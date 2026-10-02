@@ -42,6 +42,7 @@ final class CaptureCoordinator {
 
     func annotate(_ url: URL) {
         log.notice("Annotate requested: \(url.path, privacy: .public)")
+        EditorWindowController.open(url)
     }
 
     private func captureFullscreen() async throws {

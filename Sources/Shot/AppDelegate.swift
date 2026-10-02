@@ -11,11 +11,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var defaultsObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        _ = Preferences()
+        Preferences.registerDefaults()
         HotkeyCenter.shared.onPress = { [weak self] action in
             self?.coordinator.perform(action)
         }
         registerHotkeys()
+        QuickAccessController.shared.onAnnotate = { [weak self] url in
+            self?.coordinator.annotate(url)
+        }
         defaultsObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated {
                 self?.registerHotkeysIfChanged()

@@ -72,8 +72,10 @@ final class SelectionOverlayController {
         }
         let pointer = NSEvent.mouseLocation
         let keyPanel = panels.first { NSMouseInRect(pointer, $0.frame, false) } ?? panels.first
-        keyPanel?.makeKey()
-        keyPanel.flatMap { $0.contentView }.map { keyPanel?.makeFirstResponder($0) }
+        if let keyPanel {
+            keyPanel.makeKey()
+            keyPanel.makeFirstResponder(keyPanel.contentView)
+        }
         updateHover()
         NSCursor.crosshair.set()
     }
