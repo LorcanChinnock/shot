@@ -5,7 +5,8 @@ import SwiftUI
 
 struct QuickAccessCard: Identifiable {
     static let width: CGFloat = 240
-    static let maxHeight: CGFloat = 200
+    static let minHeight: CGFloat = 135
+    static let maxHeight: CGFloat = 180
 
     let id = UUID()
     let fileURL: URL
@@ -17,7 +18,7 @@ struct QuickAccessCard: Identifiable {
         guard size.width > 0 else {
             return Self.maxHeight
         }
-        return min(Self.maxHeight, max(60, (Self.width * size.height / size.width).rounded()))
+        return min(Self.maxHeight, max(Self.minHeight, (Self.width * size.height / size.width).rounded()))
     }
 }
 
@@ -53,7 +54,9 @@ final class QuickAccessController {
     }
 
     private func add(_ card: QuickAccessCard) {
-        model.cards.append(card)
+        withAnimation(.easeOut(duration: 0.2)) {
+            model.cards.append(card)
+        }
         while model.cards.count > Self.maxCards {
             remove(model.cards[0].id)
         }

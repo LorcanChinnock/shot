@@ -8,6 +8,7 @@ struct QuickAccessView: View {
         VStack(spacing: QuickAccessController.spacing) {
             ForEach(model.cards) { card in
                 QuickAccessCardView(card: card, controller: controller)
+                    .transition(.move(edge: .leading).combined(with: .opacity))
             }
         }
         .padding(QuickAccessController.padding)
@@ -20,67 +21,111 @@ private struct QuickAccessCardView: View {
     let controller: QuickAccessController
     @State private var hovering = false
 
+    private static let radius: CGFloat = 10
+
     var body: some View {
-        Image(nsImage: card.thumbnail)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: QuickAccessCard.width, height: card.height)
-            .background(Color.black.opacity(0.6))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay {
-                if hovering {
-                    actions
-                }
+        ZStack {
+            Image(nsImage: card.thumbnail)
+                .resizable()
+                .interpolation(.high)
+                .aspectRatio(contentMode: .fill)
+                .frame(width: QuickAccessCard.width, height: card.height)
+                .clipped()
+            if hovering {
+                hoverActions
+                    .transition(.opacity)
+            } else if card.isVideo {
+                videoBadge
             }
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.white.opacity(0.4), lineWidth: 1))
-            .shadow(color: .black.opacity(0.35), radius: 6, y: 2)
-            .onHover { inside in
+        }
+        .frame(width: QuickAccessCard.width, height: card.height)
+        .background(Color.black)
+        .clipShape(RoundedRectangle(cornerRadius: Self.radius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Self.radius, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.18), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.4), radius: 8, y: 3)
+        .contentShape(Rectangle())
+        .onHover { inside in
+            withAnimation(.easeOut(duration: 0.12)) {
                 hovering = inside
-                controller.setHovering(inside, card: card.id)
             }
-            .onDrag { NSItemProvider(contentsOf: card.fileURL) ?? NSItemProvider() }
+            controller.setHovering(inside, card: card.id)
+        }
+        .onDrag { NSItemProvider(contentsOf: card.fileURL) ?? NSItemProvider() }
     }
 
-    private var actions: some View {
-        ZStack(alignment: .topTrailing) {
-            RoundedRectangle(cornerRadius: 8).fill(Color.black.opacity(0.45))
-            VStack(spacing: 6) {
-                Spacer()
-                HStack(spacing: 6) {
-                    button("Copy", "doc.on.doc") { controller.copy(card) }
-                    button("Save As…", "square.and.arrow.down") { controller.saveAs(card) }
-                }
-                HStack(spacing: 6) {
+    private var hoverActions: some View {
+        ZStack {
+            Color.black.opacity(0.55)
+            VStack(spacing: 8) {
+                PillButton(title: "Copy") { controller.copy(card) }
+                PillButton(title: "Save As…") { controller.saveAs(card) }
+            }
+            VStack {
+                HStack {
+                    CornerButton(symbol: "xmark", help: "Close") { controller.remove(card.id) }
+                    Spacer()
                     if card.isVideo {
-                        button("GIF", "photo.stack") { controller.exportGIF(card) }
+                        CornerButton(symbol: "photo.stack", help: "Export GIF") { controller.exportGIF(card) }
                     } else {
-                        button("Annotate", "pencil.tip.crop.circle") { controller.annotate(card) }
+                        CornerButton(symbol: "pencil", help: "Annotate") { controller.annotate(card) }
                     }
-                    button("Show in Finder", "folder") { controller.showInFinder(card) }
                 }
                 Spacer()
+                HStack {
+                    Spacer()
+                    CornerButton(symbol: "folder", help: "Show in Finder") { controller.showInFinder(card) }
+                }
             }
-            Button {
-                controller.remove(card.id)
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 16))
-                    .foregroundStyle(.white, .black.opacity(0.6))
-            }
-            .buttonStyle(.plain)
-            .padding(6)
-            .help("Close")
+            .padding(7)
         }
     }
 
-    private func button(_ title: String, _ symbol: String, action: @escaping () -> Void) -> some View {
+    private var videoBadge: some View {
+        Image(systemName: "play.fill")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: 30, height: 30)
+            .background(Color.black.opacity(0.55), in: Circle())
+    }
+}
+
+private struct PillButton: View {
+    let title: String
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
         Button(action: action) {
-            Label(title, systemImage: symbol)
-                .font(.system(size: 11, weight: .medium))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 5)
-                .background(.ultraThinMaterial, in: Capsule())
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.black.opacity(0.85))
+                .frame(width: 104, height: 26)
+                .background(Color.white.opacity(hovering ? 1 : 0.88), in: Capsule())
         }
         .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+    }
+}
+
+private struct CornerButton: View {
+    let symbol: String
+    let help: String
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 22, height: 22)
+                .background(Color.white.opacity(hovering ? 0.35 : 0.2), in: Circle())
+        }
+        .buttonStyle(.plain)
+        .help(help)
+        .onHover { hovering = $0 }
     }
 }
