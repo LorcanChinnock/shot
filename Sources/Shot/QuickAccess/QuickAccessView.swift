@@ -5,13 +5,13 @@ struct QuickAccessView: View {
     let controller: QuickAccessController
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: QuickAccessController.spacing) {
             ForEach(model.cards) { card in
                 QuickAccessCardView(card: card, controller: controller)
             }
         }
-        .padding(8)
-        .fixedSize()
+        .padding(QuickAccessController.padding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
     }
 }
 
@@ -20,14 +20,11 @@ private struct QuickAccessCardView: View {
     let controller: QuickAccessController
     @State private var hovering = false
 
-    static let width: CGFloat = 240
-
     var body: some View {
         Image(nsImage: card.thumbnail)
             .resizable()
             .aspectRatio(contentMode: .fit)
-            .frame(width: Self.width)
-            .frame(maxHeight: 200)
+            .frame(width: QuickAccessCard.width, height: card.height)
             .background(Color.black.opacity(0.6))
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay {

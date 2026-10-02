@@ -46,3 +46,31 @@ public enum PNG {
         return max(1, CGFloat(dpi) / 72)
     }
 }
+
+public enum ImageTrim {
+    /// Crops away fully transparent rows and columns at the edges.
+    public static func trimTransparentEdges(_ image: CGImage) -> CGImage {
+        let width = image.width, height = image.height
+        guard let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width, space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.alphaOnly.rawValue),
+              let data = ctx.data
+        else {
+            return image
+        }
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        let alpha = data.assumingMemoryBound(to: UInt8.self)
+        var minX = width, maxX = -1, minY = height, maxY = -1
+        for y in 0..<height {
+            let row = alpha + y * width
+            for x in 0..<width where row[x] != 0 {
+                minX = min(minX, x)
+                maxX = max(maxX, x)
+                minY = min(minY, y)
+                maxY = max(maxY, y)
+            }
+        }
+        guard maxX >= minX, maxY >= minY else {
+            return image
+        }
+        return image.cropping(to: CGRect(x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1)) ?? image
+    }
+}
