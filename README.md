@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/icon.png" width="128" height="128" alt="Shot app icon">
+</p>
+
 # Shot
 
 A personal macOS screenshot and screen-recording app, in the spirit of CleanShot X. It runs from the menu bar.
