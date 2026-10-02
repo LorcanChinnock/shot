@@ -11,8 +11,7 @@ public enum PreferenceKey {
     public static let quickAccessAfterCapture = "quickAccessAfterCapture"
     public static let openEditorAfterCapture = "openEditorAfterCapture"
     public static let captureShowsCursor = "captureShowsCursor"
-    public static let captureHidesShotUI = "captureHidesShotUI"
-    public static let recordHidesShotUI = "recordHidesShotUI"
+    public static let hidesShotUI = "hidesShotUI"
     public static let showMagnifier = "showMagnifier"
     public static let showCrosshair = "showCrosshair"
     public static let windowShadow = "windowShadow"
@@ -64,8 +63,7 @@ public struct Preferences {
             PreferenceKey.quickAccessAfterCapture: true,
             PreferenceKey.openEditorAfterCapture: false,
             PreferenceKey.captureShowsCursor: false,
-            PreferenceKey.captureHidesShotUI: true,
-            PreferenceKey.recordHidesShotUI: true,
+            PreferenceKey.hidesShotUI: true,
             PreferenceKey.showMagnifier: true,
             PreferenceKey.showCrosshair: true,
             PreferenceKey.windowShadow: true,
@@ -125,10 +123,8 @@ public struct Preferences {
     public var quickAccessAfterCapture: Bool { store.bool(forKey: PreferenceKey.quickAccessAfterCapture) }
     public var openEditorAfterCapture: Bool { store.bool(forKey: PreferenceKey.openEditorAfterCapture) }
     public var captureShowsCursor: Bool { store.bool(forKey: PreferenceKey.captureShowsCursor) }
-    /// Keeps Quick Access cards, toasts and other Shot windows out of screenshots.
-    public var captureHidesShotUI: Bool { store.bool(forKey: PreferenceKey.captureHidesShotUI) }
-    /// Keeps Quick Access cards, toasts and other Shot windows out of recordings; the camera bubble always shows.
-    public var recordHidesShotUI: Bool { store.bool(forKey: PreferenceKey.recordHidesShotUI) }
+    /// Keeps Quick Access cards, toasts and other Shot windows out of screenshots and recordings; the camera bubble always shows.
+    public var hidesShotUI: Bool { store.bool(forKey: PreferenceKey.hidesShotUI) }
     public var showMagnifier: Bool { store.bool(forKey: PreferenceKey.showMagnifier) }
     public var showCrosshair: Bool { store.bool(forKey: PreferenceKey.showCrosshair) }
     public var windowShadow: Bool { store.bool(forKey: PreferenceKey.windowShadow) }

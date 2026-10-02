@@ -21,7 +21,6 @@ final class RecordingSetupModel {
     var cameraOn: Bool
     var microphoneOn: Bool
     var cursorOn: Bool
-    var hidesShotUI: Bool
     var countdown: Int?
 
     init(mode: RecordingMode, prefs: Preferences) {
@@ -29,7 +28,6 @@ final class RecordingSetupModel {
         cameraOn = prefs.recordCamera
         microphoneOn = prefs.recordMicrophone
         cursorOn = prefs.recordShowsCursor
-        hidesShotUI = prefs.recordHidesShotUI
     }
 }
 
@@ -179,11 +177,6 @@ final class RecordingSetupController {
         UserDefaults.standard.set(model.cursorOn, forKey: PreferenceKey.recordShowsCursor)
     }
 
-    func toggleHidesShotUI() {
-        model.hidesShotUI.toggle()
-        UserDefaults.standard.set(model.hidesShotUI, forKey: PreferenceKey.recordHidesShotUI)
-    }
-
     // MARK: Panels
 
     private func showSetup(placeCamera: Bool) async {
@@ -203,7 +196,6 @@ final class RecordingSetupController {
             toggleCamera: { [weak self] in Task { await self?.toggleCamera() } },
             toggleMicrophone: { [weak self] in self?.toggleMicrophone() },
             toggleCursor: { [weak self] in self?.toggleCursor() },
-            toggleHidesShotUI: { [weak self] in self?.toggleHidesShotUI() },
             record: { [weak self] in self?.confirm() },
             cancel: { [weak self] in self?.cancel() }
         ))
@@ -374,7 +366,8 @@ private final class HandleView: NSView {
         let body = CGRect(x: 0, y: 2, width: bounds.width - 2, height: bounds.height - 2)
         let radius: CGFloat = handle == .move ? 8 : 4
         Self.ink.setFill()
-        NSBezierPath(roundedRect: body.offsetBy(dx: 2, dy: -2), xRadius: radius, yRadius: radius).fill()
+        // Starts under the border stroke so no background shows between knob and shadow.
+        NSBezierPath(roundedRect: body.insetBy(dx: 1, dy: 1).offsetBy(dx: 2, dy: -2), xRadius: radius, yRadius: radius).fill()
         NSColor.white.setFill()
         let shape = NSBezierPath(roundedRect: body.insetBy(dx: 1, dy: 1), xRadius: radius, yRadius: radius)
         shape.fill()
@@ -401,12 +394,11 @@ private final class SetupBarPanel: NSPanel {
         let toggleCamera: @MainActor () -> Void
         let toggleMicrophone: @MainActor () -> Void
         let toggleCursor: @MainActor () -> Void
-        let toggleHidesShotUI: @MainActor () -> Void
         let record: @MainActor () -> Void
         let cancel: @MainActor () -> Void
     }
 
-    static let size = NSSize(width: 664, height: 66)
+    static let size = NSSize(width: 620, height: 66)
 
     override var canBecomeKey: Bool { true }
 
@@ -440,7 +432,6 @@ private struct SetupBarView: View {
             OptionToggle(on: model.cameraOn, symbol: model.cameraOn ? "video.fill" : "video.slash.fill", help: model.cameraOn ? "Camera bubble on" : "Camera bubble off", action: actions.toggleCamera)
             OptionToggle(on: model.microphoneOn, symbol: model.microphoneOn ? "mic.fill" : "mic.slash.fill", help: model.microphoneOn ? "Microphone on" : "Microphone off", action: actions.toggleMicrophone)
             OptionToggle(on: model.cursorOn, symbol: model.cursorOn ? "cursorarrow" : "cursorarrow.slash", help: model.cursorOn ? "Cursor shown" : "Cursor hidden", action: actions.toggleCursor)
-            OptionToggle(on: !model.hidesShotUI, symbol: model.hidesShotUI ? "eye.slash.fill" : "eye.fill", help: model.hidesShotUI ? "Shot UI hidden from video" : "Shot UI shown in video", action: actions.toggleHidesShotUI)
             Spacer(minLength: 0)
             Button {
                 actions.cancel()
@@ -521,7 +512,7 @@ private struct CountdownView: View {
                 .contentTransition(.numericText(countsDown: true))
                 .animation(.spring(response: 0.3, dampingFraction: 0.6), value: model.countdown)
                 .frame(width: 148, height: 148)
-                .brutalSurface(Brutal.yellow, radius: 74, shadow: 6)
+                .brutalCircle(Brutal.yellow, shadow: 6)
             Button("Cancel") { onCancel() }
                 .buttonStyle(BrutalButtonStyle(compact: true))
                 .keyboardShortcut(.cancelAction)

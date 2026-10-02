@@ -53,7 +53,7 @@ enum DisplayCapturer {
     static func captureAll(screens: [NSScreen] = NSScreen.screens) async throws -> [FrozenDisplay] {
         let targets = screens.map { Target(displayID: $0.displayID, frame: $0.frame, backingScale: $0.backingScaleFactor) }
         let prefs = Preferences()
-        return try await capture(targets, showsCursor: prefs.captureShowsCursor, hidesShotUI: prefs.captureHidesShotUI)
+        return try await capture(targets, showsCursor: prefs.captureShowsCursor, hidesShotUI: prefs.hidesShotUI)
     }
 
     private nonisolated static func capture(_ targets: [Target], showsCursor: Bool, hidesShotUI: Bool) async throws -> [FrozenDisplay] {
