@@ -52,7 +52,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Toast.show("Unknown action: \(host)")
             return
         }
-        coordinator.perform(action)
+        let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        coordinator.perform(action, fullDisplay: query.contains { $0.name == "full" && $0.value == "1" })
     }
 
     private var registeredBindings: [ShotAction: KeyCombo] = [:]
