@@ -1,5 +1,6 @@
 import AppKit
 import ScreenCaptureKit
+import ShotCore
 
 struct FrozenDisplay: @unchecked Sendable {
     let displayID: CGDirectDisplayID
@@ -51,10 +52,10 @@ enum DisplayCapturer {
     /// Captures every display (or only `screens`) concurrently.
     static func captureAll(screens: [NSScreen] = NSScreen.screens) async throws -> [FrozenDisplay] {
         let targets = screens.map { Target(displayID: $0.displayID, frame: $0.frame, backingScale: $0.backingScaleFactor) }
-        return try await capture(targets)
+        return try await capture(targets, showsCursor: Preferences().captureShowsCursor)
     }
 
-    private nonisolated static func capture(_ targets: [Target]) async throws -> [FrozenDisplay] {
+    private nonisolated static func capture(_ targets: [Target], showsCursor: Bool) async throws -> [FrozenDisplay] {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         return try await withThrowingTaskGroup(of: FrozenDisplay.self) { group in
             for target in targets {
@@ -65,7 +66,7 @@ enum DisplayCapturer {
                 let config = SCStreamConfiguration()
                 config.width = Int(target.frame.width * target.backingScale)
                 config.height = Int(target.frame.height * target.backingScale)
-                config.showsCursor = false
+                config.showsCursor = showsCursor
                 config.captureResolution = .best
                 let job = CaptureJob(filter: filter, config: config)
                 group.addTask {

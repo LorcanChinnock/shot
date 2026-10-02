@@ -103,6 +103,7 @@ final class EditorModel {
         return (image, png)
     }
 
+
     func copy() {
         guard let result = flattened() else {
             Toast.show("Could not render image")
@@ -118,8 +119,13 @@ final class EditorModel {
             Toast.show("Could not render image")
             return false
         }
+        let format = ImageFormat(fileExtension: fileURL.pathExtension)
+        guard let data = format == .png ? result.png : PNG.data(from: result.image, scale: scale, format: format) else {
+            Toast.show("Could not render image")
+            return false
+        }
         do {
-            try result.png.write(to: fileURL, options: .atomic)
+            try data.write(to: fileURL, options: .atomic)
             Clipboard.copy(png: result.png, image: result.image)
             isDirty = false
             Toast.show("Saved and copied")

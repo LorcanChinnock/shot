@@ -21,3 +21,7 @@ private let date: Date = {
     let free = FileNaming.uniqueURL(in: folder, date: date, pathExtension: "mp4") { _ in false }
     #expect(free.lastPathComponent == "Shot 2026-10-02 at 14.03.11.mp4")
 }
+
+@Test func customPrefix() {
+    #expect(FileNaming.baseName(for: date, prefix: "Bug") == "Bug 2026-10-02 at 14.03.11")
+}

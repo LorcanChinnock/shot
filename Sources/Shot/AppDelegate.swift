@@ -24,6 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 HotkeyCenter.shared.reloadFromPreferences()
             }
         }
+        installEditMenu()
         Permissions.showOnboardingIfNeeded()
         log.notice("Shot launched")
     }
@@ -39,6 +40,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         log.notice("URL received: \(url.absoluteString, privacy: .public)")
+        if host == "settings" {
+            let name = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "section" }?.value
+            SettingsWindowController.show(section: name.flatMap(SettingsSection.init(rawValue:)))
+            return
+        }
         if host == "annotate" {
             let path = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "path" }?.value
             guard let path else {
@@ -54,5 +60,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
         coordinator.perform(action, fullDisplay: query.contains { $0.name == "full" && $0.value == "1" })
+    }
+
+    /// Never visible in an LSUIElement app, but routes ⌘X/⌘C/⌘V/⌘A/⌘Z to text fields.
+    private func installEditMenu() {
+        let edit = NSMenu(title: "Edit")
+        edit.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
+        let redo = edit.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "z")
+        redo.keyEquivalentModifierMask = [.command, .shift]
+        edit.addItem(.separator())
+        edit.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        edit.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        edit.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        edit.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        let editItem = NSMenuItem(title: "Edit", action: nil, keyEquivalent: "")
+        editItem.submenu = edit
+        let main = NSMenu()
+        main.addItem(NSMenuItem(title: "Shot", action: nil, keyEquivalent: ""))
+        main.addItem(editItem)
+        NSApp.mainMenu = main
     }
 }

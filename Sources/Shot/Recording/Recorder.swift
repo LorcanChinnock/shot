@@ -45,10 +45,12 @@ final class Recorder: NSObject {
         config.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(prefs.recordingFPS))
         config.showsCursor = prefs.recordShowsCursor
         config.captureMicrophone = microphone
+        config.capturesAudio = prefs.recordSystemAudio
+        config.excludesCurrentProcessAudio = true
 
         let folder = prefs.saveFolder
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let url = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "mp4")
+        let url = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "mp4", prefix: prefs.filePrefix)
         let outputConfig = SCRecordingOutputConfiguration()
         outputConfig.outputURL = url
         outputConfig.outputFileType = .mp4
@@ -64,10 +66,12 @@ final class Recorder: NSObject {
         self.stream = stream
         recordingOutput = output
         outputURL = url
-        let border = RecordingBorderPanel(region: region)
-        border.orderFrontRegardless()
-        self.border = border
-        log.notice("Recording started: \(config.width)x\(config.height) at \(prefs.recordingFPS) fps, mic \(microphone), to \(url.path, privacy: .public)")
+        if prefs.showRecordingBorder {
+            let border = RecordingBorderPanel(region: region)
+            border.orderFrontRegardless()
+            self.border = border
+        }
+        log.notice("Recording started: \(config.width)x\(config.height) at \(prefs.recordingFPS) fps, mic \(microphone), system audio \(prefs.recordSystemAudio), to \(url.path, privacy: .public)")
     }
 
     /// Keeps the stream and recording output alive until SCK reports the file finished.

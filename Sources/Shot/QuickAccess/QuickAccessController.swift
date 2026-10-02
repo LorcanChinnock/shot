@@ -121,7 +121,9 @@ final class QuickAccessController {
         let cardsHeight = model.cards.reduce(0) { $0 + $1.height } + Self.spacing * CGFloat(max(0, model.cards.count - 1))
         let size = CGSize(width: QuickAccessCard.width + Self.padding * 2, height: cardsHeight + Self.padding * 2)
         let screen = NSScreen.underPointer ?? NSScreen.screens[0]
-        let origin = CGPoint(x: screen.visibleFrame.minX + Self.inset, y: screen.visibleFrame.minY + Self.inset)
+        let visible = screen.visibleFrame
+        let x = Preferences().quickAccessPosition == .left ? visible.minX + Self.inset : visible.maxX - Self.inset - size.width
+        let origin = CGPoint(x: x, y: visible.minY + Self.inset)
         panel.setFrame(NSRect(origin: origin, size: size), display: true)
     }
 
