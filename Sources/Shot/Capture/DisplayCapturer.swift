@@ -52,17 +52,21 @@ enum DisplayCapturer {
     /// Captures every display (or only `screens`) concurrently.
     static func captureAll(screens: [NSScreen] = NSScreen.screens) async throws -> [FrozenDisplay] {
         let targets = screens.map { Target(displayID: $0.displayID, frame: $0.frame, backingScale: $0.backingScaleFactor) }
-        return try await capture(targets, showsCursor: Preferences().captureShowsCursor)
+        let prefs = Preferences()
+        return try await capture(targets, showsCursor: prefs.captureShowsCursor, hidesShotUI: prefs.captureHidesShotUI)
     }
 
-    private nonisolated static func capture(_ targets: [Target], showsCursor: Bool) async throws -> [FrozenDisplay] {
+    private nonisolated static func capture(_ targets: [Target], showsCursor: Bool, hidesShotUI: Bool) async throws -> [FrozenDisplay] {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         return try await withThrowingTaskGroup(of: FrozenDisplay.self) { group in
             for target in targets {
                 guard let display = content.displays.first(where: { $0.displayID == target.displayID }) else {
                     throw CaptureError.displayNotFound
                 }
-                let filter = SCContentFilter(display: display, excludingWindows: [])
+                let ownApps = content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
+                let filter = hidesShotUI
+                    ? SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: [])
+                    : SCContentFilter(display: display, excludingWindows: [])
                 let config = SCStreamConfiguration()
                 config.width = Int(target.frame.width * target.backingScale)
                 config.height = Int(target.frame.height * target.backingScale)

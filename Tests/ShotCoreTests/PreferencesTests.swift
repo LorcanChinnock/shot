@@ -39,6 +39,8 @@ import Testing
     #expect(!prefs.downscaleRetina)
     #expect(!prefs.openEditorAfterCapture)
     #expect(!prefs.captureShowsCursor)
+    #expect(prefs.captureHidesShotUI)
+    #expect(prefs.recordHidesShotUI)
     #expect(prefs.showMagnifier)
     #expect(prefs.showCrosshair)
     #expect(prefs.quickAccessPosition == .left)

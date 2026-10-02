@@ -10,6 +10,7 @@ final class CaptureCoordinator {
     let state: AppState
     private var busy = false
     private let recorder = Recorder()
+    private var setup: RecordingSetupController?
 
     init(state: AppState) {
         self.state = state
@@ -38,6 +39,10 @@ final class CaptureCoordinator {
             stopRecording(discard: false)
             return
         }
+        if action.isRecording, let setup {
+            setup.confirm()
+            return
+        }
         guard !busy else {
             return
         }
@@ -57,7 +62,7 @@ final class CaptureCoordinator {
                 case .record:
                     try await startRecording(mode: .area)
                 case .recordFullscreen:
-                    try await startRecording(mode: .fullscreen)
+                    try await startRecording(mode: .screen)
                 case .recordWindow:
                     try await startRecording(mode: .window)
                 }
@@ -131,42 +136,19 @@ final class CaptureCoordinator {
         }
     }
 
-    private enum RecordingMode {
-        case area, fullscreen, window
-    }
-
+    /// Frames the recording, then waits for Record and the countdown before starting.
     private func startRecording(mode: RecordingMode) async throws {
-        let screens = NSScreen.screens
-        let screen: NSScreen
-        let region: CGRect
-        if mode == .fullscreen {
-            guard let pointerScreen = NSScreen.underPointer else {
-                throw CaptureError.displayNotFound
-            }
-            screen = pointerScreen
-            region = pointerScreen.frame
-        } else {
-            let displays = screens.map { OverlayDisplay(frame: $0.frame, scale: $0.backingScaleFactor, image: nil) }
-            let windows = SelectionOverlayController.onScreenWindows()
-            guard let selection = await SelectionOverlayController.select(displays: displays, windowMode: mode == .window, windows: windows, isLive: true) else {
-                return
-            }
-            switch selection {
-            case let .area(index, rect):
-                screen = screens[index]
-                region = rect.offsetBy(dx: screen.frame.minX, dy: screen.frame.minY)
-            case let .window(info):
-                let primaryHeight = screens.first?.frame.height ?? 0
-                let frame = Geometry.flip(info.frame, primaryHeight: primaryHeight)
-                screen = screens.first { $0.frame.contains(CGPoint(x: frame.midX, y: frame.midY)) } ?? screens[0]
-                region = frame.intersection(screen.frame)
-            case let .fullDisplay(index):
-                screen = screens[index]
-                region = screen.frame
-            }
+        guard let (screen, region) = await RecordingSetupController.pickRegion(mode: mode) else {
+            return
+        }
+        let controller = RecordingSetupController(mode: mode, screen: screen, region: region)
+        setup = controller
+        let result = await controller.run()
+        setup = nil
+        guard case let .start(screen, region) = result else {
+            return
         }
         try await recorder.start(screen: screen, region: region)
-        state.isRecording = true
     }
 
     private func recordingFinished(_ url: URL) {
