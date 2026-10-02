@@ -49,14 +49,11 @@ Do not build these items: scrolling capture, cloud upload, pinned screenshots, s
    3. Set Name to `Shot Dev`, Identity Type to `Self Signed Root`, and Certificate Type to `Code Signing`.
    4. Select **Create**.
    5. Run `security find-identity -p codesigning` and confirm that `Shot Dev` appears. It can show as not trusted. That is acceptable.
-2. Turn off the system screenshot shortcuts so that Shot can use them:
-   1. Open **System Settings › Keyboard › Keyboard Shortcuts… › Screenshots**.
-   2. Clear every checkbox.
-3. After the first `make run`, grant permissions:
+2. After the first `make run`, grant permissions:
    1. Open **System Settings › Privacy & Security › Screen & System Audio Recording**.
    2. Turn on **Shot**.
    3. Relaunch with `make run`.
-4. Grant Microphone permission when the first recording with the mic prompts for it.
+3. Grant Microphone permission when the first recording with the mic prompts for it.
 
 ## 5. Repository layout
 
@@ -195,11 +192,11 @@ Complete each phase in order. At the end of each phase, run `make test` and `mak
 
 | Action | Default |
 |---|---|
-| Capture Area | ⌘⇧4 |
-| Capture Fullscreen | ⌘⇧3 |
-| Capture Window | ⌘⇧W |
-| Capture Text (OCR) | ⌘⇧2 |
-| Record Screen / Stop | ⌘⇧5 |
+| Capture Area | ⌃⇧4 |
+| Capture Fullscreen | ⌃⇧3 |
+| Capture Window | ⌃⇧W |
+| Capture Text (OCR) | ⌃⇧2 |
+| Record Screen / Stop | ⌃⇧5 |
 
 4. Menu items: each action with its shortcut, a divider, **Open Capture Folder**, **Settings…** (`SettingsLink`; also call `NSApp.activate()`), and **Quit**.
 5. `AppDelegate.application(_:open:)` handles URLs: `shot://capture-area`, `shot://capture-fullscreen`, `shot://capture-window`, `shot://capture-text`, `shot://record`, `shot://annotate?path=<file>`.
@@ -326,7 +323,7 @@ Complete each phase in order. At the end of each phase, run `make test` and `mak
    - **Unverified:** whether `SCRecordingOutput` needs a `.screen` stream output as well. If recording produces an empty file, add a no-op `SCStreamOutput` for `.screen`.
 3. While recording:
    - Show a `RecordingBorderPanel` around the region: a red 2 pt border with `ignoresMouseEvents = true`. The filter excludes Shot, so the border does not appear in the video.
-   - Change the menu bar icon to `stop.circle.fill`. Put **Stop Recording (⌘⇧5)** at the top of the menu.
+   - Change the menu bar icon to `stop.circle.fill`. Put **Stop Recording (⌃⇧5)** at the top of the menu.
    - The same hotkey and `shot://record` stop the recording.
 4. On finish (`SCRecordingOutputDelegate.recordingOutputDidFinishRecording`), show a Quick Access card with a video thumbnail (`AVAssetImageGenerator` at t = 0) and an extra **GIF** button.
 5. `GIFExporter`: sample frames with `AVAssetImageGenerator` at 12 fps and a maximum width of 720 px. Write them with `CGImageDestination` (`UTType.gif`, loop count 0, frame delay 1/12). Show a progress toast. Cap the input at 60 s and say so in the toast. Longer input needs a streaming exporter.
@@ -351,7 +348,7 @@ Complete each phase in order. At the end of each phase, run `make test` and `mak
 | The CLT toolchain cannot build or test | Phase 0 gate. Stop and report. |
 | Screen Recording permission resets after rebuilds | Self-signed certificate plus a stable install path. Fallback: `make reset-tcc`, then grant again. |
 | macOS shows periodic "still allow screen recording?" prompts for apps that use SCK outside the system picker | Expected OS behavior (unverified on macOS 26). Do not work around it. |
-| A system shortcut keeps a hotkey | HUMAN prerequisite 2. Shortcuts are configurable in Settings. |
+| A system shortcut keeps a hotkey | Defaults use ⌃⇧, which the macOS screenshot shortcuts (⌘⇧3/4/5, ⌃⌘⇧3/4) do not use. Shortcuts are configurable in Settings. |
 | Settings window does not come to front from a `LSUIElement` app | Call `NSApp.activate()` before `SettingsLink` opens the window. Fallback: temporarily set the activation policy to `.regular` while the window is open. |
 | Freeze capture is slow on many displays | Capture all displays concurrently. Measure. If it takes more than 300 ms, cache `SCShareableContent` for 2 s. |
 

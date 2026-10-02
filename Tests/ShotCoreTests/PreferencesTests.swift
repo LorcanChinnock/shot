@@ -15,11 +15,11 @@ import Testing
 }
 
 @Test func defaultHotkeysMatchPlan() {
-    #expect(ShotAction.captureArea.defaultCombo.displayString == "⇧⌘4")
-    #expect(ShotAction.captureFullscreen.defaultCombo.displayString == "⇧⌘3")
-    #expect(ShotAction.captureWindow.defaultCombo.displayString == "⇧⌘W")
-    #expect(ShotAction.captureText.defaultCombo.displayString == "⇧⌘2")
-    #expect(ShotAction.record.defaultCombo.displayString == "⇧⌘5")
+    #expect(ShotAction.captureArea.defaultCombo.displayString == "⌃⇧4")
+    #expect(ShotAction.captureFullscreen.defaultCombo.displayString == "⌃⇧3")
+    #expect(ShotAction.captureWindow.defaultCombo.displayString == "⌃⇧W")
+    #expect(ShotAction.captureText.defaultCombo.displayString == "⌃⇧2")
+    #expect(ShotAction.record.defaultCombo.displayString == "⌃⇧5")
 }
 
 @Test func preferenceDefaults() throws {
