@@ -136,13 +136,13 @@ shot/
 3. Copy `.build/release/Shot` to `Contents/MacOS/Shot`.
 4. Copy `Resources/Info.plist` to `Contents/Info.plist`.
 5. Sign: `codesign --force --deep --sign "${SHOT_SIGN_IDENTITY:-Shot Dev}" build/Shot.app`. If the identity is missing, print a warning and sign ad-hoc (`-`).
-6. Replace `~/Applications/Shot.app` with the new bundle. A stable install path keeps the TCC grant stable.
+6. Replace `/Applications/Shot.app` with the new bundle. A stable install path keeps the TCC grant stable.
 
 ### Makefile
 - `make build`: `swift build`
 - `make test`: `swift test`
 - `make app`: `scripts/bundle.sh`
-- `make run`: `make app`, then `pkill -x Shot || true`, then `open ~/Applications/Shot.app`
+- `make run`: `make app`, then `pkill -x Shot || true`, then `open /Applications/Shot.app`
 - `make reset-tcc`: `tccutil reset ScreenCapture dev.lorcan.Shot`
 
 ## 7. Cross-cutting rules
@@ -355,7 +355,7 @@ Complete each phase in order. At the end of each phase, run `make test` and `mak
 ## 10. Definition of done
 1. All phases are committed on `build/v1`.
 2. `make test` passes.
-3. `make app` produces a signed `~/Applications/Shot.app`.
+3. `make app` produces a signed `/Applications/Shot.app`.
 4. Every agent check passes.
 5. The final report lists:
    - Every HUMAN check, as a checklist.
