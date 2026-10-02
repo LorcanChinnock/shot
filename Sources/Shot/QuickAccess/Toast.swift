@@ -30,11 +30,6 @@ enum Toast {
         }
     }
 
-    static func hide() {
-        hideTask?.cancel()
-        panel?.orderOut(nil)
-    }
-
     private static func makePanel() -> NSPanel {
         let panel = NSPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.level = .statusBar

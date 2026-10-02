@@ -5,7 +5,7 @@ import os
 import ScreenCaptureKit
 import ShotCore
 
-private let log = Logger(subsystem: "dev.lorcan.Shot", category: "recording")
+private let log = Logger.shot("recording")
 
 /// What the on-screen controls show; elapsed time excludes paused stretches.
 @MainActor
@@ -61,6 +61,8 @@ final class Recorder: NSObject {
     private var stream: SCStream?
     private var recordingOutput: SCRecordingOutput?
     private var segmentFinished: CheckedContinuation<Void, Never>?
+    private var segmentTimeout: Task<Void, Never>?
+    private var finishing: Task<Void, Never>?
     private var border: RecordingBorderPanel?
     private var controls: RecordingControlPanel?
     private let frameSink = FrameSink()
@@ -77,7 +79,7 @@ final class Recorder: NSObject {
             Toast.show("Microphone access denied; recording without it")
         }
         if prefs.recordCamera, !CameraBubble.shared.isVisible {
-            await showCamera(in: region)
+            await CameraBubble.shared.showFromPreferences(in: region)
         } else if !prefs.recordCamera {
             CameraBubble.shared.hide()
         }
@@ -142,12 +144,10 @@ final class Recorder: NSObject {
         guard isRecording else {
             return
         }
-        let wasRecording = phase == .recording
         phase = .finishing
         hidePanels()
-        if wasRecording {
-            await finishSegment()
-        }
+        // Also waits for a segment that a pause is still finishing.
+        await finishSegment()
         CameraBubble.shared.hide()
         await complete(discard: discard)
     }
@@ -172,10 +172,10 @@ final class Recorder: NSObject {
         do {
             try await VideoConcatenator.concatenate(parts, to: finalURL)
             let size = (try? FileManager.default.attributesOfItem(atPath: finalURL.path)[.size] as? Int) ?? 0
-            log.notice("Recording finished: \(finalURL.path, privacy: .public), \(parts.count) segments, \(size) bytes")
+            log.notice("Recording finished: \(finalURL.path), \(parts.count) segments, \(size) bytes")
             onFinish?(finalURL)
         } catch {
-            log.error("Joining segments failed; parts kept at \(parts.first?.deletingLastPathComponent().path ?? "", privacy: .public)")
+            log.error("Joining segments failed; parts kept at \(parts.first?.deletingLastPathComponent().path ?? "")")
             onError?(error)
         }
     }
@@ -189,7 +189,7 @@ final class Recorder: NSObject {
         if CameraBubble.shared.isVisible {
             CameraBubble.shared.hide()
         } else {
-            await showCamera(in: session.region)
+            await CameraBubble.shared.showFromPreferences(in: session.region)
         }
         model.cameraOn = CameraBubble.shared.isVisible
         await refreshFilter()
@@ -197,19 +197,6 @@ final class Recorder: NSObject {
 
     func cycleCameraSize() {
         CameraBubble.shared.cycleSize()
-    }
-
-    private func showCamera(in region: CGRect) async {
-        guard await AVCaptureDevice.requestAccess(for: .video) else {
-            Toast.show("Camera access denied")
-            return
-        }
-        let prefs = Preferences()
-        do {
-            try await CameraBubble.shared.show(in: region, preferred: prefs.cameraSize, deviceID: prefs.cameraDeviceID)
-        } catch {
-            Toast.show("Camera unavailable: \(error.localizedDescription)")
-        }
     }
 
     /// Re-applies the filter so a bubble shown or hidden mid-recording is included or dropped.
@@ -284,12 +271,27 @@ final class Recorder: NSObject {
     }
 
     /// Stops the current stream and waits until SCK has finished writing its file.
+    /// Concurrent callers (a stop during a pause) share the same wait.
     private func finishSegment() async {
-        guard let stream else {
-            return
+        if let stream {
+            self.stream = nil
+            recordingOutput = nil
+            finishing = Task { await stopCapture(stream) }
         }
+        await finishing?.value
+        finishing = nil
+    }
+
+    private func stopCapture(_ stream: SCStream) async {
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             segmentFinished = continuation
+            segmentTimeout = Task {
+                guard (try? await Task.sleep(for: .seconds(5))) != nil, self.segmentFinished != nil else {
+                    return
+                }
+                log.error("No finish callback 5 s after stop; using the segment as is")
+                self.resolveSegment()
+            }
             Task {
                 do {
                     try await stream.stopCapture()
@@ -297,18 +299,13 @@ final class Recorder: NSObject {
                     log.error("stopCapture failed: \(error.localizedDescription, privacy: .public)")
                     self.resolveSegment()
                 }
-                try? await Task.sleep(for: .seconds(5))
-                if self.segmentFinished != nil {
-                    log.error("No finish callback 5 s after stop; using the segment as is")
-                    self.resolveSegment()
-                }
             }
         }
-        self.stream = nil
-        recordingOutput = nil
     }
 
     private func resolveSegment() {
+        segmentTimeout?.cancel()
+        segmentTimeout = nil
         segmentFinished?.resume()
         segmentFinished = nil
     }
@@ -374,7 +371,7 @@ extension Recorder: SCStreamDelegate, SCRecordingOutputDelegate {
 }
 
 private final class FrameSink: NSObject, SCStreamOutput {
-    let queue = DispatchQueue(label: "dev.lorcan.Shot.frames")
+    let queue = DispatchQueue(label: "Shot.frames")
 
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {}
 }

@@ -5,7 +5,7 @@ import os
 import ShotCore
 import SwiftUI
 
-private let log = Logger(subsystem: "dev.lorcan.Shot", category: "recording")
+private let log = Logger.shot("recording")
 
 enum RecordingMode: String, CaseIterable {
     case area, screen, window
@@ -210,17 +210,8 @@ final class RecordingSetupController {
     }
 
     private func showCamera() async {
-        guard await AVCaptureDeviceAccess.video() else {
+        if !(await CameraBubble.shared.showFromPreferences(in: region)) {
             model.cameraOn = false
-            Toast.show("Camera access denied")
-            return
-        }
-        let prefs = Preferences()
-        do {
-            try await CameraBubble.shared.show(in: region, preferred: prefs.cameraSize, deviceID: prefs.cameraDeviceID)
-        } catch {
-            model.cameraOn = false
-            Toast.show("Camera unavailable: \(error.localizedDescription)")
         }
     }
 
@@ -262,12 +253,6 @@ final class RecordingSetupController {
         frame = nil
         bar = nil
         handles.removeAll()
-    }
-}
-
-enum AVCaptureDeviceAccess {
-    static func video() async -> Bool {
-        await AVCaptureDevice.requestAccess(for: .video)
     }
 }
 
@@ -441,6 +426,7 @@ private struct SetupBarView: View {
             .buttonStyle(BrutalButtonStyle(compact: true))
             .keyboardShortcut(.cancelAction)
             .help("Cancel (Esc)")
+            .accessibilityLabel(Text("Cancel"))
             Button {
                 actions.record()
             } label: {
@@ -471,6 +457,7 @@ private struct OptionToggle: View {
         }
         .buttonStyle(BrutalButtonStyle(color: on ? Brutal.mint : .white, compact: true))
         .help(help)
+        .accessibilityLabel(Text(help))
     }
 }
 

@@ -31,8 +31,12 @@ enum Permissions {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
         process.arguments = ["-n", Bundle.main.bundlePath]
-        try? process.run()
-        NSApp.terminate(nil)
+        do {
+            try process.run()
+            NSApp.terminate(nil)
+        } catch {
+            Toast.show("Couldn't relaunch Shot. Quit and open it again.")
+        }
     }
 }
 

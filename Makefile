@@ -1,26 +1,43 @@
-# CLT's default SDK (27) makes SwiftUI @State a macro whose plugin ships only with Xcode.
-export SDKROOT ?= /Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk
-INSTALL_DIR ?= /Applications
-export SHOT_INSTALL_DIR := $(INSTALL_DIR)
-TESTING_PLUGINS := $(shell xcode-select -p)/usr/lib/swift/host/plugins/testing
+# Building with only the Command Line Tools: their default SDK (27) makes SwiftUI's @State a
+# macro whose compiler plugin ships with Xcode alone, so pin the 26.5 SDK when it's there.
+# With Xcode selected, the default SDK works and nothing is pinned.
+CLT_SDK := /Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk
+ifeq ($(findstring CommandLineTools,$(shell xcode-select -p)),CommandLineTools)
+ifneq ($(wildcard $(CLT_SDK)),)
+export SDKROOT ?= $(CLT_SDK)
+endif
+TEST_FLAGS := -Xswiftc -plugin-path -Xswiftc $(shell xcode-select -p)/usr/lib/swift/host/plugins/testing
+endif
 
-.PHONY: build test app run reset-tcc icon
+INSTALL_DIR ?= /Applications
+
+.PHONY: build test bundle app run dist reset-tcc icon clean
 
 build:
 	swift build
 
 test:
-	swift test -Xswiftc -plugin-path -Xswiftc $(TESTING_PLUGINS)
+	swift test $(TEST_FLAGS)
 
-app:
+bundle:
 	scripts/bundle.sh
+
+app: bundle
+	scripts/install.sh "$(INSTALL_DIR)"
 
 run: app
 	pkill -x Shot || true
 	open "$(INSTALL_DIR)/Shot.app"
 
+dist: bundle
+	ditto -c -k --keepParent build/Shot.app build/Shot.zip
+	@echo "Wrote build/Shot.zip"
+
 reset-tcc:
-	tccutil reset ScreenCapture dev.lorcan.Shot
+	tccutil reset ScreenCapture $$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" Resources/Info.plist)
 
 icon:
 	swift scripts/make-icon.swift .
+
+clean:
+	rm -rf .build build

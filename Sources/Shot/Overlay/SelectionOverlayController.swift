@@ -44,10 +44,13 @@ final class SelectionOverlayController {
 
     static func select(displays: [OverlayDisplay], windowMode: Bool, windows: [WindowInfo], isLive: Bool = false) async -> OverlaySelection? {
         let controller = SelectionOverlayController(windowMode: windowMode, windows: windows, isLive: isLive)
-        return await withCheckedContinuation { continuation in
+        // The overlay views hold the controller unowned; keep it alive until the user finishes.
+        let selection = await withCheckedContinuation { continuation in
             controller.continuation = continuation
             controller.show(displays)
         }
+        withExtendedLifetime(controller) {}
+        return selection
     }
 
     private func show(_ displays: [OverlayDisplay]) {

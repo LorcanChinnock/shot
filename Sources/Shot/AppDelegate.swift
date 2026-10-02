@@ -2,7 +2,7 @@ import AppKit
 import os
 import ShotCore
 
-private let log = Logger(subsystem: "dev.lorcan.Shot", category: "app")
+private let log = Logger.shot("app")
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -39,7 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard url.scheme == "shot", let host = url.host() else {
             return
         }
-        log.notice("URL received: \(url.absoluteString, privacy: .public)")
+        log.notice("URL received: \(url.absoluteString)")
         if host == "pause" {
             coordinator.togglePause()
             return

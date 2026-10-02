@@ -3,12 +3,18 @@ import AVFoundation
 import os
 import ShotCore
 
-private let log = Logger(subsystem: "dev.lorcan.Shot", category: "camera")
+private let log = Logger.shot("camera")
 
 enum CameraError: LocalizedError {
     case noCamera
+    case cannotUseCamera
 
-    var errorDescription: String? { "No camera found" }
+    var errorDescription: String? {
+        switch self {
+        case .noCamera: "No camera found"
+        case .cannotUseCamera: "The camera is in use or unavailable"
+        }
+    }
 }
 
 /// Floating round webcam preview; the recorder includes its window in the video.
@@ -19,6 +25,8 @@ final class CameraBubble {
 
     private var panel: CameraBubblePanel?
     private var session: AVCaptureSession?
+    /// Bumped by every show and hide, so a show still starting the camera can tell it was superseded.
+    private var generation = 0
 
     var windowID: CGWindowID? { panel.map { CGWindowID($0.windowNumber) } }
     var isVisible: Bool { panel != nil }
@@ -38,9 +46,27 @@ final class CameraBubble {
         AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera, .external, .continuityCamera], mediaType: .video, position: .unspecified).devices
     }
 
+    /// Asks for camera access and shows the preferred camera, reporting problems with a toast.
+    /// Returns whether the bubble is showing.
+    @discardableResult
+    func showFromPreferences(in region: CGRect) async -> Bool {
+        guard await AVCaptureDevice.requestAccess(for: .video) else {
+            Toast.show("Camera access denied")
+            return false
+        }
+        let prefs = Preferences()
+        do {
+            try await show(in: region, preferred: prefs.cameraSize, deviceID: prefs.cameraDeviceID)
+        } catch {
+            Toast.show("Camera unavailable: \(error.localizedDescription)")
+        }
+        return isVisible
+    }
+
     /// `region` is the recorded area in AppKit global space.
     func show(in region: CGRect, preferred: CameraBubbleSize, deviceID: String) async throws {
         hide()
+        let current = generation
         guard let size = CameraBubbleSize.fitting(preferred, in: region, inset: Self.inset) else {
             log.notice("Region too small for the camera bubble")
             return
@@ -52,13 +78,18 @@ final class CameraBubble {
         let session = AVCaptureSession()
         session.sessionPreset = .high
         let input = try AVCaptureDeviceInput(device: device)
-        if session.canAddInput(input) {
-            session.addInput(input)
+        guard session.canAddInput(input) else {
+            throw CameraError.cannotUseCamera
         }
+        session.addInput(input)
         let panel = CameraBubblePanel(session: session, frame: CameraBubbleLayout.initialFrame(in: region, diameter: size.diameter, inset: Self.inset), size: size)
         // startRunning blocks until the camera is live, so the first recorded frames already show it.
         let box = SessionBox(session: session)
         await Task.detached { box.session.startRunning() }.value
+        guard current == generation else {
+            Task.detached { box.session.stopRunning() }
+            return
+        }
         panel.orderFrontRegardless()
         self.session = session
         self.panel = panel
@@ -66,6 +97,7 @@ final class CameraBubble {
     }
 
     func hide() {
+        generation += 1
         panel?.orderOut(nil)
         panel = nil
         if let session {

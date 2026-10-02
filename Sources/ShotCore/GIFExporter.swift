@@ -11,10 +11,18 @@ public enum GIFExporter {
         public let truncated: Bool
     }
 
-    public enum ExportError: Error {
+    public enum ExportError: LocalizedError {
         case noVideoTrack
         case cannotCreateDestination
         case finalizeFailed
+
+        public var errorDescription: String? {
+            switch self {
+            case .noVideoTrack: "The recording has no video track"
+            case .cannotCreateDestination: "Could not create the GIF file"
+            case .finalizeFailed: "Could not finish writing the GIF"
+            }
+        }
     }
 
     public static func export(

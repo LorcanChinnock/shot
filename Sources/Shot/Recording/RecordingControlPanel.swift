@@ -113,5 +113,6 @@ private struct IconButton: View {
         }
         .buttonStyle(BrutalButtonStyle(color: color, compact: true))
         .help(help)
+        .accessibilityLabel(Text(help))
     }
 }
