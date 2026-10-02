@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # The build number counts commits.
+      - name: Test
+        run: make test
+      - name: Build Shot.zip
+        run: make dist
+        env:
+          SHOT_SIGN_IDENTITY: "-"
+          SHOT_VERSION: ${{ github.ref_name }}
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mv build/Shot.zip "build/Shot-${GITHUB_REF_NAME}.zip"
+          gh release create "$GITHUB_REF_NAME" "build/Shot-${GITHUB_REF_NAME}.zip" \
+            --title "Shot ${GITHUB_REF_NAME#v}" --generate-notes

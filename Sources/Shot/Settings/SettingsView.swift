@@ -527,8 +527,20 @@ private struct AboutSettings: View {
                 .buttonStyle(BrutalButtonStyle(color: confirmingReset ? Brutal.red : .white, compact: true))
             }
         }
+
+        SettingsCard(title: "Project", symbol: "chevron.left.forwardslash.chevron.right") {
+            SettingRow(title: "Source code", subtitle: "Free and open source under the GPL-3.0 license.") {
+                Button("GitHub") { NSWorkspace.shared.open(Self.repository) }
+                    .buttonStyle(BrutalButtonStyle(compact: true))
+            }
+            SettingRow(title: "Report a problem", subtitle: "Bug reports and ideas are welcome.", divider: false) {
+                Button("New issue") { NSWorkspace.shared.open(Self.repository.appending(path: "issues/new/choose")) }
+                    .buttonStyle(BrutalButtonStyle(compact: true))
+            }
+        }
     }
 
+    private static let repository = URL(string: "https://github.com/LorcanChinnock/shot")!
 }
 
 private struct PermissionRow: View {

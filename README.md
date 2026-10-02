@@ -2,77 +2,44 @@
   <img src="docs/icon.png" width="128" height="128" alt="Shot app icon">
 </p>
 
-# Shot
+<h1 align="center">Shot</h1>
 
-A macOS screenshot and screen-recording app. It runs from the menu bar.
+<p align="center">
+  Screenshots, annotations, and screen recordings for macOS, from the menu bar.<br>
+  Free, open source, and private: no account, no cloud, no network access.
+</p>
+
+<p align="center">
+  <a href="https://github.com/LorcanChinnock/shot/releases/latest"><img src="https://img.shields.io/github/v/release/LorcanChinnock/shot?label=download" alt="Latest release"></a>
+  <a href="https://github.com/LorcanChinnock/shot/actions/workflows/ci.yml"><img src="https://github.com/LorcanChinnock/shot/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/macOS-15%2B-black" alt="macOS 15 or later">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="GPL-3.0 license"></a>
+</p>
 
 ## Features
 
-- **Screenshots:** area (frozen screen with magnifier), fullscreen, window (with shadow), and text (OCR to clipboard).
-- **Quick Access:** a floating card after each capture. Copy, Save As, Annotate, Show in Finder, or drag it into another app.
-- **Annotation editor:** arrow, line, rectangle, ellipse, text, highlight, pixelate, numbered counter, and crop, with undo.
-- **Screen recording:** area, screen, or window to MP4. Shot shows a setup step with an adjustable frame, then a 3-second countdown. While recording, controls let you pause, stop, discard, and toggle the camera.
-- **Camera bubble:** a round webcam overlay recorded with the screen.
-- **GIF export** from a recording's Quick Access card.
-- **Settings** for files, formats, capture behavior, Quick Access, recording, audio, camera, and shortcuts.
+- **Screenshots:** area capture on a frozen screen with a magnifier, fullscreen, window (with shadow), and text (OCR straight to the clipboard).
+- **Quick Access:** a floating card after each capture. Copy, save, annotate, show in Finder, or drag it into another app.
+- **Annotation editor:** arrow, line, rectangle, ellipse, text, highlight, pixelate, numbered counters, and crop, with undo.
+- **Screen recording:** an area, a screen, or a window to MP4. Adjust the frame, then a 3-second countdown starts the recording. Pause, resume, stop, or discard while recording.
+- **Camera bubble:** a round webcam overlay that is recorded with your screen. Drag it to move it, double-click it to resize it.
+- **GIF export** from any recording's Quick Access card.
+- **Automation:** every action has a global shortcut and a `shot://` URL for launchers, the Shortcuts app, or scripts.
 
-## Requirements
+## Install
 
-- macOS 15 or later on Apple Silicon.
-- Xcode Command Line Tools. Xcode itself is not required.
+1. Download `Shot-<version>.zip` from the [latest release](https://github.com/LorcanChinnock/shot/releases/latest).
+2. Unzip it and move **Shot.app** to your Applications folder.
+3. Open Shot. Releases aren't notarized by Apple yet, so macOS blocks the first launch. Open **System Settings › Privacy & Security**, scroll down, and click **Open Anyway** next to the message about Shot.
+4. Shot asks for **Screen & System Audio Recording** access. Turn on Shot in that list, then click **Relaunch** in Shot's window. macOS applies the permission only after a relaunch.
 
-The Makefile builds against the Command Line Tools' macOS 26.5 SDK. In the default SDK (27), SwiftUI's `@State` is a macro whose plugin ships only with Xcode. If a Command Line Tools update removes the 26.5 SDK, install Xcode and remove the `SDKROOT` line from the Makefile.
+Shot needs macOS 15 or later. It asks for Microphone and Camera access the first time you record with them.
 
-## Build and install
-
-```bash
-make run        # build, sign, install to /Applications/Shot.app, and launch
-make test       # unit tests (ShotCore)
-make app        # build, sign, and install without launching
-make icon       # regenerate Resources/AppIcon.icns
-make reset-tcc  # clear Shot's Screen Recording permission
-```
-
-To install somewhere else, run `INSTALL_DIR=~/Applications make app`.
-
-### Signing certificate
-
-macOS ties Screen Recording permission to the app's signature. Ad-hoc signatures change on every build, so the permission resets each time. Sign with a stable self-signed certificate named `Shot Dev` instead:
-
-```bash
-cat > /tmp/shot-cert.cnf <<'CNF'
-[req]
-distinguished_name = dn
-x509_extensions = ext
-prompt = no
-[dn]
-CN = Shot Dev
-[ext]
-basicConstraints = critical,CA:false
-keyUsage = critical,digitalSignature
-extendedKeyUsage = critical,codeSigning
-CNF
-cd /tmp
-/usr/bin/openssl req -x509 -newkey rsa:2048 -nodes -keyout key.pem -out cert.pem -days 3650 -config shot-cert.cnf
-PASS=$(/usr/bin/openssl rand -hex 16)
-/usr/bin/openssl pkcs12 -export -inkey key.pem -in cert.pem -name "Shot Dev" -out shot.p12 -passout pass:$PASS
-security import shot.p12 -k ~/Library/Keychains/login.keychain-db -P "$PASS" -T /usr/bin/codesign
-rm key.pem cert.pem shot.p12 shot-cert.cnf
-```
-
-The certificate shows as "not trusted". Code signing and the permission work anyway. To use a different identity, set `SHOT_SIGN_IDENTITY`. Without any identity, the build signs ad-hoc and prints a warning.
-
-### First run
-
-1. Run `make run`.
-2. Turn on **Shot** in System Settings › Privacy & Security › Screen & System Audio Recording.
-3. Relaunch Shot. macOS applies a new grant only after a relaunch.
-
-macOS asks for Microphone and Camera access the first time you record with them.
+Each release has a new signature, so macOS may ask for Screen Recording access again after an update.
 
 ## Shortcuts
 
-Recording uses the same keys as screenshots, plus Option.
+Recording uses the screenshot shortcuts plus Option.
 
 | | Screenshot | Record |
 |---|---|---|
@@ -81,11 +48,11 @@ Recording uses the same keys as screenshots, plus Option.
 | Window | ⌃⇧W | ⌃⌥⇧W |
 | Text (OCR) | ⌃⇧2 | – |
 
-Any record shortcut also confirms the recording setup, and stops a recording that is running. To change shortcuts, open Settings › Shortcuts. macOS keeps ⌘⇧3, ⌘⇧4, and ⌘⇧5 for its own screenshot tool.
+While you set up a recording, the record shortcut starts it. While you record, it stops the recording. You can change any shortcut in **Settings › Shortcuts**. macOS reserves ⌘⇧3, ⌘⇧4, and ⌘⇧5 for its own screenshot tool.
 
 ## URL scheme
 
-Launchers, the Shortcuts app, or scripts can drive Shot with `open "shot://…"`:
+Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a script:
 
 | URL | Action |
 |---|---|
@@ -93,21 +60,25 @@ Launchers, the Shortcuts app, or scripts can drive Shot with `open "shot://…"`
 | `shot://record`, `record-fullscreen`, `record-window` | Set up, confirm, or stop a recording |
 | `shot://pause` | Pause or resume the recording |
 | `shot://annotate?path=<file>` | Open an image in the editor |
-| `shot://settings?section=<name>` | Open Settings: `general`, `capture`, `quickAccess`, `recording`, `shortcuts`, or `about` |
+| `shot://settings?section=<name>` | Open Settings at `general`, `capture`, `quickAccess`, `recording`, `shortcuts`, or `about` |
 
-## Project layout
+## Privacy
 
-```
-Sources/ShotCore/   Pure logic, unit-tested: geometry, file naming, encoding, annotations,
-                    rendering, OCR, GIF export, segment joining, hotkeys, preferences
-Sources/Shot/       The app: capture, overlay, Quick Access, editor, recording, settings, design system
-Tests/ShotCoreTests Swift Testing suite
-scripts/            bundle.sh (assemble, sign, install), make-icon.swift
-docs/HANDOVER.md    The original v1 build plan, kept as history
-```
+Shot never connects to the network and collects no analytics. Captures go to the folder you choose in Settings (`~/Pictures/Shot` by default) or stay in a temporary folder when saving is off. The only exceptions are the GitHub links in Settings › About, which open in your browser.
 
-The app uses SwiftPM, has no dependencies, and is not sandboxed. Logs use the `dev.lorcan.Shot` subsystem:
+## Build from source
+
+You need the Xcode Command Line Tools, or Xcode.
 
 ```bash
-log show --last 5m --predicate 'subsystem == "dev.lorcan.Shot"'
+git clone https://github.com/LorcanChinnock/shot.git
+cd shot
+scripts/make-dev-cert.sh   # once: a stable signing identity, so the Screen Recording permission survives rebuilds
+make run                   # build, install to /Applications/Shot.app, and launch
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the other `make` targets, the project layout, and how to send a change.
+
+## License
+
+Shot is free software under the [GNU General Public License v3.0](LICENSE).
