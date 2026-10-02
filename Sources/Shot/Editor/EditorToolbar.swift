@@ -6,8 +6,8 @@ struct EditorRootView: View {
     let canvas: EditorCanvasView
 
     var body: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 10) {
+        VStack(spacing: Brutal.sectionGap) {
+            HStack(spacing: 12) {
                 Text(model.fileURL.lastPathComponent)
                     .font(.system(size: 13, weight: .heavy))
                     .foregroundStyle(Brutal.ink)
@@ -25,14 +25,14 @@ struct EditorRootView: View {
                     .help("Save and copy (⌘S)")
             }
             .padding(.leading, GlassWindow.trafficLightsWidth)
-            .frame(height: 28)
+            .frame(height: GlassWindow.titlebarHeight)
+            .padding(.bottom, -Brutal.sectionGap / 2)
             EditorToolbar(model: model)
             CanvasHost(canvas: canvas)
                 .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .continuous))
                 .glassCard()
         }
-        .padding(.top, 1)
-        .padding([.horizontal, .bottom], 16)
+        .padding([.horizontal, .bottom], Brutal.windowInset)
     }
 }
 
@@ -47,7 +47,7 @@ struct EditorToolbar: View {
     @Bindable var model: EditorModel
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             ToolGroup {
                 ForEach(EditorTool.allCases) { tool in
                     Tile(selected: model.tool == tool, color: Brutal.yellow, help: "\(tool.title) (\(String(tool.key).uppercased()))") {
@@ -110,10 +110,10 @@ private struct ToolGroup<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        HStack(spacing: 3) {
+        HStack(spacing: 4) {
             content
         }
-        .padding(4)
+        .padding(Brutal.groupInset)
         .brutalSurface(Color.white.opacity(0.5), glass: true, radius: 10, shadow: 3)
     }
 }

@@ -6,7 +6,9 @@ import SwiftUI
 enum GlassWindow {
     static let cornerRadius: CGFloat = 18
     /// Leading space that keeps content clear of the traffic lights.
-    static let trafficLightsWidth: CGFloat = 74
+    static let trafficLightsWidth: CGFloat = 86
+    /// A unified toolbar makes the title bar this tall and centers the traffic lights in it.
+    static let titlebarHeight: CGFloat = 52
 
     @discardableResult
     static func make<Content: View>(_ window: NSWindow? = nil, size: NSSize, title: String, resizable: Bool = false, @ViewBuilder content: () -> Content) -> NSWindow {
@@ -25,6 +27,9 @@ enum GlassWindow {
         window.isMovableByWindowBackground = true
         window.appearance = NSAppearance(named: .aqua)
         window.isReleasedWhenClosed = false
+        window.toolbar = NSToolbar(identifier: "glass")
+        window.toolbarStyle = .unified
+        window.titlebarSeparatorStyle = .none
         window.contentView = NSHostingView(rootView: GlassChrome(content: content()))
         window.center()
         return window
