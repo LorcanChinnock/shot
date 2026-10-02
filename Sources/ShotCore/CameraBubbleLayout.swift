@@ -25,7 +25,7 @@ public enum CameraBubbleSize: String, CaseIterable, Sendable {
 
 public enum CameraBubbleLayout {
     /// Bottom-left corner of `region` (AppKit space, bottom-left origin), so the bubble lands inside the recording.
-    public static func initialFrame(in region: CGRect, diameter: CGFloat, inset: CGFloat = 24) -> CGRect {
+    public static func initialFrame(in region: CGRect, diameter: CGFloat, inset: CGFloat) -> CGRect {
         CGRect(x: region.minX + inset, y: region.minY + inset, width: diameter, height: diameter)
     }
 

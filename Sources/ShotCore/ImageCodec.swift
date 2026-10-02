@@ -3,7 +3,8 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
-public enum PNG {
+/// Encodes and decodes captures as PNG or JPEG, preserving the Retina scale as DPI.
+public enum ImageCodec {
     /// Encodes with DPI = 72 × scale so Retina captures open at point size.
     public static func data(from image: CGImage, scale: CGFloat, format: ImageFormat = .png) -> Data? {
         let data = NSMutableData()

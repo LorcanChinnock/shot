@@ -3,7 +3,7 @@ import AVFoundation
 import os
 import ShotCore
 
-private let log = Logger(subsystem: "dev.lorcan.Shot", category: "capture")
+private let log = Logger.shot("capture")
 
 @MainActor
 final class CaptureCoordinator {
@@ -73,7 +73,7 @@ final class CaptureCoordinator {
     }
 
     func annotate(_ url: URL) {
-        log.notice("Annotate requested: \(url.path, privacy: .public)")
+        log.notice("Annotate requested: \(url.path)")
         EditorWindowController.open(url)
     }
 
@@ -85,7 +85,7 @@ final class CaptureCoordinator {
         guard let frozen = try await DisplayCapturer.captureAll(screens: [screen]).first else {
             throw CaptureError.displayNotFound
         }
-        log.notice("Fullscreen capture took \(ContinuousClock.now - start, privacy: .public)")
+        log.debug("Fullscreen capture took \(ContinuousClock.now - start, privacy: .public)")
         try await finish(image: frozen.image, scale: frozen.scale)
     }
 
@@ -93,7 +93,7 @@ final class CaptureCoordinator {
         let start = ContinuousClock.now
         let windows = SelectionOverlayController.onScreenWindows()
         let frozen = try await DisplayCapturer.captureAll()
-        log.notice("Freeze capture of \(frozen.count) displays took \(ContinuousClock.now - start, privacy: .public)")
+        log.debug("Freeze capture of \(frozen.count) displays took \(ContinuousClock.now - start, privacy: .public)")
         let displays = frozen.map { OverlayDisplay(frame: $0.frame, scale: $0.scale, image: $0.image) }
         guard let selection = await SelectionOverlayController.select(displays: displays, windowMode: windowMode, windows: windows) else {
             return
@@ -202,10 +202,10 @@ final class CaptureCoordinator {
         let format = prefs.imageFormat
         let source = SendableImage(original)
         let encoded = await Task.detached { () -> (file: Data?, png: Data?, image: SendableImage) in
-            let image = downscale ? PNG.downscaled(source.image, scale: originalScale) : source.image
+            let image = downscale ? ImageCodec.downscaled(source.image, scale: originalScale) : source.image
             let scale = downscale ? 1 : originalScale
-            let file = PNG.data(from: image, scale: scale, format: format)
-            let png = format == .png ? file : PNG.data(from: image, scale: scale)
+            let file = ImageCodec.data(from: image, scale: scale, format: format)
+            let png = format == .png ? file : ImageCodec.data(from: image, scale: scale)
             return (file, png, SendableImage(image))
         }.value
         guard let fileData = encoded.file, let png = encoded.png else {
@@ -220,7 +220,7 @@ final class CaptureCoordinator {
             let url = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: format.fileExtension, prefix: prefs.filePrefix)
             try fileData.write(to: url)
             savedURL = url
-            log.notice("Saved \(url.path, privacy: .public)")
+            log.notice("Saved \(url.path)")
         }
         if prefs.copyAfterCapture {
             Clipboard.copy(png: png, image: image)

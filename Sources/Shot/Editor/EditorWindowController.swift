@@ -2,7 +2,7 @@ import AppKit
 import os
 import ShotCore
 
-private let log = Logger(subsystem: "dev.lorcan.Shot", category: "editor")
+private let log = Logger.shot("editor")
 
 private final class EditorWindow: NSWindow {
     var onCommand: ((String, Bool) -> Bool)?
@@ -29,14 +29,14 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
             existing.show()
             return
         }
-        guard let image = PNG.image(at: url) else {
+        guard let image = ImageCodec.image(at: url) else {
             Toast.show("Cannot open \(url.lastPathComponent)")
             return
         }
-        let controller = EditorWindowController(model: EditorModel(fileURL: url, image: image, scale: PNG.scale(ofFileAt: url)))
+        let controller = EditorWindowController(model: EditorModel(fileURL: url, image: image, scale: ImageCodec.scale(ofFileAt: url)))
         open.append(controller)
         controller.show()
-        log.notice("Editor opened: \(url.path, privacy: .public)")
+        log.notice("Editor opened: \(url.path)")
     }
 
     private init(model: EditorModel) {

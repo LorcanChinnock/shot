@@ -3,7 +3,7 @@ import AVFoundation
 import os
 import ShotCore
 
-private let log = Logger(subsystem: "dev.lorcan.Shot", category: "camera")
+private let log = Logger.shot("camera")
 
 enum CameraError: LocalizedError {
     case noCamera
@@ -44,6 +44,23 @@ final class CameraBubble {
 
     static func cameras() -> [AVCaptureDevice] {
         AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera, .external, .continuityCamera], mediaType: .video, position: .unspecified).devices
+    }
+
+    /// Asks for camera access and shows the preferred camera, reporting problems with a toast.
+    /// Returns whether the bubble is showing.
+    @discardableResult
+    func showFromPreferences(in region: CGRect) async -> Bool {
+        guard await AVCaptureDevice.requestAccess(for: .video) else {
+            Toast.show("Camera access denied")
+            return false
+        }
+        let prefs = Preferences()
+        do {
+            try await show(in: region, preferred: prefs.cameraSize, deviceID: prefs.cameraDeviceID)
+        } catch {
+            Toast.show("Camera unavailable: \(error.localizedDescription)")
+        }
+        return isVisible
     }
 
     /// `region` is the recorded area in AppKit global space.

@@ -21,7 +21,6 @@ enum Brutal {
     static let mint = Color(hex: 0x4FE3B5)
     static let sky = Color(hex: 0x6FC3FF)
     static let violet = Color(hex: 0x9B8CFF)
-    static let orange = Color(hex: 0xFF9F43)
     static let red = Color(hex: 0xFF5C5C)
 
     static func title(_ size: CGFloat) -> Font { .system(size: size, weight: .black) }
@@ -166,7 +165,6 @@ struct BrutalToggleStyle: ToggleStyle {
             .background(HardShadow(shape: RoundedRectangle(cornerRadius: 7, style: .continuous), offset: 2).fill(Brutal.ink))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("Toggle"))
         .accessibilityValue(Text(configuration.isOn ? "On" : "Off"))
     }
 }
@@ -285,6 +283,7 @@ struct ToggleRow: View {
     var body: some View {
         SettingRow(title: title, subtitle: subtitle, divider: divider) {
             Toggle(title, isOn: $isOn).toggleStyle(BrutalToggleStyle(color: color)).labelsHidden()
+                .accessibilityLabel(Text(title))
         }
     }
 }

@@ -133,7 +133,7 @@ final class QuickAccessController {
     func copy(_ card: QuickAccessCard) {
         if card.isVideo {
             Clipboard.copy(fileURL: card.fileURL)
-        } else if let image = PNG.image(at: card.fileURL), let png = pngData(for: card.fileURL, image: image) {
+        } else if let image = ImageCodec.image(at: card.fileURL), let png = pngData(for: card.fileURL, image: image) {
             Clipboard.copy(png: png, image: image)
         } else {
             Toast.show("Could not read \(card.fileURL.lastPathComponent)")
@@ -147,7 +147,7 @@ final class QuickAccessController {
         if ImageFormat(fileExtension: url.pathExtension) == .png {
             return try? Data(contentsOf: url)
         }
-        return PNG.data(from: image, scale: PNG.scale(ofFileAt: url))
+        return ImageCodec.data(from: image, scale: ImageCodec.scale(ofFileAt: url))
     }
 
     func saveAs(_ card: QuickAccessCard) {

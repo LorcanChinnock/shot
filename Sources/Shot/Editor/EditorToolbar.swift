@@ -44,6 +44,9 @@ private struct CanvasHost: NSViewRepresentable {
 }
 
 struct EditorToolbar: View {
+    /// Matches `RGBA.presets`.
+    private static let colorNames = ["Red", "Orange", "Yellow", "Green", "Blue", "Black"]
+
     @Bindable var model: EditorModel
 
     var body: some View {
@@ -73,6 +76,9 @@ struct EditorToolbar: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .help(Self.colorNames[index])
+                    .accessibilityLabel(Text(Self.colorNames[index]))
+                    .accessibilityAddTraits(selected ? .isSelected : [])
                     .animation(.spring(response: 0.2, dampingFraction: 0.7), value: selected)
                 }
             }
@@ -142,6 +148,8 @@ private struct Tile<Label: View>: View {
         }
         .buttonStyle(.plain)
         .help(help)
+        .accessibilityLabel(Text(help))
+        .accessibilityAddTraits(selected ? .isSelected : [])
         .onHover { hovering = $0 }
     }
 }

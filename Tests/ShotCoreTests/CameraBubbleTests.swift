@@ -4,7 +4,7 @@ import Testing
 
 @Test func bubbleStartsInsideRegionBottomLeft() {
     let region = CGRect(x: -1920, y: -180, width: 1920, height: 1080)
-    let frame = CameraBubbleLayout.initialFrame(in: region, diameter: 220)
+    let frame = CameraBubbleLayout.initialFrame(in: region, diameter: 220, inset: 24)
     #expect(frame == CGRect(x: -1896, y: -156, width: 220, height: 220))
     #expect(region.contains(frame))
 }

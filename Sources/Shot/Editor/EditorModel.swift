@@ -97,7 +97,7 @@ final class EditorModel {
     }
 
     func flattened() -> (image: CGImage, png: Data)? {
-        guard let image = AnnotationRenderer.flatten(document), let png = PNG.data(from: image, scale: scale) else {
+        guard let image = AnnotationRenderer.flatten(document), let png = ImageCodec.data(from: image, scale: scale) else {
             return nil
         }
         return (image, png)
@@ -120,7 +120,7 @@ final class EditorModel {
             return false
         }
         let format = ImageFormat(fileExtension: fileURL.pathExtension)
-        guard let data = format == .png ? result.png : PNG.data(from: result.image, scale: scale, format: format) else {
+        guard let data = format == .png ? result.png : ImageCodec.data(from: result.image, scale: scale, format: format) else {
             Toast.show("Could not render image")
             return false
         }

@@ -98,6 +98,7 @@ private struct CornerButton: View {
         }
         .buttonStyle(CornerButtonStyle())
         .help(help)
+        .accessibilityLabel(Text(help))
     }
 }
 

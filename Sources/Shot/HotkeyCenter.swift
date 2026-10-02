@@ -2,7 +2,7 @@ import Carbon.HIToolbox
 import os
 import ShotCore
 
-private let log = Logger(subsystem: "dev.lorcan.Shot", category: "hotkeys")
+private let log = Logger.shot("hotkeys")
 
 @MainActor
 final class HotkeyCenter {

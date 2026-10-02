@@ -2,7 +2,7 @@ import os
 import ScreenCaptureKit
 import ShotCore
 
-private let log = Logger(subsystem: "dev.lorcan.Shot", category: "capture")
+private let log = Logger.shot("capture")
 
 enum WindowCapturer {
     struct Result: @unchecked Sendable {
@@ -28,7 +28,7 @@ enum WindowCapturer {
         config.captureResolution = .best
         let captured: CGImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
         let image = includeShadow ? ImageTrim.trimTransparentEdges(captured) : captured
-        log.notice("Window \(windowID) frame \(window.frame.debugDescription, privacy: .public) contentRect \(filter.contentRect.debugDescription, privacy: .public) image \(image.width)x\(image.height)")
+        log.debug("Window \(windowID) frame \(window.frame.debugDescription, privacy: .public) contentRect \(filter.contentRect.debugDescription, privacy: .public) image \(image.width)x\(image.height)")
         return Result(image: image, scale: scale)
     }
 }

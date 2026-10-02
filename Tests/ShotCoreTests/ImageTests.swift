@@ -12,8 +12,8 @@ func solidImage(width: Int, height: Int) -> CGImage {
 
 @Test(arguments: [1.0, 2.0])
 func pngDPIMatchesScale(scale: CGFloat) throws {
-    let data = try #require(PNG.data(from: solidImage(width: 20, height: 10), scale: scale))
-    #expect(PNG.scale(of: data) == scale)
+    let data = try #require(ImageCodec.data(from: solidImage(width: 20, height: 10), scale: scale))
+    #expect(ImageCodec.scale(of: data) == scale)
 }
 
 @Test func trimTransparentEdges() throws {
@@ -27,13 +27,13 @@ func pngDPIMatchesScale(scale: CGFloat) throws {
 
 @Test func jpegEncodingAndDownscale() throws {
     let image = solidImage(width: 40, height: 20)
-    let jpeg = try #require(PNG.data(from: image, scale: 2, format: .jpeg))
+    let jpeg = try #require(ImageCodec.data(from: image, scale: 2, format: .jpeg))
     #expect(jpeg.starts(with: [0xFF, 0xD8]))
-    #expect(PNG.scale(of: jpeg) == 2)
-    let small = PNG.downscaled(image, scale: 2)
+    #expect(ImageCodec.scale(of: jpeg) == 2)
+    let small = ImageCodec.downscaled(image, scale: 2)
     #expect(small.width == 20)
     #expect(small.height == 10)
-    #expect(PNG.downscaled(image, scale: 1).width == 40)
+    #expect(ImageCodec.downscaled(image, scale: 1).width == 40)
     #expect(ImageFormat(fileExtension: "JPG") == .jpeg)
     #expect(ImageFormat(fileExtension: "png") == .png)
 }
