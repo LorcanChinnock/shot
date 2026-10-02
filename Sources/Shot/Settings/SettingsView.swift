@@ -364,11 +364,55 @@ private struct RecordingSettings: View {
             ToggleRow(title: "Microphone", subtitle: "macOS asks for permission on first use.", isOn: $microphone, color: color)
             ToggleRow(title: "System audio", subtitle: "Sound from other apps. Shot's own sounds are excluded.", isOn: $systemAudio, color: color, divider: false)
         }
+        CameraSettings(color: color)
         SettingsCard(title: "GIF export", symbol: "photo.stack.fill") {
             SettingRow(title: "From the Quick Access card", subtitle: "12 fps, up to 720 px wide, first 60 seconds.", divider: false) {
                 BrutalChip(text: "GIF", color: color)
             }
         }
+    }
+}
+
+private struct CameraSettings: View {
+    let color: Color
+    @AppStorage(PreferenceKey.recordCamera) private var camera = false
+    @AppStorage(PreferenceKey.cameraDeviceID) private var deviceID = ""
+    @AppStorage(PreferenceKey.cameraSize) private var size = CameraBubbleSize.medium.rawValue
+    @State private var devices: [(id: String, name: String)] = []
+
+    var body: some View {
+        SettingsCard(title: "Camera", symbol: "web.camera.fill") {
+            ToggleRow(title: "Camera bubble", subtitle: "Round webcam overlay recorded with your screen, like Loom. Drag to move, double-click to resize.", isOn: $camera, color: color)
+            SettingRow(title: "Camera") {
+                Menu {
+                    Button("System default") { deviceID = "" }
+                    Divider()
+                    ForEach(devices, id: \.id) { device in
+                        Button(device.name) { deviceID = device.id }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(selectedName).lineLimit(1)
+                        Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
+                    }
+                    .frame(maxWidth: 190)
+                }
+                .menuStyle(.button)
+                .menuIndicator(.hidden)
+                .buttonStyle(BrutalButtonStyle(compact: true))
+                .fixedSize()
+            }
+            SettingRow(title: "Bubble size", divider: false) {
+                BrutalSegmented(selection: $size, options: CameraBubbleSize.allCases.map { ($0.rawValue, $0.rawValue.capitalized) }, color: color)
+            }
+        }
+        .onAppear {
+            devices = CameraBubble.cameras().map { ($0.uniqueID, $0.localizedName) }
+        }
+    }
+
+    private var selectedName: String {
+        devices.first { $0.id == deviceID }?.name ?? "System default"
     }
 }
 
@@ -403,6 +447,7 @@ private struct ShortcutSettings: View {
 private struct AboutSettings: View {
     @State private var screenGranted = Permissions.hasScreenCapture
     @State private var microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+    @State private var cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
     @State private var confirmingReset = false
     private let color = SettingsSection.about.color
 
@@ -437,19 +482,13 @@ private struct AboutSettings: View {
                         .buttonStyle(BrutalButtonStyle(compact: true))
                 }
             }
-            SettingRow(title: "Microphone", subtitle: "Only needed to record your voice.", divider: false) {
-                HStack(spacing: 10) {
-                    BrutalChip(text: microphoneLabel, color: microphoneStatus == .authorized ? Brutal.mint : microphoneStatus == .notDetermined ? Color.white : Brutal.red)
-                    Button("Open") {
-                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")!)
-                    }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
-                }
-            }
+            PermissionRow(title: "Microphone", subtitle: "Only needed to record your voice.", status: microphoneStatus, pane: "Privacy_Microphone")
+            PermissionRow(title: "Camera", subtitle: "Only needed for the camera bubble.", status: cameraStatus, pane: "Privacy_Camera", divider: false)
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             screenGranted = Permissions.hasScreenCapture
             microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+            cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
         }
 
         SettingsCard(title: "Data", symbol: "externaldrive.fill") {
@@ -476,8 +515,29 @@ private struct AboutSettings: View {
         }
     }
 
-    private var microphoneLabel: String {
-        switch microphoneStatus {
+}
+
+private struct PermissionRow: View {
+    let title: String
+    let subtitle: String
+    let status: AVAuthorizationStatus
+    let pane: String
+    var divider = true
+
+    var body: some View {
+        SettingRow(title: title, subtitle: subtitle, divider: divider) {
+            HStack(spacing: 10) {
+                BrutalChip(text: label, color: status == .authorized ? Brutal.mint : status == .notDetermined ? Color.white : Brutal.red)
+                Button("Open") {
+                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)")!)
+                }
+                .buttonStyle(BrutalButtonStyle(compact: true))
+            }
+        }
+    }
+
+    private var label: String {
+        switch status {
         case .authorized: "GRANTED"
         case .notDetermined: "NOT ASKED"
         default: "DENIED"

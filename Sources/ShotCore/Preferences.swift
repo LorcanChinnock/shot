@@ -21,6 +21,9 @@ public enum PreferenceKey {
     public static let recordMicrophone = "recordMicrophone"
     public static let recordSystemAudio = "recordSystemAudio"
     public static let showRecordingBorder = "showRecordingBorder"
+    public static let recordCamera = "recordCamera"
+    public static let cameraDeviceID = "cameraDeviceID"
+    public static let cameraSize = "cameraSize"
 
     public static func hotkey(_ action: ShotAction) -> String { "hotkey.\(action.rawValue)" }
 }
@@ -69,6 +72,9 @@ public struct Preferences {
             PreferenceKey.recordMicrophone: false,
             PreferenceKey.recordSystemAudio: false,
             PreferenceKey.showRecordingBorder: true,
+            PreferenceKey.recordCamera: false,
+            PreferenceKey.cameraDeviceID: "",
+            PreferenceKey.cameraSize: CameraBubbleSize.medium.rawValue,
         ]
         for action in ShotAction.allCases {
             values[PreferenceKey.hotkey(action)] = action.defaultCombo.encoded
@@ -129,6 +135,15 @@ public struct Preferences {
     public var recordMicrophone: Bool { store.bool(forKey: PreferenceKey.recordMicrophone) }
     public var recordSystemAudio: Bool { store.bool(forKey: PreferenceKey.recordSystemAudio) }
     public var showRecordingBorder: Bool { store.bool(forKey: PreferenceKey.showRecordingBorder) }
+
+    public var recordCamera: Bool { store.bool(forKey: PreferenceKey.recordCamera) }
+
+    /// Empty means the system default camera.
+    public var cameraDeviceID: String { store.string(forKey: PreferenceKey.cameraDeviceID) ?? "" }
+
+    public var cameraSize: CameraBubbleSize {
+        CameraBubbleSize(rawValue: store.string(forKey: PreferenceKey.cameraSize) ?? "") ?? .medium
+    }
 
     /// `nil` means the user cleared the shortcut.
     public func hotkey(for action: ShotAction) -> KeyCombo? {

@@ -29,12 +29,37 @@ final class Recorder: NSObject {
             Toast.show("Microphone access denied; recording without it")
         }
 
+        if prefs.recordCamera {
+            if await AVCaptureDevice.requestAccess(for: .video) {
+                do {
+                    try await CameraBubble.shared.show(in: region, preferred: prefs.cameraSize, deviceID: prefs.cameraDeviceID)
+                } catch {
+                    Toast.show("Camera unavailable: \(error.localizedDescription)")
+                }
+            } else {
+                Toast.show("Camera access denied; recording without it")
+            }
+        }
+        do {
+            try await startStream(screen: screen, region: region, prefs: prefs, microphone: microphone)
+        } catch {
+            CameraBubble.shared.hide()
+            throw error
+        }
+    }
+
+    private func startStream(screen: NSScreen, region: CGRect, prefs: Preferences, microphone: Bool) async throws {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         guard let display = content.displays.first(where: { $0.displayID == screen.displayID }) else {
             throw CaptureError.displayNotFound
         }
         let ownApps = content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
-        let filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: [])
+        // Shot's windows stay out of the video, except the camera bubble.
+        let cameraWindows = content.windows.filter { $0.windowID == CameraBubble.shared.windowID }
+        if prefs.recordCamera, CameraBubble.shared.windowID != nil, cameraWindows.isEmpty {
+            log.error("Camera bubble window not found in shareable content")
+        }
+        let filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: cameraWindows)
 
         let scale = screen.backingScaleFactor
         let local = Geometry.displayLocalTopLeft(region, screenFrame: screen.frame)
@@ -71,7 +96,7 @@ final class Recorder: NSObject {
             border.orderFrontRegardless()
             self.border = border
         }
-        log.notice("Recording started: \(config.width)x\(config.height) at \(prefs.recordingFPS) fps, mic \(microphone), system audio \(prefs.recordSystemAudio), to \(url.path, privacy: .public)")
+        log.notice("Recording started: \(config.width)x\(config.height) at \(prefs.recordingFPS) fps, mic \(microphone), system audio \(prefs.recordSystemAudio), camera \(!cameraWindows.isEmpty), to \(url.path, privacy: .public)")
     }
 
     /// Keeps the stream and recording output alive until SCK reports the file finished.
@@ -82,6 +107,7 @@ final class Recorder: NSObject {
         isStopping = true
         border?.orderOut(nil)
         border = nil
+        CameraBubble.shared.hide()
         do {
             try await stream.stopCapture()
         } catch {
@@ -115,6 +141,7 @@ final class Recorder: NSObject {
 
     private func failed(_ error: Error) {
         log.error("Recording failed: \(error.localizedDescription, privacy: .public)")
+        CameraBubble.shared.hide()
         tearDown()
         outputURL = nil
         onError?(error)
