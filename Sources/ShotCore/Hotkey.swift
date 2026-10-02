@@ -19,11 +19,11 @@ public enum ShotAction: String, CaseIterable, Sendable {
 
     public var defaultCombo: KeyCombo {
         switch self {
-        case .captureArea: KeyCombo(keyCode: 21, modifiers: KeyCombo.command | KeyCombo.shift)
-        case .captureFullscreen: KeyCombo(keyCode: 20, modifiers: KeyCombo.command | KeyCombo.shift)
-        case .captureWindow: KeyCombo(keyCode: 13, modifiers: KeyCombo.command | KeyCombo.shift)
-        case .captureText: KeyCombo(keyCode: 19, modifiers: KeyCombo.command | KeyCombo.shift)
-        case .record: KeyCombo(keyCode: 23, modifiers: KeyCombo.command | KeyCombo.shift)
+        case .captureArea: KeyCombo(keyCode: 21, modifiers: KeyCombo.control | KeyCombo.shift)
+        case .captureFullscreen: KeyCombo(keyCode: 20, modifiers: KeyCombo.control | KeyCombo.shift)
+        case .captureWindow: KeyCombo(keyCode: 13, modifiers: KeyCombo.control | KeyCombo.shift)
+        case .captureText: KeyCombo(keyCode: 19, modifiers: KeyCombo.control | KeyCombo.shift)
+        case .record: KeyCombo(keyCode: 23, modifiers: KeyCombo.control | KeyCombo.shift)
         }
     }
 }
