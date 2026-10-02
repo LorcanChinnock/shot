@@ -15,6 +15,7 @@ struct ShotApp: App {
 private struct ShotMenu: View {
     let state: AppState
     let coordinator: CaptureCoordinator
+    @AppStorage(PreferenceKey.recordCamera) private var cameraBubble = false
 
     var body: some View {
         if state.isRecording {
@@ -24,6 +25,7 @@ private struct ShotMenu: View {
         ForEach(ShotAction.allCases.filter { !(state.isRecording && $0 == .record) }, id: \.self) { action in
             ActionButton(action: action, title: action.title, coordinator: coordinator)
         }
+        Toggle("Camera Bubble", isOn: $cameraBubble)
         Divider()
         Button("Open Capture Folder") {
             let folder = Preferences().saveFolder
