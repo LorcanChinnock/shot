@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 import os
 import ShotCore
 
@@ -8,13 +9,32 @@ private let log = Logger(subsystem: "dev.lorcan.Shot", category: "capture")
 final class CaptureCoordinator {
     let state: AppState
     private var busy = false
+    private let recorder = Recorder()
 
     init(state: AppState) {
         self.state = state
+        recorder.onFinish = { [weak self] url in
+            self?.recordingFinished(url)
+        }
+        recorder.onError = { [weak self] error in
+            self?.state.isRecording = false
+            self?.report(error)
+        }
+        QuickAccessController.shared.onExportGIF = { [weak self] url in
+            self?.exportGIF(url)
+        }
     }
 
-    func perform(_ action: ShotAction) {
+    /// `fullDisplay` skips the region overlay and records the display under the pointer.
+    func perform(_ action: ShotAction, fullDisplay: Bool = false) {
         log.notice("Action received: \(action.rawValue, privacy: .public)")
+        if action == .record, recorder.isRecording {
+            Task {
+                await recorder.stop()
+                state.isRecording = false
+            }
+            return
+        }
         guard !busy else {
             return
         }
@@ -31,8 +51,8 @@ final class CaptureCoordinator {
                     try await captureWithOverlay(windowMode: true, text: false)
                 case .captureText:
                     try await captureWithOverlay(windowMode: false, text: true)
-                default:
-                    Toast.show("\(action.title) is not available yet")
+                case .record:
+                    try await startRecording(fullDisplay: fullDisplay)
                 }
             } catch {
                 report(error)
@@ -89,6 +109,69 @@ final class CaptureCoordinator {
             try await recognizeText(in: image)
         } else {
             try await finish(image: image, scale: scale)
+        }
+    }
+
+    private func startRecording(fullDisplay: Bool) async throws {
+        let screens = NSScreen.screens
+        let screen: NSScreen
+        let region: CGRect
+        if fullDisplay {
+            guard let pointerScreen = NSScreen.underPointer else {
+                throw CaptureError.displayNotFound
+            }
+            screen = pointerScreen
+            region = pointerScreen.frame
+        } else {
+            let displays = screens.map { OverlayDisplay(frame: $0.frame, scale: $0.backingScaleFactor, image: nil) }
+            let windows = SelectionOverlayController.onScreenWindows()
+            guard let selection = await SelectionOverlayController.select(displays: displays, windowMode: false, windows: windows, isLive: true) else {
+                return
+            }
+            switch selection {
+            case let .area(index, rect):
+                screen = screens[index]
+                region = rect.offsetBy(dx: screen.frame.minX, dy: screen.frame.minY)
+            case let .window(info):
+                let primaryHeight = screens.first?.frame.height ?? 0
+                let frame = Geometry.flip(info.frame, primaryHeight: primaryHeight)
+                screen = screens.first { $0.frame.contains(CGPoint(x: frame.midX, y: frame.midY)) } ?? screens[0]
+                region = frame.intersection(screen.frame)
+            case let .fullDisplay(index):
+                screen = screens[index]
+                region = screen.frame
+            }
+        }
+        try await recorder.start(screen: screen, region: region)
+        state.isRecording = true
+    }
+
+    private func recordingFinished(_ url: URL) {
+        state.isRecording = false
+        Task {
+            let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
+            generator.appliesPreferredTrackTransform = true
+            generator.maximumSize = CGSize(width: 480, height: 480)
+            let thumbnail = try? await generator.image(at: .zero).image
+            QuickAccessController.shared.add(videoURL: url, thumbnail: thumbnail)
+        }
+    }
+
+    func exportGIF(_ videoURL: URL) {
+        let gifURL = FileNaming.uniqueURL(in: videoURL.deletingLastPathComponent(), date: Date(), pathExtension: "gif")
+        Toast.show("Exporting GIF…", duration: nil)
+        Task {
+            do {
+                let result = try await GIFExporter.export(videoURL: videoURL, to: gifURL) { fraction in
+                    Task { @MainActor in
+                        Toast.show("Exporting GIF… \(Int(fraction * 100))%", duration: nil)
+                    }
+                }
+                let note = result.truncated ? " (first \(Int(GIFExporter.maxDuration)) s only)" : ""
+                Toast.show("Saved \(gifURL.lastPathComponent)\(note)", duration: .seconds(3))
+            } catch {
+                Toast.show("GIF export failed: \(error.localizedDescription)", duration: .seconds(3))
+            }
         }
     }
 
