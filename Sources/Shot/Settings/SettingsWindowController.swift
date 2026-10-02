@@ -11,18 +11,7 @@ enum SettingsWindowController {
             SettingsNavigation.shared.section = section
         }
         if window == nil {
-            let window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView], backing: .buffered, defer: false)
-            window.title = "Shot Settings"
-            window.titleVisibility = .hidden
-            window.titlebarAppearsTransparent = true
-            window.isOpaque = false
-            window.backgroundColor = .clear
-            window.isMovableByWindowBackground = true
-            window.appearance = NSAppearance(named: .aqua)
-            window.isReleasedWhenClosed = false
-            window.contentView = NSHostingView(rootView: SettingsView())
-            window.center()
-            self.window = window
+            window = GlassWindow.make(size: size, title: "Shot Settings") { SettingsView() }
         }
         NSApp.activate()
         window?.makeKeyAndOrderFront(nil)

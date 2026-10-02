@@ -23,6 +23,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     }
 
     override var isFlipped: Bool { true }
+    override var mouseDownCanMoveWindow: Bool { false }
     override var acceptsFirstResponder: Bool { true }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
@@ -83,8 +84,6 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     // MARK: Drawing
 
     override func draw(_ dirtyRect: NSRect) {
-        NSColor.windowBackgroundColor.blended(withFraction: 0.3, of: .black)?.setFill()
-        bounds.fill()
         guard let ctx = NSGraphicsContext.current?.cgContext else {
             return
         }
@@ -93,12 +92,19 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             doc.annotations.append(draft)
         }
         let rect = imageRect
+        let ink = NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1)
+        ink.setFill()
+        rect.offsetBy(dx: 5, dy: 5).fill()
         ctx.saveGState()
         ctx.translateBy(x: rect.minX, y: rect.maxY)
         ctx.scaleBy(x: viewScale, y: -viewScale)
         ctx.interpolationQuality = .high
         AnnotationRenderer.render(doc, into: ctx)
         ctx.restoreGState()
+        ink.setStroke()
+        let frame = NSBezierPath(rect: rect.insetBy(dx: -1.25, dy: -1.25))
+        frame.lineWidth = 2.5
+        frame.stroke()
 
         if let id = model.selectedID, let selected = model.document.annotations.first(where: { $0.id == id }) {
             let outline = NSBezierPath(rect: viewRect(selected.bounds.insetBy(dx: -selected.lineWidth, dy: -selected.lineWidth)))

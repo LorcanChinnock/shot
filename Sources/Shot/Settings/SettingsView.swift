@@ -86,11 +86,6 @@ struct SettingsView: View {
         .padding(.horizontal, 22)
         .padding(.bottom, 4)
         .frame(width: SettingsWindowController.size.width, height: SettingsWindowController.size.height)
-        .background(GlassBackdrop())
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Brutal.ink, lineWidth: 3))
-        .environment(\.colorScheme, .light)
-        .ignoresSafeArea()
     }
 
     private var header: some View {

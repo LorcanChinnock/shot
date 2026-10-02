@@ -177,6 +177,7 @@ final class SelectionOverlayView: NSView {
             ctx.stroke(hole.insetBy(dx: 0.5, dy: 0.5))
         }
 
+        drawHint(in: ctx)
         guard let pointer, !controller.windowMode else {
             return
         }
@@ -247,28 +248,60 @@ final class SelectionOverlayView: NSView {
         ctx.setLineWidth(1)
         ctx.stroke(CGRect(x: loupe.midX - pixel / 2, y: loupe.midY - pixel / 2, width: pixel, height: pixel))
         ctx.restoreGState()
+        ctx.setStrokeColor(Self.ink.cgColor)
+        ctx.setLineWidth(3)
+        ctx.strokeEllipse(in: loupe.insetBy(dx: -1.5, dy: -1.5))
         ctx.setStrokeColor(NSColor.white.cgColor)
-        ctx.setLineWidth(2)
-        ctx.strokeEllipse(in: loupe)
+        ctx.setLineWidth(1.5)
+        ctx.strokeEllipse(in: loupe.insetBy(dx: 0.75, dy: 0.75))
+    }
+
+    private static let ink = NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1)
+    private static let yellow = NSColor(srgbRed: 1, green: 0.83, blue: 0.23, alpha: 1)
+
+    /// Neo-brutalist chip: flat fill, ink border, hard offset shadow.
+    private func drawChip(_ text: String, at origin: CGPoint, fill: NSColor, font: NSFont) -> CGRect {
+        let string = NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: Self.ink])
+        let size = string.size()
+        let box = CGRect(x: origin.x, y: origin.y, width: (size.width + 20).rounded(), height: (size.height + 10).rounded())
+        Self.ink.setFill()
+        NSBezierPath(roundedRect: box.offsetBy(dx: 3, dy: -3), xRadius: 7, yRadius: 7).fill()
+        fill.setFill()
+        let shape = NSBezierPath(roundedRect: box, xRadius: 7, yRadius: 7)
+        shape.fill()
+        Self.ink.setStroke()
+        shape.lineWidth = 2
+        shape.stroke()
+        string.draw(at: CGPoint(x: box.minX + 10, y: box.minY + 5))
+        return box
     }
 
     private func drawSizeLabel(for selection: CGRect, near point: CGPoint) {
         let text = "\(Int((selection.width * display.scale).rounded())) × \(Int((selection.height * display.scale).rounded()))"
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium),
-            .foregroundColor: NSColor.white,
-        ]
-        let string = NSAttributedString(string: text, attributes: attributes)
-        let size = string.size()
-        var box = CGRect(x: point.x + 14, y: point.y - size.height - 18, width: size.width + 12, height: size.height + 6)
-        if box.maxX > bounds.width {
-            box.origin.x = point.x - box.width - 14
+        let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .bold)
+        let width = (text as NSString).size(withAttributes: [.font: font]).width + 20
+        var origin = CGPoint(x: point.x + 16, y: point.y - 44)
+        if origin.x + width > bounds.width {
+            origin.x = point.x - width - 16
         }
-        if box.minY < 0 {
-            box.origin.y = point.y + 14
+        if origin.y < 0 {
+            origin.y = point.y + 16
         }
-        NSColor.black.withAlphaComponent(0.75).setFill()
-        NSBezierPath(roundedRect: box, xRadius: 4, yRadius: 4).fill()
-        string.draw(at: CGPoint(x: box.minX + 6, y: box.minY + 3))
+        _ = drawChip(text, at: origin, fill: Self.yellow, font: font)
+    }
+
+    private func drawHint(in ctx: CGContext) {
+        let parts: [String]
+        if controller.windowMode {
+            parts = ["Click a window", "Space: area", "Esc: cancel"]
+        } else if controller.isLive {
+            parts = ["Drag an area", "Space: window", "Enter: full screen", "Esc: cancel"]
+        } else {
+            parts = ["Drag an area", "Space: window", "Esc: cancel"]
+        }
+        let text = parts.joined(separator: "   ·   ")
+        let font = NSFont.systemFont(ofSize: 13, weight: .bold)
+        let width = (text as NSString).size(withAttributes: [.font: font]).width + 20
+        _ = drawChip(text, at: CGPoint(x: ((bounds.width - width) / 2).rounded(), y: bounds.height - 90), fill: .white, font: font)
     }
 }

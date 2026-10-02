@@ -22,8 +22,17 @@ private struct ShotMenu: View {
             ActionButton(action: .record, title: "Stop Recording", coordinator: coordinator)
             Divider()
         }
-        ForEach(ShotAction.allCases.filter { !(state.isRecording && $0 == .record) }, id: \.self) { action in
-            ActionButton(action: action, title: action.title, coordinator: coordinator)
+        Section("Capture") {
+            ForEach(ShotAction.allCases.filter { !$0.isRecording }, id: \.self) { action in
+                ActionButton(action: action, title: action.title, coordinator: coordinator)
+            }
+        }
+        if !state.isRecording {
+            Section("Record") {
+                ForEach(ShotAction.allCases.filter(\.isRecording), id: \.self) { action in
+                    ActionButton(action: action, title: action.title, coordinator: coordinator)
+                }
+            }
         }
         Toggle("Camera Bubble", isOn: $cameraBubble)
         Divider()

@@ -6,6 +6,8 @@ public enum ShotAction: String, CaseIterable, Sendable {
     case captureWindow = "capture-window"
     case captureText = "capture-text"
     case record
+    case recordFullscreen = "record-fullscreen"
+    case recordWindow = "record-window"
 
     public var title: String {
         switch self {
@@ -13,8 +15,14 @@ public enum ShotAction: String, CaseIterable, Sendable {
         case .captureFullscreen: "Capture Fullscreen"
         case .captureWindow: "Capture Window"
         case .captureText: "Capture Text"
-        case .record: "Record Screen"
+        case .record: "Record Area"
+        case .recordFullscreen: "Record Fullscreen"
+        case .recordWindow: "Record Window"
         }
+    }
+
+    public var isRecording: Bool {
+        [.record, .recordFullscreen, .recordWindow].contains(self)
     }
 
     public var defaultCombo: KeyCombo {
@@ -23,7 +31,9 @@ public enum ShotAction: String, CaseIterable, Sendable {
         case .captureFullscreen: KeyCombo(keyCode: 20, modifiers: KeyCombo.control | KeyCombo.shift)
         case .captureWindow: KeyCombo(keyCode: 13, modifiers: KeyCombo.control | KeyCombo.shift)
         case .captureText: KeyCombo(keyCode: 19, modifiers: KeyCombo.control | KeyCombo.shift)
-        case .record: KeyCombo(keyCode: 23, modifiers: KeyCombo.control | KeyCombo.shift)
+        case .record: KeyCombo(keyCode: 21, modifiers: KeyCombo.control | KeyCombo.option | KeyCombo.shift)
+        case .recordFullscreen: KeyCombo(keyCode: 20, modifiers: KeyCombo.control | KeyCombo.option | KeyCombo.shift)
+        case .recordWindow: KeyCombo(keyCode: 13, modifiers: KeyCombo.control | KeyCombo.option | KeyCombo.shift)
         }
     }
 }

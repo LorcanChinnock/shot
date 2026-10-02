@@ -13,6 +13,7 @@ struct QuickAccessView: View {
         }
         .padding(QuickAccessController.padding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        .environment(\.colorScheme, .light)
     }
 }
 
@@ -20,8 +21,6 @@ private struct QuickAccessCardView: View {
     let card: QuickAccessCard
     let controller: QuickAccessController
     @State private var hovering = false
-
-    private static let radius: CGFloat = 10
 
     var body: some View {
         ZStack {
@@ -35,17 +34,17 @@ private struct QuickAccessCardView: View {
                 hoverActions
                     .transition(.opacity)
             } else if card.isVideo {
-                videoBadge
+                Image(systemName: "play.fill")
+                    .font(.system(size: 13, weight: .black))
+                    .foregroundStyle(Brutal.ink)
+                    .frame(width: 34, height: 34)
+                    .brutalSurface(Brutal.yellow, radius: 17, shadow: 2)
             }
         }
         .frame(width: QuickAccessCard.width, height: card.height)
         .background(Color.black)
-        .clipShape(RoundedRectangle(cornerRadius: Self.radius, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Self.radius, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.18), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.4), radius: 8, y: 3)
+        .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .continuous))
+        .brutalSurface(Color.clear)
         .contentShape(Rectangle())
         .onHover { inside in
             withAnimation(.easeOut(duration: 0.12)) {
@@ -58,10 +57,13 @@ private struct QuickAccessCardView: View {
 
     private var hoverActions: some View {
         ZStack {
-            Color.black.opacity(0.55)
-            VStack(spacing: 8) {
-                PillButton(title: "Copy") { controller.copy(card) }
-                PillButton(title: "Save As…") { controller.saveAs(card) }
+            Rectangle().fill(.ultraThinMaterial)
+            Color.white.opacity(0.25)
+            VStack(spacing: 9) {
+                Button("Copy") { controller.copy(card) }
+                    .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
+                Button("Save As…") { controller.saveAs(card) }
+                    .buttonStyle(BrutalButtonStyle(compact: true))
             }
             VStack {
                 HStack {
@@ -79,34 +81,8 @@ private struct QuickAccessCardView: View {
                     CornerButton(symbol: "folder", help: "Show in Finder") { controller.showInFinder(card) }
                 }
             }
-            .padding(7)
+            .padding(8)
         }
-    }
-
-    private var videoBadge: some View {
-        Image(systemName: "play.fill")
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.white)
-            .frame(width: 30, height: 30)
-            .background(Color.black.opacity(0.55), in: Circle())
-    }
-}
-
-private struct PillButton: View {
-    let title: String
-    let action: () -> Void
-    @State private var hovering = false
-
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.black.opacity(0.85))
-                .frame(width: 104, height: 26)
-                .background(Color.white.opacity(hovering ? 1 : 0.88), in: Capsule())
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering = $0 }
     }
 }
 
@@ -114,18 +90,24 @@ private struct CornerButton: View {
     let symbol: String
     let help: String
     let action: () -> Void
-    @State private var hovering = false
 
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 22, height: 22)
-                .background(Color.white.opacity(hovering ? 0.35 : 0.2), in: Circle())
+                .font(.system(size: 10, weight: .black))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CornerButtonStyle())
         .help(help)
-        .onHover { hovering = $0 }
+    }
+}
+
+private struct CornerButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        let pressed = configuration.isPressed
+        configuration.label
+            .foregroundStyle(Brutal.ink)
+            .frame(width: 24, height: 24)
+            .brutalSurface(Color.white, radius: 6, shadow: pressed ? 0 : 2)
+            .offset(x: pressed ? 2 : 0, y: pressed ? 2 : 0)
     }
 }

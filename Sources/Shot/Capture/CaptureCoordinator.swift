@@ -25,10 +25,9 @@ final class CaptureCoordinator {
         }
     }
 
-    /// `fullDisplay` skips the region overlay and records the display under the pointer.
-    func perform(_ action: ShotAction, fullDisplay: Bool = false) {
+    func perform(_ action: ShotAction) {
         log.notice("Action received: \(action.rawValue, privacy: .public)")
-        if action == .record, recorder.isRecording {
+        if action.isRecording, recorder.isRecording {
             state.isRecording = false
             Task {
                 await recorder.stop()
@@ -52,7 +51,11 @@ final class CaptureCoordinator {
                 case .captureText:
                     try await captureWithOverlay(windowMode: false, text: true)
                 case .record:
-                    try await startRecording(fullDisplay: fullDisplay)
+                    try await startRecording(mode: .area)
+                case .recordFullscreen:
+                    try await startRecording(mode: .fullscreen)
+                case .recordWindow:
+                    try await startRecording(mode: .window)
                 }
             } catch {
                 report(error)
@@ -112,11 +115,15 @@ final class CaptureCoordinator {
         }
     }
 
-    private func startRecording(fullDisplay: Bool) async throws {
+    private enum RecordingMode {
+        case area, fullscreen, window
+    }
+
+    private func startRecording(mode: RecordingMode) async throws {
         let screens = NSScreen.screens
         let screen: NSScreen
         let region: CGRect
-        if fullDisplay {
+        if mode == .fullscreen {
             guard let pointerScreen = NSScreen.underPointer else {
                 throw CaptureError.displayNotFound
             }
@@ -125,7 +132,7 @@ final class CaptureCoordinator {
         } else {
             let displays = screens.map { OverlayDisplay(frame: $0.frame, scale: $0.backingScaleFactor, image: nil) }
             let windows = SelectionOverlayController.onScreenWindows()
-            guard let selection = await SelectionOverlayController.select(displays: displays, windowMode: false, windows: windows, isLive: true) else {
+            guard let selection = await SelectionOverlayController.select(displays: displays, windowMode: mode == .window, windows: windows, isLive: true) else {
                 return
             }
             switch selection {

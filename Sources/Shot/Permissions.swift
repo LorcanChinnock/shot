@@ -17,12 +17,7 @@ enum Permissions {
 
     static func showOnboarding() {
         if window == nil {
-            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 440, height: 220), styleMask: [.titled, .closable], backing: .buffered, defer: false)
-            window.title = "Shot needs Screen Recording permission"
-            window.isReleasedWhenClosed = false
-            window.contentView = NSHostingView(rootView: OnboardingView())
-            window.center()
-            self.window = window
+            window = GlassWindow.make(size: NSSize(width: 500, height: 330), title: "Shot needs Screen Recording permission") { OnboardingView() }
         }
         NSApp.activate()
         window?.makeKeyAndOrderFront(nil)
@@ -43,19 +38,55 @@ enum Permissions {
 
 private struct OnboardingView: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Shot captures your screen, so macOS requires Screen Recording permission.")
-            Text("1. Select Grant, or open System Settings and turn on Shot.\n2. Relaunch Shot.")
-                .foregroundStyle(.secondary)
-            HStack {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(spacing: 14) {
+                Image(systemName: "lock.open.fill")
+                    .font(.system(size: 20, weight: .black))
+                    .foregroundStyle(Brutal.ink)
+                    .frame(width: 46, height: 46)
+                    .brutalSurface(Brutal.yellow, radius: 11, shadow: 3)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("One permission to go").font(Brutal.title(22)).foregroundStyle(Brutal.ink)
+                    Text("macOS requires Screen Recording access for every capture.")
+                        .font(.system(size: 12.5, weight: .medium)).foregroundStyle(Brutal.ink.opacity(0.65))
+                }
+            }
+            VStack(alignment: .leading, spacing: 10) {
+                Step(number: 1, text: "Select Grant, or open System Settings.")
+                Step(number: 2, text: "Turn on Shot under Screen & System Audio Recording.")
+                Step(number: 3, text: "Relaunch Shot.")
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .glassCard()
+            HStack(spacing: 12) {
                 Button("Grant") { CGRequestScreenCaptureAccess() }
+                    .buttonStyle(BrutalButtonStyle(color: Brutal.mint))
                 Button("Open Settings") { Permissions.openSettings() }
+                    .buttonStyle(BrutalButtonStyle())
                 Spacer()
                 Button("Relaunch") { Permissions.relaunch() }
+                    .buttonStyle(BrutalButtonStyle(color: Brutal.yellow))
                     .keyboardShortcut(.defaultAction)
             }
         }
-        .padding(20)
-        .frame(width: 440)
+        .padding(.top, 40)
+        .padding([.horizontal, .bottom], 24)
+    }
+}
+
+private struct Step: View {
+    let number: Int
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text("\(number)")
+                .font(.system(size: 12, weight: .black))
+                .foregroundStyle(Brutal.ink)
+                .frame(width: 22, height: 22)
+                .brutalSurface(Brutal.pink, radius: 6, shadow: 2)
+            Text(text).font(Brutal.label).foregroundStyle(Brutal.ink)
+        }
     }
 }
