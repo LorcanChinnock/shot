@@ -33,8 +33,9 @@ final class QuickAccessController {
     static let shared = QuickAccessController()
     static let maxCards = 5
     static let inset: CGFloat = 20
-    static let spacing: CGFloat = 10
-    static let padding: CGFloat = 8
+    static let spacing: CGFloat = 14
+    /// Leaves room for the cards' hard shadows.
+    static let padding: CGFloat = 10
 
     var onAnnotate: ((URL) -> Void)?
     var onExportGIF: ((URL) -> Void)?

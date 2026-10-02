@@ -59,7 +59,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
-        coordinator.perform(action, fullDisplay: query.contains { $0.name == "full" && $0.value == "1" })
+        // `shot://record?full=1` predates `shot://record-fullscreen`; keep it working.
+        let legacyFull = action == .record && query.contains { $0.name == "full" && $0.value == "1" }
+        coordinator.perform(legacyFull ? .recordFullscreen : action)
     }
 
     /// Never visible in an LSUIElement app, but routes ⌘X/⌘C/⌘V/⌘A/⌘Z to text fields.

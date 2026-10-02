@@ -19,7 +19,11 @@ import Testing
     #expect(ShotAction.captureFullscreen.defaultCombo.displayString == "⌃⇧3")
     #expect(ShotAction.captureWindow.defaultCombo.displayString == "⌃⇧W")
     #expect(ShotAction.captureText.defaultCombo.displayString == "⌃⇧2")
-    #expect(ShotAction.record.defaultCombo.displayString == "⌃⇧5")
+    #expect(ShotAction.record.defaultCombo.displayString == "⌃⌥⇧4")
+    #expect(ShotAction.recordFullscreen.defaultCombo.displayString == "⌃⌥⇧3")
+    #expect(ShotAction.recordWindow.defaultCombo.displayString == "⌃⌥⇧W")
+    #expect(Set(ShotAction.allCases.map(\.defaultCombo)).count == ShotAction.allCases.count)
+    #expect(ShotAction.allCases.filter(\.isRecording) == [.record, .recordFullscreen, .recordWindow])
 }
 
 @Test func preferenceDefaults() throws {

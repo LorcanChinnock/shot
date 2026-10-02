@@ -1,7 +1,6 @@
 import AppKit
 import os
 import ShotCore
-import SwiftUI
 
 private let log = Logger(subsystem: "dev.lorcan.Shot", category: "editor")
 
@@ -45,34 +44,16 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         canvas = EditorCanvasView(model: model)
         let pointSize = CGSize(width: CGFloat(model.document.base.width) / model.scale, height: CGFloat(model.document.base.height) / model.scale)
         let visible = (NSScreen.underPointer ?? NSScreen.screens[0]).visibleFrame
-        let size = CGSize(width: min(max(pointSize.width + 40, 820), visible.width * 0.85), height: min(max(pointSize.height + 80, 420), visible.height * 0.85))
-        let editorWindow = EditorWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
+        let size = CGSize(width: min(max(pointSize.width + 60, 860), visible.width * 0.85), height: min(max(pointSize.height + 150, 480), visible.height * 0.85))
+        let editorWindow = EditorWindow()
         window = editorWindow
         super.init()
 
-        window.title = model.fileURL.lastPathComponent
-        window.isReleasedWhenClosed = false
-        window.delegate = self
-        window.minSize = NSSize(width: 820, height: 320)
-
-        let toolbar = NSHostingView(rootView: EditorToolbar(model: model))
-        let container = NSView()
-        for view in [toolbar, canvas] as [NSView] {
-            view.translatesAutoresizingMaskIntoConstraints = false
-            container.addSubview(view)
+        GlassWindow.make(editorWindow, size: size, title: model.fileURL.lastPathComponent, resizable: true) {
+            EditorRootView(model: model, canvas: canvas)
         }
-        NSLayoutConstraint.activate([
-            toolbar.topAnchor.constraint(equalTo: container.topAnchor),
-            toolbar.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            toolbar.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            toolbar.heightAnchor.constraint(equalToConstant: 40),
-            canvas.topAnchor.constraint(equalTo: toolbar.bottomAnchor),
-            canvas.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            canvas.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            canvas.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-        ])
-        window.contentView = container
-        window.center()
+        window.delegate = self
+        window.minSize = NSSize(width: 860, height: 420)
 
         editorWindow.onCommand = { [weak self] key, shift in
             self?.handleCommand(key, shift: shift) ?? false

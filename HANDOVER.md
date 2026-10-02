@@ -196,7 +196,9 @@ Complete each phase in order. At the end of each phase, run `make test` and `mak
 | Capture Fullscreen | ⌃⇧3 |
 | Capture Window | ⌃⇧W |
 | Capture Text (OCR) | ⌃⇧2 |
-| Record Screen / Stop | ⌃⇧5 |
+| Record Area / Stop | ⌃⌥⇧4 |
+| Record Fullscreen / Stop | ⌃⌥⇧3 |
+| Record Window / Stop | ⌃⌥⇧W |
 
 4. Menu items: each action with its shortcut, a divider, **Open Capture Folder**, **Settings…** (`SettingsLink`; also call `NSApp.activate()`), and **Quit**.
 5. `AppDelegate.application(_:open:)` handles URLs: `shot://capture-area`, `shot://capture-fullscreen`, `shot://capture-window`, `shot://capture-text`, `shot://record`, `shot://annotate?path=<file>`.
@@ -323,7 +325,7 @@ Complete each phase in order. At the end of each phase, run `make test` and `mak
    - **Unverified:** whether `SCRecordingOutput` needs a `.screen` stream output as well. If recording produces an empty file, add a no-op `SCStreamOutput` for `.screen`.
 3. While recording:
    - Show a `RecordingBorderPanel` around the region: a red 2 pt border with `ignoresMouseEvents = true`. The filter excludes Shot, so the border does not appear in the video.
-   - Change the menu bar icon to `stop.circle.fill`. Put **Stop Recording (⌃⇧5)** at the top of the menu.
+   - Change the menu bar icon to `stop.circle.fill`. Put **Stop Recording** at the top of the menu.
    - The same hotkey and `shot://record` stop the recording.
 4. On finish (`SCRecordingOutputDelegate.recordingOutputDidFinishRecording`), show a Quick Access card with a video thumbnail (`AVAssetImageGenerator` at t = 0) and an extra **GIF** button.
 5. `GIFExporter`: sample frames with `AVAssetImageGenerator` at 12 fps and a maximum width of 720 px. Write them with `CGImageDestination` (`UTType.gif`, loop count 0, frame delay 1/12). Show a progress toast. Cap the input at 60 s and say so in the toast. Longer input needs a streaming exporter.
