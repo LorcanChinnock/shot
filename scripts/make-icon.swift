@@ -1,4 +1,4 @@
-// Renders Resources/AppIcon.icns. Run: swift scripts/make-icon.swift
+// Renders Resources/AppIcon.icns and docs/icon.png (for the README). Run: make icon
 import AppKit
 
 let ink = NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1)
@@ -67,5 +67,5 @@ process.executableURL = URL(fileURLWithPath: "/usr/bin/iconutil")
 process.arguments = ["-c", "icns", iconset.path, "-o", root.appendingPathComponent("Resources/AppIcon.icns").path]
 try process.run()
 process.waitUntilExit()
-try render(size: 512).write(to: FileManager.default.temporaryDirectory.appendingPathComponent("AppIcon-preview.png"))
-print("Wrote Resources/AppIcon.icns")
+try render(size: 512).write(to: root.appendingPathComponent("docs/icon.png"))
+print("Wrote Resources/AppIcon.icns and docs/icon.png")
