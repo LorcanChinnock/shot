@@ -40,9 +40,13 @@ public struct Preferences {
 
     let store: UserDefaults
 
+    /// Call `registerDefaults()` on `store` once before reading.
     public init(store: UserDefaults = .standard) {
         self.store = store
-        store.register(defaults: Self.defaults)
+    }
+
+    public static func registerDefaults(in store: UserDefaults = .standard) {
+        store.register(defaults: defaults)
     }
 
     public var saveFolder: URL { URL(fileURLWithPath: store.string(forKey: PreferenceKey.saveFolder) ?? Self.defaultSaveFolder) }
