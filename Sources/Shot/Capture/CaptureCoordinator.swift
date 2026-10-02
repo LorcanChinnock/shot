@@ -93,7 +93,15 @@ final class CaptureCoordinator {
     }
 
     private func recognizeText(in image: CGImage) async throws {
-        Toast.show("Text capture is not available yet")
+        let sendableImage = SendableImage(image)
+        let text = try await Task.detached { try OCR.recognizeText(in: sendableImage.image) }.value
+        guard !text.isEmpty else {
+            Toast.show("No text found")
+            return
+        }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        Toast.show("Copied \(text.count) characters")
     }
 
     /// Runs the enabled after-capture actions: save, copy, Quick Access.
