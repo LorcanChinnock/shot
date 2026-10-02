@@ -11,10 +11,35 @@ final class HotkeyCenter {
     var onPress: ((ShotAction) -> Void)?
     private var refs: [EventHotKeyRef] = []
     private var handlerInstalled = false
+    private var registered: [ShotAction: KeyCombo] = [:]
+    /// True while the shortcut recorder listens, so global hotkeys don't swallow the keystroke.
+    private var isSuspended = false
 
-    func register(_ bindings: [ShotAction: KeyCombo]) {
+    func reloadFromPreferences(force: Bool = false) {
+        guard !isSuspended else {
+            return
+        }
+        let prefs = Preferences()
+        let bindings = ShotAction.allCases.reduce(into: [ShotAction: KeyCombo]()) { $0[$1] = prefs.hotkey(for: $1) }
+        if force || bindings != registered {
+            register(bindings)
+        }
+    }
+
+    func suspend() {
+        isSuspended = true
+        unregisterAll()
+    }
+
+    func resume() {
+        isSuspended = false
+        reloadFromPreferences(force: true)
+    }
+
+    private func register(_ bindings: [ShotAction: KeyCombo]) {
         unregisterAll()
         installHandlerIfNeeded()
+        registered = bindings
         for (action, combo) in bindings {
             guard let index = ShotAction.allCases.firstIndex(of: action) else {
                 continue
@@ -28,13 +53,15 @@ final class HotkeyCenter {
                 log.error("RegisterEventHotKey failed for \(action.rawValue, privacy: .public): \(status)")
             }
         }
+        log.notice("Registered \(self.refs.count) hotkeys")
     }
 
-    func unregisterAll() {
+    private func unregisterAll() {
         for ref in refs {
             UnregisterEventHotKey(ref)
         }
         refs.removeAll()
+        registered = [:]
     }
 
     private func installHandlerIfNeeded() {
