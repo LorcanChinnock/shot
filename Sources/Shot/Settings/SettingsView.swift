@@ -129,6 +129,19 @@ private struct ScrollFade: View {
     }
 }
 
+/// The bundle's app icon, which already carries its own border and hard shadow.
+private struct AppIconView: View {
+    let size: CGFloat
+
+    var body: some View {
+        Image(nsImage: NSApp.applicationIconImage)
+            .resizable()
+            .interpolation(.high)
+            .frame(width: size, height: size)
+            .accessibilityLabel("Shot")
+    }
+}
+
 // MARK: Sidebar
 
 private struct Sidebar: View {
@@ -137,11 +150,7 @@ private struct Sidebar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                Image(systemName: "camera.viewfinder")
-                    .font(.system(size: 17, weight: .black))
-                    .foregroundStyle(Brutal.ink)
-                    .frame(width: 36, height: 36)
-                    .brutalSurface(Brutal.yellow, radius: 9, shadow: 3)
+                AppIconView(size: 44)
                 Text("Shot").font(Brutal.title(24)).foregroundStyle(Brutal.ink)
             }
             .padding(.bottom, 14)
@@ -467,11 +476,7 @@ private struct AboutSettings: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            Image(systemName: "camera.viewfinder")
-                .font(.system(size: 30, weight: .black))
-                .foregroundStyle(Brutal.ink)
-                .frame(width: 64, height: 64)
-                .brutalSurface(Brutal.yellow, radius: 14, shadow: 5)
+            AppIconView(size: 76)
             VStack(alignment: .leading, spacing: 3) {
                 Text("Shot").font(Brutal.title(26)).foregroundStyle(Brutal.ink)
                 Text("Screenshots and screen recordings for macOS.")

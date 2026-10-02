@@ -5,16 +5,18 @@ import SwiftUI
 struct ShotApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
-    private var menuBarSymbol: String {
+    private var menuBarState: BrandMark.State {
         if appDelegate.state.isPaused {
-            return "pause.circle.fill"
+            return .paused
         }
-        return appDelegate.state.isRecording ? "stop.circle.fill" : "camera.viewfinder"
+        return appDelegate.state.isRecording ? .recording : .idle
     }
 
     var body: some Scene {
-        MenuBarExtra("Shot", systemImage: menuBarSymbol) {
+        MenuBarExtra {
             ShotMenu(state: appDelegate.state, coordinator: appDelegate.coordinator)
+        } label: {
+            Image(nsImage: BrandMark.menuBarImage(menuBarState))
         }
     }
 }
