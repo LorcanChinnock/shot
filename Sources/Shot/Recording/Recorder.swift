@@ -61,6 +61,8 @@ final class Recorder: NSObject {
     private var stream: SCStream?
     private var recordingOutput: SCRecordingOutput?
     private var segmentFinished: CheckedContinuation<Void, Never>?
+    private var segmentTimeout: Task<Void, Never>?
+    private var finishing: Task<Void, Never>?
     private var border: RecordingBorderPanel?
     private var controls: RecordingControlPanel?
     private let frameSink = FrameSink()
@@ -142,12 +144,10 @@ final class Recorder: NSObject {
         guard isRecording else {
             return
         }
-        let wasRecording = phase == .recording
         phase = .finishing
         hidePanels()
-        if wasRecording {
-            await finishSegment()
-        }
+        // Also waits for a segment that a pause is still finishing.
+        await finishSegment()
         CameraBubble.shared.hide()
         await complete(discard: discard)
     }
@@ -284,12 +284,27 @@ final class Recorder: NSObject {
     }
 
     /// Stops the current stream and waits until SCK has finished writing its file.
+    /// Concurrent callers (a stop during a pause) share the same wait.
     private func finishSegment() async {
-        guard let stream else {
-            return
+        if let stream {
+            self.stream = nil
+            recordingOutput = nil
+            finishing = Task { await stopCapture(stream) }
         }
+        await finishing?.value
+        finishing = nil
+    }
+
+    private func stopCapture(_ stream: SCStream) async {
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             segmentFinished = continuation
+            segmentTimeout = Task {
+                guard (try? await Task.sleep(for: .seconds(5))) != nil, self.segmentFinished != nil else {
+                    return
+                }
+                log.error("No finish callback 5 s after stop; using the segment as is")
+                self.resolveSegment()
+            }
             Task {
                 do {
                     try await stream.stopCapture()
@@ -297,18 +312,13 @@ final class Recorder: NSObject {
                     log.error("stopCapture failed: \(error.localizedDescription, privacy: .public)")
                     self.resolveSegment()
                 }
-                try? await Task.sleep(for: .seconds(5))
-                if self.segmentFinished != nil {
-                    log.error("No finish callback 5 s after stop; using the segment as is")
-                    self.resolveSegment()
-                }
             }
         }
-        self.stream = nil
-        recordingOutput = nil
     }
 
     private func resolveSegment() {
+        segmentTimeout?.cancel()
+        segmentTimeout = nil
         segmentFinished?.resume()
         segmentFinished = nil
     }

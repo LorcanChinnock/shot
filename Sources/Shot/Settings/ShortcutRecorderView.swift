@@ -47,7 +47,8 @@ struct ShortcutRecorderView: View {
                 stop()
             default:
                 let flags = event.modifierFlags.intersection([.command, .shift, .option, .control])
-                guard !flags.isEmpty else {
+                // Shift alone would hijack ordinary typing.
+                guard !flags.subtracting(.shift).isEmpty else {
                     NSSound.beep()
                     return nil
                 }

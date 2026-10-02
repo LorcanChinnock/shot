@@ -40,6 +40,7 @@ final class HotkeyCenter {
         unregisterAll()
         installHandlerIfNeeded()
         registered = bindings
+        var failed: [String] = []
         for (action, combo) in bindings {
             guard let index = ShotAction.allCases.firstIndex(of: action) else {
                 continue
@@ -51,7 +52,12 @@ final class HotkeyCenter {
                 refs.append(ref)
             } else {
                 log.error("RegisterEventHotKey failed for \(action.rawValue, privacy: .public): \(status)")
+                failed.append(combo.displayString)
             }
+        }
+        if !failed.isEmpty {
+            // Usually another app owns the shortcut, or two Shot actions share it.
+            Toast.show("Shortcut unavailable: \(failed.sorted().joined(separator: ", "))", duration: .seconds(4))
         }
         log.notice("Registered \(self.refs.count) hotkeys")
     }

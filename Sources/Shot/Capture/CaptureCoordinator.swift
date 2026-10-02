@@ -46,8 +46,8 @@ final class CaptureCoordinator {
         guard !busy else {
             return
         }
+        busy = true
         Task {
-            busy = true
             defer { busy = false }
             do {
                 switch action {
@@ -229,8 +229,10 @@ final class CaptureCoordinator {
             EditorWindowController.open(savedURL)
         } else if let savedURL, prefs.quickAccessAfterCapture {
             QuickAccessController.shared.add(fileURL: savedURL, thumbnail: image, scale: scale)
-        } else {
-            Toast.show(prefs.copyAfterCapture ? "Copied to clipboard" : "Saved")
+        } else if prefs.copyAfterCapture {
+            Toast.show("Copied to clipboard")
+        } else if savedURL != nil {
+            Toast.show("Saved")
         }
     }
 

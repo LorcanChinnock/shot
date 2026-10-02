@@ -1,9 +1,16 @@
 import AVFoundation
 
 public enum VideoConcatenator {
-    public enum ConcatError: Error {
+    public enum ConcatError: LocalizedError {
         case noSegments
         case exportFailed
+
+        public var errorDescription: String? {
+            switch self {
+            case .noSegments: "Nothing was recorded"
+            case .exportFailed: "Could not join the recording's segments"
+            }
+        }
     }
 
     /// Joins recording segments end to end without re-encoding; one segment is moved as is.

@@ -50,7 +50,7 @@ final class QuickAccessController {
     }
 
     func add(videoURL: URL, thumbnail: CGImage?) {
-        let image = thumbnail.map { NSImage(cgImage: $0, size: .zero) } ?? NSImage(systemSymbolName: "film", accessibilityDescription: nil)!
+        let image = thumbnail.map { NSImage(cgImage: $0, size: .zero) } ?? NSImage(systemSymbolName: "film", accessibilityDescription: nil) ?? NSImage()
         add(QuickAccessCard(fileURL: videoURL, thumbnail: image, isVideo: true))
     }
 
@@ -133,10 +133,21 @@ final class QuickAccessController {
     func copy(_ card: QuickAccessCard) {
         if card.isVideo {
             Clipboard.copy(fileURL: card.fileURL)
-        } else if let data = try? Data(contentsOf: card.fileURL), let image = PNG.image(at: card.fileURL) {
-            Clipboard.copy(png: data, image: image)
+        } else if let image = PNG.image(at: card.fileURL), let png = pngData(for: card.fileURL, image: image) {
+            Clipboard.copy(png: png, image: image)
+        } else {
+            Toast.show("Could not read \(card.fileURL.lastPathComponent)")
+            return
         }
         Toast.show("Copied")
+    }
+
+    /// The file's own bytes when it is a PNG; JPEG and other captures are re-encoded.
+    private func pngData(for url: URL, image: CGImage) -> Data? {
+        if ImageFormat(fileExtension: url.pathExtension) == .png {
+            return try? Data(contentsOf: url)
+        }
+        return PNG.data(from: image, scale: PNG.scale(ofFileAt: url))
     }
 
     func saveAs(_ card: QuickAccessCard) {
