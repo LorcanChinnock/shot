@@ -25,6 +25,12 @@ final class CaptureCoordinator {
                 switch action {
                 case .captureFullscreen:
                     try await captureFullscreen()
+                case .captureArea:
+                    try await captureWithOverlay(windowMode: false, text: false)
+                case .captureWindow:
+                    try await captureWithOverlay(windowMode: true, text: false)
+                case .captureText:
+                    try await captureWithOverlay(windowMode: false, text: true)
                 default:
                     Toast.show("\(action.title) is not available yet")
                 }
@@ -48,6 +54,45 @@ final class CaptureCoordinator {
         }
         log.notice("Fullscreen capture took \(ContinuousClock.now - start, privacy: .public)")
         try await finish(image: frozen.image, scale: frozen.scale)
+    }
+
+    private func captureWithOverlay(windowMode: Bool, text: Bool) async throws {
+        let start = ContinuousClock.now
+        let windows = SelectionOverlayController.onScreenWindows()
+        let frozen = try await DisplayCapturer.captureAll()
+        log.notice("Freeze capture of \(frozen.count) displays took \(ContinuousClock.now - start, privacy: .public)")
+        let displays = frozen.map { OverlayDisplay(frame: $0.frame, scale: $0.scale, image: $0.image) }
+        guard let selection = await SelectionOverlayController.select(displays: displays, windowMode: windowMode, windows: windows) else {
+            return
+        }
+        let image: CGImage
+        let scale: CGFloat
+        switch selection {
+        case let .area(index, rect):
+            let display = frozen[index]
+            let pixels = Geometry.pixelRect(forViewRect: rect, viewHeight: display.frame.height, scale: display.scale)
+            guard let cropped = display.image.cropping(to: pixels) else {
+                throw CaptureError.encodingFailed
+            }
+            image = cropped
+            scale = display.scale
+        case let .window(info):
+            let result = try await WindowCapturer.capture(windowID: info.windowID, includeShadow: !text && Preferences().windowShadow)
+            image = result.image
+            scale = result.scale
+        case let .fullDisplay(index):
+            image = frozen[index].image
+            scale = frozen[index].scale
+        }
+        if text {
+            try await recognizeText(in: image)
+        } else {
+            try await finish(image: image, scale: scale)
+        }
+    }
+
+    private func recognizeText(in image: CGImage) async throws {
+        Toast.show("Text capture is not available yet")
     }
 
     /// Runs the enabled after-capture actions: save, copy, Quick Access.
