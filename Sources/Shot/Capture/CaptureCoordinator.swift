@@ -29,9 +29,9 @@ final class CaptureCoordinator {
     func perform(_ action: ShotAction, fullDisplay: Bool = false) {
         log.notice("Action received: \(action.rawValue, privacy: .public)")
         if action == .record, recorder.isRecording {
+            state.isRecording = false
             Task {
                 await recorder.stop()
-                state.isRecording = false
             }
             return
         }

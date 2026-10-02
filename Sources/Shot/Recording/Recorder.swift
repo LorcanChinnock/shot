@@ -15,8 +15,10 @@ final class Recorder: NSObject {
     private var recordingOutput: SCRecordingOutput?
     private var outputURL: URL?
     private var border: RecordingBorderPanel?
+    private var isStopping = false
+    private let frameSink = FrameSink()
 
-    var isRecording: Bool { stream != nil }
+    var isRecording: Bool { stream != nil && !isStopping }
 
     /// `region` is an AppKit global rect inside `screen`.
     func start(screen: NSScreen, region: CGRect) async throws {
@@ -53,6 +55,8 @@ final class Recorder: NSObject {
         outputConfig.videoCodecType = .h264
 
         let stream = SCStream(filter: filter, configuration: config, delegate: self)
+        // Without a screen output SCK logs a dropped-frame error for every frame.
+        try stream.addStreamOutput(frameSink, type: .screen, sampleHandlerQueue: frameSink.queue)
         let output = SCRecordingOutput(configuration: outputConfig, delegate: self)
         try stream.addRecordingOutput(output)
         try await stream.startCapture()
@@ -66,16 +70,24 @@ final class Recorder: NSObject {
         log.notice("Recording started: \(config.width)x\(config.height) at \(prefs.recordingFPS) fps, mic \(microphone), to \(url.path, privacy: .public)")
     }
 
+    /// Keeps the stream and recording output alive until SCK reports the file finished.
     func stop() async {
-        guard let stream else {
+        guard let stream, !isStopping else {
             return
         }
+        isStopping = true
+        border?.orderOut(nil)
+        border = nil
         do {
             try await stream.stopCapture()
         } catch {
             log.error("stopCapture failed: \(error.localizedDescription, privacy: .public)")
         }
-        tearDown()
+        try? await Task.sleep(for: .seconds(5))
+        if outputURL != nil {
+            log.error("No finish callback 5 s after stop; using the file as is")
+            finished()
+        }
     }
 
     private func tearDown() {
@@ -83,6 +95,7 @@ final class Recorder: NSObject {
         border = nil
         stream = nil
         recordingOutput = nil
+        isStopping = false
     }
 
     private func finished() {
@@ -90,6 +103,7 @@ final class Recorder: NSObject {
             return
         }
         outputURL = nil
+        tearDown()
         let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int) ?? 0
         log.notice("Recording finished: \(url.path, privacy: .public), \(size) bytes")
         onFinish?(url)
@@ -119,4 +133,10 @@ extension Recorder: SCStreamDelegate, SCRecordingOutputDelegate {
     nonisolated func recordingOutputDidFinishRecording(_ recordingOutput: SCRecordingOutput) {
         Task { @MainActor in self.finished() }
     }
+}
+
+private final class FrameSink: NSObject, SCStreamOutput {
+    let queue = DispatchQueue(label: "dev.lorcan.Shot.frames")
+
+    func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {}
 }

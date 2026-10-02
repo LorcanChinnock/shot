@@ -15,3 +15,12 @@ func pngDPIMatchesScale(scale: CGFloat) throws {
     let data = try #require(PNG.data(from: solidImage(width: 20, height: 10), scale: scale))
     #expect(PNG.scale(of: data) == scale)
 }
+
+@Test func trimTransparentEdges() throws {
+    let ctx = try #require(CGContext(data: nil, width: 100, height: 80, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+    ctx.setFillColor(red: 0, green: 0, blue: 0, alpha: 0.2)
+    ctx.fill(CGRect(x: 10, y: 5, width: 60, height: 50))
+    let trimmed = ImageTrim.trimTransparentEdges(try #require(ctx.makeImage()))
+    #expect(trimmed.width == 60)
+    #expect(trimmed.height == 50)
+}

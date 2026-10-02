@@ -4,10 +4,21 @@ import ShotCore
 import SwiftUI
 
 struct QuickAccessCard: Identifiable {
+    static let width: CGFloat = 240
+    static let maxHeight: CGFloat = 200
+
     let id = UUID()
     let fileURL: URL
     let thumbnail: NSImage
     let isVideo: Bool
+
+    var height: CGFloat {
+        let size = thumbnail.size
+        guard size.width > 0 else {
+            return Self.maxHeight
+        }
+        return min(Self.maxHeight, max(60, (Self.width * size.height / size.width).rounded()))
+    }
 }
 
 @MainActor
@@ -21,13 +32,14 @@ final class QuickAccessController {
     static let shared = QuickAccessController()
     static let maxCards = 5
     static let inset: CGFloat = 20
+    static let spacing: CGFloat = 10
+    static let padding: CGFloat = 8
 
     var onAnnotate: ((URL) -> Void)?
     var onExportGIF: ((URL) -> Void)?
 
     private let model = QuickAccessModel()
     private var panel: NSPanel?
-    private var hostingView: NSHostingView<QuickAccessView>?
     private var timers: [UUID: Task<Void, Never>] = [:]
 
     func add(fileURL: URL, thumbnail: CGImage, scale: CGFloat) {
@@ -94,18 +106,17 @@ final class QuickAccessController {
             let hostingView = NSHostingView(rootView: QuickAccessView(model: model, controller: self))
             panel.contentView = hostingView
             self.panel = panel
-            self.hostingView = hostingView
         }
         layout()
         panel?.orderFrontRegardless()
     }
 
     private func layout() {
-        guard let panel, let hostingView else {
+        guard let panel else {
             return
         }
-        hostingView.layoutSubtreeIfNeeded()
-        let size = hostingView.fittingSize
+        let cardsHeight = model.cards.reduce(0) { $0 + $1.height } + Self.spacing * CGFloat(max(0, model.cards.count - 1))
+        let size = CGSize(width: QuickAccessCard.width + Self.padding * 2, height: cardsHeight + Self.padding * 2)
         let screen = NSScreen.underPointer ?? NSScreen.screens[0]
         let origin = CGPoint(x: screen.visibleFrame.minX + Self.inset, y: screen.visibleFrame.minY + Self.inset)
         panel.setFrame(NSRect(origin: origin, size: size), display: true)
