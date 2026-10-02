@@ -1,5 +1,7 @@
 # Shot: handover plan
 
+> **Historical.** This is the original v1 build plan. The app has moved on since: see the README for current behavior. The git history records each deviation.
+
 Build a personal macOS screenshot and screen-recording app that covers the CleanShot X features in daily use. One agent executes this plan end to end. A human does the steps marked **HUMAN**.
 
 ## 1. Goal and scope
