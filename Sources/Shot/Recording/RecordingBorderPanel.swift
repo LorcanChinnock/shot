@@ -18,11 +18,21 @@ final class RecordingBorderPanel: NSPanel {
         setFrame(frame, display: false)
     }
 
+    func setPaused(_ paused: Bool) {
+        (contentView as? BorderView)?.paused = paused
+        contentView?.needsDisplay = true
+    }
+
     private final class BorderView: NSView {
+        var paused = false
+
         override func draw(_ dirtyRect: NSRect) {
-            NSColor.systemRed.setStroke()
+            (paused ? NSColor.systemYellow : NSColor.systemRed).setStroke()
             let path = NSBezierPath(rect: bounds.insetBy(dx: RecordingBorderPanel.lineWidth / 2, dy: RecordingBorderPanel.lineWidth / 2))
             path.lineWidth = RecordingBorderPanel.lineWidth
+            if paused {
+                path.setLineDash([8, 6], count: 2, phase: 0)
+            }
             path.stroke()
         }
     }

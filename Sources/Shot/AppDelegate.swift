@@ -40,6 +40,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         log.notice("URL received: \(url.absoluteString, privacy: .public)")
+        if host == "pause" {
+            coordinator.togglePause()
+            return
+        }
         if host == "settings" {
             let name = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "section" }?.value
             SettingsWindowController.show(section: name.flatMap(SettingsSection.init(rawValue:)))

@@ -8,6 +8,14 @@ enum Brutal {
     static let radius: CGFloat = 12
     static let shadow: CGFloat = 4
 
+    // Spacing rule: keep at least `minGap` of clear space between any two ink lines, shadows included.
+    static let minGap: CGFloat = 6
+    /// Content inset from the window border.
+    static let windowInset: CGFloat = 24
+    /// Inset inside a bordered group that holds other bordered controls.
+    static let groupInset: CGFloat = 7
+    static let sectionGap: CGFloat = 16
+
     static let yellow = Color(hex: 0xFFD43B)
     static let pink = Color(hex: 0xFF7AB6)
     static let mint = Color(hex: 0x4FE3B5)
@@ -141,12 +149,12 @@ struct BrutalToggleStyle: ToggleStyle {
             ZStack(alignment: configuration.isOn ? .trailing : .leading) {
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .fill(configuration.isOn ? color : Color.white.opacity(0.7))
-                    .frame(width: 46, height: 26)
+                    .frame(width: 48, height: 28)
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
                     .fill(Color.white)
                     .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous).strokeBorder(Brutal.ink, lineWidth: 2))
-                    .frame(width: 18, height: 18)
-                    .padding(.horizontal, 4)
+                    .frame(width: 16, height: 16)
+                    .padding(.horizontal, 6)
             }
             .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(Brutal.ink, lineWidth: Brutal.border))
             .background(HardShadow(radius: 7, offset: 2).fill(Brutal.ink))

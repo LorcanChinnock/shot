@@ -81,7 +81,7 @@ private struct QuickAccessCardView: View {
                     CornerButton(symbol: "folder", help: "Show in Finder") { controller.showInFinder(card) }
                 }
             }
-            .padding(8)
+            .padding(10)
         }
     }
 }

@@ -5,8 +5,15 @@ import SwiftUI
 struct ShotApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
+    private var menuBarSymbol: String {
+        if appDelegate.state.isPaused {
+            return "pause.circle.fill"
+        }
+        return appDelegate.state.isRecording ? "stop.circle.fill" : "camera.viewfinder"
+    }
+
     var body: some Scene {
-        MenuBarExtra("Shot", systemImage: appDelegate.state.isRecording ? "stop.circle.fill" : "camera.viewfinder") {
+        MenuBarExtra("Shot", systemImage: menuBarSymbol) {
             ShotMenu(state: appDelegate.state, coordinator: appDelegate.coordinator)
         }
     }
@@ -20,6 +27,7 @@ private struct ShotMenu: View {
     var body: some View {
         if state.isRecording {
             ActionButton(action: .record, title: "Stop Recording", coordinator: coordinator)
+            Button(state.isPaused ? "Resume Recording" : "Pause Recording") { coordinator.togglePause() }
             Divider()
         }
         Section("Capture") {

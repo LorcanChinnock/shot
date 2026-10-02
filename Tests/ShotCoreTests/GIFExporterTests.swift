@@ -3,7 +3,7 @@ import ImageIO
 import Testing
 @testable import ShotCore
 
-private func writeSyntheticVideo(to url: URL, seconds: Int, fps: Int32, width: Int, height: Int) async throws {
+func writeSyntheticVideo(to url: URL, seconds: Int, fps: Int32, width: Int, height: Int) async throws {
     let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
     let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
         AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: width, AVVideoHeightKey: height,
@@ -49,4 +49,23 @@ private func writeSyntheticVideo(to url: URL, seconds: Int, fps: Int32, width: I
     let first = try #require(CGImageSourceCreateImageAtIndex(source, 0, nil))
     #expect(first.width == 720)
     #expect(first.height == 405)
+}
+
+@Test func concatenatesSegments() async throws {
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let a = folder.appendingPathComponent("a.mp4"), b = folder.appendingPathComponent("b.mp4")
+    try await writeSyntheticVideo(to: a, seconds: 1, fps: 30, width: 320, height: 240)
+    try await writeSyntheticVideo(to: b, seconds: 2, fps: 30, width: 320, height: 240)
+    let output = folder.appendingPathComponent("out.mp4")
+    try await VideoConcatenator.concatenate([a, b], to: output)
+    let duration = try await AVURLAsset(url: output).load(.duration).seconds
+    #expect(abs(duration - 3) < 0.15)
+    #expect(!FileManager.default.fileExists(atPath: a.path))
+
+    let single = folder.appendingPathComponent("single.mp4")
+    try await writeSyntheticVideo(to: a, seconds: 1, fps: 30, width: 320, height: 240)
+    try await VideoConcatenator.concatenate([a], to: single)
+    #expect(FileManager.default.fileExists(atPath: single.path))
 }

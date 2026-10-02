@@ -21,6 +21,11 @@ final class CameraBubble {
     private var session: AVCaptureSession?
 
     var windowID: CGWindowID? { panel.map { CGWindowID($0.windowNumber) } }
+    var isVisible: Bool { panel != nil }
+
+    func cycleSize() {
+        panel?.cycleSize()
+    }
 
     static func cameras() -> [AVCaptureDevice] {
         AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera, .external, .continuityCamera], mediaType: .video, position: .unspecified).devices
@@ -125,7 +130,7 @@ private final class CameraBubblePanel: NSPanel {
         CATransaction.commit()
     }
 
-    private func cycleSize() {
+    func cycleSize() {
         let circle = CGRect(x: frame.minX, y: frame.minY + Self.shadow, width: size.diameter, height: size.diameter)
         size = size.next
         UserDefaults.standard.set(size.rawValue, forKey: PreferenceKey.cameraSize)

@@ -17,7 +17,7 @@ enum Permissions {
 
     static func showOnboarding() {
         if window == nil {
-            window = GlassWindow.make(size: NSSize(width: 500, height: 330), title: "Shot needs Screen Recording permission") { OnboardingView() }
+            window = GlassWindow.make(size: NSSize(width: 500, height: 350), title: "Shot needs Screen Recording permission") { OnboardingView() }
         }
         NSApp.activate()
         window?.makeKeyAndOrderFront(nil)
@@ -70,8 +70,8 @@ private struct OnboardingView: View {
                     .keyboardShortcut(.defaultAction)
             }
         }
-        .padding(.top, 40)
-        .padding([.horizontal, .bottom], 24)
+        .padding(.top, GlassWindow.titlebarHeight + 4)
+        .padding([.horizontal, .bottom], Brutal.windowInset)
     }
 }
 

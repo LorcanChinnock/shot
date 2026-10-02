@@ -74,17 +74,18 @@ struct SettingsView: View {
                     VStack(spacing: 18) {
                         content
                     }
-                    .padding(.trailing, 8)
-                    .padding(.bottom, 24)
-                    .padding([.leading, .top], 2)
+                    .padding(.trailing, Brutal.groupInset)
+                    .padding(.bottom, Brutal.sectionGap)
+                    .padding([.leading, .top], 3)
                 }
                 .scrollIndicators(.never)
+                .mask(ScrollFade())
                 .id(section)
             }
         }
-        .padding(.top, 44)
-        .padding(.horizontal, 22)
-        .padding(.bottom, 4)
+        .padding(.top, GlassWindow.titlebarHeight + 8)
+        .padding(.horizontal, Brutal.windowInset)
+        .padding(.bottom, Brutal.windowInset - 6)
         .frame(width: SettingsWindowController.size.width, height: SettingsWindowController.size.height)
     }
 
@@ -113,6 +114,17 @@ struct SettingsView: View {
         case .recording: RecordingSettings()
         case .shortcuts: ShortcutSettings()
         case .about: AboutSettings()
+        }
+    }
+}
+
+/// Fades scrolled content out at the edges instead of cutting it against a hard line.
+private struct ScrollFade: View {
+    var body: some View {
+        VStack(spacing: 0) {
+            LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom).frame(height: 8)
+            Color.black
+            LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom).frame(height: 18)
         }
     }
 }
@@ -164,8 +176,8 @@ private struct SidebarItem: View {
                     .foregroundStyle(Brutal.ink)
                 Spacer()
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 8)
             .background {
                 if selected {
                     Color.clear.brutalSurface(Color.white.opacity(0.6), glass: true, radius: 10, shadow: 3)

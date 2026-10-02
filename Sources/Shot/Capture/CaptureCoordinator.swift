@@ -16,6 +16,13 @@ final class CaptureCoordinator {
         recorder.onFinish = { [weak self] url in
             self?.recordingFinished(url)
         }
+        recorder.onPhaseChange = { [weak self] phase in
+            self?.state.isRecording = phase == .recording || phase == .paused
+            self?.state.isPaused = phase == .paused
+        }
+        recorder.onStopRequested = { [weak self] discard in
+            self?.stopRecording(discard: discard)
+        }
         recorder.onError = { [weak self] error in
             self?.state.isRecording = false
             self?.report(error)
@@ -28,10 +35,7 @@ final class CaptureCoordinator {
     func perform(_ action: ShotAction) {
         log.notice("Action received: \(action.rawValue, privacy: .public)")
         if action.isRecording, recorder.isRecording {
-            state.isRecording = false
-            Task {
-                await recorder.stop()
-            }
+            stopRecording(discard: false)
             return
         }
         guard !busy else {
@@ -112,6 +116,18 @@ final class CaptureCoordinator {
             try await recognizeText(in: image)
         } else {
             try await finish(image: image, scale: scale)
+        }
+    }
+
+    func togglePause() {
+        Task {
+            await recorder.togglePause()
+        }
+    }
+
+    func stopRecording(discard: Bool) {
+        Task {
+            await recorder.stop(discard: discard)
         }
     }
 
