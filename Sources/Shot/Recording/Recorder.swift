@@ -76,26 +76,30 @@ final class Recorder: NSObject {
             microphone = false
             Toast.show("Microphone access denied; recording without it")
         }
-        if prefs.recordCamera {
+        if prefs.recordCamera, !CameraBubble.shared.isVisible {
             await showCamera(in: region)
+        } else if !prefs.recordCamera {
+            CameraBubble.shared.hide()
         }
         let folder = prefs.saveFolder
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let finalURL = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "mp4", prefix: prefs.filePrefix)
         session = Session(screen: screen, region: region, microphone: microphone, finalURL: finalURL)
         segments = []
+        model = RecordingSessionModel()
+        model.cameraOn = CameraBubble.shared.isVisible
+        // Panels exist before the stream so the filter can exclude them by window ID.
+        showPanels(screen: screen, region: region, prefs: prefs)
         do {
             try await startSegment()
         } catch {
+            hidePanels()
             CameraBubble.shared.hide()
             session = nil
             throw error
         }
-        model = RecordingSessionModel()
-        model.cameraOn = CameraBubble.shared.isVisible
         model.run()
         phase = .recording
-        showPanels(screen: screen, region: region, prefs: prefs)
     }
 
     func pause() async {
@@ -105,7 +109,7 @@ final class Recorder: NSObject {
         phase = .paused
         model.isPaused = true
         model.hold()
-        border?.setPaused(true)
+        border?.setStyle(.paused)
         await finishSegment()
         log.notice("Recording paused after \(self.segments.count) segments")
     }
@@ -119,7 +123,7 @@ final class Recorder: NSObject {
             phase = .recording
             model.isPaused = false
             model.run()
-            border?.setPaused(false)
+            border?.setStyle(.recording)
             log.notice("Recording resumed")
         } catch {
             failed(error)
@@ -227,8 +231,13 @@ final class Recorder: NSObject {
         guard let display = content.displays.first(where: { $0.displayID == screen.displayID }) else {
             throw CaptureError.displayNotFound
         }
+        if !Preferences().recordHidesShotUI {
+            // Show Shot's windows such as Quick Access cards, but never the recording chrome.
+            let chrome = Set([border?.windowNumber, controls?.windowNumber].compactMap { $0 }.map { CGWindowID($0) })
+            return SCContentFilter(display: display, excludingWindows: content.windows.filter { chrome.contains($0.windowID) })
+        }
         let ownApps = content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
-        // Shot's windows (controls, border) stay out of the video, except the camera bubble.
+        // Shot's windows stay out of the video, except the camera bubble.
         let cameraWindows = content.windows.filter { $0.windowID == CameraBubble.shared.windowID }
         if CameraBubble.shared.isVisible, cameraWindows.isEmpty {
             log.error("Camera bubble window not found in shareable content")
@@ -308,7 +317,7 @@ final class Recorder: NSObject {
 
     private func showPanels(screen: NSScreen, region: CGRect, prefs: Preferences) {
         if prefs.showRecordingBorder {
-            let border = RecordingBorderPanel(region: region)
+            let border = RecordingBorderPanel(region: region, style: .recording)
             border.orderFrontRegardless()
             self.border = border
         }

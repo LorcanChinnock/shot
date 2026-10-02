@@ -27,6 +27,13 @@ final class CameraBubble {
         panel?.cycleSize()
     }
 
+    func move(by delta: CGVector) {
+        guard let panel else {
+            return
+        }
+        panel.setFrameOrigin(CGPoint(x: panel.frame.minX + delta.dx, y: panel.frame.minY + delta.dy))
+    }
+
     static func cameras() -> [AVCaptureDevice] {
         AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera, .external, .continuityCamera], mediaType: .video, position: .unspecified).devices
     }
