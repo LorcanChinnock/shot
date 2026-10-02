@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/icon.png" width="128" height="128" alt="Shot app icon">
+</p>
+
 # Shot
 
 A macOS screenshot and screen-recording app. It runs from the menu bar.
