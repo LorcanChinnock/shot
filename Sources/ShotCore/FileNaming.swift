@@ -1,15 +1,15 @@
 import Foundation
 
 public enum FileNaming {
-    public static func baseName(for date: Date) -> String {
+    public static func baseName(for date: Date, prefix: String = Preferences.defaultFilePrefix) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
-        return "Shot \(formatter.string(from: date))"
+        return "\(prefix) \(formatter.string(from: date))"
     }
 
-    public static func uniqueURL(in folder: URL, date: Date, pathExtension: String, exists: (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }) -> URL {
-        let base = baseName(for: date)
+    public static func uniqueURL(in folder: URL, date: Date, pathExtension: String, prefix: String = Preferences.defaultFilePrefix, exists: (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }) -> URL {
+        let base = baseName(for: date, prefix: prefix)
         var url = folder.appendingPathComponent("\(base).\(pathExtension)")
         var counter = 2
         while exists(url) {

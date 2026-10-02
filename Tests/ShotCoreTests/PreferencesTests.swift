@@ -29,6 +29,17 @@ import Testing
     Preferences.registerDefaults(in: store)
     let prefs = Preferences(store: store)
     #expect(prefs.saveFolder.path.hasSuffix("/Pictures/Shot"))
+    #expect(prefs.playSound)
+    #expect(prefs.filePrefix == "Shot")
+    #expect(prefs.imageFormat == .png)
+    #expect(!prefs.downscaleRetina)
+    #expect(!prefs.openEditorAfterCapture)
+    #expect(!prefs.captureShowsCursor)
+    #expect(prefs.showMagnifier)
+    #expect(prefs.showCrosshair)
+    #expect(prefs.quickAccessPosition == .left)
+    #expect(!prefs.recordSystemAudio)
+    #expect(prefs.showRecordingBorder)
     #expect(prefs.saveAfterCapture)
     #expect(prefs.copyAfterCapture)
     #expect(prefs.quickAccessAfterCapture)
@@ -40,4 +51,24 @@ import Testing
     #expect(prefs.hotkey(for: .captureArea) == ShotAction.captureArea.defaultCombo)
     store.set("", forKey: PreferenceKey.hotkey(.record))
     #expect(prefs.hotkey(for: .record) == nil)
+}
+
+@Test func resetAndPrefixSanitizing() throws {
+    let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
+    let store = try #require(UserDefaults(suiteName: suite))
+    defer { store.removePersistentDomain(forName: suite) }
+    Preferences.registerDefaults(in: store)
+    let prefs = Preferences(store: store)
+    store.set("  ", forKey: PreferenceKey.filePrefix)
+    #expect(prefs.filePrefix == "Shot")
+    store.set("a/b", forKey: PreferenceKey.filePrefix)
+    #expect(prefs.filePrefix == "a-b")
+    store.set("", forKey: PreferenceKey.hotkey(.captureArea))
+    store.set(false, forKey: PreferenceKey.playSound)
+    Preferences.resetHotkeys(in: store)
+    #expect(prefs.hotkey(for: .captureArea) == ShotAction.captureArea.defaultCombo)
+    #expect(!prefs.playSound)
+    Preferences.resetAll(in: store)
+    #expect(prefs.playSound)
+    #expect(prefs.filePrefix == "Shot")
 }

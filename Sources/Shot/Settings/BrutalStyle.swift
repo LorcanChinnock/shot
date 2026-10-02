@@ -1,0 +1,276 @@
+import AppKit
+import SwiftUI
+
+/// Design tokens and components for the glass × neo-brutalist settings UI.
+enum Brutal {
+    static let ink = Color(red: 0.07, green: 0.07, blue: 0.10)
+    static let border: CGFloat = 2.5
+    static let radius: CGFloat = 12
+    static let shadow: CGFloat = 4
+
+    static let yellow = Color(hex: 0xFFD43B)
+    static let pink = Color(hex: 0xFF7AB6)
+    static let mint = Color(hex: 0x4FE3B5)
+    static let sky = Color(hex: 0x6FC3FF)
+    static let violet = Color(hex: 0x9B8CFF)
+    static let orange = Color(hex: 0xFF9F43)
+    static let red = Color(hex: 0xFF5C5C)
+
+    static func title(_ size: CGFloat) -> Font { .system(size: size, weight: .black) }
+    static let label = Font.system(size: 13, weight: .semibold)
+    static let caption = Font.system(size: 11.5, weight: .medium)
+    static let mono = Font.system(size: 12, weight: .bold, design: .monospaced)
+}
+
+extension Color {
+    init(hex: UInt32) {
+        self.init(.sRGB, red: Double((hex >> 16) & 0xFF) / 255, green: Double((hex >> 8) & 0xFF) / 255, blue: Double(hex & 0xFF) / 255)
+    }
+}
+
+// MARK: Surfaces
+
+private struct HardShadow: Shape {
+    let radius: CGFloat
+    let offset: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        let card = RoundedRectangle(cornerRadius: radius, style: .continuous)
+        // Only the sliver outside the card, so translucent glass never shows the shadow through itself.
+        return card.offset(x: offset, y: offset).subtracting(card).path(in: rect)
+    }
+}
+
+struct BrutalSurface<Fill: ShapeStyle>: ViewModifier {
+    let fill: Fill
+    var glass = false
+    var radius = Brutal.radius
+    var shadow = Brutal.shadow
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+        content
+            .background {
+                ZStack {
+                    if glass {
+                        shape.fill(.ultraThinMaterial)
+                    }
+                    shape.fill(fill)
+                }
+            }
+            .overlay(shape.strokeBorder(Brutal.ink, lineWidth: Brutal.border))
+            .background(HardShadow(radius: radius, offset: shadow).fill(Brutal.ink))
+    }
+}
+
+extension View {
+    func brutalSurface<Fill: ShapeStyle>(_ fill: Fill, glass: Bool = false, radius: CGFloat = Brutal.radius, shadow: CGFloat = Brutal.shadow) -> some View {
+        modifier(BrutalSurface(fill: fill, glass: glass, radius: radius, shadow: shadow))
+    }
+
+    func glassCard() -> some View {
+        brutalSurface(Color.white.opacity(0.42), glass: true)
+    }
+}
+
+// MARK: Backdrop
+
+struct VisualEffectBackground: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = .hudWindow
+        view.blendingMode = .behindWindow
+        view.state = .active
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
+}
+
+/// Frosted window backdrop: blurred desktop, soft color blobs, and a faint dot grid.
+struct GlassBackdrop: View {
+    var body: some View {
+        ZStack {
+            VisualEffectBackground()
+            Color.white.opacity(0.35)
+            Circle().fill(Brutal.pink).frame(width: 380).blur(radius: 90).offset(x: -280, y: -200).opacity(0.55)
+            Circle().fill(Brutal.sky).frame(width: 420).blur(radius: 100).offset(x: 300, y: 220).opacity(0.55)
+            Circle().fill(Brutal.yellow).frame(width: 300).blur(radius: 90).offset(x: 220, y: -230).opacity(0.5)
+            Circle().fill(Brutal.mint).frame(width: 260).blur(radius: 90).offset(x: -220, y: 260).opacity(0.45)
+            Canvas { ctx, size in
+                let step: CGFloat = 18
+                for x in stride(from: step / 2, to: size.width, by: step) {
+                    for y in stride(from: step / 2, to: size.height, by: step) {
+                        ctx.fill(Path(ellipseIn: CGRect(x: x, y: y, width: 1.6, height: 1.6)), with: .color(Brutal.ink.opacity(0.10)))
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: Controls
+
+struct BrutalButtonStyle: ButtonStyle {
+    var color: Color = .white
+    var compact = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        let pressed = configuration.isPressed
+        configuration.label
+            .font(.system(size: compact ? 12 : 13, weight: .bold))
+            .foregroundStyle(Brutal.ink)
+            .padding(.horizontal, compact ? 10 : 14)
+            .padding(.vertical, compact ? 5 : 7)
+            .brutalSurface(color, radius: 8, shadow: pressed ? 0 : 3)
+            .offset(x: pressed ? 3 : 0, y: pressed ? 3 : 0)
+            .animation(.spring(response: 0.15, dampingFraction: 0.7), value: pressed)
+            .contentShape(Rectangle())
+    }
+}
+
+struct BrutalToggleStyle: ToggleStyle {
+    var color: Color
+
+    func makeBody(configuration: Configuration) -> some View {
+        Button {
+            withAnimation(.spring(response: 0.22, dampingFraction: 0.75)) {
+                configuration.isOn.toggle()
+            }
+        } label: {
+            ZStack(alignment: configuration.isOn ? .trailing : .leading) {
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(configuration.isOn ? color : Color.white.opacity(0.7))
+                    .frame(width: 46, height: 26)
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(Color.white)
+                    .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous).strokeBorder(Brutal.ink, lineWidth: 2))
+                    .frame(width: 18, height: 18)
+                    .padding(.horizontal, 4)
+            }
+            .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(Brutal.ink, lineWidth: Brutal.border))
+            .background(HardShadow(radius: 7, offset: 2).fill(Brutal.ink))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Toggle"))
+        .accessibilityValue(Text(configuration.isOn ? "On" : "Off"))
+    }
+}
+
+struct BrutalSegmented<Value: Hashable>: View {
+    @Binding var selection: Value
+    let options: [(value: Value, label: String)]
+    var color: Color
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(options.indices, id: \.self) { index in
+                let option = options[index]
+                let selected = option.value == selection
+                Button {
+                    withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
+                        selection = option.value
+                    }
+                } label: {
+                    Text(option.label)
+                        .font(.system(size: 12, weight: selected ? .heavy : .semibold))
+                        .foregroundStyle(Brutal.ink.opacity(selected ? 1 : 0.65))
+                        .padding(.horizontal, 11)
+                        .frame(height: 28)
+                        .background(selected ? color : Color.clear)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                if index < options.count - 1 {
+                    Rectangle().fill(Brutal.ink).frame(width: 2)
+                }
+            }
+        }
+        .fixedSize()
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .brutalSurface(Color.white.opacity(0.7), radius: 8, shadow: 2)
+    }
+}
+
+struct BrutalChip: View {
+    let text: String
+    var color: Color = .white
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 11, weight: .heavy))
+            .foregroundStyle(Brutal.ink)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .brutalSurface(color, radius: 6, shadow: 2)
+    }
+}
+
+// MARK: Layout
+
+struct SettingsCard<Content: View>: View {
+    let title: String
+    var symbol: String?
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                if let symbol {
+                    Image(systemName: symbol).font(.system(size: 11, weight: .black))
+                }
+                Text(title.uppercased()).font(.system(size: 11, weight: .black)).tracking(1.2)
+            }
+            .foregroundStyle(Brutal.ink.opacity(0.75))
+            .padding(.bottom, 6)
+            VStack(spacing: 0) {
+                content
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassCard()
+    }
+}
+
+struct SettingRow<Control: View>: View {
+    let title: String
+    var subtitle: String?
+    var divider = true
+    @ViewBuilder let control: Control
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(Brutal.label).foregroundStyle(Brutal.ink)
+                    if let subtitle {
+                        Text(subtitle).font(Brutal.caption).foregroundStyle(Brutal.ink.opacity(0.6))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                Spacer(minLength: 8)
+                control
+            }
+            .padding(.vertical, 9)
+            if divider {
+                Rectangle().fill(Brutal.ink.opacity(0.12)).frame(height: 1.5)
+            }
+        }
+    }
+}
+
+struct ToggleRow: View {
+    let title: String
+    var subtitle: String?
+    @Binding var isOn: Bool
+    var color: Color
+    var divider = true
+
+    var body: some View {
+        SettingRow(title: title, subtitle: subtitle, divider: divider) {
+            Toggle(title, isOn: $isOn).toggleStyle(BrutalToggleStyle(color: color)).labelsHidden()
+        }
+    }
+}

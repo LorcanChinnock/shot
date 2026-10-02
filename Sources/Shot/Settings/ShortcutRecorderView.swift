@@ -4,22 +4,34 @@ import SwiftUI
 
 struct ShortcutRecorderView: View {
     let action: ShotAction
+    var color: Color
     @AppStorage private var encoded: String
     @State private var isRecording = false
     @State private var monitor: Any?
 
-    init(action: ShotAction) {
+    init(action: ShotAction, color: Color) {
         self.action = action
+        self.color = color
         _encoded = AppStorage(wrappedValue: action.defaultCombo.encoded, PreferenceKey.hotkey(action))
+    }
+
+    private var label: String {
+        if isRecording {
+            return "Press keys…"
+        }
+        return KeyCombo(encoded: encoded)?.displayString ?? "None"
     }
 
     var body: some View {
         Button {
             isRecording ? stop() : start()
         } label: {
-            Text(isRecording ? "Type shortcut…" : KeyCombo(encoded: encoded)?.displayString ?? "None")
-                .frame(minWidth: 110)
+            Text(label)
+                .font(Brutal.mono)
+                .tracking(1)
+                .frame(minWidth: 96)
         }
+        .buttonStyle(BrutalButtonStyle(color: isRecording ? color : Color.white.opacity(0.85), compact: true))
         .onDisappear(perform: stop)
     }
 

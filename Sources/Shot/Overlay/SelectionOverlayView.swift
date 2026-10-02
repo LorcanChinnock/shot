@@ -6,6 +6,8 @@ final class SelectionOverlayView: NSView {
     private let index: Int
     private unowned let controller: SelectionOverlayController
 
+    private let showMagnifier = Preferences().showMagnifier
+    private let showCrosshair = Preferences().showCrosshair
     private var pointer: CGPoint?
     private var dragStart: CGPoint?
     private var selection: CGRect?
@@ -179,8 +181,12 @@ final class SelectionOverlayView: NSView {
             return
         }
         if selection == nil {
-            drawCrosshair(at: pointer, in: ctx)
-            drawLoupe(at: pointer, in: ctx)
+            if showCrosshair {
+                drawCrosshair(at: pointer, in: ctx)
+            }
+            if showMagnifier {
+                drawLoupe(at: pointer, in: ctx)
+            }
         } else if let selection {
             drawSizeLabel(for: selection, near: pointer)
         }

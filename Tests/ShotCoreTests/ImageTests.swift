@@ -24,3 +24,16 @@ func pngDPIMatchesScale(scale: CGFloat) throws {
     #expect(trimmed.width == 60)
     #expect(trimmed.height == 50)
 }
+
+@Test func jpegEncodingAndDownscale() throws {
+    let image = solidImage(width: 40, height: 20)
+    let jpeg = try #require(PNG.data(from: image, scale: 2, format: .jpeg))
+    #expect(jpeg.starts(with: [0xFF, 0xD8]))
+    #expect(PNG.scale(of: jpeg) == 2)
+    let small = PNG.downscaled(image, scale: 2)
+    #expect(small.width == 20)
+    #expect(small.height == 10)
+    #expect(PNG.downscaled(image, scale: 1).width == 40)
+    #expect(ImageFormat(fileExtension: "JPG") == .jpeg)
+    #expect(ImageFormat(fileExtension: "png") == .png)
+}

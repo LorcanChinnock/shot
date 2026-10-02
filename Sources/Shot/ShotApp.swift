@@ -9,16 +9,12 @@ struct ShotApp: App {
         MenuBarExtra("Shot", systemImage: appDelegate.state.isRecording ? "stop.circle.fill" : "camera.viewfinder") {
             ShotMenu(state: appDelegate.state, coordinator: appDelegate.coordinator)
         }
-        Settings {
-            SettingsView()
-        }
     }
 }
 
 private struct ShotMenu: View {
     let state: AppState
     let coordinator: CaptureCoordinator
-    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         if state.isRecording {
@@ -34,10 +30,7 @@ private struct ShotMenu: View {
             try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             NSWorkspace.shared.open(folder)
         }
-        Button("Settings…") {
-            NSApp.activate()
-            openSettings()
-        }
+        Button("Settings…") { SettingsWindowController.show() }
         .keyboardShortcut(",")
         Divider()
         Button("Quit Shot") { NSApp.terminate(nil) }

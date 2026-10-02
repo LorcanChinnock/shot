@@ -158,7 +158,7 @@ final class CaptureCoordinator {
     }
 
     func exportGIF(_ videoURL: URL) {
-        let gifURL = FileNaming.uniqueURL(in: videoURL.deletingLastPathComponent(), date: Date(), pathExtension: "gif")
+        let gifURL = FileNaming.uniqueURL(in: videoURL.deletingLastPathComponent(), date: Date(), pathExtension: "gif", prefix: Preferences().filePrefix)
         Toast.show("Exporting GIF…", duration: nil)
         Task {
             do {
@@ -187,27 +187,42 @@ final class CaptureCoordinator {
         Toast.show("Copied \(text.count) characters")
     }
 
-    /// Runs the enabled after-capture actions: save, copy, Quick Access.
-    func finish(image: CGImage, scale: CGFloat) async throws {
+    /// Runs the enabled after-capture actions: save, copy, then Quick Access or the editor.
+    func finish(image original: CGImage, scale originalScale: CGFloat) async throws {
         let prefs = Preferences()
-        let sendableImage = SendableImage(image)
-        let encoded = await Task.detached { PNG.data(from: sendableImage.image, scale: scale) }.value
-        guard let png = encoded else {
+        if prefs.playSound {
+            Sound.capture()
+        }
+        let downscale = prefs.downscaleRetina && originalScale > 1
+        let format = prefs.imageFormat
+        let source = SendableImage(original)
+        let encoded = await Task.detached { () -> (file: Data?, png: Data?, image: SendableImage) in
+            let image = downscale ? PNG.downscaled(source.image, scale: originalScale) : source.image
+            let scale = downscale ? 1 : originalScale
+            let file = PNG.data(from: image, scale: scale, format: format)
+            let png = format == .png ? file : PNG.data(from: image, scale: scale)
+            return (file, png, SendableImage(image))
+        }.value
+        guard let fileData = encoded.file, let png = encoded.png else {
             throw CaptureError.encodingFailed
         }
+        let image = encoded.image.image
+        let scale = downscale ? 1 : originalScale
         var savedURL: URL?
-        if prefs.saveAfterCapture || prefs.quickAccessAfterCapture {
+        if prefs.saveAfterCapture || prefs.quickAccessAfterCapture || prefs.openEditorAfterCapture {
             let folder = prefs.saveAfterCapture ? prefs.saveFolder : FileManager.default.temporaryDirectory.appendingPathComponent("Shot")
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            let url = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "png")
-            try png.write(to: url)
+            let url = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: format.fileExtension, prefix: prefs.filePrefix)
+            try fileData.write(to: url)
             savedURL = url
             log.notice("Saved \(url.path, privacy: .public)")
         }
         if prefs.copyAfterCapture {
             Clipboard.copy(png: png, image: image)
         }
-        if let savedURL, prefs.quickAccessAfterCapture {
+        if let savedURL, prefs.openEditorAfterCapture {
+            EditorWindowController.open(savedURL)
+        } else if let savedURL, prefs.quickAccessAfterCapture {
             QuickAccessController.shared.add(fileURL: savedURL, thumbnail: image, scale: scale)
         } else {
             Toast.show(prefs.copyAfterCapture ? "Copied to clipboard" : "Saved")
@@ -248,5 +263,15 @@ enum Clipboard {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.writeObjects([fileURL as NSURL])
+    }
+}
+
+@MainActor
+enum Sound {
+    private static let shutter = NSSound(contentsOfFile: "/System/Library/Components/CoreAudio.component/Contents/SharedSupport/SystemSounds/system/Screen Capture.aif", byReference: true)
+
+    static func capture() {
+        shutter?.stop()
+        shutter?.play()
     }
 }
