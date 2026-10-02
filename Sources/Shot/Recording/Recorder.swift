@@ -231,7 +231,7 @@ final class Recorder: NSObject {
         guard let display = content.displays.first(where: { $0.displayID == screen.displayID }) else {
             throw CaptureError.displayNotFound
         }
-        if !Preferences().recordHidesShotUI {
+        if !Preferences().hidesShotUI {
             // Show Shot's windows such as Quick Access cards, but never the recording chrome.
             let chrome = Set([border?.windowNumber, controls?.windowNumber].compactMap { $0 }.map { CGWindowID($0) })
             return SCContentFilter(display: display, excludingWindows: content.windows.filter { chrome.contains($0.windowID) })

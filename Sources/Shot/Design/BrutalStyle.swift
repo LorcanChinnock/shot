@@ -38,25 +38,26 @@ extension Color {
 
 // MARK: Surfaces
 
-private struct HardShadow: Shape {
-    let radius: CGFloat
+/// The part of an offset copy of `shape` that peeks out from under it.
+private struct HardShadow<S: InsettableShape>: Shape {
+    let shape: S
     let offset: CGFloat
 
     func path(in rect: CGRect) -> Path {
-        let card = RoundedRectangle(cornerRadius: radius, style: .continuous)
-        // Only the sliver outside the card, so translucent glass never shows the shadow through itself.
-        return card.offset(x: offset, y: offset).subtracting(card).path(in: rect)
+        // Subtract a copy inset by the border width: the shadow tucks under the opaque border instead of
+        // meeting the card's antialiased edge, which left a hairline of background showing through.
+        // Translucent glass still never shows the shadow through itself.
+        shape.offset(x: offset, y: offset).subtracting(shape.inset(by: Brutal.border)).path(in: rect)
     }
 }
 
-struct BrutalSurface<Fill: ShapeStyle>: ViewModifier {
+struct BrutalSurface<S: InsettableShape, Fill: ShapeStyle>: ViewModifier {
+    let shape: S
     let fill: Fill
     var glass = false
-    var radius = Brutal.radius
     var shadow = Brutal.shadow
 
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
         content
             .background {
                 ZStack {
@@ -67,13 +68,18 @@ struct BrutalSurface<Fill: ShapeStyle>: ViewModifier {
                 }
             }
             .overlay(shape.strokeBorder(Brutal.ink, lineWidth: Brutal.border))
-            .background(HardShadow(radius: radius, offset: shadow).fill(Brutal.ink))
+            .background(HardShadow(shape: shape, offset: shadow).fill(Brutal.ink))
     }
 }
 
 extension View {
     func brutalSurface<Fill: ShapeStyle>(_ fill: Fill, glass: Bool = false, radius: CGFloat = Brutal.radius, shadow: CGFloat = Brutal.shadow) -> some View {
-        modifier(BrutalSurface(fill: fill, glass: glass, radius: radius, shadow: shadow))
+        modifier(BrutalSurface(shape: RoundedRectangle(cornerRadius: radius, style: .continuous), fill: fill, glass: glass, shadow: shadow))
+    }
+
+    /// Round variant; a continuous rounded rectangle at half its size comes out slightly square.
+    func brutalCircle<Fill: ShapeStyle>(_ fill: Fill, shadow: CGFloat = Brutal.shadow) -> some View {
+        modifier(BrutalSurface(shape: Circle(), fill: fill, shadow: shadow))
     }
 
     func glassCard() -> some View {
@@ -157,7 +163,7 @@ struct BrutalToggleStyle: ToggleStyle {
                     .padding(.horizontal, 6)
             }
             .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(Brutal.ink, lineWidth: Brutal.border))
-            .background(HardShadow(radius: 7, offset: 2).fill(Brutal.ink))
+            .background(HardShadow(shape: RoundedRectangle(cornerRadius: 7, style: .continuous), offset: 2).fill(Brutal.ink))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Toggle"))

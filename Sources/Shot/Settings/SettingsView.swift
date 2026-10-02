@@ -21,7 +21,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
     var subtitle: String {
         switch self {
-        case .general: "Startup, files and formats."
+        case .general: "Behavior, files and formats."
         case .capture: "What happens when you take a shot."
         case .quickAccess: "The floating card after each capture."
         case .recording: "Screen recording video and audio."
@@ -196,6 +196,7 @@ private struct SidebarItem: View {
 
 private struct GeneralSettings: View {
     @AppStorage(PreferenceKey.playSound) private var playSound = true
+    @AppStorage(PreferenceKey.hidesShotUI) private var hidesShotUI = true
     @AppStorage(PreferenceKey.saveFolder) private var saveFolder = Preferences.defaultSaveFolder
     @AppStorage(PreferenceKey.filePrefix) private var filePrefix = Preferences.defaultFilePrefix
     @AppStorage(PreferenceKey.imageFormat) private var imageFormat = ImageFormat.png.rawValue
@@ -204,12 +205,13 @@ private struct GeneralSettings: View {
     private let color = SettingsSection.general.color
 
     var body: some View {
-        SettingsCard(title: "Startup", symbol: "power") {
+        SettingsCard(title: "Behavior", symbol: "slider.horizontal.3") {
             ToggleRow(title: "Launch at login", subtitle: "Start Shot when you log in to your Mac.", isOn: $launchAtLogin, color: color)
                 .onChange(of: launchAtLogin) { _, enabled in
                     setLaunchAtLogin(enabled)
                 }
-            ToggleRow(title: "Play capture sound", isOn: $playSound, color: color, divider: false)
+            ToggleRow(title: "Play capture sound", isOn: $playSound, color: color)
+            ToggleRow(title: "Hide Shot UI", subtitle: "Keep Quick Access cards, toasts and other Shot windows out of screenshots and recordings. The camera bubble always shows.", isOn: $hidesShotUI, color: color, divider: false)
         }
         SettingsCard(title: "Files", symbol: "folder.fill") {
             SettingRow(title: "Save folder", subtitle: (saveFolder as NSString).abbreviatingWithTildeInPath) {
@@ -275,7 +277,6 @@ private struct CaptureSettings: View {
     @AppStorage(PreferenceKey.showMagnifier) private var magnifier = true
     @AppStorage(PreferenceKey.showCrosshair) private var crosshair = true
     @AppStorage(PreferenceKey.captureShowsCursor) private var showsCursor = false
-    @AppStorage(PreferenceKey.captureHidesShotUI) private var hidesShotUI = true
     @AppStorage(PreferenceKey.windowShadow) private var windowShadow = true
     private let color = SettingsSection.capture.color
 
@@ -290,7 +291,6 @@ private struct CaptureSettings: View {
             ToggleRow(title: "Magnifier", subtitle: "8× loupe next to the pointer for pixel-precise edges.", isOn: $magnifier, color: color)
             ToggleRow(title: "Crosshair", subtitle: "Full-screen guide lines through the pointer.", isOn: $crosshair, color: color)
             ToggleRow(title: "Include cursor", subtitle: "Show the pointer in area and fullscreen captures.", isOn: $showsCursor, color: color)
-            ToggleRow(title: "Hide Shot UI", subtitle: "Keep Quick Access cards, toasts and other Shot windows out of screenshots.", isOn: $hidesShotUI, color: color)
             ToggleRow(title: "Window shadow", subtitle: "Keep the macOS drop shadow in window captures.", isOn: $windowShadow, color: color, divider: false)
         }
     }
@@ -357,7 +357,6 @@ private struct RecordingSettings: View {
     @AppStorage(PreferenceKey.recordingFPS) private var fps = 60
     @AppStorage(PreferenceKey.recordShowsCursor) private var showsCursor = true
     @AppStorage(PreferenceKey.showRecordingBorder) private var border = true
-    @AppStorage(PreferenceKey.recordHidesShotUI) private var hidesShotUI = true
     @AppStorage(PreferenceKey.recordMicrophone) private var microphone = false
     @AppStorage(PreferenceKey.recordSystemAudio) private var systemAudio = false
     private let color = SettingsSection.recording.color
@@ -368,7 +367,6 @@ private struct RecordingSettings: View {
                 BrutalSegmented(selection: $fps, options: [(30, "30 fps"), (60, "60 fps")], color: color)
             }
             ToggleRow(title: "Show cursor", isOn: $showsCursor, color: color)
-            ToggleRow(title: "Hide Shot UI", subtitle: "Keep Quick Access cards and toasts out of the video. The camera bubble always shows.", isOn: $hidesShotUI, color: color)
             ToggleRow(title: "Region border", subtitle: "Red outline around the recorded area. It never appears in the video.", isOn: $border, color: color, divider: false)
         }
         SettingsCard(title: "Audio", symbol: "waveform") {

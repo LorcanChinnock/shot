@@ -38,7 +38,7 @@ private struct QuickAccessCardView: View {
                     .font(.system(size: 13, weight: .black))
                     .foregroundStyle(Brutal.ink)
                     .frame(width: 34, height: 34)
-                    .brutalSurface(Brutal.yellow, radius: 17, shadow: 2)
+                    .brutalCircle(Brutal.yellow, shadow: 2)
             }
         }
         .frame(width: QuickAccessCard.width, height: card.height)
