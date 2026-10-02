@@ -15,13 +15,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         HotkeyCenter.shared.onPress = { [weak self] action in
             self?.coordinator.perform(action)
         }
-        registerHotkeys()
+        HotkeyCenter.shared.reloadFromPreferences()
         QuickAccessController.shared.onAnnotate = { [weak self] url in
             self?.coordinator.annotate(url)
         }
-        defaultsObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
+        defaultsObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated {
-                self?.registerHotkeysIfChanged()
+                HotkeyCenter.shared.reloadFromPreferences()
             }
         }
         Permissions.showOnboardingIfNeeded()
@@ -54,29 +54,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
         coordinator.perform(action, fullDisplay: query.contains { $0.name == "full" && $0.value == "1" })
-    }
-
-    private var registeredBindings: [ShotAction: KeyCombo] = [:]
-    var hotkeysSuspended = false
-
-    func registerHotkeys() {
-        let prefs = Preferences()
-        var bindings: [ShotAction: KeyCombo] = [:]
-        for action in ShotAction.allCases {
-            bindings[action] = prefs.hotkey(for: action)
-        }
-        registeredBindings = bindings
-        HotkeyCenter.shared.register(bindings)
-    }
-
-    private func registerHotkeysIfChanged() {
-        guard !hotkeysSuspended else {
-            return
-        }
-        let prefs = Preferences()
-        let current = ShotAction.allCases.reduce(into: [ShotAction: KeyCombo]()) { $0[$1] = prefs.hotkey(for: $1) }
-        if current != registeredBindings {
-            registerHotkeys()
-        }
     }
 }
