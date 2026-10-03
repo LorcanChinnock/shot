@@ -57,11 +57,16 @@ The `shot://` URL scheme (see the README) drives every action without a keyboard
 ## Sending a change
 
 - Keep each pull request focused on one change, and match the style of the surrounding code.
-- Run `make test`, then run the app and try your change. CI runs the tests and a release build on every pull request.
-- Write commit messages in the [Conventional Commits](https://www.conventionalcommits.org) style the history uses, such as `fix(recording): …` or `feat(editor): …`.
+- Run `make test`, then run the app and try your change. CI runs the tests and a universal release build on every pull request, and repeats the tests on an Intel Mac after merge.
+- Use a [Conventional Commits](https://www.conventionalcommits.org) title for the pull request, such as `fix(recording): …` or `feat(editor): …`. Pull requests are squash-merged, so the title becomes the commit on `main`, and release notes are generated from it.
 
 By contributing, you agree that your contributions are licensed under the project's [GPL-3.0 license](LICENSE).
 
 ## Releases
 
-Push a `vX.Y.Z` tag. The release workflow tests the code, builds `Shot-vX.Y.Z.zip` with that version, and publishes a GitHub release with generated notes.
+Releases are automated with [release-please](https://github.com/googleapis/release-please). Don't create tags or edit the version by hand.
+
+1. When `main` gets a `feat:` or `fix:` commit, release-please opens or updates a release pull request. It bumps the version in `Resources/Info.plist` and `.release-please-manifest.json`, and adds the changes to `CHANGELOG.md`. Before 1.0, `feat` bumps the minor version and `fix` bumps the patch. Other types such as `docs`, `chore`, `ci`, `refactor`, and `build` appear in the history but don't trigger a release.
+2. Merging the release pull request tags `vX.Y.Z` and publishes a GitHub release. The release workflow then builds the universal `Shot-vX.Y.Z.zip` and attaches it.
+
+To force a particular version, add a `Release-As: X.Y.Z` line to the body of a commit on `main`.

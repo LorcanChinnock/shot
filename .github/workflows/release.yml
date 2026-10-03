@@ -1,18 +1,39 @@
 name: Release
 
+# release-please keeps a release PR open that bumps the version and changelog from
+# Conventional Commits on main. Merging that PR tags the release, and the build job
+# then attaches the universal Shot-vX.Y.Z.zip to it.
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
-  release:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  build:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
     runs-on: macos-26
+    env:
+      TAG: ${{ needs.release-please.outputs.tag_name }}
     steps:
       - uses: actions/checkout@v5
         with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
           fetch-depth: 0 # The build number counts commits.
       - name: Test
         run: make test
@@ -20,11 +41,9 @@ jobs:
         run: make dist
         env:
           SHOT_SIGN_IDENTITY: "-"
-          SHOT_VERSION: ${{ github.ref_name }}
-      - name: Publish release
+      - name: Attach to the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mv build/Shot.zip "build/Shot-${GITHUB_REF_NAME}.zip"
-          gh release create "$GITHUB_REF_NAME" "build/Shot-${GITHUB_REF_NAME}.zip" \
-            --title "Shot ${GITHUB_REF_NAME#v}" --generate-notes
+          mv build/Shot.zip "build/Shot-${TAG}.zip"
+          gh release upload "$TAG" "build/Shot-${TAG}.zip" --clobber
