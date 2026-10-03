@@ -23,7 +23,7 @@ On the first run, turn on Shot in System Settings › Privacy & Security › Scr
 | `make test` | Run the `ShotCore` unit tests |
 | `make app` | Build and install without launching (`INSTALL_DIR=~/Applications make app` to install elsewhere) |
 | `make bundle` | Build and sign `build/Shot.app` only |
-| `make dist` | Build `build/Shot.zip`, as the release workflow does |
+| `make dist` | Build a universal (Apple Silicon and Intel) `build/Shot.zip`, as the release workflow does |
 | `make icon` | Regenerate `Resources/AppIcon.icns` from `scripts/make-icon.swift` |
 | `make reset-tcc` | Clear Shot's Screen Recording permission |
 | `make clean` | Remove build output |

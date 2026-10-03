@@ -11,12 +11,16 @@ concurrency:
 
 jobs:
   test:
-    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-26, macos-26-intel]
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v5
       - name: Test
         run: make test
-      - name: Bundle
-        run: make bundle
+      - name: Build universal bundle
+        run: make dist
         env:
           SHOT_SIGN_IDENTITY: "-"
