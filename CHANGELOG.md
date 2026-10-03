@@ -1,7 +1,5 @@
 # Changelog
 
-Release notes for each version are on the [releases page](https://github.com/LorcanChinnock/shot/releases).
-
-## 0.1.0
+## 0.1.0 (2026-10-03)
 
 First public release.
