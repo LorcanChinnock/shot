@@ -75,10 +75,10 @@ final class QuickAccessController {
         }
     }
 
+    /// Leaving a card restarts its timer. Entering doesn't cancel it: when cards reflow under a
+    /// still pointer the exit can be missed, so expiry checks the pointer instead.
     func setHovering(_ hovering: Bool, card id: UUID) {
-        if hovering {
-            timers.removeValue(forKey: id)?.cancel()
-        } else {
+        if !hovering {
             startTimer(for: id)
         }
     }
@@ -91,10 +91,31 @@ final class QuickAccessController {
         }
         timers[id] = Task { [weak self] in
             try? await Task.sleep(for: .seconds(duration))
-            if !Task.isCancelled {
-                self?.remove(id)
+            guard !Task.isCancelled, let self else {
+                return
+            }
+            if self.isPointerOver(id) {
+                self.startTimer(for: id)
+            } else {
+                self.remove(id)
             }
         }
+    }
+
+    private func isPointerOver(_ id: UUID) -> Bool {
+        guard let panel, panel.isVisible else {
+            return false
+        }
+        // Mirrors QuickAccessView: cards stack upward from the panel's bottom, newest lowest.
+        var y = panel.frame.minY + Self.padding
+        for card in model.cards.reversed() {
+            let frame = NSRect(x: panel.frame.minX + Self.padding, y: y, width: QuickAccessCard.width, height: card.height)
+            if card.id == id {
+                return frame.contains(NSEvent.mouseLocation)
+            }
+            y += card.height + Self.spacing
+        }
+        return false
     }
 
     private func show() {
