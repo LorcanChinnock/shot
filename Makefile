@@ -29,6 +29,7 @@ run: app
 	pkill -x Shot || true
 	open "$(INSTALL_DIR)/Shot.app"
 
+dist: export SHOT_ARCHS ?= arm64 x86_64
 dist: bundle
 	ditto -c -k --keepParent build/Shot.app build/Shot.zip
 	@echo "Wrote build/Shot.zip"

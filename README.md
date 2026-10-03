@@ -33,7 +33,7 @@
 3. Open Shot. Releases aren't notarized by Apple yet, so macOS blocks the first launch. Open **System Settings › Privacy & Security**, scroll down, and click **Open Anyway** next to the message about Shot.
 4. Shot asks for **Screen & System Audio Recording** access. Turn on Shot in that list, then click **Relaunch** in Shot's window. macOS applies the permission only after a relaunch.
 
-Shot needs macOS 15 or later. It asks for Microphone and Camera access the first time you record with them.
+Shot needs macOS 15 or later and runs natively on Apple Silicon and Intel Macs. It asks for Microphone and Camera access the first time you record with them.
 
 Each release has a new signature, so macOS may ask for Screen Recording access again after an update.
 
