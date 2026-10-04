@@ -32,6 +32,10 @@
 	<string>Shot shows your camera in a bubble during screen recordings when you turn it on.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Shot records your microphone during screen recordings when you turn it on.</string>
+	<key>SUFeedURL</key>
+	<string>https://github.com/LorcanChinnock/shot/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>Vea2+NP+Y+yQ/njLpchPMsRxFUK+NSJhnMKJgQNhkG0=</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

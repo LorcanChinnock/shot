@@ -2,7 +2,8 @@ name: Release
 
 # release-please keeps a release PR open that bumps the version and changelog from
 # Conventional Commits on main. Merging that PR tags the release, and the build job
-# then attaches the universal Shot-vX.Y.Z.zip to it.
+# then attaches the universal Shot-vX.Y.Z.zip and the Sparkle update feed (appcast.xml) to it.
+# Installed copies read the feed from releases/latest/download/appcast.xml.
 on:
   push:
     branches: [main]
@@ -37,13 +38,42 @@ jobs:
           fetch-depth: 0 # The build number counts commits.
       - name: Test
         run: make test
+      # Every release signs with the same self-signed certificate, so macOS keeps the
+      # Screen Recording permission across updates. See CONTRIBUTING.md › Release secrets.
+      - name: Import the signing certificate
+        env:
+          CERT_P12: ${{ secrets.SHOT_SIGNING_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.SHOT_SIGNING_CERT_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password="$(openssl rand -hex 16)"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          echo "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$keychain" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/cert.p12"
+          security set-key-partition-list -S apple-tool:,apple: -k "$keychain_password" "$keychain" > /dev/null
+          security list-keychains -d user -s "$keychain" login.keychain-db
       - name: Build Shot.zip
         run: make dist
         env:
-          SHOT_SIGN_IDENTITY: "-"
+          SHOT_SIGN_IDENTITY: Shot Release
+      - name: Build the update feed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          mkdir build/release
+          mv build/Shot.zip "build/release/Shot-${TAG}.zip"
+          gh release view "$TAG" --json body --jq .body > "build/release/Shot-${TAG}.md"
+          echo "$SPARKLE_PRIVATE_KEY" | .build/artifacts/sparkle/Sparkle/bin/generate_appcast \
+            --ed-key-file - \
+            --download-url-prefix "https://github.com/${{ github.repository }}/releases/download/${TAG}/" \
+            --embed-release-notes \
+            --link "https://github.com/${{ github.repository }}" \
+            build/release
       - name: Attach to the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          mv build/Shot.zip "build/Shot-${TAG}.zip"
-          gh release upload "$TAG" "build/Shot-${TAG}.zip" --clobber
+        run: gh release upload "$TAG" "build/release/Shot-${TAG}.zip" build/release/appcast.xml --clobber

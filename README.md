@@ -6,7 +6,7 @@
 
 <p align="center">
   Screenshots, annotations, and screen recordings for macOS, from the menu bar.<br>
-  Free, open source, and private: no account, no cloud, no network access.
+  Free, open source, and private: no account, no cloud, no analytics.
 </p>
 
 <p align="center">
@@ -35,7 +35,7 @@
 
 Shot needs macOS 15 or later and runs natively on Apple Silicon and Intel Macs. It asks for Microphone and Camera access the first time you record with them.
 
-Each release has a new signature, so macOS may ask for Screen Recording access again after an update.
+Shot updates itself through [Sparkle](https://sparkle-project.org) once you allow it to check for updates. Every release is signed with the same certificate, so macOS keeps Shot's Screen Recording access after an update. If you installed Shot before it could update itself, macOS asks for that access once more after your next install.
 
 ## Shortcuts
 
@@ -64,7 +64,9 @@ Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a scr
 
 ## Privacy
 
-Shot never connects to the network and collects no analytics. Captures go to the folder you choose in Settings (`~/Pictures/Shot` by default) or stay in a temporary folder when saving is off. The only exceptions are the GitHub links in Settings › About, which open in your browser.
+Shot collects no analytics, and the only time it connects to the network is to check for updates, after you agree to it. The second time you open Shot, it asks whether to check for updates automatically. If you say yes, it fetches the update feed from GitHub once a day, and asks before installing a new version unless you tell it to install updates automatically. You can change this, or check by hand, in **Settings › About**. The GitHub links in Settings › About open in your browser.
+
+Captures go to the folder you choose in Settings (`~/Pictures/Shot` by default) or stay in a temporary folder when saving is off.
 
 ## Build from source
 

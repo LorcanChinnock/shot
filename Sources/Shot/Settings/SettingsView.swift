@@ -26,7 +26,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .quickAccess: "The floating card after each capture."
         case .recording: "Screen recording video and audio."
         case .shortcuts: "Global hotkeys for every action."
-        case .about: "Version, permissions and reset."
+        case .about: "Version, updates, permissions and reset."
         }
     }
 
@@ -467,6 +467,7 @@ private struct AboutSettings: View {
     @State private var microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
     @State private var cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
     @State private var confirmingReset = false
+    @Bindable private var updater = Updater.shared
     private let color = SettingsSection.about.color
 
     private var version: String {
@@ -487,6 +488,15 @@ private struct AboutSettings: View {
         }
         .padding(16)
         .glassCard()
+
+        SettingsCard(title: "Updates", symbol: "arrow.down.circle.fill") {
+            ToggleRow(title: "Check for updates automatically", subtitle: "Shot asks GitHub once a day whether a new version is out, and installs it when you agree. Nothing else is sent.", isOn: $updater.automaticallyChecks, color: color)
+            SettingRow(title: "Check now", subtitle: "Looks for a new version once, even when automatic checks are off.", divider: false) {
+                Button("Check") { updater.checkForUpdates() }
+                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .disabled(!updater.canCheckForUpdates)
+            }
+        }
 
         SettingsCard(title: "Permissions", symbol: "lock.fill") {
             SettingRow(title: "Screen & System Audio Recording", subtitle: "Required for every capture.") {
