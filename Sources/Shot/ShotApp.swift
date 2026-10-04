@@ -51,11 +51,25 @@ private struct ShotMenu: View {
             try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             NSWorkspace.shared.open(folder)
         }
+        UpdateButton(updater: Updater.shared)
         Button("Settings…") { SettingsWindowController.show() }
         .keyboardShortcut(",")
         Divider()
         Button("Quit Shot") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
+    }
+}
+
+private struct UpdateButton: View {
+    let updater: Updater
+
+    var body: some View {
+        if let version = updater.pendingVersion {
+            Button("Update to Shot \(version)…") { updater.checkForUpdates() }
+        } else {
+            Button("Check for Updates…") { updater.checkForUpdates() }
+                .disabled(!updater.canCheckForUpdates)
+        }
     }
 }
 

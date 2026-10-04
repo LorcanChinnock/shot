@@ -4,7 +4,7 @@ Thanks for helping. Bug reports, ideas, and pull requests are all welcome. For a
 
 ## Set up
 
-You need macOS 15 or later and either Xcode or the Xcode Command Line Tools. Shot is a SwiftPM package with no dependencies.
+You need macOS 15 or later and either Xcode or the Xcode Command Line Tools. Shot is a SwiftPM package whose only dependency is [Sparkle](https://sparkle-project.org), for updates.
 
 ```bash
 scripts/make-dev-cert.sh   # once
@@ -67,6 +67,29 @@ By contributing, you agree that your contributions are licensed under the projec
 Releases are automated with [release-please](https://github.com/googleapis/release-please). Don't create tags or edit the version by hand.
 
 1. When `main` gets a `feat:` or `fix:` commit, release-please opens or updates a release pull request. It bumps the version in `Resources/Info.plist` and `.release-please-manifest.json`, and adds the changes to `CHANGELOG.md`. Before 1.0, `feat` bumps the minor version and `fix` bumps the patch. Other types such as `docs`, `chore`, `ci`, `refactor`, and `build` appear in the history but don't trigger a release.
-2. Merging the release pull request tags `vX.Y.Z` and publishes a GitHub release. The release workflow then builds the universal `Shot-vX.Y.Z.zip` and attaches it.
+2. Merging the release pull request tags `vX.Y.Z` and publishes a GitHub release. The release workflow then builds the universal `Shot-vX.Y.Z.zip`, signs it for Sparkle, and attaches it with `appcast.xml`, the update feed. Installed copies read the feed from the latest release.
 
 To force a particular version, add a `Release-As: X.Y.Z` line to the body of a commit on `main`.
+
+### Release secrets
+
+The release workflow needs three repository secrets. Create them once, and keep a backup of each somewhere safe: if you lose the Sparkle key, installed copies can't verify updates and you have to ship a new key by hand.
+
+| Secret | What it is |
+|---|---|
+| `SPARKLE_PRIVATE_KEY` | The EdDSA key that signs updates. Its public half is `SUPublicEDKey` in `Resources/Info.plist`. |
+| `SHOT_SIGNING_CERT_P12` | A base64 `.p12` of the self-signed `Shot Release` code-signing certificate. Every release signs with it, so macOS keeps the Screen Recording permission across updates. |
+| `SHOT_SIGNING_CERT_PASSWORD` | The password for that `.p12`. |
+
+```bash
+make build                                                     # fetches Sparkle's tools
+.build/artifacts/sparkle/Sparkle/bin/generate_keys             # prints the public key for SUPublicEDKey
+.build/artifacts/sparkle/Sparkle/bin/generate_keys -x sparkle.key
+gh secret set SPARKLE_PRIVATE_KEY < sparkle.key
+
+scripts/make-dev-cert.sh "Shot Release" release.p12            # prints the .p12 password
+base64 -i release.p12 | gh secret set SHOT_SIGNING_CERT_P12
+gh secret set SHOT_SIGNING_CERT_PASSWORD                       # paste the password
+
+rm sparkle.key release.p12                                     # both stay in your login keychain
+```

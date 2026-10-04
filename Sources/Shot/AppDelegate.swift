@@ -25,6 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         installEditMenu()
+        _ = Updater.shared
         Permissions.showOnboardingIfNeeded()
         log.notice("Shot launched")
     }

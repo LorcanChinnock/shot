@@ -9,12 +9,14 @@ for arch in ${SHOT_ARCHS:-$(uname -m)}; do
     arch_flags+=(--arch "$arch")
 done
 swift build -c release "${arch_flags[@]}"
-binary="$(swift build -c release "${arch_flags[@]}" --show-bin-path)/Shot"
+bin_path="$(swift build -c release "${arch_flags[@]}" --show-bin-path)"
+binary="$bin_path/Shot"
 
 app=build/Shot.app
 rm -rf "$app"
-mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
+mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$app/Contents/Frameworks"
 cp "$binary" "$app/Contents/MacOS/Shot"
+ditto "$bin_path/Sparkle.framework" "$app/Contents/Frameworks/Sparkle.framework"
 for arch in ${SHOT_ARCHS:-$(uname -m)}; do
     if ! lipo "$app/Contents/MacOS/Shot" -verify_arch "$arch"; then
         echo "error: the built binary has no $arch slice; run 'make clean' and try again." >&2
@@ -31,6 +33,12 @@ if [ "$identity" != "-" ] && ! security find-identity -p codesigning | grep -q "
     echo "warning: signing identity '$identity' not found; signing ad-hoc. Screen Recording permission resets on every build." >&2
     identity="-"
 fi
+# Sign Sparkle's nested helpers inside-out, then the app. Sparkle's docs advise against --deep.
+sparkle="$app/Contents/Frameworks/Sparkle.framework/Versions/B"
+for part in XPCServices/Installer.xpc XPCServices/Downloader.xpc Autoupdate Updater.app; do
+    codesign --force --sign "$identity" --preserve-metadata=entitlements "$sparkle/$part"
+done
+codesign --force --sign "$identity" "$app/Contents/Frameworks/Sparkle.framework"
 codesign --force --sign "$identity" "$app"
 version="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist")"
 echo "Built $app $version ($build_number) for $(lipo -archs "$app/Contents/MacOS/Shot")"
