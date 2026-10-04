@@ -61,8 +61,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
     }
 
     private func show() {
-        NSApp.activate()
-        window.makeKeyAndOrderFront(nil)
+        GlassWindow.present(window)
         window.makeFirstResponder(canvas)
     }
 

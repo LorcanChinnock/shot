@@ -10,6 +10,10 @@ enum GlassWindow {
     /// A unified toolbar makes the title bar this tall and centers the traffic lights in it.
     static let titlebarHeight: CGFloat = 52
 
+    /// Glass windows are Shot's real UI, so while one is open Shot shows in the Dock and ⌘-Tab.
+    private static let windows = NSHashTable<NSWindow>.weakObjects()
+    private static var closeObserver: NSObjectProtocol?
+
     @discardableResult
     static func make<Content: View>(_ window: NSWindow? = nil, size: NSSize, title: String, resizable: Bool = false, @ViewBuilder content: () -> Content) -> NSWindow {
         let window = window ?? NSWindow()
@@ -32,7 +36,33 @@ enum GlassWindow {
         window.titlebarSeparatorStyle = .none
         window.contentView = NSHostingView(rootView: GlassChrome(content: content()))
         window.center()
+        track(window)
         return window
+    }
+
+    static func present(_ window: NSWindow) {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate()
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    private static func track(_ window: NSWindow) {
+        windows.add(window)
+        guard closeObserver == nil else {
+            return
+        }
+        closeObserver = NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) { notification in
+            let id = (notification.object as? NSWindow).map(ObjectIdentifier.init)
+            MainActor.assumeIsolated {
+                guard let closing = windows.allObjects.first(where: { ObjectIdentifier($0) == id }) else {
+                    return
+                }
+                let stillOpen = windows.allObjects.contains { $0 !== closing && ($0.isVisible || $0.isMiniaturized) }
+                if !stillOpen {
+                    NSApp.setActivationPolicy(.accessory)
+                }
+            }
+        }
     }
 }
 
