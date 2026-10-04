@@ -30,6 +30,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     init(model: EditorModel) {
         self.model = model
         super.init(frame: .zero)
+        registerForDraggedTypes([NSPasteboard.PasteboardType.fileURL] + NSImage.imageTypes.map { NSPasteboard.PasteboardType($0) })
         observe()
     }
 
@@ -150,7 +151,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             ctx.translateBy(x: rect.minX, y: rect.minY)
             ctx.scaleBy(x: viewScale, y: viewScale)
             ctx.translateBy(x: -doc.canvasRect.minX, y: -doc.canvasRect.minY)
-            AnnotationRenderer.draw(unclipped, base: doc.base, in: ctx)
+            AnnotationRenderer.draw(unclipped, base: doc.base, over: doc.annotations[...], in: ctx)
             ctx.restoreGState()
         }
         ink.setStroke()
@@ -341,6 +342,25 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         if model.tool == .select, movedSinceMouseDown, let id = model.selectedID, let moved = model.document.annotations.first(where: { $0.id == id }) {
             model.document.grow(toFit: moved, margin: model.canvasMargin)
         }
+    }
+
+    // MARK: Dropping images
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        Clipboard.hasImages(on: sender.draggingPasteboard) ? .copy : []
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        let images = Clipboard.images(on: sender.draggingPasteboard)
+        guard !images.isEmpty else {
+            return false
+        }
+        if textField != nil {
+            commitText()
+        }
+        model.addImages(images, at: viewport.imagePoint(convert(sender.draggingLocation, from: nil)))
+        window?.makeFirstResponder(self)
+        return true
     }
 
     // MARK: Keyboard

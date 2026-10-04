@@ -2,6 +2,7 @@ import AppKit
 import AVFoundation
 import os
 import ShotCore
+import UniformTypeIdentifiers
 
 private let log = Logger.shot("capture")
 
@@ -283,6 +284,45 @@ enum Clipboard {
             return nil
         }
         return try AnnotationClipboard.annotation(from: data)
+    }
+
+    private static let imageFiles: [NSPasteboard.ReadingOptionKey: Any] = [
+        .urlReadingFileURLsOnly: true,
+        .urlReadingContentsConformToTypes: [UTType.image.identifier],
+    ]
+
+    /// Whether `pasteboard` holds an image `images(on:)` can read, without reading it.
+    static func hasImages(on pasteboard: NSPasteboard) -> Bool {
+        if pasteboard.canReadObject(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) {
+            return pasteboard.canReadObject(forClasses: [NSURL.self], options: imageFiles)
+        }
+        return imageType(on: pasteboard) != nil
+    }
+
+    /// The images on `pasteboard`, encoded: the contents of each image file, else its PNG, else its
+    /// first image type. Files that aren't images give nothing, rather than the icon Finder copies with them.
+    static func images(on pasteboard: NSPasteboard) -> [Data] {
+        if pasteboard.canReadObject(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) {
+            let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: imageFiles) as? [URL] ?? []
+            return urls.compactMap { url in
+                do {
+                    return try Data(contentsOf: url)
+                } catch {
+                    Toast.show("Could not read \(url.lastPathComponent): \(error.localizedDescription)")
+                    return nil
+                }
+            }
+        }
+        return imageType(on: pasteboard).flatMap { pasteboard.data(forType: $0) }.map { [$0] } ?? []
+    }
+
+    /// PNG if it's there, since it keeps the scale, else the first type that's an image.
+    private static func imageType(on pasteboard: NSPasteboard) -> NSPasteboard.PasteboardType? {
+        let types = pasteboard.types ?? []
+        if types.contains(.png) {
+            return .png
+        }
+        return types.first { UTType($0.rawValue)?.conforms(to: .image) == true }
     }
 }
 
