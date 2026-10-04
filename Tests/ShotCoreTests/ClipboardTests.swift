@@ -14,6 +14,7 @@ private let everyKind: [Annotation] = [
     Annotation(kind: .highlight(CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, lineWidth: 4),
     Annotation(kind: .pixelate(CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, lineWidth: 4),
     Annotation(kind: .blur(CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, lineWidth: 4),
+    Annotation(kind: .spotlight(CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, lineWidth: 4),
     Annotation(kind: .text("Hello\nthere", origin: CGPoint(x: 50, y: 60), fontSize: 24), color: red, lineWidth: 4),
     Annotation(kind: .counter(3, center: CGPoint(x: 200, y: 150)), color: red, lineWidth: 4),
     Annotation(kind: .note("Remember", rect: CGRect(x: 40, y: 40, width: 160, height: 0)), color: RGBA.presets[2], lineWidth: 8),

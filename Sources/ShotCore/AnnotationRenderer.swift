@@ -5,6 +5,8 @@ import CoreText
 
 public enum AnnotationRenderer {
     private static let ciContext = CIContext(options: [.cacheIntermediates: false])
+    /// How dark a spotlight makes the image outside it.
+    static let spotlightDim: CGFloat = 0.5
 
     /// Draws the document into a bottom-left-origin context of size `doc.exportSize`.
     public static func render(_ doc: EditorDocument, into ctx: CGContext) {
@@ -18,9 +20,28 @@ public enum AnnotationRenderer {
             ctx.setFillColor(background.cgColor)
             ctx.fill(canvas)
         }
+        let dim = doc.spotlightDimPath
+        // The dim keeps alpha, so it's composited in a layer of its own to look the same over the editor's backdrop as in the export.
+        if dim != nil {
+            ctx.beginTransparencyLayer(auxiliaryInfo: nil)
+        }
         drawUpright(doc.base, in: doc.fullRect, ctx: ctx)
-        for annotation in doc.annotations {
+        // The spotlights share one dim, at the lowest one's layer: what's under it dims with the image, what's over it doesn't.
+        let dimIndex = doc.annotations.firstIndex { if case .spotlight = $0.kind { true } else { false } }
+        for (index, annotation) in doc.annotations.enumerated() {
+            if index == dimIndex, let dim {
+                ctx.saveGState()
+                // Source-atop darkens what's painted and leaves transparent pixels, such as a window's shadow, clear.
+                ctx.setBlendMode(.sourceAtop)
+                ctx.setFillColor(CGColor(gray: 0, alpha: spotlightDim))
+                ctx.addPath(dim)
+                ctx.fillPath()
+                ctx.restoreGState()
+            }
             draw(annotation, base: doc.base, in: ctx)
+        }
+        if dim != nil {
+            ctx.endTransparencyLayer()
         }
         ctx.restoreGState()
     }
@@ -80,6 +101,9 @@ public enum AnnotationRenderer {
             ctx.setBlendMode(.multiply)
             ctx.setFillColor(CGColor(srgbRed: 1, green: 0.92, blue: 0.2, alpha: 1))
             ctx.fill(rect)
+        case .spotlight:
+            // `render` draws every spotlight's dim at once.
+            break
         case let .pixelate(rect):
             if let pixelated = pixelate(base, rect: rect) {
                 drawUpright(pixelated, in: rect.integral, ctx: ctx)
