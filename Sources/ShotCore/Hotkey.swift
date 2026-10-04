@@ -25,15 +25,32 @@ public enum ShotAction: String, CaseIterable, Sendable {
         [.record, .recordFullscreen, .recordWindow].contains(self)
     }
 
-    public var defaultCombo: KeyCombo {
+    /// Mirrors the macOS screenshot keys with ⌃ in place of ⌘. Record fullscreen and window
+    /// have no default: press Enter or Space in the record overlay instead.
+    public var defaultCombo: KeyCombo? {
         switch self {
         case .captureArea: KeyCombo(keyCode: 21, modifiers: KeyCombo.control | KeyCombo.shift)
         case .captureFullscreen: KeyCombo(keyCode: 20, modifiers: KeyCombo.control | KeyCombo.shift)
         case .captureWindow: KeyCombo(keyCode: 13, modifiers: KeyCombo.control | KeyCombo.shift)
         case .captureText: KeyCombo(keyCode: 17, modifiers: KeyCombo.control | KeyCombo.shift)
-        case .record: KeyCombo(keyCode: 21, modifiers: KeyCombo.control | KeyCombo.option | KeyCombo.shift)
-        case .recordFullscreen: KeyCombo(keyCode: 20, modifiers: KeyCombo.control | KeyCombo.option | KeyCombo.shift)
-        case .recordWindow: KeyCombo(keyCode: 13, modifiers: KeyCombo.control | KeyCombo.option | KeyCombo.shift)
+        case .record: KeyCombo(keyCode: 23, modifiers: KeyCombo.control | KeyCombo.shift)
+        case .recordFullscreen, .recordWindow: nil
+        }
+    }
+
+    /// The default once Shot takes over ⌘⇧3 to ⌘⇧6 from macOS. Window has none, as in macOS: press
+    /// Space after ⌘⇧4. ⌘⇧W and ⌘⇧T stay with apps, which use them to close windows and reopen tabs.
+    public func defaultCombo(replacingSystemScreenshots: Bool) -> KeyCombo? {
+        guard replacingSystemScreenshots else {
+            return defaultCombo
+        }
+        switch self {
+        case .captureFullscreen: return KeyCombo(keyCode: 20, modifiers: KeyCombo.command | KeyCombo.shift)
+        case .captureArea: return KeyCombo(keyCode: 21, modifiers: KeyCombo.command | KeyCombo.shift)
+        case .record: return KeyCombo(keyCode: 23, modifiers: KeyCombo.command | KeyCombo.shift)
+        case .captureText: return KeyCombo(keyCode: 22, modifiers: KeyCombo.command | KeyCombo.shift)
+        case .captureWindow: return nil
+        default: return defaultCombo
         }
     }
 }

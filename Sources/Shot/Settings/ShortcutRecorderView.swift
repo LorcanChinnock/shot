@@ -12,7 +12,7 @@ struct ShortcutRecorderView: View {
     init(action: ShotAction, color: Color) {
         self.action = action
         self.color = color
-        _encoded = AppStorage(wrappedValue: action.defaultCombo.encoded, PreferenceKey.hotkey(action))
+        _encoded = AppStorage(wrappedValue: action.defaultCombo(replacingSystemScreenshots: Preferences().replacesSystemScreenshots)?.encoded ?? "", PreferenceKey.hotkey(action))
     }
 
     private var label: String {

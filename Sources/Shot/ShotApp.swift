@@ -83,7 +83,7 @@ private struct ActionButton: View {
         self.action = action
         self.title = title
         self.coordinator = coordinator
-        _encodedCombo = AppStorage(wrappedValue: action.defaultCombo.encoded, PreferenceKey.hotkey(action))
+        _encodedCombo = AppStorage(wrappedValue: action.defaultCombo(replacingSystemScreenshots: Preferences().replacesSystemScreenshots)?.encoded ?? "", PreferenceKey.hotkey(action))
     }
 
     var body: some View {

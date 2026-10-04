@@ -27,6 +27,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         installEditMenu()
         _ = Updater.shared
         Permissions.showOnboardingIfNeeded()
+        if Permissions.hasScreenCapture {
+            SystemShortcuts.takeKeysIfNeeded()
+        }
         log.notice("Shot launched")
     }
 
