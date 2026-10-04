@@ -7,8 +7,10 @@ Thanks for helping. Bug reports, ideas, and pull requests are all welcome. For a
 You need macOS 15 or later and either Xcode or the Xcode Command Line Tools. Shot is a SwiftPM package whose only dependency is [Sparkle](https://sparkle-project.org), for updates.
 
 ```bash
-scripts/make-dev-cert.sh   # once
-make run
+git clone https://github.com/LorcanChinnock/shot.git
+cd shot
+scripts/make-dev-cert.sh   # once: a stable signing identity, so the Screen Recording permission survives rebuilds
+make run                   # build, install to /Applications/Shot.app, and launch
 ```
 
 macOS ties the Screen Recording permission to the app's code signature. An ad-hoc signature changes on every build, so the permission would reset each time. `make-dev-cert.sh` creates a self-signed certificate named `Shot Dev` in your login keychain, and the build signs with it. Keychain Access shows it as "not trusted"; that's expected and signing still works. To sign with another identity, set `SHOT_SIGN_IDENTITY`.
@@ -54,7 +56,7 @@ Shot logs to the unified log under its bundle identifier. File paths are redacte
 log stream --predicate 'subsystem == "dev.lorcan.Shot"'
 ```
 
-The `shot://` URL scheme (see the README) drives every action without a keyboard, which helps when you reproduce a bug.
+The `shot://` [URL scheme](docs/usage.md#url-scheme) drives every action without a keyboard, which helps when you reproduce a bug.
 
 ## Sending a change
 
