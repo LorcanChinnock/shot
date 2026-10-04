@@ -2,7 +2,7 @@ import CoreGraphics
 import CoreText
 import Foundation
 
-public struct RGBA: Equatable, Hashable, Sendable {
+public struct RGBA: Equatable, Hashable, Sendable, Codable {
     public var r, g, b, a: CGFloat
 
     public init(_ r: CGFloat, _ g: CGFloat, _ b: CGFloat, _ a: CGFloat = 1) {
@@ -39,13 +39,13 @@ public struct RGBA: Equatable, Hashable, Sendable {
 }
 
 /// All geometry is in image pixels with a top-left origin.
-public struct Annotation: Identifiable, Equatable, Sendable {
+public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public let id: UUID
     public var kind: Kind
     public var color: RGBA
     public var lineWidth: CGFloat
 
-    public enum Kind: Equatable, Sendable {
+    public enum Kind: Equatable, Sendable, Codable {
         case arrow(from: CGPoint, to: CGPoint)
         case line(from: CGPoint, to: CGPoint)
         case rect(CGRect)

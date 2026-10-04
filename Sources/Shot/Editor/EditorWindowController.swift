@@ -74,6 +74,10 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
             shift ? model.redo() : model.undo()
         case "c":
             model.copy()
+        case "v":
+            return model.paste()
+        case "d":
+            return model.duplicateSelection()
         case "s":
             model.save()
         case "w":

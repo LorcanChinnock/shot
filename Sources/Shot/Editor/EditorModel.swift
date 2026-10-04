@@ -69,6 +69,9 @@ final class EditorModel {
     /// True while auto-redact looks for text to hide.
     var isRedacting = false
     private(set) var undoStack = UndoStack<EditorSnapshot>()
+    /// The annotation the arrow keys last moved, while that move is still the latest undo step,
+    /// so holding an arrow key down undoes as one step.
+    private var nudgedID: UUID?
 
     init(fileURL: URL, image: CGImage, scale: CGFloat) {
         self.fileURL = fileURL
@@ -124,15 +127,19 @@ final class EditorModel {
     var fontSize: CGFloat { lineWidth * 6 }
     /// Space kept between an annotation and a canvas edge that grew to hold it.
     var canvasMargin: CGFloat { 16 * scale }
+    /// How far down and right a paste or duplicate lands from the original.
+    var pasteStep: CGFloat { 10 * scale }
     var isJPEG: Bool { ImageFormat(fileExtension: fileURL.pathExtension) == .jpeg }
 
     /// Call before every change so it can be undone.
     func recordUndo() {
         undoStack.record(document.snapshot)
+        nudgedID = nil
         isDirty = true
     }
 
     func undo() {
+        nudgedID = nil
         if let previous = undoStack.undo(from: document.snapshot) {
             document.restore(previous)
             selectedID = nil
@@ -141,6 +148,7 @@ final class EditorModel {
     }
 
     func redo() {
+        nudgedID = nil
         if let next = undoStack.redo(from: document.snapshot) {
             document.restore(next)
             selectedID = nil
@@ -207,6 +215,7 @@ final class EditorModel {
             return
         }
         undoStack.record(before)
+        nudgedID = nil
         isDirty = true
     }
 
@@ -239,6 +248,52 @@ final class EditorModel {
         }
     }
 
+    /// Moves the selection by one pixel, or ten when `large`, growing the canvas if it reaches past the edge.
+    /// A `repeated` press (the key held down) joins the undo step of the press before it.
+    func nudgeSelection(_ direction: NudgeDirection, large: Bool, repeated: Bool) {
+        guard let selectedID = selection?.id else {
+            return
+        }
+        if !repeated || nudgedID != selectedID {
+            recordUndo()
+        }
+        nudgedID = selectedID
+        document.move(selectedID, by: direction.offset(large: large), margin: canvasMargin)
+    }
+
+    /// Adds an offset copy of `annotation` as one undoable step and selects it.
+    private func insertCopy(of annotation: Annotation) {
+        recordUndo()
+        let id = document.paste(annotation, step: pasteStep, margin: canvasMargin)
+        tool = .select
+        selectedID = id
+    }
+
+    /// Returns false if nothing is selected.
+    func duplicateSelection() -> Bool {
+        guard let selection else {
+            return false
+        }
+        insertCopy(of: selection)
+        return true
+    }
+
+    /// Pastes a copied annotation. Returns false if the pasteboard doesn't hold one.
+    func paste() -> Bool {
+        let annotation: Annotation?
+        do {
+            annotation = try Clipboard.annotation()
+        } catch {
+            Toast.show("Could not paste: \(error.localizedDescription)")
+            return true
+        }
+        guard let annotation else {
+            return false
+        }
+        insertCopy(of: annotation)
+        return true
+    }
+
     func deleteSelection() {
         guard let selectedID else {
             return
@@ -255,8 +310,17 @@ final class EditorModel {
         return (image, png)
     }
 
-
+    /// Copies the selected annotation, or the flattened image when nothing is selected.
     func copy() {
+        if let selection {
+            do {
+                try Clipboard.copy(annotation: selection)
+                Toast.show("Copied annotation")
+            } catch {
+                Toast.show("Could not copy: \(error.localizedDescription)")
+            }
+            return
+        }
         guard let result = flattened() else {
             Toast.show("Could not render image")
             return
