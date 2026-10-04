@@ -26,6 +26,9 @@ public enum PreferenceKey {
     public static let cameraDeviceID = "cameraDeviceID"
     public static let cameraSize = "cameraSize"
     public static let replacesSystemScreenshots = "replacesSystemScreenshots"
+    public static let videoExportFormat = "videoExportFormat"
+    public static let gifFrameRate = "gifFrameRate"
+    public static let gifWidth = "gifWidth"
     /// True while the macOS screenshot shortcuts are off because Shot turned them off. Not a
     /// setting, so resetting settings keeps it and Shot can still give the keys back.
     public static let disabledSystemScreenshots = "disabledSystemScreenshots"
@@ -85,6 +88,9 @@ public struct Preferences {
             PreferenceKey.cameraDeviceID: "",
             PreferenceKey.cameraSize: CameraBubbleSize.medium.rawValue,
             PreferenceKey.replacesSystemScreenshots: true,
+            PreferenceKey.videoExportFormat: VideoExportOptions().format.rawValue,
+            PreferenceKey.gifFrameRate: VideoExportOptions().gifFrameRate,
+            PreferenceKey.gifWidth: VideoExportOptions().gifWidth,
             PreferenceKey.tookSystemScreenshots: false,
         ]
         for action in ShotAction.allCases {
@@ -121,6 +127,13 @@ public struct Preferences {
     /// Deletes the shortcut saved for text capture, which Shot no longer has.
     public static func removeTextCapture(in store: UserDefaults = .standard) {
         store.removeObject(forKey: "hotkey.capture-text")
+    }
+
+    /// Remembers the video editor's format and GIF settings; speed and mute are chosen per video.
+    public static func remember(_ options: VideoExportOptions, in store: UserDefaults = .standard) {
+        store.set(options.format.rawValue, forKey: PreferenceKey.videoExportFormat)
+        store.set(options.gifFrameRate, forKey: PreferenceKey.gifFrameRate)
+        store.set(options.gifWidth, forKey: PreferenceKey.gifWidth)
     }
 
     public static func resetHotkeys(in store: UserDefaults = .standard) {
@@ -170,6 +183,18 @@ public struct Preferences {
     public var disabledSystemScreenshots: Bool { store.bool(forKey: PreferenceKey.disabledSystemScreenshots) }
     public var tookSystemScreenshots: Bool { store.bool(forKey: PreferenceKey.tookSystemScreenshots) }
     public var gaveBackTextCaptureKey: Bool { store.bool(forKey: PreferenceKey.gaveBackTextCaptureKey) }
+
+    /// The last-used export settings, which Quick Access's Export GIF also uses, at normal speed with sound.
+    public var videoExportOptions: VideoExportOptions {
+        let defaults = VideoExportOptions()
+        let fps = store.integer(forKey: PreferenceKey.gifFrameRate)
+        let width = store.integer(forKey: PreferenceKey.gifWidth)
+        return VideoExportOptions(
+            format: VideoExportFormat(rawValue: store.string(forKey: PreferenceKey.videoExportFormat) ?? "") ?? defaults.format,
+            gifFrameRate: VideoExportOptions.gifFrameRates.contains(fps) ? fps : defaults.gifFrameRate,
+            gifWidth: VideoExportOptions.gifWidths.contains(width) ? width : defaults.gifWidth
+        )
+    }
 
     public var cameraSize: CameraBubbleSize {
         CameraBubbleSize(rawValue: store.string(forKey: PreferenceKey.cameraSize) ?? "") ?? .medium
