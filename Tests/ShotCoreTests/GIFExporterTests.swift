@@ -3,6 +3,15 @@ import ImageIO
 import Testing
 @testable import ShotCore
 
+/// Waits until `input` takes more data. A writer that stops writing never makes it ready again,
+/// so that fails the test instead of waiting forever.
+func waitUntilReady(_ input: AVAssetWriterInput, of writer: AVAssetWriter) async throws {
+    while !input.isReadyForMoreMediaData {
+        try #require(writer.status == .writing, "The writer stopped: \(String(describing: writer.error))")
+        try await Task.sleep(for: .milliseconds(5))
+    }
+}
+
 func writeSyntheticVideo(to url: URL, seconds: Int, fps: Int32, width: Int, height: Int) async throws {
     let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
     let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
@@ -15,9 +24,7 @@ func writeSyntheticVideo(to url: URL, seconds: Int, fps: Int32, width: Int, heig
     writer.startWriting()
     writer.startSession(atSourceTime: .zero)
     for frame in 0..<(Int(fps) * seconds) {
-        while !input.isReadyForMoreMediaData {
-            try await Task.sleep(for: .milliseconds(5))
-        }
+        try await waitUntilReady(input, of: writer)
         var buffer: CVPixelBuffer?
         CVPixelBufferPoolCreatePixelBuffer(nil, adaptor.pixelBufferPool!, &buffer)
         let pixels = try #require(buffer)

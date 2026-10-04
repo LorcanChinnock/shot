@@ -336,6 +336,10 @@ public enum VideoTrimmer {
                 }
             }
             if !appended {
+                // A writer that has stopped never takes more data, so waiting for it would never end.
+                guard writer.status == .writing else {
+                    throw writer.error ?? TrimError.exportFailed
+                }
                 try await Task.sleep(for: .milliseconds(2))
             }
         }

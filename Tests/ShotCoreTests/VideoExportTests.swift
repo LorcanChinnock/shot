@@ -330,14 +330,10 @@ func writeScreenRecording(to url: URL, seconds: Int, audio: Bool) async throws {
             samples.withUnsafeBytes { _ = CMBlockBufferReplaceDataBytes(with: $0.baseAddress!, blockBuffer: data, offsetIntoDestination: 0, dataLength: chunk * 2) }
             var buffer: CMSampleBuffer?
             CMAudioSampleBufferCreateReadyWithPacketDescriptions(allocator: nil, dataBuffer: data, formatDescription: audioFormat, sampleCount: chunk, presentationTimeStamp: CMTime(value: CMTimeValue(frame * chunk), timescale: CMTimeScale(sampleRate)), packetDescriptions: nil, sampleBufferOut: &buffer)
-            while !sound.isReadyForMoreMediaData {
-                try await Task.sleep(for: .milliseconds(5))
-            }
+            try await waitUntilReady(sound, of: writer)
             sound.append(try #require(buffer))
         }
-        while !video.isReadyForMoreMediaData {
-            try await Task.sleep(for: .milliseconds(5))
-        }
+        try await waitUntilReady(video, of: writer)
         var buffer: CVPixelBuffer?
         CVPixelBufferPoolCreatePixelBuffer(nil, try #require(adaptor.pixelBufferPool), &buffer)
         let pixels = try #require(buffer)
