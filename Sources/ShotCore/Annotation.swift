@@ -60,6 +60,20 @@ public struct Annotation: Identifiable, Equatable, Sendable {
         }
     }
 
+    /// `bounds` plus the stroke and arrowhead that the renderer paints past it.
+    public var paintedBounds: CGRect {
+        switch kind {
+        case .arrow:
+            let head = max(12, lineWidth * 4) * 0.45
+            let outset = max(head, lineWidth / 2)
+            return bounds.insetBy(dx: -outset, dy: -outset)
+        case .line, .rect, .ellipse:
+            return bounds.insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2)
+        case .highlight, .pixelate, .text, .counter:
+            return bounds
+        }
+    }
+
     public func hitTest(_ point: CGPoint, tolerance: CGFloat) -> Bool {
         let slop = tolerance + lineWidth / 2
         switch kind {
@@ -126,30 +140,71 @@ extension Array where Element == Annotation {
 public struct EditorDocument: @unchecked Sendable {
     public var base: CGImage
     public var annotations: [Annotation]
-    public var crop: CGRect?
+    /// The exported region in image pixels. It can be smaller than the image (a crop) or reach past it (padding).
+    public var canvasRect: CGRect
+    /// Fills the canvas behind the image; `nil` is transparent.
+    public var background: RGBA?
 
-    public init(base: CGImage, annotations: [Annotation] = [], crop: CGRect? = nil) {
+    public init(base: CGImage, annotations: [Annotation] = [], canvasRect: CGRect? = nil, background: RGBA? = nil) {
         self.base = base
         self.annotations = annotations
-        self.crop = crop
+        self.canvasRect = canvasRect ?? CGRect(x: 0, y: 0, width: base.width, height: base.height)
+        self.background = background
     }
 
     public var fullRect: CGRect { CGRect(x: 0, y: 0, width: base.width, height: base.height) }
-    /// The visible region in image pixels.
-    public var canvasRect: CGRect { crop ?? fullRect }
     public var exportSize: CGSize { canvasRect.size }
+    /// Whether the canvas reaches past the image on any side.
+    public var hasPadding: Bool { !fullRect.contains(canvasRect) }
 
-    public var snapshot: EditorSnapshot { EditorSnapshot(annotations: annotations, crop: crop) }
+    /// JPEG has no alpha, so transparent padding would export as black.
+    public static func defaultBackground(for format: ImageFormat) -> RGBA? {
+        format == .jpeg ? RGBA(1, 1, 1) : nil
+    }
+
+    /// Crops to `rect`, which may lie in the padding, within the current canvas.
+    public mutating func crop(to rect: CGRect) {
+        canvasRect = rect.integral.intersection(canvasRect)
+    }
+
+    /// Grows the canvas to hold `annotation` plus `margin` on each side its shape reaches past.
+    /// Only edges at or beyond the image grow; a crop edge inside the image stays, so cropped pixels never come back.
+    public mutating func grow(toFit annotation: Annotation, margin: CGFloat) {
+        let shape = annotation.bounds
+        let painted = annotation.paintedBounds.insetBy(dx: -margin, dy: -margin)
+        let image = fullRect
+        var minX = canvasRect.minX, minY = canvasRect.minY, maxX = canvasRect.maxX, maxY = canvasRect.maxY
+        if shape.minX < minX, minX <= image.minX { minX = painted.minX }
+        if shape.minY < minY, minY <= image.minY { minY = painted.minY }
+        if shape.maxX > maxX, maxX >= image.maxX { maxX = painted.maxX }
+        if shape.maxY > maxY, maxY >= image.maxY { maxY = painted.maxY }
+        canvasRect = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY).integral
+    }
+
+    /// Sizes the canvas to the image and every annotation, with `margin` around the annotations.
+    public mutating func fitToContent(margin: CGFloat) {
+        canvasRect = annotations.reduce(fullRect) { $0.union($1.paintedBounds.insetBy(dx: -margin, dy: -margin)) }.integral
+    }
+
+    /// Removes the padding; a crop inside the image stays.
+    public mutating func trimToImage() {
+        let trimmed = canvasRect.intersection(fullRect)
+        canvasRect = trimmed.isEmpty ? fullRect : trimmed
+    }
+
+    public var snapshot: EditorSnapshot { EditorSnapshot(annotations: annotations, canvasRect: canvasRect, background: background) }
 
     public mutating func restore(_ snapshot: EditorSnapshot) {
         annotations = snapshot.annotations
-        crop = snapshot.crop
+        canvasRect = snapshot.canvasRect
+        background = snapshot.background
     }
 }
 
 public struct EditorSnapshot: Equatable, Sendable {
     public var annotations: [Annotation]
-    public var crop: CGRect?
+    public var canvasRect: CGRect
+    public var background: RGBA?
 }
 
 public struct UndoStack<State> {
