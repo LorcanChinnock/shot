@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Preferences.registerDefaults()
+        SystemShortcuts.giveBackTextCaptureKeyIfNeeded()
         HotkeyCenter.shared.onPress = { [weak self] action in
             self?.coordinator.perform(action)
         }

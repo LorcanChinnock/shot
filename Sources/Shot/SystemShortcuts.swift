@@ -4,7 +4,7 @@ import ShotCore
 
 private let log = Logger.shot("system-shortcuts")
 
-/// Hands ⌘⇧3 to ⌘⇧6 between macOS and Shot.
+/// Hands ⌘⇧3 to ⌘⇧5 between macOS and Shot.
 @MainActor
 enum SystemShortcuts {
     private static var hotkeys: [String: Any] {
@@ -45,12 +45,45 @@ enum SystemShortcuts {
         useShot(true)
     }
 
+    /// Turns ⌘⇧6 back on for people whose takeover included it for text capture. Only once, and
+    /// only when Shot turned it off, so a choice made in System Settings sticks.
+    static func giveBackTextCaptureKeyIfNeeded() {
+        let store = UserDefaults.standard
+        Preferences.removeTextCapture(in: store)
+        let prefs = Preferences()
+        guard !prefs.gaveBackTextCaptureKey else {
+            return
+        }
+        if prefs.disabledSystemScreenshots, let updated = SystemScreenshotShortcut.givingBackTextCaptureKey(in: hotkeys) {
+            apply(updated)
+            guard SystemScreenshotShortcut.givingBackTextCaptureKey(in: hotkeys) == nil else {
+                log.error("macOS did not turn ⌘⇧6 back on")
+                return
+            }
+        }
+        store.set(true, forKey: PreferenceKey.gaveBackTextCaptureKey)
+    }
+
     /// Returns true when macOS reports the new state after the change.
     private static func setMacOSShortcuts(enabled: Bool) -> Bool {
+        guard apply(SystemScreenshotShortcut.setting(enabled: enabled, in: hotkeys)) else {
+            return false
+        }
+        let applied = macOSOwnsKeys == enabled
+        if !applied {
+            log.error("macOS screenshot shortcuts did not turn \(enabled ? "on" : "off", privacy: .public)")
+            Toast.show("Couldn't change the macOS screenshot shortcuts. Change them in Keyboard Shortcuts.", duration: .seconds(4))
+        }
+        return applied
+    }
+
+    /// Saves `hotkeys` and has macOS pick them up now. Returns false when the domain can't be opened.
+    @discardableResult
+    private static func apply(_ hotkeys: [String: Any]) -> Bool {
         guard let domain = UserDefaults(suiteName: SystemScreenshotShortcut.domain) else {
             return false
         }
-        domain.set(SystemScreenshotShortcut.setting(enabled: enabled, in: hotkeys), forKey: SystemScreenshotShortcut.key)
+        domain.set(hotkeys, forKey: SystemScreenshotShortcut.key)
         // Without this, macOS only picks up the change at the next login.
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings")
@@ -61,11 +94,6 @@ enum SystemShortcuts {
         } catch {
             log.error("activateSettings failed: \(error.localizedDescription, privacy: .public)")
         }
-        let applied = macOSOwnsKeys == enabled
-        if !applied {
-            log.error("macOS screenshot shortcuts did not turn \(enabled ? "on" : "off", privacy: .public)")
-            Toast.show("Couldn't change the macOS screenshot shortcuts. Change them in Keyboard Shortcuts.", duration: .seconds(4))
-        }
-        return applied
+        return true
     }
 }

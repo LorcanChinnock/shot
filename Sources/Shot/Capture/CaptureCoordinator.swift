@@ -54,11 +54,9 @@ final class CaptureCoordinator {
                 case .captureFullscreen:
                     try await captureFullscreen()
                 case .captureArea:
-                    try await captureWithOverlay(windowMode: false, text: false)
+                    try await captureWithOverlay(windowMode: false)
                 case .captureWindow:
-                    try await captureWithOverlay(windowMode: true, text: false)
-                case .captureText:
-                    try await captureWithOverlay(windowMode: false, text: true)
+                    try await captureWithOverlay(windowMode: true)
                 case .record:
                     try await startRecording(mode: .area)
                 case .recordFullscreen:
@@ -89,13 +87,13 @@ final class CaptureCoordinator {
         try await finish(image: frozen.image, scale: frozen.scale)
     }
 
-    private func captureWithOverlay(windowMode: Bool, text: Bool) async throws {
+    private func captureWithOverlay(windowMode: Bool) async throws {
         let start = ContinuousClock.now
         let windows = SelectionOverlayController.onScreenWindows()
         let frozen = try await DisplayCapturer.captureAll()
         log.debug("Freeze capture of \(frozen.count) displays took \(ContinuousClock.now - start, privacy: .public)")
         let displays = frozen.map { OverlayDisplay(frame: $0.frame, scale: $0.scale, image: $0.image) }
-        guard let selection = await SelectionOverlayController.select(displays: displays, windowMode: windowMode, windows: windows, textMode: text) else {
+        guard let selection = await SelectionOverlayController.select(displays: displays, windowMode: windowMode, windows: windows) else {
             return
         }
         let image: CGImage
@@ -110,18 +108,14 @@ final class CaptureCoordinator {
             image = cropped
             scale = display.scale
         case let .window(info):
-            let result = try await WindowCapturer.capture(windowID: info.windowID, includeShadow: !text && Preferences().windowShadow)
+            let result = try await WindowCapturer.capture(windowID: info.windowID, includeShadow: Preferences().windowShadow)
             image = result.image
             scale = result.scale
         case let .fullDisplay(index):
             image = frozen[index].image
             scale = frozen[index].scale
         }
-        if text {
-            try await recognizeText(in: image)
-        } else {
-            try await finish(image: image, scale: scale)
-        }
+        try await finish(image: image, scale: scale)
     }
 
     func togglePause() {
@@ -178,18 +172,6 @@ final class CaptureCoordinator {
                 Toast.show("GIF export failed: \(error.localizedDescription)", duration: .seconds(3))
             }
         }
-    }
-
-    private func recognizeText(in image: CGImage) async throws {
-        let sendableImage = SendableImage(image)
-        let text = try await Task.detached { try OCR.recognizeText(in: sendableImage.image) }.value
-        guard !text.isEmpty else {
-            Toast.show("No text found")
-            return
-        }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
-        Toast.show("Copied \(text.count) characters")
     }
 
     /// Runs the enabled after-capture actions: save, copy, then Quick Access or the editor.

@@ -5,8 +5,9 @@ public enum SystemScreenshotShortcut: Int, CaseIterable, Sendable {
     case saveScreen = 28
     case saveArea = 30
     case options = 184
-    /// ⌘⇧6, which Shot uses for text capture.
-    case saveTouchBar = 181
+
+    /// ⌘⇧6, which Shot took over for text capture until it dropped that feature.
+    static let textCaptureID = "181"
 
     public static let domain = "com.apple.symbolichotkeys"
     public static let key = "AppleSymbolicHotKeys"
@@ -18,7 +19,6 @@ public enum SystemScreenshotShortcut: Int, CaseIterable, Sendable {
         case .saveScreen: return [51, 20, commandShift]
         case .saveArea: return [52, 21, commandShift]
         case .options: return [53, 23, commandShift]
-        case .saveTouchBar: return [54, 22, commandShift]
         }
     }
 
@@ -48,6 +48,17 @@ public enum SystemScreenshotShortcut: Int, CaseIterable, Sendable {
             entry["enabled"] = enabled
             result[id] = entry
         }
+        return result
+    }
+
+    /// Returns `hotkeys` with ⌘⇧6 turned back on and its key kept, or `nil` when it's already on.
+    public static func givingBackTextCaptureKey(in hotkeys: [String: Any]) -> [String: Any]? {
+        guard var entry = hotkeys[textCaptureID] as? [String: Any], entry["enabled"] as? Bool == false else {
+            return nil
+        }
+        entry["enabled"] = true
+        var result = hotkeys
+        result[textCaptureID] = entry
         return result
     }
 }

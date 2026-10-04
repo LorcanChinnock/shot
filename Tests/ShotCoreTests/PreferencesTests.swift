@@ -17,7 +17,6 @@ import Testing
     #expect(ShotAction.captureArea.defaultCombo?.displayString == "⌃⇧4")
     #expect(ShotAction.captureFullscreen.defaultCombo?.displayString == "⌃⇧3")
     #expect(ShotAction.captureWindow.defaultCombo?.displayString == "⌃⇧W")
-    #expect(ShotAction.captureText.defaultCombo?.displayString == "⌃⇧T")
     #expect(ShotAction.record.defaultCombo?.displayString == "⌃⇧5")
     #expect(ShotAction.recordFullscreen.defaultCombo == nil)
     #expect(ShotAction.recordWindow.defaultCombo == nil)
@@ -32,7 +31,7 @@ import Testing
 
 @Test func replacementHotkeysTakeTheMacOSKeys() {
     let replaced = ShotAction.allCases.map { $0.defaultCombo(replacingSystemScreenshots: true)?.displayString }
-    #expect(replaced == ["⇧⌘4", "⇧⌘3", nil, "⇧⌘6", "⇧⌘5", nil, nil])
+    #expect(replaced == ["⇧⌘4", "⇧⌘3", nil, "⇧⌘5", nil, nil])
     #expect(ShotAction.allCases.allSatisfy { $0.defaultCombo(replacingSystemScreenshots: false) == $0.defaultCombo })
 }
 
@@ -44,7 +43,7 @@ import Testing
         defer { store.removePersistentDomain(forName: suite) }
         Preferences.registerDefaults(in: store)
         let prefs = Preferences(store: store)
-        #expect(prefs.hotkey(for: .captureText)?.displayString == "⇧⌘6")
+        #expect(prefs.hotkey(for: .record)?.displayString == "⇧⌘5")
         let custom = KeyCombo(keyCode: 122, modifiers: KeyCombo.control | KeyCombo.option)
         store.set(custom.encoded, forKey: PreferenceKey.hotkey(.captureFullscreen))
         store.set(false, forKey: PreferenceKey.replacesSystemScreenshots)
@@ -113,5 +112,18 @@ import Testing
         #expect(prefs.playSound)
         #expect(prefs.disabledSystemScreenshots)
         #expect(prefs.filePrefix == "Shot")
+    }
+
+    @Test func removingTextCaptureDeletesItsShortcut() throws {
+        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
+        let store = try #require(UserDefaults(suiteName: suite))
+        defer { store.removePersistentDomain(forName: suite) }
+        Preferences.registerDefaults(in: store)
+        store.set("17:4608", forKey: "hotkey.capture-text")
+        store.set("", forKey: PreferenceKey.hotkey(.record))
+        Preferences.removeTextCapture(in: store)
+        #expect(store.object(forKey: "hotkey.capture-text") == nil)
+        #expect(store.string(forKey: PreferenceKey.hotkey(.record)) == "")
+        #expect(ShotAction(rawValue: "capture-text") == nil)
     }
 }

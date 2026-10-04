@@ -18,7 +18,7 @@
 
 ## Features
 
-- **Screenshots:** area capture on a frozen screen with a magnifier, fullscreen, window (with shadow), and text (OCR straight to the clipboard).
+- **Screenshots:** area capture on a frozen screen with a magnifier, fullscreen, and window (with shadow).
 - **Quick Access:** a floating card after each capture. Copy, save, annotate, show in Finder, or drag it into another app.
 - **Annotation editor:** arrow, line, rectangle, ellipse, text, highlight, pixelate, numbered counters, and crop, with undo.
 - **Screen recording:** an area, a screen, or a window to MP4. Adjust the frame, then a 3-second countdown starts the recording. Pause, resume, stop, or discard while recording.
@@ -46,11 +46,10 @@ Shot takes over the macOS screenshot keys and turns off the matching macOS short
 | ⌘⇧3 | Capture fullscreen |
 | ⌘⇧4 | Capture an area. Press Space to pick a window instead. |
 | ⌘⇧5 | Record an area. Press Space to pick a window, or Enter for the full screen. |
-| ⌘⇧6 | Capture text (OCR) |
 
 While you set up a recording, the record shortcut starts it. While you record, it stops the recording. You can change any shortcut in **Settings › Shortcuts**.
 
-To keep the macOS screenshot tool, turn off **Use Shot for ⌘⇧3 to ⌘⇧6** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with ⌃ in place of ⌘: ⌃⇧3, ⌃⇧4, ⌃⇧5, plus ⌃⇧W for a window and ⌃⇧T for text.
+To keep the macOS screenshot tool, turn off **Use Shot for ⌘⇧3 to ⌘⇧5** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with ⌃ in place of ⌘: ⌃⇧3, ⌃⇧4, ⌃⇧5, plus ⌃⇧W for a window.
 
 Record Fullscreen and Record Window have no shortcut until you set one. If you remove Shot, turn the macOS shortcuts back on in **System Settings › Keyboard › Keyboard Shortcuts › Screenshots**.
 
@@ -60,7 +59,7 @@ Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a scr
 
 | URL | Action |
 |---|---|
-| `shot://capture-area`, `capture-fullscreen`, `capture-window`, `capture-text` | Take a screenshot |
+| `shot://capture-area`, `capture-fullscreen`, `capture-window` | Take a screenshot |
 | `shot://record`, `record-fullscreen`, `record-window` | Set up, confirm, or stop a recording |
 | `shot://pause` | Pause or resume the recording |
 | `shot://annotate?path=<file>` | Open an image in the editor |
