@@ -20,7 +20,7 @@
 
 - **Screenshots:** area capture on a frozen screen with a magnifier, fullscreen, and window (with shadow).
 - **Quick Access:** a floating card after each capture. Copy, save, annotate, show in Finder, or drag it into another app.
-- **Annotation editor:** arrow, line, rectangle, ellipse, text, sticky notes, highlight, spotlight, pixelate, blur, numbered counters, and crop, with undo. Copy, paste, duplicate (⌘D) and nudge (arrow keys) annotations. Auto-redact finds email addresses, phone numbers, card numbers and IP addresses and covers them.
+- **Annotation editor:** arrow, line, rectangle, ellipse, freehand pen, text, sticky notes, highlight, spotlight, pixelate, blur, numbered counters, and crop, with undo. Copy, paste, duplicate (⌘D) and nudge (arrow keys) annotations. Auto-redact finds email addresses, phone numbers, card numbers and IP addresses and covers them.
 - **Screen recording:** an area, a screen, or a window to MP4. Adjust the frame, then a 3-second countdown starts the recording. Pause, resume, stop, or discard while recording.
 - **Camera bubble:** a round webcam overlay that is recorded with your screen. Drag it to move it, double-click it to resize it.
 - **Video trim:** drag in and out points on a recording's timeline and save without re-encoding.

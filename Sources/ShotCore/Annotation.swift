@@ -60,6 +60,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case counter(Int, center: CGPoint)
         /// A sticky note. `rect` sets the wrap width; the note grows taller than it to fit the text.
         case note(String, rect: CGRect)
+        /// A pen stroke through the points, drawn smoothed with round caps.
+        case freehand([CGPoint])
     }
 
     public init(id: UUID = UUID(), kind: Kind, color: RGBA, lineWidth: CGFloat) {
@@ -92,6 +94,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             return CGRect(x: center.x - counterRadius, y: center.y - counterRadius, width: counterRadius * 2, height: counterRadius * 2)
         case .note:
             return noteLayout?.frame ?? .null
+        case let .freehand(points):
+            return Freehand.bounds(of: points)
         }
     }
 
@@ -112,6 +116,9 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             }
             let shadow = layout.frame.offsetBy(dx: 0, dy: layout.shadowOffset).insetBy(dx: -layout.shadowBlur, dy: -layout.shadowBlur)
             return layout.frame.union(shadow)
+        case let .freehand(points):
+            // The smoothed curve can swing a little past the points it runs through.
+            return bounds.union(Freehand.path(through: points).boundingBoxOfPath).insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2)
         }
     }
 
@@ -134,6 +141,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             return bounds.insetBy(dx: -tolerance, dy: -tolerance).contains(point)
         case let .counter(_, center):
             return hypot(point.x - center.x, point.y - center.y) <= counterRadius + tolerance
+        case let .freehand(points):
+            return Freehand.path(through: points).copy(strokingWithWidth: slop * 2, lineCap: .round, lineJoin: .round, miterLimit: 10).contains(point)
         }
     }
 
@@ -151,6 +160,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let .text(string, origin, size): kind = .text(string, origin: move(origin), fontSize: size)
         case let .counter(number, center): kind = .counter(number, center: move(center))
         case let .note(string, rect): kind = .note(string, rect: rect.offsetBy(dx: delta.dx, dy: delta.dy))
+        case let .freehand(points): kind = .freehand(points.map(move))
         }
     }
 
@@ -171,13 +181,14 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         lineWidth = width
     }
 
-    /// The resize handles and where they sit: a line's two ends, or the corners and edge midpoints of a box.
+    /// The resize handles and where they sit: a line's two ends, or the corners and edge midpoints of a box
+    /// (a pen stroke's is its bounds).
     /// Text and counters have none.
     public var handles: [(handle: AnnotationHandle, point: CGPoint)] {
         switch kind {
         case let .arrow(from, to), let .line(from, to):
             return [(.start, from), (.end, to)]
-        case .rect, .ellipse, .highlight, .pixelate, .blur, .spotlight, .note:
+        case .rect, .ellipse, .highlight, .pixelate, .blur, .spotlight, .note, .freehand:
             let frame = bounds
             return AnnotationHandle.box.map { ($0, $0.point(in: frame)) }
         case .text, .counter:
@@ -197,9 +208,11 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     }
 
     /// Drags `handle` to `point`. Call it on the annotation as it was when the drag began: a box dragged
-    /// past its opposite side flips, so its handles swap sides. A handle the kind doesn't have changes nothing.
+    /// past its opposite side flips, so its handles swap sides. A pen stroke scales its points within its
+    /// bounds, and mirrors when flipped. A handle the kind doesn't have changes nothing.
     public mutating func resize(_ handle: AnnotationHandle, to point: CGPoint) {
-        func box(_ rect: CGRect) -> CGRect {
+        /// `rect`'s corners with the handle's sides moved to `point`; past the opposite side, `max` is less than `min`.
+        func corners(_ rect: CGRect) -> (min: CGPoint, max: CGPoint) {
             var minX = rect.minX, minY = rect.minY, maxX = rect.maxX, maxY = rect.maxY
             switch handle.dx {
             case -1: minX = point.x
@@ -211,7 +224,11 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             case 1: maxY = point.y
             default: break
             }
-            return Geometry.normalized(from: CGPoint(x: minX, y: minY), to: CGPoint(x: maxX, y: maxY))
+            return (CGPoint(x: minX, y: minY), CGPoint(x: maxX, y: maxY))
+        }
+        func box(_ rect: CGRect) -> CGRect {
+            let (min, max) = corners(rect)
+            return Geometry.normalized(from: min, to: max)
         }
         switch (kind, handle) {
         case let (.arrow(_, to), .start): kind = .arrow(from: point, to: to)
@@ -226,6 +243,10 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let (.blur(rect), _): kind = .blur(box(rect))
         case let (.spotlight(rect), _): kind = .spotlight(box(rect))
         case let (.note(string, rect), _): resizeNote(string, rect: rect, handle: handle, to: point)
+        case let (.freehand(points), _):
+            let rect = bounds
+            let (min, max) = corners(rect)
+            kind = .freehand(Freehand.scaled(points, from: rect, min: min, max: max))
         }
     }
 

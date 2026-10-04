@@ -131,6 +131,9 @@ public enum AnnotationRenderer {
             ctx.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
             ctx.textPosition = CGPoint(x: center.x - lineWidth / 2, y: center.y + (ascent - descent) / 2)
             CTLineDraw(line, ctx)
+        case let .freehand(points):
+            ctx.addPath(Freehand.path(through: points))
+            ctx.strokePath()
         case .note:
             guard let layout = annotation.noteLayout else {
                 return

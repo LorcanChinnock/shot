@@ -273,6 +273,15 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             kind = .blur(rect)
         case .spotlight:
             kind = .spotlight(rect)
+        case .pen:
+            let points: [CGPoint]
+            if let draft, case let .freehand(drawn) = draft.kind {
+                points = drawn
+            } else {
+                points = [start]
+            }
+            // Points closer than a view point apart add nothing the curve can show.
+            kind = .freehand(Freehand.adding(point, to: points, minDistance: 1 / viewScale))
         case .note:
             draft = newNote(id: draft?.id ?? UUID(), from: start, to: point)
             needsDisplay = true

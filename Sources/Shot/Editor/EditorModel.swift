@@ -3,7 +3,7 @@ import Observation
 import ShotCore
 
 enum EditorTool: String, CaseIterable, Identifiable {
-    case select, arrow, line, rect, ellipse, text, note, highlight, spotlight, pixelate, blur, counter, crop
+    case select, arrow, line, rect, ellipse, pen, text, note, highlight, spotlight, pixelate, blur, counter, crop
 
     var id: String { rawValue }
 
@@ -14,6 +14,7 @@ enum EditorTool: String, CaseIterable, Identifiable {
         case .line: "l"
         case .rect: "r"
         case .ellipse: "o"
+        case .pen: "d"
         case .text: "t"
         case .note: "s"
         case .highlight: "h"
@@ -32,6 +33,7 @@ enum EditorTool: String, CaseIterable, Identifiable {
         case .line: "line.diagonal"
         case .rect: "rectangle"
         case .ellipse: "circle"
+        case .pen: "scribble"
         case .text: "textformat"
         case .note: "note.text"
         case .highlight: "highlighter"
