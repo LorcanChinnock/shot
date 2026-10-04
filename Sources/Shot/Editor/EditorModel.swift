@@ -281,7 +281,8 @@ final class EditorModel {
         return true
     }
 
-    /// Pastes a copied annotation. Returns false if the pasteboard doesn't hold one.
+    /// Pastes a copied annotation, else the image on the pasteboard beside the canvas.
+    /// Returns false if the pasteboard holds neither.
     func paste() -> Bool {
         let annotation: Annotation?
         do {
@@ -291,10 +292,31 @@ final class EditorModel {
             return true
         }
         guard let annotation else {
-            return false
+            let images = Clipboard.images(on: .general)
+            guard !images.isEmpty else {
+                return false
+            }
+            addImages(images, at: nil)
+            return true
         }
         insertCopy(of: annotation)
         return true
+    }
+
+    /// Adds the encoded images as one undoable step and selects the last. The first is centred on `point`
+    /// and the rest step down and right from it; with no point, each goes beside the canvas, which grows to fit.
+    func addImages(_ images: [Data], at point: CGPoint?) {
+        let decoded = images.compactMap { data in ImageCodec.image(from: data).map { ($0, ImageCodec.scale(of: data)) } }
+        guard !decoded.isEmpty else {
+            Toast.show("Could not read the image")
+            return
+        }
+        recordUndo()
+        tool = .select
+        for (index, (image, imageScale)) in decoded.enumerated() {
+            let center = point.map { CGPoint(x: $0.x + pasteStep * CGFloat(index), y: $0.y + pasteStep * CGFloat(index)) }
+            selectedID = document.addImage(image, scale: imageScale, documentScale: scale, centeredAt: center, margin: canvasMargin)
+        }
     }
 
     func deleteSelection() {

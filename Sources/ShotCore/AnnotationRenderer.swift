@@ -38,7 +38,7 @@ public enum AnnotationRenderer {
                 ctx.fillPath()
                 ctx.restoreGState()
             }
-            draw(annotation, base: doc.base, in: ctx)
+            draw(annotation, base: doc.base, over: doc.annotations[..<index], in: ctx)
         }
         if dim != nil {
             ctx.endTransparencyLayer()
@@ -55,12 +55,15 @@ public enum AnnotationRenderer {
         ) else {
             return nil
         }
+        // A placed image of lower density than the screenshot is scaled up; the rest are drawn pixel for pixel.
+        ctx.interpolationQuality = .high
         render(doc, into: ctx)
         return ctx.makeImage()
     }
 
-    /// Draws in a top-left-origin context.
-    public static func draw(_ annotation: Annotation, base: CGImage, in ctx: CGContext) {
+    /// Draws in a top-left-origin context. `below` are the annotations drawn before it, whose placed images
+    /// a pixelate or blur covers along with the screenshot.
+    public static func draw(_ annotation: Annotation, base: CGImage, over below: ArraySlice<Annotation> = [], in ctx: CGContext) {
         let color = annotation.color.cgColor
         let width = annotation.lineWidth
         ctx.saveGState()
@@ -105,13 +108,17 @@ public enum AnnotationRenderer {
             // `render` draws every spotlight's dim at once.
             break
         case let .pixelate(rect):
-            if let pixelated = pixelate(base, rect: rect) {
+            let source = backdrop(base, images: below, around: rect, outset: pixelScale(for: rect))
+            if let pixelated = pixelate(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y)) {
                 drawUpright(pixelated, in: rect.integral, ctx: ctx)
             }
         case let .blur(rect):
-            if let blurred = blur(base, rect: rect) {
+            let source = backdrop(base, images: below, around: rect, outset: blurRadius(for: rect) * 4)
+            if let blurred = blur(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y)) {
                 drawUpright(blurred, in: rect.integral, ctx: ctx)
             }
+        case let .image(image, rect):
+            drawUpright(image.image, in: pixelAligned(rect), ctx: ctx)
         case let .text(string, origin, fontSize):
             let layout = TextLayout(string: string, fontSize: fontSize, color: annotation.color)
             ctx.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
@@ -155,6 +162,42 @@ public enum AnnotationRenderer {
         }
     }
 
+    /// `rect` on whole pixels, so an image dragged by a fraction of a pixel still exports pixel for pixel.
+    static func pixelAligned(_ rect: CGRect) -> CGRect {
+        CGRect(x: rect.minX.rounded(), y: rect.minY.rounded(), width: rect.width.rounded(), height: rect.height.rounded())
+    }
+
+    /// What a pixelate or blur at `rect` hides: the screenshot, with the images placed under it drawn over it,
+    /// as an image whose top-left pixel sits at `origin`. It reaches `outset` past `rect`, so the filter's
+    /// edges sample what's really there. With no placed image under it, that's the screenshot itself.
+    static func backdrop(_ base: CGImage, images below: ArraySlice<Annotation>, around rect: CGRect, outset: CGFloat) -> (image: CGImage, origin: CGPoint) {
+        let area = rect.insetBy(dx: -outset, dy: -outset).integral
+        let images = below.compactMap { annotation -> (CGImage, CGRect)? in
+            guard case let .image(image, imageRect) = annotation.kind, imageRect.intersects(area) else {
+                return nil
+            }
+            return (image.image, pixelAligned(imageRect))
+        }
+        guard !images.isEmpty, let ctx = CGContext(
+            data: nil, width: Int(area.width), height: Int(area.height), bitsPerComponent: 8, bytesPerRow: 0,
+            space: base.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else {
+            return (base, .zero)
+        }
+        ctx.interpolationQuality = .high
+        ctx.translateBy(x: 0, y: area.height)
+        ctx.scaleBy(x: 1, y: -1)
+        ctx.translateBy(x: -area.minX, y: -area.minY)
+        drawUpright(base, in: CGRect(x: 0, y: 0, width: base.width, height: base.height), ctx: ctx)
+        for (image, imageRect) in images {
+            drawUpright(image, in: imageRect, ctx: ctx)
+        }
+        guard let image = ctx.makeImage() else {
+            return (base, .zero)
+        }
+        return (image, area.origin)
+    }
+
     /// Draws `image` right side up into `rect` of a top-left-origin context.
     static func drawUpright(_ image: CGImage, in rect: CGRect, ctx: CGContext) {
         ctx.saveGState()
@@ -172,11 +215,16 @@ public enum AnnotationRenderer {
         let filter = CIFilter.pixellate()
         filter.inputImage = CIImage(cgImage: base).clampedToExtent()
         filter.center = region.origin
-        filter.scale = Float(max(8, rect.width / 20))
+        filter.scale = Float(pixelScale(for: rect))
         guard let output = filter.outputImage?.cropped(to: region) else {
             return nil
         }
         return ciContext.createCGImage(output, from: region)
+    }
+
+    /// The pixelate's block size in image pixels.
+    static func pixelScale(for rect: CGRect) -> CGFloat {
+        max(8, rect.width / 20)
     }
 
     /// The blur's radius in image pixels: at least 12, so a line of text is gone, and more for bigger regions.

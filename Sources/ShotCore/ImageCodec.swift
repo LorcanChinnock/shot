@@ -45,6 +45,14 @@ public enum ImageCodec {
         return CGImageSourceCreateImageAtIndex(source, 0, nil)
     }
 
+    /// Decodes the first image in `data` now, so it doesn't decode again each time it's drawn.
+    public static func image(from data: Data) -> CGImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
+            return nil
+        }
+        return CGImageSourceCreateImageAtIndex(source, 0, [kCGImageSourceShouldCacheImmediately: true] as CFDictionary)
+    }
+
     public static func scale(of data: Data) -> CGFloat {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
             return 1

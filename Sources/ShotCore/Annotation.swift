@@ -62,6 +62,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case note(String, rect: CGRect)
         /// A pen stroke through the points, drawn smoothed with round caps.
         case freehand([CGPoint])
+        /// Another image placed on the canvas, stretched to `rect`. Its colour and width are unused.
+        case image(AnnotationImage, rect: CGRect)
     }
 
     public init(id: UUID = UUID(), kind: Kind, color: RGBA, lineWidth: CGFloat) {
@@ -86,7 +88,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         switch kind {
         case let .arrow(from, to), let .line(from, to):
             return CGRect(x: min(from.x, to.x), y: min(from.y, to.y), width: abs(to.x - from.x), height: abs(to.y - from.y))
-        case let .rect(rect), let .ellipse(rect), let .highlight(rect), let .pixelate(rect), let .blur(rect), let .spotlight(rect):
+        case let .rect(rect), let .ellipse(rect), let .highlight(rect), let .pixelate(rect), let .blur(rect), let .spotlight(rect), let .image(_, rect):
             return rect
         case let .text(string, origin, fontSize):
             return CGRect(origin: origin, size: TextLayout(string: string, fontSize: fontSize, color: color).size)
@@ -108,7 +110,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             return bounds.insetBy(dx: -outset, dy: -outset)
         case .line, .rect, .ellipse:
             return bounds.insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2)
-        case .highlight, .pixelate, .blur, .spotlight, .text, .counter:
+        case .highlight, .pixelate, .blur, .spotlight, .text, .counter, .image:
             return bounds
         case .note:
             guard let layout = noteLayout else {
@@ -137,7 +139,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             let dy = (point.y - rect.midY) / (rect.height / 2)
             let normalized = sqrt(dx * dx + dy * dy)
             return abs(normalized - 1) * min(rect.width, rect.height) / 2 <= slop
-        case .highlight, .pixelate, .blur, .spotlight, .text, .note:
+        case .highlight, .pixelate, .blur, .spotlight, .text, .note, .image:
             return bounds.insetBy(dx: -tolerance, dy: -tolerance).contains(point)
         case let .counter(_, center):
             return hypot(point.x - center.x, point.y - center.y) <= counterRadius + tolerance
@@ -161,6 +163,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let .counter(number, center): kind = .counter(number, center: move(center))
         case let .note(string, rect): kind = .note(string, rect: rect.offsetBy(dx: delta.dx, dy: delta.dy))
         case let .freehand(points): kind = .freehand(points.map(move))
+        case let .image(image, rect): kind = .image(image, rect: rect.offsetBy(dx: delta.dx, dy: delta.dy))
         }
     }
 
@@ -182,7 +185,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     }
 
     /// The resize handles and where they sit: a line's two ends, or the corners and edge midpoints of a box
-    /// (a pen stroke's is its bounds).
+    /// (a pen stroke's is its bounds). An image has only the corners, since it keeps its shape.
     /// Text and counters have none.
     public var handles: [(handle: AnnotationHandle, point: CGPoint)] {
         switch kind {
@@ -191,6 +194,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case .rect, .ellipse, .highlight, .pixelate, .blur, .spotlight, .note, .freehand:
             let frame = bounds
             return AnnotationHandle.box.map { ($0, $0.point(in: frame)) }
+        case let .image(_, rect):
+            return AnnotationHandle.corners.map { ($0, $0.point(in: rect)) }
         case .text, .counter:
             return []
         }
@@ -209,7 +214,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
 
     /// Drags `handle` to `point`. Call it on the annotation as it was when the drag began: a box dragged
     /// past its opposite side flips, so its handles swap sides. A pen stroke scales its points within its
-    /// bounds, and mirrors when flipped. A handle the kind doesn't have changes nothing.
+    /// bounds, and mirrors when flipped. An image keeps its aspect ratio and never flips.
+    /// A handle the kind doesn't have changes nothing.
     public mutating func resize(_ handle: AnnotationHandle, to point: CGPoint) {
         /// `rect`'s corners with the handle's sides moved to `point`; past the opposite side, `max` is less than `min`.
         func corners(_ rect: CGRect) -> (min: CGPoint, max: CGPoint) {
@@ -247,7 +253,25 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             let rect = bounds
             let (min, max) = corners(rect)
             kind = .freehand(Freehand.scaled(points, from: rect, min: min, max: max))
+        case let (.image(image, rect), _):
+            kind = .image(image, rect: Self.resizedImageRect(rect, handle: handle, to: point))
         }
+    }
+
+    /// The opposite corner stays put and the image grows or shrinks by whichever axis was dragged further,
+    /// down to `AnnotationImage.minSide` on its shorter side. An edge handle changes nothing.
+    private static func resizedImageRect(_ rect: CGRect, handle: AnnotationHandle, to point: CGPoint) -> CGRect {
+        guard handle.dx != 0, handle.dy != 0, rect.width > 0, rect.height > 0 else {
+            return rect
+        }
+        let anchor = handle.opposite.point(in: rect)
+        let factor = max(
+            (point.x - anchor.x) * CGFloat(handle.dx) / rect.width,
+            (point.y - anchor.y) * CGFloat(handle.dy) / rect.height,
+            AnnotationImage.minSide / min(rect.width, rect.height)
+        )
+        let width = rect.width * factor, height = rect.height * factor
+        return CGRect(x: handle.dx < 0 ? anchor.x - width : anchor.x, y: handle.dy < 0 ? anchor.y - height : anchor.y, width: width, height: height)
     }
 
     /// The opposite side stays put, and the note never flips, gets narrower than its minimum or shorter than its text.
@@ -369,19 +393,24 @@ public struct EditorDocument: @unchecked Sendable {
         }.integral
     }
 
-    /// The part of the image the spotlights dim: all of it outside every spotlight, never the padding.
+    /// The part of the image and the images placed on it that the spotlights dim: all of it outside
+    /// every spotlight, never the rest of the padding.
     /// `nil` when there are no spotlights. One with no area, such as a straight drag, dims nothing.
     public var spotlightDimPath: CGPath? {
         let lit = CGMutablePath()
+        let images = CGMutablePath()
         for annotation in annotations {
-            if case let .spotlight(rect) = annotation.kind, !rect.isEmpty {
-                lit.addRect(rect)
+            switch annotation.kind {
+            case let .spotlight(rect) where !rect.isEmpty: lit.addRect(rect)
+            case let .image(_, rect): images.addRect(rect)
+            default: break
             }
         }
         guard !lit.isEmpty else {
             return nil
         }
-        return CGPath(rect: fullRect, transform: nil).subtracting(lit)
+        let dimmable = images.isEmpty ? CGPath(rect: fullRect, transform: nil) : images.union(CGPath(rect: fullRect, transform: nil))
+        return dimmable.subtracting(lit)
     }
 
     /// Removes the padding; a crop inside the image stays.
@@ -464,6 +493,23 @@ public enum AnnotationHandle: Hashable, Sendable {
 
     /// The handles on a box, corners first.
     public static let box: [AnnotationHandle] = [.topLeft, .topRight, .bottomRight, .bottomLeft, .top, .right, .bottom, .left]
+    public static let corners: [AnnotationHandle] = Array(box.prefix(4))
+
+    /// The handle on the other side of a box: the far corner, or the facing edge.
+    var opposite: AnnotationHandle {
+        switch self {
+        case .topLeft: .bottomRight
+        case .top: .bottom
+        case .topRight: .bottomLeft
+        case .right: .left
+        case .bottomRight: .topLeft
+        case .bottom: .top
+        case .bottomLeft: .topRight
+        case .left: .right
+        case .start: .end
+        case .end: .start
+        }
+    }
 
     /// The side of a box the handle moves across: -1 the left, 1 the right, 0 neither.
     var dx: Int {
