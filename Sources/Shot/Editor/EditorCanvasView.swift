@@ -183,14 +183,14 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         switch model.tool {
         case .select:
             let tolerance = 6 / viewScale
-            if let id = model.selectedID, let selected = model.document.annotations.first(where: { $0.id == id }), let handle = selected.noteHandle(at: point, tolerance: tolerance) {
-                resizeHandle = handle
-            } else if let index = model.document.annotations.topmostIndex(at: point, tolerance: tolerance) {
-                let hit = model.document.annotations[index]
+            let hit = model.document.annotations.topmostIndex(at: point, tolerance: tolerance).map { model.document.annotations[$0] }
+            if event.clickCount == 2, let hit, case .note = hit.kind {
                 model.selectedID = hit.id
-                if event.clickCount == 2, case .note = hit.kind {
-                    beginNote(hit)
-                }
+                beginNote(hit)
+            } else if let id = model.selectedID, let selected = model.document.annotations.first(where: { $0.id == id }), let handle = selected.noteHandle(at: point, tolerance: tolerance) {
+                resizeHandle = handle
+            } else if let hit {
+                model.selectedID = hit.id
             } else {
                 model.selectedID = nil
             }
@@ -414,7 +414,6 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         field.placeholderString = "Note"
         let ink = layout.ink
         field.textColor = NSColor(srgbRed: ink.r, green: ink.g, blue: ink.b, alpha: 1)
-        field.font = .systemFont(ofSize: layout.fontSize * viewScale)
         field.delegate = self
         field.target = self
         field.action = #selector(textFieldAction)
@@ -428,6 +427,11 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private func layoutNoteField() {
         guard let field = textField, let layout = editedNote?.noteLayout else {
             return
+        }
+        // The zoom changes when the window resizes, so the font follows it here.
+        let size = layout.fontSize * viewScale
+        if field.font?.pointSize != size {
+            field.font = .systemFont(ofSize: size)
         }
         // A borderless field insets its text 2 pt on each side.
         field.frame = viewRect(layout.textRect).insetBy(dx: -2, dy: 0)
