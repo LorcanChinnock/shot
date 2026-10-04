@@ -267,6 +267,23 @@ enum Clipboard {
         pasteboard.clearContents()
         pasteboard.writeObjects([fileURL as NSURL])
     }
+
+    private static let annotationType = NSPasteboard.PasteboardType(AnnotationClipboard.pasteboardType)
+
+    static func copy(annotation: Annotation) throws {
+        let data = try AnnotationClipboard.data(for: annotation)
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setData(data, forType: annotationType)
+    }
+
+    /// The annotation on the pasteboard, or `nil` if it holds something else.
+    static func annotation() throws -> Annotation? {
+        guard let data = NSPasteboard.general.data(forType: annotationType) else {
+            return nil
+        }
+        return try AnnotationClipboard.annotation(from: data)
+    }
 }
 
 @MainActor

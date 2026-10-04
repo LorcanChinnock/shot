@@ -304,6 +304,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     // MARK: Keyboard
 
+    private static let nudgeDirections: [UInt16: NudgeDirection] = [123: .left, 124: .right, 125: .down, 126: .up]
+
     override func keyDown(with event: NSEvent) {
         if event.keyCode == 51 || event.keyCode == 117 {
             model.deleteSelection()
@@ -314,6 +316,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             return
         }
         let modifiers = event.modifierFlags.intersection([.command, .control, .option])
+        if modifiers.isEmpty, model.selectedID != nil, let direction = Self.nudgeDirections[event.keyCode] {
+            model.nudgeSelection(direction, large: event.modifierFlags.contains(.shift), repeated: event.isARepeat)
+            return
+        }
         if modifiers.isEmpty, let character = event.charactersIgnoringModifiers?.lowercased().first, let tool = EditorTool.allCases.first(where: { $0.key == character }) {
             model.tool = tool
             return
