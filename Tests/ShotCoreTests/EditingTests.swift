@@ -1,0 +1,234 @@
+import CoreGraphics
+import Foundation
+import Testing
+@testable import ShotCore
+
+private let red = RGBA.presets[0]
+private let box = CGRect(x: 100, y: 100, width: 200, height: 100)
+
+private func annotation(_ kind: Annotation.Kind, lineWidth: CGFloat = 4) -> Annotation {
+    Annotation(kind: kind, color: red, lineWidth: lineWidth)
+}
+
+private let boxKinds: [Annotation.Kind] = [.rect(box), .ellipse(box), .highlight(box), .pixelate(box)]
+
+/// The rect a box kind holds.
+private func rect(_ annotation: Annotation) -> CGRect? {
+    switch annotation.kind {
+    case let .rect(rect), let .ellipse(rect), let .highlight(rect), let .pixelate(rect):
+        return rect
+    default:
+        return nil
+    }
+}
+
+// MARK: Handles
+
+@Test func linesAndArrowsHaveAHandleAtEachEnd() {
+    for kind in [Annotation.Kind.line(from: CGPoint(x: 10, y: 20), to: CGPoint(x: 110, y: 70)), .arrow(from: CGPoint(x: 10, y: 20), to: CGPoint(x: 110, y: 70))] {
+        let a = annotation(kind)
+        #expect(a.handles.map { $0.handle } == [.start, .end])
+        #expect(a.handles.map { $0.point } == [CGPoint(x: 10, y: 20), CGPoint(x: 110, y: 70)])
+    }
+}
+
+@Test(arguments: boxKinds)
+func boxesHaveHandlesOnTheirCornersAndEdges(kind: Annotation.Kind) {
+    let a = annotation(kind)
+    let points = Dictionary(uniqueKeysWithValues: a.handles.map { ($0.handle, $0.point) })
+    #expect(points.count == 8)
+    #expect(points[.topLeft] == CGPoint(x: 100, y: 100))
+    #expect(points[.top] == CGPoint(x: 200, y: 100))
+    #expect(points[.topRight] == CGPoint(x: 300, y: 100))
+    #expect(points[.right] == CGPoint(x: 300, y: 150))
+    #expect(points[.bottomRight] == CGPoint(x: 300, y: 200))
+    #expect(points[.bottom] == CGPoint(x: 200, y: 200))
+    #expect(points[.bottomLeft] == CGPoint(x: 100, y: 200))
+    #expect(points[.left] == CGPoint(x: 100, y: 150))
+}
+
+@Test func notesHaveHandlesOnTheirFrame() {
+    let n = annotation(.note("Hello", rect: box))
+    #expect(n.handles.count == 8)
+    #expect(n.handles.first { $0.handle == .bottom }?.point == CGPoint(x: n.bounds.midX, y: n.bounds.maxY))
+}
+
+@Test func textAndCountersHaveNoHandles() {
+    #expect(annotation(.text("Hi", origin: .zero, fontSize: 20)).handles.isEmpty)
+    #expect(annotation(.counter(1, center: CGPoint(x: 50, y: 50))).handles.isEmpty)
+    #expect(annotation(.counter(1, center: CGPoint(x: 50, y: 50))).handle(at: CGPoint(x: 50, y: 50), tolerance: 100) == nil)
+}
+
+// MARK: Hit-testing handles
+
+@Test func handleHitTestFindsCornersEdgesAndEnds() {
+    let r = annotation(.rect(box))
+    #expect(r.handle(at: CGPoint(x: 103, y: 97), tolerance: 4) == .topLeft)
+    #expect(r.handle(at: CGPoint(x: 201, y: 203), tolerance: 4) == .bottom)
+    #expect(r.handle(at: CGPoint(x: 296, y: 150), tolerance: 4) == .right)
+    #expect(r.handle(at: CGPoint(x: 200, y: 150), tolerance: 4) == nil)
+    #expect(r.handle(at: CGPoint(x: 150, y: 100), tolerance: 4) == nil)
+    #expect(r.handle(at: CGPoint(x: 106, y: 100), tolerance: 4) == nil)
+
+    let line = annotation(.line(from: CGPoint(x: 0, y: 0), to: CGPoint(x: 100, y: 0)))
+    #expect(line.handle(at: CGPoint(x: 2, y: -2), tolerance: 4) == .start)
+    #expect(line.handle(at: CGPoint(x: 99, y: 3), tolerance: 4) == .end)
+    #expect(line.handle(at: CGPoint(x: 50, y: 0), tolerance: 4) == nil)
+}
+
+@Test func overlappingHandlesPickTheNearest() {
+    let tiny = annotation(.rect(CGRect(x: 100, y: 100, width: 6, height: 6)))
+    #expect(tiny.handle(at: CGPoint(x: 106, y: 106), tolerance: 8) == .bottomRight)
+    #expect(tiny.handle(at: CGPoint(x: 103, y: 99), tolerance: 8) == .top)
+    let short = annotation(.arrow(from: CGPoint(x: 0, y: 0), to: CGPoint(x: 4, y: 0)))
+    #expect(short.handle(at: CGPoint(x: 3, y: 0), tolerance: 8) == .end)
+}
+
+// MARK: Resizing
+
+@Test func draggingAnEndMovesOnlyThatEnd() {
+    var line = annotation(.line(from: CGPoint(x: 0, y: 0), to: CGPoint(x: 100, y: 0)))
+    line.resize(.end, to: CGPoint(x: 80, y: 60))
+    #expect(line.kind == .line(from: CGPoint(x: 0, y: 0), to: CGPoint(x: 80, y: 60)))
+    var arrow = annotation(.arrow(from: CGPoint(x: 0, y: 0), to: CGPoint(x: 100, y: 0)))
+    arrow.resize(.start, to: CGPoint(x: -20, y: 30))
+    #expect(arrow.kind == .arrow(from: CGPoint(x: -20, y: 30), to: CGPoint(x: 100, y: 0)))
+    // A box handle means nothing to a line.
+    arrow.resize(.topLeft, to: CGPoint(x: 500, y: 500))
+    #expect(arrow.kind == .arrow(from: CGPoint(x: -20, y: 30), to: CGPoint(x: 100, y: 0)))
+}
+
+@Test(arguments: boxKinds)
+func draggingACornerKeepsTheOppositeCorner(kind: Annotation.Kind) {
+    var a = annotation(kind)
+    a.resize(.bottomRight, to: CGPoint(x: 350, y: 260))
+    #expect(rect(a) == CGRect(x: 100, y: 100, width: 250, height: 160))
+    var b = annotation(kind)
+    b.resize(.topLeft, to: CGPoint(x: 50, y: 80))
+    #expect(rect(b) == CGRect(x: 50, y: 80, width: 250, height: 120))
+}
+
+@Test(arguments: boxKinds)
+func draggingAnEdgeChangesOneSide(kind: Annotation.Kind) {
+    var a = annotation(kind)
+    a.resize(.right, to: CGPoint(x: 400, y: 999))
+    #expect(rect(a) == CGRect(x: 100, y: 100, width: 300, height: 100))
+    var b = annotation(kind)
+    b.resize(.top, to: CGPoint(x: -999, y: 40))
+    #expect(rect(b) == CGRect(x: 100, y: 40, width: 200, height: 160))
+    var c = annotation(kind)
+    c.resize(.left, to: CGPoint(x: 150, y: 0))
+    #expect(rect(c) == CGRect(x: 150, y: 100, width: 150, height: 100))
+    var d = annotation(kind)
+    d.resize(.bottom, to: CGPoint(x: 0, y: 120))
+    #expect(rect(d) == CGRect(x: 100, y: 100, width: 200, height: 20))
+}
+
+@Test func draggingPastTheOppositeSideFlipsTheBox() {
+    var a = annotation(.rect(box))
+    a.resize(.right, to: CGPoint(x: 40, y: 0))
+    #expect(rect(a) == CGRect(x: 40, y: 100, width: 60, height: 100))
+    var b = annotation(.ellipse(box))
+    b.resize(.topLeft, to: CGPoint(x: 320, y: 230))
+    #expect(rect(b) == CGRect(x: 300, y: 200, width: 20, height: 30))
+    // Lines and text keep their kind when resized.
+    var line = annotation(.line(from: .zero, to: CGPoint(x: 10, y: 10)))
+    line.resize(.right, to: CGPoint(x: 99, y: 99))
+    #expect(line.kind == .line(from: .zero, to: CGPoint(x: 10, y: 10)))
+}
+
+@Test func draggingANoteEdgeChangesOnlyThatSide() throws {
+    let text = "Sticky notes wrap their text to the width of the note, so a long comment stays readable."
+    var wide = annotation(.note(text, rect: CGRect(x: 100, y: 100, width: 400, height: 0)))
+    let before = try #require(wide.noteLayout)
+    wide.resize(.right, to: CGPoint(x: 260, y: 999))
+    let after = try #require(wide.noteLayout)
+    #expect(after.frame.minX == 100 && after.frame.minY == 100 && after.frame.width == 160)
+    #expect(after.lines.count > before.lines.count)
+
+    var left = annotation(.note("Hi", rect: box))
+    left.resize(.left, to: CGPoint(x: 60, y: -999))
+    #expect(left.bounds == CGRect(x: 60, y: 100, width: 240, height: 100))
+
+    var tall = annotation(.note("Hi", rect: box))
+    tall.resize(.bottom, to: CGPoint(x: 999, y: 300))
+    #expect(tall.bounds == CGRect(x: 100, y: 100, width: 200, height: 200))
+
+    var top = annotation(.note("Hi", rect: box))
+    top.resize(.top, to: CGPoint(x: 999, y: 60))
+    #expect(top.bounds == CGRect(x: 100, y: 60, width: 200, height: 140))
+    // Pushed past the bottom, the top edge stops where the text still fits.
+    top.resize(.top, to: CGPoint(x: 0, y: 500))
+    let layout = try #require(top.noteLayout)
+    #expect(top.bounds.maxY == 200)
+    #expect(top.bounds.height == layout.lineHeight + layout.padding * 2)
+}
+
+@Test func aResizePastTheImageGrowsTheCanvasAndUndoes() {
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100))
+    var stack = UndoStack<EditorSnapshot>()
+    doc.annotations.append(annotation(.rect(CGRect(x: 20, y: 20, width: 40, height: 40))))
+    let placed = doc.snapshot
+
+    stack.record(doc.snapshot)
+    doc.annotations[0].resize(.bottomRight, to: CGPoint(x: 260, y: 140))
+    doc.grow(toFit: doc.annotations[0], margin: 10)
+    #expect(doc.canvasRect.contains(doc.annotations[0].paintedBounds.insetBy(dx: -10, dy: -10)))
+    #expect(doc.canvasRect.minX == 0 && doc.canvasRect.minY == 0)
+
+    doc.restore(stack.undo(from: doc.snapshot)!)
+    #expect(doc.snapshot == placed)
+}
+
+// MARK: Restyling
+
+@Test func changingTheLineWidthScalesTextAndKeepsOtherGeometry() {
+    var text = annotation(.text("Hi", origin: CGPoint(x: 10, y: 10), fontSize: 24))
+    text.setLineWidth(8)
+    #expect(text.lineWidth == 8)
+    #expect(text.kind == .text("Hi", origin: CGPoint(x: 10, y: 10), fontSize: 48))
+
+    var r = annotation(.rect(box))
+    r.setLineWidth(2)
+    #expect(r.lineWidth == 2 && r.kind == .rect(box))
+
+    let counter = annotation(.counter(1, center: CGPoint(x: 50, y: 50)))
+    var bigger = counter
+    bigger.setLineWidth(8)
+    #expect(bigger.bounds.width > counter.bounds.width)
+}
+
+@Test func aBiggerStyleNearTheEdgeGrowsTheCanvas() {
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100))
+    doc.annotations.append(annotation(.counter(1, center: CGPoint(x: 180, y: 50)), lineWidth: 2))
+    doc.annotations[0].setLineWidth(8)
+    doc.annotations[0].color = RGBA.presets[4]
+    doc.grow(toFit: doc.annotations[0], margin: 10)
+    #expect(doc.canvasRect.maxX >= doc.annotations[0].paintedBounds.maxX + 10)
+}
+
+// MARK: Editing text
+
+@Test func setTextReplacesTextAndKeepsItsPlace() {
+    var text = annotation(.text("Hello", origin: CGPoint(x: 10, y: 20), fontSize: 24))
+    text.setText("Bye")
+    #expect(text.kind == .text("Bye", origin: CGPoint(x: 10, y: 20), fontSize: 24))
+    var counter = annotation(.counter(2, center: .zero))
+    counter.setText("Nope")
+    #expect(counter.kind == .counter(2, center: .zero))
+}
+
+@Test func editedTextUndoes() {
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100))
+    var stack = UndoStack<EditorSnapshot>()
+    doc.annotations.append(annotation(.text("Hello", origin: CGPoint(x: 10, y: 20), fontSize: 24)))
+    let placed = doc.snapshot
+    stack.record(doc.snapshot)
+    doc.annotations[0].setText("Hello, world")
+    stack.record(doc.snapshot)
+    doc.annotations[0].color = RGBA.presets[4]
+    doc.restore(stack.undo(from: doc.snapshot)!)
+    #expect(doc.annotations[0].color == red)
+    doc.restore(stack.undo(from: doc.snapshot)!)
+    #expect(doc.snapshot == placed)
+}

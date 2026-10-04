@@ -148,50 +148,108 @@ public struct Annotation: Identifiable, Equatable, Sendable {
         }
     }
 
-    /// Replaces a note's text; other kinds are left alone.
-    public mutating func setNoteText(_ string: String) {
-        if case let .note(_, rect) = kind {
-            kind = .note(string, rect: rect)
+    /// Replaces the text of a text annotation or note; other kinds are left alone.
+    public mutating func setText(_ string: String) {
+        switch kind {
+        case let .text(_, origin, fontSize): kind = .text(string, origin: origin, fontSize: fontSize)
+        case let .note(_, rect): kind = .note(string, rect: rect)
+        default: break
         }
     }
 
-    /// The note's resize handle within `tolerance` of `point`, if any.
-    public func noteHandle(at point: CGPoint, tolerance: CGFloat) -> NoteHandle? {
-        guard case .note = kind else {
-            return nil
+    /// Sets the stroke width. Text scales its font with it; every other size already derives from it.
+    public mutating func setLineWidth(_ width: CGFloat) {
+        if case let .text(string, origin, fontSize) = kind, lineWidth > 0 {
+            kind = .text(string, origin: origin, fontSize: fontSize * width / lineWidth)
         }
-        let frame = bounds
-        return NoteHandle.allCases.first { handle in
-            let corner = handle.point(in: frame)
-            return abs(point.x - corner.x) <= tolerance && abs(point.y - corner.y) <= tolerance
+        lineWidth = width
+    }
+
+    /// The resize handles and where they sit: a line's two ends, or the corners and edge midpoints of a box.
+    /// Text and counters have none.
+    public var handles: [(handle: AnnotationHandle, point: CGPoint)] {
+        switch kind {
+        case let .arrow(from, to), let .line(from, to):
+            return [(.start, from), (.end, to)]
+        case .rect, .ellipse, .highlight, .pixelate, .note:
+            let frame = bounds
+            return AnnotationHandle.box.map { ($0, $0.point(in: frame)) }
+        case .text, .counter:
+            return []
         }
     }
 
-    /// Drags a note's corner `handle` to `point`. The opposite corner stays put, and the note
-    /// never gets narrower than its minimum or shorter than its text.
-    public mutating func resizeNote(_ handle: NoteHandle, to point: CGPoint) {
-        guard case let .note(string, _) = kind, let layout = noteLayout else {
+    /// The handle nearest `point`, if one is within `tolerance` of it on both axes.
+    public func handle(at point: CGPoint, tolerance: CGFloat) -> AnnotationHandle? {
+        handles
+            .filter { abs(point.x - $0.point.x) <= tolerance && abs(point.y - $0.point.y) <= tolerance }
+            .min { hypot(point.x - $0.point.x, point.y - $0.point.y) < hypot(point.x - $1.point.x, point.y - $1.point.y) }?
+            .handle
+    }
+
+    /// Drags `handle` to `point`. Call it on the annotation as it was when the drag began: a box dragged
+    /// past its opposite side flips, so its handles swap sides. A handle the kind doesn't have changes nothing.
+    public mutating func resize(_ handle: AnnotationHandle, to point: CGPoint) {
+        func box(_ rect: CGRect) -> CGRect {
+            var minX = rect.minX, minY = rect.minY, maxX = rect.maxX, maxY = rect.maxY
+            switch handle.dx {
+            case -1: minX = point.x
+            case 1: maxX = point.x
+            default: break
+            }
+            switch handle.dy {
+            case -1: minY = point.y
+            case 1: maxY = point.y
+            default: break
+            }
+            return Geometry.normalized(from: CGPoint(x: minX, y: minY), to: CGPoint(x: maxX, y: maxY))
+        }
+        switch (kind, handle) {
+        case let (.arrow(_, to), .start): kind = .arrow(from: point, to: to)
+        case let (.arrow(from, _), .end): kind = .arrow(from: from, to: point)
+        case let (.line(_, to), .start): kind = .line(from: point, to: to)
+        case let (.line(from, _), .end): kind = .line(from: from, to: point)
+        case (.arrow, _), (.line, _), (_, .start), (_, .end), (.text, _), (.counter, _): break
+        case let (.rect(rect), _): kind = .rect(box(rect))
+        case let (.ellipse(rect), _): kind = .ellipse(box(rect))
+        case let (.highlight(rect), _): kind = .highlight(box(rect))
+        case let (.pixelate(rect), _): kind = .pixelate(box(rect))
+        case let (.note(string, rect), _): resizeNote(string, rect: rect, handle: handle, to: point)
+        }
+    }
+
+    /// The opposite side stays put, and the note never flips, gets narrower than its minimum or shorter than its text.
+    private mutating func resizeNote(_ string: String, rect: CGRect, handle: AnnotationHandle, to point: CGPoint) {
+        guard let layout = noteLayout else {
             return
         }
         let frame = layout.frame
         let minWidth = NoteLayout.minWidth(fontSize: layout.fontSize)
         let minX: CGFloat, width: CGFloat
-        if handle.isLeft {
+        switch handle.dx {
+        case -1:
             minX = min(point.x, frame.maxX - minWidth)
             width = frame.maxX - minX
-        } else {
+        case 1:
             minX = frame.minX
             width = max(point.x - frame.minX, minWidth)
+        default:
+            minX = frame.minX
+            width = frame.width
         }
-        let rect: CGRect
-        if handle.isTop {
+        let resized: CGRect
+        switch handle.dy {
+        case -1:
             let textHeight = NoteLayout(string: string, rect: CGRect(x: minX, y: 0, width: width, height: 0), fontSize: layout.fontSize, color: color).frame.height
             let minY = min(point.y, frame.maxY - textHeight)
-            rect = CGRect(x: minX, y: minY, width: width, height: frame.maxY - minY)
-        } else {
-            rect = CGRect(x: minX, y: frame.minY, width: width, height: max(0, point.y - frame.minY))
+            resized = CGRect(x: minX, y: minY, width: width, height: frame.maxY - minY)
+        case 1:
+            resized = CGRect(x: minX, y: frame.minY, width: width, height: max(0, point.y - frame.minY))
+        default:
+            // The stored height, not the frame's, so the note still grows and shrinks with its text.
+            resized = CGRect(x: minX, y: rect.minY, width: width, height: rect.height)
         }
-        kind = .note(string, rect: rect)
+        kind = .note(string, rect: resized)
     }
 
     static func distance(from p: CGPoint, toSegment a: CGPoint, _ b: CGPoint) -> CGFloat {
@@ -342,14 +400,36 @@ public struct TextLayout {
     }
 }
 
-public enum NoteHandle: CaseIterable, Sendable {
-    case topLeft, topRight, bottomLeft, bottomRight
+/// A point on a selected annotation that drags to resize it.
+public enum AnnotationHandle: Hashable, Sendable {
+    case topLeft, top, topRight, right, bottomRight, bottom, bottomLeft, left
+    /// A line or arrow's ends.
+    case start, end
 
-    var isLeft: Bool { self == .topLeft || self == .bottomLeft }
-    var isTop: Bool { self == .topLeft || self == .topRight }
+    /// The handles on a box, corners first.
+    public static let box: [AnnotationHandle] = [.topLeft, .topRight, .bottomRight, .bottomLeft, .top, .right, .bottom, .left]
 
+    /// The side of a box the handle moves across: -1 the left, 1 the right, 0 neither.
+    var dx: Int {
+        switch self {
+        case .topLeft, .left, .bottomLeft: -1
+        case .topRight, .right, .bottomRight: 1
+        default: 0
+        }
+    }
+
+    /// The side of a box the handle moves up or down: -1 the top, 1 the bottom, 0 neither.
+    var dy: Int {
+        switch self {
+        case .topLeft, .top, .topRight: -1
+        case .bottomLeft, .bottom, .bottomRight: 1
+        default: 0
+        }
+    }
+
+    /// Where a box handle sits on `rect`.
     public func point(in rect: CGRect) -> CGPoint {
-        CGPoint(x: isLeft ? rect.minX : rect.maxX, y: isTop ? rect.minY : rect.maxY)
+        CGPoint(x: [rect.minX, rect.midX, rect.maxX][dx + 1], y: [rect.minY, rect.midY, rect.maxY][dy + 1])
     }
 }
 
