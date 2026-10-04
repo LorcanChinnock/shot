@@ -44,6 +44,12 @@ enum GlassWindow {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate()
         window.makeKeyAndOrderFront(nil)
+        // Activation is cooperative, so it can be refused (e.g. at launch, or right after the
+        // policy change); raise the window anyway and ask again once the policy has settled.
+        window.orderFrontRegardless()
+        DispatchQueue.main.async {
+            NSApp.activate()
+        }
     }
 
     private static func track(_ window: NSWindow) {
