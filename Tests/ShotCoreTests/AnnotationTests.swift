@@ -54,7 +54,7 @@ private func annotation(_ kind: Annotation.Kind) -> Annotation {
     var doc = EditorDocument(base: solidImage(width: 200, height: 100))
     #expect(doc.exportSize == CGSize(width: 200, height: 100))
     #expect(try #require(AnnotationRenderer.flatten(doc)).width == 200)
-    doc.crop = CGRect(x: 20, y: 10, width: 80, height: 40)
+    doc.crop(to: CGRect(x: 20, y: 10, width: 80, height: 40))
     #expect(doc.exportSize == CGSize(width: 80, height: 40))
     let image = try #require(AnnotationRenderer.flatten(doc))
     #expect(image.width == 80)

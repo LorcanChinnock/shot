@@ -17,6 +17,7 @@ struct EditorRootView: View {
                     BrutalChip(text: "EDITED", color: Brutal.pink)
                 }
                 Spacer()
+                CanvasMenu(model: model)
                 Button("Copy") { model.copy() }
                     .buttonStyle(BrutalButtonStyle(compact: true))
                     .help("Copy image (⌘C)")
@@ -45,7 +46,7 @@ private struct CanvasHost: NSViewRepresentable {
 
 struct EditorToolbar: View {
     /// Matches `RGBA.presets`.
-    private static let colorNames = ["Red", "Orange", "Yellow", "Green", "Blue", "Black"]
+    static let colorNames = ["Red", "Orange", "Yellow", "Green", "Blue", "Black"]
 
     @Bindable var model: EditorModel
 
@@ -109,6 +110,41 @@ struct EditorToolbar: View {
                 .opacity(model.undoStack.canRedo ? 1 : 0.35)
             }
         }
+    }
+}
+
+private struct CanvasMenu: View {
+    private static let white = RGBA(1, 1, 1)
+
+    @Bindable var model: EditorModel
+
+    var body: some View {
+        Menu {
+            Button("Fit to Content") { model.fitToContent() }
+            Button("Trim to Image") { model.trimToImage() }
+                .disabled(!model.document.hasPadding)
+            Divider()
+            Picker("Background", selection: Binding(get: { model.document.background }, set: { model.setBackground($0) })) {
+                // JPEG has no alpha, so it can't keep transparent padding.
+                if !model.isJPEG {
+                    Text("Transparent").tag(RGBA?.none)
+                }
+                Text("White").tag(RGBA?.some(Self.white))
+                ForEach(RGBA.presets.indices, id: \.self) { index in
+                    Text(EditorToolbar.colorNames[index]).tag(RGBA?.some(RGBA.presets[index]))
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Text("Canvas")
+                Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
+            }
+        }
+        .menuStyle(.button)
+        .menuIndicator(.hidden)
+        .buttonStyle(BrutalButtonStyle(compact: true))
+        .fixedSize()
+        .help("Canvas size and background")
     }
 }
 

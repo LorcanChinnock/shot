@@ -30,7 +30,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private func observe() {
         withObservationTracking {
             _ = model.document.annotations
-            _ = model.document.crop
+            _ = model.document.canvasRect
+            _ = model.document.background
             _ = model.selectedID
             _ = model.tool
         } onChange: { [weak self] in
@@ -83,24 +84,47 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     // MARK: Drawing
 
+    /// Marks transparent padding, as image editors do.
+    private static let checkerboard = NSColor(patternImage: NSImage(size: NSSize(width: 16, height: 16), flipped: false) { rect in
+        NSColor.white.setFill()
+        rect.fill()
+        NSColor(white: 0.85, alpha: 1).setFill()
+        NSRect(x: 0, y: 0, width: 8, height: 8).fill()
+        NSRect(x: 8, y: 8, width: 8, height: 8).fill()
+        return true
+    })
+
     override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else {
             return
         }
-        var doc = model.document
-        if let draft {
-            doc.annotations.append(draft)
-        }
+        let doc = model.document
         let rect = imageRect
         let ink = NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1)
         ink.setFill()
         rect.offsetBy(dx: 5, dy: 5).fill()
+        if doc.background == nil, doc.hasPadding {
+            let padding = NSBezierPath(rect: rect)
+            padding.append(NSBezierPath(rect: viewRect(doc.fullRect.intersection(doc.canvasRect))))
+            padding.windingRule = .evenOdd
+            Self.checkerboard.setFill()
+            padding.fill()
+        }
         ctx.saveGState()
         ctx.translateBy(x: rect.minX, y: rect.maxY)
         ctx.scaleBy(x: viewScale, y: -viewScale)
         ctx.interpolationQuality = .high
         AnnotationRenderer.render(doc, into: ctx)
         ctx.restoreGState()
+        // The draft isn't clipped to the canvas, so it shows where the canvas will grow to on release.
+        if let draft {
+            ctx.saveGState()
+            ctx.translateBy(x: rect.minX, y: rect.minY)
+            ctx.scaleBy(x: viewScale, y: viewScale)
+            ctx.translateBy(x: -doc.canvasRect.minX, y: -doc.canvasRect.minY)
+            AnnotationRenderer.draw(draft, base: doc.base, in: ctx)
+            ctx.restoreGState()
+        }
         ink.setStroke()
         let frame = NSBezierPath(rect: rect.insetBy(dx: -1.25, dy: -1.25))
         frame.lineWidth = 2.5
@@ -145,9 +169,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
                 model.selectedID = nil
             }
         case .counter:
-            model.recordUndo()
-            let counter = Annotation(kind: .counter(model.document.annotations.nextCounterNumber, center: point), color: model.color, lineWidth: model.lineWidth)
-            model.document.annotations.append(counter)
+            model.add(Annotation(kind: .counter(model.document.annotations.nextCounterNumber, center: point), color: model.color, lineWidth: model.lineWidth))
         case .text:
             beginText(at: point)
         default:
@@ -206,11 +228,14 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
         if let cropDraft, cropDraft.width >= 4, cropDraft.height >= 4 {
             model.recordUndo()
-            model.document.crop = cropDraft.integral.intersection(model.document.fullRect)
+            model.document.crop(to: cropDraft)
         }
         if let draft, draft.bounds.width + draft.bounds.height >= 4 {
-            model.recordUndo()
-            model.document.annotations.append(draft)
+            model.add(draft)
+        }
+        // The move recorded its undo step when it began, so growing joins that step.
+        if model.tool == .select, movedSinceMouseDown, let id = model.selectedID, let moved = model.document.annotations.first(where: { $0.id == id }) {
+            model.document.grow(toFit: moved, margin: model.canvasMargin)
         }
     }
 
@@ -286,8 +311,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard !string.trimmingCharacters(in: .whitespaces).isEmpty else {
             return
         }
-        model.recordUndo()
-        model.document.annotations.append(Annotation(kind: .text(string, origin: origin, fontSize: model.fontSize), color: model.color, lineWidth: model.lineWidth))
+        model.add(Annotation(kind: .text(string, origin: origin, fontSize: model.fontSize), color: model.color, lineWidth: model.lineWidth))
     }
 
     private func removeTextField() {

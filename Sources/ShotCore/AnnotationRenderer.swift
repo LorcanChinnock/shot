@@ -14,6 +14,10 @@ public enum AnnotationRenderer {
         ctx.scaleBy(x: 1, y: -1)
         ctx.translateBy(x: -canvas.minX, y: -canvas.minY)
         ctx.clip(to: canvas)
+        if let background = doc.background {
+            ctx.setFillColor(background.cgColor)
+            ctx.fill(canvas)
+        }
         drawUpright(doc.base, in: doc.fullRect, ctx: ctx)
         for annotation in doc.annotations {
             draw(annotation, base: doc.base, in: ctx)
