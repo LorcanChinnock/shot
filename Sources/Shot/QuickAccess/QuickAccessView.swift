@@ -72,6 +72,7 @@ private struct QuickAccessCardView: View {
                     CornerButton(symbol: "xmark", help: "Close") { controller.remove(card.id) }
                     Spacer()
                     if card.isVideo {
+                        CornerButton(symbol: "scissors", help: "Edit") { controller.annotate(card) }
                         CornerButton(symbol: "photo.stack", help: "Export GIF") { controller.exportGIF(card) }
                     } else {
                         CornerButton(symbol: "pencil", help: "Annotate") { controller.annotate(card) }

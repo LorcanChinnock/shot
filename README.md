@@ -24,6 +24,7 @@
 - **Screen recording:** an area, a screen, or a window to MP4. Adjust the frame, then a 3-second countdown starts the recording. Pause, resume, stop, or discard while recording.
 - **Camera bubble:** a round webcam overlay that is recorded with your screen. Drag it to move it, double-click it to resize it.
 - **GIF export** from any recording's Quick Access card.
+- **Video trim:** drag in and out points on a recording's timeline and save without re-encoding.
 - **Automation:** every action has a global shortcut and a `shot://` URL for launchers, the Shortcuts app, or scripts.
 
 ## Install
@@ -62,7 +63,8 @@ Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a scr
 | `shot://capture-area`, `capture-fullscreen`, `capture-window` | Take a screenshot |
 | `shot://record`, `record-fullscreen`, `record-window` | Set up, confirm, or stop a recording |
 | `shot://pause` | Pause or resume the recording |
-| `shot://annotate?path=<file>` | Open an image in the editor |
+| `shot://annotate?path=<file>` | Open an image in the editor, or a video in the video editor |
+| `shot://edit-video?path=<file>` | Open a video in the video editor to trim it |
 | `shot://settings?section=<name>` | Open Settings at `general`, `capture`, `quickAccess`, `recording`, `shortcuts`, or `about` |
 
 ## Privacy
