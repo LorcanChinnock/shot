@@ -52,6 +52,8 @@ public struct Annotation: Identifiable, Equatable, Sendable {
         case ellipse(CGRect)
         case highlight(CGRect)
         case pixelate(CGRect)
+        /// A Gaussian blur, strong enough that the text under it can't be read back.
+        case blur(CGRect)
         case text(String, origin: CGPoint, fontSize: CGFloat)
         case counter(Int, center: CGPoint)
         /// A sticky note. `rect` sets the wrap width; the note grows taller than it to fit the text.
@@ -80,7 +82,7 @@ public struct Annotation: Identifiable, Equatable, Sendable {
         switch kind {
         case let .arrow(from, to), let .line(from, to):
             return CGRect(x: min(from.x, to.x), y: min(from.y, to.y), width: abs(to.x - from.x), height: abs(to.y - from.y))
-        case let .rect(rect), let .ellipse(rect), let .highlight(rect), let .pixelate(rect):
+        case let .rect(rect), let .ellipse(rect), let .highlight(rect), let .pixelate(rect), let .blur(rect):
             return rect
         case let .text(string, origin, fontSize):
             return CGRect(origin: origin, size: TextLayout(string: string, fontSize: fontSize, color: color).size)
@@ -100,7 +102,7 @@ public struct Annotation: Identifiable, Equatable, Sendable {
             return bounds.insetBy(dx: -outset, dy: -outset)
         case .line, .rect, .ellipse:
             return bounds.insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2)
-        case .highlight, .pixelate, .text, .counter:
+        case .highlight, .pixelate, .blur, .text, .counter:
             return bounds
         case .note:
             guard let layout = noteLayout else {
@@ -126,7 +128,7 @@ public struct Annotation: Identifiable, Equatable, Sendable {
             let dy = (point.y - rect.midY) / (rect.height / 2)
             let normalized = sqrt(dx * dx + dy * dy)
             return abs(normalized - 1) * min(rect.width, rect.height) / 2 <= slop
-        case .highlight, .pixelate, .text, .note:
+        case .highlight, .pixelate, .blur, .text, .note:
             return bounds.insetBy(dx: -tolerance, dy: -tolerance).contains(point)
         case let .counter(_, center):
             return hypot(point.x - center.x, point.y - center.y) <= counterRadius + tolerance
@@ -142,6 +144,7 @@ public struct Annotation: Identifiable, Equatable, Sendable {
         case let .ellipse(rect): kind = .ellipse(rect.offsetBy(dx: delta.dx, dy: delta.dy))
         case let .highlight(rect): kind = .highlight(rect.offsetBy(dx: delta.dx, dy: delta.dy))
         case let .pixelate(rect): kind = .pixelate(rect.offsetBy(dx: delta.dx, dy: delta.dy))
+        case let .blur(rect): kind = .blur(rect.offsetBy(dx: delta.dx, dy: delta.dy))
         case let .text(string, origin, size): kind = .text(string, origin: move(origin), fontSize: size)
         case let .counter(number, center): kind = .counter(number, center: move(center))
         case let .note(string, rect): kind = .note(string, rect: rect.offsetBy(dx: delta.dx, dy: delta.dy))
@@ -171,7 +174,7 @@ public struct Annotation: Identifiable, Equatable, Sendable {
         switch kind {
         case let .arrow(from, to), let .line(from, to):
             return [(.start, from), (.end, to)]
-        case .rect, .ellipse, .highlight, .pixelate, .note:
+        case .rect, .ellipse, .highlight, .pixelate, .blur, .note:
             let frame = bounds
             return AnnotationHandle.box.map { ($0, $0.point(in: frame)) }
         case .text, .counter:
@@ -217,6 +220,7 @@ public struct Annotation: Identifiable, Equatable, Sendable {
         case let (.ellipse(rect), _): kind = .ellipse(box(rect))
         case let (.highlight(rect), _): kind = .highlight(box(rect))
         case let (.pixelate(rect), _): kind = .pixelate(box(rect))
+        case let (.blur(rect), _): kind = .blur(box(rect))
         case let (.note(string, rect), _): resizeNote(string, rect: rect, handle: handle, to: point)
         }
     }

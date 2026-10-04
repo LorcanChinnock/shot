@@ -265,6 +265,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             kind = .highlight(rect)
         case .pixelate:
             kind = .pixelate(rect)
+        case .blur:
+            kind = .blur(rect)
         case .note:
             draft = newNote(id: draft?.id ?? UUID(), from: start, to: point)
             needsDisplay = true

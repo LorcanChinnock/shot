@@ -3,7 +3,7 @@ import Observation
 import ShotCore
 
 enum EditorTool: String, CaseIterable, Identifiable {
-    case select, arrow, line, rect, ellipse, text, note, highlight, pixelate, counter, crop
+    case select, arrow, line, rect, ellipse, text, note, highlight, pixelate, blur, counter, crop
 
     var id: String { rawValue }
 
@@ -18,6 +18,7 @@ enum EditorTool: String, CaseIterable, Identifiable {
         case .note: "s"
         case .highlight: "h"
         case .pixelate: "p"
+        case .blur: "b"
         case .counter: "n"
         case .crop: "c"
         }
@@ -34,6 +35,7 @@ enum EditorTool: String, CaseIterable, Identifiable {
         case .note: "note.text"
         case .highlight: "highlighter"
         case .pixelate: "square.grid.3x3"
+        case .blur: "drop.halffull"
         case .counter: "1.circle"
         case .crop: "crop"
         }
@@ -64,6 +66,8 @@ final class EditorModel {
     var widthIndex = 1
     var selectedID: UUID?
     var isDirty = false
+    /// True while auto-redact looks for text to hide.
+    var isRedacting = false
     private(set) var undoStack = UndoStack<EditorSnapshot>()
 
     init(fileURL: URL, image: CGImage, scale: CGFloat) {
@@ -204,6 +208,35 @@ final class EditorModel {
         }
         undoStack.record(before)
         isDirty = true
+    }
+
+    /// Covers the emails, phone numbers, card numbers and IP addresses in the image, as one undoable step.
+    /// It switches to the select tool so each region can be checked and deleted before saving.
+    func autoRedact(_ style: RedactionStyle) {
+        guard !isRedacting else {
+            return
+        }
+        isRedacting = true
+        let doc = document
+        Task {
+            defer { isRedacting = false }
+            let regions: [CGRect]
+            do {
+                regions = try await Redaction.regions(in: doc.base)
+            } catch {
+                Toast.show("Could not read the image: \(error.localizedDescription)")
+                return
+            }
+            // The document may have changed while the text was read, so check against it as it is now.
+            let added = document.redactions(covering: regions, style: style, color: color, lineWidth: lineWidth)
+            guard !added.isEmpty else {
+                Toast.show(regions.isEmpty ? "Found nothing to redact" : "Nothing new to redact")
+                return
+            }
+            edit { $0.annotations += added }
+            tool = .select
+            Toast.show(added.count == 1 ? "Redacted 1 item" : "Redacted \(added.count) items")
+        }
     }
 
     func deleteSelection() {
