@@ -6,6 +6,12 @@ import ShotCore
 
 private let log = Logger.shot("video-editor")
 
+/// What one undo step restores.
+struct VideoEdit: Equatable {
+    var range: TrimRange
+    var options: VideoExportOptions
+}
+
 @MainActor
 @Observable
 final class VideoEditorModel {
@@ -18,7 +24,11 @@ final class VideoEditorModel {
     private(set) var isPlaying = false
     private(set) var isExporting = false
     private(set) var thumbnails: [CGImage?] = []
-    private(set) var undoStack = UndoStack<TrimRange>()
+    /// Applies to Export only; Copy and Save keep the original format, speed and sound.
+    private(set) var options = Preferences().videoExportOptions
+    /// Bytes Export would write, or nil until it's worked out.
+    private(set) var estimatedSize: Int?
+    private(set) var undoStack = UndoStack<VideoEdit>()
 
     @ObservationIgnored private var dragOrigin: TrimRange?
     @ObservationIgnored private var timeObserver: Any?
@@ -40,6 +50,8 @@ final class VideoEditorModel {
     }
 
     var isDirty: Bool { !range.isFull(duration: duration) }
+
+    var edit: VideoEdit { VideoEdit(range: range, options: options) }
 
     /// Loads (or reloads, after a save) the file; false when it has no video to show.
     func load() async -> Bool {
@@ -90,24 +102,41 @@ final class VideoEditorModel {
 
     func endDrag() {
         if let dragOrigin, dragOrigin != range {
-            undoStack.record(dragOrigin)
+            undoStack.record(VideoEdit(range: dragOrigin, options: options))
         }
         dragOrigin = nil
         applyRange()
     }
 
+    func setOptions(_ new: VideoExportOptions) {
+        guard new != options else {
+            return
+        }
+        undoStack.record(edit)
+        options = new
+        Preferences.remember(options)
+    }
+
+    /// Undo and redo wait for an export, since Save reloads the file and would drop the change.
     func undo() {
-        if let previous = undoStack.undo(from: range) {
-            range = previous
-            applyRange()
+        if !isExporting, let previous = undoStack.undo(from: edit) {
+            restore(previous)
         }
     }
 
     func redo() {
-        if let next = undoStack.redo(from: range) {
-            range = next
-            applyRange()
+        if !isExporting, let next = undoStack.redo(from: edit) {
+            restore(next)
         }
+    }
+
+    private func restore(_ edit: VideoEdit) {
+        range = edit.range
+        if options != edit.options {
+            options = edit.options
+            Preferences.remember(options)
+        }
+        applyRange()
     }
 
     /// Playback stops at the out point.
@@ -205,7 +234,78 @@ final class VideoEditorModel {
         return true
     }
 
+    /// Writes a new file next to the original with the trim and export options, and copies it.
+    func export() async {
+        // Checked before picking a name, so two exports can't pick the same one.
+        guard !isExporting else {
+            return
+        }
+        let options = options, range = range, source = fileURL
+        let output = FileNaming.uniqueURL(in: source.deletingLastPathComponent(), date: Date(), pathExtension: options.format.fileExtension, prefix: Preferences().filePrefix)
+        var note = ""
+        let exported = await exporting {
+            switch options.format {
+            case .mp4:
+                let passthrough = try await VideoTrimmer.trim(source, range: range, speed: options.speed, muted: options.muted, to: output, as: .mp4)
+                log.notice("Exported MP4 at \(options.speed, privacy: .public)×, muted \(options.muted, privacy: .public), passthrough \(passthrough, privacy: .public)")
+            case .gif:
+                let result = try await GIFExporter.export(
+                    videoURL: source, to: output, range: range, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed
+                ) { fraction in
+                    Task { @MainActor in
+                        Toast.show("Exporting… \(Int(fraction * 100))%", duration: nil)
+                    }
+                }
+                note = result.truncated ? " (first \(Int(GIFExporter.maxDuration)) s only)" : ""
+                log.notice("Exported GIF: \(result.frameCount, privacy: .public) frames at \(options.gifFrameRate, privacy: .public) fps, width \(options.gifWidth, privacy: .public), \(options.speed, privacy: .public)×")
+            }
+        }
+        guard exported else {
+            try? FileManager.default.removeItem(at: output)
+            return
+        }
+        Clipboard.copy(fileURL: output)
+        Toast.show("Exported and copied \(output.lastPathComponent)\(note)", duration: .seconds(3))
+    }
+
+    /// Works out `estimatedSize` for the current trim and options; call again when either changes.
+    func refreshEstimate() async {
+        let options = options, range = range, source = fileURL
+        // Wait for a drag or a run of clicks to settle before reading frames.
+        try? await Task.sleep(for: .milliseconds(250))
+        guard !Task.isCancelled else {
+            return
+        }
+        do {
+            let size = switch options.format {
+            case .mp4:
+                try await VideoTrimmer.estimatedSize(of: source, range: range, speed: options.speed, muted: options.muted)
+            case .gif:
+                try await GIFExporter.estimatedSize(of: source, range: range, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed)
+            }
+            if !Task.isCancelled {
+                estimatedSize = size
+            }
+        } catch is CancellationError {
+            return
+        } catch {
+            log.error("Size estimate failed: \(error.localizedDescription, privacy: .public)")
+            estimatedSize = nil
+        }
+    }
+
     private func export(to output: URL, creating folder: URL?) async -> Bool {
+        await exporting {
+            if let folder {
+                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            }
+            let passthrough = try await VideoTrimmer.trim(fileURL, range: range, to: output)
+            log.notice("Trimmed \(self.range.start, privacy: .public)–\(self.range.end, privacy: .public) s, passthrough \(passthrough, privacy: .public)")
+        }
+    }
+
+    /// Runs `work` with the player paused, one export at a time; false if it couldn't start or failed.
+    private func exporting(_ work: () async throws -> Void) async -> Bool {
         guard !isExporting else {
             return false
         }
@@ -214,14 +314,10 @@ final class VideoEditorModel {
         player.pause()
         Toast.show("Exporting…", duration: nil)
         do {
-            if let folder {
-                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            }
-            let passthrough = try await VideoTrimmer.trim(fileURL, range: range, to: output)
-            log.notice("Trimmed \(self.range.start, privacy: .public)–\(self.range.end, privacy: .public) s, passthrough \(passthrough, privacy: .public)")
+            try await work()
             return true
         } catch {
-            log.error("Trim failed: \(error.localizedDescription, privacy: .public)")
+            log.error("Export failed: \(error.localizedDescription, privacy: .public)")
             Toast.show("Export failed: \(error.localizedDescription)", duration: .seconds(3))
             return false
         }

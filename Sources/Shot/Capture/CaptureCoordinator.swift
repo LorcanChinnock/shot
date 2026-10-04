@@ -167,12 +167,15 @@ final class CaptureCoordinator {
         }
     }
 
+    /// Uses the video editor's last GIF settings.
     func exportGIF(_ videoURL: URL) {
-        let gifURL = FileNaming.uniqueURL(in: videoURL.deletingLastPathComponent(), date: Date(), pathExtension: "gif", prefix: Preferences().filePrefix)
+        let prefs = Preferences()
+        let options = prefs.videoExportOptions
+        let gifURL = FileNaming.uniqueURL(in: videoURL.deletingLastPathComponent(), date: Date(), pathExtension: "gif", prefix: prefs.filePrefix)
         Toast.show("Exporting GIF…", duration: nil)
         Task {
             do {
-                let result = try await GIFExporter.export(videoURL: videoURL, to: gifURL) { fraction in
+                let result = try await GIFExporter.export(videoURL: videoURL, to: gifURL, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth) { fraction in
                     Task { @MainActor in
                         Toast.show("Exporting GIF… \(Int(fraction * 100))%", duration: nil)
                     }
