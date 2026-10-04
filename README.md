@@ -20,7 +20,7 @@
 
 - **Screenshots:** area capture on a frozen screen with a magnifier, fullscreen, and window (with shadow).
 - **Quick Access:** a floating card after each capture. Copy, save, annotate, show in Finder, or drag it into another app.
-- **Annotation editor:** arrow, line, rectangle, ellipse, text, highlight, pixelate, numbered counters, and crop, with undo.
+- **Annotation editor:** arrow, line, rectangle, ellipse, text, sticky notes, highlight, pixelate, numbered counters, and crop, with undo.
 - **Screen recording:** an area, a screen, or a window to MP4. Adjust the frame, then a 3-second countdown starts the recording. Pause, resume, stop, or discard while recording.
 - **Camera bubble:** a round webcam overlay that is recorded with your screen. Drag it to move it, double-click it to resize it.
 - **GIF export** from any recording's Quick Access card.

@@ -18,6 +18,24 @@ public struct RGBA: Equatable, Hashable, Sendable {
         RGBA(1, 0.23, 0.19), RGBA(1, 0.58, 0), RGBA(1, 0.8, 0),
         RGBA(0.2, 0.78, 0.35), RGBA(0, 0.48, 1), RGBA(0, 0, 0),
     ]
+
+    /// A sticky note's paper: the colour mixed most of the way to white.
+    public var noteFill: RGBA {
+        RGBA(r + (1 - r) * 0.6, g + (1 - g) * 0.6, b + (1 - b) * 0.6, a)
+    }
+
+    /// WCAG relative luminance of the sRGB colour.
+    public var relativeLuminance: CGFloat {
+        func linear(_ c: CGFloat) -> CGFloat { c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4) }
+        return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+    }
+
+    /// Near-black or white, whichever reads better on this colour.
+    public var contrastingInk: RGBA {
+        let ink = RGBA(0.07, 0.07, 0.10), white = RGBA(1, 1, 1)
+        let l = relativeLuminance
+        return (l + 0.05) / (ink.relativeLuminance + 0.05) >= (white.relativeLuminance + 0.05) / (l + 0.05) ? ink : white
+    }
 }
 
 /// All geometry is in image pixels with a top-left origin.
@@ -36,6 +54,8 @@ public struct Annotation: Identifiable, Equatable, Sendable {
         case pixelate(CGRect)
         case text(String, origin: CGPoint, fontSize: CGFloat)
         case counter(Int, center: CGPoint)
+        /// A sticky note. `rect` sets the wrap width; the note grows taller than it to fit the text.
+        case note(String, rect: CGRect)
     }
 
     public init(id: UUID = UUID(), kind: Kind, color: RGBA, lineWidth: CGFloat) {
@@ -46,6 +66,15 @@ public struct Annotation: Identifiable, Equatable, Sendable {
     }
 
     public var counterRadius: CGFloat { lineWidth * 3 + 10 }
+    public var noteFontSize: CGFloat { lineWidth * 3 + 8 }
+
+    /// The laid-out note, or `nil` if this isn't one.
+    public var noteLayout: NoteLayout? {
+        guard case let .note(string, rect) = kind else {
+            return nil
+        }
+        return NoteLayout(string: string, rect: rect, fontSize: noteFontSize, color: color)
+    }
 
     public var bounds: CGRect {
         switch kind {
@@ -57,6 +86,8 @@ public struct Annotation: Identifiable, Equatable, Sendable {
             return CGRect(origin: origin, size: TextLayout(string: string, fontSize: fontSize, color: color).size)
         case let .counter(_, center):
             return CGRect(x: center.x - counterRadius, y: center.y - counterRadius, width: counterRadius * 2, height: counterRadius * 2)
+        case .note:
+            return noteLayout?.frame ?? .null
         }
     }
 
@@ -71,6 +102,12 @@ public struct Annotation: Identifiable, Equatable, Sendable {
             return bounds.insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2)
         case .highlight, .pixelate, .text, .counter:
             return bounds
+        case .note:
+            guard let layout = noteLayout else {
+                return bounds
+            }
+            let shadow = layout.frame.offsetBy(dx: 0, dy: layout.shadowOffset).insetBy(dx: -layout.shadowBlur, dy: -layout.shadowBlur)
+            return layout.frame.union(shadow)
         }
     }
 
@@ -89,7 +126,7 @@ public struct Annotation: Identifiable, Equatable, Sendable {
             let dy = (point.y - rect.midY) / (rect.height / 2)
             let normalized = sqrt(dx * dx + dy * dy)
             return abs(normalized - 1) * min(rect.width, rect.height) / 2 <= slop
-        case .highlight, .pixelate, .text:
+        case .highlight, .pixelate, .text, .note:
             return bounds.insetBy(dx: -tolerance, dy: -tolerance).contains(point)
         case let .counter(_, center):
             return hypot(point.x - center.x, point.y - center.y) <= counterRadius + tolerance
@@ -107,7 +144,54 @@ public struct Annotation: Identifiable, Equatable, Sendable {
         case let .pixelate(rect): kind = .pixelate(rect.offsetBy(dx: delta.dx, dy: delta.dy))
         case let .text(string, origin, size): kind = .text(string, origin: move(origin), fontSize: size)
         case let .counter(number, center): kind = .counter(number, center: move(center))
+        case let .note(string, rect): kind = .note(string, rect: rect.offsetBy(dx: delta.dx, dy: delta.dy))
         }
+    }
+
+    /// Replaces a note's text; other kinds are left alone.
+    public mutating func setNoteText(_ string: String) {
+        if case let .note(_, rect) = kind {
+            kind = .note(string, rect: rect)
+        }
+    }
+
+    /// The note's resize handle within `tolerance` of `point`, if any.
+    public func noteHandle(at point: CGPoint, tolerance: CGFloat) -> NoteHandle? {
+        guard case .note = kind else {
+            return nil
+        }
+        let frame = bounds
+        return NoteHandle.allCases.first { handle in
+            let corner = handle.point(in: frame)
+            return abs(point.x - corner.x) <= tolerance && abs(point.y - corner.y) <= tolerance
+        }
+    }
+
+    /// Drags a note's corner `handle` to `point`. The opposite corner stays put, and the note
+    /// never gets narrower than its minimum or shorter than its text.
+    public mutating func resizeNote(_ handle: NoteHandle, to point: CGPoint) {
+        guard case let .note(string, _) = kind, let layout = noteLayout else {
+            return
+        }
+        let frame = layout.frame
+        let minWidth = NoteLayout.minWidth(fontSize: layout.fontSize)
+        let minX: CGFloat, width: CGFloat
+        if handle.isLeft {
+            minX = min(point.x, frame.maxX - minWidth)
+            width = frame.maxX - minX
+        } else {
+            minX = frame.minX
+            width = max(point.x - frame.minX, minWidth)
+        }
+        let rect: CGRect
+        if handle.isTop {
+            let textHeight = NoteLayout(string: string, rect: CGRect(x: minX, y: 0, width: width, height: 0), fontSize: layout.fontSize, color: color).frame.height
+            let minY = min(point.y, frame.maxY - textHeight)
+            rect = CGRect(x: minX, y: minY, width: width, height: frame.maxY - minY)
+        } else {
+            rect = CGRect(x: minX, y: frame.minY, width: width, height: max(0, point.y - frame.minY))
+        }
+        kind = .note(string, rect: rect)
     }
 
     static func distance(from p: CGPoint, toSegment a: CGPoint, _ b: CGPoint) -> CGFloat {
@@ -255,5 +339,89 @@ public struct TextLayout {
         lineHeight = (ascent + CTFontGetDescent(bold) + CTFontGetLeading(bold)).rounded(.up)
         let width = lines.map { CGFloat(CTLineGetTypographicBounds($0, nil, nil, nil)) }.max() ?? 0
         size = CGSize(width: width.rounded(.up), height: lineHeight * CGFloat(lines.count))
+    }
+}
+
+public enum NoteHandle: CaseIterable, Sendable {
+    case topLeft, topRight, bottomLeft, bottomRight
+
+    var isLeft: Bool { self == .topLeft || self == .bottomLeft }
+    var isTop: Bool { self == .topLeft || self == .topRight }
+
+    public func point(in rect: CGRect) -> CGPoint {
+        CGPoint(x: isLeft ? rect.minX : rect.maxX, y: isTop ? rect.minY : rect.maxY)
+    }
+}
+
+/// A sticky note's text wrapped to its width, with the paper around it. Image pixels, top-left origin.
+public struct NoteLayout {
+    public let fontSize: CGFloat
+    public let padding: CGFloat
+    public let cornerRadius: CGFloat
+    public let shadowOffset: CGFloat
+    public let shadowBlur: CGFloat
+    public let fill: RGBA
+    public let ink: RGBA
+    public let lines: [CTLine]
+    public let lineHeight: CGFloat
+    public let ascent: CGFloat
+    /// The paper: the rect's origin and width (at least `minWidth`), and at least tall enough for the text.
+    public let frame: CGRect
+
+    public var textRect: CGRect { frame.insetBy(dx: padding, dy: padding) }
+
+    public static func padding(fontSize: CGFloat) -> CGFloat { fontSize * 0.6 }
+    public static func minWidth(fontSize: CGFloat) -> CGFloat { fontSize * 3 + padding(fontSize: fontSize) * 2 }
+    public static func defaultWidth(fontSize: CGFloat) -> CGFloat { fontSize * 10 }
+
+    /// The note rect for a press at `start` released at `end`: a click places a default-width note, a drag sets its size.
+    public static func placementRect(from start: CGPoint, to end: CGPoint, fontSize: CGFloat) -> CGRect {
+        guard abs(end.x - start.x) >= 4 || abs(end.y - start.y) >= 4 else {
+            return CGRect(origin: start, size: CGSize(width: defaultWidth(fontSize: fontSize), height: 0))
+        }
+        let rect = Geometry.normalized(from: start, to: end)
+        return CGRect(x: rect.minX, y: rect.minY, width: max(rect.width, minWidth(fontSize: fontSize)), height: rect.height)
+    }
+
+    public init(string: String, rect: CGRect, fontSize: CGFloat, color: RGBA) {
+        self.fontSize = fontSize
+        padding = Self.padding(fontSize: fontSize)
+        cornerRadius = fontSize * 0.35
+        shadowOffset = fontSize * 0.15
+        shadowBlur = fontSize * 0.5
+        fill = color.noteFill
+        ink = fill.contrastingInk
+
+        let width = max(rect.width, Self.minWidth(fontSize: fontSize))
+        let wrapWidth = Double(width - padding * 2)
+        let font = CTFontCreateUIFontForLanguage(.system, fontSize, nil) ?? CTFontCreateWithName("Helvetica" as CFString, fontSize, nil)
+        let attributes = [kCTFontAttributeName: font, kCTForegroundColorAttributeName: ink.cgColor] as CFDictionary
+        var lines: [CTLine] = []
+        for paragraph in string.components(separatedBy: "\n") {
+            let text = CFAttributedStringCreate(nil, paragraph as CFString, attributes)!
+            let length = CFAttributedStringGetLength(text)
+            guard length > 0 else {
+                lines.append(CTLineCreateWithAttributedString(text))
+                continue
+            }
+            let typesetter = CTTypesetterCreateWithAttributedString(text)
+            var start = 0
+            while start < length {
+                var count = CTTypesetterSuggestLineBreak(typesetter, start, wrapWidth)
+                var line = CTTypesetterCreateLine(typesetter, CFRange(location: start, length: count))
+                // A word wider than the note has no word break to use, so break it between characters.
+                if CTLineGetTypographicBounds(line, nil, nil, nil) - CTLineGetTrailingWhitespaceWidth(line) > wrapWidth {
+                    count = max(1, CTTypesetterSuggestClusterBreak(typesetter, start, wrapWidth))
+                    line = CTTypesetterCreateLine(typesetter, CFRange(location: start, length: count))
+                }
+                lines.append(line)
+                start += max(1, count)
+            }
+        }
+        self.lines = lines
+        ascent = CTFontGetAscent(font)
+        lineHeight = (ascent + CTFontGetDescent(font) + CTFontGetLeading(font)).rounded(.up)
+        let textHeight = lineHeight * CGFloat(lines.count) + padding * 2
+        frame = CGRect(x: rect.minX, y: rect.minY, width: width, height: max(rect.height, textHeight))
     }
 }
