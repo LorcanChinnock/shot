@@ -291,16 +291,13 @@ final class SelectionOverlayView: NSView {
     }
 
     private func drawHint(in ctx: CGContext) {
-        var parts: [String]
+        let parts: [String]
         if controller.windowMode {
             parts = ["Click a window", "Space: area", "Esc: cancel"]
         } else if controller.isLive {
             parts = ["Drag an area", "Space: window", "Enter: full screen", "Esc: cancel"]
         } else {
             parts = ["Drag an area", "Space: window", "Esc: cancel"]
-        }
-        if controller.textMode {
-            parts.insert("Copy text", at: 0)
         }
         let text = parts.joined(separator: "   ·   ")
         let font = NSFont.systemFont(ofSize: 13, weight: .bold)

@@ -30,6 +30,8 @@ public enum PreferenceKey {
     /// setting, so resetting settings keeps it and Shot can still give the keys back.
     public static let disabledSystemScreenshots = "disabledSystemScreenshots"
     public static let tookSystemScreenshots = "tookSystemScreenshots"
+    /// True once Shot has given ⌘⇧6 back to macOS, so it does that only once.
+    public static let gaveBackTextCaptureKey = "gaveBackTextCaptureKey"
 
     public static func hotkey(_ action: ShotAction) -> String { "hotkey.\(action.rawValue)" }
 }
@@ -116,6 +118,11 @@ public struct Preferences {
         }
     }
 
+    /// Deletes the shortcut saved for text capture, which Shot no longer has.
+    public static func removeTextCapture(in store: UserDefaults = .standard) {
+        store.removeObject(forKey: "hotkey.capture-text")
+    }
+
     public static func resetHotkeys(in store: UserDefaults = .standard) {
         for action in ShotAction.allCases {
             store.removeObject(forKey: PreferenceKey.hotkey(action))
@@ -162,6 +169,7 @@ public struct Preferences {
     public var replacesSystemScreenshots: Bool { store.bool(forKey: PreferenceKey.replacesSystemScreenshots) }
     public var disabledSystemScreenshots: Bool { store.bool(forKey: PreferenceKey.disabledSystemScreenshots) }
     public var tookSystemScreenshots: Bool { store.bool(forKey: PreferenceKey.tookSystemScreenshots) }
+    public var gaveBackTextCaptureKey: Bool { store.bool(forKey: PreferenceKey.gaveBackTextCaptureKey) }
 
     public var cameraSize: CameraBubbleSize {
         CameraBubbleSize(rawValue: store.string(forKey: PreferenceKey.cameraSize) ?? "") ?? .medium

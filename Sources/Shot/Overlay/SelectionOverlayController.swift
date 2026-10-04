@@ -26,18 +26,15 @@ final class SelectionOverlayController {
     /// CoreGraphics global space, front to back.
     let windows: [WindowInfo]
     let isLive: Bool
-    /// The selection will be OCR'd rather than saved as an image.
-    let textMode: Bool
     private(set) var hoveredWindow: WindowInfo?
     private var panels: [OverlayPanel] = []
     private var views: [SelectionOverlayView] = []
     private var continuation: CheckedContinuation<OverlaySelection?, Never>?
 
-    private init(windowMode: Bool, windows: [WindowInfo], isLive: Bool, textMode: Bool) {
+    private init(windowMode: Bool, windows: [WindowInfo], isLive: Bool) {
         self.windowMode = windowMode
         self.windows = windows
         self.isLive = isLive
-        self.textMode = textMode
     }
 
     static func onScreenWindows() -> [WindowInfo] {
@@ -45,8 +42,8 @@ final class SelectionOverlayController {
         return WindowInfo.parse(list, excludingPID: ProcessInfo.processInfo.processIdentifier)
     }
 
-    static func select(displays: [OverlayDisplay], windowMode: Bool, windows: [WindowInfo], isLive: Bool = false, textMode: Bool = false) async -> OverlaySelection? {
-        let controller = SelectionOverlayController(windowMode: windowMode, windows: windows, isLive: isLive, textMode: textMode)
+    static func select(displays: [OverlayDisplay], windowMode: Bool, windows: [WindowInfo], isLive: Bool = false) async -> OverlaySelection? {
+        let controller = SelectionOverlayController(windowMode: windowMode, windows: windows, isLive: isLive)
         // The overlay views hold the controller unowned; keep it alive until the user finishes.
         let selection = await withCheckedContinuation { continuation in
             controller.continuation = continuation

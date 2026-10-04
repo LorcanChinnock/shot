@@ -36,8 +36,8 @@ Only `make dist` keeps the update feed in `Info.plist`. Every other build leaves
 
 ```
 Sources/ShotCore/    Pure logic with unit tests: geometry, file naming, image encoding,
-                     annotations and rendering, OCR, GIF export, segment joining,
-                     hotkeys, preferences
+                     annotations and rendering, GIF export, segment joining, hotkeys,
+                     preferences
 Sources/Shot/        The app: capture, selection overlay, Quick Access, editor,
                      recording, settings, and the design system
 Tests/ShotCoreTests/ Swift Testing suite
