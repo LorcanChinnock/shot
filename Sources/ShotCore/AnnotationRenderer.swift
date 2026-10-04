@@ -84,6 +84,10 @@ public enum AnnotationRenderer {
             if let pixelated = pixelate(base, rect: rect) {
                 drawUpright(pixelated, in: rect.integral, ctx: ctx)
             }
+        case let .blur(rect):
+            if let blurred = blur(base, rect: rect) {
+                drawUpright(blurred, in: rect.integral, ctx: ctx)
+            }
         case let .text(string, origin, fontSize):
             let layout = TextLayout(string: string, fontSize: fontSize, color: annotation.color)
             ctx.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
@@ -142,6 +146,31 @@ public enum AnnotationRenderer {
         filter.inputImage = CIImage(cgImage: base).clampedToExtent()
         filter.center = region.origin
         filter.scale = Float(max(8, rect.width / 20))
+        guard let output = filter.outputImage?.cropped(to: region) else {
+            return nil
+        }
+        return ciContext.createCGImage(output, from: region)
+    }
+
+    /// The blur's radius in image pixels: at least 12, so a line of text is gone, and more for bigger regions.
+    static func blurRadius(for rect: CGRect) -> CGFloat {
+        max(12, min(rect.width, rect.height) / 4)
+    }
+
+    static func blur(_ base: CGImage, rect: CGRect) -> CGImage? {
+        let region = CGRect(x: rect.minX, y: CGFloat(base.height) - rect.maxY, width: rect.width, height: rect.height).integral
+        guard region.width >= 1, region.height >= 1 else {
+            return nil
+        }
+        let radius = Float(blurRadius(for: rect))
+        // A blur alone can be partly undone, so average the region into blocks first, which can't, then blur the blocks smooth.
+        let blocks = CIFilter.pixellate()
+        blocks.inputImage = CIImage(cgImage: base).clampedToExtent()
+        blocks.center = region.origin
+        blocks.scale = radius
+        let filter = CIFilter.gaussianBlur()
+        filter.inputImage = blocks.outputImage
+        filter.radius = radius
         guard let output = filter.outputImage?.cropped(to: region) else {
             return nil
         }

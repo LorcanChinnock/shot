@@ -10,12 +10,12 @@ private func annotation(_ kind: Annotation.Kind, lineWidth: CGFloat = 4) -> Anno
     Annotation(kind: kind, color: red, lineWidth: lineWidth)
 }
 
-private let boxKinds: [Annotation.Kind] = [.rect(box), .ellipse(box), .highlight(box), .pixelate(box)]
+private let boxKinds: [Annotation.Kind] = [.rect(box), .ellipse(box), .highlight(box), .pixelate(box), .blur(box)]
 
 /// The rect a box kind holds.
 private func rect(_ annotation: Annotation) -> CGRect? {
     switch annotation.kind {
-    case let .rect(rect), let .ellipse(rect), let .highlight(rect), let .pixelate(rect):
+    case let .rect(rect), let .ellipse(rect), let .highlight(rect), let .pixelate(rect), let .blur(rect):
         return rect
     default:
         return nil

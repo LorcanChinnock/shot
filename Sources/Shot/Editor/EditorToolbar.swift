@@ -17,6 +17,7 @@ struct EditorRootView: View {
                     BrutalChip(text: "EDITED", color: Brutal.pink)
                 }
                 Spacer()
+                RedactMenu(model: model)
                 CanvasMenu(model: model)
                 Button("Copy") { model.copy() }
                     .buttonStyle(BrutalButtonStyle(compact: true))
@@ -110,6 +111,29 @@ struct EditorToolbar: View {
                 .opacity(model.undoStack.canRedo ? 1 : 0.35)
             }
         }
+    }
+}
+
+/// Auto-redact: finds sensitive text and covers each piece with a blur or pixelate region.
+private struct RedactMenu: View {
+    @Bindable var model: EditorModel
+
+    var body: some View {
+        Menu {
+            Button("Blur Sensitive Text") { model.autoRedact(.blur) }
+            Button("Pixelate Sensitive Text") { model.autoRedact(.pixelate) }
+        } label: {
+            HStack(spacing: 6) {
+                Text(model.isRedacting ? "Redacting…" : "Redact")
+                Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
+            }
+        }
+        .menuStyle(.button)
+        .menuIndicator(.hidden)
+        .buttonStyle(BrutalButtonStyle(compact: true))
+        .fixedSize()
+        .disabled(model.isRedacting)
+        .help("Hide emails, phone numbers, card numbers and IP addresses")
     }
 }
 
