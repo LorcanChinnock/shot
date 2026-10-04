@@ -112,160 +112,162 @@ private func temporaryFolder() throws -> URL {
     return folder
 }
 
-@Test func gifExportUsesTheRangeFrameRateWidthAndSpeed() async throws {
-    let folder = try temporaryFolder()
-    defer { try? FileManager.default.removeItem(at: folder) }
-    let video = folder.appendingPathComponent("in.mp4")
-    let gif = folder.appendingPathComponent("out.gif")
-    try await writeSyntheticVideo(to: video, seconds: 4, fps: 30, width: 640, height: 360)
+extension MediaTests {
+    @Test func gifExportUsesTheRangeFrameRateWidthAndSpeed() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let video = folder.appendingPathComponent("in.mp4")
+        let gif = folder.appendingPathComponent("out.gif")
+        try await writeSyntheticVideo(to: video, seconds: 4, fps: 30, width: 640, height: 360)
 
-    let result = try await GIFExporter.export(videoURL: video, to: gif, range: TrimRange(start: 1, end: 3, duration: 4), fps: 10, maxWidth: 480, speed: 2)
+        let result = try await GIFExporter.export(videoURL: video, to: gif, range: TrimRange(start: 1, end: 3, duration: 4), fps: 10, maxWidth: 480, speed: 2)
 
-    let source = try #require(CGImageSourceCreateWithURL(gif as CFURL, nil))
-    #expect(CGImageSourceGetCount(source) == 10)
-    #expect(result.frameCount == 10)
-    #expect(!result.truncated)
-    let first = try #require(CGImageSourceCreateImageAtIndex(source, 0, nil))
-    #expect(first.width == 480)
-    #expect(first.height == 270)
-    let properties = try #require(CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any])
-    let gifProperties = try #require(properties[kCGImagePropertyGIFDictionary] as? [CFString: Any])
-    #expect(abs((gifProperties[kCGImagePropertyGIFDelayTime] as? Double ?? 0) - 0.1) < 0.005)
-    // Each source frame has its own gray level, so the frames show which source times were used:
-    // output frame i comes from 1 s + i × 0.2 s.
-    let generator = AVAssetImageGenerator(asset: AVURLAsset(url: video))
-    generator.requestedTimeToleranceBefore = .zero
-    generator.requestedTimeToleranceAfter = .zero
-    let third = try #require(CGImageSourceCreateImageAtIndex(source, 2, nil))
-    let levels = try [grayLevel(of: first), grayLevel(of: third)]
-    let expected = try await [
-        grayLevel(of: generator.image(at: CMTime(seconds: 1, preferredTimescale: 600)).image),
-        grayLevel(of: generator.image(at: CMTime(seconds: 1.4, preferredTimescale: 600)).image),
-    ]
-    // Within a frame either way (4 levels apart), as the exporter allows half an output frame of slack.
-    #expect(abs(levels[0] - expected[0]) <= 6)
-    #expect(abs(levels[1] - expected[1]) <= 6)
-}
+        let source = try #require(CGImageSourceCreateWithURL(gif as CFURL, nil))
+        #expect(CGImageSourceGetCount(source) == 10)
+        #expect(result.frameCount == 10)
+        #expect(!result.truncated)
+        let first = try #require(CGImageSourceCreateImageAtIndex(source, 0, nil))
+        #expect(first.width == 480)
+        #expect(first.height == 270)
+        let properties = try #require(CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any])
+        let gifProperties = try #require(properties[kCGImagePropertyGIFDictionary] as? [CFString: Any])
+        #expect(abs((gifProperties[kCGImagePropertyGIFDelayTime] as? Double ?? 0) - 0.1) < 0.005)
+        // Each source frame has its own gray level, so the frames show which source times were used:
+        // output frame i comes from 1 s + i × 0.2 s.
+        let generator = AVAssetImageGenerator(asset: AVURLAsset(url: video))
+        generator.requestedTimeToleranceBefore = .zero
+        generator.requestedTimeToleranceAfter = .zero
+        let third = try #require(CGImageSourceCreateImageAtIndex(source, 2, nil))
+        let levels = try [grayLevel(of: first), grayLevel(of: third)]
+        let expected = try await [
+            grayLevel(of: generator.image(at: CMTime(seconds: 1, preferredTimescale: 600)).image),
+            grayLevel(of: generator.image(at: CMTime(seconds: 1.4, preferredTimescale: 600)).image),
+        ]
+        // Within a frame either way (4 levels apart), as the exporter allows half an output frame of slack.
+        #expect(abs(levels[0] - expected[0]) <= 6)
+        #expect(abs(levels[1] - expected[1]) <= 6)
+    }
 
-@Test func gifExportKeepsTheOriginalWidth() async throws {
-    let folder = try temporaryFolder()
-    defer { try? FileManager.default.removeItem(at: folder) }
-    let video = folder.appendingPathComponent("in.mp4")
-    let gif = folder.appendingPathComponent("out.gif")
-    try await writeSyntheticVideo(to: video, seconds: 1, fps: 30, width: 640, height: 360)
+    @Test func gifExportKeepsTheOriginalWidth() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let video = folder.appendingPathComponent("in.mp4")
+        let gif = folder.appendingPathComponent("out.gif")
+        try await writeSyntheticVideo(to: video, seconds: 1, fps: 30, width: 640, height: 360)
 
-    let result = try await GIFExporter.export(videoURL: video, to: gif, fps: 24, maxWidth: nil)
+        let result = try await GIFExporter.export(videoURL: video, to: gif, fps: 24, maxWidth: nil)
 
-    let source = try #require(CGImageSourceCreateWithURL(gif as CFURL, nil))
-    #expect(abs(CGImageSourceGetCount(source) - 24) <= 1)
-    #expect(result.frameCount == CGImageSourceGetCount(source))
-    let first = try #require(CGImageSourceCreateImageAtIndex(source, 0, nil))
-    #expect(first.width == 640)
-    #expect(first.height == 360)
-}
+        let source = try #require(CGImageSourceCreateWithURL(gif as CFURL, nil))
+        #expect(abs(CGImageSourceGetCount(source) - 24) <= 1)
+        #expect(result.frameCount == CGImageSourceGetCount(source))
+        let first = try #require(CGImageSourceCreateImageAtIndex(source, 0, nil))
+        #expect(first.width == 640)
+        #expect(first.height == 360)
+    }
 
-@Test func mp4ExportCanDropTheAudio() async throws {
-    let folder = try temporaryFolder()
-    defer { try? FileManager.default.removeItem(at: folder) }
-    let input = folder.appendingPathComponent("in.mp4")
-    try await writeScreenRecording(to: input, seconds: 3, audio: true)
-    let kept = folder.appendingPathComponent("kept.mp4")
-    let muted = folder.appendingPathComponent("muted.mp4")
+    @Test func mp4ExportCanDropTheAudio() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let input = folder.appendingPathComponent("in.mp4")
+        try await writeScreenRecording(to: input, seconds: 3, audio: true)
+        let kept = folder.appendingPathComponent("kept.mp4")
+        let muted = folder.appendingPathComponent("muted.mp4")
 
-    let range = TrimRange(start: 0.5, end: 2.5, duration: 3)
-    try await VideoTrimmer.trim(input, range: range, to: kept)
-    let passthrough = try await VideoTrimmer.trim(input, range: range, muted: true, to: muted)
+        let range = TrimRange(start: 0.5, end: 2.5, duration: 3)
+        try await VideoTrimmer.trim(input, range: range, to: kept)
+        let passthrough = try await VideoTrimmer.trim(input, range: range, muted: true, to: muted)
 
-    #expect(passthrough)
-    #expect(try await AVURLAsset(url: kept).loadTracks(withMediaType: .audio).count == 1)
-    let mutedAsset = AVURLAsset(url: muted)
-    #expect(try await mutedAsset.loadTracks(withMediaType: .audio).isEmpty)
-    #expect(try await mutedAsset.loadTracks(withMediaType: .video).count == 1)
-    #expect(abs(try await mutedAsset.load(.duration).seconds - 2) < 0.1)
-}
+        #expect(passthrough)
+        #expect(try await AVURLAsset(url: kept).loadTracks(withMediaType: .audio).count == 1)
+        let mutedAsset = AVURLAsset(url: muted)
+        #expect(try await mutedAsset.loadTracks(withMediaType: .audio).isEmpty)
+        #expect(try await mutedAsset.loadTracks(withMediaType: .video).count == 1)
+        #expect(abs(try await mutedAsset.load(.duration).seconds - 2) < 0.1)
+    }
 
-@Test func mp4ExportSpeedsUpVideoAndAudio() async throws {
-    let folder = try temporaryFolder()
-    defer { try? FileManager.default.removeItem(at: folder) }
-    let input = folder.appendingPathComponent("in.mp4")
-    try await writeScreenRecording(to: input, seconds: 4, audio: true)
-    let output = folder.appendingPathComponent("fast.mp4")
+    @Test func mp4ExportSpeedsUpVideoAndAudio() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let input = folder.appendingPathComponent("in.mp4")
+        try await writeScreenRecording(to: input, seconds: 4, audio: true)
+        let output = folder.appendingPathComponent("fast.mp4")
 
-    let passthrough = try await VideoTrimmer.trim(input, range: TrimRange(start: 1, end: 4, duration: 4), speed: 1.5, to: output)
+        let passthrough = try await VideoTrimmer.trim(input, range: TrimRange(start: 1, end: 4, duration: 4), speed: 1.5, to: output)
 
-    #expect(passthrough)
-    let asset = AVURLAsset(url: output)
-    #expect(abs(try await asset.load(.duration).seconds - 2) < 0.1)
-    let video = try #require(try await asset.loadTracks(withMediaType: .video).first)
-    let (size, formats) = try await video.load(.naturalSize, .formatDescriptions)
-    #expect(size == CGSize(width: 640, height: 400))
-    // The frames are copied, not re-encoded, and none are dropped.
-    #expect(formats.map(CMFormatDescriptionGetMediaSubType) == [kCMVideoCodecType_H264])
-    // 3 s at 30 fps; passthrough may keep one frame at the cut.
-    let frames = try sampleCount(of: video, in: asset)
-    #expect((90...91).contains(frames))
-    // Both tracks are really retimed rather than stretched by an edit list that most players ignore.
-    let audio = try #require(try await asset.loadTracks(withMediaType: .audio).first)
-    for track in [video, audio] {
-        let segments = try await track.load(.segments)
+        #expect(passthrough)
+        let asset = AVURLAsset(url: output)
+        #expect(abs(try await asset.load(.duration).seconds - 2) < 0.1)
+        let video = try #require(try await asset.loadTracks(withMediaType: .video).first)
+        let (size, formats) = try await video.load(.naturalSize, .formatDescriptions)
+        #expect(size == CGSize(width: 640, height: 400))
+        // The frames are copied, not re-encoded, and none are dropped.
+        #expect(formats.map(CMFormatDescriptionGetMediaSubType) == [kCMVideoCodecType_H264])
+        // 3 s at 30 fps; passthrough may keep one frame at the cut.
+        let frames = try sampleCount(of: video, in: asset)
+        #expect((90...91).contains(frames))
+        // Both tracks are really retimed rather than stretched by an edit list that most players ignore.
+        let audio = try #require(try await asset.loadTracks(withMediaType: .audio).first)
+        for track in [video, audio] {
+            let segments = try await track.load(.segments)
+            #expect(segments.allSatisfy { abs($0.timeMapping.source.duration.seconds - $0.timeMapping.target.duration.seconds) < 0.001 })
+        }
+        #expect(abs(try await audio.load(.timeRange).duration.seconds - 2) < 0.1)
+    }
+
+    @Test func mutedSpeedUpRetimesTheFrames() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let input = folder.appendingPathComponent("in.mp4")
+        try await writeScreenRecording(to: input, seconds: 2, audio: false)
+        let output = folder.appendingPathComponent("fast.mp4")
+
+        try await VideoTrimmer.trim(input, range: TrimRange(duration: 2), speed: 2, to: output)
+
+        let asset = AVURLAsset(url: output)
+        #expect(abs(try await asset.load(.duration).seconds - 1) < 0.1)
+        let video = try #require(try await asset.loadTracks(withMediaType: .video).first)
+        let segments = try await video.load(.segments)
         #expect(segments.allSatisfy { abs($0.timeMapping.source.duration.seconds - $0.timeMapping.target.duration.seconds) < 0.001 })
-    }
-    #expect(abs(try await audio.load(.timeRange).duration.seconds - 2) < 0.1)
-}
-
-@Test func mutedSpeedUpRetimesTheFrames() async throws {
-    let folder = try temporaryFolder()
-    defer { try? FileManager.default.removeItem(at: folder) }
-    let input = folder.appendingPathComponent("in.mp4")
-    try await writeScreenRecording(to: input, seconds: 2, audio: false)
-    let output = folder.appendingPathComponent("fast.mp4")
-
-    try await VideoTrimmer.trim(input, range: TrimRange(duration: 2), speed: 2, to: output)
-
-    let asset = AVURLAsset(url: output)
-    #expect(abs(try await asset.load(.duration).seconds - 1) < 0.1)
-    let video = try #require(try await asset.loadTracks(withMediaType: .video).first)
-    let segments = try await video.load(.segments)
-    #expect(segments.allSatisfy { abs($0.timeMapping.source.duration.seconds - $0.timeMapping.target.duration.seconds) < 0.001 })
-    let frames = try sampleCount(of: video, in: asset)
-    #expect((60...61).contains(frames))
-}
-
-@Test func mp4ExportCanChangeTheFileType() async throws {
-    let folder = try temporaryFolder()
-    defer { try? FileManager.default.removeItem(at: folder) }
-    let input = folder.appendingPathComponent("in.mov")
-    try await writeSyntheticVideo(to: folder.appendingPathComponent("tmp.mp4"), seconds: 1, fps: 30, width: 320, height: 240)
-    try FileManager.default.moveItem(at: folder.appendingPathComponent("tmp.mp4"), to: input)
-    let output = folder.appendingPathComponent("out.mp4")
-
-    try await VideoTrimmer.trim(input, range: TrimRange(duration: 1), to: output, as: .mp4)
-
-    #expect(abs(try await AVURLAsset(url: output).load(.duration).seconds - 1) < 0.1)
-}
-
-// "Within roughly 25% of the actual size for typical screen recordings."
-@Test(arguments: [(VideoExportFormat.mp4, 1.0, false), (.mp4, 2.0, false), (.mp4, 1.5, true), (.gif, 1.0, false), (.gif, 2.0, false)])
-func sizeEstimateIsWithinAQuarterOfTheResult(format: VideoExportFormat, speed: Double, muted: Bool) async throws {
-    let folder = try temporaryFolder()
-    defer { try? FileManager.default.removeItem(at: folder) }
-    let input = folder.appendingPathComponent("in.mp4")
-    try await writeScreenRecording(to: input, seconds: 6, audio: true)
-    let output = folder.appendingPathComponent("out.\(format.fileExtension)")
-    let range = TrimRange(start: 1, end: 5.5, duration: 6)
-
-    let estimate: Int
-    switch format {
-    case .mp4:
-        estimate = try await VideoTrimmer.estimatedSize(of: input, range: range, speed: speed, muted: muted)
-        try await VideoTrimmer.trim(input, range: range, speed: speed, muted: muted, to: output)
-    case .gif:
-        estimate = try await GIFExporter.estimatedSize(of: input, range: range, fps: 15, maxWidth: 480, speed: speed)
-        try await GIFExporter.export(videoURL: input, to: output, range: range, fps: 15, maxWidth: 480, speed: speed)
+        let frames = try sampleCount(of: video, in: asset)
+        #expect((60...61).contains(frames))
     }
 
-    let actual = try #require(try FileManager.default.attributesOfItem(atPath: output.path)[.size] as? Int)
-    #expect(abs(Double(estimate) / Double(actual) - 1) <= 0.25, "estimate \(estimate) vs actual \(actual)")
+    @Test func mp4ExportCanChangeTheFileType() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let input = folder.appendingPathComponent("in.mov")
+        try await writeSyntheticVideo(to: folder.appendingPathComponent("tmp.mp4"), seconds: 1, fps: 30, width: 320, height: 240)
+        try FileManager.default.moveItem(at: folder.appendingPathComponent("tmp.mp4"), to: input)
+        let output = folder.appendingPathComponent("out.mp4")
+
+        try await VideoTrimmer.trim(input, range: TrimRange(duration: 1), to: output, as: .mp4)
+
+        #expect(abs(try await AVURLAsset(url: output).load(.duration).seconds - 1) < 0.1)
+    }
+
+    // "Within roughly 25% of the actual size for typical screen recordings."
+    @Test(arguments: [(VideoExportFormat.mp4, 1.0, false), (.mp4, 2.0, false), (.mp4, 1.5, true), (.gif, 1.0, false), (.gif, 2.0, false)])
+    func sizeEstimateIsWithinAQuarterOfTheResult(format: VideoExportFormat, speed: Double, muted: Bool) async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let input = folder.appendingPathComponent("in.mp4")
+        try await writeScreenRecording(to: input, seconds: 6, audio: true)
+        let output = folder.appendingPathComponent("out.\(format.fileExtension)")
+        let range = TrimRange(start: 1, end: 5.5, duration: 6)
+
+        let estimate: Int
+        switch format {
+        case .mp4:
+            estimate = try await VideoTrimmer.estimatedSize(of: input, range: range, speed: speed, muted: muted)
+            try await VideoTrimmer.trim(input, range: range, speed: speed, muted: muted, to: output)
+        case .gif:
+            estimate = try await GIFExporter.estimatedSize(of: input, range: range, fps: 15, maxWidth: 480, speed: speed)
+            try await GIFExporter.export(videoURL: input, to: output, range: range, fps: 15, maxWidth: 480, speed: speed)
+        }
+
+        let actual = try #require(try FileManager.default.attributesOfItem(atPath: output.path)[.size] as? Int)
+        #expect(abs(Double(estimate) / Double(actual) - 1) <= 0.25, "estimate \(estimate) vs actual \(actual)")
+    }
 }
 
 // MARK: Helpers

@@ -135,37 +135,39 @@ private let timeline = TrimTimeline(duration: 10, minX: 20, width: 500)
 
 // MARK: Export
 
-@Test func trimsWithoutReencoding() async throws {
-    let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-    defer { try? FileManager.default.removeItem(at: folder) }
-    let input = folder.appendingPathComponent("in.mp4")
-    let output = folder.appendingPathComponent("out.mp4")
-    try await writeSyntheticVideo(to: input, seconds: 3, fps: 30, width: 640, height: 360)
+extension MediaTests {
+    @Test func trimsWithoutReencoding() async throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let input = folder.appendingPathComponent("in.mp4")
+        let output = folder.appendingPathComponent("out.mp4")
+        try await writeSyntheticVideo(to: input, seconds: 3, fps: 30, width: 640, height: 360)
 
-    let passthrough = try await VideoTrimmer.trim(input, range: TrimRange(start: 1, end: 2, duration: 3), to: output)
+        let passthrough = try await VideoTrimmer.trim(input, range: TrimRange(start: 1, end: 2, duration: 3), to: output)
 
-    #expect(passthrough)
-    let asset = AVURLAsset(url: output)
-    let duration = try await asset.load(.duration).seconds
-    #expect(abs(duration - 1) < 0.1)
-    let track = try #require(try await asset.loadTracks(withMediaType: .video).first)
-    let (size, formats) = try await track.load(.naturalSize, .formatDescriptions)
-    #expect(size == CGSize(width: 640, height: 360))
-    #expect(formats.map(CMFormatDescriptionGetMediaSubType) == [kCMVideoCodecType_H264])
-}
+        #expect(passthrough)
+        let asset = AVURLAsset(url: output)
+        let duration = try await asset.load(.duration).seconds
+        #expect(abs(duration - 1) < 0.1)
+        let track = try #require(try await asset.loadTracks(withMediaType: .video).first)
+        let (size, formats) = try await track.load(.naturalSize, .formatDescriptions)
+        #expect(size == CGSize(width: 640, height: 360))
+        #expect(formats.map(CMFormatDescriptionGetMediaSubType) == [kCMVideoCodecType_H264])
+    }
 
-@Test func trimReplacesAnExistingOutput() async throws {
-    let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-    defer { try? FileManager.default.removeItem(at: folder) }
-    let input = folder.appendingPathComponent("in.mp4")
-    let output = folder.appendingPathComponent("out.mp4")
-    try await writeSyntheticVideo(to: input, seconds: 2, fps: 30, width: 320, height: 240)
-    try Data("old".utf8).write(to: output)
+    @Test func trimReplacesAnExistingOutput() async throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let input = folder.appendingPathComponent("in.mp4")
+        let output = folder.appendingPathComponent("out.mp4")
+        try await writeSyntheticVideo(to: input, seconds: 2, fps: 30, width: 320, height: 240)
+        try Data("old".utf8).write(to: output)
 
-    try await VideoTrimmer.trim(input, range: TrimRange(start: 0.5, end: 1.5, duration: 2), to: output)
+        try await VideoTrimmer.trim(input, range: TrimRange(start: 0.5, end: 1.5, duration: 2), to: output)
 
-    let duration = try await AVURLAsset(url: output).load(.duration).seconds
-    #expect(abs(duration - 1) < 0.1)
+        let duration = try await AVURLAsset(url: output).load(.duration).seconds
+        #expect(abs(duration - 1) < 0.1)
+    }
 }

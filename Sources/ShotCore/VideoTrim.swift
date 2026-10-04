@@ -1,4 +1,5 @@
 import AVFoundation
+import os
 import UniformTypeIdentifiers
 
 public enum TrimHandle: Sendable {
@@ -317,9 +318,35 @@ public enum VideoTrimmer {
         for copy in copies where !copy.reader.startReading() {
             throw copy.reader.error ?? TrimError.exportFailed
         }
+        // Reading a sample blocks until it's decoded, so the copy runs on a queue of its own rather than
+        // holding one of Swift's few cooperative threads, which the readers' other work may be waiting for.
+        nonisolated(unsafe) let (pending, sharedWriter) = (copies, writer)
+        let cancelled = OSAllocatedUnfairLock(initialState: false)
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                DispatchQueue(label: "Shot.mux").async {
+                    continuation.resume(with: Result {
+                        try copySamples(pending, into: sharedWriter) { cancelled.withLock { $0 } }
+                    })
+                }
+            }
+        } onCancel: {
+            cancelled.withLock { $0 = true }
+        }
+        await writer.finishWriting()
+        guard writer.status == .completed else {
+            throw writer.error ?? TrimError.exportFailed
+        }
+    }
+
+    /// Copies every sample from each reader output to its writer input, blocking until all are written.
+    private static func copySamples(_ copies: [(reader: AVAssetReader, output: AVAssetReaderTrackOutput, input: AVAssetWriterInput)], into writer: AVAssetWriter, isCancelled: () -> Bool) throws {
+        var copies = copies
         // The writer interleaves the tracks, so it takes from whichever one it's ready for.
         while !copies.isEmpty {
-            try Task.checkCancellation()
+            if isCancelled() {
+                throw CancellationError()
+            }
             var appended = false
             for index in copies.indices.reversed() where copies[index].input.isReadyForMoreMediaData {
                 if let buffer = copies[index].output.copyNextSampleBuffer() {
@@ -340,12 +367,8 @@ public enum VideoTrimmer {
                 guard writer.status == .writing else {
                     throw writer.error ?? TrimError.exportFailed
                 }
-                try await Task.sleep(for: .milliseconds(2))
+                Thread.sleep(forTimeInterval: 0.002)
             }
-        }
-        await writer.finishWriting()
-        guard writer.status == .completed else {
-            throw writer.error ?? TrimError.exportFailed
         }
     }
 
