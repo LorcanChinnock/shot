@@ -368,6 +368,9 @@ private struct RecordingSettings: View {
     @AppStorage(PreferenceKey.showRecordingBorder) private var border = true
     @AppStorage(PreferenceKey.recordMicrophone) private var microphone = false
     @AppStorage(PreferenceKey.recordSystemAudio) private var systemAudio = false
+    // Read only so the GIF summary updates when the video editor changes them.
+    @AppStorage(PreferenceKey.gifFrameRate) private var gifFrameRate = VideoExportOptions().gifFrameRate
+    @AppStorage(PreferenceKey.gifWidth) private var gifWidth = VideoExportOptions().gifWidth
     private let color = SettingsSection.recording.color
 
     var body: some View {
@@ -384,7 +387,7 @@ private struct RecordingSettings: View {
         }
         CameraSettings(color: color)
         SettingsCard(title: "GIF export", symbol: "photo.stack.fill") {
-            SettingRow(title: "From the Quick Access card", subtitle: "12 fps, up to 720 px wide, first 60 seconds.", divider: false) {
+            SettingRow(title: "From the Quick Access card", subtitle: "Uses the video editor's last GIF settings: \(Preferences().videoExportOptions.gifSummary)", divider: false) {
                 BrutalChip(text: "GIF", color: color)
             }
         }

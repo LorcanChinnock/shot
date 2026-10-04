@@ -26,6 +26,12 @@ import Testing
     #expect(options.gifMaxWidth == nil)
 }
 
+@Test func gifSummaryDescribesTheFrameRateWidthAndLengthCap() {
+    #expect(VideoExportOptions().gifSummary == "15 fps, up to 720 px wide, first 60 seconds.")
+    let full = VideoExportOptions(gifFrameRate: 24, gifWidth: VideoExportOptions.originalWidth)
+    #expect(full.gifSummary == "24 fps, full width, first 60 seconds.")
+}
+
 @Test func outputLengthFollowsSpeed() {
     var options = VideoExportOptions()
     let range = TrimRange(start: 2, end: 8, duration: 10)
