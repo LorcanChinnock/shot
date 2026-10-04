@@ -1,14 +1,16 @@
+import ShotCore
 import SwiftUI
 
 struct QuickAccessView: View {
     let model: QuickAccessModel
     let controller: QuickAccessController
+    @AppStorage(PreferenceKey.quickAccessPosition) private var position = QuickAccessPosition.left.rawValue
 
     var body: some View {
         VStack(spacing: QuickAccessController.spacing) {
             ForEach(model.cards) { card in
                 QuickAccessCardView(card: card, controller: controller)
-                    .transition(.move(edge: .leading).combined(with: .opacity))
+                    .transition(.move(edge: position == QuickAccessPosition.right.rawValue ? .trailing : .leading).combined(with: .opacity))
             }
         }
         .padding(QuickAccessController.padding)
