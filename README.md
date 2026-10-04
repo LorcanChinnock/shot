@@ -16,76 +16,69 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="GPL-3.0 license"></a>
 </p>
 
-## Features
+<p align="center">
+  <a href="https://github.com/LorcanChinnock/shot/releases/latest"><b>Download Shot for macOS</b></a>
+</p>
 
-- **Screenshots:** area capture on a frozen screen with a magnifier, fullscreen, and window (with shadow).
-- **Quick Access:** a floating card after each capture. Copy, save, annotate, show in Finder, or drag it into another app.
-- **Annotation editor:** arrow, line, rectangle, ellipse, freehand pen, text, sticky notes, highlight, spotlight, pixelate, blur, numbered counters, and crop, with undo. Copy, paste, duplicate (⌘D) and nudge (arrow keys) annotations. Zoom with a pinch, ⌘+ and ⌘- (⌘0 fits, ⌘1 is actual size), and move around by scrolling or Space-dragging. Auto-redact finds email addresses, phone numbers, card numbers and IP addresses and covers them.
-- **Screen recording:** an area, a screen, or a window to MP4. Adjust the frame, then a 3-second countdown starts the recording. Pause, resume, stop, or discard while recording.
-- **Camera bubble:** a round webcam overlay that is recorded with your screen. Drag it to move it, double-click it to resize it.
-- **Video trim:** drag in and out points on a recording's timeline and save without re-encoding.
-- **Export options:** export a recording as MP4 or GIF, with GIF frame rate and width, mute, 1.5× or 2× speed, and the file size shown before you export. Quick Access cards export a GIF with the last settings.
-- **Automation:** every action has a global shortcut and a `shot://` URL for launchers, the Shortcuts app, or scripts.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/hero-dark.gif">
+    <img src="docs/media/hero-light.gif" width="720" alt="Pressing ⌘⇧4, drawing an arrow and a note on the screenshot, then pasting it into another app">
+  </picture>
+</p>
+
+### Capture and Quick Access
+
+Pick an area on a frozen screen with a magnifier, or a window or the full screen, then copy, save, annotate or drag the capture from a floating card.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/capture-dark.png">
+  <img src="docs/media/capture-light.png" width="720" alt="Selecting an area with the magnifier, then the Quick Access card in the corner of the screen">
+</picture>
+
+### Annotate anything
+
+Arrows, sticky notes, blur and auto-redaction, a spotlight, a pen and more, with room to annotate outside the screenshot and to combine several images on one canvas.
+
+<img src="docs/media/editor.png" width="720" alt="The annotation editor with arrows, a sticky note, a blurred email address, and notes beside the screenshot">
+
+### Record your screen, and yourself
+
+Record an area, a screen or a window to MP4, with your microphone, system audio, and a round camera bubble.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/recording-dark.gif">
+  <img src="docs/media/recording-light.gif" width="720" alt="Recording an area of the screen with the round camera bubble in the corner">
+</picture>
+
+### Trim and export to GIF
+
+Trim a recording, cut sections out, and export an MP4 or a GIF at the frame rate, width and speed you choose.
+
+<img src="docs/media/video-editor.png" width="720" alt="The video editor with trim handles, a cut, and the GIF export options">
 
 ## Install
 
-1. Download `Shot-<version>.zip` from the [latest release](https://github.com/LorcanChinnock/shot/releases/latest).
-2. Unzip it and move **Shot.app** to your Applications folder.
-3. Open Shot. Releases aren't notarized by Apple yet, so macOS blocks the first launch. Open **System Settings › Privacy & Security**, scroll down, and click **Open Anyway** next to the message about Shot.
-4. Shot asks for **Screen & System Audio Recording** access. Turn on Shot in that list, then click **Relaunch** in Shot's window. macOS applies the permission only after a relaunch.
+1. Download `Shot-<version>.zip` from the [latest release](https://github.com/LorcanChinnock/shot/releases/latest), unzip it, and move **Shot.app** to Applications.
+2. Open Shot. Releases aren't notarized by Apple yet, so macOS blocks the first launch: click **Open Anyway** next to the message about Shot in **System Settings › Privacy & Security**.
+3. Turn on Shot under **Screen & System Audio Recording** when it asks, then click **Relaunch** in Shot's window. macOS applies the permission only after a relaunch.
+4. Press ⌘⇧4.
 
-Shot needs macOS 15 or later and runs natively on Apple Silicon and Intel Macs. It asks for Microphone and Camera access the first time you record with them.
-
-Shot updates itself through [Sparkle](https://sparkle-project.org) once you allow it to check for updates. Every release is signed with the same certificate, so macOS keeps Shot's Screen Recording access after an update. If you installed Shot before it could update itself, macOS asks for that access once more after your next install.
+Shot needs macOS 15 or later and runs natively on Apple Silicon and Intel Macs. It updates itself once you allow it to; see [Updates](docs/usage.md#updates).
 
 ## Shortcuts
 
-Shot takes over the macOS screenshot keys and turns off the matching macOS shortcuts, so a keyboard's screenshot key opens Shot too.
-
 | Shortcut | Action |
 |---|---|
-| ⌘⇧3 | Capture fullscreen |
+| ⌘⇧3 | Capture the full screen |
 | ⌘⇧4 | Capture an area. Press Space to pick a window instead. |
 | ⌘⇧5 | Record an area. Press Space to pick a window, or Enter for the full screen. |
 
-While you set up a recording, the record shortcut starts it. While you record, it stops the recording. You can change any shortcut in **Settings › Shortcuts**.
+Shot takes these keys over from macOS. To keep the macOS screenshot tool, and for every other shortcut, see [Keyboard shortcuts](docs/usage.md#keyboard-shortcuts).
 
-To keep the macOS screenshot tool, turn off **Use Shot for ⌘⇧3 to ⌘⇧5** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with ⌃ in place of ⌘: ⌃⇧3, ⌃⇧4, ⌃⇧5, plus ⌃⇧W for a window.
+## More
 
-Record Fullscreen and Record Window have no shortcut until you set one. If you remove Shot, turn the macOS shortcuts back on in **System Settings › Keyboard › Keyboard Shortcuts › Screenshots**.
-
-## URL scheme
-
-Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a script:
-
-| URL | Action |
-|---|---|
-| `shot://capture-area`, `capture-fullscreen`, `capture-window` | Take a screenshot |
-| `shot://record`, `record-fullscreen`, `record-window` | Set up, confirm, or stop a recording |
-| `shot://pause` | Pause or resume the recording |
-| `shot://annotate?path=<file>` | Open an image in the editor, or a video in the video editor |
-| `shot://edit-video?path=<file>` | Open a video in the video editor to trim it |
-| `shot://settings?section=<name>` | Open Settings at `general`, `capture`, `quickAccess`, `recording`, `shortcuts`, or `about` |
-
-## Privacy
-
-Shot collects no analytics, and the only time it connects to the network is to check for updates, after you agree to it. The second time you open Shot, it asks whether to check for updates automatically. If you say yes, it fetches the update feed from GitHub once a day, and asks before installing a new version unless you tell it to install updates automatically. You can change this, or check by hand, in **Settings › About**. The GitHub links in Settings › About open in your browser.
-
-Captures go to the folder you choose in Settings (`~/Pictures/Shot` by default) or stay in a temporary folder when saving is off.
-
-## Build from source
-
-You need the Xcode Command Line Tools, or Xcode.
-
-```bash
-git clone https://github.com/LorcanChinnock/shot.git
-cd shot
-scripts/make-dev-cert.sh   # once: a stable signing identity, so the Screen Recording permission survives rebuilds
-make run                   # build, install to /Applications/Shot.app, and launch
-```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the other `make` targets, the project layout, and how to send a change.
-
-## License
-
-Shot is free software under the [GNU General Public License v3.0](LICENSE).
+- **[User guide](docs/usage.md):** every feature, shortcut and setting, plus the `shot://` URL scheme.
+- **[Privacy](docs/usage.md#privacy):** no analytics; the network is used only to check for updates, after you agree.
+- **[Contributing](CONTRIBUTING.md):** build from source, run the tests, and send a change.
+- **[License](LICENSE):** free software under the GNU General Public License v3.0.
