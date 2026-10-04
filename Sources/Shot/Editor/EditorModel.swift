@@ -229,12 +229,12 @@ final class EditorModel {
             return
         }
         isRedacting = true
-        let doc = document
+        let source = document.redactionSource
         Task {
             defer { isRedacting = false }
             let regions: [CGRect]
             do {
-                regions = try await Redaction.regions(in: doc.base)
+                regions = try await Redaction.regions(in: source.image).map { $0.offsetBy(dx: source.origin.x, dy: source.origin.y) }
             } catch {
                 Toast.show("Could not read the image: \(error.localizedDescription)")
                 return

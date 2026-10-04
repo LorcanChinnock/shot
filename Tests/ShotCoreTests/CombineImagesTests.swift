@@ -261,6 +261,23 @@ func redactingOverAPlacedImageHidesItsDetail(kind: Annotation.Kind) throws {
     }
 }
 
+@Test func autoRedactReadsThePlacedImagesToo() throws {
+    var doc = EditorDocument(base: solidImage(width: 100, height: 100))
+    #expect(doc.redactionSource.image === doc.base)
+    #expect(doc.redactionSource.origin == .zero)
+
+    // One image beside the screenshot and one over its top-left corner, reaching past it.
+    doc.addImage(columns(width: 50, height: 120, (0, 0, 1), (0, 0, 1)), scale: 1, documentScale: 1, centeredAt: nil, margin: 16)
+    doc.addImage(columns(width: 40, height: 40, (0, 1, 0), (0, 1, 0)), scale: 1, documentScale: 1, centeredAt: CGPoint(x: 0, y: 0), margin: 16)
+    let source = doc.redactionSource
+    #expect(source.origin == CGPoint(x: -20, y: -20))
+    #expect(source.image.width == 186 && source.image.height == 140)
+    // The screenshot, each image, and the screenshot hidden under the second image.
+    #expect(near(try pixel(source.image, 70, 70), 255, 0, 0))
+    #expect(near(try pixel(source.image, 140, 70), 0, 0, 255))
+    #expect(near(try pixel(source.image, 25, 25), 0, 255, 0))
+}
+
 @Test func aSpotlightDimsAPlacedImageOutsideIt() throws {
     var doc = EditorDocument(base: solidImage(width: 100, height: 100))
     doc.addImage(columns(width: 100, height: 100, (1, 1, 1), (1, 1, 1)), scale: 1, documentScale: 1, centeredAt: nil, margin: 16)
