@@ -146,7 +146,9 @@ final class VideoEditorModel {
         generator.appliesPreferredTrackTransform = true
         generator.maximumSize = CGSize(width: height * aspectRatio * 2, height: height * 2)
         for (index, time) in times.enumerated() {
-            guard !Task.isCancelled, let image = try? await generator.image(at: CMTime(seconds: time, preferredTimescale: 600)).image else {
+            let image = try? await generator.image(at: CMTime(seconds: time, preferredTimescale: 600)).image
+            // A newer load (resize, or reload after a save) may have replaced the array while this one waited.
+            guard !Task.isCancelled, index < thumbnails.count else {
                 return
             }
             thumbnails[index] = image
