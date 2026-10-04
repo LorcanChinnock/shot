@@ -4,14 +4,15 @@ import SwiftUI
 @MainActor
 enum SettingsWindowController {
     private static var window: NSWindow?
-    static let size = NSSize(width: 820, height: 600)
+    /// Tall enough to show all of General, the first tab people see, without scrolling.
+    static let size = NSSize(width: 820, height: 644)
 
     static func show(section: SettingsSection? = nil) {
         if let section {
             SettingsNavigation.shared.section = section
         }
         if window == nil {
-            window = GlassWindow.make(size: size, title: "Shot Settings") { SettingsView() }
+            window = GlassWindow.make(size: size, title: "Shot Settings", resizable: true) { SettingsView() }
         }
         guard let window else {
             return

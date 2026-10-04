@@ -86,7 +86,7 @@ struct SettingsView: View {
         .padding(.top, GlassWindow.titlebarHeight + 8)
         .padding(.horizontal, Brutal.windowInset)
         .padding(.bottom, Brutal.windowInset - 6)
-        .frame(width: SettingsWindowController.size.width, height: SettingsWindowController.size.height)
+        .frame(minWidth: SettingsWindowController.size.width, maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var header: some View {

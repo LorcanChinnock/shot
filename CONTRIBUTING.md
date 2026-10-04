@@ -15,6 +15,8 @@ macOS ties the Screen Recording permission to the app's code signature. An ad-ho
 
 On the first run, turn on Shot in System Settings › Privacy & Security › Screen & System Audio Recording, then relaunch it.
 
+Only `make dist` keeps the update feed in `Info.plist`. Every other build leaves it out, so the updater stays off and Sparkle never replaces your build with a release.
+
 ### Make targets
 
 | Target | What it does |
