@@ -23,8 +23,8 @@
 - **Annotation editor:** arrow, line, rectangle, ellipse, text, highlight, pixelate, numbered counters, and crop, with undo.
 - **Screen recording:** an area, a screen, or a window to MP4. Adjust the frame, then a 3-second countdown starts the recording. Pause, resume, stop, or discard while recording.
 - **Camera bubble:** a round webcam overlay that is recorded with your screen. Drag it to move it, double-click it to resize it.
-- **GIF export** from any recording's Quick Access card.
 - **Video trim:** drag in and out points on a recording's timeline and save without re-encoding.
+- **Export options:** export a recording as MP4 or GIF, with GIF frame rate and width, mute, 1.5× or 2× speed, and the file size shown before you export. Quick Access cards export a GIF with the last settings.
 - **Automation:** every action has a global shortcut and a `shot://` URL for launchers, the Shortcuts app, or scripts.
 
 ## Install

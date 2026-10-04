@@ -71,7 +71,8 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
             VideoEditorRootView(model: model)
         }
         window.delegate = self
-        window.minSize = NSSize(width: 640, height: 200 + VideoEditorRootView.chromeHeight)
+        // Wide enough for the export options in one row.
+        window.minSize = NSSize(width: 800, height: 200 + VideoEditorRootView.chromeHeight)
 
         editorWindow.onCommand = { [weak self] key, shift in
             self?.handleCommand(key, shift: shift) ?? false

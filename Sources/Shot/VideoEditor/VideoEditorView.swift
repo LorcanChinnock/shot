@@ -4,7 +4,7 @@ import SwiftUI
 
 struct VideoEditorRootView: View {
     /// Everything but the player: title bar, timeline row, insets, and gaps.
-    static let chromeHeight: CGFloat = GlassWindow.titlebarHeight + TrimTimelineView.height + Brutal.windowInset + Brutal.sectionGap * 1.5 + 24
+    static let chromeHeight: CGFloat = GlassWindow.titlebarHeight + TrimTimelineView.height + ExportOptionsBar.height + Brutal.windowInset + Brutal.sectionGap * 2.5 + 24
 
     let model: VideoEditorModel
 
@@ -26,6 +26,9 @@ struct VideoEditorRootView: View {
                 Button("Copy") { Task { await model.copy() } }
                     .buttonStyle(BrutalButtonStyle(compact: true))
                     .help("Copy video (⌘C)")
+                Button("Export") { Task { await model.export() } }
+                    .buttonStyle(BrutalButtonStyle(color: Brutal.sky, compact: true))
+                    .help("Export a new \(model.options.format.rawValue.uppercased()) with these options next to the video, and copy it")
                 Button("Save") { Task { await model.save() } }
                     .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
                     .help("Save trimmed video and copy it (⌘S)")
@@ -53,12 +56,82 @@ struct VideoEditorRootView: View {
                 .accessibilityLabel(Text(model.isPlaying ? "Pause" : "Play"))
                 TrimTimelineView(model: model)
             }
+            ExportOptionsBar(model: model)
         }
         .padding([.horizontal, .bottom], Brutal.windowInset)
     }
 
     private var timesLabel: String {
         "\(Timecode.string(model.range.start)) – \(Timecode.string(model.range.end))  ·  \(Timecode.string(model.range.length))"
+    }
+}
+
+/// Format, GIF size and frame rate, mute, speed, and the size Export would write.
+struct ExportOptionsBar: View {
+    static let height: CGFloat = 32
+
+    let model: VideoEditorModel
+
+    var body: some View {
+        HStack(spacing: 12) {
+            BrutalSegmented(selection: option(\.format), options: [(.mp4, "MP4"), (.gif, "GIF")], color: Brutal.sky)
+                .help("Export format")
+            if model.options.format == .gif {
+                caption("FPS")
+                BrutalSegmented(selection: option(\.gifFrameRate), options: VideoExportOptions.gifFrameRates.map { ($0, "\($0)") }, color: Brutal.mint)
+                    .help("GIF frames per second")
+                caption("WIDTH")
+                BrutalSegmented(selection: option(\.gifWidth), options: VideoExportOptions.gifWidths.map { ($0, Self.widthLabel($0)) }, color: Brutal.mint)
+                    .help("GIF width in pixels; it's never made wider than the video")
+            } else {
+                caption("MUTE")
+                Toggle("Mute", isOn: option(\.muted))
+                    .toggleStyle(BrutalToggleStyle(color: Brutal.pink))
+                    .labelsHidden()
+                    .accessibilityLabel(Text("Mute"))
+                    .help("Leave the sound out")
+            }
+            caption("SPEED")
+            BrutalSegmented(selection: option(\.speed), options: VideoExportOptions.speeds.map { ($0, Self.speedLabel($0)) }, color: Brutal.violet)
+                .help("Playback speed")
+            Spacer(minLength: 8)
+            Text(model.estimatedSize.map { "≈ " + ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .file) } ?? "≈ …")
+                .font(Brutal.mono)
+                .foregroundStyle(Brutal.ink.opacity(0.7))
+                .help("Estimated size of the exported file")
+        }
+        .frame(height: Self.height)
+        .disabled(model.isExporting)
+        .task(id: model.edit) {
+            await model.refreshEstimate()
+        }
+    }
+
+    private func caption(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 11, weight: .black))
+            .tracking(1.2)
+            .foregroundStyle(Brutal.ink.opacity(0.75))
+            .padding(.trailing, -6)
+    }
+
+    /// Each change is one undo step.
+    private func option<Value>(_ keyPath: WritableKeyPath<VideoExportOptions, Value>) -> Binding<Value> {
+        Binding {
+            model.options[keyPath: keyPath]
+        } set: { value in
+            var options = model.options
+            options[keyPath: keyPath] = value
+            model.setOptions(options)
+        }
+    }
+
+    private static func widthLabel(_ width: Int) -> String {
+        width == VideoExportOptions.originalWidth ? "Full" : "\(width)"
+    }
+
+    private static func speedLabel(_ speed: Double) -> String {
+        (speed.rounded() == speed ? "\(Int(speed))" : "\(speed)") + "×"
     }
 }
 
@@ -156,6 +229,8 @@ struct TrimTimelineView: View {
         .frame(height: Self.height)
         .accessibilityElement()
         .accessibilityLabel(Text("Trim timeline"))
+        // Save reloads the file when it finishes, which would drop a trim made meanwhile.
+        .allowsHitTesting(!model.isExporting)
     }
 
     private func strip(width: CGFloat) -> some View {

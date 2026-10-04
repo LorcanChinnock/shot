@@ -162,28 +162,170 @@ public enum VideoTrimmer {
         }
     }
 
-    /// Writes `range` of `input` to `output` in the input's file type, replacing `output`.
-    /// Copies the samples as they are when it can; returns false when it had to re-encode.
+    /// Writes `range` of `input` to `output`, replacing `output`, in `fileType` or else the input's own.
+    /// `speed` 2 plays it in half the time with every frame kept; `muted` leaves the audio out.
+    /// Copies the video samples as they are when it can; returns false when it had to re-encode.
     @discardableResult
-    public static func trim(_ input: URL, range: TrimRange, to output: URL) async throws -> Bool {
+    public static func trim(_ input: URL, range: TrimRange, speed: Double = 1, muted: Bool = false, to output: URL, as fileType: AVFileType? = nil) async throws -> Bool {
         let asset = AVURLAsset(url: input)
-        guard let identifier = UTType(filenameExtension: input.pathExtension)?.identifier else {
-            throw TrimError.unsupportedFileType
+        let fileType = try fileType ?? Self.fileType(of: input)
+        let audio = muted ? [] : try await asset.loadTracks(withMediaType: .audio)
+        if speed != 1, !audio.isEmpty {
+            return try await retime(asset, audio: audio, range: range, speed: speed, to: output, as: fileType)
         }
-        let fileType = AVFileType(rawValue: identifier)
-        let passthrough = await AVAssetExportSession.compatibility(ofExportPreset: AVAssetExportPresetPassthrough, with: asset, outputFileType: fileType)
+        // With no sound to keep, the video alone is retimed; otherwise the plain trim below copies everything.
+        let edited = audio.isEmpty && (muted || speed != 1) ? try await silentComposition(of: asset, range: range, speed: speed) : nil
+        let source: AVAsset = edited ?? asset
+
+        let passthrough = await AVAssetExportSession.compatibility(ofExportPreset: AVAssetExportPresetPassthrough, with: source, outputFileType: fileType)
         let preset = passthrough ? AVAssetExportPresetPassthrough : AVAssetExportPresetHighestQuality
-        guard let export = AVAssetExportSession(asset: asset, presetName: preset) else {
+        guard let export = AVAssetExportSession(asset: source, presetName: preset) else {
             throw TrimError.exportFailed
         }
         guard export.supportedFileTypes.contains(fileType) else {
             throw TrimError.unsupportedFileType
         }
-        export.timeRange = range.timeRange
+        if edited == nil {
+            export.timeRange = range.timeRange
+        }
         if FileManager.default.fileExists(atPath: output.path) {
             try FileManager.default.removeItem(at: output)
         }
         try await export.export(to: output, as: fileType)
         return passthrough
+    }
+
+    /// Roughly how many bytes `trim` writes with the same arguments, from the tracks' average bit rates.
+    public static func estimatedSize(of input: URL, range: TrimRange, speed: Double = 1, muted: Bool = false) async throws -> Int {
+        let asset = AVURLAsset(url: input)
+        var rates: [AVMediaType: Double] = [:]
+        for type in [AVMediaType.video, .audio] {
+            for track in try await asset.loadTracks(withMediaType: type) {
+                rates[type, default: 0] += Double(try await track.load(.estimatedDataRate))
+            }
+        }
+        return estimatedBytes(videoBitRate: rates[.video] ?? 0, audioBitRate: rates[.audio] ?? 0, length: range.length, speed: speed, muted: muted)
+    }
+
+    /// Every video frame is kept at any speed, so the video's size depends only on the source length;
+    /// the audio plays for `length / speed`.
+    static func estimatedBytes(videoBitRate: Double, audioBitRate: Double, length: Double, speed: Double, muted: Bool) -> Int {
+        let audio = muted ? 0 : audioBitRate * length / speed
+        return Int(((videoBitRate * length + audio) / 8).rounded())
+    }
+
+    private static func fileType(of url: URL) throws -> AVFileType {
+        guard let identifier = UTType(filenameExtension: url.pathExtension)?.identifier else {
+            throw TrimError.unsupportedFileType
+        }
+        return AVFileType(rawValue: identifier)
+    }
+
+    /// `range` of the video tracks alone, retimed by `speed`.
+    private static func silentComposition(of asset: AVURLAsset, range: TrimRange, speed: Double) async throws -> AVMutableComposition {
+        let composition = AVMutableComposition()
+        for track in try await asset.loadTracks(withMediaType: .video) {
+            try insert(range, of: track, into: composition, speed: speed)
+                .preferredTransform = try await track.load(.preferredTransform)
+        }
+        return composition
+    }
+
+    /// Copying scaled audio only stretches it with an edit list, which most players ignore, so the
+    /// audio is rendered at the new rate. Export can't copy retimed video alongside that audio, so
+    /// each is written on its own and the samples of both are copied into `output`.
+    private static func retime(_ asset: AVURLAsset, audio: [AVAssetTrack], range: TrimRange, speed: Double, to output: URL, as fileType: AVFileType) async throws -> Bool {
+        let scratch = FileManager.default.temporaryDirectory.appendingPathComponent("Shot/\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: scratch, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: scratch) }
+        let videoURL = scratch.appendingPathComponent("video.mp4")
+        let passthrough = try await trim(asset.url, range: range, speed: speed, muted: true, to: videoURL, as: .mp4)
+
+        let retimed = AVMutableComposition()
+        for track in audio {
+            try insert(range, of: track, into: retimed, speed: speed)
+        }
+        guard let export = AVAssetExportSession(asset: retimed, presetName: AVAssetExportPresetAppleM4A) else {
+            throw TrimError.exportFailed
+        }
+        export.audioTimePitchAlgorithm = .spectral
+        let audioURL = scratch.appendingPathComponent("audio.m4a")
+        try await export.export(to: audioURL, as: .m4a)
+
+        if FileManager.default.fileExists(atPath: output.path) {
+            try FileManager.default.removeItem(at: output)
+        }
+        try await mux(video: videoURL, audio: audioURL, to: output, as: fileType)
+        return passthrough
+    }
+
+    /// Copies the samples of `video`'s video track and `audio`'s audio track into one file.
+    private static func mux(video: URL, audio: URL, to output: URL, as fileType: AVFileType) async throws {
+        let writer = try AVAssetWriter(outputURL: output, fileType: fileType)
+        let videoAsset = AVURLAsset(url: video)
+        let duration = try await videoAsset.load(.duration)
+        var copies: [(reader: AVAssetReader, output: AVAssetReaderTrackOutput, input: AVAssetWriterInput)] = []
+        for (asset, type) in [(videoAsset, AVMediaType.video), (AVURLAsset(url: audio), .audio)] {
+            guard let track = try await asset.loadTracks(withMediaType: type).first else {
+                throw TrimError.exportFailed
+            }
+            let reader = try AVAssetReader(asset: asset)
+            // The audio encoder pads the end a little; keep the audio within the video.
+            reader.timeRange = CMTimeRange(start: .zero, duration: duration)
+            let trackOutput = AVAssetReaderTrackOutput(track: track, outputSettings: nil)
+            reader.add(trackOutput)
+            let (formats, transform) = try await track.load(.formatDescriptions, .preferredTransform)
+            let input = AVAssetWriterInput(mediaType: type, outputSettings: nil, sourceFormatHint: formats.first)
+            input.transform = transform
+            writer.add(input)
+            copies.append((reader, trackOutput, input))
+        }
+        guard writer.startWriting() else {
+            throw writer.error ?? TrimError.exportFailed
+        }
+        writer.startSession(atSourceTime: .zero)
+        for copy in copies where !copy.reader.startReading() {
+            throw copy.reader.error ?? TrimError.exportFailed
+        }
+        // The writer interleaves the tracks, so it takes from whichever one it's ready for.
+        while !copies.isEmpty {
+            try Task.checkCancellation()
+            var appended = false
+            for index in copies.indices.reversed() where copies[index].input.isReadyForMoreMediaData {
+                if let buffer = copies[index].output.copyNextSampleBuffer() {
+                    guard copies[index].input.append(buffer) else {
+                        throw writer.error ?? TrimError.exportFailed
+                    }
+                    appended = true
+                } else {
+                    if copies[index].reader.status == .failed {
+                        throw copies[index].reader.error ?? TrimError.exportFailed
+                    }
+                    copies[index].input.markAsFinished()
+                    copies.remove(at: index)
+                }
+            }
+            if !appended {
+                try await Task.sleep(for: .milliseconds(2))
+            }
+        }
+        await writer.finishWriting()
+        guard writer.status == .completed else {
+            throw writer.error ?? TrimError.exportFailed
+        }
+    }
+
+    /// Inserts `range` of `track` at the start of `composition`, playing it at `speed`.
+    @discardableResult
+    private static func insert(_ range: TrimRange, of track: AVAssetTrack, into composition: AVMutableComposition, speed: Double) throws -> AVMutableCompositionTrack {
+        guard let copy = composition.addMutableTrack(withMediaType: track.mediaType, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+            throw TrimError.exportFailed
+        }
+        let source = range.timeRange
+        try copy.insertTimeRange(source, of: track, at: .zero)
+        if speed != 1 {
+            copy.scaleTimeRange(CMTimeRange(start: .zero, duration: source.duration), toDuration: CMTimeMultiplyByFloat64(source.duration, multiplier: 1 / speed))
+        }
+        return copy
     }
 }

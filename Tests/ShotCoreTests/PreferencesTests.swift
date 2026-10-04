@@ -87,6 +87,7 @@ import Testing
         #expect(!prefs.recordMicrophone)
         #expect(prefs.recordShowsCursor)
         #expect(prefs.replacesSystemScreenshots)
+        #expect(prefs.videoExportOptions == VideoExportOptions())
         #expect(prefs.hotkey(for: .captureArea)?.displayString == "⇧⌘4")
         store.set("", forKey: PreferenceKey.hotkey(.record))
         #expect(prefs.hotkey(for: .record) == nil)
@@ -112,6 +113,24 @@ import Testing
         #expect(prefs.playSound)
         #expect(prefs.disabledSystemScreenshots)
         #expect(prefs.filePrefix == "Shot")
+    }
+
+    @Test func exportOptionsRememberFormatAndGIFSettingsOnly() throws {
+        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
+        let store = try #require(UserDefaults(suiteName: suite))
+        defer { store.removePersistentDomain(forName: suite) }
+        Preferences.registerDefaults(in: store)
+        let prefs = Preferences(store: store)
+        Preferences.remember(VideoExportOptions(format: .gif, gifFrameRate: 24, gifWidth: VideoExportOptions.originalWidth, muted: true, speed: 2), in: store)
+        #expect(prefs.videoExportOptions == VideoExportOptions(format: .gif, gifFrameRate: 24, gifWidth: VideoExportOptions.originalWidth))
+        // Values Shot doesn't offer fall back to the defaults.
+        store.set(12, forKey: PreferenceKey.gifFrameRate)
+        store.set(333, forKey: PreferenceKey.gifWidth)
+        store.set("webm", forKey: PreferenceKey.videoExportFormat)
+        #expect(prefs.videoExportOptions == VideoExportOptions())
+        Preferences.remember(VideoExportOptions(format: .gif), in: store)
+        Preferences.resetAll(in: store)
+        #expect(prefs.videoExportOptions == VideoExportOptions())
     }
 
     @Test func removingTextCaptureDeletesItsShortcut() throws {
