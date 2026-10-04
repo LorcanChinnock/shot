@@ -9,6 +9,7 @@ private let log = Logger.shot("video-editor")
 /// What one undo step restores.
 struct VideoEdit: Equatable {
     var range: TrimRange
+    var cuts: CutList
     var options: VideoExportOptions
 }
 
@@ -20,6 +21,10 @@ final class VideoEditorModel {
     private(set) var duration: Double = 0
     private(set) var aspectRatio: CGFloat = 16 / 9
     private(set) var range = TrimRange(duration: 0)
+    /// Sections removed from inside `range`; Copy, Save and Export all leave them out.
+    private(set) var cuts = CutList()
+    /// The section a Shift-drag on the timeline marked, which Delete cuts.
+    private(set) var selection: Range<Double>?
     private(set) var currentTime: Double = 0
     private(set) var isPlaying = false
     private(set) var isExporting = false
@@ -32,6 +37,7 @@ final class VideoEditorModel {
 
     @ObservationIgnored private var dragOrigin: TrimRange?
     @ObservationIgnored private var timeObserver: Any?
+    @ObservationIgnored private var cutObserver: Any?
     @ObservationIgnored private var statusObservation: NSKeyValueObservation?
 
     init(fileURL: URL) {
@@ -49,9 +55,12 @@ final class VideoEditorModel {
         }
     }
 
-    var isDirty: Bool { !range.isFull(duration: duration) }
+    var isDirty: Bool { !range.isFull(duration: duration) || !cuts.isEmpty }
 
-    var edit: VideoEdit { VideoEdit(range: range, options: options) }
+    var edit: VideoEdit { VideoEdit(range: range, cuts: cuts, options: options) }
+
+    /// How long Copy and Save run for: the range less the cuts.
+    var keptLength: Double { cuts.keptLength(in: range) }
 
     /// Loads (or reloads, after a save) the file; false when it has no video to show.
     func load() async -> Bool {
@@ -71,6 +80,8 @@ final class VideoEditorModel {
         }
         player.replaceCurrentItem(with: AVPlayerItem(asset: asset))
         range = TrimRange(duration: duration)
+        cuts = CutList()
+        selection = nil
         undoStack = UndoStack()
         currentTime = 0
         thumbnails = []
@@ -80,10 +91,11 @@ final class VideoEditorModel {
 
     func teardown() {
         player.pause()
-        if let timeObserver {
-            player.removeTimeObserver(timeObserver)
+        for observer in [timeObserver, cutObserver].compactMap(\.self) {
+            player.removeTimeObserver(observer)
         }
         timeObserver = nil
+        cutObserver = nil
         statusObservation = nil
     }
 
@@ -95,17 +107,56 @@ final class VideoEditorModel {
         player.pause()
     }
 
+    /// The handles stop where the cuts would leave too little to play.
     func drag(_ handle: TrimHandle, to time: Double) {
-        range = range.moving(handle, to: time, duration: duration)
+        let moved = range.moving(handle, to: time, duration: duration)
+        if cuts.allows(moved) {
+            range = moved
+        }
         seek(to: handle == .start ? range.start : range.end)
     }
 
     func endDrag() {
         if let dragOrigin, dragOrigin != range {
-            undoStack.record(VideoEdit(range: dragOrigin, options: options))
+            undoStack.record(VideoEdit(range: dragOrigin, cuts: cuts, options: options))
         }
         dragOrigin = nil
         applyRange()
+    }
+
+    // MARK: Cutting
+
+    /// Marks the section between `anchor` and `time` and shows the frame at `time`.
+    func select(from anchor: Double, to time: Double) {
+        player.pause()
+        let ends = [anchor, time].map { min(max($0, 0), duration) }
+        selection = ends[0] == ends[1] ? nil : ends.min()!..<ends.max()!
+        seek(to: ends[1])
+    }
+
+    /// False when nothing was selected.
+    @discardableResult
+    func clearSelection() -> Bool {
+        defer { selection = nil }
+        return selection != nil
+    }
+
+    /// Cuts the selection out as one undo step; false when nothing is selected.
+    func cutSelection() -> Bool {
+        guard let selection, !isExporting else {
+            return false
+        }
+        self.selection = nil
+        guard let cut = cuts.cutting(selection, from: range) else {
+            Toast.show("Can't cut all of the video")
+            return true
+        }
+        if cut != cuts {
+            undoStack.record(edit)
+            cuts = cut
+            applyRange()
+        }
+        return true
     }
 
     func setOptions(_ new: VideoExportOptions) {
@@ -132,6 +183,7 @@ final class VideoEditorModel {
 
     private func restore(_ edit: VideoEdit) {
         range = edit.range
+        cuts = edit.cuts
         if options != edit.options {
             options = edit.options
             Preferences.remember(options)
@@ -139,9 +191,29 @@ final class VideoEditorModel {
         applyRange()
     }
 
-    /// Playback stops at the out point.
+    /// Playback jumps over the cuts and stops at the end of the last section.
     private func applyRange() {
-        player.currentItem?.forwardPlaybackEndTime = range.timeRange.end
+        player.currentItem?.forwardPlaybackEndTime = CMTime(seconds: cuts.playbackEnd(in: range), preferredTimescale: 600)
+        if let cutObserver {
+            player.removeTimeObserver(cutObserver)
+        }
+        cutObserver = nil
+        guard !cuts.isEmpty else {
+            return
+        }
+        let starts = cuts.cuts.map { NSValue(time: CMTime(seconds: $0.lowerBound, preferredTimescale: 600)) }
+        cutObserver = player.addBoundaryTimeObserver(forTimes: starts, queue: .main) { [weak self] in
+            MainActor.assumeIsolated {
+                self?.skipCut()
+            }
+        }
+    }
+
+    /// The boundary observer fires at or just after a cut's start.
+    private func skipCut() {
+        if let cut = cuts.cut(containing: player.currentTime().seconds + 0.05) {
+            seek(to: cut.upperBound)
+        }
     }
 
     // MARK: Playback
@@ -151,7 +223,7 @@ final class VideoEditorModel {
             player.pause()
             return
         }
-        let start = range.playbackStart(from: currentTime)
+        let start = cuts.playbackStart(from: currentTime, in: range)
         if start != currentTime {
             seek(to: start)
         }
@@ -186,7 +258,7 @@ final class VideoEditorModel {
 
     // MARK: Output
 
-    /// Copies the file, or a trimmed copy of it, to the clipboard.
+    /// Copies the file, or an edited copy of it, to the clipboard.
     func copy() async {
         guard isDirty else {
             Clipboard.copy(fileURL: fileURL)
@@ -202,11 +274,11 @@ final class VideoEditorModel {
         Toast.show("Copied")
     }
 
-    /// Replaces the file with the trimmed range and copies it, like Save in the image editor.
+    /// Replaces the file with the trimmed range, less the cuts, and copies it, like Save in the image editor.
     @discardableResult
     func save() async -> Bool {
         guard isDirty else {
-            Toast.show("Drag the handles to trim")
+            Toast.show("Trim or cut the video first")
             return false
         }
         let replacements: URL
@@ -227,30 +299,30 @@ final class VideoEditorModel {
             Toast.show("Save failed: \(error.localizedDescription)")
             return false
         }
-        log.notice("Saved trimmed video: \(self.fileURL.path)")
+        log.notice("Saved edited video: \(self.fileURL.path)")
         Clipboard.copy(fileURL: fileURL)
         Toast.show("Saved and copied")
         _ = await load()
         return true
     }
 
-    /// Writes a new file next to the original with the trim and export options, and copies it.
+    /// Writes a new file next to the original with the trim, cuts and export options, and copies it.
     func export() async {
         // Checked before picking a name, so two exports can't pick the same one.
         guard !isExporting else {
             return
         }
-        let options = options, range = range, source = fileURL
+        let options = options, range = range, cuts = cuts, source = fileURL
         let output = FileNaming.uniqueURL(in: source.deletingLastPathComponent(), date: Date(), pathExtension: options.format.fileExtension, prefix: Preferences().filePrefix)
         var note = ""
         let exported = await exporting {
             switch options.format {
             case .mp4:
-                let passthrough = try await VideoTrimmer.trim(source, range: range, speed: options.speed, muted: options.muted, to: output, as: .mp4)
+                let passthrough = try await VideoTrimmer.trim(source, range: range, cuts: cuts, speed: options.speed, muted: options.muted, to: output, as: .mp4)
                 log.notice("Exported MP4 at \(options.speed, privacy: .public)×, muted \(options.muted, privacy: .public), passthrough \(passthrough, privacy: .public)")
             case .gif:
                 let result = try await GIFExporter.export(
-                    videoURL: source, to: output, range: range, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed
+                    videoURL: source, to: output, range: range, cuts: cuts, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed
                 ) { fraction in
                     Task { @MainActor in
                         Toast.show("Exporting… \(Int(fraction * 100))%", duration: nil)
@@ -268,9 +340,9 @@ final class VideoEditorModel {
         Toast.show("Exported and copied \(output.lastPathComponent)\(note)", duration: .seconds(3))
     }
 
-    /// Works out `estimatedSize` for the current trim and options; call again when either changes.
+    /// Works out `estimatedSize` for the current trim, cuts and options; call again when any change.
     func refreshEstimate() async {
-        let options = options, range = range, source = fileURL
+        let options = options, range = range, cuts = cuts, source = fileURL
         // Wait for a drag or a run of clicks to settle before reading frames.
         try? await Task.sleep(for: .milliseconds(250))
         guard !Task.isCancelled else {
@@ -279,9 +351,9 @@ final class VideoEditorModel {
         do {
             let size = switch options.format {
             case .mp4:
-                try await VideoTrimmer.estimatedSize(of: source, range: range, speed: options.speed, muted: options.muted)
+                try await VideoTrimmer.estimatedSize(of: source, range: range, cuts: cuts, speed: options.speed, muted: options.muted)
             case .gif:
-                try await GIFExporter.estimatedSize(of: source, range: range, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed)
+                try await GIFExporter.estimatedSize(of: source, range: range, cuts: cuts, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed)
             }
             if !Task.isCancelled {
                 estimatedSize = size
@@ -299,8 +371,8 @@ final class VideoEditorModel {
             if let folder {
                 try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             }
-            let passthrough = try await VideoTrimmer.trim(fileURL, range: range, to: output)
-            log.notice("Trimmed \(self.range.start, privacy: .public)–\(self.range.end, privacy: .public) s, passthrough \(passthrough, privacy: .public)")
+            let passthrough = try await VideoTrimmer.trim(fileURL, range: range, cuts: cuts, to: output)
+            log.notice("Trimmed \(self.range.start, privacy: .public)–\(self.range.end, privacy: .public) s less \(self.cuts.cuts.count, privacy: .public) cuts, passthrough \(passthrough, privacy: .public)")
         }
     }
 

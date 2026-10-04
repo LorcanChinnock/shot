@@ -10,24 +10,26 @@ public struct GIFFramePlan: Equatable, Sendable {
     public let frameDelay: Double
     /// True when the range plays for longer than `GIFExporter.maxDuration` and only the start is kept.
     public let truncated: Bool
-    private let start: Double
+    private let range: TrimRange
+    private let cuts: CutList
     private let step: Double
 
-    /// Scales down to `maxWidth` but never up; `speed` 2 plays the range in half the time.
-    public init(sourceSize: CGSize, range: TrimRange, fps: Double, maxWidth: CGFloat?, speed: Double = 1) {
+    /// Scales down to `maxWidth` but never up; `speed` 2 plays the range, less `cuts`, in half the time.
+    public init(sourceSize: CGSize, range: TrimRange, cuts: CutList = CutList(), fps: Double, maxWidth: CGFloat?, speed: Double = 1) {
         let sourceWidth = abs(sourceSize.width), sourceHeight = abs(sourceSize.height)
         let width = min(maxWidth ?? sourceWidth, sourceWidth)
         size = CGSize(width: width, height: sourceWidth == 0 ? 0 : (sourceHeight * width / sourceWidth).rounded())
-        let length = range.length / speed
+        let length = cuts.keptLength(in: range) / speed
         frameCount = max(1, Int((min(length, GIFExporter.maxDuration) * fps).rounded(.down)))
         frameDelay = 1 / fps
         truncated = length > GIFExporter.maxDuration
-        start = range.start
+        self.range = range
+        self.cuts = cuts
         step = speed / fps
     }
 
     public func sourceTime(ofFrame index: Int) -> Double {
-        start + Double(index) * step
+        cuts.sourceTime(at: Double(index) * step, in: range)
     }
 
     /// Up to `count` frames from the middle of equal slots, for estimating the file size.
@@ -62,18 +64,19 @@ public enum GIFExporter {
         }
     }
 
-    /// Writes `range` (the whole video when nil) as a looping GIF at `fps`, scaled down to `maxWidth`.
+    /// Writes `range` (the whole video when nil), less `cuts`, as a looping GIF at `fps`, scaled down to `maxWidth`.
     @discardableResult
     public static func export(
         videoURL: URL,
         to outputURL: URL,
         range: TrimRange? = nil,
+        cuts: CutList = CutList(),
         fps: Double = 12,
         maxWidth: CGFloat? = 720,
         speed: Double = 1,
         progress: @Sendable (Double) -> Void = { _ in }
     ) async throws -> Result {
-        let (generator, plan) = try await prepare(videoURL: videoURL, range: range, fps: fps, maxWidth: maxWidth, speed: speed)
+        let (generator, plan) = try await prepare(videoURL: videoURL, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
         guard let destination = CGImageDestinationCreateWithURL(outputURL as CFURL, UTType.gif.identifier as CFString, plan.frameCount, nil) else {
             throw ExportError.cannotCreateDestination
         }
@@ -85,8 +88,8 @@ public enum GIFExporter {
     /// ImageIO stores only what changed since the previous frame, so this encodes a few pairs of
     /// neighbouring frames spread over the range: one frame alone costs a whole frame, and the pair
     /// costs that plus a typical change.
-    public static func estimatedSize(of videoURL: URL, range: TrimRange? = nil, fps: Double, maxWidth: CGFloat?, speed: Double = 1) async throws -> Int {
-        let (generator, plan) = try await prepare(videoURL: videoURL, range: range, fps: fps, maxWidth: maxWidth, speed: speed)
+    public static func estimatedSize(of videoURL: URL, range: TrimRange? = nil, cuts: CutList = CutList(), fps: Double, maxWidth: CGFloat?, speed: Double = 1) async throws -> Int {
+        let (generator, plan) = try await prepare(videoURL: videoURL, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
         let anchors = plan.sampleFrames(estimateSamples).map { max(0, min($0, plan.frameCount - 2)) }
         var whole = 0, change = 0
         for anchor in anchors {
@@ -127,14 +130,14 @@ public enum GIFExporter {
         [kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFDelayTime: delay]] as CFDictionary
     }
 
-    private static func prepare(videoURL: URL, range: TrimRange?, fps: Double, maxWidth: CGFloat?, speed: Double) async throws -> (AVAssetImageGenerator, GIFFramePlan) {
+    private static func prepare(videoURL: URL, range: TrimRange?, cuts: CutList, fps: Double, maxWidth: CGFloat?, speed: Double) async throws -> (AVAssetImageGenerator, GIFFramePlan) {
         let asset = AVURLAsset(url: videoURL)
         let duration = try await asset.load(.duration).seconds
         guard let track = try await asset.loadTracks(withMediaType: .video).first else {
             throw ExportError.noVideoTrack
         }
         let (naturalSize, transform) = try await track.load(.naturalSize, .preferredTransform)
-        let plan = GIFFramePlan(sourceSize: naturalSize.applying(transform), range: range ?? TrimRange(duration: duration), fps: fps, maxWidth: maxWidth, speed: speed)
+        let plan = GIFFramePlan(sourceSize: naturalSize.applying(transform), range: range ?? TrimRange(duration: duration), cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
 
         let generator = AVAssetImageGenerator(asset: asset)
         generator.appliesPreferredTrackTransform = true
