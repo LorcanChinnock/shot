@@ -50,7 +50,14 @@ final class EditorModel {
     let fileURL: URL
     let scale: CGFloat
     var document: EditorDocument
-    var tool: EditorTool = .arrow
+    var tool: EditorTool = .arrow {
+        // Only the select tool selects, and the toolbar restyles the selection, so drop it when drawing.
+        didSet {
+            if tool != .select {
+                selectedID = nil
+            }
+        }
+    }
     var colorIndex = 0
     /// Notes keep their own colour, pale yellow until the user picks another.
     var noteColorIndex = 2
@@ -68,14 +75,43 @@ final class EditorModel {
     var color: RGBA { RGBA.presets[colorIndex] }
     var noteColor: RGBA { RGBA.presets[noteColorIndex] }
 
-    /// The colour the palette shows and sets: the note colour while the note tool is active.
+    var selection: Annotation? {
+        selectedID.flatMap { id in document.annotations.first { $0.id == id } }
+    }
+
+    /// The colour the palette shows and sets: the selection's colour, else the note colour while the
+    /// note tool is active, else the colour for the next annotation.
     var paletteIndex: Int {
-        get { tool == .note ? noteColorIndex : colorIndex }
+        get {
+            if let selection {
+                return RGBA.presets.firstIndex(of: selection.color) ?? -1
+            }
+            return tool == .note ? noteColorIndex : colorIndex
+        }
         set {
-            if tool == .note {
+            if selection != nil {
+                restyleSelection { $0.color = RGBA.presets[newValue] }
+            } else if tool == .note {
                 noteColorIndex = newValue
             } else {
                 colorIndex = newValue
+            }
+        }
+    }
+
+    /// The width the toolbar shows and sets: the selection's, else the width for the next annotation.
+    var lineWidthIndex: Int {
+        get {
+            if let selection {
+                return Self.baseWidths.firstIndex { abs($0 * scale - selection.lineWidth) < 0.01 } ?? -1
+            }
+            return widthIndex
+        }
+        set {
+            if selection != nil {
+                restyleSelection { $0.setLineWidth(Self.baseWidths[newValue] * scale) }
+            } else {
+                widthIndex = newValue
             }
         }
     }
@@ -115,8 +151,8 @@ final class EditorModel {
         document.grow(toFit: annotation, margin: canvasMargin)
     }
 
-    /// Sets a note's text as one undoable step; empty text deletes the note.
-    func setNoteText(_ id: UUID, to string: String) {
+    /// Sets a text annotation's or note's text as one undoable step; empty text deletes it.
+    func setText(_ id: UUID, to string: String) {
         edit { doc in
             guard let index = doc.annotations.firstIndex(where: { $0.id == id }) else {
                 return
@@ -124,12 +160,26 @@ final class EditorModel {
             if string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 doc.annotations.remove(at: index)
             } else {
-                doc.annotations[index].setNoteText(string)
+                doc.annotations[index].setText(string)
                 doc.grow(toFit: doc.annotations[index], margin: canvasMargin)
             }
         }
         if !document.annotations.contains(where: { $0.id == id }), selectedID == id {
             selectedID = nil
+        }
+    }
+
+    /// Changes the selected annotation as one undoable step, growing the canvas if it now reaches past the edge.
+    private func restyleSelection(_ change: (inout Annotation) -> Void) {
+        guard let selectedID else {
+            return
+        }
+        edit { doc in
+            guard let index = doc.annotations.firstIndex(where: { $0.id == selectedID }) else {
+                return
+            }
+            change(&doc.annotations[index])
+            doc.grow(toFit: doc.annotations[index], margin: canvasMargin)
         }
     }
 

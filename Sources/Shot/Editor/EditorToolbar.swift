@@ -85,8 +85,8 @@ struct EditorToolbar: View {
             }
             ToolGroup {
                 ForEach(EditorModel.baseWidths.indices, id: \.self) { index in
-                    Tile(selected: model.widthIndex == index, color: Brutal.sky, help: "Line width \(Int(EditorModel.baseWidths[index]))") {
-                        model.widthIndex = index
+                    Tile(selected: model.lineWidthIndex == index, color: Brutal.sky, help: "Line width \(Int(EditorModel.baseWidths[index]))") {
+                        model.lineWidthIndex = index
                     } label: {
                         Capsule().fill(Brutal.ink).frame(width: 16, height: EditorModel.baseWidths[index] + 1)
                     }
