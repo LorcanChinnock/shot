@@ -69,6 +69,17 @@ public struct CutList: Equatable, Sendable {
         cuts.first { $0.contains(time) }
     }
 
+    /// The cut playback has just reached at `time`: one starting within `tolerance` of it that it hasn't passed.
+    public func cut(reachedAt time: Double, tolerance: Double = 0.05) -> Range<Double>? {
+        cuts.last { $0.lowerBound <= time + tolerance && $0.upperBound > time }
+    }
+
+    /// Where playback of `range` has to jump: the start of each cut it would otherwise play into.
+    public func skipPoints(in range: TrimRange) -> [Double] {
+        let end = playbackEnd(in: range)
+        return cuts.map(\.lowerBound).filter { $0 >= range.start && $0 < end }
+    }
+
     /// The source time that plays `time` seconds into the result (before any speed change).
     public func sourceTime(at time: Double, in range: TrimRange) -> Double {
         let sections = kept(in: range)

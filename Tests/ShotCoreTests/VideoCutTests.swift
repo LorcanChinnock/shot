@@ -75,6 +75,23 @@ import Testing
     #expect(cuts.cut(containing: 1) == nil)
 }
 
+@Test func playbackReachingACutFindsItEvenWhenItIsShort() {
+    let cuts = CutList([2..<2.02, 6..<7])
+    // The player reports a time at or just after the cut's start, or a hair before it.
+    #expect(cuts.cut(reachedAt: 2.005) == 2..<2.02)
+    #expect(cuts.cut(reachedAt: 5.99) == 6..<7)
+    #expect(cuts.cut(reachedAt: 6.4) == 6..<7)
+    // Already past it, or nowhere near one.
+    #expect(cuts.cut(reachedAt: 2.03) == nil)
+    #expect(cuts.cut(reachedAt: 4) == nil)
+}
+
+@Test func onlyCutsBeforeTheEndOfPlaybackAreSkipPoints() {
+    let range = TrimRange(start: 1, end: 9, duration: 10)
+    let cuts = CutList([0..<0.5, 3..<4, 7..<9.5])
+    #expect(cuts.skipPoints(in: range) == [3])
+}
+
 @Test func outputTimeMapsBackToTheSource() {
     let range = TrimRange(start: 1, end: 10, duration: 10)
     let cuts = CutList([2..<3, 6..<7.5])

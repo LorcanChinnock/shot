@@ -198,20 +198,19 @@ final class VideoEditorModel {
             player.removeTimeObserver(cutObserver)
         }
         cutObserver = nil
-        guard !cuts.isEmpty else {
+        let starts = cuts.skipPoints(in: range)
+        guard !starts.isEmpty else {
             return
         }
-        let starts = cuts.cuts.map { NSValue(time: CMTime(seconds: $0.lowerBound, preferredTimescale: 600)) }
-        cutObserver = player.addBoundaryTimeObserver(forTimes: starts, queue: .main) { [weak self] in
+        cutObserver = player.addBoundaryTimeObserver(forTimes: starts.map { NSValue(time: CMTime(seconds: $0, preferredTimescale: 600)) }, queue: .main) { [weak self] in
             MainActor.assumeIsolated {
                 self?.skipCut()
             }
         }
     }
 
-    /// The boundary observer fires at or just after a cut's start.
     private func skipCut() {
-        if let cut = cuts.cut(containing: player.currentTime().seconds + 0.05) {
+        if let cut = cuts.cut(reachedAt: player.currentTime().seconds) {
             seek(to: cut.upperBound)
         }
     }
