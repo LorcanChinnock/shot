@@ -191,11 +191,13 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         case .select:
             let tolerance = 6 / viewScale
             let hit = model.document.annotations.topmostIndex(at: point, tolerance: tolerance).map { model.document.annotations[$0] }
+            // The toolbar restyles the selection, which the open editor wouldn't show, so editing
+            // deselects; closing the editor selects it again.
             if event.clickCount == 2, let hit, case .note = hit.kind {
-                model.selectedID = hit.id
+                model.selectedID = nil
                 beginNote(hit)
             } else if event.clickCount == 2, let hit, case let .text(_, origin, _) = hit.kind {
-                model.selectedID = hit.id
+                model.selectedID = nil
                 beginText(at: origin, editing: hit)
             } else if let selected = model.selection, let handle = selected.handle(at: point, tolerance: tolerance) {
                 resizeHandle = handle
@@ -328,6 +330,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             fontSize = size
             editingTextID = existing.id
         }
+        // A double-click that wobbles mustn't drag the text being edited.
+        dragStart = nil
         textOrigin = point
         let field = NSTextField(string: string)
         field.isBordered = false
@@ -482,6 +486,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     private func removeTextField() {
         let field = textField
+        let editedID = editingNote?.id ?? editingTextID
         textField = nil
         textOrigin = nil
         editingNote = nil
@@ -490,5 +495,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         field?.delegate = nil
         field?.removeFromSuperview()
         window?.makeFirstResponder(self)
+        if model.tool == .select, let editedID, model.document.annotations.contains(where: { $0.id == editedID }) {
+            model.selectedID = editedID
+        }
     }
 }

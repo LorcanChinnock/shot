@@ -81,7 +81,17 @@ func boxesHaveHandlesOnTheirCornersAndEdges(kind: Annotation.Kind) {
     #expect(tiny.handle(at: CGPoint(x: 106, y: 106), tolerance: 8) == .bottomRight)
     #expect(tiny.handle(at: CGPoint(x: 103, y: 99), tolerance: 8) == .top)
     let short = annotation(.arrow(from: CGPoint(x: 0, y: 0), to: CGPoint(x: 4, y: 0)))
-    #expect(short.handle(at: CGPoint(x: 3, y: 0), tolerance: 8) == .end)
+    #expect(short.handle(at: CGPoint(x: 3.5, y: 0), tolerance: 8) == .end)
+}
+
+@Test func theMiddleOfASmallShapeStillMovesIt() {
+    // Every point of these shapes is within the tolerance of a handle, but the middle grabs none.
+    let tiny = annotation(.rect(CGRect(x: 100, y: 100, width: 6, height: 6)))
+    #expect(tiny.handle(at: CGPoint(x: 103, y: 103), tolerance: 8) == nil)
+    #expect(tiny.handle(at: CGPoint(x: 102, y: 104), tolerance: 8) == nil)
+    let short = annotation(.line(from: CGPoint(x: 0, y: 0), to: CGPoint(x: 6, y: 0)))
+    #expect(short.handle(at: CGPoint(x: 3, y: 0), tolerance: 8) == nil)
+    #expect(short.handle(at: CGPoint(x: 0.5, y: 1), tolerance: 8) == .start)
 }
 
 // MARK: Resizing

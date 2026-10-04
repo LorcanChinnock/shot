@@ -179,11 +179,14 @@ public struct Annotation: Identifiable, Equatable, Sendable {
         }
     }
 
-    /// The handle nearest `point`, if one is within `tolerance` of it on both axes.
+    /// The handle nearest `point`, if one is within `tolerance` of it on both axes and nearer than the
+    /// shape's centre, so a shape smaller than the handles can still be grabbed by its middle and moved.
     public func handle(at point: CGPoint, tolerance: CGFloat) -> AnnotationHandle? {
-        handles
-            .filter { abs(point.x - $0.point.x) <= tolerance && abs(point.y - $0.point.y) <= tolerance }
-            .min { hypot(point.x - $0.point.x, point.y - $0.point.y) < hypot(point.x - $1.point.x, point.y - $1.point.y) }?
+        func distance(_ p: CGPoint) -> CGFloat { hypot(point.x - p.x, point.y - p.y) }
+        let centre = distance(CGPoint(x: bounds.midX, y: bounds.midY))
+        return handles
+            .filter { abs(point.x - $0.point.x) <= tolerance && abs(point.y - $0.point.y) <= tolerance && distance($0.point) < centre }
+            .min { distance($0.point) < distance($1.point) }?
             .handle
     }
 
