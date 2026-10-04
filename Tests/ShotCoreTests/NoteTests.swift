@@ -135,12 +135,12 @@ private let longText = "Sticky notes wrap their text to the width of the note, s
     #expect(n.kind == .note("Hello", rect: CGRect(x: 70, y: 115, width: 200, height: 100)))
 }
 
-@Test func setNoteTextChangesOnlyNotes() {
+@Test func setTextChangesNotes() {
     var n = note("Hello", CGRect(x: 0, y: 0, width: 200, height: 0))
-    n.setNoteText("Bye")
+    n.setText("Bye")
     #expect(n.kind == .note("Bye", rect: CGRect(x: 0, y: 0, width: 200, height: 0)))
     var r = Annotation(kind: .rect(.zero), color: yellow, lineWidth: 4)
-    r.setNoteText("Nope")
+    r.setText("Nope")
     #expect(r.kind == .rect(.zero))
 }
 
@@ -148,37 +148,36 @@ private let longText = "Sticky notes wrap their text to the width of the note, s
 
 @Test func handlesSitOnTheCornersOfTheNote() {
     let n = note("Hello", CGRect(x: 100, y: 100, width: 200, height: 100))
-    #expect(n.noteHandle(at: CGPoint(x: 101, y: 99), tolerance: 4) == .topLeft)
-    #expect(n.noteHandle(at: CGPoint(x: 300, y: 100), tolerance: 4) == .topRight)
-    #expect(n.noteHandle(at: CGPoint(x: 97, y: 203), tolerance: 4) == .bottomLeft)
-    #expect(n.noteHandle(at: CGPoint(x: 300, y: 200), tolerance: 4) == .bottomRight)
-    #expect(n.noteHandle(at: CGPoint(x: 200, y: 150), tolerance: 4) == nil)
-    #expect(Annotation(kind: .rect(CGRect(x: 100, y: 100, width: 200, height: 100)), color: yellow, lineWidth: 4).noteHandle(at: CGPoint(x: 100, y: 100), tolerance: 4) == nil)
+    #expect(n.handle(at: CGPoint(x: 101, y: 99), tolerance: 4) == .topLeft)
+    #expect(n.handle(at: CGPoint(x: 300, y: 100), tolerance: 4) == .topRight)
+    #expect(n.handle(at: CGPoint(x: 97, y: 203), tolerance: 4) == .bottomLeft)
+    #expect(n.handle(at: CGPoint(x: 300, y: 200), tolerance: 4) == .bottomRight)
+    #expect(n.handle(at: CGPoint(x: 200, y: 150), tolerance: 4) == nil)
 }
 
 @Test func resizingChangesTheWrapWidthAndKeepsTheOppositeCorner() throws {
     var n = note(longText, CGRect(x: 100, y: 100, width: 400, height: 0))
     let before = try layout(n)
-    n.resizeNote(.bottomRight, to: CGPoint(x: 260, y: 100))
+    n.resize(.bottomRight, to: CGPoint(x: 260, y: 100))
     let after = try layout(n)
     #expect(after.frame.minX == 100 && after.frame.minY == 100)
     #expect(after.frame.width == 160)
     #expect(after.lines.count > before.lines.count)
 
     var left = note("Hi", CGRect(x: 100, y: 100, width: 200, height: 100))
-    left.resizeNote(.topLeft, to: CGPoint(x: 50, y: 80))
+    left.resize(.topLeft, to: CGPoint(x: 50, y: 80))
     #expect(left.bounds == CGRect(x: 50, y: 80, width: 250, height: 120))
 }
 
 @Test func resizingClampsAtTheMinimumAndNeverFlips() throws {
     var n = note("Hi", CGRect(x: 100, y: 100, width: 200, height: 100))
     let font = try layout(n).fontSize
-    n.resizeNote(.bottomRight, to: CGPoint(x: 0, y: 0))
+    n.resize(.bottomRight, to: CGPoint(x: 0, y: 0))
     #expect(n.bounds.minX == 100 && n.bounds.minY == 100)
     #expect(n.bounds.width == NoteLayout.minWidth(fontSize: font))
 
     var top = note("Hi", CGRect(x: 100, y: 100, width: 200, height: 100))
-    top.resizeNote(.topLeft, to: CGPoint(x: 400, y: 400))
+    top.resize(.topLeft, to: CGPoint(x: 400, y: 400))
     #expect(top.bounds.maxX == 300 && top.bounds.maxY == 200)
     #expect(top.bounds.width == NoteLayout.minWidth(fontSize: font))
     // The top edge stops where the text would no longer fit above the fixed bottom.
@@ -205,9 +204,9 @@ private let longText = "Sticky notes wrap their text to the width of the note, s
     let added = doc.snapshot
 
     stack.record(doc.snapshot)
-    doc.annotations[0].setNoteText("Hello there")
+    doc.annotations[0].setText("Hello there")
     stack.record(doc.snapshot)
-    doc.annotations[0].resizeNote(.bottomRight, to: CGPoint(x: 400, y: 20))
+    doc.annotations[0].resize(.bottomRight, to: CGPoint(x: 400, y: 20))
     doc.grow(toFit: doc.annotations[0], margin: 10)
     let resized = doc.snapshot
     #expect(resized.canvasRect.maxX > 400)
