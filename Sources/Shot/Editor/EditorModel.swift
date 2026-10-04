@@ -72,6 +72,9 @@ final class EditorModel {
     var isDirty = false
     /// True while auto-redact looks for text to hide.
     var isRedacting = false
+    /// The canvas's zoom, where 1 is actual size, for the zoom menu; the canvas view keeps it current.
+    /// Zoom is view state, not part of the document, so it isn't undoable.
+    var zoom: CGFloat = 1
     private(set) var undoStack = UndoStack<EditorSnapshot>()
     /// The annotation the arrow keys last moved, while that move is still the latest undo step,
     /// so holding an arrow key down undoes as one step.

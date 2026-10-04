@@ -17,6 +17,15 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private var resizeHandle: AnnotationHandle?
     /// The selection as it was when the resize began; every drag resizes from it.
     private var resizeStart: Annotation?
+    /// The font size of the text being typed or edited, in image pixels.
+    private var textFontSize: CGFloat?
+    /// The zoom and scroll position, or nil to fit the canvas to the view as it resizes.
+    /// They're view state, not part of the document, so they aren't undoable.
+    private var zoomedViewport: Viewport?
+    /// True while Space is held, when a drag scrolls instead of using the tool.
+    private var spaceHeld = false
+    /// The last view point of a Space-drag scroll.
+    private var panPoint: CGPoint?
 
     init(model: EditorModel) {
         self.model = model
@@ -43,7 +52,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             _ = model.tool
         } onChange: { [weak self] in
             Task { @MainActor in
-                self?.needsDisplay = true
+                // A fitted canvas rescales as it grows or is cropped.
+                self?.viewportDidChange()
                 self?.observe()
             }
         }
@@ -51,38 +61,33 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     override func layout() {
         super.layout()
-        layoutNoteField()
-        needsDisplay = true
+        viewportDidChange()
     }
 
     // MARK: Geometry
 
-    /// View points per image pixel.
-    private var viewScale: CGFloat {
-        let canvas = model.document.canvasRect
-        let fit = min((bounds.width - 40) / canvas.width, (bounds.height - 40) / canvas.height)
-        return max(0.01, min(fit, 1 / model.scale))
+    /// The whole canvas, no larger than actual size.
+    private var fitViewport: Viewport {
+        .fit(model.document.canvasRect, in: bounds.size, maxScale: Viewport.scale(forZoom: 1, pixelsPerPoint: model.scale))
     }
 
-    private var imageRect: CGRect {
-        let canvas = model.document.canvasRect
-        let s = viewScale
-        let size = CGSize(width: canvas.width * s, height: canvas.height * s)
-        return CGRect(x: ((bounds.width - size.width) / 2).rounded(), y: ((bounds.height - size.height) / 2).rounded(), width: size.width, height: size.height)
+    /// Clamped on every read, so a crop or a window resize never leaves the canvas scrolled away.
+    private var viewport: Viewport {
+        zoomedViewport?.clamped(to: model.document.canvasRect, in: bounds.size) ?? fitViewport
     }
+
+    /// View points per image pixel.
+    private var viewScale: CGFloat { viewport.scale }
+
+    /// The canvas, in view points.
+    private var imageRect: CGRect { viewport.viewRect(model.document.canvasRect) }
 
     private func imagePoint(_ event: NSEvent) -> CGPoint {
-        let p = convert(event.locationInWindow, from: nil)
-        let rect = imageRect
-        let canvas = model.document.canvasRect
-        return CGPoint(x: canvas.minX + (p.x - rect.minX) / viewScale, y: canvas.minY + (p.y - rect.minY) / viewScale)
+        viewport.imagePoint(convert(event.locationInWindow, from: nil))
     }
 
     private func viewRect(_ imageRect: CGRect) -> CGRect {
-        let rect = self.imageRect
-        let canvas = model.document.canvasRect
-        let s = viewScale
-        return CGRect(x: rect.minX + (imageRect.minX - canvas.minX) * s, y: rect.minY + (imageRect.minY - canvas.minY) * s, width: imageRect.width * s, height: imageRect.height * s)
+        viewport.viewRect(imageRect)
     }
 
     private func clampedToCanvas(_ point: CGPoint) -> CGPoint {
@@ -135,7 +140,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         ctx.saveGState()
         ctx.translateBy(x: rect.minX, y: rect.maxY)
         ctx.scaleBy(x: viewScale, y: -viewScale)
-        ctx.interpolationQuality = .high
+        // Zoomed in to two or more screen pixels per image pixel, show the pixels themselves rather than smoothing them.
+        ctx.interpolationQuality = viewScale * (window?.backingScaleFactor ?? 2) >= 2 ? .none : .high
         AnnotationRenderer.render(doc, into: ctx)
         ctx.restoreGState()
         // The draft isn't clipped to the canvas, so it shows where the canvas will grow to on release.
@@ -187,6 +193,11 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             commitText()
             return
         }
+        if spaceHeld {
+            panPoint = convert(event.locationInWindow, from: nil)
+            NSCursor.closedHand.set()
+            return
+        }
         let point = imagePoint(event)
         dragStart = point
         lastPoint = point
@@ -228,6 +239,12 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     }
 
     override func mouseDragged(with event: NSEvent) {
+        if let panPoint {
+            let point = convert(event.locationInWindow, from: nil)
+            pan(by: CGVector(dx: point.x - panPoint.x, dy: point.y - panPoint.y))
+            self.panPoint = point
+            return
+        }
         guard let start = dragStart, let last = lastPoint else {
             return
         }
@@ -292,6 +309,11 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     }
 
     override func mouseUp(with event: NSEvent) {
+        if panPoint != nil {
+            panPoint = nil
+            (spaceHeld ? NSCursor.openHand : NSCursor.arrow).set()
+            return
+        }
         defer {
             draft = nil
             cropDraft = nil
@@ -326,6 +348,14 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private static let nudgeDirections: [UInt16: NudgeDirection] = [123: .left, 124: .right, 125: .down, 126: .up]
 
     override func keyDown(with event: NSEvent) {
+        // Space scrolls while held; a drag already under way keeps using the tool.
+        if event.keyCode == 49 {
+            if !spaceHeld, dragStart == nil {
+                spaceHeld = true
+                NSCursor.openHand.set()
+            }
+            return
+        }
         if event.keyCode == 51 || event.keyCode == 117 {
             model.deleteSelection()
             return
@@ -346,6 +376,86 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         super.keyDown(with: event)
     }
 
+    override func keyUp(with event: NSEvent) {
+        guard event.keyCode == 49 else {
+            super.keyUp(with: event)
+            return
+        }
+        spaceHeld = false
+        if panPoint == nil {
+            NSCursor.arrow.set()
+        }
+    }
+
+    // Once a text field takes the keyboard, Space's release never reaches this view.
+    override func resignFirstResponder() -> Bool {
+        if spaceHeld {
+            spaceHeld = false
+            NSCursor.arrow.set()
+        }
+        return super.resignFirstResponder()
+    }
+
+    // MARK: Zoom
+
+    func zoomIn() {
+        zoom(to: Viewport.zoom(after: currentZoom), about: CGPoint(x: bounds.midX, y: bounds.midY))
+    }
+
+    func zoomOut() {
+        zoom(to: Viewport.zoom(before: currentZoom), about: CGPoint(x: bounds.midX, y: bounds.midY))
+    }
+
+    func zoomToActualSize() {
+        zoom(to: 1, about: CGPoint(x: bounds.midX, y: bounds.midY))
+    }
+
+    func zoomToFit() {
+        zoomedViewport = nil
+        viewportDidChange()
+    }
+
+    private var currentZoom: CGFloat { viewport.zoom(pixelsPerPoint: model.scale) }
+
+    private func zoom(to zoom: CGFloat, about point: CGPoint) {
+        zoomedViewport = viewport.zoomed(to: Viewport.scale(forZoom: zoom, pixelsPerPoint: model.scale), about: point).clamped(to: model.document.canvasRect, in: bounds.size)
+        viewportDidChange()
+    }
+
+    /// A fitted canvas is all on screen, so it has nowhere to scroll.
+    private func pan(by offset: CGVector) {
+        guard zoomedViewport != nil else {
+            return
+        }
+        zoomedViewport = viewport.panned(by: offset).clamped(to: model.document.canvasRect, in: bounds.size)
+        viewportDidChange()
+    }
+
+    override func magnify(with event: NSEvent) {
+        let fit = fitViewport.zoom(pixelsPerPoint: model.scale)
+        zoom(to: Viewport.clampedZoom(currentZoom * (1 + event.magnification), fit: fit), about: convert(event.locationInWindow, from: nil))
+    }
+
+    override func scrollWheel(with event: NSEvent) {
+        guard zoomedViewport != nil else {
+            super.scrollWheel(with: event)
+            return
+        }
+        // A mouse wheel counts lines rather than points. The deltas already follow the natural scrolling setting.
+        let step: CGFloat = event.hasPreciseScrollingDeltas ? 1 : 10
+        pan(by: CGVector(dx: event.scrollingDeltaX * step, dy: event.scrollingDeltaY * step))
+    }
+
+    /// Shows the new zoom in the toolbar and keeps an open text field over its text.
+    private func viewportDidChange() {
+        let zoom = currentZoom
+        if model.zoom != zoom {
+            model.zoom = zoom
+        }
+        layoutTextField()
+        needsDisplay = true
+    }
+
     // MARK: Text
 
     /// Opens a text field at `point` for new text, or over `existing` text to edit it.
@@ -360,22 +470,40 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         // A double-click that wobbles mustn't drag the text being edited.
         dragStart = nil
         textOrigin = point
+        textFontSize = fontSize
         let field = NSTextField(string: string)
         field.isBordered = false
         field.drawsBackground = true
         field.backgroundColor = NSColor.white.withAlphaComponent(0.6)
         field.focusRingType = .none
         field.textColor = NSColor(srgbRed: rgba.r, green: rgba.g, blue: rgba.b, alpha: 1)
-        field.font = .boldSystemFont(ofSize: fontSize * viewScale)
         field.delegate = self
         field.target = self
         field.action = #selector(textFieldAction)
-        let origin = viewRect(CGRect(origin: point, size: .zero)).origin
-        field.frame = CGRect(x: origin.x, y: origin.y, width: 240, height: fontSize * viewScale * 1.4)
         addSubview(field)
         window?.makeFirstResponder(field)
         textField = field
-        if !string.isEmpty {
+        layoutTextField()
+    }
+
+    /// Keeps the open text field over its text, at its size, as the zoom, scroll or window changes.
+    private func layoutTextField() {
+        if editingNote != nil {
+            layoutNoteField()
+            return
+        }
+        guard let field = textField, let textOrigin, let textFontSize else {
+            return
+        }
+        let size = textFontSize * viewScale
+        if field.font?.pointSize != size {
+            field.font = .boldSystemFont(ofSize: size)
+        }
+        let origin = viewRect(CGRect(origin: textOrigin, size: .zero)).origin
+        if field.stringValue.isEmpty {
+            field.frame = CGRect(x: origin.x, y: origin.y, width: 240, height: size * 1.4)
+        } else {
+            field.frame.origin = origin
             fitTextField(field)
         }
     }
@@ -491,7 +619,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard let field = textField, let layout = editedNote?.noteLayout else {
             return
         }
-        // The zoom changes when the window resizes, so the font follows it here.
+        // The zoom changes with the window size and the zoom commands, so the font follows it here.
         let size = layout.fontSize * viewScale
         if field.font?.pointSize != size {
             field.font = .systemFont(ofSize: size)
@@ -516,6 +644,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         let editedID = editingNote?.id ?? editingTextID
         textField = nil
         textOrigin = nil
+        textFontSize = nil
         editingNote = nil
         editingTextID = nil
         needsDisplay = true
