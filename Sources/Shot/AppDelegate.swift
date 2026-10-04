@@ -73,7 +73,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         coordinator.perform(legacyFull ? .recordFullscreen : action)
     }
 
-    /// Shown while a glass window puts Shot in the Dock; otherwise only routes ⌘X/⌘C/⌘V/⌘A/⌘Z to text fields.
+    /// Shown while a glass window puts Shot in the Dock; otherwise only routes ⌘W to the key window
+    /// and ⌘X/⌘C/⌘V/⌘A/⌘Z to text fields.
     private func installEditMenu() {
         let app = NSMenu(title: "Shot")
         app.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",").target = self
@@ -81,6 +82,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         app.addItem(withTitle: "Quit Shot", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         let appItem = NSMenuItem(title: "Shot", action: nil, keyEquivalent: "")
         appItem.submenu = app
+
+        let file = NSMenu(title: "File")
+        file.addItem(withTitle: "Close Window", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        let fileItem = NSMenuItem(title: "File", action: nil, keyEquivalent: "")
+        fileItem.submenu = file
 
         let edit = NSMenu(title: "Edit")
         edit.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
@@ -95,6 +101,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         editItem.submenu = edit
         let main = NSMenu()
         main.addItem(appItem)
+        main.addItem(fileItem)
         main.addItem(editItem)
         NSApp.mainMenu = main
     }
