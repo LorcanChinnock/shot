@@ -44,7 +44,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         canvas = EditorCanvasView(model: model)
         let pointSize = CGSize(width: CGFloat(model.document.base.width) / model.scale, height: CGFloat(model.document.base.height) / model.scale)
         let visible = (NSScreen.underPointer ?? NSScreen.screens[0]).visibleFrame
-        let size = CGSize(width: min(max(pointSize.width + 60, 920), visible.width * 0.85), height: min(max(pointSize.height + 150, 480), visible.height * 0.85))
+        let size = CGSize(width: min(max(pointSize.width + 60, 940), visible.width * 0.85), height: min(max(pointSize.height + 150, 480), visible.height * 0.85))
         let editorWindow = EditorWindow()
         window = editorWindow
         super.init()
@@ -53,7 +53,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
             EditorRootView(model: model, canvas: canvas)
         }
         window.delegate = self
-        window.minSize = NSSize(width: 920, height: 420)
+        window.minSize = NSSize(width: 940, height: 420)
 
         editorWindow.onCommand = { [weak self] key, shift in
             self?.handleCommand(key, shift: shift) ?? false

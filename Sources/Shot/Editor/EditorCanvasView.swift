@@ -114,6 +114,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         if let editingTextID {
             doc.annotations.removeAll { $0.id == editingTextID }
         }
+        // A spotlight's dim is drawn with the document's, so its draft joins the document.
+        if let draft, case .spotlight = draft.kind {
+            doc.annotations.append(draft)
+        }
         let rect = imageRect
         let ink = NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1)
         ink.setFill()
@@ -267,6 +271,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             kind = .pixelate(rect)
         case .blur:
             kind = .blur(rect)
+        case .spotlight:
+            kind = .spotlight(rect)
         case .note:
             draft = newNote(id: draft?.id ?? UUID(), from: start, to: point)
             needsDisplay = true
@@ -292,6 +298,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         if let cropDraft, cropDraft.width >= 4, cropDraft.height >= 4 {
             model.recordUndo()
             model.document.crop(to: cropDraft)
+        }
+        // A spotlight with no area would light nothing, so it isn't added.
+        if let draft, case .spotlight = draft.kind, draft.bounds.isEmpty {
+            return
         }
         if let draft, draft.bounds.width + draft.bounds.height >= 4 {
             model.add(draft)
