@@ -30,6 +30,7 @@ run: app
 	open "$(INSTALL_DIR)/Shot.app"
 
 dist: export SHOT_ARCHS ?= arm64 x86_64
+dist: export SHOT_RELEASE = 1
 dist: bundle
 	ditto -c -k --keepParent build/Shot.app build/Shot.zip
 	@echo "Wrote build/Shot.zip"

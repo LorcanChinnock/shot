@@ -7,6 +7,7 @@ private let log = Logger.shot("update")
 
 /// Wraps Sparkle. Nothing goes over the network until the user agrees: Sparkle asks once whether to
 /// check automatically (Info.plist leaves SUEnableAutomaticChecks unset), and "Check for Updates…" is always manual.
+/// Local builds have no SUFeedURL, so the updater never starts and Sparkle can't replace them with a release.
 @MainActor
 @Observable
 final class Updater: NSObject {
@@ -22,7 +23,8 @@ final class Updater: NSObject {
 
     private override init() {
         super.init()
-        controller = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: self)
+        let isEnabled = Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") != nil
+        controller = SPUStandardUpdaterController(startingUpdater: isEnabled, updaterDelegate: nil, userDriverDelegate: self)
         canCheckObservation = controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) { [weak self] _, _ in
             MainActor.assumeIsolated {
                 guard let self else {
