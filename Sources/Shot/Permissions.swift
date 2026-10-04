@@ -19,8 +19,9 @@ enum Permissions {
         if window == nil {
             window = GlassWindow.make(size: NSSize(width: 500, height: 350), title: "Shot needs Screen Recording permission") { OnboardingView() }
         }
-        NSApp.activate()
-        window?.makeKeyAndOrderFront(nil)
+        if let window {
+            GlassWindow.present(window)
+        }
     }
 
     static func openSettings() {

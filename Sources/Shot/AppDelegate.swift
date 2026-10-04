@@ -72,8 +72,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         coordinator.perform(legacyFull ? .recordFullscreen : action)
     }
 
-    /// Never visible in an LSUIElement app, but routes ⌘X/⌘C/⌘V/⌘A/⌘Z to text fields.
+    /// Shown while a glass window puts Shot in the Dock; otherwise only routes ⌘X/⌘C/⌘V/⌘A/⌘Z to text fields.
     private func installEditMenu() {
+        let app = NSMenu(title: "Shot")
+        app.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",").target = self
+        app.addItem(.separator())
+        app.addItem(withTitle: "Quit Shot", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        let appItem = NSMenuItem(title: "Shot", action: nil, keyEquivalent: "")
+        appItem.submenu = app
+
         let edit = NSMenu(title: "Edit")
         edit.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
         let redo = edit.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "z")
@@ -86,8 +93,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let editItem = NSMenuItem(title: "Edit", action: nil, keyEquivalent: "")
         editItem.submenu = edit
         let main = NSMenu()
-        main.addItem(NSMenuItem(title: "Shot", action: nil, keyEquivalent: ""))
+        main.addItem(appItem)
         main.addItem(editItem)
         NSApp.mainMenu = main
+    }
+
+    @objc private func showSettings() {
+        SettingsWindowController.show()
     }
 }

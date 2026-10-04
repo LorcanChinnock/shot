@@ -13,8 +13,10 @@ enum SettingsWindowController {
         if window == nil {
             window = GlassWindow.make(size: size, title: "Shot Settings") { SettingsView() }
         }
-        NSApp.activate()
-        window?.makeKeyAndOrderFront(nil)
-        window?.invalidateShadow()
+        guard let window else {
+            return
+        }
+        GlassWindow.present(window)
+        window.invalidateShadow()
     }
 }
