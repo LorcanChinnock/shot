@@ -29,6 +29,10 @@ public enum PreferenceKey {
     public static let videoExportFormat = "videoExportFormat"
     public static let gifFrameRate = "gifFrameRate"
     public static let gifWidth = "gifWidth"
+    public static let editorTool = "editorTool"
+    public static let editorColor = "editorColor"
+    public static let editorNoteColor = "editorNoteColor"
+    public static let editorWidth = "editorWidth"
     /// True while the macOS screenshot shortcuts are off because Shot turned them off. Not a
     /// setting, so resetting settings keeps it and Shot can still give the keys back.
     public static let disabledSystemScreenshots = "disabledSystemScreenshots"
@@ -91,6 +95,10 @@ public struct Preferences {
             PreferenceKey.videoExportFormat: VideoExportOptions().format.rawValue,
             PreferenceKey.gifFrameRate: VideoExportOptions().gifFrameRate,
             PreferenceKey.gifWidth: VideoExportOptions().gifWidth,
+            PreferenceKey.editorTool: EditorStyle().tool.rawValue,
+            PreferenceKey.editorColor: EditorStyle().colorIndex,
+            PreferenceKey.editorNoteColor: EditorStyle().noteColorIndex,
+            PreferenceKey.editorWidth: EditorStyle().widthIndex,
             PreferenceKey.tookSystemScreenshots: false,
         ]
         for action in ShotAction.allCases {
@@ -134,6 +142,17 @@ public struct Preferences {
         store.set(options.format.rawValue, forKey: PreferenceKey.videoExportFormat)
         store.set(options.gifFrameRate, forKey: PreferenceKey.gifFrameRate)
         store.set(options.gifWidth, forKey: PreferenceKey.gifWidth)
+    }
+
+    /// Remembers the editor's tool, colours and width for the next editor window. Select and crop
+    /// aren't remembered, so the last drawing tool stays.
+    public static func remember(_ style: EditorStyle, in store: UserDefaults = .standard) {
+        if style.tool.isDrawing {
+            store.set(style.tool.rawValue, forKey: PreferenceKey.editorTool)
+        }
+        store.set(style.colorIndex, forKey: PreferenceKey.editorColor)
+        store.set(style.noteColorIndex, forKey: PreferenceKey.editorNoteColor)
+        store.set(style.widthIndex, forKey: PreferenceKey.editorWidth)
     }
 
     public static func resetHotkeys(in store: UserDefaults = .standard) {
@@ -193,6 +212,21 @@ public struct Preferences {
             format: VideoExportFormat(rawValue: store.string(forKey: PreferenceKey.videoExportFormat) ?? "") ?? defaults.format,
             gifFrameRate: VideoExportOptions.gifFrameRates.contains(fps) ? fps : defaults.gifFrameRate,
             gifWidth: VideoExportOptions.gifWidths.contains(width) ? width : defaults.gifWidth
+        )
+    }
+
+    /// The style the last editor used. Each value this version doesn't offer falls back to its default on its own.
+    public var editorStyle: EditorStyle {
+        let defaults = EditorStyle()
+        func index(_ key: String, in range: Range<Int>, default value: Int) -> Int {
+            (store.object(forKey: key) as? Int).flatMap { range.contains($0) ? $0 : nil } ?? value
+        }
+        let tool = EditorTool(rawValue: store.string(forKey: PreferenceKey.editorTool) ?? "")
+        return EditorStyle(
+            tool: tool.flatMap { $0.isDrawing ? $0 : nil } ?? defaults.tool,
+            colorIndex: index(PreferenceKey.editorColor, in: RGBA.presets.indices, default: defaults.colorIndex),
+            noteColorIndex: index(PreferenceKey.editorNoteColor, in: RGBA.presets.indices, default: defaults.noteColorIndex),
+            widthIndex: index(PreferenceKey.editorWidth, in: EditorStyle.widths.indices, default: defaults.widthIndex)
         )
     }
 
