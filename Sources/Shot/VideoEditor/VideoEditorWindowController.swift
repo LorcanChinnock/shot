@@ -16,7 +16,7 @@ private final class VideoEditorWindow: NSWindow {
         return super.performKeyEquivalent(with: event)
     }
 
-    /// Space and the arrow keys drive the player wherever focus is; the window has no text fields.
+    /// Space, the arrow keys, Delete and Escape work wherever focus is; the window has no text fields.
     override func sendEvent(_ event: NSEvent) {
         if event.type == .keyDown, onKey?(event) == true {
             return
@@ -109,6 +109,10 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
             model.step(-1)
         case 124: // Right arrow
             model.step(1)
+        case 51, 117: // Delete, Forward Delete
+            return model.cutSelection()
+        case 53: // Escape
+            return model.clearSelection()
         default:
             return false
         }
@@ -120,8 +124,8 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
             return !model.isExporting
         }
         let alert = NSAlert()
-        alert.messageText = "Save the trimmed \(model.fileURL.lastPathComponent)?"
-        alert.informativeText = "Your trim is lost if you discard it."
+        alert.messageText = "Save the edited \(model.fileURL.lastPathComponent)?"
+        alert.informativeText = "Your trim and cuts are lost if you discard them."
         alert.addButton(withTitle: "Save")
         alert.addButton(withTitle: "Discard")
         alert.addButton(withTitle: "Cancel")

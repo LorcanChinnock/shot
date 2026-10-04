@@ -17,7 +17,7 @@ struct VideoEditorRootView: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
                 if model.isDirty {
-                    BrutalChip(text: "TRIMMED", color: Brutal.pink)
+                    BrutalChip(text: model.cuts.isEmpty ? "TRIMMED" : "EDITED", color: Brutal.pink)
                 }
                 Spacer()
                 Text(timesLabel)
@@ -31,7 +31,7 @@ struct VideoEditorRootView: View {
                     .help("Export a new \(model.options.format.rawValue.uppercased()) with these options next to the video, and copy it")
                 Button("Save") { Task { await model.save() } }
                     .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
-                    .help("Save trimmed video and copy it (⌘S)")
+                    .help("Save the edited video and copy it (⌘S)")
             }
             .disabled(model.isExporting)
             .padding(.leading, GlassWindow.trafficLightsWidth)
@@ -62,7 +62,7 @@ struct VideoEditorRootView: View {
     }
 
     private var timesLabel: String {
-        "\(Timecode.string(model.range.start)) – \(Timecode.string(model.range.end))  ·  \(Timecode.string(model.range.length))"
+        "\(Timecode.string(model.range.start)) – \(Timecode.string(model.range.end))  ·  \(Timecode.string(model.keptLength))"
     }
 }
 
@@ -163,12 +163,15 @@ private final class PlayerLayerView: NSView {
     }
 }
 
-/// Frame thumbnails with draggable in and out handles and the playhead; a drag elsewhere scrubs.
+/// Frame thumbnails with draggable in and out handles, the cuts, and the playhead; a drag elsewhere
+/// scrubs, and a Shift-drag selects a section for Delete to cut.
 struct TrimTimelineView: View {
     static let height: CGFloat = 56
 
     let model: VideoEditorModel
     @State private var drag: (handle: TrimHandle?, grabOffset: CGFloat)?
+    /// Where a Shift-drag started, in seconds.
+    @State private var selectionAnchor: Double?
 
     var body: some View {
         GeometryReader { geometry in
@@ -186,6 +189,20 @@ struct TrimTimelineView: View {
                 Rectangle().fill(Color.black.opacity(0.55))
                     .frame(width: max(0, timeline.minX + timeline.width - endX), height: Self.height)
                     .offset(x: endX)
+                ForEach(model.cuts.cuts, id: \.self) { cut in
+                    let x = timeline.x(for: cut.lowerBound)
+                    Rectangle().fill(Color.black.opacity(0.7))
+                        .overlay(Rectangle().strokeBorder(Brutal.pink, lineWidth: 2))
+                        .frame(width: max(0, timeline.x(for: cut.upperBound) - x), height: Self.height)
+                        .offset(x: x)
+                }
+                if let selection = model.selection {
+                    let x = timeline.x(for: selection.lowerBound)
+                    Rectangle().fill(Brutal.sky.opacity(0.35))
+                        .overlay(Rectangle().strokeBorder(Brutal.sky, lineWidth: 2))
+                        .frame(width: max(0, timeline.x(for: selection.upperBound) - x), height: Self.height)
+                        .offset(x: x)
+                }
                 Rectangle().strokeBorder(Brutal.yellow, lineWidth: 3)
                     .frame(width: max(0, endX - startX), height: Self.height)
                     .offset(x: startX)
@@ -202,7 +219,15 @@ struct TrimTimelineView: View {
             .contentShape(Rectangle())
             .gesture(DragGesture(minimumDistance: 0)
                 .onChanged { value in
+                    if drag == nil, selectionAnchor == nil, NSEvent.modifierFlags.contains(.shift) {
+                        selectionAnchor = timeline.time(at: value.startLocation.x)
+                    }
+                    if let selectionAnchor {
+                        model.select(from: selectionAnchor, to: timeline.time(at: value.location.x))
+                        return
+                    }
                     if drag == nil {
+                        model.clearSelection()
                         let handle = timeline.handle(at: value.startLocation.x, range: model.range)
                         let edge = handle.map { timeline.x(for: $0 == .start ? model.range.start : model.range.end) } ?? value.startLocation.x
                         drag = (handle, edge - value.startLocation.x)
@@ -219,6 +244,10 @@ struct TrimTimelineView: View {
                     }
                 }
                 .onEnded { _ in
+                    if selectionAnchor != nil {
+                        selectionAnchor = nil
+                        return
+                    }
                     drag = nil
                     model.endDrag()
                 })
@@ -229,6 +258,7 @@ struct TrimTimelineView: View {
         .frame(height: Self.height)
         .accessibilityElement()
         .accessibilityLabel(Text("Trim timeline"))
+        .help("Drag the handles to trim. Shift-drag to select a section, then press Delete to cut it.")
         // Save reloads the file when it finishes, which would drop a trim made meanwhile.
         .allowsHitTesting(!model.isExporting)
     }

@@ -6,7 +6,7 @@ public enum VideoExportFormat: String, CaseIterable, Sendable {
     public var fileExtension: String { rawValue }
 }
 
-/// What the video editor's Export writes; the trim comes from its `TrimRange`.
+/// What the video editor's Export writes; the trim and cuts come from its `TrimRange` and `CutList`.
 public struct VideoExportOptions: Equatable, Sendable {
     public static let gifFrameRates = [10, 15, 24]
     /// Stands for the recording's own width in `gifWidths`.
@@ -32,6 +32,6 @@ public struct VideoExportOptions: Equatable, Sendable {
     /// `nil` keeps the recording's width.
     public var gifMaxWidth: CGFloat? { gifWidth == Self.originalWidth ? nil : CGFloat(gifWidth) }
 
-    /// How long `range` plays for at this speed.
-    public func outputLength(of range: TrimRange) -> Double { range.length / speed }
+    /// How long `range`, less `cuts`, plays for at this speed.
+    public func outputLength(of range: TrimRange, cuts: CutList = CutList()) -> Double { cuts.keptLength(in: range) / speed }
 }
