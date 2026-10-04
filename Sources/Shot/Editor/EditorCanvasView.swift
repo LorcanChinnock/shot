@@ -10,6 +10,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private var movedSinceMouseDown = false
     private var textField: NSTextField?
     private var textOrigin: CGPoint?
+    /// The note whose text field is open; it may not be in the document yet.
+    private var editingNote: Annotation?
+    private var resizeHandle: NoteHandle?
 
     init(model: EditorModel) {
         self.model = model
@@ -44,6 +47,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     override func layout() {
         super.layout()
+        layoutNoteField()
         needsDisplay = true
     }
 
@@ -98,7 +102,11 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard let ctx = NSGraphicsContext.current?.cgContext else {
             return
         }
-        let doc = model.document
+        var doc = model.document
+        // The note being edited is drawn as blank paper under its text field instead.
+        if let editingNote {
+            doc.annotations.removeAll { $0.id == editingNote.id }
+        }
         let rect = imageRect
         let ink = NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1)
         ink.setFill()
@@ -120,12 +128,12 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         AnnotationRenderer.render(doc, into: ctx)
         ctx.restoreGState()
         // The draft isn't clipped to the canvas, so it shows where the canvas will grow to on release.
-        if let draft {
+        for unclipped in [draft, editingPaper].compactMap({ $0 }) {
             ctx.saveGState()
             ctx.translateBy(x: rect.minX, y: rect.minY)
             ctx.scaleBy(x: viewScale, y: viewScale)
             ctx.translateBy(x: -doc.canvasRect.minX, y: -doc.canvasRect.minY)
-            AnnotationRenderer.draw(draft, base: doc.base, in: ctx)
+            AnnotationRenderer.draw(unclipped, base: doc.base, in: ctx)
             ctx.restoreGState()
         }
         ink.setStroke()
@@ -138,6 +146,15 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             outline.setLineDash([4, 3], count: 2, phase: 0)
             NSColor.controlAccentColor.setStroke()
             outline.stroke()
+            if case .note = selected.kind, editingNote == nil {
+                for handle in NoteHandle.allCases {
+                    let center = viewRect(CGRect(origin: handle.point(in: selected.bounds), size: .zero)).origin
+                    let square = NSBezierPath(rect: CGRect(x: center.x - 4, y: center.y - 4, width: 8, height: 8))
+                    NSColor.white.setFill()
+                    square.fill()
+                    square.stroke()
+                }
+            }
         }
         if let cropDraft {
             let crop = viewRect(cropDraft)
@@ -166,8 +183,21 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         switch model.tool {
         case .select:
             let tolerance = 6 / viewScale
-            if let index = model.document.annotations.topmostIndex(at: point, tolerance: tolerance) {
-                model.selectedID = model.document.annotations[index].id
+            let hit = model.document.annotations.topmostIndex(at: point, tolerance: tolerance).map { model.document.annotations[$0] }
+            if event.clickCount == 2, let hit, case .note = hit.kind {
+                model.selectedID = hit.id
+                beginNote(hit)
+            } else if let id = model.selectedID, let selected = model.document.annotations.first(where: { $0.id == id }), let handle = selected.noteHandle(at: point, tolerance: tolerance) {
+                resizeHandle = handle
+            } else if let hit {
+                model.selectedID = hit.id
+            } else {
+                model.selectedID = nil
+            }
+        case .note:
+            // Clicking a note with the note tool edits it rather than stacking a new one on top.
+            if let index = model.document.annotations.topmostIndex(at: point, tolerance: 6 / viewScale), case .note = model.document.annotations[index].kind {
+                beginNote(model.document.annotations[index])
             } else {
                 model.selectedID = nil
             }
@@ -197,7 +227,11 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
                 model.recordUndo()
                 movedSinceMouseDown = true
             }
-            model.document.annotations[index].offset(by: CGVector(dx: point.x - last.x, dy: point.y - last.y))
+            if let resizeHandle {
+                model.document.annotations[index].resizeNote(resizeHandle, to: point)
+            } else {
+                model.document.annotations[index].offset(by: CGVector(dx: point.x - last.x, dy: point.y - last.y))
+            }
             return
         case .crop:
             cropDraft = Geometry.normalized(from: clampedToCanvas(start), to: clampedToCanvas(point))
@@ -217,6 +251,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             kind = .highlight(rect)
         case .pixelate:
             kind = .pixelate(rect)
+        case .note:
+            draft = newNote(id: draft?.id ?? UUID(), from: start, to: point)
+            needsDisplay = true
+            return
         }
         draft = Annotation(id: draft?.id ?? UUID(), kind: kind, color: model.color, lineWidth: model.lineWidth)
         needsDisplay = true
@@ -227,7 +265,12 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             draft = nil
             cropDraft = nil
             dragStart = nil
+            resizeHandle = nil
             needsDisplay = true
+        }
+        if model.tool == .note, let start = dragStart {
+            beginNote(newNote(id: draft?.id ?? UUID(), from: start, to: imagePoint(event)))
+            return
         }
         if let cropDraft, cropDraft.width >= 4, cropDraft.height >= 4 {
             model.recordUndo()
@@ -236,7 +279,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         if let draft, draft.bounds.width + draft.bounds.height >= 4 {
             model.add(draft)
         }
-        // The move recorded its undo step when it began, so growing joins that step.
+        // The move or resize recorded its undo step when it began, so growing joins that step.
         if model.tool == .select, movedSinceMouseDown, let id = model.selectedID, let moved = model.document.annotations.first(where: { $0.id == id }) {
             model.document.grow(toFit: moved, margin: model.canvasMargin)
         }
@@ -299,6 +342,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard let field = textField else {
             return
         }
+        if editingNote != nil {
+            layoutNoteField()
+            return
+        }
         field.sizeToFit()
         field.frame.size.width = max(240, field.frame.width + 20)
     }
@@ -306,6 +353,12 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     var isEditingText: Bool { textField != nil }
 
     private func commitText() {
+        if let note = editingNote, let field = textField {
+            let string = field.stringValue
+            removeTextField()
+            commitNote(note, text: string)
+            return
+        }
         guard let field = textField, let origin = textOrigin else {
             return
         }
@@ -317,10 +370,90 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         model.add(Annotation(kind: .text(string, origin: origin, fontSize: model.fontSize), color: model.color, lineWidth: model.lineWidth))
     }
 
+    // MARK: Notes
+
+    private func newNote(id: UUID, from start: CGPoint, to end: CGPoint) -> Annotation {
+        var note = Annotation(id: id, kind: .note("", rect: .zero), color: model.noteColor, lineWidth: model.lineWidth)
+        note.kind = .note("", rect: NoteLayout.placementRect(from: start, to: end, fontSize: note.noteFontSize))
+        return note
+    }
+
+    /// The note being edited, with the text typed so far.
+    private var editedNote: Annotation? {
+        guard var note = editingNote, let field = textField else {
+            return nil
+        }
+        note.setNoteText(field.stringValue)
+        return note
+    }
+
+    /// Blank paper the size the note will be, under its text field.
+    private var editingPaper: Annotation? {
+        guard let note = editedNote, let frame = note.noteLayout?.frame else {
+            return nil
+        }
+        return Annotation(id: note.id, kind: .note("", rect: frame), color: note.color, lineWidth: note.lineWidth)
+    }
+
+    /// Opens a text field over `note`, which is either new or already in the document.
+    private func beginNote(_ note: Annotation) {
+        guard case let .note(string, _) = note.kind, let layout = note.noteLayout else {
+            return
+        }
+        dragStart = nil
+        editingNote = note
+        let field = NSTextField(string: string)
+        field.isBordered = false
+        field.drawsBackground = false
+        field.focusRingType = .none
+        field.usesSingleLineMode = false
+        field.cell?.wraps = true
+        field.cell?.isScrollable = false
+        field.maximumNumberOfLines = 0
+        field.lineBreakMode = .byWordWrapping
+        field.placeholderString = "Note"
+        let ink = layout.ink
+        field.textColor = NSColor(srgbRed: ink.r, green: ink.g, blue: ink.b, alpha: 1)
+        field.delegate = self
+        field.target = self
+        field.action = #selector(textFieldAction)
+        addSubview(field)
+        textField = field
+        layoutNoteField()
+        window?.makeFirstResponder(field)
+    }
+
+    /// Fits the text field to the note's text area as the text grows.
+    private func layoutNoteField() {
+        guard let field = textField, let layout = editedNote?.noteLayout else {
+            return
+        }
+        // The zoom changes when the window resizes, so the font follows it here.
+        let size = layout.fontSize * viewScale
+        if field.font?.pointSize != size {
+            field.font = .systemFont(ofSize: size)
+        }
+        // A borderless field insets its text 2 pt on each side.
+        field.frame = viewRect(layout.textRect).insetBy(dx: -2, dy: 0)
+        needsDisplay = true
+    }
+
+    private func commitNote(_ note: Annotation, text string: String) {
+        if model.document.annotations.contains(where: { $0.id == note.id }) {
+            model.setNoteText(note.id, to: string)
+        } else if !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            var placed = note
+            placed.setNoteText(string)
+            model.add(placed)
+        }
+    }
+
     private func removeTextField() {
         let field = textField
         textField = nil
         textOrigin = nil
+        editingNote = nil
+        needsDisplay = true
         field?.delegate = nil
         field?.removeFromSuperview()
         window?.makeFirstResponder(self)
