@@ -106,41 +106,45 @@ private let sample = [
     "Nothing secret on this line",
 ]
 
-@Test func autoRedactFindsTheSampleStrings() throws {
-    let image = try textImage(sample)
-    let regions = try Redaction.regions(in: image)
-    #expect(regions.count == 4)
-    for (index, label) in ["Email", "Phone", "Card", "Server"].enumerated() {
-        let onLine = regions.filter { band(index).contains(CGPoint(x: $0.midX, y: $0.midY)) }
-        #expect(onLine.count == 1, "line \(index)")
-        guard let region = onLine.first else {
-            continue
+// Vision's text recognizer can deadlock when requests run at once on a machine with few cores, as CI's
+// runners have, so these tests run one at a time.
+@Suite(.serialized) struct TextRecognitionTests {
+    @Test func autoRedactFindsTheSampleStrings() async throws {
+        let image = try textImage(sample)
+        let regions = try await Redaction.regions(in: image)
+        #expect(regions.count == 4)
+        for (index, label) in ["Email", "Phone", "Card", "Server"].enumerated() {
+            let onLine = regions.filter { band(index).contains(CGPoint(x: $0.midX, y: $0.midY)) }
+            #expect(onLine.count == 1, "line \(index)")
+            guard let region = onLine.first else {
+                continue
+            }
+            // It covers the whole value. Vision's boxes for part of a line are loose, so it may take the
+            // colon too, but the label's word stays readable.
+            #expect(region.minX <= textEnd(label + ": ") + 2, "line \(index)")
+            #expect(region.maxX >= textEnd(sample[index]) - 2, "line \(index)")
+            #expect(region.minX > textEnd(label) - 4, "line \(index)")
         }
-        // It covers the whole value. Vision's boxes for part of a line are loose, so it may take the
-        // colon too, but the label's word stays readable.
-        #expect(region.minX <= textEnd(label + ": ") + 2, "line \(index)")
-        #expect(region.maxX >= textEnd(sample[index]) - 2, "line \(index)")
-        #expect(region.minX > textEnd(label) - 4, "line \(index)")
+        #expect(!regions.contains { band(4).contains(CGPoint(x: $0.midX, y: $0.midY)) })
     }
-    #expect(!regions.contains { band(4).contains(CGPoint(x: $0.midX, y: $0.midY)) })
-}
 
-@Test(arguments: [RedactionStyle.blur, .pixelate])
-func redactedTextCantBeReadBack(style: RedactionStyle) throws {
-    let image = try textImage(sample)
-    var doc = EditorDocument(base: image)
-    doc.annotations += doc.redactions(covering: try Redaction.regions(in: image), style: style, color: RGBA.presets[0], lineWidth: 4)
-    let exported = try #require(AnnotationRenderer.flatten(doc))
-    #expect(try Redaction.regions(in: exported).isEmpty)
+    @Test(arguments: [RedactionStyle.blur, .pixelate])
+    func redactedTextCantBeReadBack(style: RedactionStyle) async throws {
+        let image = try textImage(sample)
+        var doc = EditorDocument(base: image)
+        doc.annotations += doc.redactions(covering: try await Redaction.regions(in: image), style: style, color: RGBA.presets[0], lineWidth: 4)
+        let exported = try #require(AnnotationRenderer.flatten(doc))
+        #expect(try await Redaction.regions(in: exported).isEmpty)
 
-    let request = VNRecognizeTextRequest()
-    request.recognitionLevel = .accurate
-    request.usesLanguageCorrection = false
-    try VNImageRequestHandler(cgImage: exported).perform([request])
-    let text = (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
-    for secret in ["jane", "example", "415", "0132", "4111", "192", "168"] {
-        #expect(!text.contains(secret), "\(secret) in \(text)")
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = false
+        try VNImageRequestHandler(cgImage: exported).perform([request])
+        let text = (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
+        for secret in ["jane", "example", "415", "0132", "4111", "192", "168"] {
+            #expect(!text.contains(secret), "\(secret) in \(text)")
+        }
+        // The labels and the clean line survive.
+        #expect(text.contains("Nothing secret"))
     }
-    // The labels and the clean line survive.
-    #expect(text.contains("Nothing secret"))
 }

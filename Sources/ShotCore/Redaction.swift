@@ -47,9 +47,20 @@ public enum Redaction {
         return merged
     }
 
+    /// Vision's text recognizer blocks its caller and can deadlock when several requests run at once on a
+    /// machine with few cores, so every request runs here, one at a time, off Swift's cooperative pool.
+    private static let recognitionQueue = DispatchQueue(label: "Shot.textRecognition")
+
     /// Regions of `image` that hold sensitive text, in image pixels with a top-left origin.
-    /// Text recognition is slow, so call it off the main thread.
-    public static func regions(in image: CGImage) throws -> [CGRect] {
+    public static func regions(in image: CGImage) async throws -> [CGRect] {
+        try await withCheckedThrowingContinuation { continuation in
+            recognitionQueue.async {
+                continuation.resume(with: Result { try recognizeRegions(in: image) })
+            }
+        }
+    }
+
+    private static func recognizeRegions(in image: CGImage) throws -> [CGRect] {
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
         // Correction "fixes" addresses and digit runs into words, so read the text as it is.
