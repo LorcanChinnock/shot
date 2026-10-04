@@ -120,6 +120,10 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         }
     }
 
+    func windowDidResignKey(_ notification: Notification) {
+        canvas.releaseSpace()
+    }
+
     func windowWillClose(_ notification: Notification) {
         Self.open.removeAll { $0 === self }
     }

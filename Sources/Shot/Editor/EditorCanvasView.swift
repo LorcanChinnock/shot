@@ -389,11 +389,16 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     // Once a text field takes the keyboard, Space's release never reaches this view.
     override func resignFirstResponder() -> Bool {
+        releaseSpace()
+        return super.resignFirstResponder()
+    }
+
+    /// Forgets a held Space whose release this view won't see, such as when the window stops being key.
+    func releaseSpace() {
         if spaceHeld {
             spaceHeld = false
             NSCursor.arrow.set()
         }
-        return super.resignFirstResponder()
     }
 
     // MARK: Zoom
@@ -417,7 +422,11 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     private var currentZoom: CGFloat { viewport.zoom(pixelsPerPoint: model.scale) }
 
+    /// Does nothing when the zoom wouldn't change, so a fitted canvas keeps following the window.
     private func zoom(to zoom: CGFloat, about point: CGPoint) {
+        guard zoom != currentZoom else {
+            return
+        }
         zoomedViewport = viewport.zoomed(to: Viewport.scale(forZoom: zoom, pixelsPerPoint: model.scale), about: point).clamped(to: model.document.canvasRect, in: bounds.size)
         viewportDidChange()
     }
