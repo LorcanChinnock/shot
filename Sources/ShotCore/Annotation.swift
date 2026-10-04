@@ -167,12 +167,18 @@ public struct EditorDocument: @unchecked Sendable {
         canvasRect = rect.integral.intersection(canvasRect)
     }
 
-    /// Grows the canvas to hold `annotation` plus `margin` when it reaches past the edge.
+    /// Grows the canvas to hold `annotation` plus `margin` on each side its shape reaches past.
+    /// Only edges at or beyond the image grow; a crop edge inside the image stays, so cropped pixels never come back.
     public mutating func grow(toFit annotation: Annotation, margin: CGFloat) {
-        guard !canvasRect.contains(annotation.paintedBounds) else {
-            return
-        }
-        canvasRect = canvasRect.union(annotation.paintedBounds.insetBy(dx: -margin, dy: -margin)).integral
+        let shape = annotation.bounds
+        let painted = annotation.paintedBounds.insetBy(dx: -margin, dy: -margin)
+        let image = fullRect
+        var minX = canvasRect.minX, minY = canvasRect.minY, maxX = canvasRect.maxX, maxY = canvasRect.maxY
+        if shape.minX < minX, minX <= image.minX { minX = painted.minX }
+        if shape.minY < minY, minY <= image.minY { minY = painted.minY }
+        if shape.maxX > maxX, maxX >= image.maxX { maxX = painted.maxX }
+        if shape.maxY > maxY, maxY >= image.maxY { maxY = painted.maxY }
+        canvasRect = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY).integral
     }
 
     /// Sizes the canvas to the image and every annotation, with `margin` around the annotations.

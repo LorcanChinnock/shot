@@ -105,7 +105,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         rect.offsetBy(dx: 5, dy: 5).fill()
         if doc.background == nil, doc.hasPadding {
             let padding = NSBezierPath(rect: rect)
-            padding.append(NSBezierPath(rect: viewRect(doc.fullRect.intersection(doc.canvasRect))))
+            let image = doc.fullRect.intersection(doc.canvasRect)
+            if !image.isNull {
+                padding.append(NSBezierPath(rect: viewRect(image)))
+            }
             padding.windingRule = .evenOdd
             Self.checkerboard.setFill()
             padding.fill()

@@ -51,6 +51,23 @@ private func isWhite(_ p: [UInt8]) -> Bool { p.allSatisfy { $0 > 245 } }
     #expect(doc.canvasRect.minY <= -70)
 }
 
+@Test func growingNeverReopensACropOrReactsToAStrokeOnTheEdge() {
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100))
+    // A rect drawn along the image edge only pokes its stroke past it.
+    doc.grow(toFit: Annotation(kind: .rect(CGRect(x: 0, y: 0, width: 200, height: 100)), color: blue, lineWidth: 8), margin: 10)
+    #expect(doc.canvasRect == doc.fullRect)
+
+    // Cropped to the middle, a shape past every side leaves the crop as it is.
+    doc.crop(to: CGRect(x: 50, y: 20, width: 100, height: 60))
+    doc.grow(toFit: Annotation(kind: .rect(CGRect(x: 40, y: 10, width: 120, height: 80)), color: blue, lineWidth: 4), margin: 10)
+    #expect(doc.canvasRect == CGRect(x: 50, y: 20, width: 100, height: 60))
+
+    // Cropped flush with the right edge, the right side still grows into padding; the cropped left stays.
+    doc.canvasRect = CGRect(x: 100, y: 0, width: 100, height: 100)
+    doc.grow(toFit: Annotation(kind: .line(from: CGPoint(x: 90, y: 50), to: CGPoint(x: 250, y: 50)), color: blue, lineWidth: 4), margin: 10)
+    #expect(doc.canvasRect == CGRect(x: 100, y: 0, width: 162, height: 100))
+}
+
 @Test func fitToContentHoldsTheImageAndEveryAnnotation() {
     var doc = EditorDocument(base: solidImage(width: 200, height: 100))
     doc.fitToContent(margin: 10)
