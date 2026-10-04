@@ -39,18 +39,18 @@ final class EditorModel {
             if tool != .select {
                 selectedID = nil
             }
-            rememberStyle()
+            rememberStyle { $0.tool = tool }
         }
     }
     var colorIndex: Int {
-        didSet { rememberStyle() }
+        didSet { rememberStyle { $0.colorIndex = colorIndex } }
     }
     /// Notes keep their own colour, pale yellow until the user picks another.
     var noteColorIndex: Int {
-        didSet { rememberStyle() }
+        didSet { rememberStyle { $0.noteColorIndex = noteColorIndex } }
     }
     var widthIndex: Int {
-        didSet { rememberStyle() }
+        didSet { rememberStyle { $0.widthIndex = widthIndex } }
     }
     var selectedID: UUID?
     var isDirty = false
@@ -74,9 +74,12 @@ final class EditorModel {
         widthIndex = style.widthIndex
     }
 
-    /// Select and crop aren't remembered, so the next window starts with the last drawing tool.
-    private func rememberStyle() {
-        Preferences.remember(EditorStyle(tool: tool, colorIndex: colorIndex, noteColorIndex: noteColorIndex, widthIndex: widthIndex))
+    /// Saves only the value that changed, so another open editor's choices aren't overwritten with this
+    /// window's older ones. Select and crop aren't remembered, so the next window starts with the last drawing tool.
+    private func rememberStyle(_ change: (inout EditorStyle) -> Void) {
+        var style = Preferences().editorStyle
+        change(&style)
+        Preferences.remember(style)
     }
 
     var color: RGBA { RGBA.presets[colorIndex] }
