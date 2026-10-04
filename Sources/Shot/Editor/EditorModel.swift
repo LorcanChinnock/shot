@@ -310,17 +310,22 @@ final class EditorModel {
         return (image, png)
     }
 
-    /// Copies the selected annotation, or the flattened image when nothing is selected.
-    func copy() {
-        if let selection {
-            do {
-                try Clipboard.copy(annotation: selection)
-                Toast.show("Copied annotation")
-            } catch {
-                Toast.show("Could not copy: \(error.localizedDescription)")
-            }
-            return
+    /// Copies the selected annotation. Returns false if nothing is selected.
+    func copySelection() -> Bool {
+        guard let selection else {
+            return false
         }
+        do {
+            try Clipboard.copy(annotation: selection)
+            Toast.show("Copied annotation")
+        } catch {
+            Toast.show("Could not copy: \(error.localizedDescription)")
+        }
+        return true
+    }
+
+    /// Copies the flattened image.
+    func copy() {
         guard let result = flattened() else {
             Toast.show("Could not render image")
             return

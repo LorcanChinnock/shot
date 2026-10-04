@@ -73,7 +73,10 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         case "z":
             shift ? model.redo() : model.undo()
         case "c":
-            model.copy()
+            // A selected annotation copies on its own; otherwise ⌘C copies the image, as the toolbar's Copy does.
+            if !model.copySelection() {
+                model.copy()
+            }
         case "v":
             return model.paste()
         case "d":
