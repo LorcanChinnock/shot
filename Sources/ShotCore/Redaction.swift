@@ -20,10 +20,11 @@ public enum Redaction {
     private static let patterns: [NSRegularExpression] = [
         // Email addresses.
         #"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}"#,
-        // Card-like numbers: 13 to 19 digits, optionally grouped with spaces or dashes.
-        #"(?<![\d.])\d(?:[ -]?\d){12,18}(?![\d.])"#,
+        // Card-like numbers: 13 to 19 digits, optionally grouped with spaces or dashes. A full stop
+        // only joins a longer number when a digit is on its other side, so one ending a sentence doesn't.
+        #"(?<!\d|\d\.)\d(?:[ -]?\d){12,18}(?!\d|\.\d)"#,
         // IPv4 addresses.
-        #"(?<![\d.])(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)(?![\d.])"#,
+        #"(?<!\d|\d\.)(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)(?!\d|\.\d)"#,
     ].map { try! NSRegularExpression(pattern: $0, options: .caseInsensitive) }
 
     private static let phoneDetector = try! NSDataDetector(types: NSTextCheckingResult.CheckingType.phoneNumber.rawValue)

@@ -47,6 +47,12 @@ private func matches(_ string: String) -> [String] {
     #expect(matches("Host 192.168.10.24 up") == ["192.168.10.24"])
 }
 
+@Test func findsNumbersThatEndASentence() {
+    #expect(matches("Charged to 4111 1111 1111 1111.") == ["4111 1111 1111 1111"])
+    #expect(matches("Server is 10.0.0.1.") == ["10.0.0.1"])
+    #expect(matches("See 1.10.0.0.1 for details").isEmpty)
+}
+
 @Test func ignoresOrdinaryText() {
     #expect(matches("Nothing secret on this line").isEmpty)
     #expect(matches("Version 2.4 shipped with 12 fixes").isEmpty)
