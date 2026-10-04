@@ -95,7 +95,7 @@ final class CaptureCoordinator {
         let frozen = try await DisplayCapturer.captureAll()
         log.debug("Freeze capture of \(frozen.count) displays took \(ContinuousClock.now - start, privacy: .public)")
         let displays = frozen.map { OverlayDisplay(frame: $0.frame, scale: $0.scale, image: $0.image) }
-        guard let selection = await SelectionOverlayController.select(displays: displays, windowMode: windowMode, windows: windows) else {
+        guard let selection = await SelectionOverlayController.select(displays: displays, windowMode: windowMode, windows: windows, textMode: text) else {
             return
         }
         let image: CGImage
