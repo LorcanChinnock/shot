@@ -2,30 +2,7 @@ import AppKit
 import Observation
 import ShotCore
 
-enum EditorTool: String, CaseIterable, Identifiable {
-    case select, arrow, line, rect, ellipse, pen, text, note, highlight, spotlight, pixelate, blur, counter, crop
-
-    var id: String { rawValue }
-
-    var key: Character {
-        switch self {
-        case .select: "v"
-        case .arrow: "a"
-        case .line: "l"
-        case .rect: "r"
-        case .ellipse: "o"
-        case .pen: "d"
-        case .text: "t"
-        case .note: "s"
-        case .highlight: "h"
-        case .spotlight: "f"
-        case .pixelate: "p"
-        case .blur: "b"
-        case .counter: "n"
-        case .crop: "c"
-        }
-    }
-
+extension EditorTool {
     var symbol: String {
         switch self {
         case .select: "cursorarrow"
@@ -44,30 +21,37 @@ enum EditorTool: String, CaseIterable, Identifiable {
         case .crop: "crop"
         }
     }
-
-    var title: String { rawValue.capitalized }
 }
 
 @MainActor
 @Observable
 final class EditorModel {
-    static let baseWidths: [CGFloat] = [2, 4, 8]
+    static let baseWidths = EditorStyle.widths
 
     let fileURL: URL
     let scale: CGFloat
     var document: EditorDocument
-    var tool: EditorTool = .arrow {
+    // The tool, colours and width are remembered for the next editor window as they change.
+    // They're not part of the document, so changing them is never an undo step.
+    var tool: EditorTool {
         // Only the select tool selects, and the toolbar restyles the selection, so drop it when drawing.
         didSet {
             if tool != .select {
                 selectedID = nil
             }
+            rememberStyle { $0.tool = tool }
         }
     }
-    var colorIndex = 0
+    var colorIndex: Int {
+        didSet { rememberStyle { $0.colorIndex = colorIndex } }
+    }
     /// Notes keep their own colour, pale yellow until the user picks another.
-    var noteColorIndex = 2
-    var widthIndex = 1
+    var noteColorIndex: Int {
+        didSet { rememberStyle { $0.noteColorIndex = noteColorIndex } }
+    }
+    var widthIndex: Int {
+        didSet { rememberStyle { $0.widthIndex = widthIndex } }
+    }
     var selectedID: UUID?
     var isDirty = false
     /// True while auto-redact looks for text to hide.
@@ -80,10 +64,22 @@ final class EditorModel {
     /// so holding an arrow key down undoes as one step.
     private var nudgedID: UUID?
 
-    init(fileURL: URL, image: CGImage, scale: CGFloat) {
+    init(fileURL: URL, image: CGImage, scale: CGFloat, style: EditorStyle = Preferences().editorStyle) {
         self.fileURL = fileURL
         self.scale = scale
         document = EditorDocument(base: image, background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension)))
+        tool = style.tool
+        colorIndex = style.colorIndex
+        noteColorIndex = style.noteColorIndex
+        widthIndex = style.widthIndex
+    }
+
+    /// Saves only the value that changed, so another open editor's choices aren't overwritten with this
+    /// window's older ones. Select and crop aren't remembered, so the next window starts with the last drawing tool.
+    private func rememberStyle(_ change: (inout EditorStyle) -> Void) {
+        var style = Preferences().editorStyle
+        change(&style)
+        Preferences.remember(style)
     }
 
     var color: RGBA { RGBA.presets[colorIndex] }

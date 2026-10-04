@@ -133,6 +133,73 @@ import Testing
         #expect(prefs.videoExportOptions == VideoExportOptions())
     }
 
+    @Test func editorStyleStartsWithArrowFirstColourAndMiddleWidth() throws {
+        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
+        let store = try #require(UserDefaults(suiteName: suite))
+        defer { store.removePersistentDomain(forName: suite) }
+        Preferences.registerDefaults(in: store)
+        let style = Preferences(store: store).editorStyle
+        #expect(style == EditorStyle())
+        #expect(style.tool == .arrow)
+        #expect(style.colorIndex == 0)
+        #expect(style.noteColorIndex == 2)
+        #expect(style.widthIndex == 1)
+    }
+
+    @Test func editorStyleRemembersToolColoursAndWidth() throws {
+        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
+        let store = try #require(UserDefaults(suiteName: suite))
+        defer { store.removePersistentDomain(forName: suite) }
+        Preferences.registerDefaults(in: store)
+        let prefs = Preferences(store: store)
+        // The Done-when case: ellipse, blue and the thick width carry over to the next editor.
+        let blue = try #require(RGBA.presets.firstIndex(of: RGBA(0, 0.48, 1)))
+        let thick = try #require(EditorStyle.widths.indices.last)
+        let style = EditorStyle(tool: .ellipse, colorIndex: blue, noteColorIndex: 3, widthIndex: thick)
+        Preferences.remember(style, in: store)
+        #expect(prefs.editorStyle == style)
+        Preferences.resetAll(in: store)
+        #expect(prefs.editorStyle == EditorStyle())
+    }
+
+    @Test func selectAndCropAreNeverTheStartingTool() throws {
+        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
+        let store = try #require(UserDefaults(suiteName: suite))
+        defer { store.removePersistentDomain(forName: suite) }
+        Preferences.registerDefaults(in: store)
+        let prefs = Preferences(store: store)
+        Preferences.remember(EditorStyle(tool: .pen), in: store)
+        for tool in [EditorTool.select, .crop] {
+            Preferences.remember(EditorStyle(tool: tool, colorIndex: 4), in: store)
+            #expect(prefs.editorStyle.tool == .pen)
+            #expect(prefs.editorStyle.colorIndex == 4)
+        }
+        #expect(EditorTool.allCases.filter { !$0.isDrawing } == [.select, .crop])
+        // Even if a stored value says otherwise.
+        store.set(EditorTool.crop.rawValue, forKey: PreferenceKey.editorTool)
+        #expect(prefs.editorStyle.tool == .arrow)
+    }
+
+    @Test func editorStyleIgnoresValuesShotDoesNotOffer() throws {
+        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
+        let store = try #require(UserDefaults(suiteName: suite))
+        defer { store.removePersistentDomain(forName: suite) }
+        Preferences.registerDefaults(in: store)
+        let prefs = Preferences(store: store)
+        // From an older or newer Shot: a tool it doesn't have, and indexes past the palette and widths.
+        store.set("lasso", forKey: PreferenceKey.editorTool)
+        store.set(RGBA.presets.count, forKey: PreferenceKey.editorColor)
+        store.set(-1, forKey: PreferenceKey.editorNoteColor)
+        store.set(EditorStyle.widths.count, forKey: PreferenceKey.editorWidth)
+        #expect(prefs.editorStyle == EditorStyle())
+        store.set("thick", forKey: PreferenceKey.editorWidth)
+        #expect(prefs.editorStyle.widthIndex == EditorStyle().widthIndex)
+        // Each value falls back on its own, so one bad value keeps the rest.
+        store.set(EditorTool.text.rawValue, forKey: PreferenceKey.editorTool)
+        store.set(5, forKey: PreferenceKey.editorColor)
+        #expect(prefs.editorStyle == EditorStyle(tool: .text, colorIndex: 5))
+    }
+
     @Test func removingTextCaptureDeletesItsShortcut() throws {
         let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
         let store = try #require(UserDefaults(suiteName: suite))
