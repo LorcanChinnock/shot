@@ -81,6 +81,15 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
             return model.paste()
         case "d":
             return model.duplicateSelection()
+        // ⌘+ is ⌘= without Shift on most layouts.
+        case "=", "+":
+            canvas.zoomIn()
+        case "-":
+            canvas.zoomOut()
+        case "0":
+            canvas.zoomToFit()
+        case "1":
+            canvas.zoomToActualSize()
         case "s":
             model.save()
         case "w":
@@ -109,6 +118,10 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         default:
             return false
         }
+    }
+
+    func windowDidResignKey(_ notification: Notification) {
+        canvas.releaseSpace()
     }
 
     func windowWillClose(_ notification: Notification) {

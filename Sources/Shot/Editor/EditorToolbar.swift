@@ -17,6 +17,7 @@ struct EditorRootView: View {
                     BrutalChip(text: "EDITED", color: Brutal.pink)
                 }
                 Spacer()
+                ZoomMenu(model: model, canvas: canvas)
                 RedactMenu(model: model)
                 CanvasMenu(model: model)
                 Button("Copy") { model.copy() }
@@ -111,6 +112,33 @@ struct EditorToolbar: View {
                 .opacity(model.undoStack.canRedo ? 1 : 0.35)
             }
         }
+    }
+}
+
+/// Shows the zoom and offers the zoom commands; pinch and the keyboard shortcuts do the same.
+private struct ZoomMenu: View {
+    @Bindable var model: EditorModel
+    let canvas: EditorCanvasView
+
+    var body: some View {
+        Menu {
+            Button("Zoom In") { canvas.zoomIn() }
+            Button("Zoom Out") { canvas.zoomOut() }
+            Divider()
+            Button("Zoom to Fit") { canvas.zoomToFit() }
+            Button("Actual Size") { canvas.zoomToActualSize() }
+        } label: {
+            HStack(spacing: 6) {
+                Text("\(Int((model.zoom * 100).rounded()))%")
+                    .monospacedDigit()
+                Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
+            }
+        }
+        .menuStyle(.button)
+        .menuIndicator(.hidden)
+        .buttonStyle(BrutalButtonStyle(compact: true))
+        .fixedSize()
+        .help("Zoom in (⌘+), out (⌘-), to fit (⌘0) or to actual size (⌘1). Pinch to zoom; scroll or Space-drag to move around.")
     }
 }
 
