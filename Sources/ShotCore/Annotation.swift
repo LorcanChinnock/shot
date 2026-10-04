@@ -349,11 +349,11 @@ public struct EditorDocument: @unchecked Sendable {
     }
 
     /// The part of the image the spotlights dim: all of it outside every spotlight, never the padding.
-    /// `nil` when there are no spotlights.
+    /// `nil` when there are no spotlights. One with no area, such as a straight drag, dims nothing.
     public var spotlightDimPath: CGPath? {
         let lit = CGMutablePath()
         for annotation in annotations {
-            if case let .spotlight(rect) = annotation.kind {
+            if case let .spotlight(rect) = annotation.kind, !rect.isEmpty {
                 lit.addRect(rect)
             }
         }

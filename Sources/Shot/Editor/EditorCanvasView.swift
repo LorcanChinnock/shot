@@ -299,6 +299,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             model.recordUndo()
             model.document.crop(to: cropDraft)
         }
+        // A spotlight with no area would light nothing, so it isn't added.
+        if let draft, case .spotlight = draft.kind, draft.bounds.isEmpty {
+            return
+        }
         if let draft, draft.bounds.width + draft.bounds.height >= 4 {
             model.add(draft)
         }

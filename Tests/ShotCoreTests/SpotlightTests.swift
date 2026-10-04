@@ -79,6 +79,16 @@ private func isBright(_ p: [CGFloat]) -> Bool { p[0] > 0.97 && p[3] == 1 }
     #expect(!dim.contains(CGPoint(x: 220, y: 40)))
 }
 
+@Test func aSpotlightWithNoAreaDimsNothing() throws {
+    // A straight drag, or a resize down to a line, mustn't darken the whole image.
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100), annotations: [spotlight(CGRect(x: 50, y: 10, width: 0, height: 50))])
+    #expect(doc.spotlightDimPath == nil)
+    doc.annotations.append(spotlight(CGRect(x: 100, y: 10, width: 40, height: 40)))
+    let dim = try #require(doc.spotlightDimPath)
+    #expect(dim.contains(CGPoint(x: 50, y: 30)))
+    #expect(!dim.contains(CGPoint(x: 120, y: 30)))
+}
+
 // MARK: Rendering
 
 @Test func theExportIsDimmedOutsideTheSpotlightAndBrightInside() throws {
