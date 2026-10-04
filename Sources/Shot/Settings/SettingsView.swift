@@ -438,8 +438,30 @@ private struct CameraSettings: View {
 
 private struct ShortcutSettings: View {
     private let color = SettingsSection.shortcuts.color
+    @AppStorage(PreferenceKey.replacesSystemScreenshots) private var replacesSystemScreenshots = false
+    @State private var macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
+
+    private var useShot: Binding<Bool> {
+        Binding(get: { replacesSystemScreenshots }, set: { on in
+            SystemShortcuts.useShot(on)
+            macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
+        })
+    }
 
     var body: some View {
+        SettingsCard(title: "macOS screenshot keys", symbol: "command") {
+            ToggleRow(title: "Use Shot for ⌘⇧3 to ⌘⇧6", subtitle: "Turns off the matching macOS shortcuts, so these keys and a keyboard's screenshot key open Shot. Text capture moves to ⌘⇧6. Turning this off gives them back.", isOn: useShot, color: color, divider: replacesSystemScreenshots && macOSOwnsKeys)
+            if replacesSystemScreenshots && macOSOwnsKeys {
+                SettingRow(title: "macOS still uses these keys", subtitle: "Turn off the Screenshots shortcuts under Keyboard Shortcuts.", divider: false) {
+                    Button("Open") { SystemShortcuts.openKeyboardSettings() }
+                        .buttonStyle(BrutalButtonStyle(compact: true))
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
+        }
+
         SettingsCard(title: "Global hotkeys", symbol: "keyboard.fill") {
             ForEach(Array(ShotAction.allCases.enumerated()), id: \.element) { index, action in
                 SettingRow(title: action.title, divider: index < ShotAction.allCases.count - 1) {
@@ -447,13 +469,19 @@ private struct ShortcutSettings: View {
                 }
             }
         }
+        // Rebuilds the recorders so unchanged shortcuts show the new defaults.
+        .id(replacesSystemScreenshots)
         HStack(alignment: .top, spacing: 14) {
-            Text("Click a shortcut, then press the new keys. Esc cancels, Delete clears. macOS keeps ⌘⇧3, ⌘⇧4 and ⌘⇧5 for its own screenshot tool.")
+            Text("Click a shortcut, then press the new keys. Esc cancels, Delete clears.")
                 .font(Brutal.caption)
                 .foregroundStyle(Brutal.ink.opacity(0.65))
                 .fixedSize(horizontal: false, vertical: true)
             Spacer()
-            Button("Restore defaults") { Preferences.resetHotkeys() }
+            Button("Restore defaults") {
+                Preferences.resetHotkeys()
+                SystemShortcuts.useShot(true)
+                macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
+            }
                 .buttonStyle(BrutalButtonStyle(color: color, compact: true))
         }
         .padding(.horizontal, 4)
@@ -528,6 +556,7 @@ private struct AboutSettings: View {
                 Button(confirmingReset ? "Click to confirm" : "Reset") {
                     if confirmingReset {
                         Preferences.resetAll()
+                        SystemShortcuts.useShot(Preferences().replacesSystemScreenshots)
                         confirmingReset = false
                         Toast.show("Settings reset")
                     } else {

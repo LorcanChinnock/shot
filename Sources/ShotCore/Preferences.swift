@@ -25,6 +25,11 @@ public enum PreferenceKey {
     public static let recordCamera = "recordCamera"
     public static let cameraDeviceID = "cameraDeviceID"
     public static let cameraSize = "cameraSize"
+    public static let replacesSystemScreenshots = "replacesSystemScreenshots"
+    /// True while the macOS screenshot shortcuts are off because Shot turned them off. Not a
+    /// setting, so resetting settings keeps it and Shot can still give the keys back.
+    public static let disabledSystemScreenshots = "disabledSystemScreenshots"
+    public static let tookSystemScreenshots = "tookSystemScreenshots"
 
     public static func hotkey(_ action: ShotAction) -> String { "hotkey.\(action.rawValue)" }
 }
@@ -77,9 +82,11 @@ public struct Preferences {
             PreferenceKey.recordCamera: false,
             PreferenceKey.cameraDeviceID: "",
             PreferenceKey.cameraSize: CameraBubbleSize.medium.rawValue,
+            PreferenceKey.replacesSystemScreenshots: true,
+            PreferenceKey.tookSystemScreenshots: false,
         ]
         for action in ShotAction.allCases {
-            values[PreferenceKey.hotkey(action)] = action.defaultCombo.encoded
+            values[PreferenceKey.hotkey(action)] = action.defaultCombo?.encoded ?? ""
         }
         return values
     }
@@ -91,8 +98,15 @@ public struct Preferences {
         self.store = store
     }
 
+    /// Call again after `replacesSystemScreenshots` changes, so unchanged shortcuts follow it.
     public static func registerDefaults(in store: UserDefaults = .standard) {
         store.register(defaults: defaults)
+        let replacing = store.bool(forKey: PreferenceKey.replacesSystemScreenshots)
+        var hotkeys: [String: Any] = [:]
+        for action in ShotAction.allCases {
+            hotkeys[PreferenceKey.hotkey(action)] = action.defaultCombo(replacingSystemScreenshots: replacing)?.encoded ?? ""
+        }
+        store.register(defaults: hotkeys)
     }
 
     /// Removes every stored value so the registered defaults apply again.
@@ -144,6 +158,10 @@ public struct Preferences {
 
     /// Empty means the system default camera.
     public var cameraDeviceID: String { store.string(forKey: PreferenceKey.cameraDeviceID) ?? "" }
+
+    public var replacesSystemScreenshots: Bool { store.bool(forKey: PreferenceKey.replacesSystemScreenshots) }
+    public var disabledSystemScreenshots: Bool { store.bool(forKey: PreferenceKey.disabledSystemScreenshots) }
+    public var tookSystemScreenshots: Bool { store.bool(forKey: PreferenceKey.tookSystemScreenshots) }
 
     public var cameraSize: CameraBubbleSize {
         CameraBubbleSize(rawValue: store.string(forKey: PreferenceKey.cameraSize) ?? "") ?? .medium

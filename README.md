@@ -39,16 +39,20 @@ Shot updates itself through [Sparkle](https://sparkle-project.org) once you allo
 
 ## Shortcuts
 
-Recording uses the screenshot shortcuts plus Option.
+Shot takes over the macOS screenshot keys and turns off the matching macOS shortcuts, so a keyboard's screenshot key opens Shot too.
 
-| | Screenshot | Record |
-|---|---|---|
-| Area | ⌃⇧4 | ⌃⌥⇧4 |
-| Fullscreen | ⌃⇧3 | ⌃⌥⇧3 |
-| Window | ⌃⇧W | ⌃⌥⇧W |
-| Text (OCR) | ⌃⇧T | – |
+| Shortcut | Action |
+|---|---|
+| ⌘⇧3 | Capture fullscreen |
+| ⌘⇧4 | Capture an area. Press Space to pick a window instead. |
+| ⌘⇧5 | Record an area. Press Space to pick a window, or Enter for the full screen. |
+| ⌘⇧6 | Capture text (OCR) |
 
-While you set up a recording, the record shortcut starts it. While you record, it stops the recording. You can change any shortcut in **Settings › Shortcuts**. macOS reserves ⌘⇧3, ⌘⇧4, and ⌘⇧5 for its own screenshot tool.
+While you set up a recording, the record shortcut starts it. While you record, it stops the recording. You can change any shortcut in **Settings › Shortcuts**.
+
+To keep the macOS screenshot tool, turn off **Use Shot for ⌘⇧3 to ⌘⇧6** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with ⌃ in place of ⌘: ⌃⇧3, ⌃⇧4, ⌃⇧5, plus ⌃⇧W for a window and ⌃⇧T for text.
+
+Record Fullscreen and Record Window have no shortcut until you set one. If you remove Shot, turn the macOS shortcuts back on in **System Settings › Keyboard › Keyboard Shortcuts › Screenshots**.
 
 ## URL scheme
 
