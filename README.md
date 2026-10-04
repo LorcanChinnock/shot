@@ -46,7 +46,7 @@ Recording uses the screenshot shortcuts plus Option.
 | Area | ⌃⇧4 | ⌃⌥⇧4 |
 | Fullscreen | ⌃⇧3 | ⌃⌥⇧3 |
 | Window | ⌃⇧W | ⌃⌥⇧W |
-| Text (OCR) | ⌃⇧2 | – |
+| Text (OCR) | ⌃⇧T | – |
 
 While you set up a recording, the record shortcut starts it. While you record, it stops the recording. You can change any shortcut in **Settings › Shortcuts**. macOS reserves ⌘⇧3, ⌘⇧4, and ⌘⇧5 for its own screenshot tool.
 

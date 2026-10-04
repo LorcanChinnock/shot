@@ -18,7 +18,7 @@ import Testing
     #expect(ShotAction.captureArea.defaultCombo.displayString == "⌃⇧4")
     #expect(ShotAction.captureFullscreen.defaultCombo.displayString == "⌃⇧3")
     #expect(ShotAction.captureWindow.defaultCombo.displayString == "⌃⇧W")
-    #expect(ShotAction.captureText.defaultCombo.displayString == "⌃⇧2")
+    #expect(ShotAction.captureText.defaultCombo.displayString == "⌃⇧T")
     #expect(ShotAction.record.defaultCombo.displayString == "⌃⌥⇧4")
     #expect(ShotAction.recordFullscreen.defaultCombo.displayString == "⌃⌥⇧3")
     #expect(ShotAction.recordWindow.defaultCombo.displayString == "⌃⌥⇧W")

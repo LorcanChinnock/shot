@@ -30,7 +30,7 @@ public enum ShotAction: String, CaseIterable, Sendable {
         case .captureArea: KeyCombo(keyCode: 21, modifiers: KeyCombo.control | KeyCombo.shift)
         case .captureFullscreen: KeyCombo(keyCode: 20, modifiers: KeyCombo.control | KeyCombo.shift)
         case .captureWindow: KeyCombo(keyCode: 13, modifiers: KeyCombo.control | KeyCombo.shift)
-        case .captureText: KeyCombo(keyCode: 19, modifiers: KeyCombo.control | KeyCombo.shift)
+        case .captureText: KeyCombo(keyCode: 17, modifiers: KeyCombo.control | KeyCombo.shift)
         case .record: KeyCombo(keyCode: 21, modifiers: KeyCombo.control | KeyCombo.option | KeyCombo.shift)
         case .recordFullscreen: KeyCombo(keyCode: 20, modifiers: KeyCombo.control | KeyCombo.option | KeyCombo.shift)
         case .recordWindow: KeyCombo(keyCode: 13, modifiers: KeyCombo.control | KeyCombo.option | KeyCombo.shift)
