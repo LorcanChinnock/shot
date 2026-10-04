@@ -70,9 +70,20 @@ final class CaptureCoordinator {
         }
     }
 
+    /// Opens a capture in the editor that suits it.
     func annotate(_ url: URL) {
-        log.notice("Annotate requested: \(url.path)")
-        EditorWindowController.open(url)
+        edit(EditorRoute(fileURL: url))
+    }
+
+    func edit(_ route: EditorRoute) {
+        switch route {
+        case let .image(url):
+            log.notice("Annotate requested: \(url.path)")
+            EditorWindowController.open(url)
+        case let .video(url):
+            log.notice("Video edit requested: \(url.path)")
+            VideoEditorWindowController.open(url)
+        }
     }
 
     private func captureFullscreen() async throws {
