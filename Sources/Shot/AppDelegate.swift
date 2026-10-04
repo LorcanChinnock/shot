@@ -54,13 +54,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             SettingsWindowController.show(section: name.flatMap(SettingsSection.init(rawValue:)))
             return
         }
-        if host == "annotate" {
+        if EditorRoute.hosts.contains(host) {
             let path = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "path" }?.value
-            guard let path else {
-                Toast.show("Missing path for annotate")
+            guard let route = EditorRoute(host: host, path: path) else {
+                Toast.show("Missing path for \(host)")
                 return
             }
-            coordinator.annotate(URL(fileURLWithPath: (path as NSString).expandingTildeInPath))
+            coordinator.edit(route)
             return
         }
         guard let action = ShotAction(rawValue: host) else {
