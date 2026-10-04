@@ -13,19 +13,21 @@ make run
 
 macOS ties the Screen Recording permission to the app's code signature. An ad-hoc signature changes on every build, so the permission would reset each time. `make-dev-cert.sh` creates a self-signed certificate named `Shot Dev` in your login keychain, and the build signs with it. Keychain Access shows it as "not trusted"; that's expected and signing still works. To sign with another identity, set `SHOT_SIGN_IDENTITY`.
 
-On the first run, turn on Shot in System Settings › Privacy & Security › Screen & System Audio Recording, then relaunch it.
+`make run` installs a dev build, **Shot Dev**, next to any released Shot. It has its own bundle identifier (`dev.lorcan.Shot.dev`), so it keeps its own permissions and settings, and it has no updater, so Sparkle never replaces it with a release. Both register the `shot://` scheme and the same default shortcuts, so quit one before you use the other.
+
+On the first run, turn on Shot Dev in System Settings › Privacy & Security › Screen & System Audio Recording, then relaunch it.
 
 ### Make targets
 
 | Target | What it does |
 |---|---|
-| `make run` | Build, install to `/Applications/Shot.app`, and launch |
+| `make run` | Build, install to `/Applications/Shot Dev.app`, and launch |
 | `make test` | Run the `ShotCore` unit tests |
 | `make app` | Build and install without launching (`INSTALL_DIR=~/Applications make app` to install elsewhere) |
-| `make bundle` | Build and sign `build/Shot.app` only |
+| `make bundle` | Build and sign `build/Shot Dev.app` only |
 | `make dist` | Build a universal (Apple Silicon and Intel) `build/Shot.zip`, as the release workflow does |
 | `make icon` | Regenerate `Resources/AppIcon.icns` from `scripts/make-icon.swift` |
-| `make reset-tcc` | Clear Shot's Screen Recording permission |
+| `make reset-tcc` | Clear Shot Dev's Screen Recording permission |
 | `make clean` | Remove build output |
 
 **Command Line Tools only:** the CLT's default SDK (27) makes SwiftUI's `@State` a macro whose compiler plugin ships only with Xcode. The Makefile pins the CLT's 26.5 SDK when Xcode isn't selected. With Xcode, nothing is pinned.
@@ -46,10 +48,10 @@ If logic can be tested without a window, a display, or a permission, put it in `
 
 ## Debugging
 
-Shot logs to the unified log under its bundle identifier. File paths are redacted unless you've enabled private data logging.
+Shot logs to the unified log under its bundle identifier, which is `dev.lorcan.Shot.dev` for Shot Dev. File paths are redacted unless you've enabled private data logging.
 
 ```bash
-log stream --predicate 'subsystem == "dev.lorcan.Shot"'
+log stream --predicate 'subsystem == "dev.lorcan.Shot.dev"'
 ```
 
 The `shot://` URL scheme (see the README) drives every action without a keyboard, which helps when you reproduce a bug.

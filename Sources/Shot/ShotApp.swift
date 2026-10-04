@@ -51,7 +51,9 @@ private struct ShotMenu: View {
             try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             NSWorkspace.shared.open(folder)
         }
-        UpdateButton(updater: Updater.shared)
+        if Updater.shared.isEnabled {
+            UpdateButton(updater: Updater.shared)
+        }
         Button("Settings…") { SettingsWindowController.show() }
         .keyboardShortcut(",")
         Divider()

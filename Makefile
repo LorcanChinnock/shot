@@ -26,16 +26,17 @@ app: bundle
 	scripts/install.sh "$(INSTALL_DIR)"
 
 run: app
-	pkill -x Shot || true
-	open "$(INSTALL_DIR)/Shot.app"
+	pkill -f "Shot Dev.app/Contents/MacOS/Shot" || true
+	open "$(INSTALL_DIR)/Shot Dev.app"
 
 dist: export SHOT_ARCHS ?= arm64 x86_64
+dist: export SHOT_VARIANT = release
 dist: bundle
 	ditto -c -k --keepParent build/Shot.app build/Shot.zip
 	@echo "Wrote build/Shot.zip"
 
 reset-tcc:
-	tccutil reset ScreenCapture $$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" Resources/Info.plist)
+	tccutil reset ScreenCapture $$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" Resources/Info.plist).dev
 
 icon:
 	swift scripts/make-icon.swift .

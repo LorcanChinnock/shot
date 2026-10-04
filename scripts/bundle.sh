@@ -1,5 +1,8 @@
 #!/bin/bash
-# Builds a release binary and assembles a signed build/Shot.app.
+# Builds a release binary and assembles a signed app in build/.
+# SHOT_VARIANT=release builds Shot.app, as releases ship it. The default, dev, builds "Shot Dev.app"
+# with its own bundle identifier and no updater, so it keeps its own permissions and settings,
+# and Sparkle never replaces it with a release.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -12,7 +15,12 @@ swift build -c release "${arch_flags[@]}"
 bin_path="$(swift build -c release "${arch_flags[@]}" --show-bin-path)"
 binary="$bin_path/Shot"
 
-app=build/Shot.app
+variant="${SHOT_VARIANT:-dev}"
+case "$variant" in
+    release) app=build/Shot.app ;;
+    dev) app="build/Shot Dev.app" ;;
+    *) echo "error: SHOT_VARIANT must be dev or release, not '$variant'." >&2; exit 1 ;;
+esac
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$app/Contents/Frameworks"
 cp "$binary" "$app/Contents/MacOS/Shot"
@@ -27,6 +35,12 @@ cp Resources/Info.plist "$app/Contents/Info.plist"
 cp Resources/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
 build_number="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $build_number" "$app/Contents/Info.plist"
+if [ "$variant" = dev ]; then
+    bundle_id="$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$app/Contents/Info.plist")"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $bundle_id.dev" \
+        -c "Set :CFBundleName Shot Dev" -c "Set :CFBundleDisplayName Shot Dev" \
+        -c "Delete :SUFeedURL" "$app/Contents/Info.plist"
+fi
 
 identity="${SHOT_SIGN_IDENTITY:-Shot Dev}"
 if [ "$identity" != "-" ] && ! security find-identity -p codesigning | grep -q "\"$identity\""; then

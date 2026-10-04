@@ -517,12 +517,14 @@ private struct AboutSettings: View {
         .padding(16)
         .glassCard()
 
-        SettingsCard(title: "Updates", symbol: "arrow.down.circle.fill") {
-            ToggleRow(title: "Check for updates automatically", subtitle: "Shot asks GitHub once a day whether a new version is out, and installs it when you agree. Nothing else is sent.", isOn: $updater.automaticallyChecks, color: color)
-            SettingRow(title: "Check now", subtitle: "Looks for a new version once, even when automatic checks are off.", divider: false) {
-                Button("Check") { updater.checkForUpdates() }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
-                    .disabled(!updater.canCheckForUpdates)
+        if updater.isEnabled {
+            SettingsCard(title: "Updates", symbol: "arrow.down.circle.fill") {
+                ToggleRow(title: "Check for updates automatically", subtitle: "Shot asks GitHub once a day whether a new version is out, and installs it when you agree. Nothing else is sent.", isOn: $updater.automaticallyChecks, color: color)
+                SettingRow(title: "Check now", subtitle: "Looks for a new version once, even when automatic checks are off.", divider: false) {
+                    Button("Check") { updater.checkForUpdates() }
+                        .buttonStyle(BrutalButtonStyle(compact: true))
+                        .disabled(!updater.canCheckForUpdates)
+                }
             }
         }
 

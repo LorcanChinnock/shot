@@ -80,7 +80,7 @@ You need the Xcode Command Line Tools, or Xcode.
 git clone https://github.com/LorcanChinnock/shot.git
 cd shot
 scripts/make-dev-cert.sh   # once: a stable signing identity, so the Screen Recording permission survives rebuilds
-make run                   # build, install to /Applications/Shot.app, and launch
+make run                   # build, install to /Applications/Shot Dev.app, and launch
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the other `make` targets, the project layout, and how to send a change.
