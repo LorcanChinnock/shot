@@ -3,7 +3,7 @@ import Observation
 import ShotCore
 
 enum EditorTool: String, CaseIterable, Identifiable {
-    case select, arrow, line, rect, ellipse, text, highlight, pixelate, counter, crop
+    case select, arrow, line, rect, ellipse, text, note, highlight, pixelate, counter, crop
 
     var id: String { rawValue }
 
@@ -15,6 +15,7 @@ enum EditorTool: String, CaseIterable, Identifiable {
         case .rect: "r"
         case .ellipse: "o"
         case .text: "t"
+        case .note: "s"
         case .highlight: "h"
         case .pixelate: "p"
         case .counter: "n"
@@ -30,6 +31,7 @@ enum EditorTool: String, CaseIterable, Identifiable {
         case .rect: "rectangle"
         case .ellipse: "circle"
         case .text: "textformat"
+        case .note: "note.text"
         case .highlight: "highlighter"
         case .pixelate: "square.grid.3x3"
         case .counter: "1.circle"
@@ -50,6 +52,8 @@ final class EditorModel {
     var document: EditorDocument
     var tool: EditorTool = .arrow
     var colorIndex = 0
+    /// Notes keep their own colour, pale yellow until the user picks another.
+    var noteColorIndex = 2
     var widthIndex = 1
     var selectedID: UUID?
     var isDirty = false
@@ -62,6 +66,20 @@ final class EditorModel {
     }
 
     var color: RGBA { RGBA.presets[colorIndex] }
+    var noteColor: RGBA { RGBA.presets[noteColorIndex] }
+
+    /// The colour the palette shows and sets: the note colour while the note tool is active.
+    var paletteIndex: Int {
+        get { tool == .note ? noteColorIndex : colorIndex }
+        set {
+            if tool == .note {
+                noteColorIndex = newValue
+            } else {
+                colorIndex = newValue
+            }
+        }
+    }
+
     var lineWidth: CGFloat { Self.baseWidths[widthIndex] * scale }
     var fontSize: CGFloat { lineWidth * 6 }
     /// Space kept between an annotation and a canvas edge that grew to hold it.
@@ -95,6 +113,24 @@ final class EditorModel {
         recordUndo()
         document.annotations.append(annotation)
         document.grow(toFit: annotation, margin: canvasMargin)
+    }
+
+    /// Sets a note's text as one undoable step; empty text deletes the note.
+    func setNoteText(_ id: UUID, to string: String) {
+        edit { doc in
+            guard let index = doc.annotations.firstIndex(where: { $0.id == id }) else {
+                return
+            }
+            if string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                doc.annotations.remove(at: index)
+            } else {
+                doc.annotations[index].setNoteText(string)
+                doc.grow(toFit: doc.annotations[index], margin: canvasMargin)
+            }
+        }
+        if !document.annotations.contains(where: { $0.id == id }), selectedID == id {
+            selectedID = nil
+        }
     }
 
     func fitToContent() {

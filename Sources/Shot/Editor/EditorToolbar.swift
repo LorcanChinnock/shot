@@ -64,9 +64,9 @@ struct EditorToolbar: View {
             ToolGroup {
                 ForEach(RGBA.presets.indices, id: \.self) { index in
                     let rgba = RGBA.presets[index]
-                    let selected = model.colorIndex == index
+                    let selected = model.paletteIndex == index
                     Button {
-                        model.colorIndex = index
+                        model.paletteIndex = index
                     } label: {
                         Circle()
                             .fill(Color(.sRGB, red: rgba.r, green: rgba.g, blue: rgba.b))

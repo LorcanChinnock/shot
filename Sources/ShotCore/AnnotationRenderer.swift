@@ -103,6 +103,24 @@ public enum AnnotationRenderer {
             ctx.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
             ctx.textPosition = CGPoint(x: center.x - lineWidth / 2, y: center.y + (ascent - descent) / 2)
             CTLineDraw(line, ctx)
+        case .note:
+            guard let layout = annotation.noteLayout else {
+                return
+            }
+            // Shadows ignore the CTM, so map the offset and blur through it to look the same at any zoom.
+            let ctm = ctx.ctm
+            ctx.saveGState()
+            ctx.setShadow(offset: CGSize(width: 0, height: layout.shadowOffset).applying(ctm), blur: layout.shadowBlur * hypot(ctm.a, ctm.b), color: CGColor(gray: 0, alpha: 0.3))
+            ctx.setFillColor(layout.fill.cgColor)
+            ctx.addPath(CGPath(roundedRect: layout.frame, cornerWidth: layout.cornerRadius, cornerHeight: layout.cornerRadius, transform: nil))
+            ctx.fillPath()
+            ctx.restoreGState()
+            let text = layout.textRect
+            ctx.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
+            for (index, line) in layout.lines.enumerated() {
+                ctx.textPosition = CGPoint(x: text.minX, y: text.minY + layout.ascent + CGFloat(index) * layout.lineHeight)
+                CTLineDraw(line, ctx)
+            }
         }
     }
 
