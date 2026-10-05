@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/LorcanChinnock/shot/compare/v0.4.0...v0.5.0) (2026-10-05)
+
+
+### Features
+
+* **recording:** copy recordings to the clipboard ([#62](https://github.com/LorcanChinnock/shot/issues/62)) ([49d83ee](https://github.com/LorcanChinnock/shot/commit/49d83ee5adbb30ec4979870ab410760f8f4e8341))
+* **recording:** mic meter, mute, and mic/camera pickers with previews ([#60](https://github.com/LorcanChinnock/shot/issues/60)) ([0eb7776](https://github.com/LorcanChinnock/shot/commit/0eb7776c97b26f2455f88e3642aa1c1e60bf0823))
+
 ## [0.4.0](https://github.com/LorcanChinnock/shot/compare/v0.3.0...v0.4.0) (2026-10-05)
 
 
