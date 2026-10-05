@@ -84,7 +84,7 @@ The release workflow needs four repository secrets. Create them once, and keep a
 | `SPARKLE_PRIVATE_KEY` | The EdDSA key that signs updates. Its public half is `SUPublicEDKey` in `Resources/Info.plist`. |
 | `SHOT_SIGNING_CERT_P12` | A base64 `.p12` of the self-signed `Shot Release` code-signing certificate. Every release signs with it, so macOS keeps the Screen Recording permission across updates. |
 | `SHOT_SIGNING_CERT_PASSWORD` | The password for that `.p12`. |
-| `HOMEBREW_TAP_TOKEN` | A fine-grained token with Contents read and write access to `LorcanChinnock/homebrew-tap` only. The workflow uses it to update `Casks/shot.rb` there. |
+| `HOMEBREW_TAP_DEPLOY_KEY` | The private half of an SSH deploy key with write access to `LorcanChinnock/homebrew-tap` only. The workflow uses it to update `Casks/shot.rb` there; the tap's `main` ruleset lets deploy keys push. |
 
 ```bash
 make build                                                     # fetches Sparkle's tools
@@ -98,5 +98,8 @@ gh secret set SHOT_SIGNING_CERT_PASSWORD                       # paste the passw
 
 rm sparkle.key release.p12                                     # both stay in your login keychain
 
-gh secret set HOMEBREW_TAP_TOKEN                               # paste the token
+ssh-keygen -t ed25519 -N "" -C "shot release workflow" -f tap_key
+gh repo deploy-key add tap_key.pub -R LorcanChinnock/homebrew-tap --allow-write --title "shot release workflow"
+gh secret set HOMEBREW_TAP_DEPLOY_KEY < tap_key
+rm tap_key tap_key.pub                                         # make a new key if you lose it
 ```
