@@ -94,18 +94,25 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$TAG" "build/release/Shot-${TAG}.zip" build/release/appcast.xml --clobber
-      # GITHUB_TOKEN can't push to another repo, so the tap uses its own token.
-      # See CONTRIBUTING.md › Release secrets.
+      # GITHUB_TOKEN can't push to another repo, so the tap has a write deploy key, which its
+      # ruleset lets push to main. See CONTRIBUTING.md › Release secrets.
       - name: Update the Homebrew cask
         env:
-          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          TAP_DEPLOY_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
         run: |
+          echo "$TAP_DEPLOY_KEY" > "$RUNNER_TEMP/tap_key"
+          chmod 600 "$RUNNER_TEMP/tap_key"
+          # GitHub's published host key, from `gh api meta`.
+          echo "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" > "$RUNNER_TEMP/known_hosts"
+          export GIT_SSH_COMMAND="ssh -i $RUNNER_TEMP/tap_key -o IdentitiesOnly=yes -o UserKnownHostsFile=$RUNNER_TEMP/known_hosts"
           tap="$RUNNER_TEMP/homebrew-tap"
-          git clone "https://x-access-token:${TAP_TOKEN}@github.com/LorcanChinnock/homebrew-tap.git" "$tap"
+          git clone git@github.com:LorcanChinnock/homebrew-tap.git "$tap"
           mkdir -p "$tap/Casks"
           scripts/homebrew-cask.sh "${TAG#v}" "build/release/Shot-${TAG}.zip" > "$tap/Casks/shot.rb"
           git -C "$tap" config user.name "github-actions[bot]"
           git -C "$tap" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git -C "$tap" add Casks/shot.rb
-          git -C "$tap" commit -m "shot ${TAG#v}"
+          # A re-run of the same release has nothing to commit.
+          git -C "$tap" diff --cached --quiet || git -C "$tap" commit -m "shot ${TAG#v}"
           git -C "$tap" push
+          rm "$RUNNER_TEMP/tap_key"
