@@ -6,6 +6,8 @@
       "package-name": "Shot",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
+      "draft": true,
+      "force-tag-creation": true,
       "include-component-in-tag": false,
       "extra-files": [
         {
