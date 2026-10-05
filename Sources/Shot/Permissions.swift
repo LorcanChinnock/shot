@@ -24,6 +24,18 @@ enum Permissions {
         }
     }
 
+    // A grant made for a differently signed build, such as a local dev build, stays switched on in
+    // System Settings but no longer matches this app, so macOS denies it. Clearing it lets macOS ask afresh.
+    static func requestScreenCapture() {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
+        process.arguments = ["reset", "ScreenCapture", Bundle.main.bundleIdentifier ?? "dev.lorcan.Shot"]
+        if (try? process.run()) != nil {
+            process.waitUntilExit()
+        }
+        CGRequestScreenCaptureAccess()
+    }
+
     static func openSettings() {
         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
     }
@@ -65,7 +77,7 @@ private struct OnboardingView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .glassCard()
             HStack(spacing: 12) {
-                Button("Grant") { CGRequestScreenCaptureAccess() }
+                Button("Grant") { Permissions.requestScreenCapture() }
                     .buttonStyle(BrutalButtonStyle(color: Brutal.mint))
                 Button("Open Settings") { Permissions.openSettings() }
                     .buttonStyle(BrutalButtonStyle())
