@@ -59,12 +59,27 @@ Trim a recording, cut sections out, and export an MP4 or a GIF at the frame rate
 
 ## Install
 
-1. Install with [Homebrew](https://brew.sh): `brew install lorcanchinnock/tap/shot`. Or download `Shot-<version>.zip` from the [latest release](https://github.com/LorcanChinnock/shot/releases/latest), unzip it, and move **Shot.app** to Applications.
-2. Open Shot. Releases aren't notarized by Apple yet, so macOS blocks the first launch: click **Open Anyway** next to the message about Shot in **System Settings › Privacy & Security**.
-3. Turn on Shot under **Screen & System Audio Recording** when it asks, then click **Relaunch** in Shot's window. macOS applies the permission only after a relaunch.
-4. Press ⌘⇧4.
+Shot needs macOS 15 or later and runs natively on Apple Silicon and Intel Macs.
 
-Shot needs macOS 15 or later and runs natively on Apple Silicon and Intel Macs. It updates itself once you allow it to; see [Updates](docs/usage.md#updates).
+**With [Homebrew](https://brew.sh):**
+
+```sh
+brew install lorcanchinnock/tap/shot
+```
+
+**Or by hand:** download `Shot-v<version>.zip` from the [latest release](https://github.com/LorcanChinnock/shot/releases/latest), unzip it, and move **Shot.app** to Applications.
+
+### First launch
+
+1. Open Shot from Applications. Releases aren't notarized by Apple yet, so macOS says it can't verify Shot. Click **Done**.
+2. In **System Settings › Privacy & Security**, scroll down to the message about Shot, click **Open Anyway**, then confirm. You only do this once.
+
+   <img src="docs/media/open-anyway.png" width="600" alt="Privacy & Security in System Settings, with the Open Anyway button next to the message that Shot was blocked">
+
+3. In Shot's permission window, click **Grant**, then **Open System Settings** in the macOS prompt, and turn on Shot. Back in Shot's window, click **Relaunch**: macOS applies the permission only after a relaunch.
+4. Shot now lives in the menu bar. Press ⌘⇧4 to take your first screenshot.
+
+Shot updates itself once you allow it to; see [Updates](docs/usage.md#updates). To uninstall, see [Removing Shot](docs/usage.md#removing-shot), or quit Shot and run `brew uninstall --zap shot` if you used Homebrew.
 
 ## Shortcuts
 
