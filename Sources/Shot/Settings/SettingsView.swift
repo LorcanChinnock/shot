@@ -366,8 +366,6 @@ private struct RecordingSettings: View {
     @AppStorage(PreferenceKey.recordingFPS) private var fps = 60
     @AppStorage(PreferenceKey.recordShowsCursor) private var showsCursor = true
     @AppStorage(PreferenceKey.showRecordingBorder) private var border = true
-    @AppStorage(PreferenceKey.recordMicrophone) private var microphone = false
-    @AppStorage(PreferenceKey.recordSystemAudio) private var systemAudio = false
     // Read only so the GIF summary updates when the video editor changes them.
     @AppStorage(PreferenceKey.gifFrameRate) private var gifFrameRate = VideoExportOptions().gifFrameRate
     @AppStorage(PreferenceKey.gifWidth) private var gifWidth = VideoExportOptions().gifWidth
@@ -381,10 +379,7 @@ private struct RecordingSettings: View {
             ToggleRow(title: "Show cursor", isOn: $showsCursor, color: color)
             ToggleRow(title: "Region border", subtitle: "Red outline around the recorded area. It never appears in the video.", isOn: $border, color: color, divider: false)
         }
-        SettingsCard(title: "Audio", symbol: "waveform") {
-            ToggleRow(title: "Microphone", subtitle: "macOS asks for permission on first use.", isOn: $microphone, color: color)
-            ToggleRow(title: "System audio", subtitle: "Sound from other apps. Shot's own sounds are excluded.", isOn: $systemAudio, color: color, divider: false)
-        }
+        AudioSettings(color: color)
         CameraSettings(color: color)
         SettingsCard(title: "GIF export", symbol: "photo.stack.fill") {
             SettingRow(title: "From the Quick Access card", subtitle: "Uses the video editor's last GIF settings: \(Preferences().videoExportOptions.gifSummary)", divider: false) {
@@ -394,46 +389,130 @@ private struct RecordingSettings: View {
     }
 }
 
+private struct AudioSettings: View {
+    let color: Color
+    @AppStorage(PreferenceKey.recordMicrophone) private var microphone = false
+    @AppStorage(PreferenceKey.microphoneDeviceID) private var deviceID = ""
+    @AppStorage(PreferenceKey.recordSystemAudio) private var systemAudio = false
+    @State private var devices: [AVCaptureDevice] = []
+    private let preview = DevicePreview.microphone
+
+    var body: some View {
+        SettingsCard(title: "Audio", symbol: "waveform") {
+            ToggleRow(title: "Microphone", subtitle: "macOS asks for permission on first use. Mute it from the recording controls.", isOn: $microphone, color: color)
+            SettingRow(title: "Microphone input") {
+                DevicePicker(devices: devices, selection: $deviceID)
+            }
+            SettingRow(title: "Test microphone", subtitle: preview.isRunning ? "Speak to see the level." : "Shows the input level of the microphone above.") {
+                HStack(spacing: 10) {
+                    LevelMeter(meter: preview.meter, muted: !preview.isRunning)
+                    Button(preview.isRunning ? "Stop" : "Test") {
+                        if preview.isRunning {
+                            preview.stop()
+                        } else {
+                            Task { await preview.start(deviceID: deviceID) }
+                        }
+                    }
+                    .buttonStyle(BrutalButtonStyle(color: preview.isRunning ? color : .white, compact: true))
+                }
+            }
+            ToggleRow(title: "System audio", subtitle: "Sound from other apps. Shot's own sounds are excluded.", isOn: $systemAudio, color: color, divider: false)
+        }
+        .onAppear {
+            devices = CaptureDevices.microphones()
+        }
+        .onChange(of: deviceID) {
+            restart(preview, deviceID: deviceID)
+        }
+        .onDisappear {
+            preview.stop()
+        }
+    }
+}
+
 private struct CameraSettings: View {
     let color: Color
     @AppStorage(PreferenceKey.recordCamera) private var camera = false
     @AppStorage(PreferenceKey.cameraDeviceID) private var deviceID = ""
     @AppStorage(PreferenceKey.cameraSize) private var size = CameraBubbleSize.medium.rawValue
-    @State private var devices: [(id: String, name: String)] = []
+    @State private var devices: [AVCaptureDevice] = []
+    private let preview = DevicePreview.camera
 
     var body: some View {
         SettingsCard(title: "Camera", symbol: "web.camera.fill") {
             ToggleRow(title: "Camera bubble", subtitle: "Round webcam overlay recorded with your screen. Drag to move, double-click to resize.", isOn: $camera, color: color)
             SettingRow(title: "Camera") {
-                Menu {
-                    Button("System default") { deviceID = "" }
-                    Divider()
-                    ForEach(devices, id: \.id) { device in
-                        Button(device.name) { deviceID = device.id }
+                DevicePicker(devices: devices, selection: $deviceID)
+            }
+            SettingRow(title: "Preview", subtitle: "Check your framing and lighting.") {
+                HStack(spacing: 12) {
+                    if let session = preview.session {
+                        CameraPreviewView(session: session)
+                            .id(ObjectIdentifier(session))
+                            .frame(width: 120, height: 120)
+                            .clipShape(Circle())
+                            .brutalCircle(Color.black, shadow: 3)
                     }
-                } label: {
-                    HStack(spacing: 6) {
-                        Text(selectedName).lineLimit(1)
-                        Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
+                    Button(preview.isRunning ? "Stop" : "Preview") {
+                        if preview.isRunning {
+                            preview.stop()
+                        } else {
+                            Task { await preview.start(deviceID: deviceID) }
+                        }
                     }
-                    .frame(maxWidth: 190)
+                    .buttonStyle(BrutalButtonStyle(color: preview.isRunning ? color : .white, compact: true))
                 }
-                .menuStyle(.button)
-                .menuIndicator(.hidden)
-                .buttonStyle(BrutalButtonStyle(compact: true))
-                .fixedSize()
             }
             SettingRow(title: "Bubble size", divider: false) {
                 BrutalSegmented(selection: $size, options: CameraBubbleSize.allCases.map { ($0.rawValue, $0.rawValue.capitalized) }, color: color)
             }
         }
         .onAppear {
-            devices = CameraBubble.cameras().map { ($0.uniqueID, $0.localizedName) }
+            devices = CaptureDevices.cameras()
         }
+        .onChange(of: deviceID) {
+            restart(preview, deviceID: deviceID)
+        }
+        .onDisappear {
+            preview.stop()
+        }
+    }
+}
+
+/// A running preview follows the device picked in Settings.
+@MainActor
+private func restart(_ preview: DevicePreview, deviceID: String) {
+    if preview.isRunning {
+        Task { await preview.start(deviceID: deviceID) }
+    }
+}
+
+private struct DevicePicker: View {
+    let devices: [AVCaptureDevice]
+    @Binding var selection: String
+
+    var body: some View {
+        Menu {
+            Button("System default") { selection = "" }
+            Divider()
+            ForEach(devices, id: \.uniqueID) { device in
+                Button(device.localizedName) { selection = device.uniqueID }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Text(selectedName).lineLimit(1)
+                Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
+            }
+            .frame(maxWidth: 190)
+        }
+        .menuStyle(.button)
+        .menuIndicator(.hidden)
+        .buttonStyle(BrutalButtonStyle(compact: true))
+        .fixedSize()
     }
 
     private var selectedName: String {
-        devices.first { $0.id == deviceID }?.name ?? "System default"
+        devices.first { $0.uniqueID == selection }?.localizedName ?? "System default"
     }
 }
 

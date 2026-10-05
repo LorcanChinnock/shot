@@ -12,7 +12,12 @@ enum SettingsWindowController {
             SettingsNavigation.shared.section = section
         }
         if window == nil {
-            window = GlassWindow.make(size: size, title: "Shot Settings", resizable: true) { SettingsView() }
+            let window = GlassWindow.make(size: size, title: "Shot Settings", resizable: true) { SettingsView() }
+            // The window is kept when closed, so its views never disappear; turn off any camera or microphone test.
+            NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { _ in
+                MainActor.assumeIsolated { DevicePreview.stopAll() }
+            }
+            self.window = window
         }
         guard let window else {
             return

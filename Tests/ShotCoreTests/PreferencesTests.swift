@@ -77,6 +77,7 @@ import Testing
         #expect(prefs.showRecordingBorder)
         #expect(!prefs.recordCamera)
         #expect(prefs.cameraDeviceID.isEmpty)
+        #expect(prefs.microphoneDeviceID.isEmpty)
         #expect(prefs.cameraSize == .medium)
         #expect(prefs.saveAfterCapture)
         #expect(prefs.copyAfterCapture)

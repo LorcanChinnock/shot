@@ -81,4 +81,44 @@ extension MediaTests {
         try await VideoConcatenator.concatenate([a], to: single)
         #expect(FileManager.default.fileExists(atPath: single.path))
     }
+
+    @Test func mutingSilencesOnlyThoseStretchesOfAudio() async throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let a = folder.appendingPathComponent("a.mp4"), b = folder.appendingPathComponent("b.mp4")
+        try await writeScreenRecording(to: a, seconds: 2, audio: true)
+        try await writeScreenRecording(to: b, seconds: 2, audio: true)
+        let output = folder.appendingPathComponent("out.mp4")
+        try await VideoConcatenator.concatenate([a, b], to: output, muting: CutList([1.5..<2.5, 3.5..<10]))
+        let asset = AVURLAsset(url: output)
+        #expect(abs(try await asset.load(.duration).seconds - 4) < 0.15)
+        let levels = try await audioLevels(of: asset)
+        for (second, loud) in [(0.5, true), (1.25, true), (2.0, false), (2.75, true), (3.75, false)] {
+            let level = levels[Int(second * 4)] ?? 0
+            #expect((level > 0.05) == loud, "RMS \(level) at \(second) s")
+        }
+    }
+}
+
+/// RMS of the first audio track per quarter second, keyed by quarter.
+private func audioLevels(of asset: AVAsset) async throws -> [Int: Float] {
+    let track = try #require(try await asset.loadTracks(withMediaType: .audio).first)
+    let reader = try AVAssetReader(asset: asset)
+    let output = AVAssetReaderTrackOutput(track: track, outputSettings: [
+        AVFormatIDKey: kAudioFormatLinearPCM, AVLinearPCMBitDepthKey: 32, AVLinearPCMIsFloatKey: true, AVLinearPCMIsNonInterleaved: false,
+    ])
+    reader.add(output)
+    reader.startReading()
+    var samples: [Int: [Float]] = [:]
+    while let buffer = output.copyNextSampleBuffer(), let data = buffer.dataBuffer {
+        let start = buffer.presentationTimeStamp.seconds
+        let rate = Double(buffer.formatDescription?.audioStreamBasicDescription?.mSampleRate ?? 44100)
+        var floats = [Float](repeating: 0, count: CMBlockBufferGetDataLength(data) / 4)
+        CMBlockBufferCopyDataBytes(data, atOffset: 0, dataLength: floats.count * 4, destination: &floats)
+        for (index, sample) in floats.enumerated() {
+            samples[Int((start + Double(index) / rate) * 4), default: []].append(sample)
+        }
+    }
+    return samples.mapValues { AudioLevel.rms($0) }
 }

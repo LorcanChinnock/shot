@@ -13,6 +13,10 @@ private let log = Logger.shot("recording")
 final class RecordingSessionModel {
     var isPaused = false
     var cameraOn = false
+    /// Whether this recording captures the microphone at all; mute only silences it.
+    var microphoneOn = false
+    var microphoneMuted = false
+    let meter = AudioMeter()
     private var accumulated: TimeInterval = 0
     private var runningSince: Date?
 
@@ -53,6 +57,8 @@ final class Recorder: NSObject {
         let screen: NSScreen
         let region: CGRect
         let microphone: Bool
+        /// `nil` means the system default.
+        let microphoneID: String?
         let finalURL: URL
     }
 
@@ -65,8 +71,11 @@ final class Recorder: NSObject {
     private var finishing: Task<Void, Never>?
     private var border: RecordingBorderPanel?
     private var controls: RecordingControlPanel?
-    private let frameSink = FrameSink()
+    private var sampleSink = SampleSink(meter: AudioMeter())
     private var model = RecordingSessionModel()
+    /// Stretches of the recording, in recorded seconds, whose audio is silenced when the segments are joined.
+    private var mutes = CutList()
+    private var mutedSince: TimeInterval?
 
     // MARK: Session
 
@@ -86,10 +95,15 @@ final class Recorder: NSObject {
         let folder = prefs.saveFolder
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let finalURL = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "mp4", prefix: prefs.filePrefix)
-        session = Session(screen: screen, region: region, microphone: microphone, finalURL: finalURL)
+        let microphoneID = prefs.microphoneDeviceID.isEmpty ? nil : AVCaptureDevice(uniqueID: prefs.microphoneDeviceID)?.uniqueID
+        session = Session(screen: screen, region: region, microphone: microphone, microphoneID: microphoneID, finalURL: finalURL)
         segments = []
+        mutes = CutList()
+        mutedSince = nil
         model = RecordingSessionModel()
         model.cameraOn = CameraBubble.shared.isVisible
+        model.microphoneOn = microphone
+        sampleSink = SampleSink(meter: model.meter)
         // Panels exist before the stream so the filter can exclude them by window ID.
         showPanels(screen: screen, region: region, prefs: prefs)
         do {
@@ -113,6 +127,7 @@ final class Recorder: NSObject {
         model.hold()
         border?.setStyle(.paused)
         await finishSegment()
+        model.meter.reset()
         log.notice("Recording paused after \(self.segments.count) segments")
     }
 
@@ -145,6 +160,7 @@ final class Recorder: NSObject {
             return
         }
         phase = .finishing
+        endMute()
         hidePanels()
         // Also waits for a segment that a pause is still finishing.
         await finishSegment()
@@ -155,6 +171,7 @@ final class Recorder: NSObject {
     private func complete(discard: Bool) async {
         let parts = segments
         let finalURL = session?.finalURL
+        let muted = mutes
         segments = []
         session = nil
         phase = .idle
@@ -170,7 +187,7 @@ final class Recorder: NSObject {
             return
         }
         do {
-            try await VideoConcatenator.concatenate(parts, to: finalURL)
+            try await VideoConcatenator.concatenate(parts, to: finalURL, muting: muted)
             let size = (try? FileManager.default.attributesOfItem(atPath: finalURL.path)[.size] as? Int) ?? 0
             log.notice("Recording finished: \(finalURL.path), \(parts.count) segments, \(size) bytes")
             onFinish?(finalURL)
@@ -178,6 +195,30 @@ final class Recorder: NSObject {
             log.error("Joining segments failed; parts kept at \(parts.first?.deletingLastPathComponent().path ?? "")")
             onError?(error)
         }
+    }
+
+    // MARK: Microphone
+
+    /// Mutes or unmutes without a gap in the video: the microphone keeps recording and the muted
+    /// stretches are silenced when the segments are joined. System audio shares the track, so it goes quiet too.
+    func toggleMute() {
+        guard isRecording, session?.microphone == true else {
+            return
+        }
+        if mutedSince != nil {
+            endMute()
+        } else {
+            mutedSince = model.elapsed(at: Date())
+        }
+        model.microphoneMuted = mutedSince != nil
+        log.notice("Microphone \(self.model.microphoneMuted ? "muted" : "unmuted")")
+    }
+
+    private func endMute() {
+        if let mutedSince {
+            mutes = mutes.adding(mutedSince..<model.elapsed(at: Date()))
+        }
+        mutedSince = nil
     }
 
     // MARK: Camera
@@ -247,6 +288,7 @@ final class Recorder: NSObject {
         config.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(prefs.recordingFPS))
         config.showsCursor = prefs.recordShowsCursor
         config.captureMicrophone = session.microphone
+        config.microphoneCaptureDeviceID = session.microphoneID
         config.capturesAudio = prefs.recordSystemAudio
         config.excludesCurrentProcessAudio = true
 
@@ -260,7 +302,10 @@ final class Recorder: NSObject {
 
         let stream = SCStream(filter: filter, configuration: config, delegate: self)
         // Without a screen output SCK logs a dropped-frame error for every frame.
-        try stream.addStreamOutput(frameSink, type: .screen, sampleHandlerQueue: frameSink.queue)
+        try stream.addStreamOutput(sampleSink, type: .screen, sampleHandlerQueue: sampleSink.queue)
+        if session.microphone {
+            try stream.addStreamOutput(sampleSink, type: .microphone, sampleHandlerQueue: sampleSink.queue)
+        }
         let output = SCRecordingOutput(configuration: outputConfig, delegate: self)
         try stream.addRecordingOutput(output)
         try await stream.startCapture()
@@ -320,6 +365,7 @@ final class Recorder: NSObject {
         }
         let controls = RecordingControlPanel(region: region, screen: screen, model: model, actions: .init(
             togglePause: { [weak self] in Task { await self?.togglePause() } },
+            toggleMute: { [weak self] in self?.toggleMute() },
             toggleCamera: { [weak self] in Task { await self?.toggleCamera() } },
             cycleCameraSize: { [weak self] in self?.cycleCameraSize() },
             stop: { [weak self] discard in self?.onStopRequested?(discard) }
@@ -341,6 +387,7 @@ final class Recorder: NSObject {
         }
         log.error("Recording failed: \(error.localizedDescription, privacy: .public)")
         phase = .finishing
+        endMute()
         hidePanels()
         stream = nil
         recordingOutput = nil
@@ -370,8 +417,18 @@ extension Recorder: SCStreamDelegate, SCRecordingOutputDelegate {
     }
 }
 
-private final class FrameSink: NSObject, SCStreamOutput {
-    let queue = DispatchQueue(label: "Shot.frames")
+/// Feeds the microphone level meter; screen frames are only taken so SCK doesn't log them as dropped.
+private final class SampleSink: NSObject, SCStreamOutput {
+    let queue = DispatchQueue(label: "Shot.samples")
+    private let meter: AudioMeter
 
-    func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {}
+    init(meter: AudioMeter) {
+        self.meter = meter
+    }
+
+    func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
+        if type == .microphone {
+            meter.measure(sampleBuffer)
+        }
+    }
 }
