@@ -129,7 +129,7 @@ private struct ScrollFade: View {
     }
 }
 
-/// The bundle's app icon, which already carries its own border and hard shadow.
+/// The bundle's app icon, which already carries its own soft shadow.
 private struct AppIconView: View {
     let size: CGFloat
 
