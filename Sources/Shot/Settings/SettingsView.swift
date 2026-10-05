@@ -366,6 +366,7 @@ private struct RecordingSettings: View {
     @AppStorage(PreferenceKey.recordingFPS) private var fps = 60
     @AppStorage(PreferenceKey.recordShowsCursor) private var showsCursor = true
     @AppStorage(PreferenceKey.showRecordingBorder) private var border = true
+    @AppStorage(PreferenceKey.copyAfterRecording) private var copy = true
     // Read only so the GIF summary updates when the video editor changes them.
     @AppStorage(PreferenceKey.gifFrameRate) private var gifFrameRate = VideoExportOptions().gifFrameRate
     @AppStorage(PreferenceKey.gifWidth) private var gifWidth = VideoExportOptions().gifWidth
@@ -377,7 +378,8 @@ private struct RecordingSettings: View {
                 BrutalSegmented(selection: $fps, options: [(30, "30 fps"), (60, "60 fps")], color: color)
             }
             ToggleRow(title: "Show cursor", isOn: $showsCursor, color: color)
-            ToggleRow(title: "Region border", subtitle: "Red outline around the recorded area. It never appears in the video.", isOn: $border, color: color, divider: false)
+            ToggleRow(title: "Region border", subtitle: "Red outline around the recorded area. It never appears in the video.", isOn: $border, color: color)
+            ToggleRow(title: "Copy to clipboard", subtitle: "Copies the finished recording, ready to paste as a file.", isOn: $copy, color: color, divider: false)
         }
         AudioSettings(color: color)
         CameraSettings(color: color)

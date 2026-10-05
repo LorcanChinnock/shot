@@ -23,6 +23,7 @@ public enum PreferenceKey {
     public static let microphoneDeviceID = "microphoneDeviceID"
     public static let recordSystemAudio = "recordSystemAudio"
     public static let showRecordingBorder = "showRecordingBorder"
+    public static let copyAfterRecording = "copyAfterRecording"
     public static let recordCamera = "recordCamera"
     public static let cameraDeviceID = "cameraDeviceID"
     public static let cameraSize = "cameraSize"
@@ -89,6 +90,7 @@ public struct Preferences {
             PreferenceKey.microphoneDeviceID: "",
             PreferenceKey.recordSystemAudio: false,
             PreferenceKey.showRecordingBorder: true,
+            PreferenceKey.copyAfterRecording: true,
             PreferenceKey.recordCamera: false,
             PreferenceKey.cameraDeviceID: "",
             PreferenceKey.cameraSize: CameraBubbleSize.medium.rawValue,
@@ -196,6 +198,7 @@ public struct Preferences {
 
     public var recordSystemAudio: Bool { store.bool(forKey: PreferenceKey.recordSystemAudio) }
     public var showRecordingBorder: Bool { store.bool(forKey: PreferenceKey.showRecordingBorder) }
+    public var copyAfterRecording: Bool { store.bool(forKey: PreferenceKey.copyAfterRecording) }
 
     public var recordCamera: Bool { store.bool(forKey: PreferenceKey.recordCamera) }
 

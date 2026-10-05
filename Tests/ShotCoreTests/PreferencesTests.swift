@@ -75,6 +75,7 @@ import Testing
         #expect(prefs.quickAccessPosition == .left)
         #expect(!prefs.recordSystemAudio)
         #expect(prefs.showRecordingBorder)
+        #expect(prefs.copyAfterRecording)
         #expect(!prefs.recordCamera)
         #expect(prefs.cameraDeviceID.isEmpty)
         #expect(prefs.microphoneDeviceID.isEmpty)

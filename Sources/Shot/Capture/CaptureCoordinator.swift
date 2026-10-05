@@ -159,6 +159,9 @@ final class CaptureCoordinator {
 
     private func recordingFinished(_ url: URL) {
         state.isRecording = false
+        if Preferences().copyAfterRecording {
+            Clipboard.copy(fileURL: url)
+        }
         Task {
             let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
             generator.appliesPreferredTrackTransform = true
