@@ -6,17 +6,22 @@ import SwiftUI
 final class RecordingControlPanel: NSPanel {
     struct Actions {
         let togglePause: @MainActor () -> Void
+        let toggleMute: @MainActor () -> Void
         let toggleCamera: @MainActor () -> Void
         let cycleCameraSize: @MainActor () -> Void
         let stop: @MainActor (_ discard: Bool) -> Void
     }
 
-    private static let size = NSSize(width: 456, height: 62)
+    /// Wider when the microphone controls show.
+    private static func size(microphone: Bool) -> NSSize {
+        NSSize(width: microphone ? 556 : 456, height: 62)
+    }
 
     @MainActor
     init(region: CGRect, screen: NSScreen, model: RecordingSessionModel, actions: Actions) {
-        let origin = ControlPlacement.origin(for: Self.size, region: region, visible: screen.visibleFrame)
-        super.init(contentRect: NSRect(origin: origin, size: Self.size), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        let size = Self.size(microphone: model.microphoneOn)
+        let origin = ControlPlacement.origin(for: size, region: region, visible: screen.visibleFrame)
+        super.init(contentRect: NSRect(origin: origin, size: size), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         level = .statusBar
         isOpaque = false
         backgroundColor = .clear
@@ -63,6 +68,15 @@ private struct RecordingControlView: View {
             }
             .buttonStyle(BrutalButtonStyle(color: model.isPaused ? Brutal.yellow : .white, compact: true))
             .help(model.isPaused ? "Resume recording" : "Pause recording")
+
+            if model.microphoneOn {
+                HStack(spacing: 8) {
+                    IconButton(symbol: model.microphoneMuted ? "mic.slash.fill" : "mic.fill", color: model.microphoneMuted ? Brutal.yellow : Brutal.mint, help: model.microphoneMuted ? "Unmute microphone" : "Mute microphone") {
+                        actions.toggleMute()
+                    }
+                    LevelMeter(meter: model.meter, muted: model.microphoneMuted)
+                }
+            }
 
             IconButton(symbol: model.cameraOn ? "video.fill" : "video.slash.fill", color: model.cameraOn ? Brutal.mint : .white, help: model.cameraOn ? "Hide camera" : "Show camera") {
                 actions.toggleCamera()

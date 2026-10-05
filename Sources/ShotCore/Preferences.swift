@@ -20,6 +20,7 @@ public enum PreferenceKey {
     public static let recordingFPS = "recordingFPS"
     public static let recordShowsCursor = "recordShowsCursor"
     public static let recordMicrophone = "recordMicrophone"
+    public static let microphoneDeviceID = "microphoneDeviceID"
     public static let recordSystemAudio = "recordSystemAudio"
     public static let showRecordingBorder = "showRecordingBorder"
     public static let recordCamera = "recordCamera"
@@ -85,6 +86,7 @@ public struct Preferences {
             PreferenceKey.recordingFPS: 60,
             PreferenceKey.recordShowsCursor: true,
             PreferenceKey.recordMicrophone: false,
+            PreferenceKey.microphoneDeviceID: "",
             PreferenceKey.recordSystemAudio: false,
             PreferenceKey.showRecordingBorder: true,
             PreferenceKey.recordCamera: false,
@@ -188,6 +190,10 @@ public struct Preferences {
     public var recordingFPS: Int { store.integer(forKey: PreferenceKey.recordingFPS) }
     public var recordShowsCursor: Bool { store.bool(forKey: PreferenceKey.recordShowsCursor) }
     public var recordMicrophone: Bool { store.bool(forKey: PreferenceKey.recordMicrophone) }
+
+    /// Empty means the system default microphone.
+    public var microphoneDeviceID: String { store.string(forKey: PreferenceKey.microphoneDeviceID) ?? "" }
+
     public var recordSystemAudio: Bool { store.bool(forKey: PreferenceKey.recordSystemAudio) }
     public var showRecordingBorder: Bool { store.bool(forKey: PreferenceKey.showRecordingBorder) }
 

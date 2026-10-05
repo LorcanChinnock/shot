@@ -42,10 +42,6 @@ final class CameraBubble {
         panel.setFrameOrigin(CGPoint(x: panel.frame.minX + delta.dx, y: panel.frame.minY + delta.dy))
     }
 
-    static func cameras() -> [AVCaptureDevice] {
-        AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera, .external, .continuityCamera], mediaType: .video, position: .unspecified).devices
-    }
-
     /// Asks for camera access and shows the preferred camera, reporting problems with a toast.
     /// Returns whether the bubble is showing.
     @discardableResult
@@ -71,8 +67,7 @@ final class CameraBubble {
             log.notice("Region too small for the camera bubble")
             return
         }
-        let device = (deviceID.isEmpty ? nil : AVCaptureDevice(uniqueID: deviceID)) ?? AVCaptureDevice.default(for: .video)
-        guard let device else {
+        guard let device = CaptureDevices.device(id: deviceID, for: .video) else {
             throw CameraError.noCamera
         }
         let session = AVCaptureSession()
@@ -106,10 +101,6 @@ final class CameraBubble {
         }
         session = nil
     }
-}
-
-private struct SessionBox: @unchecked Sendable {
-    let session: AVCaptureSession
 }
 
 private final class CameraBubblePanel: NSPanel {
