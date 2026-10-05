@@ -129,7 +129,7 @@ The estimated size of the exported file is shown before you export. Closing the 
 
 ### Global
 
-Every capture and recording action can have a global shortcut, and a [`shot://` URL](#url-scheme). Shot takes over the macOS screenshot keys and turns off the matching macOS shortcuts, so a keyboard's screenshot key opens Shot too.
+Every capture and recording action can have a global shortcut, and a [`shot://` URL](#url-scheme). Shot takes over the macOS screenshot keys and turns off the matching macOS shortcuts while it runs, so a keyboard's screenshot key opens Shot too. When Shot quits, macOS gets its keys back.
 
 | Shortcut | Action |
 |---|---|
@@ -241,4 +241,4 @@ Shot needs Screen & System Audio Recording access for every capture. It asks for
 
 ## Removing Shot
 
-Quit Shot and move it to the Trash. Then turn the macOS screenshot shortcuts back on in **System Settings › Keyboard › Keyboard Shortcuts › Screenshots**.
+Quit Shot and move it to the Trash. Quitting gives the screenshot keys back to macOS. If ⌘⇧3 to ⌘⇧5 still do nothing, for example because Shot crashed before you removed it, turn the shortcuts back on in **System Settings › Keyboard › Keyboard Shortcuts › Screenshots**.

@@ -29,9 +29,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = Updater.shared
         Permissions.showOnboardingIfNeeded()
         if Permissions.hasScreenCapture {
-            SystemShortcuts.takeKeysIfNeeded()
+            SystemShortcuts.takeKeys()
         }
         log.notice("Shot launched")
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        SystemShortcuts.giveBackKeys()
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {

@@ -34,15 +34,30 @@ enum SystemShortcuts {
         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Keyboard-Settings.extension")!)
     }
 
-    /// Takes the keys once Screen Recording access is in place. Only once, so turning the macOS
-    /// shortcuts back on in System Settings sticks.
-    static func takeKeysIfNeeded() {
+    /// Takes the keys at launch once Screen Recording access is in place. If the macOS shortcuts are
+    /// on although Shot turned them off, someone turned them back on in System Settings, so Shot
+    /// stops using the keys and that choice sticks.
+    static func takeKeys() {
         let prefs = Preferences()
-        guard !prefs.tookSystemScreenshots, prefs.replacesSystemScreenshots else {
+        guard prefs.replacesSystemScreenshots else {
             return
         }
-        UserDefaults.standard.set(true, forKey: PreferenceKey.tookSystemScreenshots)
-        useShot(true)
+        useShot(!(prefs.disabledSystemScreenshots && macOSOwnsKeys))
+    }
+
+    /// Gives the keys back when Shot quits, so they work while Shot isn't running and after it's
+    /// moved to the Trash. Keeps `replacesSystemScreenshots`, so the next launch takes them again.
+    static func giveBackKeys() {
+        let prefs = Preferences()
+        guard prefs.replacesSystemScreenshots, prefs.disabledSystemScreenshots else {
+            return
+        }
+        if macOSOwnsKeys {
+            // Turned back on in System Settings while Shot ran.
+            useShot(false)
+        } else if setMacOSShortcuts(enabled: true) {
+            UserDefaults.standard.set(false, forKey: PreferenceKey.disabledSystemScreenshots)
+        }
     }
 
     /// Turns ⌘⇧6 back on for people whose takeover included it for text capture. Only once, and

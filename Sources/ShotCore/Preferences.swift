@@ -36,7 +36,6 @@ public enum PreferenceKey {
     /// True while the macOS screenshot shortcuts are off because Shot turned them off. Not a
     /// setting, so resetting settings keeps it and Shot can still give the keys back.
     public static let disabledSystemScreenshots = "disabledSystemScreenshots"
-    public static let tookSystemScreenshots = "tookSystemScreenshots"
     /// True once Shot has given ⌘⇧6 back to macOS, so it does that only once.
     public static let gaveBackTextCaptureKey = "gaveBackTextCaptureKey"
 
@@ -99,7 +98,6 @@ public struct Preferences {
             PreferenceKey.editorColor: EditorStyle().colorIndex,
             PreferenceKey.editorNoteColor: EditorStyle().noteColorIndex,
             PreferenceKey.editorWidth: EditorStyle().widthIndex,
-            PreferenceKey.tookSystemScreenshots: false,
         ]
         for action in ShotAction.allCases {
             values[PreferenceKey.hotkey(action)] = action.defaultCombo?.encoded ?? ""
@@ -200,7 +198,6 @@ public struct Preferences {
 
     public var replacesSystemScreenshots: Bool { store.bool(forKey: PreferenceKey.replacesSystemScreenshots) }
     public var disabledSystemScreenshots: Bool { store.bool(forKey: PreferenceKey.disabledSystemScreenshots) }
-    public var tookSystemScreenshots: Bool { store.bool(forKey: PreferenceKey.tookSystemScreenshots) }
     public var gaveBackTextCaptureKey: Bool { store.bool(forKey: PreferenceKey.gaveBackTextCaptureKey) }
 
     /// The last-used export settings, which Quick Access's Export GIF also uses, at normal speed with sound.
