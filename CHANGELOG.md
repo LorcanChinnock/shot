@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/LorcanChinnock/shot/compare/v0.3.0...v0.4.0) (2026-10-05)
+
+
+### Features
+
+* **icon:** redraw the app icon in the modern macOS style ([#54](https://github.com/LorcanChinnock/shot/issues/54)) ([a945601](https://github.com/LorcanChinnock/shot/commit/a945601f51663b9cc24b8ffb795b0de6b87cdc0f))
+
+
+### Bug Fixes
+
+* **hotkeys:** give the macOS screenshot keys back when Shot quits ([#50](https://github.com/LorcanChinnock/shot/issues/50)) ([b6bf679](https://github.com/LorcanChinnock/shot/commit/b6bf6791ff171f1c14421d155d61f04965234608))
+
 ## [0.3.0](https://github.com/LorcanChinnock/shot/compare/v0.2.0...v0.3.0) (2026-10-04)
 
 
