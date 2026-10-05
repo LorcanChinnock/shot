@@ -77,13 +77,14 @@ To force a particular version, add a `Release-As: X.Y.Z` line to the body of a c
 
 ### Release secrets
 
-The release workflow needs three repository secrets. Create them once, and keep a backup of each somewhere safe: if you lose the Sparkle key, installed copies can't verify updates and you have to ship a new key by hand.
+The release workflow needs four repository secrets. Create them once, and keep a backup of each somewhere safe: if you lose the Sparkle key, installed copies can't verify updates and you have to ship a new key by hand.
 
 | Secret | What it is |
 |---|---|
 | `SPARKLE_PRIVATE_KEY` | The EdDSA key that signs updates. Its public half is `SUPublicEDKey` in `Resources/Info.plist`. |
 | `SHOT_SIGNING_CERT_P12` | A base64 `.p12` of the self-signed `Shot Release` code-signing certificate. Every release signs with it, so macOS keeps the Screen Recording permission across updates. |
 | `SHOT_SIGNING_CERT_PASSWORD` | The password for that `.p12`. |
+| `HOMEBREW_TAP_TOKEN` | A fine-grained token with Contents read and write access to `LorcanChinnock/homebrew-tap` only. The workflow uses it to update `Casks/shot.rb` there. |
 
 ```bash
 make build                                                     # fetches Sparkle's tools
@@ -96,4 +97,6 @@ base64 -i release.p12 | gh secret set SHOT_SIGNING_CERT_P12
 gh secret set SHOT_SIGNING_CERT_PASSWORD                       # paste the password
 
 rm sparkle.key release.p12                                     # both stay in your login keychain
+
+gh secret set HOMEBREW_TAP_TOKEN                               # paste the token
 ```

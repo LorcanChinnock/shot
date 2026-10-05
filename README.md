@@ -59,7 +59,7 @@ Trim a recording, cut sections out, and export an MP4 or a GIF at the frame rate
 
 ## Install
 
-1. Download `Shot-<version>.zip` from the [latest release](https://github.com/LorcanChinnock/shot/releases/latest), unzip it, and move **Shot.app** to Applications.
+1. Install with [Homebrew](https://brew.sh): `brew install lorcanchinnock/tap/shot`. Or download `Shot-<version>.zip` from the [latest release](https://github.com/LorcanChinnock/shot/releases/latest), unzip it, and move **Shot.app** to Applications.
 2. Open Shot. Releases aren't notarized by Apple yet, so macOS blocks the first launch: click **Open Anyway** next to the message about Shot in **System Settings › Privacy & Security**.
 3. Turn on Shot under **Screen & System Audio Recording** when it asks, then click **Relaunch** in Shot's window. macOS applies the permission only after a relaunch.
 4. Press ⌘⇧4.
