@@ -27,6 +27,7 @@ app: bundle
 
 run: app
 	pkill -x Shot || true
+	while pgrep -x Shot >/dev/null; do sleep 0.1; done
 	open "$(INSTALL_DIR)/Shot.app"
 
 dist: export SHOT_ARCHS ?= arm64 x86_64

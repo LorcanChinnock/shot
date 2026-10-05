@@ -3,6 +3,7 @@ import AppKit
 
 let ink = NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1)
 let yellow = NSColor(srgbRed: 1, green: 0.83, blue: 0.23, alpha: 1)
+let yellowLight = NSColor(srgbRed: 1, green: 0.89, blue: 0.40, alpha: 1)
 let pink = NSColor(srgbRed: 1, green: 0.48, blue: 0.71, alpha: 1)
 
 func render(size: Int) -> Data {
@@ -13,21 +14,19 @@ func render(size: Int) -> Data {
     let ctx = NSGraphicsContext.current!.cgContext
     ctx.scaleBy(x: s, y: s)
 
-    // macOS icon grid: 824 pt body inset 100 pt.
-    let body = CGRect(x: 100, y: 112, width: 800, height: 800)
-    let radius: CGFloat = 180
-    let shadow = NSBezierPath(roundedRect: body.offsetBy(dx: 22, dy: -22), xRadius: radius, yRadius: radius)
-    ink.setFill()
-    shadow.fill()
+    // macOS icon grid: 824 pt body centered with 100 pt margin.
+    let body = CGRect(x: 100, y: 100, width: 824, height: 824)
+    let radius: CGFloat = 185
     let tile = NSBezierPath(roundedRect: body, xRadius: radius, yRadius: radius)
+    ctx.saveGState()
+    ctx.setShadow(offset: CGSize(width: 0, height: -12), blur: 28, color: NSColor.black.withAlphaComponent(0.3).cgColor)
     yellow.setFill()
     tile.fill()
-    tile.lineWidth = 30
-    ink.setStroke()
-    tile.stroke()
+    ctx.restoreGState()
+    NSGradient(starting: yellowLight, ending: yellow)!.draw(in: tile, angle: -90)
 
     // Viewfinder corner brackets.
-    let inset: CGFloat = 175, arm: CGFloat = 150
+    let inset: CGFloat = 195, arm: CGFloat = 150
     let frame = body.insetBy(dx: inset, dy: inset)
     let brackets = NSBezierPath()
     for (corner, dx, dy) in [(CGPoint(x: frame.minX, y: frame.maxY), 1.0, -1.0), (CGPoint(x: frame.maxX, y: frame.maxY), -1.0, -1.0), (CGPoint(x: frame.minX, y: frame.minY), 1.0, 1.0), (CGPoint(x: frame.maxX, y: frame.minY), -1.0, 1.0)] {
@@ -35,20 +34,16 @@ func render(size: Int) -> Data {
         brackets.line(to: corner)
         brackets.line(to: CGPoint(x: corner.x + dx * arm, y: corner.y))
     }
+    ink.setStroke()
     brackets.lineWidth = 56
     brackets.lineCapStyle = .round
     brackets.lineJoinStyle = .round
     brackets.stroke()
 
-    // Shutter dot with its own hard shadow.
-    let dot = CGRect(x: body.midX - 95, y: body.midY - 95, width: 190, height: 190)
-    ink.setFill()
-    NSBezierPath(ovalIn: dot.offsetBy(dx: 14, dy: -14)).fill()
-    let circle = NSBezierPath(ovalIn: dot)
+    // Shutter dot.
+    let circle = NSBezierPath(ovalIn: CGRect(x: body.midX - 95, y: body.midY - 95, width: 190, height: 190))
     pink.setFill()
     circle.fill()
-    circle.lineWidth = 24
-    circle.stroke()
 
     NSGraphicsContext.restoreGraphicsState()
     return rep.representation(using: .png, properties: [:])!
