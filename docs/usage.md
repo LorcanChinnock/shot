@@ -96,7 +96,7 @@ Press ⌘⇧5, then drag out an area, press Space and click a window, or press E
 
 While recording, the controls let you pause and resume, stop and save, discard the recording, and show, hide or resize the camera bubble. Pressing the record shortcut again, or opening `shot://record`, stops the recording.
 
-Recordings are H.264 MP4 at 30 or 60 fps. In **Settings › Recording** you can also show the cursor, outline the recorded area (the outline never appears in the video), and record your microphone and system audio. System audio is sound from other apps; Shot's own sounds are left out.
+Recordings are H.264 MP4 at 30 or 60 fps. When a recording finishes, Shot copies the file to the clipboard and shows it in [Quick Access](#quick-access). In **Settings › Recording** you can also show the cursor, outline the recorded area (the outline never appears in the video), turn off copying, and record your microphone and system audio. System audio is sound from other apps; Shot's own sounds are left out.
 
 ### Camera bubble
 
@@ -221,7 +221,7 @@ Open Settings from the menu bar icon, or with ⌘, while a Shot window is in fro
 | General | Launch at login, the capture sound, hiding Shot's own windows from captures, the save folder, the file name, PNG or JPEG, and scaling Retina captures to 1× |
 | Capture | What happens after a capture (save, copy, Quick Access, or the editor), the magnifier, the crosshair, the cursor, and window shadows |
 | Quick Access | The screen corner and how long cards stay |
-| Recording | Frame rate, cursor, region outline, microphone, system audio, and the camera bubble |
+| Recording | Frame rate, cursor, region outline, copying to the clipboard, microphone, system audio, and the camera bubble |
 | Shortcuts | The macOS screenshot keys and every global shortcut |
 | About | Updates, permissions, the capture folder, and resetting all settings |
 
