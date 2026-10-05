@@ -94,3 +94,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$TAG" "build/release/Shot-${TAG}.zip" build/release/appcast.xml --clobber
+      # GITHUB_TOKEN can't push to another repo, so the tap uses its own token.
+      # See CONTRIBUTING.md › Release secrets.
+      - name: Update the Homebrew cask
+        env:
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          tap="$RUNNER_TEMP/homebrew-tap"
+          git clone "https://x-access-token:${TAP_TOKEN}@github.com/LorcanChinnock/homebrew-tap.git" "$tap"
+          mkdir -p "$tap/Casks"
+          scripts/homebrew-cask.sh "${TAG#v}" "build/release/Shot-${TAG}.zip" > "$tap/Casks/shot.rb"
+          git -C "$tap" config user.name "github-actions[bot]"
+          git -C "$tap" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "$tap" add Casks/shot.rb
+          git -C "$tap" commit -m "shot ${TAG#v}"
+          git -C "$tap" push
