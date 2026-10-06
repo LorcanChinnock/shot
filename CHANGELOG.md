@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0-beta.5](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.4...v0.7.0-beta.5) (2026-10-06)
+
+
+### Features
+
+* **editor:** drag an arrow's midpoint to bend it ([#90](https://github.com/LorcanChinnock/shot/issues/90)) ([c9fa6eb](https://github.com/LorcanChinnock/shot/commit/c9fa6ebe53331f82e16029eb59e4545dd2519b0b))
+* **editor:** live note colour, canvas retracts, standard zoom and drawing modifiers ([#88](https://github.com/LorcanChinnock/shot/issues/88)) ([42144b4](https://github.com/LorcanChinnock/shot/commit/42144b4b7df576b2f7f840e161d05c77cd47a5c9))
+
 ## [0.7.0-beta.4](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.3...v0.7.0-beta.4) (2026-10-06)
 
 
