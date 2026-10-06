@@ -79,16 +79,36 @@ private struct GlassChrome<Content: View>: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(alignment: .top) {
                 // Only the title strip moves the window; a drag anywhere else belongs to the content.
-                Color.clear
+                TitleStrip()
                     .frame(height: GlassWindow.titlebarHeight)
-                    .contentShape(Rectangle())
-                    .gesture(WindowDragGesture())
-                    .onTapGesture(count: 2) { NSApp.keyWindow?.performZoom(nil) }
             }
             .background(GlassBackdrop())
             .clipShape(RoundedRectangle(cornerRadius: GlassWindow.cornerRadius, style: .circular))
             .overlay(RoundedRectangle(cornerRadius: GlassWindow.cornerRadius, style: .circular).strokeBorder(Brutal.ink, lineWidth: 3))
             .environment(\.colorScheme, .light)
             .ignoresSafeArea()
+    }
+}
+
+/// Drags the window and honours the system "double-click a window's title bar" setting.
+private struct TitleStrip: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView { StripView() }
+    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    private final class StripView: NSView {
+        override var mouseDownCanMoveWindow: Bool { false }
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+        override func mouseDown(with event: NSEvent) {
+            guard event.clickCount == 2, let window else {
+                window?.performDrag(with: event)
+                return
+            }
+            switch UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") {
+            case "Minimize": window.performMiniaturize(nil)
+            case "None": break
+            default: window.performZoom(nil)
+            }
+        }
     }
 }
