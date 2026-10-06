@@ -29,9 +29,8 @@ private struct QuickAccessCardView: View {
             Image(nsImage: card.thumbnail)
                 .resizable()
                 .interpolation(.high)
-                .aspectRatio(contentMode: .fill)
+                .aspectRatio(contentMode: .fit)
                 .frame(width: QuickAccessCard.width, height: card.height)
-                .clipped()
             if hovering {
                 hoverActions
                     .transition(.opacity)
