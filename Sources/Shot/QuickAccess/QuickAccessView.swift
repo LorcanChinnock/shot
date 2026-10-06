@@ -97,7 +97,7 @@ private struct CornerButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 10, weight: .black))
+                .font(.system(size: 10, weight: .bold))
         }
         .buttonStyle(CornerButtonStyle())
         .help(help)

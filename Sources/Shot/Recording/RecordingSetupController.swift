@@ -421,7 +421,7 @@ private struct SetupBarView: View {
             Button {
                 actions.cancel()
             } label: {
-                Image(systemName: "xmark").font(.system(size: 11, weight: .black)).frame(width: 16, height: 16)
+                Image(systemName: "xmark").font(.system(size: 11, weight: .bold)).frame(width: 16, height: 16)
             }
             .buttonStyle(BrutalButtonStyle(compact: true))
             .keyboardShortcut(.cancelAction)
@@ -453,7 +453,7 @@ private struct OptionToggle: View {
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 11, weight: .black)).frame(width: 16, height: 16)
+            Image(systemName: symbol).font(.system(size: 11, weight: .bold)).frame(width: 16, height: 16)
         }
         .buttonStyle(BrutalButtonStyle(color: on ? Brutal.mint : .white, compact: true))
         .help(help)

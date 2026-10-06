@@ -4,7 +4,7 @@ import SwiftUI
 /// Borderless-looking window whose SwiftUI content draws its own glass backdrop and ink border.
 @MainActor
 enum GlassWindow {
-    static let cornerRadius: CGFloat = 18
+    static let cornerRadius: CGFloat = 26
     /// Leading space that keeps content clear of the traffic lights.
     static let trafficLightsWidth: CGFloat = 86
     /// A unified toolbar makes the title bar this tall and centers the traffic lights in it.
