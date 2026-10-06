@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/LorcanChinnock/shot/compare/v0.6.1...v0.6.2) (2026-10-06)
+
+
+### Bug Fixes
+
+* **editor:** in-app custom colour picker, no shadow seam ([#74](https://github.com/LorcanChinnock/shot/issues/74)) ([bc30b94](https://github.com/LorcanChinnock/shot/commit/bc30b944791b7d7cc067a5b02a012b2e21e23e20))
+
 ## [0.6.1](https://github.com/LorcanChinnock/shot/compare/v0.6.0...v0.6.1) (2026-10-06)
 
 
