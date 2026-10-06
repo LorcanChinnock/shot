@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.9](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.8...v0.7.0-beta.9) (2026-10-06)
+
+
+### Features
+
+* **editor:** multi-track video timeline with imports, annotations and keyframes ([#103](https://github.com/LorcanChinnock/shot/issues/103)) ([67fc9dd](https://github.com/LorcanChinnock/shot/commit/67fc9dd5948ba50df6729c8be1a862688c7e84ae))
+
 ## [0.7.0-beta.8](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.7...v0.7.0-beta.8) (2026-10-06)
 
 
