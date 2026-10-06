@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0-beta.8](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.7...v0.7.0-beta.8) (2026-10-06)
+
+
+### Features
+
+* **gallery:** browse, search and edit every capture in one window ([#102](https://github.com/LorcanChinnock/shot/issues/102)) ([9ecf97e](https://github.com/LorcanChinnock/shot/commit/9ecf97e50cf802960be1afe29ff7466c582cfb15))
+
+
+### Bug Fixes
+
+* **ui:** only the title strip drags glass windows ([#99](https://github.com/LorcanChinnock/shot/issues/99)) ([21c67c2](https://github.com/LorcanChinnock/shot/commit/21c67c27e5dc16601ced4bfa9b8a2f83cd9254a9))
+
 ## [0.7.0-beta.7](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.6...v0.7.0-beta.7) (2026-10-06)
 
 
