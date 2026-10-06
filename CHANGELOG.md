@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.7](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.6...v0.7.0-beta.7) (2026-10-06)
+
+
+### Features
+
+* **editor:** live canvas, standard zoom and drawing modifiers ([#96](https://github.com/LorcanChinnock/shot/issues/96)) ([55151e1](https://github.com/LorcanChinnock/shot/commit/55151e183422a203977ee015355ae2d01840b932))
+
 ## [0.7.0-beta.6](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.5...v0.7.0-beta.6) (2026-10-06)
 
 
