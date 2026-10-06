@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.3](https://github.com/LorcanChinnock/shot/compare/v0.5.2...v0.5.3) (2026-10-06)
+
+
+### Bug Fixes
+
+* **editor:** include text being typed in copy/save; save as new versions ([#67](https://github.com/LorcanChinnock/shot/issues/67)) ([225a61d](https://github.com/LorcanChinnock/shot/commit/225a61da19d0f91e6de62f7c5613b82bc5c59dc2))
+
 ## [0.5.2](https://github.com/LorcanChinnock/shot/compare/v0.5.1...v0.5.2) (2026-10-06)
 
 
