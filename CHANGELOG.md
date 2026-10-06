@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/LorcanChinnock/shot/compare/v0.5.3...v0.6.0) (2026-10-06)
+
+
+### Features
+
+* **editor:** fill rectangles and ellipses, custom colours with recents ([#69](https://github.com/LorcanChinnock/shot/issues/69)) ([fd06635](https://github.com/LorcanChinnock/shot/commit/fd06635e13c6b63d269e37459db66c304788b09d))
+
 ## [0.5.3](https://github.com/LorcanChinnock/shot/compare/v0.5.2...v0.5.3) (2026-10-06)
 
 
