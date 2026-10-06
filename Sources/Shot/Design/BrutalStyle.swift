@@ -37,7 +37,7 @@ extension Color {
 
 // MARK: Surfaces
 
-/// An offset copy of `shape` with the card's own interior knocked out, so translucent glass never shows it
+/// A copy of `shape` swept along the offset diagonal with the card's own interior knocked out, so translucent glass never shows it
 /// through itself. The knockout stops at the border's inner edge, so the shadow runs under the opaque border
 /// and meets it with no seam.
 private struct HardShadow<S: InsettableShape>: View {
@@ -45,9 +45,16 @@ private struct HardShadow<S: InsettableShape>: View {
     let offset: CGFloat
     let border: CGFloat
 
+    /// Copies of the shape along the diagonal, so the corners join the border instead of leaving a notch.
+    private var sweepSteps: Int { max(Int(offset * 2), 1) }
+
     var body: some View {
-        shape.fill(Brutal.ink)
-            .offset(x: offset, y: offset)
+        ZStack {
+            ForEach(1...sweepSteps, id: \.self) { step in
+                let distance = offset * CGFloat(step) / CGFloat(sweepSteps)
+                shape.fill(Brutal.ink).offset(x: distance, y: distance)
+            }
+        }
             .mask {
                 Rectangle().fill(.white)
                     .padding(-offset * 2)
