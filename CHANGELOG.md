@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.3](https://github.com/LorcanChinnock/shot/compare/v0.6.2...v0.6.3) (2026-10-06)
+
+
+### Bug Fixes
+
+* **ui:** keep the glass fill off the border's outer edge ([#76](https://github.com/LorcanChinnock/shot/issues/76)) ([b0bfd7f](https://github.com/LorcanChinnock/shot/commit/b0bfd7f6afdc9a4b3331b3160cf27f0881a0b8f2))
+
 ## [0.6.2](https://github.com/LorcanChinnock/shot/compare/v0.6.1...v0.6.2) (2026-10-06)
 
 
