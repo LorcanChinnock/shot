@@ -31,6 +31,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         self.model = model
         super.init(frame: .zero)
         registerForDraggedTypes([NSPasteboard.PasteboardType.fileURL] + NSImage.imageTypes.map { NSPasteboard.PasteboardType($0) })
+        model.commitPendingText = { [weak self] in self?.commitText() }
         observe()
     }
 

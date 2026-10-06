@@ -25,3 +25,13 @@ private let date: Date = {
 @Test func customPrefix() {
     #expect(FileNaming.baseName(for: date, prefix: "Bug") == "Bug 2026-10-02 at 14.03.11")
 }
+
+@Test func nextVersionNeverReusesAnExistingName() {
+    let folder = URL(fileURLWithPath: "/tmp/shots")
+    let original = folder.appendingPathComponent("Shot 1.png")
+    #expect(FileNaming.nextVersionURL(of: original) { _ in false }.lastPathComponent == "Shot 1 (2).png")
+    let taken: Set<String> = ["Shot 1.png", "Shot 1 (2).png"]
+    #expect(FileNaming.nextVersionURL(of: original) { taken.contains($0.lastPathComponent) }.lastPathComponent == "Shot 1 (3).png")
+    let version = folder.appendingPathComponent("Shot 1 (2).png")
+    #expect(FileNaming.nextVersionURL(of: version) { taken.contains($0.lastPathComponent) }.lastPathComponent == "Shot 1 (3).png")
+}
