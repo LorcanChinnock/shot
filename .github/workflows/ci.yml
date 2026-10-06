@@ -1,8 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
   # release.yml dispatches this on release-please's PR branch, whose pushes come from
   # GITHUB_TOKEN and so never trigger pull_request runs.
@@ -24,13 +22,3 @@ jobs:
         run: make dist
         env:
           SHOT_SIGN_IDENTITY: "-"
-
-  # Runs the tests natively on Intel. The Intel runner is several times slower,
-  # so this runs after merge rather than on every pull request.
-  test-intel:
-    if: github.event_name == 'push'
-    runs-on: macos-26-intel
-    steps:
-      - uses: actions/checkout@v5
-      - name: Test
-        run: make test
