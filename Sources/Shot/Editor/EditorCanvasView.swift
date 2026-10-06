@@ -10,8 +10,11 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private var movedSinceMouseDown = false
     private var textField: NSTextField?
     private var textOrigin: CGPoint?
-    /// The note whose text field is open; it may not be in the document yet.
-    private var editingNote: Annotation?
+    /// The note whose text field is open; it may not be in the document yet. The model holds it so the palette can recolour it.
+    private var editingNote: Annotation? {
+        get { model.editingNote }
+        set { model.editingNote = newValue }
+    }
     /// The text annotation whose text field is open, hidden while it's edited.
     private var editingTextID: UUID?
     private var resizeHandle: AnnotationHandle?
@@ -52,6 +55,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             _ = model.document.background
             _ = model.selectedID
             _ = model.tool
+            _ = model.editingNote
         } onChange: { [weak self] in
             Task { @MainActor in
                 // A fitted canvas rescales as it grows or is cropped.
@@ -250,9 +254,28 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard let start = dragStart, let last = lastPoint else {
             return
         }
-        let point = imagePoint(event)
+        var point = imagePoint(event)
         defer { lastPoint = point }
-        let rect = Geometry.normalized(from: start, to: point)
+        // Shift keeps shapes square and lines at 45° steps; Option draws a shape out from where it started.
+        let constrain = event.modifierFlags.contains(.shift)
+        let fromCenter = event.modifierFlags.contains(.option)
+        var rect = Geometry.normalized(from: start, to: point)
+        switch model.tool {
+        case .rect, .ellipse, .highlight, .pixelate, .blur, .spotlight:
+            if constrain {
+                rect = Geometry.square(from: start, to: point)
+            }
+            if fromCenter {
+                let corner = constrain ? CGPoint(x: rect.minX == start.x ? rect.maxX : rect.minX, y: rect.minY == start.y ? rect.maxY : rect.minY) : point
+                rect = Geometry.normalized(from: CGPoint(x: 2 * start.x - corner.x, y: 2 * start.y - corner.y), to: corner)
+            }
+        case .arrow, .line:
+            if constrain {
+                point = Geometry.snapped(from: start, to: point)
+            }
+        default:
+            break
+        }
         let kind: Annotation.Kind
         switch model.tool {
         case .select:
@@ -346,6 +369,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         // The move or resize recorded its undo step when it began, so growing joins that step.
         if model.tool == .select, movedSinceMouseDown, let id = model.selectedID, let moved = model.document.annotations.first(where: { $0.id == id }) {
             model.document.grow(toFit: moved, margin: model.canvasMargin)
+            model.document.shrinkPadding(margin: model.canvasMargin)
         }
     }
 
@@ -386,6 +410,14 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             return
         }
         if event.keyCode == 53 {
+            // Escape abandons a drag under way before it deselects.
+            if dragStart != nil, resizeHandle == nil, !movedSinceMouseDown {
+                draft = nil
+                cropDraft = nil
+                dragStart = nil
+                needsDisplay = true
+                return
+            }
             model.selectedID = nil
             return
         }
@@ -470,13 +502,35 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         zoom(to: Viewport.clampedZoom(currentZoom * (1 + event.magnification), fit: fit), about: convert(event.locationInWindow, from: nil))
     }
 
+    /// A two-finger double-tap on a trackpad toggles between fit and actual size about the pointer.
+    override func smartMagnify(with event: NSEvent) {
+        if currentZoom == 1 {
+            zoomToFit()
+        } else {
+            zoom(to: 1, about: convert(event.locationInWindow, from: nil))
+        }
+    }
+
     override func scrollWheel(with event: NSEvent) {
+        // ⌘ or ⌃ with the wheel or two-finger scroll zooms about the pointer, as in Figma and Sketch.
+        if event.modifierFlags.contains(.command) || event.modifierFlags.contains(.control) {
+            let fit = fitViewport.zoom(pixelsPerPoint: model.scale)
+            let perUnit: CGFloat = event.hasPreciseScrollingDeltas ? 0.01 : 0.1
+            let target = currentZoom * exp(event.scrollingDeltaY * perUnit)
+            zoom(to: Viewport.clampedZoom(target, fit: fit), about: convert(event.locationInWindow, from: nil))
+            return
+        }
         guard zoomedViewport != nil else {
             super.scrollWheel(with: event)
             return
         }
         // A mouse wheel counts lines rather than points. The deltas already follow the natural scrolling setting.
         let step: CGFloat = event.hasPreciseScrollingDeltas ? 1 : 10
+        // Shift turns a mouse wheel's vertical scroll into horizontal.
+        if event.modifierFlags.contains(.shift), event.scrollingDeltaX == 0 {
+            pan(by: CGVector(dx: event.scrollingDeltaY * step, dy: 0))
+            return
+        }
         pan(by: CGVector(dx: event.scrollingDeltaX * step, dy: event.scrollingDeltaY * step))
     }
 
@@ -637,8 +691,6 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         field.maximumNumberOfLines = 0
         field.lineBreakMode = .byWordWrapping
         field.placeholderString = "Note"
-        let ink = layout.ink
-        field.textColor = NSColor(srgbRed: ink.r, green: ink.g, blue: ink.b, alpha: 1)
         field.delegate = self
         field.target = self
         field.action = #selector(textFieldAction)
@@ -658,6 +710,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         if field.font?.pointSize != size {
             field.font = .systemFont(ofSize: size)
         }
+        let ink = layout.ink
+        field.textColor = NSColor(srgbRed: ink.r, green: ink.g, blue: ink.b, alpha: 1)
         // A borderless field insets its text 2 pt on each side.
         field.frame = viewRect(layout.textRect).insetBy(dx: -2, dy: 0)
         needsDisplay = true
@@ -665,7 +719,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     private func commitNote(_ note: Annotation, text string: String) {
         if model.document.annotations.contains(where: { $0.id == note.id }) {
-            model.setText(note.id, to: string)
+            model.setText(note.id, to: string, color: note.color)
         } else if !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             var placed = note
             placed.setText(string)

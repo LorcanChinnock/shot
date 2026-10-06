@@ -395,6 +395,28 @@ public struct EditorDocument: @unchecked Sendable {
         canvasRect = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY).integral
     }
 
+    /// Pulls padding back in to what the annotations still need, so moving or removing one retracts the canvas.
+    /// Only edges at or beyond the image shrink, and never past the image; a crop edge inside the image stays.
+    public mutating func shrinkPadding(margin: CGFloat) {
+        let image = fullRect
+        let painted = annotations.filter { annotation in
+            if case .spotlight = annotation.kind { return false }
+            return true
+        }.map { ($0.bounds, $0.paintedBounds.insetBy(dx: -margin, dy: -margin)) }
+        func edge(_ current: CGFloat, image imageEdge: CGFloat, reaches: ((CGRect) -> Bool), painted paintedEdge: ((CGRect) -> CGFloat), outward: CGFloat) -> CGFloat {
+            guard (current - imageEdge) * outward >= 0 else {
+                return current
+            }
+            let needed = painted.filter { reaches($0.0) }.map { paintedEdge($0.1) }.reduce(imageEdge) { outward > 0 ? max($0, $1) : min($0, $1) }
+            return outward > 0 ? min(current, needed) : max(current, needed)
+        }
+        let minX = edge(canvasRect.minX, image: image.minX, reaches: { $0.minX < image.minX }, painted: { $0.minX }, outward: -1)
+        let minY = edge(canvasRect.minY, image: image.minY, reaches: { $0.minY < image.minY }, painted: { $0.minY }, outward: -1)
+        let maxX = edge(canvasRect.maxX, image: image.maxX, reaches: { $0.maxX > image.maxX }, painted: { $0.maxX }, outward: 1)
+        let maxY = edge(canvasRect.maxY, image: image.maxY, reaches: { $0.maxY > image.maxY }, painted: { $0.maxY }, outward: 1)
+        canvasRect = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY).integral
+    }
+
     /// Sizes the canvas to the image and every annotation but spotlights, with `margin` around the annotations.
     public mutating func fitToContent(margin: CGFloat) {
         canvasRect = annotations.reduce(fullRect) { canvas, annotation in

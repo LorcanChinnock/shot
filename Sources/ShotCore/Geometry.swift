@@ -25,6 +25,15 @@ public enum Geometry {
         return normalized(from: anchor, to: corner)
     }
 
+    /// `point` moved onto the nearest of the eight directions 45° apart from `anchor`, keeping its distance.
+    public static func snapped(from anchor: CGPoint, to point: CGPoint) -> CGPoint {
+        let dx = point.x - anchor.x, dy = point.y - anchor.y
+        let step = CGFloat.pi / 4
+        let angle = (atan2(dy, dx) / step).rounded() * step
+        let length = hypot(dx, dy)
+        return CGPoint(x: anchor.x + length * cos(angle), y: anchor.y + length * sin(angle))
+    }
+
     /// Converts a global AppKit rect to display-local, top-left-origin points.
     public static func displayLocalTopLeft(_ rect: CGRect, screenFrame: CGRect) -> CGRect {
         CGRect(x: rect.minX - screenFrame.minX, y: screenFrame.maxY - rect.maxY, width: rect.width, height: rect.height)
