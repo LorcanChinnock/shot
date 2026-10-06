@@ -76,16 +76,23 @@ public enum AnnotationRenderer {
 
         switch annotation.kind {
         case let .arrow(from, to):
+            let control = annotation.arrowCurve?.control
+            let tangentFrom = control ?? from
             let length = hypot(to.x - from.x, to.y - from.y)
-            guard length > 0 else {
+            let tangentLength = hypot(to.x - tangentFrom.x, to.y - tangentFrom.y)
+            guard length > 0, tangentLength > 0 else {
                 return
             }
             let head = min(max(12, width * 4), length)
-            let ux = (to.x - from.x) / length, uy = (to.y - from.y) / length
+            let ux = (to.x - tangentFrom.x) / tangentLength, uy = (to.y - tangentFrom.y) / tangentLength
             let base = CGPoint(x: to.x - ux * head, y: to.y - uy * head)
             let half = head * 0.45
             ctx.move(to: from)
-            ctx.addLine(to: base)
+            if let control {
+                ctx.addQuadCurve(to: base, control: control)
+            } else {
+                ctx.addLine(to: base)
+            }
             ctx.strokePath()
             ctx.move(to: to)
             ctx.addLine(to: CGPoint(x: base.x - uy * half, y: base.y + ux * half))
