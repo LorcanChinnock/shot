@@ -7,7 +7,8 @@ import Testing
 struct Color {
     var r: UInt8, g: UInt8, b: UInt8
     static let red = Color(r: 255, g: 0, b: 0)
-    static let green = Color(r: 0, g: 255, b: 0)
+    /// Mid-tone, since a primary at the edge of the gamut shifts the most through a video encode and decode.
+    static let green = Color(r: 60, g: 200, b: 90)
     static let blue = Color(r: 0, g: 0, b: 255)
     static let black = Color(r: 0, g: 0, b: 0)
 
@@ -248,7 +249,7 @@ private func temp(_ name: String) -> URL {
         #expect(try await center(at: 0.2).isNear(.red))
         // Hiding it, and drawing a green one in its place for the same time.
         var green = try #require(project.annotationClip(id))
-        green.annotation.fill = RGBA(0, 1, 0)
+        green.annotation.fill = RGBA(60.0 / 255, 200.0 / 255, 90.0 / 255)
         // Frames near one already drawn may be reused, so each check looks at a time of its own.
         built.live.set(hidden: [id], drawn: [green])
         let seen = try await center(at: 0.8)
