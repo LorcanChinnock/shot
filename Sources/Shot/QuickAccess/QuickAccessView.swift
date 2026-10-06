@@ -111,7 +111,7 @@ private struct QuickAccessCardView: View {
     }
 }
 
-private struct CornerButton: View {
+struct CornerButton: View {
     let symbol: String
     let help: String
     let action: () -> Void

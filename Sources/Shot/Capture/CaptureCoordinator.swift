@@ -266,10 +266,27 @@ enum Clipboard {
         pasteboard.writeObjects([item])
     }
 
+    /// Copies the image as PNG, which is the file's own bytes when it is one; false if it can't be read.
+    static func copy(imageAt url: URL) -> Bool {
+        guard let image = ImageCodec.image(at: url) else {
+            return false
+        }
+        let png = ImageFormat(fileExtension: url.pathExtension) == .png ? try? Data(contentsOf: url) : nil
+        guard let data = png ?? ImageCodec.data(from: image, scale: ImageCodec.scale(ofFileAt: url)) else {
+            return false
+        }
+        copy(png: data, image: image)
+        return true
+    }
+
     static func copy(fileURL: URL) {
+        copy(fileURLs: [fileURL])
+    }
+
+    static func copy(fileURLs: [URL]) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-        pasteboard.writeObjects([fileURL as NSURL])
+        pasteboard.writeObjects(fileURLs.map { $0 as NSURL })
     }
 
     private static let annotationType = NSPasteboard.PasteboardType(AnnotationClipboard.pasteboardType)

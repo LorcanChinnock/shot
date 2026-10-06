@@ -34,6 +34,17 @@ A floating card appears in a bottom corner of the screen after each capture. Fro
 
 Cards close on their own after a few seconds; hovering a card pauses the timer. Pick the corner and the timer in **Settings › Quick Access**.
 
+## Gallery
+
+**Open Gallery** in the menu bar menu (or [`shot://gallery`](#url-scheme)) shows every screenshot, recording and GIF in your capture folder, grouped by day and kept up to date as you capture.
+
+- **Filter** by All, Screenshots, Videos or GIFs, **search** by file name (⌘F), and **sort** by date, name or size. The slider (or ⌘+ and ⌘−) sets the thumbnail size.
+- **Select** with a click, ⌘-click, ⇧-click, ⌘A or the arrow keys.
+- **Edit** opens the selection in the [annotation editor](#annotation-editor) or [video editor](#video-editor): double-click, press Return, or use the pencil/scissors button on a hovered thumbnail.
+- **Quick Look** with Space.
+- Right-click for **Export GIF** (a video), **Copy**, **Rename…**, **Show in Finder** and **Move to Trash**. Trashed files go to the Trash, so Finder can put them back.
+- Drag a thumbnail into another app.
+
 ## Annotation editor
 
 Open the editor from a Quick Access card, by turning on **Open in editor** in Settings › Capture, or with [`shot://annotate`](#url-scheme).
@@ -189,6 +200,19 @@ Record Fullscreen and Record Window have no shortcut until you set one. Capture 
 | ⌘C | Copy the edited video |
 | ⌘S | Save and copy |
 
+### Gallery
+
+| Keys | Action |
+|---|---|
+| Arrow keys, Home, End | Move the selection (⇧ extends it) |
+| Return | Edit the selection |
+| Space | Quick Look |
+| ⌘A, ⌘C | Select all, copy |
+| Delete or ⌘Delete | Move to the Trash |
+| ⌘F | Search |
+| ⌘+, ⌘− | Thumbnail size |
+| Esc | Clear the selection |
+
 ### Any Shot window
 
 | Key | Action |
@@ -208,6 +232,7 @@ Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a scr
 | `shot://pause` | Pause or resume the recording |
 | `shot://annotate?path=<file>` | Open an image in the editor, or a video in the video editor |
 | `shot://edit-video?path=<file>` | Open a video in the video editor to trim it |
+| `shot://gallery` | Open the gallery |
 | `shot://settings?section=<name>` | Open Settings at `general`, `capture`, `quickAccess`, `recording`, `shortcuts`, or `about` |
 
 `path` can start with `~`. URL-encode spaces and other special characters, for example `open "shot://annotate?path=~/Desktop/My%20Shot.png"`. The older `shot://record?full=1` still works and does the same as `shot://record-fullscreen`.
