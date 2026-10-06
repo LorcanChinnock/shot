@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0-beta.2](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.1...v0.7.0-beta.2) (2026-10-06)
+
+
+### Bug Fixes
+
+* drop release-as now that 0.7.0-beta.1 is out ([#81](https://github.com/LorcanChinnock/shot/issues/81)) ([1026d79](https://github.com/LorcanChinnock/shot/commit/1026d79b60aed05155102abcbf9023c8e16a302a))
+* keep the beta suffix when release-please bumps the version ([#83](https://github.com/LorcanChinnock/shot/issues/83)) ([1ad398d](https://github.com/LorcanChinnock/shot/commit/1ad398d9b6b9e733f5b0a142fd803c95e9b51dc9))
+
 ## [0.7.0-beta.1](https://github.com/LorcanChinnock/shot/compare/v0.6.3...v0.7.0-beta.1) (2026-10-06)
 
 
