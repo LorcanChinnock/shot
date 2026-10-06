@@ -88,7 +88,7 @@ struct EditorToolbar: View {
                         selected: model.paletteColor,
                         recents: model.recentColors,
                         customHelp: "Custom colour",
-                        choose: { model.paletteColor = $0 },
+                        choose: { if let color = $0 { model.paletteColor = color } },
                         pickCustom: { model.pickCustom($0, forFill: false) }
                     )
                 }
