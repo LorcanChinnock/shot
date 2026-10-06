@@ -80,8 +80,8 @@ struct ClipInspector: View {
     private func position(_ values: PropertyValues, _ animation: ClipAnimation) -> some View {
         HStack(spacing: 6) {
             caption("POSITION")
-            field(values.position.width) { var changed = values; changed.position.width = $0; return changed }
-            field(values.position.height) { var changed = values; changed.position.height = $0; return changed }
+            field(values.position.width, label: "Horizontal position") { var changed = values; changed.position.width = $0; return changed }
+            field(values.position.height, label: "Vertical position") { var changed = values; changed.position.height = $0; return changed }
             diamond(.position, animation)
         }
     }
@@ -96,14 +96,16 @@ struct ClipInspector: View {
                     model.endDrag()
                 }
             }
-            .frame(width: 90)
+            .frame(minWidth: 48, idealWidth: 90, maxWidth: 90, minHeight: 24, maxHeight: 24)
             .tint(Brutal.sky)
+            .accessibilityLabel(Text(title.capitalized))
+            .accessibilityValue(Text(format(value)))
             Text(format(value)).font(Brutal.mono).foregroundStyle(Brutal.ink.opacity(0.75)).frame(width: 48, alignment: .leading)
             diamond(property, animation)
         }
     }
 
-    private func field(_ value: Double, make: @escaping (Double) -> PropertyValues) -> some View {
+    private func field(_ value: Double, label: String, make: @escaping (Double) -> PropertyValues) -> some View {
         TextField("0", value: Binding(get: { value.rounded() }, set: { model.setValues(make($0)) }), format: .number.precision(.fractionLength(0)))
             .textFieldStyle(.plain)
             .font(Brutal.mono)
@@ -111,6 +113,7 @@ struct ClipInspector: View {
             .padding(.horizontal, 6)
             .frame(width: 56, height: 24)
             .brutalSurface(Color.white.opacity(0.7), radius: 6, shadow: 0, border: 1.5)
+            .accessibilityLabel(Text(label))
     }
 
     /// Filled when there's a keyframe of the property at the playhead, a dot when it has others, and empty when it has none.
@@ -136,6 +139,6 @@ struct ClipInspector: View {
     }
 
     private func caption(_ text: String) -> some View {
-        Text(text).font(.system(size: 11, weight: .black)).tracking(1.2).foregroundStyle(Brutal.ink.opacity(0.75))
+        Text(text).font(.system(size: 11, weight: .black)).tracking(1.2).foregroundStyle(Brutal.ink.opacity(0.75)).fixedSize()
     }
 }

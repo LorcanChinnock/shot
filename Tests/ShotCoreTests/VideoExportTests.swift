@@ -53,6 +53,13 @@ import Testing
     #expect(GIFFramePlan(sourceSize: CGSize(width: 640, height: 360), range: range, fps: 12, maxWidth: 1080).size == CGSize(width: 640, height: 360))
 }
 
+@Test(arguments: [10, 12, 15, 24]) func gifFrameDelaysAddUpToTheRightLength(fps: Int) {
+    let plan = GIFFramePlan(sourceSize: CGSize(width: 640, height: 360), range: TrimRange(duration: 10), fps: Double(fps), maxWidth: nil)
+    let hundredths = (0..<plan.frameCount).map { plan.delay(ofFrame: $0) * 100 }
+    #expect(hundredths.allSatisfy { abs($0 - $0.rounded()) < 1e-9 }, "whole hundredths, as a GIF stores them")
+    #expect(abs(hundredths.reduce(0, +) - 1000) < 1e-6, "\(fps) fps plays for 10 s, not 10.5")
+}
+
 @Test func gifPlanSamplesTheRangeAtTheSpeed() {
     let range = TrimRange(start: 1, end: 3, duration: 4)
     let plan = GIFFramePlan(sourceSize: CGSize(width: 640, height: 360), range: range, fps: 10, maxWidth: nil, speed: 2)

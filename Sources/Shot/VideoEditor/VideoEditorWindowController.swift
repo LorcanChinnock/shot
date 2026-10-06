@@ -68,7 +68,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
     private init(model: VideoEditorModel) {
         self.model = model
         let visible = (NSScreen.underPointer ?? NSScreen.screens[0]).visibleFrame
-        let width = min(max(860, visible.width * 0.6), visible.width * 0.85)
+        let width = min(max(880, visible.width * 0.6), visible.width * 0.85)
         let playerHeight = min((width - Brutal.windowInset * 2) / model.aspectRatio, visible.height * 0.55)
         let size = CGSize(width: width, height: playerHeight + VideoEditorRootView.chromeHeight)
         let editorWindow = VideoEditorWindow()
@@ -79,8 +79,8 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
             VideoEditorRootView(model: model)
         }
         window.delegate = self
-        // Wide enough for the export options in one row.
-        window.minSize = NSSize(width: 800, height: 200 + VideoEditorRootView.chromeHeight)
+        // Wide enough for the export options in one row, GIF's included.
+        window.minSize = NSSize(width: 880, height: VideoEditorRootView.playerFloor + VideoEditorRootView.chromeHeight)
 
         model.onLayoutChanged = { [weak self] in
             self?.fitWindowToTracks()
@@ -100,9 +100,10 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
         guard extra != appliedExtraHeight else {
             return
         }
-        window.minSize.height = 200 + VideoEditorRootView.chromeHeight + extra
+        let visible = (window.screen ?? NSScreen.main)?.visibleFrame ?? window.frame
+        // On a short screen the tracks scroll instead, so the minimum never asks for more than the screen has.
+        window.minSize.height = min(VideoEditorRootView.playerFloor + VideoEditorRootView.chromeHeight + extra, visible.height)
         var frame = window.frame
-        let visible = (window.screen ?? NSScreen.main)?.visibleFrame ?? frame
         // The preview gives way before the window runs off the screen.
         let height = min(max(window.minSize.height, frame.height + extra - appliedExtraHeight), visible.height)
         frame.origin.y += frame.height - height

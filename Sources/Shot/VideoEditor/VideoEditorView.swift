@@ -6,7 +6,12 @@ struct VideoEditorRootView: View {
     /// Everything but the player: title bar, timeline row, insets, and gaps.
     static let chromeHeight: CGFloat = GlassWindow.titlebarHeight + TrimTimelineView.height + ExportOptionsBar.height + Brutal.windowInset + Brutal.sectionGap * 2.5 + 24
 
+    /// The least the preview is squeezed to before the tracks scroll instead.
+    static let playerFloor: CGFloat = 200
+    static let playButtonSize: CGFloat = 44
+
     let model: VideoEditorModel
+    @State private var windowHeight: CGFloat = 0
 
     var body: some View {
         VStack(spacing: Brutal.sectionGap) {
@@ -23,8 +28,11 @@ struct VideoEditorRootView: View {
                 Text(timesLabel)
                     .font(Brutal.mono)
                     .foregroundStyle(Brutal.ink.opacity(0.7))
-                Button { model.toggleTracks() } label: { Label("Tracks", systemImage: "rectangle.split.3x1") }
-                    .buttonStyle(BrutalButtonStyle(color: model.showsTracks ? Brutal.violet : .white, compact: true))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .layoutPriority(1)
+                Button { model.toggleTracks() } label: { Label("Tracks", systemImage: "rectangle.split.3x1").fixedSize() }
+                    .buttonStyle(BrutalButtonStyle(color: model.showsTracks ? (model.canHideTracks ? Brutal.violet : Brutal.violet.opacity(0.55)) : .white, compact: true))
                     .help("Show the tracks (T)")
                 Button("Copy") { Task { await model.copy() } }
                     .buttonStyle(BrutalButtonStyle(compact: true))
@@ -62,14 +70,15 @@ struct VideoEditorRootView: View {
                     Image(systemName: model.isPlaying ? "pause.fill" : "play.fill")
                         .font(.system(size: 15, weight: .black))
                         .foregroundStyle(Brutal.ink)
-                        .frame(width: 44, height: 44)
+                        .frame(width: Self.playButtonSize, height: Self.playButtonSize)
                         .brutalCircle(Brutal.yellow, shadow: 3)
                 }
                 .buttonStyle(.plain)
+                .padding(.top, playButtonInset)
                 .help(model.isPlaying ? "Pause (Space)" : "Play (Space)")
                 .accessibilityLabel(Text(model.isPlaying ? "Pause" : "Play"))
                 if model.showsTracks {
-                    TracksView(model: model)
+                    TracksView(model: model, height: lanesHeight)
                 } else {
                     TrimTimelineView(model: model)
                 }
@@ -77,10 +86,28 @@ struct VideoEditorRootView: View {
             ExportOptionsBar(model: model)
         }
         .padding([.horizontal, .bottom], Brutal.windowInset)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { windowHeight = $0 }
         .dropDestination(for: URL.self) { urls, _ in
             Task { await model.importMedia(urls) }
             return !urls.isEmpty
         }
+    }
+
+    /// Drops the play button so it's centred on the main track's row, which sits below the ruler and any picture or annotation lanes.
+    private var playButtonInset: CGFloat {
+        guard model.showsTracks, let main = TracksView.layout(for: model.project).lane(ofTrack: 0) else {
+            return 0
+        }
+        let top = min(main.y, lanesHeight - LaneLayout.mainHeight)
+        return max(0, top + (LaneLayout.mainHeight - Self.playButtonSize) / 2)
+    }
+
+    /// The lanes' height: all of it, unless the window is too short to leave the preview `playerFloor`.
+    private var lanesHeight: CGFloat {
+        let layout = TracksView.layout(for: model.project)
+        let everythingElse = Self.chromeHeight + model.tracksExtraHeight - layout.height
+        let minimum = TracksView.rulerHeight + LaneLayout.gap + LaneLayout.mainHeight
+        return layout.visibleHeight(available: windowHeight - everythingElse - Self.playerFloor, minimum: minimum)
     }
 
     private var timesLabel: String {
@@ -115,12 +142,18 @@ struct ExportOptionsBar: View {
             }
             caption("SPEED")
             BrutalSegmented(selection: option(\.speed), options: VideoExportOptions.speeds.map { ($0, Self.speedLabel($0)) }, color: Brutal.violet)
-                .disabled(model.isComposite && model.options.format == .mp4)
-                .help(model.isComposite && model.options.format == .mp4 ? "Speed isn't available for an edit with imports or transforms in MP4" : "Playback speed")
+                .disabled(speedIsLocked)
+                .overlay {
+                    if speedIsLocked {
+                        Color.clear.contentShape(Rectangle()).onTapGesture { Toast.show(Self.speedLockedReason) }
+                    }
+                }
+                .help(speedIsLocked ? Self.speedLockedReason : "Playback speed")
             Spacer(minLength: 8)
             Text(model.estimatedSize.map { "≈ " + ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .file) } ?? "≈ …")
                 .font(Brutal.mono)
                 .foregroundStyle(Brutal.ink.opacity(0.7))
+                .fixedSize()
                 .help("Estimated size of the exported file")
         }
         .frame(height: Self.height)
@@ -130,11 +163,16 @@ struct ExportOptionsBar: View {
         }
     }
 
+    private static let speedLockedReason = "Speed isn't available for an MP4 with imports, annotations or transforms. A GIF can change speed."
+
+    private var speedIsLocked: Bool { model.isComposite && model.options.format == .mp4 }
+
     private func caption(_ text: String) -> some View {
         Text(text)
             .font(.system(size: 11, weight: .black))
             .tracking(1.2)
             .foregroundStyle(Brutal.ink.opacity(0.75))
+            .fixedSize()
             .padding(.trailing, -6)
     }
 
@@ -281,6 +319,8 @@ struct TrimTimelineView: View {
         .frame(height: Self.height)
         .accessibilityElement()
         .accessibilityLabel(Text("Trim timeline"))
+        .accessibilityValue(Text("\(Timecode.string(model.playhead)) of \(Timecode.string(model.keptLength))"))
+        .accessibilityAdjustableAction { model.nudgePlayhead(bySeconds: $0 == .increment ? 1 : -1) }
         .help("Drag the handles to trim. Shift-drag to select a section, then press Delete to cut it.")
         // Save reloads the file when it finishes, which would drop a trim made meanwhile.
         .allowsHitTesting(!model.isExporting)

@@ -28,6 +28,14 @@ public struct GIFFramePlan: Equatable, Sendable {
         step = speed / fps
     }
 
+    /// A GIF stores delays in whole hundredths of a second, so 1/15 s can't be written as it is. Frames alternate between
+    /// the two nearest values so the GIF still plays for the right length overall.
+    public func delay(ofFrame index: Int) -> Double {
+        let end = (Double(index + 1) * 100 * frameDelay).rounded()
+        let start = (Double(index) * 100 * frameDelay).rounded()
+        return (end - start) / 100
+    }
+
     public func sourceTime(ofFrame index: Int) -> Double {
         cuts.sourceTime(at: Double(index) * step, in: range)
     }
@@ -125,9 +133,9 @@ public enum GIFExporter {
             for index in anchor..<min(anchor + 2, plan.frameCount) {
                 images.append(try await generator.image(at: CMTime(seconds: plan.sourceTime(ofFrame: index), preferredTimescale: 600)).image)
             }
-            let single = try encodedSize(images.prefix(1), delay: plan.frameDelay)
+            let single = try encodedSize(images.prefix(1), delays: [plan.delay(ofFrame: anchor)])
             whole += single
-            change += images.count > 1 ? try encodedSize(images, delay: plan.frameDelay) - single : 0
+            change += images.count > 1 ? try encodedSize(images, delays: [plan.delay(ofFrame: anchor), plan.delay(ofFrame: anchor + 1)]) - single : 0
         }
         return extrapolate(wholeFrameBytes: whole / anchors.count, changeBytes: change / anchors.count, totalFrames: plan.frameCount)
     }
@@ -136,13 +144,13 @@ public enum GIFExporter {
         wholeFrameBytes + changeBytes * max(0, totalFrames - 1)
     }
 
-    private static func encodedSize(_ images: some Collection<CGImage>, delay: Double) throws -> Int {
+    private static func encodedSize(_ images: some Collection<CGImage>, delays: [Double]) throws -> Int {
         let data = NSMutableData()
         guard let destination = CGImageDestinationCreateWithData(data as CFMutableData, UTType.gif.identifier as CFString, images.count, nil) else {
             throw ExportError.cannotCreateDestination
         }
         CGImageDestinationSetProperties(destination, fileProperties)
-        for image in images {
+        for (image, delay) in zip(images, delays) {
             CGImageDestinationAddImage(destination, image, frameProperties(delay: delay))
         }
         guard CGImageDestinationFinalize(destination) else {
@@ -178,13 +186,12 @@ public enum GIFExporter {
 
     private static func write(_ plan: GIFFramePlan, from generator: AVAssetImageGenerator, to destination: CGImageDestination, progress: @Sendable (Double) -> Void) async throws {
         CGImageDestinationSetProperties(destination, fileProperties)
-        let frameProperties = frameProperties(delay: plan.frameDelay)
 
         for index in 0..<plan.frameCount {
             try Task.checkCancellation()
             let time = CMTime(seconds: plan.sourceTime(ofFrame: index), preferredTimescale: 600)
             let (image, _) = try await generator.image(at: time)
-            CGImageDestinationAddImage(destination, image, frameProperties)
+            CGImageDestinationAddImage(destination, image, frameProperties(delay: plan.delay(ofFrame: index)))
             progress(Double(index + 1) / Double(plan.frameCount))
         }
         guard CGImageDestinationFinalize(destination) else {

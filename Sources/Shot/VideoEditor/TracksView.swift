@@ -107,6 +107,8 @@ struct TracksView: View {
     }
 
     let model: VideoEditorModel
+    /// How much of the lanes show; they scroll when it's less than all of them.
+    let height: CGFloat
     @State private var scroll = ScrollPosition()
     @State private var scrollX: CGFloat = 0
     @State private var gesture: (kind: Gesture, startX: CGFloat, pointsPerSecond: CGFloat)?
@@ -118,7 +120,7 @@ struct TracksView: View {
             let viewWidth = geometry.size.width
             let width = viewWidth * model.zoom
             let timeline = TrimTimeline(duration: model.fitDuration, minX: 0, width: width)
-            ScrollView(.horizontal, showsIndicators: false) {
+            ScrollView([.horizontal, .vertical], showsIndicators: false) {
                 lanes(timeline, layout: layout)
                     .frame(width: width, height: layout.height)
                     .contentShape(Rectangle())
@@ -153,9 +155,11 @@ struct TracksView: View {
                 }
                 .onEnded { _ in pinchStart = nil })
         }
-        .frame(height: layout.height)
+        .frame(height: height)
         .accessibilityElement()
         .accessibilityLabel(Text("Tracks"))
+        .accessibilityValue(Text("\(Timecode.string(model.playhead)) of \(Timecode.string(model.keptLength))"))
+        .accessibilityAdjustableAction { model.nudgePlayhead(bySeconds: $0 == .increment ? 1 : -1) }
         .help("Drag to scrub. Drag a clip to move it and its edges to trim it. Shift-drag to select a section, then press Delete to cut it.")
         .allowsHitTesting(!model.isExporting)
     }
