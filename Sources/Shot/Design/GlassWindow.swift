@@ -28,7 +28,6 @@ enum GlassWindow {
         window.titlebarAppearsTransparent = true
         window.isOpaque = false
         window.backgroundColor = .clear
-        window.isMovableByWindowBackground = true
         window.appearance = NSAppearance(named: .aqua)
         window.isReleasedWhenClosed = false
         window.toolbar = NSToolbar(identifier: "glass")
@@ -78,6 +77,14 @@ private struct GlassChrome<Content: View>: View {
     var body: some View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(alignment: .top) {
+                // Only the title strip moves the window; a drag anywhere else belongs to the content.
+                Color.clear
+                    .frame(height: GlassWindow.titlebarHeight)
+                    .contentShape(Rectangle())
+                    .gesture(WindowDragGesture())
+                    .onTapGesture(count: 2) { NSApp.keyWindow?.performZoom(nil) }
+            }
             .background(GlassBackdrop())
             .clipShape(RoundedRectangle(cornerRadius: GlassWindow.cornerRadius, style: .circular))
             .overlay(RoundedRectangle(cornerRadius: GlassWindow.cornerRadius, style: .circular).strokeBorder(Brutal.ink, lineWidth: 3))
