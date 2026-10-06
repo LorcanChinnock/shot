@@ -42,12 +42,20 @@ final class EditorModel {
             rememberStyle { $0.tool = tool }
         }
     }
-    var colorIndex: Int {
-        didSet { rememberStyle { $0.colorIndex = colorIndex } }
+    var color: RGBA {
+        didSet { rememberStyle { $0.color = color } }
     }
     /// Notes keep their own colour, pale yellow until the user picks another.
-    var noteColorIndex: Int {
-        didSet { rememberStyle { $0.noteColorIndex = noteColorIndex } }
+    var noteColor: RGBA {
+        didSet { rememberStyle { $0.noteColor = noteColor } }
+    }
+    /// What new rectangles and ellipses are filled with; `nil` leaves them unfilled.
+    var fill: RGBA? {
+        didSet { rememberStyle { $0.fill = fill } }
+    }
+    /// Custom colours picked lately, newest first, shared by the border and fill palettes.
+    private(set) var recentColors: [RGBA] {
+        didSet { rememberStyle { $0.recentColors = recentColors } }
     }
     var widthIndex: Int {
         didSet { rememberStyle { $0.widthIndex = widthIndex } }
@@ -65,14 +73,20 @@ final class EditorModel {
     /// The annotation the arrow keys last moved, while that move is still the latest undo step,
     /// so holding an arrow key down undoes as one step.
     private var nudgedID: UUID?
+    /// Which selection property a custom colour pick last changed, while that is still the latest undo step,
+    /// so dragging through the colour panel undoes as one step.
+    private var pickedKey: String?
+    private var recentTask: Task<Void, Never>?
 
     init(fileURL: URL, image: CGImage, scale: CGFloat, style: EditorStyle = Preferences().editorStyle) {
         self.fileURL = fileURL
         self.scale = scale
         document = EditorDocument(base: image, background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension)))
         tool = style.tool
-        colorIndex = style.colorIndex
-        noteColorIndex = style.noteColorIndex
+        color = style.color
+        noteColor = style.noteColor
+        fill = style.fill
+        recentColors = style.recentColors
         widthIndex = style.widthIndex
     }
 
@@ -84,30 +98,66 @@ final class EditorModel {
         Preferences.remember(style)
     }
 
-    var color: RGBA { RGBA.presets[colorIndex] }
-    var noteColor: RGBA { RGBA.presets[noteColorIndex] }
-
     var selection: Annotation? {
         selectedID.flatMap { id in document.annotations.first { $0.id == id } }
     }
 
     /// The colour the palette shows and sets: the selection's colour, else the note colour while the
     /// note tool is active, else the colour for the next annotation.
-    var paletteIndex: Int {
+    var paletteColor: RGBA {
         get {
-            if let selection {
-                return RGBA.presets.firstIndex(of: selection.color) ?? -1
-            }
-            return tool == .note ? noteColorIndex : colorIndex
+            selection?.color ?? (tool == .note ? noteColor : color)
         }
         set {
             if selection != nil {
-                restyleSelection { $0.color = RGBA.presets[newValue] }
+                restyleSelection { $0.color = newValue }
             } else if tool == .note {
-                noteColorIndex = newValue
+                noteColor = newValue
             } else {
-                colorIndex = newValue
+                color = newValue
             }
+        }
+    }
+
+    /// True when the toolbar offers a fill: a rectangle or ellipse is selected, or is the tool.
+    var showsFill: Bool {
+        selection?.supportsFill ?? (tool == .rect || tool == .ellipse)
+    }
+
+    /// The fill the toolbar shows and sets, `nil` for none: the selection's, else the fill for the next shape.
+    var paletteFill: RGBA? {
+        get {
+            selection != nil ? selection?.fill : fill
+        }
+        set {
+            if selection != nil {
+                restyleSelection { $0.fill = newValue }
+            } else {
+                fill = newValue
+            }
+        }
+    }
+
+    /// Sets the border colour, or the fill, to one picked from the colour panel, which reports every
+    /// change as the user drags. It's one undo step, and joins the recent colours once the drag settles.
+    func pickCustom(_ colour: RGBA, forFill: Bool) {
+        if let selection {
+            let key = "\(selection.id)-\(forFill)"
+            restyleSelection(coalescing: key) { forFill ? ($0.fill = colour) : ($0.color = colour) }
+        } else if forFill {
+            fill = colour
+        } else if tool == .note {
+            noteColor = colour
+        } else {
+            color = colour
+        }
+        recentTask?.cancel()
+        recentTask = Task {
+            try? await Task.sleep(for: .milliseconds(600))
+            guard !Task.isCancelled else {
+                return
+            }
+            recentColors = EditorStyle.recents(adding: colour, to: recentColors)
         }
     }
 
@@ -140,11 +190,13 @@ final class EditorModel {
     func recordUndo() {
         undoStack.record(document.snapshot)
         nudgedID = nil
+        pickedKey = nil
         isDirty = true
     }
 
     func undo() {
         nudgedID = nil
+        pickedKey = nil
         if let previous = undoStack.undo(from: document.snapshot) {
             document.restore(previous)
             selectedID = nil
@@ -154,6 +206,7 @@ final class EditorModel {
 
     func redo() {
         nudgedID = nil
+        pickedKey = nil
         if let next = undoStack.redo(from: document.snapshot) {
             document.restore(next)
             selectedID = nil
@@ -187,16 +240,28 @@ final class EditorModel {
     }
 
     /// Changes the selected annotation as one undoable step, growing the canvas if it now reaches past the edge.
-    private func restyleSelection(_ change: (inout Annotation) -> Void) {
+    /// Calls with the same `key` in a row amend that step instead of adding another.
+    private func restyleSelection(coalescing key: String? = nil, _ change: (inout Annotation) -> Void) {
         guard let selectedID else {
             return
         }
-        edit { doc in
+        let amend = key != nil && key == pickedKey
+        let apply = { (doc: inout EditorDocument) in
             guard let index = doc.annotations.firstIndex(where: { $0.id == selectedID }) else {
                 return
             }
             change(&doc.annotations[index])
             doc.grow(toFit: doc.annotations[index], margin: canvasMargin)
+        }
+        if amend {
+            apply(&document)
+            isDirty = true
+            return
+        }
+        let before = document.snapshot
+        edit(apply)
+        if document.snapshot != before {
+            pickedKey = key
         }
     }
 
@@ -221,6 +286,7 @@ final class EditorModel {
         }
         undoStack.record(before)
         nudgedID = nil
+        pickedKey = nil
         isDirty = true
     }
 

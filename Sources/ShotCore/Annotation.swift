@@ -43,6 +43,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public let id: UUID
     public var kind: Kind
     public var color: RGBA
+    /// The inside of a rectangle or ellipse; `nil` leaves it unfilled.
+    public var fill: RGBA?
     public var lineWidth: CGFloat
 
     public enum Kind: Equatable, Sendable, Codable {
@@ -66,11 +68,19 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case image(AnnotationImage, rect: CGRect)
     }
 
-    public init(id: UUID = UUID(), kind: Kind, color: RGBA, lineWidth: CGFloat) {
+    public init(id: UUID = UUID(), kind: Kind, color: RGBA, fill: RGBA? = nil, lineWidth: CGFloat) {
         self.id = id
         self.kind = kind
         self.color = color
+        self.fill = fill
         self.lineWidth = lineWidth
+    }
+
+    public var supportsFill: Bool {
+        switch kind {
+        case .rect, .ellipse: true
+        default: false
+        }
     }
 
     public var counterRadius: CGFloat { lineWidth * 3 + 10 }
@@ -130,7 +140,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let .arrow(from, to), let .line(from, to):
             return Self.distance(from: point, toSegment: from, to) <= slop
         case let .rect(rect):
-            return rect.insetBy(dx: -slop, dy: -slop).contains(point) && !rect.insetBy(dx: slop, dy: slop).contains(point)
+            let outer = rect.insetBy(dx: -slop, dy: -slop).contains(point)
+            return fill != nil ? outer : outer && !rect.insetBy(dx: slop, dy: slop).contains(point)
         case let .ellipse(rect):
             guard rect.width > 0, rect.height > 0 else {
                 return false
@@ -138,7 +149,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             let dx = (point.x - rect.midX) / (rect.width / 2)
             let dy = (point.y - rect.midY) / (rect.height / 2)
             let normalized = sqrt(dx * dx + dy * dy)
-            return abs(normalized - 1) * min(rect.width, rect.height) / 2 <= slop
+            let distance = (normalized - 1) * min(rect.width, rect.height) / 2
+            return fill != nil ? distance <= slop : abs(distance) <= slop
         case .highlight, .pixelate, .blur, .spotlight, .text, .note, .image:
             return bounds.insetBy(dx: -tolerance, dy: -tolerance).contains(point)
         case let .counter(_, center):

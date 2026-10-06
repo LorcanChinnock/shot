@@ -143,8 +143,9 @@ import Testing
         let style = Preferences(store: store).editorStyle
         #expect(style == EditorStyle())
         #expect(style.tool == .arrow)
-        #expect(style.colorIndex == 0)
-        #expect(style.noteColorIndex == 2)
+        #expect(style.color == RGBA.presets[0])
+        #expect(style.noteColor == RGBA.presets[2])
+        #expect(style.fill == nil)
         #expect(style.widthIndex == 1)
     }
 
@@ -155,9 +156,10 @@ import Testing
         Preferences.registerDefaults(in: store)
         let prefs = Preferences(store: store)
         // The Done-when case: ellipse, blue and the thick width carry over to the next editor.
-        let blue = try #require(RGBA.presets.firstIndex(of: RGBA(0, 0.48, 1)))
+        let blue = RGBA(0, 0.48, 1)
         let thick = try #require(EditorStyle.widths.indices.last)
-        let style = EditorStyle(tool: .ellipse, colorIndex: blue, noteColorIndex: 3, widthIndex: thick)
+        let custom = RGBA(0.2, 0.4, 0.6, 0.5)
+        let style = EditorStyle(tool: .ellipse, color: blue, noteColor: RGBA.presets[3], fill: custom, widthIndex: thick, recentColors: [custom])
         Preferences.remember(style, in: store)
         #expect(prefs.editorStyle == style)
         Preferences.resetAll(in: store)
@@ -189,6 +191,7 @@ import Testing
         Preferences.registerDefaults(in: store)
         let prefs = Preferences(store: store)
         // From an older or newer Shot: a tool it doesn't have, and indexes past the palette and widths.
+        // Colours older versions saved are palette indexes.
         store.set("lasso", forKey: PreferenceKey.editorTool)
         store.set(RGBA.presets.count, forKey: PreferenceKey.editorColor)
         store.set(-1, forKey: PreferenceKey.editorNoteColor)
@@ -199,7 +202,7 @@ import Testing
         // Each value falls back on its own, so one bad value keeps the rest.
         store.set(EditorTool.text.rawValue, forKey: PreferenceKey.editorTool)
         store.set(5, forKey: PreferenceKey.editorColor)
-        #expect(prefs.editorStyle == EditorStyle(tool: .text, colorIndex: 5))
+        #expect(prefs.editorStyle == EditorStyle(tool: .text, color: RGBA.presets[5]))
     }
 
     @Test func removingTextCaptureDeletesItsShortcut() throws {

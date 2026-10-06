@@ -96,3 +96,46 @@ private func annotation(_ kind: Annotation.Kind) -> Annotation {
     stack.record(state); state = 5
     #expect(!stack.canRedo)
 }
+
+private let shapeFrame = CGRect(x: 20, y: 20, width: 100, height: 60)
+
+@Test func onlyRectanglesAndEllipsesTakeAFill() {
+    #expect(annotation(.rect(shapeFrame)).supportsFill)
+    #expect(annotation(.ellipse(shapeFrame)).supportsFill)
+    #expect(!annotation(.arrow(from: .zero, to: CGPoint(x: 9, y: 9))).supportsFill)
+}
+
+@Test func aFilledShapeIsHitInside() {
+    let centre = CGPoint(x: shapeFrame.midX, y: shapeFrame.midY)
+    for kind in [Annotation.Kind.rect(shapeFrame), .ellipse(shapeFrame)] {
+        #expect(!annotation(kind).hitTest(centre, tolerance: 2))
+        #expect(Annotation(kind: kind, color: red, fill: RGBA(0, 0, 1), lineWidth: 4).hitTest(centre, tolerance: 2))
+    }
+}
+
+@Test func fillPaintsInsideAndTheBorderOverIt() throws {
+    let ctx = CGContext(data: nil, width: 140, height: 100, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+    ctx.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1))
+    ctx.fill(CGRect(x: 0, y: 0, width: 140, height: 100))
+    let doc = EditorDocument(base: ctx.makeImage()!, annotations: [Annotation(kind: .rect(shapeFrame), color: red, fill: RGBA(0, 0, 1), lineWidth: 4)])
+    let image = try #require(AnnotationRenderer.flatten(doc))
+    let pixels = try #require(image.dataProvider?.data as Data?)
+    func pixel(x: Int, y: Int) -> [UInt8] {
+        let offset = y * image.bytesPerRow + x * 4
+        return Array(pixels[offset ..< offset + 3])
+    }
+    #expect(pixel(x: 70, y: 50) == [0, 0, 255])
+    #expect(pixel(x: 20, y: 50)[0] > 240 && pixel(x: 20, y: 50)[2] < 100)
+    #expect(pixel(x: 5, y: 5) == [255, 255, 255])
+}
+
+@Test func recentColorsKeepNewestFirstWithoutPresetsOrRepeats() {
+    let a = RGBA(0.1, 0.2, 0.3), b = RGBA(0.4, 0.5, 0.6)
+    var recents = EditorStyle.recents(adding: a, to: [])
+    recents = EditorStyle.recents(adding: b, to: recents)
+    recents = EditorStyle.recents(adding: a, to: recents)
+    recents = EditorStyle.recents(adding: RGBA.presets[0], to: recents)
+    #expect(recents == [a, b])
+    let many = (0 ..< 10).reduce([RGBA]()) { EditorStyle.recents(adding: RGBA(CGFloat($1) / 20, 0.5, 0.5), to: $0) }
+    #expect(many.count == EditorStyle.maxRecentColors)
+}

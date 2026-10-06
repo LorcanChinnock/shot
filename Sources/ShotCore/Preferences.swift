@@ -34,6 +34,8 @@ public enum PreferenceKey {
     public static let editorTool = "editorTool"
     public static let editorColor = "editorColor"
     public static let editorNoteColor = "editorNoteColor"
+    public static let editorFill = "editorFill"
+    public static let editorRecentColors = "editorRecentColors"
     public static let editorWidth = "editorWidth"
     /// True while the macOS screenshot shortcuts are off because Shot turned them off. Not a
     /// setting, so resetting settings keeps it and Shot can still give the keys back.
@@ -99,8 +101,10 @@ public struct Preferences {
             PreferenceKey.gifFrameRate: VideoExportOptions().gifFrameRate,
             PreferenceKey.gifWidth: VideoExportOptions().gifWidth,
             PreferenceKey.editorTool: EditorStyle().tool.rawValue,
-            PreferenceKey.editorColor: EditorStyle().colorIndex,
-            PreferenceKey.editorNoteColor: EditorStyle().noteColorIndex,
+            PreferenceKey.editorColor: Data(),
+            PreferenceKey.editorNoteColor: Data(),
+            PreferenceKey.editorFill: Data(),
+            PreferenceKey.editorRecentColors: Data(),
             PreferenceKey.editorWidth: EditorStyle().widthIndex,
         ]
         for action in ShotAction.allCases {
@@ -152,8 +156,10 @@ public struct Preferences {
         if style.tool.isDrawing {
             store.set(style.tool.rawValue, forKey: PreferenceKey.editorTool)
         }
-        store.set(style.colorIndex, forKey: PreferenceKey.editorColor)
-        store.set(style.noteColorIndex, forKey: PreferenceKey.editorNoteColor)
+        store.set(try? JSONEncoder().encode(style.color), forKey: PreferenceKey.editorColor)
+        store.set(try? JSONEncoder().encode(style.noteColor), forKey: PreferenceKey.editorNoteColor)
+        store.set(style.fill.flatMap { try? JSONEncoder().encode($0) } ?? Data(), forKey: PreferenceKey.editorFill)
+        store.set(try? JSONEncoder().encode(style.recentColors), forKey: PreferenceKey.editorRecentColors)
         store.set(style.widthIndex, forKey: PreferenceKey.editorWidth)
     }
 
@@ -227,12 +233,21 @@ public struct Preferences {
         func index(_ key: String, in range: Range<Int>, default value: Int) -> Int {
             (store.object(forKey: key) as? Int).flatMap { range.contains($0) ? $0 : nil } ?? value
         }
+        func decoded<T: Decodable>(_ key: String, as type: T.Type = T.self) -> T? {
+            store.data(forKey: key).flatMap { try? JSONDecoder().decode(type, from: $0) }
+        }
+        // Older versions saved a colour as an index into the presets.
+        func colour(_ key: String, default value: RGBA) -> RGBA {
+            decoded(key) ?? (store.object(forKey: key) as? Int).flatMap { RGBA.presets.indices.contains($0) ? RGBA.presets[$0] : nil } ?? value
+        }
         let tool = EditorTool(rawValue: store.string(forKey: PreferenceKey.editorTool) ?? "")
         return EditorStyle(
             tool: tool.flatMap { $0.isDrawing ? $0 : nil } ?? defaults.tool,
-            colorIndex: index(PreferenceKey.editorColor, in: RGBA.presets.indices, default: defaults.colorIndex),
-            noteColorIndex: index(PreferenceKey.editorNoteColor, in: RGBA.presets.indices, default: defaults.noteColorIndex),
-            widthIndex: index(PreferenceKey.editorWidth, in: EditorStyle.widths.indices, default: defaults.widthIndex)
+            color: colour(PreferenceKey.editorColor, default: defaults.color),
+            noteColor: colour(PreferenceKey.editorNoteColor, default: defaults.noteColor),
+            fill: decoded(PreferenceKey.editorFill),
+            widthIndex: index(PreferenceKey.editorWidth, in: EditorStyle.widths.indices, default: defaults.widthIndex),
+            recentColors: decoded(PreferenceKey.editorRecentColors, as: [RGBA].self).map { Array($0.prefix(EditorStyle.maxRecentColors)) } ?? defaults.recentColors
         )
     }
 
