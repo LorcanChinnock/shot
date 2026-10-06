@@ -108,7 +108,7 @@ private struct IconButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 11, weight: .black))
+                .font(.system(size: 11, weight: .bold))
                 .frame(width: 16, height: 16)
         }
         .buttonStyle(BrutalButtonStyle(color: color, compact: true))

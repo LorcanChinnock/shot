@@ -32,12 +32,12 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
     var symbol: String {
         switch self {
-        case .general: "gearshape.fill"
+        case .general: "gearshape"
         case .capture: "viewfinder"
-        case .quickAccess: "rectangle.stack.fill"
-        case .recording: "record.circle.fill"
+        case .quickAccess: "rectangle.stack"
+        case .recording: "record.circle"
         case .shortcuts: "command"
-        case .about: "info.circle.fill"
+        case .about: "info.circle"
         }
     }
 
@@ -176,10 +176,10 @@ private struct SidebarItem: View {
         Button(action: action) {
             HStack(spacing: 10) {
                 Image(systemName: section.symbol)
-                    .font(.system(size: 12, weight: .black))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Brutal.ink)
-                    .frame(width: 26, height: 26)
-                    .brutalSurface(section.color, radius: 7, shadow: selected ? 2 : 0)
+                    .frame(width: 28, height: 28)
+                    .brutalSurface(section.color, radius: 8, shadow: 0, border: 2)
                 Text(section.title)
                     .font(.system(size: 13.5, weight: selected ? .heavy : .semibold))
                     .foregroundStyle(Brutal.ink)
