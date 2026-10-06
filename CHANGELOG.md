@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0-beta.6](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.5...v0.7.0-beta.6) (2026-10-06)
+
+
+### Features
+
+* **ui:** animate quick access in and out, drift the backdrop colours ([#93](https://github.com/LorcanChinnock/shot/issues/93)) ([88bf138](https://github.com/LorcanChinnock/shot/commit/88bf138e7fb910c802093edd99bd53c15db9d891))
+
+
+### Bug Fixes
+
+* **ui:** use circular corners so borders have no stray steps ([#92](https://github.com/LorcanChinnock/shot/issues/92)) ([16add21](https://github.com/LorcanChinnock/shot/commit/16add21cc66026ad83713b191d936b44cb694e8e))
+
 ## [0.7.0-beta.5](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.4...v0.7.0-beta.5) (2026-10-06)
 
 
