@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.4](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.3...v0.7.0-beta.4) (2026-10-06)
+
+
+### Bug Fixes
+
+* **quick-access:** letterbox extreme-aspect thumbnails instead of zooming ([#86](https://github.com/LorcanChinnock/shot/issues/86)) ([7ab9c90](https://github.com/LorcanChinnock/shot/commit/7ab9c90388e61d9f38a6ec83d5635eade06a6934))
+
 ## [0.7.0-beta.3](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.2...v0.7.0-beta.3) (2026-10-06)
 
 
