@@ -76,7 +76,25 @@ public enum GIFExporter {
         speed: Double = 1,
         progress: @Sendable (Double) -> Void = { _ in }
     ) async throws -> Result {
-        let (generator, plan) = try await prepare(videoURL: videoURL, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
+        let (generator, plan) = try await prepare(asset: AVURLAsset(url: videoURL), range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
+        return try await write(plan, from: generator, to: outputURL, progress: progress)
+    }
+
+    /// Writes the whole of `composition` as a looping GIF, as `export(videoURL:…)` does for a file.
+    @discardableResult
+    public static func export(
+        composition: ProjectComposition,
+        to outputURL: URL,
+        fps: Double = 12,
+        maxWidth: CGFloat? = 720,
+        speed: Double = 1,
+        progress: @Sendable (Double) -> Void = { _ in }
+    ) async throws -> Result {
+        let (generator, plan) = try await prepare(asset: composition.asset, videoComposition: composition.videoComposition, range: nil, cuts: CutList(), fps: fps, maxWidth: maxWidth, speed: speed)
+        return try await write(plan, from: generator, to: outputURL, progress: progress)
+    }
+
+    private static func write(_ plan: GIFFramePlan, from generator: AVAssetImageGenerator, to outputURL: URL, progress: @Sendable (Double) -> Void) async throws -> Result {
         guard let destination = CGImageDestinationCreateWithURL(outputURL as CFURL, UTType.gif.identifier as CFString, plan.frameCount, nil) else {
             throw ExportError.cannotCreateDestination
         }
@@ -89,7 +107,16 @@ public enum GIFExporter {
     /// neighbouring frames spread over the range: one frame alone costs a whole frame, and the pair
     /// costs that plus a typical change.
     public static func estimatedSize(of videoURL: URL, range: TrimRange? = nil, cuts: CutList = CutList(), fps: Double, maxWidth: CGFloat?, speed: Double = 1) async throws -> Int {
-        let (generator, plan) = try await prepare(videoURL: videoURL, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
+        let (generator, plan) = try await prepare(asset: AVURLAsset(url: videoURL), range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
+        return try await estimatedSize(plan, from: generator)
+    }
+
+    public static func estimatedSize(of composition: ProjectComposition, fps: Double, maxWidth: CGFloat?, speed: Double = 1) async throws -> Int {
+        let (generator, plan) = try await prepare(asset: composition.asset, videoComposition: composition.videoComposition, range: nil, cuts: CutList(), fps: fps, maxWidth: maxWidth, speed: speed)
+        return try await estimatedSize(plan, from: generator)
+    }
+
+    private static func estimatedSize(_ plan: GIFFramePlan, from generator: AVAssetImageGenerator) async throws -> Int {
         let anchors = plan.sampleFrames(estimateSamples).map { max(0, min($0, plan.frameCount - 2)) }
         var whole = 0, change = 0
         for anchor in anchors {
@@ -130,16 +157,17 @@ public enum GIFExporter {
         [kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFDelayTime: delay]] as CFDictionary
     }
 
-    private static func prepare(videoURL: URL, range: TrimRange?, cuts: CutList, fps: Double, maxWidth: CGFloat?, speed: Double) async throws -> (AVAssetImageGenerator, GIFFramePlan) {
-        let asset = AVURLAsset(url: videoURL)
+    private static func prepare(asset: AVAsset, videoComposition: AVVideoComposition? = nil, range: TrimRange?, cuts: CutList, fps: Double, maxWidth: CGFloat?, speed: Double) async throws -> (AVAssetImageGenerator, GIFFramePlan) {
         let duration = try await asset.load(.duration).seconds
         guard let track = try await asset.loadTracks(withMediaType: .video).first else {
             throw ExportError.noVideoTrack
         }
         let (naturalSize, transform) = try await track.load(.naturalSize, .preferredTransform)
-        let plan = GIFFramePlan(sourceSize: naturalSize.applying(transform), range: range ?? TrimRange(duration: duration), cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
+        let sourceSize = videoComposition?.renderSize ?? naturalSize.applying(transform)
+        let plan = GIFFramePlan(sourceSize: sourceSize, range: range ?? TrimRange(duration: duration), cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
 
         let generator = AVAssetImageGenerator(asset: asset)
+        generator.videoComposition = videoComposition
         generator.appliesPreferredTrackTransform = true
         generator.maximumSize = plan.size
         let tolerance = CMTime(seconds: 0.5 / fps, preferredTimescale: 600)

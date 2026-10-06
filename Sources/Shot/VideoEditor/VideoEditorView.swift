@@ -17,21 +17,24 @@ struct VideoEditorRootView: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
                 if model.isDirty {
-                    BrutalChip(text: model.cuts.isEmpty ? "TRIMMED" : "EDITED", color: Brutal.pink)
+                    BrutalChip(text: model.cuts.isEmpty && !model.isComposite ? "TRIMMED" : "EDITED", color: Brutal.pink)
                 }
                 Spacer()
                 Text(timesLabel)
                     .font(Brutal.mono)
                     .foregroundStyle(Brutal.ink.opacity(0.7))
+                Button { model.toggleTracks() } label: { Label("Tracks", systemImage: "rectangle.split.3x1") }
+                    .buttonStyle(BrutalButtonStyle(color: model.showsTracks ? Brutal.violet : .white, compact: true))
+                    .help("Show the tracks (T)")
                 Button("Copy") { Task { await model.copy() } }
                     .buttonStyle(BrutalButtonStyle(compact: true))
                     .help("Copy video (⌘C)")
                 Button("Export") { Task { await model.export() } }
                     .buttonStyle(BrutalButtonStyle(color: Brutal.sky, compact: true))
                     .help("Export a new \(model.options.format.rawValue.uppercased()) with these options next to the video, and copy it")
-                Button("Save") { Task { await model.save() } }
+                Button(model.isComposite ? "Save copy" : "Save") { Task { await model.save() } }
                     .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
-                    .help("Save the edited video and copy it (⌘S)")
+                    .help(model.isComposite ? "Write the edit as a new video next to the original and copy it (⌘S)" : "Save the edited video and copy it (⌘S)")
             }
             .disabled(model.isExporting)
             .padding(.leading, GlassWindow.trafficLightsWidth)
@@ -39,9 +42,20 @@ struct VideoEditorRootView: View {
             .padding(.bottom, -Brutal.sectionGap / 2)
             PlayerHost(player: model.player)
                 .background(Color.black)
+                .overlay { TransformOverlay(model: model) }
+                .overlay { AnnotationCanvas(model: model) }
                 .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
                 .brutalSurface(Color.clear)
-            HStack(spacing: 12) {
+            if model.showsTracks {
+                if model.isAnnotating {
+                    AnnotationPalette(model: model)
+                }
+                TracksToolbar(model: model)
+                if model.showsInspector {
+                    ClipInspector(model: model)
+                }
+            }
+            HStack(alignment: model.showsTracks ? .top : .center, spacing: 12) {
                 Button {
                     model.togglePlay()
                 } label: {
@@ -54,11 +68,19 @@ struct VideoEditorRootView: View {
                 .buttonStyle(.plain)
                 .help(model.isPlaying ? "Pause (Space)" : "Play (Space)")
                 .accessibilityLabel(Text(model.isPlaying ? "Pause" : "Play"))
-                TrimTimelineView(model: model)
+                if model.showsTracks {
+                    TracksView(model: model)
+                } else {
+                    TrimTimelineView(model: model)
+                }
             }
             ExportOptionsBar(model: model)
         }
         .padding([.horizontal, .bottom], Brutal.windowInset)
+        .dropDestination(for: URL.self) { urls, _ in
+            Task { await model.importMedia(urls) }
+            return !urls.isEmpty
+        }
     }
 
     private var timesLabel: String {
@@ -93,7 +115,8 @@ struct ExportOptionsBar: View {
             }
             caption("SPEED")
             BrutalSegmented(selection: option(\.speed), options: VideoExportOptions.speeds.map { ($0, Self.speedLabel($0)) }, color: Brutal.violet)
-                .help("Playback speed")
+                .disabled(model.isComposite && model.options.format == .mp4)
+                .help(model.isComposite && model.options.format == .mp4 ? "Speed isn't available for an edit with imports or transforms in MP4" : "Playback speed")
             Spacer(minLength: 8)
             Text(model.estimatedSize.map { "≈ " + ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .file) } ?? "≈ …")
                 .font(Brutal.mono)
@@ -197,10 +220,10 @@ struct TrimTimelineView: View {
                         .offset(x: x)
                 }
                 if let selection = model.selection {
-                    let x = timeline.x(for: selection.lowerBound)
+                    let x = timeline.x(for: model.project.sourceTime(atTimeline: selection.lowerBound))
                     Rectangle().fill(Brutal.sky.opacity(0.35))
                         .overlay(Rectangle().strokeBorder(Brutal.sky, lineWidth: 2))
-                        .frame(width: max(0, timeline.x(for: selection.upperBound) - x), height: Self.height)
+                        .frame(width: max(0, timeline.x(for: model.project.sourceTime(atTimeline: selection.upperBound)) - x), height: Self.height)
                         .offset(x: x)
                 }
                 Rectangle().strokeBorder(Brutal.yellow, lineWidth: 3)
@@ -223,7 +246,7 @@ struct TrimTimelineView: View {
                         selectionAnchor = timeline.time(at: value.startLocation.x)
                     }
                     if let selectionAnchor {
-                        model.select(from: selectionAnchor, to: timeline.time(at: value.location.x))
+                        model.select(fromSource: selectionAnchor, toSource: timeline.time(at: value.location.x))
                         return
                     }
                     if drag == nil {

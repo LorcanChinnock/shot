@@ -8,8 +8,7 @@ private let log = Logger.shot("video-editor")
 
 /// What one undo step restores.
 struct VideoEdit: Equatable {
-    var range: TrimRange
-    var cuts: CutList
+    var project: Project
     var options: VideoExportOptions
 }
 
@@ -20,28 +19,73 @@ final class VideoEditorModel {
     let player = AVPlayer()
     private(set) var duration: Double = 0
     private(set) var aspectRatio: CGFloat = 16 / 9
-    private(set) var range = TrimRange(duration: 0)
-    /// Sections removed from inside `range`; Copy, Save and Export all leave them out.
-    private(set) var cuts = CutList()
-    /// The section a Shift-drag on the timeline marked, which Delete cuts.
+    /// The edit: the recording on the main track, trimmed and cut, and anything imported. Everything below is read from it.
+    private(set) var project: Project {
+        didSet {
+            // The lanes keep their scale as the project shrinks, so trimming doesn't stretch what's left.
+            // Mid-drag the scale holds, so a clip dragged past the end doesn't shrink the lanes under the pointer.
+            if dragOrigin == nil {
+                fitDuration = max(fitDuration, project.duration)
+            }
+            projectDidChange()
+        }
+    }
+    /// The length one screen width of lanes covers at zoom 1: the longest the project has been.
+    private(set) var fitDuration: Double = 0
+    /// The section a Shift-drag on the timeline marked, on the timeline, which Delete cuts.
     private(set) var selection: Range<Double>?
+    /// The player's own time: the recording's while it plays the file, the timeline's while it plays the composite.
     private(set) var currentTime: Double = 0
+    /// Whether the player has the composite of every track, not just the recording with its cuts skipped.
+    private(set) var itemIsComposite = false
     private(set) var isPlaying = false
     private(set) var isExporting = false
-    private(set) var thumbnails: [CGImage?] = []
+    private(set) var thumbnailSets: [URL: [CGImage?]] = [:]
     /// Applies to Export only; Copy and Save keep the original format, speed and sound.
     private(set) var options = Preferences().videoExportOptions
     /// Bytes Export would write, or nil until it's worked out.
     private(set) var estimatedSize: Int?
     private(set) var undoStack = UndoStack<VideoEdit>()
 
-    @ObservationIgnored private var dragOrigin: TrimRange?
+    // Tracks panel
+    private(set) var showsTracks = UserDefaults.standard.bool(forKey: VideoEditorModel.showsTracksKey)
+    /// 1 fits the project in the window; see `TimelineZoom`.
+    private(set) var zoom: Double = 1
+    private(set) var snapping = true
+    /// The clip the Split, Delete and transform handles act on.
+    private(set) var selectedClipID: UUID? {
+        didSet {
+            if selectedClipID != oldValue {
+                selectedKeyframe = nil
+            }
+        }
+    }
+    /// The time of the keyframe being worked on, in seconds from the start of the selected clip.
+    private(set) var selectedKeyframe: Double?
+    private(set) var showsInspector = UserDefaults.standard.object(forKey: VideoEditorModel.showsInspectorKey) as? Bool ?? true
+    private(set) var waveforms: [URL: Waveform] = [:]
+    /// The tool drawing annotations over the video, or nil when none is picked. Never crop.
+    private(set) var annotationTool: EditorTool?
+    var annotationStyle = Preferences().editorStyle
+    /// Called when the panel opens, closes or changes height, so the window can grow or shrink to fit.
+    @ObservationIgnored var onLayoutChanged: (() -> Void)?
+
+    private static let showsTracksKey = "videoEditorShowsTracks"
+    private static let showsInspectorKey = "videoEditorShowsInspector"
+
+    @ObservationIgnored private var dragOrigin: Project?
+    @ObservationIgnored private var rebuildTask: Task<Void, Never>?
+    /// What the compositor draws over the project's own annotations while one is being edited.
+    @ObservationIgnored private var liveState: (hidden: Set<UUID>, drawn: [AnnotationClip]) = ([], [])
+    @ObservationIgnored private var compositeLive: LiveAnnotations?
+    @ObservationIgnored private var recentColorTask: Task<Void, Never>?
     @ObservationIgnored private var timeObserver: Any?
     @ObservationIgnored private var cutObserver: Any?
     @ObservationIgnored private var statusObservation: NSKeyValueObservation?
 
     init(fileURL: URL) {
         self.fileURL = fileURL
+        project = Project(source: fileURL, duration: 0, canvasSize: .zero, hasAudio: false)
         timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(value: 1, timescale: 60), queue: .main) { [weak self] time in
             MainActor.assumeIsolated {
                 self?.currentTime = time.seconds
@@ -55,12 +99,40 @@ final class VideoEditorModel {
         }
     }
 
-    var isDirty: Bool { !range.isFull(duration: duration) || !cuts.isEmpty }
+    /// The trim handles and cuts the project reduces to; Copy, Save and Export all write these.
+    private var trim: TrimEdit? { project.trimEdit }
 
-    var edit: VideoEdit { VideoEdit(range: range, cuts: cuts, options: options) }
+    var range: TrimRange { trim?.range ?? TrimRange(duration: duration) }
+
+    /// Sections removed from inside `range`.
+    var cuts: CutList { trim?.cuts ?? CutList() }
+
+    /// Whether the edit is more than a trim and cuts of the recording, so it has to be drawn and re-encoded.
+    var isComposite: Bool { project.trimEdit == nil }
+
+    /// Where the playhead is on the timeline, which differs from the recording's time once something's cut.
+    var playhead: Double { itemIsComposite ? currentTime : project.timelinePosition(ofSource: currentTime) }
+
+    var thumbnails: [CGImage?] { thumbnailSets[fileURL] ?? [] }
+
+    var selectedClip: Clip? { selectedClipID.flatMap(project.clip) }
+
+    var isDirty: Bool { isComposite || !range.isFull(duration: duration) || !cuts.isEmpty }
+
+    /// What the panel adds to the window's height over the collapsed layout.
+    var tracksExtraHeight: CGFloat {
+        guard showsTracks else {
+            return 0
+        }
+        let palette = isAnnotating ? AnnotationPalette.height + Brutal.sectionGap : 0
+        let inspector = showsInspector ? ClipInspector.height + Brutal.sectionGap : 0
+        return TracksView.extraHeight(for: project) + palette + inspector
+    }
+
+    var edit: VideoEdit { VideoEdit(project: project, options: options) }
 
     /// How long Copy and Save run for: the range less the cuts.
-    var keptLength: Double { cuts.keptLength(in: range) }
+    var keptLength: Double { project.duration }
 
     /// Loads (or reloads, after a save) the file; false when it has no video to show.
     func load() async -> Bool {
@@ -72,24 +144,30 @@ final class VideoEditorModel {
             }
             let (naturalSize, transform) = try await track.load(.naturalSize, .preferredTransform)
             let size = naturalSize.applying(transform)
+            let hasAudio = try await !asset.loadTracks(withMediaType: .audio).isEmpty
             self.duration = duration
             aspectRatio = size.height == 0 ? 16 / 9 : abs(size.width / size.height)
+            project = Project(source: fileURL, duration: duration, canvasSize: CGSize(width: abs(size.width), height: abs(size.height)), hasAudio: hasAudio)
         } catch {
             log.error("Could not load video: \(error.localizedDescription, privacy: .public)")
             return false
         }
+        rebuildTask?.cancel()
+        itemIsComposite = false
         player.replaceCurrentItem(with: AVPlayerItem(asset: asset))
-        range = TrimRange(duration: duration)
-        cuts = CutList()
+        fitDuration = project.duration
         selection = nil
+        selectedClipID = nil
         undoStack = UndoStack()
         currentTime = 0
-        thumbnails = []
+        thumbnailSets = [:]
+        waveforms = [:]
         applyRange()
         return true
     }
 
     func teardown() {
+        rebuildTask?.cancel()
         player.pause()
         for observer in [timeObserver, cutObserver].compactMap(\.self) {
             player.removeTimeObserver(observer)
@@ -103,35 +181,188 @@ final class VideoEditorModel {
 
     /// Call when a drag on the timeline starts; `endDrag` records one undo step if the range changed.
     func beginDrag() {
-        dragOrigin = range
+        dragOrigin = project
         player.pause()
     }
 
     /// The handles stop where the cuts would leave too little to play.
     func drag(_ handle: TrimHandle, to time: Double) {
-        let moved = range.moving(handle, to: time, duration: duration)
-        if cuts.allows(moved) {
-            range = moved
+        if let moved = dragOrigin?.trimmingMain(handle, toSource: time) {
+            project = moved
+        }
+        guard !itemIsComposite else {
+            seekTimeline(to: handle == .start ? 0 : project.duration)
+            return
         }
         seek(to: handle == .start ? range.start : range.end)
     }
 
     func endDrag() {
-        if let dragOrigin, dragOrigin != range {
-            undoStack.record(VideoEdit(range: dragOrigin, cuts: cuts, options: options))
-        }
+        let origin = dragOrigin
         dragOrigin = nil
-        applyRange()
+        // A drag that only scrubbed leaves the player alone.
+        guard let origin, origin != project else {
+            return
+        }
+        undoStack.record(VideoEdit(project: origin, options: options))
+        fitDuration = max(fitDuration, project.duration)
+        projectDidChange()
+    }
+
+    /// Drags a clip that isn't on the main track so it starts at timeline `time`; call between `beginDrag` and `endDrag`.
+    func moveClip(_ id: UUID, toStart time: Double, snapThreshold threshold: Double) {
+        let snap = snapping ? threshold : nil
+        if let moved = dragOrigin?.moving(clip: id, toStart: time, snapWithin: snap, snapTo: [playhead]) {
+            project = moved
+        }
+    }
+
+    /// Drags an edge of a clip that isn't on the main track to timeline `time`; call between `beginDrag` and `endDrag`.
+    func trimClip(_ id: UUID, _ edge: TrimHandle, toTimeline time: Double, snapThreshold threshold: Double) {
+        let snap = snapping ? threshold : nil
+        if let trimmed = dragOrigin?.trimming(clip: id, edge, toTimeline: time, snapWithin: snap, snapTo: [playhead]) {
+            project = trimmed
+        }
+    }
+
+    // MARK: Tracks
+
+    func toggleTracks() {
+        // A project with more than a trim in it has no strip to go back to.
+        guard !(showsTracks && isComposite) else {
+            Toast.show("Delete the imported clips and transforms to hide the tracks")
+            return
+        }
+        setShowsTracks(!showsTracks)
+    }
+
+    private func setShowsTracks(_ shown: Bool) {
+        guard shown != showsTracks else {
+            return
+        }
+        showsTracks = shown
+        UserDefaults.standard.set(shown, forKey: Self.showsTracksKey)
+        onLayoutChanged?()
+    }
+
+    func toggleSnapping() {
+        snapping.toggle()
+    }
+
+    func zoom(bySteps steps: Int) {
+        zoom = TimelineZoom.zoomed(zoom, bySteps: steps)
+    }
+
+    func resetZoom() {
+        zoom = 1
+    }
+
+    func setZoom(_ new: Double) {
+        zoom = min(max(new, TimelineZoom.range.lowerBound), TimelineZoom.range.upperBound)
+    }
+
+    func selectClip(_ id: UUID?) {
+        selectedClipID = id
+    }
+
+    func selectClip(at time: Double?) {
+        selectedClipID = time.flatMap { project.mainClip(at: $0)?.id }
+    }
+
+    /// Moves the playhead to timeline `time`, snapping to a clip edge within `threshold` seconds when snapping is on.
+    func scrub(toTimeline time: Double, snapThreshold threshold: Double) {
+        var target = min(max(time, 0), project.duration)
+        if snapping, let snapped = Snapping.snap(target, to: project.snapPoints(), within: threshold) {
+            target = snapped
+        }
+        seekTimeline(to: target)
+    }
+
+    /// Splits the clips under the playhead; false when it's on a clip's edge.
+    @discardableResult
+    func split() -> Bool {
+        guard !isExporting, let split = project.splitting(at: playhead) else {
+            return false
+        }
+        undoStack.record(edit)
+        project = split
+        return true
+    }
+
+    /// Cuts the selected clip out, closing the gap on the main track, as one undo step; false when none is selected.
+    func deleteSelectedClip() -> Bool {
+        guard let id = selectedClipID, !isExporting else {
+            return false
+        }
+        selectedClipID = nil
+        guard let cut = project.deleting(clip: id) else {
+            Toast.show(project.clip(id).map { _ in "Can't delete this clip" } ?? "Can't cut all of the video")
+            return true
+        }
+        let joinedAt = project.main.clips.first { $0.id == id }?.start ?? playhead
+        undoStack.record(edit)
+        project = cut
+        seekTimeline(to: min(joinedAt, project.duration))
+        return true
+    }
+
+    // MARK: Importing
+
+    /// Puts each file on new tracks at the playhead, or after the main track when `appendToMain` is set.
+    func importMedia(_ urls: [URL], appendToMain: Bool = false) async {
+        guard !isExporting else {
+            return
+        }
+        var changed = project
+        var added: UUID?
+        for url in urls {
+            do {
+                let media = try await MediaProbe.probe(url)
+                let result = appendToMain ? changed.appending(media) : changed.importing(media, at: playhead)
+                guard let result else {
+                    Toast.show("Can't add \(url.lastPathComponent) there")
+                    continue
+                }
+                changed = result.project
+                added = result.clip
+            } catch {
+                Toast.show(error.localizedDescription)
+            }
+        }
+        guard let added else {
+            return
+        }
+        undoStack.record(edit)
+        project = changed
+        selectedClipID = added
+        setShowsTracks(true)
+        log.notice("Imported \(urls.count, privacy: .public) files")
+    }
+
+    // MARK: Waveforms
+
+    func loadWaveform(for source: URL) async {
+        guard waveforms[source] == nil, let waveform = try? await Waveform.load(source) else {
+            return
+        }
+        waveforms[source] = waveform
     }
 
     // MARK: Cutting
 
-    /// Marks the section between `anchor` and `time` and shows the frame at `time`.
-    func select(from anchor: Double, to time: Double) {
-        player.pause()
+    /// Marks the section between two times in the recording and shows the frame at the second.
+    func select(fromSource anchor: Double, toSource time: Double) {
         let ends = [anchor, time].map { min(max($0, 0), duration) }
-        selection = ends[0] == ends[1] ? nil : ends.min()!..<ends.max()!
+        select(fromTimeline: project.timelinePosition(ofSource: ends[0]), toTimeline: project.timelinePosition(ofSource: ends[1]))
         seek(to: ends[1])
+    }
+
+    /// Marks the section between `anchor` and `time` on the timeline and shows the frame at `time`.
+    func select(fromTimeline anchor: Double, toTimeline time: Double) {
+        player.pause()
+        let ends = [anchor, time].map { min(max($0, 0), project.duration) }
+        selection = ends[0] == ends[1] ? nil : ends.min()!..<ends.max()!
+        seekTimeline(to: ends[1])
     }
 
     /// False when nothing was selected.
@@ -147,14 +378,13 @@ final class VideoEditorModel {
             return false
         }
         self.selection = nil
-        guard let cut = cuts.cutting(selection, from: range) else {
+        guard let cut = project.deleting(range: selection) else {
             Toast.show("Can't cut all of the video")
             return true
         }
-        if cut != cuts {
+        if cut != project {
             undoStack.record(edit)
-            cuts = cut
-            applyRange()
+            project = cut
         }
         return true
     }
@@ -182,17 +412,97 @@ final class VideoEditorModel {
     }
 
     private func restore(_ edit: VideoEdit) {
-        range = edit.range
-        cuts = edit.cuts
+        project = edit.project
+        selection = nil
+        if let selectedClipID, project.clip(selectedClipID) == nil {
+            self.selectedClipID = nil
+        }
         if options != edit.options {
             options = edit.options
             Preferences.remember(options)
         }
+    }
+
+    /// Brings the player and the window up to date with the project, once nothing is being dragged.
+    private func projectDidChange() {
+        guard dragOrigin == nil else {
+            return
+        }
+        onLayoutChanged?()
+        refreshPlayer()
+    }
+
+    /// Plays the composite while the edit needs drawing, or an annotation is being drawn; the recording itself otherwise.
+    private func refreshPlayer() {
+        guard dragOrigin == nil else {
+            return
+        }
+        if isComposite || isAnnotating {
+            rebuildComposite()
+        } else if itemIsComposite {
+            reloadRecording()
+        } else {
+            applyRange()
+        }
+    }
+
+    /// Plays the composite of every track in place of the recording, from where the playhead was.
+    private func rebuildComposite() {
+        rebuildTask?.cancel()
+        let snapshot = project
+        rebuildTask = Task {
+            // A run of edits builds once.
+            try? await Task.sleep(for: .milliseconds(120))
+            guard !Task.isCancelled else {
+                return
+            }
+            do {
+                let built = try await CompositionBuilder.build(snapshot)
+                guard !Task.isCancelled else {
+                    return
+                }
+                let resume = playhead
+                let item = AVPlayerItem(asset: built.asset)
+                item.videoComposition = built.videoComposition
+                item.audioMix = built.audioMix
+                player.pause()
+                removeCutObserver()
+                itemIsComposite = true
+                player.replaceCurrentItem(with: item)
+                seekTimeline(to: min(resume, built.duration))
+                // The project has the finished edit now, so what stood in for it can go.
+                liveState = ([], [])
+                compositeLive = built.live
+            } catch {
+                log.error("Could not build the composite: \(error.localizedDescription, privacy: .public)")
+                Toast.show("Could not show the edit: \(error.localizedDescription)", duration: .seconds(3))
+            }
+        }
+    }
+
+    /// Goes back to playing the recording itself, once the edit is only a trim and cuts again.
+    private func reloadRecording() {
+        rebuildTask?.cancel()
+        let resume = playhead
+        player.pause()
+        itemIsComposite = false
+        player.replaceCurrentItem(with: AVPlayerItem(url: fileURL))
         applyRange()
+        seekTimeline(to: resume)
+    }
+
+    private func removeCutObserver() {
+        if let cutObserver {
+            player.removeTimeObserver(cutObserver)
+        }
+        cutObserver = nil
     }
 
     /// Playback jumps over the cuts and stops at the end of the last section.
     private func applyRange() {
+        guard !itemIsComposite else {
+            return
+        }
         player.currentItem?.forwardPlaybackEndTime = CMTime(seconds: cuts.playbackEnd(in: range), preferredTimescale: 600)
         if let cutObserver {
             player.removeTimeObserver(cutObserver)
@@ -222,9 +532,15 @@ final class VideoEditorModel {
             player.pause()
             return
         }
-        let start = cuts.playbackStart(from: currentTime, in: range)
-        if start != currentTime {
-            seek(to: start)
+        if itemIsComposite {
+            if playhead >= project.duration - 0.02 {
+                seek(to: 0)
+            }
+        } else {
+            let start = cuts.playbackStart(from: currentTime, in: range)
+            if start != currentTime {
+                seek(to: start)
+            }
         }
         player.play()
     }
@@ -239,19 +555,32 @@ final class VideoEditorModel {
         player.seek(to: CMTime(seconds: time, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
     }
 
+    /// Moves the playhead to timeline `time`, in whichever time the player is in.
+    func seekTimeline(to time: Double) {
+        seek(to: itemIsComposite ? time : project.sourceTime(atTimeline: time))
+    }
+
+    /// Thumbnails of the recording for the strip.
     func loadThumbnails(count: Int, height: CGFloat) async {
+        await loadThumbnails(of: fileURL, duration: duration, aspectRatio: aspectRatio, count: count, height: height)
+    }
+
+    /// `count` frames from equal slots of `source`, `height` points tall, into `thumbnailSets`.
+    func loadThumbnails(of source: URL, duration: Double, aspectRatio: CGFloat, count: Int, height: CGFloat) async {
         let times = TrimTimeline(duration: duration, minX: 0, width: 0).thumbnailTimes(count: count)
-        thumbnails = Array(repeating: nil, count: times.count)
-        let generator = AVAssetImageGenerator(asset: AVURLAsset(url: fileURL))
+        // Until each new frame arrives the old one nearest in time stands in, so zooming doesn't flash black.
+        let old = thumbnailSets[source] ?? []
+        thumbnailSets[source] = times.indices.map { old.isEmpty ? nil : old[min(old.count - 1, $0 * old.count / times.count)] }
+        let generator = AVAssetImageGenerator(asset: AVURLAsset(url: source))
         generator.appliesPreferredTrackTransform = true
         generator.maximumSize = CGSize(width: height * aspectRatio * 2, height: height * 2)
         for (index, time) in times.enumerated() {
             let image = try? await generator.image(at: CMTime(seconds: time, preferredTimescale: 600)).image
             // A newer load (resize, or reload after a save) may have replaced the array while this one waited.
-            guard !Task.isCancelled, index < thumbnails.count else {
+            guard !Task.isCancelled, index < (thumbnailSets[source]?.count ?? 0) else {
                 return
             }
-            thumbnails[index] = image
+            thumbnailSets[source]?[index] = image
         }
     }
 
@@ -274,11 +603,15 @@ final class VideoEditorModel {
     }
 
     /// Replaces the file with the trimmed range, less the cuts, and copies it, like Save in the image editor.
+    /// An edit with imports or transforms is written as a copy next to the file, since the recording itself stays as it was.
     @discardableResult
     func save() async -> Bool {
         guard isDirty else {
             Toast.show("Trim or cut the video first")
             return false
+        }
+        if isComposite {
+            return await saveCopy()
         }
         let replacements: URL
         do {
@@ -305,16 +638,64 @@ final class VideoEditorModel {
         return true
     }
 
+    private func saveCopy() async -> Bool {
+        guard !isExporting else {
+            return false
+        }
+        let output = FileNaming.uniqueURL(in: fileURL.deletingLastPathComponent(), date: Date(), pathExtension: Self.copyExtension(of: fileURL), prefix: Preferences().filePrefix)
+        guard await export(to: output, creating: nil) else {
+            try? FileManager.default.removeItem(at: output)
+            return false
+        }
+        log.notice("Saved a copy of the edited video: \(output.path)")
+        Clipboard.copy(fileURL: output)
+        Toast.show("Saved a copy and copied \(output.lastPathComponent)", duration: .seconds(3))
+        return true
+    }
+
+    /// Copies keep the recording's format when AVFoundation can write it, and are MP4 otherwise.
+    private static func copyExtension(of url: URL) -> String {
+        url.pathExtension.lowercased() == "mov" ? "mov" : "mp4"
+    }
+
+    /// The project as exported: with the sound left out if the options say so.
+    private var exportProject: Project {
+        var exported = project
+        if options.muted {
+            for index in exported.tracks.indices where exported.tracks[index].kind == .audio {
+                exported.tracks[index].isMuted = true
+            }
+        }
+        return exported
+    }
+
     /// Writes a new file next to the original with the trim, cuts and export options, and copies it.
     func export() async {
         // Checked before picking a name, so two exports can't pick the same one.
         guard !isExporting else {
             return
         }
-        let options = options, range = range, cuts = cuts, source = fileURL
+        let options = options, range = range, cuts = cuts, source = fileURL, composite = isComposite, edited = exportProject
         let output = FileNaming.uniqueURL(in: source.deletingLastPathComponent(), date: Date(), pathExtension: options.format.fileExtension, prefix: Preferences().filePrefix)
         var note = ""
         let exported = await exporting {
+            if composite {
+                switch options.format {
+                case .mp4:
+                    try await ProjectExporter.export(edited, to: output, as: .mp4)
+                    log.notice("Exported composite MP4, muted \(options.muted, privacy: .public)")
+                case .gif:
+                    let built = try await CompositionBuilder.build(edited)
+                    let result = try await GIFExporter.export(composition: built, to: output, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed) { fraction in
+                        Task { @MainActor in
+                            Toast.show("Exporting… \(Int(fraction * 100))%", duration: nil)
+                        }
+                    }
+                    note = result.truncated ? " (first \(Int(GIFExporter.maxDuration)) s only)" : ""
+                    log.notice("Exported composite GIF: \(result.frameCount, privacy: .public) frames")
+                }
+                return
+            }
             switch options.format {
             case .mp4:
                 let passthrough = try await VideoTrimmer.trim(source, range: range, cuts: cuts, speed: options.speed, muted: options.muted, to: output, as: .mp4)
@@ -341,7 +722,7 @@ final class VideoEditorModel {
 
     /// Works out `estimatedSize` for the current trim, cuts and options; call again when any change.
     func refreshEstimate() async {
-        let options = options, range = range, cuts = cuts, source = fileURL
+        let options = options, range = range, cuts = cuts, source = fileURL, composite = isComposite, edited = exportProject
         // Wait for a drag or a run of clicks to settle before reading frames.
         try? await Task.sleep(for: .milliseconds(250))
         guard !Task.isCancelled else {
@@ -349,6 +730,10 @@ final class VideoEditorModel {
         }
         do {
             let size = switch options.format {
+            case .mp4 where composite:
+                ProjectExporter.estimatedSize(of: edited)
+            case .gif where composite:
+                try await GIFExporter.estimatedSize(of: CompositionBuilder.build(edited), fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed)
             case .mp4:
                 try await VideoTrimmer.estimatedSize(of: source, range: range, cuts: cuts, speed: options.speed, muted: options.muted)
             case .gif:
@@ -369,6 +754,11 @@ final class VideoEditorModel {
         await exporting {
             if let folder {
                 try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            }
+            if isComposite {
+                try await ProjectExporter.export(project, to: output, as: Self.copyExtension(of: fileURL) == "mov" ? .mov : .mp4)
+                log.notice("Exported the edit with \(self.project.tracks.count, privacy: .public) tracks")
+                return
             }
             let passthrough = try await VideoTrimmer.trim(fileURL, range: range, cuts: cuts, to: output)
             log.notice("Trimmed \(self.range.start, privacy: .public)–\(self.range.end, privacy: .public) s less \(self.cuts.cuts.count, privacy: .public) cuts, passthrough \(passthrough, privacy: .public)")
@@ -392,5 +782,323 @@ final class VideoEditorModel {
             Toast.show("Export failed: \(error.localizedDescription)", duration: .seconds(3))
             return false
         }
+    }
+}
+
+// MARK: Annotating
+
+extension VideoEditorModel {
+    var isAnnotating: Bool { annotationTool != nil }
+
+    var selectedAnnotation: AnnotationClip? { selectedClipID.flatMap(project.annotationClip) }
+
+    /// New strokes are scaled up with the canvas, so they look the same on a 4K recording as on a small one.
+    var lineWidth: CGFloat { EditorStyle.widths[annotationStyle.widthIndex] * max(1, project.canvasSize.width / 960) }
+    var fontSize: CGFloat { lineWidth * 6 }
+
+    /// Picks the tool that draws over the video, or nil to stop; the preview plays the composite while one is picked.
+    func setAnnotationTool(_ tool: EditorTool?) {
+        guard tool != annotationTool, tool != .crop else {
+            return
+        }
+        player.pause()
+        annotationTool = tool
+        if tool != nil, tool != .select {
+            selectedClipID = selectedAnnotation == nil ? selectedClipID : nil
+        }
+        onLayoutChanged?()
+        refreshPlayer()
+    }
+
+    var paletteColor: RGBA {
+        get {
+            selectedAnnotation?.annotation.color ?? (annotationTool == .note ? annotationStyle.noteColor : annotationStyle.color)
+        }
+        set {
+            if selectedAnnotation != nil {
+                restyleSelection { $0.color = newValue }
+            } else if annotationTool == .note {
+                annotationStyle.noteColor = newValue
+            } else {
+                annotationStyle.color = newValue
+            }
+        }
+    }
+
+    var showsFill: Bool {
+        selectedAnnotation?.annotation.supportsFill ?? (annotationTool == .rect || annotationTool == .ellipse)
+    }
+
+    var paletteFill: RGBA? {
+        get { selectedAnnotation?.annotation.fill ?? (selectedAnnotation == nil ? annotationStyle.fill : nil) }
+        set {
+            if selectedAnnotation != nil {
+                restyleSelection { $0.fill = newValue }
+            } else {
+                annotationStyle.fill = newValue
+            }
+        }
+    }
+
+    var lineWidthIndex: Int {
+        get {
+            guard let selected = selectedAnnotation?.annotation else {
+                return annotationStyle.widthIndex
+            }
+            let scale = max(1, project.canvasSize.width / 960)
+            return EditorStyle.widths.indices.min { abs(EditorStyle.widths[$0] * scale - selected.lineWidth) < abs(EditorStyle.widths[$1] * scale - selected.lineWidth) } ?? annotationStyle.widthIndex
+        }
+        set {
+            if selectedAnnotation != nil {
+                restyleSelection { $0.setLineWidth(EditorStyle.widths[newValue] * max(1, project.canvasSize.width / 960)) }
+            } else {
+                annotationStyle.widthIndex = newValue
+            }
+        }
+    }
+
+    func pickCustom(_ color: RGBA, forFill: Bool) {
+        if forFill {
+            paletteFill = color
+        } else {
+            paletteColor = color
+        }
+        recentColorTask?.cancel()
+        recentColorTask = Task {
+            try? await Task.sleep(for: .milliseconds(600))
+            guard !Task.isCancelled else {
+                return
+            }
+            annotationStyle.recentColors = EditorStyle.recents(adding: color, to: annotationStyle.recentColors)
+        }
+    }
+
+    /// Changes the selected annotation's style as one undo step, which a colour well's run of changes shares.
+    private func restyleSelection(_ change: (inout Annotation) -> Void) {
+        guard let clip = selectedAnnotation else {
+            return
+        }
+        var restyled = clip.annotation
+        change(&restyled)
+        commitAnnotation(restyled, id: clip.id)
+    }
+
+    /// Shows the compositor `annotation` at the playhead, in place of the clip `id` when it has one, before it's committed.
+    func previewAnnotation(_ annotation: Annotation?, replacing id: UUID? = nil) {
+        guard let annotation else {
+            liveState = ([], [])
+            compositeLive?.clear()
+            refreshFrame()
+            return
+        }
+        let existing = id.flatMap(project.annotationClip)
+        let clip = AnnotationClip(id: id ?? UUID(), annotation: annotation, start: existing?.start ?? playhead, duration: existing?.duration ?? AnnotationClip.defaultDuration)
+        liveState = (id.map { [$0] } ?? [], [clip])
+        compositeLive?.set(hidden: liveState.hidden, drawn: liveState.drawn)
+        refreshFrame()
+    }
+
+    /// Stops drawing the annotation clip `id`, which a text field is editing in place, until it's committed.
+    func hideAnnotation(_ id: UUID) {
+        liveState = ([id], [])
+        compositeLive?.set(hidden: liveState.hidden, drawn: liveState.drawn)
+        refreshFrame()
+    }
+
+    /// Escape leaves the annotation tool, or deselects the annotation first; false when there's nothing to leave.
+    func escapeAnnotating() -> Bool {
+        if selectedClipID != nil {
+            selectedClipID = nil
+            return true
+        }
+        guard isAnnotating else {
+            return false
+        }
+        setAnnotationTool(nil)
+        return true
+    }
+
+    /// Pauses before an edit, and leaves the player showing the frame it's editing.
+    func pauseForEditing() {
+        player.pause()
+    }
+
+    /// Redraws the frame the paused player is showing, which a change to the live annotations doesn't do by itself.
+    private func refreshFrame() {
+        guard itemIsComposite, !isPlaying else {
+            return
+        }
+        player.seek(to: player.currentTime(), toleranceBefore: .zero, toleranceAfter: .zero)
+    }
+
+    /// Puts `annotation` on the timeline at the playhead and selects it.
+    func addAnnotation(_ annotation: Annotation) {
+        guard !isExporting else {
+            return
+        }
+        let (added, id) = project.adding(annotation: annotation, at: playhead)
+        undoStack.record(edit)
+        project = added
+        selectedClipID = id
+    }
+
+    /// Replaces what the annotation clip `id` shows, as one undo step.
+    func commitAnnotation(_ annotation: Annotation, id: UUID) {
+        guard !isExporting, let changed = project.setting(annotation: annotation, ofClip: id), changed != project else {
+            return
+        }
+        undoStack.record(edit)
+        project = changed
+        // The compositor keeps drawing the live version until the rebuilt preview has it too.
+        let clip = changed.annotationClip(id)
+        liveState = ([id], clip.map { [$0] } ?? [])
+        compositeLive?.set(hidden: liveState.hidden, drawn: liveState.drawn)
+    }
+
+    func setAnnotationText(_ id: UUID, to string: String, color: RGBA? = nil) {
+        guard var annotation = project.annotationClip(id)?.annotation else {
+            return
+        }
+        annotation.setText(string)
+        if let color {
+            annotation.color = color
+        }
+        commitAnnotation(annotation, id: id)
+    }
+
+    /// Puts an image from `url` on the video, centred and fitted inside half the canvas.
+    func addImage(from url: URL) {
+        guard let data = try? Data(contentsOf: url), let image = ImageCodec.image(from: data) else {
+            Toast.show("Cannot open \(url.lastPathComponent)")
+            return
+        }
+        let canvas = project.canvasSize
+        let scale = min(1, canvas.width / 2 / CGFloat(image.width), canvas.height / 2 / CGFloat(image.height))
+        let size = CGSize(width: CGFloat(image.width) * scale, height: CGFloat(image.height) * scale)
+        let rect = CGRect(x: (canvas.width - size.width) / 2, y: (canvas.height - size.height) / 2, width: size.width, height: size.height)
+        addAnnotation(Annotation(kind: .image(AnnotationImage(image), rect: rect), color: annotationStyle.color, lineWidth: lineWidth))
+    }
+}
+
+// MARK: Keyframes
+
+extension VideoEditorModel {
+    func toggleInspector() {
+        showsInspector.toggle()
+        UserDefaults.standard.set(showsInspector, forKey: Self.showsInspectorKey)
+        onLayoutChanged?()
+    }
+
+    /// The selected clip's properties at the playhead, with its keyframes applied.
+    var selectedValues: PropertyValues? {
+        selectedClipID.flatMap { project.values(ofClip: $0, at: playhead) }
+    }
+
+    var selectedAnimation: ClipAnimation? {
+        selectedClipID.flatMap(project.animation(ofClip:))
+    }
+
+    /// Sets the selected clip's properties at the playhead: a keyframed property gets a keyframe here, any other just changes.
+    /// While dragging, call between `beginDrag` and `endDrag`; otherwise it's one undo step.
+    func setValues(_ values: PropertyValues, of id: UUID? = nil) {
+        guard !isExporting, let id = id ?? selectedClipID else {
+            return
+        }
+        let before = dragOrigin
+        guard let changed = (before ?? project).setting(values: values, ofClip: id, at: playhead), changed != project else {
+            return
+        }
+        if before == nil {
+            undoStack.record(edit)
+        }
+        project = changed
+    }
+
+    /// Adds a keyframe of `property` at the playhead holding its current value, or takes the one there away.
+    func toggleKeyframe(_ property: AnimatedProperty) {
+        guard !isExporting, let id = selectedClipID, let changed = project.togglingKeyframe(property, ofClip: id, at: playhead) else {
+            return
+        }
+        undoStack.record(edit)
+        project = changed
+    }
+
+    /// Keys everything the selected clip can animate at the playhead, or takes those keyframes away if any are there already.
+    func toggleAllKeyframes() {
+        guard !isExporting, let id = selectedClipID, let start = project.clipStart(id), let animation = project.animation(ofClip: id) else {
+            return
+        }
+        let isSound = project.clip(id).map { clip in project.tracks.contains { $0.kind == .audio && $0.clips.contains { $0.id == clip.id } } } ?? false
+        let properties: [AnimatedProperty] = isSound ? [.volume] : [.position, .scale, .rotation, .opacity]
+        let relative = max(0, playhead - start)
+        let anyHere = properties.contains { animation.hasKeyframe($0, at: relative) }
+        var changed = project
+        for property in properties where anyHere == animation.hasKeyframe(property, at: relative) {
+            changed = changed.togglingKeyframe(property, ofClip: id, at: playhead) ?? changed
+        }
+        guard changed != project else {
+            return
+        }
+        undoStack.record(edit)
+        project = changed
+    }
+
+    func applyPreset(_ preset: AnimationPreset) {
+        guard !isExporting, let id = selectedClipID, let changed = project.applying(preset, toClip: id), changed != project else {
+            return
+        }
+        undoStack.record(edit)
+        project = changed
+    }
+
+    /// Selects a keyframe, `time` seconds into the selected clip, and puts the playhead on it.
+    func selectKeyframe(_ time: Double?) {
+        selectedKeyframe = time
+        if let time, let id = selectedClipID, let start = project.clipStart(id) {
+            seekTimeline(to: min(start + time, project.duration))
+        }
+    }
+
+    func setKeyframeEasing(_ easing: Easing) {
+        guard !isExporting, let id = selectedClipID, let time = selectedKeyframe, let changed = project.settingEasing(easing, ofClip: id, at: time), changed != project else {
+            return
+        }
+        undoStack.record(edit)
+        project = changed
+    }
+
+    /// Takes away the selected keyframe, with those of other properties at the same moment; false when none is selected.
+    func deleteSelectedKeyframe() -> Bool {
+        guard let id = selectedClipID, let time = selectedKeyframe, !isExporting else {
+            return false
+        }
+        selectedKeyframe = nil
+        if let changed = project.removingKeyframes(ofClip: id, at: time) {
+            undoStack.record(edit)
+            project = changed
+        }
+        return true
+    }
+
+    func clearKeyframes() {
+        guard !isExporting, let id = selectedClipID, let animation = project.animation(ofClip: id), !animation.isEmpty else {
+            return
+        }
+        var changed = project
+        for time in animation.times {
+            changed = changed.removingKeyframes(ofClip: id, at: time) ?? changed
+        }
+        undoStack.record(edit)
+        selectedKeyframe = nil
+        project = changed
+    }
+
+    /// Drags the keyframes at `time` to timeline `target`; call between `beginDrag` and `endDrag`.
+    func moveKeyframe(_ id: UUID, from time: Double, toTimeline target: Double) {
+        guard let origin = dragOrigin, let start = origin.clipStart(id), let moved = origin.movingKeyframes(ofClip: id, from: time, to: target - start) else {
+            return
+        }
+        project = moved
+        selectedKeyframe = min(max(target - start, 0), origin.clip(id)?.length ?? origin.annotationClip(id)?.duration ?? 0)
     }
 }
