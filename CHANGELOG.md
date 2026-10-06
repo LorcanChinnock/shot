@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.11](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.10...v0.7.0-beta.11) (2026-10-06)
+
+
+### Bug Fixes
+
+* **editor:** align the play button, keep the preview usable on short screens, fix GIF timing; add ux-qa skill ([#107](https://github.com/LorcanChinnock/shot/issues/107)) ([9f32268](https://github.com/LorcanChinnock/shot/commit/9f322683d07066b69db810980709753aa92d0ff1))
+
 ## [0.7.0-beta.10](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.9...v0.7.0-beta.10) (2026-10-06)
 
 
