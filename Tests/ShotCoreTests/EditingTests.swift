@@ -25,11 +25,14 @@ private func rect(_ annotation: Annotation) -> CGRect? {
 // MARK: Handles
 
 @Test func linesAndArrowsHaveAHandleAtEachEnd() {
-    for kind in [Annotation.Kind.line(from: CGPoint(x: 10, y: 20), to: CGPoint(x: 110, y: 70)), .arrow(from: CGPoint(x: 10, y: 20), to: CGPoint(x: 110, y: 70))] {
-        let a = annotation(kind)
-        #expect(a.handles.map { $0.handle } == [.start, .end])
-        #expect(a.handles.map { $0.point } == [CGPoint(x: 10, y: 20), CGPoint(x: 110, y: 70)])
-    }
+    let from = CGPoint(x: 10, y: 20), to = CGPoint(x: 110, y: 70)
+    let line = annotation(.line(from: from, to: to))
+    #expect(line.handles.map { $0.handle } == [.start, .end])
+    #expect(line.handles.map { $0.point } == [from, to])
+
+    let arrow = annotation(.arrow(from: from, to: to))
+    #expect(arrow.handles.map { $0.handle } == [.start, .end, .mid])
+    #expect(arrow.handles.map { $0.point } == [from, to, CGPoint(x: 60, y: 45)])
 }
 
 @Test(arguments: boxKinds)

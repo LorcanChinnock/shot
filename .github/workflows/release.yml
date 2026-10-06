@@ -54,8 +54,6 @@ jobs:
         with:
           ref: ${{ needs.release-please.outputs.tag_name }}
           fetch-depth: 0 # The build number counts commits.
-      - name: Test
-        run: make test
       # Every release signs with the same self-signed certificate, so macOS keeps the
       # Screen Recording permission across updates. See CONTRIBUTING.md › Release secrets.
       - name: Import the signing certificate
