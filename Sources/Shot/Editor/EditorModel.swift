@@ -246,7 +246,7 @@ final class EditorModel {
             return
         }
         let amend = key != nil && key == pickedKey
-        let apply = { (doc: inout EditorDocument) in
+        func apply(_ doc: inout EditorDocument) {
             guard let index = doc.annotations.firstIndex(where: { $0.id == selectedID }) else {
                 return
             }
