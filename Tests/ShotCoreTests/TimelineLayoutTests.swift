@@ -147,3 +147,10 @@ private func layoutProject() throws -> Project {
     #expect(layout.lanes.map(\.track) == [6, 4, 2, 0, 1, 3, 5])
     #expect(layout.lanes[1].y == 54)
 }
+
+@Test func lanesScrollRatherThanSqueezeThePreview() throws {
+    let layout = LaneLayout(try layoutProject(), top: 22)
+    #expect(layout.visibleHeight(available: 1000, minimum: 78) == layout.height, "room to spare")
+    #expect(layout.visibleHeight(available: 150, minimum: 78) == 150)
+    #expect(layout.visibleHeight(available: 20, minimum: 78) == 78, "the ruler and the main lane stay in view")
+}

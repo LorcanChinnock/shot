@@ -98,6 +98,12 @@ public struct LaneLayout: Equatable, Sendable {
         height = y - Self.gap
     }
 
+    /// How tall the panel may be when only `available` points are left for it: the lanes scroll rather than squeeze the preview,
+    /// but never below `minimum`, which keeps the ruler and the main lane in view.
+    public func visibleHeight(available: CGFloat, minimum: CGFloat) -> CGFloat {
+        min(height, max(available, minimum))
+    }
+
     public func lane(at y: CGFloat) -> Lane? {
         lanes.first { y >= $0.y && y < $0.y + $0.height }
     }

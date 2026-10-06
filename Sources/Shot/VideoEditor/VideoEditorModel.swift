@@ -227,9 +227,11 @@ final class VideoEditorModel {
 
     // MARK: Tracks
 
+    /// A project with more than a trim in it has no strip to go back to.
+    var canHideTracks: Bool { !(showsTracks && isComposite) }
+
     func toggleTracks() {
-        // A project with more than a trim in it has no strip to go back to.
-        guard !(showsTracks && isComposite) else {
+        guard canHideTracks else {
             Toast.show("Delete the imported clips and transforms to hide the tracks")
             return
         }
@@ -558,6 +560,11 @@ final class VideoEditorModel {
     /// Moves the playhead to timeline `time`, in whichever time the player is in.
     func seekTimeline(to time: Double) {
         seek(to: itemIsComposite ? time : project.sourceTime(atTimeline: time))
+    }
+
+    /// Moves the playhead by `seconds` along the timeline, for VoiceOver's adjust gesture.
+    func nudgePlayhead(bySeconds seconds: Double) {
+        seekTimeline(to: min(max(0, playhead + seconds), keptLength))
     }
 
     /// Thumbnails of the recording for the strip.
