@@ -97,8 +97,16 @@ public enum AnnotationRenderer {
             ctx.addLine(to: to)
             ctx.strokePath()
         case let .rect(rect):
+            if let fill = annotation.fill {
+                ctx.setFillColor(fill.cgColor)
+                ctx.fill(rect)
+            }
             ctx.stroke(rect)
         case let .ellipse(rect):
+            if let fill = annotation.fill {
+                ctx.setFillColor(fill.cgColor)
+                ctx.fillEllipse(in: rect)
+            }
             ctx.strokeEllipse(in: rect)
         case let .highlight(rect):
             ctx.setBlendMode(.multiply)

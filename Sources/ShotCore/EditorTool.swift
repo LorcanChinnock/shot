@@ -36,17 +36,35 @@ public struct EditorStyle: Equatable, Sendable {
     public static let widths: [CGFloat] = [2, 4, 8]
 
     public var tool: EditorTool
-    /// Indexes into `RGBA.presets`.
-    public var colorIndex: Int
+    public var color: RGBA
     /// Notes keep their own colour, pale yellow until the user picks another.
-    public var noteColorIndex: Int
+    public var noteColor: RGBA
+    /// What new rectangles and ellipses are filled with; `nil` leaves them unfilled.
+    public var fill: RGBA?
     /// Index into `widths`.
     public var widthIndex: Int
+    /// Custom colours picked lately, newest first.
+    public var recentColors: [RGBA]
 
-    public init(tool: EditorTool = .arrow, colorIndex: Int = 0, noteColorIndex: Int = 2, widthIndex: Int = 1) {
+    public static let maxRecentColors = 6
+
+    public init(
+        tool: EditorTool = .arrow, color: RGBA = RGBA.presets[0], noteColor: RGBA = RGBA.presets[2],
+        fill: RGBA? = nil, widthIndex: Int = 1, recentColors: [RGBA] = []
+    ) {
         self.tool = tool
-        self.colorIndex = colorIndex
-        self.noteColorIndex = noteColorIndex
+        self.color = color
+        self.noteColor = noteColor
+        self.fill = fill
         self.widthIndex = widthIndex
+        self.recentColors = recentColors
+    }
+
+    /// `recentColors` with `color` first, unless it's a preset.
+    public static func recents(adding color: RGBA, to recents: [RGBA]) -> [RGBA] {
+        guard !RGBA.presets.contains(color) else {
+            return recents
+        }
+        return Array(([color] + recents.filter { $0 != color }).prefix(maxRecentColors))
     }
 }

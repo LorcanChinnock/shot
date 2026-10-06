@@ -306,7 +306,11 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             needsDisplay = true
             return
         }
-        draft = Annotation(id: draft?.id ?? UUID(), kind: kind, color: model.color, lineWidth: model.lineWidth)
+        var shape = Annotation(id: draft?.id ?? UUID(), kind: kind, color: model.color, lineWidth: model.lineWidth)
+        if shape.supportsFill {
+            shape.fill = model.fill
+        }
+        draft = shape
         needsDisplay = true
     }
 

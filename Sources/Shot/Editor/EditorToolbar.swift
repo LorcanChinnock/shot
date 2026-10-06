@@ -53,66 +53,141 @@ struct EditorToolbar: View {
     @Bindable var model: EditorModel
 
     var body: some View {
-        HStack(spacing: 14) {
-            ToolGroup {
-                ForEach(EditorTool.allCases) { tool in
-                    Tile(selected: model.tool == tool, color: Brutal.yellow, help: "\(tool.title) (\(String(tool.key).uppercased()))") {
-                        model.tool = tool
-                    } label: {
-                        Image(systemName: tool.symbol).font(.system(size: 13, weight: .bold))
+        VStack(spacing: 12) {
+            HStack(spacing: 14) {
+                ToolGroup {
+                    ForEach(EditorTool.allCases) { tool in
+                        Tile(selected: model.tool == tool, color: Brutal.yellow, help: "\(tool.title) (\(String(tool.key).uppercased()))") {
+                            model.tool = tool
+                        } label: {
+                            Image(systemName: tool.symbol).font(.system(size: 13, weight: .bold))
+                        }
                     }
                 }
-            }
-            ToolGroup {
-                ForEach(RGBA.presets.indices, id: \.self) { index in
-                    let rgba = RGBA.presets[index]
-                    let selected = model.paletteIndex == index
-                    Button {
-                        model.paletteIndex = index
+                Spacer(minLength: 0)
+                ToolGroup {
+                    Tile(selected: false, color: .white, help: "Undo (⌘Z)") {
+                        model.undo()
                     } label: {
-                        Circle()
-                            .fill(Color(.sRGB, red: rgba.r, green: rgba.g, blue: rgba.b))
-                            .overlay(Circle().strokeBorder(Brutal.ink, lineWidth: 2))
-                            .background(Circle().fill(Brutal.ink).offset(x: selected ? 2 : 0, y: selected ? 2 : 0))
-                            .frame(width: selected ? 22 : 18, height: selected ? 22 : 18)
-                            .frame(width: 26, height: 30)
-                            .contentShape(Rectangle())
+                        Image(systemName: "arrow.uturn.backward").font(.system(size: 13, weight: .bold))
                     }
-                    .buttonStyle(.plain)
-                    .help(Self.colorNames[index])
-                    .accessibilityLabel(Text(Self.colorNames[index]))
-                    .accessibilityAddTraits(selected ? .isSelected : [])
-                    .animation(.spring(response: 0.2, dampingFraction: 0.7), value: selected)
-                }
-            }
-            ToolGroup {
-                ForEach(EditorModel.baseWidths.indices, id: \.self) { index in
-                    Tile(selected: model.lineWidthIndex == index, color: Brutal.sky, help: "Line width \(Int(EditorModel.baseWidths[index]))") {
-                        model.lineWidthIndex = index
+                    .disabled(!model.undoStack.canUndo)
+                    .opacity(model.undoStack.canUndo ? 1 : 0.35)
+                    Tile(selected: false, color: .white, help: "Redo (⇧⌘Z)") {
+                        model.redo()
                     } label: {
-                        Capsule().fill(Brutal.ink).frame(width: 16, height: EditorModel.baseWidths[index] + 1)
+                        Image(systemName: "arrow.uturn.forward").font(.system(size: 13, weight: .bold))
                     }
+                    .disabled(!model.undoStack.canRedo)
+                    .opacity(model.undoStack.canRedo ? 1 : 0.35)
                 }
             }
-            Spacer(minLength: 0)
-            ToolGroup {
-                Tile(selected: false, color: .white, help: "Undo (⌘Z)") {
-                    model.undo()
-                } label: {
-                    Image(systemName: "arrow.uturn.backward").font(.system(size: 13, weight: .bold))
+            HStack(spacing: 14) {
+                ToolGroup {
+                    ColorSwatches(
+                        selected: model.paletteColor,
+                        recents: model.recentColors,
+                        customHelp: "Custom colour",
+                        choose: { model.paletteColor = $0 },
+                        pickCustom: { model.pickCustom($0, forFill: false) }
+                    )
                 }
-                .disabled(!model.undoStack.canUndo)
-                .opacity(model.undoStack.canUndo ? 1 : 0.35)
-                Tile(selected: false, color: .white, help: "Redo (⇧⌘Z)") {
-                    model.redo()
-                } label: {
-                    Image(systemName: "arrow.uturn.forward").font(.system(size: 13, weight: .bold))
+                if model.showsFill {
+                    ToolGroup {
+                        Text("FILL").font(Brutal.mono).foregroundStyle(Brutal.ink).padding(.horizontal, 4)
+                        ColorSwatches(
+                            selected: model.paletteFill,
+                            recents: model.recentColors,
+                            allowsNone: true,
+                            customHelp: "Custom fill colour",
+                            choose: { model.paletteFill = $0 },
+                            pickCustom: { model.pickCustom($0, forFill: true) }
+                        )
+                    }
                 }
-                .disabled(!model.undoStack.canRedo)
-                .opacity(model.undoStack.canRedo ? 1 : 0.35)
+                ToolGroup {
+                    ForEach(EditorModel.baseWidths.indices, id: \.self) { index in
+                        Tile(selected: model.lineWidthIndex == index, color: Brutal.sky, help: "Line width \(Int(EditorModel.baseWidths[index]))") {
+                            model.lineWidthIndex = index
+                        } label: {
+                            Capsule().fill(Brutal.ink).frame(width: 16, height: EditorModel.baseWidths[index] + 1)
+                        }
+                    }
+                }
+                Spacer(minLength: 0)
             }
         }
     }
+}
+
+/// The preset colours, the custom ones picked lately, and a colour well for a new one. With `allowsNone`,
+/// a first swatch clears the colour: `nil` is transparent, with nothing drawn.
+private struct ColorSwatches: View {
+    let selected: RGBA?
+    let recents: [RGBA]
+    var allowsNone = false
+    let customHelp: String
+    let choose: (RGBA?) -> Void
+    let pickCustom: (RGBA) -> Void
+
+    var body: some View {
+        if allowsNone {
+            Swatch(color: nil, isSelected: selected == nil, name: "Transparent") { choose(nil) }
+        }
+        ForEach(RGBA.presets.indices, id: \.self) { index in
+            Swatch(color: RGBA.presets[index], isSelected: selected == RGBA.presets[index], name: EditorToolbar.colorNames[index]) {
+                choose(RGBA.presets[index])
+            }
+        }
+        ForEach(recents, id: \.self) { recent in
+            Swatch(color: recent, isSelected: selected == recent, name: "Recent colour") { choose(recent) }
+        }
+        ColorPicker("", selection: Binding(
+            get: { (selected ?? RGBA(1, 1, 1)).swiftUIColor },
+            set: { pickCustom(RGBA(NSColor($0))) }
+        ), supportsOpacity: true)
+            .labelsHidden()
+            .frame(width: 34, height: 30)
+            .help(customHelp)
+    }
+}
+
+private struct Swatch: View {
+    let color: RGBA?
+    let isSelected: Bool
+    let name: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Circle().fill(color?.swiftUIColor ?? .white)
+                if color == nil {
+                    Rectangle().fill(Brutal.red).frame(width: 2, height: 22).rotationEffect(.degrees(45))
+                }
+            }
+            .clipShape(Circle())
+            .overlay(Circle().strokeBorder(Brutal.ink, lineWidth: 2))
+            .background(Circle().fill(Brutal.ink).offset(x: isSelected ? 2 : 0, y: isSelected ? 2 : 0))
+            .frame(width: isSelected ? 22 : 18, height: isSelected ? 22 : 18)
+            .frame(width: 26, height: 30)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(name)
+        .accessibilityLabel(Text(name))
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
+    }
+}
+
+extension RGBA {
+    init(_ color: NSColor) {
+        let c = color.usingColorSpace(.sRGB) ?? .black
+        self.init(c.redComponent, c.greenComponent, c.blueComponent, c.alphaComponent)
+    }
+
+    var swiftUIColor: Color { Color(.sRGB, red: r, green: g, blue: b, opacity: a) }
 }
 
 /// Shows the zoom and offers the zoom commands; pinch and the keyboard shortcuts do the same.
