@@ -174,9 +174,9 @@ import Testing
         let prefs = Preferences(store: store)
         Preferences.remember(EditorStyle(tool: .pen), in: store)
         for tool in [EditorTool.select, .crop] {
-            Preferences.remember(EditorStyle(tool: tool, colorIndex: 4), in: store)
+            Preferences.remember(EditorStyle(tool: tool, color: RGBA.presets[4]), in: store)
             #expect(prefs.editorStyle.tool == .pen)
-            #expect(prefs.editorStyle.colorIndex == 4)
+            #expect(prefs.editorStyle.color == RGBA.presets[4])
         }
         #expect(EditorTool.allCases.filter { !$0.isDrawing } == [.select, .crop])
         // Even if a stored value says otherwise.
