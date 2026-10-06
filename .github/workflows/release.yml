@@ -98,7 +98,7 @@ jobs:
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release edit "$TAG" --draft=false
+        run: gh release edit "$TAG" --draft=false --prerelease=false
       # GITHUB_TOKEN can't push to another repo, so the tap has a write deploy key, which its
       # ruleset lets push to main. See CONTRIBUTING.md › Release secrets.
       - name: Update the Homebrew cask
