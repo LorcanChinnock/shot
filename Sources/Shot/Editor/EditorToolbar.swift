@@ -122,7 +122,7 @@ struct EditorToolbar: View {
 
 /// The preset colours, the custom ones picked lately, and a colour well for a new one. With `allowsNone`,
 /// a first swatch clears the colour: `nil` is transparent, with nothing drawn.
-private struct ColorSwatches: View {
+struct ColorSwatches: View {
     let selected: RGBA?
     let recents: [RGBA]
     var allowsNone = false
@@ -408,7 +408,7 @@ private struct CanvasMenu: View {
     }
 }
 
-private struct ToolGroup<Content: View>: View {
+struct ToolGroup<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
@@ -420,7 +420,7 @@ private struct ToolGroup<Content: View>: View {
     }
 }
 
-private struct Tile<Label: View>: View {
+struct Tile<Label: View>: View {
     let selected: Bool
     let color: Color
     let help: String

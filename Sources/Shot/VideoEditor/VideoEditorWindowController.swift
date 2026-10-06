@@ -8,7 +8,13 @@ private final class VideoEditorWindow: NSWindow {
     var onCommand: ((String, Bool) -> Bool)?
     var onKey: ((NSEvent) -> Bool)?
 
+    /// An annotation's text field is being edited, which keeps its keys, including the shortcuts.
+    private var isEditingText: Bool { firstResponder is NSText }
+
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        guard !isEditingText else {
+            return super.performKeyEquivalent(with: event)
+        }
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         if flags.contains(.command), let key = event.charactersIgnoringModifiers?.lowercased(), onCommand?(key, flags.contains(.shift)) == true {
             return true
@@ -16,9 +22,9 @@ private final class VideoEditorWindow: NSWindow {
         return super.performKeyEquivalent(with: event)
     }
 
-    /// Space, the arrow keys, Delete and Escape work wherever focus is; the window has no text fields.
+    /// Space, the arrow keys, Delete and Escape work wherever focus is, except in a text field.
     override func sendEvent(_ event: NSEvent) {
-        if event.type == .keyDown, onKey?(event) == true {
+        if event.type == .keyDown, !isEditingText, onKey?(event) == true {
             return
         }
         super.sendEvent(event)
@@ -31,6 +37,8 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
 
     private let model: VideoEditorModel
     private let window: NSWindow
+    /// How much of the window's height is the tracks panel.
+    private var appliedExtraHeight: CGFloat = 0
 
     static func open(_ url: URL) {
         if let existing = open.first(where: { $0.model.fileURL == url }) {
@@ -74,12 +82,34 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
         // Wide enough for the export options in one row.
         window.minSize = NSSize(width: 800, height: 200 + VideoEditorRootView.chromeHeight)
 
+        model.onLayoutChanged = { [weak self] in
+            self?.fitWindowToTracks()
+        }
+        fitWindowToTracks(animate: false)
         editorWindow.onCommand = { [weak self] key, shift in
             self?.handleCommand(key, shift: shift) ?? false
         }
         editorWindow.onKey = { [weak self] event in
             self?.handleKey(event) ?? false
         }
+    }
+
+    /// Grows or shrinks the window as the panel does, keeping its top edge where it is.
+    private func fitWindowToTracks(animate: Bool = true) {
+        let extra = model.tracksExtraHeight
+        guard extra != appliedExtraHeight else {
+            return
+        }
+        window.minSize.height = 200 + VideoEditorRootView.chromeHeight + extra
+        var frame = window.frame
+        let visible = (window.screen ?? NSScreen.main)?.visibleFrame ?? frame
+        // The preview gives way before the window runs off the screen.
+        let height = min(max(window.minSize.height, frame.height + extra - appliedExtraHeight), visible.height)
+        frame.origin.y += frame.height - height
+        frame.size.height = height
+        frame.origin.y = min(max(frame.origin.y, visible.minY), visible.maxY - height)
+        appliedExtraHeight = extra
+        window.setFrame(frame, display: true, animate: animate)
     }
 
     private func handleCommand(_ key: String, shift: Bool) -> Bool {
@@ -90,6 +120,12 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
             Task { await model.copy() }
         case "s":
             Task { await model.save() }
+        case "=", "+":
+            model.zoom(bySteps: 1)
+        case "-":
+            model.zoom(bySteps: -1)
+        case "0":
+            model.resetZoom()
         case "w":
             window.performClose(nil)
         default:
@@ -123,9 +159,17 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
         case 124: // Right arrow
             model.step(1)
         case 51, 117: // Delete, Forward Delete
-            return model.cutSelection()
+            return model.deleteSelectedKeyframe() || model.cutSelection() || model.deleteSelectedClip()
+        case 1: // S
+            return model.split()
+        case 40: // K
+            model.toggleAllKeyframes()
+        case 17: // T
+            model.toggleTracks()
+        case 45: // N
+            model.toggleSnapping()
         case 53: // Escape
-            return model.clearSelection()
+            return model.clearSelection() || model.escapeAnnotating()
         default:
             return false
         }
@@ -137,9 +181,9 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
             return !model.isExporting
         }
         let alert = NSAlert()
-        alert.messageText = "Save the edited \(model.fileURL.lastPathComponent)?"
-        alert.informativeText = "Your trim and cuts are lost if you discard them."
-        alert.addButton(withTitle: "Save")
+        alert.messageText = model.isComposite ? "Save a copy of the edited \(model.fileURL.lastPathComponent)?" : "Save the edited \(model.fileURL.lastPathComponent)?"
+        alert.informativeText = "Your edits are lost if you discard them."
+        alert.addButton(withTitle: model.isComposite ? "Save Copy" : "Save")
         alert.addButton(withTitle: "Discard")
         alert.addButton(withTitle: "Cancel")
         switch alert.runModal() {
