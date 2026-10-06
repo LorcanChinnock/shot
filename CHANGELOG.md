@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.3](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.2...v0.7.0-beta.3) (2026-10-06)
+
+
+### Bug Fixes
+
+* mark each published release as latest ([#84](https://github.com/LorcanChinnock/shot/issues/84)) ([9a325fd](https://github.com/LorcanChinnock/shot/commit/9a325fd36b73fe3890fd4b455d70decbec17edaa))
+
 ## [0.7.0-beta.2](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.1...v0.7.0-beta.2) (2026-10-06)
 
 
