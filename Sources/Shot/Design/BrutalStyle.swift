@@ -115,16 +115,38 @@ struct VisualEffectBackground: NSViewRepresentable {
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }
 
-/// Frosted window backdrop: blurred desktop, soft color blobs, and a faint dot grid.
+/// Frosted window backdrop: blurred desktop, soft color blobs that slowly drift and breathe, and a faint dot grid.
 struct GlassBackdrop: View {
+    @State private var drifting = false
+
+    private struct Blob {
+        let color: Color
+        let size: CGFloat
+        let blur: CGFloat
+        let origin: CGSize
+        let drift: CGSize
+        let opacity: Double
+        let seconds: Double
+    }
+
+    private static let blobs = [
+        Blob(color: Brutal.pink, size: 380, blur: 90, origin: CGSize(width: -280, height: -200), drift: CGSize(width: 70, height: 50), opacity: 0.55, seconds: 19),
+        Blob(color: Brutal.sky, size: 420, blur: 100, origin: CGSize(width: 300, height: 220), drift: CGSize(width: -60, height: -70), opacity: 0.55, seconds: 23),
+        Blob(color: Brutal.yellow, size: 300, blur: 90, origin: CGSize(width: 220, height: -230), drift: CGSize(width: -80, height: 60), opacity: 0.5, seconds: 17),
+        Blob(color: Brutal.mint, size: 260, blur: 90, origin: CGSize(width: -220, height: 260), drift: CGSize(width: 60, height: -60), opacity: 0.45, seconds: 21),
+    ]
+
     var body: some View {
         ZStack {
             VisualEffectBackground()
             Color.white.opacity(0.35)
-            Circle().fill(Brutal.pink).frame(width: 380).blur(radius: 90).offset(x: -280, y: -200).opacity(0.55)
-            Circle().fill(Brutal.sky).frame(width: 420).blur(radius: 100).offset(x: 300, y: 220).opacity(0.55)
-            Circle().fill(Brutal.yellow).frame(width: 300).blur(radius: 90).offset(x: 220, y: -230).opacity(0.5)
-            Circle().fill(Brutal.mint).frame(width: 260).blur(radius: 90).offset(x: -220, y: 260).opacity(0.45)
+            ForEach(Self.blobs.indices, id: \.self) { index in
+                let blob = Self.blobs[index]
+                Circle().fill(blob.color).frame(width: blob.size).blur(radius: blob.blur)
+                    .offset(x: blob.origin.width + (drifting ? blob.drift.width : 0), y: blob.origin.height + (drifting ? blob.drift.height : 0))
+                    .opacity(blob.opacity * (drifting ? 0.8 : 1))
+                    .animation(.easeInOut(duration: blob.seconds).repeatForever(autoreverses: true), value: drifting)
+            }
             Canvas { ctx, size in
                 let step: CGFloat = 18
                 for x in stride(from: step / 2, to: size.width, by: step) {
@@ -132,6 +154,11 @@ struct GlassBackdrop: View {
                         ctx.fill(Path(ellipseIn: CGRect(x: x, y: y, width: 1.6, height: 1.6)), with: .color(Brutal.ink.opacity(0.10)))
                     }
                 }
+            }
+        }
+        .onAppear {
+            if !QuickAccessMotion.reduced {
+                drifting = true
             }
         }
     }

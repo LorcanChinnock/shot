@@ -1,16 +1,39 @@
+import AppKit
 import ShotCore
 import SwiftUI
+
+enum QuickAccessMotion {
+    static var reduced: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
+
+    /// A soft, slightly overshooting settle as a card arrives.
+    static var enter: Animation { reduced ? .easeOut(duration: 0.15) : .spring(response: 0.45, dampingFraction: 0.72) }
+    /// Quicker and without bounce, so dismissing feels responsive; neighbours slide into the gap with the same curve.
+    static var exit: Animation { reduced ? .easeOut(duration: 0.15) : .spring(response: 0.32, dampingFraction: 0.9) }
+}
 
 struct QuickAccessView: View {
     let model: QuickAccessModel
     let controller: QuickAccessController
     @AppStorage(PreferenceKey.quickAccessPosition) private var position = QuickAccessPosition.left.rawValue
 
+    private var edge: Edge { position == QuickAccessPosition.right.rawValue ? .trailing : .leading }
+
+    private var transition: AnyTransition {
+        guard !QuickAccessMotion.reduced else {
+            return .opacity
+        }
+        let anchor: UnitPoint = edge == .trailing ? .trailing : .leading
+        return .asymmetric(
+            insertion: .move(edge: edge).combined(with: .scale(scale: 0.88, anchor: anchor)).combined(with: .opacity),
+            removal: .move(edge: edge).combined(with: .scale(scale: 0.94, anchor: anchor)).combined(with: .opacity)
+        )
+    }
+
     var body: some View {
         VStack(spacing: QuickAccessController.spacing) {
             ForEach(model.cards) { card in
                 QuickAccessCardView(card: card, controller: controller)
-                    .transition(.move(edge: position == QuickAccessPosition.right.rawValue ? .trailing : .leading).combined(with: .opacity))
+                    .transition(transition)
             }
         }
         .padding(QuickAccessController.padding)

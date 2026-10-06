@@ -43,6 +43,10 @@ final class QuickAccessController {
     private let model = QuickAccessModel()
     private var panel: NSPanel?
     private var timers: [UUID: Task<Void, Never>] = [:]
+    private var settleTask: Task<Void, Never>?
+
+    /// How long a card's exit takes; the panel keeps its size until then so the card isn't clipped mid-slide.
+    private static let exitDuration: Duration = .milliseconds(350)
 
     func add(fileURL: URL, thumbnail: CGImage, scale: CGFloat) {
         let size = NSSize(width: CGFloat(thumbnail.width) / scale, height: CGFloat(thumbnail.height) / scale)
@@ -55,23 +59,41 @@ final class QuickAccessController {
     }
 
     private func add(_ card: QuickAccessCard) {
-        withAnimation(.easeOut(duration: 0.2)) {
-            model.cards.append(card)
+        settleTask?.cancel()
+        ensurePanel()
+        layout(for: model.cards + [card])
+        panel?.orderFrontRegardless()
+        // A panel that was just ordered in has to render empty first, or the card has nothing to animate from.
+        Task { @MainActor [weak self] in
+            guard let self else {
+                return
+            }
+            withAnimation(QuickAccessMotion.enter) {
+                self.model.cards.append(card)
+            }
+            while self.model.cards.count > Self.maxCards {
+                self.remove(self.model.cards[0].id)
+            }
+            self.startTimer(for: card.id)
         }
-        while model.cards.count > Self.maxCards {
-            remove(model.cards[0].id)
-        }
-        startTimer(for: card.id)
-        show()
     }
 
     func remove(_ id: UUID) {
         timers.removeValue(forKey: id)?.cancel()
-        model.cards.removeAll { $0.id == id }
-        if model.cards.isEmpty {
-            panel?.orderOut(nil)
-        } else {
-            layout()
+        withAnimation(QuickAccessMotion.exit) {
+            model.cards.removeAll { $0.id == id }
+        }
+        settleTask?.cancel()
+        settleTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.exitDuration)
+            guard !Task.isCancelled, let self else {
+                return
+            }
+            if self.model.cards.isEmpty {
+                self.panel?.orderOut(nil)
+            } else {
+                self.layout()
+            }
         }
     }
 
@@ -118,7 +140,7 @@ final class QuickAccessController {
         return false
     }
 
-    private func show() {
+    private func ensurePanel() {
         if panel == nil {
             let panel = NSPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
             panel.level = .floating
@@ -132,15 +154,17 @@ final class QuickAccessController {
             panel.contentView = hostingView
             self.panel = panel
         }
-        layout()
-        panel?.orderFrontRegardless()
     }
 
     private func layout() {
+        layout(for: model.cards)
+    }
+
+    private func layout(for cards: [QuickAccessCard]) {
         guard let panel else {
             return
         }
-        let cardsHeight = model.cards.reduce(0) { $0 + $1.height } + Self.spacing * CGFloat(max(0, model.cards.count - 1))
+        let cardsHeight = cards.reduce(0) { $0 + $1.height } + Self.spacing * CGFloat(max(0, cards.count - 1))
         let size = CGSize(width: QuickAccessCard.width + Self.padding * 2, height: cardsHeight + Self.padding * 2)
         let screen = NSScreen.underPointer ?? NSScreen.screens[0]
         let visible = screen.visibleFrame
