@@ -5,6 +5,7 @@
       "release-type": "simple",
       "versioning": "prerelease",
       "prerelease-type": "beta",
+      "release-as": "0.7.0-beta.1",
       "package-name": "Shot",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
