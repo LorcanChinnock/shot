@@ -54,6 +54,8 @@ final class EditorModel {
     }
     var selectedID: UUID?
     var isDirty = false
+    /// Set by the canvas: turns the text or note still being typed into an annotation.
+    var commitPendingText: (() -> Void)?
     /// True while auto-redact looks for text to hide.
     var isRedacting = false
     /// The canvas's zoom, where 1 is actual size, for the zoom menu; the canvas view keeps it current.
@@ -329,6 +331,7 @@ final class EditorModel {
     }
 
     func flattened() -> (image: CGImage, png: Data)? {
+        commitPendingText?()
         guard let image = AnnotationRenderer.flatten(document), let png = ImageCodec.data(from: image, scale: scale) else {
             return nil
         }
@@ -371,7 +374,7 @@ final class EditorModel {
             return false
         }
         do {
-            try data.write(to: fileURL, options: .atomic)
+            try data.write(to: FileNaming.nextVersionURL(of: fileURL), options: .atomic)
             Clipboard.copy(png: result.png, image: result.image)
             isDirty = false
             Toast.show("Saved and copied")
