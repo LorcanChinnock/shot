@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.1](https://github.com/LorcanChinnock/shot/compare/v0.6.0...v0.6.1) (2026-10-06)
+
+
+### Bug Fixes
+
+* repair the editor build and tests broken on main by [#69](https://github.com/LorcanChinnock/shot/issues/69) ([#72](https://github.com/LorcanChinnock/shot/issues/72)) ([13e172a](https://github.com/LorcanChinnock/shot/commit/13e172a950899487183a19a92426e3536ece95c8))
+* **ui:** sweep the hard shadow so its corners join the border ([#71](https://github.com/LorcanChinnock/shot/issues/71)) ([067ef57](https://github.com/LorcanChinnock/shot/commit/067ef5791832b06905c0cc73cc7289347261806b))
+
 ## [0.6.0](https://github.com/LorcanChinnock/shot/compare/v0.5.3...v0.6.0) (2026-10-06)
 
 
