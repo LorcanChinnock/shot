@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/LorcanChinnock/shot/compare/v0.5.1...v0.5.2) (2026-10-06)
+
+
+### Bug Fixes
+
+* **ui:** clean up window border, card shadows and sidebar icons ([#65](https://github.com/LorcanChinnock/shot/issues/65)) ([c8872ed](https://github.com/LorcanChinnock/shot/commit/c8872edcceeb5decd014bbaa50eb981f0edf5129))
+
 ## [0.5.1](https://github.com/LorcanChinnock/shot/compare/v0.5.0...v0.5.1) (2026-10-05)
 
 
