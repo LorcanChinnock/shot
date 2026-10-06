@@ -191,7 +191,7 @@ private struct SidebarItem: View {
                 if selected {
                     Color.clear.brutalSurface(Color.white.opacity(0.6), glass: true, radius: 10, shadow: 3)
                 } else if hovering {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Brutal.ink.opacity(0.06))
+                    RoundedRectangle(cornerRadius: 10, style: .circular).fill(Brutal.ink.opacity(0.06))
                 }
             }
             .contentShape(Rectangle())
@@ -345,16 +345,16 @@ private struct ScreenPreview: View {
             }
             VStack(spacing: 6) {
                 ForEach(0..<2) { index in
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    RoundedRectangle(cornerRadius: 5, style: .circular)
                         .fill(index == 1 ? color : Color.white)
                         .frame(width: 72, height: 42)
-                        .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous).strokeBorder(Brutal.ink, lineWidth: 2))
+                        .overlay(RoundedRectangle(cornerRadius: 5, style: .circular).strokeBorder(Brutal.ink, lineWidth: 2))
                 }
             }
             .padding(12)
         }
         .frame(height: 210)
-        .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
         .brutalSurface(Color.clear)
         .animation(.spring(response: 0.35, dampingFraction: 0.75), value: position)
     }

@@ -39,7 +39,7 @@ struct VideoEditorRootView: View {
             .padding(.bottom, -Brutal.sectionGap / 2)
             PlayerHost(player: model.player)
                 .background(Color.black)
-                .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
                 .brutalSurface(Color.clear)
             HStack(spacing: 12) {
                 Button {
@@ -280,7 +280,7 @@ struct TrimTimelineView: View {
         }
         .frame(width: width, height: Self.height, alignment: .leading)
         .background(Color.black)
-        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 4, style: .circular))
     }
 
     private func handle(symbol: String) -> some View {

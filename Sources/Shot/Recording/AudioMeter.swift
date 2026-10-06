@@ -61,9 +61,9 @@ struct LevelMeter: View {
             let lit = Int((meter.level * Double(Self.bars)).rounded(.up))
             HStack(spacing: 2) {
                 ForEach(0..<Self.bars, id: \.self) { index in
-                    RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                    RoundedRectangle(cornerRadius: 1.5, style: .circular)
                         .fill(index < lit ? color(index) : Color.white.opacity(0.7))
-                        .overlay(RoundedRectangle(cornerRadius: 1.5, style: .continuous).strokeBorder(Brutal.ink, lineWidth: 1.5))
+                        .overlay(RoundedRectangle(cornerRadius: 1.5, style: .circular).strokeBorder(Brutal.ink, lineWidth: 1.5))
                         .frame(width: 5, height: 16)
                 }
             }

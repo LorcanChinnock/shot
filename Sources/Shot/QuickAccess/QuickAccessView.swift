@@ -44,7 +44,7 @@ private struct QuickAccessCardView: View {
         }
         .frame(width: QuickAccessCard.width, height: card.height)
         .background(Color.black)
-        .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
         .brutalSurface(Color.clear)
         .contentShape(Rectangle())
         .onHover { inside in

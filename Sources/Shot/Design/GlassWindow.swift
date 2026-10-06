@@ -79,8 +79,8 @@ private struct GlassChrome<Content: View>: View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(GlassBackdrop())
-            .clipShape(RoundedRectangle(cornerRadius: GlassWindow.cornerRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: GlassWindow.cornerRadius, style: .continuous).strokeBorder(Brutal.ink, lineWidth: 3))
+            .clipShape(RoundedRectangle(cornerRadius: GlassWindow.cornerRadius, style: .circular))
+            .overlay(RoundedRectangle(cornerRadius: GlassWindow.cornerRadius, style: .circular).strokeBorder(Brutal.ink, lineWidth: 3))
             .environment(\.colorScheme, .light)
             .ignoresSafeArea()
     }
