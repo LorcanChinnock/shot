@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.10](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.9...v0.7.0-beta.10) (2026-10-06)
+
+
+### Bug Fixes
+
+* **ui:** honour system double-click title bar action on glass windows ([#105](https://github.com/LorcanChinnock/shot/issues/105)) ([1255f53](https://github.com/LorcanChinnock/shot/commit/1255f53d26ee1c6c84f2a0c17e4b0913b238c078))
+
 ## [0.7.0-beta.9](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.8...v0.7.0-beta.9) (2026-10-06)
 
 
