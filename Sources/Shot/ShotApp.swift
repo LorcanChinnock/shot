@@ -46,6 +46,7 @@ private struct ShotMenu: View {
         }
         Toggle("Camera Bubble", isOn: $cameraBubble)
         Divider()
+        Button("Open Gallery") { GalleryWindowController.shared.show() }
         Button("Open Capture Folder") {
             let folder = Preferences().saveFolder
             try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

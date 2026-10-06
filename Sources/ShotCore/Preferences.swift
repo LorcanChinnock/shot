@@ -37,6 +37,7 @@ public enum PreferenceKey {
     public static let editorFill = "editorFill"
     public static let editorRecentColors = "editorRecentColors"
     public static let editorWidth = "editorWidth"
+    public static let galleryTileSize = "galleryTileSize"
     /// True while the macOS screenshot shortcuts are off because Shot turned them off. Not a
     /// setting, so resetting settings keeps it and Shot can still give the keys back.
     public static let disabledSystemScreenshots = "disabledSystemScreenshots"
@@ -106,6 +107,7 @@ public struct Preferences {
             PreferenceKey.editorFill: Data(),
             PreferenceKey.editorRecentColors: Data(),
             PreferenceKey.editorWidth: EditorStyle().widthIndex,
+            PreferenceKey.galleryTileSize: Gallery.defaultTileSize,
         ]
         for action in ShotAction.allCases {
             values[PreferenceKey.hotkey(action)] = action.defaultCombo?.encoded ?? ""
@@ -249,6 +251,10 @@ public struct Preferences {
             widthIndex: index(PreferenceKey.editorWidth, in: EditorStyle.widths.indices, default: defaults.widthIndex),
             recentColors: decoded(PreferenceKey.editorRecentColors, as: [RGBA].self).map { Array($0.prefix(EditorStyle.maxRecentColors)) } ?? defaults.recentColors
         )
+    }
+
+    public var galleryTileSize: Double {
+        Gallery.tileSizes.contains(store.double(forKey: PreferenceKey.galleryTileSize)) ? store.double(forKey: PreferenceKey.galleryTileSize) : Gallery.defaultTileSize
     }
 
     public var cameraSize: CameraBubbleSize {

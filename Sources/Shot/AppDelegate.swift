@@ -20,6 +20,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         QuickAccessController.shared.onAnnotate = { [weak self] url in
             self?.coordinator.annotate(url)
         }
+        GalleryWindowController.shared.onEdit = { [weak self] url in
+            self?.coordinator.annotate(url)
+        }
+        GalleryWindowController.shared.onExportGIF = { [weak self] url in
+            self?.coordinator.exportGIF(url)
+        }
         defaultsObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated {
                 HotkeyCenter.shared.reloadFromPreferences()
@@ -51,6 +57,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         log.notice("URL received: \(url.absoluteString)")
         if host == "pause" {
             coordinator.togglePause()
+            return
+        }
+        if host == "gallery" {
+            GalleryWindowController.shared.show()
             return
         }
         if host == "settings" {

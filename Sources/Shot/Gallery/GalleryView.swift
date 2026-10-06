@@ -1,0 +1,351 @@
+import AppKit
+import ShotCore
+import SwiftUI
+
+struct GalleryRootView: View {
+    private static let spacing: CGFloat = 20
+
+    let model: GalleryModel
+    @FocusState private var searchFocused: Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            header
+            content
+            footer
+        }
+        .onChange(of: model.searchFocusRequest) {
+            searchFocused = true
+        }
+    }
+
+    // MARK: Header
+
+    private var header: some View {
+        HStack(spacing: 12) {
+            BrutalSegmented(selection: Bindable(model).filter, options: GalleryFilter.allCases.map { ($0, $0.title) }, color: Brutal.violet)
+            Spacer(minLength: 8)
+            searchField
+            sortMenu
+            Image(systemName: "photo")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(Brutal.ink.opacity(0.6))
+            Slider(value: Bindable(model).tileSize, in: Gallery.tileSizes)
+                .frame(width: 80)
+                .tint(Brutal.ink)
+                .help("Thumbnail size (⌘+ and ⌘−)")
+                .accessibilityLabel(Text("Thumbnail size"))
+            Image(systemName: "photo")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(Brutal.ink.opacity(0.6))
+        }
+        .padding(.leading, GlassWindow.trafficLightsWidth)
+        .padding(.trailing, Brutal.windowInset)
+        .frame(height: GlassWindow.titlebarHeight)
+    }
+
+    private var searchField: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(Brutal.ink.opacity(0.6))
+            TextField("Search", text: Bindable(model).query)
+                .textFieldStyle(.plain)
+                .font(.system(size: 13, weight: .semibold))
+                .focused($searchFocused)
+            if !model.query.isEmpty {
+                Button {
+                    model.query = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(Brutal.ink.opacity(0.5))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Clear search"))
+            }
+        }
+        .padding(.horizontal, 10)
+        .frame(width: 170, height: 30)
+        .brutalSurface(Color.white.opacity(0.85), radius: 8, shadow: 2)
+        .help("Search by file name (⌘F)")
+    }
+
+    private var sortMenu: some View {
+        Menu {
+            Picker("Sort", selection: Bindable(model).sort) {
+                ForEach(GallerySort.allCases, id: \.self) { sort in
+                    Text(sort.title).tag(sort)
+                }
+            }
+            .pickerStyle(.inline)
+        } label: {
+            HStack(spacing: 5) {
+                Text(model.sort.title)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .black))
+            }
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(Brutal.ink)
+            .padding(.horizontal, 10)
+            .frame(height: 30)
+            .brutalSurface(Color.white.opacity(0.85), radius: 8, shadow: 2)
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Sort")
+    }
+
+    // MARK: Grid
+
+    @ViewBuilder
+    private var content: some View {
+        if model.sections.isEmpty {
+            emptyState
+        } else {
+            grid
+        }
+    }
+
+    private var grid: some View {
+        GeometryReader { geometry in
+            let available = geometry.size.width - Brutal.windowInset * 2
+            let columns = max(1, Int((available + Self.spacing) / (model.tileSize + Self.spacing)))
+            let cell = (available - Self.spacing * CGFloat(columns - 1)) / CGFloat(columns)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    // One lazy grid, so scrolling can reach a tile that hasn't been built yet.
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Self.spacing, alignment: .top), count: columns), alignment: .leading, spacing: Self.spacing) {
+                        ForEach(model.sections) { section in
+                            Section {
+                                ForEach(section.items) { item in
+                                    GalleryTile(item: item, model: model, width: cell)
+                                        .id(item.url)
+                                }
+                            } header: {
+                                if !section.title.isEmpty {
+                                    HStack(spacing: 8) {
+                                        Text(section.title)
+                                            .font(Brutal.title(15))
+                                            .foregroundStyle(Brutal.ink)
+                                        BrutalChip(text: "\(section.items.count)")
+                                        Spacer()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, Brutal.windowInset)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background {
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .onTapGesture { model.clearSelection() }
+                    }
+                }
+                .onChange(of: model.lead) {
+                    if let lead = model.lead {
+                        proxy.scrollTo(lead)
+                    }
+                }
+                .onChange(of: columns, initial: true) {
+                    model.columns = columns
+                }
+            }
+        }
+        .clipped()
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 12) {
+            if !model.hasLoaded {
+                ProgressView().controlSize(.small)
+            } else if model.items.isEmpty {
+                Image(systemName: "photo.on.rectangle.angled")
+                    .font(.system(size: 34, weight: .bold))
+                    .foregroundStyle(Brutal.ink.opacity(0.55))
+                Text("No captures yet")
+                    .font(Brutal.title(17))
+                    .foregroundStyle(Brutal.ink)
+                Text("Screenshots and recordings saved to \((model.folder.path as NSString).abbreviatingWithTildeInPath) show up here.")
+                    .font(Brutal.caption)
+                    .foregroundStyle(Brutal.ink.opacity(0.7))
+                Button("Open Folder") { NSWorkspace.shared.open(model.folder) }
+                    .buttonStyle(BrutalButtonStyle(compact: true))
+            } else {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 34, weight: .bold))
+                    .foregroundStyle(Brutal.ink.opacity(0.55))
+                Text("Nothing matches")
+                    .font(Brutal.title(17))
+                    .foregroundStyle(Brutal.ink)
+            }
+        }
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: Footer
+
+    private var footer: some View {
+        let selected = model.selectedItems
+        return HStack(spacing: 10) {
+            Text(status)
+                .font(Brutal.mono)
+                .foregroundStyle(Brutal.ink.opacity(0.7))
+                .lineLimit(1)
+            Spacer()
+            Button("Edit") { model.edit(selected) }
+                .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
+                .disabled(!selected.contains { $0.kind.isEditable })
+                .help("Open in the editor (Return)")
+            Button("Copy") { model.copy(selected) }
+                .buttonStyle(BrutalButtonStyle(compact: true))
+                .help("Copy (⌘C)")
+            Button("Show in Finder") { model.reveal(selected) }
+                .buttonStyle(BrutalButtonStyle(compact: true))
+            Button("Move to Trash") { model.trash(selected) }
+                .buttonStyle(BrutalButtonStyle(color: Brutal.red, compact: true))
+                .help("Move to the Trash (⌘⌫)")
+        }
+        .disabled(selected.isEmpty)
+        .padding(.horizontal, Brutal.windowInset)
+        .frame(height: 34 + Brutal.windowInset)
+        .padding(.top, 6)
+    }
+
+    private var status: String {
+        let total = model.visible.count
+        let noun = total == 1 ? "item" : "items"
+        let count = model.selection.count
+        return count > 0 ? "\(count) of \(total) selected" : "\(total) \(noun)"
+    }
+}
+
+private struct GalleryTile: View {
+    let item: GalleryItem
+    let model: GalleryModel
+    let width: CGFloat
+    @State private var thumbnail: Thumbnail?
+    @State private var hovering = false
+
+    private var height: CGFloat { (width * 0.75).rounded() }
+    private var selected: Bool { model.selection.contains(item.url) }
+
+    var body: some View {
+        VStack(spacing: 7) {
+            ZStack {
+                if let thumbnail {
+                    Image(nsImage: thumbnail.image)
+                        .resizable()
+                        .interpolation(.high)
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: width, height: height)
+                        .clipped()
+                } else {
+                    Image(systemName: item.kind == .video ? "film" : "photo")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(Brutal.ink.opacity(0.35))
+                }
+                badges
+                if hovering, item.kind.isEditable {
+                    VStack {
+                        HStack {
+                            Spacer()
+                            CornerButton(symbol: item.kind == .video ? "scissors" : "pencil", help: item.kind == .video ? "Edit video" : "Annotate") {
+                                model.edit([item])
+                            }
+                        }
+                        Spacer()
+                    }
+                    .padding(8)
+                    .transition(.opacity)
+                }
+                if selected {
+                    Rectangle().strokeBorder(Brutal.violet, lineWidth: 5)
+                }
+            }
+            .frame(width: width, height: height)
+            .background(Color.white.opacity(0.6))
+            .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
+            .brutalSurface(Color.clear, shadow: selected ? 4 : 2)
+            Text(item.name)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Brutal.ink)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(selected ? Brutal.violet : Color.clear, in: RoundedRectangle(cornerRadius: 5, style: .circular))
+        }
+        .frame(width: width)
+        .contentShape(Rectangle())
+        .onHover { inside in
+            withAnimation(.easeOut(duration: 0.12)) {
+                hovering = inside
+            }
+        }
+        .onTapGesture(count: 2) { model.edit([item]) }
+        .onTapGesture {
+            let flags = NSEvent.modifierFlags
+            model.click(item, command: flags.contains(.command), shift: flags.contains(.shift))
+        }
+        .onDrag { NSItemProvider(contentsOf: item.url) ?? NSItemProvider() }
+        .contextMenu { menu }
+        .task(id: item) {
+            thumbnail = await Thumbnails.thumbnail(for: item)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(item.name))
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    @ViewBuilder
+    private var badges: some View {
+        VStack {
+            Spacer()
+            HStack {
+                switch item.kind {
+                case .video:
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 10, weight: .black))
+                        .foregroundStyle(Brutal.ink)
+                        .frame(width: 26, height: 26)
+                        .brutalCircle(Brutal.yellow, shadow: 2)
+                    Spacer()
+                    if let duration = thumbnail?.duration {
+                        BrutalChip(text: Gallery.duration(duration), color: .white)
+                    }
+                case .gif:
+                    BrutalChip(text: "GIF", color: Brutal.mint)
+                    Spacer()
+                case .image:
+                    EmptyView()
+                }
+            }
+        }
+        .padding(8)
+    }
+
+    @ViewBuilder
+    private var menu: some View {
+        let targets = model.targets(for: item)
+        if targets.contains(where: { $0.kind.isEditable }) {
+            Button(targets.count == 1 ? (item.kind == .video ? "Edit Video" : "Annotate") : "Edit") { model.edit(targets) }
+        }
+        if targets.count == 1, item.kind == .video {
+            Button("Export GIF") { model.exportGIF(item) }
+        }
+        Divider()
+        Button("Copy") { model.copy(targets) }
+        Button("Quick Look") { GalleryPreview.shared.show(targets.map(\.url)) }
+        if targets.count == 1 {
+            Button("Rename…") { model.rename(item) }
+        }
+        Button("Show in Finder") { model.reveal(targets) }
+        Divider()
+        Button("Move to Trash") { model.trash(targets) }
+    }
+}
