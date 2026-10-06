@@ -32,7 +32,7 @@ struct EditorRootView: View {
             .padding(.bottom, -Brutal.sectionGap / 2)
             EditorToolbar(model: model)
             CanvasHost(canvas: canvas)
-                .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
                 .glassCard()
         }
         .padding([.horizontal, .bottom], Brutal.windowInset)
@@ -237,8 +237,8 @@ private struct SaturationBrightnessField: View {
                     .overlay(Circle().strokeBorder(Brutal.ink, lineWidth: 1).padding(-1))
                     .position(x: saturation * size.width, y: (1 - brightness) * size.height)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(Brutal.ink, lineWidth: 2))
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .circular))
+            .overlay(RoundedRectangle(cornerRadius: 6, style: .circular).strokeBorder(Brutal.ink, lineWidth: 2))
             .contentShape(Rectangle())
             .gesture(DragGesture(minimumDistance: 0).onChanged { drag in
                 saturation = min(max(drag.location.x / size.width, 0), 1)
@@ -437,7 +437,7 @@ private struct Tile<Label: View>: View {
                     if selected {
                         Color.clear.brutalSurface(color, radius: 7, shadow: 2)
                     } else if hovering {
-                        RoundedRectangle(cornerRadius: 7, style: .continuous).fill(Brutal.ink.opacity(0.08))
+                        RoundedRectangle(cornerRadius: 7, style: .circular).fill(Brutal.ink.opacity(0.08))
                     }
                 }
                 .contentShape(Rectangle())

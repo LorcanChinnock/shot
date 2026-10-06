@@ -88,10 +88,10 @@ struct BrutalSurface<S: InsettableShape, Fill: ShapeStyle>: ViewModifier {
 
 extension View {
     func brutalSurface<Fill: ShapeStyle>(_ fill: Fill, glass: Bool = false, radius: CGFloat = Brutal.radius, shadow: CGFloat = Brutal.shadow, border: CGFloat = Brutal.border) -> some View {
-        modifier(BrutalSurface(shape: RoundedRectangle(cornerRadius: radius, style: .continuous), fill: fill, glass: glass, shadow: shadow, border: border))
+        modifier(BrutalSurface(shape: RoundedRectangle(cornerRadius: radius, style: .circular), fill: fill, glass: glass, shadow: shadow, border: border))
     }
 
-    /// Round variant; a continuous rounded rectangle at half its size comes out slightly square.
+    /// Round variant; a circular-cornered rounded rectangle at half its size is not a true circle.
     func brutalCircle<Fill: ShapeStyle>(_ fill: Fill, shadow: CGFloat = Brutal.shadow) -> some View {
         modifier(BrutalSurface(shape: Circle(), fill: fill, shadow: shadow))
     }
@@ -194,17 +194,17 @@ struct BrutalToggleStyle: ToggleStyle {
             }
         } label: {
             ZStack(alignment: configuration.isOn ? .trailing : .leading) {
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                RoundedRectangle(cornerRadius: 7, style: .circular)
                     .fill(configuration.isOn ? color : Color.white.opacity(0.7))
                     .frame(width: 48, height: 28)
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                RoundedRectangle(cornerRadius: 4, style: .circular)
                     .fill(Color.white)
-                    .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous).strokeBorder(Brutal.ink, lineWidth: 2))
+                    .overlay(RoundedRectangle(cornerRadius: 4, style: .circular).strokeBorder(Brutal.ink, lineWidth: 2))
                     .frame(width: 16, height: 16)
                     .padding(.horizontal, 6)
             }
-            .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(Brutal.ink, lineWidth: Brutal.border))
-            .background(HardShadow(shape: RoundedRectangle(cornerRadius: 7, style: .continuous), offset: 2, border: Brutal.border))
+            .overlay(RoundedRectangle(cornerRadius: 7, style: .circular).strokeBorder(Brutal.ink, lineWidth: Brutal.border))
+            .background(HardShadow(shape: RoundedRectangle(cornerRadius: 7, style: .circular), offset: 2, border: Brutal.border))
         }
         .buttonStyle(.plain)
         .accessibilityValue(Text(configuration.isOn ? "On" : "Off"))
@@ -241,7 +241,7 @@ struct BrutalSegmented<Value: Hashable>: View {
             }
         }
         .fixedSize()
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .circular))
         .brutalSurface(Color.white.opacity(0.7), radius: 8, shadow: 2)
     }
 }
