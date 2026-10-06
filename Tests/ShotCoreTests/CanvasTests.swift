@@ -182,3 +182,29 @@ private func isWhite(_ p: [UInt8]) -> Bool { p.allSatisfy { $0 > 245 } }
     #expect(isRed(try pixel(image, x: 70, y: 60)))
     #expect(isWhite(try pixel(image, x: 135, y: 115)))
 }
+
+@Test func shrinkingPullsPaddingBackAsAnAnnotationMovesOrGoes() {
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100))
+    let label = Annotation(kind: .counter(1, center: CGPoint(x: 260, y: 50)), color: blue, lineWidth: 4)
+    doc.annotations.append(label)
+    doc.grow(toFit: label, margin: 10)
+    #expect(doc.canvasRect.maxX > 200)
+
+    doc.move(label.id, by: CGVector(dx: -40, dy: 0), margin: 10)
+    #expect(doc.canvasRect.maxX < 270 && doc.canvasRect.maxX > 200)
+
+    doc.move(label.id, by: CGVector(dx: -200, dy: 0), margin: 10)
+    #expect(doc.canvasRect == doc.fullRect)
+
+    doc.move(label.id, by: CGVector(dx: 200, dy: 0), margin: 10)
+    doc.annotations.removeAll()
+    doc.shrinkPadding(margin: 10)
+    #expect(doc.canvasRect == doc.fullRect)
+}
+
+@Test func shrinkingKeepsACrop() {
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100))
+    doc.crop(to: CGRect(x: 50, y: 20, width: 100, height: 60))
+    doc.shrinkPadding(margin: 10)
+    #expect(doc.canvasRect == CGRect(x: 50, y: 20, width: 100, height: 60))
+}

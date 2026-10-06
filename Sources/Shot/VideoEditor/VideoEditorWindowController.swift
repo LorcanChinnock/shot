@@ -99,10 +99,23 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
     }
 
     private func handleKey(_ event: NSEvent) -> Bool {
-        guard event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty else {
+        guard event.modifierFlags.intersection([.command, .option, .control]).isEmpty else {
             return false
         }
+        // Shift jumps a second instead of a frame.
+        if event.modifierFlags.contains(.shift) {
+            switch event.keyCode {
+            case 123: model.seek(to: max(model.range.start, model.currentTime - 1))
+            case 124: model.seek(to: min(model.range.end, model.currentTime + 1))
+            default: return false
+            }
+            return true
+        }
         switch event.keyCode {
+        case 115: // Home
+            model.seek(to: model.range.start)
+        case 119: // End
+            model.seek(to: model.range.end)
         case 49: // Space
             model.togglePlay()
         case 123: // Left arrow

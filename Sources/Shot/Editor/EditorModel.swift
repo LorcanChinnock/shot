@@ -61,6 +61,8 @@ final class EditorModel {
         didSet { rememberStyle { $0.widthIndex = widthIndex } }
     }
     var selectedID: UUID?
+    /// The note whose text field is open, with the colour picked for it so far; it may not be in the document yet.
+    var editingNote: Annotation?
     var isDirty = false
     /// Set by the canvas: turns the text or note still being typed into an annotation.
     var commitPendingText: (() -> Void)?
@@ -106,10 +108,12 @@ final class EditorModel {
     /// note tool is active, else the colour for the next annotation.
     var paletteColor: RGBA {
         get {
-            selection?.color ?? (tool == .note ? noteColor : color)
+            editingNote?.color ?? selection?.color ?? (tool == .note ? noteColor : color)
         }
         set {
-            if selection != nil {
+            if editingNote != nil {
+                setEditingNoteColor(newValue)
+            } else if selection != nil {
                 restyleSelection { $0.color = newValue }
             } else if tool == .note {
                 noteColor = newValue
@@ -138,10 +142,24 @@ final class EditorModel {
         }
     }
 
+    /// Recolours the note being typed. The document picks it up when the note is committed.
+    /// A new note also sets the colour for the next one.
+    private func setEditingNoteColor(_ colour: RGBA) {
+        guard let note = editingNote else {
+            return
+        }
+        editingNote?.color = colour
+        if !document.annotations.contains(where: { $0.id == note.id }) {
+            noteColor = colour
+        }
+    }
+
     /// Sets the border colour, or the fill, to one picked from the colour panel, which reports every
     /// change as the user drags. It's one undo step, and joins the recent colours once the drag settles.
     func pickCustom(_ colour: RGBA, forFill: Bool) {
-        if let selection {
+        if editingNote != nil, !forFill {
+            setEditingNoteColor(colour)
+        } else if let selection {
             let key = "\(selection.id)-\(forFill)"
             restyleSelection(coalescing: key) { forFill ? ($0.fill = colour) : ($0.color = colour) }
         } else if forFill {
@@ -221,8 +239,8 @@ final class EditorModel {
         document.grow(toFit: annotation, margin: canvasMargin)
     }
 
-    /// Sets a text annotation's or note's text as one undoable step; empty text deletes it.
-    func setText(_ id: UUID, to string: String) {
+    /// Sets a text annotation's or note's text, and a note's colour, as one undoable step; empty text deletes it.
+    func setText(_ id: UUID, to string: String, color: RGBA? = nil) {
         edit { doc in
             guard let index = doc.annotations.firstIndex(where: { $0.id == id }) else {
                 return
@@ -231,8 +249,12 @@ final class EditorModel {
                 doc.annotations.remove(at: index)
             } else {
                 doc.annotations[index].setText(string)
+                if let color {
+                    doc.annotations[index].color = color
+                }
                 doc.grow(toFit: doc.annotations[index], margin: canvasMargin)
             }
+            doc.shrinkPadding(margin: canvasMargin)
         }
         if !document.annotations.contains(where: { $0.id == id }), selectedID == id {
             selectedID = nil
@@ -252,6 +274,7 @@ final class EditorModel {
             }
             change(&doc.annotations[index])
             doc.grow(toFit: doc.annotations[index], margin: canvasMargin)
+            doc.shrinkPadding(margin: canvasMargin)
         }
         if amend {
             apply(&document)
@@ -393,6 +416,7 @@ final class EditorModel {
         }
         recordUndo()
         document.annotations.removeAll { $0.id == selectedID }
+        document.shrinkPadding(margin: canvasMargin)
         self.selectedID = nil
     }
 

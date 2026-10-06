@@ -60,3 +60,11 @@ func cropRectConversion(scale: CGFloat) {
     let parsed = WindowInfo.parse([entry(1, layer: 0, pid: 5, size: 100), entry(2, layer: 25, pid: 5, size: 100), entry(3, layer: 0, pid: 99, size: 100), entry(4, layer: 0, pid: 5, size: 20)], excludingPID: 99)
     #expect(parsed.map(\.windowID) == [1])
 }
+
+@Test func snappingKeepsLengthAndLandsOnA45DegreeStep() {
+    let anchor = CGPoint(x: 10, y: 10)
+    let horizontal = Geometry.snapped(from: anchor, to: CGPoint(x: 110, y: 20))
+    #expect(abs(horizontal.y - 10) < 0.001 && horizontal.x > 100)
+    let diagonal = Geometry.snapped(from: anchor, to: CGPoint(x: 60, y: 45))
+    #expect(abs((diagonal.x - 10) - (diagonal.y - 10)) < 0.001)
+}

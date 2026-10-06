@@ -57,12 +57,13 @@ extension EditorDocument {
         return copy.id
     }
 
-    /// Moves the annotation with `id` by `delta`, growing the canvas if it now reaches past the edge.
+    /// Moves the annotation with `id` by `delta`, growing the canvas if it now reaches past the edge and shrinking it if it no longer does.
     public mutating func move(_ id: UUID, by delta: CGVector, margin: CGFloat) {
         guard let index = annotations.firstIndex(where: { $0.id == id }) else {
             return
         }
         annotations[index].offset(by: delta)
         grow(toFit: annotations[index], margin: margin)
+        shrinkPadding(margin: margin)
     }
 }
