@@ -139,3 +139,20 @@ private let shapeFrame = CGRect(x: 20, y: 20, width: 100, height: 60)
     let many = (0 ..< 10).reduce([RGBA]()) { EditorStyle.recents(adding: RGBA(CGFloat($1) / 20, 0.5, 0.5), to: $0) }
     #expect(many.count == EditorStyle.maxRecentColors)
 }
+
+@Test func draggingArrowMidpointBendsIt() {
+    var arrow = annotation(.arrow(from: .zero, to: CGPoint(x: 100, y: 0)))
+    #expect(arrow.handle(at: CGPoint(x: 50, y: 0), tolerance: 6) == .mid)
+    arrow.resize(.mid, to: CGPoint(x: 50, y: 40))
+    #expect(arrow.handles.first { $0.handle == .mid }?.point == CGPoint(x: 50, y: 40))
+    #expect(arrow.hitTest(CGPoint(x: 50, y: 40), tolerance: 3))
+    #expect(!arrow.hitTest(CGPoint(x: 50, y: 0), tolerance: 3))
+    arrow.offset(by: CGVector(dx: 10, dy: 10))
+    #expect(arrow.handles.first { $0.handle == .mid }?.point == CGPoint(x: 60, y: 50))
+    arrow.resize(.mid, to: CGPoint(x: 60, y: 10))
+    #expect(arrow.bend == nil)
+}
+
+@Test func lineHasNoMidpointHandle() {
+    #expect(annotation(.line(from: .zero, to: CGPoint(x: 100, y: 0))).handles.count == 2)
+}

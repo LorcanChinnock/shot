@@ -46,6 +46,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     /// The inside of a rectangle or ellipse; `nil` leaves it unfilled.
     public var fill: RGBA?
     public var lineWidth: CGFloat
+    /// How far an arrow's curve passes from the middle of its chord; `nil` leaves it straight.
+    public var bend: CGVector?
 
     public enum Kind: Equatable, Sendable, Codable {
         case arrow(from: CGPoint, to: CGPoint)
@@ -94,7 +96,22 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         return NoteLayout(string: string, rect: rect, fontSize: noteFontSize, color: color)
     }
 
+    /// The quadratic curve an arrow follows: its ends and the control point that gives it its bend.
+    /// `nil` for anything but a bent arrow.
+    public var arrowCurve: (from: CGPoint, to: CGPoint, control: CGPoint)? {
+        guard case let .arrow(from, to) = kind, let bend else {
+            return nil
+        }
+        return (from, to, CGPoint(x: (from.x + to.x) / 2 + 2 * bend.dx, y: (from.y + to.y) / 2 + 2 * bend.dy))
+    }
+
     public var bounds: CGRect {
+        if let curve = arrowCurve {
+            let path = CGMutablePath()
+            path.move(to: curve.from)
+            path.addQuadCurve(to: curve.to, control: curve.control)
+            return path.boundingBoxOfPath
+        }
         switch kind {
         case let .arrow(from, to), let .line(from, to):
             return CGRect(x: min(from.x, to.x), y: min(from.y, to.y), width: abs(to.x - from.x), height: abs(to.y - from.y))
@@ -137,6 +154,9 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public func hitTest(_ point: CGPoint, tolerance: CGFloat) -> Bool {
         let slop = tolerance + lineWidth / 2
         switch kind {
+        case .arrow where arrowCurve != nil:
+            let points = Self.flattened(arrowCurve!)
+            return zip(points, points.dropFirst()).contains { Self.distance(from: point, toSegment: $0, $1) <= slop }
         case let .arrow(from, to), let .line(from, to):
             return Self.distance(from: point, toSegment: from, to) <= slop
         case let .rect(rect):
@@ -202,6 +222,10 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public var handles: [(handle: AnnotationHandle, point: CGPoint)] {
         switch kind {
         case let .arrow(from, to), let .line(from, to):
+            let middle = arrowCurve.map { Self.curvePoint($0, at: 0.5) } ?? CGPoint(x: (from.x + to.x) / 2, y: (from.y + to.y) / 2)
+            if case .arrow = kind {
+                return [(.start, from), (.end, to), (.mid, middle)]
+            }
             return [(.start, from), (.end, to)]
         case .rect, .ellipse, .highlight, .pixelate, .blur, .spotlight, .note, .freehand:
             let frame = bounds
@@ -219,7 +243,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         func distance(_ p: CGPoint) -> CGFloat { hypot(point.x - p.x, point.y - p.y) }
         let centre = distance(CGPoint(x: bounds.midX, y: bounds.midY))
         return handles
-            .filter { abs(point.x - $0.point.x) <= tolerance && abs(point.y - $0.point.y) <= tolerance && distance($0.point) < centre }
+            .filter { abs(point.x - $0.point.x) <= tolerance && abs(point.y - $0.point.y) <= tolerance && ($0.handle == .mid || distance($0.point) < centre) }
             .min { distance($0.point) < distance($1.point) }?
             .handle
     }
@@ -253,6 +277,9 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let (.arrow(from, _), .end): kind = .arrow(from: from, to: point)
         case let (.line(_, to), .start): kind = .line(from: point, to: to)
         case let (.line(from, _), .end): kind = .line(from: from, to: point)
+        case (.arrow(let from, let to), .mid):
+            let drag = CGVector(dx: point.x - (from.x + to.x) / 2, dy: point.y - (from.y + to.y) / 2)
+            bend = hypot(drag.dx, drag.dy) < Self.minBend ? nil : drag
         case (.arrow, _), (.line, _), (_, .start), (_, .end), (.text, _), (.counter, _): break
         case let (.rect(rect), _): kind = .rect(box(rect))
         case let (.ellipse(rect), _): kind = .ellipse(box(rect))
@@ -318,6 +345,21 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             resized = CGRect(x: minX, y: rect.minY, width: width, height: rect.height)
         }
         kind = .note(string, rect: resized)
+    }
+
+    /// A drag this close to the chord straightens the arrow.
+    static let minBend: CGFloat = 3
+
+    static func curvePoint(_ curve: (from: CGPoint, to: CGPoint, control: CGPoint), at t: CGFloat) -> CGPoint {
+        let u = 1 - t
+        return CGPoint(
+            x: u * u * curve.from.x + 2 * u * t * curve.control.x + t * t * curve.to.x,
+            y: u * u * curve.from.y + 2 * u * t * curve.control.y + t * t * curve.to.y
+        )
+    }
+
+    private static func flattened(_ curve: (from: CGPoint, to: CGPoint, control: CGPoint)) -> [CGPoint] {
+        (0...24).map { curvePoint(curve, at: CGFloat($0) / 24) }
     }
 
     static func distance(from p: CGPoint, toSegment a: CGPoint, _ b: CGPoint) -> CGFloat {
@@ -524,6 +566,8 @@ public enum AnnotationHandle: Hashable, Sendable {
     case topLeft, top, topRight, right, bottomRight, bottom, bottomLeft, left
     /// A line or arrow's ends.
     case start, end
+    /// An arrow's middle, which drags to bend it.
+    case mid
 
     /// The handles on a box, corners first.
     public static let box: [AnnotationHandle] = [.topLeft, .topRight, .bottomRight, .bottomLeft, .top, .right, .bottom, .left]
@@ -542,6 +586,7 @@ public enum AnnotationHandle: Hashable, Sendable {
         case .left: .right
         case .start: .end
         case .end: .start
+        case .mid: .mid
         }
     }
 
