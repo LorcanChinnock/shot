@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0-beta.1](https://github.com/LorcanChinnock/shot/compare/v0.6.3...v0.7.0-beta.1) (2026-10-06)
+
+
+### Features
+
+* tag the app, README and releases as beta ([#78](https://github.com/LorcanChinnock/shot/issues/78)) ([36c0587](https://github.com/LorcanChinnock/shot/commit/36c05878c990c5ba0b1ac63540ed890567d31132))
+
+
+### Bug Fixes
+
+* start the beta series at 0.7.0-beta.1 ([#80](https://github.com/LorcanChinnock/shot/issues/80)) ([d3c8645](https://github.com/LorcanChinnock/shot/commit/d3c8645b1128aac364805439483b47f5d3bee24e))
+
 ## [0.6.3](https://github.com/LorcanChinnock/shot/compare/v0.6.2...v0.6.3) (2026-10-06)
 
 
