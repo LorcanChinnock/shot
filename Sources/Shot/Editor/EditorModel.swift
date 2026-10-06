@@ -38,6 +38,8 @@ final class EditorModel {
         didSet {
             if tool != .select {
                 selectedID = nil
+            } else {
+                commitPendingText?()
             }
             rememberStyle { $0.tool = tool }
         }

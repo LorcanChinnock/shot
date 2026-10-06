@@ -72,21 +72,30 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     // MARK: Geometry
 
+    /// The canvas as it will be once the draft or note being typed is committed, so it grows and shrinks as they do.
+    private var canvasRect: CGRect {
+        var doc = model.document
+        for pending in [draft, editingPaper].compactMap({ $0 }) {
+            doc.grow(toFit: pending, margin: model.canvasMargin)
+        }
+        return doc.canvasRect
+    }
+
     /// The whole canvas, no larger than actual size.
     private var fitViewport: Viewport {
-        .fit(model.document.canvasRect, in: bounds.size, maxScale: Viewport.scale(forZoom: 1, pixelsPerPoint: model.scale))
+        .fit(canvasRect, in: bounds.size, maxScale: Viewport.scale(forZoom: 1, pixelsPerPoint: model.scale))
     }
 
     /// Clamped on every read, so a crop or a window resize never leaves the canvas scrolled away.
     private var viewport: Viewport {
-        zoomedViewport?.clamped(to: model.document.canvasRect, in: bounds.size) ?? fitViewport
+        zoomedViewport?.clamped(to: canvasRect, in: bounds.size) ?? fitViewport
     }
 
     /// View points per image pixel.
     private var viewScale: CGFloat { viewport.scale }
 
     /// The canvas, in view points.
-    private var imageRect: CGRect { viewport.viewRect(model.document.canvasRect) }
+    private var imageRect: CGRect { viewport.viewRect(canvasRect) }
 
     private func imagePoint(_ event: NSEvent) -> CGPoint {
         viewport.imagePoint(convert(event.locationInWindow, from: nil))
@@ -97,7 +106,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     }
 
     private func clampedToCanvas(_ point: CGPoint) -> CGPoint {
-        let canvas = model.document.canvasRect
+        let canvas = canvasRect
         return CGPoint(x: min(max(point.x, canvas.minX), canvas.maxX), y: min(max(point.y, canvas.minY), canvas.maxY))
     }
 
@@ -118,6 +127,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             return
         }
         var doc = model.document
+        doc.canvasRect = canvasRect
         // The note being edited is drawn as blank paper under its text field instead.
         if let editingNote {
             doc.annotations.removeAll { $0.id == editingNote.id }
@@ -292,6 +302,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             } else {
                 model.document.annotations[index].offset(by: CGVector(dx: point.x - last.x, dy: point.y - last.y))
             }
+            model.document.grow(toFit: model.document.annotations[index], margin: model.canvasMargin)
+            model.document.shrinkPadding(margin: model.canvasMargin)
             return
         case .crop:
             cropDraft = Geometry.normalized(from: clampedToCanvas(start), to: clampedToCanvas(point))
@@ -326,7 +338,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             kind = .freehand(Freehand.adding(point, to: points, minDistance: 1 / viewScale))
         case .note:
             draft = newNote(id: draft?.id ?? UUID(), from: start, to: point)
-            needsDisplay = true
+            viewportDidChange()
             return
         }
         var shape = Annotation(id: draft?.id ?? UUID(), kind: kind, color: model.color, lineWidth: model.lineWidth)
@@ -334,7 +346,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             shape.fill = model.fill
         }
         draft = shape
-        needsDisplay = true
+        viewportDidChange()
     }
 
     override func mouseUp(with event: NSEvent) {
@@ -349,7 +361,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             dragStart = nil
             resizeHandle = nil
             resizeStart = nil
-            needsDisplay = true
+            viewportDidChange()
         }
         if model.tool == .note, let start = dragStart {
             beginNote(newNote(id: draft?.id ?? UUID(), from: start, to: imagePoint(event)))
@@ -415,7 +427,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
                 draft = nil
                 cropDraft = nil
                 dragStart = nil
-                needsDisplay = true
+                viewportDidChange()
                 return
             }
             model.selectedID = nil
@@ -484,7 +496,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard zoom != currentZoom else {
             return
         }
-        zoomedViewport = viewport.zoomed(to: Viewport.scale(forZoom: zoom, pixelsPerPoint: model.scale), about: point).clamped(to: model.document.canvasRect, in: bounds.size)
+        zoomedViewport = viewport.zoomed(to: Viewport.scale(forZoom: zoom, pixelsPerPoint: model.scale), about: point).clamped(to: canvasRect, in: bounds.size)
         viewportDidChange()
     }
 
@@ -493,7 +505,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard zoomedViewport != nil else {
             return
         }
-        zoomedViewport = viewport.panned(by: offset).clamped(to: model.document.canvasRect, in: bounds.size)
+        zoomedViewport = viewport.panned(by: offset).clamped(to: canvasRect, in: bounds.size)
         viewportDidChange()
     }
 
