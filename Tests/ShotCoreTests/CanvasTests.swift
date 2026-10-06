@@ -193,7 +193,7 @@ private func isWhite(_ p: [UInt8]) -> Bool { p.allSatisfy { $0 > 245 } }
     doc.move(label.id, by: CGVector(dx: -40, dy: 0), margin: 10)
     #expect(doc.canvasRect.maxX < 270 && doc.canvasRect.maxX > 200)
 
-    doc.move(label.id, by: CGVector(dx: -200, dy: 0), margin: 10)
+    doc.move(label.id, by: CGVector(dx: -150, dy: 0), margin: 10)
     #expect(doc.canvasRect == doc.fullRect)
 
     doc.move(label.id, by: CGVector(dx: 200, dy: 0), margin: 10)

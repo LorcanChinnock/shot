@@ -61,7 +61,7 @@ The `shot://` [URL scheme](docs/usage.md#url-scheme) drives every action without
 ## Sending a change
 
 - Keep each pull request focused on one change, and match the style of the surrounding code.
-- Run `make test`, then run the app and try your change. CI runs the tests and a universal release build on every pull request, and repeats the tests on an Intel Mac after merge.
+- Run `make test`, then run the app and try your change. CI runs the tests and a universal release build on every pull request.
 - Use a [Conventional Commits](https://www.conventionalcommits.org) title for the pull request, such as `fix(recording): …` or `feat(editor): …`. Pull requests are squash-merged, so the title becomes the commit on `main`, and release notes are generated from it.
 
 By contributing, you agree that your contributions are licensed under the project's [GPL-3.0 license](LICENSE).
