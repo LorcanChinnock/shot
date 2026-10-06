@@ -76,9 +76,9 @@ struct BrutalSurface<S: InsettableShape, Fill: ShapeStyle>: ViewModifier {
             .background {
                 ZStack {
                     if glass {
-                        shape.fill(.ultraThinMaterial)
+                        shape.inset(by: border / 2).fill(.ultraThinMaterial)
                     }
-                    shape.fill(fill)
+                    shape.inset(by: border / 2).fill(fill)
                 }
             }
             .overlay(shape.strokeBorder(Brutal.ink, lineWidth: border))
