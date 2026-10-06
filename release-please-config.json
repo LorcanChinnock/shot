@@ -3,6 +3,8 @@
   "packages": {
     ".": {
       "release-type": "simple",
+      "versioning": "prerelease",
+      "prerelease-type": "beta",
       "package-name": "Shot",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,

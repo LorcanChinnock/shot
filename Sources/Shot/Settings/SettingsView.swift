@@ -591,7 +591,10 @@ private struct AboutSettings: View {
         HStack(spacing: 16) {
             AppIconView(size: 76)
             VStack(alignment: .leading, spacing: 3) {
-                Text("Shot").font(Brutal.title(26)).foregroundStyle(Brutal.ink)
+                HStack(spacing: 8) {
+                    Text("Shot").font(Brutal.title(26)).foregroundStyle(Brutal.ink)
+                    BrutalChip(text: "BETA", color: Brutal.yellow)
+                }
                 Text("Screenshots and screen recordings for macOS.")
                     .font(.system(size: 12.5, weight: .medium)).foregroundStyle(Brutal.ink.opacity(0.65))
             }
