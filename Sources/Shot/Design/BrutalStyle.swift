@@ -38,8 +38,8 @@ extension Color {
 // MARK: Surfaces
 
 /// A copy of `shape` swept along the offset diagonal with the card's own interior knocked out, so translucent glass never shows it
-/// through itself. The knockout stops at the border's inner edge, so the shadow runs under the opaque border
-/// and meets it with no seam.
+/// through itself. The knockout stops inside the border, so the shadow runs fully under the opaque border;
+/// stopping exactly at its inner edge leaves a hairline seam where both edges are anti-aliased.
 private struct HardShadow<S: InsettableShape>: View {
     let shape: S
     let offset: CGFloat
@@ -58,7 +58,7 @@ private struct HardShadow<S: InsettableShape>: View {
             .mask {
                 Rectangle().fill(.white)
                     .padding(-offset * 2)
-                    .overlay(shape.inset(by: border).fill(.black).blendMode(.destinationOut))
+                    .overlay(shape.inset(by: max(border - 1, 0)).fill(.black).blendMode(.destinationOut))
                     .compositingGroup()
             }
     }
