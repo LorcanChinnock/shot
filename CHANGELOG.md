@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.18](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.17...v0.7.0-beta.18) (2026-10-07)
+
+
+### Features
+
+* **editor:** show tool options in context, explain tools on hover, remove auto-redact ([#142](https://github.com/LorcanChinnock/shot/issues/142)) ([54bc6aa](https://github.com/LorcanChinnock/shot/commit/54bc6aaccee6066a7fb8aa33c95f062dbc17c662))
+
 ## [0.7.0-beta.17](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.16...v0.7.0-beta.17) (2026-10-07)
 
 
