@@ -5,6 +5,11 @@ on:
   # release.yml dispatches this on release-please's PR branch, whose pushes come from
   # GITHUB_TOKEN and so never trigger pull_request runs.
   workflow_dispatch:
+    inputs:
+      lint-only:
+        description: Only lint. For the release PR, which changes no code but still needs the `test` check.
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -12,17 +17,20 @@ concurrency:
 
 jobs:
   test:
-    runs-on: macos-26
+    runs-on: ${{ inputs.lint-only && 'ubuntu-latest' || 'macos-26' }}
     steps:
       - uses: actions/checkout@v5
       # Restores the newest cache for the same dependencies, so builds are incremental.
       - uses: actions/cache@v4
+        if: ${{ !inputs.lint-only }}
         with:
           path: .build
           key: build-${{ runner.os }}-${{ hashFiles('Package.resolved') }}-${{ github.sha }}
           restore-keys: build-${{ runner.os }}-${{ hashFiles('Package.resolved') }}-
       - name: Test
+        if: ${{ !inputs.lint-only }}
         run: make test
       # Compiles the x86_64 slice, so Intel build breaks show up here. Releases build and sign the real bundle in release.yml.
       - name: Build x86_64
+        if: ${{ !inputs.lint-only }}
         run: swift build --arch x86_64
