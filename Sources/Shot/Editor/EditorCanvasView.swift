@@ -172,7 +172,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         frame.stroke()
 
         if let selected = model.selection, selected.id != editingText?.id {
-            let outline = NSBezierPath(rect: viewRect(selected.bounds.insetBy(dx: -selected.lineWidth, dy: -selected.lineWidth)))
+            let outline = NSBezierPath(rect: viewRect(selected.bounds.insetBy(dx: -selected.lineWidth, dy: -selected.lineWidth).union(selected.paintedBounds)))
             outline.setLineDash([4, 3], count: 2, phase: 0)
             NSColor.controlAccentColor.setStroke()
             outline.stroke()
@@ -307,7 +307,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
         var point = imagePoint(event)
         defer { lastPoint = point }
-        // Shift keeps shapes square and lines at 45° steps; Option draws a shape out from where it started.
+        // Shift keeps shapes square and lines and highlights at 45° steps; Option draws a shape out from where it started.
         let constrain = event.modifierFlags.contains(.shift)
         let fromCenter = event.modifierFlags.contains(.option)
         if resizeHandle != nil {
@@ -316,7 +316,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
         var rect = Geometry.normalized(from: start, to: point)
         switch model.tool {
-        case .shape, .highlight, .redact, .spotlight:
+        case .shape, .redact, .spotlight:
             if constrain {
                 rect = Geometry.square(from: start, to: point)
             }
@@ -349,7 +349,13 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         case .shape:
             kind = .shape(model.shape, rect: rect)
         case .highlight:
-            kind = .highlight(rect)
+            if constrain {
+                kind = .marker([start, Geometry.snapped(from: start, to: point)])
+            } else if let draft, case let .marker(drawn) = draft.kind {
+                kind = .marker(Freehand.adding(point, to: drawn, minDistance: 1 / viewScale))
+            } else {
+                kind = .marker([start, point])
+            }
         case .redact:
             kind = .redaction(model.redaction, rect: rect, amount: model.redactionAmount)
         case .spotlight:
@@ -368,7 +374,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             viewportDidChange()
             return
         }
-        var shape = Annotation(id: draft?.id ?? UUID(), kind: kind, color: model.color, lineWidth: model.lineWidth)
+        var shape = Annotation(id: draft?.id ?? UUID(), kind: kind, color: model.nextColor, lineWidth: model.lineWidth)
         if shape.supportsFill {
             shape.fill = model.fill
         }

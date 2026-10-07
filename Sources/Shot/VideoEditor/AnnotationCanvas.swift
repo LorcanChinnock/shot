@@ -199,12 +199,12 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         }
         var point = canvasPoint(event)
         defer { lastPoint = point }
-        // Shift keeps shapes square and lines at 45° steps; Option draws a shape out from where it started.
+        // Shift keeps shapes square and lines and highlights at 45° steps; Option draws a shape out from where it started.
         let constrain = event.modifierFlags.contains(.shift)
         let fromCenter = event.modifierFlags.contains(.option)
         var rect = Geometry.normalized(from: start, to: point)
         switch tool {
-        case .shape, .highlight, .redact, .spotlight:
+        case .shape, .redact, .spotlight:
             if constrain {
                 rect = Geometry.square(from: start, to: point)
             }
@@ -242,7 +242,14 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         case .arrow: kind = .arrow(from: start, to: point)
         case .line: kind = .line(from: start, to: point)
         case .shape: kind = .shape(style.shape, rect: rect)
-        case .highlight: kind = .highlight(rect)
+        case .highlight:
+            if constrain {
+                kind = .marker([start, Geometry.snapped(from: start, to: point)])
+            } else if let draft, case let .marker(drawn) = draft.kind {
+                kind = .marker(Freehand.adding(point, to: drawn, minDistance: 1 / fit))
+            } else {
+                kind = .marker([start, point])
+            }
         case .redact: kind = .redaction(style.redaction, rect: rect, amount: style.redactionAmount)
         case .spotlight: kind = .spotlight(rect, style: model.nextSpotlightStyle)
         case .pen:
@@ -261,7 +268,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             model.previewAnnotation(note)
             return
         }
-        var shape = Annotation(id: draft?.id ?? UUID(), kind: kind, color: style.color, lineWidth: model.lineWidth)
+        var shape = Annotation(id: draft?.id ?? UUID(), kind: kind, color: model.nextColor, lineWidth: model.lineWidth)
         if shape.supportsFill {
             shape.fill = style.fill
         }

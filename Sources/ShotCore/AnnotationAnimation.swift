@@ -45,6 +45,7 @@ extension Annotation {
         case let .image(image, r): copy.kind = .image(image, rect: rect(r))
         case let .counter(number, c): copy.kind = .counter(number, center: point(c))
         case let .freehand(points): copy.kind = .freehand(points.map(point))
+        case let .marker(points): copy.kind = .marker(points.map(point))
         case let .note(string, r): copy.kind = .note(string, rect: rect(r))
         case let .text(string, origin, fontSize):
             let size = bounds.size
@@ -55,7 +56,7 @@ extension Annotation {
         return copy
     }
 
-    /// Only the first `progress` of an arrow, line or pen stroke, from its start; anything else whole.
+    /// Only the first `progress` of an arrow, line, pen or highlighter stroke, from its start; anything else whole.
     public func revealed(_ progress: Double) -> Annotation {
         let p = min(max(progress, 0), 1)
         guard p < 1 else {
@@ -71,6 +72,8 @@ extension Annotation {
             copy.bend = bend.map { CGVector(dx: $0.dx * p, dy: $0.dy * p) }
         case let .freehand(points):
             copy.kind = .freehand(Self.prefix(of: points, fraction: p))
+        case let .marker(points):
+            copy.kind = .marker(Self.prefix(of: points, fraction: p))
         default:
             break
         }

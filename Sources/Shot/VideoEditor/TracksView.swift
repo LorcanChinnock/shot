@@ -482,7 +482,7 @@ extension Annotation {
         case .arrow: "arrow.up.right"
         case .line: "line.diagonal"
         case let .shape(shape, _): shape.symbol
-        case .highlight: "highlighter"
+        case .highlight, .marker: "highlighter"
         case .pixelate: "square.grid.3x3"
         case .blur: "drop.halffull"
         case .spotlight: "flashlight.on.fill"
@@ -500,7 +500,7 @@ extension Annotation {
         case .arrow: "Arrow"
         case .line: "Line"
         case let .shape(shape, _): shape.title
-        case .highlight: "Highlight"
+        case .highlight, .marker: "Highlight"
         case .pixelate: "Pixelate"
         case .blur: "Blur"
         case .spotlight: "Spotlight"

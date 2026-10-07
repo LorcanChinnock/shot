@@ -113,7 +113,7 @@ private let shapeFrame = CGRect(x: 20, y: 20, width: 100, height: 60)
 }
 
 @Test func onlyDrawnMarksTakeAColourAndWidth() {
-    #expect(EditorTool.allCases.filter { !$0.isStyled } == [.select, .hand, .highlight, .spotlight, .redact, .crop])
+    #expect(EditorTool.allCases.filter { !$0.isStyled } == [.select, .hand, .spotlight, .redact, .crop])
     #expect(annotation(.freehand([.zero, CGPoint(x: 9, y: 9)])).isStyled)
     #expect(annotation(.note("Hi", rect: shapeFrame)).isStyled)
     for kind in [Annotation.Kind.highlight(shapeFrame), .pixelate(shapeFrame), .blur(shapeFrame), .spotlight(shapeFrame, style: SpotlightStyle())] {
@@ -154,6 +154,10 @@ private let shapeFrame = CGRect(x: 20, y: 20, width: 100, height: 60)
     #expect(ColorSlot(forFill: false, shown: nil, tool: .note) == .note)
     #expect(ColorSlot(forFill: false, shown: nil, tool: .pen) == .stroke)
     #expect(ColorSlot(forFill: false, shown: nil, tool: nil) == .stroke)
+    let marker = annotation(.marker([.zero, CGPoint(x: 10, y: 0)]))
+    #expect(ColorSlot(forFill: false, shown: marker, tool: .arrow) == .highlight)
+    #expect(ColorSlot(forFill: false, shown: arrow, tool: .highlight) == .stroke)
+    #expect(ColorSlot(forFill: false, shown: nil, tool: .highlight) == .highlight)
 }
 
 @Test(arguments: [Annotation.Kind.arrow(from: .zero, to: CGPoint(x: 100, y: 0)), .line(from: .zero, to: CGPoint(x: 100, y: 0))])
