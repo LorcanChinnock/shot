@@ -13,7 +13,7 @@ struct AnnotationPalette: View {
         VStack(spacing: 12) {
             HStack(spacing: 14) {
                 ToolGroup {
-                    ForEach(EditorTool.allCases.filter { $0 != .crop }) { tool in
+                    ForEach(EditorTool.allCases.filter { $0 != .crop && $0 != .hand }) { tool in
                         Tile(selected: model.annotationTool == tool, color: Brutal.yellow, help: tool.title, detail: tool.summary) {
                             model.annotationStyle.tool = tool
                             model.setAnnotationTool(tool)

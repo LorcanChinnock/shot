@@ -237,7 +237,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             model.previewAnnotation(changed, replacing: clip.id)
             needsDisplay = true
             return
-        case .crop, .counter, .text:
+        case .crop, .hand, .counter, .text:
             return
         case .arrow: kind = .arrow(from: start, to: point)
         case .line: kind = .line(from: start, to: point)

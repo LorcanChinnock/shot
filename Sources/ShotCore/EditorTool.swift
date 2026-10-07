@@ -1,20 +1,21 @@
 import CoreGraphics
 
 public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
-    case select, arrow, line, shape, pen, text, note, highlight, spotlight, redact, counter, crop
+    case select, hand, arrow, line, shape, pen, text, note, highlight, spotlight, redact, counter, crop
 
     public var id: String { rawValue }
 
     public var key: Character {
         switch self {
         case .select: "v"
+        case .hand: "h"
         case .arrow: "a"
         case .line: "l"
         case .shape: "r"
         case .pen: "d"
         case .text: "t"
         case .note: "s"
-        case .highlight: "h"
+        case .highlight: "m"
         case .spotlight: "f"
         case .redact: "b"
         case .counter: "n"
@@ -25,6 +26,7 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
     public var title: String {
         switch self {
         case .select: "Select"
+        case .hand: "Hand"
         case .arrow: "Arrow"
         case .line: "Line"
         case .shape: "Shape"
@@ -39,14 +41,14 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// False for select and crop, which an editor never starts with.
-    public var isDrawing: Bool { self != .select && self != .crop }
+    /// False for select, hand and crop, which an editor never starts with.
+    public var isDrawing: Bool { self != .select && self != .hand && self != .crop }
 
     /// True for the tools that draw in the chosen colour and width.
     public var isStyled: Bool {
         switch self {
         case .arrow, .line, .shape, .pen, .text, .note, .counter: true
-        case .select, .highlight, .spotlight, .redact, .crop: false
+        case .select, .hand, .highlight, .spotlight, .redact, .crop: false
         }
     }
 
