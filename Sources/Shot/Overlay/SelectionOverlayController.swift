@@ -30,6 +30,7 @@ final class SelectionOverlayController {
     private var panels: [OverlayPanel] = []
     private var views: [SelectionOverlayView] = []
     private var continuation: CheckedContinuation<OverlaySelection?, Never>?
+    private var magnifierTask: Task<Void, Never>?
 
     private init(windowMode: Bool, windows: [WindowInfo], isLive: Bool) {
         self.windowMode = windowMode
@@ -48,7 +49,11 @@ final class SelectionOverlayController {
         let selection = await withCheckedContinuation { continuation in
             controller.continuation = continuation
             controller.show(displays)
+            if isLive, Preferences().showMagnifier {
+                controller.loadMagnifierImages()
+            }
         }
+        controller.magnifierTask?.cancel()
         withExtendedLifetime(controller) {}
         return selection
     }
@@ -81,6 +86,18 @@ final class SelectionOverlayController {
         }
         updateHover()
         NSCursor.crosshair.set()
+    }
+
+    /// A live overlay has nothing frozen to magnify, so the loupe reads from stills taken while it is open.
+    private func loadMagnifierImages() {
+        magnifierTask = Task {
+            guard let frozen = try? await DisplayCapturer.captureForMagnifier() else {
+                return
+            }
+            for view in views {
+                view.magnifierImage = frozen.first { $0.frame == view.display.frame }?.image
+            }
+        }
     }
 
     func toggleWindowMode() {
