@@ -47,7 +47,7 @@ extension Project {
     }
 
     /// Gives every spotlight on the timeline `effect` and `strength`, since spotlights showing together share one dim.
-    public func settingSpotlights(effect: SpotlightStyle.Effect, strength: SpotlightStyle.Strength) -> Project {
+    public func settingSpotlights(effect: SpotlightStyle.Effect, strength: Double) -> Project {
         let spotlights = annotationClips.filter { if case .spotlight = $0.annotation.kind { true } else { false } }.map(\.id)
         return changingAnnotations(spotlights) { $0.annotation.setSpotlightLook(effect: effect, strength: strength) }
     }

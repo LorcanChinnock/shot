@@ -83,7 +83,7 @@ struct EditorToolbar: View {
                 } else if let redaction = model.paletteRedaction {
                     RedactionOptions(selected: redaction, choose: model.setRedaction)
                 } else if let spotlight = model.paletteSpotlight {
-                    SpotlightOptions(style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook)
+                    SpotlightOptions(style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook, dragStrength: model.setDraggingStyle)
                 } else {
                     Text(model.tool.summary)
                         .font(Brutal.caption)
@@ -103,7 +103,7 @@ struct EditorToolbar: View {
         ToolGroup {
             ColorSwatches(
                 selected: model.paletteColor,
-                recents: model.recentColors,
+                lastCustom: model.lastCustom(forFill: false),
                 customHelp: "Custom colour",
                 choose: { if let color = $0 { model.paletteColor = color } },
                 pickCustom: { model.pickCustom($0, forFill: false) }
@@ -114,7 +114,7 @@ struct EditorToolbar: View {
                 Text("FILL").font(Brutal.mono).foregroundStyle(Brutal.ink).padding(.horizontal, 4)
                 ColorSwatches(
                     selected: model.paletteFill,
-                    recents: model.recentColors,
+                    lastCustom: model.lastCustom(forFill: true),
                     allowsNone: true,
                     customHelp: "Custom fill colour",
                     choose: { model.paletteFill = $0 },
@@ -123,6 +123,9 @@ struct EditorToolbar: View {
             }
         }
         WidthOptions(selected: model.lineWidthIndex, sizesText: model.sizesText) { model.lineWidthIndex = $0 }
+        if let alignment = model.paletteAlignment {
+            AlignmentOptions(selected: alignment, choose: model.setAlignment)
+        }
     }
 }
 
@@ -145,6 +148,41 @@ struct WidthOptions: View {
                     } else {
                         Capsule().fill(Brutal.ink).frame(width: 16, height: EditorStyle.widths[index] + 1)
                     }
+                }
+            }
+        }
+    }
+}
+
+extension TextAlign {
+    var symbol: String {
+        switch self {
+        case .left: "text.alignleft"
+        case .center: "text.aligncenter"
+        case .right: "text.alignright"
+        }
+    }
+
+    var textAlignment: NSTextAlignment {
+        switch self {
+        case .left: .left
+        case .center: .center
+        case .right: .right
+        }
+    }
+}
+
+struct AlignmentOptions: View {
+    let selected: TextAlign
+    let choose: (TextAlign) -> Void
+
+    var body: some View {
+        ToolGroup {
+            ForEach(TextAlign.allCases, id: \.self) { alignment in
+                Tile(selected: selected == alignment, color: Brutal.sky, help: alignment.title) {
+                    choose(alignment)
+                } label: {
+                    Image(systemName: alignment.symbol).font(.system(size: 13, weight: .bold))
                 }
             }
         }
@@ -234,7 +272,8 @@ struct RedactionOptions: View {
 struct SpotlightOptions: View {
     let style: SpotlightStyle
     let chooseShape: (BoxShape) -> Void
-    let chooseLook: (SpotlightStyle.Effect, SpotlightStyle.Strength) -> Void
+    let chooseLook: (SpotlightStyle.Effect, Double) -> Void
+    let dragStrength: (Bool) -> Void
 
     var body: some View {
         ShapeOptions(shapes: BoxShape.spotlightShapes, selected: style.shape, choose: chooseShape)
@@ -248,25 +287,27 @@ struct SpotlightOptions: View {
             }
         }
         ToolGroup {
-            ForEach(SpotlightStyle.Strength.allCases, id: \.self) { strength in
-                Tile(selected: style.strength == strength, color: Brutal.sky, help: strength.title, detail: "Applies to every spotlight in the image.") {
-                    chooseLook(style.effect, strength)
-                } label: {
-                    RoundedRectangle(cornerRadius: 3, style: .circular)
-                        .fill(Brutal.ink.opacity(SpotlightStyle(strength: strength).dimAlpha))
-                        .inkBorder(RoundedRectangle(cornerRadius: 3, style: .circular), width: 2)
-                        .frame(width: 14, height: 14)
-                }
-            }
+            BrutalSlider(
+                value: Binding(get: { style.strength }, set: { chooseLook(style.effect, $0) }),
+                range: SpotlightStyle.strengths,
+                track: LinearGradient(colors: [Brutal.ink.opacity(SpotlightStyle.strengths.lowerBound), Brutal.ink.opacity(SpotlightStyle.strengths.upperBound)], startPoint: .leading, endPoint: .trailing),
+                width: 120,
+                onEditingChanged: dragStrength
+            )
+            .frame(height: 30)
+            .padding(.horizontal, 6)
+            .accessibilityLabel(Text("Strength"))
+            .brutalTip("Strength", detail: "Applies to every spotlight in the image.")
         }
     }
 }
 
-/// The preset colours, the custom ones picked lately, and a colour well for a new one. With `allowsNone`,
+/// The preset colours and a rainbow swatch for a custom one. With `allowsNone`,
 /// a first swatch clears the colour: `nil` is transparent, with nothing drawn.
 struct ColorSwatches: View {
     let selected: RGBA?
-    let recents: [RGBA]
+    /// The custom colour picked last in this palette, which the rainbow swatch applies again.
+    let lastCustom: RGBA?
     var allowsNone = false
     let customHelp: String
     let choose: (RGBA?) -> Void
@@ -281,37 +322,63 @@ struct ColorSwatches: View {
                 choose(RGBA.presets[index])
             }
         }
-        ForEach(recents, id: \.self) { recent in
-            Swatch(color: recent, isSelected: selected == recent, name: "Recent colour") { choose(recent) }
-        }
-        CustomColorButton(current: selected ?? RGBA(1, 1, 1), help: customHelp, pick: pickCustom)
+        CustomColorButton(
+            custom: selected.flatMap { RGBA.presets.contains($0) ? nil : $0 },
+            lastCustom: lastCustom,
+            fallback: selected ?? RGBA(1, 1, 1),
+            help: customHelp,
+            pick: pickCustom
+        )
     }
 }
 
-/// A rainbow chip that opens the colour editor in a popover, so picking stays inside the app.
+/// A rainbow chip that applies the last custom colour and opens the colour editor on it in a popover,
+/// so picking stays inside the app. While a custom colour is in use, it shows inside the rainbow ring.
 private struct CustomColorButton: View {
-    let current: RGBA
+    let custom: RGBA?
+    let lastCustom: RGBA?
+    /// What the colour editor starts on when no custom colour has been picked yet.
+    let fallback: RGBA
     let help: String
     let pick: (RGBA) -> Void
     @State private var isOpen = false
 
+    private var isSelected: Bool { isOpen || custom != nil }
+
     var body: some View {
-        Button { isOpen.toggle() } label: {
-            Circle()
-                .fill(AngularGradient(colors: [.red, .yellow, .green, .cyan, .blue, .purple, .red], center: .center))
-                .inkBorder(Circle(), width: 2)
-                .background(Circle().fill(Brutal.ink).offset(x: isOpen ? 2 : 0, y: isOpen ? 2 : 0))
-                .frame(width: isOpen ? 22 : 18, height: isOpen ? 22 : 18)
-                .frame(width: 26, height: 30)
-                .contentShape(Rectangle())
+        Button(action: open) {
+            ZStack {
+                Circle()
+                    .fill(AngularGradient(colors: [.red, .yellow, .green, .cyan, .blue, .purple, .red], center: .center))
+                if let custom {
+                    Circle().fill(custom.swiftUIColor).inkBorder(Circle(), width: 2).padding(4)
+                }
+            }
+            .inkBorder(Circle(), width: 2)
+            .background(Circle().fill(Brutal.ink).offset(x: isSelected ? 2 : 0, y: isSelected ? 2 : 0))
+            .frame(width: isSelected ? 22 : 18, height: isSelected ? 22 : 18)
+            .frame(width: 26, height: 30)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .brutalTip(help)
         .accessibilityLabel(Text(help))
-        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isOpen)
+        .accessibilityAddTraits(custom != nil ? .isSelected : [])
+        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
         .popover(isPresented: $isOpen, arrowEdge: .bottom) {
-            ColorEditor(initial: current, pick: pick)
+            ColorEditor(initial: lastCustom ?? fallback, pick: pick)
         }
+    }
+
+    private func open() {
+        guard !isOpen else {
+            isOpen = false
+            return
+        }
+        if let lastCustom, lastCustom != custom {
+            pick(lastCustom)
+        }
+        isOpen = true
     }
 }
 
@@ -337,11 +404,11 @@ private struct ColorEditor: View {
         VStack(spacing: 12) {
             SaturationBrightnessField(hue: hue, saturation: $saturation, brightness: $brightness)
                 .frame(width: 200, height: 140)
-            GradientSlider(
+            BrutalSlider(
                 value: $hue,
                 track: LinearGradient(colors: (0...6).map { Color(hue: Double($0) / 6, saturation: 1, brightness: 1) }, startPoint: .leading, endPoint: .trailing)
             )
-            GradientSlider(
+            BrutalSlider(
                 value: $opacity,
                 track: LinearGradient(colors: [color.opacity(0), color.opacity(1)], startPoint: .leading, endPoint: .trailing),
                 checkerboard: true
@@ -390,40 +457,61 @@ private struct SaturationBrightnessField: View {
     }
 }
 
-private struct GradientSlider: View {
+/// A capsule track with a round knob. `onEditingChanged` reports a drag starting and ending, so a caller
+/// can make each drag one undo step.
+struct BrutalSlider: View {
     @Binding var value: Double
+    var range: ClosedRange<Double> = 0...1
     let track: LinearGradient
     var checkerboard = false
+    var width: CGFloat = 200
+    var onEditingChanged: (Bool) -> Void = { _ in }
+    @State private var isDragging = false
+
+    private var fraction: Double { (min(max(value, range.lowerBound), range.upperBound) - range.lowerBound) / (range.upperBound - range.lowerBound) }
 
     var body: some View {
-        GeometryReader { proxy in
-            let width = proxy.size.width
-            ZStack(alignment: .leading) {
-                if checkerboard {
-                    Canvas { ctx, size in
-                        let cell: CGFloat = 6
-                        for x in 0...Int(size.width / cell) {
-                            for y in 0...Int(size.height / cell) where (x + y) % 2 == 0 {
-                                ctx.fill(Path(CGRect(x: CGFloat(x) * cell, y: CGFloat(y) * cell, width: cell, height: cell)), with: .color(.gray.opacity(0.4)))
-                            }
+        ZStack(alignment: .leading) {
+            if checkerboard {
+                Canvas { ctx, size in
+                    let cell: CGFloat = 6
+                    for x in 0...Int(size.width / cell) {
+                        for y in 0...Int(size.height / cell) where (x + y) % 2 == 0 {
+                            ctx.fill(Path(CGRect(x: CGFloat(x) * cell, y: CGFloat(y) * cell, width: cell, height: cell)), with: .color(.gray.opacity(0.4)))
                         }
                     }
-                    .background(Color.white)
-                    .clipShape(Capsule().inset(by: 1))
                 }
-                Capsule().fill(track)
-                    .inkBorder(Capsule(), width: 2)
-                Circle().fill(.white)
-                    .inkBorder(Circle(), width: 2)
-                    .frame(width: 16, height: 16)
-                    .offset(x: value * (width - 16))
+                .background(Color.white)
+                .clipShape(Capsule().inset(by: 1))
             }
-            .contentShape(Rectangle())
-            .gesture(DragGesture(minimumDistance: 0).onChanged { drag in
-                value = min(max((drag.location.x - 8) / (width - 16), 0), 1)
-            })
+            Capsule().fill(track)
+                .inkBorder(Capsule(), width: 2)
+            Circle().fill(.white)
+                .inkBorder(Circle(), width: 2)
+                .frame(width: 16, height: 16)
+                .offset(x: fraction * (width - 16))
         }
-        .frame(width: 200, height: 16)
+        .frame(width: width, height: 16)
+        .contentShape(Rectangle())
+        .gesture(DragGesture(minimumDistance: 0)
+            .onChanged { drag in
+                if !isDragging {
+                    isDragging = true
+                    onEditingChanged(true)
+                }
+                let dragged = min(max((drag.location.x - 8) / (width - 16), 0), 1)
+                value = range.lowerBound + dragged * (range.upperBound - range.lowerBound)
+            }
+            .onEnded { _ in
+                isDragging = false
+                onEditingChanged(false)
+            })
+        .accessibilityElement()
+        .accessibilityValue(Text("\(Int((fraction * 100).rounded())) percent"))
+        .accessibilityAdjustableAction { direction in
+            let step = (range.upperBound - range.lowerBound) / 10
+            value = min(max(value + (direction == .increment ? step : -step), range.lowerBound), range.upperBound)
+        }
     }
 }
 

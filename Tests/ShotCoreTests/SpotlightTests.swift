@@ -197,13 +197,32 @@ func spotlightRendersTheSameInTheEditorAndTheExport(scale: CGFloat) throws {
 
 @Test func strengthSetsHowDarkTheDimIs() throws {
     var dims: [CGFloat] = []
-    for strength in SpotlightStyle.Strength.allCases {
+    for strength in [0.3, 0.5, 0.7] {
         let a = Annotation(kind: .spotlight(CGRect(x: 0, y: 0, width: 10, height: 10), style: SpotlightStyle(strength: strength)), color: blue, lineWidth: 4)
         let image = try render(EditorDocument(base: solidImage(width: 100, height: 100), annotations: [a]), scale: 1)
         dims.append(try pixel(image, 50, 50)[0])
     }
     #expect(dims == dims.sorted(by: >))
     #expect(abs(dims[1] - 0.5) < 0.03)
+}
+
+@Test func blurStrengthDoublesTheRadiusEveryFifthOfTheRange() {
+    #expect(SpotlightStyle(strength: 0.5).blurRadius(forImageLength: 1000) == 8)
+    #expect(abs(SpotlightStyle(strength: 0.3).blurRadius(forImageLength: 1000) - 4) < 0.001)
+    #expect(abs(SpotlightStyle(strength: 0.7).blurRadius(forImageLength: 1000) - 16) < 0.001)
+    #expect(SpotlightStyle(strength: 0.1).blurRadius(forImageLength: 100) == 4)
+}
+
+@Test func oldStrengthPresetsDecodeToTheirLook() throws {
+    for (preset, strength) in [(0, 0.3), (1, 0.5), (2, 0.7)] {
+        let json = Data(#"{"shape":"ellipse","effect":"blur","strength":\#(preset)}"#.utf8)
+        #expect(try JSONDecoder().decode(SpotlightStyle.self, from: json) == SpotlightStyle(shape: .ellipse, effect: .blur, strength: strength))
+    }
+}
+
+@Test func aStrengthRoundTrips() throws {
+    let style = SpotlightStyle(effect: .blur, strength: 0.62)
+    #expect(try JSONDecoder().decode(SpotlightStyle.self, from: JSONEncoder().encode(style)) == style)
 }
 
 @Test func theBlurEffectBlursOutsideAndLeavesTheSpotlightSharp() throws {
@@ -214,7 +233,7 @@ func spotlightRendersTheSameInTheEditorAndTheExport(scale: CGFloat) throws {
     ctx.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 1))
     ctx.fill(CGRect(x: 0, y: 0, width: 100, height: 100))
     let base = try #require(ctx.makeImage())
-    let style = SpotlightStyle(effect: .blur, strength: .strong)
+    let style = SpotlightStyle(effect: .blur, strength: 0.7)
     let lit = Annotation(kind: .spotlight(CGRect(x: 90, y: 0, width: 20, height: 40), style: style), color: blue, lineWidth: 4)
     let image = try render(EditorDocument(base: base, annotations: [lit]), scale: 1)
     // At the edge inside the spotlight, sharp; at the same edge below it, blurred into a mix.
@@ -230,10 +249,10 @@ func spotlightRendersTheSameInTheEditorAndTheExport(scale: CGFloat) throws {
         spotlight(CGRect(x: 10, y: 10, width: 20, height: 20)),
         Annotation(kind: .spotlight(CGRect(x: 50, y: 10, width: 20, height: 20), style: SpotlightStyle(shape: .ellipse)), color: blue, lineWidth: 4),
     ])
-    doc.setSpotlights(effect: .blur, strength: .light)
+    doc.setSpotlights(effect: .blur, strength: 0.3)
     let styles = doc.annotations.compactMap { annotation -> SpotlightStyle? in
         if case let .spotlight(_, style) = annotation.kind { style } else { nil }
     }
-    #expect(styles == [SpotlightStyle(effect: .blur, strength: .light), SpotlightStyle(shape: .ellipse, effect: .blur, strength: .light)])
+    #expect(styles == [SpotlightStyle(effect: .blur, strength: 0.3), SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.3)])
     #expect(doc.spotlightStyle == styles[0])
 }

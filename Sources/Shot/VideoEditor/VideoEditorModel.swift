@@ -82,7 +82,6 @@ final class VideoEditorModel {
     /// What the compositor draws over the project's own annotations while one is being edited.
     @ObservationIgnored private var liveState: (hidden: Set<UUID>, drawn: [AnnotationClip]) = ([], [])
     @ObservationIgnored private var compositeLive: LiveAnnotations?
-    @ObservationIgnored private var recentColorTask: Task<Void, Never>?
     @ObservationIgnored private var timeObserver: Any?
     @ObservationIgnored private var cutObserver: Any?
     @ObservationIgnored private var statusObservation: NSKeyValueObservation?
@@ -819,9 +818,11 @@ extension VideoEditorModel {
 
     var selectedAnnotation: AnnotationClip? { selectedClipID.flatMap(project.annotationClip) }
 
-    /// New strokes are scaled up with the canvas, so they look the same on a 4K recording as on a small one.
-    var lineWidth: CGFloat { EditorStyle.widths[annotationStyle.widthIndex] * max(1, project.canvasSize.width / 960) }
+    /// Canvas pixels per point of a new annotation's strokes and corners, so they look the same on a 4K recording as on a small one.
+    var styleScale: CGFloat { max(1, project.canvasSize.width / 960) }
+    var lineWidth: CGFloat { EditorStyle.widths[annotationStyle.widthIndex] * styleScale }
     var fontSize: CGFloat { lineWidth * 6 }
+    var cornerRadius: CGFloat { Annotation.defaultCornerRadius * styleScale }
 
     /// Picks the tool that draws over the video, or nil to stop; the preview plays the composite while one is picked.
     func setAnnotationTool(_ tool: EditorTool?) {
@@ -945,15 +946,41 @@ extension VideoEditorModel {
     }
 
     /// Sets the effect and strength of every spotlight in the project, since they share one dim, and of the next one.
-    func setSpotlightLook(effect: SpotlightStyle.Effect, strength: SpotlightStyle.Strength) {
+    /// Between `beginDrag` and `endDrag` the changes are one undo step.
+    func setSpotlightLook(effect: SpotlightStyle.Effect, strength: Double) {
         annotationStyle.spotlight.effect = effect
         annotationStyle.spotlight.strength = strength
         let changed = project.settingSpotlights(effect: effect, strength: strength)
         guard !isExporting, changed != project else {
             return
         }
-        undoStack.record(edit)
+        if dragOrigin == nil {
+            undoStack.record(edit)
+        }
         project = changed
+    }
+
+    /// The alignment the palette shows: the text being typed's, else the selected annotation's, else the next text's or note's.
+    /// `nil` when none of them is text or a note.
+    var paletteAlignment: TextAlign? {
+        if let shown = editingText ?? selectedAnnotation?.annotation {
+            return shown.alignsText ? shown.alignment : nil
+        }
+        return annotationTool == .text || annotationTool == .note ? annotationStyle.alignment : nil
+    }
+
+    func setAlignment(_ alignment: TextAlign) {
+        if let text = editingText {
+            // The field commits it; new text or a new note also sets the alignment for the next one.
+            editingText?.alignment = alignment
+            if project.annotationClip(text.id) == nil {
+                annotationStyle.alignment = alignment
+            }
+        } else if selectedAnnotation != nil {
+            restyleSelection { $0.alignment = alignment }
+        } else {
+            annotationStyle.alignment = alignment
+        }
     }
 
     var paletteFill: RGBA? {
@@ -996,14 +1023,21 @@ extension VideoEditorModel {
         } else {
             paletteColor = color
         }
-        recentColorTask?.cancel()
-        recentColorTask = Task {
-            try? await Task.sleep(for: .milliseconds(600))
-            guard !Task.isCancelled else {
-                return
-            }
-            annotationStyle.recentColors = EditorStyle.recents(adding: color, to: annotationStyle.recentColors)
-        }
+        let slot = customSlot(forFill: forFill)
+        annotationStyle.customColors[slot] = color
+        // Only the custom colour is remembered: the video editor's other choices last as long as its window.
+        var style = Preferences().editorStyle
+        style.customColors[slot] = color
+        Preferences.remember(style)
+    }
+
+    /// The colour or fill palette's last custom colour.
+    func lastCustom(forFill: Bool) -> RGBA? {
+        annotationStyle.customColors[customSlot(forFill: forFill)]
+    }
+
+    private func customSlot(forFill: Bool) -> ColorSlot {
+        ColorSlot(forFill: forFill, shown: editingText ?? selectedAnnotation?.annotation, tool: annotationTool)
     }
 
     /// Changes the selected annotation's style as one undo step, which a colour well's run of changes shares.

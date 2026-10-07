@@ -316,3 +316,43 @@ func noteRendersTheSameInTheEditorAndTheExport(scale: CGFloat) throws {
     #expect(paper[3] == 1)
     #expect(abs(paper[2] - yellow.noteFill.b) < 0.05)
 }
+
+// MARK: Alignment
+
+/// The leftmost and rightmost x in row `y` between `minX` and `maxX` whose green channel is dark, as red or near-black ink is.
+private func inkSpan(_ image: CGImage, y: CGFloat, from minX: CGFloat, to maxX: CGFloat) throws -> ClosedRange<CGFloat> {
+    let inked = try stride(from: minX, to: maxX, by: 0.5).filter { try pixel(image, $0, y)[1] < 0.5 }
+    let first = try #require(inked.first), last = try #require(inked.last)
+    return first...last
+}
+
+@Test(arguments: TextAlign.allCases)
+func noteLinesAlignWithinTheNote(alignment: TextAlign) throws {
+    var n = note("Hi", CGRect(x: 20, y: 20, width: 200, height: 0))
+    n.alignment = alignment
+    let l = try layout(n)
+    let image = try render(EditorDocument(base: whiteImage(width: 260, height: 120), annotations: [n]), scale: 1)
+    let span = try inkSpan(image, y: l.textRect.minY + l.ascent * 0.6, from: l.frame.minX, to: l.frame.maxX)
+    switch alignment {
+    case .left: #expect(abs(span.lowerBound - l.textRect.minX) < 4)
+    case .center: #expect(abs((span.lowerBound + span.upperBound) / 2 - l.textRect.midX) < 4)
+    case .right: #expect(abs(span.upperBound - l.textRect.maxX) < 4)
+    }
+}
+
+@Test(arguments: TextAlign.allCases)
+func textLinesAlignWithinTheTextAndKeepItsAnchor(alignment: TextAlign) throws {
+    let origin = CGPoint(x: 20, y: 20)
+    var text = Annotation(kind: .text("Hello there\nHi", origin: origin, fontSize: 24), color: RGBA.presets[0], lineWidth: 4)
+    let leftBounds = text.bounds
+    text.alignment = alignment
+    #expect(text.bounds == leftBounds)
+    let layout = TextLayout(string: "Hello there\nHi", fontSize: 24, color: text.color)
+    let image = try render(EditorDocument(base: whiteImage(width: 260, height: 120), annotations: [text]), scale: 1)
+    let span = try inkSpan(image, y: origin.y + layout.lineHeight + layout.ascent * 0.6, from: leftBounds.minX, to: leftBounds.maxX)
+    switch alignment {
+    case .left: #expect(abs(span.lowerBound - leftBounds.minX) < 4)
+    case .center: #expect(abs((span.lowerBound + span.upperBound) / 2 - leftBounds.midX) < 4)
+    case .right: #expect(abs(span.upperBound - leftBounds.maxX) < 4)
+    }
+}
