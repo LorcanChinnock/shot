@@ -28,6 +28,9 @@ final class GalleryModel {
         didSet { UserDefaults.standard.set(tileSize, forKey: PreferenceKey.galleryTileSize) }
     }
 
+    /// Opening more items than this at once asks first.
+    private static let editConfirmationThreshold = 8
+
     @ObservationIgnored var onEdit: ((URL) -> Void)?
     @ObservationIgnored var onExportGIF: ((URL) -> Void)?
 
@@ -162,8 +165,19 @@ final class GalleryModel {
             Toast.show("GIFs can't be edited")
             return
         }
-        for item in editable {
-            onEdit?(item.url)
+        guard editable.count > Self.editConfirmationThreshold, let window = NSApp.keyWindow else {
+            editable.forEach { onEdit?($0.url) }
+            return
+        }
+        let alert = NSAlert()
+        alert.messageText = "Open \(editable.count) items?"
+        alert.informativeText = "Each one opens in its own editor window."
+        alert.addButton(withTitle: "Open \(editable.count)")
+        alert.addButton(withTitle: "Cancel")
+        alert.beginSheetModal(for: window) { [weak self] response in
+            if response == .alertFirstButtonReturn {
+                editable.forEach { self?.onEdit?($0.url) }
+            }
         }
     }
 
