@@ -64,6 +64,7 @@ final class Recorder: NSObject {
 
     private var session: Session?
     private var segments: [URL] = []
+    private var segmentAudio: [VideoConcatenator.SegmentAudio] = []
     private var stream: SCStream?
     private var recordingOutput: SCRecordingOutput?
     private var segmentFinished: CheckedContinuation<Void, Never>?
@@ -98,12 +99,12 @@ final class Recorder: NSObject {
         let microphoneID = prefs.microphoneDeviceID.isEmpty ? nil : AVCaptureDevice(uniqueID: prefs.microphoneDeviceID)?.uniqueID
         session = Session(screen: screen, region: region, microphone: microphone, microphoneID: microphoneID, finalURL: finalURL)
         segments = []
+        segmentAudio = []
         mutes = CutList()
         mutedSince = nil
         model = RecordingSessionModel()
         model.cameraOn = CameraBubble.shared.isVisible
         model.microphoneOn = microphone
-        sampleSink = SampleSink(meter: model.meter)
         // Panels exist before the stream so the filter can exclude them by window ID.
         showPanels(screen: screen, region: region, prefs: prefs)
         do {
@@ -169,14 +170,17 @@ final class Recorder: NSObject {
     }
 
     private func complete(discard: Bool) async {
+        await sampleSink.finish()
         let parts = segments
+        let audio = segmentAudio.count == parts.count ? segmentAudio : []
         let finalURL = session?.finalURL
         let muted = mutes
         segments = []
+        segmentAudio = []
         session = nil
         phase = .idle
         if discard {
-            for url in parts {
+            for url in parts + audio.flatMap(\.files) {
                 try? FileManager.default.removeItem(at: url)
             }
             log.notice("Recording discarded")
@@ -187,7 +191,7 @@ final class Recorder: NSObject {
             return
         }
         do {
-            try await VideoConcatenator.concatenate(parts, to: finalURL, muting: muted)
+            try await VideoConcatenator.concatenate(parts, audio: audio, to: finalURL, muting: muted)
             let size = (try? FileManager.default.attributesOfItem(atPath: finalURL.path)[.size] as? Int) ?? 0
             log.notice("Recording finished: \(finalURL.path), \(parts.count) segments, \(size) bytes")
             onFinish?(finalURL)
@@ -200,7 +204,7 @@ final class Recorder: NSObject {
     // MARK: Microphone
 
     /// Mutes or unmutes without a gap in the video: the microphone keeps recording and the muted
-    /// stretches are silenced when the segments are joined. System audio shares the track, so it goes quiet too.
+    /// stretches are silenced when the segments are joined.
     func toggleMute() {
         guard isRecording, session?.microphone == true else {
             return
@@ -294,7 +298,13 @@ final class Recorder: NSObject {
 
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("Shot/segments")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let url = folder.appendingPathComponent("\(UUID().uuidString).mp4")
+        let id = UUID().uuidString
+        let url = folder.appendingPathComponent("\(id).mp4")
+        // SCK mixes the microphone into system audio's track, so with both on each is also written apart, to mute only the microphone.
+        let audio = session.microphone && prefs.recordSystemAudio
+            ? VideoConcatenator.SegmentAudio(system: folder.appendingPathComponent("\(id)-system.mov"), microphone: folder.appendingPathComponent("\(id)-microphone.mov"))
+            : nil
+        sampleSink = SampleSink(meter: model.meter, audio: audio)
         let outputConfig = SCRecordingOutputConfiguration()
         outputConfig.outputURL = url
         outputConfig.outputFileType = .mp4
@@ -306,12 +316,18 @@ final class Recorder: NSObject {
         if session.microphone {
             try stream.addStreamOutput(sampleSink, type: .microphone, sampleHandlerQueue: sampleSink.queue)
         }
+        if audio != nil {
+            try stream.addStreamOutput(sampleSink, type: .audio, sampleHandlerQueue: sampleSink.queue)
+        }
         let output = SCRecordingOutput(configuration: outputConfig, delegate: self)
         try stream.addRecordingOutput(output)
         try await stream.startCapture()
         self.stream = stream
         recordingOutput = output
         segments.append(url)
+        if let audio {
+            segmentAudio.append(audio)
+        }
         log.notice("Segment \(self.segments.count) started: \(config.width)x\(config.height) at \(prefs.recordingFPS) fps, mic \(session.microphone), system audio \(prefs.recordSystemAudio), camera \(CameraBubble.shared.isVisible)")
     }
 
@@ -321,7 +337,11 @@ final class Recorder: NSObject {
         if let stream {
             self.stream = nil
             recordingOutput = nil
-            finishing = Task { await stopCapture(stream) }
+            let sink = sampleSink
+            finishing = Task {
+                await stopCapture(stream)
+                await sink.finish()
+            }
         }
         await finishing?.value
         finishing = nil
@@ -423,18 +443,46 @@ extension Recorder: SCStreamDelegate, SCRecordingOutputDelegate {
     }
 }
 
-/// Feeds the microphone level meter; screen frames are only taken so SCK doesn't log them as dropped.
-private final class SampleSink: NSObject, SCStreamOutput {
+/// Feeds the microphone level meter and, with `audio`, writes system audio and the microphone to their own files.
+/// Screen frames time those files, and are otherwise only taken so SCK doesn't log them as dropped.
+private final class SampleSink: NSObject, SCStreamOutput, @unchecked Sendable {
     let queue = DispatchQueue(label: "Shot.samples")
     private let meter: AudioMeter
+    private let system: AudioFileWriter?
+    private let microphone: AudioFileWriter?
 
-    init(meter: AudioMeter) {
+    init(meter: AudioMeter, audio: VideoConcatenator.SegmentAudio? = nil) {
         self.meter = meter
+        system = audio.map { AudioFileWriter(url: $0.system) }
+        microphone = audio.map { AudioFileWriter(url: $0.microphone) }
     }
 
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
-        if type == .microphone {
+        switch type {
+        case .screen:
+            // Taken as the start of the recording file, so the audio files line up with it.
+            guard system != nil, Self.isComplete(sampleBuffer) else {
+                return
+            }
+            system?.start(at: sampleBuffer.presentationTimeStamp)
+            microphone?.start(at: sampleBuffer.presentationTimeStamp)
+        case .audio:
+            system?.append(sampleBuffer)
+        case .microphone:
             meter.measure(sampleBuffer)
+            microphone?.append(sampleBuffer)
+        @unknown default:
+            break
         }
+    }
+
+    func finish() async {
+        await system?.finish()
+        await microphone?.finish()
+    }
+
+    private static func isComplete(_ frame: CMSampleBuffer) -> Bool {
+        let attachments = CMSampleBufferGetSampleAttachmentsArray(frame, createIfNecessary: false) as? [[SCStreamFrameInfo: Any]]
+        return attachments?.first?[.status] as? Int == SCFrameStatus.complete.rawValue
     }
 }
