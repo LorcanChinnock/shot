@@ -86,11 +86,39 @@ func blurRendersTheSameInTheEditorAndTheExport(scale: CGFloat) throws {
     #expect(middle[3] == 1)
 }
 
-@Test func blurStrengthGrowsWithTheRegionAndHasAFloor() {
-    let small = AnnotationRenderer.blurRadius(for: CGRect(x: 0, y: 0, width: 200, height: 20))
-    let large = AnnotationRenderer.blurRadius(for: CGRect(x: 0, y: 0, width: 800, height: 400))
-    #expect(small >= 12)
-    #expect(large > small)
+@Test func redactionAmountIsAShareOfTheImageSoRetinaLooksTheSame() {
+    #expect(Redaction.size(amount: 0.01, imageLength: 2880) == 2 * Redaction.size(amount: 0.01, imageLength: 1440))
+    // The weakest amount never drops below the size that hides body text, even on a small image.
+    #expect(Redaction.size(amount: Redaction.amounts.lowerBound, imageLength: 300) == Redaction.minimumSize)
+    // On a 1000 px capture most of the slider changes the size.
+    let small = Redaction.size(amount: Redaction.amounts.lowerBound, imageLength: 1000)
+    let large = Redaction.size(amount: Redaction.amounts.upperBound, imageLength: 1000)
+    #expect(small == 6 && large == 16)
+}
+
+@Test func aBiggerPixelateAmountMakesBiggerBlocks() throws {
+    // A gradient from black to white across a wide image, so every block averages to its own grey.
+    let width = 2000, height = 100
+    let ctx = try #require(CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+    for x in 0..<width {
+        ctx.setFillColor(CGColor(gray: CGFloat(x) / CGFloat(width), alpha: 1))
+        ctx.fill(CGRect(x: x, y: 0, width: 1, height: height))
+    }
+    let gradient = try #require(ctx.makeImage())
+    let region = CGRect(x: 100, y: 10, width: 600, height: 80)
+    func blocks(_ amount: CGFloat) throws -> Int {
+        let doc = EditorDocument(base: gradient, annotations: [Annotation(kind: .pixelate(region, amount: amount), color: red, lineWidth: 4)])
+        let flat = try #require(AnnotationRenderer.flatten(doc))
+        var greys = Set<CGFloat>()
+        for x in stride(from: region.minX, to: region.maxX, by: 1) {
+            greys.insert(try pixel(flat, x, region.midY)[0])
+        }
+        return greys.count
+    }
+    let weak = try blocks(Redaction.amounts.lowerBound), strong = try blocks(Redaction.amounts.upperBound)
+    // 8 px blocks against 32 px ones across the 600 px region.
+    #expect(strong < weak)
+    #expect(weak <= 77 && strong <= 21)
 }
 
 @Test func aTinyBlurDrawsNothing() throws {

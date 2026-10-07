@@ -243,7 +243,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         case .line: kind = .line(from: start, to: point)
         case .shape: kind = .shape(style.shape, rect: rect)
         case .highlight: kind = .highlight(rect)
-        case .redact: kind = style.redaction == .blur ? .blur(rect) : .pixelate(rect)
+        case .redact: kind = .redaction(style.redaction, rect: rect, amount: style.redactionAmount)
         case .spotlight: kind = .spotlight(rect, style: model.nextSpotlightStyle)
         case .pen:
             let points: [CGPoint]

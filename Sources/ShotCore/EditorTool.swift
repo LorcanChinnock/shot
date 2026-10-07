@@ -78,13 +78,16 @@ public struct EditorStyle: Equatable, Sendable {
     public var customColors: [ColorSlot: RGBA]
     public var shape: BoxShape
     public var redaction: Redaction
+    /// How strongly the next redaction hides, within `Redaction.amounts`.
+    public var redactionAmount: CGFloat
     public var spotlight: SpotlightStyle
     public var alignment: TextAlign
 
     public init(
         tool: EditorTool = .arrow, color: RGBA = RGBA.presets[0], noteColor: RGBA = RGBA.presets[2],
         fill: RGBA? = nil, widthIndex: Int = 1, customColors: [ColorSlot: RGBA] = [:],
-        shape: BoxShape = .rectangle, redaction: Redaction = .blur, spotlight: SpotlightStyle = SpotlightStyle(),
+        shape: BoxShape = .rectangle, redaction: Redaction = .blur, redactionAmount: CGFloat = Redaction.defaultAmount,
+        spotlight: SpotlightStyle = SpotlightStyle(),
         alignment: TextAlign = .left
     ) {
         self.tool = tool
@@ -95,6 +98,7 @@ public struct EditorStyle: Equatable, Sendable {
         self.customColors = customColors
         self.shape = shape
         self.redaction = redaction
+        self.redactionAmount = redactionAmount
         self.spotlight = spotlight
         self.alignment = alignment
     }

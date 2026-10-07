@@ -351,7 +351,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         case .highlight:
             kind = .highlight(rect)
         case .redact:
-            kind = model.redaction == .blur ? .blur(rect) : .pixelate(rect)
+            kind = .redaction(model.redaction, rect: rect, amount: model.redactionAmount)
         case .spotlight:
             kind = .spotlight(rect, style: model.nextSpotlightStyle)
         case .pen:

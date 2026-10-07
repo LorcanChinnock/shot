@@ -916,6 +916,23 @@ extension VideoEditorModel {
         restyleSelection { $0.setRedaction(redaction) }
     }
 
+    /// How strongly the palette shows a redaction hiding: the selected one's, else the next one's.
+    var paletteRedactionAmount: CGFloat {
+        let length = max(project.canvasSize.width, project.canvasSize.height)
+        return selectedAnnotation?.annotation.redactionAmount(imageLength: length) ?? annotationStyle.redactionAmount
+    }
+
+    /// Sets how strongly the selected redaction, or the next one, hides. Between `beginDrag` and `endDrag` the changes are one undo step.
+    func setRedactionAmount(_ amount: CGFloat) {
+        guard let clip = selectedAnnotation else {
+            annotationStyle.redactionAmount = amount
+            return
+        }
+        var restyled = clip.annotation
+        restyled.setRedactionAmount(amount)
+        commitAnnotation(restyled, id: clip.id)
+    }
+
     /// The next spotlight's style: the chosen shape and edge, with the effect and strength the project's spotlights already share.
     var nextSpotlightStyle: SpotlightStyle {
         let shared = project.annotationClips.map(\.annotation).spotlightStyle ?? annotationStyle.spotlight
@@ -949,7 +966,7 @@ extension VideoEditorModel {
             return
         }
         restyled.annotation.restyleSpotlight { $0.softEdge = softEdge }
-        commitAnnotation(restyled.annotation, id: restyled.id, recordsUndo: dragOrigin == nil)
+        commitAnnotation(restyled.annotation, id: restyled.id)
     }
 
     /// Sets the effect and strength of every spotlight in the project, since they share one dim, and of the next one.
@@ -1116,12 +1133,12 @@ extension VideoEditorModel {
         selectedClipID = id
     }
 
-    /// Replaces what the annotation clip `id` shows, as one undo step.
-    func commitAnnotation(_ annotation: Annotation, id: UUID, recordsUndo: Bool = true) {
+    /// Replaces what the annotation clip `id` shows, as one undo step; between `beginDrag` and `endDrag`, `endDrag` records it.
+    func commitAnnotation(_ annotation: Annotation, id: UUID) {
         guard !isExporting, let changed = project.setting(annotation: annotation, ofClip: id), changed != project else {
             return
         }
-        if recordsUndo {
+        if dragOrigin == nil {
             undoStack.record(edit)
         }
         project = changed

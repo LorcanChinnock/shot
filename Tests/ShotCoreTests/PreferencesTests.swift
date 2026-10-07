@@ -164,7 +164,7 @@ import Testing
         let custom = RGBA(0.2, 0.4, 0.6, 0.5)
         let style = EditorStyle(
             tool: .shape, color: blue, noteColor: RGBA.presets[3], fill: custom, widthIndex: thick, customColors: [.stroke: custom, .note: blue],
-            shape: .star, redaction: .pixelate, spotlight: SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.7),
+            shape: .star, redaction: .pixelate, redactionAmount: 0.013, spotlight: SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.7),
             alignment: .center
         )
         Preferences.remember(style, in: store)
@@ -205,6 +205,7 @@ import Testing
         store.set(RGBA.presets.count, forKey: PreferenceKey.editorColor)
         store.set(-1, forKey: PreferenceKey.editorNoteColor)
         store.set(EditorStyle.widths.count, forKey: PreferenceKey.editorWidth)
+        store.set(1.0, forKey: PreferenceKey.editorRedactionAmount)
         #expect(prefs.editorStyle == EditorStyle())
         store.set("thick", forKey: PreferenceKey.editorWidth)
         #expect(prefs.editorStyle.widthIndex == EditorStyle().widthIndex)

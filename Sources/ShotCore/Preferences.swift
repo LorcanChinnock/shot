@@ -40,6 +40,7 @@ public enum PreferenceKey {
     public static let editorWidth = "editorWidth"
     public static let editorShape = "editorShape"
     public static let editorRedaction = "editorRedaction"
+    public static let editorRedactionAmount = "editorRedactionAmount"
     public static let editorSpotlight = "editorSpotlight"
     public static let editorAlignment = "editorAlignment"
     public static let galleryTileSize = "galleryTileSize"
@@ -117,6 +118,7 @@ public struct Preferences {
             PreferenceKey.editorWidth: EditorStyle().widthIndex,
             PreferenceKey.editorShape: EditorStyle().shape.rawValue,
             PreferenceKey.editorRedaction: EditorStyle().redaction.rawValue,
+            PreferenceKey.editorRedactionAmount: Double(EditorStyle().redactionAmount),
             PreferenceKey.editorSpotlight: Data(),
             PreferenceKey.editorAlignment: EditorStyle().alignment.rawValue,
             PreferenceKey.galleryTileSize: Gallery.defaultTileSize,
@@ -181,6 +183,7 @@ public struct Preferences {
         store.set(style.widthIndex, forKey: PreferenceKey.editorWidth)
         store.set(style.shape.rawValue, forKey: PreferenceKey.editorShape)
         store.set(style.redaction.rawValue, forKey: PreferenceKey.editorRedaction)
+        store.set(Double(style.redactionAmount), forKey: PreferenceKey.editorRedactionAmount)
         store.set(try? JSONEncoder().encode(style.spotlight), forKey: PreferenceKey.editorSpotlight)
         store.set(style.alignment.rawValue, forKey: PreferenceKey.editorAlignment)
     }
@@ -277,6 +280,8 @@ public struct Preferences {
             customColors: decoded(PreferenceKey.editorCustomColors) ?? defaults.customColors,
             shape: BoxShape(rawValue: store.string(forKey: PreferenceKey.editorShape) ?? "") ?? defaults.shape,
             redaction: Redaction(rawValue: store.string(forKey: PreferenceKey.editorRedaction) ?? "") ?? defaults.redaction,
+            redactionAmount: (store.object(forKey: PreferenceKey.editorRedactionAmount) as? Double)
+                .flatMap { Redaction.amounts.contains(CGFloat($0)) ? CGFloat($0) : nil } ?? defaults.redactionAmount,
             spotlight: decoded(PreferenceKey.editorSpotlight) ?? defaults.spotlight,
             alignment: TextAlign(rawValue: store.string(forKey: PreferenceKey.editorAlignment) ?? "") ?? defaults.alignment
         )

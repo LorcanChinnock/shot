@@ -81,6 +81,9 @@ final class EditorModel {
     var redaction: Redaction {
         didSet { rememberStyle { $0.redaction = redaction } }
     }
+    var redactionAmount: CGFloat {
+        didSet { rememberStyle { $0.redactionAmount = redactionAmount } }
+    }
     /// The next spotlight's shape, and the effect and strength for the image's first one.
     var spotlight: SpotlightStyle {
         didSet { rememberStyle { $0.spotlight = spotlight } }
@@ -126,6 +129,7 @@ final class EditorModel {
         fill = style.fill
         shape = style.shape
         redaction = style.redaction
+        redactionAmount = style.redactionAmount
         spotlight = style.spotlight
         alignment = style.alignment
         customColors = style.customColors
@@ -221,6 +225,21 @@ final class EditorModel {
         restyleSelection { $0.setRedaction(newRedaction) }
         if stylesNextAnnotation {
             redaction = newRedaction
+        }
+    }
+
+    /// How strongly the toolbar shows a redaction hiding: the selected one's, else the next one's.
+    var paletteRedactionAmount: CGFloat {
+        selection?.redactionAmount(imageLength: CGFloat(max(document.base.width, document.base.height))) ?? redactionAmount
+    }
+
+    /// Sets how strongly the selected redaction, or the next one, hides. Changes during a drag of a style slider are one undo step.
+    func setRedactionAmount(_ amount: CGFloat) {
+        if let selection {
+            restyleSelection(coalescing: isDraggingStyle ? "\(selection.id)-redaction-amount" : nil) { $0.setRedactionAmount(amount) }
+        }
+        if stylesNextAnnotation {
+            redactionAmount = amount
         }
     }
 
