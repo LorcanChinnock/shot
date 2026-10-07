@@ -227,10 +227,20 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         }
     }
 
-    /// Sets a spotlight's effect and strength, keeping its shape; other kinds are left alone.
+    /// Sets a spotlight's effect and strength, keeping its shape and edge; other kinds are left alone.
     public mutating func setSpotlightLook(effect: SpotlightStyle.Effect, strength: Double) {
+        restyleSpotlight {
+            $0.effect = effect
+            $0.strength = strength
+        }
+    }
+
+    /// Changes a spotlight's style; other kinds are left alone.
+    public mutating func restyleSpotlight(_ change: (inout SpotlightStyle) -> Void) {
         if case let .spotlight(rect, style) = kind {
-            kind = .spotlight(rect, style: SpotlightStyle(shape: style.shape, effect: effect, strength: strength))
+            var restyled = style
+            change(&restyled)
+            kind = .spotlight(rect, style: restyled)
         }
     }
 
@@ -518,25 +528,40 @@ public struct EditorDocument: @unchecked Sendable {
     }
 
     /// The part of the image and the images placed on it that the spotlights dim: all of it outside
-    /// every spotlight, never the rest of the padding.
+    /// every hard-edged spotlight, never the rest of the padding. `softSpotlights` fade it further.
     /// `nil` when there are no spotlights. One with no area, such as a straight drag, dims nothing.
     public var spotlightDimPath: CGPath? {
         var lit: CGPath?
+        var hasSpotlight = false
         let images = CGMutablePath()
         for annotation in annotations {
             switch annotation.kind {
             case let .spotlight(rect, style) where !rect.isEmpty:
+                hasSpotlight = true
+                guard style.softEdge == 0 else {
+                    continue
+                }
                 let shape = style.shape.path(in: rect)
                 lit = lit?.union(shape) ?? shape
             case let .image(_, rect): images.addRect(rect)
             default: break
             }
         }
-        guard let lit else {
+        guard hasSpotlight else {
             return nil
         }
         let dimmable = images.isEmpty ? CGPath(rect: fullRect, transform: nil) : images.union(CGPath(rect: fullRect, transform: nil))
-        return dimmable.subtracting(lit)
+        return lit.map { dimmable.subtracting($0) } ?? dimmable
+    }
+
+    /// The spotlights with a soft edge, which fade the dim rather than cut it out of `spotlightDimPath`.
+    public var softSpotlights: [(rect: CGRect, style: SpotlightStyle)] {
+        annotations.compactMap { annotation in
+            guard case let .spotlight(rect, style) = annotation.kind, !rect.isEmpty, style.softEdge > 0 else {
+                return nil
+            }
+            return (rect, style)
+        }
     }
 
     /// The effect and strength every spotlight's shared dim is drawn with: the lowest spotlight's. `nil` when there are none.

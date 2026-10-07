@@ -68,7 +68,7 @@ public enum Redaction: String, CaseIterable, Codable, Sendable {
     }
 }
 
-/// A spotlight's lit shape, and how it treats the image outside it. Every spotlight in an image
+/// A spotlight's lit shape and edge, and how it treats the image outside it. Every spotlight in an image
 /// shares one dim, drawn with the lowest spotlight's effect and strength.
 public struct SpotlightStyle: Equatable, Hashable, Codable, Sendable {
     public enum Effect: String, CaseIterable, Codable, Sendable {
@@ -88,11 +88,14 @@ public struct SpotlightStyle: Equatable, Hashable, Codable, Sendable {
     public var shape: BoxShape
     public var effect: Effect
     public var strength: Double
+    /// How far the lit shape fades into the dim, from 0 (a hard edge) to 1 (the softest).
+    public var softEdge: Double
 
-    public init(shape: BoxShape = .rectangle, effect: Effect = .darken, strength: Double = 0.5) {
+    public init(shape: BoxShape = .rectangle, effect: Effect = .darken, strength: Double = 0.5, softEdge: Double = 0) {
         self.shape = shape
         self.effect = effect
         self.strength = strength
+        self.softEdge = softEdge
     }
 
     public init(from decoder: Decoder) throws {
@@ -102,6 +105,12 @@ public struct SpotlightStyle: Equatable, Hashable, Codable, Sendable {
         // Strength used to be a preset stored as 0, 1 or 2 (light, medium, strong). None of those is in `strengths`.
         let stored = try container.decode(Double.self, forKey: .strength)
         strength = [0: 0.3, 1: 0.5, 2: 0.7][stored] ?? stored
+        softEdge = try container.decodeIfPresent(Double.self, forKey: .softEdge) ?? 0
+    }
+
+    /// The blur radius of the edge of a spotlight lighting `rect`, relative to its size so it looks the same at any zoom.
+    public func softEdgeRadius(in rect: CGRect) -> CGFloat {
+        softEdge * 0.2 * min(rect.width, rect.height)
     }
 
     /// How dark the darken effect makes the image outside the spotlights.

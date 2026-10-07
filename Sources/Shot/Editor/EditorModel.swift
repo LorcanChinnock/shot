@@ -220,10 +220,10 @@ final class EditorModel {
         }
     }
 
-    /// The next spotlight's style: the chosen shape, with the effect and strength the image's spotlights already share.
+    /// The next spotlight's style: the chosen shape and edge, with the effect and strength the image's spotlights already share.
     var nextSpotlightStyle: SpotlightStyle {
         let shared = document.spotlightStyle ?? spotlight
-        return SpotlightStyle(shape: spotlight.shape, effect: shared.effect, strength: shared.strength)
+        return SpotlightStyle(shape: spotlight.shape, effect: shared.effect, strength: shared.strength, softEdge: spotlight.softEdge)
     }
 
     /// The spotlight style the toolbar shows: the selected spotlight's, else the next one's. `nil` when neither is one.
@@ -238,13 +238,17 @@ final class EditorModel {
     }
 
     func setSpotlightShape(_ newShape: BoxShape) {
-        restyleSelection {
-            if case let .spotlight(rect, style) = $0.kind {
-                $0.kind = .spotlight(rect, style: SpotlightStyle(shape: newShape, effect: style.effect, strength: style.strength))
-            }
-        }
+        restyleSelection { $0.restyleSpotlight { $0.shape = newShape } }
         if stylesNextAnnotation {
             spotlight.shape = newShape
+        }
+    }
+
+    /// Changes during a drag of a style slider are one undo step.
+    func setSpotlightSoftEdge(_ softEdge: Double) {
+        restyleSelection(coalescing: isDraggingStyle ? "spotlight-edge" : nil) { $0.restyleSpotlight { $0.softEdge = softEdge } }
+        if stylesNextAnnotation {
+            spotlight.softEdge = softEdge
         }
     }
 
