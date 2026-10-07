@@ -88,7 +88,8 @@ private struct GlassChrome<Content: View>: View {
 
     var body: some View {
         content
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Zero minimums size the chrome to the window, not to content that is shorter or wider than it.
+            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
             .tipHost()
             .background(alignment: .top) {
                 // Only the title strip moves the window; a drag anywhere else belongs to the content.
@@ -96,8 +97,7 @@ private struct GlassChrome<Content: View>: View {
                     .frame(height: GlassWindow.titlebarHeight)
             }
             .background(GlassBackdrop())
-            .clipShape(RoundedRectangle(cornerRadius: GlassWindow.cornerRadius, style: .circular))
-            .overlay(RoundedRectangle(cornerRadius: GlassWindow.cornerRadius, style: .circular).strokeBorder(Brutal.ink, lineWidth: 3))
+            .inkBorder(RoundedRectangle(cornerRadius: GlassWindow.cornerRadius, style: .circular), width: 3)
             .environment(\.colorScheme, .light)
             .ignoresSafeArea()
     }

@@ -63,7 +63,7 @@ struct LevelMeter: View {
                 ForEach(0..<Self.bars, id: \.self) { index in
                     RoundedRectangle(cornerRadius: 1.5, style: .circular)
                         .fill(index < lit ? color(index) : Color.white.opacity(0.7))
-                        .overlay(RoundedRectangle(cornerRadius: 1.5, style: .circular).strokeBorder(Brutal.ink, lineWidth: 1.5))
+                        .inkBorder(RoundedRectangle(cornerRadius: 1.5, style: .circular), width: 1)
                         .frame(width: 5, height: 16)
                 }
             }

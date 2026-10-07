@@ -44,7 +44,7 @@ private struct RecordingControlView: View {
             HStack(spacing: 8) {
                 Circle()
                     .fill(model.isPaused ? Brutal.yellow : Brutal.red)
-                    .overlay(Circle().strokeBorder(Brutal.ink, lineWidth: 2))
+                    .inkBorder(Circle(), width: 2)
                     .frame(width: 14, height: 14)
                     .opacity(pulse && !model.isPaused ? 0.35 : 1)
                     .animation(.easeInOut(duration: 0.8).repeatForever(), value: pulse)

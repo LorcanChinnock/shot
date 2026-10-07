@@ -268,8 +268,7 @@ private struct GalleryTile: View {
             }
             .frame(width: width, height: height)
             .background(Color.white.opacity(0.6))
-            .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
-            .brutalSurface(Color.clear, shadow: 0, border: 1.5)
+            .inkBorder(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular), width: 2)
             Text(item.name)
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(Brutal.ink)

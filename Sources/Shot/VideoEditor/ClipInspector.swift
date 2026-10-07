@@ -119,7 +119,7 @@ struct ClipInspector: View {
             .multilineTextAlignment(.trailing)
             .padding(.horizontal, 6)
             .frame(width: 56, height: 24)
-            .brutalSurface(Color.white.opacity(0.7), radius: 6, shadow: 0, border: 1.5)
+            .brutalSurface(Color.white.opacity(0.7), radius: 6, shadow: 0, border: 2)
             .accessibilityLabel(Text(label))
     }
 

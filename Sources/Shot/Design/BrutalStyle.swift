@@ -4,7 +4,7 @@ import SwiftUI
 /// Design tokens and components for the glass × neo-brutalist settings UI.
 enum Brutal {
     static let ink = Color(red: 0.07, green: 0.07, blue: 0.10)
-    static let border: CGFloat = 2.5
+    static let border: CGFloat = 3
     static let radius: CGFloat = 12
     static let shadow: CGFloat = 4
 
@@ -27,6 +27,10 @@ enum Brutal {
     static let label = Font.system(size: 13, weight: .semibold)
     static let caption = Font.system(size: 11.5, weight: .medium)
     static let mono = Font.system(size: 12, weight: .bold, design: .monospaced)
+
+    /// How far content under an ink line stops short of its outer edge: under the line, so nothing bleeds past it, and a whole
+    /// point, because a fractional rounded clip leaves stray pixels at its corner on 1x displays.
+    static func underInk(_ width: CGFloat) -> CGFloat { (width / 2).rounded(.up) }
 }
 
 extension Color {
@@ -37,30 +41,23 @@ extension Color {
 
 // MARK: Surfaces
 
-/// A copy of `shape` swept along the offset diagonal with the card's own interior knocked out, so translucent glass never shows it
-/// through itself. The knockout stops inside the border, so the shadow runs fully under the opaque border;
-/// stopping exactly at its inner edge leaves a hairline seam where both edges are anti-aliased.
-private struct HardShadow<S: InsettableShape>: View {
+/// The border and hard shadow as one filled path: the shape swept along the shadow's diagonal, minus its interior. Filling it
+/// once anti-aliases every edge once; a stroke over separate shadow copies stacks soft edge pixels into seams and stair-steps.
+/// The interior stays open, so translucent glass never shows the shadow through itself.
+private struct InkOutline<S: InsettableShape>: Shape {
     let shape: S
-    let offset: CGFloat
     let border: CGFloat
+    let shadow: CGFloat
 
-    /// Copies of the shape along the diagonal, so the corners join the border instead of leaving a notch.
-    private var sweepSteps: Int { max(Int(offset * 2), 1) }
-
-    var body: some View {
-        ZStack {
-            ForEach(1...sweepSteps, id: \.self) { step in
-                let distance = offset * CGFloat(step) / CGFloat(sweepSteps)
-                shape.fill(Brutal.ink).offset(x: distance, y: distance)
-            }
+    func path(in rect: CGRect) -> Path {
+        let body = shape.path(in: rect)
+        // Half-point steps: the union's scallops between copies are far below a pixel.
+        let steps = Int(shadow * 2)
+        let swept = steps == 0 ? body : (1...steps).reduce(body) { outline, step in
+            let distance = shadow * CGFloat(step) / CGFloat(steps)
+            return outline.union(body.offsetBy(dx: distance, dy: distance))
         }
-            .mask {
-                Rectangle().fill(.white)
-                    .padding(-offset * 2)
-                    .overlay(shape.inset(by: max(border - 1, 0)).fill(.black).blendMode(.destinationOut))
-                    .compositingGroup()
-            }
+        return swept.subtracting(shape.inset(by: border).path(in: rect))
     }
 }
 
@@ -76,13 +73,12 @@ struct BrutalSurface<S: InsettableShape, Fill: ShapeStyle>: ViewModifier {
             .background {
                 ZStack {
                     if glass {
-                        shape.inset(by: border / 2).fill(.ultraThinMaterial)
+                        shape.inset(by: Brutal.underInk(border)).fill(.ultraThinMaterial)
                     }
-                    shape.inset(by: border / 2).fill(fill)
+                    shape.inset(by: Brutal.underInk(border)).fill(fill)
                 }
             }
-            .overlay(shape.strokeBorder(Brutal.ink, lineWidth: border))
-            .background(HardShadow(shape: shape, offset: shadow, border: border))
+            .overlay(InkOutline(shape: shape, border: border, shadow: shadow).fill(Brutal.ink))
     }
 }
 
@@ -98,6 +94,11 @@ extension View {
 
     func glassCard() -> some View {
         brutalSurface(Color.white.opacity(0.42), glass: true)
+    }
+
+    /// An ink border with the content stopping under the line, so no colour bleeds through its anti-aliased outer edge.
+    func inkBorder<S: InsettableShape>(_ shape: S, width: CGFloat) -> some View {
+        clipShape(shape.inset(by: Brutal.underInk(width))).overlay(shape.strokeBorder(Brutal.ink, lineWidth: width))
     }
 }
 
@@ -194,17 +195,14 @@ struct BrutalToggleStyle: ToggleStyle {
             }
         } label: {
             ZStack(alignment: configuration.isOn ? .trailing : .leading) {
-                RoundedRectangle(cornerRadius: 7, style: .circular)
-                    .fill(configuration.isOn ? color : Color.white.opacity(0.7))
+                Color.clear
                     .frame(width: 48, height: 28)
-                RoundedRectangle(cornerRadius: 4, style: .circular)
-                    .fill(Color.white)
-                    .overlay(RoundedRectangle(cornerRadius: 4, style: .circular).strokeBorder(Brutal.ink, lineWidth: 2))
+                Color.white
+                    .inkBorder(RoundedRectangle(cornerRadius: 4, style: .circular), width: 2)
                     .frame(width: 16, height: 16)
                     .padding(.horizontal, 6)
             }
-            .overlay(RoundedRectangle(cornerRadius: 7, style: .circular).strokeBorder(Brutal.ink, lineWidth: Brutal.border))
-            .background(HardShadow(shape: RoundedRectangle(cornerRadius: 7, style: .circular), offset: 2, border: Brutal.border))
+            .brutalSurface(configuration.isOn ? color : Color.white.opacity(0.7), radius: 7, shadow: 2)
         }
         .buttonStyle(.plain)
         .accessibilityValue(Text(configuration.isOn ? "On" : "Off"))
@@ -241,7 +239,7 @@ struct BrutalSegmented<Value: Hashable>: View {
             }
         }
         .fixedSize()
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .circular))
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .circular).inset(by: Brutal.underInk(Brutal.border)))
         .brutalSurface(Color.white.opacity(0.7), radius: 8, shadow: 2)
     }
 }

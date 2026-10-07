@@ -254,7 +254,7 @@ struct SpotlightOptions: View {
                 } label: {
                     RoundedRectangle(cornerRadius: 3, style: .circular)
                         .fill(Brutal.ink.opacity(SpotlightStyle(strength: strength).dimAlpha))
-                        .overlay(RoundedRectangle(cornerRadius: 3, style: .circular).strokeBorder(Brutal.ink, lineWidth: 1.5))
+                        .inkBorder(RoundedRectangle(cornerRadius: 3, style: .circular), width: 2)
                         .frame(width: 14, height: 14)
                 }
             }
@@ -299,7 +299,7 @@ private struct CustomColorButton: View {
         Button { isOpen.toggle() } label: {
             Circle()
                 .fill(AngularGradient(colors: [.red, .yellow, .green, .cyan, .blue, .purple, .red], center: .center))
-                .overlay(Circle().strokeBorder(Brutal.ink, lineWidth: 2))
+                .inkBorder(Circle(), width: 2)
                 .background(Circle().fill(Brutal.ink).offset(x: isOpen ? 2 : 0, y: isOpen ? 2 : 0))
                 .frame(width: isOpen ? 22 : 18, height: isOpen ? 22 : 18)
                 .frame(width: 26, height: 30)
@@ -347,7 +347,7 @@ private struct ColorEditor: View {
                 checkerboard: true
             )
             Circle().fill(color).frame(width: 22, height: 22)
-                .overlay(Circle().strokeBorder(Brutal.ink, lineWidth: 2))
+                .inkBorder(Circle(), width: 2)
         }
         .padding(16)
         .onChange(of: hue) { commit() }
@@ -379,8 +379,7 @@ private struct SaturationBrightnessField: View {
                     .overlay(Circle().strokeBorder(Brutal.ink, lineWidth: 1).padding(-1))
                     .position(x: saturation * size.width, y: (1 - brightness) * size.height)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .circular))
-            .overlay(RoundedRectangle(cornerRadius: 6, style: .circular).strokeBorder(Brutal.ink, lineWidth: 2))
+            .inkBorder(RoundedRectangle(cornerRadius: 6, style: .circular), width: 2)
             .contentShape(Rectangle())
             .gesture(DragGesture(minimumDistance: 0).onChanged { drag in
                 saturation = min(max(drag.location.x / size.width, 0), 1)
@@ -409,12 +408,12 @@ private struct GradientSlider: View {
                         }
                     }
                     .background(Color.white)
-                    .clipShape(Capsule())
+                    .clipShape(Capsule().inset(by: 1))
                 }
                 Capsule().fill(track)
-                    .overlay(Capsule().strokeBorder(Brutal.ink, lineWidth: 2))
+                    .inkBorder(Capsule(), width: 2)
                 Circle().fill(.white)
-                    .overlay(Circle().strokeBorder(Brutal.ink, lineWidth: 2))
+                    .inkBorder(Circle(), width: 2)
                     .frame(width: 16, height: 16)
                     .offset(x: value * (width - 16))
             }
@@ -441,8 +440,7 @@ private struct Swatch: View {
                     Rectangle().fill(Brutal.red).frame(width: 2, height: 22).rotationEffect(.degrees(45))
                 }
             }
-            .clipShape(Circle())
-            .overlay(Circle().strokeBorder(Brutal.ink, lineWidth: 2))
+            .inkBorder(Circle(), width: 2)
             .background(Circle().fill(Brutal.ink).offset(x: isSelected ? 2 : 0, y: isSelected ? 2 : 0))
             .frame(width: isSelected ? 22 : 18, height: isSelected ? 22 : 18)
             .frame(width: 26, height: 30)

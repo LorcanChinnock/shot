@@ -360,7 +360,7 @@ private struct ScreenPreview: View {
                     RoundedRectangle(cornerRadius: 5, style: .circular)
                         .fill(index == 1 ? color : Color.white)
                         .frame(width: 72, height: 42)
-                        .overlay(RoundedRectangle(cornerRadius: 5, style: .circular).strokeBorder(Brutal.ink, lineWidth: 2))
+                        .inkBorder(RoundedRectangle(cornerRadius: 5, style: .circular), width: 2)
                 }
             }
             .padding(12)

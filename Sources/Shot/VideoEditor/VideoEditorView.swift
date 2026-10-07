@@ -52,8 +52,7 @@ struct VideoEditorRootView: View {
                 .background(Color.black)
                 .overlay { TransformOverlay(model: model) }
                 .overlay { AnnotationCanvas(model: model) }
-                .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
-                .brutalSurface(Color.clear, shadow: 0, border: 1.5)
+                .inkBorder(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular), width: 2)
             if model.showsTracks {
                 if model.isAnnotating {
                     AnnotationPalette(model: model)
@@ -272,7 +271,7 @@ struct TrimTimelineView: View {
                 handle(symbol: "chevron.compact.right")
                     .offset(x: endX)
                 Capsule().fill(Color.white)
-                    .overlay(Capsule().strokeBorder(Brutal.ink, lineWidth: 1))
+                    .inkBorder(Capsule(), width: 1)
                     .frame(width: 4, height: Self.height + 8)
                     .offset(x: timeline.x(for: model.currentTime) - 2, y: -4)
                     .allowsHitTesting(false)
@@ -352,6 +351,6 @@ struct TrimTimelineView: View {
             .foregroundStyle(Brutal.ink)
             .frame(width: TrimTimeline.handleWidth, height: Self.height)
             .background(Brutal.yellow)
-            .overlay(Rectangle().strokeBorder(Brutal.ink, lineWidth: 1.5))
+            .inkBorder(Rectangle(), width: 2)
     }
 }
