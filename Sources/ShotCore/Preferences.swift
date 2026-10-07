@@ -208,6 +208,8 @@ public struct Preferences {
     public var imageFormat: ImageFormat { ImageFormat(rawValue: store.string(forKey: PreferenceKey.imageFormat) ?? "") ?? .png }
     public var downscaleRetina: Bool { store.bool(forKey: PreferenceKey.downscaleRetina) }
     public var saveAfterCapture: Bool { store.bool(forKey: PreferenceKey.saveAfterCapture) }
+    /// Where captures and recordings are written: the save folder, or a temporary one Quick Access and the editors can still open.
+    public var captureFolder: URL { saveAfterCapture ? saveFolder : FileManager.default.temporaryDirectory.appendingPathComponent("Shot") }
     public var copyAfterCapture: Bool { store.bool(forKey: PreferenceKey.copyAfterCapture) }
     public var quickAccessAfterCapture: Bool { store.bool(forKey: PreferenceKey.quickAccessAfterCapture) }
     public var openEditorAfterCapture: Bool { store.bool(forKey: PreferenceKey.openEditorAfterCapture) }

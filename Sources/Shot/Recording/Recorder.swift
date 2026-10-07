@@ -98,7 +98,7 @@ final class Recorder: NSObject {
         } else if !camera {
             CameraBubble.shared.hide()
         }
-        let folder = prefs.saveFolder
+        let folder = prefs.captureFolder
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let finalURL = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "mp4", prefix: prefs.filePrefix)
         let microphoneID = prefs.microphoneDeviceID.isEmpty ? nil : AVCaptureDevice(uniqueID: prefs.microphoneDeviceID)?.uniqueID
