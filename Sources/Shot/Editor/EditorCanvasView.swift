@@ -41,7 +41,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     override var isFlipped: Bool { true }
     override var mouseDownCanMoveWindow: Bool { false }
-    override var acceptsFirstResponder: Bool { true }
+    override var acceptsFirstResponder: Bool { textField == nil }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
     private func observe() {
@@ -195,11 +195,11 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     // MARK: Mouse
 
     override func mouseDown(with event: NSEvent) {
-        window?.makeFirstResponder(self)
         if textField != nil {
             commitText()
             return
         }
+        window?.makeFirstResponder(self)
         if spaceHeld {
             panPoint = convert(event.locationInWindow, from: nil)
             NSCursor.closedHand.set()
