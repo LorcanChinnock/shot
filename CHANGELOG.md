@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.21](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.20...v0.7.0-beta.21) (2026-10-07)
+
+
+### Features
+
+* **gallery:** add selection checkboxes and select/deselect all ([#154](https://github.com/LorcanChinnock/shot/issues/154)) ([c86b69c](https://github.com/LorcanChinnock/shot/commit/c86b69c50b39bf4522661879f7267a4e504f28cb))
+
 ## [0.7.0-beta.20](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.19...v0.7.0-beta.20) (2026-10-07)
 
 
