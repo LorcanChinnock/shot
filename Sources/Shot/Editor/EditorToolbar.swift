@@ -376,7 +376,8 @@ private struct SaturationBrightnessField: View {
                 Circle().fill(Color(hue: hue, saturation: saturation, brightness: brightness))
                     .frame(width: 14, height: 14)
                     .overlay(Circle().strokeBorder(.white, lineWidth: 2))
-                    .overlay(Circle().strokeBorder(Brutal.ink, lineWidth: 1).padding(-1))
+                    .padding(1)
+                    .inkBorder(Circle(), width: 1)
                     .position(x: saturation * size.width, y: (1 - brightness) * size.height)
             }
             .inkBorder(RoundedRectangle(cornerRadius: 6, style: .circular), width: 2)
