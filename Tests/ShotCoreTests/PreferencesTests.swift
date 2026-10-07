@@ -70,6 +70,7 @@ import Testing
         #expect(!prefs.openEditorAfterCapture)
         #expect(!prefs.captureShowsCursor)
         #expect(prefs.hidesShotUI)
+        #expect(!prefs.excludesMenuBar)
         #expect(prefs.showMagnifier)
         #expect(prefs.showCrosshair)
         #expect(prefs.quickAccessPosition == .left)

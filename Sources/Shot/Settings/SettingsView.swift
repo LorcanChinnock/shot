@@ -235,6 +235,7 @@ private struct SidebarItem: View {
 private struct GeneralSettings: View {
     @Setting(PreferenceKey.playSound) private var playSound = true
     @Setting(PreferenceKey.hidesShotUI) private var hidesShotUI = true
+    @Setting(PreferenceKey.excludesMenuBar) private var excludesMenuBar = false
     @Setting(PreferenceKey.saveFolder) private var saveFolder = Preferences.defaultSaveFolder
     @Setting(PreferenceKey.filePrefix) private var filePrefix = Preferences.defaultFilePrefix
     @Setting(PreferenceKey.imageFormat) private var imageFormat = ImageFormat.png.rawValue
@@ -249,7 +250,8 @@ private struct GeneralSettings: View {
                     setLaunchAtLogin(enabled)
                 }
             ToggleRow(title: "Play capture sound", isOn: $playSound, color: color)
-            ToggleRow(title: "Hide Shot UI", subtitle: "Keep Quick Access cards, toasts and other Shot windows out of screenshots and recordings. The camera bubble always shows.", isOn: $hidesShotUI, color: color, divider: false)
+            ToggleRow(title: "Hide Shot UI", subtitle: "Keep Quick Access cards, toasts and other Shot windows out of screenshots and recordings. The camera bubble always shows.", isOn: $hidesShotUI, color: color)
+            ToggleRow(title: "Exclude menu bar", subtitle: "Crop the menu bar and notch off full-screen screenshots and recordings.", isOn: $excludesMenuBar, color: color, divider: false)
         }
         SettingsCard(title: "Files", symbol: "folder.fill") {
             SettingRow(title: "Save folder", subtitle: (saveFolder as NSString).abbreviatingWithTildeInPath) {

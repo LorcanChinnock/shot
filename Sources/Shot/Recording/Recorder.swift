@@ -70,7 +70,7 @@ final class Recorder: NSObject {
     private var segmentTimeout: Task<Void, Never>?
     private var finishing: Task<Void, Never>?
     private var border: RecordingBorderPanel?
-    private var controls: RecordingControlPanel?
+    private var controls: NSPanel?
     private var sampleSink = SampleSink(meter: AudioMeter())
     private var model = RecordingSessionModel()
     /// Stretches of the recording, in recorded seconds, whose audio is silenced when the segments are joined.
@@ -363,13 +363,19 @@ final class Recorder: NSObject {
             border.orderFrontRegardless()
             self.border = border
         }
-        let controls = RecordingControlPanel(region: region, screen: screen, model: model, actions: .init(
+        let actions = RecordingControlPanel.Actions(
             togglePause: { [weak self] in Task { await self?.togglePause() } },
             toggleMute: { [weak self] in self?.toggleMute() },
             toggleCamera: { [weak self] in Task { await self?.toggleCamera() } },
             cycleCameraSize: { [weak self] in self?.cycleCameraSize() },
             stop: { [weak self] discard in self?.onStopRequested?(discard) }
-        ))
+        )
+        // The notch is dead space, so it holds the controls when the floating panel would cover the recording.
+        let controls: NSPanel = if let notch = screen.notch, RecordingControlPanel.covers(region, on: screen, microphone: model.microphoneOn) {
+            NotchRecordingPanel(notch: notch, model: model, actions: actions)
+        } else {
+            RecordingControlPanel(region: region, screen: screen, model: model, actions: actions)
+        }
         controls.orderFrontRegardless()
         self.controls = controls
     }

@@ -63,7 +63,7 @@ final class RecordingSetupController {
         let screens = NSScreen.screens
         if mode == .screen {
             let screen = NSScreen.underPointer ?? screens[0]
-            return (screen, screen.frame)
+            return (screen, screen.fullCaptureFrame)
         }
         let displays = screens.map { OverlayDisplay(frame: $0.frame, scale: $0.backingScaleFactor, image: nil) }
         let windows = SelectionOverlayController.onScreenWindows()
@@ -79,7 +79,7 @@ final class RecordingSetupController {
             let screen = screens.first { $0.frame.contains(CGPoint(x: frame.midX, y: frame.midY)) } ?? screens[0]
             return (screen, frame.intersection(screen.frame))
         case let .fullDisplay(index):
-            return (screens[index], screens[index].frame)
+            return (screens[index], screens[index].fullCaptureFrame)
         }
     }
 

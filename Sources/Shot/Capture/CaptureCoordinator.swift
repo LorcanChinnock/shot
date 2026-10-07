@@ -96,7 +96,12 @@ final class CaptureCoordinator {
             throw CaptureError.displayNotFound
         }
         log.debug("Fullscreen capture took \(ContinuousClock.now - start, privacy: .public)")
-        try await finish(image: frozen.image, scale: frozen.scale)
+        let visible = screen.fullCaptureFrame.offsetBy(dx: -screen.frame.minX, dy: -screen.frame.minY)
+        let pixels = Geometry.pixelRect(forViewRect: visible, viewHeight: frozen.frame.height, scale: frozen.scale)
+        guard let image = frozen.image.cropping(to: pixels) else {
+            throw CaptureError.encodingFailed
+        }
+        try await finish(image: image, scale: frozen.scale)
     }
 
     private func captureWithOverlay(windowMode: Bool) async throws {

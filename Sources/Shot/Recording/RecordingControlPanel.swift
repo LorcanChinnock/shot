@@ -13,8 +13,15 @@ final class RecordingControlPanel: NSPanel {
     }
 
     /// Wider when the microphone controls show.
-    private static func size(microphone: Bool) -> NSSize {
+    static func size(microphone: Bool) -> NSSize {
         NSSize(width: microphone ? 556 : 456, height: 62)
+    }
+
+    /// Whether the panel has to sit over the recorded region, for want of room outside it.
+    static func covers(_ region: CGRect, on screen: NSScreen, microphone: Bool) -> Bool {
+        let size = size(microphone: microphone)
+        let origin = ControlPlacement.origin(for: size, region: region, visible: screen.visibleFrame)
+        return CGRect(origin: origin, size: size).intersects(region)
     }
 
     @MainActor
@@ -37,27 +44,67 @@ final class RecordingControlPanel: NSPanel {
 private struct RecordingControlView: View {
     let model: RecordingSessionModel
     let actions: RecordingControlPanel.Actions
-    @State private var pulse = false
 
     var body: some View {
         HStack(spacing: 8) {
             HStack(spacing: 8) {
-                Circle()
-                    .fill(model.isPaused ? Brutal.yellow : Brutal.red)
-                    .inkBorder(Circle(), width: 2)
-                    .frame(width: 14, height: 14)
-                    .opacity(pulse && !model.isPaused ? 0.35 : 1)
-                    .animation(.easeInOut(duration: 0.8).repeatForever(), value: pulse)
-                    .onAppear { pulse = true }
-                TimelineView(.periodic(from: .now, by: 0.5)) { context in
-                    Text(format(model.elapsed(at: context.date)))
-                        .font(.system(size: 14, weight: .heavy, design: .monospaced))
-                        .foregroundStyle(Brutal.ink)
-                        .frame(width: 50, alignment: .leading)
-                }
+                RecordingDot(isPaused: model.isPaused)
+                ElapsedTime(model: model, color: Brutal.ink)
+                    .frame(width: 50, alignment: .leading)
             }
             .brutalTip(model.isPaused ? "Paused" : "Recording")
+            RecordingControls(model: model, actions: actions)
+        }
+        .padding(.horizontal, 14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .brutalSurface(Color.white.opacity(0.72), glass: true, radius: 14, shadow: 4)
+        .padding(.trailing, 4)
+        .padding(.bottom, 4)
+        .environment(\.colorScheme, .light)
+    }
+}
 
+/// Pulses while recording; yellow and still while paused.
+struct RecordingDot: View {
+    let isPaused: Bool
+    @State private var pulse = false
+
+    var body: some View {
+        Circle()
+            .fill(isPaused ? Brutal.yellow : Brutal.red)
+            .inkBorder(Circle(), width: 2)
+            .frame(width: 14, height: 14)
+            .opacity(pulse && !isPaused ? 0.35 : 1)
+            .animation(.easeInOut(duration: 0.8).repeatForever(), value: pulse)
+            .onAppear { pulse = true }
+    }
+}
+
+struct ElapsedTime: View {
+    let model: RecordingSessionModel
+    let color: Color
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 0.5)) { context in
+            Text(format(model.elapsed(at: context.date)))
+                .font(.system(size: 14, weight: .heavy, design: .monospaced))
+                .foregroundStyle(color)
+        }
+    }
+
+    private func format(_ interval: TimeInterval) -> String {
+        let seconds = Int(interval)
+        return String(format: "%d:%02d", seconds / 60, seconds % 60)
+    }
+}
+
+/// Pause, microphone, camera, discard and stop.
+struct RecordingControls: View {
+    let model: RecordingSessionModel
+    let actions: RecordingControlPanel.Actions
+
+    var body: some View {
+        HStack(spacing: 8) {
             Button {
                 actions.togglePause()
             } label: {
@@ -99,17 +146,6 @@ private struct RecordingControlView: View {
             .buttonStyle(BrutalButtonStyle(color: Brutal.red, compact: true))
             .brutalTip("Stop and save")
         }
-        .padding(.horizontal, 14)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .brutalSurface(Color.white.opacity(0.72), glass: true, radius: 14, shadow: 4)
-        .padding(.trailing, 4)
-        .padding(.bottom, 4)
-        .environment(\.colorScheme, .light)
-    }
-
-    private func format(_ interval: TimeInterval) -> String {
-        let seconds = Int(interval)
-        return String(format: "%d:%02d", seconds / 60, seconds % 60)
     }
 }
 
