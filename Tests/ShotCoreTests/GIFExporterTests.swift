@@ -102,7 +102,7 @@ extension MediaTests {
 }
 
 /// RMS of the first audio track per quarter second, keyed by quarter.
-private func audioLevels(of asset: AVAsset) async throws -> [Int: Float] {
+func audioLevels(of asset: AVAsset) async throws -> [Int: Float] {
     let track = try #require(try await asset.loadTracks(withMediaType: .audio).first)
     let reader = try AVAssetReader(asset: asset)
     let output = AVAssetReaderTrackOutput(track: track, outputSettings: [
