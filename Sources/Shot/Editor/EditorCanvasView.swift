@@ -23,7 +23,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private var zoomedViewport: Viewport?
     /// True while Space is held, when a drag scrolls instead of using the tool.
     private var spaceHeld = false
-    /// The last view point of a Space-drag scroll.
+    /// The last view point of a scroll by dragging: with Space held, the hand tool or the middle button.
     private var panPoint: CGPoint?
 
     init(model: EditorModel) {
@@ -56,6 +56,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             Task { @MainActor in
                 // A fitted canvas rescales as it grows or is cropped.
                 self?.viewportDidChange()
+                if let self {
+                    self.window?.invalidateCursorRects(for: self)
+                }
                 self?.observe()
             }
         }
@@ -194,15 +197,43 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     // MARK: Mouse
 
+    /// The hand while a drag would scroll.
+    private var restingCursor: NSCursor { spaceHeld || model.tool == .hand ? .openHand : .arrow }
+
+    override func resetCursorRects() {
+        addCursorRect(bounds, cursor: restingCursor)
+    }
+
+    private func beginPan(_ event: NSEvent) {
+        panPoint = convert(event.locationInWindow, from: nil)
+        NSCursor.closedHand.set()
+    }
+
+    private func continuePan(_ event: NSEvent) {
+        guard let panPoint else {
+            return
+        }
+        let point = convert(event.locationInWindow, from: nil)
+        pan(by: CGVector(dx: point.x - panPoint.x, dy: point.y - panPoint.y))
+        self.panPoint = point
+    }
+
+    private func endPan() {
+        panPoint = nil
+        restingCursor.set()
+    }
+
     override func mouseDown(with event: NSEvent) {
+        guard panPoint == nil else {
+            return
+        }
         if textField != nil {
             commitText()
             return
         }
         window?.makeFirstResponder(self)
-        if spaceHeld {
-            panPoint = convert(event.locationInWindow, from: nil)
-            NSCursor.closedHand.set()
+        if spaceHeld || model.tool == .hand {
+            beginPan(event)
             return
         }
         let point = imagePoint(event)
@@ -253,10 +284,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     }
 
     override func mouseDragged(with event: NSEvent) {
-        if let panPoint {
-            let point = convert(event.locationInWindow, from: nil)
-            pan(by: CGVector(dx: point.x - panPoint.x, dy: point.y - panPoint.y))
-            self.panPoint = point
+        guard panPoint == nil else {
+            continuePan(event)
             return
         }
         guard let start = dragStart, let last = lastPoint else {
@@ -297,7 +326,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             cropDraft = Geometry.normalized(from: clampedToCanvas(start), to: clampedToCanvas(point))
             needsDisplay = true
             return
-        case .counter, .text:
+        case .counter, .text, .hand:
             return
         case .arrow:
             kind = .arrow(from: start, to: point)
@@ -354,8 +383,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     override func mouseUp(with event: NSEvent) {
         if panPoint != nil {
-            panPoint = nil
-            (spaceHeld ? NSCursor.openHand : NSCursor.arrow).set()
+            endPan()
             return
         }
         defer {
@@ -386,6 +414,31 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             model.document.grow(toFit: moved, margin: model.canvasMargin)
             model.document.shrinkPadding(margin: model.canvasMargin)
         }
+    }
+
+    /// The middle button scrolls with any tool, as in Figma and browsers.
+    override func otherMouseDown(with event: NSEvent) {
+        guard event.buttonNumber == 2, dragStart == nil, panPoint == nil else {
+            super.otherMouseDown(with: event)
+            return
+        }
+        beginPan(event)
+    }
+
+    override func otherMouseDragged(with event: NSEvent) {
+        guard event.buttonNumber == 2, panPoint != nil else {
+            super.otherMouseDragged(with: event)
+            return
+        }
+        continuePan(event)
+    }
+
+    override func otherMouseUp(with event: NSEvent) {
+        guard event.buttonNumber == 2, panPoint != nil else {
+            super.otherMouseUp(with: event)
+            return
+        }
+        endPan()
     }
 
     // MARK: Dropping images
@@ -455,7 +508,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
         spaceHeld = false
         if panPoint == nil {
-            NSCursor.arrow.set()
+            restingCursor.set()
         }
     }
 
@@ -469,7 +522,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     func releaseSpace() {
         if spaceHeld {
             spaceHeld = false
-            NSCursor.arrow.set()
+            restingCursor.set()
         }
     }
 

@@ -56,13 +56,14 @@ Press a tool's key when you aren't typing text.
 | Key | Tool |
 |---|---|
 | V | Select: move, resize and restyle what you've drawn |
+| H | Hand: drag to move around when zoomed in, without touching annotations |
 | A | Arrow |
 | L | Line |
 | R | Shape: rectangle, rounded rectangle, ellipse, triangle, diamond or star |
 | D | Freehand pen |
 | T | Text |
 | S | Sticky note |
-| H | Highlight |
+| M | Highlight |
 | F | Spotlight: dims or blurs everything outside the area |
 | B | Redact: blurs or pixelates the area |
 | N | Numbered counter |
@@ -90,7 +91,7 @@ Drag an image file or a Quick Access card onto the canvas, or press ⌘V with an
 
 ### Zoom
 
-Pinch, or press ⌘+ and ⌘-, to zoom. ⌘0 fits the canvas to the window and ⌘1 shows it at actual size. When zoomed in, scroll or hold Space and drag to move around.
+Pinch, or press ⌘+ and ⌘-, to zoom. ⌘0 fits the canvas to the window and ⌘1 shows it at actual size. When zoomed in, scroll, hold Space and drag, drag with the middle mouse button, or drag with the hand tool (H) to move around.
 
 ### Saving
 
@@ -179,7 +180,7 @@ Record Fullscreen and Record Window have no shortcut until you set one. Capture 
 | ⌘+ / ⌘- | Zoom in / out |
 | ⌘0 | Zoom to fit |
 | ⌘1 | Actual size |
-| Space-drag | Move around when zoomed in |
+| Space-drag or middle-drag | Move around when zoomed in |
 | ⌘S | Save and copy |
 
 ### Video editor

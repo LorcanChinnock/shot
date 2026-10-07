@@ -177,12 +177,12 @@ import Testing
         Preferences.registerDefaults(in: store)
         let prefs = Preferences(store: store)
         Preferences.remember(EditorStyle(tool: .pen), in: store)
-        for tool in [EditorTool.select, .crop] {
+        for tool in [EditorTool.select, .hand, .crop] {
             Preferences.remember(EditorStyle(tool: tool, color: RGBA.presets[4]), in: store)
             #expect(prefs.editorStyle.tool == .pen)
             #expect(prefs.editorStyle.color == RGBA.presets[4])
         }
-        #expect(EditorTool.allCases.filter { !$0.isDrawing } == [.select, .crop])
+        #expect(EditorTool.allCases.filter { !$0.isDrawing } == [.select, .hand, .crop])
         // Even if a stored value says otherwise.
         store.set(EditorTool.crop.rawValue, forKey: PreferenceKey.editorTool)
         #expect(prefs.editorStyle.tool == .arrow)

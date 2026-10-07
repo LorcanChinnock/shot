@@ -487,7 +487,7 @@ private struct ZoomMenu: View {
         .menuIndicator(.hidden)
         .buttonStyle(BrutalButtonStyle(compact: true))
         .fixedSize()
-        .brutalTip("Zoom in (⌘+), out (⌘-), to fit (⌘0) or to actual size (⌘1). Pinch to zoom; scroll or Space-drag to move around.")
+        .brutalTip("Zoom in (⌘+), out (⌘-), to fit (⌘0) or to actual size (⌘1). Pinch to zoom; scroll, Space-drag, middle-drag or the hand tool (H) to move around.")
     }
 }
 

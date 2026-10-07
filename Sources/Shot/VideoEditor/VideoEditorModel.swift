@@ -825,7 +825,7 @@ extension VideoEditorModel {
 
     /// Picks the tool that draws over the video, or nil to stop; the preview plays the composite while one is picked.
     func setAnnotationTool(_ tool: EditorTool?) {
-        guard tool != annotationTool, tool != .crop else {
+        guard tool != annotationTool, tool != .crop, tool != .hand else {
             return
         }
         player.pause()

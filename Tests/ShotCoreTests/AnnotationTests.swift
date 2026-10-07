@@ -106,8 +106,14 @@ private let shapeFrame = CGRect(x: 20, y: 20, width: 100, height: 60)
     #expect(!annotation(.arrow(from: .zero, to: CGPoint(x: 9, y: 9))).supportsFill)
 }
 
+@Test func everyToolHasItsOwnKey() {
+    #expect(Set(EditorTool.allCases.map(\.key)).count == EditorTool.allCases.count)
+    #expect(EditorTool.hand.key == "h")
+    #expect(EditorTool.highlight.key == "m")
+}
+
 @Test func onlyDrawnMarksTakeAColourAndWidth() {
-    #expect(EditorTool.allCases.filter { !$0.isStyled } == [.select, .highlight, .spotlight, .redact, .crop])
+    #expect(EditorTool.allCases.filter { !$0.isStyled } == [.select, .hand, .highlight, .spotlight, .redact, .crop])
     #expect(annotation(.freehand([.zero, CGPoint(x: 9, y: 9)])).isStyled)
     #expect(annotation(.note("Hi", rect: shapeFrame)).isStyled)
     for kind in [Annotation.Kind.highlight(shapeFrame), .pixelate(shapeFrame), .blur(shapeFrame), .spotlight(shapeFrame, style: SpotlightStyle())] {

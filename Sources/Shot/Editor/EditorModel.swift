@@ -6,6 +6,7 @@ extension EditorTool {
     var symbol: String {
         switch self {
         case .select: "cursorarrow"
+        case .hand: "hand.raised"
         case .arrow: "arrow.up.right"
         case .line: "line.diagonal"
         case .shape: "square.on.circle"
@@ -24,6 +25,7 @@ extension EditorTool {
     var summary: String {
         switch self {
         case .select: "Click an annotation to move, resize or restyle it."
+        case .hand: "Drag to move around when zoomed in."
         case .arrow: "Drag to point at something."
         case .line: "Drag to draw a straight line."
         case .shape: "Drag to draw a box, circle, star or other shape, outlined or filled."
@@ -128,7 +130,7 @@ final class EditorModel {
     }
 
     /// Saves only the value that changed, so another open editor's choices aren't overwritten with this
-    /// window's older ones. Select and crop aren't remembered, so the next window starts with the last drawing tool.
+    /// window's older ones. Select, hand and crop aren't remembered, so the next window starts with the last drawing tool.
     private func rememberStyle(_ change: (inout EditorStyle) -> Void) {
         var style = Preferences().editorStyle
         change(&style)
