@@ -23,6 +23,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
     private let model: EditorModel
     private let window: NSWindow
     private let canvas: EditorCanvasView
+    private var discarding = false
 
     static func open(_ url: URL) {
         if let existing = open.first(where: { $0.model.fileURL == url }) {
@@ -102,8 +103,11 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
-        guard model.isDirty else {
+        guard model.isDirty, !discarding else {
             return true
+        }
+        guard sender.attachedSheet == nil else {
+            return false
         }
         let alert = NSAlert()
         alert.messageText = "Save changes to \(model.fileURL.lastPathComponent)?"
@@ -111,14 +115,20 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         alert.addButton(withTitle: "Save")
         alert.addButton(withTitle: "Discard")
         alert.addButton(withTitle: "Cancel")
-        switch alert.runModal() {
-        case .alertFirstButtonReturn:
-            return model.save()
-        case .alertSecondButtonReturn:
-            return true
-        default:
-            return false
+        alert.beginSheetModal(for: sender) { [self] response in
+            switch response {
+            case .alertFirstButtonReturn:
+                if model.save() {
+                    sender.close()
+                }
+            case .alertSecondButtonReturn:
+                discarding = true
+                sender.close()
+            default:
+                break
+            }
         }
+        return false
     }
 
     func windowDidResignKey(_ notification: Notification) {
