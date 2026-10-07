@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.20](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.19...v0.7.0-beta.20) (2026-10-07)
+
+
+### Features
+
+* **app:** show the gallery as a section of one main window ([#146](https://github.com/LorcanChinnock/shot/issues/146)) ([151f989](https://github.com/LorcanChinnock/shot/commit/151f989b80e8e2697ce5b31035b895dd0aed8721))
+
 ## [0.7.0-beta.19](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.18...v0.7.0-beta.19) (2026-10-07)
 
 
