@@ -11,9 +11,14 @@ extension Project {
         tracks.flatMap(\.annotations)
     }
 
+    /// The clips on tracks that aren't hidden, in drawing order.
+    public var shownAnnotationClips: [AnnotationClip] {
+        tracks.filter { !$0.isHidden }.flatMap(\.annotations)
+    }
+
     /// The clips showing at `time`, in drawing order.
     public func annotationClips(at time: Double) -> [AnnotationClip] {
-        annotationClips.filter { $0.start <= time && time < $0.end }
+        shownAnnotationClips.filter { $0.start <= time && time < $0.end }
     }
 
     /// Shows `annotation` from `start` on the first overlay track it fits on, or on a new one above the rest,

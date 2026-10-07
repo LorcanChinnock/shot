@@ -231,9 +231,10 @@ public struct Project: Equatable, Codable, Sendable {
     // MARK: Trim and cut, in the recording's own time
 
     /// The main track's clips as the trim handles and cuts the editor shows, when that's all there is:
-    /// one recording on the main track, in order, with its own sound linked and cut the same.
+    /// one recording on the main track, in order, with its own sound linked and cut the same, and nothing hidden or muted.
     public var trimEdit: TrimEdit? {
-        guard let first = main.clips.first, main.clips.allSatisfy({ $0.source == first.source && $0.transform == .identity && $0.animation.isEmpty }) else {
+        guard let first = main.clips.first, main.clips.allSatisfy({ $0.source == first.source && $0.transform == .identity && $0.animation.isEmpty }),
+              tracks.allSatisfy({ !$0.isHidden && !$0.isMuted }) else {
             return nil
         }
         var cuts = CutList()
