@@ -158,3 +158,31 @@ extension MediaTests {
     #expect(layout.visibleHeight(available: 150, minimum: 78) == 150)
     #expect(layout.visibleHeight(available: 20, minimum: 78) == 78, "the ruler and the main lane stay in view")
 }
+
+@Test func trimmedEndsShowTheWholeRecordingAroundWhatsKept() throws {
+    let full = Project(source: URL(fileURLWithPath: "/tmp/recording.mov"), duration: 10, canvasSize: CGSize(width: 1920, height: 1080), hasAudio: true)
+    #expect(full.trimmedLead == 0 && full.trimmedEnds(ofTrack: 0).isEmpty)
+    let trimmed = try #require(full.trimmingMain(.start, toSource: 2)?.trimmingMain(.end, toSource: 9))
+    #expect(trimmed.trimmedLead == 2)
+    let ends = trimmed.trimmedEnds(ofTrack: 0)
+    #expect(ends.map(\.start) == [-2, 7] && ends.map(\.sourceStart) == [0, 9] && ends.map(\.sourceEnd) == [2, 10])
+    #expect(trimmed.trimmedEnds(ofTrack: 1).map(\.start) == [-2, 7])
+}
+
+@Test func aCutInsideTheMainTrackIsMarkedNotDrawn() throws {
+    let full = Project(source: URL(fileURLWithPath: "/tmp/recording.mov"), duration: 10, canvasSize: CGSize(width: 1920, height: 1080), hasAudio: false)
+    let cut = try #require(full.deleting(range: 3..<5))
+    #expect(cut.mainCuts == [3])
+    #expect(cut.trimmedEnds(ofTrack: 0).isEmpty)
+    let split = try #require(full.splitting(at: 4))
+    #expect(split.mainCuts.isEmpty)
+}
+
+@Test func anImportedClipShowsWhatWasTrimmedOffBothEnds() throws {
+    let music = ImportedMedia(source: URL(fileURLWithPath: "/tmp/music.m4a"), duration: 30, size: nil, hasAudio: true)
+    let base = Project(source: URL(fileURLWithPath: "/tmp/recording.mov"), duration: 10, canvasSize: CGSize(width: 1920, height: 1080), hasAudio: false)
+    let (imported, id) = try #require(base.importing(music, at: 4))
+    let trimmed = try #require(imported.trimming(clip: id, .start, toTimeline: 6)?.trimming(clip: id, .end, toTimeline: 20))
+    // 2 s off the front and 14 s off the back, drawn either side of the 6–20 s it plays.
+    #expect(trimmed.trimmedEnds(ofTrack: 1).map(\.start) == [4, 20] && trimmed.trimmedEnds(ofTrack: 1).map(\.length) == [2, 14])
+}
