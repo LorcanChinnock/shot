@@ -56,7 +56,7 @@ private struct RecordingControlView: View {
                         .frame(width: 50, alignment: .leading)
                 }
             }
-            .help(model.isPaused ? "Paused" : "Recording")
+            .brutalTip(model.isPaused ? "Paused" : "Recording")
 
             Button {
                 actions.togglePause()
@@ -67,7 +67,7 @@ private struct RecordingControlView: View {
                     .fixedSize()
             }
             .buttonStyle(BrutalButtonStyle(color: model.isPaused ? Brutal.yellow : .white, compact: true))
-            .help(model.isPaused ? "Resume recording" : "Pause recording")
+            .brutalTip(model.isPaused ? "Resume recording" : "Pause recording")
 
             if model.microphoneOn {
                 HStack(spacing: 8) {
@@ -97,7 +97,7 @@ private struct RecordingControlView: View {
                 Label("Stop", systemImage: "stop.fill").labelStyle(.titleAndIcon).fixedSize()
             }
             .buttonStyle(BrutalButtonStyle(color: Brutal.red, compact: true))
-            .help("Stop and save")
+            .brutalTip("Stop and save")
         }
         .padding(.horizontal, 14)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -126,7 +126,7 @@ private struct IconButton: View {
                 .frame(width: 16, height: 16)
         }
         .buttonStyle(BrutalButtonStyle(color: color, compact: true))
-        .help(help)
+        .brutalTip(help)
         .accessibilityLabel(Text(help))
     }
 }

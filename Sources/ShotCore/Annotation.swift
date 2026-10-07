@@ -85,6 +85,14 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         }
     }
 
+    /// True for the kinds drawn in their colour and sized by their width.
+    public var isStyled: Bool {
+        switch kind {
+        case .arrow, .line, .rect, .ellipse, .text, .counter, .note, .freehand: true
+        case .highlight, .pixelate, .blur, .spotlight, .image: false
+        }
+    }
+
     public var counterRadius: CGFloat { lineWidth * 3 + 10 }
     public var noteFontSize: CGFloat { lineWidth * 3 + 8 }
 

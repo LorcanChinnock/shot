@@ -70,19 +70,6 @@ extension EditorDocument {
         return CGRect(origin: CGPoint(x: origin.x.rounded(), y: origin.y.rounded()), size: size)
     }
 
-    /// The pictures auto-redact reads: the screenshot with every placed image drawn over it, as an image
-    /// whose top-left pixel sits at `origin`, so text a placed image shows is found and text it covers isn't.
-    /// With no placed images, that's the screenshot itself.
-    public var redactionSource: (image: CGImage, origin: CGPoint) {
-        let area = annotations.reduce(fullRect) { area, annotation in
-            if case let .image(_, rect) = annotation.kind {
-                return area.union(AnnotationRenderer.pixelAligned(rect))
-            }
-            return area
-        }
-        return AnnotationRenderer.backdrop(base, images: annotations[...], around: area, outset: 0)
-    }
-
     /// Places `image` on whole pixels, centred on `point` or beside the canvas when there's none, grows the
     /// canvas to hold it, and returns its annotation's id. See `placementSize` for the size it's given.
     @discardableResult

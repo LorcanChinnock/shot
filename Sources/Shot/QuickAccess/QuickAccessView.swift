@@ -122,7 +122,7 @@ struct CornerButton: View {
                 .font(.system(size: 10, weight: .bold))
         }
         .buttonStyle(CornerButtonStyle())
-        .help(help)
+        .brutalTip(help)
         .accessibilityLabel(Text(help))
     }
 }

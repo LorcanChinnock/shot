@@ -410,7 +410,7 @@ private struct SetupBarView: View {
     var body: some View {
         HStack(spacing: 10) {
             BrutalSegmented(selection: Binding(get: { model.mode }, set: { actions.switchMode($0) }), options: RecordingMode.allCases.map { ($0, $0.title) }, color: Brutal.sky)
-                .help("Switch what to record")
+                .brutalTip("Switch what to record")
             BrutalChip(text: "\(Int(model.pixelSize.width)) × \(Int(model.pixelSize.height))")
                 .fixedSize()
             Rectangle().fill(Brutal.ink.opacity(0.2)).frame(width: 2, height: 28)
@@ -425,7 +425,7 @@ private struct SetupBarView: View {
             }
             .buttonStyle(BrutalButtonStyle(compact: true))
             .keyboardShortcut(.cancelAction)
-            .help("Cancel (Esc)")
+            .brutalTip("Cancel (Esc)")
             .accessibilityLabel(Text("Cancel"))
             Button {
                 actions.record()
@@ -434,7 +434,7 @@ private struct SetupBarView: View {
             }
             .buttonStyle(BrutalButtonStyle(color: Brutal.red, compact: true))
             .keyboardShortcut(.defaultAction)
-            .help("Start recording after a 3-second countdown (Return)")
+            .brutalTip("Start recording after a 3-second countdown (Return)")
         }
         .padding(.horizontal, 14)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -456,7 +456,7 @@ private struct OptionToggle: View {
             Image(systemName: symbol).font(.system(size: 11, weight: .bold)).frame(width: 16, height: 16)
         }
         .buttonStyle(BrutalButtonStyle(color: on ? Brutal.mint : .white, compact: true))
-        .help(help)
+        .brutalTip(help)
         .accessibilityLabel(Text(help))
     }
 }

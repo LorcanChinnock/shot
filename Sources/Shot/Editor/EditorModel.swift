@@ -21,6 +21,26 @@ extension EditorTool {
         case .crop: "crop"
         }
     }
+
+    /// What the tool does, for its tooltip.
+    var summary: String {
+        switch self {
+        case .select: "Click an annotation to move, resize or restyle it."
+        case .arrow: "Drag to point at something."
+        case .line: "Drag to draw a straight line."
+        case .rect: "Drag to draw a box, outlined or filled."
+        case .ellipse: "Drag to draw a circle or oval."
+        case .pen: "Drag to draw freehand."
+        case .text: "Click to type a label."
+        case .note: "Drag to add a sticky note."
+        case .highlight: "Drag over text to mark it in yellow."
+        case .spotlight: "Drag to dim everything outside an area."
+        case .pixelate: "Drag over private details to pixelate them."
+        case .blur: "Drag over private details to blur them."
+        case .counter: "Click to add numbered steps: 1, 2, 3…"
+        case .crop: "Drag to choose the area to keep."
+        }
+    }
 }
 
 @MainActor
@@ -70,8 +90,6 @@ final class EditorModel {
     @ObservationIgnored private var savedSnapshot: EditorSnapshot
     /// Set by the canvas: turns the text or note still being typed into an annotation.
     var commitPendingText: (() -> Void)?
-    /// True while auto-redact looks for text to hide.
-    var isRedacting = false
     /// The canvas's zoom, where 1 is actual size, for the zoom menu; the canvas view keeps it current.
     /// Zoom is view state, not part of the document, so it isn't undoable.
     var zoom: CGFloat = 1
@@ -127,6 +145,11 @@ final class EditorModel {
                 color = newValue
             }
         }
+    }
+
+    /// True when the toolbar offers a colour and width: the selection takes them, or else the tool does.
+    var showsStyle: Bool {
+        selection?.isStyled ?? tool.isStyled
     }
 
     /// True when the toolbar offers a fill: a rectangle or ellipse is selected, or is the tool.
@@ -317,35 +340,6 @@ final class EditorModel {
         nudgedID = nil
         pickedKey = nil
         isDirty = true
-    }
-
-    /// Covers the emails, phone numbers, card numbers and IP addresses in the image, as one undoable step.
-    /// It switches to the select tool so each region can be checked and deleted before saving.
-    func autoRedact(_ style: RedactionStyle) {
-        guard !isRedacting else {
-            return
-        }
-        isRedacting = true
-        let source = document.redactionSource
-        Task {
-            defer { isRedacting = false }
-            let regions: [CGRect]
-            do {
-                regions = try await Redaction.regions(in: source.image).map { $0.offsetBy(dx: source.origin.x, dy: source.origin.y) }
-            } catch {
-                Toast.error("Could not read the image: \(error.localizedDescription)")
-                return
-            }
-            // The document may have changed while the text was read, so check against it as it is now.
-            let added = document.redactions(covering: regions, style: style, color: color, lineWidth: lineWidth)
-            guard !added.isEmpty else {
-                Toast.show(regions.isEmpty ? "Found nothing to redact" : "Nothing new to redact")
-                return
-            }
-            edit { $0.annotations += added }
-            tool = .select
-            Toast.show(added.count == 1 ? "Redacted 1 item" : "Redacted \(added.count) items")
-        }
     }
 
     /// Moves the selection by one pixel, or ten when `large`, growing the canvas if it reaches past the edge.

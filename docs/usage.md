@@ -70,7 +70,7 @@ Press a tool's key when you aren't typing text.
 | N | Numbered counter |
 | C | Crop |
 
-Pick a colour and one of three line widths in the toolbar. The editor remembers the last tool, colour and width you used.
+Hover a tool to see what it does. Tools that draw a mark show a colour and one of three line widths below the tools; rectangles and ellipses also take a fill. The editor remembers the last tool, colour and width you used.
 
 ### Editing annotations
 
@@ -88,10 +88,6 @@ Annotations can reach past the edges of the screenshot: the canvas grows to fit 
 ### Combine images
 
 Drag an image file or a Quick Access card onto the canvas, or press ⌘V with an image on the clipboard, to place another image beside your screenshot. A dropped image is centred where you drop it; a pasted one goes beside the canvas. Placed images keep their full resolution, keep their aspect ratio when you resize them, and can be moved, nudged, copied and deleted like any other annotation.
-
-### Redaction
-
-The **Redact** menu finds email addresses, phone numbers, card numbers and IP addresses in the image and covers each with a blur or pixelation. Check the result: anything it misses, cover with the blur (B) or pixelate (P) tool.
 
 ### Zoom
 
