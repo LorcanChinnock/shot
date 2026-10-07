@@ -111,6 +111,7 @@ struct TracksView: View {
     @State private var scrollX: CGFloat = 0
     @State private var gesture: (kind: Gesture, startX: CGFloat, pointsPerSecond: CGFloat)?
     @State private var pinchStart: Double?
+    @State private var hoveredTrack: Int?
 
     var body: some View {
         let layout = Self.layout(for: model.project)
@@ -127,7 +128,15 @@ struct TracksView: View {
                 lanes(timeline, layout: layout)
                     .offset(x: leadX)
                     .frame(width: max(width, leadX + CGFloat(reach) * pointsPerSecond), height: layout.height, alignment: .topLeading)
+                    .overlay(alignment: .topLeading) { laneControls(layout).offset(x: scrollX) }
                     .contentShape(Rectangle())
+                    .onContinuousHover { phase in
+                        if case .active(let point) = phase {
+                            hoveredTrack = layout.lane(at: point.y)?.track
+                        } else {
+                            hoveredTrack = nil
+                        }
+                    }
                     .gesture(drag(timeline, layout: layout, leadX: leadX))
                     .task(id: thumbnailRequests(width: width)) {
                         for request in thumbnailRequests(width: width) {
@@ -232,6 +241,36 @@ struct TracksView: View {
                 .offset(x: max(0, timeline.x(for: model.playhead) - 2), y: Self.rulerHeight - 2)
                 .allowsHitTesting(false)
         }
+    }
+
+    /// Lock, hide and mute for each lane, pinned to the left of the view: the ones that are on, and every one under the pointer.
+    private func laneControls(_ layout: LaneLayout) -> some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(layout.lanes, id: \.track) { lane in
+                let track = model.project.tracks[lane.track]
+                HStack(spacing: 3) {
+                    ForEach(LaneControl.allCases.filter { $0.applies(to: track.kind) && (hoveredTrack == lane.track || track[keyPath: $0.flag]) }, id: \.self) { control in
+                        laneButton(control, track: lane.track, isOn: track[keyPath: control.flag])
+                    }
+                }
+                .padding(.leading, 4)
+                .frame(height: lane.height)
+                .offset(y: lane.y)
+            }
+        }
+    }
+
+    private func laneButton(_ control: LaneControl, track: Int, isOn: Bool) -> some View {
+        Button { model.toggle(control.flag, ofTrack: track) } label: {
+            Image(systemName: control.symbol(isOn: isOn))
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(Brutal.ink)
+                .frame(width: 20, height: 20)
+                .background(isOn ? Brutal.yellow : Color.white)
+                .inkBorder(RoundedRectangle(cornerRadius: 4, style: .circular), width: 2)
+        }
+        .buttonStyle(.plain)
+        .brutalTip(control.tip(isOn: isOn))
     }
 
     private func ruler(_ timeline: TrimTimeline, pointsPerSecond: CGFloat) -> some View {
@@ -472,6 +511,43 @@ struct TracksView: View {
             return .trim(id, .end)
         }
         return .move(id, grab: time - start)
+    }
+}
+
+/// A switch on a lane, for the kinds of track it means something on.
+private enum LaneControl: CaseIterable {
+    case lock, hide, mute
+
+    var flag: WritableKeyPath<Track, Bool> {
+        switch self {
+        case .lock: \.isLocked
+        case .hide: \.isHidden
+        case .mute: \.isMuted
+        }
+    }
+
+    func applies(to kind: Track.Kind) -> Bool {
+        switch self {
+        case .lock: true
+        case .hide: kind != .audio
+        case .mute: kind == .audio
+        }
+    }
+
+    func symbol(isOn: Bool) -> String {
+        switch self {
+        case .lock: isOn ? "lock.fill" : "lock.open"
+        case .hide: isOn ? "eye.slash" : "eye"
+        case .mute: isOn ? "speaker.slash.fill" : "speaker.wave.2.fill"
+        }
+    }
+
+    func tip(isOn: Bool) -> String {
+        switch self {
+        case .lock: isOn ? "Unlock the track" : "Lock the track, so Split and new annotations leave it alone"
+        case .hide: isOn ? "Show the track" : "Hide the track"
+        case .mute: isOn ? "Unmute the track" : "Mute the track"
+        }
     }
 }
 
