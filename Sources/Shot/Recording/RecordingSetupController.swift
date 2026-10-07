@@ -230,6 +230,7 @@ final class RecordingSetupController {
             CameraBubble.shared.move(by: CGVector(dx: adjusted.minX - region.minX, dy: adjusted.minY - region.minY))
         }
         region = adjusted
+        CameraBubble.shared.setRegion(region)
         // A dragged screen or window frame is now a custom area.
         model.mode = .area
         model.windowID = nil
