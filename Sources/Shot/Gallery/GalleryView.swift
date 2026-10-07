@@ -156,6 +156,8 @@ struct GalleryRootView: View {
             }
         }
         .clipped()
+        // A scroll view that starts exactly at the title bar's edge is stretched under it and swallows the header's clicks.
+        .padding(.top, 1)
     }
 
     private var emptyState: some View {

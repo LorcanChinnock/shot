@@ -33,14 +33,14 @@ final class DevicePreview {
         stop()
         let current = generation
         guard await AVCaptureDevice.requestAccess(for: mediaType) else {
-            Toast.show(mediaType == .video ? "Camera access denied" : "Microphone access denied")
+            Toast.error(mediaType == .video ? "Camera access denied" : "Microphone access denied")
             return
         }
         guard current == generation else {
             return
         }
         guard let device = CaptureDevices.device(id: deviceID, for: mediaType) else {
-            Toast.show(mediaType == .video ? "No camera found" : "No microphone found")
+            Toast.error(mediaType == .video ? "No camera found" : "No microphone found")
             return
         }
         let session = AVCaptureSession()
@@ -51,7 +51,7 @@ final class DevicePreview {
             }
             session.addInput(input)
         } catch {
-            Toast.show("\(device.localizedName) is unavailable")
+            Toast.error("\(device.localizedName) is unavailable")
             return
         }
         if mediaType == .audio {

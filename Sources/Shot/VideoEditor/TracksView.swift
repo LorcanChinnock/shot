@@ -122,7 +122,7 @@ struct TracksView: View {
             let timeline = TrimTimeline(duration: model.fitDuration, minX: 0, width: width)
             ScrollView([.horizontal, .vertical], showsIndicators: false) {
                 lanes(timeline, layout: layout)
-                    .frame(width: width, height: layout.height)
+                    .frame(width: width, height: layout.height, alignment: .topLeading)
                     .contentShape(Rectangle())
                     .gesture(drag(timeline, layout: layout))
                     .task(id: thumbnailRequests(width: width)) {

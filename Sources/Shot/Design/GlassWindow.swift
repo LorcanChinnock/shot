@@ -33,7 +33,13 @@ enum GlassWindow {
         window.toolbar = NSToolbar(identifier: "glass")
         window.toolbarStyle = .unified
         window.titlebarSeparatorStyle = .none
-        window.contentView = NSHostingView(fixedFrame: GlassChrome(content: content()))
+        let hosting = NSHostingView(fixedFrame: GlassChrome(content: content()))
+        // A hosting view that is the contentView overwrites the window's minSize with SwiftUI's own, so keep it one level down.
+        let container = NSView()
+        hosting.frame = container.bounds
+        hosting.autoresizingMask = [.width, .height]
+        container.addSubview(hosting)
+        window.contentView = container
         window.center()
         track(window)
         return window

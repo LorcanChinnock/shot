@@ -71,14 +71,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if EditorRoute.hosts.contains(host) {
             let path = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "path" }?.value
             guard let route = EditorRoute(host: host, path: path) else {
-                Toast.show("Missing path for \(host)")
+                Toast.error("Missing path for \(host)")
                 return
             }
             coordinator.edit(route)
             return
         }
         guard let action = ShotAction(rawValue: host) else {
-            Toast.show("Unknown action: \(host)")
+            Toast.error("Unknown action: \(host)")
             return
         }
         let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []

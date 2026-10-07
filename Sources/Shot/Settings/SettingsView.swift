@@ -270,7 +270,7 @@ private struct GeneralSettings: View {
                 try SMAppService.mainApp.unregister()
             }
         } catch {
-            Toast.show("Launch at login failed: \(error.localizedDescription)")
+            Toast.error("Launch at login failed: \(error.localizedDescription)")
             launchAtLogin = SMAppService.mainApp.status == .enabled
         }
     }

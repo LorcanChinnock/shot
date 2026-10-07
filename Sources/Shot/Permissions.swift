@@ -48,7 +48,7 @@ enum Permissions {
             try process.run()
             NSApp.terminate(nil)
         } catch {
-            Toast.show("Couldn't relaunch Shot. Quit and open it again.")
+            Toast.error("Couldn't relaunch Shot. Quit and open it again.")
         }
     }
 }

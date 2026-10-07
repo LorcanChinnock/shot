@@ -28,6 +28,10 @@ final class GalleryModel {
         didSet { UserDefaults.standard.set(tileSize, forKey: PreferenceKey.galleryTileSize) }
     }
 
+    /// Opening more items than this at once asks first.
+    private static let editConfirmationThreshold = 8
+
+    @ObservationIgnored private var trashHistory: [[(trashed: URL, original: URL)]] = []
     @ObservationIgnored var onEdit: ((URL) -> Void)?
     @ObservationIgnored var onExportGIF: ((URL) -> Void)?
 
@@ -41,6 +45,7 @@ final class GalleryModel {
     private func refilter() {
         visible = Gallery.visible(items, filter: filter, sort: sort, query: query)
         sections = Gallery.sections(visible, sort: sort)
+        selection.formIntersection(visible.map(\.url))
     }
 
     // MARK: Loading
@@ -159,11 +164,22 @@ final class GalleryModel {
     func edit(_ items: [GalleryItem]) {
         let editable = items.filter { $0.kind.isEditable }
         guard !editable.isEmpty else {
-            Toast.show("GIFs can't be edited")
+            Toast.error("GIFs can't be edited")
             return
         }
-        for item in editable {
-            onEdit?(item.url)
+        guard editable.count > Self.editConfirmationThreshold, let window = NSApp.keyWindow else {
+            editable.forEach { onEdit?($0.url) }
+            return
+        }
+        let alert = NSAlert()
+        alert.messageText = "Open \(editable.count) items?"
+        alert.informativeText = "Each one opens in its own editor window."
+        alert.addButton(withTitle: "Open \(editable.count)")
+        alert.addButton(withTitle: "Cancel")
+        alert.beginSheetModal(for: window) { [weak self] response in
+            if response == .alertFirstButtonReturn {
+                editable.forEach { self?.onEdit?($0.url) }
+            }
         }
     }
 
@@ -173,7 +189,7 @@ final class GalleryModel {
         }
         if items.count == 1, first.kind == .image {
             guard Clipboard.copy(imageAt: first.url) else {
-                Toast.show("Could not read \(first.name)")
+                Toast.error("Could not read \(first.name)")
                 return
             }
         } else {
@@ -204,14 +220,14 @@ final class GalleryModel {
             return
         }
         guard let destination = Gallery.renamedURL(of: item.url, to: field.stringValue) else {
-            Toast.show("Enter a name")
+            Toast.error("Enter a name")
             return
         }
         guard destination != item.url else {
             return
         }
         guard !FileManager.default.fileExists(atPath: destination.path) else {
-            Toast.show("\(destination.lastPathComponent) already exists")
+            Toast.error("\(destination.lastPathComponent) already exists")
             return
         }
         do {
@@ -221,7 +237,7 @@ final class GalleryModel {
             anchor = destination
             reload()
         } catch {
-            Toast.show("Rename failed: \(error.localizedDescription)")
+            Toast.error("Rename failed: \(error.localizedDescription)")
         }
     }
 
@@ -232,10 +248,15 @@ final class GalleryModel {
         }
         let position = visible.firstIndex { $0.url == first.url } ?? 0
         var trashed: Set<URL> = []
+        var moves: [(trashed: URL, original: URL)] = []
         for item in items {
             do {
-                try FileManager.default.trashItem(at: item.url, resultingItemURL: nil)
+                var result: NSURL?
+                try FileManager.default.trashItem(at: item.url, resultingItemURL: &result)
                 trashed.insert(item.url)
+                if let result {
+                    moves.append((trashed: result as URL, original: item.url))
+                }
             } catch {
                 log.error("Could not trash \(item.url.path): \(error.localizedDescription)")
             }
@@ -243,13 +264,32 @@ final class GalleryModel {
         self.items.removeAll { trashed.contains($0.url) }
         selection.subtract(trashed)
         if trashed.count < items.count {
-            Toast.show("Could not move \(items.count - trashed.count) to the Trash")
+            Toast.error("Could not move \(items.count - trashed.count) to the Trash")
         } else {
-            Toast.show(items.count == 1 ? "Moved to the Trash" : "Moved \(items.count) files to the Trash")
+            Toast.show(items.count == 1 ? "Moved to the Trash (⌘Z to undo)" : "Moved \(items.count) files to the Trash (⌘Z to undo)")
+        }
+        if !moves.isEmpty {
+            trashHistory.append(moves)
         }
         if selection.isEmpty, !visible.isEmpty {
             click(visible[min(position, visible.count - 1)], command: false, shift: false)
         }
+    }
+
+    var canUndoTrash: Bool { !trashHistory.isEmpty }
+
+    func undoTrash() {
+        guard let moves = trashHistory.popLast() else {
+            return
+        }
+        let restored = Gallery.restore(moves)
+        guard !restored.isEmpty else {
+            Toast.error("Could not put the files back")
+            return
+        }
+        selection = Set(restored)
+        reload()
+        Toast.show(restored.count == 1 ? "Put back" : "Put back \(restored.count) files")
     }
 
     func zoom(by step: Double) {

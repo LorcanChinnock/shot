@@ -87,7 +87,7 @@ enum SystemShortcuts {
         let applied = macOSOwnsKeys == enabled
         if !applied {
             log.error("macOS screenshot shortcuts did not turn \(enabled ? "on" : "off", privacy: .public)")
-            Toast.show("Couldn't change the macOS screenshot shortcuts. Change them in Keyboard Shortcuts.", duration: .seconds(4))
+            Toast.error("Couldn't change the macOS screenshot shortcuts. Change them in Keyboard Shortcuts.")
         }
         return applied
     }

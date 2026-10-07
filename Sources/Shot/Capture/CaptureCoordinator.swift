@@ -187,7 +187,7 @@ final class CaptureCoordinator {
                 let note = result.truncated ? " (first \(Int(GIFExporter.maxDuration)) s only)" : ""
                 Toast.show("Saved \(gifURL.lastPathComponent)\(note)", duration: .seconds(3))
             } catch {
-                Toast.show("GIF export failed: \(error.localizedDescription)", duration: .seconds(3))
+                Toast.error("GIF export failed: \(error.localizedDescription)")
             }
         }
     }
@@ -241,7 +241,7 @@ final class CaptureCoordinator {
         if !Permissions.hasScreenCapture {
             Permissions.showOnboarding()
         }
-        Toast.show(error.localizedDescription)
+        Toast.error(error.localizedDescription)
     }
 }
 
@@ -328,7 +328,7 @@ enum Clipboard {
                 do {
                     return try Data(contentsOf: url)
                 } catch {
-                    Toast.show("Could not read \(url.lastPathComponent): \(error.localizedDescription)")
+                    Toast.error("Could not read \(url.lastPathComponent): \(error.localizedDescription)")
                     return nil
                 }
             }

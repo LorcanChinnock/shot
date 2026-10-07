@@ -619,7 +619,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
         if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
-            removeTextField()
+            commitText()
             return true
         }
         return false
