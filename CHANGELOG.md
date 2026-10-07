@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.14](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.13...v0.7.0-beta.14) (2026-10-07)
+
+
+### Bug Fixes
+
+* **ui:** host SwiftUI below each panel's content view to stop the layout crash after capture ([#133](https://github.com/LorcanChinnock/shot/issues/133)) ([a4e0fae](https://github.com/LorcanChinnock/shot/commit/a4e0faee11ef533c5576a94f0acac35bd285db50))
+
 ## [0.7.0-beta.13](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.12...v0.7.0-beta.13) (2026-10-07)
 
 
