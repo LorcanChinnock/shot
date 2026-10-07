@@ -83,10 +83,8 @@ final class EditorModel {
     var spotlight: SpotlightStyle {
         didSet { rememberStyle { $0.spotlight = spotlight } }
     }
-    /// Custom colours picked lately, newest first, shared by the border and fill palettes.
-    private(set) var recentColors: [RGBA] {
-        didSet { rememberStyle { $0.recentColors = recentColors } }
-    }
+    /// The last custom colour picked in each palette.
+    private(set) var customColors: [ColorSlot: RGBA]
     var widthIndex: Int {
         didSet { rememberStyle { $0.widthIndex = widthIndex } }
     }
@@ -109,7 +107,6 @@ final class EditorModel {
     /// so dragging through the colour panel or along a slider undoes as one step.
     private var pickedKey: String?
     private var isDraggingStyle = false
-    private var recentTask: Task<Void, Never>?
 
     init(fileURL: URL, image: CGImage, scale: CGFloat, style: EditorStyle = Preferences().editorStyle) {
         self.fileURL = fileURL
@@ -124,7 +121,7 @@ final class EditorModel {
         shape = style.shape
         redaction = style.redaction
         spotlight = style.spotlight
-        recentColors = style.recentColors
+        customColors = style.customColors
         widthIndex = style.widthIndex
     }
 
@@ -292,7 +289,7 @@ final class EditorModel {
     }
 
     /// Sets the border colour, or the fill, to one picked from the colour panel, which reports every
-    /// change as the user drags. It's one undo step, and joins the recent colours once the drag settles.
+    /// change as the user drags. It's one undo step, and becomes the palette's last custom colour.
     func pickCustom(_ colour: RGBA, forFill: Bool) {
         if editingText != nil, !forFill {
             setEditingColor(colour)
@@ -311,14 +308,18 @@ final class EditorModel {
                 }
             }
         }
-        recentTask?.cancel()
-        recentTask = Task {
-            try? await Task.sleep(for: .milliseconds(600))
-            guard !Task.isCancelled else {
-                return
-            }
-            recentColors = EditorStyle.recents(adding: colour, to: recentColors)
-        }
+        let slot = customSlot(forFill: forFill)
+        customColors[slot] = colour
+        rememberStyle { $0.customColors[slot] = colour }
+    }
+
+    /// The border or fill palette's last custom colour.
+    func lastCustom(forFill: Bool) -> RGBA? {
+        customColors[customSlot(forFill: forFill)]
+    }
+
+    private func customSlot(forFill: Bool) -> ColorSlot {
+        ColorSlot(forFill: forFill, shown: editingText ?? selection, tool: tool)
     }
 
     /// The width the toolbar shows and sets: the text being typed's, else the selection's, else the width for the next annotation.

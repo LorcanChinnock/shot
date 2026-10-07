@@ -72,17 +72,15 @@ public struct EditorStyle: Equatable, Sendable {
     public var fill: RGBA?
     /// Index into `widths`.
     public var widthIndex: Int
-    /// Custom colours picked lately, newest first.
-    public var recentColors: [RGBA]
+    /// The last custom colour picked in each palette, which its rainbow swatch offers again.
+    public var customColors: [ColorSlot: RGBA]
     public var shape: BoxShape
     public var redaction: Redaction
     public var spotlight: SpotlightStyle
 
-    public static let maxRecentColors = 6
-
     public init(
         tool: EditorTool = .arrow, color: RGBA = RGBA.presets[0], noteColor: RGBA = RGBA.presets[2],
-        fill: RGBA? = nil, widthIndex: Int = 1, recentColors: [RGBA] = [],
+        fill: RGBA? = nil, widthIndex: Int = 1, customColors: [ColorSlot: RGBA] = [:],
         shape: BoxShape = .rectangle, redaction: Redaction = .blur, spotlight: SpotlightStyle = SpotlightStyle()
     ) {
         self.tool = tool
@@ -90,17 +88,29 @@ public struct EditorStyle: Equatable, Sendable {
         self.noteColor = noteColor
         self.fill = fill
         self.widthIndex = widthIndex
-        self.recentColors = recentColors
+        self.customColors = customColors
         self.shape = shape
         self.redaction = redaction
         self.spotlight = spotlight
     }
+}
 
-    /// `recentColors` with `color` first, unless it's a preset.
-    public static func recents(adding color: RGBA, to recents: [RGBA]) -> [RGBA] {
-        guard !RGBA.presets.contains(color) else {
-            return recents
+/// A palette that remembers its own last custom colour.
+public enum ColorSlot: String, Codable, CodingKeyRepresentable, Sendable {
+    case stroke, fill, note
+
+    /// The fill palette's slot, else the note colour's for the note shown or about to be drawn, else the stroke's.
+    public init(forFill: Bool, shown: Annotation?, tool: EditorTool?) {
+        if forFill {
+            self = .fill
+        } else if let shown {
+            if case .note = shown.kind {
+                self = .note
+            } else {
+                self = .stroke
+            }
+        } else {
+            self = tool == .note ? .note : .stroke
         }
-        return Array(([color] + recents.filter { $0 != color }).prefix(maxRecentColors))
     }
 }
