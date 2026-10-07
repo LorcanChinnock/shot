@@ -164,7 +164,7 @@ final class GalleryModel {
     func edit(_ items: [GalleryItem]) {
         let editable = items.filter { $0.kind.isEditable }
         guard !editable.isEmpty else {
-            Toast.show("GIFs can't be edited")
+            Toast.error("GIFs can't be edited")
             return
         }
         guard editable.count > Self.editConfirmationThreshold, let window = NSApp.keyWindow else {
@@ -189,7 +189,7 @@ final class GalleryModel {
         }
         if items.count == 1, first.kind == .image {
             guard Clipboard.copy(imageAt: first.url) else {
-                Toast.show("Could not read \(first.name)")
+                Toast.error("Could not read \(first.name)")
                 return
             }
         } else {
@@ -220,14 +220,14 @@ final class GalleryModel {
             return
         }
         guard let destination = Gallery.renamedURL(of: item.url, to: field.stringValue) else {
-            Toast.show("Enter a name")
+            Toast.error("Enter a name")
             return
         }
         guard destination != item.url else {
             return
         }
         guard !FileManager.default.fileExists(atPath: destination.path) else {
-            Toast.show("\(destination.lastPathComponent) already exists")
+            Toast.error("\(destination.lastPathComponent) already exists")
             return
         }
         do {
@@ -237,7 +237,7 @@ final class GalleryModel {
             anchor = destination
             reload()
         } catch {
-            Toast.show("Rename failed: \(error.localizedDescription)")
+            Toast.error("Rename failed: \(error.localizedDescription)")
         }
     }
 
@@ -264,7 +264,7 @@ final class GalleryModel {
         self.items.removeAll { trashed.contains($0.url) }
         selection.subtract(trashed)
         if trashed.count < items.count {
-            Toast.show("Could not move \(items.count - trashed.count) to the Trash")
+            Toast.error("Could not move \(items.count - trashed.count) to the Trash")
         } else {
             Toast.show(items.count == 1 ? "Moved to the Trash (⌘Z to undo)" : "Moved \(items.count) files to the Trash (⌘Z to undo)")
         }
@@ -284,7 +284,7 @@ final class GalleryModel {
         }
         let restored = Gallery.restore(moves)
         guard !restored.isEmpty else {
-            Toast.show("Could not put the files back")
+            Toast.error("Could not put the files back")
             return
         }
         selection = Set(restored)

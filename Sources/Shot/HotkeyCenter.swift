@@ -57,7 +57,7 @@ final class HotkeyCenter {
         }
         if !failed.isEmpty {
             // Usually another app owns the shortcut, or two Shot actions share it.
-            Toast.show("Shortcut unavailable: \(failed.sorted().joined(separator: ", "))", duration: .seconds(4))
+            Toast.error("Shortcut unavailable: \(failed.sorted().joined(separator: ", "))")
         }
         log.notice("Registered \(self.refs.count) hotkeys")
     }

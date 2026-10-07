@@ -30,7 +30,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
             return
         }
         guard let image = ImageCodec.image(at: url) else {
-            Toast.show("Cannot open \(url.lastPathComponent)")
+            Toast.error("Cannot open \(url.lastPathComponent)")
             return
         }
         let controller = EditorWindowController(model: EditorModel(fileURL: url, image: image, scale: ImageCodec.scale(ofFileAt: url)))

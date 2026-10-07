@@ -179,7 +179,7 @@ final class QuickAccessController {
         if card.isVideo {
             Clipboard.copy(fileURL: card.fileURL)
         } else if !Clipboard.copy(imageAt: card.fileURL) {
-            Toast.show("Could not read \(card.fileURL.lastPathComponent)")
+            Toast.error("Could not read \(card.fileURL.lastPathComponent)")
             return
         }
         Toast.show("Copied")
@@ -200,7 +200,7 @@ final class QuickAccessController {
             try FileManager.default.copyItem(at: card.fileURL, to: destination)
             Toast.show("Saved \(destination.lastPathComponent)")
         } catch {
-            Toast.show("Save failed: \(error.localizedDescription)")
+            Toast.error("Save failed: \(error.localizedDescription)")
         }
     }
 

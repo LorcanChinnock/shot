@@ -232,7 +232,7 @@ final class VideoEditorModel {
 
     func toggleTracks() {
         guard canHideTracks else {
-            Toast.show("Delete the imported clips and transforms to hide the tracks")
+            Toast.error("Delete the imported clips and transforms to hide the tracks")
             return
         }
         setShowsTracks(!showsTracks)
@@ -298,7 +298,7 @@ final class VideoEditorModel {
         }
         selectedClipID = nil
         guard let cut = project.deleting(clip: id) else {
-            Toast.show(project.clip(id).map { _ in "Can't delete this clip" } ?? "Can't cut all of the video")
+            Toast.error(project.clip(id).map { _ in "Can't delete this clip" } ?? "Can't cut all of the video")
             return true
         }
         let joinedAt = project.main.clips.first { $0.id == id }?.start ?? playhead
@@ -322,13 +322,13 @@ final class VideoEditorModel {
                 let media = try await MediaProbe.probe(url)
                 let result = appendToMain ? changed.appending(media) : changed.importing(media, at: playhead)
                 guard let result else {
-                    Toast.show("Can't add \(url.lastPathComponent) there")
+                    Toast.error("Can't add \(url.lastPathComponent) there")
                     continue
                 }
                 changed = result.project
                 added = result.clip
             } catch {
-                Toast.show(error.localizedDescription)
+                Toast.error(error.localizedDescription)
             }
         }
         guard let added else {
@@ -381,7 +381,7 @@ final class VideoEditorModel {
         }
         self.selection = nil
         guard let cut = project.deleting(range: selection) else {
-            Toast.show("Can't cut all of the video")
+            Toast.error("Can't cut all of the video")
             return true
         }
         if cut != project {
@@ -477,7 +477,7 @@ final class VideoEditorModel {
                 compositeLive = built.live
             } catch {
                 log.error("Could not build the composite: \(error.localizedDescription, privacy: .public)")
-                Toast.show("Could not show the edit: \(error.localizedDescription)", duration: .seconds(3))
+                Toast.error("Could not show the edit: \(error.localizedDescription)")
             }
         }
     }
@@ -614,7 +614,7 @@ final class VideoEditorModel {
     @discardableResult
     func save() async -> Bool {
         guard isDirty else {
-            Toast.show("Trim or cut the video first")
+            Toast.error("Trim or cut the video first")
             return false
         }
         if isComposite {
@@ -624,7 +624,7 @@ final class VideoEditorModel {
         do {
             replacements = try FileManager.default.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: fileURL, create: true)
         } catch {
-            Toast.show("Save failed: \(error.localizedDescription)")
+            Toast.error("Save failed: \(error.localizedDescription)")
             return false
         }
         defer { try? FileManager.default.removeItem(at: replacements) }
@@ -635,7 +635,7 @@ final class VideoEditorModel {
         do {
             _ = try FileManager.default.replaceItemAt(fileURL, withItemAt: trimmed)
         } catch {
-            Toast.show("Save failed: \(error.localizedDescription)")
+            Toast.error("Save failed: \(error.localizedDescription)")
             return false
         }
         log.notice("Saved edited video: \(self.fileURL.path)")
@@ -786,7 +786,7 @@ final class VideoEditorModel {
             return true
         } catch {
             log.error("Export failed: \(error.localizedDescription, privacy: .public)")
-            Toast.show("Export failed: \(error.localizedDescription)", duration: .seconds(3))
+            Toast.error("Export failed: \(error.localizedDescription)")
             return false
         }
     }
@@ -976,7 +976,7 @@ extension VideoEditorModel {
     /// Puts an image from `url` on the video, centred and fitted inside half the canvas.
     func addImage(from url: URL) {
         guard let data = try? Data(contentsOf: url), let image = ImageCodec.image(from: data) else {
-            Toast.show("Cannot open \(url.lastPathComponent)")
+            Toast.error("Cannot open \(url.lastPathComponent)")
             return
         }
         let canvas = project.canvasSize

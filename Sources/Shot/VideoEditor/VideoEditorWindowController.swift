@@ -49,7 +49,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
             let model = VideoEditorModel(fileURL: url)
             guard await model.load() else {
                 model.teardown()
-                Toast.show("Cannot open \(url.lastPathComponent)")
+                Toast.error("Cannot open \(url.lastPathComponent)")
                 return
             }
             // A second request for the same file may have finished loading first.

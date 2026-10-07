@@ -329,7 +329,7 @@ final class EditorModel {
             do {
                 regions = try await Redaction.regions(in: source.image).map { $0.offsetBy(dx: source.origin.x, dy: source.origin.y) }
             } catch {
-                Toast.show("Could not read the image: \(error.localizedDescription)")
+                Toast.error("Could not read the image: \(error.localizedDescription)")
                 return
             }
             // The document may have changed while the text was read, so check against it as it is now.
@@ -381,7 +381,7 @@ final class EditorModel {
         do {
             annotation = try Clipboard.annotation()
         } catch {
-            Toast.show("Could not paste: \(error.localizedDescription)")
+            Toast.error("Could not paste: \(error.localizedDescription)")
             return true
         }
         guard let annotation else {
@@ -401,7 +401,7 @@ final class EditorModel {
     func addImages(_ images: [Data], at point: CGPoint?) {
         let decoded = images.compactMap { data in ImageCodec.image(from: data).map { ($0, ImageCodec.scale(of: data)) } }
         guard !decoded.isEmpty else {
-            Toast.show("Could not read the image")
+            Toast.error("Could not read the image")
             return
         }
         recordUndo()
@@ -439,7 +439,7 @@ final class EditorModel {
             try Clipboard.copy(annotation: selection)
             Toast.show("Copied annotation")
         } catch {
-            Toast.show("Could not copy: \(error.localizedDescription)")
+            Toast.error("Could not copy: \(error.localizedDescription)")
         }
         return true
     }
@@ -447,7 +447,7 @@ final class EditorModel {
     /// Copies the flattened image.
     func copy() {
         guard let result = flattened() else {
-            Toast.show("Could not render image")
+            Toast.error("Could not render image")
             return
         }
         Clipboard.copy(png: result.png, image: result.image)
@@ -457,12 +457,12 @@ final class EditorModel {
     @discardableResult
     func save() -> Bool {
         guard let result = flattened() else {
-            Toast.show("Could not render image")
+            Toast.error("Could not render image")
             return false
         }
         let format = ImageFormat(fileExtension: fileURL.pathExtension)
         guard let data = format == .png ? result.png : ImageCodec.data(from: result.image, scale: scale, format: format) else {
-            Toast.show("Could not render image")
+            Toast.error("Could not render image")
             return false
         }
         do {
@@ -472,7 +472,7 @@ final class EditorModel {
             Toast.show("Saved and copied")
             return true
         } catch {
-            Toast.show("Save failed: \(error.localizedDescription)")
+            Toast.error("Save failed: \(error.localizedDescription)")
             return false
         }
     }
