@@ -162,11 +162,11 @@ final class CaptureCoordinator {
         setup = controller
         let result = await controller.run()
         setup = nil
-        guard case let .start(screen, region, windowID) = result else {
+        guard case let .start(screen, region, options) = result else {
             return
         }
         recordingRegion = region
-        try await recorder.start(screen: screen, region: region, windowID: windowID)
+        try await recorder.start(screen: screen, region: region, options: options)
     }
 
     private func recordingFinished(_ url: URL) {

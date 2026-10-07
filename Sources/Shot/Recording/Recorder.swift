@@ -54,12 +54,21 @@ final class Recorder: NSObject {
 
     var isRecording: Bool { phase == .recording || phase == .paused }
 
+    /// Choices made for one recording; Settings only holds the defaults they start from.
+    struct Options {
+        let camera: Bool
+        let microphone: Bool
+        let showsCursor: Bool
+        /// Set when recording one window, which then follows the window and leaves out anything covering it.
+        let windowID: CGWindowID?
+    }
+
     private struct Session {
         let screen: NSScreen
         let region: CGRect
-        /// Set when recording one window, which then follows the window and leaves out anything covering it.
         let windowID: CGWindowID?
         let microphone: Bool
+        let showsCursor: Bool
         /// `nil` means the system default.
         let microphoneID: String?
         let finalURL: URL
@@ -84,15 +93,15 @@ final class Recorder: NSObject {
     // MARK: Session
 
     /// `region` is an AppKit global rect inside `screen`.
-    func start(screen: NSScreen, region: CGRect, windowID: CGWindowID?) async throws {
+    func start(screen: NSScreen, region: CGRect, options: Options) async throws {
         let prefs = Preferences()
-        var microphone = prefs.recordMicrophone
+        var microphone = options.microphone
         if microphone, !(await AVCaptureDevice.requestAccess(for: .audio)) {
             microphone = false
             Toast.error("Microphone access denied; recording without it")
         }
         // A window recording captures only that window, so the bubble would never appear in it.
-        let camera = prefs.recordCamera && windowID == nil
+        let camera = options.camera && options.windowID == nil
         if camera, !CameraBubble.shared.isVisible {
             await CameraBubble.shared.showFromPreferences(in: region)
         } else if !camera {
@@ -102,14 +111,14 @@ final class Recorder: NSObject {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let finalURL = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "mp4", prefix: prefs.filePrefix)
         let microphoneID = prefs.microphoneDeviceID.isEmpty ? nil : AVCaptureDevice(uniqueID: prefs.microphoneDeviceID)?.uniqueID
-        session = Session(screen: screen, region: region, windowID: windowID, microphone: microphone, microphoneID: microphoneID, finalURL: finalURL)
+        session = Session(screen: screen, region: region, windowID: options.windowID, microphone: microphone, showsCursor: options.showsCursor, microphoneID: microphoneID, finalURL: finalURL)
         segments = []
         segmentAudio = []
         mutes = CutList()
         mutedSince = nil
         model = RecordingSessionModel()
         model.cameraOn = CameraBubble.shared.isVisible
-        model.cameraAvailable = windowID == nil
+        model.cameraAvailable = options.windowID == nil
         model.microphoneOn = microphone
         // Panels exist before the stream so the filter can exclude them by window ID.
         showPanels(screen: screen, region: region, prefs: prefs)
@@ -308,7 +317,7 @@ final class Recorder: NSObject {
             config.height = Geometry.evenFloor(local.height * scale)
         }
         config.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(prefs.recordingFPS))
-        config.showsCursor = prefs.recordShowsCursor
+        config.showsCursor = session.showsCursor
         config.captureMicrophone = session.microphone
         config.microphoneCaptureDeviceID = session.microphoneID
         config.capturesAudio = prefs.recordSystemAudio

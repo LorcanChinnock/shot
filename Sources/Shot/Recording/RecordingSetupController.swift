@@ -21,6 +21,8 @@ final class RecordingSetupModel {
     var cameraOn: Bool
     var microphoneOn: Bool
     var cursorOn: Bool
+    /// Set when recording a single window rather than a screen area.
+    var windowID: CGWindowID?
     var countdown: Int?
 
     init(mode: RecordingMode, prefs: Preferences) {
@@ -29,6 +31,8 @@ final class RecordingSetupModel {
         microphoneOn = prefs.recordMicrophone
         cursorOn = prefs.recordShowsCursor
     }
+
+    var options: Recorder.Options { .init(camera: cameraOn, microphone: microphoneOn, showsCursor: cursorOn, windowID: windowID) }
 }
 
 /// Lets the user frame the recording, set options and press Record; recording starts after a 3-second countdown.
@@ -36,8 +40,7 @@ final class RecordingSetupModel {
 final class RecordingSetupController {
     /// Only crosses the continuation on the main actor.
     enum Result: @unchecked Sendable {
-        /// `windowID` is set when recording a single window rather than a screen area.
-        case start(screen: NSScreen, region: CGRect, windowID: CGWindowID?)
+        case start(screen: NSScreen, region: CGRect, options: Recorder.Options)
         case cancel
     }
 
@@ -46,7 +49,6 @@ final class RecordingSetupController {
     private let model: RecordingSetupModel
     private var screen: NSScreen
     private var region: CGRect
-    private var windowID: CGWindowID?
     private var frame: RecordingBorderPanel?
     private var handles: [RegionHandle: HandlePanel] = [:]
     private var bar: SetupBarPanel?
@@ -58,7 +60,7 @@ final class RecordingSetupController {
         model = RecordingSetupModel(mode: mode, prefs: Preferences())
         self.screen = screen
         self.region = region
-        self.windowID = windowID
+        model.windowID = windowID
     }
 
     /// Lets the user pick an area or window with the live overlay, or takes the screen under the pointer.
@@ -116,7 +118,7 @@ final class RecordingSetupController {
                     return
                 }
             }
-            finish(.start(screen: screen, region: region, windowID: windowID))
+            finish(.start(screen: screen, region: region, options: model.options))
         }
     }
 
@@ -153,7 +155,7 @@ final class RecordingSetupController {
             model.mode = mode
             screen = picked.0
             region = picked.1
-            windowID = picked.2
+            model.windowID = picked.2
             tearDownSetup()
             await showSetup(placeCamera: true)
         } else {
@@ -163,7 +165,6 @@ final class RecordingSetupController {
 
     func toggleCamera() async {
         model.cameraOn.toggle()
-        UserDefaults.standard.set(model.cameraOn, forKey: PreferenceKey.recordCamera)
         if model.cameraOn {
             await showCamera()
         } else {
@@ -173,12 +174,10 @@ final class RecordingSetupController {
 
     func toggleMicrophone() {
         model.microphoneOn.toggle()
-        UserDefaults.standard.set(model.microphoneOn, forKey: PreferenceKey.recordMicrophone)
     }
 
     func toggleCursor() {
         model.cursorOn.toggle()
-        UserDefaults.standard.set(model.cursorOn, forKey: PreferenceKey.recordShowsCursor)
     }
 
     // MARK: Panels
@@ -215,7 +214,7 @@ final class RecordingSetupController {
 
     /// A window recording captures only that window, so the bubble would never appear in it.
     private func showCamera() async {
-        if windowID != nil {
+        if model.windowID != nil {
             model.cameraOn = false
             CameraBubble.shared.hide()
             return
@@ -233,7 +232,7 @@ final class RecordingSetupController {
         region = adjusted
         // A dragged screen or window frame is now a custom area.
         model.mode = .area
-        windowID = nil
+        model.windowID = nil
         updateGeometry()
     }
 
