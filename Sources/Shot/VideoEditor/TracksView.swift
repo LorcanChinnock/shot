@@ -452,8 +452,7 @@ struct TracksView: View {
             return .scrub
         }
         if followsMain {
-            // The recording's own sound is the main clip's.
-            model.selectClip(project.main.clips.first { $0.linkedID == clip.id }?.id)
+            model.selectClip(clip.id)
             return .scrub
         }
         return startEditing(clip.id, start: clip.start, end: clip.end, point: point, timeline: timeline, time: time)
