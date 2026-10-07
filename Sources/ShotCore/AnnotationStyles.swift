@@ -89,44 +89,34 @@ public struct SpotlightStyle: Equatable, Hashable, Codable, Sendable {
         }
     }
 
-    public enum Strength: Int, CaseIterable, Codable, Sendable {
-        case light, medium, strong
-
-        public var title: String {
-            switch self {
-            case .light: "Light"
-            case .medium: "Medium"
-            case .strong: "Strong"
-            }
-        }
-    }
+    /// The strengths the slider offers. Each is also the darken effect's alpha.
+    public static let strengths: ClosedRange<Double> = 0.1...0.9
 
     public var shape: BoxShape
     public var effect: Effect
-    public var strength: Strength
+    public var strength: Double
 
-    public init(shape: BoxShape = .rectangle, effect: Effect = .darken, strength: Strength = .medium) {
+    public init(shape: BoxShape = .rectangle, effect: Effect = .darken, strength: Double = 0.5) {
         self.shape = shape
         self.effect = effect
         self.strength = strength
     }
 
-    /// How dark the darken effect makes the image outside the spotlights.
-    public var dimAlpha: CGFloat {
-        switch strength {
-        case .light: 0.3
-        case .medium: 0.5
-        case .strong: 0.7
-        }
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        shape = try container.decode(BoxShape.self, forKey: .shape)
+        effect = try container.decode(Effect.self, forKey: .effect)
+        // Strength used to be a preset stored as 0, 1 or 2 (light, medium, strong). None of those is in `strengths`.
+        let stored = try container.decode(Double.self, forKey: .strength)
+        strength = [0: 0.3, 1: 0.5, 2: 0.7][stored] ?? stored
     }
 
-    /// The blur effect's radius on an image whose longer side is `length` pixels.
+    /// How dark the darken effect makes the image outside the spotlights.
+    public var dimAlpha: CGFloat { strength }
+
+    /// The blur effect's radius on an image whose longer side is `length` pixels. It doubles with every 0.2 of
+    /// strength, so 0.3, 0.5 and 0.7 match the old light, medium and strong presets.
     public func blurRadius(forImageLength length: CGFloat) -> CGFloat {
-        let fraction: CGFloat = switch strength {
-        case .light: 0.004
-        case .medium: 0.008
-        case .strong: 0.016
-        }
-        return max(4, length * fraction)
+        max(4, length * 0.008 * pow(2, (strength - 0.5) / 0.2))
     }
 }
