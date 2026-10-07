@@ -180,6 +180,21 @@ public enum Gallery {
         }
     }
 
+    /// `selection` with `url` added, or removed when it was already there.
+    public static func toggled(_ selection: Set<URL>, _ url: URL) -> Set<URL> {
+        selection.symmetricDifference([url])
+    }
+
+    /// Whether every one of `visible` is selected; false when there is nothing to select.
+    public static func allSelected(_ selection: Set<URL>, in visible: [GalleryItem]) -> Bool {
+        !visible.isEmpty && visible.allSatisfy { selection.contains($0.url) }
+    }
+
+    /// Edit applies only when it can open every item: none are GIFs.
+    public static func canEdit(_ items: [GalleryItem]) -> Bool {
+        !items.isEmpty && items.allSatisfy(\.kind.isEditable)
+    }
+
     /// The next item to select after an arrow key, clamped to the ends.
     public static func moved(from index: Int?, by step: Int, count: Int) -> Int? {
         guard count > 0 else {

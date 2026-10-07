@@ -147,3 +147,25 @@ private func item(_ name: String, _ date: Date, bytes: Int = 1) -> GalleryItem {
     #expect(names == ["a.png", "b.mp4", "c.gif"])
     #expect(Gallery.items(in: folder.appendingPathComponent("missing")).isEmpty)
 }
+
+@Test func toggleAddsOrRemovesOneItem() {
+    let a = URL(fileURLWithPath: "/shots/a.png")
+    let b = URL(fileURLWithPath: "/shots/b.png")
+    #expect(Gallery.toggled([a], b) == [a, b])
+    #expect(Gallery.toggled([a, b], b) == [a])
+    #expect(Gallery.toggled([], a) == [a])
+}
+
+@Test func allSelectedNeedsEveryVisibleItem() {
+    let visible = [item("a.png", now), item("b.mp4", now)]
+    #expect(Gallery.allSelected(Set(visible.map(\.url)), in: visible))
+    #expect(!Gallery.allSelected([visible[0].url], in: visible))
+    #expect(!Gallery.allSelected([], in: visible))
+    #expect(!Gallery.allSelected([], in: []))
+}
+
+@Test func editNeedsEveryItemEditable() {
+    #expect(Gallery.canEdit([item("a.png", now), item("b.mp4", now)]))
+    #expect(!Gallery.canEdit([item("a.png", now), item("c.gif", now)]))
+    #expect(!Gallery.canEdit([]))
+}
