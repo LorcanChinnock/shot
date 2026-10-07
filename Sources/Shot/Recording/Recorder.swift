@@ -188,13 +188,25 @@ final class Recorder: NSObject {
         session = nil
         phase = .idle
         if discard {
-            for url in parts + audio.flatMap(\.files) {
-                try? FileManager.default.removeItem(at: url)
-            }
-            log.notice("Recording discarded")
-            Toast.show("Recording discarded")
+            let pending = PendingAction(
+                commit: {
+                    for url in parts + audio.flatMap(\.files) {
+                        try? FileManager.default.removeItem(at: url)
+                    }
+                    log.notice("Recording discarded")
+                },
+                undo: { [weak self] in
+                    log.notice("Discard undone")
+                    Task { await self?.join(parts, audio: audio, to: finalURL, muting: muted) }
+                }
+            )
+            Toast.show("Recording discarded", duration: .seconds(5), undoable: pending)
             return
         }
+        await join(parts, audio: audio, to: finalURL, muting: muted)
+    }
+
+    private func join(_ parts: [URL], audio: [VideoConcatenator.SegmentAudio], to finalURL: URL?, muting muted: CutList) async {
         guard let finalURL, !parts.isEmpty else {
             return
         }
