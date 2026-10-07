@@ -228,7 +228,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     }
 
     /// Sets a spotlight's effect and strength, keeping its shape; other kinds are left alone.
-    public mutating func setSpotlightLook(effect: SpotlightStyle.Effect, strength: SpotlightStyle.Strength) {
+    public mutating func setSpotlightLook(effect: SpotlightStyle.Effect, strength: Double) {
         if case let .spotlight(rect, style) = kind {
             kind = .spotlight(rect, style: SpotlightStyle(shape: style.shape, effect: effect, strength: strength))
         }
@@ -543,7 +543,7 @@ public struct EditorDocument: @unchecked Sendable {
     public var spotlightStyle: SpotlightStyle? { annotations.spotlightStyle }
 
     /// Gives every spotlight `effect` and `strength`, since they share one dim. Their shapes stay.
-    public mutating func setSpotlights(effect: SpotlightStyle.Effect, strength: SpotlightStyle.Strength) {
+    public mutating func setSpotlights(effect: SpotlightStyle.Effect, strength: Double) {
         for index in annotations.indices {
             annotations[index].setSpotlightLook(effect: effect, strength: strength)
         }

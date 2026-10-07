@@ -162,7 +162,7 @@ import Testing
         let custom = RGBA(0.2, 0.4, 0.6, 0.5)
         let style = EditorStyle(
             tool: .shape, color: blue, noteColor: RGBA.presets[3], fill: custom, widthIndex: thick, customColors: [.stroke: custom, .note: blue],
-            shape: .star, redaction: .pixelate, spotlight: SpotlightStyle(shape: .ellipse, effect: .blur, strength: .strong)
+            shape: .star, redaction: .pixelate, spotlight: SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.7)
         )
         Preferences.remember(style, in: store)
         store.set(Data(), forKey: "editorRecentColors")
