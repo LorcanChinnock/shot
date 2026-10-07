@@ -30,7 +30,8 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
             return
         }
         guard let image = ImageCodec.image(at: url) else {
-            Toast.error("Cannot open \(url.lastPathComponent)")
+            let reason = FileManager.default.fileExists(atPath: url.path) ? "it isn't an image Shot can read" : "it doesn't exist"
+            Toast.error("Cannot open \(url.lastPathComponent): \(reason)")
             return
         }
         let controller = EditorWindowController(model: EditorModel(fileURL: url, image: image, scale: ImageCodec.scale(ofFileAt: url)))

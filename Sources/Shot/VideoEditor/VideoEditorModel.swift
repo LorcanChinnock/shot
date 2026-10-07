@@ -134,13 +134,16 @@ final class VideoEditorModel {
     /// How long Copy and Save run for: the range less the cuts.
     var keptLength: Double { project.duration }
 
-    /// Loads (or reloads, after a save) the file; false when it has no video to show.
-    func load() async -> Bool {
+    /// Loads (or reloads, after a save) the file; throws a readable reason when it has no video to show.
+    func load() async throws {
         let asset = AVURLAsset(url: fileURL)
         do {
             let duration = try await asset.load(.duration).seconds
-            guard duration > 0, let track = try await asset.loadTracks(withMediaType: .video).first else {
-                return false
+            guard duration > 0 else {
+                throw LoadFailure(reason: "it has no length")
+            }
+            guard let track = try await asset.loadTracks(withMediaType: .video).first else {
+                throw LoadFailure(reason: "it has no video track")
             }
             let (naturalSize, transform) = try await track.load(.naturalSize, .preferredTransform)
             let size = naturalSize.applying(transform)
@@ -148,9 +151,11 @@ final class VideoEditorModel {
             self.duration = duration
             aspectRatio = size.height == 0 ? 16 / 9 : abs(size.width / size.height)
             project = Project(source: fileURL, duration: duration, canvasSize: CGSize(width: abs(size.width), height: abs(size.height)), hasAudio: hasAudio)
+        } catch let failure as LoadFailure {
+            throw failure
         } catch {
             log.error("Could not load video: \(error.localizedDescription, privacy: .public)")
-            return false
+            throw LoadFailure(reason: "it isn't a video Shot can read")
         }
         rebuildTask?.cancel()
         itemIsComposite = false
@@ -163,7 +168,11 @@ final class VideoEditorModel {
         thumbnailSets = [:]
         waveforms = [:]
         applyRange()
-        return true
+    }
+
+    struct LoadFailure: LocalizedError {
+        let reason: String
+        var errorDescription: String? { reason }
     }
 
     func teardown() {
@@ -641,7 +650,7 @@ final class VideoEditorModel {
         log.notice("Saved edited video: \(self.fileURL.path)")
         Clipboard.copy(fileURL: fileURL)
         Toast.show("Saved and copied")
-        _ = await load()
+        try? await load()
         return true
     }
 
@@ -976,7 +985,7 @@ extension VideoEditorModel {
     /// Puts an image from `url` on the video, centred and fitted inside half the canvas.
     func addImage(from url: URL) {
         guard let data = try? Data(contentsOf: url), let image = ImageCodec.image(from: data) else {
-            Toast.error("Cannot open \(url.lastPathComponent)")
+            Toast.error("Cannot open \(url.lastPathComponent): it isn't an image Shot can read")
             return
         }
         let canvas = project.canvasSize
