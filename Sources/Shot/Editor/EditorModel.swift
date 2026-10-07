@@ -50,7 +50,8 @@ final class EditorModel {
     // The tool, colours and width are remembered for the next editor window as they change.
     // They're not part of the document, so changing them is never an undo step.
     var tool: EditorTool {
-        // Only the select tool selects, and the toolbar restyles the selection, so drop it when drawing.
+        // The toolbar restyles the selection, so drop it when changing tool: it's either picked with the
+        // select tool or the annotation just drawn with another.
         didSet {
             if tool != .select {
                 selectedID = nil
@@ -147,14 +148,23 @@ final class EditorModel {
         set {
             if editingText != nil {
                 setEditingColor(newValue)
-            } else if selection != nil {
-                restyleSelection { $0.color = newValue }
-            } else if tool == .note {
-                noteColor = newValue
-            } else {
-                color = newValue
+                return
+            }
+            restyleSelection { $0.color = newValue }
+            if stylesNextAnnotation {
+                if tool == .note {
+                    noteColor = newValue
+                } else {
+                    color = newValue
+                }
             }
         }
+    }
+
+    /// True when the toolbar sets the style of the next annotation: nothing is selected, or the selection is the
+    /// annotation just drawn, so fixing its style fixes the tool's too. One picked with the select tool restyles alone.
+    private var stylesNextAnnotation: Bool {
+        selection == nil || tool != .select
     }
 
     /// True when the toolbar offers a colour and width: the text being typed or the selection takes them, or else the tool does.
@@ -184,14 +194,13 @@ final class EditorModel {
     }
 
     func setShape(_ newShape: BoxShape) {
-        guard selection != nil else {
-            shape = newShape
-            return
-        }
         restyleSelection {
             if case let .shape(_, rect) = $0.kind {
                 $0.kind = .shape(newShape, rect: rect)
             }
+        }
+        if stylesNextAnnotation {
+            shape = newShape
         }
     }
 
@@ -204,11 +213,10 @@ final class EditorModel {
     }
 
     func setRedaction(_ newRedaction: Redaction) {
-        guard selection != nil else {
-            redaction = newRedaction
-            return
-        }
         restyleSelection { $0.setRedaction(newRedaction) }
+        if stylesNextAnnotation {
+            redaction = newRedaction
+        }
     }
 
     /// The next spotlight's style: the chosen shape, with the effect and strength the image's spotlights already share.
@@ -229,14 +237,13 @@ final class EditorModel {
     }
 
     func setSpotlightShape(_ newShape: BoxShape) {
-        guard selection != nil else {
-            spotlight.shape = newShape
-            return
-        }
         restyleSelection {
             if case let .spotlight(rect, style) = $0.kind {
                 $0.kind = .spotlight(rect, style: SpotlightStyle(shape: newShape, effect: style.effect, strength: style.strength))
             }
+        }
+        if stylesNextAnnotation {
+            spotlight.shape = newShape
         }
     }
 
@@ -253,9 +260,8 @@ final class EditorModel {
             selection != nil ? selection?.fill : fill
         }
         set {
-            if selection != nil {
-                restyleSelection { $0.fill = newValue }
-            } else {
+            restyleSelection { $0.fill = newValue }
+            if stylesNextAnnotation {
                 fill = newValue
             }
         }
@@ -282,15 +288,20 @@ final class EditorModel {
     func pickCustom(_ colour: RGBA, forFill: Bool) {
         if editingText != nil, !forFill {
             setEditingColor(colour)
-        } else if let selection {
-            let key = "\(selection.id)-\(forFill)"
-            restyleSelection(coalescing: key) { forFill ? ($0.fill = colour) : ($0.color = colour) }
-        } else if forFill {
-            fill = colour
-        } else if tool == .note {
-            noteColor = colour
         } else {
-            color = colour
+            if let selection {
+                let key = "\(selection.id)-\(forFill)"
+                restyleSelection(coalescing: key) { forFill ? ($0.fill = colour) : ($0.color = colour) }
+            }
+            if stylesNextAnnotation {
+                if forFill {
+                    fill = colour
+                } else if tool == .note {
+                    noteColor = colour
+                } else {
+                    color = colour
+                }
+            }
         }
         recentTask?.cancel()
         recentTask = Task {
@@ -317,10 +328,11 @@ final class EditorModel {
                 if !document.annotations.contains(where: { $0.id == text.id }) {
                     widthIndex = newValue
                 }
-            } else if selection != nil {
-                restyleSelection { $0.setLineWidth(Self.baseWidths[newValue] * scale) }
             } else {
-                widthIndex = newValue
+                restyleSelection { $0.setLineWidth(Self.baseWidths[newValue] * scale) }
+                if stylesNextAnnotation {
+                    widthIndex = newValue
+                }
             }
         }
     }
@@ -361,11 +373,13 @@ final class EditorModel {
         }
     }
 
-    /// Adds `annotation` as one undoable step, growing the canvas if it reaches past the edge.
+    /// Adds `annotation` as one undoable step, growing the canvas if it reaches past the edge, and selects it
+    /// so the toolbar can fix its style until the next one is drawn.
     func add(_ annotation: Annotation) {
         recordUndo()
         document.annotations.append(annotation)
         document.grow(toFit: annotation, margin: canvasMargin)
+        selectedID = annotation.id
     }
 
     /// Puts text or a note as it was typed and styled into the document as one undoable step: in place of the
