@@ -850,6 +850,11 @@ extension VideoEditorModel {
         }
     }
 
+    /// True when the palette offers a colour and width: the selected annotation takes them, or else the tool does.
+    var showsStyle: Bool {
+        selectedAnnotation?.annotation.isStyled ?? annotationTool?.isStyled ?? false
+    }
+
     var showsFill: Bool {
         selectedAnnotation?.annotation.supportsFill ?? (annotationTool == .rect || annotationTool == .ellipse)
     }

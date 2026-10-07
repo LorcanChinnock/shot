@@ -24,10 +24,35 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    public var title: String { rawValue.capitalized }
+    public var title: String {
+        switch self {
+        case .select: "Select"
+        case .arrow: "Arrow"
+        case .line: "Line"
+        case .rect: "Rectangle"
+        case .ellipse: "Ellipse"
+        case .pen: "Pen"
+        case .text: "Text"
+        case .note: "Sticky Note"
+        case .highlight: "Highlight"
+        case .spotlight: "Spotlight"
+        case .pixelate: "Pixelate"
+        case .blur: "Blur"
+        case .counter: "Counter"
+        case .crop: "Crop"
+        }
+    }
 
     /// False for select and crop, which an editor never starts with.
     public var isDrawing: Bool { self != .select && self != .crop }
+
+    /// True for the tools that draw in the chosen colour and width.
+    public var isStyled: Bool {
+        switch self {
+        case .arrow, .line, .rect, .ellipse, .pen, .text, .note, .counter: true
+        case .select, .highlight, .spotlight, .pixelate, .blur, .crop: false
+        }
+    }
 }
 
 /// The tool, colours and width a new editor window starts with: the last ones used.

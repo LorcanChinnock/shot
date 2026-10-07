@@ -11,33 +11,33 @@ struct TracksToolbar: View {
         HStack(spacing: 8) {
             Button { model.split() } label: { Label("Split", systemImage: "scissors") }
                 .buttonStyle(BrutalButtonStyle(compact: true))
-                .help("Split the clip at the playhead (S)")
+                .brutalTip("Split the clip at the playhead (S)")
             Button { _ = model.deleteSelectedClip() } label: { Label("Delete", systemImage: "trash") }
                 .buttonStyle(BrutalButtonStyle(color: model.selectedClipID == nil ? .white.opacity(0.6) : Brutal.pink, compact: true))
                 .disabled(model.selectedClipID == nil)
-                .help("Cut out the selected clip and close the gap (⌫)")
+                .brutalTip("Cut out the selected clip and close the gap (⌫)")
             ImportMenu(model: model)
             Button {
                 model.setAnnotationTool(model.isAnnotating ? nil : (model.annotationStyle.tool == .crop ? .arrow : model.annotationStyle.tool))
             } label: { Label("Annotate", systemImage: "pencil.tip.crop.circle") }
                 .buttonStyle(BrutalButtonStyle(color: model.isAnnotating ? Brutal.pink : .white, compact: true))
-                .help("Draw arrows, shapes, text, blur and more over the video")
+                .brutalTip("Draw arrows, shapes, text, blur and more over the video")
             Button { model.toggleInspector() } label: { Label("Inspector", systemImage: "slider.horizontal.3") }
                 .buttonStyle(BrutalButtonStyle(color: model.showsInspector ? Brutal.violet : .white, compact: true))
-                .help("Position, scale, rotation, opacity, volume and keyframes of the selected clip")
+                .brutalTip("Position, scale, rotation, opacity, volume and keyframes of the selected clip")
             Button { model.toggleSnapping() } label: { Label("Snap", systemImage: "magnet") }
                 .buttonStyle(BrutalButtonStyle(color: model.snapping ? Brutal.mint : .white, compact: true))
-                .help("Snap the playhead to clip edges (N)")
+                .brutalTip("Snap the playhead to clip edges (N)")
             Spacer(minLength: 8)
             Button { model.zoom(bySteps: -1) } label: { Image(systemName: "minus.magnifyingglass") }
                 .buttonStyle(BrutalButtonStyle(compact: true))
-                .help("Zoom out (⌘−)")
+                .brutalTip("Zoom out (⌘−)")
             Button { model.resetZoom() } label: { Text("Fit") }
                 .buttonStyle(BrutalButtonStyle(compact: true))
-                .help("Fit the whole project in the window (⌘0)")
+                .brutalTip("Fit the whole project in the window (⌘0)")
             Button { model.zoom(bySteps: 1) } label: { Image(systemName: "plus.magnifyingglass") }
                 .buttonStyle(BrutalButtonStyle(compact: true))
-                .help("Zoom in (⌘+)")
+                .brutalTip("Zoom in (⌘+)")
         }
         .frame(height: Self.height)
         .disabled(model.isExporting)
@@ -59,7 +59,7 @@ struct ImportMenu: View {
         .buttonStyle(BrutalButtonStyle(color: Brutal.sky, compact: true))
         .menuIndicator(.hidden)
         .fixedSize()
-        .help("Add video or audio files to the timeline")
+        .brutalTip("Add video or audio files to the timeline")
     }
 
     private func pick(appendToMain: Bool) {

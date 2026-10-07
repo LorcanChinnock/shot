@@ -33,7 +33,7 @@ struct GalleryRootView: View {
             Slider(value: Bindable(model).tileSize, in: Gallery.tileSizes)
                 .frame(width: 80)
                 .tint(Brutal.ink)
-                .help("Thumbnail size (⌘+ and ⌘−)")
+                .brutalTip("Thumbnail size (⌘+ and ⌘−)")
                 .accessibilityLabel(Text("Thumbnail size"))
             Image(systemName: "photo")
                 .font(.system(size: 15, weight: .bold))
@@ -67,7 +67,7 @@ struct GalleryRootView: View {
         .padding(.horizontal, 10)
         .frame(width: 170, height: 30)
         .brutalSurface(Color.white.opacity(0.85), radius: 8, shadow: 2)
-        .help("Search by file name (⌘F)")
+        .brutalTip("Search by file name (⌘F)")
     }
 
     private var sortMenu: some View {
@@ -94,7 +94,7 @@ struct GalleryRootView: View {
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .fixedSize()
-        .help("Sort")
+        .brutalTip("Sort")
     }
 
     // MARK: Grid
@@ -202,15 +202,15 @@ struct GalleryRootView: View {
             Button("Edit") { model.edit(selected) }
                 .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
                 .disabled(!selected.contains { $0.kind.isEditable })
-                .help("Open in the editor (Return)")
+                .brutalTip("Open in the editor (Return)")
             Button("Copy") { model.copy(selected) }
                 .buttonStyle(BrutalButtonStyle(compact: true))
-                .help("Copy (⌘C)")
+                .brutalTip("Copy (⌘C)")
             Button("Show in Finder") { model.reveal(selected) }
                 .buttonStyle(BrutalButtonStyle(compact: true))
             Button("Move to Trash") { model.trash(selected) }
                 .buttonStyle(BrutalButtonStyle(color: Brutal.red, compact: true))
-                .help("Move to the Trash (⌘⌫)")
+                .brutalTip("Move to the Trash (⌘⌫)")
         }
         .disabled(selected.isEmpty)
         .padding(.horizontal, Brutal.windowInset)

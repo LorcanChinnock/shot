@@ -105,6 +105,15 @@ private let shapeFrame = CGRect(x: 20, y: 20, width: 100, height: 60)
     #expect(!annotation(.arrow(from: .zero, to: CGPoint(x: 9, y: 9))).supportsFill)
 }
 
+@Test func onlyDrawnMarksTakeAColourAndWidth() {
+    #expect(EditorTool.allCases.filter { !$0.isStyled } == [.select, .highlight, .spotlight, .pixelate, .blur, .crop])
+    #expect(annotation(.freehand([.zero, CGPoint(x: 9, y: 9)])).isStyled)
+    #expect(annotation(.note("Hi", rect: shapeFrame)).isStyled)
+    for kind in [Annotation.Kind.highlight(shapeFrame), .pixelate(shapeFrame), .blur(shapeFrame), .spotlight(shapeFrame)] {
+        #expect(!annotation(kind).isStyled)
+    }
+}
+
 @Test func aFilledShapeIsHitInside() {
     let centre = CGPoint(x: shapeFrame.midX, y: shapeFrame.midY)
     for kind in [Annotation.Kind.rect(shapeFrame), .ellipse(shapeFrame)] {

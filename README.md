@@ -39,7 +39,7 @@ Pick an area on a frozen screen with a magnifier, or a window or the full screen
 
 ### Annotate anything
 
-Arrows, sticky notes, blur and auto-redaction, a spotlight, a pen and more, with room to annotate outside the screenshot and to combine several images on one canvas.
+Arrows, sticky notes, blur and pixelate, a spotlight, a pen and more, with room to annotate outside the screenshot and to combine several images on one canvas.
 
 <img src="docs/media/editor.png" width="720" alt="The annotation editor with arrows, a sticky note, a blurred email address, and notes beside the screenshot">
 

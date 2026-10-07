@@ -21,7 +21,7 @@ struct ClipInspector: View {
                             if model.project.supports(preset, forClip: id) {
                                 Button(preset.title) { model.applyPreset(preset) }
                                     .buttonStyle(BrutalButtonStyle(color: Brutal.violet.opacity(0.7), compact: true))
-                                    .help("\(preset.title) animation at the start of the \(isNote ? "annotation" : "clip")")
+                                    .brutalTip("\(preset.title) animation at the start of the \(isNote ? "annotation" : "clip")")
                             }
                         }
                     }
@@ -29,7 +29,7 @@ struct ClipInspector: View {
                     if let time = model.selectedKeyframe, let easing = animation.easing(at: time) {
                         Text("EASING").font(.system(size: 11, weight: .black)).tracking(1.2).foregroundStyle(Brutal.ink.opacity(0.75))
                         BrutalSegmented(selection: Binding(get: { easing }, set: { model.setKeyframeEasing($0) }), options: Easing.allCases.map { ($0, $0.title) }, color: Brutal.mint)
-                            .help("How the value moves from this keyframe to the next")
+                            .brutalTip("How the value moves from this keyframe to the next")
                     }
                     if !animation.isEmpty {
                         Button("Clear keyframes") { model.clearKeyframes() }
@@ -141,7 +141,7 @@ struct ClipInspector: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help(here ? "Remove this keyframe" : "Keyframe \(property.rawValue) here")
+        .brutalTip(here ? "Remove this keyframe" : "Keyframe \(property.rawValue) here")
         .accessibilityLabel(Text(here ? "Remove \(property.rawValue) keyframe" : "Add \(property.rawValue) keyframe"))
     }
 

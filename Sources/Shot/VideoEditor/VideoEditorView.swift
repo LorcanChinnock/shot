@@ -33,16 +33,16 @@ struct VideoEditorRootView: View {
                     .layoutPriority(1)
                 Button { model.toggleTracks() } label: { Label("Tracks", systemImage: "rectangle.split.3x1").fixedSize() }
                     .buttonStyle(BrutalButtonStyle(color: model.showsTracks ? (model.canHideTracks ? Brutal.violet : Brutal.violet.opacity(0.55)) : .white, compact: true))
-                    .help("Show the tracks (T)")
+                    .brutalTip("Show the tracks (T)")
                 Button("Copy") { Task { await model.copy() } }
                     .buttonStyle(BrutalButtonStyle(compact: true))
-                    .help("Copy video (⌘C)")
+                    .brutalTip("Copy video (⌘C)")
                 Button("Export") { Task { await model.export() } }
                     .buttonStyle(BrutalButtonStyle(color: Brutal.sky, compact: true))
-                    .help("Export a new \(model.options.format.rawValue.uppercased()) with these options next to the video, and copy it")
+                    .brutalTip("Export a new \(model.options.format.rawValue.uppercased()) with these options next to the video, and copy it")
                 Button(model.isComposite ? "Save copy" : "Save") { Task { await model.save() } }
                     .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
-                    .help(model.isComposite ? "Write the edit as a new video next to the original and copy it (⌘S)" : "Save the edited video and copy it (⌘S)")
+                    .brutalTip(model.isComposite ? "Write the edit as a new video next to the original and copy it (⌘S)" : "Save the edited video and copy it (⌘S)")
             }
             .disabled(model.isExporting)
             .padding(.leading, GlassWindow.trafficLightsWidth)
@@ -75,7 +75,7 @@ struct VideoEditorRootView: View {
                 }
                 .buttonStyle(.plain)
                 .padding(.top, playButtonInset)
-                .help(model.isPlaying ? "Pause (Space)" : "Play (Space)")
+                .brutalTip(model.isPlaying ? "Pause (Space)" : "Play (Space)")
                 .accessibilityLabel(Text(model.isPlaying ? "Pause" : "Play"))
                 if model.showsTracks {
                     TracksView(model: model, height: lanesHeight)
@@ -124,21 +124,21 @@ struct ExportOptionsBar: View {
     var body: some View {
         HStack(spacing: 12) {
             BrutalSegmented(selection: option(\.format), options: [(.mp4, "MP4"), (.gif, "GIF")], color: Brutal.sky)
-                .help("Export format")
+                .brutalTip("Export format")
             if model.options.format == .gif {
                 caption("FPS")
                 BrutalSegmented(selection: option(\.gifFrameRate), options: VideoExportOptions.gifFrameRates.map { ($0, "\($0)") }, color: Brutal.mint)
-                    .help("GIF frames per second")
+                    .brutalTip("GIF frames per second")
                 caption("WIDTH")
                 BrutalSegmented(selection: option(\.gifWidth), options: VideoExportOptions.gifWidths.map { ($0, Self.widthLabel($0)) }, color: Brutal.mint)
-                    .help("GIF width in pixels; it's never made wider than the video")
+                    .brutalTip("GIF width in pixels; it's never made wider than the video")
             } else {
                 caption("MUTE")
                 Toggle("Mute", isOn: option(\.muted))
                     .toggleStyle(BrutalToggleStyle(color: Brutal.pink))
                     .labelsHidden()
                     .accessibilityLabel(Text("Mute"))
-                    .help("Leave the sound out")
+                    .brutalTip("Leave the sound out")
             }
             caption("SPEED")
             BrutalSegmented(selection: option(\.speed), options: VideoExportOptions.speeds.map { ($0, Self.speedLabel($0)) }, color: Brutal.violet)
@@ -148,13 +148,13 @@ struct ExportOptionsBar: View {
                         Color.clear.contentShape(Rectangle()).onTapGesture { Toast.error(Self.speedLockedReason) }
                     }
                 }
-                .help(speedIsLocked ? Self.speedLockedReason : "Playback speed")
+                .brutalTip(speedIsLocked ? Self.speedLockedReason : "Playback speed")
             Spacer(minLength: 8)
             Text(model.estimatedSize.map { "≈ " + ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .file) } ?? "≈ …")
                 .font(Brutal.mono)
                 .foregroundStyle(Brutal.ink.opacity(0.7))
                 .fixedSize()
-                .help("Estimated size of the exported file")
+                .brutalTip("Estimated size of the exported file")
         }
         .frame(height: Self.height)
         .disabled(model.isExporting)

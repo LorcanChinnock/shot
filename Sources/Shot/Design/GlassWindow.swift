@@ -89,6 +89,7 @@ private struct GlassChrome<Content: View>: View {
     var body: some View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .tipHost()
             .background(alignment: .top) {
                 // Only the title strip moves the window; a drag anywhere else belongs to the content.
                 TitleStrip()
