@@ -120,11 +120,17 @@ struct TracksView: View {
             let viewWidth = geometry.size.width
             let width = viewWidth * model.zoom
             let timeline = TrimTimeline(duration: model.fitDuration, minX: 0, width: width)
+            let pointsPerSecond = width / CGFloat(max(model.fitDuration, .leastNonzeroMagnitude))
+            // What was trimmed off the front shows before 0, so the lanes start that far in.
+            let lead = model.project.trimmedLead
+            let leadX = CGFloat(lead) * pointsPerSecond
+            let reach = model.project.tracks.indices.flatMap(model.project.trimmedEnds).map(\.end).max() ?? 0
             ScrollView([.horizontal, .vertical], showsIndicators: false) {
                 lanes(timeline, layout: layout)
-                    .frame(width: width, height: layout.height, alignment: .topLeading)
+                    .offset(x: leadX)
+                    .frame(width: max(width, leadX + CGFloat(reach) * pointsPerSecond), height: layout.height, alignment: .topLeading)
                     .contentShape(Rectangle())
-                    .gesture(drag(timeline, layout: layout))
+                    .gesture(drag(timeline, layout: layout, leadX: leadX))
                     .task(id: thumbnailRequests(width: width)) {
                         for request in thumbnailRequests(width: width) {
                             await model.loadThumbnails(of: request.source, duration: request.duration, aspectRatio: request.aspectRatio, count: request.count, height: request.height)
@@ -137,13 +143,13 @@ struct TracksView: View {
             }
             .onChange(of: model.zoom) { old, new in
                 // Zoom around the playhead if it's in view, or the middle of the view if not.
-                let oldX = viewWidth * old * CGFloat(model.playhead / max(model.fitDuration, .leastNonzeroMagnitude)) - scrollX
+                let oldX = viewWidth * old * CGFloat((model.playhead + lead) / max(model.fitDuration, .leastNonzeroMagnitude)) - scrollX
                 let anchor = (0...viewWidth).contains(oldX) ? oldX : viewWidth / 2
                 let time = (scrollX + anchor) / (viewWidth * old) * model.fitDuration
                 scroll.scrollTo(x: TimelineZoom.offset(keeping: time, atViewX: anchor, duration: model.fitDuration, zoom: new, viewWidth: viewWidth))
             }
             .onChange(of: model.playhead) {
-                let x = timeline.x(for: model.playhead)
+                let x = timeline.x(for: model.playhead) + leadX
                 if model.isPlaying, x < scrollX || x > scrollX + viewWidth - 24 {
                     scroll.scrollTo(x: max(0, x - viewWidth * 0.2))
                 }
@@ -190,15 +196,11 @@ struct TracksView: View {
                     annotationClip(clip, height: lane.height, pointsPerSecond: pointsPerSecond)
                         .offset(x: CGFloat(clip.start) * pointsPerSecond, y: lane.y)
                 }
+                ForEach(Array(project.trimmedEnds(ofTrack: lane.track).enumerated()), id: \.offset) { _, end in
+                    clip(end, in: lane, pointsPerSecond: pointsPerSecond, trimmed: true)
+                }
                 ForEach(project.tracks[lane.track].clips) { clip in
-                    Group {
-                        if project.tracks[lane.track].kind == .audio {
-                            soundClip(clip, height: lane.height, pointsPerSecond: pointsPerSecond)
-                        } else {
-                            pictureClip(clip, height: lane.height, pointsPerSecond: pointsPerSecond)
-                        }
-                    }
-                    .offset(x: CGFloat(clip.start) * pointsPerSecond, y: lane.y)
+                    self.clip(clip, in: lane, pointsPerSecond: pointsPerSecond)
                 }
             }
             if let selection = model.selection, let main = layout.lane(ofTrack: 0) {
@@ -216,13 +218,19 @@ struct TracksView: View {
                 }
             }
             if let main = layout.lane(ofTrack: 0), let first = project.main.clips.first, let last = project.main.clips.last {
+                ForEach(project.mainCuts, id: \.self) { time in
+                    Rectangle().fill(Brutal.pink)
+                        .frame(width: 3, height: main.height)
+                        .offset(x: CGFloat(time) * pointsPerSecond - 1.5, y: main.y)
+                        .allowsHitTesting(false)
+                }
                 handle("chevron.compact.left", height: main.height).offset(x: timeline.x(for: first.start), y: main.y)
                 handle("chevron.compact.right", height: main.height).offset(x: timeline.x(for: last.end) - TrimTimeline.handleWidth, y: main.y)
             }
             Capsule().fill(Color.white)
                 .overlay(Capsule().strokeBorder(Brutal.ink, lineWidth: 1))
                 .frame(width: 4, height: layout.height - Self.rulerHeight + 4)
-                .offset(x: timeline.x(for: model.playhead) - 2, y: Self.rulerHeight - 2)
+                .offset(x: max(0, timeline.x(for: model.playhead) - 2), y: Self.rulerHeight - 2)
                 .allowsHitTesting(false)
         }
     }
@@ -248,9 +256,23 @@ struct TracksView: View {
         return clip.id == selected || clip.linkedID == selected
     }
 
-    private func pictureClip(_ clip: Clip, height: CGFloat, pointsPerSecond: CGFloat) -> some View {
+    /// A clip in its lane; `trimmed` greys out a stretch that was trimmed off it.
+    private func clip(_ clip: Clip, in lane: LaneLayout.Lane, pointsPerSecond: CGFloat, trimmed: Bool = false) -> some View {
+        Group {
+            if model.project.tracks[lane.track].kind == .audio {
+                soundClip(clip, height: lane.height, pointsPerSecond: pointsPerSecond, trimmed: trimmed)
+            } else {
+                pictureClip(clip, height: lane.height, pointsPerSecond: pointsPerSecond, trimmed: trimmed)
+            }
+        }
+        .saturation(trimmed ? 0 : 1)
+        .opacity(trimmed ? 0.35 : 1)
+        .offset(x: CGFloat(clip.start) * pointsPerSecond, y: lane.y)
+    }
+
+    private func pictureClip(_ clip: Clip, height: CGFloat, pointsPerSecond: CGFloat, trimmed: Bool) -> some View {
         let width = CGFloat(clip.length) * pointsPerSecond
-        let selected = isSelected(clip)
+        let selected = !trimmed && isSelected(clip)
         let thumbnails = model.thumbnailSets[clip.source] ?? []
         let tile = max(1, height * clip.size.width / max(clip.size.height, 1))
         return Canvas { context, size in
@@ -272,9 +294,9 @@ struct TracksView: View {
         .allowsHitTesting(false)
     }
 
-    private func soundClip(_ clip: Clip, height: CGFloat, pointsPerSecond: CGFloat) -> some View {
+    private func soundClip(_ clip: Clip, height: CGFloat, pointsPerSecond: CGFloat, trimmed: Bool) -> some View {
         let width = CGFloat(clip.length) * pointsPerSecond
-        let selected = isSelected(clip)
+        let selected = !trimmed && isSelected(clip)
         let waveform = model.waveforms[clip.source]
         let volume = Float(clip.volume)
         return Canvas { context, size in
@@ -346,17 +368,19 @@ struct TracksView: View {
 
     // MARK: Gestures
 
-    private func drag(_ timeline: TrimTimeline, layout: LaneLayout) -> some SwiftUI.Gesture {
+    /// `leadX` is where time 0 sits in the lanes.
+    private func drag(_ timeline: TrimTimeline, layout: LaneLayout, leadX: CGFloat) -> some SwiftUI.Gesture {
         let pointsPerSecond = timeline.width / CGFloat(max(model.fitDuration, .leastNonzeroMagnitude))
         return DragGesture(minimumDistance: 0)
             .onChanged { value in
                 if gesture == nil {
-                    gesture = (start(value.startLocation, timeline: timeline, layout: layout), value.startLocation.x, pointsPerSecond)
+                    let point = CGPoint(x: value.startLocation.x - leadX, y: value.startLocation.y)
+                    gesture = (start(point, timeline: timeline, layout: layout), value.startLocation.x, pointsPerSecond)
                 }
                 guard let gesture else {
                     return
                 }
-                let time = Double(value.location.x / gesture.pointsPerSecond)
+                let time = Double((value.location.x - leadX) / gesture.pointsPerSecond)
                 let reach = Double(Snapping.reach / gesture.pointsPerSecond)
                 switch gesture.kind {
                 case .scrub:

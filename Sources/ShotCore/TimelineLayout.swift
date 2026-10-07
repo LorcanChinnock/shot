@@ -112,3 +112,43 @@ public struct LaneLayout: Equatable, Sendable {
         lanes.first { $0.track == track }
     }
 }
+
+extension Project {
+    /// How much was trimmed off the front of the main track, which the lanes leave room for before time 0.
+    public var trimmedLead: Double { main.clips.first?.sourceStart ?? 0 }
+
+    /// The trimmed-off ends of the clips in track `index`, as far as they reach into empty space and no further back than
+    /// `trimmedLead` before 0, each as the clip narrowed to that stretch and placed where it would play.
+    public func trimmedEnds(ofTrack index: Int) -> [Clip] {
+        let clips = tracks[index].clips.sorted { $0.start < $1.start }
+        var ends: [Clip] = []
+        for (position, clip) in clips.enumerated() {
+            let before = position > 0 ? clips[position - 1].end : -trimmedLead
+            let after = position + 1 < clips.count ? clips[position + 1].start : .infinity
+            let head = min(clip.sourceStart, clip.start - before)
+            if head > Self.shortestClip {
+                var end = clip
+                end.sourceStart -= head
+                end.sourceEnd = clip.sourceStart
+                end.start -= head
+                ends.append(end)
+            }
+            let tail = min(clip.sourceDuration - clip.sourceEnd, after - clip.end)
+            if tail > Self.shortestClip {
+                var end = clip
+                end.sourceStart = clip.sourceEnd
+                end.sourceEnd += tail
+                end.start = clip.end
+                ends.append(end)
+            }
+        }
+        return ends
+    }
+
+    /// Where on the timeline the main track jumps over a cut section of the same file.
+    public var mainCuts: [Double] {
+        zip(main.clips, main.clips.dropFirst()).compactMap { previous, next in
+            next.source == previous.source && abs(next.sourceStart - previous.sourceEnd) > Self.shortestClip ? next.start : nil
+        }
+    }
+}

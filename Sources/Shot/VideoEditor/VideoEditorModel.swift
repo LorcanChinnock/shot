@@ -74,6 +74,8 @@ final class VideoEditorModel {
     private static let showsInspectorKey = "videoEditorShowsInspector"
 
     @ObservationIgnored private var dragOrigin: Project?
+    /// Where in the recording the playhead was before a trim handle drag moved it to show the edge.
+    @ObservationIgnored private var trimResume: Double?
     @ObservationIgnored private var rebuildTask: Task<Void, Never>?
     /// What the compositor draws over the project's own annotations while one is being edited.
     @ObservationIgnored private var liveState: (hidden: Set<UUID>, drawn: [AnnotationClip]) = ([], [])
@@ -196,6 +198,9 @@ final class VideoEditorModel {
 
     /// The handles stop where the cuts would leave too little to play.
     func drag(_ handle: TrimHandle, to time: Double) {
+        if trimResume == nil {
+            trimResume = project.sourceTime(atTimeline: playhead)
+        }
         if let moved = dragOrigin?.trimmingMain(handle, toSource: time) {
             project = moved
         }
@@ -209,6 +214,10 @@ final class VideoEditorModel {
     func endDrag() {
         let origin = dragOrigin
         dragOrigin = nil
+        if let resume = trimResume {
+            trimResume = nil
+            seekTimeline(to: project.timelinePosition(ofSource: resume))
+        }
         // A drag that only scrubbed leaves the player alone.
         guard let origin, origin != project else {
             return
