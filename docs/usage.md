@@ -76,7 +76,7 @@ Pick a colour and one of three line widths in the toolbar. The editor remembers 
 
 - Click an annotation with the select tool to select it, then drag it, or drag its handles to resize it. Choosing a colour or width restyles the selection.
 - Double-click text or a sticky note to edit it. Clicking a note with the note tool edits it too.
-- Press Delete to remove the selection, and Esc to deselect.
+- Press Delete to remove the selection, and Esc to deselect. While you type in a text box or sticky note, Esc finishes it; ⌘Z removes it again.
 - Arrow keys nudge the selection by 1 pixel, or 10 with Shift.
 - ⌘C copies the selection, ⌘V pastes it, and ⌘D duplicates it. You can paste into another editor window. With nothing selected, ⌘C copies the whole image.
 - ⌘Z undoes and ⇧⌘Z redoes.
