@@ -22,9 +22,11 @@ struct EditorRootView: View {
                 Button("Copy") { model.copy() }
                     .buttonStyle(BrutalButtonStyle(compact: true))
                     .brutalTip("Copy image (⌘C)")
-                Button("Save") { model.save() }
-                    .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
-                    .brutalTip("Save and copy (⌘S)")
+                PartyColor(Brutal.yellow) { color in
+                    Button("Save") { model.save() }
+                        .buttonStyle(BrutalButtonStyle(color: color, compact: true))
+                }
+                .brutalTip("Save and copy (⌘S)")
             }
             .padding(.leading, GlassWindow.trafficLightsWidth)
             .frame(height: GlassWindow.titlebarHeight)
@@ -557,7 +559,7 @@ struct Tile<Label: View>: View {
                 .frame(width: 30, height: 30)
                 .background {
                     if selected {
-                        Color.clear.brutalSurface(color, radius: 7, shadow: 2)
+                        PartyColor(color) { Color.clear.brutalSurface($0, radius: 7, shadow: 2) }
                     } else if hovering {
                         RoundedRectangle(cornerRadius: 7, style: .circular).fill(Brutal.ink.opacity(0.08))
                     }
