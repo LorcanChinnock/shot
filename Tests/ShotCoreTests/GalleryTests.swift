@@ -81,6 +81,24 @@ private func item(_ name: String, _ date: Date, bytes: Int = 1) -> GalleryItem {
     #expect(Gallery.renamedURL(of: url, to: "x")?.deletingLastPathComponent().path == "/shots")
 }
 
+@Test func restoreMovesFilesBackAndSkipsTakenPaths() throws {
+    let manager = FileManager.default
+    let root = manager.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let bin = root.appendingPathComponent("bin")
+    try manager.createDirectory(at: bin, withIntermediateDirectories: true)
+    defer { try? manager.removeItem(at: root) }
+    let moves = ["a.png", "b.png"].map { (trashed: bin.appendingPathComponent($0), original: root.appendingPathComponent($0)) }
+    for move in moves {
+        try Data([1]).write(to: move.trashed)
+    }
+    try Data([2]).write(to: moves[1].original)
+
+    #expect(Gallery.restore(moves) == [moves[0].original])
+    #expect(manager.fileExists(atPath: moves[0].original.path))
+    #expect(manager.fileExists(atPath: moves[1].trashed.path))
+    #expect(try Data(contentsOf: moves[1].original) == Data([2]))
+}
+
 @Test func arrowMovementClamps() {
     #expect(Gallery.moved(from: nil, by: 1, count: 5) == 0)
     #expect(Gallery.moved(from: nil, by: -1, count: 5) == 4)

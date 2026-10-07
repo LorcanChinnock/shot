@@ -169,6 +169,17 @@ public enum Gallery {
         return url.deletingLastPathComponent().appendingPathComponent(base).appendingPathExtension(ext)
     }
 
+    /// Moves trashed files back to where they were and returns the originals it restored; one whose old path is taken again stays in the Trash.
+    public static func restore(_ moves: [(trashed: URL, original: URL)]) -> [URL] {
+        let manager = FileManager.default
+        return moves.compactMap { move in
+            guard !manager.fileExists(atPath: move.original.path), (try? manager.moveItem(at: move.trashed, to: move.original)) != nil else {
+                return nil
+            }
+            return move.original
+        }
+    }
+
     /// The next item to select after an arrow key, clamped to the ends.
     public static func moved(from index: Int?, by step: Int, count: Int) -> Int? {
         guard count > 0 else {
