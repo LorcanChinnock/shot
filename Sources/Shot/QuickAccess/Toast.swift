@@ -19,7 +19,7 @@ enum Toast {
         let panel = panel ?? makePanel()
         let textWidth = (message as NSString).size(withAttributes: [.font: font]).width.rounded(.up)
         let size = NSSize(width: textWidth + 32 + shadow, height: 38 + shadow)
-        panel.contentView = NSHostingView(rootView: ToastView(message: message, hold: { hold($0) }, dismiss: { panel.orderOut(nil) }))
+        panel.contentView = NSHostingView(fixedFrame: ToastView(message: message, hold: { hold($0) }, dismiss: { panel.orderOut(nil) }))
         let screen = NSScreen.underPointer ?? NSScreen.main ?? NSScreen.screens[0]
         let origin = NSPoint(x: screen.frame.midX - size.width / 2, y: screen.visibleFrame.minY + 80)
         panel.setFrame(NSRect(origin: origin, size: size), display: true)

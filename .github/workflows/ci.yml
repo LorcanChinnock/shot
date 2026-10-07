@@ -20,6 +20,8 @@ jobs:
     runs-on: ${{ inputs.lint-only && 'ubuntu-latest' || 'macos-26' }}
     steps:
       - uses: actions/checkout@v5
+      - name: Lint
+        run: make lint
       # Restores the newest cache for the same dependencies, so builds are incremental.
       - uses: actions/cache@v4
         if: ${{ !inputs.lint-only }}

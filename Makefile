@@ -11,13 +11,16 @@ endif
 
 INSTALL_DIR ?= /Applications
 
-.PHONY: build test bundle app run dist reset-tcc icon clean
+.PHONY: build test lint bundle app run dist reset-tcc icon clean
 
 build:
 	swift build
 
 test:
 	swift test $(TEST_FLAGS)
+
+lint:
+	scripts/lint.sh
 
 bundle:
 	scripts/bundle.sh
