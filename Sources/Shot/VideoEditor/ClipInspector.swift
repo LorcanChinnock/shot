@@ -63,9 +63,9 @@ struct ClipInspector: View {
                 }
             } else {
                 position(values, animation)
-                slider("SCALE", property: .scale, value: values.scale, range: 0.1...3, format: { String(format: "%.2f×", $0) }, animation: animation) {
+                slider("SCALE", property: .scale, value: log2(values.scale), range: PropertyValues.scaleDoublings, format: { String(format: "%.2f×", exp2($0)) }, animation: animation) {
                     var changed = values
-                    changed.scale = $0
+                    changed.scale = exp2($0)
                     return changed
                 }
                 slider("TURN", property: .rotation, value: values.rotation * 180 / .pi, range: -180...180, format: { "\(Int($0.rounded()))°" }, animation: animation) {
