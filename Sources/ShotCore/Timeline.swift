@@ -273,7 +273,10 @@ public struct Project: Equatable, Codable, Sendable {
             let grown = first.sourceStart - target
             result.tracks[0].clips[0].sourceStart = target
             result.tracks[0].clips[0].animation = first.animation.shifted(by: grown)
-            result.followingMain { $0.sourceStart = target }
+            result.followingMain {
+                $0.sourceStart = target
+                $0.animation = $0.animation.shifted(by: grown)
+            }
         case .end:
             let target = max(min(time, last.sourceDuration), isOneRecording ? first.sourceStart + TrimRange.minimumLength : last.sourceStart)
             if target <= last.sourceEnd {
