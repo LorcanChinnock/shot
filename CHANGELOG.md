@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.17](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.16...v0.7.0-beta.17) (2026-10-07)
+
+
+### Bug Fixes
+
+* **ui:** drop hard shadows and thin outlines on image and video previews ([#140](https://github.com/LorcanChinnock/shot/issues/140)) ([1ecbd62](https://github.com/LorcanChinnock/shot/commit/1ecbd62c94ebccd56ea801cc636639cb78ca264c))
+
 ## [0.7.0-beta.16](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.15...v0.7.0-beta.16) (2026-10-07)
 
 
