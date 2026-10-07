@@ -142,6 +142,11 @@ public struct PropertyValues: Equatable, Sendable {
     public var volume: Double
     public var reveal: Double
 
+    /// The scale a clip can take, from the canvas handles and the Inspector alike.
+    public static let scaleRange = 0.05...20
+    /// `scaleRange` in doublings, so a slider gives each doubling equal travel and puts 1× in the middle.
+    public static let scaleDoublings = log2(scaleRange.lowerBound)...log2(scaleRange.upperBound)
+
     public init(position: CGSize = .zero, scale: Double = 1, rotation: Double = 0, opacity: Double = 1, volume: Double = 1, reveal: Double = 1) {
         self.position = position
         self.scale = scale
