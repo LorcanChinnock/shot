@@ -62,7 +62,7 @@ final class VideoEditorModel {
     }
     /// The time of the keyframe being worked on, in seconds from the start of the selected clip.
     private(set) var selectedKeyframe: Double?
-    private(set) var showsInspector = UserDefaults.standard.object(forKey: VideoEditorModel.showsInspectorKey) as? Bool ?? true
+    private(set) var showsInspector = UserDefaults.standard.bool(forKey: VideoEditorModel.showsInspectorKey)
     private(set) var waveforms: [URL: Waveform] = [:]
     /// The tool drawing annotations over the video, or nil when none is picked. Never crop.
     private(set) var annotationTool: EditorTool?
