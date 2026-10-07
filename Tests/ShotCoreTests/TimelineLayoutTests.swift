@@ -45,22 +45,24 @@ import Testing
     #expect(waveform.peaks(in: 2..<2, count: 3).isEmpty)
 }
 
-@Test func loadingARecordingReadsItsToneAsEvenPeaks() async throws {
-    let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).mp4")
-    defer { try? FileManager.default.removeItem(at: url) }
-    try await writeScreenRecording(to: url, seconds: 2, audio: true)
-    let waveform = try #require(try await Waveform.load(url))
-    #expect(abs(waveform.duration - 2) < 0.1)
-    // 8000 / 32768 is about 0.24, and AAC lands within a few percent of it.
-    let peaks = waveform.peaks(in: 0.2..<1.8, count: 8)
-    #expect(peaks.allSatisfy { $0.max > 0.2 && $0.max < 0.3 && $0.min < -0.2 })
-}
+extension MediaTests {
+    @Test func loadingARecordingReadsItsToneAsEvenPeaks() async throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).mp4")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try await writeScreenRecording(to: url, seconds: 2, audio: true)
+        let waveform = try #require(try await Waveform.load(url))
+        #expect(abs(waveform.duration - 2) < 0.1)
+        // 8000 / 32768 is about 0.24, and AAC lands within a few percent of it.
+        let peaks = waveform.peaks(in: 0.2..<1.8, count: 8)
+        #expect(peaks.allSatisfy { $0.max > 0.2 && $0.max < 0.3 && $0.min < -0.2 })
+    }
 
-@Test func aRecordingWithoutAudioHasNoWaveform() async throws {
-    let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).mp4")
-    defer { try? FileManager.default.removeItem(at: url) }
-    try await writeScreenRecording(to: url, seconds: 1, audio: false)
-    #expect(try await Waveform.load(url) == nil)
+    @Test func aRecordingWithoutAudioHasNoWaveform() async throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).mp4")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try await writeScreenRecording(to: url, seconds: 1, audio: false)
+        #expect(try await Waveform.load(url) == nil)
+    }
 }
 
 @Test func rulerLabelsStayApartAsYouZoom() {
@@ -115,27 +117,29 @@ private func layoutProject() throws -> Project {
     #expect(layout.lane(ofTrack: 9) == nil)
 }
 
-@Test func probingAFileReadsItsDurationPictureAndSound() async throws {
-    let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).mp4")
-    defer { try? FileManager.default.removeItem(at: url) }
-    try await writeScreenRecording(to: url, seconds: 2, audio: true)
-    let media = try await MediaProbe.probe(url)
-    #expect(abs(media.duration - 2) < 0.1 && media.size == CGSize(width: 640, height: 400) && media.hasAudio)
-}
+extension MediaTests {
+    @Test func probingAFileReadsItsDurationPictureAndSound() async throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).mp4")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try await writeScreenRecording(to: url, seconds: 2, audio: true)
+        let media = try await MediaProbe.probe(url)
+        #expect(abs(media.duration - 2) < 0.1 && media.size == CGSize(width: 640, height: 400) && media.hasAudio)
+    }
 
-@Test func probingARotatedFileReportsItsPlayingSize() async throws {
-    let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).mp4")
-    defer { try? FileManager.default.removeItem(at: url) }
-    try await writeSolidVideo(to: url, color: .red, size: CGSize(width: 320, height: 180), seconds: 1, rotated: true)
-    let media = try await MediaProbe.probe(url)
-    #expect(media.size == CGSize(width: 180, height: 320) && !media.hasAudio)
-}
+    @Test func probingARotatedFileReportsItsPlayingSize() async throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).mp4")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try await writeSolidVideo(to: url, color: .red, size: CGSize(width: 320, height: 180), seconds: 1, rotated: true)
+        let media = try await MediaProbe.probe(url)
+        #expect(media.size == CGSize(width: 180, height: 320) && !media.hasAudio)
+    }
 
-@Test func probingSomethingThatIsntMediaFails() async throws {
-    let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).txt")
-    try Data("hello".utf8).write(to: url)
-    defer { try? FileManager.default.removeItem(at: url) }
-    await #expect(throws: MediaProbe.ProbeError.self) { try await MediaProbe.probe(url) }
+    @Test func probingSomethingThatIsntMediaFails() async throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).txt")
+        try Data("hello".utf8).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        await #expect(throws: MediaProbe.ProbeError.self) { try await MediaProbe.probe(url) }
+    }
 }
 
 @Test func annotationLanesSitAboveEverything() throws {
