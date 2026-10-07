@@ -150,7 +150,7 @@ final class QuickAccessController {
             panel.becomesKeyOnlyIfNeeded = true
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             panel.isReleasedWhenClosed = false
-            let hostingView = NSHostingView(rootView: QuickAccessView(model: model, controller: self))
+            let hostingView = NSHostingView(fixedFrame: QuickAccessView(model: model, controller: self))
             panel.contentView = hostingView
             self.panel = panel
         }

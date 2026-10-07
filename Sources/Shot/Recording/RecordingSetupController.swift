@@ -395,7 +395,7 @@ private final class SetupBarPanel: NSPanel {
         hasShadow = false
         isReleasedWhenClosed = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
-        contentView = NSHostingView(rootView: SetupBarView(model: model, actions: actions))
+        contentView = NSHostingView(fixedFrame: SetupBarView(model: model, actions: actions))
     }
 
     func place(below region: CGRect, on screen: NSScreen) {
@@ -479,7 +479,7 @@ private final class CountdownPanel: NSPanel {
         hasShadow = false
         isReleasedWhenClosed = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
-        contentView = NSHostingView(rootView: CountdownView(model: model, onCancel: onCancel))
+        contentView = NSHostingView(fixedFrame: CountdownView(model: model, onCancel: onCancel))
     }
 
     override func cancelOperation(_ sender: Any?) {
