@@ -191,6 +191,72 @@ func draggingAnEdgeChangesOneSide(kind: Annotation.Kind) {
     #expect(doc.snapshot == placed)
 }
 
+// MARK: Corner radius
+
+@Test func onlyRoundedBoxesBigEnoughHaveRadiusHandles() {
+    #expect(annotation(.shape(.rounded, rect: box)).radiusHandles(tolerance: 4).map(\.handle) == AnnotationHandle.corners.map { .radius($0) })
+    #expect(annotation(.spotlight(box, style: SpotlightStyle(shape: .rounded))).radiusHandles(tolerance: 4).count == 4)
+    #expect(annotation(.shape(.rectangle, rect: box)).radiusHandles(tolerance: 4).isEmpty)
+    #expect(annotation(.spotlight(box, style: SpotlightStyle(shape: .ellipse))).radiusHandles(tolerance: 4).isEmpty)
+    #expect(annotation(.shape(.rounded, rect: CGRect(x: 0, y: 0, width: 200, height: 39))).radiusHandles(tolerance: 4).isEmpty)
+    #expect(annotation(.shape(.rounded, rect: box)).handles.count == 8)
+}
+
+@Test func radiusHandlesSitInsideTheCornersAndFollowTheRadius() {
+    var rounded = annotation(.shape(.rounded, rect: box))
+    rounded.cornerRadius = 0
+    #expect(rounded.radiusHandles(tolerance: 4)[0].point == CGPoint(x: 108, y: 108))
+    #expect(rounded.handle(at: CGPoint(x: 109, y: 107), tolerance: 4) == .radius(.topLeft))
+    #expect(rounded.handle(at: CGPoint(x: 101, y: 101), tolerance: 4) == .topLeft)
+    rounded.cornerRadius = 20
+    #expect(rounded.radiusHandles(tolerance: 4)[2].point == CGPoint(x: 282, y: 182))
+}
+
+@Test func draggingARadiusHandleSetsOneRadiusUpToAPill() {
+    let start = annotation(.shape(.rounded, rect: box))
+    var a = start
+    // The handle starts 18 in from the corner: 8 for the tolerance plus half the radius of 20.
+    a.resize(.radius(.topLeft), to: CGPoint(x: 130, y: 130), tolerance: 4)
+    #expect(a.cornerRadius == 44)
+    #expect(a.roundedBox?.rect == box)
+    var b = start
+    b.resize(.radius(.bottomRight), to: CGPoint(x: 280, y: 180), tolerance: 4)
+    #expect(b.cornerRadius == 24)
+    var c = start
+    c.resize(.radius(.topRight), to: CGPoint(x: 100, y: 300), tolerance: 4)
+    #expect(c.cornerRadius == 50)
+    var d = start
+    d.resize(.radius(.bottomLeft), to: CGPoint(x: 0, y: 300), tolerance: 4)
+    #expect(d.cornerRadius == 0)
+    var rectangle = annotation(.shape(.rectangle, rect: box))
+    rectangle.resize(.radius(.topLeft), to: CGPoint(x: 130, y: 130), tolerance: 4)
+    #expect(rectangle.cornerRadius == nil)
+}
+
+@Test func theRadiusSurvivesResizingAndKeepsWithinTheBox() {
+    var a = annotation(.shape(.rounded, rect: box))
+    a.cornerRadius = 30
+    a.resize(.right, to: CGPoint(x: 500, y: 150))
+    #expect(a.roundedBox?.radius == 30)
+    a.resize(.bottom, to: CGPoint(x: 0, y: 120))
+    #expect(a.roundedBox?.radius == 10)
+    // A radius bigger than the box allows draws a pill rather than failing.
+    _ = BoxShape.rounded.path(in: CGRect(x: 0, y: 0, width: 10, height: 4), cornerRadius: 100)
+}
+
+@Test func aRoundedBoxWithNoRadiusKeepsItsOldLook() throws {
+    let legacy = annotation(.shape(.rounded, rect: box))
+    let decoded = try JSONDecoder().decode(Annotation.self, from: JSONEncoder().encode(legacy))
+    #expect(decoded.cornerRadius == nil)
+    #expect(decoded.roundedBox?.radius == 20)
+}
+
+@Test func scalingARoundedBoxScalesItsRadius() {
+    var a = annotation(.shape(.rounded, rect: box))
+    a.cornerRadius = 10
+    #expect(a.scaled(by: 2).cornerRadius == 20)
+}
+
 // MARK: Restyling
 
 @Test func changingTheLineWidthScalesTextAndKeepsOtherGeometry() {
