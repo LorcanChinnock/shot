@@ -84,7 +84,7 @@ struct TransformOverlay: View {
             var scaled = origin.values
             let before = hypot(origin.pointer.x - center.x, origin.pointer.y - center.y)
             let now = hypot(pointer.x - center.x, pointer.y - center.y)
-            scaled.scale = min(max(origin.values.scale * Double(now / max(before, 1)), 0.05), 20)
+            scaled.scale = min(max(origin.values.scale * Double(now / max(before, 1)), PropertyValues.scaleRange.lowerBound), PropertyValues.scaleRange.upperBound)
             return scaled
         }
     }
