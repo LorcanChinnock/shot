@@ -29,6 +29,8 @@ final class RecordingSetupModel {
         microphoneOn = prefs.recordMicrophone
         cursorOn = prefs.recordShowsCursor
     }
+
+    var options: Recorder.Options { .init(camera: cameraOn, microphone: microphoneOn, showsCursor: cursorOn) }
 }
 
 /// Lets the user frame the recording, set options and press Record; recording starts after a 3-second countdown.
@@ -36,7 +38,7 @@ final class RecordingSetupModel {
 final class RecordingSetupController {
     /// Only crosses the continuation on the main actor.
     enum Result: @unchecked Sendable {
-        case start(screen: NSScreen, region: CGRect)
+        case start(screen: NSScreen, region: CGRect, options: Recorder.Options)
         case cancel
     }
 
@@ -113,7 +115,7 @@ final class RecordingSetupController {
                     return
                 }
             }
-            finish(.start(screen: screen, region: region))
+            finish(.start(screen: screen, region: region, options: model.options))
         }
     }
 
@@ -159,7 +161,6 @@ final class RecordingSetupController {
 
     func toggleCamera() async {
         model.cameraOn.toggle()
-        UserDefaults.standard.set(model.cameraOn, forKey: PreferenceKey.recordCamera)
         if model.cameraOn {
             await showCamera()
         } else {
@@ -169,12 +170,10 @@ final class RecordingSetupController {
 
     func toggleMicrophone() {
         model.microphoneOn.toggle()
-        UserDefaults.standard.set(model.microphoneOn, forKey: PreferenceKey.recordMicrophone)
     }
 
     func toggleCursor() {
         model.cursorOn.toggle()
-        UserDefaults.standard.set(model.cursorOn, forKey: PreferenceKey.recordShowsCursor)
     }
 
     // MARK: Panels
