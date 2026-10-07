@@ -383,7 +383,7 @@ private struct ScreenPreview: View {
             .padding(12)
         }
         .frame(height: 210)
-        .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
+        .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular).inset(by: Brutal.underInk(Brutal.border)))
         .brutalSurface(Color.clear)
         .animation(.spring(response: 0.35, dampingFraction: 0.75), value: position)
     }
@@ -481,7 +481,7 @@ private struct CameraSettings: View {
                         CameraPreviewView(session: session)
                             .id(ObjectIdentifier(session))
                             .frame(width: 120, height: 120)
-                            .clipShape(Circle())
+                            .clipShape(Circle().inset(by: Brutal.underInk(Brutal.border)))
                             .brutalCircle(Color.black, shadow: 3)
                     }
                     Button(preview.isRunning ? "Stop" : "Preview") {
