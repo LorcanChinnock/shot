@@ -33,4 +33,12 @@ public enum CameraBubbleLayout {
     public static func resized(_ frame: CGRect, to diameter: CGFloat) -> CGRect {
         CGRect(x: frame.midX - diameter / 2, y: frame.midY - diameter / 2, width: diameter, height: diameter)
     }
+
+    /// Moves `frame` the least distance that keeps it inside `region` with `inset` on each side,
+    /// favouring the bottom-left when it can't fit.
+    public static func clamped(_ frame: CGRect, in region: CGRect, inset: CGFloat) -> CGRect {
+        let x = max(min(frame.minX, region.maxX - inset - frame.width), region.minX + inset)
+        let y = max(min(frame.minY, region.maxY - inset - frame.height), region.minY + inset)
+        return CGRect(origin: CGPoint(x: x, y: y), size: frame.size)
+    }
 }
