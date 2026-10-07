@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0-beta.15](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.14...v0.7.0-beta.15) (2026-10-07)
+
+
+### Bug Fixes
+
+* **ui:** hide the clip inspector by default and fill its empty state ([#135](https://github.com/LorcanChinnock/shot/issues/135)) ([114113a](https://github.com/LorcanChinnock/shot/commit/114113a78f3b1bf1011c78c06899a99919db3197))
+* **ui:** keep trim handles under the pointer and show trimmed footage greyed ([#137](https://github.com/LorcanChinnock/shot/issues/137)) ([f62ed9d](https://github.com/LorcanChinnock/shot/commit/f62ed9d56d8a928a3cbdf3c2828af8c885deefe4))
+
 ## [0.7.0-beta.14](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.13...v0.7.0-beta.14) (2026-10-07)
 
 
