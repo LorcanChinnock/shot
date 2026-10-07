@@ -87,10 +87,8 @@ final class EditorModel {
     var alignment: TextAlign {
         didSet { rememberStyle { $0.alignment = alignment } }
     }
-    /// Custom colours picked lately, newest first, shared by the border and fill palettes.
-    private(set) var recentColors: [RGBA] {
-        didSet { rememberStyle { $0.recentColors = recentColors } }
-    }
+    /// The last custom colour picked in each palette.
+    private(set) var customColors: [ColorSlot: RGBA]
     var widthIndex: Int {
         didSet { rememberStyle { $0.widthIndex = widthIndex } }
     }
@@ -109,10 +107,10 @@ final class EditorModel {
     /// The annotation the arrow keys last moved, while that move is still the latest undo step,
     /// so holding an arrow key down undoes as one step.
     private var nudgedID: UUID?
-    /// Which selection property a custom colour pick last changed, while that is still the latest undo step,
-    /// so dragging through the colour panel undoes as one step.
+    /// Which property a custom colour pick or a style slider last changed, while that is still the latest undo step,
+    /// so dragging through the colour panel or along a slider undoes as one step.
     private var pickedKey: String?
-    private var recentTask: Task<Void, Never>?
+    private var isDraggingStyle = false
 
     init(fileURL: URL, image: CGImage, scale: CGFloat, style: EditorStyle = Preferences().editorStyle) {
         self.fileURL = fileURL
@@ -128,7 +126,7 @@ final class EditorModel {
         redaction = style.redaction
         spotlight = style.spotlight
         alignment = style.alignment
-        recentColors = style.recentColors
+        customColors = style.customColors
         widthIndex = style.widthIndex
     }
 
@@ -253,10 +251,17 @@ final class EditorModel {
     }
 
     /// Sets the effect and strength of every spotlight in the image, since they share one dim, and of the next one.
-    func setSpotlightLook(effect: SpotlightStyle.Effect, strength: SpotlightStyle.Strength) {
+    /// Changes during a drag of a style slider are one undo step.
+    func setSpotlightLook(effect: SpotlightStyle.Effect, strength: Double) {
         spotlight.effect = effect
         spotlight.strength = strength
-        edit { $0.setSpotlights(effect: effect, strength: strength) }
+        edit(coalescing: isDraggingStyle ? "spotlight-look" : nil) { $0.setSpotlights(effect: effect, strength: strength) }
+    }
+
+    /// Call as a drag of a style slider starts and ends, so each drag is one undo step.
+    func setDraggingStyle(_ dragging: Bool) {
+        isDraggingStyle = dragging
+        pickedKey = nil
     }
 
     /// The alignment the toolbar shows: the text being typed's, else the selection's, else the next text's or note's.
@@ -312,7 +317,7 @@ final class EditorModel {
     }
 
     /// Sets the border colour, or the fill, to one picked from the colour panel, which reports every
-    /// change as the user drags. It's one undo step, and joins the recent colours once the drag settles.
+    /// change as the user drags. It's one undo step, and becomes the palette's last custom colour.
     func pickCustom(_ colour: RGBA, forFill: Bool) {
         if editingText != nil, !forFill {
             setEditingColor(colour)
@@ -331,14 +336,18 @@ final class EditorModel {
                 }
             }
         }
-        recentTask?.cancel()
-        recentTask = Task {
-            try? await Task.sleep(for: .milliseconds(600))
-            guard !Task.isCancelled else {
-                return
-            }
-            recentColors = EditorStyle.recents(adding: colour, to: recentColors)
-        }
+        let slot = customSlot(forFill: forFill)
+        customColors[slot] = colour
+        rememberStyle { $0.customColors[slot] = colour }
+    }
+
+    /// The border or fill palette's last custom colour.
+    func lastCustom(forFill: Bool) -> RGBA? {
+        customColors[customSlot(forFill: forFill)]
+    }
+
+    private func customSlot(forFill: Bool) -> ColorSlot {
+        ColorSlot(forFill: forFill, shown: editingText ?? selection, tool: tool)
     }
 
     /// The width the toolbar shows and sets: the text being typed's, else the selection's, else the width for the next annotation.
@@ -367,6 +376,7 @@ final class EditorModel {
 
     var lineWidth: CGFloat { Self.baseWidths[widthIndex] * scale }
     var fontSize: CGFloat { lineWidth * 6 }
+    var cornerRadius: CGFloat { Annotation.defaultCornerRadius * scale }
     /// Space kept between an annotation and a canvas edge that grew to hold it.
     var canvasMargin: CGFloat { 16 * scale }
     /// How far down and right a paste or duplicate lands from the original.
@@ -443,24 +453,13 @@ final class EditorModel {
         guard let selectedID else {
             return
         }
-        let amend = key != nil && key == pickedKey
-        func apply(_ doc: inout EditorDocument) {
+        edit(coalescing: key) { doc in
             guard let index = doc.annotations.firstIndex(where: { $0.id == selectedID }) else {
                 return
             }
             change(&doc.annotations[index])
             doc.grow(toFit: doc.annotations[index], margin: canvasMargin)
             doc.shrinkPadding(margin: canvasMargin)
-        }
-        if amend {
-            apply(&document)
-            isDirty = true
-            return
-        }
-        let before = document.snapshot
-        edit(apply)
-        if document.snapshot != before {
-            pickedKey = key
         }
     }
 
@@ -477,7 +476,13 @@ final class EditorModel {
     }
 
     /// Applies `change` as one undoable step, or does nothing if it leaves the document as it was.
-    private func edit(_ change: (inout EditorDocument) -> Void) {
+    /// Calls with the same `key` in a row amend that step instead of adding another.
+    private func edit(coalescing key: String? = nil, _ change: (inout EditorDocument) -> Void) {
+        if key != nil, key == pickedKey {
+            change(&document)
+            isDirty = true
+            return
+        }
         let before = document.snapshot
         change(&document)
         guard document.snapshot != before else {
@@ -485,7 +490,7 @@ final class EditorModel {
         }
         undoStack.record(before)
         nudgedID = nil
-        pickedKey = nil
+        pickedKey = key
         isDirty = true
     }
 
