@@ -152,3 +152,10 @@ private func keys(_ pairs: (Double, Double)...) -> [Keyframe<Double>] {
     let decoded = try JSONDecoder().decode(ClipAnimation.self, from: JSONEncoder().encode(animation))
     #expect(decoded == animation)
 }
+
+@Test func theScaleSliderSpansTheWholeScaleRangeWithOneTimesInTheMiddle() {
+    let doublings = PropertyValues.scaleDoublings
+    #expect(abs(exp2(doublings.lowerBound) - PropertyValues.scaleRange.lowerBound) < 1e-9)
+    #expect(abs(exp2(doublings.upperBound) - PropertyValues.scaleRange.upperBound) < 1e-9)
+    #expect(abs(doublings.lowerBound + doublings.upperBound) < 1e-9)
+}
