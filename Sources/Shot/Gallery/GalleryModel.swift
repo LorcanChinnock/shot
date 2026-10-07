@@ -41,6 +41,7 @@ final class GalleryModel {
     @ObservationIgnored private var debounce: Task<Void, Never>?
 
     var selectedItems: [GalleryItem] { visible.filter { selection.contains($0.url) } }
+    var allSelected: Bool { Gallery.allSelected(selection, in: visible) }
 
     private func refilter() {
         visible = Gallery.visible(items, filter: filter, sort: sort, query: query)
@@ -119,9 +120,7 @@ final class GalleryModel {
         }
         anchor = item.url
         if command {
-            if !selection.insert(item.url).inserted {
-                selection.remove(item.url)
-            }
+            selection = Gallery.toggled(selection, item.url)
         } else {
             selection = [item.url]
         }
@@ -162,23 +161,22 @@ final class GalleryModel {
     // MARK: Actions
 
     func edit(_ items: [GalleryItem]) {
-        let editable = items.filter { $0.kind.isEditable }
-        guard !editable.isEmpty else {
+        guard Gallery.canEdit(items) else {
             Toast.error("GIFs can't be edited")
             return
         }
-        guard editable.count > Self.editConfirmationThreshold, let window = NSApp.keyWindow else {
-            editable.forEach { onEdit?($0.url) }
+        guard items.count > Self.editConfirmationThreshold, let window = NSApp.keyWindow else {
+            items.forEach { onEdit?($0.url) }
             return
         }
         let alert = NSAlert()
-        alert.messageText = "Open \(editable.count) items?"
+        alert.messageText = "Open \(items.count) items?"
         alert.informativeText = "Each one opens in its own editor window."
-        alert.addButton(withTitle: "Open \(editable.count)")
+        alert.addButton(withTitle: "Open \(items.count)")
         alert.addButton(withTitle: "Cancel")
         alert.beginSheetModal(for: window) { [weak self] response in
             if response == .alertFirstButtonReturn {
-                editable.forEach { self?.onEdit?($0.url) }
+                items.forEach { self?.onEdit?($0.url) }
             }
         }
     }

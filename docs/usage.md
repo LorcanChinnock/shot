@@ -39,8 +39,8 @@ Cards close on their own after a few seconds; hovering a card pauses the timer. 
 **Open Gallery** in the menu bar menu (or [`shot://gallery`](#url-scheme)) shows every screenshot, recording and GIF in your capture folder, grouped by day and kept up to date as you capture.
 
 - **Filter** by All, Screenshots, Videos or GIFs, **search** by file name (⌘F), and **sort** by date, name or size. The slider (or ⌘+ and ⌘−) sets the thumbnail size.
-- **Select** with a click, ⌘-click, ⇧-click, ⌘A or the arrow keys.
-- **Edit** opens the selection in the [annotation editor](#annotation-editor) or [video editor](#video-editor): double-click, press Return, or use the pencil/scissors button on a hovered thumbnail.
+- **Select** with a click, ⌘-click, ⇧-click, ⌘A or the arrow keys, or tick the checkbox on a thumbnail to add it to the selection. **Select All** and **Deselect All** sit next to the count at the bottom.
+- **Edit** opens the selection, when none of it is a GIF, in the [annotation editor](#annotation-editor) or [video editor](#video-editor): double-click, press Return, or use the pencil/scissors button on a hovered thumbnail.
 - **Quick Look** with Space.
 - Right-click for **Export GIF** (a video), **Copy**, **Rename…**, **Show in Finder** and **Move to Trash**. Trashed files go to the Trash, so Finder can put them back.
 - Drag a thumbnail into another app.
@@ -201,7 +201,9 @@ Record Fullscreen and Record Window have no shortcut until you set one. Capture 
 | Arrow keys, Home, End | Move the selection (⇧ extends it) |
 | Return | Edit the selection |
 | Space | Quick Look |
-| ⌘A, ⌘C | Select all, copy |
+| ⌘A, ⌘⇧A | Select all, deselect all |
+| ⌘C | Copy |
+| ⌘R | Show in Finder |
 | Delete or ⌘Delete | Move to the Trash |
 | ⌘F | Search |
 | ⌘+, ⌘− | Thumbnail size |

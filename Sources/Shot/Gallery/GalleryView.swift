@@ -195,21 +195,34 @@ struct GalleryRootView: View {
                 .font(Brutal.mono)
                 .foregroundStyle(Brutal.ink.opacity(0.7))
                 .lineLimit(1)
+            if model.allSelected {
+                Button("Deselect All") { model.clearSelection() }
+                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .brutalTip("Deselect all (⌘⇧A)")
+            } else {
+                Button("Select All") { model.selectAll() }
+                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .disabled(model.visible.isEmpty)
+                    .brutalTip("Select all (⌘A)")
+            }
             Spacer()
-            Button("Edit") { model.edit(selected) }
-                .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
-                .disabled(!selected.contains { $0.kind.isEditable })
-                .brutalTip("Open in the editor (Return)")
-            Button("Copy") { model.copy(selected) }
-                .buttonStyle(BrutalButtonStyle(compact: true))
-                .brutalTip("Copy (⌘C)")
-            Button("Show in Finder") { model.reveal(selected) }
-                .buttonStyle(BrutalButtonStyle(compact: true))
-            Button("Move to Trash") { model.trash(selected) }
-                .buttonStyle(BrutalButtonStyle(color: Brutal.red, compact: true))
-                .brutalTip("Move to the Trash (⌘⌫)")
+            Group {
+                Button("Edit") { model.edit(selected) }
+                    .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
+                    .disabled(!Gallery.canEdit(selected))
+                    .brutalTip("Open in the editor (Return)")
+                Button("Copy") { model.copy(selected) }
+                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .brutalTip("Copy (⌘C)")
+                Button("Show in Finder") { model.reveal(selected) }
+                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .brutalTip("Show in Finder (⌘R)")
+                Button("Move to Trash") { model.trash(selected) }
+                    .buttonStyle(BrutalButtonStyle(color: Brutal.red, compact: true))
+                    .brutalTip("Move to the Trash (⌘⌫)")
+            }
+            .disabled(selected.isEmpty)
         }
-        .disabled(selected.isEmpty)
         .padding(.horizontal, 3)
         .frame(height: 34)
         .padding(.top, 6)
@@ -249,6 +262,19 @@ private struct GalleryTile: View {
                         .foregroundStyle(Brutal.ink.opacity(0.35))
                 }
                 badges
+                if hovering || !model.selection.isEmpty {
+                    VStack {
+                        HStack {
+                            SelectionCheckbox(checked: selected) {
+                                model.click(item, command: true, shift: false)
+                            }
+                            Spacer()
+                        }
+                        Spacer()
+                    }
+                    .padding(8)
+                    .transition(.opacity)
+                }
                 if hovering, item.kind.isEditable {
                     VStack {
                         HStack {
@@ -262,13 +288,10 @@ private struct GalleryTile: View {
                     .padding(8)
                     .transition(.opacity)
                 }
-                if selected {
-                    Rectangle().strokeBorder(Brutal.violet, lineWidth: 5)
-                }
             }
             .frame(width: width, height: height)
             .background(Color.white.opacity(0.6))
-            .inkBorder(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular), width: 2)
+            .inkBorder(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.violet : Brutal.ink)
             Text(item.name)
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(Brutal.ink)
@@ -330,7 +353,7 @@ private struct GalleryTile: View {
     @ViewBuilder
     private var menu: some View {
         let targets = model.targets(for: item)
-        if targets.contains(where: { $0.kind.isEditable }) {
+        if Gallery.canEdit(targets) {
             Button(targets.count == 1 ? (item.kind == .video ? "Edit Video" : "Annotate") : "Edit") { model.edit(targets) }
         }
         if targets.count == 1, item.kind == .video {
@@ -345,5 +368,26 @@ private struct GalleryTile: View {
         Button("Show in Finder") { model.reveal(targets) }
         Divider()
         Button("Move to Trash") { model.trash(targets) }
+    }
+}
+
+/// Toggles one tile in or out of the selection without touching the rest, like ⌘-click.
+private struct SelectionCheckbox: View {
+    let checked: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "checkmark")
+                .font(.system(size: 10, weight: .black))
+                .foregroundStyle(Brutal.ink)
+                .opacity(checked ? 1 : 0)
+                .frame(width: 22, height: 22)
+                .brutalSurface(checked ? Brutal.violet : Color.white, radius: 6, shadow: 2)
+        }
+        .buttonStyle(.plain)
+        // Focus stays on the grid, so the keyboard shortcuts keep working after a click.
+        .focusable(false)
+        .brutalTip(checked ? "Deselect (⌘-click)" : "Select (⌘-click)")
     }
 }

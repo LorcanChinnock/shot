@@ -41,9 +41,15 @@ final class GalleryController {
         case "-":
             model.zoom(by: -30)
         case "a" where !isTyping(in: window):
-            model.selectAll()
+            if shift {
+                model.clearSelection()
+            } else {
+                model.selectAll()
+            }
         case "c" where !isTyping(in: window) && !model.selection.isEmpty:
             model.copy(model.selectedItems)
+        case "r" where !isTyping(in: window) && !model.selection.isEmpty:
+            model.reveal(model.selectedItems)
         case "z" where !isTyping(in: window) && !shift && model.canUndoTrash:
             model.undoTrash()
         case "\u{7f}" where !isTyping(in: window):
@@ -75,6 +81,9 @@ final class GalleryController {
         case 115: model.move(.first, extending: extending)
         case 119: model.move(.last, extending: extending)
         case 36, 76: // Return, Enter
+            guard !model.selection.isEmpty else {
+                return false
+            }
             model.edit(model.selectedItems)
         case 49: // Space
             GalleryPreview.shared.toggle(model.selectedItems.map(\.url))

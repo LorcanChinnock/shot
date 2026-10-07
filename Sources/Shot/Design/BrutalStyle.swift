@@ -97,8 +97,8 @@ extension View {
     }
 
     /// An ink border with the content stopping under the line, so no colour bleeds through its anti-aliased outer edge.
-    func inkBorder<S: InsettableShape>(_ shape: S, width: CGFloat) -> some View {
-        clipShape(shape.inset(by: Brutal.underInk(width))).overlay(shape.strokeBorder(Brutal.ink, lineWidth: width))
+    func inkBorder<S: InsettableShape>(_ shape: S, width: CGFloat, color: Color = Brutal.ink) -> some View {
+        clipShape(shape.inset(by: Brutal.underInk(width))).overlay(shape.strokeBorder(color, lineWidth: width))
     }
 }
 
@@ -170,6 +170,7 @@ struct GlassBackdrop: View {
 struct BrutalButtonStyle: ButtonStyle {
     var color: Color = .white
     var compact = false
+    @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         let pressed = configuration.isPressed
@@ -180,6 +181,7 @@ struct BrutalButtonStyle: ButtonStyle {
             .padding(.vertical, compact ? 5 : 7)
             .brutalSurface(color, radius: 8, shadow: pressed ? 0 : 3)
             .offset(x: pressed ? 3 : 0, y: pressed ? 3 : 0)
+            .opacity(isEnabled ? 1 : 0.4)
             .animation(.spring(response: 0.15, dampingFraction: 0.7), value: pressed)
             .contentShape(Rectangle())
     }
