@@ -14,34 +14,7 @@ struct ClipInspector: View {
             if let id = model.selectedClipID, let values = model.selectedValues, let animation = model.selectedAnimation {
                 let isSound = model.project.clip(id).map { clip in model.project.tracks.contains { $0.kind == .audio && $0.clips.contains { $0.id == clip.id } } } ?? false
                 let isNote = model.project.annotationClip(id) != nil
-                HStack(spacing: 14) {
-                    if isSound {
-                        slider("VOLUME", property: .volume, value: values.volume, range: 0...2, format: { "\(Int(($0 * 100).rounded()))%" }, animation: animation) {
-                            var changed = values
-                            changed.volume = $0
-                            return changed
-                        }
-                    } else {
-                        position(values, animation)
-                        slider("SCALE", property: .scale, value: values.scale, range: 0.1...3, format: { String(format: "%.2f×", $0) }, animation: animation) {
-                            var changed = values
-                            changed.scale = $0
-                            return changed
-                        }
-                        slider("TURN", property: .rotation, value: values.rotation * 180 / .pi, range: -180...180, format: { "\(Int($0.rounded()))°" }, animation: animation) {
-                            var changed = values
-                            changed.rotation = $0 * .pi / 180
-                            return changed
-                        }
-                        slider("OPACITY", property: .opacity, value: values.opacity, range: 0...1, format: { "\(Int(($0 * 100).rounded()))%" }, animation: animation) {
-                            var changed = values
-                            changed.opacity = $0
-                            return changed
-                        }
-                    }
-                    Spacer(minLength: 0)
-                }
-                .frame(height: 32)
+                properties(values, animation, isSound: isSound)
                 HStack(spacing: 8) {
                     if !isSound {
                         ForEach(AnimationPreset.allCases, id: \.self) { preset in
@@ -65,10 +38,13 @@ struct ClipInspector: View {
                 }
                 .frame(height: 32)
             } else {
+                properties(PropertyValues(), ClipAnimation(), isSound: false)
+                    .disabled(true)
+                    .opacity(0.5)
                 Text("Select a clip to move, scale, turn or fade it, and to key it over time.")
                     .font(Brutal.caption)
                     .foregroundStyle(Brutal.ink.opacity(0.7))
-                    .frame(maxWidth: .infinity, minHeight: Self.height, alignment: .leading)
+                    .frame(height: 32)
             }
         }
         .frame(height: Self.height)
@@ -76,6 +52,37 @@ struct ClipInspector: View {
     }
 
     // MARK: Controls
+
+    private func properties(_ values: PropertyValues, _ animation: ClipAnimation, isSound: Bool) -> some View {
+        HStack(spacing: 14) {
+            if isSound {
+                slider("VOLUME", property: .volume, value: values.volume, range: 0...2, format: { "\(Int(($0 * 100).rounded()))%" }, animation: animation) {
+                    var changed = values
+                    changed.volume = $0
+                    return changed
+                }
+            } else {
+                position(values, animation)
+                slider("SCALE", property: .scale, value: values.scale, range: 0.1...3, format: { String(format: "%.2f×", $0) }, animation: animation) {
+                    var changed = values
+                    changed.scale = $0
+                    return changed
+                }
+                slider("TURN", property: .rotation, value: values.rotation * 180 / .pi, range: -180...180, format: { "\(Int($0.rounded()))°" }, animation: animation) {
+                    var changed = values
+                    changed.rotation = $0 * .pi / 180
+                    return changed
+                }
+                slider("OPACITY", property: .opacity, value: values.opacity, range: 0...1, format: { "\(Int(($0 * 100).rounded()))%" }, animation: animation) {
+                    var changed = values
+                    changed.opacity = $0
+                    return changed
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(height: 32)
+    }
 
     private func position(_ values: PropertyValues, _ animation: ClipAnimation) -> some View {
         HStack(spacing: 6) {

@@ -2,6 +2,10 @@
 
 Thanks for helping. Bug reports, ideas, and pull requests are all welcome. For a large change, open an issue first so we can agree on the approach.
 
+## Design principle
+
+The default is the simplest, most seamless state. Extra tools, panels and controls start off, and the user turns them on if they want them.
+
 ## Set up
 
 You need macOS 15 or later and either Xcode or the Xcode Command Line Tools. Shot is a SwiftPM package whose only dependency is [Sparkle](https://sparkle-project.org), for updates.
