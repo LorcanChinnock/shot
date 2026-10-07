@@ -77,7 +77,7 @@ private func temp(_ name: String) -> URL {
     FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString)-\(name)")
 }
 
-@Suite struct CompositionTests {
+extension MediaTests {
     @Test func anOverlayDrawsOverTheRecordingOnlyWhileItIsThere() async throws {
         let base = temp("base.mp4"), top = temp("top.mp4"), output = temp("out.mp4")
         defer { [base, top, output].forEach { try? FileManager.default.removeItem(at: $0) } }
