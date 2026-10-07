@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.12](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.11...v0.7.0-beta.12) (2026-10-07)
+
+
+### Bug Fixes
+
+* UX/QA sweep findings ([#110](https://github.com/LorcanChinnock/shot/issues/110)-[#121](https://github.com/LorcanChinnock/shot/issues/121), [#123](https://github.com/LorcanChinnock/shot/issues/123)) ([#125](https://github.com/LorcanChinnock/shot/issues/125)) ([916c1fe](https://github.com/LorcanChinnock/shot/commit/916c1fed879fdacf6abf28a113d12a939c45ab9e))
+
 ## [0.7.0-beta.11](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.10...v0.7.0-beta.11) (2026-10-06)
 
 
