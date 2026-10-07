@@ -73,6 +73,7 @@ Hover a tool to see what it does. Tools that draw a mark show a colour and one o
 ### Editing annotations
 
 - Click an annotation with the select tool to select it, then drag it, or drag its handles to resize it. Drag the middle handle of a line or arrow to bend it. Choosing a colour, width or option restyles the selection.
+- What you've just drawn stays selected until you draw the next thing, click elsewhere or press Esc, so you can fix its shape, colour, width or fill from the toolbar, or drag its handles, without switching to the select tool. The change also applies to what you draw next.
 - Double-click text or a sticky note to edit it. Clicking a note with the note tool edits it too.
 - Press Delete to remove the selection, and Esc to deselect. While you type in a text box or sticky note, Esc finishes it; ⌘Z removes it again.
 - Arrow keys nudge the selection by 1 pixel, or 10 with Shift.

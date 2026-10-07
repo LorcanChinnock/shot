@@ -209,6 +209,15 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         dragStart = point
         lastPoint = point
         movedSinceMouseDown = false
+        // The annotation just drawn stays selected, with handles that still resize it, until the next press elsewhere.
+        if model.tool != .select, let selected = model.selection {
+            if let handle = selected.handle(at: point, tolerance: 6 / viewScale) {
+                resizeHandle = handle
+                resizeStart = selected
+                return
+            }
+            model.selectedID = nil
+        }
         switch model.tool {
         case .select:
             let tolerance = 6 / viewScale
@@ -233,15 +242,13 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             // Clicking a note with the note tool edits it rather than stacking a new one on top.
             if let index = model.document.annotations.topmostIndex(at: point, tolerance: 6 / viewScale), case .note = model.document.annotations[index].kind {
                 beginNote(model.document.annotations[index])
-            } else {
-                model.selectedID = nil
             }
         case .counter:
             model.add(Annotation(kind: .counter(model.document.annotations.nextCounterNumber, center: point), color: model.color, lineWidth: model.lineWidth))
         case .text:
             beginText(at: point)
         default:
-            model.selectedID = nil
+            break
         }
     }
 
@@ -260,6 +267,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         // Shift keeps shapes square and lines at 45° steps; Option draws a shape out from where it started.
         let constrain = event.modifierFlags.contains(.shift)
         let fromCenter = event.modifierFlags.contains(.option)
+        if resizeHandle != nil {
+            dragSelection(to: point, from: last)
+            return
+        }
         var rect = Geometry.normalized(from: start, to: point)
         switch model.tool {
         case .shape, .highlight, .redact, .spotlight:
@@ -280,21 +291,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         let kind: Annotation.Kind
         switch model.tool {
         case .select:
-            guard let id = model.selectedID, let index = model.document.annotations.firstIndex(where: { $0.id == id }) else {
-                return
-            }
-            if !movedSinceMouseDown {
-                model.recordUndo()
-                movedSinceMouseDown = true
-            }
-            if let resizeHandle, var resized = resizeStart {
-                resized.resize(resizeHandle, to: point)
-                model.document.annotations[index] = resized
-            } else {
-                model.document.annotations[index].offset(by: CGVector(dx: point.x - last.x, dy: point.y - last.y))
-            }
-            model.document.grow(toFit: model.document.annotations[index], margin: model.canvasMargin)
-            model.document.shrinkPadding(margin: model.canvasMargin)
+            dragSelection(to: point, from: last)
             return
         case .crop:
             cropDraft = Geometry.normalized(from: clampedToCanvas(start), to: clampedToCanvas(point))
@@ -336,6 +333,25 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         viewportDidChange()
     }
 
+    /// Resizes the selection from the handle pressed, else moves it with the pointer.
+    private func dragSelection(to point: CGPoint, from last: CGPoint) {
+        guard let id = model.selectedID, let index = model.document.annotations.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+        if !movedSinceMouseDown {
+            model.recordUndo()
+            movedSinceMouseDown = true
+        }
+        if let resizeHandle, var resized = resizeStart {
+            resized.resize(resizeHandle, to: point)
+            model.document.annotations[index] = resized
+        } else {
+            model.document.annotations[index].offset(by: CGVector(dx: point.x - last.x, dy: point.y - last.y))
+        }
+        model.document.grow(toFit: model.document.annotations[index], margin: model.canvasMargin)
+        model.document.shrinkPadding(margin: model.canvasMargin)
+    }
+
     override func mouseUp(with event: NSEvent) {
         if panPoint != nil {
             panPoint = nil
@@ -350,7 +366,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             resizeStart = nil
             viewportDidChange()
         }
-        if model.tool == .note, let start = dragStart {
+        if model.tool == .note, resizeHandle == nil, let start = dragStart {
             beginNote(newNote(id: draft?.id ?? UUID(), from: start, to: imagePoint(event)))
             return
         }
@@ -366,7 +382,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             model.add(draft)
         }
         // The move or resize recorded its undo step when it began, so growing joins that step.
-        if model.tool == .select, movedSinceMouseDown, let id = model.selectedID, let moved = model.document.annotations.first(where: { $0.id == id }) {
+        if movedSinceMouseDown, let id = model.selectedID, let moved = model.document.annotations.first(where: { $0.id == id }) {
             model.document.grow(toFit: moved, margin: model.canvasMargin)
             model.document.shrinkPadding(margin: model.canvasMargin)
         }
