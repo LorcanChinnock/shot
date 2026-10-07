@@ -1,4 +1,5 @@
 import AppKit
+import ShotCore
 import SwiftUI
 
 @MainActor
@@ -6,6 +7,7 @@ enum Toast {
     private static var panel: NSPanel?
     private static var hideTask: Task<Void, Never>?
     private static var duration: Duration?
+    private static var undoable: PendingAction?
     private static let font = NSFont.systemFont(ofSize: 13, weight: .bold)
     private static let shadow: CGFloat = 4
 
@@ -15,11 +17,18 @@ enum Toast {
     }
 
     /// Shows `message`; `duration` nil keeps it visible until the next call. The pointer holds it, and a click dismisses it.
-    static func show(_ message: String, duration: Duration? = .seconds(1.5)) {
+    /// With `undoable`, the toast offers Undo, and the action commits once the toast goes away any other way.
+    static func show(_ message: String, duration: Duration? = .seconds(1.5), undoable: PendingAction? = nil) {
+        settle()
+        self.undoable = undoable
         let panel = panel ?? makePanel()
-        let textWidth = (message as NSString).size(withAttributes: [.font: font]).width.rounded(.up)
+        var textWidth = (message as NSString).size(withAttributes: [.font: font]).width.rounded(.up)
+        if undoable != nil {
+            textWidth += ("Undo" as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 12, weight: .bold)]).width.rounded(.up) + 36
+        }
         let size = NSSize(width: textWidth + 32 + shadow, height: 38 + shadow)
-        panel.contentView = NSView(hosting: ToastView(message: message, hold: { hold($0) }, dismiss: { panel.orderOut(nil) }))
+        let undo: (() -> Void)? = undoable.map { pending in { pending.undo(); hide() } }
+        panel.contentView = NSView(hosting: ToastView(message: message, undo: undo, hold: { hold($0) }, dismiss: { hide() }))
         let screen = NSScreen.underPointer ?? NSScreen.main ?? NSScreen.screens[0]
         let origin = NSPoint(x: screen.frame.midX - size.width / 2, y: screen.visibleFrame.minY + 80)
         panel.setFrame(NSRect(origin: origin, size: size), display: true)
@@ -45,9 +54,20 @@ enum Toast {
         hideTask = Task {
             try? await Task.sleep(for: duration)
             if !Task.isCancelled {
-                panel.orderOut(nil)
+                hide()
             }
         }
+    }
+
+    private static func hide() {
+        panel?.orderOut(nil)
+        settle()
+    }
+
+    private static func settle() {
+        let pending = undoable
+        undoable = nil
+        pending?.commit()
     }
 
     private static func makePanel() -> NSPanel {
@@ -64,21 +84,28 @@ enum Toast {
 
 private struct ToastView: View {
     let message: String
+    let undo: (() -> Void)?
     let hold: (Bool) -> Void
     let dismiss: () -> Void
 
     var body: some View {
-        Text(message)
-            .font(.system(size: 13, weight: .bold))
-            .foregroundStyle(Brutal.ink)
-            .lineLimit(1)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .brutalSurface(Color.white.opacity(0.75), glass: true, radius: 10, shadow: 4)
-            .padding(.trailing, 4)
-            .padding(.bottom, 4)
-            .environment(\.colorScheme, .light)
-            .contentShape(Rectangle())
-            .onHover(perform: hold)
-            .onTapGesture(perform: dismiss)
+        HStack(spacing: 12) {
+            Text(message)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(Brutal.ink)
+                .lineLimit(1)
+            if let undo {
+                Button("Undo", action: undo)
+                    .buttonStyle(BrutalButtonStyle(compact: true))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .brutalSurface(Color.white.opacity(0.75), glass: true, radius: 10, shadow: 4)
+        .padding(.trailing, 4)
+        .padding(.bottom, 4)
+        .environment(\.colorScheme, .light)
+        .contentShape(Rectangle())
+        .onHover(perform: hold)
+        .onTapGesture(perform: dismiss)
     }
 }
