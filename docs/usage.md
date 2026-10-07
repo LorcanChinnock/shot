@@ -99,7 +99,7 @@ Pinch, or press ⌘+ and ⌘-, to zoom. ⌘0 fits the canvas to the window and �
 
 Press ⌘⇧5, then drag out an area, press Space and click a window, or press Enter for the full screen. Before recording, you can adjust the frame, switch between area, screen and window, and turn the camera bubble, microphone and cursor on or off. Press Return or click **Record** to start after a 3-second countdown, or Esc to cancel.
 
-While recording, the controls let you pause and resume, stop and save, discard the recording, and show, hide or resize the camera bubble. Pressing the record shortcut again, or opening `shot://record`, stops the recording.
+While recording, the controls let you pause and resume, stop and save, discard the recording, and show, hide or resize the camera bubble. On a Mac with a notch, when there's no room for the controls outside the recorded area, they move into the notch: a black pill shows the elapsed time, and hovering it shows the controls. Pressing the record shortcut again, or opening `shot://record`, stops the recording.
 
 Recordings are H.264 MP4 at 30 or 60 fps. When a recording finishes, Shot copies the file to the clipboard and shows it in [Quick Access](#quick-access). In **Settings › Recording** you can also show the cursor, outline the recorded area (the outline never appears in the video), turn off copying, and record your microphone and system audio. System audio is sound from other apps; Shot's own sounds are left out.
 
@@ -239,7 +239,7 @@ Open Settings from the menu bar icon, or with ⌘, while a Shot window is in fro
 
 | Section | What you can change |
 |---|---|
-| General | Launch at login, the capture sound, hiding Shot's own windows from captures, the save folder, the file name, PNG or JPEG, and scaling Retina captures to 1× |
+| General | Launch at login, the capture sound, hiding Shot's own windows from captures, cropping the menu bar off full-screen captures, the save folder, the file name, PNG or JPEG, and scaling Retina captures to 1× |
 | Capture | What happens after a capture (save, copy, Quick Access, or the editor), the magnifier, the crosshair, the cursor, and window shadows |
 | Quick Access | The screen corner and how long cards stay |
 | Recording | Frame rate, cursor, region outline, copying to the clipboard, microphone, system audio, and the camera bubble |
