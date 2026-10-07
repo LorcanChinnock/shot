@@ -120,6 +120,18 @@ import Testing
         #expect(prefs.filePrefix == "Shot")
     }
 
+    @Test func capturesGoToTheSaveFolderOnlyWhenSavingIsOn() throws {
+        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
+        let store = try #require(UserDefaults(suiteName: suite))
+        defer { store.removePersistentDomain(forName: suite) }
+        Preferences.registerDefaults(in: store)
+        let prefs = Preferences(store: store)
+        store.set("/tmp/ShotSaves", forKey: PreferenceKey.saveFolder)
+        #expect(prefs.captureFolder == URL(fileURLWithPath: "/tmp/ShotSaves"))
+        store.set(false, forKey: PreferenceKey.saveAfterCapture)
+        #expect(prefs.captureFolder == FileManager.default.temporaryDirectory.appendingPathComponent("Shot"))
+    }
+
     @Test func exportOptionsRememberFormatAndGIFSettingsOnly() throws {
         let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
         let store = try #require(UserDefaults(suiteName: suite))
