@@ -2,7 +2,7 @@ import AppKit
 import ShotCore
 
 final class SelectionOverlayView: NSView {
-    private let display: OverlayDisplay
+    let display: OverlayDisplay
     private let index: Int
     private unowned let controller: SelectionOverlayController
 
@@ -13,6 +13,9 @@ final class SelectionOverlayView: NSView {
     private var selection: CGRect?
     private var isMoving = false
     private var lastDragPoint: CGPoint?
+    var magnifierImage: CGImage? {
+        didSet { needsDisplay = true }
+    }
 
     private static let minimumSize: CGFloat = 4
     private static let loupeSize: CGFloat = 120
@@ -216,7 +219,7 @@ final class SelectionOverlayView: NSView {
     }
 
     private func drawLoupe(at point: CGPoint, in ctx: CGContext) {
-        guard let image = display.image else {
+        guard let image = display.image ?? magnifierImage else {
             return
         }
         let size = Self.loupeSize
