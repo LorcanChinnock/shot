@@ -143,9 +143,10 @@ struct TracksView: View {
             }
             .onChange(of: model.zoom) { old, new in
                 // Zoom around the playhead if it's in view, or the middle of the view if not.
-                let oldX = viewWidth * old * CGFloat((model.playhead + lead) / max(model.fitDuration, .leastNonzeroMagnitude)) - scrollX
+                let oldWidth = viewWidth * CGFloat(old)
+                let oldX = oldWidth * CGFloat((model.playhead + lead) / max(model.fitDuration, .leastNonzeroMagnitude)) - scrollX
                 let anchor = (0...viewWidth).contains(oldX) ? oldX : viewWidth / 2
-                let time = (scrollX + anchor) / (viewWidth * old) * model.fitDuration
+                let time = Double((scrollX + anchor) / oldWidth) * model.fitDuration
                 scroll.scrollTo(x: TimelineZoom.offset(keeping: time, atViewX: anchor, duration: model.fitDuration, zoom: new, viewWidth: viewWidth))
             }
             .onChange(of: model.playhead) {
