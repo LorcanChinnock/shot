@@ -53,10 +53,18 @@ final class Recorder: NSObject {
 
     var isRecording: Bool { phase == .recording || phase == .paused }
 
+    /// Choices made for one recording; Settings only holds the defaults they start from.
+    struct Options {
+        let camera: Bool
+        let microphone: Bool
+        let showsCursor: Bool
+    }
+
     private struct Session {
         let screen: NSScreen
         let region: CGRect
         let microphone: Bool
+        let showsCursor: Bool
         /// `nil` means the system default.
         let microphoneID: String?
         let finalURL: URL
@@ -81,23 +89,23 @@ final class Recorder: NSObject {
     // MARK: Session
 
     /// `region` is an AppKit global rect inside `screen`.
-    func start(screen: NSScreen, region: CGRect) async throws {
+    func start(screen: NSScreen, region: CGRect, options: Options) async throws {
         let prefs = Preferences()
-        var microphone = prefs.recordMicrophone
+        var microphone = options.microphone
         if microphone, !(await AVCaptureDevice.requestAccess(for: .audio)) {
             microphone = false
             Toast.error("Microphone access denied; recording without it")
         }
-        if prefs.recordCamera, !CameraBubble.shared.isVisible {
+        if options.camera, !CameraBubble.shared.isVisible {
             await CameraBubble.shared.showFromPreferences(in: region)
-        } else if !prefs.recordCamera {
+        } else if !options.camera {
             CameraBubble.shared.hide()
         }
         let folder = prefs.captureFolder
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let finalURL = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "mp4", prefix: prefs.filePrefix)
         let microphoneID = prefs.microphoneDeviceID.isEmpty ? nil : AVCaptureDevice(uniqueID: prefs.microphoneDeviceID)?.uniqueID
-        session = Session(screen: screen, region: region, microphone: microphone, microphoneID: microphoneID, finalURL: finalURL)
+        session = Session(screen: screen, region: region, microphone: microphone, showsCursor: options.showsCursor, microphoneID: microphoneID, finalURL: finalURL)
         segments = []
         segmentAudio = []
         mutes = CutList()
@@ -302,7 +310,7 @@ final class Recorder: NSObject {
         config.width = Geometry.evenFloor(local.width * scale)
         config.height = Geometry.evenFloor(local.height * scale)
         config.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(prefs.recordingFPS))
-        config.showsCursor = prefs.recordShowsCursor
+        config.showsCursor = session.showsCursor
         config.captureMicrophone = session.microphone
         config.microphoneCaptureDeviceID = session.microphoneID
         config.capturesAudio = prefs.recordSystemAudio
