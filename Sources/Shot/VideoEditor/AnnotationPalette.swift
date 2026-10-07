@@ -33,7 +33,9 @@ struct AnnotationPalette: View {
                 if model.showsStyle {
                     styleOptions
                 } else if let redaction = model.paletteRedaction {
-                    RedactionOptions(selected: redaction, choose: model.setRedaction)
+                    RedactionOptions(selected: redaction, amount: model.paletteRedactionAmount, choose: model.setRedaction, setAmount: model.setRedactionAmount) { dragging in
+                        dragging ? model.beginDrag() : model.endDrag()
+                    }
                 } else if let spotlight = model.paletteSpotlight {
                     SpotlightOptions(style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook) { dragging in
                         dragging ? model.beginDrag() : model.endDrag()

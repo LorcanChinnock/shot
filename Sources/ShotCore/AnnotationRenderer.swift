@@ -54,7 +54,7 @@ public enum AnnotationRenderer {
             ctx.fillPath()
         case .blur:
             let source = backdrop(base, images: below, around: dim.boundingBoxOfPath, outset: 0)
-            let radius = style.blurRadius(forImageLength: CGFloat(max(base.width, base.height)))
+            let radius = style.blurRadius(forImageLength: longerSide(of: base))
             guard let blurred = blurredWhole(source.image, radius: radius) else {
                 return
             }
@@ -157,14 +157,16 @@ public enum AnnotationRenderer {
         case .spotlight:
             // `render` draws every spotlight's dim at once.
             break
-        case let .pixelate(rect):
-            let source = backdrop(base, images: below, around: rect, outset: pixelScale(for: rect))
-            if let pixelated = pixelate(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y)) {
+        case let .pixelate(rect, _):
+            let scale = redactionSize(annotation, base: base)
+            let source = backdrop(base, images: below, around: rect, outset: scale)
+            if let pixelated = pixelate(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y), scale: scale) {
                 drawUpright(pixelated, in: rect.integral, ctx: ctx)
             }
-        case let .blur(rect):
-            let source = backdrop(base, images: below, around: rect, outset: blurRadius(for: rect) * 4)
-            if let blurred = blur(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y)) {
+        case let .blur(rect, _):
+            let radius = redactionSize(annotation, base: base)
+            let source = backdrop(base, images: below, around: rect, outset: radius * 4)
+            if let blurred = blur(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y), radius: radius) {
                 drawUpright(blurred, in: rect.integral, ctx: ctx)
             }
         case let .image(image, rect):
@@ -257,7 +259,7 @@ public enum AnnotationRenderer {
         ctx.restoreGState()
     }
 
-    static func pixelate(_ base: CGImage, rect: CGRect) -> CGImage? {
+    static func pixelate(_ base: CGImage, rect: CGRect, scale: CGFloat) -> CGImage? {
         let region = CGRect(x: rect.minX, y: CGFloat(base.height) - rect.maxY, width: rect.width, height: rect.height).integral
         guard region.width >= 1, region.height >= 1 else {
             return nil
@@ -265,37 +267,36 @@ public enum AnnotationRenderer {
         let filter = CIFilter.pixellate()
         filter.inputImage = CIImage(cgImage: base).clampedToExtent()
         filter.center = region.origin
-        filter.scale = Float(pixelScale(for: rect))
+        filter.scale = Float(scale)
         guard let output = filter.outputImage?.cropped(to: region) else {
             return nil
         }
         return ciContext.createCGImage(output, from: region)
     }
 
-    /// The pixelate's block size in image pixels.
-    static func pixelScale(for rect: CGRect) -> CGFloat {
-        max(8, rect.width / 20)
+    static func longerSide(of image: CGImage) -> CGFloat {
+        CGFloat(max(image.width, image.height))
     }
 
-    /// The blur's radius in image pixels: at least 12, so a line of text is gone, and more for bigger regions.
-    static func blurRadius(for rect: CGRect) -> CGFloat {
-        max(12, min(rect.width, rect.height) / 4)
+    /// A pixelate's block size or a blur's radius in pixels of `base`.
+    static func redactionSize(_ annotation: Annotation, base: CGImage) -> CGFloat {
+        let length = longerSide(of: base)
+        return Redaction.size(amount: annotation.redactionAmount(imageLength: length) ?? Redaction.defaultAmount, imageLength: length)
     }
 
-    static func blur(_ base: CGImage, rect: CGRect) -> CGImage? {
+    static func blur(_ base: CGImage, rect: CGRect, radius: CGFloat) -> CGImage? {
         let region = CGRect(x: rect.minX, y: CGFloat(base.height) - rect.maxY, width: rect.width, height: rect.height).integral
         guard region.width >= 1, region.height >= 1 else {
             return nil
         }
-        let radius = Float(blurRadius(for: rect))
         // A blur alone can be partly undone, so average the region into blocks first, which can't, then blur the blocks smooth.
         let blocks = CIFilter.pixellate()
         blocks.inputImage = CIImage(cgImage: base).clampedToExtent()
         blocks.center = region.origin
-        blocks.scale = radius
+        blocks.scale = Float(radius)
         let filter = CIFilter.gaussianBlur()
         filter.inputImage = blocks.outputImage
-        filter.radius = radius
+        filter.radius = Float(radius)
         guard let output = filter.outputImage?.cropped(to: region) else {
             return nil
         }

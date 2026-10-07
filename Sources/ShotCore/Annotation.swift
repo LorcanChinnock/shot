@@ -54,9 +54,11 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case line(from: CGPoint, to: CGPoint)
         case shape(BoxShape, rect: CGRect)
         case highlight(CGRect)
-        case pixelate(CGRect)
-        /// A Gaussian blur, strong enough that the text under it can't be read back.
-        case blur(CGRect)
+        /// `amount` is the block size, as a fraction of the image's longer side; `nil` sizes it from the rect, as before the amount existed.
+        case pixelate(CGRect, amount: CGFloat? = nil)
+        /// A Gaussian blur, strong enough that the text under it can't be read back. `amount` is its radius,
+        /// as a fraction of the image's longer side; `nil` sizes it from the rect, as before the amount existed.
+        case blur(CGRect, amount: CGFloat? = nil)
         /// Dims or blurs the image outside its shape. Every spotlight shares one dim, so together they light up several areas.
         case spotlight(CGRect, style: SpotlightStyle)
         case text(String, origin: CGPoint, fontSize: CGFloat)
@@ -67,6 +69,11 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case freehand([CGPoint])
         /// Another image placed on the canvas, stretched to `rect`. Its colour and width are unused.
         case image(AnnotationImage, rect: CGRect)
+
+        /// A blur or pixelate, as `redaction` says.
+        public static func redaction(_ redaction: Redaction, rect: CGRect, amount: CGFloat?) -> Kind {
+            redaction == .blur ? .blur(rect, amount: amount) : .pixelate(rect, amount: amount)
+        }
     }
 
     public init(id: UUID = UUID(), kind: Kind, color: RGBA, fill: RGBA? = nil, lineWidth: CGFloat) {
@@ -101,10 +108,31 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         }
     }
 
-    /// Turns a pixelate into a blur or back; other kinds are left alone.
+    /// How strongly a pixelate or blur hides what's under it, as a fraction of `imageLength`, the longer side of the image
+    /// it's drawn on; `nil` for anything else. One made before the amount existed gets the amount nearest the size it was
+    /// drawn at then, which was set by its rect.
+    public func redactionAmount(imageLength: CGFloat) -> CGFloat? {
+        switch kind {
+        case let .pixelate(rect, amount): amount ?? Redaction.clamped(max(8, rect.width / 20) / imageLength)
+        case let .blur(rect, amount): amount ?? Redaction.clamped(max(12, min(rect.width, rect.height) / 4) / imageLength)
+        default: nil
+        }
+    }
+
+    /// Turns a pixelate into a blur or back, keeping its amount; other kinds are left alone.
     public mutating func setRedaction(_ redaction: Redaction) {
         switch kind {
-        case let .blur(rect), let .pixelate(rect): kind = redaction == .blur ? .blur(rect) : .pixelate(rect)
+        case let .blur(rect, amount), let .pixelate(rect, amount): kind = .redaction(redaction, rect: rect, amount: amount)
+        default: break
+        }
+    }
+
+    /// Sets how strongly a pixelate or blur hides what's under it, kept within `Redaction.amounts`; other kinds are left alone.
+    public mutating func setRedactionAmount(_ amount: CGFloat) {
+        let clamped = Redaction.clamped(amount)
+        switch kind {
+        case let .blur(rect, _): kind = .blur(rect, amount: clamped)
+        case let .pixelate(rect, _): kind = .pixelate(rect, amount: clamped)
         default: break
         }
     }
@@ -152,7 +180,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         switch kind {
         case let .arrow(from, to), let .line(from, to):
             return CGRect(x: min(from.x, to.x), y: min(from.y, to.y), width: abs(to.x - from.x), height: abs(to.y - from.y))
-        case let .shape(_, rect), let .highlight(rect), let .pixelate(rect), let .blur(rect), let .spotlight(rect, _), let .image(_, rect):
+        case let .shape(_, rect), let .highlight(rect), let .pixelate(rect, _), let .blur(rect, _), let .spotlight(rect, _), let .image(_, rect):
             return rect
         case let .text(string, origin, fontSize):
             return CGRect(origin: origin, size: TextLayout(string: string, fontSize: fontSize, color: color).size)
@@ -216,8 +244,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let .line(from, to): kind = .line(from: move(from), to: move(to))
         case let .shape(shape, rect): kind = .shape(shape, rect: rect.offsetBy(dx: delta.dx, dy: delta.dy))
         case let .highlight(rect): kind = .highlight(rect.offsetBy(dx: delta.dx, dy: delta.dy))
-        case let .pixelate(rect): kind = .pixelate(rect.offsetBy(dx: delta.dx, dy: delta.dy))
-        case let .blur(rect): kind = .blur(rect.offsetBy(dx: delta.dx, dy: delta.dy))
+        case let .pixelate(rect, amount): kind = .pixelate(rect.offsetBy(dx: delta.dx, dy: delta.dy), amount: amount)
+        case let .blur(rect, amount): kind = .blur(rect.offsetBy(dx: delta.dx, dy: delta.dy), amount: amount)
         case let .spotlight(rect, style): kind = .spotlight(rect.offsetBy(dx: delta.dx, dy: delta.dy), style: style)
         case let .text(string, origin, size): kind = .text(string, origin: move(origin), fontSize: size)
         case let .counter(number, center): kind = .counter(number, center: move(center))
@@ -325,8 +353,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case (.arrow, _), (.line, _), (_, .start), (_, .end), (.text, _), (.counter, _): break
         case let (.shape(shape, rect), _): kind = .shape(shape, rect: box(rect))
         case let (.highlight(rect), _): kind = .highlight(box(rect))
-        case let (.pixelate(rect), _): kind = .pixelate(box(rect))
-        case let (.blur(rect), _): kind = .blur(box(rect))
+        case let (.pixelate(rect, amount), _): kind = .pixelate(box(rect), amount: amount)
+        case let (.blur(rect, amount), _): kind = .blur(box(rect), amount: amount)
         case let (.spotlight(rect, style), _): kind = .spotlight(box(rect), style: style)
         case let (.note(string, rect), _): resizeNote(string, rect: rect, handle: handle, to: point)
         case let (.freehand(points), _):

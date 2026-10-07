@@ -66,6 +66,23 @@ public enum Redaction: String, CaseIterable, Codable, Sendable {
         case .pixelate: "Pixelate"
         }
     }
+
+    /// How strongly a redaction can hide: its block size or blur radius as a fraction of the image's longer side.
+    /// The default is about the strength a line of text got before the amount existed.
+    public static let amounts: ClosedRange<CGFloat> = 0.004...0.016
+    public static let defaultAmount: CGFloat = 0.008
+    /// The smallest block size or blur radius in image pixels, whatever the amount and image, so even the weakest
+    /// redaction of a small capture hides body text.
+    public static let minimumSize: CGFloat = 6
+
+    public static func clamped(_ amount: CGFloat) -> CGFloat {
+        min(max(amount, amounts.lowerBound), amounts.upperBound)
+    }
+
+    /// The block size or blur radius in pixels that `amount` gives on an image whose longer side is `imageLength` pixels.
+    public static func size(amount: CGFloat, imageLength: CGFloat) -> CGFloat {
+        max(minimumSize, amount * imageLength)
+    }
 }
 
 /// A spotlight's lit shape, and how it treats the image outside it. Every spotlight in an image

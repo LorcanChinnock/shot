@@ -915,6 +915,23 @@ extension VideoEditorModel {
         restyleSelection { $0.setRedaction(redaction) }
     }
 
+    /// How strongly the palette shows a redaction hiding: the selected one's, else the next one's.
+    var paletteRedactionAmount: CGFloat {
+        let length = max(project.canvasSize.width, project.canvasSize.height)
+        return selectedAnnotation?.annotation.redactionAmount(imageLength: length) ?? annotationStyle.redactionAmount
+    }
+
+    /// Sets how strongly the selected redaction, or the next one, hides. Between `beginDrag` and `endDrag` the changes are one undo step.
+    func setRedactionAmount(_ amount: CGFloat) {
+        guard let clip = selectedAnnotation else {
+            annotationStyle.redactionAmount = amount
+            return
+        }
+        var restyled = clip.annotation
+        restyled.setRedactionAmount(amount)
+        commitAnnotation(restyled, id: clip.id)
+    }
+
     /// The next spotlight's style: the chosen shape, with the effect and strength the project's spotlights already share.
     var nextSpotlightStyle: SpotlightStyle {
         let shared = project.annotationClips.map(\.annotation).spotlightStyle ?? annotationStyle.spotlight
@@ -1078,12 +1095,14 @@ extension VideoEditorModel {
         selectedClipID = id
     }
 
-    /// Replaces what the annotation clip `id` shows, as one undo step.
+    /// Replaces what the annotation clip `id` shows, as one undo step; between `beginDrag` and `endDrag`, `endDrag` records it.
     func commitAnnotation(_ annotation: Annotation, id: UUID) {
         guard !isExporting, let changed = project.setting(annotation: annotation, ofClip: id), changed != project else {
             return
         }
-        undoStack.record(edit)
+        if dragOrigin == nil {
+            undoStack.record(edit)
+        }
         project = changed
         // The compositor keeps drawing the live version until the rebuilt preview has it too.
         let clip = changed.annotationClip(id)

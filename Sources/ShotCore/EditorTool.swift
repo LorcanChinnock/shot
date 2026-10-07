@@ -76,6 +76,8 @@ public struct EditorStyle: Equatable, Sendable {
     public var recentColors: [RGBA]
     public var shape: BoxShape
     public var redaction: Redaction
+    /// How strongly the next redaction hides, within `Redaction.amounts`.
+    public var redactionAmount: CGFloat
     public var spotlight: SpotlightStyle
 
     public static let maxRecentColors = 6
@@ -83,7 +85,8 @@ public struct EditorStyle: Equatable, Sendable {
     public init(
         tool: EditorTool = .arrow, color: RGBA = RGBA.presets[0], noteColor: RGBA = RGBA.presets[2],
         fill: RGBA? = nil, widthIndex: Int = 1, recentColors: [RGBA] = [],
-        shape: BoxShape = .rectangle, redaction: Redaction = .blur, spotlight: SpotlightStyle = SpotlightStyle()
+        shape: BoxShape = .rectangle, redaction: Redaction = .blur, redactionAmount: CGFloat = Redaction.defaultAmount,
+        spotlight: SpotlightStyle = SpotlightStyle()
     ) {
         self.tool = tool
         self.color = color
@@ -93,6 +96,7 @@ public struct EditorStyle: Equatable, Sendable {
         self.recentColors = recentColors
         self.shape = shape
         self.redaction = redaction
+        self.redactionAmount = redactionAmount
         self.spotlight = spotlight
     }
 

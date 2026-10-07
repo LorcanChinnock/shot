@@ -68,7 +68,7 @@ Press a tool's key when you aren't typing text.
 | N | Numbered counter |
 | C | Crop |
 
-Hover a tool to see what it does. Tools that draw a mark show a colour and one of three line widths below the tools; for text, sticky notes and counters the widths are text sizes, and changing the size or colour while you type updates the text as you go. The shape tool also offers the shape and a fill. Redact offers blur or pixelate. Spotlight offers its shape (rectangle, rounded or ellipse), whether to darken or blur outside it, and how strongly; the effect and strength apply to every spotlight in the image, since they share one dim. The editor remembers the last tool, colour, width and options you used.
+Hover a tool to see what it does. Tools that draw a mark show a colour and one of three line widths below the tools; for text, sticky notes and counters the widths are text sizes, and changing the size or colour while you type updates the text as you go. The shape tool also offers the shape and a fill. Redact offers blur or pixelate, and an amount slider for how far the blur spreads or how big the blocks are. Spotlight offers its shape (rectangle, rounded or ellipse), whether to darken or blur outside it, and how strongly; the effect and strength apply to every spotlight in the image, since they share one dim. The editor remembers the last tool, colour, width and options you used.
 
 ### Editing annotations
 

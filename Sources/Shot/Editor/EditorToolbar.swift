@@ -81,7 +81,7 @@ struct EditorToolbar: View {
                 if model.showsStyle {
                     styleOptions
                 } else if let redaction = model.paletteRedaction {
-                    RedactionOptions(selected: redaction, choose: model.setRedaction)
+                    RedactionOptions(selected: redaction, amount: model.paletteRedactionAmount, choose: model.setRedaction, setAmount: model.setRedactionAmount, dragAmount: model.setDraggingStyle)
                 } else if let spotlight = model.paletteSpotlight {
                     SpotlightOptions(style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook, dragStrength: model.setDraggingStyle)
                 } else {
@@ -215,7 +215,10 @@ struct ShapeMenu: View {
 
 struct RedactionOptions: View {
     let selected: Redaction
+    let amount: CGFloat
     let choose: (Redaction) -> Void
+    let setAmount: (CGFloat) -> Void
+    let dragAmount: (Bool) -> Void
 
     var body: some View {
         ToolGroup {
@@ -226,6 +229,19 @@ struct RedactionOptions: View {
                     Image(systemName: redaction == .blur ? "drop.halffull" : "square.grid.3x3").font(.system(size: 13, weight: .bold))
                 }
             }
+        }
+        ToolGroup {
+            BrutalSlider(
+                value: Binding(get: { amount }, set: { setAmount($0) }),
+                range: Redaction.amounts.lowerBound...Redaction.amounts.upperBound,
+                track: LinearGradient(colors: [.white, Brutal.sky], startPoint: .leading, endPoint: .trailing),
+                width: 120,
+                onEditingChanged: dragAmount
+            )
+            .frame(height: 30)
+            .padding(.horizontal, 6)
+            .accessibilityLabel(Text("Amount"))
+            .brutalTip("Amount", detail: selected == .blur ? "How far the blur spreads." : "How big the blocks are.")
         }
     }
 }
@@ -596,3 +612,4 @@ struct Tile<Label: View>: View {
         .brutalTip(help, detail: detail)
     }
 }
+

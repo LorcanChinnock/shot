@@ -15,7 +15,7 @@ private let boxKinds: [Annotation.Kind] = [.shape(.rectangle, rect: box), .shape
 /// The rect a box kind holds.
 private func rect(_ annotation: Annotation) -> CGRect? {
     switch annotation.kind {
-    case let .shape(_, rect), let .highlight(rect), let .pixelate(rect), let .blur(rect), let .spotlight(rect, _):
+    case let .shape(_, rect), let .highlight(rect), let .pixelate(rect, _), let .blur(rect, _), let .spotlight(rect, _):
         return rect
     default:
         return nil
