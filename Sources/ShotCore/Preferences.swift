@@ -43,6 +43,8 @@ public enum PreferenceKey {
     public static let editorSpotlight = "editorSpotlight"
     public static let editorAlignment = "editorAlignment"
     public static let galleryTileSize = "galleryTileSize"
+    public static let partyModeUnlocked = "partyModeUnlocked"
+    public static let partyMode = "partyMode"
     /// True while the macOS screenshot shortcuts are off because Shot turned them off. Not a
     /// setting, so resetting settings keeps it and Shot can still give the keys back.
     public static let disabledSystemScreenshots = "disabledSystemScreenshots"
@@ -118,6 +120,8 @@ public struct Preferences {
             PreferenceKey.editorSpotlight: Data(),
             PreferenceKey.editorAlignment: EditorStyle().alignment.rawValue,
             PreferenceKey.galleryTileSize: Gallery.defaultTileSize,
+            PreferenceKey.partyModeUnlocked: false,
+            PreferenceKey.partyMode: false,
         ]
         for action in ShotAction.allCases {
             values[PreferenceKey.hotkey(action)] = action.defaultCombo?.encoded ?? ""
@@ -281,6 +285,9 @@ public struct Preferences {
     public var galleryTileSize: Double {
         Gallery.tileSizes.contains(store.double(forKey: PreferenceKey.galleryTileSize)) ? store.double(forKey: PreferenceKey.galleryTileSize) : Gallery.defaultTileSize
     }
+
+    public var partyModeUnlocked: Bool { store.bool(forKey: PreferenceKey.partyModeUnlocked) }
+    public var partyMode: Bool { store.bool(forKey: PreferenceKey.partyMode) }
 
     public var cameraSize: CameraBubbleSize {
         CameraBubbleSize(rawValue: store.string(forKey: PreferenceKey.cameraSize) ?? "") ?? .medium

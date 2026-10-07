@@ -133,16 +133,18 @@ private struct TipBubble: View {
         let minX = leading
             ? min(max(target.minX, Self.margin), bounds.width - Self.maxWidth - Self.margin)
             : max(min(target.maxX, bounds.width - Self.margin), Self.maxWidth + Self.margin) - Self.maxWidth
-        VStack(alignment: .leading, spacing: 2) {
-            Text(tip.title).font(Brutal.label)
-            if let detail = tip.detail {
-                Text(detail).font(Brutal.caption).opacity(0.75)
+        PartyColor(.white) { color in
+            VStack(alignment: .leading, spacing: 2) {
+                Text(tip.title).font(Brutal.label)
+                if let detail = tip.detail {
+                    Text(detail).font(Brutal.caption).opacity(0.75)
+                }
             }
+            .foregroundStyle(Brutal.ink)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .brutalSurface(color, radius: 8, shadow: 2)
         }
-        .foregroundStyle(Brutal.ink)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .brutalSurface(Color.white, radius: 8, shadow: 2)
         .fixedSize(horizontal: false, vertical: true)
         .frame(width: Self.maxWidth, height: 0, alignment: Alignment(horizontal: leading ? .leading : .trailing, vertical: below ? .top : .bottom))
         .position(x: minX + Self.maxWidth / 2, y: below ? target.maxY + Self.gap : target.minY - Self.gap)

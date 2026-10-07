@@ -81,6 +81,8 @@ import Testing
         #expect(prefs.cameraDeviceID.isEmpty)
         #expect(prefs.microphoneDeviceID.isEmpty)
         #expect(prefs.cameraSize == .medium)
+        #expect(!prefs.partyModeUnlocked)
+        #expect(!prefs.partyMode)
         #expect(prefs.saveAfterCapture)
         #expect(prefs.copyAfterCapture)
         #expect(prefs.quickAccessAfterCapture)
