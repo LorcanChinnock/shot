@@ -48,6 +48,12 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public var lineWidth: CGFloat
     /// How far an arrow's or line's curve passes from the middle of its chord; `nil` leaves it straight.
     public var bend: CGVector?
+    /// How a text annotation's or note's lines line up. Stored only when it isn't left, so annotations saved before it still decode.
+    public var alignment: TextAlign {
+        get { textAlign ?? .left }
+        set { textAlign = newValue == .left ? nil : newValue }
+    }
+    private var textAlign: TextAlign?
 
     public enum Kind: Equatable, Sendable, Codable {
         case arrow(from: CGPoint, to: CGPoint)
@@ -88,6 +94,14 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public var sizesText: Bool {
         switch kind {
         case .text, .note, .counter: true
+        default: false
+        }
+    }
+
+    /// True for the kinds whose lines can be aligned.
+    public var alignsText: Bool {
+        switch kind {
+        case .text, .note: true
         default: false
         }
     }

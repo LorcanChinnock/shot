@@ -956,6 +956,29 @@ extension VideoEditorModel {
         project = changed
     }
 
+    /// The alignment the palette shows: the text being typed's, else the selected annotation's, else the next text's or note's.
+    /// `nil` when none of them is text or a note.
+    var paletteAlignment: TextAlign? {
+        if let shown = editingText ?? selectedAnnotation?.annotation {
+            return shown.alignsText ? shown.alignment : nil
+        }
+        return annotationTool == .text || annotationTool == .note ? annotationStyle.alignment : nil
+    }
+
+    func setAlignment(_ alignment: TextAlign) {
+        if let text = editingText {
+            // The field commits it; new text or a new note also sets the alignment for the next one.
+            editingText?.alignment = alignment
+            if project.annotationClip(text.id) == nil {
+                annotationStyle.alignment = alignment
+            }
+        } else if selectedAnnotation != nil {
+            restyleSelection { $0.alignment = alignment }
+        } else {
+            annotationStyle.alignment = alignment
+        }
+    }
+
     var paletteFill: RGBA? {
         get { selectedAnnotation?.annotation.fill ?? (selectedAnnotation == nil ? annotationStyle.fill : nil) }
         set {

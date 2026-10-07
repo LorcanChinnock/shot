@@ -1,4 +1,5 @@
 import CoreGraphics
+import CoreText
 import Foundation
 
 /// The outline a shape annotation, or a spotlight's lit area, takes within its rect.
@@ -64,6 +65,35 @@ public enum Redaction: String, CaseIterable, Codable, Sendable {
         switch self {
         case .blur: "Blur"
         case .pixelate: "Pixelate"
+        }
+    }
+}
+
+/// How the lines of a text annotation or note line up within it.
+public enum TextAlign: String, CaseIterable, Codable, Sendable {
+    case left, center, right
+
+    public var title: String {
+        switch self {
+        case .left: "Align Left"
+        case .center: "Align Centre"
+        case .right: "Align Right"
+        }
+    }
+
+    /// How far right of the left edge of a box `width` wide `line` starts. Trailing spaces don't count,
+    /// so a wrapped line lines up by its last word.
+    public func offset(of line: CTLine, in width: CGFloat) -> CGFloat {
+        let visible = CGFloat(CTLineGetTypographicBounds(line, nil, nil, nil) - CTLineGetTrailingWhitespaceWidth(line))
+        return (width - visible) * fraction
+    }
+
+    /// The share of the spare width that goes before a line.
+    public var fraction: CGFloat {
+        switch self {
+        case .left: 0
+        case .center: 0.5
+        case .right: 1
         }
     }
 }

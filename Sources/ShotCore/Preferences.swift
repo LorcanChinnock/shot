@@ -41,6 +41,7 @@ public enum PreferenceKey {
     public static let editorShape = "editorShape"
     public static let editorRedaction = "editorRedaction"
     public static let editorSpotlight = "editorSpotlight"
+    public static let editorAlignment = "editorAlignment"
     public static let galleryTileSize = "galleryTileSize"
     /// True while the macOS screenshot shortcuts are off because Shot turned them off. Not a
     /// setting, so resetting settings keeps it and Shot can still give the keys back.
@@ -115,6 +116,7 @@ public struct Preferences {
             PreferenceKey.editorShape: EditorStyle().shape.rawValue,
             PreferenceKey.editorRedaction: EditorStyle().redaction.rawValue,
             PreferenceKey.editorSpotlight: Data(),
+            PreferenceKey.editorAlignment: EditorStyle().alignment.rawValue,
             PreferenceKey.galleryTileSize: Gallery.defaultTileSize,
         ]
         for action in ShotAction.allCases {
@@ -174,6 +176,7 @@ public struct Preferences {
         store.set(style.shape.rawValue, forKey: PreferenceKey.editorShape)
         store.set(style.redaction.rawValue, forKey: PreferenceKey.editorRedaction)
         store.set(try? JSONEncoder().encode(style.spotlight), forKey: PreferenceKey.editorSpotlight)
+        store.set(style.alignment.rawValue, forKey: PreferenceKey.editorAlignment)
     }
 
     public static func resetHotkeys(in store: UserDefaults = .standard) {
@@ -268,7 +271,8 @@ public struct Preferences {
             recentColors: decoded(PreferenceKey.editorRecentColors, as: [RGBA].self).map { Array($0.prefix(EditorStyle.maxRecentColors)) } ?? defaults.recentColors,
             shape: BoxShape(rawValue: store.string(forKey: PreferenceKey.editorShape) ?? "") ?? defaults.shape,
             redaction: Redaction(rawValue: store.string(forKey: PreferenceKey.editorRedaction) ?? "") ?? defaults.redaction,
-            spotlight: decoded(PreferenceKey.editorSpotlight) ?? defaults.spotlight
+            spotlight: decoded(PreferenceKey.editorSpotlight) ?? defaults.spotlight,
+            alignment: TextAlign(rawValue: store.string(forKey: PreferenceKey.editorAlignment) ?? "") ?? defaults.alignment
         )
     }
 
