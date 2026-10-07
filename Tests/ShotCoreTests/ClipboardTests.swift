@@ -41,6 +41,15 @@ func everyKindSurvivesTheClipboard(annotation: Annotation) throws {
     #expect(try AnnotationClipboard.annotation(from: data) == annotation)
 }
 
+@Test func alignmentSurvivesTheClipboardAndIsLeftInAnnotationsSavedWithoutOne() throws {
+    var note = Annotation(kind: .note("Hi", rect: CGRect(x: 0, y: 0, width: 160, height: 0)), color: red, lineWidth: 4)
+    let saved = try AnnotationClipboard.data(for: note)
+    #expect(!String(decoding: saved, as: UTF8.self).contains("textAlign"))
+    #expect(try AnnotationClipboard.annotation(from: saved).alignment == .left)
+    note.alignment = .right
+    #expect(try AnnotationClipboard.annotation(from: AnnotationClipboard.data(for: note)) == note)
+}
+
 @Test func clipboardRejectsOtherData() {
     #expect(throws: (any Error).self) { try AnnotationClipboard.annotation(from: Data("not an annotation".utf8)) }
     #expect(throws: (any Error).self) { try AnnotationClipboard.annotation(from: Data()) }

@@ -36,11 +36,12 @@ public enum PreferenceKey {
     public static let editorColor = "editorColor"
     public static let editorNoteColor = "editorNoteColor"
     public static let editorFill = "editorFill"
-    public static let editorRecentColors = "editorRecentColors"
+    public static let editorCustomColors = "editorCustomColors"
     public static let editorWidth = "editorWidth"
     public static let editorShape = "editorShape"
     public static let editorRedaction = "editorRedaction"
     public static let editorSpotlight = "editorSpotlight"
+    public static let editorAlignment = "editorAlignment"
     public static let galleryTileSize = "galleryTileSize"
     public static let partyModeUnlocked = "partyModeUnlocked"
     public static let partyMode = "partyMode"
@@ -112,11 +113,12 @@ public struct Preferences {
             PreferenceKey.editorColor: Data(),
             PreferenceKey.editorNoteColor: Data(),
             PreferenceKey.editorFill: Data(),
-            PreferenceKey.editorRecentColors: Data(),
+            PreferenceKey.editorCustomColors: Data(),
             PreferenceKey.editorWidth: EditorStyle().widthIndex,
             PreferenceKey.editorShape: EditorStyle().shape.rawValue,
             PreferenceKey.editorRedaction: EditorStyle().redaction.rawValue,
             PreferenceKey.editorSpotlight: Data(),
+            PreferenceKey.editorAlignment: EditorStyle().alignment.rawValue,
             PreferenceKey.galleryTileSize: Gallery.defaultTileSize,
             PreferenceKey.partyModeUnlocked: false,
             PreferenceKey.partyMode: false,
@@ -150,6 +152,8 @@ public struct Preferences {
         for key in defaults.keys {
             store.removeObject(forKey: key)
         }
+        // Older versions kept recent custom colours.
+        store.removeObject(forKey: "editorRecentColors")
     }
 
     /// Deletes the shortcut saved for text capture, which Shot no longer has.
@@ -173,11 +177,12 @@ public struct Preferences {
         store.set(try? JSONEncoder().encode(style.color), forKey: PreferenceKey.editorColor)
         store.set(try? JSONEncoder().encode(style.noteColor), forKey: PreferenceKey.editorNoteColor)
         store.set(style.fill.flatMap { try? JSONEncoder().encode($0) } ?? Data(), forKey: PreferenceKey.editorFill)
-        store.set(try? JSONEncoder().encode(style.recentColors), forKey: PreferenceKey.editorRecentColors)
+        store.set(try? JSONEncoder().encode(style.customColors), forKey: PreferenceKey.editorCustomColors)
         store.set(style.widthIndex, forKey: PreferenceKey.editorWidth)
         store.set(style.shape.rawValue, forKey: PreferenceKey.editorShape)
         store.set(style.redaction.rawValue, forKey: PreferenceKey.editorRedaction)
         store.set(try? JSONEncoder().encode(style.spotlight), forKey: PreferenceKey.editorSpotlight)
+        store.set(style.alignment.rawValue, forKey: PreferenceKey.editorAlignment)
     }
 
     public static func resetHotkeys(in store: UserDefaults = .standard) {
@@ -269,10 +274,11 @@ public struct Preferences {
             noteColor: colour(PreferenceKey.editorNoteColor, default: defaults.noteColor),
             fill: decoded(PreferenceKey.editorFill),
             widthIndex: index(PreferenceKey.editorWidth, in: EditorStyle.widths.indices, default: defaults.widthIndex),
-            recentColors: decoded(PreferenceKey.editorRecentColors, as: [RGBA].self).map { Array($0.prefix(EditorStyle.maxRecentColors)) } ?? defaults.recentColors,
+            customColors: decoded(PreferenceKey.editorCustomColors) ?? defaults.customColors,
             shape: BoxShape(rawValue: store.string(forKey: PreferenceKey.editorShape) ?? "") ?? defaults.shape,
             redaction: Redaction(rawValue: store.string(forKey: PreferenceKey.editorRedaction) ?? "") ?? defaults.redaction,
-            spotlight: decoded(PreferenceKey.editorSpotlight) ?? defaults.spotlight
+            spotlight: decoded(PreferenceKey.editorSpotlight) ?? defaults.spotlight,
+            alignment: TextAlign(rawValue: store.string(forKey: PreferenceKey.editorAlignment) ?? "") ?? defaults.alignment
         )
     }
 

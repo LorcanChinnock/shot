@@ -142,7 +142,7 @@ public enum AnnotationRenderer {
             }
             ctx.strokePath()
         case let .shape(shape, rect):
-            let path = shape.path(in: rect)
+            let path = shape.path(in: rect, cornerRadius: annotation.cornerRadius)
             if let fill = annotation.fill {
                 ctx.setFillColor(fill.cgColor)
                 ctx.addPath(path)
@@ -173,7 +173,8 @@ public enum AnnotationRenderer {
             let layout = TextLayout(string: string, fontSize: fontSize, color: annotation.color)
             ctx.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
             for (index, line) in layout.lines.enumerated() {
-                ctx.textPosition = CGPoint(x: origin.x, y: origin.y + layout.ascent + CGFloat(index) * layout.lineHeight)
+                let x = origin.x + annotation.alignment.offset(of: line, in: layout.size.width)
+                ctx.textPosition = CGPoint(x: x, y: origin.y + layout.ascent + CGFloat(index) * layout.lineHeight)
                 CTLineDraw(line, ctx)
             }
         case let .counter(number, center):
@@ -206,7 +207,8 @@ public enum AnnotationRenderer {
             let text = layout.textRect
             ctx.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
             for (index, line) in layout.lines.enumerated() {
-                ctx.textPosition = CGPoint(x: text.minX, y: text.minY + layout.ascent + CGFloat(index) * layout.lineHeight)
+                let x = text.minX + annotation.alignment.offset(of: line, in: text.width)
+                ctx.textPosition = CGPoint(x: x, y: text.minY + layout.ascent + CGFloat(index) * layout.lineHeight)
                 CTLineDraw(line, ctx)
             }
         }

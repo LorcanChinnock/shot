@@ -70,14 +70,9 @@ struct GalleryRootView: View {
     }
 
     private var sortMenu: some View {
-        Menu {
-            Picker("Sort", selection: Bindable(model).sort) {
-                ForEach(GallerySort.allCases, id: \.self) { sort in
-                    Text(sort.title).tag(sort)
-                }
-            }
-            .pickerStyle(.inline)
-        } label: {
+        BrutalDropdown(title: "Sort", entries: GallerySort.allCases.map { sort in
+            .item(sort.title, selected: sort == model.sort) { model.sort = sort }
+        }) {
             HStack(spacing: 5) {
                 Text(model.sort.title)
                 Image(systemName: "chevron.down")
@@ -89,9 +84,7 @@ struct GalleryRootView: View {
             .frame(height: 30)
             .brutalSurface(Color.white.opacity(0.85), radius: 8, shadow: 2)
         }
-        .menuStyle(.button)
         .buttonStyle(.plain)
-        .menuIndicator(.hidden)
         .fixedSize()
         .brutalTip("Sort")
     }
