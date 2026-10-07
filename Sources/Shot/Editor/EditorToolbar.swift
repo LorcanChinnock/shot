@@ -103,7 +103,7 @@ struct EditorToolbar: View {
         ToolGroup {
             ColorSwatches(
                 selected: model.paletteColor,
-                recents: model.recentColors,
+                lastCustom: model.lastCustom(forFill: false),
                 customHelp: "Custom colour",
                 choose: { if let color = $0 { model.paletteColor = color } },
                 pickCustom: { model.pickCustom($0, forFill: false) }
@@ -114,7 +114,7 @@ struct EditorToolbar: View {
                 Text("FILL").font(Brutal.mono).foregroundStyle(Brutal.ink).padding(.horizontal, 4)
                 ColorSwatches(
                     selected: model.paletteFill,
-                    recents: model.recentColors,
+                    lastCustom: model.lastCustom(forFill: true),
                     allowsNone: true,
                     customHelp: "Custom fill colour",
                     choose: { model.paletteFill = $0 },
@@ -262,11 +262,12 @@ struct SpotlightOptions: View {
     }
 }
 
-/// The preset colours, the custom ones picked lately, and a colour well for a new one. With `allowsNone`,
+/// The preset colours and a rainbow swatch for a custom one. With `allowsNone`,
 /// a first swatch clears the colour: `nil` is transparent, with nothing drawn.
 struct ColorSwatches: View {
     let selected: RGBA?
-    let recents: [RGBA]
+    /// The custom colour picked last in this palette, which the rainbow swatch applies again.
+    let lastCustom: RGBA?
     var allowsNone = false
     let customHelp: String
     let choose: (RGBA?) -> Void
@@ -281,37 +282,63 @@ struct ColorSwatches: View {
                 choose(RGBA.presets[index])
             }
         }
-        ForEach(recents, id: \.self) { recent in
-            Swatch(color: recent, isSelected: selected == recent, name: "Recent colour") { choose(recent) }
-        }
-        CustomColorButton(current: selected ?? RGBA(1, 1, 1), help: customHelp, pick: pickCustom)
+        CustomColorButton(
+            custom: selected.flatMap { RGBA.presets.contains($0) ? nil : $0 },
+            lastCustom: lastCustom,
+            fallback: selected ?? RGBA(1, 1, 1),
+            help: customHelp,
+            pick: pickCustom
+        )
     }
 }
 
-/// A rainbow chip that opens the colour editor in a popover, so picking stays inside the app.
+/// A rainbow chip that applies the last custom colour and opens the colour editor on it in a popover,
+/// so picking stays inside the app. While a custom colour is in use, it shows inside the rainbow ring.
 private struct CustomColorButton: View {
-    let current: RGBA
+    let custom: RGBA?
+    let lastCustom: RGBA?
+    /// What the colour editor starts on when no custom colour has been picked yet.
+    let fallback: RGBA
     let help: String
     let pick: (RGBA) -> Void
     @State private var isOpen = false
 
+    private var isSelected: Bool { isOpen || custom != nil }
+
     var body: some View {
-        Button { isOpen.toggle() } label: {
-            Circle()
-                .fill(AngularGradient(colors: [.red, .yellow, .green, .cyan, .blue, .purple, .red], center: .center))
-                .inkBorder(Circle(), width: 2)
-                .background(Circle().fill(Brutal.ink).offset(x: isOpen ? 2 : 0, y: isOpen ? 2 : 0))
-                .frame(width: isOpen ? 22 : 18, height: isOpen ? 22 : 18)
-                .frame(width: 26, height: 30)
-                .contentShape(Rectangle())
+        Button(action: open) {
+            ZStack {
+                Circle()
+                    .fill(AngularGradient(colors: [.red, .yellow, .green, .cyan, .blue, .purple, .red], center: .center))
+                if let custom {
+                    Circle().fill(custom.swiftUIColor).inkBorder(Circle(), width: 2).padding(4)
+                }
+            }
+            .inkBorder(Circle(), width: 2)
+            .background(Circle().fill(Brutal.ink).offset(x: isSelected ? 2 : 0, y: isSelected ? 2 : 0))
+            .frame(width: isSelected ? 22 : 18, height: isSelected ? 22 : 18)
+            .frame(width: 26, height: 30)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .brutalTip(help)
         .accessibilityLabel(Text(help))
-        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isOpen)
+        .accessibilityAddTraits(custom != nil ? .isSelected : [])
+        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
         .popover(isPresented: $isOpen, arrowEdge: .bottom) {
-            ColorEditor(initial: current, pick: pick)
+            ColorEditor(initial: lastCustom ?? fallback, pick: pick)
         }
+    }
+
+    private func open() {
+        guard !isOpen else {
+            isOpen = false
+            return
+        }
+        if let lastCustom, lastCustom != custom {
+            pick(lastCustom)
+        }
+        isOpen = true
     }
 }
 
