@@ -103,7 +103,7 @@ Press ⌘⇧5, then drag out an area (the magnifier helps here too), press Space
 
 While recording, the controls let you pause and resume, stop and save, discard the recording, and show, hide or resize the camera bubble. On a Mac with a notch, when there's no room for the controls outside the recorded area, they move into the notch: a black pill shows the elapsed time, and hovering it shows the controls. Pressing the record shortcut again, or opening `shot://record`, stops the recording.
 
-Recordings are H.264 MP4 at 30 or 60 fps. When a recording finishes, Shot copies the file to the clipboard and shows it in [Quick Access](#quick-access). In **Settings › Recording** you can also show the cursor, outline the recorded area (the outline never appears in the video), turn off copying, and record your microphone and system audio. System audio is sound from other apps; Shot's own sounds are left out.
+Recordings are H.264 MP4 at 30 or 60 fps. When a recording finishes, Shot copies the file to the clipboard, and saves it and shows it in [Quick Access](#quick-access) unless you turned those off in **Settings › Capture**. In **Settings › Recording** you can also show the cursor, outline the recorded area (the outline never appears in the video), turn off copying, and record your microphone and system audio. System audio is sound from other apps; Shot's own sounds are left out.
 
 ### Camera bubble
 
