@@ -5,14 +5,14 @@ import SwiftUI
 struct ShortcutRecorderView: View {
     let action: ShotAction
     var color: Color
-    @AppStorage private var encoded: String
+    @Setting private var encoded: String
     @State private var isRecording = false
     @State private var monitor: Any?
 
     init(action: ShotAction, color: Color) {
         self.action = action
         self.color = color
-        _encoded = AppStorage(wrappedValue: action.defaultCombo(replacingSystemScreenshots: Preferences().replacesSystemScreenshots)?.encoded ?? "", PreferenceKey.hotkey(action))
+        _encoded = Setting(wrappedValue: action.defaultCombo(replacingSystemScreenshots: Preferences().replacesSystemScreenshots)?.encoded ?? "", PreferenceKey.hotkey(action))
     }
 
     private var label: String {

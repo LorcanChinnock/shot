@@ -24,7 +24,7 @@ struct ShotApp: App {
 private struct ShotMenu: View {
     let state: AppState
     let coordinator: CaptureCoordinator
-    @AppStorage(PreferenceKey.recordCamera) private var cameraBubble = false
+    @Setting(PreferenceKey.recordCamera) private var cameraBubble = false
 
     var body: some View {
         if state.isRecording {
@@ -78,13 +78,13 @@ private struct ActionButton: View {
     let action: ShotAction
     let title: String
     let coordinator: CaptureCoordinator
-    @AppStorage private var encodedCombo: String
+    @Setting private var encodedCombo: String
 
     init(action: ShotAction, title: String, coordinator: CaptureCoordinator) {
         self.action = action
         self.title = title
         self.coordinator = coordinator
-        _encodedCombo = AppStorage(wrappedValue: action.defaultCombo(replacingSystemScreenshots: Preferences().replacesSystemScreenshots)?.encoded ?? "", PreferenceKey.hotkey(action))
+        _encodedCombo = Setting(wrappedValue: action.defaultCombo(replacingSystemScreenshots: Preferences().replacesSystemScreenshots)?.encoded ?? "", PreferenceKey.hotkey(action))
     }
 
     var body: some View {

@@ -24,3 +24,10 @@ if [ -n "$hits" ]; then
     echo "$hits"
     exit 1
 fi
+
+hits=$(grep -rnE '@AppStorage[( ]|AppStorage\(' Sources || true)
+if [ -n "$hits" ]; then
+    echo "Use @Setting instead; @AppStorage catches up an update late, so views mixing it with other state show combinations that never existed:"
+    echo "$hits"
+    exit 1
+fi
