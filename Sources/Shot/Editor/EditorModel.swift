@@ -66,6 +66,8 @@ final class EditorModel {
     /// The note whose text field is open, with the colour picked for it so far; it may not be in the document yet.
     var editingNote: Annotation?
     var isDirty = false
+    /// What the document looked like when it was last saved, so undoing back to it leaves the editor clean.
+    @ObservationIgnored private var savedSnapshot: EditorSnapshot
     /// Set by the canvas: turns the text or note still being typed into an annotation.
     var commitPendingText: (() -> Void)?
     /// True while auto-redact looks for text to hide.
@@ -85,7 +87,9 @@ final class EditorModel {
     init(fileURL: URL, image: CGImage, scale: CGFloat, style: EditorStyle = Preferences().editorStyle) {
         self.fileURL = fileURL
         self.scale = scale
-        document = EditorDocument(base: image, background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension)))
+        let document = EditorDocument(base: image, background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension)))
+        self.document = document
+        savedSnapshot = document.snapshot
         tool = style.tool
         color = style.color
         noteColor = style.noteColor
@@ -220,7 +224,7 @@ final class EditorModel {
         if let previous = undoStack.undo(from: document.snapshot) {
             document.restore(previous)
             selectedID = nil
-            isDirty = true
+            isDirty = document.snapshot != savedSnapshot
         }
     }
 
@@ -230,7 +234,7 @@ final class EditorModel {
         if let next = undoStack.redo(from: document.snapshot) {
             document.restore(next)
             selectedID = nil
-            isDirty = true
+            isDirty = document.snapshot != savedSnapshot
         }
     }
 
@@ -468,6 +472,7 @@ final class EditorModel {
         do {
             try data.write(to: FileNaming.nextVersionURL(of: fileURL), options: .atomic)
             Clipboard.copy(png: result.png, image: result.image)
+            savedSnapshot = document.snapshot
             isDirty = false
             Toast.show("Saved and copied")
             return true
