@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.16](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.15...v0.7.0-beta.16) (2026-10-07)
+
+
+### Bug Fixes
+
+* **ui:** convert zoom to CGFloat explicitly so CI's Xcode compiles TracksView ([#138](https://github.com/LorcanChinnock/shot/issues/138)) ([32c8c99](https://github.com/LorcanChinnock/shot/commit/32c8c99519c45d2d6636775a6ff5e35ce9d72ed2))
+
 ## [0.7.0-beta.15](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.14...v0.7.0-beta.15) (2026-10-07)
 
 
