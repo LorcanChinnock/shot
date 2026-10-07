@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.7.0-beta.24](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.23...v0.7.0-beta.24) (2026-10-07)
+
+
+### Features
+
+* **design:** custom brutal-styled dropdown to replace system menus ([#182](https://github.com/LorcanChinnock/shot/issues/182)) ([42ce4eb](https://github.com/LorcanChinnock/shot/commit/42ce4eba9f09af2b3113b55d2fc84ba2b6c15721))
+* **design:** longer tooltip delay with warm-up ([#178](https://github.com/LorcanChinnock/shot/issues/178)) ([af7c929](https://github.com/LorcanChinnock/shot/commit/af7c9297c24361e931f4bac3d2ca0ec80744a238))
+* **editor:** amount slider for blur and pixelate ([#185](https://github.com/LorcanChinnock/shot/issues/185)) ([559981d](https://github.com/LorcanChinnock/shot/commit/559981db71c19208dbb943a8a87fc7bb17c3f730))
+* **editor:** corner-radius handles on rounded rectangles ([#175](https://github.com/LorcanChinnock/shot/issues/175)) ([d359038](https://github.com/LorcanChinnock/shot/commit/d35903802ba550331068041858c01fd18334d7e5))
+* **editor:** hand tool (H) for panning, and middle-click drag to pan ([#177](https://github.com/LorcanChinnock/shot/issues/177)) ([183528c](https://github.com/LorcanChinnock/shot/commit/183528c071b2522d3f364dee5827901d87437d79))
+* **editor:** highlighter becomes a freehand marker with colour and size (M) ([#183](https://github.com/LorcanChinnock/shot/issues/183)) ([e609e23](https://github.com/LorcanChinnock/shot/commit/e609e23170f1c29072c33b1ff59daf51f05fa2db))
+* **editor:** one custom colour swatch per slot, drop recent colours ([#180](https://github.com/LorcanChinnock/shot/issues/180)) ([9b03fae](https://github.com/LorcanChinnock/shot/commit/9b03fae41fc087fc895c843f051710dbb9874e23))
+* **editor:** optional soft edge for spotlights ([#184](https://github.com/LorcanChinnock/shot/issues/184)) ([e4edc54](https://github.com/LorcanChinnock/shot/commit/e4edc543e8ba1d8b37879ddf902011d7be9c33d3))
+* **editor:** spotlight strength as a slider instead of three presets ([#179](https://github.com/LorcanChinnock/shot/issues/179)) ([05317fd](https://github.com/LorcanChinnock/shot/commit/05317fd38f0b5abb253129b8a6bcb15441355a37))
+* **editor:** text alignment for text and sticky notes ([#176](https://github.com/LorcanChinnock/shot/issues/176)) ([8d3e2de](https://github.com/LorcanChinnock/shot/commit/8d3e2de87dd3f63ace2e038374d79f652b4348fc))
+* **settings:** hidden party mode easter egg ([#181](https://github.com/LorcanChinnock/shot/issues/181)) ([2e42037](https://github.com/LorcanChinnock/shot/commit/2e4203723c609692305e06fbc74c830534f9e6c0))
+
 ## [0.7.0-beta.23](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.22...v0.7.0-beta.23) (2026-10-07)
 
 
