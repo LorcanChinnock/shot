@@ -142,7 +142,7 @@ public enum AnnotationRenderer {
             }
             ctx.strokePath()
         case let .shape(shape, rect):
-            let path = shape.path(in: rect)
+            let path = shape.path(in: rect, cornerRadius: annotation.cornerRadius)
             if let fill = annotation.fill {
                 ctx.setFillColor(fill.cgColor)
                 ctx.addPath(path)
