@@ -65,9 +65,17 @@ enum DisplayCapturer {
 
     /// Captures every display (or only `screens`) concurrently.
     static func captureAll(screens: [NSScreen] = NSScreen.screens) async throws -> [FrozenDisplay] {
-        let targets = screens.map { Target(displayID: $0.displayID, frame: $0.frame, backingScale: $0.backingScaleFactor) }
         let prefs = Preferences()
-        return try await capture(targets, showsCursor: prefs.captureShowsCursor, hidesShotUI: prefs.hidesShotUI)
+        return try await capture(targets(screens), showsCursor: prefs.captureShowsCursor, hidesShotUI: prefs.hidesShotUI)
+    }
+
+    /// Captures every display without Shot's windows or the cursor, for the live overlay's magnifier.
+    static func captureForMagnifier() async throws -> [FrozenDisplay] {
+        try await capture(targets(NSScreen.screens), showsCursor: false, hidesShotUI: true)
+    }
+
+    private static func targets(_ screens: [NSScreen]) -> [Target] {
+        screens.map { Target(displayID: $0.displayID, frame: $0.frame, backingScale: $0.backingScaleFactor) }
     }
 
     private nonisolated static func capture(_ targets: [Target], showsCursor: Bool, hidesShotUI: Bool) async throws -> [FrozenDisplay] {
