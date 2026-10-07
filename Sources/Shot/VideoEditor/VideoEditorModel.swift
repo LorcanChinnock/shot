@@ -916,10 +916,11 @@ extension VideoEditorModel {
         restyleSelection { $0.setRedaction(redaction) }
     }
 
-    /// The next spotlight's style: the chosen shape, with the effect and strength the project's spotlights already share.
+    /// The next spotlight's style: the chosen shape and edge, with the effect and strength the project's spotlights already share.
     var nextSpotlightStyle: SpotlightStyle {
         let shared = project.annotationClips.map(\.annotation).spotlightStyle ?? annotationStyle.spotlight
-        return SpotlightStyle(shape: annotationStyle.spotlight.shape, effect: shared.effect, strength: shared.strength)
+        let next = annotationStyle.spotlight
+        return SpotlightStyle(shape: next.shape, effect: shared.effect, strength: shared.strength, softEdge: next.softEdge)
     }
 
     /// The spotlight style the palette shows: the selected spotlight's, else the next one's. `nil` when neither is one.
@@ -938,11 +939,17 @@ extension VideoEditorModel {
             annotationStyle.spotlight.shape = shape
             return
         }
-        restyleSelection {
-            if case let .spotlight(rect, style) = $0.kind {
-                $0.kind = .spotlight(rect, style: SpotlightStyle(shape: shape, effect: style.effect, strength: style.strength))
-            }
+        restyleSelection { $0.restyleSpotlight { $0.shape = shape } }
+    }
+
+    /// Between `beginDrag` and `endDrag` the changes are one undo step.
+    func setSpotlightSoftEdge(_ softEdge: Double) {
+        guard var restyled = selectedAnnotation else {
+            annotationStyle.spotlight.softEdge = softEdge
+            return
         }
+        restyled.annotation.restyleSpotlight { $0.softEdge = softEdge }
+        commitAnnotation(restyled.annotation, id: restyled.id, recordsUndo: dragOrigin == nil)
     }
 
     /// Sets the effect and strength of every spotlight in the project, since they share one dim, and of the next one.
@@ -1110,11 +1117,13 @@ extension VideoEditorModel {
     }
 
     /// Replaces what the annotation clip `id` shows, as one undo step.
-    func commitAnnotation(_ annotation: Annotation, id: UUID) {
+    func commitAnnotation(_ annotation: Annotation, id: UUID, recordsUndo: Bool = true) {
         guard !isExporting, let changed = project.setting(annotation: annotation, ofClip: id), changed != project else {
             return
         }
-        undoStack.record(edit)
+        if recordsUndo {
+            undoStack.record(edit)
+        }
         project = changed
         // The compositor keeps drawing the live version until the rebuilt preview has it too.
         let clip = changed.annotationClip(id)

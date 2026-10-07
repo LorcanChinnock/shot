@@ -85,7 +85,10 @@ struct EditorToolbar: View {
                 } else if let redaction = model.paletteRedaction {
                     RedactionOptions(selected: redaction, choose: model.setRedaction)
                 } else if let spotlight = model.paletteSpotlight {
-                    SpotlightOptions(style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook, dragStrength: model.setDraggingStyle)
+                    SpotlightOptions(
+                        style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook,
+                        chooseSoftEdge: model.setSpotlightSoftEdge, dragSlider: model.setDraggingStyle
+                    )
                 } else {
                     Text(model.tool.summary)
                         .font(Brutal.caption)
@@ -265,12 +268,13 @@ struct RedactionOptions: View {
     }
 }
 
-/// A spotlight's shape, and the effect and strength every spotlight in the image shares.
+/// A spotlight's shape and edge, and the effect and strength every spotlight in the image shares.
 struct SpotlightOptions: View {
     let style: SpotlightStyle
     let chooseShape: (BoxShape) -> Void
     let chooseLook: (SpotlightStyle.Effect, Double) -> Void
-    let dragStrength: (Bool) -> Void
+    let chooseSoftEdge: (Double) -> Void
+    let dragSlider: (Bool) -> Void
 
     var body: some View {
         ShapeOptions(shapes: BoxShape.spotlightShapes, selected: style.shape, choose: chooseShape)
@@ -289,12 +293,25 @@ struct SpotlightOptions: View {
                 range: SpotlightStyle.strengths,
                 track: LinearGradient(colors: [Brutal.ink.opacity(SpotlightStyle.strengths.lowerBound), Brutal.ink.opacity(SpotlightStyle.strengths.upperBound)], startPoint: .leading, endPoint: .trailing),
                 width: 120,
-                onEditingChanged: dragStrength
+                onEditingChanged: dragSlider
             )
             .frame(height: 30)
             .padding(.horizontal, 6)
             .accessibilityLabel(Text("Strength"))
             .brutalTip("Strength", detail: "Applies to every spotlight in the image.")
+        }
+        ToolGroup {
+            Text("EDGE").font(Brutal.mono).foregroundStyle(Brutal.ink).padding(.horizontal, 4)
+            BrutalSlider(
+                value: Binding(get: { style.softEdge }, set: { chooseSoftEdge($0) }),
+                track: LinearGradient(colors: [.white, Brutal.sky], startPoint: .leading, endPoint: .trailing),
+                width: 100,
+                onEditingChanged: dragSlider
+            )
+            .frame(height: 30)
+            .padding(.trailing, 6)
+            .accessibilityLabel(Text("Soft edge"))
+            .brutalTip("Soft edge", detail: "Fades the spotlight into the dim.")
         }
     }
 }

@@ -6,6 +6,8 @@ import os
 
 public enum AnnotationRenderer {
     private static let ciContext = CIContext(options: [.cacheIntermediates: false])
+    /// Blurs masks as plain coverage values, without converting them through a colour space.
+    private static let maskContext = CIContext(options: [.cacheIntermediates: false, .workingColorSpace: NSNull(), .outputColorSpace: NSNull()])
     /// The last image a spotlight blurred, so redrawing while editing doesn't blur the whole image again.
     private static let blurCache = OSAllocatedUnfairLock<(source: CGImage, radius: CGFloat, blurred: CGImage)?>(initialState: nil)
 
@@ -31,7 +33,7 @@ public enum AnnotationRenderer {
         let dimIndex = doc.annotations.firstIndex { if case .spotlight = $0.kind { true } else { false } }
         for (index, annotation) in doc.annotations.enumerated() {
             if index == dimIndex, let dim, let style = doc.spotlightStyle {
-                drawSpotlightDim(dim, style: style, base: doc.base, below: doc.annotations[..<index], in: ctx)
+                drawSpotlightDim(dim, style: style, softSpotlights: doc.softSpotlights, base: doc.base, below: doc.annotations[..<index], in: ctx)
             }
             draw(annotation, base: doc.base, over: doc.annotations[..<index], in: ctx)
         }
@@ -41,10 +43,16 @@ public enum AnnotationRenderer {
         ctx.restoreGState()
     }
 
-    /// Darkens or blurs `dim`, the image outside every spotlight.
-    private static func drawSpotlightDim(_ dim: CGPath, style: SpotlightStyle, base: CGImage, below: ArraySlice<Annotation>, in ctx: CGContext) {
+    /// Darkens or blurs `dim`, the image outside every spotlight, faded where `softSpotlights` light it.
+    private static func drawSpotlightDim(
+        _ dim: CGPath, style: SpotlightStyle, softSpotlights: [(rect: CGRect, style: SpotlightStyle, cornerRadius: CGFloat?)], base: CGImage, below: ArraySlice<Annotation>, in ctx: CGContext
+    ) {
         ctx.saveGState()
         defer { ctx.restoreGState() }
+        let area = dim.boundingBoxOfPath.integral
+        if !softSpotlights.isEmpty, let mask = softSpotlightMask(softSpotlights, in: area) {
+            ctx.clip(to: area, mask: mask)
+        }
         switch style.effect {
         case .darken:
             // Source-atop darkens what's painted and leaves transparent pixels, such as a window's shadow, clear.
@@ -62,6 +70,68 @@ public enum AnnotationRenderer {
             ctx.clip()
             drawUpright(blurred, in: CGRect(origin: source.origin, size: CGSize(width: blurred.width, height: blurred.height)), ctx: ctx)
         }
+    }
+
+    /// A greyscale mask of `area`: white where the dim shows, black inside the spotlights, with each spotlight's edge
+    /// blurred by its soft-edge radius. Having only blurry edges, it's drawn at a lower resolution the softer they are.
+    private static func softSpotlightMask(_ spotlights: [(rect: CGRect, style: SpotlightStyle, cornerRadius: CGFloat?)], in area: CGRect) -> CGImage? {
+        let sharpest = spotlights.map { $0.style.softEdgeRadius(in: $0.rect) }.min() ?? 0
+        let scale = min(1, 8 / sharpest)
+        let size = CGSize(width: ceil(area.width * scale), height: ceil(area.height * scale))
+        guard let ctx = greyContext(size: size) else {
+            return nil
+        }
+        ctx.setFillColor(gray: 1, alpha: 1)
+        ctx.fill(CGRect(origin: .zero, size: size))
+        ctx.scaleBy(x: size.width / area.width, y: size.height / area.height)
+        ctx.translateBy(x: -area.minX, y: -area.minY)
+        ctx.interpolationQuality = .high
+        // Darken keeps the lower of the two, so overlapping spotlights light their union.
+        ctx.setBlendMode(.darken)
+        for (rect, style, cornerRadius) in spotlights {
+            if let lit = softSpotlight(rect, style: style, cornerRadius: cornerRadius) {
+                ctx.draw(lit.image, in: lit.frame)
+            }
+        }
+        return ctx.makeImage()
+    }
+
+    /// One spotlight's shape, black on white, blurred by its soft-edge radius and drawn at a resolution to match;
+    /// `frame` is where it goes, at full size.
+    private static func softSpotlight(_ rect: CGRect, style: SpotlightStyle, cornerRadius: CGFloat?) -> (image: CGImage, frame: CGRect)? {
+        let radius = style.softEdgeRadius(in: rect)
+        let frame = rect.insetBy(dx: -3 * radius, dy: -3 * radius).integral
+        let scale = min(1, 8 / radius)
+        let extent = CGRect(x: 0, y: 0, width: ceil(frame.width * scale), height: ceil(frame.height * scale))
+        guard let ctx = greyContext(size: extent.size) else {
+            return nil
+        }
+        ctx.setFillColor(gray: 1, alpha: 1)
+        ctx.fill(extent)
+        ctx.scaleBy(x: scale, y: scale)
+        ctx.translateBy(x: -frame.minX, y: -frame.minY)
+        ctx.setFillColor(gray: 0, alpha: 1)
+        ctx.addPath(style.shape.path(in: rect, cornerRadius: cornerRadius))
+        ctx.fillPath()
+        guard let shape = ctx.makeImage() else {
+            return nil
+        }
+        let filter = CIFilter.gaussianBlur()
+        filter.inputImage = CIImage(cgImage: shape).clampedToExtent()
+        filter.radius = Float(radius * scale)
+        guard let output = filter.outputImage?.cropped(to: extent),
+              let blurred = maskContext.createCGImage(output, from: extent, format: .L8, colorSpace: CGColorSpaceCreateDeviceGray())
+        else {
+            return nil
+        }
+        return (blurred, CGRect(x: frame.minX, y: frame.minY, width: extent.width / scale, height: extent.height / scale))
+    }
+
+    private static func greyContext(size: CGSize) -> CGContext? {
+        CGContext(
+            data: nil, width: Int(size.width), height: Int(size.height), bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue
+        )
     }
 
     /// All of `image` blurred by `radius`, its edges kept sharp-cornered rather than fading out.
