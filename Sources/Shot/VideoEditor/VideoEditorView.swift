@@ -53,7 +53,7 @@ struct VideoEditorRootView: View {
                 .overlay { TransformOverlay(model: model) }
                 .overlay { AnnotationCanvas(model: model) }
                 .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
-                .brutalSurface(Color.clear)
+                .brutalSurface(Color.clear, shadow: 0, border: 1.5)
             if model.showsTracks {
                 if model.isAnnotating {
                     AnnotationPalette(model: model)
