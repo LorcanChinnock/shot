@@ -22,6 +22,14 @@ private func rect(_ x: CGFloat = 10) -> Annotation {
     #expect(annotated.trimEdit == nil)
 }
 
+@Test func annotationsOnAHiddenTrackDontShowOrDraw() {
+    var (annotated, _) = project().adding(annotation: rect(), at: 2)
+    annotated.tracks[2].isHidden = true
+    #expect(annotated.annotationClips(at: 3).isEmpty)
+    #expect(annotated.videoSegments().allSatisfy { $0.annotations.isEmpty })
+    #expect(annotated.annotationClips.count == 1)
+}
+
 @Test func anAnnotationNearTheEndStopsWhereTheProjectDoes() throws {
     let (annotated, id) = project().adding(annotation: rect(), at: 9)
     #expect(annotated.annotationClip(id)?.duration == 1)

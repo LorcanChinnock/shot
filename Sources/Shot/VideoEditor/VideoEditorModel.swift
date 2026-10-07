@@ -310,6 +310,15 @@ final class VideoEditorModel {
         return true
     }
 
+    /// Turns a track's lock, hide or mute on or off as one undo step.
+    func toggle(_ flag: WritableKeyPath<Track, Bool>, ofTrack index: Int) {
+        guard !isExporting, project.tracks.indices.contains(index) else {
+            return
+        }
+        undoStack.record(edit)
+        project.tracks[index][keyPath: flag].toggle()
+    }
+
     /// Cuts the selected clip out, closing the gap on the main track, as one undo step; false when none is selected.
     func deleteSelectedClip() -> Bool {
         guard let id = selectedClipID, !isExporting else {
