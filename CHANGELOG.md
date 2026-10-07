@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.19](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.18...v0.7.0-beta.19) (2026-10-07)
+
+
+### Features
+
+* **editor:** shape and redact tools with options, spotlight styles, bendable lines, live text size ([#144](https://github.com/LorcanChinnock/shot/issues/144)) ([8a63b0e](https://github.com/LorcanChinnock/shot/commit/8a63b0e72610f1b0469041f5efd020e9a7ca8203))
+
 ## [0.7.0-beta.18](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.17...v0.7.0-beta.18) (2026-10-07)
 
 
