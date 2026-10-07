@@ -30,7 +30,7 @@ final class RecordingControlPanel: NSPanel {
         becomesKeyOnlyIfNeeded = true
         isReleasedWhenClosed = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
-        contentView = NSHostingView(fixedFrame: RecordingControlView(model: model, actions: actions))
+        contentView = NSView(hosting: RecordingControlView(model: model, actions: actions))
     }
 }
 
