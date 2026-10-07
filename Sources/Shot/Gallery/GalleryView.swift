@@ -39,9 +39,8 @@ struct GalleryRootView: View {
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(Brutal.ink.opacity(0.6))
         }
-        .padding(.leading, GlassWindow.trafficLightsWidth)
-        .padding(.trailing, Brutal.windowInset)
-        .frame(height: GlassWindow.titlebarHeight)
+        .padding(.horizontal, 3)
+        .frame(height: 36)
     }
 
     private var searchField: some View {
@@ -110,7 +109,7 @@ struct GalleryRootView: View {
 
     private var grid: some View {
         GeometryReader { geometry in
-            let available = geometry.size.width - Brutal.windowInset * 2
+            let available = geometry.size.width - Brutal.groupInset * 2
             let columns = max(1, Int((available + Self.spacing) / (model.tileSize + Self.spacing)))
             let cell = (available - Self.spacing * CGFloat(columns - 1)) / CGFloat(columns)
             ScrollViewReader { proxy in
@@ -136,7 +135,7 @@ struct GalleryRootView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, Brutal.windowInset)
+                    .padding(.horizontal, Brutal.groupInset)
                     .padding(.vertical, 8)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background {
@@ -156,8 +155,6 @@ struct GalleryRootView: View {
             }
         }
         .clipped()
-        // A scroll view that starts exactly at the title bar's edge is stretched under it and swallows the header's clicks.
-        .padding(.top, 1)
     }
 
     private var emptyState: some View {
@@ -213,8 +210,8 @@ struct GalleryRootView: View {
                 .brutalTip("Move to the Trash (⌘⌫)")
         }
         .disabled(selected.isEmpty)
-        .padding(.horizontal, Brutal.windowInset)
-        .frame(height: 34 + Brutal.windowInset)
+        .padding(.horizontal, 3)
+        .frame(height: 34)
         .padding(.top, 6)
     }
 

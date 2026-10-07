@@ -4,12 +4,13 @@ import ShotCore
 import SwiftUI
 
 enum SettingsSection: String, CaseIterable, Identifiable {
-    case general, capture, quickAccess, recording, shortcuts, about
+    case gallery, general, capture, quickAccess, recording, shortcuts, about
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
+        case .gallery: "Gallery"
         case .general: "General"
         case .capture: "Capture"
         case .quickAccess: "Quick Access"
@@ -21,6 +22,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
     var subtitle: String {
         switch self {
+        case .gallery: "Every capture in your folder."
         case .general: "Behavior, files and formats."
         case .capture: "What happens when you take a shot."
         case .quickAccess: "The floating card after each capture."
@@ -32,6 +34,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
     var symbol: String {
         switch self {
+        case .gallery: "photo.on.rectangle"
         case .general: "gearshape"
         case .capture: "viewfinder"
         case .quickAccess: "rectangle.stack"
@@ -43,6 +46,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
     var color: Color {
         switch self {
+        case .gallery: Brutal.violet
         case .general: Brutal.yellow
         case .capture: Brutal.pink
         case .quickAccess: Brutal.sky
@@ -57,7 +61,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 @Observable
 final class SettingsNavigation {
     static let shared = SettingsNavigation()
-    var section: SettingsSection = .general
+    var section: SettingsSection = .gallery
 }
 
 struct SettingsView: View {
@@ -70,23 +74,30 @@ struct SettingsView: View {
                 .frame(width: 196)
             VStack(alignment: .leading, spacing: 16) {
                 header
-                ScrollView {
-                    VStack(spacing: 18) {
-                        content
+                if section == .gallery {
+                    let model = GalleryController.shared.model
+                    GalleryRootView(model: model)
+                        .onAppear { model.start() }
+                        .onDisappear { model.stop() }
+                } else {
+                    ScrollView {
+                        VStack(spacing: 18) {
+                            content
+                        }
+                        .padding(.trailing, Brutal.groupInset)
+                        .padding(.bottom, Brutal.sectionGap)
+                        .padding([.leading, .top], 3)
                     }
-                    .padding(.trailing, Brutal.groupInset)
-                    .padding(.bottom, Brutal.sectionGap)
-                    .padding([.leading, .top], 3)
+                    .scrollIndicators(.never)
+                    .mask(ScrollFade())
+                    .id(section)
                 }
-                .scrollIndicators(.never)
-                .mask(ScrollFade())
-                .id(section)
             }
         }
         .padding(.top, GlassWindow.titlebarHeight + 8)
         .padding(.horizontal, Brutal.windowInset)
         .padding(.bottom, Brutal.windowInset - 6)
-        .frame(minWidth: SettingsWindowController.size.width, maxWidth: .infinity, maxHeight: .infinity)
+        .frame(minWidth: MainWindowController.minSize.width, maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var header: some View {
@@ -108,6 +119,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var content: some View {
         switch section {
+        case .gallery: EmptyView()
         case .general: GeneralSettings()
         case .capture: CaptureSettings()
         case .quickAccess: QuickAccessSettings()
