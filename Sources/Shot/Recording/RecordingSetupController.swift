@@ -36,7 +36,8 @@ final class RecordingSetupModel {
 final class RecordingSetupController {
     /// Only crosses the continuation on the main actor.
     enum Result: @unchecked Sendable {
-        case start(screen: NSScreen, region: CGRect)
+        /// `windowID` is set when recording a single window rather than a screen area.
+        case start(screen: NSScreen, region: CGRect, windowID: CGWindowID?)
         case cancel
     }
 
@@ -45,6 +46,7 @@ final class RecordingSetupController {
     private let model: RecordingSetupModel
     private var screen: NSScreen
     private var region: CGRect
+    private var windowID: CGWindowID?
     private var frame: RecordingBorderPanel?
     private var handles: [RegionHandle: HandlePanel] = [:]
     private var bar: SetupBarPanel?
@@ -52,18 +54,19 @@ final class RecordingSetupController {
     private var countdownTask: Task<Void, Never>?
     private var continuation: CheckedContinuation<Result, Never>?
 
-    init(mode: RecordingMode, screen: NSScreen, region: CGRect) {
+    init(mode: RecordingMode, screen: NSScreen, region: CGRect, windowID: CGWindowID?) {
         model = RecordingSetupModel(mode: mode, prefs: Preferences())
         self.screen = screen
         self.region = region
+        self.windowID = windowID
     }
 
     /// Lets the user pick an area or window with the live overlay, or takes the screen under the pointer.
-    static func pickRegion(mode: RecordingMode) async -> (NSScreen, CGRect)? {
+    static func pickRegion(mode: RecordingMode) async -> (NSScreen, CGRect, CGWindowID?)? {
         let screens = NSScreen.screens
         if mode == .screen {
             let screen = NSScreen.underPointer ?? screens[0]
-            return (screen, screen.fullCaptureFrame)
+            return (screen, screen.fullCaptureFrame, nil)
         }
         let displays = screens.map { OverlayDisplay(frame: $0.frame, scale: $0.backingScaleFactor, image: nil) }
         let windows = SelectionOverlayController.onScreenWindows()
@@ -73,13 +76,13 @@ final class RecordingSetupController {
         switch selection {
         case let .area(index, rect):
             let screen = screens[index]
-            return (screen, rect.offsetBy(dx: screen.frame.minX, dy: screen.frame.minY))
+            return (screen, rect.offsetBy(dx: screen.frame.minX, dy: screen.frame.minY), nil)
         case let .window(info):
             let frame = Geometry.flip(info.frame, primaryHeight: screens.first?.frame.height ?? 0)
             let screen = screens.first { $0.frame.contains(CGPoint(x: frame.midX, y: frame.midY)) } ?? screens[0]
-            return (screen, frame.intersection(screen.frame))
+            return (screen, frame.intersection(screen.frame), info.windowID)
         case let .fullDisplay(index):
-            return (screens[index], screens[index].fullCaptureFrame)
+            return (screens[index], screens[index].fullCaptureFrame, nil)
         }
     }
 
@@ -113,7 +116,7 @@ final class RecordingSetupController {
                     return
                 }
             }
-            finish(.start(screen: screen, region: region))
+            finish(.start(screen: screen, region: region, windowID: windowID))
         }
     }
 
@@ -150,6 +153,7 @@ final class RecordingSetupController {
             model.mode = mode
             screen = picked.0
             region = picked.1
+            windowID = picked.2
             tearDownSetup()
             await showSetup(placeCamera: true)
         } else {
@@ -209,7 +213,13 @@ final class RecordingSetupController {
         }
     }
 
+    /// A window recording captures only that window, so the bubble would never appear in it.
     private func showCamera() async {
+        if windowID != nil {
+            model.cameraOn = false
+            CameraBubble.shared.hide()
+            return
+        }
         if !(await CameraBubble.shared.showFromPreferences(in: region)) {
             model.cameraOn = false
         }
@@ -223,6 +233,7 @@ final class RecordingSetupController {
         region = adjusted
         // A dragged screen or window frame is now a custom area.
         model.mode = .area
+        windowID = nil
         updateGeometry()
     }
 

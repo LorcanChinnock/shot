@@ -13,6 +13,7 @@ private let log = Logger.shot("recording")
 final class RecordingSessionModel {
     var isPaused = false
     var cameraOn = false
+    var cameraAvailable = true
     /// Whether this recording captures the microphone at all; mute only silences it.
     var microphoneOn = false
     var microphoneMuted = false
@@ -56,6 +57,8 @@ final class Recorder: NSObject {
     private struct Session {
         let screen: NSScreen
         let region: CGRect
+        /// Set when recording one window, which then follows the window and leaves out anything covering it.
+        let windowID: CGWindowID?
         let microphone: Bool
         /// `nil` means the system default.
         let microphoneID: String?
@@ -80,28 +83,31 @@ final class Recorder: NSObject {
     // MARK: Session
 
     /// `region` is an AppKit global rect inside `screen`.
-    func start(screen: NSScreen, region: CGRect) async throws {
+    func start(screen: NSScreen, region: CGRect, windowID: CGWindowID?) async throws {
         let prefs = Preferences()
         var microphone = prefs.recordMicrophone
         if microphone, !(await AVCaptureDevice.requestAccess(for: .audio)) {
             microphone = false
             Toast.error("Microphone access denied; recording without it")
         }
-        if prefs.recordCamera, !CameraBubble.shared.isVisible {
+        // A window recording captures only that window, so the bubble would never appear in it.
+        let camera = prefs.recordCamera && windowID == nil
+        if camera, !CameraBubble.shared.isVisible {
             await CameraBubble.shared.showFromPreferences(in: region)
-        } else if !prefs.recordCamera {
+        } else if !camera {
             CameraBubble.shared.hide()
         }
         let folder = prefs.saveFolder
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let finalURL = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "mp4", prefix: prefs.filePrefix)
         let microphoneID = prefs.microphoneDeviceID.isEmpty ? nil : AVCaptureDevice(uniqueID: prefs.microphoneDeviceID)?.uniqueID
-        session = Session(screen: screen, region: region, microphone: microphone, microphoneID: microphoneID, finalURL: finalURL)
+        session = Session(screen: screen, region: region, windowID: windowID, microphone: microphone, microphoneID: microphoneID, finalURL: finalURL)
         segments = []
         mutes = CutList()
         mutedSince = nil
         model = RecordingSessionModel()
         model.cameraOn = CameraBubble.shared.isVisible
+        model.cameraAvailable = windowID == nil
         model.microphoneOn = microphone
         sampleSink = SampleSink(meter: model.meter)
         // Panels exist before the stream so the filter can exclude them by window ID.
@@ -224,7 +230,7 @@ final class Recorder: NSObject {
     // MARK: Camera
 
     func toggleCamera() async {
-        guard let session else {
+        guard let session, session.windowID == nil else {
             return
         }
         if CameraBubble.shared.isVisible {
@@ -246,7 +252,7 @@ final class Recorder: NSObject {
             return
         }
         do {
-            try await stream.updateContentFilter(try await makeFilter(screen: session.screen))
+            try await stream.updateContentFilter(try await makeFilter(session))
         } catch {
             log.error("updateContentFilter failed: \(error.localizedDescription, privacy: .public)")
         }
@@ -254,9 +260,15 @@ final class Recorder: NSObject {
 
     // MARK: Segments
 
-    private func makeFilter(screen: NSScreen) async throws -> SCContentFilter {
+    private func makeFilter(_ session: Session) async throws -> SCContentFilter {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
-        guard let display = content.displays.first(where: { $0.displayID == screen.displayID }) else {
+        if let windowID = session.windowID {
+            guard let window = content.windows.first(where: { $0.windowID == windowID }) else {
+                throw CaptureError.windowNotFound
+            }
+            return SCContentFilter(desktopIndependentWindow: window)
+        }
+        guard let display = content.displays.first(where: { $0.displayID == session.screen.displayID }) else {
             throw CaptureError.displayNotFound
         }
         if !Preferences().hidesShotUI {
@@ -278,13 +290,19 @@ final class Recorder: NSObject {
             return
         }
         let prefs = Preferences()
-        let filter = try await makeFilter(screen: session.screen)
-        let scale = session.screen.backingScaleFactor
-        let local = Geometry.displayLocalTopLeft(session.region, screenFrame: session.screen.frame)
+        let filter = try await makeFilter(session)
         let config = SCStreamConfiguration()
-        config.sourceRect = local
-        config.width = Geometry.evenFloor(local.width * scale)
-        config.height = Geometry.evenFloor(local.height * scale)
+        if session.windowID != nil {
+            let scale = CGFloat(filter.pointPixelScale)
+            config.width = Geometry.evenFloor(filter.contentRect.width * scale)
+            config.height = Geometry.evenFloor(filter.contentRect.height * scale)
+        } else {
+            let scale = session.screen.backingScaleFactor
+            let local = Geometry.displayLocalTopLeft(session.region, screenFrame: session.screen.frame)
+            config.sourceRect = local
+            config.width = Geometry.evenFloor(local.width * scale)
+            config.height = Geometry.evenFloor(local.height * scale)
+        }
         config.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(prefs.recordingFPS))
         config.showsCursor = prefs.recordShowsCursor
         config.captureMicrophone = session.microphone
