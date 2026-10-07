@@ -116,6 +116,26 @@ private func sections(_ track: Track) -> [Range<Double>] {
     #expect(project.trimEdit == nil)
 }
 
+@Test func aProjectWithAMutedOrHiddenTrackIsNotATrimEdit() {
+    var muted = project()
+    muted.tracks[1].isMuted = true
+    #expect(muted.trimEdit == nil)
+    var hidden = project()
+    hidden.tracks[0].isHidden = true
+    #expect(hidden.trimEdit == nil)
+    var locked = project()
+    locked.tracks[1].isLocked = true
+    #expect(locked.trimEdit != nil)
+}
+
+@Test func trackFlagsSurviveEncoding() throws {
+    var project = project()
+    project.tracks[0].isHidden = true
+    project.tracks[1].isLocked = true
+    project.tracks[1].isMuted = true
+    #expect(try JSONDecoder().decode(Project.self, from: JSONEncoder().encode(project)) == project)
+}
+
 @Test func aProjectWhoseAudioWasEditedOnItsOwnIsNotATrimEdit() throws {
     var project = try #require(project().splitting(at: 5))
     project.tracks[1].clips[1].sourceStart = 6
