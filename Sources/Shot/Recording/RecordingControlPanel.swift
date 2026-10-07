@@ -125,14 +125,16 @@ struct RecordingControls: View {
                 }
             }
 
-            IconButton(symbol: model.cameraOn ? "video.fill" : "video.slash.fill", color: model.cameraOn ? Brutal.mint : .white, help: model.cameraOn ? "Hide camera" : "Show camera") {
-                actions.toggleCamera()
+            if model.cameraAvailable {
+                IconButton(symbol: model.cameraOn ? "video.fill" : "video.slash.fill", color: model.cameraOn ? Brutal.mint : .white, help: model.cameraOn ? "Hide camera" : "Show camera") {
+                    actions.toggleCamera()
+                }
+                IconButton(symbol: "circle.circle", color: .white, help: "Camera bubble size") {
+                    actions.cycleCameraSize()
+                }
+                .disabled(!model.cameraOn)
+                .opacity(model.cameraOn ? 1 : 0.35)
             }
-            IconButton(symbol: "circle.circle", color: .white, help: "Camera bubble size") {
-                actions.cycleCameraSize()
-            }
-            .disabled(!model.cameraOn)
-            .opacity(model.cameraOn ? 1 : 0.35)
 
             Spacer(minLength: 0)
             IconButton(symbol: "trash.fill", color: .white, help: "Discard recording") {

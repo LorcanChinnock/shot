@@ -155,10 +155,10 @@ final class CaptureCoordinator {
 
     /// Frames the recording, then waits for Record and the countdown before starting.
     private func startRecording(mode: RecordingMode) async throws {
-        guard let (screen, region) = await RecordingSetupController.pickRegion(mode: mode) else {
+        guard let (screen, region, windowID) = await RecordingSetupController.pickRegion(mode: mode) else {
             return
         }
-        let controller = RecordingSetupController(mode: mode, screen: screen, region: region)
+        let controller = RecordingSetupController(mode: mode, screen: screen, region: region, windowID: windowID)
         setup = controller
         let result = await controller.run()
         setup = nil
