@@ -76,6 +76,26 @@ func pastingAddsAnOffsetCopyWithANewID(annotation: Annotation) throws {
     }
 }
 
+@Test func pastingKeepsFillBendAlignmentAndCornerRadius() throws {
+    var shape = Annotation(kind: .shape(.rounded, rect: CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, fill: RGBA.presets[2], lineWidth: 4)
+    shape.cornerRadius = 20
+    var arrow = Annotation(kind: .arrow(from: CGPoint(x: 10, y: 20), to: CGPoint(x: 110, y: 70)), color: red, lineWidth: 4)
+    arrow.bend = CGVector(dx: 15, dy: -25)
+    var text = Annotation(kind: .text("Hi", origin: CGPoint(x: 50, y: 60), fontSize: 24), color: red, lineWidth: 4)
+    text.alignment = .center
+    for annotation in [shape, arrow, text] {
+        var doc = document([annotation])
+        let id = doc.paste(annotation, step: 10, margin: 16)
+        let pasted = try #require(doc.annotations.last)
+        #expect(pasted.id == id && id != annotation.id)
+        #expect(pasted.fill == annotation.fill)
+        #expect(pasted.bend == annotation.bend)
+        #expect(pasted.alignment == annotation.alignment)
+        #expect(pasted.cornerRadius == annotation.cornerRadius)
+        #expect(pasted.kind == moved(annotation, 10, 10).kind)
+    }
+}
+
 @Test func pastingAgainCascadesInsteadOfStacking() throws {
     let rect = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, lineWidth: 4)
     var doc = document([rect])

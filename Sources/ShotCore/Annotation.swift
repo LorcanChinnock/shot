@@ -40,7 +40,7 @@ public struct RGBA: Equatable, Hashable, Sendable, Codable {
 
 /// All geometry is in image pixels with a top-left origin.
 public struct Annotation: Identifiable, Equatable, Sendable, Codable {
-    public let id: UUID
+    public private(set) var id: UUID
     public var kind: Kind
     public var color: RGBA
     /// The inside of a shape; `nil` leaves it unfilled.
@@ -93,6 +93,13 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         self.color = color
         self.fill = fill
         self.lineWidth = lineWidth
+    }
+
+    /// The same annotation with a new id.
+    public func withNewID() -> Annotation {
+        var copy = self
+        copy.id = UUID()
+        return copy
     }
 
     /// The radius a new rounded rectangle's corners start with, in points, so resizing it doesn't change them.

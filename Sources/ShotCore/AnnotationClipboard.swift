@@ -38,7 +38,7 @@ extension EditorDocument {
     /// The canvas grows if the copy reaches past its edge.
     @discardableResult
     public mutating func paste(_ annotation: Annotation, step: CGFloat, margin: CGFloat) -> UUID {
-        var copy = Annotation(kind: annotation.kind, color: annotation.color, lineWidth: annotation.lineWidth)
+        var copy = annotation.withNewID()
         if case let .counter(_, center) = copy.kind {
             copy.kind = .counter(annotations.nextCounterNumber, center: center)
         }
