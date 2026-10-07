@@ -78,6 +78,9 @@ struct AnnotationPalette: View {
             }
         }
         WidthOptions(selected: model.lineWidthIndex, sizesText: model.sizesText) { model.lineWidthIndex = $0 }
+        if let alignment = model.paletteAlignment {
+            AlignmentOptions(selected: alignment, choose: model.setAlignment)
+        }
     }
 
     private func pickImage() {

@@ -123,6 +123,9 @@ struct EditorToolbar: View {
             }
         }
         WidthOptions(selected: model.lineWidthIndex, sizesText: model.sizesText) { model.lineWidthIndex = $0 }
+        if let alignment = model.paletteAlignment {
+            AlignmentOptions(selected: alignment, choose: model.setAlignment)
+        }
     }
 }
 
@@ -145,6 +148,41 @@ struct WidthOptions: View {
                     } else {
                         Capsule().fill(Brutal.ink).frame(width: 16, height: EditorStyle.widths[index] + 1)
                     }
+                }
+            }
+        }
+    }
+}
+
+extension TextAlign {
+    var symbol: String {
+        switch self {
+        case .left: "text.alignleft"
+        case .center: "text.aligncenter"
+        case .right: "text.alignright"
+        }
+    }
+
+    var textAlignment: NSTextAlignment {
+        switch self {
+        case .left: .left
+        case .center: .center
+        case .right: .right
+        }
+    }
+}
+
+struct AlignmentOptions: View {
+    let selected: TextAlign
+    let choose: (TextAlign) -> Void
+
+    var body: some View {
+        ToolGroup {
+            ForEach(TextAlign.allCases, id: \.self) { alignment in
+                Tile(selected: selected == alignment, color: Brutal.sky, help: alignment.title) {
+                    choose(alignment)
+                } label: {
+                    Image(systemName: alignment.symbol).font(.system(size: 13, weight: .bold))
                 }
             }
         }

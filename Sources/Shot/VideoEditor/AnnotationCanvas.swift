@@ -172,7 +172,9 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             model.addAnnotation(Annotation(kind: .counter(model.project.nextCounterNumber, center: point), color: model.annotationStyle.color, lineWidth: model.lineWidth))
             dragStart = nil
         case .text:
-            beginField(for: Annotation(kind: .text("", origin: point, fontSize: model.fontSize), color: model.annotationStyle.color, lineWidth: model.lineWidth), isNew: true)
+            var text = Annotation(kind: .text("", origin: point, fontSize: model.fontSize), color: model.annotationStyle.color, lineWidth: model.lineWidth)
+            text.alignment = model.annotationStyle.alignment
+            beginField(for: text, isNew: true)
             dragStart = nil
         case .note:
             // Clicking a note with the note tool edits it rather than stacking another on top.
@@ -253,6 +255,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             kind = .freehand(Freehand.adding(point, to: points, minDistance: 1 / fit))
         case .note:
             var note = Annotation(id: draft?.id ?? UUID(), kind: .note("", rect: .zero), color: style.noteColor, lineWidth: model.lineWidth)
+            note.alignment = style.alignment
             note.kind = .note("", rect: NoteLayout.placementRect(from: start, to: point, fontSize: note.noteFontSize))
             draft = note
             model.previewAnnotation(note)
@@ -342,6 +345,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         }
         var edited = annotation
         edited.setText(field.stringValue)
+        field.alignment = annotation.alignment.textAlignment
         switch annotation.kind {
         case .note:
             guard let layout = edited.noteLayout else {
@@ -362,8 +366,11 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             }
             field.textColor = NSColor(srgbRed: annotation.color.r, green: annotation.color.g, blue: annotation.color.b, alpha: 1)
             field.sizeToFit()
+            let fitted = field.stringValue.isEmpty ? 0 : field.frame.width
             let topLeft = viewRect(CGRect(origin: origin, size: .zero)).origin
             field.frame = CGRect(x: topLeft.x, y: topLeft.y, width: max(200, field.frame.width + 20), height: size * 1.4)
+            // The field is wider than its text, so it reaches back past the anchor by the spare width the alignment puts before the text.
+            field.frame.origin.x -= (field.frame.width - fitted) * annotation.alignment.fraction
         default:
             break
         }

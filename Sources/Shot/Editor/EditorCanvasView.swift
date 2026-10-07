@@ -580,7 +580,13 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     /// Opens a text field at `point` for new text, or over `existing` text to edit it.
     private func beginText(at point: CGPoint, editing existing: Annotation? = nil) {
-        editingText = existing ?? Annotation(kind: .text("", origin: point, fontSize: model.fontSize), color: model.color, lineWidth: model.lineWidth)
+        if let existing {
+            editingText = existing
+        } else {
+            var text = Annotation(kind: .text("", origin: point, fontSize: model.fontSize), color: model.color, lineWidth: model.lineWidth)
+            text.alignment = model.alignment
+            editingText = text
+        }
         // A double-click that wobbles mustn't drag the text being edited.
         dragStart = nil
         let field = NSTextField(string: existing?.text ?? "")
@@ -611,18 +617,19 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             field.font = .boldSystemFont(ofSize: size)
         }
         field.textColor = NSColor(srgbRed: text.color.r, green: text.color.g, blue: text.color.b, alpha: 1)
+        field.alignment = text.alignment.textAlignment
         let origin = viewRect(CGRect(origin: textOrigin, size: .zero)).origin
+        let fitted: CGFloat
         if field.stringValue.isEmpty {
             field.frame = CGRect(x: origin.x, y: origin.y, width: 240, height: size * 1.4)
+            fitted = 0
         } else {
-            field.frame.origin = origin
-            fitTextField(field)
+            field.sizeToFit()
+            fitted = field.frame.width
+            field.frame = CGRect(x: origin.x, y: origin.y, width: max(240, fitted + 20), height: field.frame.height)
         }
-    }
-
-    private func fitTextField(_ field: NSTextField) {
-        field.sizeToFit()
-        field.frame.size.width = max(240, field.frame.width + 20)
+        // The field is wider than its text, so it reaches back past the anchor by the spare width the alignment puts before the text.
+        field.frame.origin.x -= (field.frame.width - fitted) * text.alignment.fraction
     }
 
     @objc private func textFieldAction() {
@@ -638,14 +645,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     }
 
     func controlTextDidChange(_ notification: Notification) {
-        guard let field = textField else {
-            return
-        }
-        if case .note = editingText?.kind {
-            layoutNoteField()
-            return
-        }
-        fitTextField(field)
+        layoutTextField()
     }
 
     var isEditingText: Bool { textField != nil }
@@ -671,6 +671,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     private func newNote(id: UUID, from start: CGPoint, to end: CGPoint) -> Annotation {
         var note = Annotation(id: id, kind: .note("", rect: .zero), color: model.noteColor, lineWidth: model.lineWidth)
+        note.alignment = model.alignment
         note.kind = .note("", rect: NoteLayout.placementRect(from: start, to: end, fontSize: note.noteFontSize))
         return note
     }
@@ -721,6 +722,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
         let ink = layout.ink
         field.textColor = NSColor(srgbRed: ink.r, green: ink.g, blue: ink.b, alpha: 1)
+        field.alignment = (editedText?.alignment ?? .left).textAlignment
         // A borderless field insets its text 2 pt on each side.
         field.frame = viewRect(layout.textRect).insetBy(dx: -2, dy: 0)
         needsDisplay = true

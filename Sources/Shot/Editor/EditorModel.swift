@@ -83,6 +83,10 @@ final class EditorModel {
     var spotlight: SpotlightStyle {
         didSet { rememberStyle { $0.spotlight = spotlight } }
     }
+    /// How the lines of the next text or note line up.
+    var alignment: TextAlign {
+        didSet { rememberStyle { $0.alignment = alignment } }
+    }
     /// The last custom colour picked in each palette.
     private(set) var customColors: [ColorSlot: RGBA]
     var widthIndex: Int {
@@ -121,6 +125,7 @@ final class EditorModel {
         shape = style.shape
         redaction = style.redaction
         spotlight = style.spotlight
+        alignment = style.alignment
         customColors = style.customColors
         widthIndex = style.widthIndex
     }
@@ -257,6 +262,29 @@ final class EditorModel {
     func setDraggingStyle(_ dragging: Bool) {
         isDraggingStyle = dragging
         pickedKey = nil
+    }
+
+    /// The alignment the toolbar shows: the text being typed's, else the selection's, else the next text's or note's.
+    /// `nil` when none of them is text or a note.
+    var paletteAlignment: TextAlign? {
+        if let shown = editingText ?? selection {
+            return shown.alignsText ? shown.alignment : nil
+        }
+        return tool == .text || tool == .note ? alignment : nil
+    }
+
+    func setAlignment(_ newAlignment: TextAlign) {
+        if let text = editingText {
+            editingText?.alignment = newAlignment
+            if !document.annotations.contains(where: { $0.id == text.id }) {
+                alignment = newAlignment
+            }
+            return
+        }
+        restyleSelection { $0.alignment = newAlignment }
+        if stylesNextAnnotation {
+            alignment = newAlignment
+        }
     }
 
     /// The fill the toolbar shows and sets, `nil` for none: the selection's, else the fill for the next shape.

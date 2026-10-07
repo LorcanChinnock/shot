@@ -77,11 +77,13 @@ public struct EditorStyle: Equatable, Sendable {
     public var shape: BoxShape
     public var redaction: Redaction
     public var spotlight: SpotlightStyle
+    public var alignment: TextAlign
 
     public init(
         tool: EditorTool = .arrow, color: RGBA = RGBA.presets[0], noteColor: RGBA = RGBA.presets[2],
         fill: RGBA? = nil, widthIndex: Int = 1, customColors: [ColorSlot: RGBA] = [:],
-        shape: BoxShape = .rectangle, redaction: Redaction = .blur, spotlight: SpotlightStyle = SpotlightStyle()
+        shape: BoxShape = .rectangle, redaction: Redaction = .blur, spotlight: SpotlightStyle = SpotlightStyle(),
+        alignment: TextAlign = .left
     ) {
         self.tool = tool
         self.color = color
@@ -92,6 +94,7 @@ public struct EditorStyle: Equatable, Sendable {
         self.shape = shape
         self.redaction = redaction
         self.spotlight = spotlight
+        self.alignment = alignment
     }
 }
 
