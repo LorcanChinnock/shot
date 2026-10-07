@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.22](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.21...v0.7.0-beta.22) (2026-10-07)
+
+
+### Features
+
+* **recording:** show recording controls in the notch and add an exclude menu bar setting ([#156](https://github.com/LorcanChinnock/shot/issues/156)) ([ceb3005](https://github.com/LorcanChinnock/shot/commit/ceb3005fdc8e053b4e132f555a2b414fa554066b))
+
 ## [0.7.0-beta.21](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.20...v0.7.0-beta.21) (2026-10-07)
 
 
