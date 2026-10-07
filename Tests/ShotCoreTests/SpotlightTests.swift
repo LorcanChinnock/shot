@@ -256,3 +256,78 @@ func spotlightRendersTheSameInTheEditorAndTheExport(scale: CGFloat) throws {
     #expect(styles == [SpotlightStyle(effect: .blur, strength: 0.3), SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.3)])
     #expect(doc.spotlightStyle == styles[0])
 }
+
+// MARK: Soft edge
+
+private func softSpotlight(_ rect: CGRect, shape: BoxShape = .rectangle, effect: SpotlightStyle.Effect = .darken, softEdge: Double = 1) -> Annotation {
+    Annotation(kind: .spotlight(rect, style: SpotlightStyle(shape: shape, effect: effect, softEdge: softEdge)), color: blue, lineWidth: 4)
+}
+
+@Test func savedSpotlightsWithoutASoftEdgeDecodeAsHard() throws {
+    let saved = Data(#"{"shape":"ellipse","effect":"blur","strength":2}"#.utf8)
+    #expect(try JSONDecoder().decode(SpotlightStyle.self, from: saved) == SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.7))
+    let soft = SpotlightStyle(softEdge: 0.4)
+    #expect(try JSONDecoder().decode(SpotlightStyle.self, from: JSONEncoder().encode(soft)) == soft)
+}
+
+@Test func aSoftSpotlightFadesTheDimRatherThanCuttingItOut() throws {
+    let doc = EditorDocument(base: solidImage(width: 200, height: 100), annotations: [
+        spotlight(CGRect(x: 10, y: 10, width: 40, height: 40)),
+        softSpotlight(CGRect(x: 120, y: 20, width: 60, height: 60)),
+    ])
+    let dim = try #require(doc.spotlightDimPath)
+    #expect(!dim.contains(CGPoint(x: 30, y: 30)))
+    #expect(dim.contains(CGPoint(x: 150, y: 50)))
+    #expect(doc.softSpotlights.map(\.rect) == [CGRect(x: 120, y: 20, width: 60, height: 60)])
+}
+
+@Test(arguments: BoxShape.spotlightShapes, SpotlightStyle.Effect.allCases)
+func aSoftSpotlightIsBrightInsideDimOutsideAndFadesBetween(shape: BoxShape, effect: SpotlightStyle.Effect) throws {
+    let doc = EditorDocument(base: solidImage(width: 300, height: 200), annotations: [softSpotlight(CGRect(x: 100, y: 50, width: 100, height: 100), shape: shape, effect: effect)])
+    let image = try #require(AnnotationRenderer.flatten(doc))
+    let centre = try pixel(image, 150, 100)[0]
+    #expect(centre > 0.97, "\(centre)")
+    if effect == .darken {
+        #expect(isDimmed(try pixel(image, 10, 10)))
+        let edge = try pixel(image, 100, 100)[0]
+        #expect(edge > 0.6 && edge < 0.9, "\(edge)")
+    }
+}
+
+@Test func aSoftEdgeLooksTheSameAtAnyImageSize() throws {
+    var fades: [CGFloat] = []
+    for size in [1.0, 2.0] {
+        let doc = EditorDocument(base: solidImage(width: Int(200 * size), height: Int(100 * size)), annotations: [
+            softSpotlight(CGRect(x: 50 * size, y: 20 * size, width: 100 * size, height: 60 * size), softEdge: 0.5),
+        ])
+        let image = try #require(AnnotationRenderer.flatten(doc))
+        fades.append(try pixel(image, 46 * size, 50 * size)[0])
+    }
+    #expect(fades[0] > 0.55 && fades[0] < 0.9, "\(fades[0])")
+    #expect(abs(fades[0] - fades[1]) < 0.03)
+}
+
+@Test(arguments: [1.0, 2.0])
+func aSoftSpotlightRendersTheSameInTheEditorAndTheExport(scale: CGFloat) throws {
+    let doc = EditorDocument(base: solidImage(width: 200, height: 100), annotations: [
+        softSpotlight(CGRect(x: 40, y: 20, width: 80, height: 40), shape: .ellipse),
+        spotlight(CGRect(x: 130, y: 50, width: 40, height: 30)),
+    ])
+    let flat = try #require(AnnotationRenderer.flatten(doc))
+    let editor = try render(doc, scale: scale)
+    for x in stride(from: 3.0, to: 200, by: 7) {
+        for y in stride(from: 3.0, to: 100, by: 7) {
+            let exported = try pixel(flat, x, y), shown = try pixel(editor, x, y, scale: scale)
+            #expect(zip(exported, shown).allSatisfy { abs($0 - $1) < 0.03 }, "at \(x), \(y)")
+        }
+    }
+}
+
+@Test func settingTheSharedLookKeepsEachSpotlightsEdge() {
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100), annotations: [
+        spotlight(CGRect(x: 10, y: 10, width: 20, height: 20)),
+        softSpotlight(CGRect(x: 50, y: 10, width: 20, height: 20), softEdge: 0.3),
+    ])
+    doc.setSpotlights(effect: .blur, strength: 0.3)
+    #expect(doc.softSpotlights.map(\.style) == [SpotlightStyle(effect: .blur, strength: 0.3, softEdge: 0.3)])
+}

@@ -1,4 +1,5 @@
 import CoreGraphics
+import CoreText
 import Foundation
 
 /// The outline a shape annotation, or a spotlight's lit area, takes within its rect.
@@ -19,13 +20,13 @@ public enum BoxShape: String, CaseIterable, Codable, Sendable {
         }
     }
 
-    /// The outline stretched to fill `rect`.
-    public func path(in rect: CGRect) -> CGPath {
+    /// The outline stretched to fill `rect`, a rounded rectangle's corners rounded by `cornerRadius`.
+    public func path(in rect: CGRect, cornerRadius: CGFloat? = nil) -> CGPath {
         switch self {
         case .rectangle:
             return CGPath(rect: rect, transform: nil)
         case .rounded:
-            let radius = min(rect.width, rect.height) / 5
+            let radius = Self.cornerRadius(cornerRadius, in: rect)
             return CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
         case .ellipse:
             return CGPath(ellipseIn: rect, transform: nil)
@@ -46,6 +47,13 @@ public enum BoxShape: String, CaseIterable, Codable, Sendable {
                 CGPoint(x: rect.minX + ($0.x - minX) / (maxX - minX) * rect.width, y: rect.minY + ($0.y - minY) / (maxY - minY) * rect.height)
             })
         }
+    }
+
+    /// `radius` within what `rect` can take: half its shorter side makes a pill. `nil` is the radius from before it could
+    /// be set, a fifth of the shorter side, so older annotations keep their look.
+    public static func cornerRadius(_ radius: CGFloat?, in rect: CGRect) -> CGFloat {
+        let shorter = max(0, min(rect.width, rect.height))
+        return min(max(radius ?? shorter / 5, 0), shorter / 2)
     }
 
     private static func polygon(_ points: [CGPoint]) -> CGPath {
@@ -85,7 +93,36 @@ public enum Redaction: String, CaseIterable, Codable, Sendable {
     }
 }
 
-/// A spotlight's lit shape, and how it treats the image outside it. Every spotlight in an image
+/// How the lines of a text annotation or note line up within it.
+public enum TextAlign: String, CaseIterable, Codable, Sendable {
+    case left, center, right
+
+    public var title: String {
+        switch self {
+        case .left: "Align Left"
+        case .center: "Align Centre"
+        case .right: "Align Right"
+        }
+    }
+
+    /// How far right of the left edge of a box `width` wide `line` starts. Trailing spaces don't count,
+    /// so a wrapped line lines up by its last word.
+    public func offset(of line: CTLine, in width: CGFloat) -> CGFloat {
+        let visible = CGFloat(CTLineGetTypographicBounds(line, nil, nil, nil) - CTLineGetTrailingWhitespaceWidth(line))
+        return (width - visible) * fraction
+    }
+
+    /// The share of the spare width that goes before a line.
+    public var fraction: CGFloat {
+        switch self {
+        case .left: 0
+        case .center: 0.5
+        case .right: 1
+        }
+    }
+}
+
+/// A spotlight's lit shape and edge, and how it treats the image outside it. Every spotlight in an image
 /// shares one dim, drawn with the lowest spotlight's effect and strength.
 public struct SpotlightStyle: Equatable, Hashable, Codable, Sendable {
     public enum Effect: String, CaseIterable, Codable, Sendable {
@@ -105,11 +142,14 @@ public struct SpotlightStyle: Equatable, Hashable, Codable, Sendable {
     public var shape: BoxShape
     public var effect: Effect
     public var strength: Double
+    /// How far the lit shape fades into the dim, from 0 (a hard edge) to 1 (the softest).
+    public var softEdge: Double
 
-    public init(shape: BoxShape = .rectangle, effect: Effect = .darken, strength: Double = 0.5) {
+    public init(shape: BoxShape = .rectangle, effect: Effect = .darken, strength: Double = 0.5, softEdge: Double = 0) {
         self.shape = shape
         self.effect = effect
         self.strength = strength
+        self.softEdge = softEdge
     }
 
     public init(from decoder: Decoder) throws {
@@ -119,6 +159,12 @@ public struct SpotlightStyle: Equatable, Hashable, Codable, Sendable {
         // Strength used to be a preset stored as 0, 1 or 2 (light, medium, strong). None of those is in `strengths`.
         let stored = try container.decode(Double.self, forKey: .strength)
         strength = [0: 0.3, 1: 0.5, 2: 0.7][stored] ?? stored
+        softEdge = try container.decodeIfPresent(Double.self, forKey: .softEdge) ?? 0
+    }
+
+    /// The blur radius of the edge of a spotlight lighting `rect`, relative to its size so it looks the same at any zoom.
+    public func softEdgeRadius(in rect: CGRect) -> CGFloat {
+        softEdge * 0.2 * min(rect.width, rect.height)
     }
 
     /// How dark the darken effect makes the image outside the spotlights.

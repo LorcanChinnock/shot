@@ -23,7 +23,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private var zoomedViewport: Viewport?
     /// True while Space is held, when a drag scrolls instead of using the tool.
     private var spaceHeld = false
-    /// The last view point of a Space-drag scroll.
+    /// The last view point of a scroll by dragging: with Space held, the hand tool or the middle button.
     private var panPoint: CGPoint?
 
     init(model: EditorModel) {
@@ -56,6 +56,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             Task { @MainActor in
                 // A fitted canvas rescales as it grows or is cropped.
                 self?.viewportDidChange()
+                if let self {
+                    self.window?.invalidateCursorRects(for: self)
+                }
                 self?.observe()
             }
         }
@@ -89,6 +92,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     /// View points per image pixel.
     private var viewScale: CGFloat { viewport.scale }
+
+    /// How near, in image pixels, a press must be to grab a handle.
+    private var handleTolerance: CGFloat { 6 / viewScale }
 
     /// The canvas, in view points.
     private var imageRect: CGRect { viewport.viewRect(canvasRect) }
@@ -178,6 +184,17 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
                     square.fill()
                     square.stroke()
                 }
+                let radiusHandles = selected.radiusHandles(tolerance: handleTolerance)
+                for handle in radiusHandles {
+                    let center = viewRect(CGRect(origin: handle.point, size: .zero)).origin
+                    let dot = NSBezierPath(ovalIn: CGRect(x: center.x - 4, y: center.y - 4, width: 8, height: 8))
+                    NSColor.white.setFill()
+                    dot.fill()
+                    dot.stroke()
+                }
+                if movedSinceMouseDown, let dragged = radiusHandles.first(where: { $0.handle == resizeHandle }), let radius = selected.roundedBox?.radius {
+                    drawRadiusLabel(radius / model.scale, near: viewRect(CGRect(origin: dragged.point, size: .zero)).origin)
+                }
             }
         }
         if let cropDraft {
@@ -194,15 +211,43 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     // MARK: Mouse
 
+    /// The hand while a drag would scroll.
+    private var restingCursor: NSCursor { spaceHeld || model.tool == .hand ? .openHand : .arrow }
+
+    override func resetCursorRects() {
+        addCursorRect(bounds, cursor: restingCursor)
+    }
+
+    private func beginPan(_ event: NSEvent) {
+        panPoint = convert(event.locationInWindow, from: nil)
+        NSCursor.closedHand.set()
+    }
+
+    private func continuePan(_ event: NSEvent) {
+        guard let panPoint else {
+            return
+        }
+        let point = convert(event.locationInWindow, from: nil)
+        pan(by: CGVector(dx: point.x - panPoint.x, dy: point.y - panPoint.y))
+        self.panPoint = point
+    }
+
+    private func endPan() {
+        panPoint = nil
+        restingCursor.set()
+    }
+
     override func mouseDown(with event: NSEvent) {
+        guard panPoint == nil else {
+            return
+        }
         if textField != nil {
             commitText()
             return
         }
         window?.makeFirstResponder(self)
-        if spaceHeld {
-            panPoint = convert(event.locationInWindow, from: nil)
-            NSCursor.closedHand.set()
+        if spaceHeld || model.tool == .hand {
+            beginPan(event)
             return
         }
         let point = imagePoint(event)
@@ -211,7 +256,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         movedSinceMouseDown = false
         // The annotation just drawn stays selected, with handles that still resize it, until the next press elsewhere.
         if model.tool != .select, let selected = model.selection {
-            if let handle = selected.handle(at: point, tolerance: 6 / viewScale) {
+            if let handle = selected.handle(at: point, tolerance: handleTolerance) {
                 resizeHandle = handle
                 resizeStart = selected
                 return
@@ -230,7 +275,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             } else if event.clickCount == 2, let hit, case let .text(_, origin, _) = hit.kind {
                 model.selectedID = nil
                 beginText(at: origin, editing: hit)
-            } else if let selected = model.selection, let handle = selected.handle(at: point, tolerance: tolerance) {
+            } else if let selected = model.selection, let handle = selected.handle(at: point, tolerance: handleTolerance) {
                 resizeHandle = handle
                 resizeStart = selected
             } else if let hit {
@@ -253,10 +298,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     }
 
     override func mouseDragged(with event: NSEvent) {
-        if let panPoint {
-            let point = convert(event.locationInWindow, from: nil)
-            pan(by: CGVector(dx: point.x - panPoint.x, dy: point.y - panPoint.y))
-            self.panPoint = point
+        guard panPoint == nil else {
+            continuePan(event)
             return
         }
         guard let start = dragStart, let last = lastPoint else {
@@ -297,7 +340,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             cropDraft = Geometry.normalized(from: clampedToCanvas(start), to: clampedToCanvas(point))
             needsDisplay = true
             return
-        case .counter, .text:
+        case .counter, .text, .hand:
             return
         case .arrow:
             kind = .arrow(from: start, to: point)
@@ -329,6 +372,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         if shape.supportsFill {
             shape.fill = model.fill
         }
+        if shape.canRound {
+            shape.cornerRadius = model.cornerRadius
+        }
         draft = shape
         viewportDidChange()
     }
@@ -343,7 +389,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             movedSinceMouseDown = true
         }
         if let resizeHandle, var resized = resizeStart {
-            resized.resize(resizeHandle, to: point)
+            resized.resize(resizeHandle, to: point, tolerance: handleTolerance)
             model.document.annotations[index] = resized
         } else {
             model.document.annotations[index].offset(by: CGVector(dx: point.x - last.x, dy: point.y - last.y))
@@ -354,8 +400,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     override func mouseUp(with event: NSEvent) {
         if panPoint != nil {
-            panPoint = nil
-            (spaceHeld ? NSCursor.openHand : NSCursor.arrow).set()
+            endPan()
             return
         }
         defer {
@@ -386,6 +431,31 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             model.document.grow(toFit: moved, margin: model.canvasMargin)
             model.document.shrinkPadding(margin: model.canvasMargin)
         }
+    }
+
+    /// The middle button scrolls with any tool, as in Figma and browsers.
+    override func otherMouseDown(with event: NSEvent) {
+        guard event.buttonNumber == 2, dragStart == nil, panPoint == nil else {
+            super.otherMouseDown(with: event)
+            return
+        }
+        beginPan(event)
+    }
+
+    override func otherMouseDragged(with event: NSEvent) {
+        guard event.buttonNumber == 2, panPoint != nil else {
+            super.otherMouseDragged(with: event)
+            return
+        }
+        continuePan(event)
+    }
+
+    override func otherMouseUp(with event: NSEvent) {
+        guard event.buttonNumber == 2, panPoint != nil else {
+            super.otherMouseUp(with: event)
+            return
+        }
+        endPan()
     }
 
     // MARK: Dropping images
@@ -455,7 +525,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
         spaceHeld = false
         if panPoint == nil {
-            NSCursor.arrow.set()
+            restingCursor.set()
         }
     }
 
@@ -469,7 +539,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     func releaseSpace() {
         if spaceHeld {
             spaceHeld = false
-            NSCursor.arrow.set()
+            restingCursor.set()
         }
     }
 
@@ -563,7 +633,13 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     /// Opens a text field at `point` for new text, or over `existing` text to edit it.
     private func beginText(at point: CGPoint, editing existing: Annotation? = nil) {
-        editingText = existing ?? Annotation(kind: .text("", origin: point, fontSize: model.fontSize), color: model.color, lineWidth: model.lineWidth)
+        if let existing {
+            editingText = existing
+        } else {
+            var text = Annotation(kind: .text("", origin: point, fontSize: model.fontSize), color: model.color, lineWidth: model.lineWidth)
+            text.alignment = model.alignment
+            editingText = text
+        }
         // A double-click that wobbles mustn't drag the text being edited.
         dragStart = nil
         let field = NSTextField(string: existing?.text ?? "")
@@ -594,18 +670,19 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             field.font = .boldSystemFont(ofSize: size)
         }
         field.textColor = NSColor(srgbRed: text.color.r, green: text.color.g, blue: text.color.b, alpha: 1)
+        field.alignment = text.alignment.textAlignment
         let origin = viewRect(CGRect(origin: textOrigin, size: .zero)).origin
+        let fitted: CGFloat
         if field.stringValue.isEmpty {
             field.frame = CGRect(x: origin.x, y: origin.y, width: 240, height: size * 1.4)
+            fitted = 0
         } else {
-            field.frame.origin = origin
-            fitTextField(field)
+            field.sizeToFit()
+            fitted = field.frame.width
+            field.frame = CGRect(x: origin.x, y: origin.y, width: max(240, fitted + 20), height: field.frame.height)
         }
-    }
-
-    private func fitTextField(_ field: NSTextField) {
-        field.sizeToFit()
-        field.frame.size.width = max(240, field.frame.width + 20)
+        // The field is wider than its text, so it reaches back past the anchor by the spare width the alignment puts before the text.
+        field.frame.origin.x -= (field.frame.width - fitted) * text.alignment.fraction
     }
 
     @objc private func textFieldAction() {
@@ -621,14 +698,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     }
 
     func controlTextDidChange(_ notification: Notification) {
-        guard let field = textField else {
-            return
-        }
-        if case .note = editingText?.kind {
-            layoutNoteField()
-            return
-        }
-        fitTextField(field)
+        layoutTextField()
     }
 
     var isEditingText: Bool { textField != nil }
@@ -654,6 +724,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     private func newNote(id: UUID, from start: CGPoint, to end: CGPoint) -> Annotation {
         var note = Annotation(id: id, kind: .note("", rect: .zero), color: model.noteColor, lineWidth: model.lineWidth)
+        note.alignment = model.alignment
         note.kind = .note("", rect: NoteLayout.placementRect(from: start, to: end, fontSize: note.noteFontSize))
         return note
     }
@@ -704,6 +775,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
         let ink = layout.ink
         field.textColor = NSColor(srgbRed: ink.r, green: ink.g, blue: ink.b, alpha: 1)
+        field.alignment = (editedText?.alignment ?? .left).textAlignment
         // A borderless field insets its text 2 pt on each side.
         field.frame = viewRect(layout.textRect).insetBy(dx: -2, dy: 0)
         needsDisplay = true
@@ -721,5 +793,26 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         if model.tool == .select, let editedID, model.document.annotations.contains(where: { $0.id == editedID }) {
             model.selectedID = editedID
         }
+    }
+}
+
+extension NSView {
+    /// A chip beside `point` showing the corner radius being dragged, in points.
+    func drawRadiusLabel(_ radius: CGFloat, near point: CGPoint) {
+        let text = NSAttributedString(string: "Radius \(Int(radius.rounded()))", attributes: [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .semibold),
+            .foregroundColor: NSColor.white,
+        ])
+        let size = text.size()
+        var chip = CGRect(x: point.x + 12, y: point.y + 12, width: (size.width + 12).rounded(), height: (size.height + 6).rounded())
+        if chip.maxX > bounds.maxX {
+            chip.origin.x = point.x - 12 - chip.width
+        }
+        if chip.maxY > bounds.maxY {
+            chip.origin.y = point.y - 12 - chip.height
+        }
+        NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 0.9).setFill()
+        NSBezierPath(roundedRect: chip, xRadius: 4, yRadius: 4).fill()
+        text.draw(at: CGPoint(x: chip.minX + 6, y: chip.minY + 3))
     }
 }

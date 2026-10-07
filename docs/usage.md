@@ -56,23 +56,24 @@ Press a tool's key when you aren't typing text.
 | Key | Tool |
 |---|---|
 | V | Select: move, resize and restyle what you've drawn |
+| H | Hand: drag to move around when zoomed in, without touching annotations |
 | A | Arrow |
 | L | Line |
 | R | Shape: rectangle, rounded rectangle, ellipse, triangle, diamond or star |
 | D | Freehand pen |
 | T | Text |
 | S | Sticky note |
-| H | Highlight |
+| M | Highlight |
 | F | Spotlight: dims or blurs everything outside the area |
 | B | Redact: blurs or pixelates the area |
 | N | Numbered counter |
 | C | Crop |
 
-Hover a tool to see what it does. Tools that draw a mark show a colour and one of three line widths below the tools; for text, sticky notes and counters the widths are text sizes, and changing the size or colour while you type updates the text as you go. The shape tool also offers the shape and a fill. Redact offers blur or pixelate, and an amount slider for how far the blur spreads or how big the blocks are. Spotlight offers its shape (rectangle, rounded or ellipse), whether to darken or blur outside it, and how strongly; the effect and strength apply to every spotlight in the image, since they share one dim. The editor remembers the last tool, colour, width and options you used.
+Hover a tool to see what it does. Tools that draw a mark show a colour and one of three line widths below the tools; for text, sticky notes and counters the widths are text sizes, and changing the size or colour while you type updates the text as you go. Text and sticky notes also offer left, centre or right alignment for their lines. The shape tool also offers the shape and a fill. Redact offers blur or pixelate, and an amount slider for how far the blur spreads or how big the blocks are. Spotlight offers its shape (rectangle, rounded or ellipse), whether to darken or blur outside it, and how strongly; the effect and strength apply to every spotlight in the image, since they share one dim. The editor remembers the last tool, colour, width and options you used.
 
 ### Editing annotations
 
-- Click an annotation with the select tool to select it, then drag it, or drag its handles to resize it. Drag the middle handle of a line or arrow to bend it. Choosing a colour, width or option restyles the selection.
+- Click an annotation with the select tool to select it, then drag it, or drag its handles to resize it. Drag the middle handle of a line or arrow to bend it. Drag one of the round handles inside a rounded rectangle's corners to set how round all four are, up to a pill; they hide on a box too small to grab them. Choosing a colour, width or option restyles the selection.
 - What you've just drawn stays selected until you draw the next thing, click elsewhere or press Esc, so you can fix its shape, colour, width or fill from the toolbar, or drag its handles, without switching to the select tool. The change also applies to what you draw next.
 - Double-click text or a sticky note to edit it. Clicking a note with the note tool edits it too.
 - Press Delete to remove the selection, and Esc to deselect. While you type in a text box or sticky note, Esc finishes it; ⌘Z removes it again.
@@ -90,7 +91,7 @@ Drag an image file or a Quick Access card onto the canvas, or press ⌘V with an
 
 ### Zoom
 
-Pinch, or press ⌘+ and ⌘-, to zoom. ⌘0 fits the canvas to the window and ⌘1 shows it at actual size. When zoomed in, scroll or hold Space and drag to move around.
+Pinch, or press ⌘+ and ⌘-, to zoom. ⌘0 fits the canvas to the window and ⌘1 shows it at actual size. When zoomed in, scroll, hold Space and drag, drag with the middle mouse button, or drag with the hand tool (H) to move around.
 
 ### Saving
 
@@ -179,7 +180,7 @@ Record Fullscreen and Record Window have no shortcut until you set one. Capture 
 | ⌘+ / ⌘- | Zoom in / out |
 | ⌘0 | Zoom to fit |
 | ⌘1 | Actual size |
-| Space-drag | Move around when zoomed in |
+| Space-drag or middle-drag | Move around when zoomed in |
 | ⌘S | Save and copy |
 
 ### Video editor

@@ -33,6 +33,7 @@ extension Annotation {
         var copy = self
         copy.lineWidth = lineWidth * s
         copy.bend = bend.map { CGVector(dx: $0.dx * s, dy: $0.dy * s) }
+        copy.cornerRadius = cornerRadius.map { $0 * s }
         switch kind {
         case let .arrow(from, to): copy.kind = .arrow(from: point(from), to: point(to))
         case let .line(from, to): copy.kind = .line(from: point(from), to: point(to))

@@ -85,6 +85,9 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         return CGPoint(x: min(max((point.x - origin.x) / fit, 0), canvas.width), y: min(max((point.y - origin.y) / fit, 0), canvas.height))
     }
 
+    /// How near, in canvas pixels, a press must be to grab a handle.
+    private var handleTolerance: CGFloat { 6 / fit }
+
     private func viewRect(_ rect: CGRect) -> CGRect {
         CGRect(x: origin.x + rect.minX * fit, y: origin.y + rect.minY * fit, width: rect.width * fit, height: rect.height * fit)
     }
@@ -118,6 +121,19 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             square.lineWidth = 1.5
             square.stroke()
         }
+        let radiusHandles = annotation.radiusHandles(tolerance: handleTolerance)
+        for (_, point) in radiusHandles {
+            let center = CGPoint(x: origin.x + point.x * fit, y: origin.y + point.y * fit)
+            let dot = NSBezierPath(ovalIn: CGRect(x: center.x - 4, y: center.y - 4, width: 8, height: 8))
+            NSColor.white.setFill()
+            dot.fill()
+            NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1).setStroke()
+            dot.lineWidth = 1.5
+            dot.stroke()
+        }
+        if editing != nil, let dragged = radiusHandles.first(where: { $0.handle == resizeHandle }), let radius = annotation.roundedBox?.radius {
+            drawRadiusLabel(radius / model.styleScale, near: CGPoint(x: origin.x + dragged.point.x * fit, y: origin.y + dragged.point.y * fit))
+        }
     }
 
     // MARK: Mouse
@@ -135,7 +151,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         let point = canvasPoint(event)
         dragStart = point
         lastPoint = point
-        let tolerance = 6 / fit
+        let tolerance = handleTolerance
         switch tool {
         case .select:
             let visible = model.project.annotationClips(at: model.playhead)
@@ -156,7 +172,9 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             model.addAnnotation(Annotation(kind: .counter(model.project.nextCounterNumber, center: point), color: model.annotationStyle.color, lineWidth: model.lineWidth))
             dragStart = nil
         case .text:
-            beginField(for: Annotation(kind: .text("", origin: point, fontSize: model.fontSize), color: model.annotationStyle.color, lineWidth: model.lineWidth), isNew: true)
+            var text = Annotation(kind: .text("", origin: point, fontSize: model.fontSize), color: model.annotationStyle.color, lineWidth: model.lineWidth)
+            text.alignment = model.annotationStyle.alignment
+            beginField(for: text, isNew: true)
             dragStart = nil
         case .note:
             // Clicking a note with the note tool edits it rather than stacking another on top.
@@ -211,7 +229,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             var changed = editing ?? clip.annotation
             if let resizeHandle, let resizeStart {
                 changed = resizeStart
-                changed.resize(resizeHandle, to: point)
+                changed.resize(resizeHandle, to: point, tolerance: handleTolerance)
             } else {
                 changed.offset(by: CGVector(dx: point.x - last.x, dy: point.y - last.y))
             }
@@ -219,7 +237,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             model.previewAnnotation(changed, replacing: clip.id)
             needsDisplay = true
             return
-        case .crop, .counter, .text:
+        case .crop, .hand, .counter, .text:
             return
         case .arrow: kind = .arrow(from: start, to: point)
         case .line: kind = .line(from: start, to: point)
@@ -237,6 +255,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             kind = .freehand(Freehand.adding(point, to: points, minDistance: 1 / fit))
         case .note:
             var note = Annotation(id: draft?.id ?? UUID(), kind: .note("", rect: .zero), color: style.noteColor, lineWidth: model.lineWidth)
+            note.alignment = style.alignment
             note.kind = .note("", rect: NoteLayout.placementRect(from: start, to: point, fontSize: note.noteFontSize))
             draft = note
             model.previewAnnotation(note)
@@ -245,6 +264,9 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         var shape = Annotation(id: draft?.id ?? UUID(), kind: kind, color: style.color, lineWidth: model.lineWidth)
         if shape.supportsFill {
             shape.fill = style.fill
+        }
+        if shape.canRound {
+            shape.cornerRadius = model.cornerRadius
         }
         draft = shape
         model.previewAnnotation(shape)
@@ -323,6 +345,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         }
         var edited = annotation
         edited.setText(field.stringValue)
+        field.alignment = annotation.alignment.textAlignment
         switch annotation.kind {
         case .note:
             guard let layout = edited.noteLayout else {
@@ -343,8 +366,11 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             }
             field.textColor = NSColor(srgbRed: annotation.color.r, green: annotation.color.g, blue: annotation.color.b, alpha: 1)
             field.sizeToFit()
+            let fitted = field.stringValue.isEmpty ? 0 : field.frame.width
             let topLeft = viewRect(CGRect(origin: origin, size: .zero)).origin
             field.frame = CGRect(x: topLeft.x, y: topLeft.y, width: max(200, field.frame.width + 20), height: size * 1.4)
+            // The field is wider than its text, so it reaches back past the anchor by the spare width the alignment puts before the text.
+            field.frame.origin.x -= (field.frame.width - fitted) * annotation.alignment.fraction
         default:
             break
         }
