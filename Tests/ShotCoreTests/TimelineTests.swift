@@ -122,6 +122,21 @@ private func sections(_ track: Track) -> [Range<Double>] {
     #expect(project.trimEdit == nil)
 }
 
+@Test func turningTheRecordingsSoundDownMakesItNotATrimEdit() throws {
+    let recorded = project()
+    let quieter = try #require(recorded.setting(volume: 0.5, of: recorded.tracks[1].clips[0].id))
+    #expect(quieter.tracks[1].clips[0].volume == 0.5)
+    #expect(quieter.trimEdit == nil)
+}
+
+@Test func extendingTheStartKeepsTheRecordingsSoundKeyframesWhereTheyWere() throws {
+    let trimmed = try #require(project().trimmingMain(.start, toSource: 4))
+    let sound = trimmed.tracks[1].clips[0].id
+    let keyed = try #require(trimmed.togglingKeyframe(.volume, ofClip: sound, at: 2))
+    let extended = try #require(keyed.trimmingMain(.start, toSource: 1))
+    #expect(extended.tracks[1].clips[0].animation.volume.map(\.time) == [5])
+}
+
 @Test func draggingAHandleInTrimsAndOutRestoresFromTheOrigin() throws {
     let origin = project()
     let trimmed = try #require(origin.trimmingMain(.start, toSource: 4))
