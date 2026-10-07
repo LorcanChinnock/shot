@@ -960,14 +960,17 @@ extension VideoEditorModel {
     }
 
     /// Sets the effect and strength of every spotlight in the project, since they share one dim, and of the next one.
-    func setSpotlightLook(effect: SpotlightStyle.Effect, strength: SpotlightStyle.Strength) {
+    /// Between `beginDrag` and `endDrag` the changes are one undo step.
+    func setSpotlightLook(effect: SpotlightStyle.Effect, strength: Double) {
         annotationStyle.spotlight.effect = effect
         annotationStyle.spotlight.strength = strength
         let changed = project.settingSpotlights(effect: effect, strength: strength)
         guard !isExporting, changed != project else {
             return
         }
-        undoStack.record(edit)
+        if dragOrigin == nil {
+            undoStack.record(edit)
+        }
         project = changed
     }
 

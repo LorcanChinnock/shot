@@ -83,7 +83,7 @@ struct EditorToolbar: View {
                 } else if let redaction = model.paletteRedaction {
                     RedactionOptions(selected: redaction, choose: model.setRedaction)
                 } else if let spotlight = model.paletteSpotlight {
-                    SpotlightOptions(style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook)
+                    SpotlightOptions(style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook, dragStrength: model.setDraggingStyle)
                 } else {
                     Text(model.tool.summary)
                         .font(Brutal.caption)
@@ -234,7 +234,8 @@ struct RedactionOptions: View {
 struct SpotlightOptions: View {
     let style: SpotlightStyle
     let chooseShape: (BoxShape) -> Void
-    let chooseLook: (SpotlightStyle.Effect, SpotlightStyle.Strength) -> Void
+    let chooseLook: (SpotlightStyle.Effect, Double) -> Void
+    let dragStrength: (Bool) -> Void
 
     var body: some View {
         ShapeOptions(shapes: BoxShape.spotlightShapes, selected: style.shape, choose: chooseShape)
@@ -248,16 +249,17 @@ struct SpotlightOptions: View {
             }
         }
         ToolGroup {
-            ForEach(SpotlightStyle.Strength.allCases, id: \.self) { strength in
-                Tile(selected: style.strength == strength, color: Brutal.sky, help: strength.title, detail: "Applies to every spotlight in the image.") {
-                    chooseLook(style.effect, strength)
-                } label: {
-                    RoundedRectangle(cornerRadius: 3, style: .circular)
-                        .fill(Brutal.ink.opacity(SpotlightStyle(strength: strength).dimAlpha))
-                        .inkBorder(RoundedRectangle(cornerRadius: 3, style: .circular), width: 2)
-                        .frame(width: 14, height: 14)
-                }
-            }
+            BrutalSlider(
+                value: Binding(get: { style.strength }, set: { chooseLook(style.effect, $0) }),
+                range: SpotlightStyle.strengths,
+                track: LinearGradient(colors: [Brutal.ink.opacity(SpotlightStyle.strengths.lowerBound), Brutal.ink.opacity(SpotlightStyle.strengths.upperBound)], startPoint: .leading, endPoint: .trailing),
+                width: 120,
+                onEditingChanged: dragStrength
+            )
+            .frame(height: 30)
+            .padding(.horizontal, 6)
+            .accessibilityLabel(Text("Strength"))
+            .brutalTip("Strength", detail: "Applies to every spotlight in the image.")
         }
     }
 }
@@ -364,11 +366,11 @@ private struct ColorEditor: View {
         VStack(spacing: 12) {
             SaturationBrightnessField(hue: hue, saturation: $saturation, brightness: $brightness)
                 .frame(width: 200, height: 140)
-            GradientSlider(
+            BrutalSlider(
                 value: $hue,
                 track: LinearGradient(colors: (0...6).map { Color(hue: Double($0) / 6, saturation: 1, brightness: 1) }, startPoint: .leading, endPoint: .trailing)
             )
-            GradientSlider(
+            BrutalSlider(
                 value: $opacity,
                 track: LinearGradient(colors: [color.opacity(0), color.opacity(1)], startPoint: .leading, endPoint: .trailing),
                 checkerboard: true
@@ -417,40 +419,61 @@ private struct SaturationBrightnessField: View {
     }
 }
 
-private struct GradientSlider: View {
+/// A capsule track with a round knob. `onEditingChanged` reports a drag starting and ending, so a caller
+/// can make each drag one undo step.
+struct BrutalSlider: View {
     @Binding var value: Double
+    var range: ClosedRange<Double> = 0...1
     let track: LinearGradient
     var checkerboard = false
+    var width: CGFloat = 200
+    var onEditingChanged: (Bool) -> Void = { _ in }
+    @State private var isDragging = false
+
+    private var fraction: Double { (min(max(value, range.lowerBound), range.upperBound) - range.lowerBound) / (range.upperBound - range.lowerBound) }
 
     var body: some View {
-        GeometryReader { proxy in
-            let width = proxy.size.width
-            ZStack(alignment: .leading) {
-                if checkerboard {
-                    Canvas { ctx, size in
-                        let cell: CGFloat = 6
-                        for x in 0...Int(size.width / cell) {
-                            for y in 0...Int(size.height / cell) where (x + y) % 2 == 0 {
-                                ctx.fill(Path(CGRect(x: CGFloat(x) * cell, y: CGFloat(y) * cell, width: cell, height: cell)), with: .color(.gray.opacity(0.4)))
-                            }
+        ZStack(alignment: .leading) {
+            if checkerboard {
+                Canvas { ctx, size in
+                    let cell: CGFloat = 6
+                    for x in 0...Int(size.width / cell) {
+                        for y in 0...Int(size.height / cell) where (x + y) % 2 == 0 {
+                            ctx.fill(Path(CGRect(x: CGFloat(x) * cell, y: CGFloat(y) * cell, width: cell, height: cell)), with: .color(.gray.opacity(0.4)))
                         }
                     }
-                    .background(Color.white)
-                    .clipShape(Capsule().inset(by: 1))
                 }
-                Capsule().fill(track)
-                    .inkBorder(Capsule(), width: 2)
-                Circle().fill(.white)
-                    .inkBorder(Circle(), width: 2)
-                    .frame(width: 16, height: 16)
-                    .offset(x: value * (width - 16))
+                .background(Color.white)
+                .clipShape(Capsule().inset(by: 1))
             }
-            .contentShape(Rectangle())
-            .gesture(DragGesture(minimumDistance: 0).onChanged { drag in
-                value = min(max((drag.location.x - 8) / (width - 16), 0), 1)
-            })
+            Capsule().fill(track)
+                .inkBorder(Capsule(), width: 2)
+            Circle().fill(.white)
+                .inkBorder(Circle(), width: 2)
+                .frame(width: 16, height: 16)
+                .offset(x: fraction * (width - 16))
         }
-        .frame(width: 200, height: 16)
+        .frame(width: width, height: 16)
+        .contentShape(Rectangle())
+        .gesture(DragGesture(minimumDistance: 0)
+            .onChanged { drag in
+                if !isDragging {
+                    isDragging = true
+                    onEditingChanged(true)
+                }
+                let dragged = min(max((drag.location.x - 8) / (width - 16), 0), 1)
+                value = range.lowerBound + dragged * (range.upperBound - range.lowerBound)
+            }
+            .onEnded { _ in
+                isDragging = false
+                onEditingChanged(false)
+            })
+        .accessibilityElement()
+        .accessibilityValue(Text("\(Int((fraction * 100).rounded())) percent"))
+        .accessibilityAdjustableAction { direction in
+            let step = (range.upperBound - range.lowerBound) / 10
+            value = min(max(value + (direction == .increment ? step : -step), range.lowerBound), range.upperBound)
+        }
     }
 }
 
