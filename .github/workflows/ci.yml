@@ -15,11 +15,14 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v5
+      # Restores the newest cache for the same dependencies, so builds are incremental.
+      - uses: actions/cache@v4
+        with:
+          path: .build
+          key: build-${{ runner.os }}-${{ hashFiles('Package.resolved') }}-${{ github.sha }}
+          restore-keys: build-${{ runner.os }}-${{ hashFiles('Package.resolved') }}-
       - name: Test
         run: make test
-      # Compiles the x86_64 slice too, so Intel build breaks show up here.
-      - name: Build universal bundle
-        run: make dist
-        env:
-          SHOT_SIGN_IDENTITY: "-"
-
+      # Compiles the x86_64 slice, so Intel build breaks show up here. Releases build and sign the real bundle in release.yml.
+      - name: Build x86_64
+        run: swift build --arch x86_64
