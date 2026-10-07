@@ -17,7 +17,7 @@ private func withOverlay(at start: Double = 2) throws -> (project: Project, id: 
 }
 
 private func box() -> Annotation {
-    Annotation(kind: .rect(CGRect(x: 100, y: 100, width: 100, height: 60)), color: RGBA.presets[0], lineWidth: 4)
+    Annotation(kind: .shape(.rectangle, rect: CGRect(x: 100, y: 100, width: 100, height: 60)), color: RGBA.presets[0], lineWidth: 4)
 }
 
 @Test func settingAPropertyWithoutKeyframesChangesItForGood() throws {
@@ -198,7 +198,7 @@ private func box() -> Annotation {
 @Test func scalingEveryKindGrowsItsBounds() {
     let kinds: [Annotation.Kind] = [
         .arrow(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 110, y: 60)), .line(from: .zero, to: CGPoint(x: 80, y: 40)),
-        .ellipse(CGRect(x: 0, y: 0, width: 60, height: 40)), .blur(CGRect(x: 5, y: 5, width: 50, height: 30)),
+        .shape(.ellipse, rect: CGRect(x: 0, y: 0, width: 60, height: 40)), .blur(CGRect(x: 5, y: 5, width: 50, height: 30)),
         .freehand([CGPoint(x: 0, y: 0), CGPoint(x: 50, y: 20), CGPoint(x: 90, y: 0)]),
         .text("Hi", origin: CGPoint(x: 20, y: 20), fontSize: 24), .counter(3, center: CGPoint(x: 50, y: 50)),
         .note("A note", rect: CGRect(x: 10, y: 10, width: 200, height: 40)),

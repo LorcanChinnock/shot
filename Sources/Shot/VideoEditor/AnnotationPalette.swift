@@ -32,6 +32,10 @@ struct AnnotationPalette: View {
             HStack(spacing: 14) {
                 if model.showsStyle {
                     styleOptions
+                } else if let redaction = model.paletteRedaction {
+                    RedactionOptions(selected: redaction, choose: model.setRedaction)
+                } else if let spotlight = model.paletteSpotlight {
+                    SpotlightOptions(style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook)
                 } else if let tool = model.annotationTool {
                     Text(tool.summary)
                         .font(Brutal.caption)
@@ -46,6 +50,9 @@ struct AnnotationPalette: View {
     }
 
     @ViewBuilder private var styleOptions: some View {
+        if let shape = model.paletteShape {
+            ShapeMenu(selected: shape, choose: model.setShape)
+        }
         ToolGroup {
             ColorSwatches(
                 selected: model.paletteColor,
@@ -68,15 +75,7 @@ struct AnnotationPalette: View {
                 )
             }
         }
-        ToolGroup {
-            ForEach(EditorStyle.widths.indices, id: \.self) { index in
-                Tile(selected: model.lineWidthIndex == index, color: Brutal.sky, help: "Line width \(Int(EditorStyle.widths[index]))") {
-                    model.lineWidthIndex = index
-                } label: {
-                    Capsule().fill(Brutal.ink).frame(width: 16, height: EditorStyle.widths[index] + 1)
-                }
-            }
-        }
+        WidthOptions(selected: model.lineWidthIndex, sizesText: model.sizesText) { model.lineWidthIndex = $0 }
     }
 
     private func pickImage() {

@@ -9,19 +9,15 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private var lastPoint: CGPoint?
     private var movedSinceMouseDown = false
     private var textField: NSTextField?
-    private var textOrigin: CGPoint?
-    /// The note whose text field is open; it may not be in the document yet. The model holds it so the palette can recolour it.
-    private var editingNote: Annotation? {
-        get { model.editingNote }
-        set { model.editingNote = newValue }
+    /// The text or note whose text field is open, hidden while it's edited; it may not be in the document yet.
+    /// The model holds it so the toolbar can recolour and resize it.
+    private var editingText: Annotation? {
+        get { model.editingText }
+        set { model.editingText = newValue }
     }
-    /// The text annotation whose text field is open, hidden while it's edited.
-    private var editingTextID: UUID?
     private var resizeHandle: AnnotationHandle?
     /// The selection as it was when the resize began; every drag resizes from it.
     private var resizeStart: Annotation?
-    /// The font size of the text being typed or edited, in image pixels.
-    private var textFontSize: CGFloat?
     /// The zoom and scroll position, or nil to fit the canvas to the view as it resizes.
     /// They're view state, not part of the document, so they aren't undoable.
     private var zoomedViewport: Viewport?
@@ -55,7 +51,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             _ = model.document.background
             _ = model.selectedID
             _ = model.tool
-            _ = model.editingNote
+            _ = model.editingText
         } onChange: { [weak self] in
             Task { @MainActor in
                 // A fitted canvas rescales as it grows or is cropped.
@@ -128,12 +124,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
         var doc = model.document
         doc.canvasRect = canvasRect
-        // The note being edited is drawn as blank paper under its text field instead.
-        if let editingNote {
-            doc.annotations.removeAll { $0.id == editingNote.id }
-        }
-        if let editingTextID {
-            doc.annotations.removeAll { $0.id == editingTextID }
+        // The text being edited is drawn by its text field instead, a note's over blank paper.
+        if let editingText {
+            doc.annotations.removeAll { $0.id == editingText.id }
         }
         // A spotlight's dim is drawn with the document's, so its draft joins the document.
         if let draft, case .spotlight = draft.kind {
@@ -172,12 +165,12 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         frame.lineWidth = 1.5
         frame.stroke()
 
-        if let selected = model.selection, selected.id != editingTextID {
+        if let selected = model.selection, selected.id != editingText?.id {
             let outline = NSBezierPath(rect: viewRect(selected.bounds.insetBy(dx: -selected.lineWidth, dy: -selected.lineWidth)))
             outline.setLineDash([4, 3], count: 2, phase: 0)
             NSColor.controlAccentColor.setStroke()
             outline.stroke()
-            if editingNote == nil {
+            if editingText == nil {
                 for handle in selected.handles {
                     let center = viewRect(CGRect(origin: handle.point, size: .zero)).origin
                     let square = NSBezierPath(rect: CGRect(x: center.x - 4, y: center.y - 4, width: 8, height: 8))
@@ -269,7 +262,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         let fromCenter = event.modifierFlags.contains(.option)
         var rect = Geometry.normalized(from: start, to: point)
         switch model.tool {
-        case .rect, .ellipse, .highlight, .pixelate, .blur, .spotlight:
+        case .shape, .highlight, .redact, .spotlight:
             if constrain {
                 rect = Geometry.square(from: start, to: point)
             }
@@ -313,18 +306,14 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             kind = .arrow(from: start, to: point)
         case .line:
             kind = .line(from: start, to: point)
-        case .rect:
-            kind = .rect(rect)
-        case .ellipse:
-            kind = .ellipse(rect)
+        case .shape:
+            kind = .shape(model.shape, rect: rect)
         case .highlight:
             kind = .highlight(rect)
-        case .pixelate:
-            kind = .pixelate(rect)
-        case .blur:
-            kind = .blur(rect)
+        case .redact:
+            kind = model.redaction == .blur ? .blur(rect) : .pixelate(rect)
         case .spotlight:
-            kind = .spotlight(rect)
+            kind = .spotlight(rect, style: model.nextSpotlightStyle)
         case .pen:
             let points: [CGPoint]
             if let draft, case let .freehand(drawn) = draft.kind {
@@ -558,23 +547,14 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     /// Opens a text field at `point` for new text, or over `existing` text to edit it.
     private func beginText(at point: CGPoint, editing existing: Annotation? = nil) {
-        var string = "", rgba = model.color, fontSize = model.fontSize
-        if let existing, case let .text(text, _, size) = existing.kind {
-            string = text
-            rgba = existing.color
-            fontSize = size
-            editingTextID = existing.id
-        }
+        editingText = existing ?? Annotation(kind: .text("", origin: point, fontSize: model.fontSize), color: model.color, lineWidth: model.lineWidth)
         // A double-click that wobbles mustn't drag the text being edited.
         dragStart = nil
-        textOrigin = point
-        textFontSize = fontSize
-        let field = NSTextField(string: string)
+        let field = NSTextField(string: existing?.text ?? "")
         field.isBordered = false
         field.drawsBackground = true
         field.backgroundColor = NSColor.white.withAlphaComponent(0.6)
         field.focusRingType = .none
-        field.textColor = NSColor(srgbRed: rgba.r, green: rgba.g, blue: rgba.b, alpha: 1)
         field.delegate = self
         field.target = self
         field.action = #selector(textFieldAction)
@@ -584,19 +564,20 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         layoutTextField()
     }
 
-    /// Keeps the open text field over its text, at its size, as the zoom, scroll or window changes.
+    /// Keeps the open text field over its text, at its size and colour, as the zoom, scroll, window or toolbar changes.
     private func layoutTextField() {
-        if editingNote != nil {
+        if case .note = editingText?.kind {
             layoutNoteField()
             return
         }
-        guard let field = textField, let textOrigin, let textFontSize else {
+        guard let field = textField, let text = editingText, case let .text(_, textOrigin, fontSize) = text.kind else {
             return
         }
-        let size = textFontSize * viewScale
+        let size = fontSize * viewScale
         if field.font?.pointSize != size {
             field.font = .boldSystemFont(ofSize: size)
         }
+        field.textColor = NSColor(srgbRed: text.color.r, green: text.color.g, blue: text.color.b, alpha: 1)
         let origin = viewRect(CGRect(origin: textOrigin, size: .zero)).origin
         if field.stringValue.isEmpty {
             field.frame = CGRect(x: origin.x, y: origin.y, width: 240, height: size * 1.4)
@@ -627,7 +608,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard let field = textField else {
             return
         }
-        if editingNote != nil {
+        if case .note = editingText?.kind {
             layoutNoteField()
             return
         }
@@ -637,26 +618,20 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     var isEditingText: Bool { textField != nil }
 
     private func commitText() {
-        if let note = editingNote, let field = textField {
-            let string = field.stringValue
-            removeTextField()
-            commitNote(note, text: string)
+        guard let edited = editedText else {
             return
         }
-        guard let field = textField, let origin = textOrigin else {
-            return
-        }
-        let string = field.stringValue
-        let editedID = editingTextID
         removeTextField()
-        if let editedID {
-            model.setText(editedID, to: string)
-            return
+        model.commitText(edited)
+    }
+
+    /// The text or note being edited, with the text typed so far.
+    private var editedText: Annotation? {
+        guard var text = editingText, let field = textField else {
+            return nil
         }
-        guard !string.trimmingCharacters(in: .whitespaces).isEmpty else {
-            return
-        }
-        model.add(Annotation(kind: .text(string, origin: origin, fontSize: model.fontSize), color: model.color, lineWidth: model.lineWidth))
+        text.setText(field.stringValue)
+        return text
     }
 
     // MARK: Notes
@@ -667,18 +642,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         return note
     }
 
-    /// The note being edited, with the text typed so far.
-    private var editedNote: Annotation? {
-        guard var note = editingNote, let field = textField else {
-            return nil
-        }
-        note.setText(field.stringValue)
-        return note
-    }
-
     /// Blank paper the size the note will be, under its text field.
     private var editingPaper: Annotation? {
-        guard let note = editedNote, let frame = note.noteLayout?.frame else {
+        guard let note = editedText, let frame = note.noteLayout?.frame else {
             return nil
         }
         return Annotation(id: note.id, kind: .note("", rect: frame), color: note.color, lineWidth: note.lineWidth)
@@ -690,7 +656,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             return
         }
         dragStart = nil
-        editingNote = note
+        editingText = note
         let field = NSTextField(string: string)
         field.isBordered = false
         field.drawsBackground = false
@@ -712,7 +678,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     /// Fits the text field to the note's text area as the text grows.
     private func layoutNoteField() {
-        guard let field = textField, let layout = editedNote?.noteLayout else {
+        guard let field = textField, let layout = editedText?.noteLayout else {
             return
         }
         // The zoom changes with the window size and the zoom commands, so the font follows it here.
@@ -727,24 +693,11 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         needsDisplay = true
     }
 
-    private func commitNote(_ note: Annotation, text string: String) {
-        if model.document.annotations.contains(where: { $0.id == note.id }) {
-            model.setText(note.id, to: string, color: note.color)
-        } else if !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            var placed = note
-            placed.setText(string)
-            model.add(placed)
-        }
-    }
-
     private func removeTextField() {
         let field = textField
-        let editedID = editingNote?.id ?? editingTextID
+        let editedID = editingText?.id
         textField = nil
-        textOrigin = nil
-        textFontSize = nil
-        editingNote = nil
-        editingTextID = nil
+        editingText = nil
         needsDisplay = true
         field?.delegate = nil
         field?.removeFromSuperview()

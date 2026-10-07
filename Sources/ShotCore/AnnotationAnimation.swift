@@ -36,12 +36,11 @@ extension Annotation {
         switch kind {
         case let .arrow(from, to): copy.kind = .arrow(from: point(from), to: point(to))
         case let .line(from, to): copy.kind = .line(from: point(from), to: point(to))
-        case let .rect(r): copy.kind = .rect(rect(r))
-        case let .ellipse(r): copy.kind = .ellipse(rect(r))
+        case let .shape(shape, r): copy.kind = .shape(shape, rect: rect(r))
         case let .highlight(r): copy.kind = .highlight(rect(r))
         case let .pixelate(r): copy.kind = .pixelate(rect(r))
         case let .blur(r): copy.kind = .blur(rect(r))
-        case let .spotlight(r): copy.kind = .spotlight(rect(r))
+        case let .spotlight(r, style): copy.kind = .spotlight(rect(r), style: style)
         case let .image(image, r): copy.kind = .image(image, rect: rect(r))
         case let .counter(number, c): copy.kind = .counter(number, center: point(c))
         case let .freehand(points): copy.kind = .freehand(points.map(point))
@@ -68,6 +67,7 @@ extension Annotation {
             copy.bend = bend.map { CGVector(dx: $0.dx * p, dy: $0.dy * p) }
         case let .line(from, to):
             copy.kind = .line(from: from, to: CGPoint(x: from.x + (to.x - from.x) * p, y: from.y + (to.y - from.y) * p))
+            copy.bend = bend.map { CGVector(dx: $0.dx * p, dy: $0.dy * p) }
         case let .freehand(points):
             copy.kind = .freehand(Self.prefix(of: points, fraction: p))
         default:

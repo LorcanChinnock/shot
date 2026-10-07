@@ -43,23 +43,22 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public let id: UUID
     public var kind: Kind
     public var color: RGBA
-    /// The inside of a rectangle or ellipse; `nil` leaves it unfilled.
+    /// The inside of a shape; `nil` leaves it unfilled.
     public var fill: RGBA?
     public var lineWidth: CGFloat
-    /// How far an arrow's curve passes from the middle of its chord; `nil` leaves it straight.
+    /// How far an arrow's or line's curve passes from the middle of its chord; `nil` leaves it straight.
     public var bend: CGVector?
 
     public enum Kind: Equatable, Sendable, Codable {
         case arrow(from: CGPoint, to: CGPoint)
         case line(from: CGPoint, to: CGPoint)
-        case rect(CGRect)
-        case ellipse(CGRect)
+        case shape(BoxShape, rect: CGRect)
         case highlight(CGRect)
         case pixelate(CGRect)
         /// A Gaussian blur, strong enough that the text under it can't be read back.
         case blur(CGRect)
-        /// Dims the image outside the rect. Every spotlight shares one dim, so together they light up several areas.
-        case spotlight(CGRect)
+        /// Dims or blurs the image outside its shape. Every spotlight shares one dim, so together they light up several areas.
+        case spotlight(CGRect, style: SpotlightStyle)
         case text(String, origin: CGPoint, fontSize: CGFloat)
         case counter(Int, center: CGPoint)
         /// A sticky note. `rect` sets the wrap width; the note grows taller than it to fit the text.
@@ -80,15 +79,40 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
 
     public var supportsFill: Bool {
         switch kind {
-        case .rect, .ellipse: true
+        case .shape: true
         default: false
+        }
+    }
+
+    /// True for the kinds whose width sets the size of their text.
+    public var sizesText: Bool {
+        switch kind {
+        case .text, .note, .counter: true
+        default: false
+        }
+    }
+
+    /// How a pixelate or blur hides what's under it; `nil` for anything else.
+    public var redaction: Redaction? {
+        switch kind {
+        case .blur: .blur
+        case .pixelate: .pixelate
+        default: nil
+        }
+    }
+
+    /// Turns a pixelate into a blur or back; other kinds are left alone.
+    public mutating func setRedaction(_ redaction: Redaction) {
+        switch kind {
+        case let .blur(rect), let .pixelate(rect): kind = redaction == .blur ? .blur(rect) : .pixelate(rect)
+        default: break
         }
     }
 
     /// True for the kinds drawn in their colour and sized by their width.
     public var isStyled: Bool {
         switch kind {
-        case .arrow, .line, .rect, .ellipse, .text, .counter, .note, .freehand: true
+        case .arrow, .line, .shape, .text, .counter, .note, .freehand: true
         case .highlight, .pixelate, .blur, .spotlight, .image: false
         }
     }
@@ -104,17 +128,22 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         return NoteLayout(string: string, rect: rect, fontSize: noteFontSize, color: color)
     }
 
-    /// The quadratic curve an arrow follows: its ends and the control point that gives it its bend.
-    /// `nil` for anything but a bent arrow.
-    public var arrowCurve: (from: CGPoint, to: CGPoint, control: CGPoint)? {
-        guard case let .arrow(from, to) = kind, let bend else {
+    /// The quadratic curve an arrow or line follows: its ends and the control point that gives it its bend.
+    /// `nil` for anything but a bent arrow or line.
+    public var curve: (from: CGPoint, to: CGPoint, control: CGPoint)? {
+        guard let bend else {
             return nil
         }
-        return (from, to, CGPoint(x: (from.x + to.x) / 2 + 2 * bend.dx, y: (from.y + to.y) / 2 + 2 * bend.dy))
+        switch kind {
+        case let .arrow(from, to), let .line(from, to):
+            return (from, to, CGPoint(x: (from.x + to.x) / 2 + 2 * bend.dx, y: (from.y + to.y) / 2 + 2 * bend.dy))
+        default:
+            return nil
+        }
     }
 
     public var bounds: CGRect {
-        if let curve = arrowCurve {
+        if let curve {
             let path = CGMutablePath()
             path.move(to: curve.from)
             path.addQuadCurve(to: curve.to, control: curve.control)
@@ -123,7 +152,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         switch kind {
         case let .arrow(from, to), let .line(from, to):
             return CGRect(x: min(from.x, to.x), y: min(from.y, to.y), width: abs(to.x - from.x), height: abs(to.y - from.y))
-        case let .rect(rect), let .ellipse(rect), let .highlight(rect), let .pixelate(rect), let .blur(rect), let .spotlight(rect), let .image(_, rect):
+        case let .shape(_, rect), let .highlight(rect), let .pixelate(rect), let .blur(rect), let .spotlight(rect, _), let .image(_, rect):
             return rect
         case let .text(string, origin, fontSize):
             return CGRect(origin: origin, size: TextLayout(string: string, fontSize: fontSize, color: color).size)
@@ -143,7 +172,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             let head = max(12, lineWidth * 4) * 0.45
             let outset = max(head, lineWidth / 2)
             return bounds.insetBy(dx: -outset, dy: -outset)
-        case .line, .rect, .ellipse:
+        case .line, .shape:
             return bounds.insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2)
         case .highlight, .pixelate, .blur, .spotlight, .text, .counter, .image:
             return bounds
@@ -162,23 +191,15 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public func hitTest(_ point: CGPoint, tolerance: CGFloat) -> Bool {
         let slop = tolerance + lineWidth / 2
         switch kind {
-        case .arrow where arrowCurve != nil:
-            let points = Self.flattened(arrowCurve!)
+        case .arrow where curve != nil, .line where curve != nil:
+            let points = Self.flattened(curve!)
             return zip(points, points.dropFirst()).contains { Self.distance(from: point, toSegment: $0, $1) <= slop }
         case let .arrow(from, to), let .line(from, to):
             return Self.distance(from: point, toSegment: from, to) <= slop
-        case let .rect(rect):
-            let outer = rect.insetBy(dx: -slop, dy: -slop).contains(point)
-            return fill != nil ? outer : outer && !rect.insetBy(dx: slop, dy: slop).contains(point)
-        case let .ellipse(rect):
-            guard rect.width > 0, rect.height > 0 else {
-                return false
-            }
-            let dx = (point.x - rect.midX) / (rect.width / 2)
-            let dy = (point.y - rect.midY) / (rect.height / 2)
-            let normalized = sqrt(dx * dx + dy * dy)
-            let distance = (normalized - 1) * min(rect.width, rect.height) / 2
-            return fill != nil ? distance <= slop : abs(distance) <= slop
+        case let .shape(shape, rect):
+            let path = shape.path(in: rect)
+            let outline = path.copy(strokingWithWidth: slop * 2, lineCap: .butt, lineJoin: .miter, miterLimit: 10)
+            return outline.contains(point) || (fill != nil && path.contains(point))
         case .highlight, .pixelate, .blur, .spotlight, .text, .note, .image:
             return bounds.insetBy(dx: -tolerance, dy: -tolerance).contains(point)
         case let .counter(_, center):
@@ -193,17 +214,31 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         switch kind {
         case let .arrow(from, to): kind = .arrow(from: move(from), to: move(to))
         case let .line(from, to): kind = .line(from: move(from), to: move(to))
-        case let .rect(rect): kind = .rect(rect.offsetBy(dx: delta.dx, dy: delta.dy))
-        case let .ellipse(rect): kind = .ellipse(rect.offsetBy(dx: delta.dx, dy: delta.dy))
+        case let .shape(shape, rect): kind = .shape(shape, rect: rect.offsetBy(dx: delta.dx, dy: delta.dy))
         case let .highlight(rect): kind = .highlight(rect.offsetBy(dx: delta.dx, dy: delta.dy))
         case let .pixelate(rect): kind = .pixelate(rect.offsetBy(dx: delta.dx, dy: delta.dy))
         case let .blur(rect): kind = .blur(rect.offsetBy(dx: delta.dx, dy: delta.dy))
-        case let .spotlight(rect): kind = .spotlight(rect.offsetBy(dx: delta.dx, dy: delta.dy))
+        case let .spotlight(rect, style): kind = .spotlight(rect.offsetBy(dx: delta.dx, dy: delta.dy), style: style)
         case let .text(string, origin, size): kind = .text(string, origin: move(origin), fontSize: size)
         case let .counter(number, center): kind = .counter(number, center: move(center))
         case let .note(string, rect): kind = .note(string, rect: rect.offsetBy(dx: delta.dx, dy: delta.dy))
         case let .freehand(points): kind = .freehand(points.map(move))
         case let .image(image, rect): kind = .image(image, rect: rect.offsetBy(dx: delta.dx, dy: delta.dy))
+        }
+    }
+
+    /// Sets a spotlight's effect and strength, keeping its shape; other kinds are left alone.
+    public mutating func setSpotlightLook(effect: SpotlightStyle.Effect, strength: SpotlightStyle.Strength) {
+        if case let .spotlight(rect, style) = kind {
+            kind = .spotlight(rect, style: SpotlightStyle(shape: style.shape, effect: effect, strength: strength))
+        }
+    }
+
+    /// The text of a text annotation or note; `nil` for other kinds.
+    public var text: String? {
+        switch kind {
+        case let .text(string, _, _), let .note(string, _): string
+        default: nil
         }
     }
 
@@ -230,12 +265,9 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public var handles: [(handle: AnnotationHandle, point: CGPoint)] {
         switch kind {
         case let .arrow(from, to), let .line(from, to):
-            let middle = arrowCurve.map { Self.curvePoint($0, at: 0.5) } ?? CGPoint(x: (from.x + to.x) / 2, y: (from.y + to.y) / 2)
-            if case .arrow = kind {
-                return [(.start, from), (.end, to), (.mid, middle)]
-            }
-            return [(.start, from), (.end, to)]
-        case .rect, .ellipse, .highlight, .pixelate, .blur, .spotlight, .note, .freehand:
+            let middle = curve.map { Self.curvePoint($0, at: 0.5) } ?? CGPoint(x: (from.x + to.x) / 2, y: (from.y + to.y) / 2)
+            return [(.start, from), (.end, to), (.mid, middle)]
+        case .shape, .highlight, .pixelate, .blur, .spotlight, .note, .freehand:
             let frame = bounds
             return AnnotationHandle.box.map { ($0, $0.point(in: frame)) }
         case let .image(_, rect):
@@ -247,11 +279,13 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
 
     /// The handle nearest `point`, if one is within `tolerance` of it on both axes and nearer than the
     /// shape's centre, so a shape smaller than the handles can still be grabbed by its middle and moved.
+    /// A line's or arrow's middle handle sits at its centre, so it's offered only on one long enough to move by its stroke.
     public func handle(at point: CGPoint, tolerance: CGFloat) -> AnnotationHandle? {
         func distance(_ p: CGPoint) -> CGFloat { hypot(point.x - p.x, point.y - p.y) }
         let centre = distance(CGPoint(x: bounds.midX, y: bounds.midY))
+        let bendable = hypot(bounds.width, bounds.height) > tolerance * 4
         return handles
-            .filter { abs(point.x - $0.point.x) <= tolerance && abs(point.y - $0.point.y) <= tolerance && ($0.handle == .mid || distance($0.point) < centre) }
+            .filter { abs(point.x - $0.point.x) <= tolerance && abs(point.y - $0.point.y) <= tolerance && ($0.handle == .mid ? bendable : distance($0.point) < centre) }
             .min { distance($0.point) < distance($1.point) }?
             .handle
     }
@@ -285,16 +319,15 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let (.arrow(from, _), .end): kind = .arrow(from: from, to: point)
         case let (.line(_, to), .start): kind = .line(from: point, to: to)
         case let (.line(from, _), .end): kind = .line(from: from, to: point)
-        case (.arrow(let from, let to), .mid):
+        case (.arrow(let from, let to), .mid), (.line(let from, let to), .mid):
             let drag = CGVector(dx: point.x - (from.x + to.x) / 2, dy: point.y - (from.y + to.y) / 2)
             bend = hypot(drag.dx, drag.dy) < Self.minBend ? nil : drag
         case (.arrow, _), (.line, _), (_, .start), (_, .end), (.text, _), (.counter, _): break
-        case let (.rect(rect), _): kind = .rect(box(rect))
-        case let (.ellipse(rect), _): kind = .ellipse(box(rect))
+        case let (.shape(shape, rect), _): kind = .shape(shape, rect: box(rect))
         case let (.highlight(rect), _): kind = .highlight(box(rect))
         case let (.pixelate(rect), _): kind = .pixelate(box(rect))
         case let (.blur(rect), _): kind = .blur(box(rect))
-        case let (.spotlight(rect), _): kind = .spotlight(box(rect))
+        case let (.spotlight(rect, style), _): kind = .spotlight(box(rect), style: style)
         case let (.note(string, rect), _): resizeNote(string, rect: rect, handle: handle, to: point)
         case let (.freehand(points), _):
             let rect = bounds
@@ -355,7 +388,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         kind = .note(string, rect: resized)
     }
 
-    /// A drag this close to the chord straightens the arrow.
+    /// A drag this close to the chord straightens the arrow or line.
     static let minBend: CGFloat = 3
 
     static func curvePoint(_ curve: (from: CGPoint, to: CGPoint, control: CGPoint), at t: CGFloat) -> CGPoint {
@@ -385,6 +418,13 @@ extension Array where Element == Annotation {
     /// Index of the topmost (last drawn) annotation under `point`.
     public func topmostIndex(at point: CGPoint, tolerance: CGFloat) -> Int? {
         indices.reversed().first { self[$0].hitTest(point, tolerance: tolerance) }
+    }
+
+    /// The lowest spotlight's style, whose effect and strength they all share. `nil` when there are none.
+    public var spotlightStyle: SpotlightStyle? {
+        lazy.compactMap { annotation -> SpotlightStyle? in
+            if case let .spotlight(_, style) = annotation.kind { style } else { nil }
+        }.first
     }
 
     public var nextCounterNumber: Int {
@@ -481,20 +521,32 @@ public struct EditorDocument: @unchecked Sendable {
     /// every spotlight, never the rest of the padding.
     /// `nil` when there are no spotlights. One with no area, such as a straight drag, dims nothing.
     public var spotlightDimPath: CGPath? {
-        let lit = CGMutablePath()
+        var lit: CGPath?
         let images = CGMutablePath()
         for annotation in annotations {
             switch annotation.kind {
-            case let .spotlight(rect) where !rect.isEmpty: lit.addRect(rect)
+            case let .spotlight(rect, style) where !rect.isEmpty:
+                let shape = style.shape.path(in: rect)
+                lit = lit?.union(shape) ?? shape
             case let .image(_, rect): images.addRect(rect)
             default: break
             }
         }
-        guard !lit.isEmpty else {
+        guard let lit else {
             return nil
         }
         let dimmable = images.isEmpty ? CGPath(rect: fullRect, transform: nil) : images.union(CGPath(rect: fullRect, transform: nil))
         return dimmable.subtracting(lit)
+    }
+
+    /// The effect and strength every spotlight's shared dim is drawn with: the lowest spotlight's. `nil` when there are none.
+    public var spotlightStyle: SpotlightStyle? { annotations.spotlightStyle }
+
+    /// Gives every spotlight `effect` and `strength`, since they share one dim. Their shapes stay.
+    public mutating func setSpotlights(effect: SpotlightStyle.Effect, strength: SpotlightStyle.Strength) {
+        for index in annotations.indices {
+            annotations[index].setSpotlightLook(effect: effect, strength: strength)
+        }
     }
 
     /// Removes the padding; a crop inside the image stays.
@@ -574,7 +626,7 @@ public enum AnnotationHandle: Hashable, Sendable {
     case topLeft, top, topRight, right, bottomRight, bottom, bottomLeft, left
     /// A line or arrow's ends.
     case start, end
-    /// An arrow's middle, which drags to bend it.
+    /// A line or arrow's middle, which drags to bend it.
     case mid
 
     /// The handles on a box, corners first.

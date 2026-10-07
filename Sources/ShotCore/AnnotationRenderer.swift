@@ -2,11 +2,12 @@ import CoreGraphics
 import CoreImage
 import CoreImage.CIFilterBuiltins
 import CoreText
+import os
 
 public enum AnnotationRenderer {
     private static let ciContext = CIContext(options: [.cacheIntermediates: false])
-    /// How dark a spotlight makes the image outside it.
-    static let spotlightDim: CGFloat = 0.5
+    /// The last image a spotlight blurred, so redrawing while editing doesn't blur the whole image again.
+    private static let blurCache = OSAllocatedUnfairLock<(source: CGImage, radius: CGFloat, blurred: CGImage)?>(initialState: nil)
 
     /// Draws the document into a bottom-left-origin context of size `doc.exportSize`.
     public static func render(_ doc: EditorDocument, into ctx: CGContext) {
@@ -29,14 +30,8 @@ public enum AnnotationRenderer {
         // The spotlights share one dim, at the lowest one's layer: what's under it dims with the image, what's over it doesn't.
         let dimIndex = doc.annotations.firstIndex { if case .spotlight = $0.kind { true } else { false } }
         for (index, annotation) in doc.annotations.enumerated() {
-            if index == dimIndex, let dim {
-                ctx.saveGState()
-                // Source-atop darkens what's painted and leaves transparent pixels, such as a window's shadow, clear.
-                ctx.setBlendMode(.sourceAtop)
-                ctx.setFillColor(CGColor(gray: 0, alpha: spotlightDim))
-                ctx.addPath(dim)
-                ctx.fillPath()
-                ctx.restoreGState()
+            if index == dimIndex, let dim, let style = doc.spotlightStyle {
+                drawSpotlightDim(dim, style: style, base: doc.base, below: doc.annotations[..<index], in: ctx)
             }
             draw(annotation, base: doc.base, over: doc.annotations[..<index], in: ctx)
         }
@@ -44,6 +39,45 @@ public enum AnnotationRenderer {
             ctx.endTransparencyLayer()
         }
         ctx.restoreGState()
+    }
+
+    /// Darkens or blurs `dim`, the image outside every spotlight.
+    private static func drawSpotlightDim(_ dim: CGPath, style: SpotlightStyle, base: CGImage, below: ArraySlice<Annotation>, in ctx: CGContext) {
+        ctx.saveGState()
+        defer { ctx.restoreGState() }
+        switch style.effect {
+        case .darken:
+            // Source-atop darkens what's painted and leaves transparent pixels, such as a window's shadow, clear.
+            ctx.setBlendMode(.sourceAtop)
+            ctx.setFillColor(CGColor(gray: 0, alpha: style.dimAlpha))
+            ctx.addPath(dim)
+            ctx.fillPath()
+        case .blur:
+            let source = backdrop(base, images: below, around: dim.boundingBoxOfPath, outset: 0)
+            let radius = style.blurRadius(forImageLength: CGFloat(max(base.width, base.height)))
+            guard let blurred = blurredWhole(source.image, radius: radius) else {
+                return
+            }
+            ctx.addPath(dim)
+            ctx.clip()
+            drawUpright(blurred, in: CGRect(origin: source.origin, size: CGSize(width: blurred.width, height: blurred.height)), ctx: ctx)
+        }
+    }
+
+    /// All of `image` blurred by `radius`, its edges kept sharp-cornered rather than fading out.
+    static func blurredWhole(_ image: CGImage, radius: CGFloat) -> CGImage? {
+        if let cached = blurCache.withLock({ $0 }), cached.source === image, cached.radius == radius {
+            return cached.blurred
+        }
+        let extent = CGRect(x: 0, y: 0, width: image.width, height: image.height)
+        let filter = CIFilter.gaussianBlur()
+        filter.inputImage = CIImage(cgImage: image).clampedToExtent()
+        filter.radius = Float(radius)
+        guard let output = filter.outputImage?.cropped(to: extent), let blurred = ciContext.createCGImage(output, from: extent) else {
+            return nil
+        }
+        blurCache.withLock { $0 = (image, radius, blurred) }
+        return blurred
     }
 
     public static func flatten(_ doc: EditorDocument) -> CGImage? {
@@ -76,7 +110,7 @@ public enum AnnotationRenderer {
 
         switch annotation.kind {
         case let .arrow(from, to):
-            let control = annotation.arrowCurve?.control
+            let control = annotation.curve?.control
             let tangentFrom = control ?? from
             let length = hypot(to.x - from.x, to.y - from.y)
             let tangentLength = hypot(to.x - tangentFrom.x, to.y - tangentFrom.y)
@@ -101,20 +135,21 @@ public enum AnnotationRenderer {
             ctx.fillPath()
         case let .line(from, to):
             ctx.move(to: from)
-            ctx.addLine(to: to)
+            if let control = annotation.curve?.control {
+                ctx.addQuadCurve(to: to, control: control)
+            } else {
+                ctx.addLine(to: to)
+            }
             ctx.strokePath()
-        case let .rect(rect):
+        case let .shape(shape, rect):
+            let path = shape.path(in: rect)
             if let fill = annotation.fill {
                 ctx.setFillColor(fill.cgColor)
-                ctx.fill(rect)
+                ctx.addPath(path)
+                ctx.fillPath()
             }
-            ctx.stroke(rect)
-        case let .ellipse(rect):
-            if let fill = annotation.fill {
-                ctx.setFillColor(fill.cgColor)
-                ctx.fillEllipse(in: rect)
-            }
-            ctx.strokeEllipse(in: rect)
+            ctx.addPath(path)
+            ctx.strokePath()
         case let .highlight(rect):
             ctx.setBlendMode(.multiply)
             ctx.setFillColor(CGColor(srgbRed: 1, green: 0.92, blue: 0.2, alpha: 1))

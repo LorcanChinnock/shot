@@ -8,15 +8,13 @@ extension EditorTool {
         case .select: "cursorarrow"
         case .arrow: "arrow.up.right"
         case .line: "line.diagonal"
-        case .rect: "rectangle"
-        case .ellipse: "circle"
+        case .shape: "square.on.circle"
         case .pen: "scribble"
         case .text: "textformat"
         case .note: "note.text"
         case .highlight: "highlighter"
         case .spotlight: "flashlight.on.fill"
-        case .pixelate: "square.grid.3x3"
-        case .blur: "drop.halffull"
+        case .redact: "eye.slash"
         case .counter: "1.circle"
         case .crop: "crop"
         }
@@ -28,15 +26,13 @@ extension EditorTool {
         case .select: "Click an annotation to move, resize or restyle it."
         case .arrow: "Drag to point at something."
         case .line: "Drag to draw a straight line."
-        case .rect: "Drag to draw a box, outlined or filled."
-        case .ellipse: "Drag to draw a circle or oval."
+        case .shape: "Drag to draw a box, circle, star or other shape, outlined or filled."
         case .pen: "Drag to draw freehand."
         case .text: "Click to type a label."
         case .note: "Drag to add a sticky note."
         case .highlight: "Drag over text to mark it in yellow."
-        case .spotlight: "Drag to dim everything outside an area."
-        case .pixelate: "Drag over private details to pixelate them."
-        case .blur: "Drag over private details to blur them."
+        case .spotlight: "Drag to dim or blur everything outside an area."
+        case .redact: "Drag over private details to blur or pixelate them."
         case .counter: "Click to add numbered steps: 1, 2, 3…"
         case .crop: "Drag to choose the area to keep."
         }
@@ -71,9 +67,20 @@ final class EditorModel {
     var noteColor: RGBA {
         didSet { rememberStyle { $0.noteColor = noteColor } }
     }
-    /// What new rectangles and ellipses are filled with; `nil` leaves them unfilled.
+    /// What new shapes are filled with; `nil` leaves them unfilled.
     var fill: RGBA? {
         didSet { rememberStyle { $0.fill = fill } }
+    }
+    /// The outline of the next shape.
+    var shape: BoxShape {
+        didSet { rememberStyle { $0.shape = shape } }
+    }
+    var redaction: Redaction {
+        didSet { rememberStyle { $0.redaction = redaction } }
+    }
+    /// The next spotlight's shape, and the effect and strength for the image's first one.
+    var spotlight: SpotlightStyle {
+        didSet { rememberStyle { $0.spotlight = spotlight } }
     }
     /// Custom colours picked lately, newest first, shared by the border and fill palettes.
     private(set) var recentColors: [RGBA] {
@@ -83,8 +90,8 @@ final class EditorModel {
         didSet { rememberStyle { $0.widthIndex = widthIndex } }
     }
     var selectedID: UUID?
-    /// The note whose text field is open, with the colour picked for it so far; it may not be in the document yet.
-    var editingNote: Annotation?
+    /// The text or note whose text field is open, with the colour and size picked for it so far; it may not be in the document yet.
+    var editingText: Annotation?
     var isDirty = false
     /// What the document looked like when it was last saved, so undoing back to it leaves the editor clean.
     @ObservationIgnored private var savedSnapshot: EditorSnapshot
@@ -112,6 +119,9 @@ final class EditorModel {
         color = style.color
         noteColor = style.noteColor
         fill = style.fill
+        shape = style.shape
+        redaction = style.redaction
+        spotlight = style.spotlight
         recentColors = style.recentColors
         widthIndex = style.widthIndex
     }
@@ -128,15 +138,15 @@ final class EditorModel {
         selectedID.flatMap { id in document.annotations.first { $0.id == id } }
     }
 
-    /// The colour the palette shows and sets: the selection's colour, else the note colour while the
-    /// note tool is active, else the colour for the next annotation.
+    /// The colour the palette shows and sets: the text being typed's, else the selection's, else the note
+    /// colour while the note tool is active, else the colour for the next annotation.
     var paletteColor: RGBA {
         get {
-            editingNote?.color ?? selection?.color ?? (tool == .note ? noteColor : color)
+            editingText?.color ?? selection?.color ?? (tool == .note ? noteColor : color)
         }
         set {
-            if editingNote != nil {
-                setEditingNoteColor(newValue)
+            if editingText != nil {
+                setEditingColor(newValue)
             } else if selection != nil {
                 restyleSelection { $0.color = newValue }
             } else if tool == .note {
@@ -147,14 +157,94 @@ final class EditorModel {
         }
     }
 
-    /// True when the toolbar offers a colour and width: the selection takes them, or else the tool does.
+    /// True when the toolbar offers a colour and width: the text being typed or the selection takes them, or else the tool does.
     var showsStyle: Bool {
-        selection?.isStyled ?? tool.isStyled
+        editingText != nil || (selection?.isStyled ?? tool.isStyled)
     }
 
-    /// True when the toolbar offers a fill: a rectangle or ellipse is selected, or is the tool.
+    /// True when the width sets a text size, so the toolbar offers sizes rather than line widths.
+    var sizesText: Bool {
+        (editingText ?? selection)?.sizesText ?? tool.sizesText
+    }
+
+    /// True when the toolbar offers a fill: a shape is selected, or is the tool.
     var showsFill: Bool {
-        selection?.supportsFill ?? (tool == .rect || tool == .ellipse)
+        selection?.supportsFill ?? (tool == .shape)
+    }
+
+    /// The outline the toolbar shows: the selected shape's, else the next shape's. `nil` when neither is a shape.
+    var paletteShape: BoxShape? {
+        if let selection {
+            guard case let .shape(shape, _) = selection.kind else {
+                return nil
+            }
+            return shape
+        }
+        return tool == .shape ? shape : nil
+    }
+
+    func setShape(_ newShape: BoxShape) {
+        guard selection != nil else {
+            shape = newShape
+            return
+        }
+        restyleSelection {
+            if case let .shape(_, rect) = $0.kind {
+                $0.kind = .shape(newShape, rect: rect)
+            }
+        }
+    }
+
+    /// How the toolbar shows a redaction hiding: the selected one's, else the next one's. `nil` when neither is one.
+    var paletteRedaction: Redaction? {
+        if let selection {
+            return selection.redaction
+        }
+        return tool == .redact ? redaction : nil
+    }
+
+    func setRedaction(_ newRedaction: Redaction) {
+        guard selection != nil else {
+            redaction = newRedaction
+            return
+        }
+        restyleSelection { $0.setRedaction(newRedaction) }
+    }
+
+    /// The next spotlight's style: the chosen shape, with the effect and strength the image's spotlights already share.
+    var nextSpotlightStyle: SpotlightStyle {
+        let shared = document.spotlightStyle ?? spotlight
+        return SpotlightStyle(shape: spotlight.shape, effect: shared.effect, strength: shared.strength)
+    }
+
+    /// The spotlight style the toolbar shows: the selected spotlight's, else the next one's. `nil` when neither is one.
+    var paletteSpotlight: SpotlightStyle? {
+        if let selection {
+            guard case let .spotlight(_, style) = selection.kind else {
+                return nil
+            }
+            return style
+        }
+        return tool == .spotlight ? nextSpotlightStyle : nil
+    }
+
+    func setSpotlightShape(_ newShape: BoxShape) {
+        guard selection != nil else {
+            spotlight.shape = newShape
+            return
+        }
+        restyleSelection {
+            if case let .spotlight(rect, style) = $0.kind {
+                $0.kind = .spotlight(rect, style: SpotlightStyle(shape: newShape, effect: style.effect, strength: style.strength))
+            }
+        }
+    }
+
+    /// Sets the effect and strength of every spotlight in the image, since they share one dim, and of the next one.
+    func setSpotlightLook(effect: SpotlightStyle.Effect, strength: SpotlightStyle.Strength) {
+        spotlight.effect = effect
+        spotlight.strength = strength
+        edit { $0.setSpotlights(effect: effect, strength: strength) }
     }
 
     /// The fill the toolbar shows and sets, `nil` for none: the selection's, else the fill for the next shape.
@@ -171,23 +261,27 @@ final class EditorModel {
         }
     }
 
-    /// Recolours the note being typed. The document picks it up when the note is committed.
-    /// A new note also sets the colour for the next one.
-    private func setEditingNoteColor(_ colour: RGBA) {
-        guard let note = editingNote else {
+    /// Recolours the text or note being typed. The document picks it up when it's committed.
+    /// New text or a new note also sets the colour for the next one.
+    private func setEditingColor(_ colour: RGBA) {
+        guard let text = editingText else {
             return
         }
-        editingNote?.color = colour
-        if !document.annotations.contains(where: { $0.id == note.id }) {
-            noteColor = colour
+        editingText?.color = colour
+        if !document.annotations.contains(where: { $0.id == text.id }) {
+            if case .note = text.kind {
+                noteColor = colour
+            } else {
+                color = colour
+            }
         }
     }
 
     /// Sets the border colour, or the fill, to one picked from the colour panel, which reports every
     /// change as the user drags. It's one undo step, and joins the recent colours once the drag settles.
     func pickCustom(_ colour: RGBA, forFill: Bool) {
-        if editingNote != nil, !forFill {
-            setEditingNoteColor(colour)
+        if editingText != nil, !forFill {
+            setEditingColor(colour)
         } else if let selection {
             let key = "\(selection.id)-\(forFill)"
             restyleSelection(coalescing: key) { forFill ? ($0.fill = colour) : ($0.color = colour) }
@@ -208,16 +302,22 @@ final class EditorModel {
         }
     }
 
-    /// The width the toolbar shows and sets: the selection's, else the width for the next annotation.
+    /// The width the toolbar shows and sets: the text being typed's, else the selection's, else the width for the next annotation.
     var lineWidthIndex: Int {
         get {
-            if let selection {
-                return Self.baseWidths.firstIndex { abs($0 * scale - selection.lineWidth) < 0.01 } ?? -1
+            if let shown = editingText ?? selection {
+                return Self.baseWidths.firstIndex { abs($0 * scale - shown.lineWidth) < 0.01 } ?? -1
             }
             return widthIndex
         }
         set {
-            if selection != nil {
+            if let text = editingText {
+                // Text resizes as it's typed; new text also sets the width for the next annotation.
+                editingText?.setLineWidth(Self.baseWidths[newValue] * scale)
+                if !document.annotations.contains(where: { $0.id == text.id }) {
+                    widthIndex = newValue
+                }
+            } else if selection != nil {
                 restyleSelection { $0.setLineWidth(Self.baseWidths[newValue] * scale) }
             } else {
                 widthIndex = newValue
@@ -268,24 +368,29 @@ final class EditorModel {
         document.grow(toFit: annotation, margin: canvasMargin)
     }
 
-    /// Sets a text annotation's or note's text, and a note's colour, as one undoable step; empty text deletes it.
-    func setText(_ id: UUID, to string: String, color: RGBA? = nil) {
+    /// Puts text or a note as it was typed and styled into the document as one undoable step: in place of the
+    /// one its field was opened on, else as a new one. Empty text deletes it, or adds nothing.
+    func commitText(_ edited: Annotation) {
+        let isEmpty = (edited.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        guard document.annotations.contains(where: { $0.id == edited.id }) else {
+            if !isEmpty {
+                add(edited)
+            }
+            return
+        }
         edit { doc in
-            guard let index = doc.annotations.firstIndex(where: { $0.id == id }) else {
+            guard let index = doc.annotations.firstIndex(where: { $0.id == edited.id }) else {
                 return
             }
-            if string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if isEmpty {
                 doc.annotations.remove(at: index)
             } else {
-                doc.annotations[index].setText(string)
-                if let color {
-                    doc.annotations[index].color = color
-                }
-                doc.grow(toFit: doc.annotations[index], margin: canvasMargin)
+                doc.annotations[index] = edited
+                doc.grow(toFit: edited, margin: canvasMargin)
             }
             doc.shrinkPadding(margin: canvasMargin)
         }
-        if !document.annotations.contains(where: { $0.id == id }), selectedID == id {
+        if !document.annotations.contains(where: { $0.id == edited.id }), selectedID == edited.id {
             selectedID = nil
         }
     }

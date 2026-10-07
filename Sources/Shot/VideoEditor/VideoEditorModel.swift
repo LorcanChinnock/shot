@@ -67,6 +67,8 @@ final class VideoEditorModel {
     /// The tool drawing annotations over the video, or nil when none is picked. Never crop.
     private(set) var annotationTool: EditorTool?
     var annotationStyle = Preferences().editorStyle
+    /// The text or note whose text field is open, with the colour and size picked for it so far; it may not be on the timeline yet.
+    var editingText: Annotation?
     /// Called when the panel opens, closes or changes height, so the window can grow or shrink to fit.
     @ObservationIgnored var onLayoutChanged: (() -> Void)?
 
@@ -837,10 +839,20 @@ extension VideoEditorModel {
 
     var paletteColor: RGBA {
         get {
-            selectedAnnotation?.annotation.color ?? (annotationTool == .note ? annotationStyle.noteColor : annotationStyle.color)
+            editingText?.color ?? selectedAnnotation?.annotation.color ?? (annotationTool == .note ? annotationStyle.noteColor : annotationStyle.color)
         }
         set {
-            if selectedAnnotation != nil {
+            if let text = editingText {
+                // The field commits it; new text or a new note also sets the colour for the next one.
+                editingText?.color = newValue
+                if project.annotationClip(text.id) == nil {
+                    if case .note = text.kind {
+                        annotationStyle.noteColor = newValue
+                    } else {
+                        annotationStyle.color = newValue
+                    }
+                }
+            } else if selectedAnnotation != nil {
                 restyleSelection { $0.color = newValue }
             } else if annotationTool == .note {
                 annotationStyle.noteColor = newValue
@@ -850,13 +862,98 @@ extension VideoEditorModel {
         }
     }
 
-    /// True when the palette offers a colour and width: the selected annotation takes them, or else the tool does.
+    /// True when the palette offers a colour and width: the text being typed or the selected annotation takes them, or else the tool does.
     var showsStyle: Bool {
-        selectedAnnotation?.annotation.isStyled ?? annotationTool?.isStyled ?? false
+        editingText != nil || (selectedAnnotation?.annotation.isStyled ?? annotationTool?.isStyled ?? false)
+    }
+
+    /// True when the width sets a text size, so the palette offers sizes rather than line widths.
+    var sizesText: Bool {
+        (editingText ?? selectedAnnotation?.annotation)?.sizesText ?? annotationTool?.sizesText ?? false
     }
 
     var showsFill: Bool {
-        selectedAnnotation?.annotation.supportsFill ?? (annotationTool == .rect || annotationTool == .ellipse)
+        selectedAnnotation?.annotation.supportsFill ?? (annotationTool == .shape)
+    }
+
+    /// The outline the palette shows: the selected shape's, else the next shape's. `nil` when neither is a shape.
+    var paletteShape: BoxShape? {
+        if let selected = selectedAnnotation?.annotation {
+            guard case let .shape(shape, _) = selected.kind else {
+                return nil
+            }
+            return shape
+        }
+        return annotationTool == .shape ? annotationStyle.shape : nil
+    }
+
+    func setShape(_ shape: BoxShape) {
+        guard selectedAnnotation != nil else {
+            annotationStyle.shape = shape
+            return
+        }
+        restyleSelection {
+            if case let .shape(_, rect) = $0.kind {
+                $0.kind = .shape(shape, rect: rect)
+            }
+        }
+    }
+
+    /// How the palette shows a redaction hiding: the selected one's, else the next one's. `nil` when neither is one.
+    var paletteRedaction: Redaction? {
+        if let selected = selectedAnnotation?.annotation {
+            return selected.redaction
+        }
+        return annotationTool == .redact ? annotationStyle.redaction : nil
+    }
+
+    func setRedaction(_ redaction: Redaction) {
+        guard selectedAnnotation != nil else {
+            annotationStyle.redaction = redaction
+            return
+        }
+        restyleSelection { $0.setRedaction(redaction) }
+    }
+
+    /// The next spotlight's style: the chosen shape, with the effect and strength the project's spotlights already share.
+    var nextSpotlightStyle: SpotlightStyle {
+        let shared = project.annotationClips.map(\.annotation).spotlightStyle ?? annotationStyle.spotlight
+        return SpotlightStyle(shape: annotationStyle.spotlight.shape, effect: shared.effect, strength: shared.strength)
+    }
+
+    /// The spotlight style the palette shows: the selected spotlight's, else the next one's. `nil` when neither is one.
+    var paletteSpotlight: SpotlightStyle? {
+        if let selected = selectedAnnotation?.annotation {
+            guard case let .spotlight(_, style) = selected.kind else {
+                return nil
+            }
+            return style
+        }
+        return annotationTool == .spotlight ? nextSpotlightStyle : nil
+    }
+
+    func setSpotlightShape(_ shape: BoxShape) {
+        guard selectedAnnotation != nil else {
+            annotationStyle.spotlight.shape = shape
+            return
+        }
+        restyleSelection {
+            if case let .spotlight(rect, style) = $0.kind {
+                $0.kind = .spotlight(rect, style: SpotlightStyle(shape: shape, effect: style.effect, strength: style.strength))
+            }
+        }
+    }
+
+    /// Sets the effect and strength of every spotlight in the project, since they share one dim, and of the next one.
+    func setSpotlightLook(effect: SpotlightStyle.Effect, strength: SpotlightStyle.Strength) {
+        annotationStyle.spotlight.effect = effect
+        annotationStyle.spotlight.strength = strength
+        let changed = project.settingSpotlights(effect: effect, strength: strength)
+        guard !isExporting, changed != project else {
+            return
+        }
+        undoStack.record(edit)
+        project = changed
     }
 
     var paletteFill: RGBA? {
@@ -872,14 +969,20 @@ extension VideoEditorModel {
 
     var lineWidthIndex: Int {
         get {
-            guard let selected = selectedAnnotation?.annotation else {
+            guard let selected = editingText ?? selectedAnnotation?.annotation else {
                 return annotationStyle.widthIndex
             }
             let scale = max(1, project.canvasSize.width / 960)
             return EditorStyle.widths.indices.min { abs(EditorStyle.widths[$0] * scale - selected.lineWidth) < abs(EditorStyle.widths[$1] * scale - selected.lineWidth) } ?? annotationStyle.widthIndex
         }
         set {
-            if selectedAnnotation != nil {
+            if let text = editingText {
+                // Text resizes as it's typed; new text also sets the width for the next annotation.
+                editingText?.setLineWidth(EditorStyle.widths[newValue] * max(1, project.canvasSize.width / 960))
+                if project.annotationClip(text.id) == nil {
+                    annotationStyle.widthIndex = newValue
+                }
+            } else if selectedAnnotation != nil {
                 restyleSelection { $0.setLineWidth(EditorStyle.widths[newValue] * max(1, project.canvasSize.width / 960)) }
             } else {
                 annotationStyle.widthIndex = newValue

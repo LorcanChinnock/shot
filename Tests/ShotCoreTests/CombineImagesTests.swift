@@ -264,7 +264,7 @@ func redactingOverAPlacedImageHidesItsDetail(kind: Annotation.Kind) throws {
 @Test func aSpotlightDimsAPlacedImageOutsideIt() throws {
     var doc = EditorDocument(base: solidImage(width: 100, height: 100))
     doc.addImage(columns(width: 100, height: 100, (1, 1, 1), (1, 1, 1)), scale: 1, documentScale: 1, centeredAt: nil, margin: 16)
-    doc.annotations.append(Annotation(kind: .spotlight(CGRect(x: 120, y: 0, width: 40, height: 40)), color: black, lineWidth: 4))
+    doc.annotations.append(Annotation(kind: .spotlight(CGRect(x: 120, y: 0, width: 40, height: 40), style: SpotlightStyle()), color: black, lineWidth: 4))
     let dim = try #require(doc.spotlightDimPath)
     #expect(dim.contains(CGPoint(x: 180, y: 80)))
     #expect(!dim.contains(CGPoint(x: 130, y: 20)))

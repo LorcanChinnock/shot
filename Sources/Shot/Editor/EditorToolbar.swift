@@ -80,6 +80,10 @@ struct EditorToolbar: View {
             HStack(spacing: 14) {
                 if model.showsStyle {
                     styleOptions
+                } else if let redaction = model.paletteRedaction {
+                    RedactionOptions(selected: redaction, choose: model.setRedaction)
+                } else if let spotlight = model.paletteSpotlight {
+                    SpotlightOptions(style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook)
                 } else {
                     Text(model.tool.summary)
                         .font(Brutal.caption)
@@ -93,6 +97,9 @@ struct EditorToolbar: View {
     }
 
     @ViewBuilder private var styleOptions: some View {
+        if let shape = model.paletteShape {
+            ShapeMenu(selected: shape, choose: model.setShape)
+        }
         ToolGroup {
             ColorSwatches(
                 selected: model.paletteColor,
@@ -115,12 +122,140 @@ struct EditorToolbar: View {
                 )
             }
         }
+        WidthOptions(selected: model.lineWidthIndex, sizesText: model.sizesText) { model.lineWidthIndex = $0 }
+    }
+}
+
+/// Line widths, or text sizes for text, notes and counters, whose width sets their size.
+struct WidthOptions: View {
+    private static let sizeNames = ["Small", "Medium", "Large"]
+
+    let selected: Int
+    let sizesText: Bool
+    let choose: (Int) -> Void
+
+    var body: some View {
         ToolGroup {
-            ForEach(EditorModel.baseWidths.indices, id: \.self) { index in
-                Tile(selected: model.lineWidthIndex == index, color: Brutal.sky, help: "Line width \(Int(EditorModel.baseWidths[index]))") {
-                    model.lineWidthIndex = index
+            ForEach(EditorStyle.widths.indices, id: \.self) { index in
+                Tile(selected: selected == index, color: Brutal.sky, help: sizesText ? "Text size: \(Self.sizeNames[index])" : "Line width \(Int(EditorStyle.widths[index]))") {
+                    choose(index)
                 } label: {
-                    Capsule().fill(Brutal.ink).frame(width: 16, height: EditorModel.baseWidths[index] + 1)
+                    if sizesText {
+                        Text("A").font(.system(size: 9 + CGFloat(index) * 4, weight: .heavy))
+                    } else {
+                        Capsule().fill(Brutal.ink).frame(width: 16, height: EditorStyle.widths[index] + 1)
+                    }
+                }
+            }
+        }
+    }
+}
+
+extension BoxShape {
+    var symbol: String {
+        switch self {
+        case .rectangle: "rectangle"
+        case .rounded: "app"
+        case .ellipse: "circle"
+        case .triangle: "triangle"
+        case .diamond: "diamond"
+        case .star: "star"
+        }
+    }
+}
+
+struct ShapeOptions: View {
+    let shapes: [BoxShape]
+    let selected: BoxShape
+    let choose: (BoxShape) -> Void
+
+    var body: some View {
+        ToolGroup {
+            ForEach(shapes, id: \.self) { shape in
+                Tile(selected: selected == shape, color: Brutal.sky, help: shape.title) {
+                    choose(shape)
+                } label: {
+                    Image(systemName: shape.symbol).font(.system(size: 13, weight: .bold))
+                }
+            }
+        }
+    }
+}
+
+/// Every shape in one dropdown, which leaves room in the toolbar for the colour and fill beside it.
+struct ShapeMenu: View {
+    let selected: BoxShape
+    let choose: (BoxShape) -> Void
+
+    var body: some View {
+        ToolGroup {
+            Menu {
+                ForEach(BoxShape.allCases, id: \.self) { shape in
+                    Button { choose(shape) } label: { Label(shape.title, systemImage: shape.symbol) }
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: selected.symbol).font(.system(size: 13, weight: .bold))
+                    Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
+                }
+                .foregroundStyle(Brutal.ink)
+                .frame(height: 30)
+                .padding(.horizontal, 8)
+                .contentShape(Rectangle())
+            }
+            .menuStyle(.button)
+            .menuIndicator(.hidden)
+            .buttonStyle(.plain)
+            .fixedSize()
+            .accessibilityLabel(Text("Shape: \(selected.title)"))
+            .brutalTip("Shape", detail: selected.title)
+        }
+    }
+}
+
+struct RedactionOptions: View {
+    let selected: Redaction
+    let choose: (Redaction) -> Void
+
+    var body: some View {
+        ToolGroup {
+            ForEach(Redaction.allCases, id: \.self) { redaction in
+                Tile(selected: selected == redaction, color: Brutal.sky, help: redaction.title) {
+                    choose(redaction)
+                } label: {
+                    Image(systemName: redaction == .blur ? "drop.halffull" : "square.grid.3x3").font(.system(size: 13, weight: .bold))
+                }
+            }
+        }
+    }
+}
+
+/// A spotlight's shape, and the effect and strength every spotlight in the image shares.
+struct SpotlightOptions: View {
+    let style: SpotlightStyle
+    let chooseShape: (BoxShape) -> Void
+    let chooseLook: (SpotlightStyle.Effect, SpotlightStyle.Strength) -> Void
+
+    var body: some View {
+        ShapeOptions(shapes: BoxShape.spotlightShapes, selected: style.shape, choose: chooseShape)
+        ToolGroup {
+            ForEach(SpotlightStyle.Effect.allCases, id: \.self) { effect in
+                Tile(selected: style.effect == effect, color: Brutal.sky, help: "\(effect.title) outside", detail: "Applies to every spotlight in the image.") {
+                    chooseLook(effect, style.strength)
+                } label: {
+                    Image(systemName: effect == .darken ? "moon.fill" : "drop.halffull").font(.system(size: 13, weight: .bold))
+                }
+            }
+        }
+        ToolGroup {
+            ForEach(SpotlightStyle.Strength.allCases, id: \.self) { strength in
+                Tile(selected: style.strength == strength, color: Brutal.sky, help: strength.title, detail: "Applies to every spotlight in the image.") {
+                    chooseLook(style.effect, strength)
+                } label: {
+                    RoundedRectangle(cornerRadius: 3, style: .circular)
+                        .fill(Brutal.ink.opacity(SpotlightStyle(strength: strength).dimAlpha))
+                        .overlay(RoundedRectangle(cornerRadius: 3, style: .circular).strokeBorder(Brutal.ink, lineWidth: 1.5))
+                        .frame(width: 14, height: 14)
                 }
             }
         }

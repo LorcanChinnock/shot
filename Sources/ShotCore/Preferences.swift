@@ -37,6 +37,9 @@ public enum PreferenceKey {
     public static let editorFill = "editorFill"
     public static let editorRecentColors = "editorRecentColors"
     public static let editorWidth = "editorWidth"
+    public static let editorShape = "editorShape"
+    public static let editorRedaction = "editorRedaction"
+    public static let editorSpotlight = "editorSpotlight"
     public static let galleryTileSize = "galleryTileSize"
     /// True while the macOS screenshot shortcuts are off because Shot turned them off. Not a
     /// setting, so resetting settings keeps it and Shot can still give the keys back.
@@ -107,6 +110,9 @@ public struct Preferences {
             PreferenceKey.editorFill: Data(),
             PreferenceKey.editorRecentColors: Data(),
             PreferenceKey.editorWidth: EditorStyle().widthIndex,
+            PreferenceKey.editorShape: EditorStyle().shape.rawValue,
+            PreferenceKey.editorRedaction: EditorStyle().redaction.rawValue,
+            PreferenceKey.editorSpotlight: Data(),
             PreferenceKey.galleryTileSize: Gallery.defaultTileSize,
         ]
         for action in ShotAction.allCases {
@@ -163,6 +169,9 @@ public struct Preferences {
         store.set(style.fill.flatMap { try? JSONEncoder().encode($0) } ?? Data(), forKey: PreferenceKey.editorFill)
         store.set(try? JSONEncoder().encode(style.recentColors), forKey: PreferenceKey.editorRecentColors)
         store.set(style.widthIndex, forKey: PreferenceKey.editorWidth)
+        store.set(style.shape.rawValue, forKey: PreferenceKey.editorShape)
+        store.set(style.redaction.rawValue, forKey: PreferenceKey.editorRedaction)
+        store.set(try? JSONEncoder().encode(style.spotlight), forKey: PreferenceKey.editorSpotlight)
     }
 
     public static func resetHotkeys(in store: UserDefaults = .standard) {
@@ -242,14 +251,20 @@ public struct Preferences {
         func colour(_ key: String, default value: RGBA) -> RGBA {
             decoded(key) ?? (store.object(forKey: key) as? Int).flatMap { RGBA.presets.indices.contains($0) ? RGBA.presets[$0] : nil } ?? value
         }
-        let tool = EditorTool(rawValue: store.string(forKey: PreferenceKey.editorTool) ?? "")
+        // Older versions had a tool for each shape and for pixelate and blur.
+        let legacyTools: [String: EditorTool] = ["rect": .shape, "ellipse": .shape, "pixelate": .redact, "blur": .redact]
+        let toolName = store.string(forKey: PreferenceKey.editorTool) ?? ""
+        let tool = EditorTool(rawValue: toolName) ?? legacyTools[toolName]
         return EditorStyle(
             tool: tool.flatMap { $0.isDrawing ? $0 : nil } ?? defaults.tool,
             color: colour(PreferenceKey.editorColor, default: defaults.color),
             noteColor: colour(PreferenceKey.editorNoteColor, default: defaults.noteColor),
             fill: decoded(PreferenceKey.editorFill),
             widthIndex: index(PreferenceKey.editorWidth, in: EditorStyle.widths.indices, default: defaults.widthIndex),
-            recentColors: decoded(PreferenceKey.editorRecentColors, as: [RGBA].self).map { Array($0.prefix(EditorStyle.maxRecentColors)) } ?? defaults.recentColors
+            recentColors: decoded(PreferenceKey.editorRecentColors, as: [RGBA].self).map { Array($0.prefix(EditorStyle.maxRecentColors)) } ?? defaults.recentColors,
+            shape: BoxShape(rawValue: store.string(forKey: PreferenceKey.editorShape) ?? "") ?? defaults.shape,
+            redaction: Redaction(rawValue: store.string(forKey: PreferenceKey.editorRedaction) ?? "") ?? defaults.redaction,
+            spotlight: decoded(PreferenceKey.editorSpotlight) ?? defaults.spotlight
         )
     }
 

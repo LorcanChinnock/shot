@@ -483,8 +483,7 @@ extension Annotation {
         switch kind {
         case .arrow: "arrow.up.right"
         case .line: "line.diagonal"
-        case .rect: "rectangle"
-        case .ellipse: "circle"
+        case let .shape(shape, _): shape.symbol
         case .highlight: "highlighter"
         case .pixelate: "square.grid.3x3"
         case .blur: "drop.halffull"
@@ -502,8 +501,7 @@ extension Annotation {
         switch kind {
         case .arrow: "Arrow"
         case .line: "Line"
-        case .rect: "Box"
-        case .ellipse: "Ellipse"
+        case let .shape(shape, _): shape.title
         case .highlight: "Highlight"
         case .pixelate: "Pixelate"
         case .blur: "Blur"

@@ -6,7 +6,7 @@ import Testing
 private let blue = RGBA(0, 0, 1)
 
 private func spotlight(_ rect: CGRect) -> Annotation {
-    Annotation(kind: .spotlight(rect), color: blue, lineWidth: 4)
+    Annotation(kind: .spotlight(rect, style: SpotlightStyle()), color: blue, lineWidth: 4)
 }
 
 /// Renders as the editor does: into a context zoomed by `scale`.
@@ -42,13 +42,13 @@ private func isBright(_ p: [CGFloat]) -> Bool { p[0] > 0.97 && p[3] == 1 }
     #expect(a.hitTest(CGPoint(x: 30, y: 20), tolerance: 0))
     #expect(!a.hitTest(CGPoint(x: 100, y: 20), tolerance: 0))
     a.offset(by: CGVector(dx: 5, dy: -5))
-    #expect(a.kind == .spotlight(CGRect(x: 15, y: 5, width: 50, height: 20)))
+    #expect(a.kind == .spotlight(CGRect(x: 15, y: 5, width: 50, height: 20), style: SpotlightStyle()))
 }
 
 // MARK: Dim area
 
 @Test func noSpotlightMeansNoDim() {
-    let doc = EditorDocument(base: solidImage(width: 200, height: 100), annotations: [Annotation(kind: .rect(CGRect(x: 10, y: 10, width: 20, height: 20)), color: blue, lineWidth: 4)])
+    let doc = EditorDocument(base: solidImage(width: 200, height: 100), annotations: [Annotation(kind: .shape(.rectangle, rect: CGRect(x: 10, y: 10, width: 20, height: 20)), color: blue, lineWidth: 4)])
     #expect(doc.spotlightDimPath == nil)
 }
 
@@ -182,4 +182,58 @@ func spotlightRendersTheSameInTheEditorAndTheExport(scale: CGFloat) throws {
     #expect(doc.canvasRect == doc.fullRect)
     doc.fitToContent(margin: 10)
     #expect(doc.canvasRect == doc.fullRect)
+}
+
+// MARK: Style
+
+@Test func anEllipseSpotlightLightsOnlyItsEllipse() throws {
+    var lit = spotlight(CGRect(x: 20, y: 20, width: 60, height: 60))
+    lit.kind = .spotlight(CGRect(x: 20, y: 20, width: 60, height: 60), style: SpotlightStyle(shape: .ellipse))
+    let image = try render(EditorDocument(base: solidImage(width: 100, height: 100), annotations: [lit]), scale: 1)
+    #expect(isBright(try pixel(image, 50, 50)))
+    // Inside the rect, but outside the ellipse.
+    #expect(isDimmed(try pixel(image, 23, 23)))
+}
+
+@Test func strengthSetsHowDarkTheDimIs() throws {
+    var dims: [CGFloat] = []
+    for strength in SpotlightStyle.Strength.allCases {
+        let a = Annotation(kind: .spotlight(CGRect(x: 0, y: 0, width: 10, height: 10), style: SpotlightStyle(strength: strength)), color: blue, lineWidth: 4)
+        let image = try render(EditorDocument(base: solidImage(width: 100, height: 100), annotations: [a]), scale: 1)
+        dims.append(try pixel(image, 50, 50)[0])
+    }
+    #expect(dims == dims.sorted(by: >))
+    #expect(abs(dims[1] - 0.5) < 0.03)
+}
+
+@Test func theBlurEffectBlursOutsideAndLeavesTheSpotlightSharp() throws {
+    // Black on the left half, red on the right: blurring softens the edge between them.
+    let ctx = try #require(CGContext(data: nil, width: 200, height: 100, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+    ctx.setFillColor(CGColor(srgbRed: 1, green: 0, blue: 0, alpha: 1))
+    ctx.fill(CGRect(x: 0, y: 0, width: 200, height: 100))
+    ctx.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 1))
+    ctx.fill(CGRect(x: 0, y: 0, width: 100, height: 100))
+    let base = try #require(ctx.makeImage())
+    let style = SpotlightStyle(effect: .blur, strength: .strong)
+    let lit = Annotation(kind: .spotlight(CGRect(x: 90, y: 0, width: 20, height: 40), style: style), color: blue, lineWidth: 4)
+    let image = try render(EditorDocument(base: base, annotations: [lit]), scale: 1)
+    // At the edge inside the spotlight, sharp; at the same edge below it, blurred into a mix.
+    #expect(try pixel(image, 101, 20)[0] > 0.97)
+    let blurred = try pixel(image, 101, 80)[0]
+    #expect(blurred > 0.1 && blurred < 0.9)
+    // Far from the edge, the colour stays.
+    #expect(try pixel(image, 190, 80)[0] > 0.97)
+}
+
+@Test func everySpotlightSharesTheEffectAndStrength() {
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100), annotations: [
+        spotlight(CGRect(x: 10, y: 10, width: 20, height: 20)),
+        Annotation(kind: .spotlight(CGRect(x: 50, y: 10, width: 20, height: 20), style: SpotlightStyle(shape: .ellipse)), color: blue, lineWidth: 4),
+    ])
+    doc.setSpotlights(effect: .blur, strength: .light)
+    let styles = doc.annotations.compactMap { annotation -> SpotlightStyle? in
+        if case let .spotlight(_, style) = annotation.kind { style } else { nil }
+    }
+    #expect(styles == [SpotlightStyle(effect: .blur, strength: .light), SpotlightStyle(shape: .ellipse, effect: .blur, strength: .light)])
+    #expect(doc.spotlightStyle == styles[0])
 }
