@@ -35,7 +35,9 @@ struct AnnotationPalette: View {
                 } else if let redaction = model.paletteRedaction {
                     RedactionOptions(selected: redaction, choose: model.setRedaction)
                 } else if let spotlight = model.paletteSpotlight {
-                    SpotlightOptions(style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook)
+                    SpotlightOptions(style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook) { dragging in
+                        dragging ? model.beginDrag() : model.endDrag()
+                    }
                 } else if let tool = model.annotationTool {
                     Text(tool.summary)
                         .font(Brutal.caption)
@@ -56,7 +58,7 @@ struct AnnotationPalette: View {
         ToolGroup {
             ColorSwatches(
                 selected: model.paletteColor,
-                recents: model.annotationStyle.recentColors,
+                lastCustom: model.lastCustom(forFill: false),
                 customHelp: "Custom colour",
                 choose: { if let color = $0 { model.paletteColor = color } },
                 pickCustom: { model.pickCustom($0, forFill: false) }
@@ -67,7 +69,7 @@ struct AnnotationPalette: View {
                 Text("FILL").font(Brutal.mono).foregroundStyle(Brutal.ink).padding(.horizontal, 4)
                 ColorSwatches(
                     selected: model.paletteFill,
-                    recents: model.annotationStyle.recentColors,
+                    lastCustom: model.lastCustom(forFill: true),
                     allowsNone: true,
                     customHelp: "Custom fill colour",
                     choose: { model.paletteFill = $0 },
