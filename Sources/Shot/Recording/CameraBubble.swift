@@ -8,11 +8,13 @@ private let log = Logger.shot("camera")
 enum CameraError: LocalizedError {
     case noCamera
     case cannotUseCamera
+    case regionTooSmall
 
     var errorDescription: String? {
         switch self {
         case .noCamera: "No camera found"
         case .cannotUseCamera: "The camera is in use or unavailable"
+        case .regionTooSmall: "The area is too small for the camera bubble"
         }
     }
 }
@@ -58,6 +60,8 @@ final class CameraBubble {
         let prefs = Preferences()
         do {
             try await show(in: region, preferred: prefs.cameraSize, deviceID: prefs.cameraDeviceID)
+        } catch CameraError.regionTooSmall {
+            Toast.error(CameraError.regionTooSmall.localizedDescription)
         } catch {
             Toast.error("Camera unavailable: \(error.localizedDescription)")
         }
@@ -69,8 +73,7 @@ final class CameraBubble {
         hide()
         let current = generation
         guard let size = CameraBubbleSize.fitting(preferred, in: region, inset: Self.inset) else {
-            log.notice("Region too small for the camera bubble")
-            return
+            throw CameraError.regionTooSmall
         }
         guard let device = CaptureDevices.device(id: deviceID, for: .video) else {
             throw CameraError.noCamera
