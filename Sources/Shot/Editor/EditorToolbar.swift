@@ -22,9 +22,11 @@ struct EditorRootView: View {
                 Button("Copy") { model.copy() }
                     .buttonStyle(BrutalButtonStyle(compact: true))
                     .brutalTip("Copy image (⌘C)")
-                Button("Save") { model.save() }
-                    .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
-                    .brutalTip("Save and copy (⌘S)")
+                PartyColor(Brutal.yellow) { color in
+                    Button("Save") { model.save() }
+                        .buttonStyle(BrutalButtonStyle(color: color, compact: true))
+                }
+                .brutalTip("Save and copy (⌘S)")
             }
             .padding(.leading, GlassWindow.trafficLightsWidth)
             .frame(height: GlassWindow.titlebarHeight)
@@ -106,7 +108,7 @@ struct EditorToolbar: View {
         ToolGroup {
             ColorSwatches(
                 selected: model.paletteColor,
-                recents: model.recentColors,
+                lastCustom: model.lastCustom(forFill: false),
                 customHelp: "Custom colour",
                 choose: { if let color = $0 { model.paletteColor = color } },
                 pickCustom: { model.pickCustom($0, forFill: false) }
@@ -117,7 +119,7 @@ struct EditorToolbar: View {
                 Text("FILL").font(Brutal.mono).foregroundStyle(Brutal.ink).padding(.horizontal, 4)
                 ColorSwatches(
                     selected: model.paletteFill,
-                    recents: model.recentColors,
+                    lastCustom: model.lastCustom(forFill: true),
                     allowsNone: true,
                     customHelp: "Custom fill colour",
                     choose: { model.paletteFill = $0 },
@@ -126,6 +128,9 @@ struct EditorToolbar: View {
             }
         }
         WidthOptions(selected: model.lineWidthIndex, sizesText: model.sizesText) { model.lineWidthIndex = $0 }
+        if let alignment = model.paletteAlignment {
+            AlignmentOptions(selected: alignment, choose: model.setAlignment)
+        }
     }
 }
 
@@ -148,6 +153,41 @@ struct WidthOptions: View {
                     } else {
                         Capsule().fill(Brutal.ink).frame(width: 16, height: EditorStyle.widths[index] + 1)
                     }
+                }
+            }
+        }
+    }
+}
+
+extension TextAlign {
+    var symbol: String {
+        switch self {
+        case .left: "text.alignleft"
+        case .center: "text.aligncenter"
+        case .right: "text.alignright"
+        }
+    }
+
+    var textAlignment: NSTextAlignment {
+        switch self {
+        case .left: .left
+        case .center: .center
+        case .right: .right
+        }
+    }
+}
+
+struct AlignmentOptions: View {
+    let selected: TextAlign
+    let choose: (TextAlign) -> Void
+
+    var body: some View {
+        ToolGroup {
+            ForEach(TextAlign.allCases, id: \.self) { alignment in
+                Tile(selected: selected == alignment, color: Brutal.sky, help: alignment.title) {
+                    choose(alignment)
+                } label: {
+                    Image(systemName: alignment.symbol).font(.system(size: 13, weight: .bold))
                 }
             }
         }
@@ -192,11 +232,9 @@ struct ShapeMenu: View {
 
     var body: some View {
         ToolGroup {
-            Menu {
-                ForEach(BoxShape.allCases, id: \.self) { shape in
-                    Button { choose(shape) } label: { Label(shape.title, systemImage: shape.symbol) }
-                }
-            } label: {
+            BrutalDropdown(title: "Shape", entries: BoxShape.allCases.map { shape in
+                .item(shape.title, symbol: shape.symbol, selected: shape == selected) { choose(shape) }
+            }) {
                 HStack(spacing: 6) {
                     Image(systemName: selected.symbol).font(.system(size: 13, weight: .bold))
                     Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
@@ -206,11 +244,8 @@ struct ShapeMenu: View {
                 .padding(.horizontal, 8)
                 .contentShape(Rectangle())
             }
-            .menuStyle(.button)
-            .menuIndicator(.hidden)
             .buttonStyle(.plain)
             .fixedSize()
-            .accessibilityLabel(Text("Shape: \(selected.title)"))
             .brutalTip("Shape", detail: selected.title)
         }
     }
@@ -281,11 +316,12 @@ struct SpotlightOptions: View {
     }
 }
 
-/// The preset colours, the custom ones picked lately, and a colour well for a new one. With `allowsNone`,
+/// The preset colours and a rainbow swatch for a custom one. With `allowsNone`,
 /// a first swatch clears the colour: `nil` is transparent, with nothing drawn.
 struct ColorSwatches: View {
     let selected: RGBA?
-    let recents: [RGBA]
+    /// The custom colour picked last in this palette, which the rainbow swatch applies again.
+    let lastCustom: RGBA?
     var allowsNone = false
     let customHelp: String
     let choose: (RGBA?) -> Void
@@ -300,37 +336,63 @@ struct ColorSwatches: View {
                 choose(RGBA.presets[index])
             }
         }
-        ForEach(recents, id: \.self) { recent in
-            Swatch(color: recent, isSelected: selected == recent, name: "Recent colour") { choose(recent) }
-        }
-        CustomColorButton(current: selected ?? RGBA(1, 1, 1), help: customHelp, pick: pickCustom)
+        CustomColorButton(
+            custom: selected.flatMap { RGBA.presets.contains($0) ? nil : $0 },
+            lastCustom: lastCustom,
+            fallback: selected ?? RGBA(1, 1, 1),
+            help: customHelp,
+            pick: pickCustom
+        )
     }
 }
 
-/// A rainbow chip that opens the colour editor in a popover, so picking stays inside the app.
+/// A rainbow chip that applies the last custom colour and opens the colour editor on it in a popover,
+/// so picking stays inside the app. While a custom colour is in use, it shows inside the rainbow ring.
 private struct CustomColorButton: View {
-    let current: RGBA
+    let custom: RGBA?
+    let lastCustom: RGBA?
+    /// What the colour editor starts on when no custom colour has been picked yet.
+    let fallback: RGBA
     let help: String
     let pick: (RGBA) -> Void
     @State private var isOpen = false
 
+    private var isSelected: Bool { isOpen || custom != nil }
+
     var body: some View {
-        Button { isOpen.toggle() } label: {
-            Circle()
-                .fill(AngularGradient(colors: [.red, .yellow, .green, .cyan, .blue, .purple, .red], center: .center))
-                .inkBorder(Circle(), width: 2)
-                .background(Circle().fill(Brutal.ink).offset(x: isOpen ? 2 : 0, y: isOpen ? 2 : 0))
-                .frame(width: isOpen ? 22 : 18, height: isOpen ? 22 : 18)
-                .frame(width: 26, height: 30)
-                .contentShape(Rectangle())
+        Button(action: open) {
+            ZStack {
+                Circle()
+                    .fill(AngularGradient(colors: [.red, .yellow, .green, .cyan, .blue, .purple, .red], center: .center))
+                if let custom {
+                    Circle().fill(custom.swiftUIColor).inkBorder(Circle(), width: 2).padding(4)
+                }
+            }
+            .inkBorder(Circle(), width: 2)
+            .background(Circle().fill(Brutal.ink).offset(x: isSelected ? 2 : 0, y: isSelected ? 2 : 0))
+            .frame(width: isSelected ? 22 : 18, height: isSelected ? 22 : 18)
+            .frame(width: 26, height: 30)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .brutalTip(help)
         .accessibilityLabel(Text(help))
-        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isOpen)
+        .accessibilityAddTraits(custom != nil ? .isSelected : [])
+        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
         .popover(isPresented: $isOpen, arrowEdge: .bottom) {
-            ColorEditor(initial: current, pick: pick)
+            ColorEditor(initial: lastCustom ?? fallback, pick: pick)
         }
+    }
+
+    private func open() {
+        guard !isOpen else {
+            isOpen = false
+            return
+        }
+        if let lastCustom, lastCustom != custom {
+            pick(lastCustom)
+        }
+        isOpen = true
     }
 }
 
@@ -510,24 +572,22 @@ private struct ZoomMenu: View {
     let canvas: EditorCanvasView
 
     var body: some View {
-        Menu {
-            Button("Zoom In") { canvas.zoomIn() }
-            Button("Zoom Out") { canvas.zoomOut() }
-            Divider()
-            Button("Zoom to Fit") { canvas.zoomToFit() }
-            Button("Actual Size") { canvas.zoomToActualSize() }
-        } label: {
+        BrutalDropdown(title: "Zoom", entries: [
+            .item("Zoom In", shortcut: "⌘+") { canvas.zoomIn() },
+            .item("Zoom Out", shortcut: "⌘-") { canvas.zoomOut() },
+            .divider,
+            .item("Zoom to Fit", shortcut: "⌘0") { canvas.zoomToFit() },
+            .item("Actual Size", shortcut: "⌘1") { canvas.zoomToActualSize() },
+        ]) {
             HStack(spacing: 6) {
                 Text("\(Int((model.zoom * 100).rounded()))%")
                     .monospacedDigit()
                 Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
             }
         }
-        .menuStyle(.button)
-        .menuIndicator(.hidden)
         .buttonStyle(BrutalButtonStyle(compact: true))
         .fixedSize()
-        .brutalTip("Zoom in (⌘+), out (⌘-), to fit (⌘0) or to actual size (⌘1). Pinch to zoom; scroll or Space-drag to move around.")
+        .brutalTip("Zoom in (⌘+), out (⌘-), to fit (⌘0) or to actual size (⌘1). Pinch to zoom; scroll, Space-drag, middle-drag or the hand tool (H) to move around.")
     }
 }
 
@@ -537,32 +597,28 @@ private struct CanvasMenu: View {
     @Bindable var model: EditorModel
 
     var body: some View {
-        Menu {
-            Button("Fit to Content") { model.fitToContent() }
-            Button("Trim to Image") { model.trimToImage() }
-                .disabled(!model.document.hasPadding)
-            Divider()
-            Picker("Background", selection: Binding(get: { model.document.background }, set: { model.setBackground($0) })) {
-                // JPEG has no alpha, so it can't keep transparent padding.
-                if !model.isJPEG {
-                    Text("Transparent").tag(RGBA?.none)
-                }
-                Text("White").tag(RGBA?.some(Self.white))
-                ForEach(RGBA.presets.indices, id: \.self) { index in
-                    Text(EditorToolbar.colorNames[index]).tag(RGBA?.some(RGBA.presets[index]))
-                }
-            }
-        } label: {
+        BrutalDropdown(title: "Canvas", entries: [
+            .item("Fit to Content") { model.fitToContent() },
+            .item("Trim to Image", enabled: model.document.hasPadding) { model.trimToImage() },
+            .divider,
+            .header("Background"),
+        ] + backgrounds.map { name, color in
+            .item(name, selected: model.document.background == color) { model.setBackground(color) }
+        }) {
             HStack(spacing: 6) {
                 Text("Canvas")
                 Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
             }
         }
-        .menuStyle(.button)
-        .menuIndicator(.hidden)
         .buttonStyle(BrutalButtonStyle(compact: true))
         .fixedSize()
         .brutalTip("Canvas size and background")
+    }
+
+    private var backgrounds: [(name: String, color: RGBA?)] {
+        // JPEG has no alpha, so it can't keep transparent padding.
+        (model.isJPEG ? [] : [("Transparent", nil)]) + [("White", Self.white)]
+            + RGBA.presets.indices.map { (EditorToolbar.colorNames[$0], RGBA.presets[$0]) }
     }
 }
 
@@ -597,7 +653,7 @@ struct Tile<Label: View>: View {
                 .frame(width: 30, height: 30)
                 .background {
                     if selected {
-                        Color.clear.brutalSurface(color, radius: 7, shadow: 2)
+                        PartyColor(color) { Color.clear.brutalSurface($0, radius: 7, shadow: 2) }
                     } else if hovering {
                         RoundedRectangle(cornerRadius: 7, style: .circular).fill(Brutal.ink.opacity(0.08))
                     }

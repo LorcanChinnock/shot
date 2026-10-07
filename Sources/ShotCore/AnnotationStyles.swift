@@ -1,4 +1,5 @@
 import CoreGraphics
+import CoreText
 import Foundation
 
 /// The outline a shape annotation, or a spotlight's lit area, takes within its rect.
@@ -19,13 +20,13 @@ public enum BoxShape: String, CaseIterable, Codable, Sendable {
         }
     }
 
-    /// The outline stretched to fill `rect`.
-    public func path(in rect: CGRect) -> CGPath {
+    /// The outline stretched to fill `rect`, a rounded rectangle's corners rounded by `cornerRadius`.
+    public func path(in rect: CGRect, cornerRadius: CGFloat? = nil) -> CGPath {
         switch self {
         case .rectangle:
             return CGPath(rect: rect, transform: nil)
         case .rounded:
-            let radius = min(rect.width, rect.height) / 5
+            let radius = Self.cornerRadius(cornerRadius, in: rect)
             return CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
         case .ellipse:
             return CGPath(ellipseIn: rect, transform: nil)
@@ -48,6 +49,13 @@ public enum BoxShape: String, CaseIterable, Codable, Sendable {
         }
     }
 
+    /// `radius` within what `rect` can take: half its shorter side makes a pill. `nil` is the radius from before it could
+    /// be set, a fifth of the shorter side, so older annotations keep their look.
+    public static func cornerRadius(_ radius: CGFloat?, in rect: CGRect) -> CGFloat {
+        let shorter = max(0, min(rect.width, rect.height))
+        return min(max(radius ?? shorter / 5, 0), shorter / 2)
+    }
+
     private static func polygon(_ points: [CGPoint]) -> CGPath {
         let path = CGMutablePath()
         path.addLines(between: points)
@@ -64,6 +72,35 @@ public enum Redaction: String, CaseIterable, Codable, Sendable {
         switch self {
         case .blur: "Blur"
         case .pixelate: "Pixelate"
+        }
+    }
+}
+
+/// How the lines of a text annotation or note line up within it.
+public enum TextAlign: String, CaseIterable, Codable, Sendable {
+    case left, center, right
+
+    public var title: String {
+        switch self {
+        case .left: "Align Left"
+        case .center: "Align Centre"
+        case .right: "Align Right"
+        }
+    }
+
+    /// How far right of the left edge of a box `width` wide `line` starts. Trailing spaces don't count,
+    /// so a wrapped line lines up by its last word.
+    public func offset(of line: CTLine, in width: CGFloat) -> CGFloat {
+        let visible = CGFloat(CTLineGetTypographicBounds(line, nil, nil, nil) - CTLineGetTrailingWhitespaceWidth(line))
+        return (width - visible) * fraction
+    }
+
+    /// The share of the spare width that goes before a line.
+    public var fraction: CGFloat {
+        switch self {
+        case .left: 0
+        case .center: 0.5
+        case .right: 1
         }
     }
 }

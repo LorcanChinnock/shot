@@ -45,7 +45,7 @@ public enum AnnotationRenderer {
 
     /// Darkens or blurs `dim`, the image outside every spotlight, faded where `softSpotlights` light it.
     private static func drawSpotlightDim(
-        _ dim: CGPath, style: SpotlightStyle, softSpotlights: [(rect: CGRect, style: SpotlightStyle)], base: CGImage, below: ArraySlice<Annotation>, in ctx: CGContext
+        _ dim: CGPath, style: SpotlightStyle, softSpotlights: [(rect: CGRect, style: SpotlightStyle, cornerRadius: CGFloat?)], base: CGImage, below: ArraySlice<Annotation>, in ctx: CGContext
     ) {
         ctx.saveGState()
         defer { ctx.restoreGState() }
@@ -74,7 +74,7 @@ public enum AnnotationRenderer {
 
     /// A greyscale mask of `area`: white where the dim shows, black inside the spotlights, with each spotlight's edge
     /// blurred by its soft-edge radius. Having only blurry edges, it's drawn at a lower resolution the softer they are.
-    private static func softSpotlightMask(_ spotlights: [(rect: CGRect, style: SpotlightStyle)], in area: CGRect) -> CGImage? {
+    private static func softSpotlightMask(_ spotlights: [(rect: CGRect, style: SpotlightStyle, cornerRadius: CGFloat?)], in area: CGRect) -> CGImage? {
         let sharpest = spotlights.map { $0.style.softEdgeRadius(in: $0.rect) }.min() ?? 0
         let scale = min(1, 8 / sharpest)
         let size = CGSize(width: ceil(area.width * scale), height: ceil(area.height * scale))
@@ -88,8 +88,8 @@ public enum AnnotationRenderer {
         ctx.interpolationQuality = .high
         // Darken keeps the lower of the two, so overlapping spotlights light their union.
         ctx.setBlendMode(.darken)
-        for (rect, style) in spotlights {
-            if let lit = softSpotlight(rect, style: style) {
+        for (rect, style, cornerRadius) in spotlights {
+            if let lit = softSpotlight(rect, style: style, cornerRadius: cornerRadius) {
                 ctx.draw(lit.image, in: lit.frame)
             }
         }
@@ -98,7 +98,7 @@ public enum AnnotationRenderer {
 
     /// One spotlight's shape, black on white, blurred by its soft-edge radius and drawn at a resolution to match;
     /// `frame` is where it goes, at full size.
-    private static func softSpotlight(_ rect: CGRect, style: SpotlightStyle) -> (image: CGImage, frame: CGRect)? {
+    private static func softSpotlight(_ rect: CGRect, style: SpotlightStyle, cornerRadius: CGFloat?) -> (image: CGImage, frame: CGRect)? {
         let radius = style.softEdgeRadius(in: rect)
         let frame = rect.insetBy(dx: -3 * radius, dy: -3 * radius).integral
         let scale = min(1, 8 / radius)
@@ -111,7 +111,7 @@ public enum AnnotationRenderer {
         ctx.scaleBy(x: scale, y: scale)
         ctx.translateBy(x: -frame.minX, y: -frame.minY)
         ctx.setFillColor(gray: 0, alpha: 1)
-        ctx.addPath(style.shape.path(in: rect))
+        ctx.addPath(style.shape.path(in: rect, cornerRadius: cornerRadius))
         ctx.fillPath()
         guard let shape = ctx.makeImage() else {
             return nil
@@ -212,7 +212,7 @@ public enum AnnotationRenderer {
             }
             ctx.strokePath()
         case let .shape(shape, rect):
-            let path = shape.path(in: rect)
+            let path = shape.path(in: rect, cornerRadius: annotation.cornerRadius)
             if let fill = annotation.fill {
                 ctx.setFillColor(fill.cgColor)
                 ctx.addPath(path)
@@ -243,7 +243,8 @@ public enum AnnotationRenderer {
             let layout = TextLayout(string: string, fontSize: fontSize, color: annotation.color)
             ctx.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
             for (index, line) in layout.lines.enumerated() {
-                ctx.textPosition = CGPoint(x: origin.x, y: origin.y + layout.ascent + CGFloat(index) * layout.lineHeight)
+                let x = origin.x + annotation.alignment.offset(of: line, in: layout.size.width)
+                ctx.textPosition = CGPoint(x: x, y: origin.y + layout.ascent + CGFloat(index) * layout.lineHeight)
                 CTLineDraw(line, ctx)
             }
         case let .counter(number, center):
@@ -276,7 +277,8 @@ public enum AnnotationRenderer {
             let text = layout.textRect
             ctx.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
             for (index, line) in layout.lines.enumerated() {
-                ctx.textPosition = CGPoint(x: text.minX, y: text.minY + layout.ascent + CGFloat(index) * layout.lineHeight)
+                let x = text.minX + annotation.alignment.offset(of: line, in: text.width)
+                ctx.textPosition = CGPoint(x: x, y: text.minY + layout.ascent + CGFloat(index) * layout.lineHeight)
                 CTLineDraw(line, ctx)
             }
         }

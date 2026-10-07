@@ -12,6 +12,8 @@ final class CaptureCoordinator {
     private var busy = false
     private let recorder = Recorder()
     private var setup: RecordingSetupController?
+    /// The region being recorded, as an AppKit global rect.
+    private var recordingRegion = CGRect.zero
 
     init(state: AppState) {
         self.state = state
@@ -101,7 +103,7 @@ final class CaptureCoordinator {
         guard let image = frozen.image.cropping(to: pixels) else {
             throw CaptureError.encodingFailed
         }
-        try await finish(image: image, scale: frozen.scale)
+        try await finish(image: image, scale: frozen.scale, from: screen.fullCaptureFrame)
     }
 
     private func captureWithOverlay(windowMode: Bool) async throws {
@@ -115,6 +117,7 @@ final class CaptureCoordinator {
         }
         let image: CGImage
         let scale: CGFloat
+        let frame: CGRect
         switch selection {
         case let .area(index, rect):
             let display = frozen[index]
@@ -124,15 +127,18 @@ final class CaptureCoordinator {
             }
             image = cropped
             scale = display.scale
+            frame = rect.offsetBy(dx: display.frame.minX, dy: display.frame.minY)
         case let .window(info):
             let result = try await WindowCapturer.capture(windowID: info.windowID, includeShadow: Preferences().windowShadow)
             image = result.image
             scale = result.scale
+            frame = Geometry.flip(info.frame, primaryHeight: NSScreen.screens.first?.frame.height ?? 0)
         case let .fullDisplay(index):
             image = frozen[index].image
             scale = frozen[index].scale
+            frame = frozen[index].frame
         }
-        try await finish(image: image, scale: scale)
+        try await finish(image: image, scale: scale, from: frame)
     }
 
     func togglePause() {
@@ -159,6 +165,7 @@ final class CaptureCoordinator {
         guard case let .start(screen, region) = result else {
             return
         }
+        recordingRegion = region
         try await recorder.start(screen: screen, region: region)
     }
 
@@ -167,6 +174,7 @@ final class CaptureCoordinator {
         if Preferences().copyAfterRecording {
             Clipboard.copy(fileURL: url)
         }
+        Confetti.burst(from: recordingRegion)
         Task {
             let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
             generator.appliesPreferredTrackTransform = true
@@ -197,8 +205,9 @@ final class CaptureCoordinator {
         }
     }
 
-    /// Runs the enabled after-capture actions: save, copy, then Quick Access or the editor.
-    func finish(image original: CGImage, scale originalScale: CGFloat) async throws {
+    /// Runs the enabled after-capture actions: save, copy, then Quick Access or the editor. `frame` is where the capture was
+    /// on screen, as an AppKit global rect.
+    func finish(image original: CGImage, scale originalScale: CGFloat, from frame: CGRect) async throws {
         let prefs = Preferences()
         if prefs.playSound {
             Sound.capture()
@@ -239,6 +248,7 @@ final class CaptureCoordinator {
         } else if savedURL != nil {
             Toast.show("Saved")
         }
+        Confetti.burst(from: frame)
     }
 
     func report(_ error: Error) {

@@ -1,20 +1,21 @@
 import CoreGraphics
 
 public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
-    case select, arrow, line, shape, pen, text, note, highlight, spotlight, redact, counter, crop
+    case select, hand, arrow, line, shape, pen, text, note, highlight, spotlight, redact, counter, crop
 
     public var id: String { rawValue }
 
     public var key: Character {
         switch self {
         case .select: "v"
+        case .hand: "h"
         case .arrow: "a"
         case .line: "l"
         case .shape: "r"
         case .pen: "d"
         case .text: "t"
         case .note: "s"
-        case .highlight: "h"
+        case .highlight: "m"
         case .spotlight: "f"
         case .redact: "b"
         case .counter: "n"
@@ -25,6 +26,7 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
     public var title: String {
         switch self {
         case .select: "Select"
+        case .hand: "Hand"
         case .arrow: "Arrow"
         case .line: "Line"
         case .shape: "Shape"
@@ -39,14 +41,14 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// False for select and crop, which an editor never starts with.
-    public var isDrawing: Bool { self != .select && self != .crop }
+    /// False for select, hand and crop, which an editor never starts with.
+    public var isDrawing: Bool { self != .select && self != .hand && self != .crop }
 
     /// True for the tools that draw in the chosen colour and width.
     public var isStyled: Bool {
         switch self {
         case .arrow, .line, .shape, .pen, .text, .note, .counter: true
-        case .select, .highlight, .spotlight, .redact, .crop: false
+        case .select, .hand, .highlight, .spotlight, .redact, .crop: false
         }
     }
 
@@ -72,35 +74,48 @@ public struct EditorStyle: Equatable, Sendable {
     public var fill: RGBA?
     /// Index into `widths`.
     public var widthIndex: Int
-    /// Custom colours picked lately, newest first.
-    public var recentColors: [RGBA]
+    /// The last custom colour picked in each palette, which its rainbow swatch offers again.
+    public var customColors: [ColorSlot: RGBA]
     public var shape: BoxShape
     public var redaction: Redaction
     public var spotlight: SpotlightStyle
-
-    public static let maxRecentColors = 6
+    public var alignment: TextAlign
 
     public init(
         tool: EditorTool = .arrow, color: RGBA = RGBA.presets[0], noteColor: RGBA = RGBA.presets[2],
-        fill: RGBA? = nil, widthIndex: Int = 1, recentColors: [RGBA] = [],
-        shape: BoxShape = .rectangle, redaction: Redaction = .blur, spotlight: SpotlightStyle = SpotlightStyle()
+        fill: RGBA? = nil, widthIndex: Int = 1, customColors: [ColorSlot: RGBA] = [:],
+        shape: BoxShape = .rectangle, redaction: Redaction = .blur, spotlight: SpotlightStyle = SpotlightStyle(),
+        alignment: TextAlign = .left
     ) {
         self.tool = tool
         self.color = color
         self.noteColor = noteColor
         self.fill = fill
         self.widthIndex = widthIndex
-        self.recentColors = recentColors
+        self.customColors = customColors
         self.shape = shape
         self.redaction = redaction
         self.spotlight = spotlight
+        self.alignment = alignment
     }
+}
 
-    /// `recentColors` with `color` first, unless it's a preset.
-    public static func recents(adding color: RGBA, to recents: [RGBA]) -> [RGBA] {
-        guard !RGBA.presets.contains(color) else {
-            return recents
+/// A palette that remembers its own last custom colour.
+public enum ColorSlot: String, Codable, CodingKeyRepresentable, Sendable {
+    case stroke, fill, note
+
+    /// The fill palette's slot, else the note colour's for the note shown or about to be drawn, else the stroke's.
+    public init(forFill: Bool, shown: Annotation?, tool: EditorTool?) {
+        if forFill {
+            self = .fill
+        } else if let shown {
+            if case .note = shown.kind {
+                self = .note
+            } else {
+                self = .stroke
+            }
+        } else {
+            self = tool == .note ? .note : .stroke
         }
-        return Array(([color] + recents.filter { $0 != color }).prefix(maxRecentColors))
     }
 }

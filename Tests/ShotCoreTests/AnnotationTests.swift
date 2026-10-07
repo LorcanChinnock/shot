@@ -106,8 +106,14 @@ private let shapeFrame = CGRect(x: 20, y: 20, width: 100, height: 60)
     #expect(!annotation(.arrow(from: .zero, to: CGPoint(x: 9, y: 9))).supportsFill)
 }
 
+@Test func everyToolHasItsOwnKey() {
+    #expect(Set(EditorTool.allCases.map(\.key)).count == EditorTool.allCases.count)
+    #expect(EditorTool.hand.key == "h")
+    #expect(EditorTool.highlight.key == "m")
+}
+
 @Test func onlyDrawnMarksTakeAColourAndWidth() {
-    #expect(EditorTool.allCases.filter { !$0.isStyled } == [.select, .highlight, .spotlight, .redact, .crop])
+    #expect(EditorTool.allCases.filter { !$0.isStyled } == [.select, .hand, .highlight, .spotlight, .redact, .crop])
     #expect(annotation(.freehand([.zero, CGPoint(x: 9, y: 9)])).isStyled)
     #expect(annotation(.note("Hi", rect: shapeFrame)).isStyled)
     for kind in [Annotation.Kind.highlight(shapeFrame), .pixelate(shapeFrame), .blur(shapeFrame), .spotlight(shapeFrame, style: SpotlightStyle())] {
@@ -139,15 +145,15 @@ private let shapeFrame = CGRect(x: 20, y: 20, width: 100, height: 60)
     #expect(pixel(x: 5, y: 5) == [255, 255, 255])
 }
 
-@Test func recentColorsKeepNewestFirstWithoutPresetsOrRepeats() {
-    let a = RGBA(0.1, 0.2, 0.3), b = RGBA(0.4, 0.5, 0.6)
-    var recents = EditorStyle.recents(adding: a, to: [])
-    recents = EditorStyle.recents(adding: b, to: recents)
-    recents = EditorStyle.recents(adding: a, to: recents)
-    recents = EditorStyle.recents(adding: RGBA.presets[0], to: recents)
-    #expect(recents == [a, b])
-    let many = (0 ..< 10).reduce([RGBA]()) { EditorStyle.recents(adding: RGBA(CGFloat($1) / 20, 0.5, 0.5), to: $0) }
-    #expect(many.count == EditorStyle.maxRecentColors)
+@Test func eachPaletteHasItsOwnCustomColourSlot() {
+    let note = annotation(.note("", rect: CGRect(x: 0, y: 0, width: 50, height: 50)))
+    let arrow = annotation(.arrow(from: .zero, to: CGPoint(x: 10, y: 0)))
+    #expect(ColorSlot(forFill: true, shown: note, tool: .note) == .fill)
+    #expect(ColorSlot(forFill: false, shown: note, tool: .arrow) == .note)
+    #expect(ColorSlot(forFill: false, shown: arrow, tool: .note) == .stroke)
+    #expect(ColorSlot(forFill: false, shown: nil, tool: .note) == .note)
+    #expect(ColorSlot(forFill: false, shown: nil, tool: .pen) == .stroke)
+    #expect(ColorSlot(forFill: false, shown: nil, tool: nil) == .stroke)
 }
 
 @Test(arguments: [Annotation.Kind.arrow(from: .zero, to: CGPoint(x: 100, y: 0)), .line(from: .zero, to: CGPoint(x: 100, y: 0))])
