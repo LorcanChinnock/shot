@@ -818,13 +818,15 @@ extension VideoEditorModel {
 
     var selectedAnnotation: AnnotationClip? { selectedClipID.flatMap(project.annotationClip) }
 
-    /// New strokes are scaled up with the canvas, so they look the same on a 4K recording as on a small one.
-    var lineWidth: CGFloat { EditorStyle.widths[annotationStyle.widthIndex] * max(1, project.canvasSize.width / 960) }
+    /// Canvas pixels per point of a new annotation's strokes and corners, so they look the same on a 4K recording as on a small one.
+    var styleScale: CGFloat { max(1, project.canvasSize.width / 960) }
+    var lineWidth: CGFloat { EditorStyle.widths[annotationStyle.widthIndex] * styleScale }
     var fontSize: CGFloat { lineWidth * 6 }
+    var cornerRadius: CGFloat { Annotation.defaultCornerRadius * styleScale }
 
     /// Picks the tool that draws over the video, or nil to stop; the preview plays the composite while one is picked.
     func setAnnotationTool(_ tool: EditorTool?) {
-        guard tool != annotationTool, tool != .crop else {
+        guard tool != annotationTool, tool != .crop, tool != .hand else {
             return
         }
         player.pause()
@@ -930,10 +932,28 @@ extension VideoEditorModel {
         restyleSelection { $0.setRedaction(redaction) }
     }
 
-    /// The next spotlight's style: the chosen shape, with the effect and strength the project's spotlights already share.
+    /// How strongly the palette shows a redaction hiding: the selected one's, else the next one's.
+    var paletteRedactionAmount: CGFloat {
+        let length = max(project.canvasSize.width, project.canvasSize.height)
+        return selectedAnnotation?.annotation.redactionAmount(imageLength: length) ?? annotationStyle.redactionAmount
+    }
+
+    /// Sets how strongly the selected redaction, or the next one, hides. Between `beginDrag` and `endDrag` the changes are one undo step.
+    func setRedactionAmount(_ amount: CGFloat) {
+        guard let clip = selectedAnnotation else {
+            annotationStyle.redactionAmount = amount
+            return
+        }
+        var restyled = clip.annotation
+        restyled.setRedactionAmount(amount)
+        commitAnnotation(restyled, id: clip.id)
+    }
+
+    /// The next spotlight's style: the chosen shape and edge, with the effect and strength the project's spotlights already share.
     var nextSpotlightStyle: SpotlightStyle {
         let shared = project.annotationClips.map(\.annotation).spotlightStyle ?? annotationStyle.spotlight
-        return SpotlightStyle(shape: annotationStyle.spotlight.shape, effect: shared.effect, strength: shared.strength)
+        let next = annotationStyle.spotlight
+        return SpotlightStyle(shape: next.shape, effect: shared.effect, strength: shared.strength, softEdge: next.softEdge)
     }
 
     /// The spotlight style the palette shows: the selected spotlight's, else the next one's. `nil` when neither is one.
@@ -952,11 +972,17 @@ extension VideoEditorModel {
             annotationStyle.spotlight.shape = shape
             return
         }
-        restyleSelection {
-            if case let .spotlight(rect, style) = $0.kind {
-                $0.kind = .spotlight(rect, style: SpotlightStyle(shape: shape, effect: style.effect, strength: style.strength))
-            }
+        restyleSelection { $0.restyleSpotlight { $0.shape = shape } }
+    }
+
+    /// Between `beginDrag` and `endDrag` the changes are one undo step.
+    func setSpotlightSoftEdge(_ softEdge: Double) {
+        guard var restyled = selectedAnnotation else {
+            annotationStyle.spotlight.softEdge = softEdge
+            return
         }
+        restyled.annotation.restyleSpotlight { $0.softEdge = softEdge }
+        commitAnnotation(restyled.annotation, id: restyled.id)
     }
 
     /// Sets the effect and strength of every spotlight in the project, since they share one dim, and of the next one.
@@ -972,6 +998,29 @@ extension VideoEditorModel {
             undoStack.record(edit)
         }
         project = changed
+    }
+
+    /// The alignment the palette shows: the text being typed's, else the selected annotation's, else the next text's or note's.
+    /// `nil` when none of them is text or a note.
+    var paletteAlignment: TextAlign? {
+        if let shown = editingText ?? selectedAnnotation?.annotation {
+            return shown.alignsText ? shown.alignment : nil
+        }
+        return annotationTool == .text || annotationTool == .note ? annotationStyle.alignment : nil
+    }
+
+    func setAlignment(_ alignment: TextAlign) {
+        if let text = editingText {
+            // The field commits it; new text or a new note also sets the alignment for the next one.
+            editingText?.alignment = alignment
+            if project.annotationClip(text.id) == nil {
+                annotationStyle.alignment = alignment
+            }
+        } else if selectedAnnotation != nil {
+            restyleSelection { $0.alignment = alignment }
+        } else {
+            annotationStyle.alignment = alignment
+        }
     }
 
     var paletteFill: RGBA? {
@@ -1100,12 +1149,14 @@ extension VideoEditorModel {
         selectedClipID = id
     }
 
-    /// Replaces what the annotation clip `id` shows, as one undo step.
+    /// Replaces what the annotation clip `id` shows, as one undo step; between `beginDrag` and `endDrag`, `endDrag` records it.
     func commitAnnotation(_ annotation: Annotation, id: UUID) {
         guard !isExporting, let changed = project.setting(annotation: annotation, ofClip: id), changed != project else {
             return
         }
-        undoStack.record(edit)
+        if dragOrigin == nil {
+            undoStack.record(edit)
+        }
         project = changed
         // The compositor keeps drawing the live version until the rebuilt preview has it too.
         let clip = changed.annotationClip(id)

@@ -33,8 +33,7 @@ struct TransformOverlay: View {
                         .frame(width: size.width, height: size.height)
                         .gesture(move(clip, fit: fit))
                     ForEach(Array([(-1.0, -1.0), (1, -1), (1, 1), (-1, 1)].enumerated()), id: \.offset) { _, corner in
-                        Rectangle()
-                            .fill(Brutal.yellow)
+                        PartyColor(Brutal.yellow) { Rectangle().fill($0) }
                             .inkBorder(Rectangle(), width: 2)
                             .frame(width: Self.handleSize, height: Self.handleSize)
                             .offset(x: corner.0 * size.width / 2, y: corner.1 * size.height / 2)

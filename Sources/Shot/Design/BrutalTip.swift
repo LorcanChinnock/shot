@@ -1,3 +1,6 @@
+import AppKit
+import Combine
+import ShotCore
 import SwiftUI
 
 private struct HostsTipsKey: EnvironmentKey {
@@ -13,7 +16,7 @@ extension EnvironmentValues {
 }
 
 extension View {
-    /// Explains the view in a tip after a short hover: `title`, with `detail` below it when there is one.
+    /// Explains the view in a tip after a hover: `title`, with `detail` below it when there is one.
     func brutalTip(_ title: String, detail: String? = nil) -> some View {
         modifier(TipTrigger(title: title, detail: detail))
     }
@@ -38,7 +41,7 @@ private struct Tip {
     let anchor: Anchor<CGRect>
 }
 
-private struct TipKey: PreferenceKey {
+private struct TipKey: SwiftUI.PreferenceKey {
     static let defaultValue: [Tip] = []
 
     static func reduce(value: inout [Tip], nextValue: () -> [Tip]) {
@@ -51,24 +54,64 @@ private struct TipTrigger: ViewModifier {
     let detail: String?
     @Environment(\.hostsTips) private var hostsTips
     @State private var hovering = false
+    @State private var clicked = false
     @State private var shows = false
 
     func body(content: Content) -> some View {
         if hostsTips {
             content
                 .accessibilityHint(Text(detail ?? title))
-                .onHover { hovering = $0 }
-                .task(id: hovering) {
-                    guard hovering else {
+                .onHover(perform: hover)
+                .onDisappear { hover(false) }
+                .onReceive(TipClock.shared.clicks) {
+                    if hovering {
+                        clicked = true
+                    }
+                }
+                .task(id: hovering && !clicked) {
+                    guard hovering, !clicked else {
                         shows = false
                         return
                     }
-                    try? await Task.sleep(for: .milliseconds(400))
-                    shows = !Task.isCancelled
+                    try? await Task.sleep(for: TipClock.shared.timing.delay)
+                    guard !Task.isCancelled else {
+                        return
+                    }
+                    shows = true
+                    TipClock.shared.timing.shown()
                 }
                 .anchorPreference(key: TipKey.self, value: .bounds) { shows ? [Tip(title: title, detail: detail, anchor: $0)] : [] }
         } else {
             content.help([title, detail].compactMap(\.self).joined(separator: "\n"))
+        }
+    }
+
+    private func hover(_ inside: Bool) {
+        guard inside != hovering else {
+            return
+        }
+        hovering = inside
+        if inside {
+            TipClock.shared.timing.entered(at: .now)
+        } else {
+            clicked = false
+            TipClock.shared.timing.left(at: .now)
+        }
+    }
+}
+
+/// Shared by every tip, so moving between controls keeps tips warm, and a click hides the tip of the control under it.
+@MainActor
+private final class TipClock {
+    static let shared = TipClock()
+
+    var timing = TipTiming()
+    let clicks = PassthroughSubject<Void, Never>()
+
+    private init() {
+        NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]) { [clicks] event in
+            clicks.send()
+            return event
         }
     }
 }
@@ -90,16 +133,18 @@ private struct TipBubble: View {
         let minX = leading
             ? min(max(target.minX, Self.margin), bounds.width - Self.maxWidth - Self.margin)
             : max(min(target.maxX, bounds.width - Self.margin), Self.maxWidth + Self.margin) - Self.maxWidth
-        VStack(alignment: .leading, spacing: 2) {
-            Text(tip.title).font(Brutal.label)
-            if let detail = tip.detail {
-                Text(detail).font(Brutal.caption).opacity(0.75)
+        PartyColor(.white) { color in
+            VStack(alignment: .leading, spacing: 2) {
+                Text(tip.title).font(Brutal.label)
+                if let detail = tip.detail {
+                    Text(detail).font(Brutal.caption).opacity(0.75)
+                }
             }
+            .foregroundStyle(Brutal.ink)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .brutalSurface(color, radius: 8, shadow: 2)
         }
-        .foregroundStyle(Brutal.ink)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .brutalSurface(Color.white, radius: 8, shadow: 2)
         .fixedSize(horizontal: false, vertical: true)
         .frame(width: Self.maxWidth, height: 0, alignment: Alignment(horizontal: leading ? .leading : .trailing, vertical: below ? .top : .bottom))
         .position(x: minX + Self.maxWidth / 2, y: below ? target.maxY + Self.gap : target.minY - Self.gap)

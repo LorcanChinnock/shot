@@ -13,7 +13,7 @@ struct AnnotationPalette: View {
         VStack(spacing: 12) {
             HStack(spacing: 14) {
                 ToolGroup {
-                    ForEach(EditorTool.allCases.filter { $0 != .crop }) { tool in
+                    ForEach(EditorTool.allCases.filter { $0 != .crop && $0 != .hand }) { tool in
                         Tile(selected: model.annotationTool == tool, color: Brutal.yellow, help: tool.title, detail: tool.summary) {
                             model.annotationStyle.tool = tool
                             model.setAnnotationTool(tool)
@@ -33,9 +33,13 @@ struct AnnotationPalette: View {
                 if model.showsStyle {
                     styleOptions
                 } else if let redaction = model.paletteRedaction {
-                    RedactionOptions(selected: redaction, choose: model.setRedaction)
+                    RedactionOptions(selected: redaction, amount: model.paletteRedactionAmount, choose: model.setRedaction, setAmount: model.setRedactionAmount) { dragging in
+                        dragging ? model.beginDrag() : model.endDrag()
+                    }
                 } else if let spotlight = model.paletteSpotlight {
-                    SpotlightOptions(style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook) { dragging in
+                    SpotlightOptions(
+                        style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook, chooseSoftEdge: model.setSpotlightSoftEdge
+                    ) { dragging in
                         dragging ? model.beginDrag() : model.endDrag()
                     }
                 } else if let tool = model.annotationTool {
@@ -78,6 +82,9 @@ struct AnnotationPalette: View {
             }
         }
         WidthOptions(selected: model.lineWidthIndex, sizesText: model.sizesText) { model.lineWidthIndex = $0 }
+        if let alignment = model.paletteAlignment {
+            AlignmentOptions(selected: alignment, choose: model.setAlignment)
+        }
     }
 
     private func pickImage() {

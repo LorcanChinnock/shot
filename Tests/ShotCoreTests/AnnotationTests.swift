@@ -106,8 +106,14 @@ private let shapeFrame = CGRect(x: 20, y: 20, width: 100, height: 60)
     #expect(!annotation(.arrow(from: .zero, to: CGPoint(x: 9, y: 9))).supportsFill)
 }
 
+@Test func everyToolHasItsOwnKey() {
+    #expect(Set(EditorTool.allCases.map(\.key)).count == EditorTool.allCases.count)
+    #expect(EditorTool.hand.key == "h")
+    #expect(EditorTool.highlight.key == "m")
+}
+
 @Test func onlyDrawnMarksTakeAColourAndWidth() {
-    #expect(EditorTool.allCases.filter { !$0.isStyled } == [.select, .spotlight, .redact, .crop])
+    #expect(EditorTool.allCases.filter { !$0.isStyled } == [.select, .hand, .spotlight, .redact, .crop])
     #expect(annotation(.freehand([.zero, CGPoint(x: 9, y: 9)])).isStyled)
     #expect(annotation(.note("Hi", rect: shapeFrame)).isStyled)
     for kind in [Annotation.Kind.highlight(shapeFrame), .pixelate(shapeFrame), .blur(shapeFrame), .spotlight(shapeFrame, style: SpotlightStyle())] {
@@ -204,6 +210,44 @@ func draggingTheMidpointBendsIt(kind: Annotation.Kind) {
     var arrow = annotation(.arrow(from: .zero, to: CGPoint(x: 9, y: 9)))
     arrow.setRedaction(.blur)
     #expect(arrow.redaction == nil)
+}
+
+@Test func aRedactionKeepsItsAmountWithinTheRangeAndWhenSwitched() {
+    var a = annotation(.blur(shapeFrame))
+    a.setRedactionAmount(0.012)
+    a.setRedaction(.pixelate)
+    #expect(a.kind == .pixelate(shapeFrame, amount: 0.012))
+    a.offset(by: CGVector(dx: 5, dy: 5))
+    #expect(a.redactionAmount(imageLength: 1000) == 0.012)
+    a.setRedactionAmount(1)
+    #expect(a.redactionAmount(imageLength: 1000) == Redaction.amounts.upperBound)
+    a.setRedactionAmount(0)
+    #expect(a.redactionAmount(imageLength: 1000) == Redaction.amounts.lowerBound)
+    #expect(Redaction.amounts.contains(Redaction.defaultAmount))
+    var arrow = annotation(.arrow(from: .zero, to: CGPoint(x: 9, y: 9)))
+    arrow.setRedactionAmount(0.01)
+    #expect(arrow.redactionAmount(imageLength: 1000) == nil)
+}
+
+@Test func aRedactionWithoutAnAmountShowsTheOneThatDrawsItAsBefore() {
+    // Before the amount, a pixelate's blocks were a 20th of its width, at least 8, and a blur's radius a quarter of its
+    // shorter side, at least 12.
+    let wide = CGRect(x: 0, y: 0, width: 300, height: 40)
+    #expect(annotation(.pixelate(wide)).redactionAmount(imageLength: 1500) == 0.01)
+    #expect(annotation(.blur(wide)).redactionAmount(imageLength: 1500) == 0.008)
+    #expect(AnnotationRenderer.redactionSize(annotation(.pixelate(wide)), base: solidImage(width: 1500, height: 900)) == 15)
+    #expect(AnnotationRenderer.redactionSize(annotation(.blur(wide)), base: solidImage(width: 1500, height: 900)) == 12)
+    // Past the slider's range, it's the nearest end.
+    #expect(annotation(.pixelate(wide)).redactionAmount(imageLength: 4000) == Redaction.amounts.lowerBound)
+    #expect(annotation(.pixelate(CGRect(x: 0, y: 0, width: 900, height: 40))).redactionAmount(imageLength: 1000) == Redaction.amounts.upperBound)
+}
+
+@Test func aRedactionSavedBeforeTheAmountDecodesWithoutOne() throws {
+    let json = #"{"id":"9F0C1E2A-3B4C-4D5E-8F60-718293A4B5C6","kind":{"pixelate":{"_0":[[20,20],[100,60]]}},"color":{"r":1,"g":0,"b":0,"a":1},"lineWidth":4}"#
+    let decoded = try JSONDecoder().decode(Annotation.self, from: Data(json.utf8))
+    #expect(decoded.kind == .pixelate(shapeFrame, amount: nil))
+    let saved = annotation(.blur(shapeFrame, amount: 0.007))
+    #expect(try JSONDecoder().decode(Annotation.self, from: JSONEncoder().encode(saved)) == saved)
 }
 
 @Test func onlyTextNotesAndCountersSizeText() {

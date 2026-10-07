@@ -48,6 +48,14 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public var lineWidth: CGFloat
     /// How far an arrow's or line's curve passes from the middle of its chord; `nil` leaves it straight.
     public var bend: CGVector?
+    /// How a text annotation's or note's lines line up. Stored only when it isn't left, so annotations saved before it still decode.
+    public var alignment: TextAlign {
+        get { textAlign ?? .left }
+        set { textAlign = newValue == .left ? nil : newValue }
+    }
+    private var textAlign: TextAlign?
+    /// A rounded rectangle's or rounded spotlight's corner radius; `nil` keeps the look from before it could be set.
+    public var cornerRadius: CGFloat?
 
     public enum Kind: Equatable, Sendable, Codable {
         case arrow(from: CGPoint, to: CGPoint)
@@ -55,9 +63,11 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case shape(BoxShape, rect: CGRect)
         /// A yellow box, from before the highlighter drew strokes. Kept so older projects still open.
         case highlight(CGRect)
-        case pixelate(CGRect)
-        /// A Gaussian blur, strong enough that the text under it can't be read back.
-        case blur(CGRect)
+        /// `amount` is the block size, as a fraction of the image's longer side; `nil` sizes it from the rect, as before the amount existed.
+        case pixelate(CGRect, amount: CGFloat? = nil)
+        /// A Gaussian blur, strong enough that the text under it can't be read back. `amount` is its radius,
+        /// as a fraction of the image's longer side; `nil` sizes it from the rect, as before the amount existed.
+        case blur(CGRect, amount: CGFloat? = nil)
         /// Dims or blurs the image outside its shape. Every spotlight shares one dim, so together they light up several areas.
         case spotlight(CGRect, style: SpotlightStyle)
         case text(String, origin: CGPoint, fontSize: CGFloat)
@@ -70,6 +80,11 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case marker([CGPoint])
         /// Another image placed on the canvas, stretched to `rect`. Its colour and width are unused.
         case image(AnnotationImage, rect: CGRect)
+
+        /// A blur or pixelate, as `redaction` says.
+        public static func redaction(_ redaction: Redaction, rect: CGRect, amount: CGFloat?) -> Kind {
+            redaction == .blur ? .blur(rect, amount: amount) : .pixelate(rect, amount: amount)
+        }
     }
 
     public init(id: UUID = UUID(), kind: Kind, color: RGBA, fill: RGBA? = nil, lineWidth: CGFloat) {
@@ -78,6 +93,28 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         self.color = color
         self.fill = fill
         self.lineWidth = lineWidth
+    }
+
+    /// The radius a new rounded rectangle's corners start with, in points, so resizing it doesn't change them.
+    public static let defaultCornerRadius: CGFloat = 12
+
+    /// True for the kinds that can be rounded rectangles: shapes and spotlights.
+    public var canRound: Bool {
+        switch kind {
+        case .shape, .spotlight: true
+        default: false
+        }
+    }
+
+    /// The box of a rounded rectangle or rounded spotlight and the radius its corners are drawn with; `nil` for anything else.
+    public var roundedBox: (rect: CGRect, radius: CGFloat)? {
+        let rect: CGRect
+        switch kind {
+        case let .shape(.rounded, box): rect = box
+        case let .spotlight(box, style) where style.shape == .rounded: rect = box
+        default: return nil
+        }
+        return (rect, BoxShape.cornerRadius(cornerRadius, in: rect))
     }
 
     public var supportsFill: Bool {
@@ -95,6 +132,14 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         }
     }
 
+    /// True for the kinds whose lines can be aligned.
+    public var alignsText: Bool {
+        switch kind {
+        case .text, .note: true
+        default: false
+        }
+    }
+
     /// How a pixelate or blur hides what's under it; `nil` for anything else.
     public var redaction: Redaction? {
         switch kind {
@@ -104,10 +149,31 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         }
     }
 
-    /// Turns a pixelate into a blur or back; other kinds are left alone.
+    /// How strongly a pixelate or blur hides what's under it, as a fraction of `imageLength`, the longer side of the image
+    /// it's drawn on; `nil` for anything else. One made before the amount existed gets the amount nearest the size it was
+    /// drawn at then, which was set by its rect.
+    public func redactionAmount(imageLength: CGFloat) -> CGFloat? {
+        switch kind {
+        case let .pixelate(rect, amount): amount ?? Redaction.clamped(max(8, rect.width / 20) / imageLength)
+        case let .blur(rect, amount): amount ?? Redaction.clamped(max(12, min(rect.width, rect.height) / 4) / imageLength)
+        default: nil
+        }
+    }
+
+    /// Turns a pixelate into a blur or back, keeping its amount; other kinds are left alone.
     public mutating func setRedaction(_ redaction: Redaction) {
         switch kind {
-        case let .blur(rect), let .pixelate(rect): kind = redaction == .blur ? .blur(rect) : .pixelate(rect)
+        case let .blur(rect, amount), let .pixelate(rect, amount): kind = .redaction(redaction, rect: rect, amount: amount)
+        default: break
+        }
+    }
+
+    /// Sets how strongly a pixelate or blur hides what's under it, kept within `Redaction.amounts`; other kinds are left alone.
+    public mutating func setRedactionAmount(_ amount: CGFloat) {
+        let clamped = Redaction.clamped(amount)
+        switch kind {
+        case let .blur(rect, _): kind = .blur(rect, amount: clamped)
+        case let .pixelate(rect, _): kind = .pixelate(rect, amount: clamped)
         default: break
         }
     }
@@ -157,7 +223,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         switch kind {
         case let .arrow(from, to), let .line(from, to):
             return CGRect(x: min(from.x, to.x), y: min(from.y, to.y), width: abs(to.x - from.x), height: abs(to.y - from.y))
-        case let .shape(_, rect), let .highlight(rect), let .pixelate(rect), let .blur(rect), let .spotlight(rect, _), let .image(_, rect):
+        case let .shape(_, rect), let .highlight(rect), let .pixelate(rect, _), let .blur(rect, _), let .spotlight(rect, _), let .image(_, rect):
             return rect
         case let .text(string, origin, fontSize):
             return CGRect(origin: origin, size: TextLayout(string: string, fontSize: fontSize, color: color).size)
@@ -204,7 +270,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let .arrow(from, to), let .line(from, to):
             return Self.distance(from: point, toSegment: from, to) <= slop
         case let .shape(shape, rect):
-            let path = shape.path(in: rect)
+            let path = shape.path(in: rect, cornerRadius: cornerRadius)
             let outline = path.copy(strokingWithWidth: slop * 2, lineCap: .butt, lineJoin: .miter, miterLimit: 10)
             return outline.contains(point) || (fill != nil && path.contains(point))
         case .highlight, .pixelate, .blur, .spotlight, .text, .note, .image:
@@ -225,8 +291,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let .line(from, to): kind = .line(from: move(from), to: move(to))
         case let .shape(shape, rect): kind = .shape(shape, rect: rect.offsetBy(dx: delta.dx, dy: delta.dy))
         case let .highlight(rect): kind = .highlight(rect.offsetBy(dx: delta.dx, dy: delta.dy))
-        case let .pixelate(rect): kind = .pixelate(rect.offsetBy(dx: delta.dx, dy: delta.dy))
-        case let .blur(rect): kind = .blur(rect.offsetBy(dx: delta.dx, dy: delta.dy))
+        case let .pixelate(rect, amount): kind = .pixelate(rect.offsetBy(dx: delta.dx, dy: delta.dy), amount: amount)
+        case let .blur(rect, amount): kind = .blur(rect.offsetBy(dx: delta.dx, dy: delta.dy), amount: amount)
         case let .spotlight(rect, style): kind = .spotlight(rect.offsetBy(dx: delta.dx, dy: delta.dy), style: style)
         case let .text(string, origin, size): kind = .text(string, origin: move(origin), fontSize: size)
         case let .counter(number, center): kind = .counter(number, center: move(center))
@@ -237,10 +303,20 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         }
     }
 
-    /// Sets a spotlight's effect and strength, keeping its shape; other kinds are left alone.
+    /// Sets a spotlight's effect and strength, keeping its shape and edge; other kinds are left alone.
     public mutating func setSpotlightLook(effect: SpotlightStyle.Effect, strength: Double) {
+        restyleSpotlight {
+            $0.effect = effect
+            $0.strength = strength
+        }
+    }
+
+    /// Changes a spotlight's style; other kinds are left alone.
+    public mutating func restyleSpotlight(_ change: (inout SpotlightStyle) -> Void) {
         if case let .spotlight(rect, style) = kind {
-            kind = .spotlight(rect, style: SpotlightStyle(shape: style.shape, effect: effect, strength: strength))
+            var restyled = style
+            change(&restyled)
+            kind = .spotlight(rect, style: restyled)
         }
     }
 
@@ -287,6 +363,25 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         }
     }
 
+    /// A rounded rectangle's corner-radius handles, one inside each corner on its diagonal. They sit `2 * tolerance` in
+    /// from the corner, clear of its resize handle, and move further in as the radius grows. A box too small to keep
+    /// them clear of the resize handles has none.
+    public func radiusHandles(tolerance: CGFloat) -> [(handle: AnnotationHandle, point: CGPoint)] {
+        guard let (rect, radius) = roundedBox, min(rect.width, rect.height) >= tolerance * 10 else {
+            return []
+        }
+        let inset = Self.radiusHandleInset(radius: radius, tolerance: tolerance)
+        return AnnotationHandle.corners.map { corner in
+            let point = corner.point(in: rect)
+            return (.radius(corner), CGPoint(x: point.x - CGFloat(corner.dx) * inset, y: point.y - CGFloat(corner.dy) * inset))
+        }
+    }
+
+    /// How far a radius handle sits in from its corner on each axis. Half the radius keeps the four apart even on a circle.
+    private static func radiusHandleInset(radius: CGFloat, tolerance: CGFloat) -> CGFloat {
+        tolerance * 2 + radius / 2
+    }
+
     /// The handle nearest `point`, if one is within `tolerance` of it on both axes and nearer than the
     /// shape's centre, so a shape smaller than the handles can still be grabbed by its middle and moved.
     /// A line's or arrow's middle handle sits at its centre, so it's offered only on one long enough to move by its stroke.
@@ -294,7 +389,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         func distance(_ p: CGPoint) -> CGFloat { hypot(point.x - p.x, point.y - p.y) }
         let centre = distance(CGPoint(x: bounds.midX, y: bounds.midY))
         let bendable = hypot(bounds.width, bounds.height) > tolerance * 4
-        return handles
+        return (handles + radiusHandles(tolerance: tolerance))
             .filter { abs(point.x - $0.point.x) <= tolerance && abs(point.y - $0.point.y) <= tolerance && ($0.handle == .mid ? bendable : distance($0.point) < centre) }
             .min { distance($0.point) < distance($1.point) }?
             .handle
@@ -303,8 +398,17 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     /// Drags `handle` to `point`. Call it on the annotation as it was when the drag began: a box dragged
     /// past its opposite side flips, so its handles swap sides. A pen stroke scales its points within its
     /// bounds, and mirrors when flipped. An image keeps its aspect ratio and never flips.
-    /// A handle the kind doesn't have changes nothing.
-    public mutating func resize(_ handle: AnnotationHandle, to point: CGPoint) {
+    /// A radius handle sets one radius for all four corners from how far along its diagonal `point` is; pass the
+    /// `tolerance` its handles were placed with. A handle the kind doesn't have changes nothing.
+    public mutating func resize(_ handle: AnnotationHandle, to point: CGPoint, tolerance: CGFloat = 0) {
+        if case let .radius(corner) = handle {
+            if let (rect, _) = roundedBox {
+                let cornerPoint = corner.point(in: rect)
+                let inset = ((cornerPoint.x - point.x) * CGFloat(corner.dx) + (cornerPoint.y - point.y) * CGFloat(corner.dy)) / 2
+                cornerRadius = BoxShape.cornerRadius(max(0, (inset - tolerance * 2) * 2), in: rect)
+            }
+            return
+        }
         /// `rect`'s corners with the handle's sides moved to `point`; past the opposite side, `max` is less than `min`.
         func corners(_ rect: CGRect) -> (min: CGPoint, max: CGPoint) {
             var minX = rect.minX, minY = rect.minY, maxX = rect.maxX, maxY = rect.maxY
@@ -335,8 +439,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case (.arrow, _), (.line, _), (_, .start), (_, .end), (.text, _), (.counter, _): break
         case let (.shape(shape, rect), _): kind = .shape(shape, rect: box(rect))
         case let (.highlight(rect), _): kind = .highlight(box(rect))
-        case let (.pixelate(rect), _): kind = .pixelate(box(rect))
-        case let (.blur(rect), _): kind = .blur(box(rect))
+        case let (.pixelate(rect, amount), _): kind = .pixelate(box(rect), amount: amount)
+        case let (.blur(rect, amount), _): kind = .blur(box(rect), amount: amount)
         case let (.spotlight(rect, style), _): kind = .spotlight(box(rect), style: style)
         case let (.note(string, rect), _): resizeNote(string, rect: rect, handle: handle, to: point)
         case let (.freehand(points), _):
@@ -532,25 +636,40 @@ public struct EditorDocument: @unchecked Sendable {
     }
 
     /// The part of the image and the images placed on it that the spotlights dim: all of it outside
-    /// every spotlight, never the rest of the padding.
+    /// every hard-edged spotlight, never the rest of the padding. `softSpotlights` fade it further.
     /// `nil` when there are no spotlights. One with no area, such as a straight drag, dims nothing.
     public var spotlightDimPath: CGPath? {
         var lit: CGPath?
+        var hasSpotlight = false
         let images = CGMutablePath()
         for annotation in annotations {
             switch annotation.kind {
             case let .spotlight(rect, style) where !rect.isEmpty:
-                let shape = style.shape.path(in: rect)
+                hasSpotlight = true
+                guard style.softEdge == 0 else {
+                    continue
+                }
+                let shape = style.shape.path(in: rect, cornerRadius: annotation.cornerRadius)
                 lit = lit?.union(shape) ?? shape
             case let .image(_, rect): images.addRect(rect)
             default: break
             }
         }
-        guard let lit else {
+        guard hasSpotlight else {
             return nil
         }
         let dimmable = images.isEmpty ? CGPath(rect: fullRect, transform: nil) : images.union(CGPath(rect: fullRect, transform: nil))
-        return dimmable.subtracting(lit)
+        return lit.map { dimmable.subtracting($0) } ?? dimmable
+    }
+
+    /// The spotlights with a soft edge, which fade the dim rather than cut it out of `spotlightDimPath`.
+    public var softSpotlights: [(rect: CGRect, style: SpotlightStyle, cornerRadius: CGFloat?)] {
+        annotations.compactMap { annotation in
+            guard case let .spotlight(rect, style) = annotation.kind, !rect.isEmpty, style.softEdge > 0 else {
+                return nil
+            }
+            return (rect, style, annotation.cornerRadius)
+        }
     }
 
     /// The effect and strength every spotlight's shared dim is drawn with: the lowest spotlight's. `nil` when there are none.
@@ -642,6 +761,8 @@ public enum AnnotationHandle: Hashable, Sendable {
     case start, end
     /// A line or arrow's middle, which drags to bend it.
     case mid
+    /// A rounded rectangle's corner radius, from the handle inside `corner`.
+    indirect case radius(AnnotationHandle)
 
     /// The handles on a box, corners first.
     public static let box: [AnnotationHandle] = [.topLeft, .topRight, .bottomRight, .bottomLeft, .top, .right, .bottom, .left]
@@ -660,7 +781,7 @@ public enum AnnotationHandle: Hashable, Sendable {
         case .left: .right
         case .start: .end
         case .end: .start
-        case .mid: .mid
+        case .mid, .radius: self
         }
     }
 

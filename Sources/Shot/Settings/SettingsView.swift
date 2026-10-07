@@ -525,21 +525,18 @@ private struct DevicePicker: View {
     @Binding var selection: String
 
     var body: some View {
-        Menu {
-            Button("System default") { selection = "" }
-            Divider()
-            ForEach(devices, id: \.uniqueID) { device in
-                Button(device.localizedName) { selection = device.uniqueID }
-            }
-        } label: {
+        BrutalDropdown(title: "Device", entries: [
+            .item("System default", selected: !devices.contains { $0.uniqueID == selection }) { selection = "" },
+            .divider,
+        ] + devices.map { device in
+            .item(device.localizedName, selected: device.uniqueID == selection) { selection = device.uniqueID }
+        }) {
             HStack(spacing: 6) {
                 Text(selectedName).lineLimit(1)
                 Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
             }
             .frame(maxWidth: 190)
         }
-        .menuStyle(.button)
-        .menuIndicator(.hidden)
         .buttonStyle(BrutalButtonStyle(compact: true))
         .fixedSize()
     }
@@ -608,6 +605,9 @@ private struct AboutSettings: View {
     @State private var microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
     @State private var cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
     @State private var confirmingReset = false
+    @State private var iconClicks = 0
+    @Setting(PreferenceKey.partyModeUnlocked) private var partyUnlocked = false
+    @Setting(PreferenceKey.partyMode) private var party = false
     @Bindable private var updater = Updater.shared
     private let color = SettingsSection.about.color
 
@@ -619,6 +619,12 @@ private struct AboutSettings: View {
     var body: some View {
         HStack(spacing: 16) {
             AppIconView(size: 76)
+                .onTapGesture {
+                    iconClicks += 1
+                    if iconClicks >= PartyMode.clicksToUnlock {
+                        partyUnlocked = true
+                    }
+                }
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
                     Text("Shot").font(Brutal.title(26)).foregroundStyle(Brutal.ink)
@@ -632,6 +638,12 @@ private struct AboutSettings: View {
         }
         .padding(16)
         .glassCard()
+
+        if partyUnlocked {
+            SettingsCard(title: "You found it", symbol: "party.popper.fill") {
+                ToggleRow(title: "Party mode", subtitle: "Confetti on every capture and recording, and a rainbow through the editors. Reduce Motion keeps the colours still and skips the confetti.", isOn: $party, color: color, divider: false)
+            }
+        }
 
         SettingsCard(title: "Updates", symbol: "arrow.down.circle.fill") {
             ToggleRow(title: "Check for updates automatically", subtitle: "Shot asks GitHub once a day whether a new version is out, and installs it when you agree. Nothing else is sent.", isOn: $updater.automaticallyChecks, color: color)

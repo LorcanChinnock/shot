@@ -1,13 +1,14 @@
 import CoreGraphics
 
 public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
-    case select, arrow, line, shape, pen, text, note, highlight, spotlight, redact, counter, crop
+    case select, hand, arrow, line, shape, pen, text, note, highlight, spotlight, redact, counter, crop
 
     public var id: String { rawValue }
 
     public var key: Character {
         switch self {
         case .select: "v"
+        case .hand: "h"
         case .arrow: "a"
         case .line: "l"
         case .shape: "r"
@@ -25,6 +26,7 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
     public var title: String {
         switch self {
         case .select: "Select"
+        case .hand: "Hand"
         case .arrow: "Arrow"
         case .line: "Line"
         case .shape: "Shape"
@@ -39,14 +41,14 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// False for select and crop, which an editor never starts with.
-    public var isDrawing: Bool { self != .select && self != .crop }
+    /// False for select, hand and crop, which an editor never starts with.
+    public var isDrawing: Bool { self != .select && self != .hand && self != .crop }
 
     /// True for the tools that draw in the chosen colour and width.
     public var isStyled: Bool {
         switch self {
         case .arrow, .line, .shape, .pen, .text, .note, .highlight, .counter: true
-        case .select, .spotlight, .redact, .crop: false
+        case .select, .hand, .spotlight, .redact, .crop: false
         }
     }
 
@@ -78,12 +80,17 @@ public struct EditorStyle: Equatable, Sendable {
     public var customColors: [ColorSlot: RGBA]
     public var shape: BoxShape
     public var redaction: Redaction
+    /// How strongly the next redaction hides, within `Redaction.amounts`.
+    public var redactionAmount: CGFloat
     public var spotlight: SpotlightStyle
+    public var alignment: TextAlign
 
     public init(
         tool: EditorTool = .arrow, color: RGBA = RGBA.presets[0], noteColor: RGBA = RGBA.presets[2],
         highlightColor: RGBA = RGBA.presets[2], fill: RGBA? = nil, widthIndex: Int = 1, customColors: [ColorSlot: RGBA] = [:],
-        shape: BoxShape = .rectangle, redaction: Redaction = .blur, spotlight: SpotlightStyle = SpotlightStyle()
+        shape: BoxShape = .rectangle, redaction: Redaction = .blur, redactionAmount: CGFloat = Redaction.defaultAmount,
+        spotlight: SpotlightStyle = SpotlightStyle(),
+        alignment: TextAlign = .left
     ) {
         self.tool = tool
         self.color = color
@@ -94,7 +101,9 @@ public struct EditorStyle: Equatable, Sendable {
         self.customColors = customColors
         self.shape = shape
         self.redaction = redaction
+        self.redactionAmount = redactionAmount
         self.spotlight = spotlight
+        self.alignment = alignment
     }
 }
 

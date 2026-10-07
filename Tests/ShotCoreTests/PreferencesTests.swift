@@ -81,6 +81,8 @@ import Testing
         #expect(prefs.cameraDeviceID.isEmpty)
         #expect(prefs.microphoneDeviceID.isEmpty)
         #expect(prefs.cameraSize == .medium)
+        #expect(!prefs.partyModeUnlocked)
+        #expect(!prefs.partyMode)
         #expect(prefs.saveAfterCapture)
         #expect(prefs.copyAfterCapture)
         #expect(prefs.quickAccessAfterCapture)
@@ -164,7 +166,8 @@ import Testing
         let style = EditorStyle(
             tool: .shape, color: blue, noteColor: RGBA.presets[3], highlightColor: RGBA.presets[4], fill: custom, widthIndex: thick,
             customColors: [.stroke: custom, .note: blue, .highlight: RGBA.presets[1]],
-            shape: .star, redaction: .pixelate, spotlight: SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.7)
+            shape: .star, redaction: .pixelate, redactionAmount: 0.013, spotlight: SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.7),
+            alignment: .center
         )
         Preferences.remember(style, in: store)
         store.set(Data(), forKey: "editorRecentColors")
@@ -181,12 +184,12 @@ import Testing
         Preferences.registerDefaults(in: store)
         let prefs = Preferences(store: store)
         Preferences.remember(EditorStyle(tool: .pen), in: store)
-        for tool in [EditorTool.select, .crop] {
+        for tool in [EditorTool.select, .hand, .crop] {
             Preferences.remember(EditorStyle(tool: tool, color: RGBA.presets[4]), in: store)
             #expect(prefs.editorStyle.tool == .pen)
             #expect(prefs.editorStyle.color == RGBA.presets[4])
         }
-        #expect(EditorTool.allCases.filter { !$0.isDrawing } == [.select, .crop])
+        #expect(EditorTool.allCases.filter { !$0.isDrawing } == [.select, .hand, .crop])
         // Even if a stored value says otherwise.
         store.set(EditorTool.crop.rawValue, forKey: PreferenceKey.editorTool)
         #expect(prefs.editorStyle.tool == .arrow)
@@ -204,6 +207,7 @@ import Testing
         store.set(RGBA.presets.count, forKey: PreferenceKey.editorColor)
         store.set(-1, forKey: PreferenceKey.editorNoteColor)
         store.set(EditorStyle.widths.count, forKey: PreferenceKey.editorWidth)
+        store.set(1.0, forKey: PreferenceKey.editorRedactionAmount)
         #expect(prefs.editorStyle == EditorStyle())
         store.set("thick", forKey: PreferenceKey.editorWidth)
         #expect(prefs.editorStyle.widthIndex == EditorStyle().widthIndex)

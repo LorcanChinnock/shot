@@ -49,15 +49,13 @@ struct ImportMenu: View {
     let model: VideoEditorModel
 
     var body: some View {
-        Menu {
-            Button("Add Video or Audio at Playhead…") { pick(appendToMain: false) }
-            Button("Add Video to End…") { pick(appendToMain: true) }
-        } label: {
+        BrutalDropdown(title: "Import", entries: [
+            .item("Add Video or Audio at Playhead…") { pick(appendToMain: false) },
+            .item("Add Video to End…") { pick(appendToMain: true) },
+        ]) {
             Label("Import", systemImage: "plus")
         }
-        .menuStyle(.button)
         .buttonStyle(BrutalButtonStyle(color: Brutal.sky, compact: true))
-        .menuIndicator(.hidden)
         .fixedSize()
         .brutalTip("Add video or audio files to the timeline")
     }

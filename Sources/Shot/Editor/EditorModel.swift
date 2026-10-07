@@ -6,6 +6,7 @@ extension EditorTool {
     var symbol: String {
         switch self {
         case .select: "cursorarrow"
+        case .hand: "hand.raised"
         case .arrow: "arrow.up.right"
         case .line: "line.diagonal"
         case .shape: "square.on.circle"
@@ -24,6 +25,7 @@ extension EditorTool {
     var summary: String {
         switch self {
         case .select: "Click an annotation to move, resize or restyle it."
+        case .hand: "Drag to move around when zoomed in."
         case .arrow: "Drag to point at something."
         case .line: "Drag to draw a straight line."
         case .shape: "Drag to draw a box, circle, star or other shape, outlined or filled."
@@ -83,9 +85,16 @@ final class EditorModel {
     var redaction: Redaction {
         didSet { rememberStyle { $0.redaction = redaction } }
     }
+    var redactionAmount: CGFloat {
+        didSet { rememberStyle { $0.redactionAmount = redactionAmount } }
+    }
     /// The next spotlight's shape, and the effect and strength for the image's first one.
     var spotlight: SpotlightStyle {
         didSet { rememberStyle { $0.spotlight = spotlight } }
+    }
+    /// How the lines of the next text or note line up.
+    var alignment: TextAlign {
+        didSet { rememberStyle { $0.alignment = alignment } }
     }
     /// The last custom colour picked in each palette.
     private(set) var customColors: [ColorSlot: RGBA]
@@ -125,13 +134,15 @@ final class EditorModel {
         fill = style.fill
         shape = style.shape
         redaction = style.redaction
+        redactionAmount = style.redactionAmount
         spotlight = style.spotlight
+        alignment = style.alignment
         customColors = style.customColors
         widthIndex = style.widthIndex
     }
 
     /// Saves only the value that changed, so another open editor's choices aren't overwritten with this
-    /// window's older ones. Select and crop aren't remembered, so the next window starts with the last drawing tool.
+    /// window's older ones. Select, hand and crop aren't remembered, so the next window starts with the last drawing tool.
     private func rememberStyle(_ change: (inout EditorStyle) -> Void) {
         var style = Preferences().editorStyle
         change(&style)
@@ -235,10 +246,25 @@ final class EditorModel {
         }
     }
 
-    /// The next spotlight's style: the chosen shape, with the effect and strength the image's spotlights already share.
+    /// How strongly the toolbar shows a redaction hiding: the selected one's, else the next one's.
+    var paletteRedactionAmount: CGFloat {
+        selection?.redactionAmount(imageLength: CGFloat(max(document.base.width, document.base.height))) ?? redactionAmount
+    }
+
+    /// Sets how strongly the selected redaction, or the next one, hides. Changes during a drag of a style slider are one undo step.
+    func setRedactionAmount(_ amount: CGFloat) {
+        if let selection {
+            restyleSelection(coalescing: isDraggingStyle ? "\(selection.id)-redaction-amount" : nil) { $0.setRedactionAmount(amount) }
+        }
+        if stylesNextAnnotation {
+            redactionAmount = amount
+        }
+    }
+
+    /// The next spotlight's style: the chosen shape and edge, with the effect and strength the image's spotlights already share.
     var nextSpotlightStyle: SpotlightStyle {
         let shared = document.spotlightStyle ?? spotlight
-        return SpotlightStyle(shape: spotlight.shape, effect: shared.effect, strength: shared.strength)
+        return SpotlightStyle(shape: spotlight.shape, effect: shared.effect, strength: shared.strength, softEdge: spotlight.softEdge)
     }
 
     /// The spotlight style the toolbar shows: the selected spotlight's, else the next one's. `nil` when neither is one.
@@ -253,13 +279,17 @@ final class EditorModel {
     }
 
     func setSpotlightShape(_ newShape: BoxShape) {
-        restyleSelection {
-            if case let .spotlight(rect, style) = $0.kind {
-                $0.kind = .spotlight(rect, style: SpotlightStyle(shape: newShape, effect: style.effect, strength: style.strength))
-            }
-        }
+        restyleSelection { $0.restyleSpotlight { $0.shape = newShape } }
         if stylesNextAnnotation {
             spotlight.shape = newShape
+        }
+    }
+
+    /// Changes during a drag of a style slider are one undo step.
+    func setSpotlightSoftEdge(_ softEdge: Double) {
+        restyleSelection(coalescing: isDraggingStyle ? "spotlight-edge" : nil) { $0.restyleSpotlight { $0.softEdge = softEdge } }
+        if stylesNextAnnotation {
+            spotlight.softEdge = softEdge
         }
     }
 
@@ -275,6 +305,29 @@ final class EditorModel {
     func setDraggingStyle(_ dragging: Bool) {
         isDraggingStyle = dragging
         pickedKey = nil
+    }
+
+    /// The alignment the toolbar shows: the text being typed's, else the selection's, else the next text's or note's.
+    /// `nil` when none of them is text or a note.
+    var paletteAlignment: TextAlign? {
+        if let shown = editingText ?? selection {
+            return shown.alignsText ? shown.alignment : nil
+        }
+        return tool == .text || tool == .note ? alignment : nil
+    }
+
+    func setAlignment(_ newAlignment: TextAlign) {
+        if let text = editingText {
+            editingText?.alignment = newAlignment
+            if !document.annotations.contains(where: { $0.id == text.id }) {
+                alignment = newAlignment
+            }
+            return
+        }
+        restyleSelection { $0.alignment = newAlignment }
+        if stylesNextAnnotation {
+            alignment = newAlignment
+        }
     }
 
     /// The fill the toolbar shows and sets, `nil` for none: the selection's, else the fill for the next shape.
@@ -364,6 +417,7 @@ final class EditorModel {
 
     var lineWidth: CGFloat { Self.baseWidths[widthIndex] * scale }
     var fontSize: CGFloat { lineWidth * 6 }
+    var cornerRadius: CGFloat { Annotation.defaultCornerRadius * scale }
     /// Space kept between an annotation and a canvas edge that grew to hold it.
     var canvasMargin: CGFloat { 16 * scale }
     /// How far down and right a paste or duplicate lands from the original.

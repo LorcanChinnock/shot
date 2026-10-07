@@ -22,9 +22,11 @@ struct EditorRootView: View {
                 Button("Copy") { model.copy() }
                     .buttonStyle(BrutalButtonStyle(compact: true))
                     .brutalTip("Copy image (⌘C)")
-                Button("Save") { model.save() }
-                    .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
-                    .brutalTip("Save and copy (⌘S)")
+                PartyColor(Brutal.yellow) { color in
+                    Button("Save") { model.save() }
+                        .buttonStyle(BrutalButtonStyle(color: color, compact: true))
+                }
+                .brutalTip("Save and copy (⌘S)")
             }
             .padding(.leading, GlassWindow.trafficLightsWidth)
             .frame(height: GlassWindow.titlebarHeight)
@@ -81,9 +83,12 @@ struct EditorToolbar: View {
                 if model.showsStyle {
                     styleOptions
                 } else if let redaction = model.paletteRedaction {
-                    RedactionOptions(selected: redaction, choose: model.setRedaction)
+                    RedactionOptions(selected: redaction, amount: model.paletteRedactionAmount, choose: model.setRedaction, setAmount: model.setRedactionAmount, dragAmount: model.setDraggingStyle)
                 } else if let spotlight = model.paletteSpotlight {
-                    SpotlightOptions(style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook, dragStrength: model.setDraggingStyle)
+                    SpotlightOptions(
+                        style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook,
+                        chooseSoftEdge: model.setSpotlightSoftEdge, dragSlider: model.setDraggingStyle
+                    )
                 } else {
                     Text(model.tool.summary)
                         .font(Brutal.caption)
@@ -123,6 +128,9 @@ struct EditorToolbar: View {
             }
         }
         WidthOptions(selected: model.lineWidthIndex, sizesText: model.sizesText) { model.lineWidthIndex = $0 }
+        if let alignment = model.paletteAlignment {
+            AlignmentOptions(selected: alignment, choose: model.setAlignment)
+        }
     }
 }
 
@@ -145,6 +153,41 @@ struct WidthOptions: View {
                     } else {
                         Capsule().fill(Brutal.ink).frame(width: 16, height: EditorStyle.widths[index] + 1)
                     }
+                }
+            }
+        }
+    }
+}
+
+extension TextAlign {
+    var symbol: String {
+        switch self {
+        case .left: "text.alignleft"
+        case .center: "text.aligncenter"
+        case .right: "text.alignright"
+        }
+    }
+
+    var textAlignment: NSTextAlignment {
+        switch self {
+        case .left: .left
+        case .center: .center
+        case .right: .right
+        }
+    }
+}
+
+struct AlignmentOptions: View {
+    let selected: TextAlign
+    let choose: (TextAlign) -> Void
+
+    var body: some View {
+        ToolGroup {
+            ForEach(TextAlign.allCases, id: \.self) { alignment in
+                Tile(selected: selected == alignment, color: Brutal.sky, help: alignment.title) {
+                    choose(alignment)
+                } label: {
+                    Image(systemName: alignment.symbol).font(.system(size: 13, weight: .bold))
                 }
             }
         }
@@ -189,11 +232,9 @@ struct ShapeMenu: View {
 
     var body: some View {
         ToolGroup {
-            Menu {
-                ForEach(BoxShape.allCases, id: \.self) { shape in
-                    Button { choose(shape) } label: { Label(shape.title, systemImage: shape.symbol) }
-                }
-            } label: {
+            BrutalDropdown(title: "Shape", entries: BoxShape.allCases.map { shape in
+                .item(shape.title, symbol: shape.symbol, selected: shape == selected) { choose(shape) }
+            }) {
                 HStack(spacing: 6) {
                     Image(systemName: selected.symbol).font(.system(size: 13, weight: .bold))
                     Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
@@ -203,11 +244,8 @@ struct ShapeMenu: View {
                 .padding(.horizontal, 8)
                 .contentShape(Rectangle())
             }
-            .menuStyle(.button)
-            .menuIndicator(.hidden)
             .buttonStyle(.plain)
             .fixedSize()
-            .accessibilityLabel(Text("Shape: \(selected.title)"))
             .brutalTip("Shape", detail: selected.title)
         }
     }
@@ -215,7 +253,10 @@ struct ShapeMenu: View {
 
 struct RedactionOptions: View {
     let selected: Redaction
+    let amount: CGFloat
     let choose: (Redaction) -> Void
+    let setAmount: (CGFloat) -> Void
+    let dragAmount: (Bool) -> Void
 
     var body: some View {
         ToolGroup {
@@ -227,15 +268,29 @@ struct RedactionOptions: View {
                 }
             }
         }
+        ToolGroup {
+            BrutalSlider(
+                value: Binding(get: { amount }, set: { setAmount($0) }),
+                range: Redaction.amounts.lowerBound...Redaction.amounts.upperBound,
+                track: LinearGradient(colors: [.white, Brutal.sky], startPoint: .leading, endPoint: .trailing),
+                width: 120,
+                onEditingChanged: dragAmount
+            )
+            .frame(height: 30)
+            .padding(.horizontal, 6)
+            .accessibilityLabel(Text("Amount"))
+            .brutalTip("Amount", detail: selected == .blur ? "How far the blur spreads." : "How big the blocks are.")
+        }
     }
 }
 
-/// A spotlight's shape, and the effect and strength every spotlight in the image shares.
+/// A spotlight's shape and edge, and the effect and strength every spotlight in the image shares.
 struct SpotlightOptions: View {
     let style: SpotlightStyle
     let chooseShape: (BoxShape) -> Void
     let chooseLook: (SpotlightStyle.Effect, Double) -> Void
-    let dragStrength: (Bool) -> Void
+    let chooseSoftEdge: (Double) -> Void
+    let dragSlider: (Bool) -> Void
 
     var body: some View {
         ShapeOptions(shapes: BoxShape.spotlightShapes, selected: style.shape, choose: chooseShape)
@@ -254,12 +309,25 @@ struct SpotlightOptions: View {
                 range: SpotlightStyle.strengths,
                 track: LinearGradient(colors: [Brutal.ink.opacity(SpotlightStyle.strengths.lowerBound), Brutal.ink.opacity(SpotlightStyle.strengths.upperBound)], startPoint: .leading, endPoint: .trailing),
                 width: 120,
-                onEditingChanged: dragStrength
+                onEditingChanged: dragSlider
             )
             .frame(height: 30)
             .padding(.horizontal, 6)
             .accessibilityLabel(Text("Strength"))
             .brutalTip("Strength", detail: "Applies to every spotlight in the image.")
+        }
+        ToolGroup {
+            Text("EDGE").font(Brutal.mono).foregroundStyle(Brutal.ink).padding(.horizontal, 4)
+            BrutalSlider(
+                value: Binding(get: { style.softEdge }, set: { chooseSoftEdge($0) }),
+                track: LinearGradient(colors: [.white, Brutal.sky], startPoint: .leading, endPoint: .trailing),
+                width: 100,
+                onEditingChanged: dragSlider
+            )
+            .frame(height: 30)
+            .padding(.trailing, 6)
+            .accessibilityLabel(Text("Soft edge"))
+            .brutalTip("Soft edge", detail: "Fades the spotlight into the dim.")
         }
     }
 }
@@ -520,24 +588,22 @@ private struct ZoomMenu: View {
     let canvas: EditorCanvasView
 
     var body: some View {
-        Menu {
-            Button("Zoom In") { canvas.zoomIn() }
-            Button("Zoom Out") { canvas.zoomOut() }
-            Divider()
-            Button("Zoom to Fit") { canvas.zoomToFit() }
-            Button("Actual Size") { canvas.zoomToActualSize() }
-        } label: {
+        BrutalDropdown(title: "Zoom", entries: [
+            .item("Zoom In", shortcut: "⌘+") { canvas.zoomIn() },
+            .item("Zoom Out", shortcut: "⌘-") { canvas.zoomOut() },
+            .divider,
+            .item("Zoom to Fit", shortcut: "⌘0") { canvas.zoomToFit() },
+            .item("Actual Size", shortcut: "⌘1") { canvas.zoomToActualSize() },
+        ]) {
             HStack(spacing: 6) {
                 Text("\(Int((model.zoom * 100).rounded()))%")
                     .monospacedDigit()
                 Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
             }
         }
-        .menuStyle(.button)
-        .menuIndicator(.hidden)
         .buttonStyle(BrutalButtonStyle(compact: true))
         .fixedSize()
-        .brutalTip("Zoom in (⌘+), out (⌘-), to fit (⌘0) or to actual size (⌘1). Pinch to zoom; scroll or Space-drag to move around.")
+        .brutalTip("Zoom in (⌘+), out (⌘-), to fit (⌘0) or to actual size (⌘1). Pinch to zoom; scroll, Space-drag, middle-drag or the hand tool (H) to move around.")
     }
 }
 
@@ -547,32 +613,28 @@ private struct CanvasMenu: View {
     @Bindable var model: EditorModel
 
     var body: some View {
-        Menu {
-            Button("Fit to Content") { model.fitToContent() }
-            Button("Trim to Image") { model.trimToImage() }
-                .disabled(!model.document.hasPadding)
-            Divider()
-            Picker("Background", selection: Binding(get: { model.document.background }, set: { model.setBackground($0) })) {
-                // JPEG has no alpha, so it can't keep transparent padding.
-                if !model.isJPEG {
-                    Text("Transparent").tag(RGBA?.none)
-                }
-                Text("White").tag(RGBA?.some(Self.white))
-                ForEach(RGBA.presets.indices, id: \.self) { index in
-                    Text(EditorToolbar.colorNames[index]).tag(RGBA?.some(RGBA.presets[index]))
-                }
-            }
-        } label: {
+        BrutalDropdown(title: "Canvas", entries: [
+            .item("Fit to Content") { model.fitToContent() },
+            .item("Trim to Image", enabled: model.document.hasPadding) { model.trimToImage() },
+            .divider,
+            .header("Background"),
+        ] + backgrounds.map { name, color in
+            .item(name, selected: model.document.background == color) { model.setBackground(color) }
+        }) {
             HStack(spacing: 6) {
                 Text("Canvas")
                 Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
             }
         }
-        .menuStyle(.button)
-        .menuIndicator(.hidden)
         .buttonStyle(BrutalButtonStyle(compact: true))
         .fixedSize()
         .brutalTip("Canvas size and background")
+    }
+
+    private var backgrounds: [(name: String, color: RGBA?)] {
+        // JPEG has no alpha, so it can't keep transparent padding.
+        (model.isJPEG ? [] : [("Transparent", nil)]) + [("White", Self.white)]
+            + RGBA.presets.indices.map { (EditorToolbar.colorNames[$0], RGBA.presets[$0]) }
     }
 }
 
@@ -607,7 +669,7 @@ struct Tile<Label: View>: View {
                 .frame(width: 30, height: 30)
                 .background {
                     if selected {
-                        Color.clear.brutalSurface(color, radius: 7, shadow: 2)
+                        PartyColor(color) { Color.clear.brutalSurface($0, radius: 7, shadow: 2) }
                     } else if hovering {
                         RoundedRectangle(cornerRadius: 7, style: .circular).fill(Brutal.ink.opacity(0.08))
                     }
@@ -623,3 +685,4 @@ struct Tile<Label: View>: View {
         .brutalTip(help, detail: detail)
     }
 }
+
