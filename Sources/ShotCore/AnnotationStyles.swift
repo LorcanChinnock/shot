@@ -19,13 +19,13 @@ public enum BoxShape: String, CaseIterable, Codable, Sendable {
         }
     }
 
-    /// The outline stretched to fill `rect`.
-    public func path(in rect: CGRect) -> CGPath {
+    /// The outline stretched to fill `rect`, a rounded rectangle's corners rounded by `cornerRadius`.
+    public func path(in rect: CGRect, cornerRadius: CGFloat? = nil) -> CGPath {
         switch self {
         case .rectangle:
             return CGPath(rect: rect, transform: nil)
         case .rounded:
-            let radius = min(rect.width, rect.height) / 5
+            let radius = Self.cornerRadius(cornerRadius, in: rect)
             return CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
         case .ellipse:
             return CGPath(ellipseIn: rect, transform: nil)
@@ -46,6 +46,13 @@ public enum BoxShape: String, CaseIterable, Codable, Sendable {
                 CGPoint(x: rect.minX + ($0.x - minX) / (maxX - minX) * rect.width, y: rect.minY + ($0.y - minY) / (maxY - minY) * rect.height)
             })
         }
+    }
+
+    /// `radius` within what `rect` can take: half its shorter side makes a pill. `nil` is the radius from before it could
+    /// be set, a fifth of the shorter side, so older annotations keep their look.
+    public static func cornerRadius(_ radius: CGFloat?, in rect: CGRect) -> CGFloat {
+        let shorter = max(0, min(rect.width, rect.height))
+        return min(max(radius ?? shorter / 5, 0), shorter / 2)
     }
 
     private static func polygon(_ points: [CGPoint]) -> CGPath {

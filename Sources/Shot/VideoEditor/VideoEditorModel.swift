@@ -819,9 +819,11 @@ extension VideoEditorModel {
 
     var selectedAnnotation: AnnotationClip? { selectedClipID.flatMap(project.annotationClip) }
 
-    /// New strokes are scaled up with the canvas, so they look the same on a 4K recording as on a small one.
-    var lineWidth: CGFloat { EditorStyle.widths[annotationStyle.widthIndex] * max(1, project.canvasSize.width / 960) }
+    /// Canvas pixels per point of a new annotation's strokes and corners, so they look the same on a 4K recording as on a small one.
+    var styleScale: CGFloat { max(1, project.canvasSize.width / 960) }
+    var lineWidth: CGFloat { EditorStyle.widths[annotationStyle.widthIndex] * styleScale }
     var fontSize: CGFloat { lineWidth * 6 }
+    var cornerRadius: CGFloat { Annotation.defaultCornerRadius * styleScale }
 
     /// Picks the tool that draws over the video, or nil to stop; the preview plays the composite while one is picked.
     func setAnnotationTool(_ tool: EditorTool?) {

@@ -48,6 +48,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public var lineWidth: CGFloat
     /// How far an arrow's or line's curve passes from the middle of its chord; `nil` leaves it straight.
     public var bend: CGVector?
+    /// A rounded rectangle's or rounded spotlight's corner radius; `nil` keeps the look from before it could be set.
+    public var cornerRadius: CGFloat?
 
     public enum Kind: Equatable, Sendable, Codable {
         case arrow(from: CGPoint, to: CGPoint)
@@ -75,6 +77,28 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         self.color = color
         self.fill = fill
         self.lineWidth = lineWidth
+    }
+
+    /// The radius a new rounded rectangle's corners start with, in points, so resizing it doesn't change them.
+    public static let defaultCornerRadius: CGFloat = 12
+
+    /// True for the kinds that can be rounded rectangles: shapes and spotlights.
+    public var canRound: Bool {
+        switch kind {
+        case .shape, .spotlight: true
+        default: false
+        }
+    }
+
+    /// The box of a rounded rectangle or rounded spotlight and the radius its corners are drawn with; `nil` for anything else.
+    public var roundedBox: (rect: CGRect, radius: CGFloat)? {
+        let rect: CGRect
+        switch kind {
+        case let .shape(.rounded, box): rect = box
+        case let .spotlight(box, style) where style.shape == .rounded: rect = box
+        default: return nil
+        }
+        return (rect, BoxShape.cornerRadius(cornerRadius, in: rect))
     }
 
     public var supportsFill: Bool {
@@ -197,7 +221,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let .arrow(from, to), let .line(from, to):
             return Self.distance(from: point, toSegment: from, to) <= slop
         case let .shape(shape, rect):
-            let path = shape.path(in: rect)
+            let path = shape.path(in: rect, cornerRadius: cornerRadius)
             let outline = path.copy(strokingWithWidth: slop * 2, lineCap: .butt, lineJoin: .miter, miterLimit: 10)
             return outline.contains(point) || (fill != nil && path.contains(point))
         case .highlight, .pixelate, .blur, .spotlight, .text, .note, .image:
@@ -277,6 +301,25 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         }
     }
 
+    /// A rounded rectangle's corner-radius handles, one inside each corner on its diagonal. They sit `2 * tolerance` in
+    /// from the corner, clear of its resize handle, and move further in as the radius grows. A box too small to keep
+    /// them clear of the resize handles has none.
+    public func radiusHandles(tolerance: CGFloat) -> [(handle: AnnotationHandle, point: CGPoint)] {
+        guard let (rect, radius) = roundedBox, min(rect.width, rect.height) >= tolerance * 10 else {
+            return []
+        }
+        let inset = Self.radiusHandleInset(radius: radius, tolerance: tolerance)
+        return AnnotationHandle.corners.map { corner in
+            let point = corner.point(in: rect)
+            return (.radius(corner), CGPoint(x: point.x - CGFloat(corner.dx) * inset, y: point.y - CGFloat(corner.dy) * inset))
+        }
+    }
+
+    /// How far a radius handle sits in from its corner on each axis. Half the radius keeps the four apart even on a circle.
+    private static func radiusHandleInset(radius: CGFloat, tolerance: CGFloat) -> CGFloat {
+        tolerance * 2 + radius / 2
+    }
+
     /// The handle nearest `point`, if one is within `tolerance` of it on both axes and nearer than the
     /// shape's centre, so a shape smaller than the handles can still be grabbed by its middle and moved.
     /// A line's or arrow's middle handle sits at its centre, so it's offered only on one long enough to move by its stroke.
@@ -284,7 +327,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         func distance(_ p: CGPoint) -> CGFloat { hypot(point.x - p.x, point.y - p.y) }
         let centre = distance(CGPoint(x: bounds.midX, y: bounds.midY))
         let bendable = hypot(bounds.width, bounds.height) > tolerance * 4
-        return handles
+        return (handles + radiusHandles(tolerance: tolerance))
             .filter { abs(point.x - $0.point.x) <= tolerance && abs(point.y - $0.point.y) <= tolerance && ($0.handle == .mid ? bendable : distance($0.point) < centre) }
             .min { distance($0.point) < distance($1.point) }?
             .handle
@@ -293,8 +336,17 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     /// Drags `handle` to `point`. Call it on the annotation as it was when the drag began: a box dragged
     /// past its opposite side flips, so its handles swap sides. A pen stroke scales its points within its
     /// bounds, and mirrors when flipped. An image keeps its aspect ratio and never flips.
-    /// A handle the kind doesn't have changes nothing.
-    public mutating func resize(_ handle: AnnotationHandle, to point: CGPoint) {
+    /// A radius handle sets one radius for all four corners from how far along its diagonal `point` is; pass the
+    /// `tolerance` its handles were placed with. A handle the kind doesn't have changes nothing.
+    public mutating func resize(_ handle: AnnotationHandle, to point: CGPoint, tolerance: CGFloat = 0) {
+        if case let .radius(corner) = handle {
+            if let (rect, _) = roundedBox {
+                let cornerPoint = corner.point(in: rect)
+                let inset = ((cornerPoint.x - point.x) * CGFloat(corner.dx) + (cornerPoint.y - point.y) * CGFloat(corner.dy)) / 2
+                cornerRadius = BoxShape.cornerRadius(max(0, (inset - tolerance * 2) * 2), in: rect)
+            }
+            return
+        }
         /// `rect`'s corners with the handle's sides moved to `point`; past the opposite side, `max` is less than `min`.
         func corners(_ rect: CGRect) -> (min: CGPoint, max: CGPoint) {
             var minX = rect.minX, minY = rect.minY, maxX = rect.maxX, maxY = rect.maxY
@@ -526,7 +578,7 @@ public struct EditorDocument: @unchecked Sendable {
         for annotation in annotations {
             switch annotation.kind {
             case let .spotlight(rect, style) where !rect.isEmpty:
-                let shape = style.shape.path(in: rect)
+                let shape = style.shape.path(in: rect, cornerRadius: annotation.cornerRadius)
                 lit = lit?.union(shape) ?? shape
             case let .image(_, rect): images.addRect(rect)
             default: break
@@ -628,6 +680,8 @@ public enum AnnotationHandle: Hashable, Sendable {
     case start, end
     /// A line or arrow's middle, which drags to bend it.
     case mid
+    /// A rounded rectangle's corner radius, from the handle inside `corner`.
+    indirect case radius(AnnotationHandle)
 
     /// The handles on a box, corners first.
     public static let box: [AnnotationHandle] = [.topLeft, .topRight, .bottomRight, .bottomLeft, .top, .right, .bottom, .left]
@@ -646,7 +700,7 @@ public enum AnnotationHandle: Hashable, Sendable {
         case .left: .right
         case .start: .end
         case .end: .start
-        case .mid: .mid
+        case .mid, .radius: self
         }
     }
 
