@@ -21,7 +21,7 @@ extension Project {
     public func videoSegments() -> [VideoSegment] {
         let total = duration
         let clips = videoTracks.flatMap(\.clips)
-        let notes = annotationClips
+        let notes = shownAnnotationClips
         let edges = Set(clips.flatMap { [$0.start, $0.end] } + notes.flatMap { [$0.start, $0.end] } + [0, total]).filter { $0 >= 0 && $0 <= total }.sorted()
         var segments: [VideoSegment] = []
         for (from, to) in zip(edges, edges.dropFirst()) where to - from >= Self.shortestClip {
