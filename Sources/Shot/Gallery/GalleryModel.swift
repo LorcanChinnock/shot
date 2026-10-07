@@ -44,6 +44,7 @@ final class GalleryModel {
     private func refilter() {
         visible = Gallery.visible(items, filter: filter, sort: sort, query: query)
         sections = Gallery.sections(visible, sort: sort)
+        selection.formIntersection(visible.map(\.url))
     }
 
     // MARK: Loading
