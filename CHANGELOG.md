@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.13](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.12...v0.7.0-beta.13) (2026-10-07)
+
+
+### Bug Fixes
+
+* **ui:** stop SwiftUI managing window size limits to avoid layout crash after capture ([#127](https://github.com/LorcanChinnock/shot/issues/127)) ([88befe8](https://github.com/LorcanChinnock/shot/commit/88befe8a2ee3b669d32c1a18894f026b27d9d61c))
+
 ## [0.7.0-beta.12](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.11...v0.7.0-beta.12) (2026-10-07)
 
 
