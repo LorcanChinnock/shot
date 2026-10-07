@@ -67,8 +67,7 @@ private struct QuickAccessCardView: View {
         }
         .frame(width: QuickAccessCard.width, height: card.height)
         .background(Color.black)
-        .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
-        .brutalSurface(Color.clear, shadow: 0, border: 1.5)
+        .inkBorder(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular), width: 2)
         .contentShape(Rectangle())
         .onHover { inside in
             withAnimation(.easeOut(duration: 0.12)) {

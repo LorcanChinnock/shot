@@ -35,14 +35,14 @@ struct TransformOverlay: View {
                     ForEach(Array([(-1.0, -1.0), (1, -1), (1, 1), (-1, 1)].enumerated()), id: \.offset) { _, corner in
                         Rectangle()
                             .fill(Brutal.yellow)
-                            .overlay(Rectangle().strokeBorder(Brutal.ink, lineWidth: 1.5))
+                            .inkBorder(Rectangle(), width: 2)
                             .frame(width: Self.handleSize, height: Self.handleSize)
                             .offset(x: corner.0 * size.width / 2, y: corner.1 * size.height / 2)
                             .gesture(scaling(clip, center: center))
                     }
                     Circle()
                         .fill(Brutal.pink)
-                        .overlay(Circle().strokeBorder(Brutal.ink, lineWidth: 1.5))
+                        .inkBorder(Circle(), width: 2)
                         .frame(width: Self.handleSize, height: Self.handleSize)
                         .offset(y: -size.height / 2 - Self.knobDistance)
                         .gesture(rotating(clip, center: center))

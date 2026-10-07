@@ -159,6 +159,9 @@ Judge against the app's own design system first; it has a deliberate style (see 
 - [ ] **Content presentation**: letterboxing is clean, thumbnails are sharp and match their time, waveforms are legible,
       overlays and annotations render the same in the preview and in the export.
 - [ ] Capture 2× crops of each region and look at them at full size, not only at screen scale.
+- [ ] **Ink edges on a 1x display**: Retina hides half-pixel faults. On a 1x screen, sample the pixels across borders and
+      corners: the outermost pixel must be ink at partial alpha, never a lighter colour from inside, and borders must be
+      whole pixels with no grey seam between fill and ink.
 
 ## 7. Functional QA (does it do what it says?)
 
@@ -181,6 +184,10 @@ Judge against the app's own design system first; it has a deliberate style (see 
 - [ ] **Persistence and side effects**: remembered options, recent files, the clipboard after Copy and Export, the
       originals are untouched unless Save was chosen.
 - [ ] **Messages are true**: what a toast or label claims (saved, copied, size, duration) is what happened.
+- [ ] **Transitions hold still**: record every toggle and picker change in both directions (`screencapture -v -V 3 -R…`,
+      then `ffmpeg` to frames) and track a few card edges and labels frame by frame. Anything that jumps for an update and
+      then settles is a glitch a still screenshot misses, usually a view mixing two copies of the same state that update at
+      different times.
 
 ## 8. Robustness and performance
 

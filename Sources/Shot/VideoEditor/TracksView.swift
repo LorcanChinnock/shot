@@ -229,7 +229,7 @@ struct TracksView: View {
                 handle("chevron.compact.right", height: main.height).offset(x: timeline.x(for: last.end) - TrimTimeline.handleWidth, y: main.y)
             }
             Capsule().fill(Color.white)
-                .overlay(Capsule().strokeBorder(Brutal.ink, lineWidth: 1))
+                .inkBorder(Capsule(), width: 1)
                 .frame(width: 4, height: layout.height - Self.rulerHeight + 4)
                 .offset(x: max(0, timeline.x(for: model.playhead) - 2), y: Self.rulerHeight - 2)
                 .allowsHitTesting(false)
@@ -350,7 +350,7 @@ struct TracksView: View {
     private func diamond(selected: Bool) -> some View {
         Rectangle()
             .fill(selected ? Brutal.pink : Brutal.yellow)
-            .overlay(Rectangle().strokeBorder(Brutal.ink, lineWidth: 1.5))
+            .inkBorder(Rectangle(), width: 2)
             .frame(width: 9, height: 9)
             .rotationEffect(.degrees(45))
             .frame(width: 12, height: 12)
@@ -363,7 +363,7 @@ struct TracksView: View {
             .foregroundStyle(Brutal.ink)
             .frame(width: TrimTimeline.handleWidth, height: height)
             .background(Brutal.yellow)
-            .overlay(Rectangle().strokeBorder(Brutal.ink, lineWidth: 1.5))
+            .inkBorder(Rectangle(), width: 2)
             .allowsHitTesting(false)
     }
 

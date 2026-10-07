@@ -66,6 +66,7 @@ final class SettingsNavigation {
 
 struct SettingsView: View {
     @Bindable private var navigation = SettingsNavigation.shared
+    @State private var scrolledPast = ScrollFade.Edges()
     private var section: SettingsSection { navigation.section }
 
     var body: some View {
@@ -89,7 +90,15 @@ struct SettingsView: View {
                         .padding([.leading, .top], 3)
                     }
                     .scrollIndicators(.never)
-                    .mask(ScrollFade())
+                    .onScrollGeometryChange(for: ScrollFade.Edges.self) { geometry in
+                        ScrollFade.Edges(
+                            top: geometry.contentOffset.y > -geometry.contentInsets.top,
+                            bottom: geometry.visibleRect.maxY < geometry.contentSize.height
+                        )
+                    } action: { _, edges in
+                        scrolledPast = edges
+                    }
+                    .mask(ScrollFade(edges: scrolledPast))
                     .id(section)
                 }
             }
@@ -130,13 +139,21 @@ struct SettingsView: View {
     }
 }
 
-/// Fades scrolled content out at the edges instead of cutting it against a hard line.
+/// Fades scrolled content out at an edge it runs past, instead of cutting it against a hard line. An edge with nothing
+/// past it stays sharp, so the first and last cards aren't faded at rest.
 private struct ScrollFade: View {
+    struct Edges: Equatable {
+        var top = false
+        var bottom = false
+    }
+
+    let edges: Edges
+
     var body: some View {
         VStack(spacing: 0) {
-            LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom).frame(height: 8)
+            LinearGradient(colors: [edges.top ? .clear : .black, .black], startPoint: .top, endPoint: .bottom).frame(height: 8)
             Color.black
-            LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom).frame(height: 18)
+            LinearGradient(colors: [.black, edges.bottom ? .clear : .black], startPoint: .top, endPoint: .bottom).frame(height: 18)
         }
     }
 }
@@ -360,13 +377,13 @@ private struct ScreenPreview: View {
                     RoundedRectangle(cornerRadius: 5, style: .circular)
                         .fill(index == 1 ? color : Color.white)
                         .frame(width: 72, height: 42)
-                        .overlay(RoundedRectangle(cornerRadius: 5, style: .circular).strokeBorder(Brutal.ink, lineWidth: 2))
+                        .inkBorder(RoundedRectangle(cornerRadius: 5, style: .circular), width: 2)
                 }
             }
             .padding(12)
         }
         .frame(height: 210)
-        .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
+        .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular).inset(by: Brutal.underInk(Brutal.border)))
         .brutalSurface(Color.clear)
         .animation(.spring(response: 0.35, dampingFraction: 0.75), value: position)
     }
@@ -464,7 +481,7 @@ private struct CameraSettings: View {
                         CameraPreviewView(session: session)
                             .id(ObjectIdentifier(session))
                             .frame(width: 120, height: 120)
-                            .clipShape(Circle())
+                            .clipShape(Circle().inset(by: Brutal.underInk(Brutal.border)))
                             .brutalCircle(Color.black, shadow: 3)
                     }
                     Button(preview.isRunning ? "Stop" : "Preview") {
@@ -535,19 +552,23 @@ private struct DevicePicker: View {
 private struct ShortcutSettings: View {
     private let color = SettingsSection.shortcuts.color
     @AppStorage(PreferenceKey.replacesSystemScreenshots) private var replacesSystemScreenshots = false
-    @State private var macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
+    /// Read straight from the defaults: `replacesSystemScreenshots` only catches up an update later, and pairing its old
+    /// value with the new key owner flashed the warning row when turning this off.
+    @State private var keysStillWithMacOS = Self.keysStillWithMacOS
+
+    private static var keysStillWithMacOS: Bool { Preferences().replacesSystemScreenshots && SystemShortcuts.macOSOwnsKeys }
 
     private var useShot: Binding<Bool> {
         Binding(get: { replacesSystemScreenshots }, set: { on in
             SystemShortcuts.useShot(on)
-            macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
+            keysStillWithMacOS = Self.keysStillWithMacOS
         })
     }
 
     var body: some View {
         SettingsCard(title: "macOS screenshot keys", symbol: "command") {
-            ToggleRow(title: "Use Shot for ⌘⇧3 to ⌘⇧5", subtitle: "Turns off the matching macOS shortcuts, so these keys and a keyboard's screenshot key open Shot. macOS gets them back while Shot isn't running, or when you turn this off.", isOn: useShot, color: color, divider: replacesSystemScreenshots && macOSOwnsKeys)
-            if replacesSystemScreenshots && macOSOwnsKeys {
+            ToggleRow(title: "Use Shot for ⌘⇧3 to ⌘⇧5", subtitle: "Turns off the matching macOS shortcuts, so these keys and a keyboard's screenshot key open Shot. macOS gets them back while Shot isn't running, or when you turn this off.", isOn: useShot, color: color, divider: keysStillWithMacOS)
+            if keysStillWithMacOS {
                 SettingRow(title: "macOS still uses these keys", subtitle: "Turn off the Screenshots shortcuts under Keyboard Shortcuts.", divider: false) {
                     Button("Open") { SystemShortcuts.openKeyboardSettings() }
                         .buttonStyle(BrutalButtonStyle(compact: true))
@@ -555,7 +576,7 @@ private struct ShortcutSettings: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
+            keysStillWithMacOS = Self.keysStillWithMacOS
         }
 
         SettingsCard(title: "Global hotkeys", symbol: "keyboard.fill") {
@@ -576,7 +597,7 @@ private struct ShortcutSettings: View {
             Button("Restore defaults") {
                 Preferences.resetHotkeys()
                 SystemShortcuts.useShot(true)
-                macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
+                keysStillWithMacOS = Self.keysStillWithMacOS
             }
                 .buttonStyle(BrutalButtonStyle(color: color, compact: true))
         }
