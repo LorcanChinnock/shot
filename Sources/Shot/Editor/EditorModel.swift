@@ -469,12 +469,13 @@ final class EditorModel {
             Toast.error("Could not render image")
             return false
         }
+        let destination = FileNaming.nextVersionURL(of: fileURL)
         do {
-            try data.write(to: FileNaming.nextVersionURL(of: fileURL), options: .atomic)
+            try data.write(to: destination, options: .atomic)
             Clipboard.copy(png: result.png, image: result.image)
             savedSnapshot = document.snapshot
             isDirty = false
-            Toast.show("Saved and copied")
+            Toast.show("Saved as \(destination.lastPathComponent) and copied", duration: .seconds(3))
             return true
         } catch {
             Toast.error("Save failed: \(error.localizedDescription)")

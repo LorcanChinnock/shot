@@ -99,7 +99,7 @@ Pinch, or press ⌘+ and ⌘-, to zoom. ⌘0 fits the canvas to the window and �
 
 ### Saving
 
-**Copy** copies the annotated image. **Save** (⌘S) writes it over the original file and copies it. Closing the window with ⌘W asks whether to save unsaved changes.
+**Copy** copies the annotated image. **Save** (⌘S) writes it beside the original as `name (2).png`, then `name (3).png` and so on, and copies it; the original is never changed. Closing the window with ⌘W asks whether to save unsaved changes.
 
 ## Screen recording
 
