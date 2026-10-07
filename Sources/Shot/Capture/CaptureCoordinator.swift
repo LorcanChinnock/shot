@@ -171,10 +171,19 @@ final class CaptureCoordinator {
 
     private func recordingFinished(_ url: URL) {
         state.isRecording = false
-        if Preferences().copyAfterRecording {
+        let prefs = Preferences()
+        if prefs.copyAfterRecording {
             Clipboard.copy(fileURL: url)
         }
         Confetti.burst(from: recordingRegion)
+        guard prefs.quickAccessAfterCapture else {
+            if prefs.copyAfterRecording {
+                Toast.show("Copied to clipboard")
+            } else if prefs.saveAfterCapture {
+                Toast.show("Saved")
+            }
+            return
+        }
         Task {
             let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
             generator.appliesPreferredTrackTransform = true
@@ -229,7 +238,7 @@ final class CaptureCoordinator {
         let scale = downscale ? 1 : originalScale
         var savedURL: URL?
         if prefs.saveAfterCapture || prefs.quickAccessAfterCapture || prefs.openEditorAfterCapture {
-            let folder = prefs.saveAfterCapture ? prefs.saveFolder : FileManager.default.temporaryDirectory.appendingPathComponent("Shot")
+            let folder = prefs.captureFolder
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             let url = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: format.fileExtension, prefix: prefs.filePrefix)
             try fileData.write(to: url)
