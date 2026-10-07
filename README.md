@@ -65,7 +65,7 @@ Shot needs macOS 15 or later and runs natively on Apple Silicon and Intel Macs.
 **With [Homebrew](https://brew.sh):**
 
 ```sh
-brew install lorcanchinnock/tap/shot
+brew update && brew install lorcanchinnock/tap/shot
 ```
 
 **Or by hand:** download `Shot-v<version>.zip` from the [latest release](https://github.com/LorcanChinnock/shot/releases/latest), unzip it, and move **Shot.app** to Applications.
