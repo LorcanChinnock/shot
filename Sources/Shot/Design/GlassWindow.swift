@@ -33,13 +33,7 @@ enum GlassWindow {
         window.toolbar = NSToolbar(identifier: "glass")
         window.toolbarStyle = .unified
         window.titlebarSeparatorStyle = .none
-        let hosting = NSHostingView(fixedFrame: GlassChrome(content: content()))
-        // A hosting view that is the contentView overwrites the window's minSize with SwiftUI's own, so keep it one level down.
-        let container = NSView()
-        hosting.frame = container.bounds
-        hosting.autoresizingMask = [.width, .height]
-        container.addSubview(hosting)
-        window.contentView = container
+        window.contentView = NSView(hosting: GlassChrome(content: content()))
         window.center()
         track(window)
         return window
@@ -77,11 +71,15 @@ enum GlassWindow {
     }
 }
 
-extension NSHostingView {
-    /// For windows that own their size: stops SwiftUI updating the window's size limits mid-layout, which throws when content changes under a visible window.
-    convenience init(fixedFrame rootView: Content) {
-        self.init(rootView: rootView)
-        sizingOptions = []
+extension NSView {
+    /// A window's content view hosting SwiftUI one level down. A hosting view that is itself the content view resizes the
+    /// window and sets its size limits from inside AppKit's layout pass, which throws once content changes under a visible window.
+    convenience init(hosting rootView: some View) {
+        self.init()
+        let hosting = NSHostingView(rootView: rootView)
+        hosting.sizingOptions = []
+        hosting.autoresizingMask = [.width, .height]
+        addSubview(hosting)
     }
 }
 
