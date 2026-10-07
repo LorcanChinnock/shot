@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.7.0-beta.25](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.24...v0.7.0-beta.25) (2026-10-07)
+
+
+### Features
+
+* **editor:** change the recording's own sound volume and keyframes ([#207](https://github.com/LorcanChinnock/shot/issues/207)) ([cfe9a8b](https://github.com/LorcanChinnock/shot/commit/cfe9a8bf32b4d6cfa2f3a53d951471f631057fc3))
+* **recording:** magnifier in the record area overlay ([#202](https://github.com/LorcanChinnock/shot/issues/202)) ([4802b09](https://github.com/LorcanChinnock/shot/commit/4802b09e04fc97f9e2990c6d8e8ef6951d512896))
+* **recording:** Record Window records the window itself ([#204](https://github.com/LorcanChinnock/shot/issues/204)) ([e96270e](https://github.com/LorcanChinnock/shot/commit/e96270e569e34e60656cbd936eb75897fbe444c2))
+* **video:** lock, hide and mute buttons on track lanes ([#206](https://github.com/LorcanChinnock/shot/issues/206)) ([f6697e8](https://github.com/LorcanChinnock/shot/commit/f6697e8ad0f75cecd3c6a9addd9eac602c810efb))
+
+
+### Bug Fixes
+
+* **editor:** canvas handles and Inspector SCALE slider share one scale range ([#199](https://github.com/LorcanChinnock/shot/issues/199)) ([98d50ec](https://github.com/LorcanChinnock/shot/commit/98d50ec4edd4076219c3a49866ed714a956d1d36))
+* **editor:** paste and duplicate keep fill, bend, alignment and corner radius ([#201](https://github.com/LorcanChinnock/shot/issues/201)) ([0694fd9](https://github.com/LorcanChinnock/shot/commit/0694fd90cb9744bce084cb41790b973610f9bda6))
+* **recording:** follow Save to folder and Show Quick Access ([#209](https://github.com/LorcanChinnock/shot/issues/209)) ([66de74e](https://github.com/LorcanChinnock/shot/commit/66de74ee5308a083d5b86603fda3d101664b2cc4))
+* **recording:** keep the camera bubble inside the recorded region ([#203](https://github.com/LorcanChinnock/shot/issues/203)) ([e9e8691](https://github.com/LorcanChinnock/shot/commit/e9e8691f427cdb26e453025c8fd266bb3cf0cfae))
+* **recording:** mute silences only the microphone, not system audio ([#208](https://github.com/LorcanChinnock/shot/issues/208)) ([a70520a](https://github.com/LorcanChinnock/shot/commit/a70520adca124d221d72ad0ddca042c22297ac4b))
+* **recording:** setup toggles apply to this recording only ([#211](https://github.com/LorcanChinnock/shot/issues/211)) ([30413f8](https://github.com/LorcanChinnock/shot/commit/30413f82d6f0dc18b28822eb79459f42da00099c))
+* **recording:** toast when the area is too small for the camera bubble ([#200](https://github.com/LorcanChinnock/shot/issues/200)) ([3d2d6d9](https://github.com/LorcanChinnock/shot/commit/3d2d6d9bf2d6c07884019f87ef5a13cffc0aacda))
+* **recording:** undo window before a discarded recording is deleted ([#205](https://github.com/LorcanChinnock/shot/issues/205)) ([178a6c9](https://github.com/LorcanChinnock/shot/commit/178a6c971b0242316f699e37f65056f532732406))
+
 ## [0.7.0-beta.24](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.23...v0.7.0-beta.24) (2026-10-07)
 
 
