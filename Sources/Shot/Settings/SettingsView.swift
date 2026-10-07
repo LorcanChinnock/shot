@@ -525,21 +525,18 @@ private struct DevicePicker: View {
     @Binding var selection: String
 
     var body: some View {
-        Menu {
-            Button("System default") { selection = "" }
-            Divider()
-            ForEach(devices, id: \.uniqueID) { device in
-                Button(device.localizedName) { selection = device.uniqueID }
-            }
-        } label: {
+        BrutalDropdown(title: "Device", entries: [
+            .item("System default", selected: !devices.contains { $0.uniqueID == selection }) { selection = "" },
+            .divider,
+        ] + devices.map { device in
+            .item(device.localizedName, selected: device.uniqueID == selection) { selection = device.uniqueID }
+        }) {
             HStack(spacing: 6) {
                 Text(selectedName).lineLimit(1)
                 Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
             }
             .frame(maxWidth: 190)
         }
-        .menuStyle(.button)
-        .menuIndicator(.hidden)
         .buttonStyle(BrutalButtonStyle(compact: true))
         .fixedSize()
     }

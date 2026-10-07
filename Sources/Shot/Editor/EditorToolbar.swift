@@ -227,11 +227,9 @@ struct ShapeMenu: View {
 
     var body: some View {
         ToolGroup {
-            Menu {
-                ForEach(BoxShape.allCases, id: \.self) { shape in
-                    Button { choose(shape) } label: { Label(shape.title, systemImage: shape.symbol) }
-                }
-            } label: {
+            BrutalDropdown(title: "Shape", entries: BoxShape.allCases.map { shape in
+                .item(shape.title, symbol: shape.symbol, selected: shape == selected) { choose(shape) }
+            }) {
                 HStack(spacing: 6) {
                     Image(systemName: selected.symbol).font(.system(size: 13, weight: .bold))
                     Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
@@ -241,11 +239,8 @@ struct ShapeMenu: View {
                 .padding(.horizontal, 8)
                 .contentShape(Rectangle())
             }
-            .menuStyle(.button)
-            .menuIndicator(.hidden)
             .buttonStyle(.plain)
             .fixedSize()
-            .accessibilityLabel(Text("Shape: \(selected.title)"))
             .brutalTip("Shape", detail: selected.title)
         }
     }
@@ -558,21 +553,19 @@ private struct ZoomMenu: View {
     let canvas: EditorCanvasView
 
     var body: some View {
-        Menu {
-            Button("Zoom In") { canvas.zoomIn() }
-            Button("Zoom Out") { canvas.zoomOut() }
-            Divider()
-            Button("Zoom to Fit") { canvas.zoomToFit() }
-            Button("Actual Size") { canvas.zoomToActualSize() }
-        } label: {
+        BrutalDropdown(title: "Zoom", entries: [
+            .item("Zoom In", shortcut: "⌘+") { canvas.zoomIn() },
+            .item("Zoom Out", shortcut: "⌘-") { canvas.zoomOut() },
+            .divider,
+            .item("Zoom to Fit", shortcut: "⌘0") { canvas.zoomToFit() },
+            .item("Actual Size", shortcut: "⌘1") { canvas.zoomToActualSize() },
+        ]) {
             HStack(spacing: 6) {
                 Text("\(Int((model.zoom * 100).rounded()))%")
                     .monospacedDigit()
                 Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
             }
         }
-        .menuStyle(.button)
-        .menuIndicator(.hidden)
         .buttonStyle(BrutalButtonStyle(compact: true))
         .fixedSize()
         .brutalTip("Zoom in (⌘+), out (⌘-), to fit (⌘0) or to actual size (⌘1). Pinch to zoom; scroll, Space-drag, middle-drag or the hand tool (H) to move around.")
@@ -585,32 +578,28 @@ private struct CanvasMenu: View {
     @Bindable var model: EditorModel
 
     var body: some View {
-        Menu {
-            Button("Fit to Content") { model.fitToContent() }
-            Button("Trim to Image") { model.trimToImage() }
-                .disabled(!model.document.hasPadding)
-            Divider()
-            Picker("Background", selection: Binding(get: { model.document.background }, set: { model.setBackground($0) })) {
-                // JPEG has no alpha, so it can't keep transparent padding.
-                if !model.isJPEG {
-                    Text("Transparent").tag(RGBA?.none)
-                }
-                Text("White").tag(RGBA?.some(Self.white))
-                ForEach(RGBA.presets.indices, id: \.self) { index in
-                    Text(EditorToolbar.colorNames[index]).tag(RGBA?.some(RGBA.presets[index]))
-                }
-            }
-        } label: {
+        BrutalDropdown(title: "Canvas", entries: [
+            .item("Fit to Content") { model.fitToContent() },
+            .item("Trim to Image", enabled: model.document.hasPadding) { model.trimToImage() },
+            .divider,
+            .header("Background"),
+        ] + backgrounds.map { name, color in
+            .item(name, selected: model.document.background == color) { model.setBackground(color) }
+        }) {
             HStack(spacing: 6) {
                 Text("Canvas")
                 Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
             }
         }
-        .menuStyle(.button)
-        .menuIndicator(.hidden)
         .buttonStyle(BrutalButtonStyle(compact: true))
         .fixedSize()
         .brutalTip("Canvas size and background")
+    }
+
+    private var backgrounds: [(name: String, color: RGBA?)] {
+        // JPEG has no alpha, so it can't keep transparent padding.
+        (model.isJPEG ? [] : [("Transparent", nil)]) + [("White", Self.white)]
+            + RGBA.presets.indices.map { (EditorToolbar.colorNames[$0], RGBA.presets[$0]) }
     }
 }
 
