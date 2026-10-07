@@ -35,6 +35,7 @@ public enum PreferenceKey {
     public static let editorTool = "editorTool"
     public static let editorColor = "editorColor"
     public static let editorNoteColor = "editorNoteColor"
+    public static let editorHighlightColor = "editorHighlightColor"
     public static let editorFill = "editorFill"
     public static let editorCustomColors = "editorCustomColors"
     public static let editorWidth = "editorWidth"
@@ -109,6 +110,7 @@ public struct Preferences {
             PreferenceKey.editorTool: EditorStyle().tool.rawValue,
             PreferenceKey.editorColor: Data(),
             PreferenceKey.editorNoteColor: Data(),
+            PreferenceKey.editorHighlightColor: Data(),
             PreferenceKey.editorFill: Data(),
             PreferenceKey.editorCustomColors: Data(),
             PreferenceKey.editorWidth: EditorStyle().widthIndex,
@@ -170,6 +172,7 @@ public struct Preferences {
         }
         store.set(try? JSONEncoder().encode(style.color), forKey: PreferenceKey.editorColor)
         store.set(try? JSONEncoder().encode(style.noteColor), forKey: PreferenceKey.editorNoteColor)
+        store.set(try? JSONEncoder().encode(style.highlightColor), forKey: PreferenceKey.editorHighlightColor)
         store.set(style.fill.flatMap { try? JSONEncoder().encode($0) } ?? Data(), forKey: PreferenceKey.editorFill)
         store.set(try? JSONEncoder().encode(style.customColors), forKey: PreferenceKey.editorCustomColors)
         store.set(style.widthIndex, forKey: PreferenceKey.editorWidth)
@@ -265,6 +268,7 @@ public struct Preferences {
             tool: tool.flatMap { $0.isDrawing ? $0 : nil } ?? defaults.tool,
             color: colour(PreferenceKey.editorColor, default: defaults.color),
             noteColor: colour(PreferenceKey.editorNoteColor, default: defaults.noteColor),
+            highlightColor: decoded(PreferenceKey.editorHighlightColor) ?? defaults.highlightColor,
             fill: decoded(PreferenceKey.editorFill),
             widthIndex: index(PreferenceKey.editorWidth, in: EditorStyle.widths.indices, default: defaults.widthIndex),
             customColors: decoded(PreferenceKey.editorCustomColors) ?? defaults.customColors,

@@ -35,7 +35,7 @@ enum AnnotationFrame {
     /// Kinds that depend on what's under them: they blend with it, blur it, or dim all but a part of it.
     private static func needsPicture(_ annotation: Annotation) -> Bool {
         switch annotation.kind {
-        case .highlight, .spotlight, .pixelate, .blur: true
+        case .highlight, .marker, .spotlight, .pixelate, .blur: true
         default: false
         }
     }

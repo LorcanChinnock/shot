@@ -14,7 +14,7 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
         case .pen: "d"
         case .text: "t"
         case .note: "s"
-        case .highlight: "h"
+        case .highlight: "m"
         case .spotlight: "f"
         case .redact: "b"
         case .counter: "n"
@@ -45,8 +45,8 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
     /// True for the tools that draw in the chosen colour and width.
     public var isStyled: Bool {
         switch self {
-        case .arrow, .line, .shape, .pen, .text, .note, .counter: true
-        case .select, .highlight, .spotlight, .redact, .crop: false
+        case .arrow, .line, .shape, .pen, .text, .note, .highlight, .counter: true
+        case .select, .spotlight, .redact, .crop: false
         }
     }
 
@@ -68,6 +68,8 @@ public struct EditorStyle: Equatable, Sendable {
     public var color: RGBA
     /// Notes keep their own colour, pale yellow until the user picks another.
     public var noteColor: RGBA
+    /// The highlighter keeps its own colour too, yellow until the user picks another.
+    public var highlightColor: RGBA
     /// What new shapes are filled with; `nil` leaves them unfilled.
     public var fill: RGBA?
     /// Index into `widths`.
@@ -80,12 +82,13 @@ public struct EditorStyle: Equatable, Sendable {
 
     public init(
         tool: EditorTool = .arrow, color: RGBA = RGBA.presets[0], noteColor: RGBA = RGBA.presets[2],
-        fill: RGBA? = nil, widthIndex: Int = 1, customColors: [ColorSlot: RGBA] = [:],
+        highlightColor: RGBA = RGBA.presets[2], fill: RGBA? = nil, widthIndex: Int = 1, customColors: [ColorSlot: RGBA] = [:],
         shape: BoxShape = .rectangle, redaction: Redaction = .blur, spotlight: SpotlightStyle = SpotlightStyle()
     ) {
         self.tool = tool
         self.color = color
         self.noteColor = noteColor
+        self.highlightColor = highlightColor
         self.fill = fill
         self.widthIndex = widthIndex
         self.customColors = customColors
@@ -97,20 +100,24 @@ public struct EditorStyle: Equatable, Sendable {
 
 /// A palette that remembers its own last custom colour.
 public enum ColorSlot: String, Codable, CodingKeyRepresentable, Sendable {
-    case stroke, fill, note
+    case stroke, fill, note, highlight
 
-    /// The fill palette's slot, else the note colour's for the note shown or about to be drawn, else the stroke's.
+    /// The fill palette's slot, else the note's or highlighter's for the one shown or about to be drawn, else the stroke's.
     public init(forFill: Bool, shown: Annotation?, tool: EditorTool?) {
         if forFill {
             self = .fill
         } else if let shown {
-            if case .note = shown.kind {
-                self = .note
-            } else {
-                self = .stroke
+            switch shown.kind {
+            case .note: self = .note
+            case .marker: self = .highlight
+            default: self = .stroke
             }
         } else {
-            self = tool == .note ? .note : .stroke
+            switch tool {
+            case .note: self = .note
+            case .highlight: self = .highlight
+            default: self = .stroke
+            }
         }
     }
 }

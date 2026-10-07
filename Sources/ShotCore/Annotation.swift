@@ -53,6 +53,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case arrow(from: CGPoint, to: CGPoint)
         case line(from: CGPoint, to: CGPoint)
         case shape(BoxShape, rect: CGRect)
+        /// A yellow box, from before the highlighter drew strokes. Kept so older projects still open.
         case highlight(CGRect)
         case pixelate(CGRect)
         /// A Gaussian blur, strong enough that the text under it can't be read back.
@@ -65,6 +66,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case note(String, rect: CGRect)
         /// A pen stroke through the points, drawn smoothed with round caps.
         case freehand([CGPoint])
+        /// A highlighter stroke through the points: smoothed like a pen's, but wide, flat-ended and multiplied into what's under it.
+        case marker([CGPoint])
         /// Another image placed on the canvas, stretched to `rect`. Its colour and width are unused.
         case image(AnnotationImage, rect: CGRect)
     }
@@ -112,13 +115,15 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     /// True for the kinds drawn in their colour and sized by their width.
     public var isStyled: Bool {
         switch kind {
-        case .arrow, .line, .shape, .text, .counter, .note, .freehand: true
+        case .arrow, .line, .shape, .text, .counter, .note, .freehand, .marker: true
         case .highlight, .pixelate, .blur, .spotlight, .image: false
         }
     }
 
     public var counterRadius: CGFloat { lineWidth * 3 + 10 }
     public var noteFontSize: CGFloat { lineWidth * 3 + 8 }
+    /// About one line of body text tall at the middle width.
+    public var markerWidth: CGFloat { lineWidth * 4.5 }
 
     /// The laid-out note, or `nil` if this isn't one.
     public var noteLayout: NoteLayout? {
@@ -160,7 +165,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             return CGRect(x: center.x - counterRadius, y: center.y - counterRadius, width: counterRadius * 2, height: counterRadius * 2)
         case .note:
             return noteLayout?.frame ?? .null
-        case let .freehand(points):
+        case let .freehand(points), let .marker(points):
             return Freehand.bounds(of: points)
         }
     }
@@ -185,6 +190,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let .freehand(points):
             // The smoothed curve can swing a little past the points it runs through.
             return bounds.union(Freehand.path(through: points).boundingBoxOfPath).insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2)
+        case let .marker(points):
+            return bounds.union(Freehand.path(through: points).boundingBoxOfPath).insetBy(dx: -markerWidth / 2, dy: -markerWidth / 2)
         }
     }
 
@@ -206,6 +213,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             return hypot(point.x - center.x, point.y - center.y) <= counterRadius + tolerance
         case let .freehand(points):
             return Freehand.path(through: points).copy(strokingWithWidth: slop * 2, lineCap: .round, lineJoin: .round, miterLimit: 10).contains(point)
+        case let .marker(points):
+            return Freehand.path(through: points).copy(strokingWithWidth: tolerance * 2 + markerWidth, lineCap: .butt, lineJoin: .round, miterLimit: 10).contains(point)
         }
     }
 
@@ -223,6 +232,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let .counter(number, center): kind = .counter(number, center: move(center))
         case let .note(string, rect): kind = .note(string, rect: rect.offsetBy(dx: delta.dx, dy: delta.dy))
         case let .freehand(points): kind = .freehand(points.map(move))
+        case let .marker(points): kind = .marker(points.map(move))
         case let .image(image, rect): kind = .image(image, rect: rect.offsetBy(dx: delta.dx, dy: delta.dy))
         }
     }
@@ -267,7 +277,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let .arrow(from, to), let .line(from, to):
             let middle = curve.map { Self.curvePoint($0, at: 0.5) } ?? CGPoint(x: (from.x + to.x) / 2, y: (from.y + to.y) / 2)
             return [(.start, from), (.end, to), (.mid, middle)]
-        case .shape, .highlight, .pixelate, .blur, .spotlight, .note, .freehand:
+        case .shape, .highlight, .pixelate, .blur, .spotlight, .note, .freehand, .marker:
             let frame = bounds
             return AnnotationHandle.box.map { ($0, $0.point(in: frame)) }
         case let .image(_, rect):
@@ -333,6 +343,10 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             let rect = bounds
             let (min, max) = corners(rect)
             kind = .freehand(Freehand.scaled(points, from: rect, min: min, max: max))
+        case let (.marker(points), _):
+            let rect = bounds
+            let (min, max) = corners(rect)
+            kind = .marker(Freehand.scaled(points, from: rect, min: min, max: max))
         case let (.image(image, rect), _):
             kind = .image(image, rect: Self.resizedImageRect(rect, handle: handle, to: point))
         }

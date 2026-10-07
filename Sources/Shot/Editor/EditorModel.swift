@@ -30,7 +30,7 @@ extension EditorTool {
         case .pen: "Drag to draw freehand."
         case .text: "Click to type a label."
         case .note: "Drag to add a sticky note."
-        case .highlight: "Drag over text to mark it in yellow."
+        case .highlight: "Drag over text to highlight it. Hold Shift for a straight line."
         case .spotlight: "Drag to dim or blur everything outside an area."
         case .redact: "Drag over private details to blur or pixelate them."
         case .counter: "Click to add numbered steps: 1, 2, 3…"
@@ -67,6 +67,10 @@ final class EditorModel {
     /// Notes keep their own colour, pale yellow until the user picks another.
     var noteColor: RGBA {
         didSet { rememberStyle { $0.noteColor = noteColor } }
+    }
+    /// The highlighter keeps its own colour too, yellow until the user picks another.
+    var highlightColor: RGBA {
+        didSet { rememberStyle { $0.highlightColor = highlightColor } }
     }
     /// What new shapes are filled with; `nil` leaves them unfilled.
     var fill: RGBA? {
@@ -116,6 +120,7 @@ final class EditorModel {
         tool = style.tool
         color = style.color
         noteColor = style.noteColor
+        highlightColor = style.highlightColor
         fill = style.fill
         shape = style.shape
         redaction = style.redaction
@@ -136,11 +141,10 @@ final class EditorModel {
         selectedID.flatMap { id in document.annotations.first { $0.id == id } }
     }
 
-    /// The colour the palette shows and sets: the text being typed's, else the selection's, else the note
-    /// colour while the note tool is active, else the colour for the next annotation.
+    /// The colour the palette shows and sets: the text being typed's, else the selection's, else the colour for the tool's next annotation.
     var paletteColor: RGBA {
         get {
-            editingText?.color ?? selection?.color ?? (tool == .note ? noteColor : color)
+            editingText?.color ?? selection?.color ?? nextColor
         }
         set {
             if editingText != nil {
@@ -149,11 +153,25 @@ final class EditorModel {
             }
             restyleSelection { $0.color = newValue }
             if stylesNextAnnotation {
-                if tool == .note {
-                    noteColor = newValue
-                } else {
-                    color = newValue
-                }
+                nextColor = newValue
+            }
+        }
+    }
+
+    /// The colour for the tool's next annotation: notes and the highlighter keep their own.
+    var nextColor: RGBA {
+        get {
+            switch tool {
+            case .note: noteColor
+            case .highlight: highlightColor
+            default: color
+            }
+        }
+        set {
+            switch tool {
+            case .note: noteColor = newValue
+            case .highlight: highlightColor = newValue
+            default: color = newValue
             }
         }
     }
@@ -293,10 +311,8 @@ final class EditorModel {
             if stylesNextAnnotation {
                 if forFill {
                     fill = colour
-                } else if tool == .note {
-                    noteColor = colour
                 } else {
-                    color = colour
+                    nextColor = colour
                 }
             }
         }

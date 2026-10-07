@@ -191,6 +191,13 @@ public enum AnnotationRenderer {
         case let .freehand(points):
             ctx.addPath(Freehand.path(through: points))
             ctx.strokePath()
+        case let .marker(points):
+            ctx.setBlendMode(.multiply)
+            ctx.setAlpha(0.6)
+            ctx.setLineWidth(annotation.markerWidth)
+            ctx.setLineCap(.butt)
+            ctx.addPath(Freehand.path(through: points))
+            ctx.strokePath()
         case .note:
             guard let layout = annotation.noteLayout else {
                 return

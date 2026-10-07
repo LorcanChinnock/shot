@@ -838,7 +838,7 @@ extension VideoEditorModel {
 
     var paletteColor: RGBA {
         get {
-            editingText?.color ?? selectedAnnotation?.annotation.color ?? (annotationTool == .note ? annotationStyle.noteColor : annotationStyle.color)
+            editingText?.color ?? selectedAnnotation?.annotation.color ?? nextColor
         }
         set {
             if let text = editingText {
@@ -853,10 +853,26 @@ extension VideoEditorModel {
                 }
             } else if selectedAnnotation != nil {
                 restyleSelection { $0.color = newValue }
-            } else if annotationTool == .note {
-                annotationStyle.noteColor = newValue
             } else {
-                annotationStyle.color = newValue
+                nextColor = newValue
+            }
+        }
+    }
+
+    /// The colour for the tool's next annotation: notes and the highlighter keep their own.
+    var nextColor: RGBA {
+        get {
+            switch annotationTool {
+            case .note: annotationStyle.noteColor
+            case .highlight: annotationStyle.highlightColor
+            default: annotationStyle.color
+            }
+        }
+        set {
+            switch annotationTool {
+            case .note: annotationStyle.noteColor = newValue
+            case .highlight: annotationStyle.highlightColor = newValue
+            default: annotationStyle.color = newValue
             }
         }
     }

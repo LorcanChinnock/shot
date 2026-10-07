@@ -146,6 +146,7 @@ import Testing
         #expect(style.tool == .arrow)
         #expect(style.color == RGBA.presets[0])
         #expect(style.noteColor == RGBA.presets[2])
+        #expect(style.highlightColor == RGBA.presets[2])
         #expect(style.fill == nil)
         #expect(style.widthIndex == 1)
     }
@@ -161,7 +162,8 @@ import Testing
         let thick = try #require(EditorStyle.widths.indices.last)
         let custom = RGBA(0.2, 0.4, 0.6, 0.5)
         let style = EditorStyle(
-            tool: .shape, color: blue, noteColor: RGBA.presets[3], fill: custom, widthIndex: thick, customColors: [.stroke: custom, .note: blue],
+            tool: .shape, color: blue, noteColor: RGBA.presets[3], highlightColor: RGBA.presets[4], fill: custom, widthIndex: thick,
+            customColors: [.stroke: custom, .note: blue, .highlight: RGBA.presets[1]],
             shape: .star, redaction: .pixelate, spotlight: SpotlightStyle(shape: .ellipse, effect: .blur, strength: .strong)
         )
         Preferences.remember(style, in: store)
