@@ -1,7 +1,7 @@
 import CoreGraphics
 
 public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
-    case select, arrow, line, rect, ellipse, pen, text, note, highlight, spotlight, pixelate, blur, counter, crop
+    case select, arrow, line, shape, pen, text, note, highlight, spotlight, redact, counter, crop
 
     public var id: String { rawValue }
 
@@ -10,15 +10,13 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
         case .select: "v"
         case .arrow: "a"
         case .line: "l"
-        case .rect: "r"
-        case .ellipse: "o"
+        case .shape: "r"
         case .pen: "d"
         case .text: "t"
         case .note: "s"
         case .highlight: "h"
         case .spotlight: "f"
-        case .pixelate: "p"
-        case .blur: "b"
+        case .redact: "b"
         case .counter: "n"
         case .crop: "c"
         }
@@ -29,15 +27,13 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
         case .select: "Select"
         case .arrow: "Arrow"
         case .line: "Line"
-        case .rect: "Rectangle"
-        case .ellipse: "Ellipse"
+        case .shape: "Shape"
         case .pen: "Pen"
         case .text: "Text"
         case .note: "Sticky Note"
         case .highlight: "Highlight"
         case .spotlight: "Spotlight"
-        case .pixelate: "Pixelate"
-        case .blur: "Blur"
+        case .redact: "Redact"
         case .counter: "Counter"
         case .crop: "Crop"
         }
@@ -49,8 +45,16 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
     /// True for the tools that draw in the chosen colour and width.
     public var isStyled: Bool {
         switch self {
-        case .arrow, .line, .rect, .ellipse, .pen, .text, .note, .counter: true
-        case .select, .highlight, .spotlight, .pixelate, .blur, .crop: false
+        case .arrow, .line, .shape, .pen, .text, .note, .counter: true
+        case .select, .highlight, .spotlight, .redact, .crop: false
+        }
+    }
+
+    /// True for the tools whose width sets the size of their text.
+    public var sizesText: Bool {
+        switch self {
+        case .text, .note, .counter: true
+        default: false
         }
     }
 }
@@ -64,18 +68,22 @@ public struct EditorStyle: Equatable, Sendable {
     public var color: RGBA
     /// Notes keep their own colour, pale yellow until the user picks another.
     public var noteColor: RGBA
-    /// What new rectangles and ellipses are filled with; `nil` leaves them unfilled.
+    /// What new shapes are filled with; `nil` leaves them unfilled.
     public var fill: RGBA?
     /// Index into `widths`.
     public var widthIndex: Int
     /// Custom colours picked lately, newest first.
     public var recentColors: [RGBA]
+    public var shape: BoxShape
+    public var redaction: Redaction
+    public var spotlight: SpotlightStyle
 
     public static let maxRecentColors = 6
 
     public init(
         tool: EditorTool = .arrow, color: RGBA = RGBA.presets[0], noteColor: RGBA = RGBA.presets[2],
-        fill: RGBA? = nil, widthIndex: Int = 1, recentColors: [RGBA] = []
+        fill: RGBA? = nil, widthIndex: Int = 1, recentColors: [RGBA] = [],
+        shape: BoxShape = .rectangle, redaction: Redaction = .blur, spotlight: SpotlightStyle = SpotlightStyle()
     ) {
         self.tool = tool
         self.color = color
@@ -83,6 +91,9 @@ public struct EditorStyle: Equatable, Sendable {
         self.fill = fill
         self.widthIndex = widthIndex
         self.recentColors = recentColors
+        self.shape = shape
+        self.redaction = redaction
+        self.spotlight = spotlight
     }
 
     /// `recentColors` with `color` first, unless it's a preset.

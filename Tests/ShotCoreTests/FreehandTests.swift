@@ -133,7 +133,7 @@ private func isBase(_ p: [CGFloat]) -> Bool { p[0] > 0.9 && p[2] < 0.1 }
     #expect(a.hitTest(CGPoint(x: 150, y: 100), tolerance: 0))
     #expect(a.hitTest(CGPoint(x: 100, y: 52), tolerance: 2))
     #expect(!a.hitTest(CGPoint(x: 100, y: 100), tolerance: 6))
-    let doc = [Annotation(kind: .rect(CGRect(x: 90, y: 90, width: 20, height: 20)), color: blue, lineWidth: 4), a]
+    let doc = [Annotation(kind: .shape(.rectangle, rect: CGRect(x: 90, y: 90, width: 20, height: 20)), color: blue, lineWidth: 4), a]
     #expect(doc.topmostIndex(at: CGPoint(x: 90, y: 100), tolerance: 2) == 0)
     #expect(doc.topmostIndex(at: CGPoint(x: 150, y: 100), tolerance: 2) == 1)
 }

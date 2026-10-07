@@ -14,6 +14,9 @@ struct AnnotationCanvas: NSViewRepresentable {
     func updateNSView(_ view: AnnotationCanvasView, context: Context) {
         // Reading these makes SwiftUI call this again when they change, so the handles follow the selection and playhead.
         _ = (model.selectedClipID, model.playhead, model.annotationTool, model.project, model.zoom)
+        // The palette recolours and resizes the text being typed.
+        _ = model.editingText
+        view.layoutField()
         view.needsDisplay = true
         view.window?.invalidateCursorRects(for: view)
     }
@@ -29,8 +32,12 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
     private var resizeHandle: AnnotationHandle?
     private var resizeStart: Annotation?
     private var field: NSTextField?
-    private var fieldAnnotation: Annotation?
     private var fieldIsNew = false
+    /// The text or note the field is editing. The model holds it so the palette can recolour and resize it.
+    private var fieldAnnotation: Annotation? {
+        get { model.editingText }
+        set { model.editingText = newValue }
+    }
 
     init(model: VideoEditorModel) {
         self.model = model
@@ -179,7 +186,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         let fromCenter = event.modifierFlags.contains(.option)
         var rect = Geometry.normalized(from: start, to: point)
         switch tool {
-        case .rect, .ellipse, .highlight, .pixelate, .blur, .spotlight:
+        case .shape, .highlight, .redact, .spotlight:
             if constrain {
                 rect = Geometry.square(from: start, to: point)
             }
@@ -216,12 +223,10 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             return
         case .arrow: kind = .arrow(from: start, to: point)
         case .line: kind = .line(from: start, to: point)
-        case .rect: kind = .rect(rect)
-        case .ellipse: kind = .ellipse(rect)
+        case .shape: kind = .shape(style.shape, rect: rect)
         case .highlight: kind = .highlight(rect)
-        case .pixelate: kind = .pixelate(rect)
-        case .blur: kind = .blur(rect)
-        case .spotlight: kind = .spotlight(rect)
+        case .redact: kind = style.redaction == .blur ? .blur(rect) : .pixelate(rect)
+        case .spotlight: kind = .spotlight(rect, style: model.nextSpotlightStyle)
         case .pen:
             let points: [CGPoint]
             if let draft, case let .freehand(drawn) = draft.kind {
@@ -281,7 +286,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
 
     /// Opens a text field over a text or note annotation, which is either new or already on the timeline.
     private func beginField(for annotation: Annotation, isNew: Bool) {
-        let field = NSTextField(string: annotation.currentString)
+        let field = NSTextField(string: annotation.text ?? "")
         field.isBordered = false
         field.focusRingType = .none
         field.delegate = self
@@ -312,7 +317,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         }
     }
 
-    private func layoutField() {
+    func layoutField() {
         guard let field, let annotation = fieldAnnotation else {
             return
         }
@@ -393,17 +398,5 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
 }
 
 private extension Annotation {
-    var isEditableText: Bool {
-        switch kind {
-        case .text, .note: true
-        default: false
-        }
-    }
-
-    var currentString: String {
-        switch kind {
-        case let .text(string, _, _), let .note(string, _): string
-        default: ""
-        }
-    }
+    var isEditableText: Bool { text != nil }
 }

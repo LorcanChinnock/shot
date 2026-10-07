@@ -20,10 +20,10 @@ private func annotation(_ kind: Annotation.Kind) -> Annotation {
 
 @Test func hitTestRectAndEllipseStrokeOnly() {
     let rect = CGRect(x: 0, y: 0, width: 100, height: 100)
-    let r = annotation(.rect(rect))
+    let r = annotation(.shape(.rectangle, rect: rect))
     #expect(r.hitTest(CGPoint(x: 0, y: 50), tolerance: 2))
     #expect(!r.hitTest(CGPoint(x: 50, y: 50), tolerance: 2))
-    let e = annotation(.ellipse(rect))
+    let e = annotation(.shape(.ellipse, rect: rect))
     #expect(e.hitTest(CGPoint(x: 50, y: 0), tolerance: 2))
     #expect(!e.hitTest(CGPoint(x: 50, y: 50), tolerance: 2))
     #expect(!e.hitTest(CGPoint(x: 2, y: 2), tolerance: 2))
@@ -99,24 +99,25 @@ private func annotation(_ kind: Annotation.Kind) -> Annotation {
 
 private let shapeFrame = CGRect(x: 20, y: 20, width: 100, height: 60)
 
-@Test func onlyRectanglesAndEllipsesTakeAFill() {
-    #expect(annotation(.rect(shapeFrame)).supportsFill)
-    #expect(annotation(.ellipse(shapeFrame)).supportsFill)
+@Test func onlyShapesTakeAFill() {
+    for shape in BoxShape.allCases {
+        #expect(annotation(.shape(shape, rect: shapeFrame)).supportsFill)
+    }
     #expect(!annotation(.arrow(from: .zero, to: CGPoint(x: 9, y: 9))).supportsFill)
 }
 
 @Test func onlyDrawnMarksTakeAColourAndWidth() {
-    #expect(EditorTool.allCases.filter { !$0.isStyled } == [.select, .highlight, .spotlight, .pixelate, .blur, .crop])
+    #expect(EditorTool.allCases.filter { !$0.isStyled } == [.select, .highlight, .spotlight, .redact, .crop])
     #expect(annotation(.freehand([.zero, CGPoint(x: 9, y: 9)])).isStyled)
     #expect(annotation(.note("Hi", rect: shapeFrame)).isStyled)
-    for kind in [Annotation.Kind.highlight(shapeFrame), .pixelate(shapeFrame), .blur(shapeFrame), .spotlight(shapeFrame)] {
+    for kind in [Annotation.Kind.highlight(shapeFrame), .pixelate(shapeFrame), .blur(shapeFrame), .spotlight(shapeFrame, style: SpotlightStyle())] {
         #expect(!annotation(kind).isStyled)
     }
 }
 
 @Test func aFilledShapeIsHitInside() {
     let centre = CGPoint(x: shapeFrame.midX, y: shapeFrame.midY)
-    for kind in [Annotation.Kind.rect(shapeFrame), .ellipse(shapeFrame)] {
+    for kind in BoxShape.allCases.map({ Annotation.Kind.shape($0, rect: shapeFrame) }) {
         #expect(!annotation(kind).hitTest(centre, tolerance: 2))
         #expect(Annotation(kind: kind, color: red, fill: RGBA(0, 0, 1), lineWidth: 4).hitTest(centre, tolerance: 2))
     }
@@ -126,7 +127,7 @@ private let shapeFrame = CGRect(x: 20, y: 20, width: 100, height: 60)
     let ctx = CGContext(data: nil, width: 140, height: 100, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
     ctx.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1))
     ctx.fill(CGRect(x: 0, y: 0, width: 140, height: 100))
-    let doc = EditorDocument(base: ctx.makeImage()!, annotations: [Annotation(kind: .rect(shapeFrame), color: red, fill: RGBA(0, 0, 1), lineWidth: 4)])
+    let doc = EditorDocument(base: ctx.makeImage()!, annotations: [Annotation(kind: .shape(.rectangle, rect: shapeFrame), color: red, fill: RGBA(0, 0, 1), lineWidth: 4)])
     let image = try #require(AnnotationRenderer.flatten(doc))
     let pixels = try #require(image.dataProvider?.data as Data?)
     func pixel(x: Int, y: Int) -> [UInt8] {
@@ -149,19 +150,60 @@ private let shapeFrame = CGRect(x: 20, y: 20, width: 100, height: 60)
     #expect(many.count == EditorStyle.maxRecentColors)
 }
 
-@Test func draggingArrowMidpointBendsIt() {
-    var arrow = annotation(.arrow(from: .zero, to: CGPoint(x: 100, y: 0)))
-    #expect(arrow.handle(at: CGPoint(x: 50, y: 0), tolerance: 6) == .mid)
-    arrow.resize(.mid, to: CGPoint(x: 50, y: 40))
-    #expect(arrow.handles.first { $0.handle == .mid }?.point == CGPoint(x: 50, y: 40))
-    #expect(arrow.hitTest(CGPoint(x: 50, y: 40), tolerance: 3))
-    #expect(!arrow.hitTest(CGPoint(x: 50, y: 0), tolerance: 3))
-    arrow.offset(by: CGVector(dx: 10, dy: 10))
-    #expect(arrow.handles.first { $0.handle == .mid }?.point == CGPoint(x: 60, y: 50))
-    arrow.resize(.mid, to: CGPoint(x: 60, y: 10))
-    #expect(arrow.bend == nil)
+@Test(arguments: [Annotation.Kind.arrow(from: .zero, to: CGPoint(x: 100, y: 0)), .line(from: .zero, to: CGPoint(x: 100, y: 0))])
+func draggingTheMidpointBendsIt(kind: Annotation.Kind) {
+    var a = annotation(kind)
+    #expect(a.handle(at: CGPoint(x: 50, y: 0), tolerance: 6) == .mid)
+    a.resize(.mid, to: CGPoint(x: 50, y: 40))
+    #expect(a.handles.first { $0.handle == .mid }?.point == CGPoint(x: 50, y: 40))
+    #expect(a.hitTest(CGPoint(x: 50, y: 40), tolerance: 3))
+    #expect(!a.hitTest(CGPoint(x: 50, y: 0), tolerance: 3))
+    #expect(a.bounds.maxY == 40)
+    a.offset(by: CGVector(dx: 10, dy: 10))
+    #expect(a.handles.first { $0.handle == .mid }?.point == CGPoint(x: 60, y: 50))
+    a.resize(.mid, to: CGPoint(x: 60, y: 10))
+    #expect(a.bend == nil)
 }
 
-@Test func lineHasNoMidpointHandle() {
-    #expect(annotation(.line(from: .zero, to: CGPoint(x: 100, y: 0))).handles.count == 2)
+@Test func aBentLineIsDrawnAlongItsCurve() throws {
+    var line = annotation(.line(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 90, y: 10)))
+    line.lineWidth = 4
+    line.resize(.mid, to: CGPoint(x: 50, y: 50))
+    let ctx = try #require(CGContext(data: nil, width: 100, height: 60, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+    ctx.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1))
+    ctx.fill(CGRect(x: 0, y: 0, width: 100, height: 60))
+    let base = try #require(ctx.makeImage())
+    let image = try #require(AnnotationRenderer.flatten(EditorDocument(base: base, annotations: [line])))
+    let pixels = try #require(image.dataProvider?.data as Data?)
+    func green(x: Int, y: Int) -> UInt8 { pixels[y * image.bytesPerRow + x * 4 + 1] }
+    // The curve passes through the dragged midpoint, not along the chord.
+    #expect(green(x: 50, y: 50) < 100)
+    #expect(green(x: 50, y: 10) > 200)
+}
+
+@Test func everyShapeIsHitOnItsOutlineAndNotInsideUnlessFilled() {
+    let frame = CGRect(x: 0, y: 0, width: 100, height: 100)
+    for shape in BoxShape.allCases {
+        let outline = annotation(.shape(shape, rect: frame))
+        // Every shape's outline touches the top edge's midpoint.
+        #expect(outline.hitTest(CGPoint(x: 50, y: 1), tolerance: 2), "\(shape)")
+        #expect(!outline.hitTest(CGPoint(x: 50, y: 60), tolerance: 2), "\(shape)")
+        #expect(Annotation(kind: outline.kind, color: red, fill: red, lineWidth: 4).hitTest(CGPoint(x: 50, y: 60), tolerance: 2), "\(shape)")
+    }
+}
+
+@Test func switchingARedactionKeepsItsRect() {
+    var a = annotation(.blur(shapeFrame))
+    #expect(a.redaction == .blur)
+    a.setRedaction(.pixelate)
+    #expect(a.kind == .pixelate(shapeFrame))
+    var arrow = annotation(.arrow(from: .zero, to: CGPoint(x: 9, y: 9)))
+    arrow.setRedaction(.blur)
+    #expect(arrow.redaction == nil)
+}
+
+@Test func onlyTextNotesAndCountersSizeText() {
+    #expect(EditorTool.allCases.filter(\.sizesText) == [.text, .note, .counter])
+    #expect(annotation(.counter(1, center: .zero)).sizesText)
+    #expect(!annotation(.line(from: .zero, to: CGPoint(x: 9, y: 9))).sizesText)
 }

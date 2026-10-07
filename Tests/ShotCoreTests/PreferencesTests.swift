@@ -155,11 +155,14 @@ import Testing
         defer { store.removePersistentDomain(forName: suite) }
         Preferences.registerDefaults(in: store)
         let prefs = Preferences(store: store)
-        // The Done-when case: ellipse, blue and the thick width carry over to the next editor.
+        // The Done-when case: the star shape, blue and the thick width carry over to the next editor.
         let blue = RGBA(0, 0.48, 1)
         let thick = try #require(EditorStyle.widths.indices.last)
         let custom = RGBA(0.2, 0.4, 0.6, 0.5)
-        let style = EditorStyle(tool: .ellipse, color: blue, noteColor: RGBA.presets[3], fill: custom, widthIndex: thick, recentColors: [custom])
+        let style = EditorStyle(
+            tool: .shape, color: blue, noteColor: RGBA.presets[3], fill: custom, widthIndex: thick, recentColors: [custom],
+            shape: .star, redaction: .pixelate, spotlight: SpotlightStyle(shape: .ellipse, effect: .blur, strength: .strong)
+        )
         Preferences.remember(style, in: store)
         #expect(prefs.editorStyle == style)
         Preferences.resetAll(in: store)
@@ -203,6 +206,18 @@ import Testing
         store.set(EditorTool.text.rawValue, forKey: PreferenceKey.editorTool)
         store.set(5, forKey: PreferenceKey.editorColor)
         #expect(prefs.editorStyle == EditorStyle(tool: .text, color: RGBA.presets[5]))
+    }
+
+    @Test func toolsFromOlderVersionsBecomeTheToolsThatReplacedThem() throws {
+        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
+        let store = try #require(UserDefaults(suiteName: suite))
+        defer { store.removePersistentDomain(forName: suite) }
+        Preferences.registerDefaults(in: store)
+        let prefs = Preferences(store: store)
+        for (old, tool) in [("rect", EditorTool.shape), ("ellipse", .shape), ("pixelate", .redact), ("blur", .redact)] {
+            store.set(old, forKey: PreferenceKey.editorTool)
+            #expect(prefs.editorStyle.tool == tool)
+        }
     }
 
     @Test func removingTextCaptureDeletesItsShortcut() throws {

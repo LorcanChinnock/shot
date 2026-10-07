@@ -10,7 +10,7 @@ private func project() -> Project {
 }
 
 private func rect(_ x: CGFloat = 10) -> Annotation {
-    Annotation(kind: .rect(CGRect(x: x, y: 10, width: 50, height: 30)), color: RGBA.presets[0], lineWidth: 4)
+    Annotation(kind: .shape(.rectangle, rect: CGRect(x: x, y: 10, width: 50, height: 30)), color: RGBA.presets[0], lineWidth: 4)
 }
 
 @Test func addingAnAnnotationMakesAnOverlayTrackForThreeSeconds() throws {

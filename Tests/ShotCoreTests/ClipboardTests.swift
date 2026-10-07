@@ -9,12 +9,12 @@ private let red = RGBA.presets[0]
 private let everyKind: [Annotation] = [
     Annotation(kind: .arrow(from: CGPoint(x: 10, y: 20), to: CGPoint(x: 110, y: 70)), color: red, lineWidth: 4),
     Annotation(kind: .line(from: CGPoint(x: 10, y: 20), to: CGPoint(x: 110, y: 70)), color: red, lineWidth: 4),
-    Annotation(kind: .rect(CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, lineWidth: 4),
-    Annotation(kind: .ellipse(CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, lineWidth: 4),
+    Annotation(kind: .shape(.rectangle, rect: CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, lineWidth: 4),
+    Annotation(kind: .shape(.ellipse, rect: CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, lineWidth: 4),
     Annotation(kind: .highlight(CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, lineWidth: 4),
     Annotation(kind: .pixelate(CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, lineWidth: 4),
     Annotation(kind: .blur(CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, lineWidth: 4),
-    Annotation(kind: .spotlight(CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, lineWidth: 4),
+    Annotation(kind: .spotlight(CGRect(x: 100, y: 100, width: 80, height: 40), style: SpotlightStyle()), color: red, lineWidth: 4),
     Annotation(kind: .text("Hello\nthere", origin: CGPoint(x: 50, y: 60), fontSize: 24), color: red, lineWidth: 4),
     Annotation(kind: .counter(3, center: CGPoint(x: 200, y: 150)), color: red, lineWidth: 4),
     Annotation(kind: .note("Remember", rect: CGRect(x: 40, y: 40, width: 160, height: 0)), color: RGBA.presets[2], lineWidth: 8),
@@ -68,7 +68,7 @@ func pastingAddsAnOffsetCopyWithANewID(annotation: Annotation) throws {
 }
 
 @Test func pastingAgainCascadesInsteadOfStacking() throws {
-    let rect = Annotation(kind: .rect(CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, lineWidth: 4)
+    let rect = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, lineWidth: 4)
     var doc = document([rect])
     doc.paste(rect, step: 10, margin: 16)
     doc.paste(rect, step: 10, margin: 16)
@@ -87,7 +87,7 @@ func pastingAddsAnOffsetCopyWithANewID(annotation: Annotation) throws {
 }
 
 @Test func pastingIntoAnEmptyDocumentStillOffsets() {
-    let rect = Annotation(kind: .rect(CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, lineWidth: 4)
+    let rect = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, lineWidth: 4)
     var doc = document()
     doc.paste(rect, step: 10, margin: 16)
     #expect(doc.annotations.first?.bounds.origin == CGPoint(x: 110, y: 110))
@@ -95,7 +95,7 @@ func pastingAddsAnOffsetCopyWithANewID(annotation: Annotation) throws {
 
 @Test func pasteThatWouldLandOffTheCanvasIsCentredOnIt() throws {
     // Copied from a bigger screenshot, far past this one's edge.
-    let far = Annotation(kind: .rect(CGRect(x: 2000, y: 1500, width: 80, height: 40)), color: red, lineWidth: 4)
+    let far = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 2000, y: 1500, width: 80, height: 40)), color: red, lineWidth: 4)
     var doc = document()
     doc.paste(far, step: 10, margin: 16)
     let pasted = try #require(doc.annotations.first)
@@ -107,7 +107,7 @@ func pastingAddsAnOffsetCopyWithANewID(annotation: Annotation) throws {
 }
 
 @Test func pasteThatCrossesTheEdgeGrowsTheCanvas() throws {
-    let edge = Annotation(kind: .rect(CGRect(x: 340, y: 100, width: 50, height: 40)), color: red, lineWidth: 4)
+    let edge = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 340, y: 100, width: 50, height: 40)), color: red, lineWidth: 4)
     var doc = document([edge])
     doc.paste(edge, step: 20, margin: 16)
     let pasted = try #require(doc.annotations.last)
@@ -135,14 +135,14 @@ func nudgesOnePixelOrTenWithShift(direction: NudgeDirection, unit: CGVector) {
 
 @Test(arguments: everyKind)
 func nudgingMovesOnlyThatAnnotation(annotation: Annotation) {
-    let other = Annotation(kind: .rect(CGRect(x: 5, y: 5, width: 20, height: 20)), color: red, lineWidth: 4)
+    let other = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 5, y: 5, width: 20, height: 20)), color: red, lineWidth: 4)
     var doc = document([other, annotation])
     doc.move(annotation.id, by: CGVector(dx: -10, dy: 1), margin: 16)
     #expect(doc.annotations == [other, moved(annotation, -10, 1)])
 }
 
 @Test func nudgingPastTheEdgeGrowsTheCanvas() {
-    let rect = Annotation(kind: .rect(CGRect(x: 0, y: 100, width: 50, height: 40)), color: red, lineWidth: 4)
+    let rect = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 0, y: 100, width: 50, height: 40)), color: red, lineWidth: 4)
     var doc = document([rect])
     doc.move(rect.id, by: CGVector(dx: -1, dy: 0), margin: 16)
     #expect(doc.canvasRect.minX == -19)
@@ -150,7 +150,7 @@ func nudgingMovesOnlyThatAnnotation(annotation: Annotation) {
 }
 
 @Test func nudgingAMissingAnnotationChangesNothing() {
-    let rect = Annotation(kind: .rect(CGRect(x: 0, y: 100, width: 50, height: 40)), color: red, lineWidth: 4)
+    let rect = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 0, y: 100, width: 50, height: 40)), color: red, lineWidth: 4)
     var doc = document([rect])
     let before = doc.snapshot
     doc.move(UUID(), by: CGVector(dx: 10, dy: 10), margin: 16)

@@ -35,7 +35,7 @@ private func isWhite(_ p: [UInt8]) -> Bool { p.allSatisfy { $0 > 245 } }
 
 @Test func growsOnlyWhenAnAnnotationCrossesTheEdge() {
     var doc = EditorDocument(base: solidImage(width: 200, height: 100))
-    let inside = Annotation(kind: .rect(CGRect(x: 20, y: 20, width: 40, height: 40)), color: blue, lineWidth: 4)
+    let inside = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 20, y: 20, width: 40, height: 40)), color: blue, lineWidth: 4)
     doc.grow(toFit: inside, margin: 10)
     #expect(doc.canvasRect == doc.fullRect)
 
@@ -54,12 +54,12 @@ private func isWhite(_ p: [UInt8]) -> Bool { p.allSatisfy { $0 > 245 } }
 @Test func growingNeverReopensACropOrReactsToAStrokeOnTheEdge() {
     var doc = EditorDocument(base: solidImage(width: 200, height: 100))
     // A rect drawn along the image edge only pokes its stroke past it.
-    doc.grow(toFit: Annotation(kind: .rect(CGRect(x: 0, y: 0, width: 200, height: 100)), color: blue, lineWidth: 8), margin: 10)
+    doc.grow(toFit: Annotation(kind: .shape(.rectangle, rect: CGRect(x: 0, y: 0, width: 200, height: 100)), color: blue, lineWidth: 8), margin: 10)
     #expect(doc.canvasRect == doc.fullRect)
 
     // Cropped to the middle, a shape past every side leaves the crop as it is.
     doc.crop(to: CGRect(x: 50, y: 20, width: 100, height: 60))
-    doc.grow(toFit: Annotation(kind: .rect(CGRect(x: 40, y: 10, width: 120, height: 80)), color: blue, lineWidth: 4), margin: 10)
+    doc.grow(toFit: Annotation(kind: .shape(.rectangle, rect: CGRect(x: 40, y: 10, width: 120, height: 80)), color: blue, lineWidth: 4), margin: 10)
     #expect(doc.canvasRect == CGRect(x: 50, y: 20, width: 100, height: 60))
 
     // Cropped flush with the right edge, the right side still grows into padding; the cropped left stays.
@@ -81,7 +81,7 @@ private func isWhite(_ p: [UInt8]) -> Bool { p.allSatisfy { $0 > 245 } }
     #expect(doc.canvasRect == expected)
 
     // Fit shrinks too, once the annotations move back inside.
-    doc.annotations = [Annotation(kind: .rect(CGRect(x: 20, y: 20, width: 40, height: 40)), color: blue, lineWidth: 4)]
+    doc.annotations = [Annotation(kind: .shape(.rectangle, rect: CGRect(x: 20, y: 20, width: 40, height: 40)), color: blue, lineWidth: 4)]
     doc.fitToContent(margin: 10)
     #expect(doc.canvasRect == doc.fullRect)
 }

@@ -208,7 +208,7 @@ extension MediaTests {
         let base = temp("base.mp4"), output = temp("out.mp4")
         defer { [base, output].forEach { try? FileManager.default.removeItem(at: $0) } }
         try await writeSolidVideo(to: base, color: Color(r: 128, g: 128, b: 128), size: canvas, seconds: 3)
-        let box = Annotation(kind: .rect(CGRect(x: 160, y: 90, width: 320, height: 180)), color: RGBA(0, 0, 0), fill: RGBA(1, 0, 0), lineWidth: 2)
+        let box = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 160, y: 90, width: 320, height: 180)), color: RGBA(0, 0, 0), fill: RGBA(1, 0, 0), lineWidth: 2)
         let project = Project(source: base, duration: 3, canvasSize: canvas, hasAudio: false).adding(annotation: box, at: 1, duration: 1).project
         try await ProjectExporter.export(project, to: output)
         #expect(try await pixel(in: output, at: 0.5, x: 0.5, y: 0.5).isNear(Color(r: 128, g: 128, b: 128)), "before")
@@ -234,7 +234,7 @@ extension MediaTests {
         let base = temp("base.mp4")
         defer { try? FileManager.default.removeItem(at: base) }
         try await writeSolidVideo(to: base, color: Color(r: 128, g: 128, b: 128), size: canvas, seconds: 2)
-        let box = Annotation(kind: .rect(CGRect(x: 160, y: 90, width: 320, height: 180)), color: RGBA(0, 0, 0), fill: RGBA(1, 0, 0), lineWidth: 2)
+        let box = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 160, y: 90, width: 320, height: 180)), color: RGBA(0, 0, 0), fill: RGBA(1, 0, 0), lineWidth: 2)
         let (project, id) = Project(source: base, duration: 2, canvasSize: canvas, hasAudio: false).adding(annotation: box, at: 0, duration: 2)
         let built = try await CompositionBuilder.build(project)
         let generator = AVAssetImageGenerator(asset: built.asset)
@@ -282,7 +282,7 @@ extension MediaTests {
         let base = temp("base.mp4"), output = temp("out.mp4")
         defer { [base, output].forEach { try? FileManager.default.removeItem(at: $0) } }
         try await writeSolidVideo(to: base, color: Color(r: 128, g: 128, b: 128), size: canvas, seconds: 3)
-        let box = Annotation(kind: .rect(CGRect(x: 20, y: 140, width: 80, height: 80)), color: RGBA(0, 0, 0), fill: RGBA(1, 0, 0), lineWidth: 2)
+        let box = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 20, y: 140, width: 80, height: 80)), color: RGBA(0, 0, 0), fill: RGBA(1, 0, 0), lineWidth: 2)
         var (project, id) = Project(source: base, duration: 3, canvasSize: canvas, hasAudio: false).adding(annotation: box, at: 0, duration: 3)
         // From where it was drawn to 400 points to the right, over the whole clip, with no easing.
         project = try #require(project.togglingKeyframe(.position, ofClip: id, at: 0))
@@ -302,7 +302,7 @@ extension MediaTests {
         defer { [base, output].forEach { try? FileManager.default.removeItem(at: $0) } }
         try await writeSolidVideo(to: base, color: Color(r: 128, g: 128, b: 128), size: canvas, seconds: 2)
         // A wide bar across the middle, turned a quarter, becomes a tall one.
-        let bar = Annotation(kind: .rect(CGRect(x: 220, y: 160, width: 200, height: 40)), color: RGBA(0, 0, 0), fill: RGBA(1, 0, 0), lineWidth: 1)
+        let bar = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 220, y: 160, width: 200, height: 40)), color: RGBA(0, 0, 0), fill: RGBA(1, 0, 0), lineWidth: 1)
         var (project, id) = Project(source: base, duration: 2, canvasSize: canvas, hasAudio: false).adding(annotation: bar, at: 0, duration: 2)
         var values = try #require(project.values(ofClip: id, at: 1))
         values.rotation = .pi / 2

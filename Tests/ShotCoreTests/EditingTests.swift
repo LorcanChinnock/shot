@@ -10,12 +10,12 @@ private func annotation(_ kind: Annotation.Kind, lineWidth: CGFloat = 4) -> Anno
     Annotation(kind: kind, color: red, lineWidth: lineWidth)
 }
 
-private let boxKinds: [Annotation.Kind] = [.rect(box), .ellipse(box), .highlight(box), .pixelate(box), .blur(box), .spotlight(box)]
+private let boxKinds: [Annotation.Kind] = [.shape(.rectangle, rect: box), .shape(.ellipse, rect: box), .highlight(box), .pixelate(box), .blur(box), .spotlight(box, style: SpotlightStyle())]
 
 /// The rect a box kind holds.
 private func rect(_ annotation: Annotation) -> CGRect? {
     switch annotation.kind {
-    case let .rect(rect), let .ellipse(rect), let .highlight(rect), let .pixelate(rect), let .blur(rect), let .spotlight(rect):
+    case let .shape(_, rect), let .highlight(rect), let .pixelate(rect), let .blur(rect), let .spotlight(rect, _):
         return rect
     default:
         return nil
@@ -24,15 +24,13 @@ private func rect(_ annotation: Annotation) -> CGRect? {
 
 // MARK: Handles
 
-@Test func linesAndArrowsHaveAHandleAtEachEnd() {
+@Test func linesAndArrowsHaveAHandleAtEachEndAndTheMiddle() {
     let from = CGPoint(x: 10, y: 20), to = CGPoint(x: 110, y: 70)
-    let line = annotation(.line(from: from, to: to))
-    #expect(line.handles.map { $0.handle } == [.start, .end])
-    #expect(line.handles.map { $0.point } == [from, to])
-
-    let arrow = annotation(.arrow(from: from, to: to))
-    #expect(arrow.handles.map { $0.handle } == [.start, .end, .mid])
-    #expect(arrow.handles.map { $0.point } == [from, to, CGPoint(x: 60, y: 45)])
+    for kind in [Annotation.Kind.line(from: from, to: to), .arrow(from: from, to: to)] {
+        let a = annotation(kind)
+        #expect(a.handles.map { $0.handle } == [.start, .end, .mid])
+        #expect(a.handles.map { $0.point } == [from, to, CGPoint(x: 60, y: 45)])
+    }
 }
 
 @Test(arguments: boxKinds)
@@ -65,7 +63,7 @@ func boxesHaveHandlesOnTheirCornersAndEdges(kind: Annotation.Kind) {
 // MARK: Hit-testing handles
 
 @Test func handleHitTestFindsCornersEdgesAndEnds() {
-    let r = annotation(.rect(box))
+    let r = annotation(.shape(.rectangle, rect: box))
     #expect(r.handle(at: CGPoint(x: 103, y: 97), tolerance: 4) == .topLeft)
     #expect(r.handle(at: CGPoint(x: 201, y: 203), tolerance: 4) == .bottom)
     #expect(r.handle(at: CGPoint(x: 296, y: 150), tolerance: 4) == .right)
@@ -76,11 +74,11 @@ func boxesHaveHandlesOnTheirCornersAndEdges(kind: Annotation.Kind) {
     let line = annotation(.line(from: CGPoint(x: 0, y: 0), to: CGPoint(x: 100, y: 0)))
     #expect(line.handle(at: CGPoint(x: 2, y: -2), tolerance: 4) == .start)
     #expect(line.handle(at: CGPoint(x: 99, y: 3), tolerance: 4) == .end)
-    #expect(line.handle(at: CGPoint(x: 50, y: 0), tolerance: 4) == nil)
+    #expect(line.handle(at: CGPoint(x: 50, y: 0), tolerance: 4) == .mid)
 }
 
 @Test func overlappingHandlesPickTheNearest() {
-    let tiny = annotation(.rect(CGRect(x: 100, y: 100, width: 6, height: 6)))
+    let tiny = annotation(.shape(.rectangle, rect: CGRect(x: 100, y: 100, width: 6, height: 6)))
     #expect(tiny.handle(at: CGPoint(x: 106, y: 106), tolerance: 8) == .bottomRight)
     #expect(tiny.handle(at: CGPoint(x: 103, y: 99), tolerance: 8) == .top)
     let short = annotation(.arrow(from: CGPoint(x: 0, y: 0), to: CGPoint(x: 4, y: 0)))
@@ -89,7 +87,7 @@ func boxesHaveHandlesOnTheirCornersAndEdges(kind: Annotation.Kind) {
 
 @Test func theMiddleOfASmallShapeStillMovesIt() {
     // Every point of these shapes is within the tolerance of a handle, but the middle grabs none.
-    let tiny = annotation(.rect(CGRect(x: 100, y: 100, width: 6, height: 6)))
+    let tiny = annotation(.shape(.rectangle, rect: CGRect(x: 100, y: 100, width: 6, height: 6)))
     #expect(tiny.handle(at: CGPoint(x: 103, y: 103), tolerance: 8) == nil)
     #expect(tiny.handle(at: CGPoint(x: 102, y: 104), tolerance: 8) == nil)
     let short = annotation(.line(from: CGPoint(x: 0, y: 0), to: CGPoint(x: 6, y: 0)))
@@ -138,10 +136,10 @@ func draggingAnEdgeChangesOneSide(kind: Annotation.Kind) {
 }
 
 @Test func draggingPastTheOppositeSideFlipsTheBox() {
-    var a = annotation(.rect(box))
+    var a = annotation(.shape(.rectangle, rect: box))
     a.resize(.right, to: CGPoint(x: 40, y: 0))
     #expect(rect(a) == CGRect(x: 40, y: 100, width: 60, height: 100))
-    var b = annotation(.ellipse(box))
+    var b = annotation(.shape(.ellipse, rect: box))
     b.resize(.topLeft, to: CGPoint(x: 320, y: 230))
     #expect(rect(b) == CGRect(x: 300, y: 200, width: 20, height: 30))
     // Lines and text keep their kind when resized.
@@ -180,7 +178,7 @@ func draggingAnEdgeChangesOneSide(kind: Annotation.Kind) {
 @Test func aResizePastTheImageGrowsTheCanvasAndUndoes() {
     var doc = EditorDocument(base: solidImage(width: 200, height: 100))
     var stack = UndoStack<EditorSnapshot>()
-    doc.annotations.append(annotation(.rect(CGRect(x: 20, y: 20, width: 40, height: 40))))
+    doc.annotations.append(annotation(.shape(.rectangle, rect: CGRect(x: 20, y: 20, width: 40, height: 40))))
     let placed = doc.snapshot
 
     stack.record(doc.snapshot)
@@ -201,9 +199,9 @@ func draggingAnEdgeChangesOneSide(kind: Annotation.Kind) {
     #expect(text.lineWidth == 8)
     #expect(text.kind == .text("Hi", origin: CGPoint(x: 10, y: 10), fontSize: 48))
 
-    var r = annotation(.rect(box))
+    var r = annotation(.shape(.rectangle, rect: box))
     r.setLineWidth(2)
-    #expect(r.lineWidth == 2 && r.kind == .rect(box))
+    #expect(r.lineWidth == 2 && r.kind == .shape(.rectangle, rect: box))
 
     let counter = annotation(.counter(1, center: CGPoint(x: 50, y: 50)))
     var bigger = counter

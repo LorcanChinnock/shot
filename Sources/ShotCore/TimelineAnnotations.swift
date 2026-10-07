@@ -46,6 +46,12 @@ extension Project {
         return changingAnnotations([id]) { $0.annotation = annotation }
     }
 
+    /// Gives every spotlight on the timeline `effect` and `strength`, since spotlights showing together share one dim.
+    public func settingSpotlights(effect: SpotlightStyle.Effect, strength: SpotlightStyle.Strength) -> Project {
+        let spotlights = annotationClips.filter { if case .spotlight = $0.annotation.kind { true } else { false } }.map(\.id)
+        return changingAnnotations(spotlights) { $0.annotation.setSpotlightLook(effect: effect, strength: strength) }
+    }
+
     /// The next counter number: one more than the highest on the timeline.
     public var nextCounterNumber: Int {
         annotationClips.map(\.annotation).nextCounterNumber

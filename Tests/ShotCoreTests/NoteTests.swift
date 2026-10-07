@@ -87,7 +87,7 @@ private let longText = "Sticky notes wrap their text to the width of the note, s
     let large = Annotation(kind: .note("Hi", rect: CGRect(x: 0, y: 0, width: 300, height: 0)), color: yellow, lineWidth: 8)
     #expect(try layout(large).fontSize > layout(small).fontSize)
     #expect(try layout(large).frame.height > layout(small).frame.height)
-    #expect(Annotation(kind: .rect(.zero), color: yellow, lineWidth: 4).noteLayout == nil)
+    #expect(Annotation(kind: .shape(.rectangle, rect: .zero), color: yellow, lineWidth: 4).noteLayout == nil)
 }
 
 // MARK: Placement
@@ -139,9 +139,9 @@ private let longText = "Sticky notes wrap their text to the width of the note, s
     var n = note("Hello", CGRect(x: 0, y: 0, width: 200, height: 0))
     n.setText("Bye")
     #expect(n.kind == .note("Bye", rect: CGRect(x: 0, y: 0, width: 200, height: 0)))
-    var r = Annotation(kind: .rect(.zero), color: yellow, lineWidth: 4)
+    var r = Annotation(kind: .shape(.rectangle, rect: .zero), color: yellow, lineWidth: 4)
     r.setText("Nope")
-    #expect(r.kind == .rect(.zero))
+    #expect(r.kind == .shape(.rectangle, rect: .zero))
 }
 
 // MARK: Resize handles

@@ -128,7 +128,7 @@ private func isRed(_ p: [UInt8]) -> Bool { p[0] > 225 && p[1] < 30 && p[2] < 30 
     #expect(start == CGPoint(x: 57, y: 57))
     #expect(end == CGPoint(x: 97, y: 77))
     var doc = EditorDocument(base: solidImage(width: 400, height: 300))
-    doc.annotations.append(Annotation(kind: .rect(Geometry.normalized(from: start, to: end)), color: blue, lineWidth: 2))
+    doc.annotations.append(Annotation(kind: .shape(.rectangle, rect: Geometry.normalized(from: start, to: end)), color: blue, lineWidth: 2))
     let image = try #require(AnnotationRenderer.flatten(doc))
 
     // The 2 px stroke straddles each edge: pixels 56–57 and 96–97 across, and nothing outside it.
