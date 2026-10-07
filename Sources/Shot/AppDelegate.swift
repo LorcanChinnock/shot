@@ -20,10 +20,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         QuickAccessController.shared.onAnnotate = { [weak self] url in
             self?.coordinator.annotate(url)
         }
-        GalleryWindowController.shared.onEdit = { [weak self] url in
+        GalleryController.shared.onEdit = { [weak self] url in
             self?.coordinator.annotate(url)
         }
-        GalleryWindowController.shared.onExportGIF = { [weak self] url in
+        GalleryController.shared.onExportGIF = { [weak self] url in
             self?.coordinator.exportGIF(url)
         }
         defaultsObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { _ in
@@ -60,12 +60,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         if host == "gallery" {
-            GalleryWindowController.shared.show()
+            GalleryController.shared.show()
             return
         }
         if host == "settings" {
             let name = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "section" }?.value
-            SettingsWindowController.show(section: name.flatMap(SettingsSection.init(rawValue:)))
+            MainWindowController.showSettings(section: name.flatMap(SettingsSection.init(rawValue:)))
             return
         }
         if EditorRoute.hosts.contains(host) {
@@ -121,6 +121,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func showSettings() {
-        SettingsWindowController.show()
+        MainWindowController.showSettings()
     }
 }

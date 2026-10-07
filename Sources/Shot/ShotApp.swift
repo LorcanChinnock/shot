@@ -46,14 +46,14 @@ private struct ShotMenu: View {
         }
         Toggle("Camera Bubble", isOn: $cameraBubble)
         Divider()
-        Button("Open Gallery") { GalleryWindowController.shared.show() }
+        Button("Open Gallery") { GalleryController.shared.show() }
         Button("Open Capture Folder") {
             let folder = Preferences().saveFolder
             try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             NSWorkspace.shared.open(folder)
         }
         UpdateButton(updater: Updater.shared)
-        Button("Settings…") { SettingsWindowController.show() }
+        Button("Settings…") { MainWindowController.showSettings() }
         .keyboardShortcut(",")
         Divider()
         Button("Quit Shot") { NSApp.terminate(nil) }
