@@ -145,7 +145,7 @@ struct ExportOptionsBar: View {
                 .disabled(speedIsLocked)
                 .overlay {
                     if speedIsLocked {
-                        Color.clear.contentShape(Rectangle()).onTapGesture { Toast.show(Self.speedLockedReason) }
+                        Color.clear.contentShape(Rectangle()).onTapGesture { Toast.error(Self.speedLockedReason) }
                     }
                 }
                 .help(speedIsLocked ? Self.speedLockedReason : "Playback speed")

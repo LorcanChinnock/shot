@@ -47,14 +47,14 @@ final class CameraBubble {
     @discardableResult
     func showFromPreferences(in region: CGRect) async -> Bool {
         guard await AVCaptureDevice.requestAccess(for: .video) else {
-            Toast.show("Camera access denied")
+            Toast.error("Camera access denied")
             return false
         }
         let prefs = Preferences()
         do {
             try await show(in: region, preferred: prefs.cameraSize, deviceID: prefs.cameraDeviceID)
         } catch {
-            Toast.show("Camera unavailable: \(error.localizedDescription)")
+            Toast.error("Camera unavailable: \(error.localizedDescription)")
         }
         return isVisible
     }

@@ -39,6 +39,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
     private let window: NSWindow
     /// How much of the window's height is the tracks panel.
     private var appliedExtraHeight: CGFloat = 0
+    private var discarding = false
 
     static func open(_ url: URL) {
         if let existing = open.first(where: { $0.model.fileURL == url }) {
@@ -47,9 +48,11 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
         }
         Task {
             let model = VideoEditorModel(fileURL: url)
-            guard await model.load() else {
+            do {
+                try await model.load()
+            } catch {
                 model.teardown()
-                Toast.show("Cannot open \(url.lastPathComponent)")
+                Toast.error("Cannot open \(url.lastPathComponent): \(error.localizedDescription)")
                 return
             }
             // A second request for the same file may have finished loading first.
@@ -178,8 +181,11 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
-        guard model.isDirty, !model.isExporting else {
+        guard model.isDirty, !model.isExporting, !discarding else {
             return !model.isExporting
+        }
+        guard sender.attachedSheet == nil else {
+            return false
         }
         let alert = NSAlert()
         alert.messageText = model.isComposite ? "Save a copy of the edited \(model.fileURL.lastPathComponent)?" : "Save the edited \(model.fileURL.lastPathComponent)?"
@@ -187,20 +193,23 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
         alert.addButton(withTitle: model.isComposite ? "Save Copy" : "Save")
         alert.addButton(withTitle: "Discard")
         alert.addButton(withTitle: "Cancel")
-        switch alert.runModal() {
-        case .alertFirstButtonReturn:
-            // Exporting takes a moment, so close once the file is written.
-            Task {
-                if await model.save() {
-                    window.close()
+        alert.beginSheetModal(for: sender) { [self] response in
+            switch response {
+            case .alertFirstButtonReturn:
+                // Exporting takes a moment, so close once the file is written.
+                Task {
+                    if await model.save() {
+                        sender.close()
+                    }
                 }
+            case .alertSecondButtonReturn:
+                discarding = true
+                sender.close()
+            default:
+                break
             }
-            return false
-        case .alertSecondButtonReturn:
-            return true
-        default:
-            return false
         }
+        return false
     }
 
     func windowWillClose(_ notification: Notification) {

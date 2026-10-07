@@ -85,7 +85,7 @@ final class Recorder: NSObject {
         var microphone = prefs.recordMicrophone
         if microphone, !(await AVCaptureDevice.requestAccess(for: .audio)) {
             microphone = false
-            Toast.show("Microphone access denied; recording without it")
+            Toast.error("Microphone access denied; recording without it")
         }
         if prefs.recordCamera, !CameraBubble.shared.isVisible {
             await CameraBubble.shared.showFromPreferences(in: region)

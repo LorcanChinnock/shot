@@ -67,7 +67,7 @@ struct ClipInspector: View {
             } else {
                 Text("Select a clip to move, scale, turn or fade it, and to key it over time.")
                     .font(Brutal.caption)
-                    .foregroundStyle(Brutal.ink.opacity(0.6))
+                    .foregroundStyle(Brutal.ink.opacity(0.7))
                     .frame(maxWidth: .infinity, minHeight: Self.height, alignment: .leading)
             }
         }

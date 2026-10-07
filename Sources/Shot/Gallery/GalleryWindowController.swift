@@ -92,6 +92,8 @@ final class GalleryWindowController: NSObject, NSWindowDelegate {
             model.selectAll()
         case "c" where !isTyping(in: window) && !model.selection.isEmpty:
             model.copy(model.selectedItems)
+        case "z" where !isTyping(in: window) && !shift && model.canUndoTrash:
+            model.undoTrash()
         case "\u{7f}" where !isTyping(in: window):
             model.trash(model.selectedItems)
         default:

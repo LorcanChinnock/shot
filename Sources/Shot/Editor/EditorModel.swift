@@ -66,6 +66,8 @@ final class EditorModel {
     /// The note whose text field is open, with the colour picked for it so far; it may not be in the document yet.
     var editingNote: Annotation?
     var isDirty = false
+    /// What the document looked like when it was last saved, so undoing back to it leaves the editor clean.
+    @ObservationIgnored private var savedSnapshot: EditorSnapshot
     /// Set by the canvas: turns the text or note still being typed into an annotation.
     var commitPendingText: (() -> Void)?
     /// True while auto-redact looks for text to hide.
@@ -85,7 +87,9 @@ final class EditorModel {
     init(fileURL: URL, image: CGImage, scale: CGFloat, style: EditorStyle = Preferences().editorStyle) {
         self.fileURL = fileURL
         self.scale = scale
-        document = EditorDocument(base: image, background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension)))
+        let document = EditorDocument(base: image, background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension)))
+        self.document = document
+        savedSnapshot = document.snapshot
         tool = style.tool
         color = style.color
         noteColor = style.noteColor
@@ -220,7 +224,7 @@ final class EditorModel {
         if let previous = undoStack.undo(from: document.snapshot) {
             document.restore(previous)
             selectedID = nil
-            isDirty = true
+            isDirty = document.snapshot != savedSnapshot
         }
     }
 
@@ -230,7 +234,7 @@ final class EditorModel {
         if let next = undoStack.redo(from: document.snapshot) {
             document.restore(next)
             selectedID = nil
-            isDirty = true
+            isDirty = document.snapshot != savedSnapshot
         }
     }
 
@@ -329,7 +333,7 @@ final class EditorModel {
             do {
                 regions = try await Redaction.regions(in: source.image).map { $0.offsetBy(dx: source.origin.x, dy: source.origin.y) }
             } catch {
-                Toast.show("Could not read the image: \(error.localizedDescription)")
+                Toast.error("Could not read the image: \(error.localizedDescription)")
                 return
             }
             // The document may have changed while the text was read, so check against it as it is now.
@@ -381,7 +385,7 @@ final class EditorModel {
         do {
             annotation = try Clipboard.annotation()
         } catch {
-            Toast.show("Could not paste: \(error.localizedDescription)")
+            Toast.error("Could not paste: \(error.localizedDescription)")
             return true
         }
         guard let annotation else {
@@ -401,7 +405,7 @@ final class EditorModel {
     func addImages(_ images: [Data], at point: CGPoint?) {
         let decoded = images.compactMap { data in ImageCodec.image(from: data).map { ($0, ImageCodec.scale(of: data)) } }
         guard !decoded.isEmpty else {
-            Toast.show("Could not read the image")
+            Toast.error("Could not read the image")
             return
         }
         recordUndo()
@@ -439,7 +443,7 @@ final class EditorModel {
             try Clipboard.copy(annotation: selection)
             Toast.show("Copied annotation")
         } catch {
-            Toast.show("Could not copy: \(error.localizedDescription)")
+            Toast.error("Could not copy: \(error.localizedDescription)")
         }
         return true
     }
@@ -447,7 +451,7 @@ final class EditorModel {
     /// Copies the flattened image.
     func copy() {
         guard let result = flattened() else {
-            Toast.show("Could not render image")
+            Toast.error("Could not render image")
             return
         }
         Clipboard.copy(png: result.png, image: result.image)
@@ -457,22 +461,24 @@ final class EditorModel {
     @discardableResult
     func save() -> Bool {
         guard let result = flattened() else {
-            Toast.show("Could not render image")
+            Toast.error("Could not render image")
             return false
         }
         let format = ImageFormat(fileExtension: fileURL.pathExtension)
         guard let data = format == .png ? result.png : ImageCodec.data(from: result.image, scale: scale, format: format) else {
-            Toast.show("Could not render image")
+            Toast.error("Could not render image")
             return false
         }
+        let destination = FileNaming.nextVersionURL(of: fileURL)
         do {
-            try data.write(to: FileNaming.nextVersionURL(of: fileURL), options: .atomic)
+            try data.write(to: destination, options: .atomic)
             Clipboard.copy(png: result.png, image: result.image)
+            savedSnapshot = document.snapshot
             isDirty = false
-            Toast.show("Saved and copied")
+            Toast.show("Saved as \(destination.lastPathComponent) and copied", duration: .seconds(3))
             return true
         } catch {
-            Toast.show("Save failed: \(error.localizedDescription)")
+            Toast.error("Save failed: \(error.localizedDescription)")
             return false
         }
     }
