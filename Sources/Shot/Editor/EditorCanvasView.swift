@@ -141,8 +141,6 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
         let rect = imageRect
         let ink = NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1)
-        ink.setFill()
-        rect.offsetBy(dx: 5, dy: 5).fill()
         if doc.background == nil, doc.hasPadding {
             let padding = NSBezierPath(rect: rect)
             let image = doc.fullRect.intersection(doc.canvasRect)
@@ -170,8 +168,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             ctx.restoreGState()
         }
         ink.setStroke()
-        let frame = NSBezierPath(rect: rect.insetBy(dx: -1.25, dy: -1.25))
-        frame.lineWidth = 2.5
+        let frame = NSBezierPath(rect: rect.insetBy(dx: -0.75, dy: -0.75))
+        frame.lineWidth = 1.5
         frame.stroke()
 
         if let selected = model.selection, selected.id != editingTextID {
