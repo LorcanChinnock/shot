@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0-beta.23](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.22...v0.7.0-beta.23) (2026-10-07)
+
+
+### Features
+
+* **editor:** keep the annotation just drawn selected so the toolbar can fix it ([#159](https://github.com/LorcanChinnock/shot/issues/159)) ([a9928e3](https://github.com/LorcanChinnock/shot/commit/a9928e38cfc48637c0202595963f2e2406474741))
+
+
+### Bug Fixes
+
+* **editor:** clicking the canvas while typing text only commits it ([#162](https://github.com/LorcanChinnock/shot/issues/162)) ([06d3767](https://github.com/LorcanChinnock/shot/commit/06d3767b0d24031d2f70ada0a24e618803a405ad))
+
 ## [0.7.0-beta.22](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.21...v0.7.0-beta.22) (2026-10-07)
 
 
