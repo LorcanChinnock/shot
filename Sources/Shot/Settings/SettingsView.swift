@@ -233,12 +233,12 @@ private struct SidebarItem: View {
 // MARK: General
 
 private struct GeneralSettings: View {
-    @AppStorage(PreferenceKey.playSound) private var playSound = true
-    @AppStorage(PreferenceKey.hidesShotUI) private var hidesShotUI = true
-    @AppStorage(PreferenceKey.saveFolder) private var saveFolder = Preferences.defaultSaveFolder
-    @AppStorage(PreferenceKey.filePrefix) private var filePrefix = Preferences.defaultFilePrefix
-    @AppStorage(PreferenceKey.imageFormat) private var imageFormat = ImageFormat.png.rawValue
-    @AppStorage(PreferenceKey.downscaleRetina) private var downscaleRetina = false
+    @Setting(PreferenceKey.playSound) private var playSound = true
+    @Setting(PreferenceKey.hidesShotUI) private var hidesShotUI = true
+    @Setting(PreferenceKey.saveFolder) private var saveFolder = Preferences.defaultSaveFolder
+    @Setting(PreferenceKey.filePrefix) private var filePrefix = Preferences.defaultFilePrefix
+    @Setting(PreferenceKey.imageFormat) private var imageFormat = ImageFormat.png.rawValue
+    @Setting(PreferenceKey.downscaleRetina) private var downscaleRetina = false
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     private let color = SettingsSection.general.color
 
@@ -308,14 +308,14 @@ private struct GeneralSettings: View {
 // MARK: Capture
 
 private struct CaptureSettings: View {
-    @AppStorage(PreferenceKey.saveAfterCapture) private var save = true
-    @AppStorage(PreferenceKey.copyAfterCapture) private var copy = true
-    @AppStorage(PreferenceKey.quickAccessAfterCapture) private var quickAccess = true
-    @AppStorage(PreferenceKey.openEditorAfterCapture) private var openEditor = false
-    @AppStorage(PreferenceKey.showMagnifier) private var magnifier = true
-    @AppStorage(PreferenceKey.showCrosshair) private var crosshair = true
-    @AppStorage(PreferenceKey.captureShowsCursor) private var showsCursor = false
-    @AppStorage(PreferenceKey.windowShadow) private var windowShadow = true
+    @Setting(PreferenceKey.saveAfterCapture) private var save = true
+    @Setting(PreferenceKey.copyAfterCapture) private var copy = true
+    @Setting(PreferenceKey.quickAccessAfterCapture) private var quickAccess = true
+    @Setting(PreferenceKey.openEditorAfterCapture) private var openEditor = false
+    @Setting(PreferenceKey.showMagnifier) private var magnifier = true
+    @Setting(PreferenceKey.showCrosshair) private var crosshair = true
+    @Setting(PreferenceKey.captureShowsCursor) private var showsCursor = false
+    @Setting(PreferenceKey.windowShadow) private var windowShadow = true
     private let color = SettingsSection.capture.color
 
     var body: some View {
@@ -337,8 +337,8 @@ private struct CaptureSettings: View {
 // MARK: Quick Access
 
 private struct QuickAccessSettings: View {
-    @AppStorage(PreferenceKey.quickAccessPosition) private var position = QuickAccessPosition.left.rawValue
-    @AppStorage(PreferenceKey.quickAccessDuration) private var duration = 8.0
+    @Setting(PreferenceKey.quickAccessPosition) private var position = QuickAccessPosition.left.rawValue
+    @Setting(PreferenceKey.quickAccessDuration) private var duration = 8.0
     private let color = SettingsSection.quickAccess.color
 
     var body: some View {
@@ -392,13 +392,13 @@ private struct ScreenPreview: View {
 // MARK: Recording
 
 private struct RecordingSettings: View {
-    @AppStorage(PreferenceKey.recordingFPS) private var fps = 60
-    @AppStorage(PreferenceKey.recordShowsCursor) private var showsCursor = true
-    @AppStorage(PreferenceKey.showRecordingBorder) private var border = true
-    @AppStorage(PreferenceKey.copyAfterRecording) private var copy = true
+    @Setting(PreferenceKey.recordingFPS) private var fps = 60
+    @Setting(PreferenceKey.recordShowsCursor) private var showsCursor = true
+    @Setting(PreferenceKey.showRecordingBorder) private var border = true
+    @Setting(PreferenceKey.copyAfterRecording) private var copy = true
     // Read only so the GIF summary updates when the video editor changes them.
-    @AppStorage(PreferenceKey.gifFrameRate) private var gifFrameRate = VideoExportOptions().gifFrameRate
-    @AppStorage(PreferenceKey.gifWidth) private var gifWidth = VideoExportOptions().gifWidth
+    @Setting(PreferenceKey.gifFrameRate) private var gifFrameRate = VideoExportOptions().gifFrameRate
+    @Setting(PreferenceKey.gifWidth) private var gifWidth = VideoExportOptions().gifWidth
     private let color = SettingsSection.recording.color
 
     var body: some View {
@@ -422,9 +422,9 @@ private struct RecordingSettings: View {
 
 private struct AudioSettings: View {
     let color: Color
-    @AppStorage(PreferenceKey.recordMicrophone) private var microphone = false
-    @AppStorage(PreferenceKey.microphoneDeviceID) private var deviceID = ""
-    @AppStorage(PreferenceKey.recordSystemAudio) private var systemAudio = false
+    @Setting(PreferenceKey.recordMicrophone) private var microphone = false
+    @Setting(PreferenceKey.microphoneDeviceID) private var deviceID = ""
+    @Setting(PreferenceKey.recordSystemAudio) private var systemAudio = false
     @State private var devices: [AVCaptureDevice] = []
     private let preview = DevicePreview.microphone
 
@@ -463,9 +463,9 @@ private struct AudioSettings: View {
 
 private struct CameraSettings: View {
     let color: Color
-    @AppStorage(PreferenceKey.recordCamera) private var camera = false
-    @AppStorage(PreferenceKey.cameraDeviceID) private var deviceID = ""
-    @AppStorage(PreferenceKey.cameraSize) private var size = CameraBubbleSize.medium.rawValue
+    @Setting(PreferenceKey.recordCamera) private var camera = false
+    @Setting(PreferenceKey.cameraDeviceID) private var deviceID = ""
+    @Setting(PreferenceKey.cameraSize) private var size = CameraBubbleSize.medium.rawValue
     @State private var devices: [AVCaptureDevice] = []
     private let preview = DevicePreview.camera
 
@@ -551,24 +551,20 @@ private struct DevicePicker: View {
 
 private struct ShortcutSettings: View {
     private let color = SettingsSection.shortcuts.color
-    @AppStorage(PreferenceKey.replacesSystemScreenshots) private var replacesSystemScreenshots = false
-    /// Read straight from the defaults: `replacesSystemScreenshots` only catches up an update later, and pairing its old
-    /// value with the new key owner flashed the warning row when turning this off.
-    @State private var keysStillWithMacOS = Self.keysStillWithMacOS
-
-    private static var keysStillWithMacOS: Bool { Preferences().replacesSystemScreenshots && SystemShortcuts.macOSOwnsKeys }
+    @Setting(PreferenceKey.replacesSystemScreenshots) private var replacesSystemScreenshots = false
+    @State private var macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
 
     private var useShot: Binding<Bool> {
         Binding(get: { replacesSystemScreenshots }, set: { on in
             SystemShortcuts.useShot(on)
-            keysStillWithMacOS = Self.keysStillWithMacOS
+            macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
         })
     }
 
     var body: some View {
         SettingsCard(title: "macOS screenshot keys", symbol: "command") {
-            ToggleRow(title: "Use Shot for ⌘⇧3 to ⌘⇧5", subtitle: "Turns off the matching macOS shortcuts, so these keys and a keyboard's screenshot key open Shot. macOS gets them back while Shot isn't running, or when you turn this off.", isOn: useShot, color: color, divider: keysStillWithMacOS)
-            if keysStillWithMacOS {
+            ToggleRow(title: "Use Shot for ⌘⇧3 to ⌘⇧5", subtitle: "Turns off the matching macOS shortcuts, so these keys and a keyboard's screenshot key open Shot. macOS gets them back while Shot isn't running, or when you turn this off.", isOn: useShot, color: color, divider: replacesSystemScreenshots && macOSOwnsKeys)
+            if replacesSystemScreenshots && macOSOwnsKeys {
                 SettingRow(title: "macOS still uses these keys", subtitle: "Turn off the Screenshots shortcuts under Keyboard Shortcuts.", divider: false) {
                     Button("Open") { SystemShortcuts.openKeyboardSettings() }
                         .buttonStyle(BrutalButtonStyle(compact: true))
@@ -576,7 +572,7 @@ private struct ShortcutSettings: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            keysStillWithMacOS = Self.keysStillWithMacOS
+            macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
         }
 
         SettingsCard(title: "Global hotkeys", symbol: "keyboard.fill") {
@@ -586,8 +582,6 @@ private struct ShortcutSettings: View {
                 }
             }
         }
-        // Rebuilds the recorders so unchanged shortcuts show the new defaults.
-        .id(replacesSystemScreenshots)
         HStack(alignment: .top, spacing: 14) {
             Text("Click a shortcut, then press the new keys. Esc cancels, Delete clears.")
                 .font(Brutal.caption)
@@ -597,7 +591,7 @@ private struct ShortcutSettings: View {
             Button("Restore defaults") {
                 Preferences.resetHotkeys()
                 SystemShortcuts.useShot(true)
-                keysStillWithMacOS = Self.keysStillWithMacOS
+                macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
             }
                 .buttonStyle(BrutalButtonStyle(color: color, compact: true))
         }

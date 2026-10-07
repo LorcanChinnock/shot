@@ -14,7 +14,7 @@ enum QuickAccessMotion {
 struct QuickAccessView: View {
     let model: QuickAccessModel
     let controller: QuickAccessController
-    @AppStorage(PreferenceKey.quickAccessPosition) private var position = QuickAccessPosition.left.rawValue
+    @Setting(PreferenceKey.quickAccessPosition) private var position = QuickAccessPosition.left.rawValue
 
     private var edge: Edge { position == QuickAccessPosition.right.rawValue ? .trailing : .leading }
 

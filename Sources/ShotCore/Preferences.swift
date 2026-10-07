@@ -64,7 +64,7 @@ public enum QuickAccessPosition: String, CaseIterable, Sendable {
     case left, right
 }
 
-/// Typed read access to settings; `@AppStorage` in views uses the same keys and `Preferences.defaults`.
+/// Typed read access to settings; `@Setting` in views uses the same keys and `Preferences.defaults`.
 public struct Preferences {
     public static var defaultSaveFolder: String {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Pictures/Shot").path
