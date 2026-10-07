@@ -99,7 +99,7 @@ Pinch, or press ⌘+ and ⌘-, to zoom. ⌘0 fits the canvas to the window and �
 
 ## Screen recording
 
-Press ⌘⇧5, then drag out an area, press Space and click a window, or press Enter for the full screen. Before recording, you can adjust the frame, switch between area, screen and window, and turn the camera bubble, microphone and cursor on or off for this recording; **Settings › Recording** sets what each recording starts with. Press Return or click **Record** to start after a 3-second countdown, or Esc to cancel.
+Press ⌘⇧5, then drag out an area (the magnifier helps here too), press Space and click a window, or press Enter for the full screen. Before recording, you can adjust the frame, switch between area, screen and window, and turn the camera bubble, microphone and cursor on or off for this recording; **Settings › Recording** sets what each recording starts with. Press Return or click **Record** to start after a 3-second countdown, or Esc to cancel.
 
 While recording, the controls let you pause and resume, stop and save, discard the recording, and show, hide or resize the camera bubble. On a Mac with a notch, when there's no room for the controls outside the recorded area, they move into the notch: a black pill shows the elapsed time, and hovering it shows the controls. Pressing the record shortcut again, or opening `shot://record`, stops the recording.
 
