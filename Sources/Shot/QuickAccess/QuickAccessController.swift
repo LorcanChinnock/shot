@@ -47,8 +47,7 @@ final class QuickAccessController {
     /// How long a card's exit takes; the panel keeps its size until then so the card isn't clipped mid-slide.
     private static let exitDuration: Duration = .milliseconds(350)
 
-    func add(fileURL: URL, thumbnail: CGImage, scale: CGFloat) {
-        let size = NSSize(width: CGFloat(thumbnail.width) / scale, height: CGFloat(thumbnail.height) / scale)
+    func add(fileURL: URL, thumbnail: CGImage, size: NSSize) {
         add(QuickAccessCard(fileURL: fileURL, thumbnail: NSImage(cgImage: thumbnail, size: size), isVideo: false))
     }
 
