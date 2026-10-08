@@ -76,7 +76,9 @@ final class GalleryModel {
             guard !Task.isCancelled else {
                 return
             }
-            items = found
+            if found != items {
+                items = found
+            }
             hasLoaded = true
             selection.formIntersection(Set(found.map(\.url)))
         }
