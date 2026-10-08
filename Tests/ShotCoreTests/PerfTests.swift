@@ -84,7 +84,8 @@ private func median(_ body: () throws -> Void) throws -> Duration {
 }
 
 private func check(_ time: Duration, budget: Duration, _ name: String) throws {
-    print("\(name): \(time.formatted(.units(allowed: [.milliseconds, .microseconds], fractionalPart: .show(length: 2)))), budget \(budget)")
+    let style = Duration.UnitsFormatStyle(allowedUnits: [.milliseconds, .microseconds], width: .abbreviated, fractionalPart: .show(length: 2))
+    print("\(name): \(time.formatted(style)), budget \(budget.formatted(style))")
     #expect(time <= budget, "\(name) took \(time), over its \(budget) budget")
 }
 
