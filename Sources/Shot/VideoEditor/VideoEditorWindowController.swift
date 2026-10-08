@@ -173,7 +173,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
         case 45: // N
             model.toggleSnapping()
         case 53: // Escape
-            return model.clearSelection() || model.escapeAnnotating()
+            return model.cancelExport() || model.clearSelection() || model.escapeAnnotating()
         default:
             return false
         }
@@ -181,8 +181,17 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
-        guard model.isDirty, !model.isExporting, !discarding else {
-            return !model.isExporting
+        if model.cancelExport() {
+            Task {
+                await model.exportEnded()
+                if windowShouldClose(sender) {
+                    sender.close()
+                }
+            }
+            return false
+        }
+        guard model.isDirty, !discarding else {
+            return true
         }
         guard sender.attachedSheet == nil else {
             return false

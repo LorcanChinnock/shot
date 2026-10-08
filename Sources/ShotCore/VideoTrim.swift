@@ -315,23 +315,29 @@ public enum VideoTrimmer {
             throw writer.error ?? TrimError.exportFailed
         }
         writer.startSession(atSourceTime: .zero)
-        for copy in copies where !copy.reader.startReading() {
-            throw copy.reader.error ?? TrimError.exportFailed
-        }
-        // Reading a sample blocks until it's decoded, so the copy runs on a queue of its own rather than
-        // holding one of Swift's few cooperative threads, which the readers' other work may be waiting for.
-        nonisolated(unsafe) let (pending, sharedWriter) = (copies, writer)
-        let cancelled = OSAllocatedUnfairLock(initialState: false)
-        try await withTaskCancellationHandler {
-            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                DispatchQueue(label: "Shot.mux").async {
-                    continuation.resume(with: Result {
-                        try copySamples(pending, into: sharedWriter) { cancelled.withLock { $0 } }
-                    })
-                }
+        do {
+            for copy in copies where !copy.reader.startReading() {
+                throw copy.reader.error ?? TrimError.exportFailed
             }
-        } onCancel: {
-            cancelled.withLock { $0 = true }
+            // Reading a sample blocks until it's decoded, so the copy runs on a queue of its own rather than
+            // holding one of Swift's few cooperative threads, which the readers' other work may be waiting for.
+            nonisolated(unsafe) let (pending, sharedWriter) = (copies, writer)
+            let cancelled = OSAllocatedUnfairLock(initialState: false)
+            try await withTaskCancellationHandler {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                    DispatchQueue(label: "Shot.mux").async {
+                        continuation.resume(with: Result {
+                            try copySamples(pending, into: sharedWriter) { cancelled.withLock { $0 } }
+                        })
+                    }
+                }
+            } onCancel: {
+                cancelled.withLock { $0 = true }
+            }
+        } catch {
+            // Deletes what was written so far.
+            writer.cancelWriting()
+            throw error
         }
         await writer.finishWriting()
         guard writer.status == .completed else {

@@ -1,5 +1,6 @@
 import AVFoundation
 import ImageIO
+import os
 import Testing
 @testable import ShotCore
 
@@ -69,6 +70,27 @@ extension MediaTests {
         #expect(file.frames.count == result.frameCount)
         let plan = GIFFramePlan(sourceSize: CGSize(width: 1280, height: 720), range: TrimRange(duration: 2), fps: 12, maxWidth: 720)
         #expect(file.frames.map(\.delay) == (0..<result.frameCount).map { Int((plan.delay(ofFrame: $0) * 100).rounded()) })
+    }
+
+    @Test func cancellingAGIFExportStopsBeforeTheNextFrameAndLeavesNoFile() async throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let video = folder.appendingPathComponent("in.mp4")
+        let gif = folder.appendingPathComponent("out.gif")
+        try await writeSyntheticVideo(to: video, seconds: 2, fps: 30, width: 320, height: 240)
+        let framesWritten = OSAllocatedUnfairLock(initialState: 0)
+
+        let export = Task {
+            try await GIFExporter.export(videoURL: video, to: gif) { _ in
+                framesWritten.withLock { $0 += 1 }
+                withUnsafeCurrentTask { $0?.cancel() }
+            }
+        }
+
+        await #expect(throws: CancellationError.self) { try await export.value }
+        #expect(framesWritten.withLock { $0 } == 1)
+        #expect(!FileManager.default.fileExists(atPath: gif.path))
     }
 
     @Test func concatenatesSegments() async throws {

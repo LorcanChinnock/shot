@@ -39,7 +39,8 @@ final class VideoEditorModel {
     /// Whether the player has the composite of every track, not just the recording with its cuts skipped.
     private(set) var itemIsComposite = false
     private(set) var isPlaying = false
-    private(set) var isExporting = false
+    var isExporting: Bool { exportTask != nil }
+    private var exportTask: Task<Bool, Never>?
     private(set) var thumbnailSets: [URL: [CGImage?]] = [:]
     @ObservationIgnored private var thumbnailSources: [URL: ThumbnailSource] = [:]
     /// Applies to Export only; Copy and Save keep the original format, speed and sound.
@@ -660,6 +661,7 @@ final class VideoEditorModel {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("Shot/\(UUID().uuidString)")
         let output = folder.appendingPathComponent(fileURL.lastPathComponent)
         guard await export(to: output, creating: folder) else {
+            try? FileManager.default.removeItem(at: folder)
             return
         }
         Clipboard.copy(fileURL: output)
@@ -813,7 +815,7 @@ final class VideoEditorModel {
     }
 
     private func export(to output: URL, creating folder: URL?) async -> Bool {
-        await exporting {
+        await exporting { [self] in
             if let folder {
                 try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             }
@@ -827,23 +829,42 @@ final class VideoEditorModel {
         }
     }
 
-    /// Runs `work` with the player paused, one export at a time; false if it couldn't start or failed.
-    private func exporting(_ work: () async throws -> Void) async -> Bool {
-        guard !isExporting else {
+    /// Runs `work` with the player paused, one export at a time; false if it couldn't start, failed or was cancelled.
+    private func exporting(_ work: @escaping () async throws -> Void) async -> Bool {
+        guard exportTask == nil else {
             return false
         }
-        isExporting = true
-        defer { isExporting = false }
         player.pause()
         Toast.show("Exporting…", duration: nil)
-        do {
-            try await work()
-            return true
-        } catch {
-            log.error("Export failed: \(error.localizedDescription, privacy: .public)")
-            Toast.error("Export failed: \(error.localizedDescription)")
-            return false
+        let task = Task {
+            defer { exportTask = nil }
+            do {
+                try await work()
+                return true
+            } catch where Task.isCancelled {
+                log.notice("Export cancelled")
+                Toast.show("Export cancelled")
+                return false
+            } catch {
+                log.error("Export failed: \(error.localizedDescription, privacy: .public)")
+                Toast.error("Export failed: \(error.localizedDescription)")
+                return false
+            }
         }
+        exportTask = task
+        return await task.value
+    }
+
+    /// Stops the export in progress; false when there isn't one.
+    @discardableResult
+    func cancelExport() -> Bool {
+        exportTask?.cancel()
+        return exportTask != nil
+    }
+
+    /// Returns once the export in progress, if any, has finished or stopped.
+    func exportEnded() async {
+        _ = await exportTask?.value
     }
 }
 

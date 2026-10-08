@@ -198,6 +198,26 @@ extension MediaTests {
         #expect(abs(try await mutedAsset.load(.duration).seconds - 2) < 0.1)
     }
 
+    @Test func cancellingARetimedExportWhileItWritesLeavesNoFile() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let input = folder.appendingPathComponent("in.mp4")
+        try await writeScreenRecording(to: input, seconds: 20, audio: true)
+        let output = folder.appendingPathComponent("fast.mp4")
+
+        let export = Task { try await VideoTrimmer.trim(input, range: TrimRange(duration: 20), speed: 1.5, to: output) }
+        // The samples are copied into the output last, once the retimed video and audio are written.
+        let deadline = ContinuousClock.now + .seconds(30)
+        while !FileManager.default.fileExists(atPath: output.path) {
+            try #require(ContinuousClock.now < deadline, "The export never started writing")
+            try await Task.sleep(for: .milliseconds(1))
+        }
+        export.cancel()
+
+        await #expect(throws: CancellationError.self) { try await export.value }
+        #expect(!FileManager.default.fileExists(atPath: output.path))
+    }
+
     @Test func mp4ExportSpeedsUpVideoAndAudio() async throws {
         let folder = try temporaryFolder()
         defer { try? FileManager.default.removeItem(at: folder) }
