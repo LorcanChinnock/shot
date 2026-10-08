@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.29](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.28...v0.7.0-beta.29) (2026-10-08)
+
+
+### Features
+
+* **editor:** layers panel for photo and video editors ([#251](https://github.com/LorcanChinnock/shot/issues/251)) ([cd936f6](https://github.com/LorcanChinnock/shot/commit/cd936f648015c50d8c02a2a50a1f064c57ab594e))
+
 ## [0.7.0-beta.28](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.27...v0.7.0-beta.28) (2026-10-08)
 
 
