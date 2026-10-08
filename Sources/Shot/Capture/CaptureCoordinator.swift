@@ -154,12 +154,15 @@ final class CaptureCoordinator {
         }
     }
 
-    /// Frames the recording, then waits for Record and the countdown before starting.
+    /// Picks the area, then starts recording, first showing the setup panel or a countdown if Settings asks for them.
     private func startRecording(mode: RecordingMode) async throws {
-        guard let (screen, region, windowID, ratio) = await RecordingSetupController.pickRegion(mode: mode) else {
+        guard let pick = await RecordingSetupController.pickRegion(mode: mode) else {
             return
         }
-        let controller = RecordingSetupController(mode: mode, screen: screen, region: region, windowID: windowID, ratio: ratio)
+        let prefs = Preferences()
+        // Record Fullscreen has no pick to end, so `pickRegion` never reports ⌥ for it; its hotkey may itself hold ⌥.
+        let start = RecordingStart.after(adjustBeforeRecording: prefs.adjustBeforeRecording, countdown: prefs.recordingCountdown, optionHeld: pick.optionHeld)
+        let controller = RecordingSetupController(mode: mode, screen: pick.screen, region: pick.region, windowID: pick.windowID, ratio: pick.ratio, start: start)
         setup = controller
         let result = await controller.run()
         setup = nil

@@ -26,6 +26,8 @@ public enum PreferenceKey {
     public static let showRecordingBorder = "showRecordingBorder"
     public static let copyAfterRecording = "copyAfterRecording"
     public static let recordCamera = "recordCamera"
+    public static let adjustBeforeRecording = "adjustBeforeRecording"
+    public static let recordingCountdown = "recordingCountdown"
     public static let cameraDeviceID = "cameraDeviceID"
     public static let cameraSize = "cameraSize"
     public static let replacesSystemScreenshots = "replacesSystemScreenshots"
@@ -105,6 +107,8 @@ public struct Preferences {
             PreferenceKey.showRecordingBorder: true,
             PreferenceKey.copyAfterRecording: true,
             PreferenceKey.recordCamera: false,
+            PreferenceKey.adjustBeforeRecording: false,
+            PreferenceKey.recordingCountdown: 0,
             PreferenceKey.cameraDeviceID: "",
             PreferenceKey.cameraSize: CameraBubbleSize.medium.rawValue,
             PreferenceKey.replacesSystemScreenshots: true,
@@ -239,6 +243,14 @@ public struct Preferences {
     public var copyAfterRecording: Bool { store.bool(forKey: PreferenceKey.copyAfterRecording) }
 
     public var recordCamera: Bool { store.bool(forKey: PreferenceKey.recordCamera) }
+    /// Shows the setup panel, with frame handles and option toggles, before each recording.
+    public var adjustBeforeRecording: Bool { store.bool(forKey: PreferenceKey.adjustBeforeRecording) }
+
+    /// Seconds to count down before recording starts, one of `RecordingStart.countdowns`; 0 is off.
+    public var recordingCountdown: Int {
+        let seconds = store.integer(forKey: PreferenceKey.recordingCountdown)
+        return RecordingStart.countdowns.contains(seconds) ? seconds : 0
+    }
 
     /// Empty means the system default camera.
     public var cameraDeviceID: String { store.string(forKey: PreferenceKey.cameraDeviceID) ?? "" }
