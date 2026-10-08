@@ -66,8 +66,15 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         set { locked = newValue ? true : nil }
     }
     private var locked: Bool?
-    /// A rounded rectangle's or rounded spotlight's corner radius; `nil` keeps the look from before it could be set.
+    /// A rounded rectangle's, rounded spotlight's or placed image's corner radius; `nil` keeps the look from before it
+    /// could be set, which for an image is square.
     public var cornerRadius: CGFloat?
+    /// A placed image's shadow and border. Stored only when set, so annotations saved before it still decode.
+    public var style: ObjectStyle {
+        get { objectStyle ?? ObjectStyle() }
+        set { objectStyle = newValue.isEmpty ? nil : newValue }
+    }
+    private var objectStyle: ObjectStyle?
 
     public enum Kind: Equatable, Sendable, Codable {
         case arrow(from: CGPoint, to: CGPoint)
@@ -264,8 +271,10 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             return bounds.insetBy(dx: -outset, dy: -outset)
         case .line, .shape:
             return bounds.insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2)
-        case .highlight, .pixelate, .blur, .spotlight, .text, .counter, .image:
+        case .highlight, .pixelate, .blur, .spotlight, .text, .counter:
             return bounds
+        case .image:
+            return style.paintedRect(around: bounds)
         case .note:
             guard let layout = noteLayout else {
                 return bounds
@@ -581,6 +590,10 @@ public struct EditorDocument: @unchecked Sendable {
     public var canvasRect: CGRect
     /// Fills the canvas behind the image; `nil` is transparent.
     public var background: RGBA?
+    /// How far the image's corners are rounded, in image pixels.
+    public var captureCornerRadius: CGFloat = 0
+    /// The image's shadow and border.
+    public var captureStyle = ObjectStyle()
 
     public init(base: CGImage, annotations: [Annotation] = [], canvasRect: CGRect? = nil, background: RGBA? = nil) {
         self.base = base
@@ -622,8 +635,8 @@ public struct EditorDocument: @unchecked Sendable {
         canvasRect = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY).integral
     }
 
-    /// Pulls padding back in to what the annotations still need, so moving or removing one retracts the canvas.
-    /// Only edges at or beyond the image shrink, and never past the image; a crop edge inside the image stays.
+    /// Pulls padding back in to what the annotations and the image's shadow and border still need, so moving or removing
+    /// one retracts the canvas. Only edges at or beyond the image shrink, and never past the image; a crop edge inside the image stays.
     public mutating func shrinkPadding(margin: CGFloat) {
         let image = fullRect
         guard canvasRect.minX < image.minX || canvasRect.minY < image.minY || canvasRect.maxX > image.maxX || canvasRect.maxY > image.maxY else {
@@ -633,13 +646,14 @@ public struct EditorDocument: @unchecked Sendable {
             if case .spotlight = annotation.kind { return false }
             return true
         }.map { (annotation: $0, bounds: $0.bounds) }
+        let capture = capturePaintedBounds
         func edge(_ current: CGFloat, image imageEdge: CGFloat, reaches: ((CGRect) -> Bool), painted paintedEdge: ((CGRect) -> CGFloat), outward: CGFloat) -> CGFloat {
             guard (current - imageEdge) * outward > 0 else {
                 return current
             }
             let needed = shapes.filter { reaches($0.bounds) }
                 .map { paintedEdge($0.annotation.paintedBounds.insetBy(dx: -margin, dy: -margin)) }
-                .reduce(imageEdge) { outward > 0 ? max($0, $1) : min($0, $1) }
+                .reduce(paintedEdge(capture)) { outward > 0 ? max($0, $1) : min($0, $1) }
             return outward > 0 ? min(current, needed) : max(current, needed)
         }
         let minX = edge(canvasRect.minX, image: image.minX, reaches: { $0.minX < image.minX }, painted: { $0.minX }, outward: -1)
@@ -649,9 +663,10 @@ public struct EditorDocument: @unchecked Sendable {
         canvasRect = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY).integral
     }
 
-    /// Sizes the canvas to the image and every annotation but spotlights, with `margin` around the annotations.
+    /// Sizes the canvas to the image with its shadow and border, and every annotation but spotlights, with `margin`
+    /// around the annotations.
     public mutating func fitToContent(margin: CGFloat) {
-        canvasRect = annotations.reduce(fullRect) { canvas, annotation in
+        canvasRect = annotations.reduce(capturePaintedBounds) { canvas, annotation in
             if case .spotlight = annotation.kind {
                 return canvas
             }
@@ -688,7 +703,9 @@ public struct EditorDocument: @unchecked Sendable {
         guard hasSpotlight else {
             return nil
         }
-        let dimmable = below.isEmpty ? CGPath(rect: fullRect, transform: nil) : below.union(CGPath(rect: fullRect, transform: nil))
+        let radius = clampedCaptureCornerRadius
+        let image = CGPath(roundedRect: fullRect, cornerWidth: radius, cornerHeight: radius, transform: nil)
+        let dimmable = below.isEmpty ? image : below.union(image)
         return lit.map { dimmable.subtracting($0) } ?? dimmable
     }
 
@@ -712,18 +729,22 @@ public struct EditorDocument: @unchecked Sendable {
         }
     }
 
-    /// Removes the padding; a crop inside the image stays.
+    /// Removes the padding but what the image's shadow and border need; a crop inside the image stays.
     public mutating func trimToImage() {
-        let trimmed = canvasRect.intersection(fullRect)
+        let trimmed = canvasRect.intersection(capturePaintedBounds)
         canvasRect = trimmed.isEmpty ? fullRect : trimmed
     }
 
-    public var snapshot: EditorSnapshot { EditorSnapshot(annotations: annotations, canvasRect: canvasRect, background: background) }
+    public var snapshot: EditorSnapshot {
+        EditorSnapshot(annotations: annotations, canvasRect: canvasRect, background: background, captureCornerRadius: captureCornerRadius, captureStyle: captureStyle)
+    }
 
     public mutating func restore(_ snapshot: EditorSnapshot) {
         annotations = snapshot.annotations
         canvasRect = snapshot.canvasRect
         background = snapshot.background
+        captureCornerRadius = snapshot.captureCornerRadius
+        captureStyle = snapshot.captureStyle
     }
 }
 
@@ -731,6 +752,8 @@ public struct EditorSnapshot: Equatable, Sendable {
     public var annotations: [Annotation]
     public var canvasRect: CGRect
     public var background: RGBA?
+    public var captureCornerRadius: CGFloat
+    public var captureStyle: ObjectStyle
 }
 
 public struct UndoStack<State> {

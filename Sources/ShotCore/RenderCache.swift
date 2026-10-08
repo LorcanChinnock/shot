@@ -10,6 +10,7 @@ final class RenderCache: Sendable {
         case blur(Backdrop, rect: CGRect, radius: CGFloat)
         case softSpotlight(SoftSpotlight)
         case softSpotlightMask([SoftSpotlight], area: CGRect)
+        case edgeSample(SampledImage)
     }
 
     typealias Value = (image: CGImage, frame: CGRect)
@@ -52,14 +53,17 @@ struct Backdrop: Equatable, Sendable {
     let base: CGImage
     /// The annotations under it that can change what's drawn in `area`, back to front.
     let below: [Annotation]
-    /// Where the drawn image goes; `.zero` with nothing under it there, when it's the screenshot itself.
+    /// How the screenshot itself is drawn.
+    let look: CaptureLook
+    /// Where the drawn image goes; `.zero` with nothing under it there and a plain screenshot, when it's the screenshot itself.
     let area: CGRect
 
-    init(_ base: CGImage, below: ArraySlice<Annotation>, around rect: CGRect, outset: CGFloat) {
+    init(_ base: CGImage, below: ArraySlice<Annotation>, around rect: CGRect, outset: CGFloat, look: CaptureLook = CaptureLook()) {
         let area = rect.insetBy(dx: -outset, dy: -outset).integral
         self.base = base
         self.below = Self.annotations(below.filter { !$0.isHidden }, reaching: area, base: base)
-        self.area = self.below.isEmpty ? .zero : area
+        self.look = look
+        self.area = self.below.isEmpty && look.isPlain ? .zero : area
     }
 
     /// Those of `annotations` that can change what's drawn in `area`: working down from the top, each one drawn in the
@@ -78,14 +82,17 @@ struct Backdrop: Equatable, Sendable {
 
     /// The image, and where its top-left pixel sits.
     func draw() -> (image: CGImage, origin: CGPoint) {
-        guard !below.isEmpty, let ctx = CGContext(
+        guard area != .zero, let ctx = CGContext(
             data: nil, width: Int(area.width), height: Int(area.height), bitsPerComponent: 8, bytesPerRow: 0,
             space: base.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ) else {
             return (base, .zero)
         }
         ctx.interpolationQuality = .high
-        AnnotationRenderer.renderLayers(EditorDocument(base: base, annotations: below, canvasRect: area), into: ctx)
+        var doc = EditorDocument(base: base, annotations: below, canvasRect: area)
+        doc.captureCornerRadius = look.cornerRadius
+        doc.captureStyle = look.style
+        AnnotationRenderer.renderLayers(doc, into: ctx, shadowBackground: look.background)
         guard let image = ctx.makeImage() else {
             return (base, .zero)
         }
@@ -93,7 +100,27 @@ struct Backdrop: Equatable, Sendable {
     }
 
     static func == (a: Self, b: Self) -> Bool {
-        a.base === b.base && a.area == b.area && a.below == b.below
+        a.base === b.base && a.area == b.area && a.below == b.below && a.look == b.look
+    }
+}
+
+/// How the screenshot under the annotations is drawn: its corners, shadow and border, and the background that tints
+/// the shadows. A backdrop draws without the background itself, so the layer over it sees the padding as it did before.
+struct CaptureLook: Equatable, Sendable {
+    var cornerRadius: CGFloat = 0
+    var style = ObjectStyle()
+    var background: RGBA?
+
+    /// True when the screenshot is drawn as it is, which a backdrop with nothing else in it needn't draw.
+    var isPlain: Bool { cornerRadius == 0 && style.isEmpty }
+}
+
+/// An image whose edge colour is sampled, the same while it's the same image, so comparing never reads the pixels.
+struct SampledImage: Equatable, Sendable {
+    let image: CGImage
+
+    static func == (a: Self, b: Self) -> Bool {
+        a.image === b.image
     }
 }
 
