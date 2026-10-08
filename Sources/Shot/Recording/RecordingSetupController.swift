@@ -23,10 +23,14 @@ final class RecordingSetupModel {
     var cursorOn: Bool
     /// Set when recording a single window rather than a screen area.
     var windowID: CGWindowID?
+    /// Seconds left while counting down.
     var countdown: Int?
+    /// How long the countdown runs once Record is pressed; 0 starts at once.
+    let countdownSeconds: Int
 
-    init(mode: RecordingMode, prefs: Preferences) {
+    init(mode: RecordingMode, prefs: Preferences, countdownSeconds: Int) {
         self.mode = mode
+        self.countdownSeconds = countdownSeconds
         cameraOn = prefs.recordCamera
         microphoneOn = prefs.recordMicrophone
         cursorOn = prefs.recordShowsCursor
@@ -35,7 +39,8 @@ final class RecordingSetupModel {
     var options: Recorder.Options { .init(camera: cameraOn, microphone: microphoneOn, showsCursor: cursorOn, windowID: windowID) }
 }
 
-/// Lets the user frame the recording, set options and press Record; recording starts after a 3-second countdown.
+/// Starts a recording of a picked area, first showing the setup panel and counting down when `RecordingStart` asks for them.
+/// The setup panel lets the user adjust the frame and this recording's options, then press Record.
 @MainActor
 final class RecordingSetupController {
     /// Only crosses the continuation on the main actor.
@@ -43,8 +48,6 @@ final class RecordingSetupController {
         case start(screen: NSScreen, region: CGRect, options: Recorder.Options)
         case cancel
     }
-
-    static let countdownSeconds = 3
 
     private let model: RecordingSetupModel
     private var screen: NSScreen
@@ -57,9 +60,11 @@ final class RecordingSetupController {
     private var countdownPanel: CountdownPanel?
     private var countdownTask: Task<Void, Never>?
     private var continuation: CheckedContinuation<Result, Never>?
+    private let showsSetup: Bool
 
-    init(mode: RecordingMode, screen: NSScreen, region: CGRect, windowID: CGWindowID?, ratio: CGFloat?) {
-        model = RecordingSetupModel(mode: mode, prefs: Preferences())
+    init(mode: RecordingMode, screen: NSScreen, region: CGRect, windowID: CGWindowID?, ratio: CGFloat?, start: RecordingStart) {
+        model = RecordingSetupModel(mode: mode, prefs: Preferences(), countdownSeconds: start.countdown)
+        showsSetup = start.showsSetup
         self.screen = screen
         self.region = region
         self.ratio = ratio
@@ -94,19 +99,34 @@ final class RecordingSetupController {
     func run() async -> Result {
         await withCheckedContinuation { continuation in
             self.continuation = continuation
-            Task { await self.showSetup(placeCamera: true) }
+            Task {
+                if showsSetup {
+                    await showSetup(placeCamera: true)
+                } else {
+                    if model.cameraOn {
+                        await showCamera()
+                    }
+                    confirm()
+                }
+            }
         }
     }
 
     // MARK: Actions
 
-    /// Starts the countdown; the record hotkey and Return also call this.
+    /// Starts the countdown, or recording when there is none; the record hotkey and Return also call this.
     func confirm() {
         guard model.countdown == nil, continuation != nil else {
             return
         }
         setSetupVisible(false)
-        model.countdown = Self.countdownSeconds
+        guard model.countdownSeconds > 0 else {
+            finish(.start(screen: screen, region: region, options: model.options))
+            return
+        }
+        model.countdown = model.countdownSeconds
+        // Without the setup panel Shot may not be active yet, and the countdown needs key focus for Esc.
+        NSApp.activate()
         let panel = CountdownPanel(center: CGPoint(x: region.midX, y: region.midY), model: model) { [weak self] in
             self?.cancelCountdown()
         }
@@ -114,7 +134,7 @@ final class RecordingSetupController {
         panel.makeKey()
         countdownPanel = panel
         countdownTask = Task {
-            for remaining in stride(from: Self.countdownSeconds, through: 1, by: -1) {
+            for remaining in stride(from: model.countdownSeconds, through: 1, by: -1) {
                 model.countdown = remaining
                 try? await Task.sleep(for: .seconds(1))
                 if Task.isCancelled {
@@ -130,7 +150,12 @@ final class RecordingSetupController {
         finish(.cancel)
     }
 
+    /// Goes back to the setup panel, or cancels the recording when it wasn't shown.
     private func cancelCountdown() {
+        guard showsSetup else {
+            cancel()
+            return
+        }
         countdownTask?.cancel()
         countdownTask = nil
         countdownPanel?.orderOut(nil)
@@ -449,7 +474,7 @@ private struct SetupBarView: View {
             }
             .buttonStyle(BrutalButtonStyle(color: Brutal.red, compact: true))
             .keyboardShortcut(.defaultAction)
-            .brutalTip("Start recording after a 3-second countdown (Return)")
+            .brutalTip(model.countdownSeconds > 0 ? "Start recording after a \(model.countdownSeconds)-second countdown (Return)" : "Start recording (Return)")
         }
         .padding(.horizontal, 14)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -78,6 +78,8 @@ import Testing
         #expect(prefs.showRecordingBorder)
         #expect(prefs.copyAfterRecording)
         #expect(!prefs.recordCamera)
+        #expect(!prefs.adjustBeforeRecording)
+        #expect(prefs.recordingCountdown == 0)
         #expect(prefs.cameraDeviceID.isEmpty)
         #expect(prefs.microphoneDeviceID.isEmpty)
         #expect(prefs.cameraSize == .medium)
