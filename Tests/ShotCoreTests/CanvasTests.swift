@@ -202,6 +202,20 @@ private func isWhite(_ p: [UInt8]) -> Bool { p.allSatisfy { $0 > 245 } }
     #expect(doc.canvasRect == doc.fullRect)
 }
 
+@Test func shrinkingOnlyMovesEdgesPastTheImage() {
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100))
+    let right = Annotation(kind: .note("Right", rect: CGRect(x: 180, y: 20, width: 80, height: 40)), color: blue, lineWidth: 4)
+    let top = Annotation(kind: .text("Top", origin: CGPoint(x: 20, y: -10), fontSize: 20), color: blue, lineWidth: 4)
+    doc.annotations = [right, top]
+    // Past the image but with no padding, as when the editor draws a canvas of its own: nothing to shrink.
+    doc.shrinkPadding(margin: 10)
+    #expect(doc.canvasRect == doc.fullRect)
+
+    doc.canvasRect = CGRect(x: 0, y: 0, width: 400, height: 100)
+    doc.shrinkPadding(margin: 10)
+    #expect(doc.canvasRect == CGRect(x: 0, y: 0, width: right.paintedBounds.maxX + 10, height: 100).integral)
+}
+
 @Test func shrinkingKeepsACrop() {
     var doc = EditorDocument(base: solidImage(width: 200, height: 100))
     doc.crop(to: CGRect(x: 50, y: 20, width: 100, height: 60))
