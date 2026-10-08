@@ -15,7 +15,8 @@ final class CaptureCoordinator {
     /// The region being recorded, as an AppKit global rect.
     private var recordingRegion = CGRect.zero
     private var gifExports: [URL: Task<Void, Never>] = [:]
-    /// From a capture action to its clipboard write; ended with "copied", or "not copied" when nothing was copied.
+    /// From a full-screen capture action to its clipboard write; ended with "copied", or "not copied" when nothing was copied.
+    /// Area and window captures wait for the user's selection, so their time says nothing about Shot's speed.
     private var captureInterval: OSSignpostIntervalState?
 
     init(state: AppState) {
@@ -53,7 +54,7 @@ final class CaptureCoordinator {
             return
         }
         busy = true
-        if !action.isRecording {
+        if action == .captureFullscreen {
             captureInterval = Perf.signposter.beginInterval("Capture to clipboard", id: Perf.signposter.makeSignpostID())
         }
         Task {

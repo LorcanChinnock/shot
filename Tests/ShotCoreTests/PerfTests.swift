@@ -38,7 +38,7 @@ extension Tag {
         try check(time / frames, budget: .microseconds(Budget.overlayFrame), "Overlay per frame")
     }
 
-    @Test func exportingA20SecondGIFKeepsMemoryFlat() async throws {
+    @Test func exportingA20SecondGIFStaysInItsMemoryBudget() async throws {
         let video = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString)-perf.mp4")
         let gif = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString)-perf.gif")
         defer { [video, gif].forEach { try? FileManager.default.removeItem(at: $0) } }
@@ -127,26 +127,27 @@ private final class FootprintSampler: @unchecked Sendable {
     private var running = false
     private var baseline = 0
     private var peak = 0
-    private var thread: Thread?
+    private let finished = DispatchSemaphore(value: 0)
 
     func start() {
         baseline = footprint()
         peak = baseline
         running = true
-        let thread = Thread { [self] in
+        Thread { [self] in
             while lock.withLock({ running }) {
                 let now = footprint()
                 lock.withLock { peak = max(peak, now) }
                 usleep(5000)
             }
-        }
-        self.thread = thread
-        thread.start()
+            finished.signal()
+        }.start()
     }
 
-    /// Stops sampling and returns the largest growth over the footprint at `start`, in bytes.
+    /// Stops sampling, waiting for the sampling thread to finish, and returns the largest growth over the footprint at
+    /// `start`, in bytes.
     func stop() -> Int {
         lock.withLock { running = false }
+        finished.wait()
         let now = footprint()
         return lock.withLock { max(peak, now) - baseline }
     }

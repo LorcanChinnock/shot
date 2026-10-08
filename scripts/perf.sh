@@ -6,10 +6,12 @@
 # It takes 20 full-screen screenshots and moves them out of the capture folder afterwards, into a folder it prints.
 # Usage: scripts/perf.sh [path/to/Shot.app]   (default /Applications/Shot.app)
 set -euo pipefail
-cd "$(dirname "$0")/.."
 
 app="${1:-/Applications/Shot.app}"
 [ -d "$app" ] || { echo "No app at $app; run make app first" >&2; exit 1; }
+# Absolute and resolved, as ps reports the running executable.
+app=$(cd "$app" && pwd -P)
+cd "$(dirname "$0")/.."
 bundle_id=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$app/Contents/Info.plist")
 
 # Budgets, about 1.5x the baselines in docs/performance.md. Empty means not measured: printed, not checked.
@@ -41,10 +43,15 @@ for _ in 1 2 3; do
   quit_shot
   before=$(ready_count)
   open -a "$app"
+  ready=0
   for _ in $(seq 50); do
-    [ "$(ready_count)" -gt "$before" ] && break
+    if [ "$(ready_count)" -gt "$before" ]; then
+      ready=1
+      break
+    fi
     sleep 0.4
   done
+  [ "$ready" = 1 ] || { echo "Shot didn't report Ready within 20 s of launching" >&2; exit 1; }
   sleep 2
 done
 launch_ms=$(signposts Ready | python3 -c '
@@ -58,9 +65,25 @@ running=$(pid)
 [ "$(ps -o comm= -p "$running")" = "$app/Contents/MacOS/Shot" ] || { echo "The running Shot isn't $app" >&2; exit 1; }
 
 # Capture → clipboard: 20 full-screen captures, timed by the app's "Capture to clipboard" interval.
-folder=$(defaults read "$bundle_id" saveFolder 2>/dev/null || echo "$HOME/Pictures/Shot")
+# Shot writes to the save folder, or to a temporary one when saving is off (Preferences.captureFolder).
+if [ "$(defaults read "$bundle_id" saveAfterCapture 2>/dev/null || echo 1)" = 0 ]; then
+  folder="${TMPDIR:-/tmp}/Shot"
+else
+  folder=$(defaults read "$bundle_id" saveFolder 2>/dev/null || echo "$HOME/Pictures/Shot")
+fi
 marker="$work/marker"
 touch "$marker"
+moved="$work/captures"
+# Move this run's captures out of the capture folder however the script ends, since they show the screen.
+# shellcheck disable=SC2329 # Called by the EXIT trap.
+move_captures() {
+  mkdir -p "$moved"
+  if [ -d "$folder" ]; then
+    find "$folder" -maxdepth 1 -newer "$marker" -type f -exec mv {} "$moved/" \;
+  fi
+  echo "This run's captures were moved to $moved"
+}
+trap move_captures EXIT
 for i in $(seq 20); do
   open -g -a "$app" "shot://capture-fullscreen"
   sleep 1.5
@@ -93,14 +116,18 @@ match = re.search(r"Footprint: ([\d.]+) (B|KB|MB|GB)", sys.stdin.read())
 scale = {"B": 1 / 2**20, "KB": 1 / 1024, "MB": 1, "GB": 1024}
 print(round(float(match.group(1)) * scale[match.group(2)]) if match else "")')
 
-# Idle CPU: open and close the editor, video editor and gallery, then average %CPU over 30 s.
+# Idle CPU: open and close the editor, video editor and gallery, then the CPU time used over the next 30 s.
 shot=$(find "$folder" -maxdepth 1 -newer "$marker" -name "*.png" | head -1)
 clip="$work/clip.mp4"
 if command -v ffmpeg >/dev/null; then
   ffmpeg -loglevel error -y -f lavfi -i "testsrc2=size=1280x720:rate=30:duration=3" -c:v libx264 -pix_fmt yuv420p "$clip"
 fi
-[ -n "$shot" ] && open -g -a "$app" "shot://annotate?path=$shot"
-[ -f "$clip" ] && open -g -a "$app" "shot://edit-video?path=$clip"
+encode() { python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$1"; }
+[ -n "$shot" ] || { echo "No capture found in $folder to open in the editor" >&2; exit 1; }
+open -g -a "$app" "shot://annotate?path=$(encode "$shot")"
+if [ -f "$clip" ]; then
+  open -g -a "$app" "shot://edit-video?path=$(encode "$clip")"
+fi
 open -g -a "$app" "shot://gallery"
 sleep 4
 osascript -e 'tell application "System Events" to tell process "Shot"
@@ -111,12 +138,16 @@ osascript -e 'tell application "System Events" to tell process "Shot"
   end repeat
 end tell' >/dev/null
 sleep 5
-idle_cpu=$(for _ in $(seq 30); do ps -o %cpu= -p "$(pid)"; sleep 1; done | python3 -c 'import sys,statistics; print(round(statistics.mean(float(x) for x in sys.stdin.read().split()), 2))')
-
-# Move this run's captures out of the user's folder.
-moved="$work/captures"
-mkdir -p "$moved"
-find "$folder" -maxdepth 1 -newer "$marker" -type f -exec mv {} "$moved/" \;
+# ps %cpu is a decaying average over about a minute, so it would still count the windows just closed; CPU time isn't.
+cpu_seconds() { ps -o time= -p "$(pid)" | python3 -c '
+import sys
+days, _, clock = sys.stdin.read().strip().rpartition("-")
+parts = [float(p) for p in clock.split(":")]
+print(float(days or 0) * 86400 + sum(value * 60 ** index for index, value in enumerate(reversed(parts))))'; }
+cpu_before=$(cpu_seconds)
+sleep 30
+cpu_after=$(cpu_seconds)
+idle_cpu=$(python3 -c "print(round(($cpu_after - $cpu_before) / 30 * 100, 2))")
 
 failed=0
 row() { # name value unit budget
@@ -135,5 +166,4 @@ row "Capture → clipboard" "$capture_ms" ms "$budget_capture_ms"
 row "Memory after use" "$memory_mb" MB "$budget_memory_mb"
 row "Idle CPU" "$idle_cpu" % "$budget_idle_cpu"
 echo
-echo "This run's captures were moved to $moved"
 exit $failed

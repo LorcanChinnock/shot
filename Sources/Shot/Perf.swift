@@ -5,7 +5,7 @@ import os
 /// Signposts around the paths with budgets in `docs/performance.md`. `scripts/perf.sh` reads them from the log, and
 /// Instruments shows them; they cost almost nothing when nobody reads them.
 enum Perf {
-    static let signposter = OSSignposter(subsystem: Bundle.main.bundleIdentifier ?? "Shot", category: "perf")
+    static let signposter = OSSignposter(logger: .shot("perf"))
 
     /// Milliseconds since the kernel started this process, so launch time includes what runs before `main`.
     static func millisecondsSinceLaunch() -> Int? {

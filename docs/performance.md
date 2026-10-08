@@ -26,7 +26,7 @@ To change a budget, measure again, then update both this table and `Budget` in `
 The app emits `OSSignposter` signposts under its bundle identifier, in category `perf`, which the script reads with `log show --signpost`. Instruments shows them too.
 
 - **Ready** marks when hotkeys are registered at launch. Its message gives the time since the process started.
-- **Capture to clipboard** runs from the capture action to the clipboard write. It ends with `copied`, or `not copied` when nothing was copied.
+- **Capture to clipboard** runs from a full-screen capture action to the clipboard write. Area and window captures have no interval, since they wait for your selection. It ends with `copied`, or `not copied` when nothing was copied.
 
 The script:
 
