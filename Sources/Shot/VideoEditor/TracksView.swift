@@ -156,12 +156,7 @@ struct TracksView: View {
                 let time = Double((scrollX + anchor) / oldWidth) * model.fitDuration
                 scroll.scrollTo(x: TimelineZoom.offset(keeping: time, atViewX: anchor, duration: model.fitDuration, zoom: new, viewWidth: viewWidth))
             }
-            .onChange(of: model.playhead) {
-                let x = timeline.x(for: model.playhead) + leadX
-                if model.isPlaying, x < scrollX || x > scrollX + viewWidth - 24 {
-                    scroll.scrollTo(x: max(0, x - viewWidth * 0.2))
-                }
-            }
+            .modifier(FollowPlayhead(model: model, scroll: $scroll, timeline: timeline, leadX: leadX, scrollX: scrollX, viewWidth: viewWidth))
             .simultaneousGesture(MagnifyGesture()
                 .onChanged { value in
                     pinchStart = pinchStart ?? model.zoom
@@ -170,10 +165,7 @@ struct TracksView: View {
                 .onEnded { _ in pinchStart = nil })
         }
         .frame(height: height)
-        .accessibilityElement()
-        .accessibilityLabel(Text("Tracks"))
-        .accessibilityValue(Text("\(Timecode.string(model.playhead)) of \(Timecode.string(model.keptLength))"))
-        .accessibilityAdjustableAction { model.nudgePlayhead(bySeconds: $0 == .increment ? 1 : -1) }
+        .modifier(TimelineAccessibility(model: model, label: Text("Tracks")))
         .help("Drag to scrub. Drag a clip to move it and its edges to trim it. Shift-drag to select a section, then press Delete to cut it.")
         .allowsHitTesting(!model.isExporting)
     }
@@ -235,11 +227,8 @@ struct TracksView: View {
                 handle("chevron.compact.left", height: main.height).offset(x: timeline.x(for: first.start), y: main.y)
                 handle("chevron.compact.right", height: main.height).offset(x: timeline.x(for: last.end) - TrimTimeline.handleWidth, y: main.y)
             }
-            Capsule().fill(Color.white)
-                .inkBorder(Capsule(), width: 1)
-                .frame(width: 4, height: layout.height - Self.rulerHeight + 4)
-                .offset(x: max(0, timeline.x(for: model.playhead) - 2), y: Self.rulerHeight - 2)
-                .allowsHitTesting(false)
+            PlayheadCapsule(model: model, timeline: timeline, time: \.playhead, height: layout.height - Self.rulerHeight + 4)
+                .offset(y: Self.rulerHeight - 2)
         }
     }
 
@@ -510,6 +499,56 @@ struct TracksView: View {
             return .trim(id, .end)
         }
         return .move(id, grab: time - start)
+    }
+}
+
+/// The playhead line. It alone reads the time, so playback redraws just it rather than the timeline it's on.
+struct PlayheadCapsule: View {
+    let model: VideoEditorModel
+    let timeline: TrimTimeline
+    let time: KeyPath<VideoEditorModel, Double>
+    let height: CGFloat
+
+    var body: some View {
+        Capsule().fill(Color.white)
+            .inkBorder(Capsule(), width: 1)
+            .frame(width: 4, height: height)
+            .offset(x: max(0, timeline.x(for: model[keyPath: time]) - 2))
+            .allowsHitTesting(false)
+    }
+}
+
+/// A timeline as one VoiceOver element whose value is the playhead. A modifier re-runs without re-running the view it's on,
+/// so reading the time here doesn't redraw the timeline on every tick.
+struct TimelineAccessibility: ViewModifier {
+    let model: VideoEditorModel
+    let label: Text
+
+    func body(content: Content) -> some View {
+        content
+            .accessibilityElement()
+            .accessibilityLabel(label)
+            .accessibilityValue(Text("\(Timecode.string(model.playhead)) of \(Timecode.string(model.keptLength))"))
+            .accessibilityAdjustableAction { model.nudgePlayhead(bySeconds: $0 == .increment ? 1 : -1) }
+    }
+}
+
+/// Scrolls the lanes to keep the playhead in view while playing, as a modifier for the same reason as `TimelineAccessibility`.
+private struct FollowPlayhead: ViewModifier {
+    let model: VideoEditorModel
+    @Binding var scroll: ScrollPosition
+    let timeline: TrimTimeline
+    let leadX: CGFloat
+    let scrollX: CGFloat
+    let viewWidth: CGFloat
+
+    func body(content: Content) -> some View {
+        content.onChange(of: model.playhead) {
+            let x = timeline.x(for: model.playhead) + leadX
+            if model.isPlaying, x < scrollX || x > scrollX + viewWidth - 24 {
+                scroll.scrollTo(x: max(0, x - viewWidth * 0.2))
+            }
+        }
     }
 }
 
