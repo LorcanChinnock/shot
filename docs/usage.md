@@ -16,7 +16,7 @@ The full guide to Shot. For a quick introduction, see the [README](../README.md)
 
 ## Screenshots
 
-- **Area (⌘⇧4):** the screen freezes, and you drag out an area. A magnifier next to the pointer helps you find exact edges. Hold Space while dragging to move the area. Press Esc to cancel.
+- **Area (⌘⇧4):** the screen freezes, and you drag out an area. A magnifier next to the pointer helps you find exact edges. Hold Shift for a square, or press Tab to step through 1:1, 4:3, 3:2 and 16:9 (Shift-Tab steps back); dragging wider than tall gives landscape, taller gives portrait. Hold Space while dragging to move the area. Press Esc to cancel.
 - **Window:** press Space after ⌘⇧4, then click a window. Shot keeps the macOS window shadow unless you turn it off in Settings › Capture.
 - **Fullscreen (⌘⇧3):** captures the screen under the pointer.
 
@@ -100,6 +100,8 @@ Pinch, or press ⌘+ and ⌘-, to zoom. ⌘0 fits the canvas to the window and �
 ## Screen recording
 
 Press ⌘⇧5, then drag out an area (the magnifier helps here too), press Space and click a window, or press Enter for the full screen. Before recording, you can adjust the frame, switch between area, screen and window, and turn the camera bubble, microphone and cursor on or off for this recording; **Settings › Recording** sets what each recording starts with. Press Return or click **Record** to start after a 3-second countdown, or Esc to cancel.
+
+If you picked the area with a ratio (Tab or Shift), the frame's handles keep it.
 
 A window recording captures just that window: it follows the window when it moves and leaves out anything on top of it. It has no camera bubble, and dragging the frame turns it into an area recording.
 

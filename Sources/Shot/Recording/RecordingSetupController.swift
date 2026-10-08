@@ -49,6 +49,8 @@ final class RecordingSetupController {
     private let model: RecordingSetupModel
     private var screen: NSScreen
     private var region: CGRect
+    /// The width over height the frame's handles keep, when the area was picked with one.
+    private var ratio: CGFloat?
     private var frame: RecordingBorderPanel?
     private var handles: [RegionHandle: HandlePanel] = [:]
     private var bar: SetupBarPanel?
@@ -56,19 +58,20 @@ final class RecordingSetupController {
     private var countdownTask: Task<Void, Never>?
     private var continuation: CheckedContinuation<Result, Never>?
 
-    init(mode: RecordingMode, screen: NSScreen, region: CGRect, windowID: CGWindowID?) {
+    init(mode: RecordingMode, screen: NSScreen, region: CGRect, windowID: CGWindowID?, ratio: CGFloat?) {
         model = RecordingSetupModel(mode: mode, prefs: Preferences())
         self.screen = screen
         self.region = region
+        self.ratio = ratio
         model.windowID = windowID
     }
 
     /// Lets the user pick an area or window with the live overlay, or takes the screen under the pointer.
-    static func pickRegion(mode: RecordingMode) async -> (NSScreen, CGRect, CGWindowID?)? {
+    static func pickRegion(mode: RecordingMode) async -> (NSScreen, CGRect, CGWindowID?, CGFloat?)? {
         let screens = NSScreen.screens
         if mode == .screen {
             let screen = NSScreen.underPointer ?? screens[0]
-            return (screen, screen.fullCaptureFrame, nil)
+            return (screen, screen.fullCaptureFrame, nil, nil)
         }
         let displays = screens.map { OverlayDisplay(frame: $0.frame, scale: $0.backingScaleFactor, image: nil) }
         let windows = SelectionOverlayController.onScreenWindows()
@@ -76,15 +79,15 @@ final class RecordingSetupController {
             return nil
         }
         switch selection {
-        case let .area(index, rect):
+        case let .area(index, rect, ratio):
             let screen = screens[index]
-            return (screen, rect.offsetBy(dx: screen.frame.minX, dy: screen.frame.minY), nil)
+            return (screen, rect.offsetBy(dx: screen.frame.minX, dy: screen.frame.minY), nil, ratio)
         case let .window(info):
             let frame = Geometry.flip(info.frame, primaryHeight: screens.first?.frame.height ?? 0)
             let screen = screens.first { $0.frame.contains(CGPoint(x: frame.midX, y: frame.midY)) } ?? screens[0]
-            return (screen, frame.intersection(screen.frame), info.windowID)
+            return (screen, frame.intersection(screen.frame), info.windowID, nil)
         case let .fullDisplay(index):
-            return (screens[index], screens[index].fullCaptureFrame, nil)
+            return (screens[index], screens[index].fullCaptureFrame, nil, nil)
         }
     }
 
@@ -156,6 +159,7 @@ final class RecordingSetupController {
             screen = picked.0
             region = picked.1
             model.windowID = picked.2
+            ratio = picked.3
             tearDownSetup()
             await showSetup(placeCamera: true)
         } else {
@@ -225,7 +229,7 @@ final class RecordingSetupController {
     }
 
     private func drag(_ handle: RegionHandle, by delta: CGVector) {
-        let adjusted = handle.adjust(region, by: delta, in: screen.frame)
+        let adjusted = handle.adjust(region, by: delta, in: screen.frame, ratio: ratio)
         if handle == .move {
             CameraBubble.shared.move(by: CGVector(dx: adjusted.minX - region.minX, dy: adjusted.minY - region.minY))
         }

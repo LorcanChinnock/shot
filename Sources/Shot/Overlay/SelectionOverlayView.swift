@@ -90,13 +90,21 @@ final class SelectionOverlayView: NSView {
             moved.origin.y = min(max(moved.minY, 0), bounds.height - moved.height)
             dragStart = CGPoint(x: start.x + moved.minX - current.minX, y: start.y + moved.minY - current.minY)
             selection = moved
-        } else if event.modifierFlags.contains(.shift) {
-            selection = Geometry.square(from: start, to: point)
         } else {
-            selection = Geometry.normalized(from: start, to: point)
+            selection = shaped(from: start, to: point, square: event.modifierFlags.contains(.shift))
         }
         lastDragPoint = point
         needsDisplay = true
+    }
+
+    private func shaped(from start: CGPoint, to point: CGPoint, square: Bool) -> CGRect {
+        if square {
+            return Geometry.square(from: start, to: point)
+        }
+        if let ratio = controller.aspectRatio.value {
+            return Geometry.fitted(from: start, to: point, ratio: ratio)
+        }
+        return Geometry.normalized(from: start, to: point)
     }
 
     override func mouseUp(with event: NSEvent) {
@@ -115,7 +123,9 @@ final class SelectionOverlayView: NSView {
             needsDisplay = true
             return
         }
-        controller.finish(.area(display: index, rect: selection))
+        let shape = event.modifierFlags.contains(.shift) ? AspectRatio.square : controller.aspectRatio
+        let ratio = shape.value.map { selection.width >= selection.height ? $0 : 1 / $0 }
+        controller.finish(.area(display: index, rect: selection, ratio: ratio))
     }
 
     override func keyDown(with event: NSEvent) {
@@ -128,6 +138,12 @@ final class SelectionOverlayView: NSView {
             } else if !event.isARepeat {
                 controller.toggleWindowMode()
             }
+        case 48 where !controller.windowMode:
+            controller.aspectRatio = controller.aspectRatio.next(backward: event.modifierFlags.contains(.shift))
+            if let start = dragStart, let point = lastDragPoint, !isMoving {
+                selection = shaped(from: start, to: point, square: false)
+            }
+            needsDisplay = true
         case 36, 76:
             if controller.isLive {
                 controller.finish(.fullDisplay(index))
@@ -280,7 +296,10 @@ final class SelectionOverlayView: NSView {
     }
 
     private func drawSizeLabel(for selection: CGRect, near point: CGPoint) {
-        let text = "\(Int((selection.width * display.scale).rounded())) × \(Int((selection.height * display.scale).rounded()))"
+        var text = "\(Int((selection.width * display.scale).rounded())) × \(Int((selection.height * display.scale).rounded()))"
+        if controller.aspectRatio != .free {
+            text = "\(controller.aspectRatio.label) · \(text)"
+        }
         let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .bold)
         let width = (text as NSString).size(withAttributes: [.font: font]).width + 20
         var origin = CGPoint(x: point.x + 16, y: point.y - 44)
@@ -298,9 +317,9 @@ final class SelectionOverlayView: NSView {
         if controller.windowMode {
             parts = ["Click a window", "Space: area", "Esc: cancel"]
         } else if controller.isLive {
-            parts = ["Drag an area", "Space: window", "Enter: full screen", "Esc: cancel"]
+            parts = ["Drag an area", "Tab: ratio (\(controller.aspectRatio.label))", "Space: window", "Enter: full screen", "Esc: cancel"]
         } else {
-            parts = ["Drag an area", "Space: window", "Esc: cancel"]
+            parts = ["Drag an area", "Tab: ratio (\(controller.aspectRatio.label))", "Space: window", "Esc: cancel"]
         }
         let text = parts.joined(separator: "   ·   ")
         let font = NSFont.systemFont(ofSize: 13, weight: .bold)
