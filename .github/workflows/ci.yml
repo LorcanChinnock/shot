@@ -32,7 +32,3 @@ jobs:
       - name: Test
         if: ${{ !inputs.lint-only }}
         run: make test
-      # Compiles the x86_64 slice, so Intel build breaks show up here. Releases build and sign the real bundle in release.yml.
-      - name: Build x86_64
-        if: ${{ !inputs.lint-only }}
-        run: swift build --arch x86_64

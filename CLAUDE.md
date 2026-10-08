@@ -20,7 +20,6 @@ make build                        # swift build
 make bundle                       # build and sign build/Shot.app only
 make run                          # build, install to /Applications/Shot.app, relaunch
 swift test --filter <testName>    # one test, e.g. --filter hitTestFilledKinds
-swift build --arch x86_64         # CI also checks the Intel slice
 ```
 
 - With only the Command Line Tools selected, the Makefile pins the 26.5 SDK and adds the testing plugin path, so a bare `swift build`/`swift test` can fail on SwiftUI macros. Prefer `make`, or prefix with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.

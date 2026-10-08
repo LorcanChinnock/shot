@@ -2,7 +2,7 @@ name: Release
 
 # release-please keeps a release PR open that bumps the version and changelog from
 # Conventional Commits on main. Merging that PR tags the release, and the build job
-# then attaches the universal Shot-vX.Y.Z.zip and the Sparkle update feed (appcast.xml) to it.
+# then attaches Shot-vX.Y.Z.zip and the Sparkle update feed (appcast.xml) to it.
 # Installed copies read the feed from releases/latest/download/appcast.xml, so the release stays a
 # draft (tag created up front) until its assets are attached; otherwise `latest` has no feed mid-build.
 on:
