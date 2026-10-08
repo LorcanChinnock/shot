@@ -24,7 +24,6 @@ struct ShotApp: App {
 private struct ShotMenu: View {
     let state: AppState
     let coordinator: CaptureCoordinator
-    @Setting(PreferenceKey.recordCamera) private var cameraBubble = false
 
     var body: some View {
         if state.isRecording {
@@ -44,7 +43,6 @@ private struct ShotMenu: View {
                 }
             }
         }
-        Toggle("Camera Bubble", isOn: $cameraBubble)
         Divider()
         Button("Open Gallery") { GalleryController.shared.show() }
         Button("Open Capture Folder") {
