@@ -75,8 +75,21 @@ final class SelectionOverlayController {
             panel.hasShadow = false
             panel.acceptsMouseMovedEvents = true
             panel.isReleasedWhenClosed = false
-            let view = SelectionOverlayView(frame: NSRect(origin: .zero, size: display.frame.size), display: display, index: index, controller: self)
-            panel.contentView = view
+            let bounds = NSRect(origin: .zero, size: display.frame.size)
+            let view = SelectionOverlayView(frame: bounds, display: display, index: index, controller: self)
+            view.autoresizingMask = [.width, .height]
+            let content = NSView(frame: bounds)
+            content.wantsLayer = true
+            // The frozen image sits in its own layer, so redrawing the overlay doesn't redraw it.
+            if let image = display.image {
+                let frozen = NSImageView(frame: bounds)
+                frozen.image = NSImage(cgImage: image, size: bounds.size)
+                frozen.imageScaling = .scaleAxesIndependently
+                frozen.autoresizingMask = [.width, .height]
+                content.addSubview(frozen)
+            }
+            content.addSubview(view)
+            panel.contentView = content
             panel.setFrame(display.frame, display: false)
             panels.append(panel)
             views.append(view)
@@ -89,9 +102,9 @@ final class SelectionOverlayController {
         let keyPanel = panels.first { NSMouseInRect(pointer, $0.frame, false) } ?? panels.first
         if let keyPanel {
             keyPanel.makeKey()
-            keyPanel.makeFirstResponder(keyPanel.contentView)
+            keyPanel.makeFirstResponder(views.first { $0.window === keyPanel })
         }
-        updateHover()
+        updateHover(redraw: true)
         NSCursor.crosshair.set()
     }
 
@@ -109,13 +122,17 @@ final class SelectionOverlayController {
 
     func toggleWindowMode() {
         windowMode.toggle()
-        updateHover()
+        updateHover(redraw: true)
     }
 
-    func updateHover() {
+    func updateHover(redraw: Bool = false) {
         let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
         let point = Geometry.flip(NSEvent.mouseLocation, primaryHeight: primaryHeight)
-        hoveredWindow = windowMode ? WindowInfo.topmost(at: point, in: windows) : nil
+        let hovered = windowMode ? WindowInfo.topmost(at: point, in: windows) : nil
+        guard redraw || hovered != hoveredWindow else {
+            return
+        }
+        hoveredWindow = hovered
         for view in views {
             view.needsDisplay = true
         }
