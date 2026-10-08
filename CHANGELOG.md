@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.27](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.26...v0.7.0-beta.27) (2026-10-08)
+
+
+### Bug Fixes
+
+* **capture:** ratio-locked area selection tracks the pointer ([#215](https://github.com/LorcanChinnock/shot/issues/215)) ([2ede877](https://github.com/LorcanChinnock/shot/commit/2ede877570eca4f2941ebd6b025b9d45c2a6a72b))
+
 ## [0.7.0-beta.26](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.25...v0.7.0-beta.26) (2026-10-08)
 
 
