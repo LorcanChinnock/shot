@@ -4,6 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Shot is a macOS 15+ menu bar app for screenshots, annotation, screen recording and GIF export. It's a SwiftPM package (Swift 6 language mode, strict concurrency) whose only dependency is Sparkle.
 
+## Mantra
+
+By default, Shot is fast, convenient and bloat-free for its main use: taking quick, easy screenshots and recordings. If you want more tools, they're built in too, but they stay out of the way until you ask for them.
+
+- Nothing may slow down or clutter the capture → copy/save path.
+- The default is the simplest state. Extra tools, panels and controls start off.
+
 ## Commands
 
 ```bash
@@ -47,7 +54,6 @@ Concurrency: UI and model types are `@MainActor`. Heavy work runs in `Task.detac
 
 ## Conventions
 
-- Design principle: the default is the simplest state. Extra tools, panels and controls start off.
 - Strings are hard-coded English; there's no localization.
 - PR titles use Conventional Commits (`feat(editor): …`, `fix(recording): …`). PRs are squash-merged and release-please generates versions and `CHANGELOG.md`, so never edit the version or tags by hand.
 - Only `make dist` keeps the Sparkle feed in `Info.plist`, so dev builds never self-update.
