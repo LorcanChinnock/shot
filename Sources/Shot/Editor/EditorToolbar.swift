@@ -19,11 +19,11 @@ struct EditorRootView: View {
                 Spacer()
                 ZoomMenu(model: model, canvas: canvas)
                 CanvasMenu(model: model)
-                Button("Copy") { model.copy() }
+                Button("Copy") { Task { await model.copy() } }
                     .buttonStyle(BrutalButtonStyle(compact: true))
                     .brutalTip("Copy image (⌘C)")
                 PartyColor(Brutal.yellow) { color in
-                    Button("Save") { model.save() }
+                    Button("Save") { Task { await model.save() } }
                         .buttonStyle(BrutalButtonStyle(color: color, compact: true))
                 }
                 .brutalTip("Save and copy (⌘S)")
