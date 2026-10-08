@@ -47,7 +47,7 @@ It needs Screen Recording for Shot, and Accessibility for the terminal, which cl
 
 Idle CPU has an absolute budget. The others are about 1.5× the baseline, set in `scripts/perf.sh`; change both together.
 
-Memory after 20 captures is high, and falls slowly afterwards: to 316 MB a minute later, most of it large malloc blocks. Whether that's a cache or a leak is still to find out. The budget records where it is today, so it can't grow unnoticed.
+Memory after 20 captures is high, and falls slowly afterwards: to 316 MB a minute later, most of it large malloc blocks. Whether that's a cache or a leak is tracked in #276. The budget records where it is today, so it can't grow unnoticed.
 
 ## Reference Mac
 
