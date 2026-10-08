@@ -119,7 +119,7 @@ final class CaptureCoordinator {
         let scale: CGFloat
         let frame: CGRect
         switch selection {
-        case let .area(index, rect):
+        case let .area(index, rect, _):
             let display = frozen[index]
             let pixels = Geometry.pixelRect(forViewRect: rect, viewHeight: display.frame.height, scale: display.scale)
             guard let cropped = display.image.cropping(to: pixels) else {
@@ -155,10 +155,10 @@ final class CaptureCoordinator {
 
     /// Frames the recording, then waits for Record and the countdown before starting.
     private func startRecording(mode: RecordingMode) async throws {
-        guard let (screen, region, windowID) = await RecordingSetupController.pickRegion(mode: mode) else {
+        guard let (screen, region, windowID, ratio) = await RecordingSetupController.pickRegion(mode: mode) else {
             return
         }
-        let controller = RecordingSetupController(mode: mode, screen: screen, region: region, windowID: windowID)
+        let controller = RecordingSetupController(mode: mode, screen: screen, region: region, windowID: windowID, ratio: ratio)
         setup = controller
         let result = await controller.run()
         setup = nil

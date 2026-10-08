@@ -17,10 +17,19 @@ public enum Geometry {
 
     /// The largest square with a corner at `anchor` that extends toward `point`.
     public static func square(from anchor: CGPoint, to point: CGPoint) -> CGRect {
-        let side = min(abs(point.x - anchor.x), abs(point.y - anchor.y))
+        fitted(from: anchor, to: point, ratio: 1)
+    }
+
+    /// The largest rect of `ratio` (long side over short side) with a corner at `anchor` that extends toward `point`,
+    /// landscape when the drag is wider than tall and portrait otherwise.
+    public static func fitted(from anchor: CGPoint, to point: CGPoint, ratio: CGFloat) -> CGRect {
+        let dx = abs(point.x - anchor.x), dy = abs(point.y - anchor.y)
+        let widthOverHeight = dx >= dy ? ratio : 1 / ratio
+        let width = min(dx, dy * widthOverHeight)
+        let height = width / widthOverHeight
         let corner = CGPoint(
-            x: anchor.x + (point.x >= anchor.x ? side : -side),
-            y: anchor.y + (point.y >= anchor.y ? side : -side)
+            x: anchor.x + (point.x >= anchor.x ? width : -width),
+            y: anchor.y + (point.y >= anchor.y ? height : -height)
         )
         return normalized(from: anchor, to: corner)
     }

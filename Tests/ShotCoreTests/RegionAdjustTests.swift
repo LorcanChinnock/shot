@@ -27,3 +27,21 @@ private let rect = CGRect(x: 100, y: 100, width: 400, height: 300)
     #expect(RegionHandle.topLeft.anchor(in: rect) == CGPoint(x: 100, y: 400))
     #expect(RegionHandle.bottom.anchor(in: rect) == CGPoint(x: 300, y: 100))
 }
+
+private let wide = CGRect(x: 100, y: 100, width: 400, height: 200)
+
+@Test func ratioLockedCornerPivotsOnOppositeCorner() {
+    let adjusted = RegionHandle.bottomRight.adjust(wide, by: CGVector(dx: 100, dy: 0), in: bounds, ratio: 2)
+    #expect(adjusted == CGRect(x: 100, y: 50, width: 500, height: 250))
+}
+
+@Test func ratioLockedEdgeGrowsAroundCentreLine() {
+    let adjusted = RegionHandle.top.adjust(wide, by: CGVector(dx: 0, dy: 50), in: bounds, ratio: 2)
+    #expect(adjusted == CGRect(x: 50, y: 100, width: 500, height: 250))
+}
+
+@Test func ratioLockedStaysInBounds() {
+    let adjusted = RegionHandle.right.adjust(wide, by: CGVector(dx: 900, dy: 0), in: bounds, ratio: 2)
+    #expect(adjusted.maxX <= bounds.maxX && adjusted.minY >= bounds.minY && adjusted.maxY <= bounds.maxY)
+    #expect(adjusted.width == adjusted.height * 2)
+}

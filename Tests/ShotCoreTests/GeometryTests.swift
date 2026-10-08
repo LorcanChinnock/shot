@@ -31,6 +31,18 @@ import Testing
     #expect(Geometry.square(from: .zero, to: CGPoint(x: -20, y: 70)) == CGRect(x: -20, y: 0, width: 20, height: 20))
 }
 
+@Test func aspectRatioConstraint() {
+    #expect(Geometry.fitted(from: .zero, to: CGPoint(x: 400, y: 90), ratio: 2) == CGRect(x: 0, y: 0, width: 180, height: 90))
+    #expect(Geometry.fitted(from: .zero, to: CGPoint(x: 100, y: 90), ratio: 2) == CGRect(x: 0, y: 0, width: 100, height: 50))
+    #expect(Geometry.fitted(from: .zero, to: CGPoint(x: -60, y: -100), ratio: 2) == CGRect(x: -50, y: -100, width: 50, height: 100))
+}
+
+@Test func aspectRatioCycle() {
+    #expect(AspectRatio.free.next() == .square)
+    #expect(AspectRatio.sixteenNine.next() == .free)
+    #expect(AspectRatio.free.next(backward: true) == .sixteenNine)
+}
+
 @Test(arguments: [1.0, 2.0])
 func cropRectConversion(scale: CGFloat) {
     let rect = Geometry.pixelRect(forViewRect: CGRect(x: 10, y: 700, width: 100, height: 50), viewHeight: 900, scale: scale)

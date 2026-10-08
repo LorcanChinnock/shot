@@ -10,8 +10,8 @@ struct OverlayDisplay {
 }
 
 enum OverlaySelection {
-    /// `rect` is in the display's view space: points, bottom-left origin.
-    case area(display: Int, rect: CGRect)
+    /// `rect` is in the display's view space: points, bottom-left origin. `ratio` is the width over height it was held to, if any.
+    case area(display: Int, rect: CGRect, ratio: CGFloat?)
     case window(WindowInfo)
     case fullDisplay(Int)
 }
@@ -27,6 +27,13 @@ final class SelectionOverlayController {
     let windows: [WindowInfo]
     let isLive: Bool
     private(set) var hoveredWindow: WindowInfo?
+    var aspectRatio = AspectRatio.free {
+        didSet {
+            for view in views {
+                view.needsDisplay = true
+            }
+        }
+    }
     private var panels: [OverlayPanel] = []
     private var views: [SelectionOverlayView] = []
     private var continuation: CheckedContinuation<OverlaySelection?, Never>?
