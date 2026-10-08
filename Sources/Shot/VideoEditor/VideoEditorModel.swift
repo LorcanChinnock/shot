@@ -742,6 +742,11 @@ final class VideoEditorModel {
         let options = options, range = range, cuts = cuts, source = fileURL, composite = isComposite, edited = exportProject
         let output = FileNaming.uniqueURL(in: source.deletingLastPathComponent(), date: Date(), pathExtension: options.format.fileExtension, prefix: Preferences().filePrefix)
         var note = ""
+        let progress = PercentProgress { percent in
+            Task { @MainActor in
+                Toast.progress("Exporting… \(percent)%")
+            }
+        }
         let exported = await exporting {
             if composite {
                 switch options.format {
@@ -750,11 +755,7 @@ final class VideoEditorModel {
                     log.notice("Exported composite MP4, muted \(options.muted, privacy: .public)")
                 case .gif:
                     let built = try await CompositionBuilder.build(edited)
-                    let result = try await GIFExporter.export(composition: built, to: output, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed) { fraction in
-                        Task { @MainActor in
-                            Toast.show("Exporting… \(Int(fraction * 100))%", duration: nil)
-                        }
-                    }
+                    let result = try await GIFExporter.export(composition: built, to: output, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed, progress: progress.report)
                     note = result.truncated ? " (first \(Int(GIFExporter.maxDuration)) s only)" : ""
                     log.notice("Exported composite GIF: \(result.frameCount, privacy: .public) frames")
                 }
@@ -766,12 +767,9 @@ final class VideoEditorModel {
                 log.notice("Exported MP4 at \(options.speed, privacy: .public)×, muted \(options.muted, privacy: .public), passthrough \(passthrough, privacy: .public)")
             case .gif:
                 let result = try await GIFExporter.export(
-                    videoURL: source, to: output, range: range, cuts: cuts, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed
-                ) { fraction in
-                    Task { @MainActor in
-                        Toast.show("Exporting… \(Int(fraction * 100))%", duration: nil)
-                    }
-                }
+                    videoURL: source, to: output, range: range, cuts: cuts, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed,
+                    progress: progress.report
+                )
                 note = result.truncated ? " (first \(Int(GIFExporter.maxDuration)) s only)" : ""
                 log.notice("Exported GIF: \(result.frameCount, privacy: .public) frames at \(options.gifFrameRate, privacy: .public) fps, width \(options.gifWidth, privacy: .public), \(options.speed, privacy: .public)×")
             }

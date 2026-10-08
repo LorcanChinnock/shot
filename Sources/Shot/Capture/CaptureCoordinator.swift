@@ -199,13 +199,14 @@ final class CaptureCoordinator {
         let options = prefs.videoExportOptions
         let gifURL = FileNaming.uniqueURL(in: videoURL.deletingLastPathComponent(), date: Date(), pathExtension: "gif", prefix: prefs.filePrefix)
         Toast.show("Exporting GIF…", duration: nil)
+        let progress = PercentProgress { percent in
+            Task { @MainActor in
+                Toast.progress("Exporting GIF… \(percent)%")
+            }
+        }
         Task {
             do {
-                let result = try await GIFExporter.export(videoURL: videoURL, to: gifURL, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth) { fraction in
-                    Task { @MainActor in
-                        Toast.show("Exporting GIF… \(Int(fraction * 100))%", duration: nil)
-                    }
-                }
+                let result = try await GIFExporter.export(videoURL: videoURL, to: gifURL, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, progress: progress.report)
                 let note = result.truncated ? " (first \(Int(GIFExporter.maxDuration)) s only)" : ""
                 Toast.show("Saved \(gifURL.lastPathComponent)\(note)", duration: .seconds(3))
             } catch {
