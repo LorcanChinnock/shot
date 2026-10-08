@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.30](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.29...v0.7.0-beta.30) (2026-10-08)
+
+
+### Features
+
+* **design:** animate and scale the glass window backdrop ([#253](https://github.com/LorcanChinnock/shot/issues/253)) ([61770dc](https://github.com/LorcanChinnock/shot/commit/61770dc22ddbc03ac37206747276c898ba5427fa))
+
 ## [0.7.0-beta.29](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.28...v0.7.0-beta.29) (2026-10-08)
 
 
