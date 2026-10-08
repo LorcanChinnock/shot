@@ -49,7 +49,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             _ = model.document.annotations
             _ = model.document.canvasRect
             _ = model.document.background
-            _ = model.selectedID
+            _ = model.selectedIDs
             _ = model.tool
             _ = model.editingText
         } onChange: { [weak self] in
@@ -171,12 +171,18 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         frame.lineWidth = 1.5
         frame.stroke()
 
+        for other in model.document.annotations where model.selectedIDs.count > 1 && model.selectedIDs.contains(other.id) {
+            let outline = NSBezierPath(rect: viewRect(other.bounds.insetBy(dx: -other.lineWidth, dy: -other.lineWidth).union(other.paintedBounds)))
+            outline.setLineDash([4, 3], count: 2, phase: 0)
+            NSColor.controlAccentColor.setStroke()
+            outline.stroke()
+        }
         if let selected = model.selection, selected.id != editingText?.id {
             let outline = NSBezierPath(rect: viewRect(selected.bounds.insetBy(dx: -selected.lineWidth, dy: -selected.lineWidth).union(selected.paintedBounds)))
             outline.setLineDash([4, 3], count: 2, phase: 0)
             NSColor.controlAccentColor.setStroke()
             outline.stroke()
-            if editingText == nil {
+            if editingText == nil, !selected.isLocked {
                 for handle in selected.handles {
                     let center = viewRect(CGRect(origin: handle.point, size: .zero)).origin
                     let square = NSBezierPath(rect: CGRect(x: center.x - 4, y: center.y - 4, width: 8, height: 8))
@@ -275,7 +281,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             } else if event.clickCount == 2, let hit, case let .text(_, origin, _) = hit.kind {
                 model.selectedID = nil
                 beginText(at: origin, editing: hit)
-            } else if let selected = model.selection, let handle = selected.handle(at: point, tolerance: handleTolerance) {
+            } else if let selected = model.selection, !selected.isLocked, let handle = selected.handle(at: point, tolerance: handleTolerance) {
                 resizeHandle = handle
                 resizeStart = selected
             } else if let hit {
@@ -387,7 +393,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     /// Resizes the selection from the handle pressed, else moves it with the pointer.
     private func dragSelection(to point: CGPoint, from last: CGPoint) {
-        guard let id = model.selectedID, let index = model.document.annotations.firstIndex(where: { $0.id == id }) else {
+        guard let id = model.selectedID, let index = model.document.annotations.firstIndex(where: { $0.id == id }), !model.document.annotations[index].isLocked else {
             return
         }
         if !movedSinceMouseDown {

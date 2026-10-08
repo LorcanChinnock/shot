@@ -64,6 +64,7 @@ final class VideoEditorModel {
     }
     /// The time of the keyframe being worked on, in seconds from the start of the selected clip.
     private(set) var selectedKeyframe: Double?
+    private(set) var showsLayers = UserDefaults.standard.bool(forKey: VideoEditorModel.showsLayersKey)
     private(set) var showsInspector = UserDefaults.standard.bool(forKey: VideoEditorModel.showsInspectorKey)
     private(set) var waveforms: [URL: Waveform] = [:]
     /// The tool drawing annotations over the video, or nil when none is picked. Never crop.
@@ -76,6 +77,7 @@ final class VideoEditorModel {
 
     private static let showsTracksKey = "videoEditorShowsTracks"
     private static let showsInspectorKey = "videoEditorShowsInspector"
+    private static let showsLayersKey = "videoEditorShowsLayers"
 
     @ObservationIgnored private var dragOrigin: Project?
     /// Where in the recording the playhead was before a trim handle drag moved it to show the edge.
@@ -320,6 +322,81 @@ final class VideoEditorModel {
         }
         undoStack.record(edit)
         project.tracks[index][keyPath: flag].toggle()
+    }
+
+    // MARK: Layers
+
+    /// The overlay tracks, topmost first, as the layers panel lists them.
+    var layerRows: [LayerRow] {
+        project.overlayTracks.reversed().map { track in
+            LayerRow(id: track.id, name: track.layerName, symbol: track.annotations.first?.annotation.layerSymbol ?? "square.dashed", isHidden: track.isHidden, isLocked: track.isLocked)
+        }
+    }
+
+    /// The track of the selected annotation clip.
+    var selectedLayerIDs: Set<UUID> {
+        guard let id = selectedClipID, let track = project.tracks.first(where: { $0.kind == .overlay && $0.annotations.contains { $0.id == id } }) else {
+            return []
+        }
+        return [track.id]
+    }
+
+    func toggleLayers() {
+        showsLayers.toggle()
+        UserDefaults.standard.set(showsLayers, forKey: Self.showsLayersKey)
+    }
+
+    /// Selects the annotation showing at the playhead on the picked track, else its first. A track is one row however many clips it holds.
+    func selectLayers(_ ids: Set<UUID>) {
+        let picked = ids.subtracting(selectedLayerIDs).first ?? ids.first
+        guard let track = project.tracks.first(where: { $0.id == picked }) else {
+            selectedClipID = nil
+            return
+        }
+        selectedClipID = (track.annotations.first { $0.start <= playhead && playhead < $0.end } ?? track.annotations.first)?.id
+    }
+
+    /// Applies `change` as one undo step, or does nothing if it leaves the project as it was.
+    private func editLayers(_ change: (Project) -> Project) {
+        guard !isExporting else {
+            return
+        }
+        let changed = change(project)
+        guard changed != project else {
+            return
+        }
+        undoStack.record(edit)
+        project = changed
+    }
+
+    func moveSelectedLayers(_ move: LayerMove) {
+        let ids = selectedLayerIDs
+        editLayers { $0.movingOverlays(ids, move) }
+    }
+
+    func moveLayers(fromOffsets offsets: IndexSet, toOffset destination: Int) {
+        let listed = layerRows
+        let moved = Set(offsets.map { listed[$0].id })
+        let index = LayerList.backToFrontIndex(movingOffsets: offsets, toOffset: destination, count: listed.count)
+        editLayers { $0.movingOverlays(moved, toIndex: index) }
+    }
+
+    func setLayersHidden(_ hidden: Bool, _ ids: Set<UUID>) {
+        editLayers { $0.setting(\.isHidden, to: hidden, ofOverlays: ids) }
+    }
+
+    func setLayersLocked(_ locked: Bool, _ ids: Set<UUID>) {
+        editLayers { $0.setting(\.isLocked, to: locked, ofOverlays: ids) }
+    }
+
+    func deleteLayers(_ ids: Set<UUID>) {
+        if !selectedLayerIDs.isDisjoint(with: ids) {
+            selectedClipID = nil
+        }
+        editLayers { project in
+            let unlocked = ids.filter { id in project.tracks.first { $0.id == id }?.isLocked == false }
+            return project.deletingOverlays(unlocked)
+        }
     }
 
     /// Cuts the selected clip out, closing the gap on the main track, as one undo step; false when none is selected.

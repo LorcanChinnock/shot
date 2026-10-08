@@ -5,11 +5,11 @@ import ShotCore
 private let log = Logger.shot("editor")
 
 private final class EditorWindow: NSWindow {
-    var onCommand: ((String, Bool) -> Bool)?
+    var onCommand: ((String, Bool, Bool) -> Bool)?
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        if flags.contains(.command), let key = event.charactersIgnoringModifiers?.lowercased(), onCommand?(key, flags.contains(.shift)) == true {
+        if flags.contains(.command), let key = event.charactersIgnoringModifiers?.lowercased(), onCommand?(key, flags.contains(.shift), flags.contains(.option)) == true {
             return true
         }
         return super.performKeyEquivalent(with: event)
@@ -57,8 +57,8 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         window.delegate = self
         window.minSize = NSSize(width: 980, height: 420)
 
-        editorWindow.onCommand = { [weak self] key, shift in
-            self?.handleCommand(key, shift: shift) ?? false
+        editorWindow.onCommand = { [weak self] key, shift, option in
+            self?.handleCommand(key, shift: shift, option: option) ?? false
         }
     }
 
@@ -67,7 +67,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         window.makeFirstResponder(canvas)
     }
 
-    private func handleCommand(_ key: String, shift: Bool) -> Bool {
+    private func handleCommand(_ key: String, shift: Bool, option: Bool) -> Bool {
         if canvas.isEditingText && key != "s" && key != "w" {
             return false
         }
@@ -92,6 +92,12 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
             canvas.zoomToFit()
         case "1":
             canvas.zoomToActualSize()
+        case "l":
+            model.toggleLayers()
+        case "]":
+            model.moveSelectedLayers(option ? .toFront : .forward)
+        case "[":
+            model.moveSelectedLayers(option ? .toBack : .backward)
         case "s":
             Task { await model.save() }
         case "w":

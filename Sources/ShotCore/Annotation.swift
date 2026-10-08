@@ -54,6 +54,18 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         set { textAlign = newValue == .left ? nil : newValue }
     }
     private var textAlign: TextAlign?
+    /// Whether the layers panel hides it. Stored only when set, so annotations saved before it still decode.
+    public var isHidden: Bool {
+        get { hidden ?? false }
+        set { hidden = newValue ? true : nil }
+    }
+    private var hidden: Bool?
+    /// Whether the layers panel locks it against moving, resizing and picking on the canvas.
+    public var isLocked: Bool {
+        get { locked ?? false }
+        set { locked = newValue ? true : nil }
+    }
+    private var locked: Bool?
     /// A rounded rectangle's or rounded spotlight's corner radius; `nil` keeps the look from before it could be set.
     public var cornerRadius: CGFloat?
 
@@ -542,7 +554,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
 extension Array where Element == Annotation {
     /// Index of the topmost (last drawn) annotation under `point`.
     public func topmostIndex(at point: CGPoint, tolerance: CGFloat) -> Int? {
-        indices.reversed().first { self[$0].hitTest(point, tolerance: tolerance) }
+        indices.reversed().first { !self[$0].isHidden && !self[$0].isLocked && self[$0].hitTest(point, tolerance: tolerance) }
     }
 
     /// The lowest spotlight's style, whose effect and strength they all share. `nil` when there are none.

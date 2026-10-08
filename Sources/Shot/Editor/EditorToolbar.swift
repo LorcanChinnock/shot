@@ -17,6 +17,9 @@ struct EditorRootView: View {
                     BrutalChip(text: "EDITED", color: Brutal.pink)
                 }
                 Spacer()
+                Button { model.toggleLayers() } label: { Label("Layers", systemImage: "square.3.layers.3d").fixedSize() }
+                    .buttonStyle(BrutalButtonStyle(color: model.showsLayers ? Brutal.violet : .white, compact: true))
+                    .brutalTip("Show the layers (⌘L)")
                 ZoomMenu(model: model, canvas: canvas)
                 CanvasMenu(model: model)
                 Button("Copy") { Task { await model.copy() } }
@@ -32,9 +35,24 @@ struct EditorRootView: View {
             .frame(height: GlassWindow.titlebarHeight)
             .padding(.bottom, -Brutal.sectionGap / 2)
             EditorToolbar(model: model)
-            CanvasHost(canvas: canvas)
-                .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
-                .glassCard()
+            HStack(spacing: Brutal.sectionGap) {
+                CanvasHost(canvas: canvas)
+                    .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
+                    .glassCard()
+                if model.showsLayers {
+                    LayersPanel(
+                        rows: model.layerRows,
+                        baseName: "Image",
+                        baseSymbol: "photo",
+                        selection: Binding(get: { model.selectedIDs }, set: { model.selectLayers($0) }),
+                        onMove: model.moveLayers,
+                        onHide: { model.setHidden($1, $0) },
+                        onLock: { model.setLocked($1, $0) },
+                        onDuplicate: model.duplicateLayers,
+                        onDelete: model.deleteLayers
+                    )
+                }
+            }
         }
         .padding([.horizontal, .bottom], Brutal.windowInset)
     }

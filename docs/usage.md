@@ -81,6 +81,12 @@ Hover a tool to see what it does. Tools that draw a mark show a colour and one o
 - ⌘C copies the selection, ⌘V pastes it, and ⌘D duplicates it. You can paste into another editor window. With nothing selected, ⌘C copies the whole image.
 - ⌘Z undoes and ⇧⌘Z redoes.
 
+### Layers
+
+Click **Layers** (⌘L) to list the annotations, frontmost first, with the image locked at the bottom. Click a row to select it on the canvas, ⌘-click or ⇧-click to select several, and drag a row to reorder. The eye hides a layer, which also leaves it out of Copy and Save, and the lock stops it being picked, moved or deleted. Right-click a row to duplicate, delete, lock or hide. ⌘] and ⌘[ move the selection forward and back, and ⌥⌘] and ⌥⌘[ bring it to the front or send it to the back.
+
+Blur, pixelate and spotlight only ever act on the image and any images placed on it, so their place in the list never changes the result. Everything else is drawn over them.
+
 ### Canvas
 
 Annotations can reach past the edges of the screenshot: the canvas grows to fit them. The **Canvas** menu fits the canvas to its content, trims it back to the image, and sets the background of the extra space to transparent (PNG only), white, or one of the palette colours.
@@ -122,6 +128,7 @@ Open a recording from its Quick Access card (**Edit**), or with [`shot://edit-vi
 - **Trim:** drag the handles at either end of the timeline.
 - **Cut:** Shift-drag on the timeline to select a section, then press Delete to cut it out. Esc clears the selection.
 - **Play:** Space plays and pauses; ← and → step one frame.
+- **Layers:** ⌘L lists the annotation tracks, topmost first. Click a row to select its annotation, drag to reorder the tracks, and use the eye and lock to hide or lock a track. ⌘] and ⌘[ move the selected track up and down.
 - ⌘Z undoes and ⇧⌘Z redoes.
 
 Then:
@@ -180,6 +187,9 @@ Record Fullscreen and Record Window have no shortcut until you set one. Capture 
 | ⌘C | Copy the selection, or the whole image when nothing is selected |
 | ⌘V | Paste an annotation or an image |
 | ⌘D | Duplicate the selection |
+| ⌘L | Show or hide the layers |
+| ⌘] / ⌘[ | Move the selection forward / back |
+| ⌥⌘] / ⌥⌘[ | Bring the selection to the front / send it to the back |
 | ⌘Z / ⇧⌘Z | Undo / redo |
 | ⌘+ / ⌘- | Zoom in / out |
 | ⌘0 | Zoom to fit |

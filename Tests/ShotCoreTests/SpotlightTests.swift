@@ -154,8 +154,7 @@ func spotlightRendersTheSameInTheEditorAndTheExport(scale: CGFloat) throws {
     #expect(isDimmed(try pixel(image, 30, 25)))
 }
 
-@Test func theDimSitsAtTheLowestSpotlightsLayer() throws {
-    // A counter drawn before the spotlights is dimmed with the image; one drawn after stays bright.
+@Test func theDimNeverReachesAnnotationsWhateverTheirOrder() throws {
     let below = Annotation(kind: .counter(1, center: CGPoint(x: 40, y: 50)), color: blue, lineWidth: 4)
     let above = Annotation(kind: .counter(2, center: CGPoint(x: 160, y: 50)), color: blue, lineWidth: 4)
     let doc = EditorDocument(base: solidImage(width: 200, height: 100), annotations: [
@@ -166,9 +165,8 @@ func spotlightRendersTheSameInTheEditorAndTheExport(scale: CGFloat) throws {
     ])
     let image = try #require(AnnotationRenderer.flatten(doc))
     // Below the digit, inside the circle.
-    let dimmed = try pixel(image, 40, 66), bright = try pixel(image, 160, 66)
-    #expect(abs(dimmed[2] - 0.5) < 0.03)
-    #expect(bright[2] > 0.97)
+    #expect(try pixel(image, 40, 66)[2] > 0.97)
+    #expect(try pixel(image, 160, 66)[2] > 0.97)
     #expect(isBright(try pixel(image, 110, 70)))
 }
 

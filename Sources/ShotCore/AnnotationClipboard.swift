@@ -39,6 +39,8 @@ extension EditorDocument {
     @discardableResult
     public mutating func paste(_ annotation: Annotation, step: CGFloat, margin: CGFloat) -> UUID {
         var copy = annotation.withNewID()
+        copy.isHidden = false
+        copy.isLocked = false
         if case let .counter(_, center) = copy.kind {
             copy.kind = .counter(annotations.nextCounterNumber, center: center)
         }
