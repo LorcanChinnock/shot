@@ -64,8 +64,9 @@ final class SelectionOverlayView: NSView {
         pointer = convert(event.locationInWindow, from: nil)
         if controller.windowMode {
             controller.updateHover()
+        } else {
+            needsDisplay = true
         }
-        needsDisplay = true
     }
 
     override func mouseDown(with event: NSEvent) {
@@ -187,12 +188,7 @@ final class SelectionOverlayView: NSView {
         guard let ctx = NSGraphicsContext.current?.cgContext else {
             return
         }
-        if let image = display.image {
-            ctx.interpolationQuality = .high
-            ctx.draw(image, in: bounds)
-        } else {
-            ctx.clear(bounds)
-        }
+        ctx.clear(dirtyRect)
 
         let hole = holeRect()
         let dim = CGMutablePath()
