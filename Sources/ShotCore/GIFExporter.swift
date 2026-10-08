@@ -1,6 +1,4 @@
 import AVFoundation
-import ImageIO
-import UniformTypeIdentifiers
 
 /// Which source frames a GIF uses and how big they are.
 public struct GIFFramePlan: Equatable, Sendable {
@@ -48,7 +46,7 @@ public struct GIFFramePlan: Equatable, Sendable {
 }
 
 public enum GIFExporter {
-    /// Frames are held one at a time, but longer input needs a streaming exporter to stay responsive.
+    /// Only the first this many seconds of longer input are kept.
     public static let maxDuration: Double = 60
     /// Places in the range sampled to estimate a GIF's size.
     public static let estimateSamples = 6
@@ -102,16 +100,8 @@ public enum GIFExporter {
         return try await write(plan, from: generator, to: outputURL, progress: progress)
     }
 
-    private static func write(_ plan: GIFFramePlan, from generator: AVAssetImageGenerator, to outputURL: URL, progress: @Sendable (Double) -> Void) async throws -> Result {
-        guard let destination = CGImageDestinationCreateWithURL(outputURL as CFURL, UTType.gif.identifier as CFString, plan.frameCount, nil) else {
-            throw ExportError.cannotCreateDestination
-        }
-        try await write(plan, from: generator, to: destination, progress: progress)
-        return Result(frameCount: plan.frameCount, truncated: plan.truncated)
-    }
-
     /// Roughly how many bytes `export` writes with the same arguments.
-    /// ImageIO stores only what changed since the previous frame, so this encodes a few pairs of
+    /// Each frame stores only what changed since the previous one, so this encodes a few pairs of
     /// neighbouring frames spread over the range: one frame alone costs a whole frame, and the pair
     /// costs that plus a typical change.
     public static func estimatedSize(of videoURL: URL, range: TrimRange? = nil, cuts: CutList = CutList(), fps: Double, maxWidth: CGFloat?, speed: Double = 1) async throws -> Int {
@@ -129,40 +119,20 @@ public enum GIFExporter {
         var whole = 0, change = 0
         for anchor in anchors {
             try Task.checkCancellation()
-            var images: [CGImage] = []
+            let writer = GIFStreamWriter { _ in }
+            var single = 0
             for index in anchor..<min(anchor + 2, plan.frameCount) {
-                images.append(try await generator.image(at: CMTime(seconds: plan.sourceTime(ofFrame: index), preferredTimescale: 600)).image)
+                try writer.add(try await generator.image(at: CMTime(seconds: plan.sourceTime(ofFrame: index), preferredTimescale: 600)).image, delay: plan.delay(ofFrame: index))
+                if index == anchor { single = writer.bytesWritten }
             }
-            let single = try encodedSize(images.prefix(1), delays: [plan.delay(ofFrame: anchor)])
             whole += single
-            change += images.count > 1 ? try encodedSize(images, delays: [plan.delay(ofFrame: anchor), plan.delay(ofFrame: anchor + 1)]) - single : 0
+            change += writer.bytesWritten - single
         }
         return extrapolate(wholeFrameBytes: whole / anchors.count, changeBytes: change / anchors.count, totalFrames: plan.frameCount)
     }
 
     static func extrapolate(wholeFrameBytes: Int, changeBytes: Int, totalFrames: Int) -> Int {
         wholeFrameBytes + changeBytes * max(0, totalFrames - 1)
-    }
-
-    private static func encodedSize(_ images: some Collection<CGImage>, delays: [Double]) throws -> Int {
-        let data = NSMutableData()
-        guard let destination = CGImageDestinationCreateWithData(data as CFMutableData, UTType.gif.identifier as CFString, images.count, nil) else {
-            throw ExportError.cannotCreateDestination
-        }
-        CGImageDestinationSetProperties(destination, fileProperties)
-        for (image, delay) in zip(images, delays) {
-            CGImageDestinationAddImage(destination, image, frameProperties(delay: delay))
-        }
-        guard CGImageDestinationFinalize(destination) else {
-            throw ExportError.finalizeFailed
-        }
-        return data.length
-    }
-
-    private static var fileProperties: CFDictionary { [kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFLoopCount: 0]] as CFDictionary }
-
-    private static func frameProperties(delay: Double) -> CFDictionary {
-        [kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFDelayTime: delay]] as CFDictionary
     }
 
     private static func prepare(asset: AVAsset, videoComposition: AVVideoComposition? = nil, range: TrimRange?, cuts: CutList, fps: Double, maxWidth: CGFloat?, speed: Double) async throws -> (AVAssetImageGenerator, GIFFramePlan) {
@@ -184,18 +154,20 @@ public enum GIFExporter {
         return (generator, plan)
     }
 
-    private static func write(_ plan: GIFFramePlan, from generator: AVAssetImageGenerator, to destination: CGImageDestination, progress: @Sendable (Double) -> Void) async throws {
-        CGImageDestinationSetProperties(destination, fileProperties)
-
+    private static func write(_ plan: GIFFramePlan, from generator: AVAssetImageGenerator, to outputURL: URL, progress: @Sendable (Double) -> Void) async throws -> Result {
+        guard FileManager.default.createFile(atPath: outputURL.path, contents: nil), let file = try? FileHandle(forWritingTo: outputURL) else {
+            throw ExportError.cannotCreateDestination
+        }
+        defer { try? file.close() }
+        let writer = GIFStreamWriter { try file.write(contentsOf: $0) }
         for index in 0..<plan.frameCount {
             try Task.checkCancellation()
             let time = CMTime(seconds: plan.sourceTime(ofFrame: index), preferredTimescale: 600)
             let (image, _) = try await generator.image(at: time)
-            CGImageDestinationAddImage(destination, image, frameProperties(delay: plan.delay(ofFrame: index)))
+            try writer.add(image, delay: plan.delay(ofFrame: index))
             progress(Double(index + 1) / Double(plan.frameCount))
         }
-        guard CGImageDestinationFinalize(destination) else {
-            throw ExportError.finalizeFailed
-        }
+        try writer.finish()
+        return Result(frameCount: plan.frameCount, truncated: plan.truncated)
     }
 }
