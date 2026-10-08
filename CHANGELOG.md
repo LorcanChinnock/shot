@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.26](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.25...v0.7.0-beta.26) (2026-10-08)
+
+
+### Features
+
+* **capture:** aspect ratio presets for area selection ([#213](https://github.com/LorcanChinnock/shot/issues/213)) ([afede72](https://github.com/LorcanChinnock/shot/commit/afede72073fb1293498f1828532e8b3d9bbed187))
+
 ## [0.7.0-beta.25](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.24...v0.7.0-beta.25) (2026-10-07)
 
 
