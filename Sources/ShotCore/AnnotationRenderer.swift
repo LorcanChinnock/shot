@@ -2,14 +2,13 @@ import CoreGraphics
 import CoreImage
 import CoreImage.CIFilterBuiltins
 import CoreText
-import os
 
 public enum AnnotationRenderer {
     private static let ciContext = CIContext(options: [.cacheIntermediates: false])
     /// Blurs masks as plain coverage values, without converting them through a colour space.
     private static let maskContext = CIContext(options: [.cacheIntermediates: false, .workingColorSpace: NSNull(), .outputColorSpace: NSNull()])
-    /// The last image a spotlight blurred, so redrawing while editing doesn't blur the whole image again.
-    private static let blurCache = OSAllocatedUnfairLock<(source: CGImage, radius: CGFloat, blurred: CGImage)?>(initialState: nil)
+    /// What Core Image made on the last render, so redrawing while editing doesn't filter what hasn't changed again.
+    static let cache = RenderCache()
 
     /// Draws the document into a bottom-left-origin context of size `doc.exportSize`.
     public static func render(_ doc: EditorDocument, into ctx: CGContext) {
@@ -41,6 +40,7 @@ public enum AnnotationRenderer {
             ctx.endTransparencyLayer()
         }
         ctx.restoreGState()
+        cache.sweep()
     }
 
     /// Darkens or blurs `dim`, the image outside every spotlight, faded where `softSpotlights` light it.
@@ -50,7 +50,8 @@ public enum AnnotationRenderer {
         ctx.saveGState()
         defer { ctx.restoreGState() }
         let area = dim.boundingBoxOfPath.integral
-        if !softSpotlights.isEmpty, let mask = softSpotlightMask(softSpotlights, in: area) {
+        let spotlights = softSpotlights.map { SoftSpotlight(rect: $0.rect, style: $0.style, cornerRadius: $0.cornerRadius) }
+        if !spotlights.isEmpty, let mask = softSpotlightMask(spotlights, in: area) {
             ctx.clip(to: area, mask: mask)
         }
         switch style.effect {
@@ -61,20 +62,30 @@ public enum AnnotationRenderer {
             ctx.addPath(dim)
             ctx.fillPath()
         case .blur:
-            let source = backdrop(base, images: below, around: dim.boundingBoxOfPath, outset: 0)
+            let backdrop = Backdrop(base, images: below, around: dim.boundingBoxOfPath, outset: 0)
             let radius = style.blurRadius(forImageLength: longerSide(of: base))
-            guard let blurred = blurredWhole(source.image, radius: radius) else {
+            let blurred = cache.value(for: .dimBlur(backdrop, radius: radius)) {
+                let source = backdrop.draw()
+                return blurredWhole(source.image, radius: radius).map { ($0, CGRect(origin: source.origin, size: CGSize(width: $0.width, height: $0.height))) }
+            }
+            guard let blurred else {
                 return
             }
             ctx.addPath(dim)
             ctx.clip()
-            drawUpright(blurred, in: CGRect(origin: source.origin, size: CGSize(width: blurred.width, height: blurred.height)), ctx: ctx)
+            drawUpright(blurred.image, in: blurred.frame, ctx: ctx)
         }
     }
 
     /// A greyscale mask of `area`: white where the dim shows, black inside the spotlights, with each spotlight's edge
     /// blurred by its soft-edge radius. Having only blurry edges, it's drawn at a lower resolution the softer they are.
-    private static func softSpotlightMask(_ spotlights: [(rect: CGRect, style: SpotlightStyle, cornerRadius: CGFloat?)], in area: CGRect) -> CGImage? {
+    private static func softSpotlightMask(_ spotlights: [SoftSpotlight], in area: CGRect) -> CGImage? {
+        cache.value(for: .softSpotlightMask(spotlights, area: area)) {
+            drawSoftSpotlightMask(spotlights, in: area).map { ($0, area) }
+        }?.image
+    }
+
+    private static func drawSoftSpotlightMask(_ spotlights: [SoftSpotlight], in area: CGRect) -> CGImage? {
         let sharpest = spotlights.map { $0.style.softEdgeRadius(in: $0.rect) }.min() ?? 0
         let scale = min(1, 8 / sharpest)
         let size = CGSize(width: ceil(area.width * scale), height: ceil(area.height * scale))
@@ -88,8 +99,8 @@ public enum AnnotationRenderer {
         ctx.interpolationQuality = .high
         // Darken keeps the lower of the two, so overlapping spotlights light their union.
         ctx.setBlendMode(.darken)
-        for (rect, style, cornerRadius) in spotlights {
-            if let lit = softSpotlight(rect, style: style, cornerRadius: cornerRadius) {
+        for spotlight in spotlights {
+            if let lit = cache.value(for: .softSpotlight(spotlight), make: { softSpotlight(spotlight.rect, style: spotlight.style, cornerRadius: spotlight.cornerRadius) }) {
                 ctx.draw(lit.image, in: lit.frame)
             }
         }
@@ -136,18 +147,14 @@ public enum AnnotationRenderer {
 
     /// All of `image` blurred by `radius`, its edges kept sharp-cornered rather than fading out.
     static func blurredWhole(_ image: CGImage, radius: CGFloat) -> CGImage? {
-        if let cached = blurCache.withLock({ $0 }), cached.source === image, cached.radius == radius {
-            return cached.blurred
-        }
         let extent = CGRect(x: 0, y: 0, width: image.width, height: image.height)
         let filter = CIFilter.gaussianBlur()
         filter.inputImage = CIImage(cgImage: image).clampedToExtent()
         filter.radius = Float(radius)
-        guard let output = filter.outputImage?.cropped(to: extent), let blurred = ciContext.createCGImage(output, from: extent) else {
+        guard let output = filter.outputImage?.cropped(to: extent) else {
             return nil
         }
-        blurCache.withLock { $0 = (image, radius, blurred) }
-        return blurred
+        return ciContext.createCGImage(output, from: extent)
     }
 
     public static func flatten(_ doc: EditorDocument) -> CGImage? {
@@ -229,15 +236,23 @@ public enum AnnotationRenderer {
             break
         case let .pixelate(rect, _):
             let scale = redactionSize(annotation, base: base)
-            let source = backdrop(base, images: below, around: rect, outset: scale)
-            if let pixelated = pixelate(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y), scale: scale) {
-                drawUpright(pixelated, in: rect.integral, ctx: ctx)
+            let backdrop = Backdrop(base, images: below, around: rect, outset: scale)
+            let pixelated = cache.value(for: .pixelate(backdrop, rect: rect, scale: scale)) {
+                let source = backdrop.draw()
+                return pixelate(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y), scale: scale).map { ($0, rect.integral) }
+            }
+            if let pixelated {
+                drawUpright(pixelated.image, in: pixelated.frame, ctx: ctx)
             }
         case let .blur(rect, _):
             let radius = redactionSize(annotation, base: base)
-            let source = backdrop(base, images: below, around: rect, outset: radius * 4)
-            if let blurred = blur(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y), radius: radius) {
-                drawUpright(blurred, in: rect.integral, ctx: ctx)
+            let backdrop = Backdrop(base, images: below, around: rect, outset: radius * 4)
+            let blurred = cache.value(for: .blur(backdrop, rect: rect, radius: radius)) {
+                let source = backdrop.draw()
+                return blur(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y), radius: radius).map { ($0, rect.integral) }
+            }
+            if let blurred {
+                drawUpright(blurred.image, in: blurred.frame, ctx: ctx)
             }
         case let .image(image, rect):
             drawUpright(image.image, in: pixelAligned(rect), ctx: ctx)
@@ -296,37 +311,6 @@ public enum AnnotationRenderer {
     /// `rect` on whole pixels, so an image dragged by a fraction of a pixel still exports pixel for pixel.
     static func pixelAligned(_ rect: CGRect) -> CGRect {
         CGRect(x: rect.minX.rounded(), y: rect.minY.rounded(), width: rect.width.rounded(), height: rect.height.rounded())
-    }
-
-    /// What a pixelate or blur at `rect` hides: the screenshot, with the images placed under it drawn over it,
-    /// as an image whose top-left pixel sits at `origin`. It reaches `outset` past `rect`, so the filter's
-    /// edges sample what's really there. With no placed image under it, that's the screenshot itself.
-    static func backdrop(_ base: CGImage, images below: ArraySlice<Annotation>, around rect: CGRect, outset: CGFloat) -> (image: CGImage, origin: CGPoint) {
-        let area = rect.insetBy(dx: -outset, dy: -outset).integral
-        let images = below.compactMap { annotation -> (CGImage, CGRect)? in
-            guard case let .image(image, imageRect) = annotation.kind, imageRect.intersects(area) else {
-                return nil
-            }
-            return (image.image, pixelAligned(imageRect))
-        }
-        guard !images.isEmpty, let ctx = CGContext(
-            data: nil, width: Int(area.width), height: Int(area.height), bitsPerComponent: 8, bytesPerRow: 0,
-            space: base.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else {
-            return (base, .zero)
-        }
-        ctx.interpolationQuality = .high
-        ctx.translateBy(x: 0, y: area.height)
-        ctx.scaleBy(x: 1, y: -1)
-        ctx.translateBy(x: -area.minX, y: -area.minY)
-        drawUpright(base, in: CGRect(x: 0, y: 0, width: base.width, height: base.height), ctx: ctx)
-        for (image, imageRect) in images {
-            drawUpright(image, in: imageRect, ctx: ctx)
-        }
-        guard let image = ctx.makeImage() else {
-            return (base, .zero)
-        }
-        return (image, area.origin)
     }
 
     /// Draws `image` right side up into `rect` of a top-left-origin context.
