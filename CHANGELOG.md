@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.7.0-beta.33](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.32...v0.7.0-beta.33) (2026-10-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* ship for Apple Silicon only, dropping Intel Macs ([#269](https://github.com/LorcanChinnock/shot/issues/269))
+
+### Features
+
+* ship for Apple Silicon only, dropping Intel Macs ([#269](https://github.com/LorcanChinnock/shot/issues/269)) ([fbb1afe](https://github.com/LorcanChinnock/shot/commit/fbb1afe30c2f05a6889ae64bcadd2549f643d89b))
+
 ## [0.7.0-beta.32](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.31...v0.7.0-beta.32) (2026-10-08)
 
 
