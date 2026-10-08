@@ -4,13 +4,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# SHOT_ARCHS="arm64 x86_64" builds a universal binary, as releases do; the default is this Mac's.
-arch_flags=()
-for arch in ${SHOT_ARCHS:-$(uname -m)}; do
-    arch_flags+=(--arch "$arch")
-done
-swift build -c release "${arch_flags[@]}"
-bin_path="$(swift build -c release "${arch_flags[@]}" --show-bin-path)"
+# Shot runs on Apple Silicon only.
+swift build -c release --arch arm64
+bin_path="$(swift build -c release --arch arm64 --show-bin-path)"
 binary="$bin_path/Shot"
 
 app=build/Shot.app
@@ -18,12 +14,6 @@ rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$app/Contents/Frameworks"
 cp "$binary" "$app/Contents/MacOS/Shot"
 ditto "$bin_path/Sparkle.framework" "$app/Contents/Frameworks/Sparkle.framework"
-for arch in ${SHOT_ARCHS:-$(uname -m)}; do
-    if ! lipo "$app/Contents/MacOS/Shot" -verify_arch "$arch"; then
-        echo "error: the built binary has no $arch slice; run 'make clean' and try again." >&2
-        exit 1
-    fi
-done
 cp Resources/Info.plist "$app/Contents/Info.plist"
 cp Resources/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
 build_number="$(git rev-list --count HEAD 2>/dev/null || echo 1)"

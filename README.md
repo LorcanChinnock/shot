@@ -59,7 +59,7 @@ Trim a recording, cut sections out, and export an MP4 or a GIF at the frame rate
 
 ## Install
 
-Shot needs macOS 15 or later and runs natively on Apple Silicon and Intel Macs.
+Shot needs macOS 15 or later and an Apple Silicon Mac. It doesn't run on Intel Macs.
 
 **With [Homebrew](https://brew.sh):**
 
