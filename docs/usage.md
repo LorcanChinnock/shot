@@ -107,7 +107,7 @@ Pinch, or press ⌘+ and ⌘-, to zoom. ⌘0 fits the canvas to the window and �
 
 Press ⌘⇧5, then drag out an area (the magnifier helps here too), press Space and click a window, or press Enter for the full screen. Recording starts as soon as you let go, with the camera bubble, microphone and cursor set as in **Settings › Recording**. Record Fullscreen starts on its shortcut.
 
-To adjust first, hold ⌥ as you finish the selection, or turn on **Adjust before recording** in **Settings › Recording** to do it every time. You can then adjust the frame, switch between area, screen and window, and turn the camera bubble, microphone and cursor on or off for this recording. Press Return or click **Record** to start, or Esc to cancel. **Countdown** in the same settings adds a 3 or 5 second countdown before recording starts, with or without this step; press Esc during it to cancel.
+To adjust first, hold ⌥ as you finish the selection, or turn on **Adjust before recording** in **Settings › Recording** to do it every time. You can then adjust the frame, switch between area, screen and window, and turn the camera bubble, microphone and cursor on or off for this recording. Press Return or click **Record** to start, or Esc to cancel. **Countdown** in the same settings adds a 3 or 5 second countdown before recording starts, with or without this step. Esc during the countdown goes back to the adjust step if it was shown, and otherwise cancels the recording.
 
 If you picked the area with a ratio (Tab or Shift), the frame's handles keep it.
 

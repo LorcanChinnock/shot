@@ -61,6 +61,8 @@ final class RecordingSetupController {
     private var countdownTask: Task<Void, Never>?
     private var continuation: CheckedContinuation<Result, Never>?
     private let showsSetup: Bool
+    /// True while the camera starts before an automatic start, so a record press can't start with options it may still change.
+    private var preparing = false
 
     init(mode: RecordingMode, screen: NSScreen, region: CGRect, windowID: CGWindowID?, ratio: CGFloat?, start: RecordingStart) {
         model = RecordingSetupModel(mode: mode, prefs: Preferences(), countdownSeconds: start.countdown)
@@ -71,28 +73,39 @@ final class RecordingSetupController {
         model.windowID = windowID
     }
 
+    /// What `pickRegion` picked; `optionHeld` is whether ⌥ was held as the pick ended.
+    struct Pick {
+        let screen: NSScreen
+        let region: CGRect
+        let windowID: CGWindowID?
+        let ratio: CGFloat?
+        var optionHeld = false
+    }
+
     /// Lets the user pick an area or window with the live overlay, or takes the screen under the pointer.
-    static func pickRegion(mode: RecordingMode) async -> (NSScreen, CGRect, CGWindowID?, CGFloat?)? {
+    static func pickRegion(mode: RecordingMode) async -> Pick? {
         let screens = NSScreen.screens
         if mode == .screen {
             let screen = NSScreen.underPointer ?? screens[0]
-            return (screen, screen.fullCaptureFrame, nil, nil)
+            return Pick(screen: screen, region: screen.fullCaptureFrame, windowID: nil, ratio: nil)
         }
         let displays = screens.map { OverlayDisplay(frame: $0.frame, scale: $0.backingScaleFactor, image: nil) }
         let windows = SelectionOverlayController.onScreenWindows()
-        guard let selection = await SelectionOverlayController.select(displays: displays, windowMode: mode == .window, windows: windows, isLive: true) else {
+        let (picked, modifiers) = await SelectionOverlayController.selectWithModifiers(displays: displays, windowMode: mode == .window, windows: windows, isLive: true)
+        guard let selection = picked else {
             return nil
         }
+        let optionHeld = modifiers.contains(.option)
         switch selection {
         case let .area(index, rect, ratio):
             let screen = screens[index]
-            return (screen, rect.offsetBy(dx: screen.frame.minX, dy: screen.frame.minY), nil, ratio)
+            return Pick(screen: screen, region: rect.offsetBy(dx: screen.frame.minX, dy: screen.frame.minY), windowID: nil, ratio: ratio, optionHeld: optionHeld)
         case let .window(info):
             let frame = Geometry.flip(info.frame, primaryHeight: screens.first?.frame.height ?? 0)
             let screen = screens.first { $0.frame.contains(CGPoint(x: frame.midX, y: frame.midY)) } ?? screens[0]
-            return (screen, frame.intersection(screen.frame), info.windowID, nil)
+            return Pick(screen: screen, region: frame.intersection(screen.frame), windowID: info.windowID, ratio: nil, optionHeld: optionHeld)
         case let .fullDisplay(index):
-            return (screens[index], screens[index].fullCaptureFrame, nil, nil)
+            return Pick(screen: screens[index], region: screens[index].fullCaptureFrame, windowID: nil, ratio: nil, optionHeld: optionHeld)
         }
     }
 
@@ -104,7 +117,9 @@ final class RecordingSetupController {
                     await showSetup(placeCamera: true)
                 } else {
                     if model.cameraOn {
+                        preparing = true
                         await showCamera()
+                        preparing = false
                     }
                     confirm()
                 }
@@ -116,7 +131,7 @@ final class RecordingSetupController {
 
     /// Starts the countdown, or recording when there is none; the record hotkey and Return also call this.
     func confirm() {
-        guard model.countdown == nil, continuation != nil else {
+        guard model.countdown == nil, continuation != nil, !preparing else {
             return
         }
         setSetupVisible(false)
@@ -181,10 +196,10 @@ final class RecordingSetupController {
         setSetupVisible(false)
         if let picked = await Self.pickRegion(mode: mode) {
             model.mode = mode
-            screen = picked.0
-            region = picked.1
-            model.windowID = picked.2
-            ratio = picked.3
+            screen = picked.screen
+            region = picked.region
+            model.windowID = picked.windowID
+            ratio = picked.ratio
             tearDownSetup()
             await showSetup(placeCamera: true)
         } else {

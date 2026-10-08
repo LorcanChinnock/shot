@@ -38,6 +38,8 @@ final class SelectionOverlayController {
     private var views: [SelectionOverlayView] = []
     private var continuation: CheckedContinuation<OverlaySelection?, Never>?
     private var magnifierTask: Task<Void, Never>?
+    /// The modifier keys held by the event that ended the selection.
+    private var endModifiers: NSEvent.ModifierFlags = []
 
     private init(windowMode: Bool, windows: [WindowInfo], isLive: Bool) {
         self.windowMode = windowMode
@@ -51,6 +53,11 @@ final class SelectionOverlayController {
     }
 
     static func select(displays: [OverlayDisplay], windowMode: Bool, windows: [WindowInfo], isLive: Bool = false) async -> OverlaySelection? {
+        await selectWithModifiers(displays: displays, windowMode: windowMode, windows: windows, isLive: isLive).selection
+    }
+
+    /// Like `select`, also returning the modifier keys held as the selection ended, read from that event rather than later.
+    static func selectWithModifiers(displays: [OverlayDisplay], windowMode: Bool, windows: [WindowInfo], isLive: Bool = false) async -> (selection: OverlaySelection?, modifiers: NSEvent.ModifierFlags) {
         let controller = SelectionOverlayController(windowMode: windowMode, windows: windows, isLive: isLive)
         // The overlay views hold the controller unowned; keep it alive until the user finishes.
         let selection = await withCheckedContinuation { continuation in
@@ -62,7 +69,7 @@ final class SelectionOverlayController {
         }
         controller.magnifierTask?.cancel()
         withExtendedLifetime(controller) {}
-        return selection
+        return (selection, controller.endModifiers)
     }
 
     private func show(_ displays: [OverlayDisplay]) {
@@ -143,11 +150,12 @@ final class SelectionOverlayController {
         Geometry.flip(window.frame, primaryHeight: NSScreen.screens.first?.frame.height ?? 0)
     }
 
-    func finish(_ selection: OverlaySelection?) {
+    func finish(_ selection: OverlaySelection?, modifiers: NSEvent.ModifierFlags = []) {
         guard let continuation else {
             return
         }
         self.continuation = nil
+        endModifiers = modifiers
         for panel in panels {
             panel.orderOut(nil)
             panel.close()
