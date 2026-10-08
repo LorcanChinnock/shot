@@ -139,6 +139,11 @@ struct TracksView: View {
                     }
                     .gesture(drag(timeline, layout: layout, leadX: leadX))
                     .task(id: thumbnailRequests(width: width)) {
+                        // Zooming and resizing change the requests many times a second, so wait for them to settle.
+                        try? await Task.sleep(for: .milliseconds(150))
+                        guard !Task.isCancelled else {
+                            return
+                        }
                         for request in thumbnailRequests(width: width) {
                             await model.loadThumbnails(of: request.source, duration: request.duration, aspectRatio: request.aspectRatio, count: request.count, height: request.height)
                         }
