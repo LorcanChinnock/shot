@@ -70,7 +70,7 @@ enum SystemShortcuts {
             return
         }
         if prefs.disabledSystemScreenshots, let updated = SystemScreenshotShortcut.givingBackTextCaptureKey(in: hotkeys) {
-            apply(updated)
+            apply(updated, wait: false)
             guard SystemScreenshotShortcut.givingBackTextCaptureKey(in: hotkeys) == nil else {
                 log.error("macOS did not turn ⌘⇧6 back on")
                 return
@@ -81,7 +81,8 @@ enum SystemShortcuts {
 
     /// Returns true when macOS reports the new state after the change.
     private static func setMacOSShortcuts(enabled: Bool) -> Bool {
-        guard apply(SystemScreenshotShortcut.setting(enabled: enabled, in: hotkeys)) else {
+        // Giving the keys back can run at quit, which must not exit before macOS picks the change up.
+        guard apply(SystemScreenshotShortcut.setting(enabled: enabled, in: hotkeys), wait: enabled) else {
             return false
         }
         let applied = macOSOwnsKeys == enabled
@@ -92,9 +93,10 @@ enum SystemShortcuts {
         return applied
     }
 
-    /// Saves `hotkeys` and has macOS pick them up now. Returns false when the domain can't be opened.
+    /// Saves `hotkeys` and has macOS pick them up now, blocking until it has when `wait` is true.
+    /// Returns false when the domain can't be opened.
     @discardableResult
-    private static func apply(_ hotkeys: [String: Any]) -> Bool {
+    private static func apply(_ hotkeys: [String: Any], wait: Bool) -> Bool {
         guard let domain = UserDefaults(suiteName: SystemScreenshotShortcut.domain) else {
             return false
         }
@@ -103,9 +105,16 @@ enum SystemShortcuts {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings")
         process.arguments = ["-u"]
+        process.terminationHandler = { process in
+            if process.terminationStatus != 0 {
+                log.error("activateSettings exited with status \(process.terminationStatus, privacy: .public)")
+            }
+        }
         do {
             try process.run()
-            process.waitUntilExit()
+            if wait {
+                process.waitUntilExit()
+            }
         } catch {
             log.error("activateSettings failed: \(error.localizedDescription, privacy: .public)")
         }
