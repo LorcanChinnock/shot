@@ -103,6 +103,12 @@ public enum Gallery {
         }
     }
 
+    /// The newest screenshots in `items`, at most `limit`, leaving out `excluding`: what the editor offers to place on the canvas.
+    public static func recentImages(_ items: [GalleryItem], excluding url: URL?, limit: Int) -> [GalleryItem] {
+        let excluded = url?.standardizedFileURL
+        return Array(items.filter { $0.kind == .image && $0.url.standardizedFileURL != excluded }.sorted { $0.date > $1.date }.prefix(limit))
+    }
+
     public static func visible(_ items: [GalleryItem], filter: GalleryFilter, sort: GallerySort, query: String) -> [GalleryItem] {
         let query = query.trimmingCharacters(in: .whitespaces)
         let matching = items.filter { item in

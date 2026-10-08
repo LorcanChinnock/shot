@@ -44,26 +44,61 @@ public enum LayerList {
         let frontIndex = destination - offsets.filter { $0 < destination }.count
         return count - offsets.count - frontIndex
     }
+
+    /// The `destination` that drops the rows in `moving` into the gap before the `gap`th of the rows that stay, as
+    /// `backToFrontIndex` takes it, or `nil` when they'd land where they are.
+    public static func destination<ID: Hashable>(of ids: [ID], moving: Set<ID>, gap: Int) -> Int? {
+        var rest = ids.filter { !moving.contains($0) }
+        let staying = rest
+        rest.insert(contentsOf: ids.filter { moving.contains($0) }, at: min(max(gap, 0), rest.count))
+        guard rest != ids else {
+            return nil
+        }
+        return gap < staying.count ? ids.firstIndex(of: staying[max(gap, 0)]) : ids.count
+    }
 }
 
 extension Annotation {
     /// What the layers panel calls it: the first words of a text or note, else its kind.
-    /// A blur, pixelate or spotlight says "(image)", since it only ever acts on the image.
     public var layerName: String {
         switch kind {
         case .arrow: "Arrow"
         case .line: "Line"
         case let .shape(shape, _): shape.title
         case .highlight: "Highlight"
-        case .pixelate: "Pixelate (image)"
-        case .blur: "Blur (image)"
-        case .spotlight: "Spotlight (image)"
+        case .pixelate: "Pixelate"
+        case .blur: "Blur"
+        case .spotlight: "Spotlight"
         case let .text(string, _, _): Self.firstWords(of: string) ?? "Text"
         case let .note(string, _): Self.firstWords(of: string) ?? "Note"
         case let .counter(number, _): "Step \(number)"
         case .freehand: "Pen"
         case .marker: "Highlighter"
         case .image: "Image"
+        }
+    }
+
+    /// Where drawing it changes the canvas: what it paints, or for a spotlight, everywhere, since the spotlights share one dim.
+    var drawnArea: CGRect {
+        if case .spotlight = kind {
+            return .infinite
+        }
+        return paintedBounds
+    }
+
+    /// How far past where it draws it reads what's under it, on `base`; `nil` when it only paints over it.
+    /// A layer that reads acts on everything drawn under it, so this is all the renderer needs to know to draw it in order.
+    func backdropReach(base: CGImage) -> CGFloat? {
+        switch kind {
+        case .pixelate:
+            AnnotationRenderer.redactionSize(self, base: base)
+        case .blur:
+            AnnotationRenderer.redactionSize(self, base: base) * 4
+        case let .spotlight(_, style):
+            // A Gaussian blur spreads about three times its radius; a darkening reads only the pixel it darkens.
+            style.effect == .blur ? style.blurRadius(forImageLength: AnnotationRenderer.longerSide(of: base)) * 3 : 0
+        default:
+            nil
         }
     }
 
@@ -81,48 +116,103 @@ extension Annotation {
         }
         return name
     }
+}
 
-    /// True for the kinds that act on the image under them rather than being drawn over it.
-    public var isImageEffect: Bool {
-        switch kind {
-        case .pixelate, .blur, .spotlight: true
-        default: false
+extension EditorDocument {
+    /// Removes the annotations in `ids` that aren't locked, and the padding only they needed. Returns the ids removed.
+    @discardableResult
+    public mutating func deleteLayers(_ ids: Set<UUID>, margin: CGFloat) -> Set<UUID> {
+        let removable = Set(annotations.filter { ids.contains($0.id) && !$0.isLocked }.map(\.id))
+        guard !removable.isEmpty else {
+            return []
         }
+        annotations.removeAll { removable.contains($0.id) }
+        shrinkPadding(margin: margin)
+        return removable
     }
 }
 
+/// Where an annotation clip dragged up or down the lanes lands.
+public enum LaneDrop: Equatable, Sendable {
+    /// Onto the overlay track at this index of `tracks`, or a new one just above it where that's locked or taken.
+    case onto(Int)
+    /// Onto a new overlay track put at this index of `tracks`.
+    case insert(Int)
+}
+
 extension Project {
-    /// The overlay tracks, back to front: the layers the panel lists, top row last.
+    /// The overlay tracks, back to front.
     public var overlayTracks: [Track] {
         tracks.filter { $0.kind == .overlay }
     }
 
-    /// Puts the overlay tracks in the order `reorder` returns, leaving the other tracks where they are.
-    private func reorderingOverlays(_ reorder: ([Track]) -> [Track]) -> Project {
-        let slots = tracks.indices.filter { tracks[$0].kind == .overlay }
+    /// The id of the track annotation clip `id` is on.
+    public func trackID(ofAnnotation id: UUID) -> UUID? {
+        tracks.first { $0.annotations.contains { $0.id == id } }?.id
+    }
+
+    /// Moves annotation clip `id` to start at `start` on the track `drop` picks, as dragging it up or down the lanes does,
+    /// snapping as `moving(clip:toStart:snapWithin:snapTo:)` does. The track it leaves goes if that empties it. Nil when it can't move.
+    public func movingAnnotation(_ id: UUID, toStart start: Double, onto drop: LaneDrop, snapWithin threshold: Double? = nil, snapTo extra: [Double] = []) -> Project? {
+        guard var clip = annotationClip(id), let source = tracks.firstIndex(where: { $0.annotations.contains { $0.id == id } }) else {
+            return nil
+        }
+        clip.start = snappedStart(of: clip, at: start, within: threshold, to: extra)
+        let alone = tracks[source].annotations.count == 1
         var result = self
-        for (slot, track) in zip(slots, reorder(slots.map { tracks[$0] })) {
-            result.tracks[slot] = track
+        let target: Int
+        switch drop {
+        case let .onto(index):
+            guard tracks.indices.contains(index), tracks[index].kind == .overlay else {
+                return nil
+            }
+            if index == source {
+                return movingAnnotation(id, toStart: start, snapWithin: threshold, snapTo: extra)
+            }
+            if !tracks[index].isLocked, tracks[index].annotations.allSatisfy({ $0.end <= clip.start + 1e-9 || $0.start >= clip.end - 1e-9 }) {
+                target = index
+            } else {
+                target = index + 1
+                result.tracks.insert(Track(kind: .overlay), at: target)
+            }
+        case let .insert(index):
+            // A new track right next to one it would leave empty is that track, which keeps its lock and visibility.
+            if alone, index == source || index == source + 1 {
+                return movingAnnotation(id, toStart: start, snapWithin: threshold, snapTo: extra)
+            }
+            target = min(max(index, 1), tracks.count)
+            result.tracks.insert(Track(kind: .overlay), at: target)
+        }
+        guard let from = result.tracks.firstIndex(where: { $0.id == tracks[source].id }) else {
+            return nil
+        }
+        result.tracks[from].annotations.removeAll { $0.id == id }
+        result.tracks[target].annotations.append(clip)
+        result.tracks[target].annotations.sort { $0.start < $1.start }
+        if result.tracks[from].isEmpty {
+            result.tracks.remove(at: from)
         }
         return result
     }
 
-    public func movingOverlays(_ ids: Set<UUID>, _ move: LayerMove) -> Project {
-        reorderingOverlays { $0.moving(ids, move) }
-    }
-
-    /// Lifts the overlay tracks in `ids` out and puts them back together at `index` among the other overlay tracks, back to front.
-    public func movingOverlays(_ ids: Set<UUID>, toIndex index: Int) -> Project {
-        reorderingOverlays { $0.moving(ids, toIndex: index) }
-    }
-
-    /// Hides or shows, locks or unlocks, the overlay tracks in `ids`.
-    public func setting(_ flag: WritableKeyPath<Track, Bool>, to value: Bool, ofOverlays ids: Set<UUID>) -> Project {
-        var result = self
-        for index in result.tracks.indices where result.tracks[index].kind == .overlay && ids.contains(result.tracks[index].id) {
-            result.tracks[index][keyPath: flag] = value
+    /// Moves annotation clip `id` one lane up or down, or to the top or bottom lane, keeping its time.
+    /// At the top or bottom it takes a lane of its own unless it's already alone there. Nil when it can't move.
+    public func movingAnnotation(_ id: UUID, _ move: LayerMove) -> Project? {
+        guard let clip = annotationClip(id), let source = tracks.firstIndex(where: { $0.annotations.contains { $0.id == id } }) else {
+            return nil
         }
-        return result
+        let overlays = tracks.indices.filter { tracks[$0].kind == .overlay }
+        let above = overlays.filter { $0 > source }, below = overlays.filter { $0 < source }
+        let drop: LaneDrop? = switch move {
+        case .forward: above.first.map(LaneDrop.onto) ?? .insert(source + 1)
+        case .backward: below.last.map(LaneDrop.onto) ?? .insert(source)
+        case .toFront: above.last.map(LaneDrop.onto) ?? .insert(source + 1)
+        case .toBack: below.first.map(LaneDrop.onto) ?? .insert(source)
+        }
+        guard let drop, let moved = movingAnnotation(id, toStart: clip.start, onto: drop), moved != self else {
+            return nil
+        }
+        return moved
     }
 
     /// Removes every annotation on the overlay tracks in `ids`, and the tracks.
@@ -130,15 +220,5 @@ extension Project {
         var result = self
         result.tracks.removeAll { $0.kind == .overlay && ids.contains($0.id) }
         return result
-    }
-}
-
-extension Track {
-    /// What the layers panel calls an overlay track: its first annotation, and how many others share the track.
-    public var layerName: String {
-        guard let first = annotations.first else {
-            return "Empty"
-        }
-        return annotations.count > 1 ? "\(first.annotation.layerName) +\(annotations.count - 1)" : first.annotation.layerName
     }
 }

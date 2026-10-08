@@ -158,7 +158,14 @@ public enum GIFExporter {
         guard FileManager.default.createFile(atPath: outputURL.path, contents: nil), let file = try? FileHandle(forWritingTo: outputURL) else {
             throw ExportError.cannotCreateDestination
         }
-        defer { try? file.close() }
+        var finished = false
+        // A cancelled or failed export leaves no half-written GIF behind.
+        defer {
+            try? file.close()
+            if !finished {
+                try? FileManager.default.removeItem(at: outputURL)
+            }
+        }
         let writer = GIFStreamWriter { try file.write(contentsOf: $0) }
         for index in 0..<plan.frameCount {
             try Task.checkCancellation()
@@ -168,6 +175,7 @@ public enum GIFExporter {
             progress(Double(index + 1) / Double(plan.frameCount))
         }
         try writer.finish()
+        finished = true
         return Result(frameCount: plan.frameCount, truncated: plan.truncated)
     }
 }

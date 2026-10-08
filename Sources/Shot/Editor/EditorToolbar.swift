@@ -42,8 +42,6 @@ struct EditorRootView: View {
                 if model.showsLayers {
                     LayersPanel(
                         rows: model.layerRows,
-                        baseName: "Image",
-                        baseSymbol: "photo",
                         selection: Binding(get: { model.selectedIDs }, set: { model.selectLayers($0) }),
                         onMove: model.moveLayers,
                         onHide: { model.setHidden($1, $0) },
@@ -80,6 +78,19 @@ struct EditorToolbar: View {
                             model.tool = tool
                         } label: {
                             Image(systemName: tool.symbol).font(.system(size: 13, weight: .bold))
+                        }
+                    }
+                }
+                ToolGroup {
+                    Tile(selected: model.showsImagePicker, color: Brutal.sky, help: "Add an image (⇧⌘I)", detail: "Place a recent capture or an image file beside your screenshot") {
+                        model.showsImagePicker.toggle()
+                    } label: {
+                        Image(systemName: "photo.badge.plus").font(.system(size: 13, weight: .bold))
+                    }
+                    .popover(isPresented: $model.showsImagePicker, arrowEdge: .bottom) {
+                        ImagePicker(excluding: model.fileURL) { urls in
+                            model.showsImagePicker = false
+                            model.addImageFiles(urls)
                         }
                     }
                 }

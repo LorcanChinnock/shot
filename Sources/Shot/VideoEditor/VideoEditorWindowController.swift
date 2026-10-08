@@ -130,12 +130,10 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
             model.zoom(bySteps: -1)
         case "0":
             model.resetZoom()
-        case "l":
-            model.toggleLayers()
         case "]":
-            model.moveSelectedLayers(option ? .toFront : .forward)
+            return model.moveSelectedClip(option ? .toFront : .forward)
         case "[":
-            model.moveSelectedLayers(option ? .toBack : .backward)
+            return model.moveSelectedClip(option ? .toBack : .backward)
         case "w":
             window.performClose(nil)
         default:

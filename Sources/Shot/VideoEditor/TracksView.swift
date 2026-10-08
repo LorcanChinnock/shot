@@ -138,6 +138,7 @@ struct TracksView: View {
                         }
                     }
                     .gesture(drag(timeline, layout: layout, leadX: leadX))
+                    .contextMenu { laneMenu }
                     .task(id: thumbnailRequests(width: width)) {
                         // Zooming and resizing change the requests many times a second, so wait for them to settle.
                         try? await Task.sleep(for: .milliseconds(150))
@@ -171,7 +172,7 @@ struct TracksView: View {
         }
         .frame(height: height)
         .modifier(TimelineAccessibility(model: model, label: Text("Tracks")))
-        .help("Drag to scrub. Drag a clip to move it and its edges to trim it. Shift-drag to select a section, then press Delete to cut it.")
+        .help("Drag to scrub. Drag a clip to move it and its edges to trim it, and an annotation up or down to restack it. Shift-drag to select a section, then press Delete to cut it. Right-click a lane for its options.")
         .allowsHitTesting(!model.isExporting)
     }
 
@@ -199,6 +200,8 @@ struct TracksView: View {
             ForEach(layout.lanes, id: \.track) { lane in
                 ForEach(project.tracks[lane.track].annotations) { clip in
                     annotationClip(clip, height: lane.height, pointsPerSecond: pointsPerSecond)
+                        // Faded while it's dragged to another lane, where the marker shows it'll land.
+                        .opacity(model.laneDrop?.clip.id == clip.id ? 0.4 : 1)
                         .offset(x: CGFloat(clip.start) * pointsPerSecond, y: lane.y)
                 }
                 ForEach(Array(project.trimmedEnds(ofTrack: lane.track).enumerated()), id: \.offset) { _, end in
@@ -207,6 +210,9 @@ struct TracksView: View {
                 ForEach(project.tracks[lane.track].clips) { clip in
                     self.clip(clip, in: lane, pointsPerSecond: pointsPerSecond)
                 }
+            }
+            if let preview = model.laneDrop {
+                laneDropMarker(preview, layout: layout, pointsPerSecond: pointsPerSecond)
             }
             if let selection = model.selection, let main = layout.lane(ofTrack: 0) {
                 let from = timeline.x(for: selection.lowerBound), to = timeline.x(for: selection.upperBound)
@@ -234,6 +240,51 @@ struct TracksView: View {
             }
             PlayheadCapsule(model: model, timeline: timeline, time: \.playhead, height: layout.height - Self.rulerHeight + 4)
                 .offset(y: Self.rulerHeight - 2)
+        }
+    }
+
+    /// Where an annotation clip dragged to another lane will land: a ghost on that lane, or a bar between lanes where
+    /// it'll get a new one.
+    @ViewBuilder
+    private func laneDropMarker(_ preview: LaneDropPreview, layout: LaneLayout, pointsPerSecond: CGFloat) -> some View {
+        let project = model.project
+        let x = CGFloat(preview.clip.start) * pointsPerSecond, width = max(CGFloat(preview.clip.duration) * pointsPerSecond, 8)
+        let onto: Int? = if case let .onto(track) = preview.drop, preview.result.trackID(ofAnnotation: preview.clip.id) == project.tracks[track].id { track } else { nil }
+        if let onto, let lane = layout.lane(ofTrack: onto) {
+            RoundedRectangle(cornerRadius: 4, style: .circular)
+                .fill(Brutal.yellow.opacity(0.45))
+                .inkBorder(RoundedRectangle(cornerRadius: 4, style: .circular), width: 2, dash: [4, 3])
+                .frame(width: width, height: lane.height)
+                .offset(x: x, y: lane.y)
+                .allowsHitTesting(false)
+        } else {
+            let index: Int = switch preview.drop {
+            case let .onto(track): track + 1
+            case let .insert(track): track
+            }
+            // A new track at `index` goes under the lane of the track there now and over the lane of the one below it.
+            let y = layout.lane(ofTrack: index).flatMap { project.tracks[index].kind == .overlay ? $0.y + $0.height : nil }
+                ?? layout.lane(ofTrack: index - 1).map(\.y) ?? 0
+            Capsule().fill(Brutal.pink)
+                .inkBorder(Capsule(), width: 2)
+                .frame(width: width, height: 8)
+                .offset(x: x, y: y + LaneLayout.gap / 2 - 4)
+                .allowsHitTesting(false)
+        }
+    }
+
+    /// What right-clicking a lane offers: deleting an annotation track, and the lane's own switches.
+    @ViewBuilder
+    private var laneMenu: some View {
+        if let index = hoveredTrack, model.project.tracks.indices.contains(index) {
+            let track = model.project.tracks[index]
+            ForEach(LaneControl.allCases.filter { $0.applies(to: track.kind) }, id: \.self) { control in
+                Button(control.menuTitle(isOn: track[keyPath: control.flag])) { model.toggle(control.flag, ofTrack: index) }
+            }
+            if track.kind == .overlay {
+                Divider()
+                Button("Delete Track") { model.deleteTrack(index) }
+            }
         }
     }
 
@@ -422,7 +473,8 @@ struct TracksView: View {
                 case .trimMain(let handle, let edge):
                     model.drag(handle, to: edge + Double((value.location.x - gesture.startX) / gesture.pointsPerSecond))
                 case .move(let id, let grab):
-                    model.moveClip(id, toStart: time - grab, snapThreshold: reach)
+                    let drop = model.project.annotationClip(id) == nil ? nil : layout.laneDrop(at: value.location.y, in: model.project)
+                    model.moveClip(id, toStart: time - grab, snapThreshold: reach, drop: drop)
                 case .trim(let id, let handle):
                     model.trimClip(id, handle, toTimeline: time, snapThreshold: reach)
                 case .keyframe(let id, let original):
@@ -582,6 +634,14 @@ private enum LaneControl: CaseIterable {
         case .lock: isOn ? "lock.fill" : "lock.open"
         case .hide: isOn ? "eye.slash" : "eye"
         case .mute: isOn ? "speaker.slash.fill" : "speaker.wave.2.fill"
+        }
+    }
+
+    func menuTitle(isOn: Bool) -> String {
+        switch self {
+        case .lock: isOn ? "Unlock Track" : "Lock Track"
+        case .hide: isOn ? "Show Track" : "Hide Track"
+        case .mute: isOn ? "Unmute Track" : "Mute Track"
         }
     }
 

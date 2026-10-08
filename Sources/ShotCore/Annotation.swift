@@ -659,30 +659,36 @@ public struct EditorDocument: @unchecked Sendable {
         }.integral
     }
 
-    /// The part of the image and the images placed on it that the spotlights dim: all of it outside
-    /// every hard-edged spotlight, never the rest of the padding. `softSpotlights` fade it further.
+    /// The part of the image, and of what's drawn under the lowest spotlight, that the spotlights dim: all of it
+    /// outside every hard-edged spotlight, never the rest of the padding. `softSpotlights` fade it further.
     /// `nil` when there are no spotlights. One with no area, such as a straight drag, dims nothing.
     public var spotlightDimPath: CGPath? {
         var lit: CGPath?
         var hasSpotlight = false
-        let images = CGMutablePath()
-        for annotation in annotations {
-            switch annotation.kind {
-            case let .spotlight(rect, style) where !rect.isEmpty:
-                hasSpotlight = true
-                guard style.softEdge == 0 else {
-                    continue
+        var isAboveDim = false
+        let below = CGMutablePath()
+        for annotation in annotations where !annotation.isHidden {
+            guard case let .spotlight(rect, style) = annotation.kind else {
+                if !isAboveDim, !annotation.paintedBounds.isNull {
+                    below.addRect(annotation.paintedBounds)
                 }
-                let shape = style.shape.path(in: rect, cornerRadius: annotation.cornerRadius)
-                lit = lit?.union(shape) ?? shape
-            case let .image(_, rect): images.addRect(rect)
-            default: break
+                continue
             }
+            isAboveDim = true
+            guard !rect.isEmpty else {
+                continue
+            }
+            hasSpotlight = true
+            guard style.softEdge == 0 else {
+                continue
+            }
+            let shape = style.shape.path(in: rect, cornerRadius: annotation.cornerRadius)
+            lit = lit?.union(shape) ?? shape
         }
         guard hasSpotlight else {
             return nil
         }
-        let dimmable = images.isEmpty ? CGPath(rect: fullRect, transform: nil) : images.union(CGPath(rect: fullRect, transform: nil))
+        let dimmable = below.isEmpty ? CGPath(rect: fullRect, transform: nil) : below.union(CGPath(rect: fullRect, transform: nil))
         return lit.map { dimmable.subtracting($0) } ?? dimmable
     }
 

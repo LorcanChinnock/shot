@@ -83,9 +83,9 @@ Hover a tool to see what it does. Tools that draw a mark show a colour and one o
 
 ### Layers
 
-Click **Layers** (⌘L) to list the annotations, frontmost first, with the image locked at the bottom. Click a row to select it on the canvas, ⌘-click or ⇧-click to select several, and drag a row to reorder. The eye hides a layer, which also leaves it out of Copy and Save, and the lock stops it being picked, moved or deleted. Right-click a row to duplicate, delete, lock or hide. ⌘] and ⌘[ move the selection forward and back, and ⌥⌘] and ⌥⌘[ bring it to the front or send it to the back.
+Click **Layers** (⌘L) to list the annotations, frontmost first, with the image locked at the bottom. Click a row to select it on the canvas, ⌘-click or ⇧-click to select several, drag a row by its handle to reorder (Escape or dropping outside the list cancels), and press Delete or click the bin to delete. The eye hides a layer, which also leaves it out of Copy and Save, and the lock stops it being picked, moved or deleted. Right-click a row to duplicate, delete, lock or hide. ⌘] and ⌘[ move the selection forward and back, and ⌥⌘] and ⌥⌘[ bring it to the front or send it to the back.
 
-Blur, pixelate and spotlight only ever act on the image and any images placed on it, so their place in the list never changes the result. Everything else is drawn over them.
+Each layer acts on everything under it and nothing over it: a blur, pixelate or spotlight covers the layers below it, and layers above it are drawn over it. All spotlights share one dim, at the lowest spotlight's place in the list.
 
 ### Canvas
 
@@ -93,7 +93,7 @@ Annotations can reach past the edges of the screenshot: the canvas grows to fit 
 
 ### Combine images
 
-Drag an image file or a Quick Access card onto the canvas, or press ⌘V with an image on the clipboard, to place another image beside your screenshot. A dropped image is centred where you drop it; a pasted one goes beside the canvas. Placed images keep their full resolution, keep their aspect ratio when you resize them, and can be moved, nudged, copied and deleted like any other annotation.
+Click **Add an image** (⇧⌘I) to pick one of your recent captures, or **Choose File…** for any image files. You can also drag an image file or a Quick Access card onto the canvas, or press ⌘V with an image on the clipboard, to place another image beside your screenshot. A picked image goes beside the canvas. A dropped image is centred where you drop it; a pasted one goes beside the canvas. Placed images keep their full resolution, keep their aspect ratio when you resize them, and can be moved, nudged, copied and deleted like any other annotation.
 
 ### Zoom
 
@@ -128,7 +128,7 @@ Open a recording from its Quick Access card (**Edit**), or with [`shot://edit-vi
 - **Trim:** drag the handles at either end of the timeline.
 - **Cut:** Shift-drag on the timeline to select a section, then press Delete to cut it out. Esc clears the selection.
 - **Play:** Space plays and pauses; ← and → step one frame.
-- **Layers:** ⌘L lists the annotation tracks, topmost first. Click a row to select its annotation, drag to reorder the tracks, and use the eye and lock to hide or lock a track. ⌘] and ⌘[ move the selected track up and down.
+- **Layers:** the annotation lanes at the top of the timeline are the layers, topmost first. Drag an annotation up or down to put it on another lane; drop it between lanes, or on a lane that's taken at that time, and it gets a new lane of its own. ⌘] and ⌘[ move the selected annotation a lane up or down, and ⌥⌘] and ⌥⌘[ to the top or bottom. Right-click a lane to lock, hide or delete it. A blur, pixelate or spotlight affects the lanes under it, not those over it.
 - ⌘Z undoes and ⇧⌘Z redoes.
 
 Then:
@@ -187,6 +187,7 @@ Record Fullscreen and Record Window have no shortcut until you set one. Capture 
 | ⌘C | Copy the selection, or the whole image when nothing is selected |
 | ⌘V | Paste an annotation or an image |
 | ⌘D | Duplicate the selection |
+| ⇧⌘I | Add an image: a recent capture or a file |
 | ⌘L | Show or hide the layers |
 | ⌘] / ⌘[ | Move the selection forward / back |
 | ⌥⌘] / ⌥⌘[ | Bring the selection to the front / send it to the back |
@@ -206,6 +207,8 @@ Record Fullscreen and Record Window have no shortcut until you set one. Capture 
 | Shift-drag | Select a section of the timeline |
 | Delete | Cut the selected section |
 | Esc | Clear the selection |
+| ⌘] / ⌘[ | Move the selected annotation a lane up / down |
+| ⌥⌘] / ⌥⌘[ | Move the selected annotation to the top / bottom lane |
 | ⌘Z / ⇧⌘Z | Undo / redo |
 | ⌘C | Copy the edited video |
 | ⌘S | Save and copy |

@@ -154,7 +154,7 @@ func spotlightRendersTheSameInTheEditorAndTheExport(scale: CGFloat) throws {
     #expect(isDimmed(try pixel(image, 30, 25)))
 }
 
-@Test func theDimNeverReachesAnnotationsWhateverTheirOrder() throws {
+@Test func theDimSitsAtTheLowestSpotlightsLayer() throws {
     let below = Annotation(kind: .counter(1, center: CGPoint(x: 40, y: 50)), color: blue, lineWidth: 4)
     let above = Annotation(kind: .counter(2, center: CGPoint(x: 160, y: 50)), color: blue, lineWidth: 4)
     let doc = EditorDocument(base: solidImage(width: 200, height: 100), annotations: [
@@ -165,9 +165,30 @@ func spotlightRendersTheSameInTheEditorAndTheExport(scale: CGFloat) throws {
     ])
     let image = try #require(AnnotationRenderer.flatten(doc))
     // Below the digit, inside the circle.
-    #expect(try pixel(image, 40, 66)[2] > 0.97)
+    #expect(abs(try pixel(image, 40, 66)[2] - 0.5) < 0.03)
     #expect(try pixel(image, 160, 66)[2] > 0.97)
     #expect(isBright(try pixel(image, 110, 70)))
+}
+
+@Test func theDimCoversWhatsDrawnUnderItInThePadding() throws {
+    var square = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 110, y: 20, width: 40, height: 40)), color: blue, lineWidth: 4)
+    square.fill = blue
+    var doc = EditorDocument(base: solidImage(width: 100, height: 100), annotations: [square, spotlight(CGRect(x: 10, y: 10, width: 20, height: 20))], background: RGBA(1, 1, 1))
+    doc.canvasRect = CGRect(x: 0, y: 0, width: 160, height: 100)
+    let dim = try #require(doc.spotlightDimPath)
+    #expect(dim.contains(CGPoint(x: 130, y: 40)))
+    #expect(!dim.contains(CGPoint(x: 130, y: 80)))
+    let image = try #require(AnnotationRenderer.flatten(doc))
+    #expect(abs(try pixel(image, 130, 40)[2] - 0.5) < 0.03)
+    #expect(try pixel(image, 130, 80).allSatisfy { $0 > 0.97 })
+}
+
+@Test func aHiddenLayerUnderASpotlightIsNotDimmedOrDrawn() throws {
+    var square = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 110, y: 20, width: 40, height: 40)), color: blue, lineWidth: 4)
+    square.isHidden = true
+    var doc = EditorDocument(base: solidImage(width: 100, height: 100), annotations: [square, spotlight(CGRect(x: 10, y: 10, width: 20, height: 20))])
+    doc.canvasRect = CGRect(x: 0, y: 0, width: 160, height: 100)
+    #expect(try #require(doc.spotlightDimPath).boundingBoxOfPath == doc.fullRect)
 }
 
 // MARK: Canvas

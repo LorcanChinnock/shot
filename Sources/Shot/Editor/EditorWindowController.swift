@@ -94,6 +94,8 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
             canvas.zoomToActualSize()
         case "l":
             model.toggleLayers()
+        case "i" where shift:
+            model.showsImagePicker = true
         case "]":
             model.moveSelectedLayers(option ? .toFront : .forward)
         case "[":
