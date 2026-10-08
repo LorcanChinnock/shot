@@ -172,7 +172,7 @@ struct TracksView: View {
         }
         .frame(height: height)
         .modifier(TimelineAccessibility(model: model, label: Text("Tracks")))
-        .help("Drag to scrub. Drag a clip to move it and its edges to trim it, and an annotation up or down to restack it. Shift-drag to select a section, then press Delete to cut it. Right-click a lane for its options.")
+        .help("Drag to scrub. Drag a clip to move it and its edges to trim it, and an annotation or picture up or down to restack it. Shift-drag to select a section, then press Delete to cut it. Right-click a lane for its options.")
         .allowsHitTesting(!model.isExporting)
     }
 
@@ -201,7 +201,7 @@ struct TracksView: View {
                 ForEach(project.tracks[lane.track].annotations) { clip in
                     annotationClip(clip, height: lane.height, pointsPerSecond: pointsPerSecond)
                         // Faded while it's dragged to another lane, where the marker shows it'll land.
-                        .opacity(model.laneDrop?.clip.id == clip.id ? 0.4 : 1)
+                        .opacity(model.laneDrop?.clip == clip.id ? 0.4 : 1)
                         .offset(x: CGFloat(clip.start) * pointsPerSecond, y: lane.y)
                 }
                 ForEach(Array(project.trimmedEnds(ofTrack: lane.track).enumerated()), id: \.offset) { _, end in
@@ -209,6 +209,7 @@ struct TracksView: View {
                 }
                 ForEach(project.tracks[lane.track].clips) { clip in
                     self.clip(clip, in: lane, pointsPerSecond: pointsPerSecond)
+                        .opacity(model.laneDrop?.clip == clip.id ? 0.4 : 1)
                 }
             }
             if let preview = model.laneDrop {
@@ -243,13 +244,13 @@ struct TracksView: View {
         }
     }
 
-    /// Where an annotation clip dragged to another lane will land: a ghost on that lane, or a bar between lanes where
-    /// it'll get a new one.
+    /// Where a clip dragged to another lane will land: a ghost on that lane, or a bar between lanes where it'll get a new one.
     @ViewBuilder
     private func laneDropMarker(_ preview: LaneDropPreview, layout: LaneLayout, pointsPerSecond: CGFloat) -> some View {
         let project = model.project
-        let x = CGFloat(preview.clip.start) * pointsPerSecond, width = max(CGFloat(preview.clip.duration) * pointsPerSecond, 8)
-        let onto: Int? = if case let .onto(track) = preview.drop, preview.result.trackID(ofAnnotation: preview.clip.id) == project.tracks[track].id { track } else { nil }
+        let x = CGFloat(preview.range.lowerBound) * pointsPerSecond
+        let width = max(CGFloat(preview.range.upperBound - preview.range.lowerBound) * pointsPerSecond, 8)
+        let onto: Int? = if case let .onto(track) = preview.drop, preview.result.trackID(of: preview.clip) == project.tracks[track].id { track } else { nil }
         if let onto, let lane = layout.lane(ofTrack: onto) {
             RoundedRectangle(cornerRadius: 4, style: .circular)
                 .fill(Brutal.yellow.opacity(0.45))
@@ -262,13 +263,13 @@ struct TracksView: View {
             case let .onto(track): track + 1
             case let .insert(track): track
             }
-            // A new track at `index` goes under the lane of the track there now and over the lane of the one below it.
-            let y = layout.lane(ofTrack: index).flatMap { project.tracks[index].kind == .overlay ? $0.y + $0.height : nil }
-                ?? layout.lane(ofTrack: index - 1).map(\.y) ?? 0
+            // A new track at `index` goes just over the lane of the stacked track below it, or the main one.
+            let below = project.stackedTrackIndices.last { $0 < index } ?? 0
+            let y = layout.lane(ofTrack: below)?.y ?? 0
             Capsule().fill(Brutal.pink)
                 .inkBorder(Capsule(), width: 2)
                 .frame(width: width, height: 8)
-                .offset(x: x, y: y + LaneLayout.gap / 2 - 4)
+                .offset(x: x, y: y - LaneLayout.gap / 2 - 4)
                 .allowsHitTesting(false)
         }
     }
@@ -473,7 +474,7 @@ struct TracksView: View {
                 case .trimMain(let handle, let edge):
                     model.drag(handle, to: edge + Double((value.location.x - gesture.startX) / gesture.pointsPerSecond))
                 case .move(let id, let grab):
-                    let drop = model.project.annotationClip(id) == nil ? nil : layout.laneDrop(at: value.location.y, in: model.project)
+                    let drop = model.project.stackedTrackIndices.contains(trackIndex(of: id)) ? layout.laneDrop(at: value.location.y, in: model.project) : nil
                     model.moveClip(id, toStart: time - grab, snapThreshold: reach, drop: drop)
                 case .trim(let id, let handle):
                     model.trimClip(id, handle, toTimeline: time, snapThreshold: reach)

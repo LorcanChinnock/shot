@@ -58,8 +58,8 @@ public enum TimelineRuler {
     }
 }
 
-/// Where each track's lane sits in the panel, top to bottom: the annotation tracks, then the picture tracks above the main one,
-/// each top-most first, then the main track, then the sound tracks.
+/// Where each track's lane sits in the panel, top to bottom: the annotation and picture tracks above the main one, in the order
+/// they're drawn, top-most first, then the main track, then the sound tracks.
 public struct LaneLayout: Equatable, Sendable {
     public struct Lane: Equatable, Sendable {
         public var track: Int
@@ -84,11 +84,8 @@ public struct LaneLayout: Equatable, Sendable {
             lanes.append(Lane(track: track, y: y, height: height))
             y += height + Self.gap
         }
-        for index in project.tracks.indices.reversed() where project.tracks[index].kind == .overlay {
-            add(index, Self.annotationHeight)
-        }
-        for index in project.tracks.indices.reversed() where index != 0 && project.tracks[index].kind == .video {
-            add(index, Self.pictureHeight)
+        for index in project.stackedTrackIndices.reversed() {
+            add(index, project.tracks[index].kind == .overlay ? Self.annotationHeight : Self.pictureHeight)
         }
         add(0, Self.mainHeight)
         for index in project.tracks.indices where project.tracks[index].kind == .audio {
@@ -112,26 +109,26 @@ public struct LaneLayout: Equatable, Sendable {
         lanes.first { $0.track == track }
     }
 
-    /// How close to a lane's edge an annotation clip dragged up or down drops between lanes, onto a new track of its own.
+    /// How close to a lane's edge a clip dragged up or down drops between lanes, onto a new track of its own.
     public static let insertReach: CGFloat = 7
 
-    /// Where an annotation clip dragged to `y` lands among the annotation lanes, which are `project`'s: onto the lane under
-    /// it, or onto a new track near the edge between two lanes, above the top one, or anywhere below the bottom one.
+    /// Where a clip dragged to `y` lands among the lanes above the main one, which are `project`'s: onto the lane under it,
+    /// or onto a new track near the edge between two lanes, above the top one, or anywhere below the bottom one.
     public func laneDrop(at y: CGFloat, in project: Project) -> LaneDrop? {
-        let overlays = lanes.filter { project.tracks[$0.track].kind == .overlay }
-        guard let top = overlays.first, let bottom = overlays.last else {
+        let stacked = lanes.filter { $0.track != 0 && project.tracks[$0.track].kind != .audio }
+        guard let top = stacked.first, let bottom = stacked.last else {
             return nil
         }
         if y < top.y + Self.insertReach {
             return .insert(top.track + 1)
         }
-        for (upper, lower) in zip(overlays, overlays.dropFirst()) where y >= upper.y + upper.height - Self.insertReach && y < lower.y + Self.insertReach {
+        for (upper, lower) in zip(stacked, stacked.dropFirst()) where y >= upper.y + upper.height - Self.insertReach && y < lower.y + Self.insertReach {
             return .insert(lower.track + 1)
         }
         if y >= bottom.y + bottom.height - Self.insertReach {
             return .insert(bottom.track)
         }
-        return overlays.first { y >= $0.y && y < $0.y + $0.height }.map { .onto($0.track) }
+        return stacked.first { y >= $0.y && y < $0.y + $0.height }.map { .onto($0.track) }
     }
 }
 

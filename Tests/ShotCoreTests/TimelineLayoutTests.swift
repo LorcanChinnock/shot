@@ -142,7 +142,7 @@ extension MediaTests {
     }
 }
 
-@Test func annotationLanesSitAboveEverything() throws {
+@Test func aNewAnnotationLaneSitsAboveEverything() throws {
     let base = try layoutProject()
     let annotated = base.adding(annotation: Annotation(kind: .line(from: .zero, to: CGPoint(x: 5, y: 5)), color: RGBA.presets[0], lineWidth: 2), at: 1).project
     let layout = LaneLayout(annotated, top: 22)

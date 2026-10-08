@@ -71,27 +71,7 @@ extension Project {
         if annotationClip(id) != nil {
             return movingAnnotation(id, toStart: start, snapWithin: threshold, snapTo: extra)
         }
-        guard let clip = clip(id), isFree(clip) else {
-            return nil
-        }
-        var target = max(0, start)
-        if let threshold {
-            let points = snapPoints(excluding: Set([id, clip.linkedID].compactMap(\.self))) + extra
-            let toStart = Snapping.snap(target, to: points, within: threshold).map { $0 - target }
-            let toEnd = Snapping.snap(target + clip.length, to: points, within: threshold).map { $0 - (target + clip.length) }
-            if let nudge = [toStart, toEnd].compactMap(\.self).min(by: { abs($0) < abs($1) }) {
-                target += nudge
-            }
-        }
-        var delta = target - clip.start
-        for member in group(of: clip) {
-            let range = freeRange(around: member)
-            delta = min(max(delta, range.lowerBound - member.start), range.upperBound - member.length - member.start)
-        }
-        guard group(of: clip).allSatisfy({ member in
-            let range = freeRange(around: member)
-            return range.lowerBound <= member.start + delta + 1e-9 && member.end + delta <= range.upperBound + 1e-9
-        }) else {
+        guard let clip = clip(id), isFree(clip), let delta = moveDelta(of: clip, toStart: start, snapWithin: threshold, snapTo: extra, keepingIn: group(of: clip)) else {
             return nil
         }
         return changing(group(of: clip).map(\.id)) { $0.start += delta }
@@ -150,17 +130,55 @@ extension Project {
         tracks.firstIndex { $0.clips.contains { $0.id == id } }
     }
 
-    // MARK: Private
+    // MARK: Used by moving a clip to another lane
+
+    /// How far `clip` moves when it's dragged to start at `start`: never before 0, snapped as `moving(clip:toStart:snapWithin:snapTo:)`
+    /// does, and no further than each of `members` has room for on its track. Nil when one of them has no room.
+    func moveDelta(of clip: Clip, toStart start: Double, snapWithin threshold: Double?, snapTo extra: [Double], keepingIn members: [Clip]) -> Double? {
+        var target = max(0, start)
+        if let threshold {
+            let points = snapPoints(excluding: Set([clip.id, clip.linkedID].compactMap(\.self))) + extra
+            let toStart = Snapping.snap(target, to: points, within: threshold).map { $0 - target }
+            let toEnd = Snapping.snap(target + clip.length, to: points, within: threshold).map { $0 - (target + clip.length) }
+            if let nudge = [toStart, toEnd].compactMap(\.self).min(by: { abs($0) < abs($1) }) {
+                target += nudge
+            }
+        }
+        var delta = max(target - clip.start, -clip.start)
+        for member in members {
+            let range = freeRange(around: member)
+            delta = min(max(delta, range.lowerBound - member.start), range.upperBound - member.length - member.start)
+        }
+        guard members.allSatisfy({ member in
+            let range = freeRange(around: member)
+            return range.lowerBound <= member.start + delta + 1e-9 && member.end + delta <= range.upperBound + 1e-9
+        }) else {
+            return nil
+        }
+        return delta
+    }
 
     /// Whether a clip can be moved and trimmed on its own: not one on the main track, nor the sound of one.
-    private func isFree(_ clip: Clip) -> Bool {
+    func isFree(_ clip: Clip) -> Bool {
         !main.clips.contains { $0.id == clip.id || $0.linkedID == clip.id }
     }
 
     /// `clip` and the clip linked to it.
-    private func group(of clip: Clip) -> [Clip] {
+    func group(of clip: Clip) -> [Clip] {
         [clip] + [clip.linkedID.flatMap(self.clip)].compactMap(\.self)
     }
+
+    func changing(_ ids: [UUID], _ change: (inout Clip) -> Void) -> Project {
+        var result = self
+        for track in result.tracks.indices {
+            for index in result.tracks[track].clips.indices where ids.contains(result.tracks[track].clips[index].id) {
+                change(&result.tracks[track].clips[index])
+            }
+        }
+        return result
+    }
+
+    // MARK: Private
 
     /// The stretch of its track a clip may occupy: from the end of the clip before it to the start of the one after.
     private func freeRange(around clip: Clip) -> ClosedRange<Double> {
@@ -171,15 +189,5 @@ extension Project {
         let before = others.filter { $0.end <= clip.start + 1e-9 }.map(\.end).max() ?? 0
         let after = others.filter { $0.start >= clip.end - 1e-9 }.map(\.start).min() ?? .infinity
         return before...after
-    }
-
-    private func changing(_ ids: [UUID], _ change: (inout Clip) -> Void) -> Project {
-        var result = self
-        for track in result.tracks.indices {
-            for index in result.tracks[track].clips.indices where ids.contains(result.tracks[track].clips[index].id) {
-                change(&result.tracks[track].clips[index])
-            }
-        }
-        return result
     }
 }

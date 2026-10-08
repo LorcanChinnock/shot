@@ -238,16 +238,17 @@ final class VideoEditorModel {
     }
 
     /// Drags a clip that isn't on the main track so it starts at timeline `time`; call between `beginDrag` and `endDrag`.
-    /// An annotation clip dragged to another lane, by `drop`, stays put until it's let go, and `laneDrop` says where it'll land.
+    /// A clip dragged to another lane, by `drop`, stays put until it's let go, and `laneDrop` says where it'll land.
     func moveClip(_ id: UUID, toStart time: Double, snapThreshold threshold: Double, drop: LaneDrop? = nil) {
         guard let origin = dragOrigin else {
             return
         }
         let snap = snapping ? threshold : nil
-        if let drop, let moved = origin.movingAnnotation(id, toStart: time, onto: drop, snapWithin: snap, snapTo: [playhead]),
-           let landed = moved.annotationClip(id), moved.trackID(ofAnnotation: id) != origin.trackID(ofAnnotation: id) {
+        if let drop, let moved = origin.moving(clip: id, toStart: time, onto: drop, snapWithin: snap, snapTo: [playhead]),
+           let landed = moved.annotationClip(id).map({ $0.start..<$0.end }) ?? moved.clip(id).map({ $0.start..<$0.end }),
+           moved.trackID(of: id) != origin.trackID(of: id) {
             project = origin
-            laneDrop = LaneDropPreview(clip: landed, drop: drop, result: moved)
+            laneDrop = LaneDropPreview(clip: id, range: landed, drop: drop, result: moved)
             return
         }
         laneDrop = nil
@@ -341,13 +342,13 @@ final class VideoEditorModel {
 
     // MARK: Lanes
 
-    /// Moves the selected annotation clip a lane up or down, or to the top or bottom lane, as one undo step; false when no
-    /// annotation clip is selected.
+    /// Moves the selected annotation or picture clip a lane up or down, or to the top or bottom lane, as one undo step; false when
+    /// neither is selected.
     func moveSelectedClip(_ move: LayerMove) -> Bool {
-        guard let id = selectedClipID, project.annotationClip(id) != nil else {
+        guard let id = selectedClipID, let track = project.tracks.firstIndex(where: { $0.id == project.trackID(of: id) }), project.stackedTrackIndices.contains(track) else {
             return false
         }
-        if !isExporting, let moved = project.movingAnnotation(id, move) {
+        if !isExporting, let moved = project.moving(clip: id, move) {
             undoStack.record(edit)
             project = moved
         }
@@ -1426,9 +1427,10 @@ private final class ThumbnailSource {
     }
 }
 
-/// An annotation clip being dragged to another lane: where it'll show, and the project once it's let go.
+/// A clip being dragged to another lane: when it'll show, and the project once it's let go.
 struct LaneDropPreview {
-    let clip: AnnotationClip
+    let clip: UUID
+    let range: Range<Double>
     let drop: LaneDrop
     let result: Project
 }

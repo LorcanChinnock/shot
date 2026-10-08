@@ -187,10 +187,10 @@ private func clip(on track: UUID, of project: Project) -> UUID {
 @Test func aClipDroppedOnAFreeLaneMovesThereAndKeepsItsTime() throws {
     let (project, bottom, _, top) = overlayProject()
     let added = project.adding(annotation: annotation(.counter(2, center: .zero)), at: 6, duration: 2)
-    #expect(added.project.trackID(ofAnnotation: added.clip) == bottom)
+    #expect(added.project.trackID(of: added.clip) == bottom)
     let topIndex = try #require(added.project.tracks.firstIndex { $0.id == top })
-    let moved = try #require(added.project.movingAnnotation(added.clip, toStart: 6.5, onto: .onto(topIndex)))
-    #expect(moved.trackID(ofAnnotation: added.clip) == top)
+    let moved = try #require(added.project.moving(clip: added.clip, toStart: 6.5, onto: .onto(topIndex)))
+    #expect(moved.trackID(of: added.clip) == top)
     #expect(moved.annotationClip(added.clip)?.start == 6.5)
     #expect(moved.overlayTracks.count == 3)
 }
@@ -199,7 +199,7 @@ private func clip(on track: UUID, of project: Project) -> UUID {
     let (project, bottom, middle, top) = overlayProject()
     let arrow = clip(on: bottom, of: project)
     let topIndex = try #require(project.tracks.firstIndex { $0.id == top })
-    let moved = try #require(project.movingAnnotation(arrow, toStart: 0, onto: .onto(topIndex)))
+    let moved = try #require(project.moving(clip: arrow, toStart: 0, onto: .onto(topIndex)))
     // The arrow's own track emptied, so it went.
     #expect(lanes(moved) == [[clip(on: middle, of: project)], [clip(on: top, of: project)], [arrow]])
 }
@@ -208,7 +208,7 @@ private func clip(on track: UUID, of project: Project) -> UUID {
     let (project, bottom, middle, top) = overlayProject()
     let blur = clip(on: middle, of: project)
     let bottomIndex = try #require(project.tracks.firstIndex { $0.id == bottom })
-    let moved = try #require(project.movingAnnotation(blur, toStart: 1, onto: .insert(bottomIndex)))
+    let moved = try #require(project.moving(clip: blur, toStart: 1, onto: .insert(bottomIndex)))
     #expect(lanes(moved) == [[blur], [clip(on: bottom, of: project)], [clip(on: top, of: project)]])
 }
 
@@ -218,8 +218,8 @@ private func clip(on track: UUID, of project: Project) -> UUID {
     project.tracks[middleIndex].isHidden = true
     let blur = clip(on: middle, of: project)
     for drop in [LaneDrop.insert(middleIndex), .insert(middleIndex + 1)] {
-        let moved = try #require(project.movingAnnotation(blur, toStart: 1.5, onto: drop))
-        #expect(moved.trackID(ofAnnotation: blur) == middle)
+        let moved = try #require(project.moving(clip: blur, toStart: 1.5, onto: drop))
+        #expect(moved.trackID(of: blur) == middle)
         #expect(moved.tracks[middleIndex].isHidden)
         #expect(moved.annotationClip(blur)?.start == 1.5)
     }
@@ -229,13 +229,16 @@ private func clip(on track: UUID, of project: Project) -> UUID {
     let (project, bottom, middle, top) = overlayProject()
     let arrow = clip(on: bottom, of: project), blur = clip(on: middle, of: project), counter = clip(on: top, of: project)
     // The blur's lane is taken where the arrow is, so it gets a new lane just above it.
-    let forward = try #require(project.movingAnnotation(arrow, .forward))
+    let forward = try #require(project.moving(clip: arrow, .forward))
     #expect(lanes(forward) == [[blur], [arrow], [counter]])
-    let toBack = try #require(project.movingAnnotation(counter, .toBack))
-    #expect(lanes(toBack) == [[arrow], [counter], [blur]])
+    // The arrow's lane is taken where the counter is, so it gets a new lane under it.
+    let toBack = try #require(project.moving(clip: counter, .toBack))
+    #expect(lanes(toBack) == [[counter], [arrow], [blur]])
+    let backward = try #require(project.moving(clip: counter, .backward))
+    #expect(lanes(backward) == [[arrow], [counter], [blur]])
     // Already alone at the top or bottom, it stays.
-    #expect(project.movingAnnotation(counter, .forward) == nil)
-    #expect(project.movingAnnotation(arrow, .toBack) == nil)
+    #expect(project.moving(clip: counter, .forward) == nil)
+    #expect(project.moving(clip: arrow, .toBack) == nil)
 }
 
 @Test func whereADraggedClipLandsDependsOnHowNearALaneEdgeItIs() {
@@ -324,4 +327,94 @@ private func layered() -> (doc: EditorDocument, bottom: UUID, middle: UUID, top:
     #expect(doc.canvasRect.maxX > 60)
     doc.deleteLayers([past.id], margin: 16)
     #expect(doc.canvasRect == doc.fullRect)
+}
+
+/// A recording with an annotation at the bottom, then a picture, then another annotation, with no sound.
+private func mixedProject() throws -> (project: Project, below: UUID, picture: UUID, above: UUID) {
+    var project = Project(source: URL(fileURLWithPath: "/tmp/a.mov"), duration: 10, canvasSize: CGSize(width: 100, height: 100), hasAudio: false)
+    let below = project.adding(annotation: annotation(.blur(.zero)), at: 0, duration: 4)
+    let picture = try #require(below.project.importing(ImportedMedia(source: URL(fileURLWithPath: "/tmp/b.mov"), duration: 4, size: CGSize(width: 64, height: 36), hasAudio: false), at: 0))
+    project = picture.project
+    project.tracks.append(Track(kind: .overlay))
+    let above = annotation(.arrow(from: .zero, to: CGPoint(x: 1, y: 1)))
+    project.tracks[3].annotations = [AnnotationClip(annotation: above, start: 0, duration: 4)]
+    return (project, below.clip, picture.clip, project.tracks[3].annotations[0].id)
+}
+
+@Test func pictureAndAnnotationLanesShareOneStack() throws {
+    let (project, _, _, _) = try mixedProject()
+    let layout = LaneLayout(project, top: 0)
+    #expect(layout.lanes.map(\.track) == [3, 2, 1, 0])
+    #expect(layout.lanes.map(\.height) == [LaneLayout.annotationHeight, LaneLayout.pictureHeight, LaneLayout.annotationHeight, LaneLayout.mainHeight])
+    // Lanes top down: the arrow (3) at 0–28, the picture (2) at 32–72, the blur (1) at 76–104, then the main track.
+    #expect(layout.laneDrop(at: 50, in: project) == .onto(2))
+    #expect(layout.laneDrop(at: 30, in: project) == .insert(3))
+    #expect(layout.laneDrop(at: 74, in: project) == .insert(2))
+    #expect(layout.laneDrop(at: 120, in: project) == .insert(1))
+}
+
+@Test func segmentsDrawPicturesAndAnnotationsInTrackOrder() throws {
+    let (project, below, picture, above) = try mixedProject()
+    let main = project.main.clips[0].id
+    #expect(project.videoSegments()[0].layers == [.clip(main), .annotation(below), .clip(picture), .annotation(above)])
+}
+
+@Test func aPictureDroppedOnAnAnnotationLaneGetsANewLaneAboveIt() throws {
+    let (project, below, picture, above) = try mixedProject()
+    let moved = try #require(project.moving(clip: picture, toStart: 1, onto: .onto(3)))
+    #expect(moved.tracks.map(\.kind) == [.video, .overlay, .overlay, .video])
+    #expect(moved.trackIndex(of: picture) == 3 && moved.clip(picture)?.start == 1)
+    #expect(moved.videoSegments()[1].layers == [.clip(moved.main.clips[0].id), .annotation(below), .annotation(above), .clip(picture)])
+}
+
+@Test func aPictureDroppedBetweenLanesOrAtTheBottomGetsANewTrackThere() throws {
+    let (project, _, picture, _) = try mixedProject()
+    let bottom = try #require(project.moving(clip: picture, toStart: 0, onto: .insert(1)))
+    #expect(bottom.tracks.map(\.kind) == [.video, .video, .overlay, .overlay])
+    // Next to its own lane, where it's alone, it stays put.
+    #expect(project.moving(clip: picture, toStart: 0, onto: .insert(3)) == project)
+}
+
+@Test func aPictureDroppedOnAFreePictureLaneMovesThere() throws {
+    var (project, _, picture, _) = try mixedProject()
+    let other = Clip(source: URL(fileURLWithPath: "/tmp/c.mov"), sourceDuration: 2, start: 6, size: CGSize(width: 10, height: 10))
+    project.tracks.append(Track(kind: .video, clips: [other]))
+    let moved = try #require(project.moving(clip: picture, toStart: 0, onto: .onto(4)))
+    #expect(moved.tracks.count == 4, "the picture's old track emptied and went")
+    #expect(moved.tracks[3].clips.map(\.id) == [picture, other.id])
+    // Where it would overlap, it gets a lane of its own above.
+    let crowded = try #require(project.moving(clip: picture, toStart: 5, onto: .onto(4)))
+    #expect(crowded.tracks.count == 5 && crowded.trackIndex(of: picture) == 4)
+}
+
+@Test func anAnnotationDroppedOnAPictureLaneGetsANewLaneAboveIt() throws {
+    let (project, below, picture, _) = try mixedProject()
+    let moved = try #require(project.moving(clip: below, toStart: 0, onto: .onto(2)))
+    #expect(moved.trackIndex(of: picture) == 1)
+    #expect(moved.tracks[2].annotations.map(\.id) == [below])
+}
+
+@Test func aPicturesSoundMovesWithItInTimeAndStaysOnItsTrack() throws {
+    let base = Project(source: URL(fileURLWithPath: "/tmp/a.mov"), duration: 10, canvasSize: CGSize(width: 100, height: 100), hasAudio: false)
+    let annotated = base.adding(annotation: annotation(.blur(.zero)), at: 0, duration: 4).project
+    let (project, picture) = try #require(annotated.importing(ImportedMedia(source: URL(fileURLWithPath: "/tmp/b.mov"), duration: 2, size: CGSize(width: 64, height: 36), hasAudio: true), at: 0))
+    let sound = try #require(project.clip(picture)?.linkedID)
+    let moved = try #require(project.moving(clip: picture, toStart: 3, onto: .insert(1)))
+    #expect(moved.tracks.map(\.kind) == [.video, .video, .overlay, .audio])
+    #expect(moved.clip(picture)?.start == 3 && moved.clip(sound)?.start == 3)
+    #expect(moved.trackIndex(of: sound) == 3)
+}
+
+@Test func mainTrackClipsDontRestack() throws {
+    let (project, _, _, _) = try mixedProject()
+    #expect(project.moving(clip: project.main.clips[0].id, toStart: 0, onto: .insert(3)) == nil)
+}
+
+@Test func theKeyboardMovesAPicturePastAnAnnotation() throws {
+    let (project, below, picture, above) = try mixedProject()
+    let back = try #require(project.moving(clip: picture, .backward))
+    #expect(back.trackIndex(of: picture) == 1 && back.tracks[2].annotations.map(\.id) == [below])
+    let front = try #require(project.moving(clip: picture, .toFront))
+    #expect(front.trackIndex(of: picture) == 3 && front.tracks[2].annotations.map(\.id) == [above])
+    #expect(back.moving(clip: picture, .backward) == nil, "already at the bottom")
 }

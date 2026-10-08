@@ -91,10 +91,13 @@ public enum CompositionBuilder {
         for (index, segment) in segments.enumerated() {
             let start = time(segment.range.lowerBound)
             let end = index == segments.count - 1 ? max(duration, start) : time(segment.range.upperBound)
-            instructions.append(ProjectInstruction(
-                timeRange: CMTimeRange(start: start, end: end), layers: segment.clips.compactMap { layers[$0] },
-                annotations: segment.annotations.compactMap { notes[$0] }, live: live, canvas: canvas
-            ))
+            let stack = segment.layers.compactMap { layer -> ProjectInstruction.Layer? in
+                switch layer {
+                case let .clip(id): layers[id].map(ProjectInstruction.Layer.picture)
+                case let .annotation(id): notes[id].map(ProjectInstruction.Layer.annotation)
+                }
+            }
+            instructions.append(ProjectInstruction(timeRange: CMTimeRange(start: start, end: end), layers: stack, live: live, canvas: canvas))
         }
 
         let video = AVMutableVideoComposition()
@@ -160,23 +163,29 @@ final class ProjectInstruction: NSObject, AVVideoCompositionInstructionProtocol,
     let containsTweening = true
     let requiredSourceTrackIDs: [NSValue]?
     let passthroughTrackID = kCMPersistentTrackID_Invalid
-    let layers: [ClipLayer]
-    let annotations: [AnnotationClip]
+    enum Layer {
+        case picture(ClipLayer)
+        case annotation(AnnotationClip)
+    }
+
+    /// Bottom to top.
+    let layers: [Layer]
     let live: LiveAnnotations
     let canvas: CGSize
 
-    init(timeRange: CMTimeRange, layers: [ClipLayer], annotations: [AnnotationClip], live: LiveAnnotations, canvas: CGSize) {
+    init(timeRange: CMTimeRange, layers: [Layer], live: LiveAnnotations, canvas: CGSize) {
         self.timeRange = timeRange
         self.layers = layers
-        self.annotations = annotations
         self.live = live
         self.canvas = canvas
-        requiredSourceTrackIDs = Array(Set(layers.map(\.trackID))).sorted().map { NSNumber(value: $0) }
+        let tracks = layers.compactMap { if case let .picture(layer) = $0 { layer.trackID } else { nil } }
+        requiredSourceTrackIDs = Array(Set(tracks)).sorted().map { NSNumber(value: $0) }
         super.init()
     }
 }
 
-/// Draws each frame: the canvas background, then each layer's picture placed by its geometry, bottom to top.
+/// Draws each frame: the canvas background, then each layer bottom to top, a picture placed by its geometry or a run of annotations
+/// drawn together, so an effect acts on everything under it.
 final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable {
     private static let pixelFormat = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
 
@@ -200,30 +209,51 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
             let canvas = CGRect(origin: .zero, size: instruction.canvas)
             var image = CIImage(color: .black).cropped(to: canvas)
             var firstFrame: CVPixelBuffer?
-            for layer in instruction.layers {
-                guard let frame = request.sourceFrame(byTrackID: layer.trackID) else {
-                    continue
-                }
-                firstFrame = firstFrame ?? frame
-                var picture = CIImage(cvPixelBuffer: frame)
-                var placed = layer.clip
-                placed.transform = layer.clip.transform(atTimeline: request.compositionTime.seconds)
-                let geometry = LayerGeometry.transform(for: placed, canvas: layer.canvas)
-                let matrix = LayerGeometry.imageTransform(orientation: layer.orientation, geometry: geometry, sourceHeight: CGFloat(CVPixelBufferGetHeight(frame)), canvasHeight: canvas.height)
-                picture = picture.transformed(by: matrix)
-                if placed.transform.opacity < 1 {
-                    picture = picture.applyingFilter("CIColorMatrix", parameters: ["inputAVector": CIVector(x: 0, y: 0, z: 0, w: CGFloat(max(0, placed.transform.opacity)))])
-                }
-                image = picture.composited(over: image)
-            }
-            let (hidden, drawn) = instruction.live.snapshot()
             let time = request.compositionTime.seconds
-            let shown = instruction.annotations.filter { !hidden.contains($0.id) } + drawn.filter { $0.start <= time && time < $0.end }
-            let items = shown.map { clip -> AnnotationFrame.Item in
+            let (hidden, drawn) = instruction.live.snapshot()
+            let replacements = Dictionary(drawn.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            var stacked: Set<UUID> = []
+            var run: [AnnotationFrame.Item] = []
+            func item(_ clip: AnnotationClip) -> AnnotationFrame.Item {
                 let state = clip.rendered(atTimeline: time)
                 return AnnotationFrame.Item(annotation: state.annotation, rotation: state.rotation, opacity: state.opacity)
             }
-            image = AnnotationFrame.apply(items, to: image, canvas: canvas, context: self.context, cache: self.overlays)
+            func flush() {
+                image = AnnotationFrame.apply(run, to: image, canvas: canvas, context: self.context, cache: self.overlays)
+                run = []
+            }
+            for layer in instruction.layers {
+                switch layer {
+                case let .annotation(clip):
+                    // One being edited draws where it is in the stack.
+                    guard hidden.contains(clip.id) else {
+                        run.append(item(clip))
+                        continue
+                    }
+                    if let replacement = replacements[clip.id], replacement.start <= time, time < replacement.end {
+                        stacked.insert(clip.id)
+                        run.append(item(replacement))
+                    }
+                case let .picture(layer):
+                    guard let frame = request.sourceFrame(byTrackID: layer.trackID) else {
+                        continue
+                    }
+                    flush()
+                    firstFrame = firstFrame ?? frame
+                    var picture = CIImage(cvPixelBuffer: frame)
+                    var placed = layer.clip
+                    placed.transform = layer.clip.transform(atTimeline: time)
+                    let geometry = LayerGeometry.transform(for: placed, canvas: layer.canvas)
+                    let matrix = LayerGeometry.imageTransform(orientation: layer.orientation, geometry: geometry, sourceHeight: CGFloat(CVPixelBufferGetHeight(frame)), canvasHeight: canvas.height)
+                    picture = picture.transformed(by: matrix)
+                    if placed.transform.opacity < 1 {
+                        picture = picture.applyingFilter("CIColorMatrix", parameters: ["inputAVector": CIVector(x: 0, y: 0, z: 0, w: CGFloat(max(0, placed.transform.opacity)))])
+                    }
+                    image = picture.composited(over: image)
+                }
+            }
+            run += drawn.filter { !stacked.contains($0.id) && $0.start <= time && time < $0.end }.map(item)
+            flush()
             self.context.render(image.cropped(to: canvas), to: output, bounds: canvas, colorSpace: nil)
             if let tags = firstFrame.flatMap({ CVBufferCopyAttachments($0, .shouldPropagate) }) {
                 CVBufferSetAttachments(output, tags, .shouldPropagate)
