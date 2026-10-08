@@ -2,6 +2,9 @@ name: CI
 
 on:
   pull_request:
+  # Each merge runs once more, which also saves the build cache that PRs restore.
+  push:
+    branches: [main]
   # release.yml dispatches this on release-please's PR branch, whose pushes come from
   # GITHUB_TOKEN and so never trigger pull_request runs.
   workflow_dispatch:
@@ -13,22 +16,84 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Runs on main queue instead, so every merge gets checked and saves a cache.
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 jobs:
-  test:
-    runs-on: ${{ inputs.lint-only && 'ubuntu-latest' || 'macos-26' }}
+  # Decides whether `test` needs macOS. A PR that only changes docs is linted on ubuntu.
+  # paths-ignore would skip the workflow instead, leaving the required `test` check pending.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
     steps:
       - uses: actions/checkout@v5
+        if: github.event_name == 'pull_request'
+        with:
+          fetch-depth: 2
+      - id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          LINT_ONLY: ${{ inputs.lint-only }}
+        run: |
+          if [ "$EVENT" = pull_request ]; then
+            # HEAD is the PR merged into main, so its first parent is main.
+            code=$(git diff --name-only HEAD^1 HEAD | grep -qvE '\.md$|^docs/|^\.github/ISSUE_TEMPLATE/' && echo true || echo false)
+          elif [ "$LINT_ONLY" = true ]; then
+            code=false
+          else
+            code=true
+          fi
+          echo "code=$code" | tee -a "$GITHUB_OUTPUT"
+
+  test:
+    needs: changes
+    # If `changes` fails, this still runs the full check rather than passing on lint alone.
+    if: ${{ !cancelled() }}
+    runs-on: ${{ needs.changes.outputs.code == 'false' && 'ubuntu-latest' || 'macos-26' }}
+    permissions:
+      actions: write # Deletes the previous cache on main.
+      contents: read
+    env:
+      CODE: ${{ needs.changes.outputs.code != 'false' }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: ${{ needs.changes.outputs.code == 'false' && 1 || 0 }}
       - name: Lint
         run: make lint
-      # Restores the newest cache for the same dependencies, so builds are incremental.
-      - uses: actions/cache@v4
-        if: ${{ !inputs.lint-only }}
+      # A fresh checkout gives every file a new mtime, so the restored build would recompile everything.
+      # Each file gets its last commit's time instead. A PR's merge commit is new, so its changes still rebuild.
+      - name: Restore file times
+        if: env.CODE == 'true'
+        run: |
+          git log --first-parent --diff-merges=first-parent --format='T %ct' --name-only --no-renames |
+            perl -ne 'chomp; if (/^T (\d+)$/) { $t = $1; next } next if $_ eq "" || $seen{$_}++; utime $t, $t, $_ if -e $_'
+      # Only main saves, so PRs restore the build of the latest merge.
+      - uses: actions/cache/restore@v4
+        if: env.CODE == 'true'
         with:
           path: .build
           key: build-${{ runner.os }}-${{ hashFiles('Package.resolved') }}-${{ github.sha }}
           restore-keys: build-${{ runner.os }}-${{ hashFiles('Package.resolved') }}-
+      - name: Build
+        if: env.CODE == 'true'
+        run: swift build --build-tests
+      # Saved before testing, so a failing test still leaves a cache for the fix.
+      - uses: actions/cache/save@v4
+        if: env.CODE == 'true' && github.event_name == 'push'
+        with:
+          path: .build
+          key: build-${{ runner.os }}-${{ hashFiles('Package.resolved') }}-${{ github.sha }}
+      # Restores only use the newest cache, so older ones just take up the repo's 10 GB.
+      - name: Delete older caches
+        if: env.CODE == 'true' && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEEP: build-${{ runner.os }}-${{ hashFiles('Package.resolved') }}-${{ github.sha }}
+        run: |
+          gh cache list --repo "$GITHUB_REPOSITORY" --ref refs/heads/main --key build- --limit 100 --json key --jq '.[].key' |
+            grep -vxF "$KEEP" | while read -r key; do gh cache delete "$key" --repo "$GITHUB_REPOSITORY"; done
       - name: Test
-        if: ${{ !inputs.lint-only }}
-        run: make test
+        if: env.CODE == 'true'
+        run: swift test --skip-build
