@@ -116,39 +116,75 @@ struct VisualEffectBackground: NSViewRepresentable {
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }
 
-/// Frosted window backdrop: blurred desktop, soft color blobs and a faint dot grid.
+/// Frosted window backdrop: blurred desktop, soft color blobs drifting slowly, and a faint dot grid.
 struct GlassBackdrop: View {
+    /// Positions and sizes are fractions of the window, so the composition holds at any window or display size.
     private struct Blob {
         let color: Color
+        let anchor: CGPoint
         let size: CGFloat
-        let blur: CGFloat
-        let origin: CGSize
         let opacity: Double
+        let drift: CGFloat
+        let period: Double
+        let phase: Double
     }
 
     private static let blobs = [
-        Blob(color: Brutal.pink, size: 380, blur: 90, origin: CGSize(width: -280, height: -200), opacity: 0.55),
-        Blob(color: Brutal.sky, size: 420, blur: 100, origin: CGSize(width: 300, height: 220), opacity: 0.55),
-        Blob(color: Brutal.yellow, size: 300, blur: 90, origin: CGSize(width: 220, height: -230), opacity: 0.5),
-        Blob(color: Brutal.mint, size: 260, blur: 90, origin: CGSize(width: -220, height: 260), opacity: 0.45),
+        Blob(color: Brutal.pink, anchor: CGPoint(x: 0.12, y: 0.15), size: 0.5, opacity: 0.55, drift: 0.08, period: 31, phase: 0),
+        Blob(color: Brutal.sky, anchor: CGPoint(x: 0.9, y: 0.88), size: 0.55, opacity: 0.55, drift: 0.09, period: 37, phase: 2),
+        Blob(color: Brutal.yellow, anchor: CGPoint(x: 0.85, y: 0.1), size: 0.4, opacity: 0.5, drift: 0.07, period: 43, phase: 4),
+        Blob(color: Brutal.mint, anchor: CGPoint(x: 0.15, y: 0.9), size: 0.36, opacity: 0.45, drift: 0.07, period: 29, phase: 5),
     ]
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.controlActiveState) private var activeState
 
     var body: some View {
         ZStack {
             VisualEffectBackground()
             Color.white.opacity(0.35)
-            ForEach(Self.blobs.indices, id: \.self) { index in
-                let blob = Self.blobs[index]
-                Circle().fill(blob.color).frame(width: blob.size).blur(radius: blob.blur)
-                    .offset(blob.origin)
-                    .opacity(blob.opacity)
+            TimelineView(.animation(paused: reduceMotion || activeState == .inactive)) { timeline in
+                blobLayer(at: reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate)
             }
-            Canvas { ctx, size in
-                let step: CGFloat = 18
-                for x in stride(from: step / 2, to: size.width, by: step) {
-                    for y in stride(from: step / 2, to: size.height, by: step) {
-                        ctx.fill(Path(ellipseIn: CGRect(x: x, y: y, width: 1.6, height: 1.6)), with: .color(Brutal.ink.opacity(0.10)))
-                    }
+            dotGrid
+        }
+    }
+
+    private func blobLayer(at time: Double) -> some View {
+        Canvas { ctx, size in
+            let reach = max(size.width, size.height)
+            for blob in Self.blobs {
+                let angle = time / blob.period * 2 * .pi + blob.phase
+                let breathing = 1 + 0.08 * sin(angle * 1.7)
+                let diameter = reach * blob.size * breathing
+                let center = CGPoint(
+                    x: size.width * blob.anchor.x + reach * blob.drift * cos(angle),
+                    y: size.height * blob.anchor.y + reach * blob.drift * sin(angle * 0.8)
+                )
+                let rect = CGRect(x: center.x - diameter / 2, y: center.y - diameter / 2, width: diameter, height: diameter)
+                let gradient = Gradient(stops: [
+                    .init(color: blob.color.opacity(blob.opacity), location: 0),
+                    .init(color: blob.color.opacity(blob.opacity * 0.5), location: 0.45),
+                    .init(color: blob.color.opacity(0), location: 1),
+                ])
+                ctx.fill(
+                    Path(ellipseIn: rect),
+                    with: .radialGradient(gradient, center: center, startRadius: 0, endRadius: diameter / 2)
+                )
+            }
+        }
+    }
+
+    /// Strongest at the centre, fading out toward the edges.
+    private var dotGrid: some View {
+        Canvas { ctx, size in
+            let step: CGFloat = 18
+            let middle = CGPoint(x: size.width / 2, y: size.height / 2)
+            let farthest = hypot(middle.x, middle.y)
+            for x in stride(from: step / 2, to: size.width, by: step) {
+                for y in stride(from: step / 2, to: size.height, by: step) {
+                    let falloff = 1 - 0.7 * hypot(x - middle.x, y - middle.y) / farthest
+                    ctx.fill(Path(ellipseIn: CGRect(x: x, y: y, width: 1.6, height: 1.6)), with: .color(Brutal.ink.opacity(0.10 * falloff)))
                 }
             }
         }
