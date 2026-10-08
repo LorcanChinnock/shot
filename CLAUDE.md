@@ -15,6 +15,8 @@ By default, Shot is fast, convenient and bloat-free for its main use: taking qui
 
 ```bash
 make test                         # ShotCore unit tests (Swift Testing)
+make perf                         # ShotCore performance budgets (PerfTests; make test skips them)
+make perf-app                     # scripts/perf.sh: launch, capture, memory, idle CPU of the installed app
 make lint                         # scripts/lint.sh: bans patterns that caused bugs (see below)
 make build                        # swift build
 make bundle                       # build and sign build/Shot.app only

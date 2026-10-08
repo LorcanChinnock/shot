@@ -11,13 +11,20 @@ endif
 
 INSTALL_DIR ?= /Applications
 
-.PHONY: build test lint bundle app run dist reset-tcc icon clean
+.PHONY: build test perf perf-app lint bundle app run dist reset-tcc icon clean
 
 build:
 	swift build
 
 test:
-	swift test $(TEST_FLAGS)
+	swift test $(TEST_FLAGS) --skip PerfTests
+
+# Budgets and baselines: docs/performance.md.
+perf:
+	swift test $(TEST_FLAGS) --filter PerfTests
+
+perf-app:
+	scripts/perf.sh
 
 lint:
 	scripts/lint.sh
