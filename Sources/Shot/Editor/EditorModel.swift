@@ -826,7 +826,7 @@ final class EditorModel {
             Toast.error("Could not render image")
             return
         }
-        Clipboard.copy(png: result.png, image: result.image)
+        Clipboard.copy(png: result.png)
         Toast.show("Copied")
     }
 
@@ -847,7 +847,7 @@ final class EditorModel {
         let destination = FileNaming.nextVersionURL(of: fileURL)
         do {
             try result.file.write(to: destination, options: .atomic)
-            Clipboard.copy(png: result.png, image: result.image)
+            Clipboard.copy(png: result.png)
             savedSnapshot = snapshot
             isDirty = document.snapshot != snapshot
             Toast.show("Saved as \(destination.lastPathComponent) and copied", duration: .seconds(3))
