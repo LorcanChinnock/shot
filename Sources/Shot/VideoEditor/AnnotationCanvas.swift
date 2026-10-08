@@ -13,7 +13,10 @@ struct AnnotationCanvas: NSViewRepresentable {
 
     func updateNSView(_ view: AnnotationCanvasView, context: Context) {
         // Reading these makes SwiftUI call this again when they change, so the handles follow the selection and playhead.
-        _ = (model.selectedClipID, model.playhead, model.annotationTool, model.project, model.zoom)
+        // Only while annotating: otherwise there are no handles, and playback would redraw the canvas every tick.
+        if model.isAnnotating {
+            _ = (model.selectedClipID, model.playhead, model.project, model.zoom)
+        }
         // The palette recolours and resizes the text being typed.
         _ = model.editingText
         view.layoutField()
