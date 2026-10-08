@@ -31,6 +31,7 @@ final class GalleryModel {
     /// Opening more items than this at once asks first.
     private static let editConfirmationThreshold = 8
 
+    @ObservationIgnored let thumbnails = ThumbnailStore()
     @ObservationIgnored private var trashHistory: [[(trashed: URL, original: URL)]] = []
     @ObservationIgnored var onEdit: ((URL) -> Void)?
     @ObservationIgnored var onExportGIF: ((URL) -> Void)?
@@ -62,6 +63,7 @@ final class GalleryModel {
         watchedFolder = nil
         debounce?.cancel()
         loadTask?.cancel()
+        thumbnails.removeAll()
     }
 
     func reload() {
@@ -76,7 +78,9 @@ final class GalleryModel {
             guard !Task.isCancelled else {
                 return
             }
-            items = found
+            if found != items {
+                items = found
+            }
             hasLoaded = true
             selection.formIntersection(Set(found.map(\.url)))
         }

@@ -33,10 +33,14 @@ enum GlassWindow {
         window.toolbar = NSToolbar(identifier: "glass")
         window.toolbarStyle = .unified
         window.titlebarSeparatorStyle = .none
-        window.contentView = NSView(hosting: GlassChrome(content: content()))
+        setContent(of: window, content: content)
         window.center()
         track(window)
         return window
+    }
+
+    static func setContent<Content: View>(of window: NSWindow, @ViewBuilder content: () -> Content) {
+        window.contentView = NSView(hosting: GlassChrome(content: content()))
     }
 
     static func present(_ window: NSWindow) {

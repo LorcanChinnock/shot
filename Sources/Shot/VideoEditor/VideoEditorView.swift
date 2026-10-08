@@ -279,11 +279,8 @@ struct TrimTimelineView: View {
                     .offset(x: startX - inset)
                 handle(symbol: "chevron.compact.right")
                     .offset(x: endX)
-                Capsule().fill(Color.white)
-                    .inkBorder(Capsule(), width: 1)
-                    .frame(width: 4, height: Self.height + 8)
-                    .offset(x: timeline.x(for: model.currentTime) - 2, y: -4)
-                    .allowsHitTesting(false)
+                PlayheadCapsule(model: model, timeline: timeline, time: \.currentTime, height: Self.height + 8)
+                    .offset(y: -4)
             }
             .contentShape(Rectangle())
             .gesture(DragGesture(minimumDistance: 0)
@@ -325,10 +322,7 @@ struct TrimTimelineView: View {
             }
         }
         .frame(height: Self.height)
-        .accessibilityElement()
-        .accessibilityLabel(Text("Trim timeline"))
-        .accessibilityValue(Text("\(Timecode.string(model.playhead)) of \(Timecode.string(model.keptLength))"))
-        .accessibilityAdjustableAction { model.nudgePlayhead(bySeconds: $0 == .increment ? 1 : -1) }
+        .modifier(TimelineAccessibility(model: model, label: Text("Trim timeline")))
         .help("Drag the handles to trim. Shift-drag to select a section, then press Delete to cut it.")
         // Save reloads the file when it finishes, which would drop a trim made meanwhile.
         .allowsHitTesting(!model.isExporting)

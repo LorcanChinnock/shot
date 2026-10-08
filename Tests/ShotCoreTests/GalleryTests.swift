@@ -64,6 +64,21 @@ private func item(_ name: String, _ date: Date, bytes: Int = 1) -> GalleryItem {
     #expect(sections[4].items.map(\.name) == ["sep.png", "sep2.png"])
 }
 
+@Test func daySectionsSplitAtExactBoundaries() {
+    let items = [
+        item("midnight.png", day(10, 7, hour: 0)),
+        item("last-yesterday.png", day(10, 7, hour: 0).addingTimeInterval(-1)),
+        item("first-oct.png", day(10, 1, hour: 0)),
+        item("last-sep.png", day(10, 1, hour: 0).addingTimeInterval(-1)),
+        item("first-sep.png", day(9, 1, hour: 0)),
+        item("last-aug.png", day(9, 1, hour: 0).addingTimeInterval(-1)),
+        item("dec.png", day(12, 31).addingTimeInterval(-366 * 86_400)),
+    ]
+    let expected = ["Today", "Yesterday", "This Month", "September 2026", "August 2026", "December 2025"]
+    #expect(Gallery.sections(items, sort: .newest, now: now, calendar: calendar).map(\.title) == expected)
+    #expect(Gallery.sections(items.reversed(), sort: .oldest, now: now, calendar: calendar).map(\.title) == expected.reversed())
+}
+
 @Test func nonDateSortIsOneSection() {
     let items = [item("a.png", now), item("b.png", day(1, 1))]
     #expect(Gallery.sections(items, sort: .name, now: now, calendar: calendar).map(\.items.count) == [2])

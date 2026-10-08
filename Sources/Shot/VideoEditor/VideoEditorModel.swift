@@ -42,6 +42,7 @@ final class VideoEditorModel {
     var isExporting: Bool { exportTask != nil }
     private var exportTask: Task<Bool, Never>?
     private(set) var thumbnailSets: [URL: [CGImage?]] = [:]
+    @ObservationIgnored private var thumbnailSources: [URL: ThumbnailSource] = [:]
     /// Applies to Export only; Copy and Save keep the original format, speed and sound.
     private(set) var options = Preferences().videoExportOptions
     /// Bytes Export would write, or nil until it's worked out.
@@ -170,6 +171,7 @@ final class VideoEditorModel {
         undoStack = UndoStack()
         currentTime = 0
         thumbnailSets = [:]
+        thumbnailSources = [:]
         waveforms = [:]
         applyRange()
     }
@@ -601,22 +603,49 @@ final class VideoEditorModel {
         await loadThumbnails(of: fileURL, duration: duration, aspectRatio: aspectRatio, count: count, height: height)
     }
 
-    /// `count` frames from equal slots of `source`, `height` points tall, into `thumbnailSets`.
+    /// `count` frames from equal slots of `source`, `height` points tall, into `thumbnailSets`. Frames fetched before are reused.
     func loadThumbnails(of source: URL, duration: Double, aspectRatio: CGFloat, count: Int, height: CGFloat) async {
         let times = TrimTimeline(duration: duration, minX: 0, width: 0).thumbnailTimes(count: count)
+        let size = CGSize(width: height * aspectRatio * 2, height: height * 2)
+        if thumbnailSources[source]?.generator.maximumSize != size {
+            thumbnailSources[source] = ThumbnailSource(url: source, maximumSize: size)
+        }
+        guard let fetcher = thumbnailSources[source] else {
+            return
+        }
+        let cached = fetcher.cache.frames(for: times, spacing: duration / Double(times.count))
         // Until each new frame arrives the old one nearest in time stands in, so zooming doesn't flash black.
         let old = thumbnailSets[source] ?? []
-        thumbnailSets[source] = times.indices.map { old.isEmpty ? nil : old[min(old.count - 1, $0 * old.count / times.count)] }
-        let generator = AVAssetImageGenerator(asset: AVURLAsset(url: source))
-        generator.appliesPreferredTrackTransform = true
-        generator.maximumSize = CGSize(width: height * aspectRatio * 2, height: height * 2)
-        for (index, time) in times.enumerated() {
-            let image = try? await generator.image(at: CMTime(seconds: time, preferredTimescale: 600)).image
+        var frames = times.indices.map { cached[$0] ?? (old.isEmpty ? nil : old[min(old.count - 1, $0 * old.count / times.count)]) }
+        thumbnailSets[source] = frames
+        let missing = times.indices.filter { cached[$0] == nil }
+        guard !missing.isEmpty else {
+            return
+        }
+        let requested = missing.map { CMTime(seconds: times[$0], preferredTimescale: 600) }
+        var lastWrite = ContinuousClock.now
+        var unwritten = false
+        for await result in fetcher.generator.images(for: requested) {
             // A newer load (resize, or reload after a save) may have replaced the array while this one waited.
-            guard !Task.isCancelled, index < (thumbnailSets[source]?.count ?? 0) else {
+            guard !Task.isCancelled, thumbnailSets[source]?.count == frames.count else {
                 return
             }
-            thumbnailSets[source]?[index] = image
+            guard let position = requested.firstIndex(of: result.requestedTime), let image = try? result.image else {
+                continue
+            }
+            let index = missing[position]
+            fetcher.cache.insert(image, at: times[index])
+            frames[index] = image
+            unwritten = true
+            // Each write redraws the lanes, so frames go in a few at a time.
+            if ContinuousClock.now - lastWrite > .milliseconds(100) {
+                thumbnailSets[source] = frames
+                lastWrite = .now
+                unwritten = false
+            }
+        }
+        if unwritten, !Task.isCancelled, thumbnailSets[source]?.count == frames.count {
+            thumbnailSets[source] = frames
         }
     }
 
@@ -715,6 +744,11 @@ final class VideoEditorModel {
         let options = options, range = range, cuts = cuts, source = fileURL, composite = isComposite, edited = exportProject
         let output = FileNaming.uniqueURL(in: source.deletingLastPathComponent(), date: Date(), pathExtension: options.format.fileExtension, prefix: Preferences().filePrefix)
         var note = ""
+        let progress = PercentProgress { percent in
+            Task { @MainActor in
+                Toast.progress("Exporting… \(percent)%")
+            }
+        }
         let exported = await exporting {
             if composite {
                 switch options.format {
@@ -723,11 +757,7 @@ final class VideoEditorModel {
                     log.notice("Exported composite MP4, muted \(options.muted, privacy: .public)")
                 case .gif:
                     let built = try await CompositionBuilder.build(edited)
-                    let result = try await GIFExporter.export(composition: built, to: output, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed) { fraction in
-                        Task { @MainActor in
-                            Toast.show("Exporting… \(Int(fraction * 100))%", duration: nil)
-                        }
-                    }
+                    let result = try await GIFExporter.export(composition: built, to: output, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed, progress: progress.report)
                     note = result.truncated ? " (first \(Int(GIFExporter.maxDuration)) s only)" : ""
                     log.notice("Exported composite GIF: \(result.frameCount, privacy: .public) frames")
                 }
@@ -739,12 +769,9 @@ final class VideoEditorModel {
                 log.notice("Exported MP4 at \(options.speed, privacy: .public)×, muted \(options.muted, privacy: .public), passthrough \(passthrough, privacy: .public)")
             case .gif:
                 let result = try await GIFExporter.export(
-                    videoURL: source, to: output, range: range, cuts: cuts, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed
-                ) { fraction in
-                    Task { @MainActor in
-                        Toast.show("Exporting… \(Int(fraction * 100))%", duration: nil)
-                    }
-                }
+                    videoURL: source, to: output, range: range, cuts: cuts, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed,
+                    progress: progress.report
+                )
                 note = result.truncated ? " (first \(Int(GIFExporter.maxDuration)) s only)" : ""
                 log.notice("Exported GIF: \(result.frameCount, privacy: .public) frames at \(options.gifFrameRate, privacy: .public) fps, width \(options.gifWidth, privacy: .public), \(options.speed, privacy: .public)×")
             }
@@ -1339,5 +1366,18 @@ extension VideoEditorModel {
         }
         project = moved
         selectedKeyframe = min(max(target - start, 0), origin.clip(id)?.length ?? origin.annotationClip(id)?.duration ?? 0)
+    }
+}
+
+/// What fetches a video's thumbnails, kept from one load to the next along with the frames it has fetched.
+@MainActor
+private final class ThumbnailSource {
+    let generator: AVAssetImageGenerator
+    var cache = ThumbnailCache<CGImage>()
+
+    init(url: URL, maximumSize: CGSize) {
+        generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
+        generator.appliesPreferredTrackTransform = true
+        generator.maximumSize = maximumSize
     }
 }

@@ -233,9 +233,9 @@ private struct GalleryTile: View {
     let item: GalleryItem
     let model: GalleryModel
     let width: CGFloat
-    @State private var thumbnail: Thumbnail?
     @State private var hovering = false
 
+    private var thumbnail: Thumbnail? { model.thumbnails.slot(for: item).thumbnail }
     private var height: CGFloat { (width * 0.75).rounded() }
     private var selected: Bool { model.selection.contains(item.url) }
 
@@ -309,7 +309,7 @@ private struct GalleryTile: View {
         .onDrag { NSItemProvider(contentsOf: item.url) ?? NSItemProvider() }
         .contextMenu { menu }
         .task(id: item) {
-            thumbnail = await Thumbnails.thumbnail(for: item)
+            await model.thumbnails.load(item)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(item.name))

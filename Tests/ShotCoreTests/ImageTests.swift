@@ -16,6 +16,15 @@ func pngDPIMatchesScale(scale: CGFloat) throws {
     #expect(ImageCodec.scale(of: data) == scale)
 }
 
+@Test func thumbnailFitsLongEdgeAndKeepsAspect() throws {
+    let data = try #require(ImageCodec.data(from: solidImage(width: 1200, height: 300), scale: 2))
+    let thumbnail = try #require(ImageCodec.thumbnail(from: data, maxPixelSize: 480))
+    #expect(thumbnail.width == 480)
+    #expect(thumbnail.height == 120)
+    let small = try #require(ImageCodec.data(from: solidImage(width: 40, height: 20), scale: 1))
+    #expect(try #require(ImageCodec.thumbnail(from: small, maxPixelSize: 480)).width == 40)
+}
+
 @Test func trimTransparentEdges() throws {
     let ctx = try #require(CGContext(data: nil, width: 100, height: 80, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
     ctx.setFillColor(red: 0, green: 0, blue: 0, alpha: 0.2)

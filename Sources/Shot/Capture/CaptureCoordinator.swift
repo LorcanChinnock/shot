@@ -205,17 +205,18 @@ final class CaptureCoordinator {
         let gifURL = FileNaming.uniqueURL(in: videoURL.deletingLastPathComponent(), date: Date(), pathExtension: "gif", prefix: prefs.filePrefix)
         let cancel: @MainActor @Sendable () -> Void = { [weak self] in self?.gifExports[videoURL]?.cancel() }
         Toast.show("Exporting GIF…", duration: nil, cancel: cancel)
+        let progress = PercentProgress { [weak self] percent in
+            Task { @MainActor in
+                guard let export = self?.gifExports[videoURL], !export.isCancelled else {
+                    return
+                }
+                Toast.progress("Exporting GIF… \(percent)%")
+            }
+        }
         gifExports[videoURL] = Task {
             defer { gifExports[videoURL] = nil }
             do {
-                let result = try await GIFExporter.export(videoURL: videoURL, to: gifURL, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth) { fraction in
-                    Task { @MainActor in
-                        guard let export = gifExports[videoURL], !export.isCancelled else {
-                            return
-                        }
-                        Toast.show("Exporting GIF… \(Int(fraction * 100))%", duration: nil, cancel: cancel)
-                    }
-                }
+                let result = try await GIFExporter.export(videoURL: videoURL, to: gifURL, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, progress: progress.report)
                 let note = result.truncated ? " (first \(Int(GIFExporter.maxDuration)) s only)" : ""
                 Toast.show("Saved \(gifURL.lastPathComponent)\(note)", duration: .seconds(3))
             } catch where Task.isCancelled {
@@ -238,12 +239,13 @@ final class CaptureCoordinator {
         let downscale = prefs.downscaleRetina && originalScale > 1
         let format = prefs.imageFormat
         let source = SendableImage(original)
-        let encoded = await Task.detached { () -> (file: Data?, png: Data?, image: SendableImage) in
+        let encoded = await Task.detached { () -> (file: Data?, png: Data?, image: SendableImage, thumbnail: SendableImage?) in
             let image = downscale ? ImageCodec.downscaled(source.image, scale: originalScale) : source.image
             let scale = downscale ? 1 : originalScale
             let file = ImageCodec.data(from: image, scale: scale, format: format)
             let png = format == .png ? file : ImageCodec.data(from: image, scale: scale)
-            return (file, png, SendableImage(image))
+            let thumbnail = file.flatMap { ImageCodec.thumbnail(from: $0, maxPixelSize: 480) }.map(SendableImage.init)
+            return (file, png, SendableImage(image), thumbnail)
         }.value
         guard let fileData = encoded.file, let png = encoded.png else {
             throw CaptureError.encodingFailed
@@ -265,7 +267,8 @@ final class CaptureCoordinator {
         if let savedURL, prefs.openEditorAfterCapture {
             EditorWindowController.open(savedURL)
         } else if let savedURL, prefs.quickAccessAfterCapture {
-            QuickAccessController.shared.add(fileURL: savedURL, thumbnail: image, scale: scale)
+            let size = NSSize(width: CGFloat(image.width) / scale, height: CGFloat(image.height) / scale)
+            QuickAccessController.shared.add(fileURL: savedURL, thumbnail: encoded.thumbnail?.image ?? image, size: size)
         } else if prefs.copyAfterCapture {
             Toast.show("Copied to clipboard")
         } else if savedURL != nil {
