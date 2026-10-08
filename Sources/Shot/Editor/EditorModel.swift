@@ -41,6 +41,25 @@ extension EditorTool {
     }
 }
 
+extension Annotation {
+    var layerSymbol: String {
+        switch kind {
+        case .arrow: "arrow.up.right"
+        case .line: "line.diagonal"
+        case .shape: "square.on.circle"
+        case .highlight, .marker: "highlighter"
+        case .pixelate: "squareshape.split.3x3"
+        case .blur: "drop.halffull"
+        case .spotlight: "flashlight.on.fill"
+        case .text: "textformat"
+        case .counter: "1.circle"
+        case .note: "note.text"
+        case .freehand: "scribble"
+        case .image: "photo"
+        }
+    }
+}
+
 @MainActor
 @Observable
 final class EditorModel {
@@ -101,7 +120,14 @@ final class EditorModel {
     var widthIndex: Int {
         didSet { rememberStyle { $0.widthIndex = widthIndex } }
     }
-    var selectedID: UUID?
+    /// The layers picked, from the canvas or the layers panel. The toolbar styles an annotation only while it's the only one.
+    var selectedIDs: Set<UUID> = []
+    var selectedID: UUID? {
+        get { selectedIDs.count == 1 ? selectedIDs.first : nil }
+        set { selectedIDs = newValue.map { [$0] } ?? [] }
+    }
+    var showsLayers = UserDefaults.standard.bool(forKey: EditorModel.showsLayersKey)
+    private static let showsLayersKey = "editorShowsLayers"
     /// The text or note whose text field is open, with the colour and size picked for it so far; it may not be in the document yet.
     var editingText: Annotation?
     var isDirty = false
@@ -152,6 +178,83 @@ final class EditorModel {
 
     var selection: Annotation? {
         selectedID.flatMap { id in document.annotations.first { $0.id == id } }
+    }
+
+    // MARK: Layers
+
+    /// The annotations frontmost first, as the layers panel lists them.
+    var layers: [Annotation] { document.annotations.reversed() }
+
+    var layerRows: [LayerRow] {
+        layers.map { LayerRow(id: $0.id, name: $0.layerName, symbol: $0.layerSymbol, isHidden: $0.isHidden, isLocked: $0.isLocked) }
+    }
+
+    func toggleLayers() {
+        showsLayers.toggle()
+        UserDefaults.standard.set(showsLayers, forKey: Self.showsLayersKey)
+    }
+
+    /// Picks layers from the panel, which also switches to the select tool, as picking one on the canvas does.
+    func selectLayers(_ ids: Set<UUID>) {
+        if tool != .select {
+            tool = .select
+        }
+        selectedIDs = ids.intersection(document.annotations.map(\.id))
+    }
+
+    func moveSelectedLayers(_ move: LayerMove) {
+        guard !selectedIDs.isEmpty else {
+            return
+        }
+        edit { $0.annotations = $0.annotations.moving(selectedIDs, move) }
+    }
+
+    /// Drops the layers at `offsets` of `layers` before the row at `destination`.
+    func moveLayers(fromOffsets offsets: IndexSet, toOffset destination: Int) {
+        let listed = layers
+        let moved = Set(offsets.map { listed[$0].id })
+        let index = LayerList.backToFrontIndex(movingOffsets: offsets, toOffset: destination, count: listed.count)
+        edit { $0.annotations = $0.annotations.moving(moved, toIndex: index) }
+    }
+
+    func setHidden(_ hidden: Bool, _ ids: Set<UUID>) {
+        edit { doc in
+            for index in doc.annotations.indices where ids.contains(doc.annotations[index].id) {
+                doc.annotations[index].isHidden = hidden
+            }
+        }
+        if hidden {
+            selectedIDs.subtract(ids)
+        }
+    }
+
+    func setLocked(_ locked: Bool, _ ids: Set<UUID>) {
+        edit { doc in
+            for index in doc.annotations.indices where ids.contains(doc.annotations[index].id) {
+                doc.annotations[index].isLocked = locked
+            }
+        }
+    }
+
+    func duplicateLayers(_ ids: Set<UUID>) {
+        let copies = document.annotations.filter { ids.contains($0.id) }
+        guard !copies.isEmpty else {
+            return
+        }
+        recordUndo()
+        tool = .select
+        selectedIDs = Set(copies.map { document.paste($0, step: pasteStep, margin: canvasMargin) })
+    }
+
+    func deleteLayers(_ ids: Set<UUID>) {
+        let removable = Set(document.annotations.filter { ids.contains($0.id) && !$0.isLocked }.map(\.id))
+        guard !removable.isEmpty else {
+            return
+        }
+        recordUndo()
+        document.annotations.removeAll { removable.contains($0.id) }
+        document.shrinkPadding(margin: canvasMargin)
+        selectedIDs.subtract(removable)
     }
 
     /// The colour the palette shows and sets: the text being typed's, else the selection's, else the colour for the tool's next annotation.
@@ -492,7 +595,7 @@ final class EditorModel {
     /// Changes the selected annotation as one undoable step, growing the canvas if it now reaches past the edge.
     /// Calls with the same `key` in a row amend that step instead of adding another.
     private func restyleSelection(coalescing key: String? = nil, _ change: (inout Annotation) -> Void) {
-        guard let selectedID else {
+        guard let selectedID, selection?.isLocked != true else {
             return
         }
         edit(coalescing: key) { doc in
@@ -539,7 +642,7 @@ final class EditorModel {
     /// Moves the selection by one pixel, or ten when `large`, growing the canvas if it reaches past the edge.
     /// A `repeated` press (the key held down) joins the undo step of the press before it.
     func nudgeSelection(_ direction: NudgeDirection, large: Bool, repeated: Bool) {
-        guard let selectedID = selection?.id else {
+        guard let selectedID = selection?.id, selection?.isLocked != true else {
             return
         }
         if !repeated || nudgedID != selectedID {
@@ -559,10 +662,10 @@ final class EditorModel {
 
     /// Returns false if nothing is selected.
     func duplicateSelection() -> Bool {
-        guard let selection else {
+        guard !selectedIDs.isEmpty else {
             return false
         }
-        insertCopy(of: selection)
+        duplicateLayers(selectedIDs)
         return true
     }
 
@@ -605,13 +708,7 @@ final class EditorModel {
     }
 
     func deleteSelection() {
-        guard let selectedID else {
-            return
-        }
-        recordUndo()
-        document.annotations.removeAll { $0.id == selectedID }
-        document.shrinkPadding(margin: canvasMargin)
-        self.selectedID = nil
+        deleteLayers(selectedIDs)
     }
 
     private func rendered(as format: ImageFormat = .png) async -> (image: CGImage, png: Data, file: Data)? {

@@ -5,7 +5,7 @@ import ShotCore
 private let log = Logger.shot("video-editor")
 
 private final class VideoEditorWindow: NSWindow {
-    var onCommand: ((String, Bool) -> Bool)?
+    var onCommand: ((String, Bool, Bool) -> Bool)?
     var onKey: ((NSEvent) -> Bool)?
 
     /// An annotation's text field is being edited, which keeps its keys, including the shortcuts.
@@ -16,7 +16,7 @@ private final class VideoEditorWindow: NSWindow {
             return super.performKeyEquivalent(with: event)
         }
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        if flags.contains(.command), let key = event.charactersIgnoringModifiers?.lowercased(), onCommand?(key, flags.contains(.shift)) == true {
+        if flags.contains(.command), let key = event.charactersIgnoringModifiers?.lowercased(), onCommand?(key, flags.contains(.shift), flags.contains(.option)) == true {
             return true
         }
         return super.performKeyEquivalent(with: event)
@@ -89,8 +89,8 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
             self?.fitWindowToTracks()
         }
         fitWindowToTracks(animate: false)
-        editorWindow.onCommand = { [weak self] key, shift in
-            self?.handleCommand(key, shift: shift) ?? false
+        editorWindow.onCommand = { [weak self] key, shift, option in
+            self?.handleCommand(key, shift: shift, option: option) ?? false
         }
         editorWindow.onKey = { [weak self] event in
             self?.handleKey(event) ?? false
@@ -116,7 +116,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
         window.setFrame(frame, display: true, animate: animate)
     }
 
-    private func handleCommand(_ key: String, shift: Bool) -> Bool {
+    private func handleCommand(_ key: String, shift: Bool, option: Bool) -> Bool {
         switch key {
         case "z":
             shift ? model.redo() : model.undo()
@@ -130,6 +130,12 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
             model.zoom(bySteps: -1)
         case "0":
             model.resetZoom()
+        case "l":
+            model.toggleLayers()
+        case "]":
+            model.moveSelectedLayers(option ? .toFront : .forward)
+        case "[":
+            model.moveSelectedLayers(option ? .toBack : .backward)
         case "w":
             window.performClose(nil)
         default:

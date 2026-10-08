@@ -12,6 +12,8 @@ public enum AnnotationRenderer {
 
     /// Draws the document into a bottom-left-origin context of size `doc.exportSize`.
     public static func render(_ doc: EditorDocument, into ctx: CGContext) {
+        var doc = doc
+        doc.annotations.removeAll(where: \.isHidden)
         let canvas = doc.canvasRect
         ctx.saveGState()
         ctx.translateBy(x: 0, y: canvas.height)
@@ -28,13 +30,23 @@ public enum AnnotationRenderer {
             ctx.beginTransparencyLayer(auxiliaryInfo: nil)
         }
         drawUpright(doc.base, in: doc.fullRect, ctx: ctx)
-        // The spotlights share one dim, at the lowest one's layer: what's under it dims with the image, what's over it doesn't.
-        let dimIndex = doc.annotations.firstIndex { if case .spotlight = $0.kind { true } else { false } }
-        for (index, annotation) in doc.annotations.enumerated() {
-            if index == dimIndex, let dim, let style = doc.spotlightStyle {
-                drawSpotlightDim(dim, style: style, softSpotlights: doc.softSpotlights, base: doc.base, below: doc.annotations[..<index], in: ctx)
+        // Redactions and spotlights act on the image and the images placed on it, never on the other annotations,
+        // so they're applied before those are drawn and a layer's place in the list can't change the result.
+        let images = doc.annotations.filter { if case .image = $0.kind { true } else { false } }
+        for image in images {
+            draw(image, base: doc.base, in: ctx)
+        }
+        for redaction in doc.annotations where redaction.isImageEffect {
+            draw(redaction, base: doc.base, over: images[...], in: ctx)
+        }
+        if let dim, let style = doc.spotlightStyle {
+            drawSpotlightDim(dim, style: style, softSpotlights: doc.softSpotlights, base: doc.base, below: images[...], in: ctx)
+        }
+        for annotation in doc.annotations where !annotation.isImageEffect {
+            if case .image = annotation.kind {
+                continue
             }
-            draw(annotation, base: doc.base, over: doc.annotations[..<index], in: ctx)
+            draw(annotation, base: doc.base, in: ctx)
         }
         if dim != nil {
             ctx.endTransparencyLayer()
