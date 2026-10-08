@@ -64,7 +64,6 @@ final class VideoEditorModel {
     }
     /// The time of the keyframe being worked on, in seconds from the start of the selected clip.
     private(set) var selectedKeyframe: Double?
-    private(set) var showsLayers = UserDefaults.standard.bool(forKey: VideoEditorModel.showsLayersKey)
     private(set) var showsInspector = UserDefaults.standard.bool(forKey: VideoEditorModel.showsInspectorKey)
     private(set) var waveforms: [URL: Waveform] = [:]
     /// The tool drawing annotations over the video, or nil when none is picked. Never crop.
@@ -77,9 +76,10 @@ final class VideoEditorModel {
 
     private static let showsTracksKey = "videoEditorShowsTracks"
     private static let showsInspectorKey = "videoEditorShowsInspector"
-    private static let showsLayersKey = "videoEditorShowsLayers"
 
     @ObservationIgnored private var dragOrigin: Project?
+    /// Where the annotation clip being dragged to another lane will land.
+    private(set) var laneDrop: LaneDropPreview?
     /// Where in the recording the playhead was before a trim handle drag moved it to show the edge.
     @ObservationIgnored private var trimResume: Double?
     @ObservationIgnored private var rebuildTask: Task<Void, Never>?
@@ -220,6 +220,10 @@ final class VideoEditorModel {
     func endDrag() {
         let origin = dragOrigin
         dragOrigin = nil
+        if let landed = laneDrop?.result {
+            project = landed
+        }
+        laneDrop = nil
         if let resume = trimResume {
             trimResume = nil
             seekTimeline(to: project.timelinePosition(ofSource: resume))
@@ -234,9 +238,20 @@ final class VideoEditorModel {
     }
 
     /// Drags a clip that isn't on the main track so it starts at timeline `time`; call between `beginDrag` and `endDrag`.
-    func moveClip(_ id: UUID, toStart time: Double, snapThreshold threshold: Double) {
+    /// An annotation clip dragged to another lane, by `drop`, stays put until it's let go, and `laneDrop` says where it'll land.
+    func moveClip(_ id: UUID, toStart time: Double, snapThreshold threshold: Double, drop: LaneDrop? = nil) {
+        guard let origin = dragOrigin else {
+            return
+        }
         let snap = snapping ? threshold : nil
-        if let moved = dragOrigin?.moving(clip: id, toStart: time, snapWithin: snap, snapTo: [playhead]) {
+        if let drop, let moved = origin.movingAnnotation(id, toStart: time, onto: drop, snapWithin: snap, snapTo: [playhead]),
+           let landed = moved.annotationClip(id), moved.trackID(ofAnnotation: id) != origin.trackID(ofAnnotation: id) {
+            project = origin
+            laneDrop = LaneDropPreview(clip: landed, drop: drop, result: moved)
+            return
+        }
+        laneDrop = nil
+        if let moved = origin.moving(clip: id, toStart: time, snapWithin: snap, snapTo: [playhead]) {
             project = moved
         }
     }
@@ -324,79 +339,31 @@ final class VideoEditorModel {
         project.tracks[index][keyPath: flag].toggle()
     }
 
-    // MARK: Layers
+    // MARK: Lanes
 
-    /// The overlay tracks, topmost first, as the layers panel lists them.
-    var layerRows: [LayerRow] {
-        project.overlayTracks.reversed().map { track in
-            LayerRow(id: track.id, name: track.layerName, symbol: track.annotations.first?.annotation.layerSymbol ?? "square.dashed", isHidden: track.isHidden, isLocked: track.isLocked)
+    /// Moves the selected annotation clip a lane up or down, or to the top or bottom lane, as one undo step; false when no
+    /// annotation clip is selected.
+    func moveSelectedClip(_ move: LayerMove) -> Bool {
+        guard let id = selectedClipID, project.annotationClip(id) != nil else {
+            return false
         }
-    }
-
-    /// The track of the selected annotation clip.
-    var selectedLayerIDs: Set<UUID> {
-        guard let id = selectedClipID, let track = project.tracks.first(where: { $0.kind == .overlay && $0.annotations.contains { $0.id == id } }) else {
-            return []
+        if !isExporting, let moved = project.movingAnnotation(id, move) {
+            undoStack.record(edit)
+            project = moved
         }
-        return [track.id]
+        return true
     }
 
-    func toggleLayers() {
-        showsLayers.toggle()
-        UserDefaults.standard.set(showsLayers, forKey: Self.showsLayersKey)
-    }
-
-    /// Selects the annotation showing at the playhead on the picked track, else its first. A track is one row however many clips it holds.
-    func selectLayers(_ ids: Set<UUID>) {
-        let picked = ids.subtracting(selectedLayerIDs).first ?? ids.first
-        guard let track = project.tracks.first(where: { $0.id == picked }) else {
+    /// Deletes overlay track `index` and every annotation on it, as one undo step.
+    func deleteTrack(_ index: Int) {
+        guard !isExporting, project.tracks.indices.contains(index), project.tracks[index].kind == .overlay else {
+            return
+        }
+        if let id = selectedClipID, project.tracks[index].annotations.contains(where: { $0.id == id }) {
             selectedClipID = nil
-            return
-        }
-        selectedClipID = (track.annotations.first { $0.start <= playhead && playhead < $0.end } ?? track.annotations.first)?.id
-    }
-
-    /// Applies `change` as one undo step, or does nothing if it leaves the project as it was.
-    private func editLayers(_ change: (Project) -> Project) {
-        guard !isExporting else {
-            return
-        }
-        let changed = change(project)
-        guard changed != project else {
-            return
         }
         undoStack.record(edit)
-        project = changed
-    }
-
-    func moveSelectedLayers(_ move: LayerMove) {
-        let ids = selectedLayerIDs
-        editLayers { $0.movingOverlays(ids, move) }
-    }
-
-    func moveLayers(fromOffsets offsets: IndexSet, toOffset destination: Int) {
-        let listed = layerRows
-        let moved = Set(offsets.map { listed[$0].id })
-        let index = LayerList.backToFrontIndex(movingOffsets: offsets, toOffset: destination, count: listed.count)
-        editLayers { $0.movingOverlays(moved, toIndex: index) }
-    }
-
-    func setLayersHidden(_ hidden: Bool, _ ids: Set<UUID>) {
-        editLayers { $0.setting(\.isHidden, to: hidden, ofOverlays: ids) }
-    }
-
-    func setLayersLocked(_ locked: Bool, _ ids: Set<UUID>) {
-        editLayers { $0.setting(\.isLocked, to: locked, ofOverlays: ids) }
-    }
-
-    func deleteLayers(_ ids: Set<UUID>) {
-        if !selectedLayerIDs.isDisjoint(with: ids) {
-            selectedClipID = nil
-        }
-        editLayers { project in
-            let unlocked = ids.filter { id in project.tracks.first { $0.id == id }?.isLocked == false }
-            return project.deletingOverlays(unlocked)
-        }
+        project = project.deletingOverlays([project.tracks[index].id])
     }
 
     /// Cuts the selected clip out, closing the gap on the main track, as one undo step; false when none is selected.
@@ -1457,4 +1424,11 @@ private final class ThumbnailSource {
         generator.appliesPreferredTrackTransform = true
         generator.maximumSize = maximumSize
     }
+}
+
+/// An annotation clip being dragged to another lane: where it'll show, and the project once it's let go.
+struct LaneDropPreview {
+    let clip: AnnotationClip
+    let drop: LaneDrop
+    let result: Project
 }

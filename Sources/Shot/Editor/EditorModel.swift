@@ -127,6 +127,8 @@ final class EditorModel {
         set { selectedIDs = newValue.map { [$0] } ?? [] }
     }
     var showsLayers = UserDefaults.standard.bool(forKey: EditorModel.showsLayersKey)
+    /// Whether the picker of images to place on the canvas is open.
+    var showsImagePicker = false
     private static let showsLayersKey = "editorShowsLayers"
     /// The text or note whose text field is open, with the colour and size picked for it so far; it may not be in the document yet.
     var editingText: Annotation?
@@ -247,14 +249,9 @@ final class EditorModel {
     }
 
     func deleteLayers(_ ids: Set<UUID>) {
-        let removable = Set(document.annotations.filter { ids.contains($0.id) && !$0.isLocked }.map(\.id))
-        guard !removable.isEmpty else {
-            return
-        }
-        recordUndo()
-        document.annotations.removeAll { removable.contains($0.id) }
-        document.shrinkPadding(margin: canvasMargin)
-        selectedIDs.subtract(removable)
+        var removed: Set<UUID> = []
+        edit { removed = $0.deleteLayers(ids, margin: canvasMargin) }
+        selectedIDs.subtract(removed)
     }
 
     /// The colour the palette shows and sets: the text being typed's, else the selection's, else the colour for the tool's next annotation.
@@ -705,6 +702,11 @@ final class EditorModel {
             let center = point.map { CGPoint(x: $0.x + pasteStep * CGFloat(index), y: $0.y + pasteStep * CGFloat(index)) }
             selectedID = document.addImage(image, scale: imageScale, documentScale: scale, centeredAt: center, margin: canvasMargin)
         }
+    }
+
+    /// Places the images in the files at `urls` beside the canvas, as pasting them does.
+    func addImageFiles(_ urls: [URL]) {
+        addImages(urls.compactMap { try? Data(contentsOf: $0) }, at: nil)
     }
 
     func deleteSelection() {

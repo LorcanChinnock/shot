@@ -77,20 +77,27 @@ extension Project {
         guard let clip = annotationClip(id), let track = tracks.firstIndex(where: { $0.annotations.contains { $0.id == id } }) else {
             return nil
         }
+        let target = snappedStart(of: clip, at: start, within: threshold, to: extra)
+        let others = tracks[track].annotations.filter { $0.id != id }
+        let before = others.filter { $0.end <= clip.start + 1e-9 }.map(\.end).max() ?? 0
+        let after = others.filter { $0.start >= clip.end - 1e-9 }.map(\.start).min() ?? .infinity
+        let clamped = min(max(target, before), after - clip.duration)
+        return changingAnnotations([id]) { $0.start = max(0, clamped) }
+    }
+
+    /// Where annotation clip `clip` starts when dragged to `start`: never before 0, and with `threshold`, its start or end
+    /// jumped to the nearest clip edge, or of `extra`, inside that many seconds.
+    func snappedStart(of clip: AnnotationClip, at start: Double, within threshold: Double?, to extra: [Double]) -> Double {
         var target = max(0, start)
         if let threshold {
-            let points = snapPoints(excluding: [id]) + extra
+            let points = snapPoints(excluding: [clip.id]) + extra
             let toStart = Snapping.snap(target, to: points, within: threshold).map { $0 - target }
             let toEnd = Snapping.snap(target + clip.duration, to: points, within: threshold).map { $0 - (target + clip.duration) }
             if let nudge = [toStart, toEnd].compactMap(\.self).min(by: { abs($0) < abs($1) }) {
                 target += nudge
             }
         }
-        let others = tracks[track].annotations.filter { $0.id != id }
-        let before = others.filter { $0.end <= clip.start + 1e-9 }.map(\.end).max() ?? 0
-        let after = others.filter { $0.start >= clip.end - 1e-9 }.map(\.start).min() ?? .infinity
-        let clamped = min(max(target, before), after - clip.duration)
-        return changingAnnotations([id]) { $0.start = max(0, clamped) }
+        return max(0, target)
     }
 
     func trimmingAnnotation(_ id: UUID, _ edge: TrimHandle, toTimeline time: Double, snapWithin threshold: Double?, snapTo extra: [Double]) -> Project? {

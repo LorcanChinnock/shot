@@ -12,6 +12,12 @@ public enum AnnotationRenderer {
 
     /// Draws the document into a bottom-left-origin context of size `doc.exportSize`.
     public static func render(_ doc: EditorDocument, into ctx: CGContext) {
+        renderLayers(doc, into: ctx)
+        cache.sweep()
+    }
+
+    /// `render` without sweeping the cache, so a backdrop can be drawn with it partway through a render.
+    static func renderLayers(_ doc: EditorDocument, into ctx: CGContext) {
         var doc = doc
         doc.annotations.removeAll(where: \.isHidden)
         let canvas = doc.canvasRect
@@ -30,34 +36,27 @@ public enum AnnotationRenderer {
             ctx.beginTransparencyLayer(auxiliaryInfo: nil)
         }
         drawUpright(doc.base, in: doc.fullRect, ctx: ctx)
-        // Redactions and spotlights act on the image and the images placed on it, never on the other annotations,
-        // so they're applied before those are drawn and a layer's place in the list can't change the result.
-        let images = doc.annotations.filter { if case .image = $0.kind { true } else { false } }
-        for image in images {
-            draw(image, base: doc.base, in: ctx)
-        }
-        for redaction in doc.annotations where redaction.isImageEffect {
-            draw(redaction, base: doc.base, over: images[...], in: ctx)
-        }
-        if let dim, let style = doc.spotlightStyle {
-            drawSpotlightDim(dim, style: style, softSpotlights: doc.softSpotlights, base: doc.base, below: images[...], in: ctx)
-        }
-        for annotation in doc.annotations where !annotation.isImageEffect {
-            if case .image = annotation.kind {
-                continue
+        // Each layer acts on everything under it and nothing over it. The spotlights share one dim, at the lowest one's layer.
+        let dimIndex = doc.annotations.firstIndex { if case .spotlight = $0.kind { true } else { false } }
+        for (index, annotation) in doc.annotations.enumerated() {
+            if index == dimIndex, let dim, let style = doc.spotlightStyle {
+                // Only what's within the dim's reach of the canvas shows in it.
+                let reach = annotation.backdropReach(base: doc.base) ?? 0
+                let read = canvas.insetBy(dx: -reach, dy: -reach)
+                drawSpotlightDim(dim, style: style, softSpotlights: doc.softSpotlights, base: doc.base, below: doc.annotations[..<index], reading: read, in: ctx)
             }
-            draw(annotation, base: doc.base, in: ctx)
+            draw(annotation, base: doc.base, over: doc.annotations[..<index], in: ctx)
         }
         if dim != nil {
             ctx.endTransparencyLayer()
         }
         ctx.restoreGState()
-        cache.sweep()
     }
 
-    /// Darkens or blurs `dim`, the image outside every spotlight, faded where `softSpotlights` light it.
+    /// Darkens or blurs `dim`, everything under the lowest spotlight outside every spotlight, faded where `softSpotlights` light it.
     private static func drawSpotlightDim(
-        _ dim: CGPath, style: SpotlightStyle, softSpotlights: [(rect: CGRect, style: SpotlightStyle, cornerRadius: CGFloat?)], base: CGImage, below: ArraySlice<Annotation>, in ctx: CGContext
+        _ dim: CGPath, style: SpotlightStyle, softSpotlights: [(rect: CGRect, style: SpotlightStyle, cornerRadius: CGFloat?)],
+        base: CGImage, below: ArraySlice<Annotation>, reading read: CGRect, in ctx: CGContext
     ) {
         ctx.saveGState()
         defer { ctx.restoreGState() }
@@ -74,8 +73,12 @@ public enum AnnotationRenderer {
             ctx.addPath(dim)
             ctx.fillPath()
         case .blur:
-            let backdrop = Backdrop(base, images: below, around: dim.boundingBoxOfPath, outset: 0)
             let radius = style.blurRadius(forImageLength: longerSide(of: base))
+            let area = dim.boundingBoxOfPath.intersection(read)
+            guard !area.isEmpty else {
+                return
+            }
+            let backdrop = Backdrop(base, below: below, around: area, outset: 0)
             let blurred = cache.value(for: .dimBlur(backdrop, radius: radius)) {
                 let source = backdrop.draw()
                 return blurredWhole(source.image, radius: radius).map { ($0, CGRect(origin: source.origin, size: CGSize(width: $0.width, height: $0.height))) }
@@ -184,8 +187,8 @@ public enum AnnotationRenderer {
         return ctx.makeImage()
     }
 
-    /// Draws in a top-left-origin context. `below` are the annotations drawn before it, whose placed images
-    /// a pixelate or blur covers along with the screenshot.
+    /// Draws in a top-left-origin context. `below` are the annotations drawn before it, which a pixelate or blur
+    /// covers along with the screenshot.
     public static func draw(_ annotation: Annotation, base: CGImage, over below: ArraySlice<Annotation> = [], in ctx: CGContext) {
         let color = annotation.color.cgColor
         let width = annotation.lineWidth
@@ -248,7 +251,7 @@ public enum AnnotationRenderer {
             break
         case let .pixelate(rect, _):
             let scale = redactionSize(annotation, base: base)
-            let backdrop = Backdrop(base, images: below, around: rect, outset: scale)
+            let backdrop = Backdrop(base, below: below, around: rect, outset: annotation.backdropReach(base: base) ?? 0)
             let pixelated = cache.value(for: .pixelate(backdrop, rect: rect, scale: scale)) {
                 let source = backdrop.draw()
                 return pixelate(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y), scale: scale).map { ($0, rect.integral) }
@@ -258,7 +261,7 @@ public enum AnnotationRenderer {
             }
         case let .blur(rect, _):
             let radius = redactionSize(annotation, base: base)
-            let backdrop = Backdrop(base, images: below, around: rect, outset: radius * 4)
+            let backdrop = Backdrop(base, below: below, around: rect, outset: annotation.backdropReach(base: base) ?? 0)
             let blurred = cache.value(for: .blur(backdrop, rect: rect, radius: radius)) {
                 let source = backdrop.draw()
                 return blur(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y), radius: radius).map { ($0, rect.integral) }

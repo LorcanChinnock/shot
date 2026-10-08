@@ -184,3 +184,13 @@ private func item(_ name: String, _ date: Date, bytes: Int = 1) -> GalleryItem {
     #expect(!Gallery.canEdit([item("a.png", now), item("c.gif", now)]))
     #expect(!Gallery.canEdit([]))
 }
+
+@Test func recentImagesAreTheNewestScreenshotsButTheOneBeingEdited() {
+    let items = [
+        item("old.png", day(9, 1)), item("clip.mp4", day(10, 7)), item("party.gif", day(10, 7)),
+        item("editing.png", day(10, 6)), item("new.jpg", day(10, 5)), item("newest.png", day(10, 7)),
+    ]
+    let recent = Gallery.recentImages(items, excluding: URL(fileURLWithPath: "/shots/./editing.png"), limit: 2)
+    #expect(recent.map(\.name) == ["newest.png", "new.jpg"])
+    #expect(Gallery.recentImages(items, excluding: nil, limit: 10).map(\.name) == ["newest.png", "editing.png", "new.jpg", "old.png"])
+}

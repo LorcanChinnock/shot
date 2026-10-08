@@ -68,15 +68,38 @@ func aCachedRenderMatchesAnUncachedOneByteForByte(effect: SpotlightStyle.Effect)
     let base = pattern(width: 100, height: 100)
     let image = placed(CGRect(x: 10, y: 10, width: 20, height: 20))
     let rect = CGRect(x: 15, y: 15, width: 30, height: 30)
-    #expect(Backdrop(base, images: [image], around: rect, outset: 4) == Backdrop(base, images: [image], around: rect, outset: 4))
+    #expect(Backdrop(base, below: [image], around: rect, outset: 4) == Backdrop(base, below: [image], around: rect, outset: 4))
     // With no image under it, it's the screenshot wherever it is.
-    #expect(Backdrop(base, images: [image], around: CGRect(x: 60, y: 60, width: 10, height: 10), outset: 4) == Backdrop(base, images: [], around: rect, outset: 4))
+    #expect(Backdrop(base, below: [image], around: CGRect(x: 60, y: 60, width: 10, height: 10), outset: 4) == Backdrop(base, below: [], around: rect, outset: 4))
 
     var moved = image
     moved.offset(by: CGVector(dx: 1, dy: 0))
-    #expect(Backdrop(base, images: [image], around: rect, outset: 4) != Backdrop(base, images: [moved], around: rect, outset: 4))
-    #expect(Backdrop(base, images: [image], around: rect, outset: 4) != Backdrop(base, images: [image], around: rect, outset: 8))
-    #expect(Backdrop(base, images: [], around: rect, outset: 4) != Backdrop(pattern(width: 100, height: 100), images: [], around: rect, outset: 4))
+    #expect(Backdrop(base, below: [image], around: rect, outset: 4) != Backdrop(base, below: [moved], around: rect, outset: 4))
+    #expect(Backdrop(base, below: [image], around: rect, outset: 4) != Backdrop(base, below: [image], around: rect, outset: 8))
+    #expect(Backdrop(base, below: [], around: rect, outset: 4) != Backdrop(pattern(width: 100, height: 100), below: [], around: rect, outset: 4))
+}
+
+@Test func aBackdropChangesWithTheAnnotationsUnderItThere() {
+    let base = pattern(width: 100, height: 100)
+    let rect = CGRect(x: 15, y: 15, width: 30, height: 30)
+    let arrow = Annotation(kind: .arrow(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 40, y: 40)), color: RGBA(1, 0, 0), lineWidth: 4)
+    var far = arrow
+    far.offset(by: CGVector(dx: 50, dy: 50))
+    var hidden = arrow
+    hidden.isHidden = true
+    #expect(Backdrop(base, below: [arrow], around: rect, outset: 4) != Backdrop(base, below: [], around: rect, outset: 4))
+    #expect(Backdrop(base, below: [far], around: rect, outset: 4) == Backdrop(base, below: [], around: rect, outset: 4))
+    #expect(Backdrop(base, below: [hidden], around: rect, outset: 4) == Backdrop(base, below: [], around: rect, outset: 4))
+    // A redaction there reads past its rect, so what it reads counts too.
+    let blur = Annotation(kind: .blur(CGRect(x: 40, y: 40, width: 30, height: 30)), color: RGBA(1, 0, 0), lineWidth: 4)
+    let nearBlur = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 54, y: 42, width: 4, height: 4)), color: RGBA(1, 0, 0), lineWidth: 4)
+    #expect(Backdrop(base, below: [nearBlur], around: rect, outset: 4).below.isEmpty)
+    #expect(Backdrop(base, below: [nearBlur, blur], around: rect, outset: 4).below == [nearBlur, blur])
+    // Only what's under the redaction counts; what's over it is drawn after.
+    #expect(Backdrop(base, below: [blur, nearBlur], around: rect, outset: 4).below == [blur])
+    // Every spotlight counts, since their one dim covers the whole canvas.
+    let spotlight = Annotation(kind: .spotlight(CGRect(x: 80, y: 80, width: 10, height: 10), style: SpotlightStyle()), color: RGBA(1, 0, 0), lineWidth: 4)
+    #expect(Backdrop(base, below: [spotlight], around: rect, outset: 4).below == [spotlight])
 }
 
 @Test func theCacheMakesEachImageOnceAndDropsWhatARenderDidntUse() throws {

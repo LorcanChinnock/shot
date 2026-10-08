@@ -32,9 +32,6 @@ struct VideoEditorRootView: View {
                     .minimumScaleFactor(0.75)
                     .layoutPriority(1)
                 Group {
-                    Button { model.toggleLayers() } label: { Label("Layers", systemImage: "square.3.layers.3d").fixedSize() }
-                        .buttonStyle(BrutalButtonStyle(color: model.showsLayers ? Brutal.violet : .white, compact: true))
-                        .brutalTip("Show the layers (⌘L)")
                     Button { model.toggleTracks() } label: { Label("Tracks", systemImage: "rectangle.split.3x1").fixedSize() }
                         .buttonStyle(BrutalButtonStyle(color: model.showsTracks ? (model.canHideTracks ? Brutal.violet : Brutal.violet.opacity(0.55)) : .white, compact: true))
                         .brutalTip("Show the tracks (T)")
@@ -60,26 +57,11 @@ struct VideoEditorRootView: View {
             .padding(.leading, GlassWindow.trafficLightsWidth)
             .frame(height: GlassWindow.titlebarHeight)
             .padding(.bottom, -Brutal.sectionGap / 2)
-            HStack(spacing: Brutal.sectionGap) {
-                PlayerHost(player: model.player)
-                    .background(Color.black)
-                    .overlay { TransformOverlay(model: model) }
-                    .overlay { AnnotationCanvas(model: model) }
-                    .inkBorder(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular), width: 2)
-                if model.showsLayers {
-                    LayersPanel(
-                        rows: model.layerRows,
-                        baseName: "Video",
-                        baseSymbol: "film",
-                        selection: Binding(get: { model.selectedLayerIDs }, set: { model.selectLayers($0) }),
-                        onMove: model.moveLayers,
-                        onHide: { model.setLayersHidden($1, $0) },
-                        onLock: { model.setLayersLocked($1, $0) },
-                        onDuplicate: nil,
-                        onDelete: model.deleteLayers
-                    )
-                }
-            }
+            PlayerHost(player: model.player)
+                .background(Color.black)
+                .overlay { TransformOverlay(model: model) }
+                .overlay { AnnotationCanvas(model: model) }
+                .inkBorder(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular), width: 2)
             if model.showsTracks {
                 if model.isAnnotating {
                     AnnotationPalette(model: model)
