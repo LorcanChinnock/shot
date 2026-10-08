@@ -12,10 +12,10 @@ app="${1:-/Applications/Shot.app}"
 [ -d "$app" ] || { echo "No app at $app; run make app first" >&2; exit 1; }
 bundle_id=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$app/Contents/Info.plist")
 
-# Budgets, about 1.5x the baselines in docs/performance.md. Empty means not measured yet: printed, not checked.
-budget_launch_ms=""
-budget_capture_ms=""
-budget_memory_mb=""
+# Budgets, about 1.5x the baselines in docs/performance.md. Empty means not measured: printed, not checked.
+budget_launch_ms="150"
+budget_capture_ms="285"
+budget_memory_mb="865"
 budget_idle_cpu="1.0"
 
 work=$(mktemp -d "${TMPDIR:-/tmp}/shot-perf.XXXXXX")
@@ -61,9 +61,14 @@ running=$(pid)
 folder=$(defaults read "$bundle_id" saveFolder 2>/dev/null || echo "$HOME/Pictures/Shot")
 marker="$work/marker"
 touch "$marker"
-for _ in $(seq 20); do
-  open -g "shot://capture-fullscreen"
+for i in $(seq 20); do
+  open -g -a "$app" "shot://capture-fullscreen"
   sleep 1.5
+  # Stop after the first capture if it wasn't copied, usually a missing Screen Recording permission, rather than fail 20 times.
+  if [ "$i" = 1 ] && ! signposts "Capture to clipboard" | grep -q '"eventMessage":"copied"'; then
+    echo "The first capture wasn't copied. Check Shot's Screen Recording permission and that Copy after capture is on." >&2
+    exit 1
+  fi
 done
 sleep 2
 capture_ms=$(signposts "Capture to clipboard" | python3 -c '
@@ -94,9 +99,9 @@ clip="$work/clip.mp4"
 if command -v ffmpeg >/dev/null; then
   ffmpeg -loglevel error -y -f lavfi -i "testsrc2=size=1280x720:rate=30:duration=3" -c:v libx264 -pix_fmt yuv420p "$clip"
 fi
-[ -n "$shot" ] && open -g "shot://annotate?path=$shot"
-[ -f "$clip" ] && open -g "shot://edit-video?path=$clip"
-open -g "shot://gallery"
+[ -n "$shot" ] && open -g -a "$app" "shot://annotate?path=$shot"
+[ -f "$clip" ] && open -g -a "$app" "shot://edit-video?path=$clip"
+open -g -a "$app" "shot://gallery"
 sleep 4
 osascript -e 'tell application "System Events" to tell process "Shot"
   set frontmost to true

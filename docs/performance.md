@@ -40,13 +40,15 @@ It needs Screen Recording for Shot, and Accessibility for the terminal, which cl
 
 | Metric | Reference Mac | Budget |
 |---|---|---|
-| Launch → ready | not measured yet | — |
-| Capture → clipboard (full screen) | not measured yet | — |
-| Memory after 20 captures | not measured yet | — |
-| Idle CPU, no windows open | not measured yet | under 1% |
+| Launch → ready | 101 ms | 150 ms |
+| Capture → clipboard (full screen, 2880×1864) | 189 ms | 285 ms |
+| Memory after 20 captures | 577 MB | 865 MB |
+| Idle CPU, no windows open | 0.0% | under 1% |
 
-Idle CPU has an absolute budget. For the other three metrics, run the script on the reference Mac and record the baselines here. Then set the budgets in `scripts/perf.sh` to about 1.5× the baselines. Until then the script prints them without checking them.
+Idle CPU has an absolute budget. The others are about 1.5× the baseline, set in `scripts/perf.sh`; change both together.
+
+Memory after 20 captures is high, and falls slowly afterwards: to 316 MB a minute later, most of it large malloc blocks. Whether that's a cache or a leak is still to find out. The budget records where it is today, so it can't grow unnoticed.
 
 ## Reference Mac
 
-MacBook Air (Mac16,13), Apple M4, 16 GB, macOS 27.0.1. The baselines above come from debug builds, as `swift test` makes them.
+MacBook Air (Mac16,13), Apple M4, 16 GB, macOS 27.0.1, built-in display only. The `make perf` baselines come from debug builds, as `swift test` makes them. The `make perf-app` baselines come from the build `make app` installs.
