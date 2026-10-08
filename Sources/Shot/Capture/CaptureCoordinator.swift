@@ -262,7 +262,7 @@ final class CaptureCoordinator {
             log.notice("Saved \(url.path)")
         }
         if prefs.copyAfterCapture {
-            Clipboard.copy(png: png, image: image)
+            Clipboard.copy(png: png)
         }
         if let savedURL, prefs.openEditorAfterCapture {
             EditorWindowController.open(savedURL)
@@ -296,14 +296,12 @@ struct SendableImage: @unchecked Sendable {
 
 @MainActor
 enum Clipboard {
-    static func copy(png: Data, image: CGImage) {
+    /// PNG only: apps read it, and a TIFF beside it cost about 15 ms and a screen-sized buffer per capture (#276).
+    static func copy(png: Data) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         let item = NSPasteboardItem()
         item.setData(png, forType: .png)
-        if let tiff = NSImage(cgImage: image, size: .zero).tiffRepresentation {
-            item.setData(tiff, forType: .tiff)
-        }
         pasteboard.writeObjects([item])
     }
 
@@ -316,7 +314,7 @@ enum Clipboard {
         guard let data = png ?? ImageCodec.data(from: image, scale: ImageCodec.scale(ofFileAt: url)) else {
             return false
         }
-        copy(png: data, image: image)
+        copy(png: data)
         return true
     }
 
