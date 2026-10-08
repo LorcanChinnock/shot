@@ -17,21 +17,28 @@ public enum Geometry {
 
     /// The largest square with a corner at `anchor` that extends toward `point`.
     public static func square(from anchor: CGPoint, to point: CGPoint) -> CGRect {
-        fitted(from: anchor, to: point, ratio: 1)
-    }
-
-    /// The largest rect of `ratio` (long side over short side) with a corner at `anchor` that extends toward `point`,
-    /// landscape when the drag is wider than tall and portrait otherwise.
-    public static func fitted(from anchor: CGPoint, to point: CGPoint, ratio: CGFloat) -> CGRect {
-        let dx = abs(point.x - anchor.x), dy = abs(point.y - anchor.y)
-        let widthOverHeight = dx >= dy ? ratio : 1 / ratio
-        let width = min(dx, dy * widthOverHeight)
-        let height = width / widthOverHeight
+        let side = min(abs(point.x - anchor.x), abs(point.y - anchor.y))
         let corner = CGPoint(
-            x: anchor.x + (point.x >= anchor.x ? width : -width),
-            y: anchor.y + (point.y >= anchor.y ? height : -height)
+            x: anchor.x + (point.x >= anchor.x ? side : -side),
+            y: anchor.y + (point.y >= anchor.y ? side : -side)
         )
         return normalized(from: anchor, to: corner)
+    }
+
+    /// The rect of `ratio` (width over height) with a corner at `anchor` whose opposite corner lies as close to `point` as `bounds` allows.
+    public static func fitted(from anchor: CGPoint, to point: CGPoint, ratio: CGFloat, in bounds: CGRect) -> CGRect {
+        let right = point.x >= anchor.x, up = point.y >= anchor.y
+        let size = fitted(CGSize(width: abs(point.x - anchor.x), height: abs(point.y - anchor.y)), ratio: ratio)
+        let room = CGSize(width: right ? bounds.maxX - anchor.x : anchor.x - bounds.minX, height: up ? bounds.maxY - anchor.y : anchor.y - bounds.minY)
+        let scale = min(1, room.width / max(size.width, .ulpOfOne), room.height / max(size.height, .ulpOfOne))
+        let corner = CGPoint(x: anchor.x + (right ? 1 : -1) * size.width * scale, y: anchor.y + (up ? 1 : -1) * size.height * scale)
+        return normalized(from: anchor, to: corner)
+    }
+
+    /// The size of `ratio` (width over height) whose far corner is nearest the far corner of `size`.
+    public static func fitted(_ size: CGSize, ratio: CGFloat) -> CGSize {
+        let height = (size.width * ratio + size.height) / (ratio * ratio + 1)
+        return CGSize(width: height * ratio, height: height)
     }
 
     /// `point` moved onto the nearest of the eight directions 45° apart from `anchor`, keeping its distance.

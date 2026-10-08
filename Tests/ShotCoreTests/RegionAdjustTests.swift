@@ -32,7 +32,13 @@ private let wide = CGRect(x: 100, y: 100, width: 400, height: 200)
 
 @Test func ratioLockedCornerPivotsOnOppositeCorner() {
     let adjusted = RegionHandle.bottomRight.adjust(wide, by: CGVector(dx: 100, dy: 0), in: bounds, ratio: 2)
-    #expect(adjusted == CGRect(x: 100, y: 50, width: 500, height: 250))
+    #expect(adjusted == CGRect(x: 100, y: 60, width: 480, height: 240))
+}
+
+@Test func ratioLockedCornerMatchesInitialDragFit() {
+    let adjusted = RegionHandle.topRight.adjust(wide, by: CGVector(dx: 60, dy: 70), in: bounds, ratio: 2)
+    let drawn = Geometry.fitted(from: wide.origin, to: CGPoint(x: wide.maxX + 60, y: wide.maxY + 70), ratio: 2, in: bounds)
+    #expect(adjusted == drawn)
 }
 
 @Test func ratioLockedEdgeGrowsAroundCentreLine() {

@@ -13,11 +13,13 @@ final class SelectionOverlayView: NSView {
     private var selection: CGRect?
     private var isMoving = false
     private var lastDragPoint: CGPoint?
+    private var portrait: Bool?
     var magnifierImage: CGImage? {
         didSet { needsDisplay = true }
     }
 
     private static let minimumSize: CGFloat = 4
+    private static let orientationLockDistance: CGFloat = 8
     private static let loupeSize: CGFloat = 120
     private static let loupeZoom: CGFloat = 8
 
@@ -74,6 +76,7 @@ final class SelectionOverlayView: NSView {
         }
         dragStart = point
         lastDragPoint = point
+        portrait = nil
         selection = nil
         needsDisplay = true
     }
@@ -91,6 +94,9 @@ final class SelectionOverlayView: NSView {
             dragStart = CGPoint(x: start.x + moved.minX - current.minX, y: start.y + moved.minY - current.minY)
             selection = moved
         } else {
+            if portrait == nil, hypot(point.x - start.x, point.y - start.y) >= Self.orientationLockDistance {
+                portrait = isTall(from: start, to: point)
+            }
             selection = shaped(from: start, to: point, square: event.modifierFlags.contains(.shift))
         }
         lastDragPoint = point
@@ -99,12 +105,17 @@ final class SelectionOverlayView: NSView {
 
     private func shaped(from start: CGPoint, to point: CGPoint, square: Bool) -> CGRect {
         if square {
-            return Geometry.square(from: start, to: point)
+            return Geometry.fitted(from: start, to: point, ratio: 1, in: bounds)
         }
         if let ratio = controller.aspectRatio.value {
-            return Geometry.fitted(from: start, to: point, ratio: ratio)
+            let tall = portrait ?? isTall(from: start, to: point)
+            return Geometry.fitted(from: start, to: point, ratio: tall ? 1 / ratio : ratio, in: bounds)
         }
         return Geometry.normalized(from: start, to: point)
+    }
+
+    private func isTall(from start: CGPoint, to point: CGPoint) -> Bool {
+        abs(point.y - start.y) > abs(point.x - start.x)
     }
 
     override func mouseUp(with event: NSEvent) {
@@ -141,9 +152,16 @@ final class SelectionOverlayView: NSView {
         case 48 where !controller.windowMode:
             controller.aspectRatio = controller.aspectRatio.next(backward: event.modifierFlags.contains(.shift))
             if let start = dragStart, let point = lastDragPoint, !isMoving {
+                portrait = isTall(from: start, to: point)
                 selection = shaped(from: start, to: point, square: false)
             }
             needsDisplay = true
+        case 7 where controller.aspectRatio != .free:
+            if let start = dragStart, let point = lastDragPoint, !isMoving {
+                portrait = !(portrait ?? isTall(from: start, to: point))
+                selection = shaped(from: start, to: point, square: event.modifierFlags.contains(.shift))
+                needsDisplay = true
+            }
         case 36, 76:
             if controller.isLive {
                 controller.finish(.fullDisplay(index))
@@ -298,7 +316,7 @@ final class SelectionOverlayView: NSView {
     private func drawSizeLabel(for selection: CGRect, near point: CGPoint) {
         var text = "\(Int((selection.width * display.scale).rounded())) × \(Int((selection.height * display.scale).rounded()))"
         if controller.aspectRatio != .free {
-            text = "\(controller.aspectRatio.label) · \(text)"
+            text = "\(controller.aspectRatio.label(portrait: selection.height > selection.width)) · \(text)"
         }
         let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .bold)
         let width = (text as NSString).size(withAttributes: [.font: font]).width + 20
@@ -313,13 +331,19 @@ final class SelectionOverlayView: NSView {
     }
 
     private func drawHint(in ctx: CGContext) {
-        let parts: [String]
+        var parts: [String]
         if controller.windowMode {
             parts = ["Click a window", "Space: area", "Esc: cancel"]
-        } else if controller.isLive {
-            parts = ["Drag an area", "Tab: ratio (\(controller.aspectRatio.label))", "Space: window", "Enter: full screen", "Esc: cancel"]
         } else {
-            parts = ["Drag an area", "Tab: ratio (\(controller.aspectRatio.label))", "Space: window", "Esc: cancel"]
+            parts = ["Drag an area", "Tab: ratio (\(controller.aspectRatio.label))"]
+            if controller.aspectRatio != .free {
+                parts.append("X: rotate")
+            }
+            parts.append("Space: window")
+            if controller.isLive {
+                parts.append("Enter: full screen")
+            }
+            parts.append("Esc: cancel")
         }
         let text = parts.joined(separator: "   ·   ")
         let font = NSFont.systemFont(ofSize: 13, weight: .bold)

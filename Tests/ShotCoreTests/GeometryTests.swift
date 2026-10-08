@@ -31,10 +31,29 @@ import Testing
     #expect(Geometry.square(from: .zero, to: CGPoint(x: -20, y: 70)) == CGRect(x: -20, y: 0, width: 20, height: 20))
 }
 
-@Test func aspectRatioConstraint() {
-    #expect(Geometry.fitted(from: .zero, to: CGPoint(x: 400, y: 90), ratio: 2) == CGRect(x: 0, y: 0, width: 180, height: 90))
-    #expect(Geometry.fitted(from: .zero, to: CGPoint(x: 100, y: 90), ratio: 2) == CGRect(x: 0, y: 0, width: 100, height: 50))
-    #expect(Geometry.fitted(from: .zero, to: CGPoint(x: -60, y: -100), ratio: 2) == CGRect(x: -50, y: -100, width: 50, height: 100))
+private let open = CGRect(x: -1000, y: -1000, width: 2000, height: 2000)
+
+@Test func aspectRatioFitPutsCornerNearestPointer() {
+    #expect(Geometry.fitted(from: .zero, to: CGPoint(x: 400, y: 0), ratio: 2, in: open) == CGRect(x: 0, y: 0, width: 320, height: 160))
+    #expect(Geometry.fitted(from: .zero, to: CGPoint(x: 0, y: 500), ratio: 2, in: open) == CGRect(x: 0, y: 0, width: 200, height: 100))
+    #expect(Geometry.fitted(from: .zero, to: CGPoint(x: -100, y: -200), ratio: 0.5, in: open) == CGRect(x: -100, y: -200, width: 100, height: 200))
+}
+
+@Test func aspectRatioFitTracksBothAxes() {
+    let narrow = Geometry.fitted(from: .zero, to: CGPoint(x: 400, y: 50), ratio: 2, in: open)
+    let wider = Geometry.fitted(from: .zero, to: CGPoint(x: 500, y: 50), ratio: 2, in: open)
+    #expect(wider.width > narrow.width)
+}
+
+@Test func aspectRatioFitStaysInBounds() {
+    let fitted = Geometry.fitted(from: CGPoint(x: 900, y: 0), to: CGPoint(x: 1000, y: 200), ratio: 2, in: CGRect(x: 0, y: 0, width: 1000, height: 800))
+    #expect(fitted == CGRect(x: 900, y: 0, width: 100, height: 50))
+}
+
+@Test func portraitLabelSwapsSides() {
+    #expect(AspectRatio.sixteenNine.label(portrait: true) == "9:16")
+    #expect(AspectRatio.sixteenNine.label(portrait: false) == "16:9")
+    #expect(AspectRatio.free.label(portrait: true) == "Free")
 }
 
 @Test func aspectRatioCycle() {
