@@ -124,36 +124,39 @@ public enum Gallery {
         guard sort.isByDate else {
             return items.isEmpty ? [] : [GallerySection(title: "", items: items)]
         }
+        let recent = [
+            ("Today", calendar.dateInterval(of: .day, for: now)),
+            ("Yesterday", calendar.date(byAdding: .day, value: -1, to: now).flatMap { calendar.dateInterval(of: .day, for: $0) }),
+            ("This Week", calendar.dateInterval(of: .weekOfYear, for: now)),
+            ("This Month", calendar.dateInterval(of: .month, for: now)),
+        ].compactMap { title, interval in interval.map { (title: title, dates: $0.start..<$0.end) } }
+        lazy var monthFormatter = {
+            let formatter = DateFormatter()
+            formatter.calendar = calendar
+            formatter.timeZone = calendar.timeZone
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.dateFormat = "MMMM yyyy"
+            return formatter
+        }()
+        var lastMonth: (title: String, dates: Range<Date>)?
         var order: [String] = []
         var buckets: [String: [GalleryItem]] = [:]
         for item in items {
-            let title = bucketTitle(for: item.date, now: now, calendar: calendar)
+            let title: String
+            if let match = recent.first(where: { $0.dates.contains(item.date) }) {
+                title = match.title
+            } else if let lastMonth, lastMonth.dates.contains(item.date) {
+                title = lastMonth.title
+            } else {
+                title = monthFormatter.string(from: item.date)
+                lastMonth = calendar.dateInterval(of: .month, for: item.date).map { (title: title, dates: $0.start..<$0.end) }
+            }
             if buckets[title] == nil {
                 order.append(title)
             }
             buckets[title, default: []].append(item)
         }
         return order.map { GallerySection(title: $0, items: buckets[$0] ?? []) }
-    }
-
-    private static func bucketTitle(for date: Date, now: Date, calendar: Calendar) -> String {
-        if calendar.isDate(date, inSameDayAs: now) {
-            return "Today"
-        }
-        if let yesterday = calendar.date(byAdding: .day, value: -1, to: now), calendar.isDate(date, inSameDayAs: yesterday) {
-            return "Yesterday"
-        }
-        if calendar.isDate(date, equalTo: now, toGranularity: .weekOfYear) {
-            return "This Week"
-        }
-        if calendar.isDate(date, equalTo: now, toGranularity: .month) {
-            return "This Month"
-        }
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: date)
     }
 
     /// `name` with the original extension kept and path separators and edge spaces removed; nil when nothing is left.
