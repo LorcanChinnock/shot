@@ -77,7 +77,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         case "c":
             // A selected annotation copies on its own; otherwise ⌘C copies the image, as the toolbar's Copy does.
             if !model.copySelection() {
-                model.copy()
+                Task { await model.copy() }
             }
         case "v":
             return model.paste()
@@ -93,7 +93,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         case "1":
             canvas.zoomToActualSize()
         case "s":
-            model.save()
+            Task { await model.save() }
         case "w":
             window.performClose(nil)
         default:
@@ -118,8 +118,10 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         alert.beginSheetModal(for: sender) { [self] response in
             switch response {
             case .alertFirstButtonReturn:
-                if model.save() {
-                    sender.close()
+                Task {
+                    if await model.save() {
+                        sender.close()
+                    }
                 }
             case .alertSecondButtonReturn:
                 discarding = true

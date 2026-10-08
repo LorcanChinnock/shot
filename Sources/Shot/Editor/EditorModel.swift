@@ -107,6 +107,7 @@ final class EditorModel {
     var isDirty = false
     /// What the document looked like when it was last saved, so undoing back to it leaves the editor clean.
     @ObservationIgnored private var savedSnapshot: EditorSnapshot
+    @ObservationIgnored private var isSaving = false
     /// Set by the canvas: turns the text or note still being typed into an annotation.
     var commitPendingText: (() -> Void)?
     /// The canvas's zoom, where 1 is actual size, for the zoom menu; the canvas view keeps it current.
@@ -613,12 +614,18 @@ final class EditorModel {
         self.selectedID = nil
     }
 
-    func flattened() -> (image: CGImage, png: Data)? {
-        commitPendingText?()
-        guard let image = AnnotationRenderer.flatten(document), let png = ImageCodec.data(from: image, scale: scale) else {
-            return nil
-        }
-        return (image, png)
+    private func rendered(as format: ImageFormat = .png) async -> (image: CGImage, png: Data, file: Data)? {
+        let document = document, scale = scale
+        let result = await Task.detached { () -> (image: SendableImage, png: Data, file: Data)? in
+            guard let image = AnnotationRenderer.flatten(document), let png = ImageCodec.data(from: image, scale: scale) else {
+                return nil
+            }
+            guard let file = format == .png ? png : ImageCodec.data(from: image, scale: scale, format: format) else {
+                return nil
+            }
+            return (SendableImage(image), png, file)
+        }.value
+        return result.map { ($0.image.image, $0.png, $0.file) }
     }
 
     /// Copies the selected annotation. Returns false if nothing is selected.
@@ -636,8 +643,9 @@ final class EditorModel {
     }
 
     /// Copies the flattened image.
-    func copy() {
-        guard let result = flattened() else {
+    func copy() async {
+        commitPendingText?()
+        guard let result = await rendered() else {
             Toast.error("Could not render image")
             return
         }
@@ -645,23 +653,26 @@ final class EditorModel {
         Toast.show("Copied")
     }
 
+    /// Returns false if the save failed or another is still running.
     @discardableResult
-    func save() -> Bool {
-        guard let result = flattened() else {
-            Toast.error("Could not render image")
+    func save() async -> Bool {
+        guard !isSaving else {
             return false
         }
-        let format = ImageFormat(fileExtension: fileURL.pathExtension)
-        guard let data = format == .png ? result.png : ImageCodec.data(from: result.image, scale: scale, format: format) else {
+        isSaving = true
+        defer { isSaving = false }
+        commitPendingText?()
+        let snapshot = document.snapshot
+        guard let result = await rendered(as: ImageFormat(fileExtension: fileURL.pathExtension)) else {
             Toast.error("Could not render image")
             return false
         }
         let destination = FileNaming.nextVersionURL(of: fileURL)
         do {
-            try data.write(to: destination, options: .atomic)
+            try result.file.write(to: destination, options: .atomic)
             Clipboard.copy(png: result.png, image: result.image)
-            savedSnapshot = document.snapshot
-            isDirty = false
+            savedSnapshot = snapshot
+            isDirty = document.snapshot != snapshot
             Toast.show("Saved as \(destination.lastPathComponent) and copied", duration: .seconds(3))
             return true
         } catch {
