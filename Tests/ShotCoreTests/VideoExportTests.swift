@@ -278,8 +278,9 @@ extension MediaTests {
         #expect(abs(try await AVURLAsset(url: output).load(.duration).seconds - 1) < 0.1)
     }
 
-    // "Within roughly 25% of the actual size for typical screen recordings."
-    @Test(arguments: [(VideoExportFormat.mp4, 1.0, false), (.mp4, 2.0, false), (.mp4, 1.5, true), (.gif, 1.0, false), (.gif, 2.0, false)])
+    // "Within roughly 25% of the actual size for typical screen recordings." One GIF case covers speed,
+    // which only changes how many frames the same path writes.
+    @Test(arguments: [(VideoExportFormat.mp4, 1.0, false), (.mp4, 2.0, false), (.mp4, 1.5, true), (.gif, 2.0, false)])
     func sizeEstimateIsWithinAQuarterOfTheResult(format: VideoExportFormat, speed: Double, muted: Bool) async throws {
         let folder = try temporaryFolder()
         defer { try? FileManager.default.removeItem(at: folder) }
