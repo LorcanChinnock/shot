@@ -25,6 +25,7 @@ private final class MainWindow: NSWindow {
 @MainActor
 enum MainWindowController {
     private static var window: NSWindow?
+    private static var contentReleased = false
     static let size = NSSize(width: 1080, height: 720)
     /// Narrowest width that fits the gallery toolbar beside the sidebar.
     static let minSize = NSSize(width: 1020, height: 520)
@@ -40,6 +41,10 @@ enum MainWindowController {
         }
         guard let window else {
             return
+        }
+        if contentReleased {
+            GlassWindow.setContent(of: window) { SettingsView() }
+            contentReleased = false
         }
         GlassWindow.present(window)
         window.invalidateShadow()
@@ -74,11 +79,19 @@ enum MainWindowController {
                 }
             }
         }
-        // The window is kept when closed, so its views never disappear; stop watching the folder and turn off any camera or microphone test.
+        // The window is kept when closed, so its views never disappear on their own: stop watching the folder, turn off any camera or
+        // microphone test, and once closed drop the views, as the gallery grid keeps every tile it has built. `show` builds them again.
         NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { _ in
             MainActor.assumeIsolated {
                 GalleryController.shared.model.stop()
                 DevicePreview.stopAll()
+                DispatchQueue.main.async {
+                    guard !window.isVisible else {
+                        return
+                    }
+                    window.contentView = NSView()
+                    contentReleased = true
+                }
             }
         }
         self.window = window
