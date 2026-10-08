@@ -614,15 +614,20 @@ public struct EditorDocument: @unchecked Sendable {
     /// Only edges at or beyond the image shrink, and never past the image; a crop edge inside the image stays.
     public mutating func shrinkPadding(margin: CGFloat) {
         let image = fullRect
-        let painted = annotations.filter { annotation in
+        guard canvasRect.minX < image.minX || canvasRect.minY < image.minY || canvasRect.maxX > image.maxX || canvasRect.maxY > image.maxY else {
+            return
+        }
+        let shapes = annotations.filter { annotation in
             if case .spotlight = annotation.kind { return false }
             return true
-        }.map { ($0.bounds, $0.paintedBounds.insetBy(dx: -margin, dy: -margin)) }
+        }.map { (annotation: $0, bounds: $0.bounds) }
         func edge(_ current: CGFloat, image imageEdge: CGFloat, reaches: ((CGRect) -> Bool), painted paintedEdge: ((CGRect) -> CGFloat), outward: CGFloat) -> CGFloat {
-            guard (current - imageEdge) * outward >= 0 else {
+            guard (current - imageEdge) * outward > 0 else {
                 return current
             }
-            let needed = painted.filter { reaches($0.0) }.map { paintedEdge($0.1) }.reduce(imageEdge) { outward > 0 ? max($0, $1) : min($0, $1) }
+            let needed = shapes.filter { reaches($0.bounds) }
+                .map { paintedEdge($0.annotation.paintedBounds.insetBy(dx: -margin, dy: -margin)) }
+                .reduce(imageEdge) { outward > 0 ? max($0, $1) : min($0, $1) }
             return outward > 0 ? min(current, needed) : max(current, needed)
         }
         let minX = edge(canvasRect.minX, image: image.minX, reaches: { $0.minX < image.minX }, painted: { $0.minX }, outward: -1)
