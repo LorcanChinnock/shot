@@ -25,6 +25,11 @@ public enum AspectRatio: CaseIterable, Sendable {
         }
     }
 
+    /// The label with its sides swapped when `portrait`, e.g. 9:16.
+    public func label(portrait: Bool) -> String {
+        portrait ? label.split(separator: ":").reversed().joined(separator: ":") : label
+    }
+
     /// The next ratio in the cycle, wrapping around; `backward` steps the other way.
     public func next(backward: Bool = false) -> AspectRatio {
         let all = Self.allCases

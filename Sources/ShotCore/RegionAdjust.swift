@@ -61,7 +61,7 @@ public enum RegionHandle: CaseIterable, Sendable {
             : movesUp ? bounds.maxY - rect.minY
             : 2 * min(rect.midY - bounds.minY, bounds.maxY - rect.midY)
 
-        var width = movesX && movesY ? max(free.width, free.height * ratio) : movesX ? free.width : free.height * ratio
+        var width = movesX && movesY ? Geometry.fitted(free.size, ratio: ratio).width : movesX ? free.width : free.height * ratio
         width = min(max(width, minSize, minSize * ratio), maxWidth, maxHeight * ratio)
         let height = width / ratio
 

@@ -16,7 +16,7 @@ The full guide to Shot. For a quick introduction, see the [README](../README.md)
 
 ## Screenshots
 
-- **Area (⌘⇧4):** the screen freezes, and you drag out an area. A magnifier next to the pointer helps you find exact edges. Hold Shift for a square, or press Tab to step through 1:1, 4:3, 3:2 and 16:9 (Shift-Tab steps back); dragging wider than tall gives landscape, taller gives portrait. Hold Space while dragging to move the area. Press Esc to cancel.
+- **Area (⌘⇧4):** the screen freezes, and you drag out an area. A magnifier next to the pointer helps you find exact edges. Hold Shift for a square, or press Tab to step through 1:1, 4:3, 3:2 and 16:9 (Shift-Tab steps back); the direction you start dragging picks landscape or portrait, and X rotates it mid-drag. Hold Space while dragging to move the area. Press Esc to cancel.
 - **Window:** press Space after ⌘⇧4, then click a window. Shot keeps the macOS window shadow unless you turn it off in Settings › Capture.
 - **Fullscreen (⌘⇧3):** captures the screen under the pointer.
 
