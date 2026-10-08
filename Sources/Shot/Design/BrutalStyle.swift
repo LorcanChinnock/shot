@@ -97,8 +97,9 @@ extension View {
     }
 
     /// An ink border with the content stopping under the line, so no colour bleeds through its anti-aliased outer edge.
-    func inkBorder<S: InsettableShape>(_ shape: S, width: CGFloat, color: Color = Brutal.ink) -> some View {
-        clipShape(shape.inset(by: Brutal.underInk(width))).overlay(shape.strokeBorder(color, lineWidth: width))
+    /// `dash` draws it as dashes, as `StrokeStyle` takes them.
+    func inkBorder<S: InsettableShape>(_ shape: S, width: CGFloat, color: Color = Brutal.ink, dash: [CGFloat] = []) -> some View {
+        clipShape(shape.inset(by: Brutal.underInk(width))).overlay(shape.strokeBorder(color, style: StrokeStyle(lineWidth: width, dash: dash)))
     }
 }
 

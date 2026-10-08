@@ -253,7 +253,7 @@ struct TracksView: View {
         if let onto, let lane = layout.lane(ofTrack: onto) {
             RoundedRectangle(cornerRadius: 4, style: .circular)
                 .fill(Brutal.yellow.opacity(0.45))
-                .overlay(RoundedRectangle(cornerRadius: 4, style: .circular).strokeBorder(Brutal.ink, style: StrokeStyle(lineWidth: 2, dash: [4, 3])))
+                .inkBorder(RoundedRectangle(cornerRadius: 4, style: .circular), width: 2, dash: [4, 3])
                 .frame(width: width, height: lane.height)
                 .offset(x: x, y: lane.y)
                 .allowsHitTesting(false)
