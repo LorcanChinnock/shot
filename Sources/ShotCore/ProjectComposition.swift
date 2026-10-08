@@ -184,6 +184,7 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
     /// picture in it, so the composite looks as the recording does when it plays on its own.
     private let context = CIContext(options: [.workingColorSpace: NSNull(), .outputColorSpace: NSNull()])
     private let queue = DispatchQueue(label: "Shot.compositor", attributes: .concurrent)
+    private let overlays = OverlayCache()
 
     var sourcePixelBufferAttributes: [String: any Sendable]? { Self.pixelFormat }
     var requiredPixelBufferAttributesForRenderContext: [String: any Sendable] { Self.pixelFormat }
@@ -222,7 +223,7 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
                 let state = clip.rendered(atTimeline: time)
                 return AnnotationFrame.Item(annotation: state.annotation, rotation: state.rotation, opacity: state.opacity)
             }
-            image = AnnotationFrame.apply(items, to: image, canvas: canvas, context: self.context)
+            image = AnnotationFrame.apply(items, to: image, canvas: canvas, context: self.context, cache: self.overlays)
             self.context.render(image.cropped(to: canvas), to: output, bounds: canvas, colorSpace: nil)
             if let tags = firstFrame.flatMap({ CVBufferCopyAttachments($0, .shouldPropagate) }) {
                 CVBufferSetAttachments(output, tags, .shouldPropagate)
