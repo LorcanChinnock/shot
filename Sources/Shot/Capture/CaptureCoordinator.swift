@@ -14,6 +14,7 @@ final class CaptureCoordinator {
     private var setup: RecordingSetupController?
     /// The region being recorded, as an AppKit global rect.
     private var recordingRegion = CGRect.zero
+    private var gifExports: [URL: Task<Void, Never>] = [:]
 
     init(state: AppState) {
         self.state = state
@@ -195,20 +196,33 @@ final class CaptureCoordinator {
 
     /// Uses the video editor's last GIF settings.
     func exportGIF(_ videoURL: URL) {
+        guard gifExports[videoURL] == nil else {
+            Toast.error("That video's GIF is already exporting")
+            return
+        }
         let prefs = Preferences()
         let options = prefs.videoExportOptions
         let gifURL = FileNaming.uniqueURL(in: videoURL.deletingLastPathComponent(), date: Date(), pathExtension: "gif", prefix: prefs.filePrefix)
-        Toast.show("Exporting GIF…", duration: nil)
-        Task {
+        let cancel: @MainActor @Sendable () -> Void = { [weak self] in self?.gifExports[videoURL]?.cancel() }
+        Toast.show("Exporting GIF…", duration: nil, cancel: cancel)
+        gifExports[videoURL] = Task {
+            defer { gifExports[videoURL] = nil }
             do {
                 let result = try await GIFExporter.export(videoURL: videoURL, to: gifURL, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth) { fraction in
                     Task { @MainActor in
-                        Toast.show("Exporting GIF… \(Int(fraction * 100))%", duration: nil)
+                        guard let export = gifExports[videoURL], !export.isCancelled else {
+                            return
+                        }
+                        Toast.show("Exporting GIF… \(Int(fraction * 100))%", duration: nil, cancel: cancel)
                     }
                 }
                 let note = result.truncated ? " (first \(Int(GIFExporter.maxDuration)) s only)" : ""
                 Toast.show("Saved \(gifURL.lastPathComponent)\(note)", duration: .seconds(3))
+            } catch where Task.isCancelled {
+                try? FileManager.default.removeItem(at: gifURL)
+                Toast.show("Export cancelled")
             } catch {
+                try? FileManager.default.removeItem(at: gifURL)
                 Toast.error("GIF export failed: \(error.localizedDescription)")
             }
         }

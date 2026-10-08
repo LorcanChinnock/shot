@@ -18,17 +18,24 @@ enum Toast {
 
     /// Shows `message`; `duration` nil keeps it visible until the next call. The pointer holds it, and a click dismisses it.
     /// With `undoable`, the toast offers Undo, and the action commits once the toast goes away any other way.
-    static func show(_ message: String, duration: Duration? = .seconds(1.5), undoable: PendingAction? = nil) {
+    /// With `cancel`, it offers Cancel for the work it describes.
+    static func show(_ message: String, duration: Duration? = .seconds(1.5), undoable: PendingAction? = nil, cancel: (() -> Void)? = nil) {
         settle()
         self.undoable = undoable
         let panel = panel ?? makePanel()
+        let action: ToastView.Action? = if let undoable {
+            ToastView.Action(title: "Undo") { undoable.undo(); hide() }
+        } else if let cancel {
+            ToastView.Action(title: "Cancel", perform: cancel)
+        } else {
+            nil
+        }
         var textWidth = (message as NSString).size(withAttributes: [.font: font]).width.rounded(.up)
-        if undoable != nil {
-            textWidth += ("Undo" as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 12, weight: .bold)]).width.rounded(.up) + 36
+        if let action {
+            textWidth += (action.title as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 12, weight: .bold)]).width.rounded(.up) + 36
         }
         let size = NSSize(width: textWidth + 32 + shadow, height: 38 + shadow)
-        let undo: (() -> Void)? = undoable.map { pending in { pending.undo(); hide() } }
-        panel.contentView = NSView(hosting: ToastView(message: message, undo: undo, hold: { hold($0) }, dismiss: { hide() }))
+        panel.contentView = NSView(hosting: ToastView(message: message, action: action, hold: { hold($0) }, dismiss: { hide() }))
         let screen = NSScreen.underPointer ?? NSScreen.main ?? NSScreen.screens[0]
         let origin = NSPoint(x: screen.frame.midX - size.width / 2, y: screen.visibleFrame.minY + 80)
         panel.setFrame(NSRect(origin: origin, size: size), display: true)
@@ -83,8 +90,13 @@ enum Toast {
 }
 
 private struct ToastView: View {
+    struct Action {
+        let title: String
+        let perform: () -> Void
+    }
+
     let message: String
-    let undo: (() -> Void)?
+    let action: Action?
     let hold: (Bool) -> Void
     let dismiss: () -> Void
 
@@ -94,8 +106,8 @@ private struct ToastView: View {
                 .font(.system(size: 13, weight: .bold))
                 .foregroundStyle(Brutal.ink)
                 .lineLimit(1)
-            if let undo {
-                Button("Undo", action: undo)
+            if let action {
+                Button(action.title, action: action.perform)
                     .buttonStyle(BrutalButtonStyle(compact: true))
             }
         }

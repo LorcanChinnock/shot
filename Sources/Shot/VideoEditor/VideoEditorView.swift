@@ -31,22 +31,29 @@ struct VideoEditorRootView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                     .layoutPriority(1)
-                Button { model.toggleTracks() } label: { Label("Tracks", systemImage: "rectangle.split.3x1").fixedSize() }
-                    .buttonStyle(BrutalButtonStyle(color: model.showsTracks ? (model.canHideTracks ? Brutal.violet : Brutal.violet.opacity(0.55)) : .white, compact: true))
-                    .brutalTip("Show the tracks (T)")
-                Button("Copy") { Task { await model.copy() } }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
-                    .brutalTip("Copy video (⌘C)")
-                Button("Export") { Task { await model.export() } }
-                    .buttonStyle(BrutalButtonStyle(color: Brutal.sky, compact: true))
-                    .brutalTip("Export a new \(model.options.format.rawValue.uppercased()) with these options next to the video, and copy it")
-                PartyColor(Brutal.yellow) { color in
-                    Button(model.isComposite ? "Save copy" : "Save") { Task { await model.save() } }
-                        .buttonStyle(BrutalButtonStyle(color: color, compact: true))
+                Group {
+                    Button { model.toggleTracks() } label: { Label("Tracks", systemImage: "rectangle.split.3x1").fixedSize() }
+                        .buttonStyle(BrutalButtonStyle(color: model.showsTracks ? (model.canHideTracks ? Brutal.violet : Brutal.violet.opacity(0.55)) : .white, compact: true))
+                        .brutalTip("Show the tracks (T)")
+                    Button("Copy") { Task { await model.copy() } }
+                        .buttonStyle(BrutalButtonStyle(compact: true))
+                        .brutalTip("Copy video (⌘C)")
+                    Button("Export") { Task { await model.export() } }
+                        .buttonStyle(BrutalButtonStyle(color: Brutal.sky, compact: true))
+                        .brutalTip("Export a new \(model.options.format.rawValue.uppercased()) with these options next to the video, and copy it")
+                    PartyColor(Brutal.yellow) { color in
+                        Button(model.isComposite ? "Save copy" : "Save") { Task { await model.save() } }
+                            .buttonStyle(BrutalButtonStyle(color: color, compact: true))
+                    }
+                    .brutalTip(model.isComposite ? "Write the edit as a new video next to the original and copy it (⌘S)" : "Save the edited video and copy it (⌘S)")
                 }
-                .brutalTip(model.isComposite ? "Write the edit as a new video next to the original and copy it (⌘S)" : "Save the edited video and copy it (⌘S)")
+                .disabled(model.isExporting)
+                if model.isExporting {
+                    Button("Cancel") { model.cancelExport() }
+                        .buttonStyle(BrutalButtonStyle(compact: true))
+                        .brutalTip("Stop exporting (Esc)")
+                }
             }
-            .disabled(model.isExporting)
             .padding(.leading, GlassWindow.trafficLightsWidth)
             .frame(height: GlassWindow.titlebarHeight)
             .padding(.bottom, -Brutal.sectionGap / 2)
