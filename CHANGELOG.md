@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.32](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.31...v0.7.0-beta.32) (2026-10-08)
+
+
+### Features
+
+* **menu:** remove the camera bubble toggle from the menu bar ([#266](https://github.com/LorcanChinnock/shot/issues/266)) ([82593cd](https://github.com/LorcanChinnock/shot/commit/82593cd33d361b3c011b0c6c0c789476d56e5cbe))
+
 ## [0.7.0-beta.31](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.30...v0.7.0-beta.31) (2026-10-08)
 
 
