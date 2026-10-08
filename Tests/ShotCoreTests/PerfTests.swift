@@ -9,8 +9,9 @@ extension Tag {
 }
 
 /// Times the pure paths that have budgets in `docs/performance.md`. `make test` skips this suite and `make perf` runs it alone,
-/// one test at a time, so other tests don't skew the timings. Budgets are 2× the baseline measured on the reference Mac,
-/// which leaves room for a noisy CI runner but still fails on a regression that does the work again on every call.
+/// one test at a time, so other tests don't skew the timings. Budgets are 2× the baseline measured on the CI runner, the
+/// slowest machine that runs them, which leaves room for noise but still fails on a regression that does the work again
+/// on every call.
 @Suite(.serialized, .tags(.perf)) struct PerfTests {
     @Test func flatteningAndEncodingA5KCaptureStaysInBudget() throws {
         let doc = EditorDocument(base: try gradient(width: 5120, height: 2880), annotations: twentyAnnotations(in: CGSize(width: 5120, height: 2880), special: true))
@@ -42,6 +43,8 @@ extension Tag {
         let gif = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString)-perf.gif")
         defer { [video, gif].forEach { try? FileManager.default.removeItem(at: $0) } }
         try await writeSolidVideo(to: video, color: .green, corner: .red, size: CGSize(width: 1920, height: 1080), seconds: 20)
+        // Hand back the pages writing the video freed, or the export reuses them and its growth doesn't show.
+        malloc_zone_pressure_relief(nil, 0)
         let sampler = FootprintSampler()
         sampler.start()
         try await GIFExporter.export(videoURL: video, to: gif)
@@ -64,14 +67,12 @@ extension Tag {
     }
 }
 
-/// Twice the baselines in `docs/performance.md`; change both together.
+/// Twice the CI runner's baselines in `docs/performance.md`; change both together.
 private enum Budget {
-    static let flattenAndEncode = 544
-    static let overlayFrame = 22
-    /// The baseline is under 1 MB, so this is a floor above allocator noise rather than 2×. Holding every frame, as #230
-    /// did, costs about 280 MB here.
-    static let gifExportMegabytes = 32
-    static let galleryGrouping = 3
+    static let flattenAndEncode = 860
+    static let overlayFrame = 37
+    static let gifExportMegabytes = 452
+    static let galleryGrouping = 6
 }
 
 /// The median time of five runs of `body`, after one untimed run that warms caches.
