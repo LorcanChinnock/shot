@@ -16,16 +16,16 @@ private func overlay(duration: Double = 4, size: CGSize = CGSize(width: 640, hei
 
 @Test func aLoneRecordingIsOneSegment() {
     let project = project()
-    #expect(project.videoSegments() == [VideoSegment(range: 0..<10, clips: [project.main.clips[0].id])])
+    #expect(project.videoSegments() == [VideoSegment(range: 0..<10, layers: [.clip(project.main.clips[0].id)])])
 }
 
 @Test func anOverlaySplitsTheTimelineIntoBeforeDuringAfter() throws {
     let (imported, id) = try #require(project().importing(overlay(), at: 3))
     let main = imported.main.clips[0].id
     #expect(imported.videoSegments() == [
-        VideoSegment(range: 0..<3, clips: [main]),
-        VideoSegment(range: 3..<7, clips: [main, id]),
-        VideoSegment(range: 7..<10, clips: [main]),
+        VideoSegment(range: 0..<3, layers: [.clip(main)]),
+        VideoSegment(range: 3..<7, layers: [.clip(main), .clip(id)]),
+        VideoSegment(range: 7..<10, layers: [.clip(main)]),
     ])
 }
 

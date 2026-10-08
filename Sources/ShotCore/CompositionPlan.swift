@@ -1,13 +1,24 @@
 import CoreGraphics
 import Foundation
 
-/// A stretch of the timeline over which the same video clips are on screen.
+/// A stretch of the timeline over which the same clips are on screen.
 public struct VideoSegment: Equatable, Sendable {
+    public enum Layer: Equatable, Sendable {
+        case clip(UUID)
+        case annotation(UUID)
+    }
+
     public var range: Range<Double>
-    /// The clips drawn, bottom to top.
-    public var clips: [UUID]
-    /// The annotation clips drawn over them, bottom to top.
-    public var annotations: [UUID] = []
+    /// What's drawn, bottom to top: video clips and annotation clips in the order of their tracks.
+    public var layers: [Layer]
+
+    public var clips: [UUID] {
+        layers.compactMap { if case let .clip(id) = $0 { id } else { nil } }
+    }
+
+    public var annotations: [UUID] {
+        layers.compactMap { if case let .annotation(id) = $0 { id } else { nil } }
+    }
 }
 
 extension Project {
@@ -16,21 +27,22 @@ extension Project {
         tracks.filter { $0.kind == .video && !$0.isHidden }
     }
 
-    /// The timeline cut wherever a video clip starts or ends, with the clips showing in each piece.
+    /// The timeline cut wherever a clip starts or ends, with what shows in each piece.
     /// Pieces with nothing in them show the canvas background.
     public func videoSegments() -> [VideoSegment] {
         let total = duration
-        let clips = videoTracks.flatMap(\.clips)
-        let notes = shownAnnotationClips
-        let edges = Set(clips.flatMap { [$0.start, $0.end] } + notes.flatMap { [$0.start, $0.end] } + [0, total]).filter { $0 >= 0 && $0 <= total }.sorted()
+        let shown = tracks.filter { $0.kind != .audio && !$0.isHidden }
+        let edges = Set(shown.flatMap { $0.clips.flatMap { [$0.start, $0.end] } + $0.annotations.flatMap { [$0.start, $0.end] } } + [0, total]).filter { $0 >= 0 && $0 <= total }.sorted()
         var segments: [VideoSegment] = []
         for (from, to) in zip(edges, edges.dropFirst()) where to - from >= Self.shortestClip {
-            let active = videoTracks.flatMap(\.clips).filter { $0.start <= from + 1e-9 && $0.end >= to - 1e-9 }.map(\.id)
-            let shown = notes.filter { $0.start <= from + 1e-9 && $0.end >= to - 1e-9 }.map(\.id)
-            if let last = segments.last, last.clips == active, last.annotations == shown {
+            let active = shown.flatMap { track in
+                track.clips.filter { $0.start <= from + 1e-9 && $0.end >= to - 1e-9 }.map { VideoSegment.Layer.clip($0.id) }
+                    + track.annotations.filter { $0.start <= from + 1e-9 && $0.end >= to - 1e-9 }.map { VideoSegment.Layer.annotation($0.id) }
+            }
+            if let last = segments.last, last.layers == active {
                 segments[segments.count - 1].range = last.range.lowerBound..<to
             } else {
-                segments.append(VideoSegment(range: from..<to, clips: active, annotations: shown))
+                segments.append(VideoSegment(range: from..<to, layers: active))
             }
         }
         return segments

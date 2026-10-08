@@ -230,6 +230,25 @@ extension MediaTests {
         #expect(try await pixel(in: output, at: 1, x: 0.05, y: 0.05).isNear(.blue))
     }
 
+    @Test func aSpotlightDimsOnlyThePicturesUnderIt() async throws {
+        let base = temp("base.mp4"), top = temp("top.mp4"), over = temp("over.mp4"), under = temp("under.mp4")
+        defer { [base, top, over, under].forEach { try? FileManager.default.removeItem(at: $0) } }
+        try await writeSolidVideo(to: base, color: .red, size: canvas, seconds: 2)
+        try await writeSolidVideo(to: top, color: .green, size: canvas, seconds: 2)
+        let spotlight = Annotation(kind: .spotlight(CGRect(x: 0, y: 0, width: 64, height: 36), style: SpotlightStyle()), color: RGBA(0, 0, 0), lineWidth: 2)
+        let annotated = Project(source: base, duration: 2, canvasSize: canvas, hasAudio: false).adding(annotation: spotlight, at: 0, duration: 2).project
+        let (imported, id) = try #require(annotated.importing(ImportedMedia(source: top, duration: 2, size: canvas, hasAudio: false), at: 0))
+        let project = try #require(imported.setting(transform: ClipTransform(scale: 0.5), of: id))
+        try await ProjectExporter.export(project, to: over)
+        #expect(try await pixel(in: over, at: 1, x: 0.5, y: 0.5).isNear(.green), "the picture is over the spotlight")
+        let dimmedRed = try await pixel(in: over, at: 1, x: 0.9, y: 0.9)
+        #expect(dimmedRed.r < 200 && !dimmedRed.isNear(.red, tolerance: 30), "the recording under it is dimmed, got \(dimmedRed)")
+
+        try await ProjectExporter.export(try #require(project.moving(clip: id, .toBack)), to: under)
+        let dimmedGreen = try await pixel(in: under, at: 1, x: 0.5, y: 0.5)
+        #expect(!dimmedGreen.isNear(.green, tolerance: 30), "under the spotlight it's dimmed too, got \(dimmedGreen)")
+    }
+
     @Test func liveAnnotationsReplaceTheProjectsWhileTheyAreSet() async throws {
         let base = temp("base.mp4")
         defer { try? FileManager.default.removeItem(at: base) }

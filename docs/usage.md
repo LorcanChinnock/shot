@@ -128,7 +128,7 @@ Open a recording from its Quick Access card (**Edit**), or with [`shot://edit-vi
 - **Trim:** drag the handles at either end of the timeline.
 - **Cut:** Shift-drag on the timeline to select a section, then press Delete to cut it out. Esc clears the selection.
 - **Play:** Space plays and pauses; ← and → step one frame.
-- **Layers:** the annotation lanes at the top of the timeline are the layers, topmost first. Drag an annotation up or down to put it on another lane; drop it between lanes, or on a lane that's taken at that time, and it gets a new lane of its own. ⌘] and ⌘[ move the selected annotation a lane up or down, and ⌥⌘] and ⌥⌘[ to the top or bottom. Right-click a lane to lock, hide or delete it. A blur, pixelate or spotlight affects the lanes under it, not those over it.
+- **Layers:** the annotation and picture lanes above the main track are the layers, topmost first. Drag an annotation or an imported clip up or down to put it on another lane; drop it between lanes, or on a lane that's taken at that time or holds the other kind, and it gets a new lane of its own. ⌘] and ⌘[ move the selected annotation or clip a lane up or down, and ⌥⌘] and ⌥⌘[ to the top or bottom. Right-click a lane to lock, hide or delete it. A blur, pixelate or spotlight affects the lanes under it, video included, not those over it.
 - ⌘Z undoes and ⇧⌘Z redoes.
 
 Then:
@@ -207,8 +207,8 @@ Record Fullscreen and Record Window have no shortcut until you set one. Capture 
 | Shift-drag | Select a section of the timeline |
 | Delete | Cut the selected section |
 | Esc | Clear the selection |
-| ⌘] / ⌘[ | Move the selected annotation a lane up / down |
-| ⌥⌘] / ⌥⌘[ | Move the selected annotation to the top / bottom lane |
+| ⌘] / ⌘[ | Move the selected annotation or clip a lane up / down |
+| ⌥⌘] / ⌥⌘[ | Move the selected annotation or clip to the top / bottom lane |
 | ⌘Z / ⇧⌘Z | Undo / redo |
 | ⌘C | Copy the edited video |
 | ⌘S | Save and copy |
