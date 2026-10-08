@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.7.0-beta.28](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.27...v0.7.0-beta.28) (2026-10-08)
+
+
+### Features
+
+* **export:** cancel a running export ([#247](https://github.com/LorcanChinnock/shot/issues/247)) ([0b3bf10](https://github.com/LorcanChinnock/shot/commit/0b3bf105ea583d641b11a418278a0e13ae5ce995))
+
+
+### Bug Fixes
+
+* **export:** stream GIF frames to disk so memory stays flat ([#245](https://github.com/LorcanChinnock/shot/issues/245)) ([eee98f1](https://github.com/LorcanChinnock/shot/commit/eee98f17c555093eda95a4ba1b0eba4fcff751e1))
+* **export:** update the GIF progress toast in place, once per percent ([#241](https://github.com/LorcanChinnock/shot/issues/241)) ([ce2a32c](https://github.com/LorcanChinnock/shot/commit/ce2a32c353551c5b99de8ee5fd8b39ff3f6a7848))
+* **gallery:** bound thumbnail memory and stop decoding tiles scrolled past ([#239](https://github.com/LorcanChinnock/shot/issues/239)) ([5b701c9](https://github.com/LorcanChinnock/shot/commit/5b701c9ef6ceea10b2a25dd9b732c3ce2313c2ff))
+* **ui:** make the glass backdrop static so closed windows stop using CPU ([#234](https://github.com/LorcanChinnock/shot/issues/234)) ([836e99c](https://github.com/LorcanChinnock/shot/commit/836e99cabff6d6bf083a7383c15f2f680896cfc6))
+
+
+### Performance Improvements
+
+* **capture:** stop redrawing the frozen screen on every pointer move ([#243](https://github.com/LorcanChinnock/shot/issues/243)) ([b28e14e](https://github.com/LorcanChinnock/shot/commit/b28e14ee4df96085a8137e89aa6fdf5bf1af3f86))
+* **editor:** cache blurs, pixelates and soft spotlights between redraws ([#235](https://github.com/LorcanChinnock/shot/issues/235)) ([38b2c26](https://github.com/LorcanChinnock/shot/commit/38b2c26b8d85b12c1a268a1fcc5bf83289ba9ad8))
+* **editor:** flatten and encode Save and Copy off the main thread ([#246](https://github.com/LorcanChinnock/shot/issues/246)) ([48c1162](https://github.com/LorcanChinnock/shot/commit/48c1162848de3a8655b97c5003ee29914362fdda))
+* **editor:** skip padding re-layout when there's nothing to shrink ([#248](https://github.com/LorcanChinnock/shot/issues/248)) ([724fa62](https://github.com/LorcanChinnock/shot/commit/724fa622aa928a75811cd4c818a86cffd37a0cdd))
+* **gallery:** group by date without per-item formatters and skip unchanged reloads ([#236](https://github.com/LorcanChinnock/shot/issues/236)) ([691da06](https://github.com/LorcanChinnock/shot/commit/691da068a94cc0db0211a17f2ec3b582b77665d3))
+* **quick-access:** keep a 480 px thumbnail per card instead of the full capture ([#242](https://github.com/LorcanChinnock/shot/issues/242)) ([44b2700](https://github.com/LorcanChinnock/shot/commit/44b2700ac7b190c8dc04204330292f653fec1351))
+* **shortcuts:** don't block launch waiting on activateSettings ([#244](https://github.com/LorcanChinnock/shot/issues/244)) ([27f7ebf](https://github.com/LorcanChinnock/shot/commit/27f7ebf1f8dec97c3121f820a76580adf0e917c4))
+* **video-editor:** debounce and cache timeline thumbnails ([#240](https://github.com/LorcanChinnock/shot/issues/240)) ([9ab6187](https://github.com/LorcanChinnock/shot/commit/9ab6187fa218acc266b385d8217a6236c4464b18))
+* **video-editor:** only the playhead redraws during playback ([#237](https://github.com/LorcanChinnock/shot/issues/237)) ([1d03ed8](https://github.com/LorcanChinnock/shot/commit/1d03ed873a63370a9d020f96c7ed74cd1769c38e))
+* **video-editor:** reuse annotation overlays that don't change between frames ([#238](https://github.com/LorcanChinnock/shot/issues/238)) ([a3d6be3](https://github.com/LorcanChinnock/shot/commit/a3d6be3f493a1c8e9512c41f6627fd8ef3d90bdd))
+
 ## [0.7.0-beta.27](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.26...v0.7.0-beta.27) (2026-10-08)
 
 
