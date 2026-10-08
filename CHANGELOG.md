@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0-beta.31](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.30...v0.7.0-beta.31) (2026-10-08)
+
+
+### Features
+
+* **editor:** layers that respect order, pick-up reordering, timeline stacking and image import ([#257](https://github.com/LorcanChinnock/shot/issues/257)) ([3ba3f37](https://github.com/LorcanChinnock/shot/commit/3ba3f37453435dafb33c9ffff24234059546ded4))
+* **editor:** let imported clips stack among annotation lanes ([#260](https://github.com/LorcanChinnock/shot/issues/260)) ([0fc142d](https://github.com/LorcanChinnock/shot/commit/0fc142df59de67955444d943282dc584b17fc414))
+
 ## [0.7.0-beta.30](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.29...v0.7.0-beta.30) (2026-10-08)
 
 
