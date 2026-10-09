@@ -96,6 +96,8 @@ final class Recorder: NSObject {
     /// Stretches of the recording, in recorded seconds, whose audio is silenced when the segments are joined.
     private var mutes = CutList()
     private var mutedSince: TimeInterval?
+    /// Set once this recording has said its microphone file failed.
+    private var microphoneFailureShown = false
 
     // MARK: Session
 
@@ -123,6 +125,7 @@ final class Recorder: NSObject {
         segmentAudio = []
         mutes = CutList()
         mutedSince = nil
+        microphoneFailureShown = false
         model = RecordingSessionModel()
         model.cameraOn = CameraBubble.shared.isVisible
         model.cameraAvailable = options.windowID == nil
@@ -212,7 +215,7 @@ final class Recorder: NSObject {
     }
 
     private func complete(discard: Bool) async {
-        await sampleSink.finish()
+        reportAudio(await sampleSink.finish())
         let parts = segments
         let audio = segmentAudio.count == parts.count ? segmentAudio : []
         let finalURL = session?.finalURL
@@ -407,7 +410,7 @@ final class Recorder: NSObject {
         guard self.session?.id == session.id else {
             // The recording ended while this segment started, so nothing would ever stop or join it.
             try? await stream.stopCapture()
-            await sink.finish()
+            _ = await sink.finish()
             for file in [url] + (audio?.files ?? []) {
                 try? FileManager.default.removeItem(at: file)
             }
@@ -423,6 +426,21 @@ final class Recorder: NSObject {
         log.notice("Segment \(self.segments.count) started: \(config.width)x\(config.height) at \(session.fps) fps, mic \(session.microphone), system audio \(session.systemAudio), camera \(CameraBubble.shared.isVisible)")
     }
 
+    /// Logs an audio file that couldn't be written, and says so once per recording when it's the microphone's: the
+    /// recording then has no microphone in it.
+    private func reportAudio(_ failures: SampleSink.Failures) {
+        if let message = failures.system {
+            log.error("System audio file failed: \(message, privacy: .public)")
+        }
+        if let message = failures.microphone {
+            log.error("Microphone file failed: \(message, privacy: .public)")
+            if !microphoneFailureShown {
+                microphoneFailureShown = true
+                Toast.error("The microphone couldn't be recorded: \(message)")
+            }
+        }
+    }
+
     /// Stops the current stream and waits until SCK has finished writing its file.
     /// Concurrent callers (a stop during a pause) share the same wait.
     private func finishSegment() async {
@@ -432,7 +450,7 @@ final class Recorder: NSObject {
             let sink = sampleSink
             finishing = Task {
                 await stopCapture(stream)
-                await sink.finish()
+                reportAudio(await sink.finish())
             }
         }
         await finishing?.value
@@ -558,6 +576,8 @@ private final class SampleSink: NSObject, SCStreamOutput, @unchecked Sendable {
     private let meter: AudioMeter
     private let system: AudioFileWriter?
     private let microphone: AudioFileWriter?
+    /// Read and written on `queue`.
+    private var reported = false
 
     init(meter: AudioMeter, audio: VideoConcatenator.SegmentAudio? = nil) {
         self.meter = meter
@@ -584,9 +604,22 @@ private final class SampleSink: NSObject, SCStreamOutput, @unchecked Sendable {
         }
     }
 
-    func finish() async {
+    /// Why the system audio or microphone file couldn't be written, if either couldn't; messages, so they can reach
+    /// the main actor.
+    struct Failures: Sendable {
+        var system: String?
+        var microphone: String?
+    }
+
+    /// Finishes both files and says which failed. Only the first call reports a failure, so it's told once.
+    func finish() async -> Failures {
         await system?.finish()
         await microphone?.finish()
+        let first = queue.sync {
+            defer { reported = true }
+            return !reported
+        }
+        return first ? Failures(system: system?.failure?.localizedDescription, microphone: microphone?.failure?.localizedDescription) : Failures()
     }
 
     private static func isComplete(_ frame: CMSampleBuffer) -> Bool {
