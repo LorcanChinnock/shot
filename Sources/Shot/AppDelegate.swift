@@ -36,11 +36,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         installEditMenu()
         _ = Updater.shared
+        Task.detached(priority: .utility) {
+            Recorder.sweepLeftoverSegments()
+        }
         Permissions.showOnboardingIfNeeded()
         if Permissions.hasScreenCapture {
             SystemShortcuts.takeKeys()
         }
         log.notice("Shot launched")
+    }
+
+    /// A recording in progress is stopped and saved first, so quitting, or logging out, doesn't lose it.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard coordinator.isRecording else {
+            return .terminateNow
+        }
+        log.notice("Quitting while recording; saving the recording first")
+        Task {
+            await coordinator.finishRecording(within: .seconds(10))
+            NSApp.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
     }
 
     func applicationWillTerminate(_ notification: Notification) {

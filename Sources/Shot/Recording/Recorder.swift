@@ -97,6 +97,28 @@ final class Recorder: NSObject {
     private var mutes = CutList()
     private var mutedSince: TimeInterval?
 
+    /// Where each segment and its audio are written until the recording is joined.
+    nonisolated static var segmentsFolder: URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("Shot/segments")
+    }
+
+    /// Deletes segments left by a recording that never finished, a quit or crash say. Call at launch, before anything
+    /// records. Files written in the last ten minutes are kept, in case another copy of Shot is recording into the same folder.
+    nonisolated static func sweepLeftoverSegments() {
+        let folder = segmentsFolder
+        let cutoff = Date().addingTimeInterval(-600)
+        let files = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
+        var swept = 0
+        for file in files where ((try? file.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast) < cutoff {
+            if (try? FileManager.default.removeItem(at: file)) != nil {
+                swept += 1
+            }
+        }
+        if swept > 0 {
+            log.notice("Swept \(swept) leftover segment files")
+        }
+    }
+
     // MARK: Session
 
     /// `region` is an AppKit global rect inside `screen`.
@@ -364,7 +386,7 @@ final class Recorder: NSObject {
         config.capturesAudio = session.systemAudio
         config.excludesCurrentProcessAudio = true
 
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("Shot/segments")
+        let folder = Self.segmentsFolder
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let id = UUID().uuidString
         let url = folder.appendingPathComponent("\(id).mp4")

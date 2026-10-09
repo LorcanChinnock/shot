@@ -162,6 +162,18 @@ final class CaptureCoordinator {
         }
     }
 
+    var isRecording: Bool { recorder.isRecording }
+
+    /// Stops and saves the recording in progress, as quitting does, waiting at most `timeout` for it to be written.
+    func finishRecording(within timeout: Duration) async {
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { await self.recorder.stop(discard: false) }
+            group.addTask { try? await Task.sleep(for: timeout) }
+            await group.next()
+            group.cancelAll()
+        }
+    }
+
     func stopRecording(discard: Bool) {
         Task {
             await recorder.stop(discard: discard)
