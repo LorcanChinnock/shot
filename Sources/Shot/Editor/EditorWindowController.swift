@@ -17,7 +17,7 @@ private final class EditorWindow: NSWindow {
 }
 
 @MainActor
-final class EditorWindowController: NSObject, NSWindowDelegate {
+final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValidation {
     private static var open: [EditorWindowController] = []
 
     private let model: EditorModel
@@ -74,6 +74,11 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         switch key {
         case "z":
             shift ? model.redo() : model.undo()
+        // ⌥⌘C and ⌥⌘V copy and paste a style, so they're matched before ⌘C and ⌘V.
+        case "c" where option:
+            model.copyStyle()
+        case "v" where option:
+            model.pasteStyle()
         case "c":
             // A selected annotation copies on its own; otherwise ⌘C copies the image, as the toolbar's Copy does.
             if !model.copySelection() {
@@ -110,6 +115,20 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         return true
     }
 
+    // The Edit menu's style items, which reach the editor through the key window's delegate.
+
+    @objc func copyStyle(_ sender: Any?) {
+        model.copyStyle()
+    }
+
+    @objc func pasteStyle(_ sender: Any?) {
+        model.pasteStyle()
+    }
+
+    @objc func applyStyleToAllImages(_ sender: Any?) {
+        model.applyStyleToAllImages()
+    }
+
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         guard model.isDirty, !discarding else {
             return true
@@ -139,6 +158,14 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
             }
         }
         return false
+    }
+
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        switch menuItem.action {
+        case #selector(copyStyle(_:)): model.styleTarget != nil
+        case #selector(pasteStyle(_:)), #selector(applyStyleToAllImages(_:)): model.canPasteStyle && model.editingText == nil
+        default: true
+        }
     }
 
     func windowDidResignKey(_ notification: Notification) {

@@ -173,6 +173,8 @@ enum AnnotationFrame {
         for annotation in annotations {
             AnnotationRenderer.draw(annotation, base: placeholder, in: target)
         }
+        // A styled annotation's shadow is cached as `render` caches it, so let go of those this frame didn't draw.
+        AnnotationRenderer.cache.sweep()
         return target.makeImage().map { CIImage(cgImage: $0) }
     }
 }

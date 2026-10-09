@@ -246,3 +246,280 @@ func aShadowFallsBelowTheObjectAndNotAbove(scale: CGFloat) throws {
     #expect(corner[3] < 0.05)
     #expect(try pixel(flat, 150, 150)[3] == 1)
 }
+
+/// A clear square with an opaque disc in the middle, like a cut-out sticker.
+private func disc(side: Int, radius: CGFloat) -> CGImage {
+    let ctx = CGContext(data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+    ctx.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 1, alpha: 1))
+    let centre = CGFloat(side) / 2
+    ctx.fillEllipse(in: CGRect(x: centre - radius, y: centre - radius, width: radius * 2, height: radius * 2))
+    return ctx.makeImage()!
+}
+
+private func sticker(_ rect: CGRect, radius: CGFloat) -> Annotation {
+    Annotation(kind: .image(AnnotationImage(disc(side: Int(rect.width), radius: radius)), rect: rect), color: RGBA(0, 0, 0), lineWidth: 0)
+}
+
+private func arrow(from: CGPoint, to: CGPoint, color: RGBA = RGBA(1, 0, 0)) -> Annotation {
+    Annotation(kind: .arrow(from: from, to: to), color: color, lineWidth: 4)
+}
+
+private func text(_ string: String, at origin: CGPoint, color: RGBA = RGBA(1, 0, 0)) -> Annotation {
+    Annotation(kind: .text(string, origin: origin, fontSize: 40), color: color, lineWidth: 4)
+}
+
+/// How many pixels of `image` `matches` picks.
+private func count(_ image: CGImage, where matches: ([CGFloat]) -> Bool) throws -> Int {
+    let data = try #require(image.dataProvider?.data as Data?)
+    var found = 0
+    for y in 0..<image.height {
+        for x in 0..<image.width {
+            let offset = y * image.bytesPerRow + x * 4
+            if matches(data[offset..<offset + 4].map { CGFloat($0) / 255 }) {
+                found += 1
+            }
+        }
+    }
+    return found
+}
+
+@Test func aSolidBorderDrawsOutsideTheImageInItsColourWithConcentricCorners() throws {
+    var doc = EditorDocument(base: filled(width: 60, height: 40, grey: 0.5))
+    doc.setStyle(ObjectStyle(border: Border(kind: .solid, lineWidth: 4, color: RGBA(1, 0, 0))), of: .capture, margin: 16)
+    doc.setCornerRadius(10, of: .capture)
+    #expect(doc.canvasRect == CGRect(x: -4, y: -4, width: 68, height: 48))
+    let flat = try #require(AnnotationRenderer.flatten(doc))
+    func at(_ x: CGFloat, _ y: CGFloat) throws -> [CGFloat] { try pixel(flat, x + 4, y + 4) }
+    // The border is red all the way out, beside the image and not over it.
+    #expect(try at(-2, 20) == [1, 0, 0, 1])
+    #expect(try at(-3.5, 20) == [1, 0, 0, 1])
+    let inside = try at(30, 20)
+    #expect(abs(inside[0] - 0.5) < 0.01 && inside[3] == 1)
+    // Its outer corner is rounded by the image's radius plus its width, so the canvas corner stays clear while the
+    // border still runs along each side up to the curve.
+    #expect(try at(-3.5, -3.5)[3] == 0)
+    #expect(try at(-3.5, 10) == [1, 0, 0, 1])
+    // No seam shows between the border and the image along the edge.
+    #expect(try at(-0.5, 20)[3] == 1)
+}
+
+@Test func theOutlineFollowsTheAlphaEdge() throws {
+    let rect = CGRect(x: 100, y: 100, width: 100, height: 100)
+    var image = sticker(rect, radius: 30)
+    #expect(image.hasTransparency)
+    image.style = ObjectStyle(border: Border(kind: .outline, lineWidth: 8, color: RGBA(1, 1, 1)))
+    #expect(image.paintedBounds == rect.insetBy(dx: -8, dy: -8))
+    let doc = EditorDocument(base: filled(width: 300, height: 300, grey: 0), annotations: [image])
+    let flat = try #require(AnnotationRenderer.flatten(doc))
+    // The disc, centred at (150, 150), keeps its colour; just past its edge is the outline; past the outline, the screenshot.
+    #expect(try pixel(flat, 150, 150) == [0, 0, 1, 1])
+    #expect(try pixel(flat, 150 + 34, 150) == [1, 1, 1, 1])
+    #expect(try pixel(flat, 150, 150 - 34) == [1, 1, 1, 1])
+    #expect(try pixel(flat, 150 + 42, 150) == [0, 0, 0, 1])
+    // It follows the disc, not the image's square: its corners are still the screenshot.
+    #expect(try pixel(flat, 104, 104) == [0, 0, 0, 1])
+}
+
+@Test func anOpaqueImageTakesNoOutline() throws {
+    var doc = EditorDocument(base: filled(width: 200, height: 100, grey: 0.5), annotations: [placed(CGRect(x: 10, y: 10, width: 40, height: 30))])
+    let image = try #require(doc.annotations.first?.id)
+    #expect(!doc.hasTransparency(of: .annotation(image)))
+    #expect(!doc.hasTransparency(of: .capture))
+    let outline = ObjectStyle(border: Border(kind: .outline, lineWidth: 8, color: RGBA(1, 1, 1)))
+    doc.setStyle(outline, of: .annotation(image), margin: 16)
+    doc.setStyle(outline, of: .capture, margin: 16)
+    #expect(doc.style(of: .annotation(image)).isEmpty)
+    #expect(doc.captureStyle.isEmpty)
+    #expect(doc.canvasRect == doc.fullRect)
+    // What the popover offers: no outline on an opaque image, and only an outline on text.
+    #expect(StyleKind.image.borders(transparent: false) == [.hairline, .solid])
+    #expect(StyleKind.image.borders(transparent: true) == [.hairline, .solid, .outline])
+    #expect(StyleKind.text.borders(transparent: false) == [.outline])
+    #expect(StyleKind.mark.borders(transparent: true).isEmpty)
+}
+
+/// Whether `a` and `b` are the same rect but for rounding.
+private func same(_ a: CGRect, _ b: CGRect) -> Bool {
+    abs(a.minX - b.minX) < 1e-9 && abs(a.minY - b.minY) < 1e-9 && abs(a.width - b.width) < 1e-9 && abs(a.height - b.height) < 1e-9
+}
+
+@Test func paintedBoundsGrowWithAMarksShadowAndGlowAndATextOutline() {
+    var mark = arrow(from: CGPoint(x: 100, y: 100), to: CGPoint(x: 200, y: 100))
+    let plain = mark.paintedBounds
+    mark.style = ObjectStyle(shadow: soft)
+    // Soft reaches 12 above, 24 to each side and 36 below.
+    #expect(same(mark.paintedBounds, CGRect(x: plain.minX - 24, y: plain.minY - 12, width: plain.width + 48, height: plain.height + 48)))
+    mark.style = ObjectStyle(shadow: ShadowPreset.glow.shadow(scale: 1))
+    #expect(same(mark.paintedBounds, plain.insetBy(dx: -20, dy: -20)))
+
+    var label = text("Hi", at: CGPoint(x: 50, y: 50))
+    let unstyled = label.paintedBounds
+    label.style = ObjectStyle(border: Border(kind: .outline, lineWidth: 3, color: RGBA(1, 1, 1)))
+    #expect(same(label.paintedBounds, unstyled.insetBy(dx: -3, dy: -3)))
+    // The outline casts the shadow along with the letters.
+    label.style.shadow = soft
+    #expect(same(label.paintedBounds, CGRect(x: unstyled.minX - 27, y: unstyled.minY - 15, width: unstyled.width + 54, height: unstyled.height + 54)))
+}
+
+@Test func aMarksShadowFallsBelowItAndItsGlowTakesItsColour() throws {
+    var line = Annotation(kind: .line(from: CGPoint(x: 50, y: 100), to: CGPoint(x: 250, y: 100)), color: RGBA(1, 0, 0), lineWidth: 4)
+    line.style = ObjectStyle(shadow: soft)
+    var doc = EditorDocument(base: filled(width: 300, height: 200, grey: 1), annotations: [line])
+    var flat = try #require(AnnotationRenderer.flatten(doc))
+    // Darker below the line than as far above it, and the line itself drawn once over its shadow.
+    #expect(try pixel(flat, 150, 120)[1] < 0.99)
+    #expect(try pixel(flat, 150, 120)[1] < pixel(flat, 150, 80)[1])
+    #expect(try pixel(flat, 150, 100) == [1, 0, 0, 1])
+
+    doc.annotations[0].style = ObjectStyle(shadow: ShadowPreset.glow.shadow(scale: 1))
+    doc.base = filled(width: 300, height: 200, grey: 0)
+    flat = try #require(AnnotationRenderer.flatten(doc))
+    // On black, the glow around the line, which spans 98 to 102, is red, evenly above and below.
+    let above = try pixel(flat, 150, 94), below = try pixel(flat, 150, 105)
+    #expect(above[0] > 0.05 && above[1] < 0.01 && above[2] < 0.01)
+    #expect(abs(above[0] - below[0]) < 0.02)
+}
+
+@Test func aTextOutlineIsDrawnInItsOwnColourUnderTheLetters() throws {
+    var label = text("Shot", at: CGPoint(x: 20, y: 20), color: RGBA(1, 0, 0))
+    var doc = EditorDocument(base: filled(width: 200, height: 100, grey: 1), annotations: [label])
+    func isBlue(_ p: [CGFloat]) -> Bool { p[2] > 0.9 && p[0] < 0.1 && p[1] < 0.1 }
+    func isRed(_ p: [CGFloat]) -> Bool { p[0] > 0.9 && p[1] < 0.1 && p[2] < 0.1 }
+    let plain = try #require(AnnotationRenderer.flatten(doc))
+    #expect(try count(plain, where: isBlue) == 0)
+    let red = try count(plain, where: isRed)
+    label.style = ObjectStyle(border: Border(kind: .outline, lineWidth: 3, color: RGBA(0, 0, 1)))
+    doc.annotations = [label]
+    let outlined = try #require(AnnotationRenderer.flatten(doc))
+    // Core Text strokes in the outline's colour, and the letters stay red over it, as many of them as before.
+    #expect(try count(outlined, where: isBlue) > 200)
+    #expect(try abs(count(outlined, where: isRed) - red) < red / 20)
+}
+
+@Test func pasteStyleAppliesOnlyTheFieldsTheTargetHas() throws {
+    let solid = Border(kind: .solid, lineWidth: 8, color: RGBA(1, 0, 0))
+    var source = placed(CGRect(x: 10, y: 10, width: 40, height: 30))
+    source.style = ObjectStyle(shadow: ShadowPreset.float.shadow(scale: 2), border: solid)
+    source.cornerRadius = 16
+    var outlined = text("Hi", at: CGPoint(x: 100, y: 10))
+    outlined.style = ObjectStyle(border: Border(kind: .outline, lineWidth: 2, color: RGBA(1, 1, 1)))
+    var doc = EditorDocument(base: filled(width: 300, height: 200, grey: 0.5), annotations: [
+        source, arrow(from: CGPoint(x: 10, y: 100), to: CGPoint(x: 60, y: 120)), outlined,
+        Annotation(kind: .shape(.rounded, rect: CGRect(x: 100, y: 100, width: 40, height: 40)), color: RGBA(1, 0, 0), lineWidth: 4),
+        Annotation(kind: .note("Note", rect: CGRect(x: 200, y: 100, width: 80, height: 40)), color: RGBA(1, 0.8, 0), lineWidth: 4),
+        Annotation(kind: .blur(CGRect(x: 200, y: 10, width: 40, height: 40)), color: RGBA(0, 0, 0), lineWidth: 4),
+    ])
+    let ids = doc.annotations.map(\.id)
+    doc.annotations[3].cornerRadius = 6
+    let untouched = Array(doc.annotations[4...])
+    let copied = try #require(doc.copyStyle(of: .annotation(ids[0]), scale: 2))
+    // Copied in points: Float's 64 pixel elevation on a Retina image is 32 points, and the medium border 4.
+    #expect(copied.style.shadow?.elevation == 32 && copied.style.border?.lineWidth == 4 && copied.cornerRadius == 8)
+    doc.pasteStyle(copied, to: [.capture] + ids.dropFirst().map { .annotation($0) }, scale: 2, margin: 16)
+    // The screenshot takes all of it.
+    #expect(doc.captureStyle == source.style)
+    #expect(doc.captureCornerRadius == 16)
+    // A mark takes the shadow only, keeping its own corners.
+    #expect(doc.annotations[1].style == ObjectStyle(shadow: source.style.shadow))
+    #expect(doc.annotations[3].style == ObjectStyle(shadow: source.style.shadow))
+    #expect(doc.annotations[3].cornerRadius == 6)
+    // Text takes the shadow and keeps its outline, since it can't have a solid border.
+    #expect(doc.annotations[2].style == ObjectStyle(shadow: source.style.shadow, border: outlined.style.border))
+    // A note, and kinds Style is off for, are left alone.
+    #expect(Array(doc.annotations[4...]) == untouched)
+
+    // A medium text outline pasted on a cut-out image is the image's medium outline, and no border pasted on an image
+    // removes its border; corners from text leave the image's alone.
+    var target = sticker(CGRect(x: 0, y: 0, width: 60, height: 60), radius: 20)
+    target.style = ObjectStyle(border: .hairline)
+    target.cornerRadius = 4
+    var scene = EditorDocument(base: filled(width: 100, height: 100, grey: 0.5), annotations: [target])
+    scene.pasteStyle(CopiedStyle(style: ObjectStyle(border: Border(kind: .outline, lineWidth: 2, color: RGBA(0, 0, 0))), source: .text), to: [.annotation(target.id)], scale: 1, margin: 16)
+    #expect(scene.annotations[0].style.border == Border(kind: .outline, lineWidth: 9, color: RGBA(0, 0, 0)))
+    #expect(scene.annotations[0].cornerRadius == 4)
+    scene.pasteStyle(CopiedStyle(style: ObjectStyle(shadow: soft), source: .image), to: [.annotation(target.id)], scale: 1, margin: 16)
+    #expect(scene.annotations[0].style == ObjectStyle(shadow: soft))
+    #expect(scene.annotations[0].cornerRadius == nil)
+    // A mark has no border to paste, so the image keeps its.
+    scene.annotations[0].style = ObjectStyle(border: .hairline)
+    scene.pasteStyle(CopiedStyle(style: ObjectStyle(), source: .mark), to: [.annotation(target.id)], scale: 1, margin: 16)
+    #expect(scene.annotations[0].style == ObjectStyle(border: .hairline))
+}
+
+@Test func pastingStyleOnAllImagesRestylesTheScreenshotAndEveryPlacedImage() {
+    var doc = EditorDocument(base: filled(width: 300, height: 200, grey: 0.5), annotations: [
+        placed(CGRect(x: 10, y: 10, width: 40, height: 30)), arrow(from: CGPoint(x: 10, y: 100), to: CGPoint(x: 60, y: 120)),
+        placed(CGRect(x: 100, y: 10, width: 40, height: 30)),
+    ])
+    #expect(doc.imageStyleTargets == [.capture, .annotation(doc.annotations[0].id), .annotation(doc.annotations[2].id)])
+    doc.pasteStyle(CopiedStyle(style: ObjectStyle(border: .hairline), cornerRadius: 6, source: .image), to: doc.imageStyleTargets, scale: 1, margin: 16)
+    #expect(doc.captureStyle == ObjectStyle(border: .hairline) && doc.captureCornerRadius == 6)
+    #expect(doc.annotations[0].style == ObjectStyle(border: .hairline) && doc.annotations[2].cornerRadius == 6)
+    #expect(doc.annotations[1].style.isEmpty)
+}
+
+@Test func aBorderSavedBeforeSolidAndOutlineDecodesUnchanged() throws {
+    let json = #"{"border":{"kind":"hairline"}}"#
+    let decoded = try JSONDecoder().decode(ObjectStyle.self, from: Data(json.utf8))
+    #expect(decoded == ObjectStyle(border: .hairline))
+    // A hairline still saves as it did, so the version before still reads it.
+    let saved = try #require(String(data: JSONEncoder().encode(decoded), encoding: .utf8))
+    #expect(saved == json)
+}
+
+@Test func styledMarksAndTextRoundTripAndPasteAndDuplicateKeepTheirStyle() throws {
+    var mark = arrow(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 60, y: 40))
+    mark.style = ObjectStyle(shadow: ShadowPreset.glow.shadow(scale: 2))
+    var label = text("Hi", at: CGPoint(x: 100, y: 10))
+    label.style = ObjectStyle(shadow: soft, border: Border(kind: .outline, lineWidth: 4, color: RGBA(1, 1, 1)))
+    var image = sticker(CGRect(x: 0, y: 50, width: 40, height: 40), radius: 12)
+    image.style = ObjectStyle(border: Border(kind: .solid, lineWidth: 8, color: RGBA(0, 0.48, 1)))
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100), annotations: [mark, label, image])
+    for original in [mark, label, image] {
+        let decoded = try AnnotationClipboard.annotation(from: AnnotationClipboard.data(for: original))
+        #expect(decoded.style == original.style)
+        let duplicate = doc.paste(original, step: 10, margin: 16)
+        let pasted = doc.paste(decoded, step: 10, margin: 16)
+        for id in [duplicate, pasted] {
+            #expect(doc.annotations.first { $0.id == id }?.style == original.style)
+        }
+    }
+}
+
+@Test func notesAndTheKindsStyleIsOffForTakeNoStyle() {
+    let kinds: [Annotation.Kind] = [
+        .note("Note", rect: CGRect(x: 0, y: 0, width: 80, height: 40)), .blur(CGRect(x: 0, y: 0, width: 10, height: 10)),
+        .pixelate(CGRect(x: 0, y: 0, width: 10, height: 10)), .spotlight(CGRect(x: 0, y: 0, width: 10, height: 10), style: SpotlightStyle()),
+        .highlight(CGRect(x: 0, y: 0, width: 10, height: 10)), .marker([CGPoint(x: 0, y: 0), CGPoint(x: 10, y: 0)]),
+    ]
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100), annotations: kinds.map { Annotation(kind: $0, color: RGBA(1, 0, 0), lineWidth: 4) })
+    for annotation in doc.annotations {
+        #expect(annotation.styleKind == nil)
+        doc.setStyle(ObjectStyle(shadow: soft), of: .annotation(annotation.id), margin: 16)
+    }
+    #expect(doc.annotations.allSatisfy { $0.style.isEmpty })
+}
+
+@Test func theLastStyleOfEachKindStartsAtNone() throws {
+    #expect(EditorStyle().objectStyles.isEmpty)
+    for kind in StyleKind.allCases {
+        #expect(EditorStyle().objectStyle(for: kind, scale: 2).isEmpty)
+    }
+    let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
+    let store = try #require(UserDefaults(suiteName: suite))
+    defer { store.removePersistentDomain(forName: suite) }
+    Preferences.registerDefaults(in: store)
+    let prefs = Preferences(store: store)
+    #expect(prefs.editorStyle.objectStyles.isEmpty)
+    // Remembered in points, so a Retina document gets twice the pixels; the screenshot always starts plain.
+    let glow = ShadowPreset.glow.shadow(scale: 1)
+    var style = prefs.editorStyle
+    style.objectStyles = [.mark: ObjectStyle(shadow: glow), .capture: ObjectStyle(border: .hairline)]
+    Preferences.remember(style, in: store)
+    #expect(prefs.editorStyle.objectStyles[.mark] == ObjectStyle(shadow: glow))
+    #expect(prefs.editorStyle.objectStyle(for: .mark, scale: 2) == ObjectStyle(shadow: ShadowPreset.glow.shadow(scale: 2)))
+    #expect(prefs.editorStyle.objectStyle(for: .text, scale: 2).isEmpty)
+    #expect(prefs.editorStyle.objectStyle(for: .capture, scale: 2).isEmpty)
+    Preferences.resetAll(in: store)
+    #expect(prefs.editorStyle.objectStyles.isEmpty)
+}

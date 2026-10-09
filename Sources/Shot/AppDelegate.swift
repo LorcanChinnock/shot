@@ -90,8 +90,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         coordinator.perform(legacyFull ? .recordFullscreen : action)
     }
 
-    /// Shown while a glass window puts Shot in the Dock; otherwise only routes ⌘W to the key window
-    /// and ⌘X/⌘C/⌘V/⌘A/⌘Z to text fields.
+    /// Shown while a glass window puts Shot in the Dock; otherwise only routes ⌘W to the key window,
+    /// ⌘X/⌘C/⌘V/⌘A/⌘Z to text fields and ⌥⌘C/⌥⌘V to the image editor.
     private func installEditMenu() {
         let app = NSMenu(title: "Shot")
         app.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",").target = self
@@ -114,6 +114,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         edit.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
         edit.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
         edit.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        // The image editor's; elsewhere nothing answers them, so they're greyed out.
+        edit.addItem(.separator())
+        edit.addItem(withTitle: "Copy Style", action: Selector(("copyStyle:")), keyEquivalent: "c").keyEquivalentModifierMask = [.command, .option]
+        edit.addItem(withTitle: "Paste Style", action: Selector(("pasteStyle:")), keyEquivalent: "v").keyEquivalentModifierMask = [.command, .option]
+        edit.addItem(withTitle: "Apply Style to All Images", action: Selector(("applyStyleToAllImages:")), keyEquivalent: "")
         let editItem = NSMenuItem(title: "Edit", action: nil, keyEquivalent: "")
         editItem.submenu = edit
         let main = NSMenu()

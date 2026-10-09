@@ -1,7 +1,8 @@
 import CoreGraphics
 import Foundation
+import os
 
-/// The shadow and border drawn around an object: the capture or an image placed on it. The empty style draws neither.
+/// The shadow and border drawn around an object: the capture, an image placed on it, a mark or text. The empty style draws neither.
 public struct ObjectStyle: Equatable, Hashable, Sendable, Codable {
     public var shadow: Shadow?
     public var border: Border?
@@ -13,20 +14,70 @@ public struct ObjectStyle: Equatable, Hashable, Sendable, Codable {
 
     public var isEmpty: Bool { shadow == nil && border == nil }
 
-    /// `rect` grown by how far the shadow and border paint past it.
+    /// `rect` grown by how far the shadow and border paint past it. A border that casts the shadow with the object
+    /// moves the shadow out with it.
     public func paintedRect(around rect: CGRect) -> CGRect {
-        var painted = rect
+        var painted = rect, silhouette = rect
         if let border {
             painted = painted.insetBy(dx: -border.width, dy: -border.width)
+            if border.castsShadow {
+                silhouette = painted
+            }
         }
         if let shadow {
             let reach = shadow.reach
             painted = painted.union(CGRect(
-                x: rect.minX - reach.side, y: rect.minY - reach.top,
-                width: rect.width + reach.side * 2, height: rect.height + reach.top + reach.bottom
+                x: silhouette.minX - reach.side, y: silhouette.minY - reach.top,
+                width: silhouette.width + reach.side * 2, height: silhouette.height + reach.top + reach.bottom
             ))
         }
         return painted
+    }
+
+    /// The style with its sizes multiplied by `factor`, to turn one in points into pixels of a document or back.
+    public func scaled(by factor: CGFloat) -> ObjectStyle {
+        var scaled = self
+        scaled.shadow?.elevation *= factor
+        if let lineWidth = border?.lineWidth {
+            scaled.border?.lineWidth = lineWidth * factor
+        }
+        return scaled
+    }
+
+    /// The style without a border `kind` can't have. `transparent` says whether the object has see-through pixels,
+    /// which an outline needs.
+    public func restricted(to kind: StyleKind, transparent: Bool) -> ObjectStyle {
+        var style = self
+        if let border, !kind.borders(transparent: transparent).contains(border.kind) {
+            style.border = nil
+        }
+        return style
+    }
+}
+
+/// What a style is on, which decides the borders and corners it can have.
+public enum StyleKind: String, CaseIterable, Codable, CodingKeyRepresentable, Sendable {
+    /// The screenshot.
+    case capture
+    /// An image placed on the canvas.
+    case image
+    /// An arrow, line, shape, pen stroke or counter.
+    case mark
+    case text
+
+    /// The borders it can have. Only an object with see-through pixels, `transparent`, has a shape of its own to outline;
+    /// text is outlined letter by letter.
+    public func borders(transparent: Bool) -> [Border.Kind] {
+        switch self {
+        case .capture, .image: transparent ? [.hairline, .solid, .outline] : [.hairline, .solid]
+        case .text: [.outline]
+        case .mark: []
+        }
+    }
+
+    /// True for the kinds whose corners the Style popover rounds.
+    public var takesCorners: Bool {
+        self == .capture || self == .image
     }
 }
 
@@ -135,12 +186,24 @@ public struct Border: Equatable, Hashable, Sendable, Codable {
     public enum Kind: String, Equatable, Hashable, Sendable, Codable {
         /// One pixel, light on dark content and dark on light, so a screenshot keeps its edge on a page of the same colour.
         case hairline
+        /// A line of one colour just outside the object's edge, its corners concentric with the object's.
+        case solid
+        /// A sticker outline: the shape of an image's opaque pixels grown by the width and filled with one colour, with no
+        /// blur, so it stays crisp. Text is outlined letter by letter.
+        case outline
     }
 
     public var kind: Kind
+    /// How wide a solid border or an outline is, in image pixels. A hairline is always one pixel, so it has none, which
+    /// keeps borders saved before the others decoding the same.
+    public var lineWidth: CGFloat?
+    /// The colour of a solid border or an outline; white when it has none. A hairline picks its own.
+    public var color: RGBA?
 
-    public init(kind: Kind) {
+    public init(kind: Kind, lineWidth: CGFloat? = nil, color: RGBA? = nil) {
         self.kind = kind
+        self.lineWidth = lineWidth
+        self.color = color
     }
 
     public static let hairline = Border(kind: .hairline)
@@ -149,6 +212,25 @@ public struct Border: Equatable, Hashable, Sendable, Codable {
     public var width: CGFloat {
         switch kind {
         case .hairline: 1
+        case .solid, .outline: lineWidth ?? 0
+        }
+    }
+
+    /// The colour a solid border or an outline is drawn in.
+    public var paint: RGBA { color ?? RGBA(1, 1, 1) }
+
+    /// Whether the shadow falls from the border along with the object. A hairline is only a faint rim, so it doesn't.
+    public var castsShadow: Bool { kind != .hairline }
+
+    /// The widths S, M and L offers for a `kind` border on `target`, in points. A solid border takes the editor's line
+    /// widths; an outline on an image is wide enough to read as a sticker's edge, about 8, 18 and 30 pixels on a Retina
+    /// capture, and on text a stroke round each letter, half the line widths. A hairline has none.
+    public static func widths(_ kind: Kind, on target: StyleKind) -> [CGFloat] {
+        switch (kind, target) {
+        case (.hairline, _): []
+        case (.solid, _): EditorStyle.widths
+        case (.outline, .text): EditorStyle.widths.map { $0 / 2 }
+        case (.outline, _): [4, 9, 15]
         }
     }
 
@@ -163,15 +245,57 @@ public struct Border: Equatable, Hashable, Sendable, Codable {
 }
 
 /// What the Style popover changes: the capture, or one annotation.
-public enum StyleTarget: Equatable, Sendable {
+public enum StyleTarget: Equatable, Hashable, Sendable {
     case capture
     case annotation(UUID)
 }
 
+extension CGImage {
+    /// Whether any of its pixels is see-through, read from a 64×64 copy. An image without alpha isn't, without reading it.
+    public var hasTransparentPixels: Bool {
+        switch alphaInfo {
+        case .none, .noneSkipFirst, .noneSkipLast:
+            return false
+        default:
+            break
+        }
+        let side = 64
+        guard let ctx = CGContext(
+            data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: side * 4,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ), let data = ctx.data else {
+            return false
+        }
+        // Averaging keeps a thin see-through edge visible in the small copy, where picking single pixels could miss it.
+        ctx.interpolationQuality = .medium
+        ctx.draw(self, in: CGRect(x: 0, y: 0, width: side, height: side))
+        let bytes = data.bindMemory(to: UInt8.self, capacity: side * side * 4)
+        return (0..<side * side).contains { bytes[$0 * 4 + 3] < 255 }
+    }
+}
+
+/// The last screenshot asked whether it has see-through pixels, and the answer, so asking again on every edit doesn't
+/// read it again.
+private let lastCaptureTransparency = OSAllocatedUnfairLock<(image: CGImage, transparent: Bool)?>(initialState: nil)
+
 extension Annotation {
-    /// True for the kinds the Style popover can give a shadow, border and corner radius: placed images.
-    public var takesObjectStyle: Bool {
-        if case .image = kind { true } else { false }
+    /// What its style is on, which decides what the Style popover offers; `nil` for the kinds it can't style: blurs,
+    /// pixelates, spotlights, the highlighter and notes, which have a shadow of their own.
+    public var styleKind: StyleKind? {
+        switch kind {
+        case .image: .image
+        case .arrow, .line, .shape, .freehand, .counter: .mark
+        case .text: .text
+        case .highlight, .pixelate, .blur, .spotlight, .note, .marker: nil
+        }
+    }
+
+    /// True for the kinds the Style popover can give a shadow or border.
+    public var takesObjectStyle: Bool { styleKind != nil }
+
+    /// Whether it's a placed image with see-through pixels, which can take an outline.
+    public var hasTransparency: Bool {
+        if case let .image(image, _) = kind { image.hasTransparency } else { false }
     }
 
     /// A placed image's corner radius, within what its rect can take; 0 for anything else.
@@ -194,6 +318,31 @@ extension EditorDocument {
         captureStyle.paintedRect(around: fullRect)
     }
 
+    /// What `target`'s style is on; `nil` for an annotation that isn't there or can't be styled.
+    public func styleKind(of target: StyleTarget) -> StyleKind? {
+        switch target {
+        case .capture: .capture
+        case let .annotation(id): annotations.first { $0.id == id }?.styleKind
+        }
+    }
+
+    /// Whether `target` has see-through pixels, which an outline needs. The screenshot's answer is kept while it's the
+    /// same screenshot.
+    public func hasTransparency(of target: StyleTarget) -> Bool {
+        switch target {
+        case .capture:
+            let base = base
+            if let known = lastCaptureTransparency.withLock({ $0.flatMap { $0.image === base ? $0.transparent : nil } }) {
+                return known
+            }
+            let transparent = base.hasTransparentPixels
+            lastCaptureTransparency.withLock { $0 = (base, transparent) }
+            return transparent
+        case let .annotation(id):
+            return annotations.first { $0.id == id }?.hasTransparency ?? false
+        }
+    }
+
     /// The style of `target`; empty for an annotation that isn't there.
     public func style(of target: StyleTarget) -> ObjectStyle {
         switch target {
@@ -211,14 +360,18 @@ extension EditorDocument {
     }
 
     /// Restyles `target`, growing the canvas to hold its shadow and border and pulling back padding they no longer need.
-    /// A locked annotation, or one that can't be styled, is left alone.
+    /// A border the target can't have is dropped. A locked annotation, or one that can't be styled, is left alone.
     public mutating func setStyle(_ style: ObjectStyle, of target: StyleTarget, margin: CGFloat) {
+        guard let kind = styleKind(of: target) else {
+            return
+        }
+        let style = style.restricted(to: kind, transparent: style.border?.kind == .outline && hasTransparency(of: target))
         switch target {
         case .capture:
             captureStyle = style
             growToFitCapture()
         case let .annotation(id):
-            guard let index = annotations.firstIndex(where: { $0.id == id }), annotations[index].takesObjectStyle, !annotations[index].isLocked else {
+            guard let index = annotations.firstIndex(where: { $0.id == id }), !annotations[index].isLocked else {
                 return
             }
             annotations[index].style = style
@@ -227,18 +380,66 @@ extension EditorDocument {
         shrinkPadding(margin: margin)
     }
 
-    /// Sets the corner radius of `target`. A locked annotation, or one that can't be styled, is left alone.
+    /// Sets the corner radius of `target`. A locked annotation, or one without corners to round, is left alone.
     public mutating func setCornerRadius(_ radius: CGFloat, of target: StyleTarget) {
         let radius = max(0, radius)
         switch target {
         case .capture:
             captureCornerRadius = radius
         case let .annotation(id):
-            guard let index = annotations.firstIndex(where: { $0.id == id }), annotations[index].takesObjectStyle, !annotations[index].isLocked else {
+            guard let index = annotations.firstIndex(where: { $0.id == id }), annotations[index].styleKind?.takesCorners == true, !annotations[index].isLocked else {
                 return
             }
             annotations[index].cornerRadius = radius == 0 ? nil : radius
         }
+    }
+
+    /// The style of `target` to paste on others, in points of a document of `scale` pixels per point; `nil` for an
+    /// annotation that isn't there or can't be styled.
+    public func copyStyle(of target: StyleTarget, scale: CGFloat) -> CopiedStyle? {
+        guard let kind = styleKind(of: target) else {
+            return nil
+        }
+        return CopiedStyle(style: style(of: target).scaled(by: 1 / scale), cornerRadius: cornerRadius(of: target) / scale, source: kind)
+    }
+
+    /// Pastes `copied` on each of `targets`, on a document of `scale` pixels per point: the fields both it and the target
+    /// have. Every kind has a shadow; the border goes only on a target that can have that border, and S, M and L stay S,
+    /// M and L; the corners go only between things with corners. Locked annotations are left alone.
+    public mutating func pasteStyle(_ copied: CopiedStyle, to targets: [StyleTarget], scale: CGFloat, margin: CGFloat) {
+        let sourceBorders = copied.source.borders(transparent: true)
+        for target in targets {
+            guard let kind = styleKind(of: target) else {
+                continue
+            }
+            var copy = copied.style
+            if var border = copy.border, let lineWidth = border.lineWidth {
+                let from = Border.widths(border.kind, on: copied.source), to = Border.widths(border.kind, on: kind)
+                if let size = from.firstIndex(of: lineWidth), to.indices.contains(size) {
+                    border.lineWidth = to[size]
+                    copy.border = border
+                }
+            }
+            let pasted = copy.scaled(by: scale)
+            var restyled = style(of: target)
+            restyled.shadow = pasted.shadow
+            if let border = pasted.border {
+                if kind.borders(transparent: border.kind == .outline && hasTransparency(of: target)).contains(border.kind) {
+                    restyled.border = border
+                }
+            } else if !sourceBorders.isEmpty, !kind.borders(transparent: true).isEmpty {
+                restyled.border = nil
+            }
+            setStyle(restyled, of: target, margin: margin)
+            if copied.source.takesCorners, kind.takesCorners {
+                setCornerRadius(copied.cornerRadius * scale, of: target)
+            }
+        }
+    }
+
+    /// What Apply Style to All Images restyles: the screenshot and every placed image.
+    public var imageStyleTargets: [StyleTarget] {
+        [.capture] + annotations.filter { $0.styleKind == .image }.map { .annotation($0.id) }
     }
 
     /// Grows the canvas just enough to show the capture's shadow and border. As with annotations, only edges at or
@@ -251,5 +452,21 @@ extension EditorDocument {
         if maxX >= image.maxX { maxX = max(maxX, painted.maxX) }
         if maxY >= image.maxY { maxY = max(maxY, painted.maxY) }
         canvasRect = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY).integral
+    }
+}
+
+/// A style copied from one object to paste on others. Its sizes are in points, so it looks the same pasted in a
+/// document of another scale.
+public struct CopiedStyle: Equatable, Sendable {
+    public var style: ObjectStyle
+    /// The corner radius, in points; it's pasted only between kinds with corners.
+    public var cornerRadius: CGFloat
+    /// What it was copied from, which says which of its fields mean anything.
+    public var source: StyleKind
+
+    public init(style: ObjectStyle, cornerRadius: CGFloat = 0, source: StyleKind) {
+        self.style = style
+        self.cornerRadius = cornerRadius
+        self.source = source
     }
 }

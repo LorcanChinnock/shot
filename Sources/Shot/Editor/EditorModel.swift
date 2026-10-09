@@ -120,6 +120,10 @@ final class EditorModel {
     var widthIndex: Int {
         didSet { rememberStyle { $0.widthIndex = widthIndex } }
     }
+    /// The last shadow and border given to each kind, in points, which new ones of that kind start with.
+    private var objectStyles: [StyleKind: ObjectStyle]
+    /// The style Copy Style took last, in any editor window, which Paste Style puts on the selection.
+    private static var copiedStyle: CopiedStyle?
     /// The layers picked, from the canvas or the layers panel. The toolbar styles an annotation only while it's the only one.
     var selectedIDs: Set<UUID> = []
     var selectedID: UUID? {
@@ -170,6 +174,7 @@ final class EditorModel {
         alignment = style.alignment
         customColors = style.customColors
         widthIndex = style.widthIndex
+        objectStyles = style.objectStyles
     }
 
     /// Saves only the value that changed, so another open editor's choices aren't overwritten with this
@@ -406,8 +411,8 @@ final class EditorModel {
 
     // MARK: Object style
 
-    /// What the Style popover changes: the selected image, else the capture when nothing is selected. `nil` while text is
-    /// typed or the selection can't take a style.
+    /// What the Style popover changes: the selected image, mark or text, else the capture when nothing is selected. `nil`
+    /// while text is typed or the selection can't take a style.
     var styleTarget: StyleTarget? {
         guard editingText == nil else {
             return nil
@@ -419,6 +424,16 @@ final class EditorModel {
             return nil
         }
         return .annotation(selection.id)
+    }
+
+    /// What the Style popover's target is, which decides what it offers.
+    var targetStyleKind: StyleKind? {
+        styleTarget.flatMap { document.styleKind(of: $0) }
+    }
+
+    /// Whether the target has see-through pixels, so the Style popover offers an outline.
+    var targetHasTransparency: Bool {
+        styleTarget.map { document.hasTransparency(of: $0) } ?? false
     }
 
     /// The style the Style popover shows: its target's.
@@ -461,6 +476,37 @@ final class EditorModel {
         restyleTarget(coalescing: "shadow") { $0.shadow?.opacity = opacity }
     }
 
+    /// The colour a border picked from the custom colour editor had last, which its rainbow swatch applies again.
+    private(set) var lastBorderColor = RGBA(1, 1, 1)
+
+    /// A new `kind` border for the target, at the middle width, in the colour of the border it has, else white, or
+    /// for text the ink that stands out from its colour.
+    func newBorder(_ kind: Border.Kind) -> Border {
+        guard kind != .hairline, let styleKind = targetStyleKind else {
+            return .hairline
+        }
+        let widths = Border.widths(kind, on: styleKind)
+        let textColor = styleKind == .text ? selection?.color.contrastingInk : nil
+        let color = targetStyle.border?.color ?? textColor ?? RGBA(1, 1, 1)
+        return Border(kind: kind, lineWidth: widths[widths.count / 2] * scale, color: color)
+    }
+
+    /// Sets the width of the target's solid border or outline to one of `Border.widths`, in points.
+    func setBorderWidth(_ points: CGFloat) {
+        restyleTarget { $0.border?.lineWidth = points * scale }
+    }
+
+    func setBorderColor(_ color: RGBA) {
+        restyleTarget { $0.border?.color = color }
+    }
+
+    /// Sets the border's colour to one picked from the colour editor, which reports every change as the user drags.
+    /// It's one undo step.
+    func pickBorderColor(_ color: RGBA) {
+        lastBorderColor = color
+        restyleTarget(coalescing: "border-color", whileDragging: false) { $0.border?.color = color }
+    }
+
     /// Changes during a drag of a style slider are one undo step.
     func setTargetCornerRadius(_ points: CGFloat) {
         guard let styleTarget else {
@@ -469,15 +515,56 @@ final class EditorModel {
         edit(coalescing: isDraggingStyle ? "\(styleTarget)-corners" : nil) { $0.setCornerRadius(points * scale, of: styleTarget) }
     }
 
-    /// Changes the target's style as one undo step, growing the canvas to hold it. While a style slider is dragged,
-    /// calls with the same `key` amend that step.
-    private func restyleTarget(coalescing key: String? = nil, _ change: (inout ObjectStyle) -> Void) {
-        guard let styleTarget else {
+    /// Changes the target's style as one undo step, growing the canvas to hold it, and remembers it for the next one of
+    /// its kind. While a style slider is dragged, or always unless `whileDragging`, calls with the same `key` amend that step.
+    private func restyleTarget(coalescing key: String? = nil, whileDragging: Bool = true, _ change: (inout ObjectStyle) -> Void) {
+        guard let styleTarget, let kind = targetStyleKind else {
             return
         }
         var style = document.style(of: styleTarget)
         change(&style)
-        edit(coalescing: isDraggingStyle ? key.map { "\(styleTarget)-\($0)" } : nil) { $0.setStyle(style, of: styleTarget, margin: canvasMargin) }
+        edit(coalescing: isDraggingStyle || !whileDragging ? key.map { "\(styleTarget)-\($0)" } : nil) { $0.setStyle(style, of: styleTarget, margin: canvasMargin) }
+        // The screenshot isn't remembered: new captures always start plain.
+        if kind != .capture {
+            let remembered = document.style(of: styleTarget).scaled(by: 1 / scale)
+            objectStyles[kind] = remembered
+            rememberStyle { $0.objectStyles[kind] = remembered }
+        }
+    }
+
+    /// The style a new annotation of `kind` starts with: the last one given to that kind, else none.
+    private func startingStyle(for kind: StyleKind) -> ObjectStyle {
+        EditorStyle(objectStyles: objectStyles).objectStyle(for: kind, scale: scale)
+    }
+
+    /// Copies the style of the selection, or of the screenshot when nothing is selected, for Paste Style.
+    func copyStyle() {
+        guard let styleTarget, let copied = document.copyStyle(of: styleTarget, scale: scale) else {
+            Toast.error("Select an image, shape, arrow or text to copy its style")
+            return
+        }
+        Self.copiedStyle = copied
+        Toast.show("Copied style")
+    }
+
+    var canPasteStyle: Bool { Self.copiedStyle != nil }
+
+    /// Puts the copied style on every selected annotation that takes one, or on the screenshot when nothing is selected,
+    /// as one undo step. Each takes only what it can have.
+    func pasteStyle() {
+        guard let copied = Self.copiedStyle, editingText == nil else {
+            return
+        }
+        let targets: [StyleTarget] = selectedIDs.isEmpty ? [.capture] : document.annotations.filter { selectedIDs.contains($0.id) }.map { .annotation($0.id) }
+        edit { $0.pasteStyle(copied, to: targets, scale: scale, margin: canvasMargin) }
+    }
+
+    /// Puts the copied style on the screenshot and every placed image as one undo step.
+    func applyStyleToAllImages() {
+        guard let copied = Self.copiedStyle, editingText == nil else {
+            return
+        }
+        edit { $0.pasteStyle(copied, to: $0.imageStyleTargets, scale: scale, margin: canvasMargin) }
     }
 
     /// Call as a drag of a style slider starts and ends, so each drag is one undo step.
@@ -632,9 +719,13 @@ final class EditorModel {
     }
 
     /// Adds `annotation` as one undoable step, growing the canvas if it reaches past the edge, and selects it
-    /// so the toolbar can fix its style until the next one is drawn.
+    /// so the toolbar can fix its style until the next one is drawn. A mark or text starts with the last style given to its kind.
     func add(_ annotation: Annotation) {
         recordUndo()
+        var annotation = annotation
+        if let kind = annotation.styleKind, annotation.style.isEmpty {
+            annotation.style = startingStyle(for: kind)
+        }
         document.annotations.append(annotation)
         document.grow(toFit: annotation, margin: canvasMargin)
         selectedID = annotation.id
@@ -776,9 +867,15 @@ final class EditorModel {
         }
         recordUndo()
         tool = .select
+        let style = startingStyle(for: .image)
         for (index, (image, imageScale)) in decoded.enumerated() {
             let center = point.map { CGPoint(x: $0.x + pasteStep * CGFloat(index), y: $0.y + pasteStep * CGFloat(index)) }
-            selectedID = document.addImage(image, scale: imageScale, documentScale: scale, centeredAt: center, margin: canvasMargin)
+            let id = document.addImage(image, scale: imageScale, documentScale: scale, centeredAt: center, margin: canvasMargin)
+            // It starts with the last style given to an image, but for an outline it has no see-through pixels for.
+            if !style.isEmpty {
+                document.setStyle(style, of: .annotation(id), margin: canvasMargin)
+            }
+            selectedID = id
         }
     }
 

@@ -46,6 +46,7 @@ public enum PreferenceKey {
     public static let editorRedactionAmount = "editorRedactionAmount"
     public static let editorSpotlight = "editorSpotlight"
     public static let editorAlignment = "editorAlignment"
+    public static let editorObjectStyles = "editorObjectStyles"
     public static let galleryTileSize = "galleryTileSize"
     public static let partyModeUnlocked = "partyModeUnlocked"
     public static let partyMode = "partyMode"
@@ -127,6 +128,7 @@ public struct Preferences {
             PreferenceKey.editorRedactionAmount: Double(EditorStyle().redactionAmount),
             PreferenceKey.editorSpotlight: Data(),
             PreferenceKey.editorAlignment: EditorStyle().alignment.rawValue,
+            PreferenceKey.editorObjectStyles: Data(),
             PreferenceKey.galleryTileSize: Gallery.defaultTileSize,
             PreferenceKey.partyModeUnlocked: false,
             PreferenceKey.partyMode: false,
@@ -193,6 +195,7 @@ public struct Preferences {
         store.set(Double(style.redactionAmount), forKey: PreferenceKey.editorRedactionAmount)
         store.set(try? JSONEncoder().encode(style.spotlight), forKey: PreferenceKey.editorSpotlight)
         store.set(style.alignment.rawValue, forKey: PreferenceKey.editorAlignment)
+        store.set(try? JSONEncoder().encode(style.objectStyles), forKey: PreferenceKey.editorObjectStyles)
     }
 
     public static func resetHotkeys(in store: UserDefaults = .standard) {
@@ -301,7 +304,8 @@ public struct Preferences {
             redactionAmount: (store.object(forKey: PreferenceKey.editorRedactionAmount) as? Double)
                 .flatMap { Redaction.amounts.contains(CGFloat($0)) ? CGFloat($0) : nil } ?? defaults.redactionAmount,
             spotlight: decoded(PreferenceKey.editorSpotlight) ?? defaults.spotlight,
-            alignment: TextAlign(rawValue: store.string(forKey: PreferenceKey.editorAlignment) ?? "") ?? defaults.alignment
+            alignment: TextAlign(rawValue: store.string(forKey: PreferenceKey.editorAlignment) ?? "") ?? defaults.alignment,
+            objectStyles: decoded(PreferenceKey.editorObjectStyles) ?? defaults.objectStyles
         )
     }
 

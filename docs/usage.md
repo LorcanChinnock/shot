@@ -93,13 +93,17 @@ Annotations can reach past the edges of the screenshot: the canvas grows to fit 
 
 ### Style
 
-Click **Style** in the toolbar to round the corners of your screenshot and give it a shadow or a border. With an image you placed selected, Style acts on that image instead; it's greyed out while anything else is selected. Nothing is styled until you ask.
+Click **Style** in the toolbar to round the corners of your screenshot and give it a shadow or a border. With something selected, Style acts on that instead: a placed image gets the same choices, and a shape, arrow, line, pen stroke, counter or text gets a shadow or glow, and text an outline too. It's greyed out for blurs, pixelates, spotlights, the highlighter and notes, which already have a shadow of their own. Nothing is styled until you ask.
 
-- **Shadow:** None, Soft, Float, Contact or Glow. Point at one to preview it on the canvas, and click to apply it. Once there's a shadow, **Elevation** and **Opacity** sliders tune it into a custom one. The light comes from above, so shadows fall below. On a coloured background the shadow takes a dark shade of it; on a transparent one it's black, and it's saved in the PNG so it looks right pasted anywhere. Glow takes the colour of the image's edge.
-- **Border:** **Hairline** draws a one-pixel rim, light on dark content and dark on light, so a screenshot keeps its edge on a page of the same colour.
-- **Corners:** the slider rounds the corners.
+- **Shadow:** None, Soft, Float, Contact or Glow. Point at one to preview it on the canvas, and click to apply it. Once there's a shadow, **Elevation** and **Opacity** sliders tune it into a custom one. The light comes from above, so shadows fall below. On a coloured background the shadow takes a dark shade of it; on a transparent one it's black, and it's saved in the PNG so it looks right pasted anywhere. Glow takes the colour of the image's edge, or of the shape, arrow or text.
+- **Border:** **Hairline** draws a one-pixel rim, light on dark content and dark on light, so a screenshot keeps its edge on a page of the same colour. **Solid** draws a line of one colour just outside the edge, following the rounded corners. **Outline** shows only for an image with see-through pixels, such as a logo or a cut-out: it traces the image's shape, like a sticker. On text, Outline strokes round each letter, so it reads on a busy screenshot. Solid and Outline offer three widths, **S**, **M** and **L**, and the palette colours; they start white, or on text in black or white to stand out from its colour.
+- **Corners:** the slider rounds the corners of the screenshot or an image.
 
 A shadow or border on the screenshot grows the canvas just enough to fit it, and removing it shrinks the canvas back. Each click is one undo step, and so is each slider drag.
+
+The style you give an image, a shape or arrow, or text is remembered: the next one you draw or add of that kind starts with it, even in a new editor window, until you pick None. The screenshot always starts plain.
+
+To reuse a style, select something and choose **Edit › Copy Style** (⌥⌘C), then select something else and choose **Paste Style** (⌥⌘V); with nothing selected, they copy from and paste on the screenshot. Each thing takes only what it can have: a shape keeps its own corners, and text only takes an outline. **Edit › Apply Style to All Images** pastes it on the screenshot and every image you placed. Pasting is one undo step.
 
 ### Combine images
 
@@ -199,6 +203,7 @@ Record Fullscreen and Record Window have no shortcut until you set one. Capture 
 | ⌘C | Copy the selection, or the whole image when nothing is selected |
 | ⌘V | Paste an annotation or an image |
 | ⌘D | Duplicate the selection |
+| ⌥⌘C / ⌥⌘V | Copy / paste a style |
 | ⇧⌘I | Add an image: a recent capture or a file |
 | ⌘L | Show or hide the layers |
 | ⌘] / ⌘[ | Move the selection forward / back |

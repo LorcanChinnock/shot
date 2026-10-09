@@ -1,5 +1,6 @@
 import CoreGraphics
 import Foundation
+import os
 
 /// The pixels of an image placed on the canvas, kept at full resolution and stored once: annotations,
 /// undo steps and copies within the editor all share the same instance rather than copying the bitmap.
@@ -10,10 +11,23 @@ public final class AnnotationImage: Equatable, Codable, @unchecked Sendable {
 
     public let id: UUID
     public let image: CGImage
+    private let transparency = OSAllocatedUnfairLock<Bool?>(initialState: nil)
 
     public init(_ image: CGImage, id: UUID = UUID()) {
         self.id = id
         self.image = image
+    }
+
+    /// Whether any of its pixels is see-through, which an outline needs. It's read the first time it's asked, then kept.
+    public var hasTransparency: Bool {
+        transparency.withLock { known in
+            if let known {
+                return known
+            }
+            let transparent = image.hasTransparentPixels
+            known = transparent
+            return transparent
+        }
     }
 
     public static func == (lhs: AnnotationImage, rhs: AnnotationImage) -> Bool {
