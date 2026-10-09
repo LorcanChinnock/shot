@@ -57,6 +57,10 @@ public enum PreferenceKey {
     public static let disabledSystemScreenshots = "disabledSystemScreenshots"
     /// True once Shot has given ⌘⇧6 back to macOS, so it does that only once.
     public static let gaveBackTextCaptureKey = "gaveBackTextCaptureKey"
+    /// Window layout: whether the photo editor shows its layers, and the video editor its tracks and inspector.
+    public static let editorShowsLayers = "editorShowsLayers"
+    public static let videoEditorShowsTracks = "videoEditorShowsTracks"
+    public static let videoEditorShowsInspector = "videoEditorShowsInspector"
 
     public static func hotkey(_ action: ShotAction) -> String { "hotkey.\(action.rawValue)" }
 }
@@ -135,6 +139,9 @@ public struct Preferences {
             PreferenceKey.galleryTileSize: Gallery.defaultTileSize,
             PreferenceKey.partyModeUnlocked: false,
             PreferenceKey.partyMode: false,
+            PreferenceKey.editorShowsLayers: false,
+            PreferenceKey.videoEditorShowsTracks: false,
+            PreferenceKey.videoEditorShowsInspector: false,
         ]
         for action in ShotAction.allCases {
             values[PreferenceKey.hotkey(action)] = action.defaultCombo?.encoded ?? ""
@@ -210,9 +217,12 @@ public struct Preferences {
     public var playSound: Bool { store.bool(forKey: PreferenceKey.playSound) }
     public var saveFolder: URL { URL(fileURLWithPath: store.string(forKey: PreferenceKey.saveFolder) ?? Self.defaultSaveFolder) }
 
-    public var filePrefix: String {
-        let trimmed = (store.string(forKey: PreferenceKey.filePrefix) ?? "").trimmingCharacters(in: .whitespaces)
-        return trimmed.isEmpty ? Self.defaultFilePrefix : trimmed.replacingOccurrences(of: "/", with: "-")
+    public var filePrefix: String { Self.sanitizedPrefix(store.string(forKey: PreferenceKey.filePrefix) ?? "") }
+
+    /// The file name prefix typed in Settings as file names use it: trimmed, the default when empty, and with no `/`.
+    public static func sanitizedPrefix(_ typed: String) -> String {
+        let trimmed = typed.trimmingCharacters(in: .whitespaces)
+        return trimmed.isEmpty ? defaultFilePrefix : trimmed.replacingOccurrences(of: "/", with: "-")
     }
 
     public var imageFormat: ImageFormat { ImageFormat(rawValue: store.string(forKey: PreferenceKey.imageFormat) ?? "") ?? .png }

@@ -233,13 +233,13 @@ private struct SidebarItem: View {
 // MARK: General
 
 private struct GeneralSettings: View {
-    @Setting(PreferenceKey.playSound) private var playSound = true
-    @Setting(PreferenceKey.hidesShotUI) private var hidesShotUI = true
-    @Setting(PreferenceKey.excludesMenuBar) private var excludesMenuBar = false
-    @Setting(PreferenceKey.saveFolder) private var saveFolder = Preferences.defaultSaveFolder
-    @Setting(PreferenceKey.filePrefix) private var filePrefix = Preferences.defaultFilePrefix
-    @Setting(PreferenceKey.imageFormat) private var imageFormat = ImageFormat.png.rawValue
-    @Setting(PreferenceKey.downscaleRetina) private var downscaleRetina = false
+    @Setting(PreferenceKey.playSound) private var playSound: Bool
+    @Setting(PreferenceKey.hidesShotUI) private var hidesShotUI: Bool
+    @Setting(PreferenceKey.excludesMenuBar) private var excludesMenuBar: Bool
+    @Setting(PreferenceKey.saveFolder) private var saveFolder: String
+    @Setting(PreferenceKey.filePrefix) private var filePrefix: String
+    @Setting(PreferenceKey.imageFormat) private var imageFormat: ImageFormat
+    @Setting(PreferenceKey.downscaleRetina) private var downscaleRetina: Bool
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     private let color = SettingsSection.general.color
 
@@ -262,7 +262,7 @@ private struct GeneralSettings: View {
                         .buttonStyle(BrutalButtonStyle(color: color, compact: true))
                 }
             }
-            SettingRow(title: "File name", subtitle: "\(previewName).\(ImageFormat(rawValue: imageFormat)?.fileExtension ?? "png")") {
+            SettingRow(title: "File name", subtitle: "\(previewName).\(imageFormat.fileExtension)") {
                 TextField("Shot", text: $filePrefix)
                     .textFieldStyle(.plain)
                     .font(.system(size: 13, weight: .semibold))
@@ -271,15 +271,14 @@ private struct GeneralSettings: View {
                     .brutalSurface(Color.white.opacity(0.85), radius: 8, shadow: 2)
             }
             SettingRow(title: "Image format", subtitle: "Clipboard copies always use PNG.") {
-                BrutalSegmented(selection: $imageFormat, options: [(ImageFormat.png.rawValue, "PNG"), (ImageFormat.jpeg.rawValue, "JPEG")], color: color)
+                BrutalSegmented(selection: $imageFormat, options: [(ImageFormat.png, "PNG"), (.jpeg, "JPEG")], color: color)
             }
             ToggleRow(title: "Scale Retina captures to 1×", subtitle: "Halves pixel size on 2× displays. Smaller files, less detail.", isOn: $downscaleRetina, color: color, divider: false)
         }
     }
 
     private var previewName: String {
-        let trimmed = filePrefix.trimmingCharacters(in: .whitespaces)
-        return FileNaming.baseName(for: Date(), prefix: trimmed.isEmpty ? Preferences.defaultFilePrefix : trimmed.replacingOccurrences(of: "/", with: "-"))
+        FileNaming.baseName(for: Date(), prefix: Preferences.sanitizedPrefix(filePrefix))
     }
 
     private func chooseFolder() {
@@ -310,14 +309,14 @@ private struct GeneralSettings: View {
 // MARK: Capture
 
 private struct CaptureSettings: View {
-    @Setting(PreferenceKey.saveAfterCapture) private var save = true
-    @Setting(PreferenceKey.copyAfterCapture) private var copy = true
-    @Setting(PreferenceKey.quickAccessAfterCapture) private var quickAccess = true
-    @Setting(PreferenceKey.openEditorAfterCapture) private var openEditor = false
-    @Setting(PreferenceKey.showMagnifier) private var magnifier = true
-    @Setting(PreferenceKey.showCrosshair) private var crosshair = true
-    @Setting(PreferenceKey.captureShowsCursor) private var showsCursor = false
-    @Setting(PreferenceKey.windowShadow) private var windowShadow = true
+    @Setting(PreferenceKey.saveAfterCapture) private var save: Bool
+    @Setting(PreferenceKey.copyAfterCapture) private var copy: Bool
+    @Setting(PreferenceKey.quickAccessAfterCapture) private var quickAccess: Bool
+    @Setting(PreferenceKey.openEditorAfterCapture) private var openEditor: Bool
+    @Setting(PreferenceKey.showMagnifier) private var magnifier: Bool
+    @Setting(PreferenceKey.showCrosshair) private var crosshair: Bool
+    @Setting(PreferenceKey.captureShowsCursor) private var showsCursor: Bool
+    @Setting(PreferenceKey.windowShadow) private var windowShadow: Bool
     private let color = SettingsSection.capture.color
 
     var body: some View {
@@ -339,20 +338,20 @@ private struct CaptureSettings: View {
 // MARK: Quick Access
 
 private struct QuickAccessSettings: View {
-    @Setting(PreferenceKey.quickAccessPosition) private var position = QuickAccessPosition.left.rawValue
-    @Setting(PreferenceKey.quickAccessDuration) private var duration = 8.0
+    @Setting(PreferenceKey.quickAccessPosition) private var position: QuickAccessPosition
+    @Setting(PreferenceKey.quickAccessDuration) private var duration: Double
     private let color = SettingsSection.quickAccess.color
 
     var body: some View {
         SettingsCard(title: "Placement", symbol: "rectangle.bottomhalf.inset.filled") {
             SettingRow(title: "Screen corner") {
-                BrutalSegmented(selection: $position, options: [(QuickAccessPosition.left.rawValue, "Bottom left"), (QuickAccessPosition.right.rawValue, "Bottom right")], color: color)
+                BrutalSegmented(selection: $position, options: [(QuickAccessPosition.left, "Bottom left"), (.right, "Bottom right")], color: color)
             }
             SettingRow(title: "Auto-close", subtitle: "Hovering a card pauses the timer.", divider: false) {
                 BrutalSegmented(selection: $duration, options: [(4.0, "4s"), (8.0, "8s"), (15.0, "15s"), (30.0, "30s"), (0.0, "Never")], color: color)
             }
         }
-        ScreenPreview(position: QuickAccessPosition(rawValue: position) ?? .left, color: color)
+        ScreenPreview(position: position, color: color)
     }
 }
 
@@ -394,15 +393,15 @@ private struct ScreenPreview: View {
 // MARK: Recording
 
 private struct RecordingSettings: View {
-    @Setting(PreferenceKey.recordingFPS) private var fps = 60
-    @Setting(PreferenceKey.recordShowsCursor) private var showsCursor = true
-    @Setting(PreferenceKey.showRecordingBorder) private var border = true
-    @Setting(PreferenceKey.copyAfterRecording) private var copy = true
-    @Setting(PreferenceKey.adjustBeforeRecording) private var adjust = false
-    @Setting(PreferenceKey.recordingCountdown) private var countdown = 0
+    @Setting(PreferenceKey.recordingFPS) private var fps: Int
+    @Setting(PreferenceKey.recordShowsCursor) private var showsCursor: Bool
+    @Setting(PreferenceKey.showRecordingBorder) private var border: Bool
+    @Setting(PreferenceKey.copyAfterRecording) private var copy: Bool
+    @Setting(PreferenceKey.adjustBeforeRecording) private var adjust: Bool
+    @Setting(PreferenceKey.recordingCountdown) private var countdown: Int
     // Read only so the GIF summary updates when the video editor changes them.
-    @Setting(PreferenceKey.gifFrameRate) private var gifFrameRate = VideoExportOptions().gifFrameRate
-    @Setting(PreferenceKey.gifWidth) private var gifWidth = VideoExportOptions().gifWidth
+    @Setting(PreferenceKey.gifFrameRate) private var gifFrameRate: Int
+    @Setting(PreferenceKey.gifWidth) private var gifWidth: Int
     private let color = SettingsSection.recording.color
 
     var body: some View {
@@ -432,9 +431,9 @@ private struct RecordingSettings: View {
 
 private struct AudioSettings: View {
     let color: Color
-    @Setting(PreferenceKey.recordMicrophone) private var microphone = false
-    @Setting(PreferenceKey.microphoneDeviceID) private var deviceID = ""
-    @Setting(PreferenceKey.recordSystemAudio) private var systemAudio = false
+    @Setting(PreferenceKey.recordMicrophone) private var microphone: Bool
+    @Setting(PreferenceKey.microphoneDeviceID) private var deviceID: String
+    @Setting(PreferenceKey.recordSystemAudio) private var systemAudio: Bool
     @State private var devices: [AVCaptureDevice] = []
     private let preview = DevicePreview.microphone
 
@@ -473,9 +472,9 @@ private struct AudioSettings: View {
 
 private struct CameraSettings: View {
     let color: Color
-    @Setting(PreferenceKey.recordCamera) private var camera = false
-    @Setting(PreferenceKey.cameraDeviceID) private var deviceID = ""
-    @Setting(PreferenceKey.cameraSize) private var size = CameraBubbleSize.medium.rawValue
+    @Setting(PreferenceKey.recordCamera) private var camera: Bool
+    @Setting(PreferenceKey.cameraDeviceID) private var deviceID: String
+    @Setting(PreferenceKey.cameraSize) private var size: CameraBubbleSize
     @State private var devices: [AVCaptureDevice] = []
     private let preview = DevicePreview.camera
 
@@ -505,7 +504,7 @@ private struct CameraSettings: View {
                 }
             }
             SettingRow(title: "Bubble size", divider: false) {
-                BrutalSegmented(selection: $size, options: CameraBubbleSize.allCases.map { ($0.rawValue, $0.rawValue.capitalized) }, color: color)
+                BrutalSegmented(selection: $size, options: CameraBubbleSize.allCases.map { ($0, $0.rawValue.capitalized) }, color: color)
             }
         }
         .onAppear {
@@ -558,7 +557,7 @@ private struct DevicePicker: View {
 
 private struct ShortcutSettings: View {
     private let color = SettingsSection.shortcuts.color
-    @Setting(PreferenceKey.replacesSystemScreenshots) private var replacesSystemScreenshots = false
+    @Setting(PreferenceKey.replacesSystemScreenshots) private var replacesSystemScreenshots: Bool
     @State private var macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
 
     private var useShot: Binding<Bool> {
@@ -614,8 +613,8 @@ private struct AboutSettings: View {
     @State private var cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
     @State private var confirmingReset = false
     @State private var iconClicks = 0
-    @Setting(PreferenceKey.partyModeUnlocked) private var partyUnlocked = false
-    @Setting(PreferenceKey.partyMode) private var party = false
+    @Setting(PreferenceKey.partyModeUnlocked) private var partyUnlocked: Bool
+    @Setting(PreferenceKey.partyMode) private var party: Bool
     @Bindable private var updater = Updater.shared
     private let color = SettingsSection.about.color
 

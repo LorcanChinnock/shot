@@ -18,7 +18,7 @@ enum Party {
 struct PartyColor<Content: View>: View {
     let color: Color
     @ViewBuilder let content: (Color) -> Content
-    @Setting(PreferenceKey.partyMode) private var party = false
+    @Setting(PreferenceKey.partyMode) private var party: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(_ color: Color, @ViewBuilder content: @escaping (Color) -> Content) {
