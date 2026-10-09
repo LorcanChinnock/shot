@@ -333,6 +333,39 @@ extension MediaTests {
         #expect(try await pixel(in: output, at: 1, x: 0.5 + 80 / 640, y: 0.5).isNear(gray), "no longer to the side")
     }
 
+    @Test func aStyledClipExportsWithRoundedCornersAndAShadowBelowIt() async throws {
+        let base = temp("base.mp4"), top = temp("top.mp4"), output = temp("out.mp4")
+        defer { [base, top, output].forEach { try? FileManager.default.removeItem(at: $0) } }
+        try await writeSolidVideo(to: base, color: Color(r: 128, g: 128, b: 128), size: canvas, seconds: 1)
+        try await writeSolidVideo(to: top, color: .green, size: canvas, seconds: 1)
+        let (imported, id) = try #require(Project(source: base, duration: 1, canvasSize: canvas, hasAudio: false)
+            .importing(ImportedMedia(source: top, duration: 1, size: canvas, hasAudio: false), at: 0))
+        // At half scale the clip sits from 160 to 480 across and 90 to 270 down, its radius and shadow halved with it.
+        var project = try #require(imported.setting(transform: ClipTransform(scale: 0.5), of: id))
+        project = try #require(project.setting(cornerRadius: 80, of: id))
+        project = try #require(project.setting(style: ObjectStyle(shadow: ShadowPreset.float.shadow(scale: 1)), of: id))
+        try await ProjectExporter.export(project, to: output)
+        #expect(try await pixel(in: output, at: 0.5, x: 0.5, y: 0.5).isNear(.green))
+        // The encode shifts the grey a little, so the shadow is measured against grey well clear of it.
+        let clear = try await pixel(in: output, at: 0.5, x: 0.05, y: 0.5)
+        #expect(try await pixel(in: output, at: 0.5, x: 162 / 640, y: 92 / 360).isNear(clear, tolerance: 20), "the rounded corner shows what's under it")
+        let above = try await pixel(in: output, at: 0.5, x: 0.5, y: 78 / 360), below = try await pixel(in: output, at: 0.5, x: 0.5, y: 282 / 360)
+        #expect(above.isNear(clear, tolerance: 4), "nothing above, got \(above) by \(clear)")
+        #expect(Int(below.r) < Int(clear.r) - 8, "a shadow below, got \(below) by \(clear)")
+    }
+
+    @Test func aStyledAnnotationCastsItsShadowInTheVideo() async throws {
+        let base = temp("base.mp4"), output = temp("out.mp4")
+        defer { [base, output].forEach { try? FileManager.default.removeItem(at: $0) } }
+        try await writeSolidVideo(to: base, color: Color(r: 128, g: 128, b: 128), size: canvas, seconds: 1)
+        var box = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 220, y: 130, width: 200, height: 100)), color: RGBA(1, 1, 1), fill: RGBA(1, 1, 1), lineWidth: 2)
+        box.style = ObjectStyle(shadow: ShadowPreset.float.shadow(scale: 1))
+        let project = Project(source: base, duration: 1, canvasSize: canvas, hasAudio: false).adding(annotation: box, at: 0, duration: 1).project
+        try await ProjectExporter.export(project, to: output)
+        let above = try await pixel(in: output, at: 0.5, x: 0.5, y: 118 / 360), below = try await pixel(in: output, at: 0.5, x: 0.5, y: 242 / 360)
+        #expect(Int(below.r) < Int(above.r) - 8, "darker below than above, got \(below) and \(above)")
+    }
+
     @Test func volumeKeyframesBecomeRampsInTheAudioMix() async throws {
         let base = temp("base.mp4")
         defer { try? FileManager.default.removeItem(at: base) }

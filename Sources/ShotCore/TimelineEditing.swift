@@ -122,6 +122,15 @@ extension Project {
         clip(id) == nil ? nil : changing([id]) { $0.volume = min(max(volume, 0), 2) }
     }
 
+    /// Gives a clip's picture `style`, without the borders a picture can't have.
+    public func setting(style: ObjectStyle, of id: UUID) -> Project? {
+        clip(id) == nil ? nil : changing([id]) { $0.style = style.restricted(to: .image, transparent: false) }
+    }
+
+    public func setting(cornerRadius: CGFloat, of id: UUID) -> Project? {
+        clip(id) == nil ? nil : changing([id]) { $0.cornerRadius = max(0, cornerRadius) }
+    }
+
     public func clip(_ id: UUID) -> Clip? {
         tracks.lazy.flatMap(\.clips).first { $0.id == id }
     }

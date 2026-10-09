@@ -40,6 +40,19 @@ public struct Clip: Equatable, Codable, Sendable, Identifiable {
     public var volume: Double
     /// Keyframes for the properties above, in seconds from `start`.
     public var animation: ClipAnimation
+    /// The shadow and border of its picture, in canvas pixels at scale 1, so they grow and shrink with it. Stored only
+    /// when set, so projects saved before it still decode.
+    public var style: ObjectStyle {
+        get { objectStyle ?? ObjectStyle() }
+        set { objectStyle = newValue.isEmpty ? nil : newValue }
+    }
+    private var objectStyle: ObjectStyle?
+    /// How round its picture's corners are, in canvas pixels at scale 1. Stored only when set.
+    public var cornerRadius: CGFloat {
+        get { radius ?? 0 }
+        set { radius = newValue > 0 ? newValue : nil }
+    }
+    private var radius: CGFloat?
 
     public init(id: UUID = UUID(), source: URL, sourceDuration: Double, sourceStart: Double = 0, sourceEnd: Double? = nil, start: Double = 0, linkedID: UUID? = nil, size: CGSize = .zero, transform: ClipTransform = .identity, volume: Double = 1, animation: ClipAnimation = ClipAnimation()) {
         self.id = id
@@ -233,7 +246,7 @@ public struct Project: Equatable, Codable, Sendable {
     /// The main track's clips as the trim handles and cuts the editor shows, when that's all there is:
     /// one recording on the main track, in order, with its own sound linked and cut the same, and nothing hidden or muted.
     public var trimEdit: TrimEdit? {
-        guard let first = main.clips.first, main.clips.allSatisfy({ $0.source == first.source && $0.transform == .identity && $0.animation.isEmpty }),
+        guard let first = main.clips.first, main.clips.allSatisfy({ $0.source == first.source && $0.transform == .identity && $0.animation.isEmpty && !$0.isStyled }),
               tracks.allSatisfy({ !$0.isHidden && !$0.isMuted }) else {
             return nil
         }

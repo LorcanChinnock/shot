@@ -194,6 +194,7 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
     private let context = CIContext(options: [.workingColorSpace: NSNull(), .outputColorSpace: NSNull()])
     private let queue = DispatchQueue(label: "Shot.compositor", attributes: .concurrent)
     private let overlays = OverlayCache()
+    private let shadows = ClipShadowCache()
 
     var sourcePixelBufferAttributes: [String: any Sendable]? { Self.pixelFormat }
     var requiredPixelBufferAttributesForRenderContext: [String: any Sendable] { Self.pixelFormat }
@@ -246,6 +247,13 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
                     let geometry = LayerGeometry.transform(for: placed, canvas: layer.canvas)
                     let matrix = LayerGeometry.imageTransform(orientation: layer.orientation, geometry: geometry, sourceHeight: CGFloat(CVPixelBufferGetHeight(frame)), canvasHeight: canvas.height)
                     picture = picture.transformed(by: matrix)
+                    if placed.isStyled, placed.size.width > 0, placed.size.height > 0 {
+                        let fit = min(layer.canvas.width / placed.size.width, layer.canvas.height / placed.size.height)
+                        let placement = LayerGeometry.imageTransform(orientation: .identity, geometry: geometry, sourceHeight: placed.size.height, canvasHeight: canvas.height)
+                        let lift = placed.animation.lift(at: time - placed.start)
+                        image = ClipStyler.composite(picture, of: placed, placement: placement, fit: fit, lift: lift, over: image, shadows: self.shadows, context: self.context)
+                        continue
+                    }
                     if placed.transform.opacity < 1 {
                         picture = picture.applyingFilter("CIColorMatrix", parameters: ["inputAVector": CIVector(x: 0, y: 0, z: 0, w: CGFloat(max(0, placed.transform.opacity)))])
                     }

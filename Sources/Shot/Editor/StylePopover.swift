@@ -1,18 +1,49 @@
 import ShotCore
 import SwiftUI
 
+/// What the Style popover edits: the photo editor's selection or screenshot, or the video editor's selected clip. Sizes are
+/// in points, which `scale` turns into the target's pixels.
+@MainActor
+protocol StyleEditing: AnyObject, Observable {
+    var targetStyleKind: StyleKind? { get }
+    /// The popover's heading.
+    var targetStyleTitle: String { get }
+    var targetHasTransparency: Bool { get }
+    var targetStyle: ObjectStyle { get }
+    var targetCornerRadius: CGFloat { get }
+    var scale: CGFloat { get }
+    /// A style the pointer is over, shown in place of the target's until it moves off.
+    var stylePreview: ObjectStyle? { get set }
+    var lastBorderColor: RGBA { get }
+    func newBorder(_ kind: Border.Kind) -> Border
+    func setTargetStyle(_ style: ObjectStyle)
+    func setShadowElevation(_ points: CGFloat)
+    func setShadowOpacity(_ opacity: CGFloat)
+    func setBorderWidth(_ points: CGFloat)
+    func setBorderColor(_ color: RGBA)
+    func pickBorderColor(_ color: RGBA)
+    func setTargetCornerRadius(_ points: CGFloat)
+    func setDraggingStyle(_ dragging: Bool)
+}
+
+extension StyleEditing {
+    var targetStyleTitle: String { targetStyleKind?.title ?? "" }
+}
+
+extension EditorModel: StyleEditing {}
+
 /// The shadow, border and corner radius of the selected image, mark or text, or of the screenshot when nothing is selected.
 /// Pointing at a preset shows it on the canvas; clicking it applies it. The sliders show only once there's a shadow to tune,
 /// and the width and colour only once there's a border that has them. It offers only what the target can have.
-struct StylePopover: View {
-    @Bindable var model: EditorModel
+struct StylePopover<Model: StyleEditing>: View {
+    @Bindable var model: Model
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             if let kind = model.targetStyleKind {
                 let style = model.targetStyle
                 let borders = kind.borders(transparent: model.targetHasTransparency)
-                Text(kind.title)
+                Text(model.targetStyleTitle)
                     .font(.system(size: 11, weight: .black))
                     .tracking(1.2)
                     .foregroundStyle(Brutal.ink.opacity(0.75))
@@ -129,7 +160,7 @@ struct StylePopover: View {
         }
     }
 
-    private static let sizeNames = ["Small", "Medium", "Large"]
+    private static var sizeNames: [String] { ["Small", "Medium", "Large"] }
 
     private func label(_ text: String) -> some View {
         Text(text)
