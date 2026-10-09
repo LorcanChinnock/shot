@@ -274,10 +274,6 @@ extension CGImage {
     }
 }
 
-/// The last screenshot asked whether it has see-through pixels, and the answer, so asking again on every edit doesn't
-/// read it again.
-private let lastCaptureTransparency = OSAllocatedUnfairLock<(image: CGImage, transparent: Bool)?>(initialState: nil)
-
 extension Annotation {
     /// What its style is on, which decides what the Style popover offers; `nil` for the kinds it can't style: blurs,
     /// pixelates, spotlights, the highlighter and notes, which have a shadow of their own.
@@ -304,139 +300,6 @@ extension Annotation {
             return 0
         }
         return BoxShape.cornerRadius(cornerRadius ?? 0, in: rect)
-    }
-}
-
-extension EditorDocument {
-    /// The capture's corner radius, within what the image can take.
-    public var clampedCaptureCornerRadius: CGFloat {
-        BoxShape.cornerRadius(captureCornerRadius, in: fullRect)
-    }
-
-    /// The image plus how far its shadow and border paint past it.
-    public var capturePaintedBounds: CGRect {
-        captureStyle.paintedRect(around: fullRect)
-    }
-
-    /// What `target`'s style is on; `nil` for an annotation that isn't there or can't be styled.
-    public func styleKind(of target: StyleTarget) -> StyleKind? {
-        switch target {
-        case .capture: .capture
-        case let .annotation(id): annotations.first { $0.id == id }?.styleKind
-        }
-    }
-
-    /// Whether `target` has see-through pixels, which an outline needs. The screenshot's answer is kept while it's the
-    /// same screenshot.
-    public func hasTransparency(of target: StyleTarget) -> Bool {
-        switch target {
-        case .capture:
-            let base = base
-            if let known = lastCaptureTransparency.withLock({ $0.flatMap { $0.image === base ? $0.transparent : nil } }) {
-                return known
-            }
-            let transparent = base.hasTransparentPixels
-            lastCaptureTransparency.withLock { $0 = (base, transparent) }
-            return transparent
-        case let .annotation(id):
-            return annotations.first { $0.id == id }?.hasTransparency ?? false
-        }
-    }
-
-    /// The style of `target`; empty for an annotation that isn't there.
-    public func style(of target: StyleTarget) -> ObjectStyle {
-        switch target {
-        case .capture: captureStyle
-        case let .annotation(id): annotations.first { $0.id == id }?.style ?? ObjectStyle()
-        }
-    }
-
-    /// The corner radius of `target`, as set; 0 for an annotation that isn't there.
-    public func cornerRadius(of target: StyleTarget) -> CGFloat {
-        switch target {
-        case .capture: captureCornerRadius
-        case let .annotation(id): annotations.first { $0.id == id }?.cornerRadius ?? 0
-        }
-    }
-
-    /// Restyles `target`, growing the canvas to hold its shadow and border and pulling back padding they no longer need.
-    /// A border the target can't have is dropped. A window captured with the macOS shadow takes no style: its image
-    /// includes the shadow's see-through margin, which a border or corners would go round. A locked annotation, or one
-    /// that can't be styled, is left alone.
-    public mutating func setStyle(_ style: ObjectStyle, of target: StyleTarget, margin: CGFloat) {
-        guard let kind = styleKind(of: target) else {
-            return
-        }
-        let style = style.restricted(to: kind, transparent: style.border?.kind == .outline && hasTransparency(of: target))
-        switch target {
-        case .capture:
-            captureStyle = hasWindowShadow ? ObjectStyle() : style
-            growToFitCapture()
-        case let .annotation(id):
-            guard let index = annotations.firstIndex(where: { $0.id == id }), !annotations[index].isLocked else {
-                return
-            }
-            annotations[index].style = style
-            grow(toFit: annotations[index], margin: margin)
-        }
-        shrinkPadding(margin: margin)
-    }
-
-    /// Sets the corner radius of `target`. A locked annotation, one without corners to round, and a window captured with
-    /// the macOS shadow are left alone.
-    public mutating func setCornerRadius(_ radius: CGFloat, of target: StyleTarget) {
-        let radius = max(0, radius)
-        switch target {
-        case .capture:
-            captureCornerRadius = hasWindowShadow ? 0 : radius
-        case let .annotation(id):
-            guard let index = annotations.firstIndex(where: { $0.id == id }), annotations[index].styleKind?.takesCorners == true, !annotations[index].isLocked else {
-                return
-            }
-            annotations[index].cornerRadius = radius == 0 ? nil : radius
-        }
-    }
-
-    /// The style of `target` to paste on others, in points of a document of `scale` pixels per point; `nil` for an
-    /// annotation that isn't there or can't be styled.
-    public func copyStyle(of target: StyleTarget, scale: CGFloat) -> CopiedStyle? {
-        guard let kind = styleKind(of: target) else {
-            return nil
-        }
-        return CopiedStyle(style: style(of: target).scaled(by: 1 / scale), cornerRadius: cornerRadius(of: target) / scale, source: kind)
-    }
-
-    /// Pastes `copied` on each of `targets`, on a document of `scale` pixels per point: the fields both it and the target
-    /// have. Every kind has a shadow; the border goes only on a target that can have that border, and S, M and L stay S,
-    /// M and L; the corners go only between things with corners. Locked annotations are left alone.
-    public mutating func pasteStyle(_ copied: CopiedStyle, to targets: [StyleTarget], scale: CGFloat, margin: CGFloat) {
-        for target in targets {
-            guard let kind = styleKind(of: target) else {
-                continue
-            }
-            let transparent = copied.style.border?.kind == .outline && hasTransparency(of: target)
-            setStyle(copied.pasted(on: style(of: target), of: kind, transparent: transparent, scale: scale), of: target, margin: margin)
-            if let radius = copied.pastedCornerRadius(on: kind, scale: scale) {
-                setCornerRadius(radius, of: target)
-            }
-        }
-    }
-
-    /// What Apply Style to All Images restyles: the screenshot and every placed image.
-    public var imageStyleTargets: [StyleTarget] {
-        [.capture] + annotations.filter { $0.styleKind == .image }.map { .annotation($0.id) }
-    }
-
-    /// Grows the canvas just enough to show the capture's shadow and border. As with annotations, only edges at or
-    /// beyond the image grow; a crop edge inside the image stays.
-    public mutating func growToFitCapture() {
-        let painted = capturePaintedBounds, image = fullRect
-        var minX = canvasRect.minX, minY = canvasRect.minY, maxX = canvasRect.maxX, maxY = canvasRect.maxY
-        if minX <= image.minX { minX = min(minX, painted.minX) }
-        if minY <= image.minY { minY = min(minY, painted.minY) }
-        if maxX >= image.maxX { maxX = max(maxX, painted.maxX) }
-        if maxY >= image.maxY { maxY = max(maxY, painted.maxY) }
-        canvasRect = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY).integral
     }
 }
 
@@ -532,16 +395,5 @@ public extension CopiedStyle {
         default:
             return false
         }
-    }
-}
-
-public extension EditorDocument {
-    /// Whether this screenshot, in a document of `scale` pixels per point, has `newCaptureStyle`, the style Use this
-    /// style for new captures saved; false when that's off.
-    func captureHas(_ newCaptureStyle: CopiedStyle?, scale: CGFloat) -> Bool {
-        guard let newCaptureStyle, let style = copyStyle(of: .capture, scale: scale) else {
-            return false
-        }
-        return style.isSameStyle(as: newCaptureStyle)
     }
 }
