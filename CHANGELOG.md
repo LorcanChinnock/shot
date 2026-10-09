@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.35](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.34...v0.7.0-beta.35) (2026-10-09)
+
+
+### Features
+
+* **style:** finish the style follow-ups from [#262](https://github.com/LorcanChinnock/shot/issues/262) ([#285](https://github.com/LorcanChinnock/shot/issues/285)) ([814c1d6](https://github.com/LorcanChinnock/shot/commit/814c1d614897c83fba6c11950ac5628507826962))
+
 ## [0.7.0-beta.34](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.33...v0.7.0-beta.34) (2026-10-09)
 
 
