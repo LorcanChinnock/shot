@@ -1214,8 +1214,7 @@ extension VideoEditorModel {
         guard !isExporting, let id = selectedClipID, let start = project.clipStart(id), let animation = project.animation(ofClip: id) else {
             return
         }
-        let isSound = project.clip(id).map { clip in project.tracks.contains { $0.kind == .audio && $0.clips.contains { $0.id == clip.id } } } ?? false
-        let properties: [AnimatedProperty] = isSound ? [.volume] : [.position, .scale, .rotation, .opacity]
+        let properties = project.keyableProperties(ofClip: id)
         let relative = max(0, playhead - start)
         let anyHere = properties.contains { animation.hasKeyframe($0, at: relative) }
         var changed = project
