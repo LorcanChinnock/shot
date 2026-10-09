@@ -219,10 +219,11 @@ public struct Preferences {
 
     public var filePrefix: String { Self.sanitizedPrefix(store.string(forKey: PreferenceKey.filePrefix) ?? "") }
 
-    /// The file name prefix typed in Settings as file names use it: trimmed, the default when empty, and with no `/`.
+    /// The file name prefix typed in Settings as file names use it: trimmed of spaces and of dots, which would hide the
+    /// file, the default when empty, and with no `/` or `:`, which Finder shows as each other.
     public static func sanitizedPrefix(_ typed: String) -> String {
-        let trimmed = typed.trimmingCharacters(in: .whitespaces)
-        return trimmed.isEmpty ? defaultFilePrefix : trimmed.replacingOccurrences(of: "/", with: "-")
+        let trimmed = typed.trimmingCharacters(in: CharacterSet.whitespaces.union(CharacterSet(charactersIn: ".")))
+        return trimmed.isEmpty ? defaultFilePrefix : trimmed.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
     }
 
     public var imageFormat: ImageFormat { ImageFormat(rawValue: store.string(forKey: PreferenceKey.imageFormat) ?? "") ?? .png }
