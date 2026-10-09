@@ -49,7 +49,8 @@ private func drawn() -> Project {
 
 @Test func aCopyKeepsTheRecordingsSpeedSoundAndFormat() {
     #expect(VideoExportPlan.copy(of: recording(), as: .mov) == .trimmed(source: source, range: TrimRange(duration: 10), cuts: CutList(), speed: 1, muted: false, fileType: nil))
-    #expect(VideoExportPlan.copy(of: drawn(), as: .mov) == .composite(drawn(), fileType: .mov))
+    let edited = drawn()
+    #expect(VideoExportPlan.copy(of: edited, as: .mov) == .composite(edited, fileType: .mov))
 }
 
 @Test func aDrawnMP4IsEstimatedFromTheCanvasAndSound() async throws {
