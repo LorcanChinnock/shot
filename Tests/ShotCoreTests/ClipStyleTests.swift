@@ -21,7 +21,10 @@ private func composite(_ clip: Clip, side: CGFloat, lift: Double = 1, color: CIC
     let placement = LayerGeometry.imageTransform(orientation: .identity, geometry: LayerGeometry.transform(for: clip, canvas: canvas), sourceHeight: 100, canvasHeight: side)
     let frame = CIImage(color: color).cropped(to: CGRect(x: 0, y: 0, width: 100, height: 100))
     let grey = CIImage(color: CIColor(red: 0.5, green: 0.5, blue: 0.5)).cropped(to: CGRect(origin: .zero, size: canvas))
-    return ClipStyler.composite(frame.transformed(by: placement), of: clip, frame: frame, placement: placement, fit: side / 100, lift: lift, over: grey, shadows: shadows, context: context)
+    return ClipStyler.composite(
+        frame.transformed(by: placement), of: clip, frame: frame, time: 0, placement: placement, fit: side / 100, lift: lift, over: grey,
+        shadows: shadows, edges: ClipEdgeCache(), context: context
+    )
 }
 
 /// The red and green of the pixel at (`x`, `y`) from the top left of an image of `side` pixels.
@@ -147,4 +150,18 @@ private func pixel(_ image: CIImage, x: CGFloat, y: CGFloat, side: CGFloat) -> (
     let frame = middle.composited(over: CIImage(color: .white).cropped(to: CGRect(x: 0, y: 0, width: 100, height: 100)))
     let edge = try #require(ClipStyler.edgeColor(of: frame, context: context))
     #expect(edge.r > 0.95 && edge.g > 0.95 && edge.b > 0.95)
+}
+
+@Test func aClipsEdgeColourIsReadOnceASecond() {
+    let edges = ClipEdgeCache(), id = UUID()
+    var reads = 0
+    let read = { () -> RGBA? in
+        reads += 1
+        return RGBA(1, 0, 0)
+    }
+    _ = edges.color(of: id, second: 0, read: read)
+    _ = edges.color(of: id, second: 0, read: read)
+    #expect(reads == 1)
+    #expect(edges.color(of: id, second: 1, read: read) == RGBA(1, 0, 0))
+    #expect(reads == 2)
 }

@@ -360,19 +360,17 @@ extension EditorDocument {
     }
 
     /// Restyles `target`, growing the canvas to hold its shadow and border and pulling back padding they no longer need.
-    /// A border the target can't have is dropped, as is a shadow on a window captured with the macOS one. A locked annotation, or one that can't be styled, is left alone.
+    /// A border the target can't have is dropped. A window captured with the macOS shadow takes no style: its image
+    /// includes the shadow's see-through margin, which a border or corners would go round. A locked annotation, or one
+    /// that can't be styled, is left alone.
     public mutating func setStyle(_ style: ObjectStyle, of target: StyleTarget, margin: CGFloat) {
         guard let kind = styleKind(of: target) else {
             return
         }
-        var style = style.restricted(to: kind, transparent: style.border?.kind == .outline && hasTransparency(of: target))
+        let style = style.restricted(to: kind, transparent: style.border?.kind == .outline && hasTransparency(of: target))
         switch target {
         case .capture:
-            // A window captured with the macOS shadow already has one.
-            if hasWindowShadow {
-                style.shadow = nil
-            }
-            captureStyle = style
+            captureStyle = hasWindowShadow ? ObjectStyle() : style
             growToFitCapture()
         case let .annotation(id):
             guard let index = annotations.firstIndex(where: { $0.id == id }), !annotations[index].isLocked else {
@@ -384,12 +382,13 @@ extension EditorDocument {
         shrinkPadding(margin: margin)
     }
 
-    /// Sets the corner radius of `target`. A locked annotation, or one without corners to round, is left alone.
+    /// Sets the corner radius of `target`. A locked annotation, one without corners to round, and a window captured with
+    /// the macOS shadow are left alone.
     public mutating func setCornerRadius(_ radius: CGFloat, of target: StyleTarget) {
         let radius = max(0, radius)
         switch target {
         case .capture:
-            captureCornerRadius = radius
+            captureCornerRadius = hasWindowShadow ? 0 : radius
         case let .annotation(id):
             guard let index = annotations.firstIndex(where: { $0.id == id }), annotations[index].styleKind?.takesCorners == true, !annotations[index].isLocked else {
                 return
@@ -491,7 +490,7 @@ public extension CopiedStyle {
 
     /// `image`, a new capture of `scale` pixels per point, with this style on it over `background`, as Use this style
     /// for new captures copies it; `nil` when the style changes nothing. A window captured with the macOS shadow,
-    /// `windowShadow`, keeps that one in place of the style's.
+    /// `windowShadow`, takes no style, so it's `nil` for one.
     func styledCapture(_ image: CGImage, scale: CGFloat, background: RGBA?, windowShadow: Bool = false) -> CGImage? {
         var doc = EditorDocument(base: image, background: background)
         doc.hasWindowShadow = windowShadow
@@ -540,23 +539,9 @@ public extension EditorDocument {
     /// Whether this screenshot, in a document of `scale` pixels per point, has `newCaptureStyle`, the style Use this
     /// style for new captures saved; false when that's off.
     func captureHas(_ newCaptureStyle: CopiedStyle?, scale: CGFloat) -> Bool {
-        guard var newCaptureStyle, let style = copyStyle(of: .capture, scale: scale) else {
+        guard let newCaptureStyle, let style = copyStyle(of: .capture, scale: scale) else {
             return false
         }
-        // A window with the macOS shadow can't take the saved one, so it has the style without it.
-        if hasWindowShadow {
-            newCaptureStyle.style.shadow = nil
-        }
         return style.isSameStyle(as: newCaptureStyle)
-    }
-
-    /// The style Use this style for new captures saves from this screenshot. A window with the macOS shadow has no shadow
-    /// of its own to save, so it keeps the shadow of `saved`, the style saved before, for captures that can take one.
-    func newCaptureStyle(keeping saved: CopiedStyle?, scale: CGFloat) -> CopiedStyle? {
-        var style = copyStyle(of: .capture, scale: scale)
-        if hasWindowShadow {
-            style?.style.shadow = saved?.style.shadow
-        }
-        return style
     }
 }

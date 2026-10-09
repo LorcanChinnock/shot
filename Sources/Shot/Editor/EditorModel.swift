@@ -577,7 +577,7 @@ final class EditorModel {
 
     /// Saves the screenshot's style for new captures to open and copy with, or turns that off.
     func setUsesStyleForNewCaptures(_ on: Bool) {
-        Preferences.styleNewCaptures(with: on ? document.newCaptureStyle(keeping: Preferences().newCaptureStyle, scale: scale) : nil)
+        Preferences.styleNewCaptures(with: on ? document.copyStyle(of: .capture, scale: scale) : nil)
         newCaptureSettingChanges += 1
     }
 

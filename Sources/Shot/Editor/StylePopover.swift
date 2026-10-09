@@ -68,32 +68,30 @@ struct StylePopover<Model: StyleEditing>: View {
                     .tracking(1.2)
                     .foregroundStyle(Brutal.ink.opacity(0.75))
                 if model.targetHasWindowShadow {
-                    row("SHADOW") {
-                        Text("Uses macOS window shadow")
-                            .font(Brutal.caption)
-                            .foregroundStyle(Brutal.ink.opacity(0.6))
-                            .brutalTip("This window was captured with its own shadow, so it takes no other")
+                    // Its image includes the shadow's see-through margin, which a border or corners would go round.
+                    Text("Uses macOS window shadow")
+                        .font(Brutal.caption)
+                        .foregroundStyle(Brutal.ink.opacity(0.6))
+                        .brutalTip("This window was captured with its own shadow, so it takes no other style")
+                } else {
+                    ForEach(rows, id: \.title) { presetRow in
+                        tiles(presetRow)
+                        if presetRow.title == "SHADOW", let shadow = style.shadow {
+                            shadowSliders(shadow)
+                        }
+                        if presetRow.title == "BORDER", let border = style.border, border.kind != .hairline {
+                            borderOptions(border, on: kind)
+                        }
                     }
-                } else if let shadows = rows.first(where: { $0.title == "SHADOW" }) {
-                    tiles(shadows)
-                }
-                if let shadow = style.shadow, !model.targetHasWindowShadow {
-                    shadowSliders(shadow)
-                }
-                if let borders = rows.first(where: { $0.title == "BORDER" }) {
-                    tiles(borders)
-                    if let border = style.border, border.kind != .hairline {
-                        borderOptions(border, on: kind)
+                    if kind.takesCorners {
+                        row("CORNERS") {
+                            slider(value: model.targetCornerRadius, range: 0...48, name: "Corner radius", set: { model.setTargetCornerRadius($0) })
+                        }
                     }
-                }
-                if kind.takesCorners {
-                    row("CORNERS") {
-                        slider(value: model.targetCornerRadius, range: 0...48, name: "Corner radius", set: { model.setTargetCornerRadius($0) })
+                    // Only the photo editor has a screenshot to style.
+                    if kind == .capture, let editor = model as? EditorModel {
+                        NewCaptureStyleSwitch(model: editor)
                     }
-                }
-                // Only the photo editor has a screenshot to style.
-                if kind == .capture, let editor = model as? EditorModel {
-                    NewCaptureStyleSwitch(model: editor)
                 }
             } else {
                 Text("Select an image, shape, arrow or text, or nothing to style the screenshot.")
@@ -110,7 +108,10 @@ struct StylePopover<Model: StyleEditing>: View {
             handle(press.key)
         }
         .onAppear { focused = true }
-        .onDisappear { model.stylePreview = nil }
+        .onDisappear {
+            model.stylePreview = nil
+            StyleThumbnail.forgetShrunk()
+        }
     }
 
     /// A row of preset tiles.
@@ -129,22 +130,22 @@ struct StylePopover<Model: StyleEditing>: View {
         let swatch: Swatch
     }
 
-    /// The shadow presets, which a window with the macOS shadow has none of, then the borders the target can have.
+    /// The shadow presets, then the borders the target can have; none for a window with the macOS shadow.
     private func presetRows(_ kind: StyleKind, _ style: ObjectStyle) -> [PresetRow] {
+        guard !model.targetHasWindowShadow else {
+            return []
+        }
         func preset(_ id: String, _ title: String, selected: Bool, swatch: Swatch, _ change: (inout ObjectStyle) -> Void) -> Preset {
             var candidate = style
             change(&candidate)
             return Preset(id: id, title: title, style: candidate, selected: selected, swatch: swatch)
         }
-        var rows: [PresetRow] = []
-        if !model.targetHasWindowShadow {
-            let shadows = [preset("shadow-none", "None", selected: style.shadow == nil, swatch: Swatch()) { $0.shadow = nil }]
-                + ShadowPreset.allCases.map { shadowPreset in
-                    let shadow = shadowPreset.shadow(scale: model.scale)
-                    return preset("shadow-\(shadowPreset.rawValue)", shadowPreset.title, selected: style.shadow == shadow, swatch: Swatch(shadow: shadowPreset)) { $0.shadow = shadow }
-                }
-            rows.append(PresetRow(title: "SHADOW", presets: shadows))
-        }
+        let shadows = [preset("shadow-none", "None", selected: style.shadow == nil, swatch: Swatch()) { $0.shadow = nil }]
+            + ShadowPreset.allCases.map { shadowPreset in
+                let shadow = shadowPreset.shadow(scale: model.scale)
+                return preset("shadow-\(shadowPreset.rawValue)", shadowPreset.title, selected: style.shadow == shadow, swatch: Swatch(shadow: shadowPreset)) { $0.shadow = shadow }
+            }
+        var rows = [PresetRow(title: "SHADOW", presets: shadows)]
         let borderKinds = kind.borders(transparent: model.targetHasTransparency)
         if !borderKinds.isEmpty {
             let borders = [preset("border-none", "None", selected: style.border == nil, swatch: Swatch()) { $0.border = nil }]

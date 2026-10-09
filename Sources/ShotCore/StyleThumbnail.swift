@@ -72,8 +72,13 @@ public enum StyleThumbnail {
         return context.makeImage()!
     }()
 
-    /// The image last shrunk and the copy made, since every tile of a popover draws the same one.
+    /// The image last shrunk and the copy made, since every tile of a popover draws the same one. It holds on to the
+    /// screenshot, so the popover lets go of it with `forgetShrunk` as it closes.
     private static let lastShrunk = OSAllocatedUnfairLock<(source: CGImage, box: CGSize, image: CGImage)?>(initialState: nil)
+
+    public static func forgetShrunk() {
+        lastShrunk.withLock { $0 = nil }
+    }
 
     /// `image` scaled to fit `box`, in pixels, keeping its shape; as it is when it already fits.
     static func shrunk(_ image: CGImage, toFit box: CGSize) -> CGImage {
@@ -84,16 +89,7 @@ public enum StyleThumbnail {
         if let known = lastShrunk.withLock({ $0.flatMap { $0.source === image && $0.box == box ? $0.image : nil } }) {
             return known
         }
-        let width = max(1, Int((CGFloat(image.width) * factor).rounded())), height = max(1, Int((CGFloat(image.height) * factor).rounded()))
-        guard let ctx = CGContext(
-            data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
-            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else {
-            return image
-        }
-        ctx.interpolationQuality = .high
-        ctx.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
-        let small = ctx.makeImage() ?? image
+        let small = ImageCodec.downscaled(image, scale: 1 / factor)
         lastShrunk.withLock { $0 = (image, box, small) }
         return small
     }

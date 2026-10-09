@@ -76,6 +76,22 @@ final class ClipShadowCache: Sendable {
     var count: Int { entries.withLock { $0.count } }
 }
 
+/// The colour near the edge of each clip's frame, read once a second of the clip, so a hairline or glow doesn't read the
+/// frame back every frame, nor flicker as the content changes. Safe to use from any thread.
+final class ClipEdgeCache: Sendable {
+    private let entries = OSAllocatedUnfairLock<[UUID: (second: Int, color: RGBA?)]>(initialState: [:])
+
+    /// The colour read for clip `id` in this `second`, or the one `read` returns, kept until the next second.
+    func color(of id: UUID, second: Int, read: () -> RGBA?) -> RGBA? {
+        if let known = entries.withLock({ $0[id].flatMap { $0.second == second ? $0 : nil } }) {
+            return known.color
+        }
+        let color = read()
+        entries.withLock { $0[id] = (second, color) }
+        return color
+    }
+}
+
 /// Draws a clip's picture with its rounded corners, border and shadow, which grow and shrink with the clip.
 enum ClipStyler {
     /// How closely the scale a shadow is blurred at follows the clip's: an eighth of a doubling, so a shadow is blurred
@@ -87,17 +103,18 @@ enum ClipStyler {
     /// `picture`, the clip's frame already placed on the canvas, with `clip`'s corners, border and shadow and faded by its
     /// opacity, over `image`. `placement` maps the clip's upright picture, y up, onto the canvas in Core Image's
     /// coordinates, and `fit` is how much it's scaled to fit the canvas at a clip scale of 1. `lift` raises the shadow.
-    /// `frame` is the frame as it comes, whose edge colour picks a hairline's and tints a glow, as an image's does.
+    /// `frame` is the frame as it comes, whose edge colour picks a hairline's and tints a glow, as an image's does; it's
+    /// read from `edges` once a second, by `time` in seconds from the clip's start.
     static func composite(
-        _ picture: CIImage, of clip: Clip, frame: CIImage, placement: CGAffineTransform, fit: CGFloat, lift: Double, over image: CIImage,
-        shadows: ClipShadowCache, context: CIContext
+        _ picture: CIImage, of clip: Clip, frame: CIImage, time: Double, placement: CGAffineTransform, fit: CGFloat, lift: Double,
+        over image: CIImage, shadows: ClipShadowCache, edges: ClipEdgeCache, context: CIContext
     ) -> CIImage {
         let scale = CGFloat(clip.transform.scale), opacity = CGFloat(min(max(clip.transform.opacity, 0), 1))
         guard scale > 0, fit > 0 else {
             return image
         }
         let needsEdge = clip.style.border?.kind == .hairline || clip.style.shadow?.tint == .object
-        let edge = needsEdge ? edgeColor(of: frame, context: context) : nil
+        let edge = needsEdge ? edges.color(of: clip.id, second: Int(time.rounded(.down))) { edgeColor(of: frame, context: context) } : nil
         let look = Look(clip, scale: scale, fit: fit)
         // From canvas pixels about the upright picture, y up, to the canvas.
         let toCanvas = CGAffineTransform(scaleX: 1 / (fit * scale), y: 1 / (fit * scale)).concatenating(placement)
