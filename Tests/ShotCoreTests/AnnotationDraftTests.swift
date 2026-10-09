@@ -24,7 +24,7 @@ private func isClose(_ a: CGPoint, _ b: CGPoint) -> Bool { hypot(a.x - b.x, a.y 
         case let .arrow(from, to), let .line(from, to):
             #expect(from == .zero)
             #expect(abs(to.x - to.y) < 0.001)
-            #expect(abs(hypot(to.x, to.y) - hypot(100, 90)) < 0.001)
+            #expect(abs(hypot(to.x, to.y) - (100.0 * 100.0 + 90.0 * 90.0).squareRoot()) < 0.001)
         default:
             Issue.record("\(tool) drew \(snapped.kind)")
         }
@@ -55,7 +55,7 @@ private func isClose(_ a: CGPoint, _ b: CGPoint) -> Bool { hypot(a.x - b.x, a.y 
         return
     }
     #expect(points.count == 2)
-    #expect(isClose(points[1], CGPoint(x: hypot(100, 4), y: 0)))
+    #expect(isClose(points[1], CGPoint(x: (100.0 * 100.0 + 4.0 * 4.0).squareRoot(), y: 0)))
     #expect(straight.id == wobbly.id)
 }
 
