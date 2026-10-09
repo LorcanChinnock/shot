@@ -11,6 +11,8 @@ final class RenderCache: Sendable {
         case softSpotlight(SoftSpotlight)
         case softSpotlightMask([SoftSpotlight], area: CGRect)
         case edgeSample(SampledImage)
+        case outlineMask(SampledImage, radius: CGFloat)
+        case shadow(ShadowCaster, color: RGBA, unit: CGFloat)
     }
 
     typealias Value = (image: CGImage, frame: CGRect)
@@ -115,13 +117,20 @@ struct CaptureLook: Equatable, Sendable {
     var isPlain: Bool { cornerRadius == 0 && style.isEmpty }
 }
 
-/// An image whose edge colour is sampled, the same while it's the same image, so comparing never reads the pixels.
+/// An image whose edge colour is sampled or whose outline is grown, the same while it's the same image, so comparing
+/// never reads the pixels.
 struct SampledImage: Equatable, Sendable {
     let image: CGImage
 
     static func == (a: Self, b: Self) -> Bool {
         a.image === b.image
     }
+}
+
+/// What casts a shadow, and where, which tells whether a shadow drawn before is still the same without drawing it.
+enum ShadowCaster: Equatable, Sendable {
+    case annotation(Annotation)
+    case image(SampledImage, rect: CGRect, cornerRadius: CGFloat, style: ObjectStyle)
 }
 
 /// A spotlight with a soft edge, which fades the dim rather than cutting it out.

@@ -195,8 +195,20 @@ public enum AnnotationRenderer {
         draw(annotation, base: base, over: below, look: CaptureLook(background: background), in: ctx)
     }
 
-    /// `look` is how the screenshot under it is drawn, which a pixelate or blur covers too.
+    /// `look` is how the screenshot under it is drawn, which a pixelate or blur covers too. A mark or text with a shadow
+    /// casts it first; a placed image draws its own.
     static func draw(_ annotation: Annotation, base: CGImage, over below: ArraySlice<Annotation>, look: CaptureLook, in ctx: CGContext) {
+        if let shadow = annotation.style.shadow, let kind = annotation.styleKind, kind != .image {
+            let color = shadow.color(background: look.background, object: annotation.color)
+            drawCachedShadow(shadow, color: color, of: annotation.bounds, area: annotation.paintedBounds, caster: .annotation(annotation), ctx: ctx) {
+                drawPlain(annotation, base: base, over: below, look: look, in: $0)
+            }
+        }
+        drawPlain(annotation, base: base, over: below, look: look, in: ctx)
+    }
+
+    /// Draws `annotation` without its shadow.
+    private static func drawPlain(_ annotation: Annotation, base: CGImage, over below: ArraySlice<Annotation>, look: CaptureLook, in ctx: CGContext) {
         let color = annotation.color.cgColor
         let width = annotation.lineWidth
         ctx.saveGState()
@@ -281,11 +293,23 @@ public enum AnnotationRenderer {
         case let .text(string, origin, fontSize):
             let layout = TextLayout(string: string, fontSize: fontSize, color: annotation.color)
             ctx.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
-            for (index, line) in layout.lines.enumerated() {
-                let x = origin.x + annotation.alignment.offset(of: line, in: layout.size.width)
-                ctx.textPosition = CGPoint(x: x, y: origin.y + layout.ascent + CGFloat(index) * layout.lineHeight)
-                CTLineDraw(line, ctx)
+            func drawLines(_ lines: [CTLine]) {
+                for (index, line) in lines.enumerated() {
+                    let x = origin.x + annotation.alignment.offset(of: line, in: layout.size.width)
+                    ctx.textPosition = CGPoint(x: x, y: origin.y + layout.ascent + CGFloat(index) * layout.lineHeight)
+                    CTLineDraw(line, ctx)
+                }
             }
+            if let outline = annotation.style.border, outline.kind == .outline {
+                // Each letter is stroked twice as wide as the outline in its colour, and the fill covers the inner half.
+                ctx.saveGState()
+                ctx.setTextDrawingMode(.stroke)
+                ctx.setLineWidth(outline.width * 2)
+                ctx.setStrokeColor(outline.paint.cgColor)
+                drawLines(TextLayout(string: string, fontSize: fontSize, color: outline.paint).lines)
+                ctx.restoreGState()
+            }
+            drawLines(layout.lines)
         case let .counter(number, center):
             let radius = annotation.counterRadius
             ctx.fillEllipse(in: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
@@ -333,7 +357,13 @@ public enum AnnotationRenderer {
     /// Draws `image` right side up into `rect` of a top-left-origin context, its corners rounded by `cornerRadius`,
     /// with `style`'s shadow under it and border around it. A plain image is drawn as it is.
     static func drawImage(_ image: CGImage, in rect: CGRect, cornerRadius: CGFloat, style: ObjectStyle, shadowBackground: RGBA?, ctx: CGContext) {
-        func drawRounded() {
+        let needsEdge = style.border?.kind == .hairline || style.shadow?.tint == .object
+        let edge = needsEdge ? edgeColor(of: image) : nil
+        // A solid border or outline goes under the image and casts the shadow with it; a hairline goes over its edge.
+        func drawSilhouette(_ ctx: CGContext) {
+            if let border = style.border, border.castsShadow {
+                drawBorder(border, around: image, in: rect, cornerRadius: cornerRadius, edge: edge, ctx: ctx)
+            }
             ctx.saveGState()
             if cornerRadius > 0 {
                 ctx.addPath(CGPath(roundedRect: rect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil))
@@ -342,25 +372,116 @@ public enum AnnotationRenderer {
             drawUpright(image, in: rect, ctx: ctx)
             ctx.restoreGState()
         }
-        let needsEdge = style.border != nil || style.shadow?.tint == .object
-        let edge = needsEdge ? edgeColor(of: image) : nil
         if let shadow = style.shadow {
-            drawShadow(shadow, color: shadow.color(background: shadowBackground, object: edge ?? RGBA(0, 0, 0)), of: rect, ctx: ctx, silhouette: drawRounded)
+            let color = shadow.color(background: shadowBackground, object: edge ?? RGBA(0, 0, 0))
+            let caster = ShadowCaster.image(SampledImage(image: image), rect: rect, cornerRadius: cornerRadius, style: style)
+            drawCachedShadow(shadow, color: color, of: rect, area: style.paintedRect(around: rect), caster: caster, ctx: ctx, silhouette: drawSilhouette)
         }
-        drawRounded()
-        if let border = style.border {
-            switch border.kind {
-            case .hairline:
-                // Centred just outside the edge, its corners concentric with the image's, so it hugs them evenly.
-                let width = border.width
-                let radius = cornerRadius > 0 ? cornerRadius + width / 2 : 0
-                ctx.saveGState()
-                ctx.setStrokeColor(Border.hairlineColor(edge: edge).cgColor)
-                ctx.setLineWidth(width)
-                ctx.addPath(CGPath(roundedRect: rect.insetBy(dx: -width / 2, dy: -width / 2), cornerWidth: radius, cornerHeight: radius, transform: nil))
-                ctx.strokePath()
-                ctx.restoreGState()
+        drawSilhouette(ctx)
+        if let border = style.border, !border.castsShadow {
+            drawBorder(border, around: image, in: rect, cornerRadius: cornerRadius, edge: edge, ctx: ctx)
+        }
+    }
+
+    /// Draws `border` around `image`, drawn in `rect` with its corners rounded by `cornerRadius`. `edge` is the average
+    /// colour near the image's edge, which picks a hairline's.
+    private static func drawBorder(_ border: Border, around image: CGImage, in rect: CGRect, cornerRadius: CGFloat, edge: RGBA?, ctx: CGContext) {
+        let width = border.width
+        ctx.saveGState()
+        defer { ctx.restoreGState() }
+        switch border.kind {
+        case .hairline, .solid:
+            // Centred just outside the edge, its corners concentric with the image's, so it hugs them evenly. A solid one
+            // reaches half a pixel under the image too, so no seam shows between them.
+            let overlap: CGFloat = border.kind == .solid ? 0.5 : 0
+            let stroke = width + overlap
+            let inset = (width - overlap) / 2
+            let radius = cornerRadius > 0 ? cornerRadius + inset : 0
+            ctx.setStrokeColor(border.kind == .hairline ? Border.hairlineColor(edge: edge).cgColor : border.paint.cgColor)
+            ctx.setLineWidth(stroke)
+            ctx.addPath(CGPath(roundedRect: rect.insetBy(dx: -inset, dy: -inset), cornerWidth: radius, cornerHeight: radius, transform: nil))
+            ctx.strokePath()
+        case .outline:
+            guard width > 0, rect.width > 0, rect.height > 0 else {
+                return
             }
+            // The mask is made at the image's own size, so the width is grown in its pixels.
+            let scale = CGSize(width: rect.width / CGFloat(image.width), height: rect.height / CGFloat(image.height))
+            guard let mask = outlineMask(of: image, radius: width / max(scale.width, scale.height)) else {
+                return
+            }
+            let frame = CGRect(
+                x: rect.minX + mask.frame.minX * scale.width, y: rect.minY + mask.frame.minY * scale.height,
+                width: mask.frame.width * scale.width, height: mask.frame.height * scale.height
+            )
+            // Upright, as `drawUpright` draws an image, since a mask is drawn like one.
+            ctx.translateBy(x: 0, y: frame.maxY)
+            ctx.scaleBy(x: 1, y: -1)
+            let flipped = CGRect(x: frame.minX, y: 0, width: frame.width, height: frame.height)
+            ctx.clip(to: flipped, mask: mask.image)
+            ctx.setFillColor(border.paint.cgColor)
+            ctx.fill(flipped)
+        }
+    }
+
+    /// The shape of `image`'s opaque pixels grown by `radius` of its pixels, white on black, made with Core Image and kept
+    /// while the image is drawn. Its frame is where it goes in the image's pixels, reaching `radius` past each edge.
+    private static func outlineMask(of image: CGImage, radius: CGFloat) -> RenderCache.Value? {
+        cache.value(for: .outlineMask(SampledImage(image: image), radius: radius)) {
+            let extent = CGRect(x: 0, y: 0, width: image.width, height: image.height)
+            let grown = extent.insetBy(dx: -radius.rounded(.up), dy: -radius.rounded(.up))
+            let dilate = CIFilter.morphologyMaximum()
+            dilate.inputImage = CIImage(cgImage: image)
+            dilate.radius = Float(radius)
+            // Grey from the grown alpha, over opaque black.
+            let grey = CIFilter.colorMatrix()
+            grey.inputImage = dilate.outputImage
+            grey.rVector = CIVector(x: 0, y: 0, z: 0, w: 1)
+            grey.gVector = CIVector(x: 0, y: 0, z: 0, w: 1)
+            grey.bVector = CIVector(x: 0, y: 0, z: 0, w: 1)
+            grey.aVector = CIVector(x: 0, y: 0, z: 0, w: 0)
+            grey.biasVector = CIVector(x: 0, y: 0, z: 0, w: 1)
+            guard let output = grey.outputImage?.cropped(to: grown),
+                  let mask = maskContext.createCGImage(output, from: grown, format: .L8, colorSpace: CGColorSpaceCreateDeviceGray())
+            else {
+                return nil
+            }
+            // Core Image counts up from the bottom, but the grown frame is the same distance past every edge.
+            return (mask, grown)
+        }
+    }
+
+    /// Draws the shadow `silhouette` casts from `rect`, which reaches no further than `area`. It's drawn into a bitmap of
+    /// `area` at the context's resolution, but no finer than the image's pixels, and coarser the softer its sharpest layer,
+    /// as a soft spotlight's mask is, since a blurry shadow has no detail to lose. It's kept while `caster` and the
+    /// resolution stay the same, so redrawing while editing draws an image rather than blurring again, and a shadow that
+    /// does change blurs only its own area, not the whole canvas.
+    private static func drawCachedShadow(
+        _ shadow: Shadow, color: RGBA, of rect: CGRect, area: CGRect, caster: ShadowCaster, ctx: CGContext, silhouette: (CGContext) -> Void
+    ) {
+        let ctm = ctx.ctm
+        let sharpest = shadow.layers.map(\.blur).min() ?? 0
+        let unit = min(1, hypot(ctm.a, ctm.b), sharpest > 0 ? 8 / sharpest : 1)
+        let area = area.integral
+        let size = CGSize(width: (area.width * unit).rounded(.up), height: (area.height * unit).rounded(.up))
+        guard size.width >= 1, size.height >= 1 else {
+            return
+        }
+        let cached = cache.value(for: .shadow(caster, color: color, unit: unit)) {
+            guard let bitmap = CGContext(
+                data: nil, width: Int(size.width), height: Int(size.height), bitsPerComponent: 8, bytesPerRow: 0,
+                space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            ) else {
+                return nil
+            }
+            bitmap.translateBy(x: 0, y: size.height)
+            bitmap.scaleBy(x: unit, y: -unit)
+            bitmap.translateBy(x: -area.minX, y: -area.minY)
+            drawShadow(shadow, color: color, of: rect, ctx: bitmap) { silhouette(bitmap) }
+            return bitmap.makeImage().map { ($0, CGRect(origin: area.origin, size: CGSize(width: size.width / unit, height: size.height / unit))) }
+        }
+        if let cached {
+            drawUpright(cached.image, in: cached.frame, ctx: ctx)
         }
     }
 

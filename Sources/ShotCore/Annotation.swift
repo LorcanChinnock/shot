@@ -69,7 +69,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     /// A rounded rectangle's, rounded spotlight's or placed image's corner radius; `nil` keeps the look from before it
     /// could be set, which for an image is square.
     public var cornerRadius: CGFloat?
-    /// A placed image's shadow and border. Stored only when set, so annotations saved before it still decode.
+    /// The shadow and border of a placed image, mark or text; see `styleKind`. Stored only when set, so annotations saved
+    /// before it still decode.
     public var style: ObjectStyle {
         get { objectStyle ?? ObjectStyle() }
         set { objectStyle = newValue.isEmpty ? nil : newValue }
@@ -262,8 +263,16 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         }
     }
 
-    /// `bounds` plus the stroke and arrowhead that the renderer paints past it.
+    /// `bounds` plus the stroke and arrowhead that the renderer paints past it, and the shadow and border of its style.
     public var paintedBounds: CGRect {
+        guard styleKind != nil else {
+            return plainPaintedBounds
+        }
+        return style.paintedRect(around: plainPaintedBounds)
+    }
+
+    /// `bounds` plus the stroke and arrowhead that the renderer paints past it, without its style.
+    private var plainPaintedBounds: CGRect {
         switch kind {
         case .arrow:
             let head = max(12, lineWidth * 4) * 0.45
@@ -271,10 +280,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             return bounds.insetBy(dx: -outset, dy: -outset)
         case .line, .shape:
             return bounds.insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2)
-        case .highlight, .pixelate, .blur, .spotlight, .text, .counter:
+        case .highlight, .pixelate, .blur, .spotlight, .text, .counter, .image:
             return bounds
-        case .image:
-            return style.paintedRect(around: bounds)
         case .note:
             guard let layout = noteLayout else {
                 return bounds

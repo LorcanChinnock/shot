@@ -95,7 +95,7 @@ struct EditorToolbar: View {
                     }
                     Tile(
                         selected: model.showsStylePopover, color: Brutal.sky, help: "Style",
-                        detail: "Round the corners and add a shadow or border to the selected image, or to the screenshot when nothing is selected",
+                        detail: "Add a shadow, border or rounded corners to the selected image, a shadow or glow to a shape, arrow or text, or style the screenshot when nothing is selected",
                         isEnabled: model.styleTarget != nil
                     ) {
                         model.showsStylePopover.toggle()

@@ -84,13 +84,16 @@ public struct EditorStyle: Equatable, Sendable {
     public var redactionAmount: CGFloat
     public var spotlight: SpotlightStyle
     public var alignment: TextAlign
+    /// The last shadow and border given to each kind but the capture, in points, which new ones of that kind start
+    /// with. A kind with none starts plain.
+    public var objectStyles: [StyleKind: ObjectStyle]
 
     public init(
         tool: EditorTool = .arrow, color: RGBA = RGBA.presets[0], noteColor: RGBA = RGBA.presets[2],
         highlightColor: RGBA = RGBA.presets[2], fill: RGBA? = nil, widthIndex: Int = 1, customColors: [ColorSlot: RGBA] = [:],
         shape: BoxShape = .rectangle, redaction: Redaction = .blur, redactionAmount: CGFloat = Redaction.defaultAmount,
         spotlight: SpotlightStyle = SpotlightStyle(),
-        alignment: TextAlign = .left
+        alignment: TextAlign = .left, objectStyles: [StyleKind: ObjectStyle] = [:]
     ) {
         self.tool = tool
         self.color = color
@@ -104,6 +107,16 @@ public struct EditorStyle: Equatable, Sendable {
         self.redactionAmount = redactionAmount
         self.spotlight = spotlight
         self.alignment = alignment
+        self.objectStyles = objectStyles
+    }
+
+    /// The style a new object of `kind` starts with on a document of `scale` pixels per point: the last one given to
+    /// that kind, else none. The capture always starts plain.
+    public func objectStyle(for kind: StyleKind, scale: CGFloat) -> ObjectStyle {
+        guard kind != .capture else {
+            return ObjectStyle()
+        }
+        return (objectStyles[kind] ?? ObjectStyle()).scaled(by: scale)
     }
 }
 

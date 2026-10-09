@@ -1,16 +1,18 @@
 import ShotCore
 import SwiftUI
 
-/// The shadow, border and corner radius of the selected image, or of the screenshot when nothing is selected.
-/// Pointing at a preset shows it on the canvas; clicking it applies it. The sliders show only once there's a shadow to tune.
+/// The shadow, border and corner radius of the selected image, mark or text, or of the screenshot when nothing is selected.
+/// Pointing at a preset shows it on the canvas; clicking it applies it. The sliders show only once there's a shadow to tune,
+/// and the width and colour only once there's a border that has them. It offers only what the target can have.
 struct StylePopover: View {
     @Bindable var model: EditorModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            if let target = model.styleTarget {
+            if let kind = model.targetStyleKind {
                 let style = model.targetStyle
-                Text(target == .capture ? "SCREENSHOT STYLE" : "IMAGE STYLE")
+                let borders = kind.borders(transparent: model.targetHasTransparency)
+                Text(kind.title)
                     .font(.system(size: 11, weight: .black))
                     .tracking(1.2)
                     .foregroundStyle(Brutal.ink.opacity(0.75))
@@ -24,15 +26,25 @@ struct StylePopover: View {
                 if let shadow = style.shadow {
                     shadowSliders(shadow)
                 }
-                row("BORDER") {
-                    tile("None", style, { $0.border = nil }, selected: style.border == nil) { Swatch() }
-                    tile("Hairline", style, { $0.border = .hairline }, selected: style.border == .hairline) { Swatch(hairline: true) }
+                if !borders.isEmpty {
+                    row("BORDER") {
+                        tile("None", style, { $0.border = nil }, selected: style.border == nil) { Swatch() }
+                        ForEach(borders, id: \.self) { borderKind in
+                            let border = model.newBorder(borderKind)
+                            tile(borderKind.title, style, { $0.border = border }, selected: style.border?.kind == borderKind) { Swatch(border: borderKind) }
+                        }
+                    }
+                    if let border = style.border, border.kind != .hairline {
+                        borderOptions(border, on: kind)
+                    }
                 }
-                row("CORNERS") {
-                    slider(value: model.targetCornerRadius, range: 0...48, name: "Corner radius", set: model.setTargetCornerRadius)
+                if kind.takesCorners {
+                    row("CORNERS") {
+                        slider(value: model.targetCornerRadius, range: 0...48, name: "Corner radius", set: model.setTargetCornerRadius)
+                    }
                 }
             } else {
-                Text("Select an image, or nothing to style the screenshot.")
+                Text("Select an image, shape, arrow or text, or nothing to style the screenshot.")
                     .font(Brutal.caption)
                     .foregroundStyle(Brutal.ink.opacity(0.6))
             }
@@ -88,6 +100,36 @@ struct StylePopover: View {
             }
         }
     }
+
+    /// The width, S, M or L, and the colour of a solid border or an outline.
+    private func borderOptions(_ border: Border, on kind: StyleKind) -> some View {
+        let widths = Border.widths(border.kind, on: kind)
+        return VStack(alignment: .leading, spacing: 4) {
+            row("") {
+                label("Width")
+                ForEach(widths.indices, id: \.self) { index in
+                    let points = widths[index]
+                    Tile(selected: abs(points * model.scale - border.width) < 0.01, color: Brutal.sky, help: Self.sizeNames[index]) {
+                        model.setBorderWidth(points)
+                    } label: {
+                        Text(Self.sizeNames[index].prefix(1)).font(.system(size: 12, weight: .heavy))
+                    }
+                }
+            }
+            row("") {
+                label("Colour")
+                ColorSwatches(
+                    selected: border.paint,
+                    lastCustom: model.lastBorderColor,
+                    customHelp: "Custom border colour",
+                    choose: { if let color = $0 { model.setBorderColor(color) } },
+                    pickCustom: model.pickBorderColor
+                )
+            }
+        }
+    }
+
+    private static let sizeNames = ["Small", "Medium", "Large"]
 
     private func label(_ text: String) -> some View {
         Text(text)
@@ -146,20 +188,52 @@ private struct StyleTile<Picture: View>: View {
     }
 }
 
-/// A white card with a preset's shadow or border, as a tile's picture.
+extension StyleKind {
+    /// The Style popover's heading.
+    var title: String {
+        switch self {
+        case .capture: "SCREENSHOT STYLE"
+        case .image: "IMAGE STYLE"
+        case .mark: "SHAPE STYLE"
+        case .text: "TEXT STYLE"
+        }
+    }
+}
+
+extension Border.Kind {
+    var title: String {
+        switch self {
+        case .hairline: "Hairline"
+        case .solid: "Solid"
+        case .outline: "Outline"
+        }
+    }
+}
+
+/// A white card with a preset's shadow or border, as a tile's picture; an outline's is a cut-out disc with a white rim.
 private struct Swatch: View {
     var shadow: ShadowPreset?
-    var hairline = false
+    var border: Border.Kind?
 
     var body: some View {
         let card = RoundedRectangle(cornerRadius: 4, style: .circular)
-        card.fill(.white)
-            .overlay {
-                if hairline {
-                    card.stroke(Brutal.ink.opacity(0.45), lineWidth: 1)
+        if border == .outline {
+            Circle().fill(Brutal.sky)
+                .padding(3)
+                .background(Circle().fill(.white))
+                .overlay(Circle().stroke(Brutal.ink.opacity(0.45), lineWidth: 1))
+                .frame(width: 16, height: 16)
+        } else {
+            card.fill(.white)
+                .overlay {
+                    switch border {
+                    case .hairline: card.stroke(Brutal.ink.opacity(0.45), lineWidth: 1)
+                    case .solid: card.stroke(Brutal.sky, lineWidth: 3)
+                    case .outline, nil: EmptyView()
+                    }
                 }
-            }
-            .shadow(color: color, radius: radius, y: offset)
+                .shadow(color: color, radius: radius, y: offset)
+        }
     }
 
     private var color: Color {
