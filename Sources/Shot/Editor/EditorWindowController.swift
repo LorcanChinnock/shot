@@ -25,7 +25,8 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
     private let canvas: EditorCanvasView
     private var discarding = false
 
-    static func open(_ url: URL) {
+    /// `newCaptureStyle` styles a new capture's screenshot as the editor opens, as Use this style for new captures asks.
+    static func open(_ url: URL, newCaptureStyle: CopiedStyle? = nil) {
         if let existing = open.first(where: { $0.model.fileURL == url }) {
             existing.show()
             return
@@ -35,7 +36,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
             Toast.error("Cannot open \(url.lastPathComponent): \(reason)")
             return
         }
-        let controller = EditorWindowController(model: EditorModel(fileURL: url, image: image, scale: ImageCodec.scale(ofFileAt: url)))
+        let controller = EditorWindowController(model: EditorModel(fileURL: url, image: image, scale: ImageCodec.scale(ofFileAt: url), newCaptureStyle: newCaptureStyle))
         open.append(controller)
         controller.show()
         log.notice("Editor opened: \(url.path)")

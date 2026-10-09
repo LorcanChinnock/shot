@@ -74,6 +74,10 @@ struct StylePopover<Model: StyleEditing>: View {
                         slider(value: model.targetCornerRadius, range: 0...48, name: "Corner radius", set: { model.setTargetCornerRadius($0) })
                     }
                 }
+                // Only the photo editor has a screenshot to style.
+                if kind == .capture, let editor = model as? EditorModel {
+                    NewCaptureStyleSwitch(model: editor)
+                }
             } else {
                 Text("Select an image, shape, arrow or text, or nothing to style the screenshot.")
                     .font(Brutal.caption)
@@ -292,5 +296,22 @@ private struct Swatch: View {
         case .soft: 2
         case .float: 4
         }
+    }
+}
+
+/// Use this style for new captures: saves the screenshot's style for new captures to open and copy with.
+private struct NewCaptureStyleSwitch: View {
+    let model: EditorModel
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Toggle("Use this style for new captures", isOn: Binding(get: { model.usesStyleForNewCaptures }, set: { model.setUsesStyleForNewCaptures($0) }))
+                .toggleStyle(BrutalToggleStyle(color: Brutal.mint))
+                .labelsHidden()
+            Text("Use this style for new captures")
+                .font(Brutal.caption)
+                .foregroundStyle(Brutal.ink)
+        }
+        .brutalTip("New captures open and copy with this screenshot's style")
     }
 }

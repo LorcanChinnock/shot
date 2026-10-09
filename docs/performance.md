@@ -41,7 +41,7 @@ It needs Screen Recording for Shot, and Accessibility for the terminal, which cl
 | Metric | Reference Mac | Budget |
 |---|---|---|
 | Launch → ready | 101 ms | 150 ms |
-| Capture → clipboard (full screen, 2880×1864) | 189 ms | 285 ms |
+| Capture → clipboard (full screen, 3840×2486 px: the 15″ panel at a scaled resolution) | 189 ms | 285 ms |
 | Memory after 20 captures | 20 MB | 30 MB |
 | Idle CPU, no windows open | 0.0% | under 1% |
 
