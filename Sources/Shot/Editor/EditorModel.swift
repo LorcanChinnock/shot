@@ -271,144 +271,119 @@ final class EditorModel {
         selectedIDs.subtract(removed)
     }
 
+    /// The toolbar's state, built from the editor's; see `ShotCore.AnnotationPalette`.
+    private var palette: ShotCore.AnnotationPalette {
+        ShotCore.AnnotationPalette(
+            style: nextStyle, editingText: editingText,
+            editingTextIsNew: editingText.map { text in !document.annotations.contains { $0.id == text.id } } ?? false,
+            selection: selection, tool: tool, scale: scale, imageLength: CGFloat(max(document.base.width, document.base.height)),
+            sharedSpotlight: document.spotlightStyle
+        )
+    }
+
+    /// The style the tool's next annotation gets.
+    private var nextStyle: EditorStyle {
+        EditorStyle(
+            tool: tool, color: color, noteColor: noteColor, highlightColor: highlightColor, fill: fill, widthIndex: widthIndex,
+            customColors: customColors, shape: shape, redaction: redaction, redactionAmount: redactionAmount, spotlight: spotlight,
+            alignment: alignment, objectStyles: objectStyles
+        )
+    }
+
+    /// Takes on what a palette setter changed: the text being typed, the selection as one undo step, which calls with the
+    /// same `coalescing` key in a row share, and the next annotation's style. Only what changed is remembered, so two
+    /// windows don't overwrite each other's choices.
+    private func adopt(_ changed: ShotCore.AnnotationPalette, coalescing key: String? = nil) {
+        if changed.editingText != editingText {
+            editingText = changed.editingText
+        }
+        if let restyled = changed.selection, restyled != selection {
+            restyleSelection(coalescing: key) { $0 = restyled }
+        }
+        let next = changed.style
+        if next.color != color { color = next.color }
+        if next.noteColor != noteColor { noteColor = next.noteColor }
+        if next.highlightColor != highlightColor { highlightColor = next.highlightColor }
+        if next.fill != fill { fill = next.fill }
+        if next.widthIndex != widthIndex { widthIndex = next.widthIndex }
+        if next.shape != shape { shape = next.shape }
+        if next.redaction != redaction { redaction = next.redaction }
+        if next.redactionAmount != redactionAmount { redactionAmount = next.redactionAmount }
+        if next.spotlight != spotlight { spotlight = next.spotlight }
+        if next.alignment != alignment { alignment = next.alignment }
+        for (slot, colour) in next.customColors where customColors[slot] != colour {
+            customColors[slot] = colour
+            rememberStyle { $0.customColors[slot] = colour }
+        }
+    }
+
     /// The colour the palette shows and sets: the text being typed's, else the selection's, else the colour for the tool's next annotation.
     var paletteColor: RGBA {
-        get {
-            editingText?.color ?? selection?.color ?? nextColor
-        }
+        get { palette.color }
         set {
-            if editingText != nil {
-                setEditingColor(newValue)
-                return
-            }
-            restyleSelection { $0.color = newValue }
-            if stylesNextAnnotation {
-                nextColor = newValue
-            }
+            var changed = palette
+            changed.setColor(newValue)
+            adopt(changed)
         }
     }
 
     /// The colour for the tool's next annotation: notes and the highlighter keep their own.
-    var nextColor: RGBA {
-        get {
-            switch tool {
-            case .note: noteColor
-            case .highlight: highlightColor
-            default: color
-            }
-        }
-        set {
-            switch tool {
-            case .note: noteColor = newValue
-            case .highlight: highlightColor = newValue
-            default: color = newValue
-            }
-        }
-    }
-
-    /// True when the toolbar sets the style of the next annotation: nothing is selected, or the selection is the
-    /// annotation just drawn, so fixing its style fixes the tool's too. One picked with the select tool restyles alone.
-    private var stylesNextAnnotation: Bool {
-        selection == nil || tool != .select
-    }
+    var nextColor: RGBA { palette.nextColor }
 
     /// True when the toolbar offers a colour and width: the text being typed or the selection takes them, or else the tool does.
-    var showsStyle: Bool {
-        editingText != nil || (selection?.isStyled ?? tool.isStyled)
-    }
+    var showsStyle: Bool { palette.showsStyle }
 
     /// True when the width sets a text size, so the toolbar offers sizes rather than line widths.
-    var sizesText: Bool {
-        (editingText ?? selection)?.sizesText ?? tool.sizesText
-    }
+    var sizesText: Bool { palette.sizesText }
 
     /// True when the toolbar offers a fill: a shape is selected, or is the tool.
-    var showsFill: Bool {
-        selection?.supportsFill ?? (tool == .shape)
-    }
+    var showsFill: Bool { palette.showsFill }
 
     /// The outline the toolbar shows: the selected shape's, else the next shape's. `nil` when neither is a shape.
-    var paletteShape: BoxShape? {
-        if let selection {
-            guard case let .shape(shape, _) = selection.kind else {
-                return nil
-            }
-            return shape
-        }
-        return tool == .shape ? shape : nil
-    }
+    var paletteShape: BoxShape? { palette.shape }
 
     func setShape(_ newShape: BoxShape) {
-        restyleSelection {
-            if case let .shape(_, rect) = $0.kind {
-                $0.kind = .shape(newShape, rect: rect)
-            }
-        }
-        if stylesNextAnnotation {
-            shape = newShape
-        }
+        var changed = palette
+        changed.setShape(newShape)
+        adopt(changed)
     }
 
     /// How the toolbar shows a redaction hiding: the selected one's, else the next one's. `nil` when neither is one.
-    var paletteRedaction: Redaction? {
-        if let selection {
-            return selection.redaction
-        }
-        return tool == .redact ? redaction : nil
-    }
+    var paletteRedaction: Redaction? { palette.redaction }
 
     func setRedaction(_ newRedaction: Redaction) {
-        restyleSelection { $0.setRedaction(newRedaction) }
-        if stylesNextAnnotation {
-            redaction = newRedaction
-        }
+        var changed = palette
+        changed.setRedaction(newRedaction)
+        adopt(changed)
     }
 
     /// How strongly the toolbar shows a redaction hiding: the selected one's, else the next one's.
-    var paletteRedactionAmount: CGFloat {
-        selection?.redactionAmount(imageLength: CGFloat(max(document.base.width, document.base.height))) ?? redactionAmount
-    }
+    var paletteRedactionAmount: CGFloat { palette.redactionAmount }
 
     /// Sets how strongly the selected redaction, or the next one, hides. Changes during a drag of a style slider are one undo step.
     func setRedactionAmount(_ amount: CGFloat) {
-        if let selection {
-            restyleSelection(coalescing: isDraggingStyle ? "\(selection.id)-redaction-amount" : nil) { $0.setRedactionAmount(amount) }
-        }
-        if stylesNextAnnotation {
-            redactionAmount = amount
-        }
+        var changed = palette
+        changed.setRedactionAmount(amount)
+        adopt(changed, coalescing: isDraggingStyle ? selection.map { "\($0.id)-redaction-amount" } : nil)
     }
 
     /// The next spotlight's style: the chosen shape and edge, with the effect and strength the image's spotlights already share.
-    var nextSpotlightStyle: SpotlightStyle {
-        let shared = document.spotlightStyle ?? spotlight
-        return SpotlightStyle(shape: spotlight.shape, effect: shared.effect, strength: shared.strength, softEdge: spotlight.softEdge)
-    }
+    var nextSpotlightStyle: SpotlightStyle { palette.nextSpotlightStyle }
 
     /// The spotlight style the toolbar shows: the selected spotlight's, else the next one's. `nil` when neither is one.
-    var paletteSpotlight: SpotlightStyle? {
-        if let selection {
-            guard case let .spotlight(_, style) = selection.kind else {
-                return nil
-            }
-            return style
-        }
-        return tool == .spotlight ? nextSpotlightStyle : nil
-    }
+    var paletteSpotlight: SpotlightStyle? { palette.spotlight }
 
     func setSpotlightShape(_ newShape: BoxShape) {
-        restyleSelection { $0.restyleSpotlight { $0.shape = newShape } }
-        if stylesNextAnnotation {
-            spotlight.shape = newShape
-        }
+        var changed = palette
+        changed.setSpotlightShape(newShape)
+        adopt(changed)
     }
 
     /// Changes during a drag of a style slider are one undo step.
     func setSpotlightSoftEdge(_ softEdge: Double) {
-        restyleSelection(coalescing: isDraggingStyle ? "spotlight-edge" : nil) { $0.restyleSpotlight { $0.softEdge = softEdge } }
-        if stylesNextAnnotation {
-            spotlight.softEdge = softEdge
-        }
+        var changed = palette
+        changed.setSpotlightSoftEdge(softEdge)
+        adopt(changed, coalescing: isDraggingStyle ? "spotlight-edge" : nil)
     }
 
     /// Sets the effect and strength of every spotlight in the image, since they share one dim, and of the next one.
@@ -624,109 +599,45 @@ final class EditorModel {
 
     /// The alignment the toolbar shows: the text being typed's, else the selection's, else the next text's or note's.
     /// `nil` when none of them is text or a note.
-    var paletteAlignment: TextAlign? {
-        if let shown = editingText ?? selection {
-            return shown.alignsText ? shown.alignment : nil
-        }
-        return tool == .text || tool == .note ? alignment : nil
-    }
+    var paletteAlignment: TextAlign? { palette.alignment }
 
     func setAlignment(_ newAlignment: TextAlign) {
-        if let text = editingText {
-            editingText?.alignment = newAlignment
-            if !document.annotations.contains(where: { $0.id == text.id }) {
-                alignment = newAlignment
-            }
-            return
-        }
-        restyleSelection { $0.alignment = newAlignment }
-        if stylesNextAnnotation {
-            alignment = newAlignment
-        }
+        var changed = palette
+        changed.setAlignment(newAlignment)
+        adopt(changed)
     }
 
     /// The fill the toolbar shows and sets, `nil` for none: the selection's, else the fill for the next shape.
     var paletteFill: RGBA? {
-        get {
-            selection != nil ? selection?.fill : fill
-        }
+        get { palette.fill }
         set {
-            restyleSelection { $0.fill = newValue }
-            if stylesNextAnnotation {
-                fill = newValue
-            }
-        }
-    }
-
-    /// Recolours the text or note being typed. The document picks it up when it's committed.
-    /// New text or a new note also sets the colour for the next one.
-    private func setEditingColor(_ colour: RGBA) {
-        guard let text = editingText else {
-            return
-        }
-        editingText?.color = colour
-        if !document.annotations.contains(where: { $0.id == text.id }) {
-            if case .note = text.kind {
-                noteColor = colour
-            } else {
-                color = colour
-            }
+            var changed = palette
+            changed.setFill(newValue)
+            adopt(changed)
         }
     }
 
     /// Sets the border colour, or the fill, to one picked from the colour panel, which reports every
     /// change as the user drags. It's one undo step, and becomes the palette's last custom colour.
     func pickCustom(_ colour: RGBA, forFill: Bool) {
-        if editingText != nil, !forFill {
-            setEditingColor(colour)
-        } else {
-            if let selection {
-                let key = "\(selection.id)-\(forFill)"
-                restyleSelection(coalescing: key) { forFill ? ($0.fill = colour) : ($0.color = colour) }
-            }
-            if stylesNextAnnotation {
-                if forFill {
-                    fill = colour
-                } else {
-                    nextColor = colour
-                }
-            }
-        }
-        let slot = customSlot(forFill: forFill)
-        customColors[slot] = colour
-        rememberStyle { $0.customColors[slot] = colour }
+        var changed = palette
+        changed.pickCustom(colour, forFill: forFill)
+        adopt(changed, coalescing: selection.map { "\($0.id)-\(forFill)" })
     }
 
     /// The border or fill palette's last custom colour.
     func lastCustom(forFill: Bool) -> RGBA? {
-        customColors[customSlot(forFill: forFill)]
+        palette.lastCustom(forFill: forFill)
     }
 
-    private func customSlot(forFill: Bool) -> ColorSlot {
-        ColorSlot(forFill: forFill, shown: editingText ?? selection, tool: tool)
-    }
-
-    /// The width the toolbar shows and sets: the text being typed's, else the selection's, else the width for the next annotation.
+    /// The width the toolbar shows and sets: the text being typed's, else the selection's nearest, else the width for the
+    /// next annotation.
     var lineWidthIndex: Int {
-        get {
-            if let shown = editingText ?? selection {
-                return Self.baseWidths.firstIndex { abs($0 * scale - shown.lineWidth) < 0.01 } ?? -1
-            }
-            return widthIndex
-        }
+        get { palette.lineWidthIndex }
         set {
-            if let text = editingText {
-                // Text resizes as it's typed; new text also sets the width for the next annotation.
-                editingText?.setLineWidth(Self.baseWidths[newValue] * scale)
-                if !document.annotations.contains(where: { $0.id == text.id }) {
-                    widthIndex = newValue
-                }
-            } else {
-                restyleSelection { $0.setLineWidth(Self.baseWidths[newValue] * scale) }
-                if stylesNextAnnotation {
-                    widthIndex = newValue
-                }
-            }
+            var changed = palette
+            changed.setLineWidthIndex(newValue)
+            adopt(changed)
         }
     }
 

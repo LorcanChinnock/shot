@@ -90,8 +90,6 @@ final class VideoEditorModel {
     /// What the latest undo step changed, while it's still the latest, so a run of changes to it (a colour picker
     /// dragged) amends that step instead of adding one each; see `replaceProject`.
     @ObservationIgnored private var coalescingKey: String?
-    /// Set while a custom colour from the colour editor is applied, so its run of changes is one step.
-    @ObservationIgnored private var pickingKey: String?
 
     private static let showsTracksKey = "videoEditorShowsTracks"
     private static let showsInspectorKey = "videoEditorShowsInspector"
@@ -969,151 +967,96 @@ extension VideoEditorModel {
         refreshPlayer()
     }
 
-    var paletteColor: RGBA {
-        get {
-            editingText?.color ?? selectedAnnotation?.annotation.color ?? nextColor
+    /// The palette's state, built from the editor's; see `ShotCore.AnnotationPalette`.
+    private var palette: ShotCore.AnnotationPalette {
+        ShotCore.AnnotationPalette(
+            style: annotationStyle, editingText: editingText, editingTextIsNew: editingText.map { project.annotationClip($0.id) == nil } ?? false,
+            selection: selectedAnnotation?.annotation, tool: annotationTool, scale: styleScale,
+            imageLength: max(project.canvasSize.width, project.canvasSize.height),
+            sharedSpotlight: project.annotationClips.map(\.annotation).spotlightStyle
+        )
+    }
+
+    /// Takes on what a palette setter changed: the text being typed, the selected annotation as one undo step, which calls
+    /// with the same `coalescing` key in a row share (between `beginDrag` and `endDrag`, `endDrag` records it), and the
+    /// next annotation's style.
+    private func adopt(_ changed: ShotCore.AnnotationPalette, coalescing key: String? = nil) {
+        if changed.editingText != editingText {
+            editingText = changed.editingText
         }
+        if let restyled = changed.selection, let clip = selectedAnnotation, restyled != clip.annotation {
+            commitAnnotation(restyled, id: clip.id, coalescing: key)
+        }
+        if changed.style != annotationStyle {
+            annotationStyle = changed.style
+        }
+    }
+
+    var paletteColor: RGBA {
+        get { palette.color }
         set {
-            if let text = editingText {
-                // The field commits it; new text or a new note also sets the colour for the next one.
-                editingText?.color = newValue
-                if project.annotationClip(text.id) == nil {
-                    if case .note = text.kind {
-                        annotationStyle.noteColor = newValue
-                    } else {
-                        annotationStyle.color = newValue
-                    }
-                }
-            } else if selectedAnnotation != nil {
-                restyleSelection { $0.color = newValue }
-            } else {
-                nextColor = newValue
-            }
+            var changed = palette
+            changed.setColor(newValue)
+            adopt(changed)
         }
     }
 
     /// The colour for the tool's next annotation: notes and the highlighter keep their own.
-    var nextColor: RGBA {
-        get {
-            switch annotationTool {
-            case .note: annotationStyle.noteColor
-            case .highlight: annotationStyle.highlightColor
-            default: annotationStyle.color
-            }
-        }
-        set {
-            switch annotationTool {
-            case .note: annotationStyle.noteColor = newValue
-            case .highlight: annotationStyle.highlightColor = newValue
-            default: annotationStyle.color = newValue
-            }
-        }
-    }
+    var nextColor: RGBA { palette.nextColor }
 
     /// True when the palette offers a colour and width: the text being typed or the selected annotation takes them, or else the tool does.
-    var showsStyle: Bool {
-        editingText != nil || (selectedAnnotation?.annotation.isStyled ?? annotationTool?.isStyled ?? false)
-    }
+    var showsStyle: Bool { palette.showsStyle }
 
     /// True when the width sets a text size, so the palette offers sizes rather than line widths.
-    var sizesText: Bool {
-        (editingText ?? selectedAnnotation?.annotation)?.sizesText ?? annotationTool?.sizesText ?? false
-    }
+    var sizesText: Bool { palette.sizesText }
 
-    var showsFill: Bool {
-        selectedAnnotation?.annotation.supportsFill ?? (annotationTool == .shape)
-    }
+    var showsFill: Bool { palette.showsFill }
 
     /// The outline the palette shows: the selected shape's, else the next shape's. `nil` when neither is a shape.
-    var paletteShape: BoxShape? {
-        if let selected = selectedAnnotation?.annotation {
-            guard case let .shape(shape, _) = selected.kind else {
-                return nil
-            }
-            return shape
-        }
-        return annotationTool == .shape ? annotationStyle.shape : nil
-    }
+    var paletteShape: BoxShape? { palette.shape }
 
     func setShape(_ shape: BoxShape) {
-        guard selectedAnnotation != nil else {
-            annotationStyle.shape = shape
-            return
-        }
-        restyleSelection {
-            if case let .shape(_, rect) = $0.kind {
-                $0.kind = .shape(shape, rect: rect)
-            }
-        }
+        var changed = palette
+        changed.setShape(shape)
+        adopt(changed)
     }
 
     /// How the palette shows a redaction hiding: the selected one's, else the next one's. `nil` when neither is one.
-    var paletteRedaction: Redaction? {
-        if let selected = selectedAnnotation?.annotation {
-            return selected.redaction
-        }
-        return annotationTool == .redact ? annotationStyle.redaction : nil
-    }
+    var paletteRedaction: Redaction? { palette.redaction }
 
     func setRedaction(_ redaction: Redaction) {
-        guard selectedAnnotation != nil else {
-            annotationStyle.redaction = redaction
-            return
-        }
-        restyleSelection { $0.setRedaction(redaction) }
+        var changed = palette
+        changed.setRedaction(redaction)
+        adopt(changed)
     }
 
     /// How strongly the palette shows a redaction hiding: the selected one's, else the next one's.
-    var paletteRedactionAmount: CGFloat {
-        let length = max(project.canvasSize.width, project.canvasSize.height)
-        return selectedAnnotation?.annotation.redactionAmount(imageLength: length) ?? annotationStyle.redactionAmount
-    }
+    var paletteRedactionAmount: CGFloat { palette.redactionAmount }
 
     /// Sets how strongly the selected redaction, or the next one, hides. Between `beginDrag` and `endDrag` the changes are one undo step.
     func setRedactionAmount(_ amount: CGFloat) {
-        guard let clip = selectedAnnotation else {
-            annotationStyle.redactionAmount = amount
-            return
-        }
-        var restyled = clip.annotation
-        restyled.setRedactionAmount(amount)
-        commitAnnotation(restyled, id: clip.id)
+        var changed = palette
+        changed.setRedactionAmount(amount)
+        adopt(changed)
     }
 
     /// The next spotlight's style: the chosen shape and edge, with the effect and strength the project's spotlights already share.
-    var nextSpotlightStyle: SpotlightStyle {
-        let shared = project.annotationClips.map(\.annotation).spotlightStyle ?? annotationStyle.spotlight
-        let next = annotationStyle.spotlight
-        return SpotlightStyle(shape: next.shape, effect: shared.effect, strength: shared.strength, softEdge: next.softEdge)
-    }
+    var nextSpotlightStyle: SpotlightStyle { palette.nextSpotlightStyle }
 
     /// The spotlight style the palette shows: the selected spotlight's, else the next one's. `nil` when neither is one.
-    var paletteSpotlight: SpotlightStyle? {
-        if let selected = selectedAnnotation?.annotation {
-            guard case let .spotlight(_, style) = selected.kind else {
-                return nil
-            }
-            return style
-        }
-        return annotationTool == .spotlight ? nextSpotlightStyle : nil
-    }
+    var paletteSpotlight: SpotlightStyle? { palette.spotlight }
 
     func setSpotlightShape(_ shape: BoxShape) {
-        guard selectedAnnotation != nil else {
-            annotationStyle.spotlight.shape = shape
-            return
-        }
-        restyleSelection { $0.restyleSpotlight { $0.shape = shape } }
+        var changed = palette
+        changed.setSpotlightShape(shape)
+        adopt(changed)
     }
 
     /// Between `beginDrag` and `endDrag` the changes are one undo step.
     func setSpotlightSoftEdge(_ softEdge: Double) {
-        guard var restyled = selectedAnnotation else {
-            annotationStyle.spotlight.softEdge = softEdge
-            return
-        }
-        restyled.annotation.restyleSpotlight { $0.softEdge = softEdge }
-        commitAnnotation(restyled.annotation, id: restyled.id)
+        var changed = palette
+        changed.setSpotlightSoftEdge(softEdge)
+        adopt(changed)
     }
 
     /// Sets the effect and strength of every spotlight in the project, since they share one dim, and of the next one.
@@ -1127,72 +1070,41 @@ extension VideoEditorModel {
 
     /// The alignment the palette shows: the text being typed's, else the selected annotation's, else the next text's or note's.
     /// `nil` when none of them is text or a note.
-    var paletteAlignment: TextAlign? {
-        if let shown = editingText ?? selectedAnnotation?.annotation {
-            return shown.alignsText ? shown.alignment : nil
-        }
-        return annotationTool == .text || annotationTool == .note ? annotationStyle.alignment : nil
-    }
+    var paletteAlignment: TextAlign? { palette.alignment }
 
     func setAlignment(_ alignment: TextAlign) {
-        if let text = editingText {
-            // The field commits it; new text or a new note also sets the alignment for the next one.
-            editingText?.alignment = alignment
-            if project.annotationClip(text.id) == nil {
-                annotationStyle.alignment = alignment
-            }
-        } else if selectedAnnotation != nil {
-            restyleSelection { $0.alignment = alignment }
-        } else {
-            annotationStyle.alignment = alignment
-        }
+        var changed = palette
+        changed.setAlignment(alignment)
+        adopt(changed)
     }
 
     var paletteFill: RGBA? {
-        get { selectedAnnotation?.annotation.fill ?? (selectedAnnotation == nil ? annotationStyle.fill : nil) }
+        get { palette.fill }
         set {
-            if selectedAnnotation != nil {
-                restyleSelection { $0.fill = newValue }
-            } else {
-                annotationStyle.fill = newValue
-            }
+            var changed = palette
+            changed.setFill(newValue)
+            adopt(changed)
         }
     }
 
+    /// The width the palette shows and sets: the text being typed's, else the selected annotation's nearest, else the
+    /// next annotation's.
     var lineWidthIndex: Int {
-        get {
-            guard let selected = editingText ?? selectedAnnotation?.annotation else {
-                return annotationStyle.widthIndex
-            }
-            let scale = max(1, project.canvasSize.width / 960)
-            return EditorStyle.widths.indices.min { abs(EditorStyle.widths[$0] * scale - selected.lineWidth) < abs(EditorStyle.widths[$1] * scale - selected.lineWidth) } ?? annotationStyle.widthIndex
-        }
+        get { palette.lineWidthIndex }
         set {
-            if let text = editingText {
-                // Text resizes as it's typed; new text also sets the width for the next annotation.
-                editingText?.setLineWidth(EditorStyle.widths[newValue] * max(1, project.canvasSize.width / 960))
-                if project.annotationClip(text.id) == nil {
-                    annotationStyle.widthIndex = newValue
-                }
-            } else if selectedAnnotation != nil {
-                restyleSelection { $0.setLineWidth(EditorStyle.widths[newValue] * max(1, project.canvasSize.width / 960)) }
-            } else {
-                annotationStyle.widthIndex = newValue
-            }
+            var changed = palette
+            changed.setLineWidthIndex(newValue)
+            adopt(changed)
         }
     }
 
+    /// Sets the colour, or the fill, to one picked from the colour editor, which reports every change as the user drags,
+    /// so its run of changes to one annotation is one step. It becomes the palette's last custom colour.
     func pickCustom(_ color: RGBA, forFill: Bool) {
-        // The colour editor reports every change as the user drags, so its run of changes to one annotation is one step.
-        pickingKey = selectedClipID.map { "\($0)-custom-\(forFill)" }
-        defer { pickingKey = nil }
-        if forFill {
-            paletteFill = color
-        } else {
-            paletteColor = color
-        }
-        let slot = customSlot(forFill: forFill)
-        annotationStyle.customColors[slot] = color
+        var changed = palette
+        changed.pickCustom(color, forFill: forFill)
+        adopt(changed, coalescing: selectedClipID.map { "\($0)-custom-\(forFill)" })
+        let slot = changed.customSlot(forFill: forFill)
         // Only the custom colour is remembered: the video editor's other choices last as long as its window.
         var style = Preferences().editorStyle
         style.customColors[slot] = color
@@ -1201,21 +1113,7 @@ extension VideoEditorModel {
 
     /// The colour or fill palette's last custom colour.
     func lastCustom(forFill: Bool) -> RGBA? {
-        annotationStyle.customColors[customSlot(forFill: forFill)]
-    }
-
-    private func customSlot(forFill: Bool) -> ColorSlot {
-        ColorSlot(forFill: forFill, shown: editingText ?? selectedAnnotation?.annotation, tool: annotationTool)
-    }
-
-    /// Changes the selected annotation's style as one undo step, which a colour well's run of changes shares.
-    private func restyleSelection(_ change: (inout Annotation) -> Void) {
-        guard let clip = selectedAnnotation else {
-            return
-        }
-        var restyled = clip.annotation
-        change(&restyled)
-        commitAnnotation(restyled, id: clip.id, coalescing: pickingKey)
+        palette.lastCustom(forFill: forFill)
     }
 
     /// Shows the compositor `annotation` at the playhead, in place of the clip `id` when it has one, before it's committed.
