@@ -189,25 +189,24 @@ final class CaptureCoordinator {
 
     private func recordingFinished(_ url: URL) {
         state.isRecording = false
-        let prefs = Preferences()
-        if prefs.copyAfterRecording {
+        let plan = AfterCapture.plan(prefs: Preferences(), isVideo: true)
+        if plan.copies {
             Clipboard.copy(fileURL: url)
         }
         Confetti.burst(from: recordingRegion)
-        guard prefs.quickAccessAfterCapture else {
-            if prefs.copyAfterRecording {
-                Toast.show("Copied to clipboard")
-            } else if prefs.saveAfterCapture {
-                Toast.show("Saved")
+        switch plan.next {
+        case .quickAccess:
+            Task {
+                let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
+                generator.appliesPreferredTrackTransform = true
+                generator.maximumSize = CGSize(width: 480, height: 480)
+                let thumbnail = try? await generator.image(at: .zero).image
+                QuickAccessController.shared.add(videoURL: url, thumbnail: thumbnail)
             }
-            return
-        }
-        Task {
-            let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
-            generator.appliesPreferredTrackTransform = true
-            generator.maximumSize = CGSize(width: 480, height: 480)
-            let thumbnail = try? await generator.image(at: .zero).image
-            QuickAccessController.shared.add(videoURL: url, thumbnail: thumbnail)
+        case let .toast(message):
+            Toast.show(message)
+        case .editor, .nothing:
+            break
         }
     }
 
@@ -246,62 +245,74 @@ final class CaptureCoordinator {
         }
     }
 
-    /// Runs the enabled after-capture actions: save, copy, then Quick Access or the editor. `frame` is where the capture was
+    /// Runs the enabled after-capture actions: copy, save, then Quick Access or the editor. `frame` is where the capture was
     /// on screen, as an AppKit global rect. `windowShadow` marks a window captured with the macOS shadow, which the file
-    /// records so the editor doesn't offer a second one.
+    /// records so the editor doesn't offer a second one. The copy comes first, so a save that fails still leaves the
+    /// capture on the clipboard, and the clipboard doesn't wait for the file.
     func finish(image original: CGImage, scale originalScale: CGFloat, from frame: CGRect, windowShadow: Bool = false) async throws {
         let prefs = Preferences()
         if prefs.playSound {
             Sound.capture()
         }
+        let plan = AfterCapture.plan(prefs: prefs, isVideo: false)
         let downscale = prefs.downscaleRetina && originalScale > 1
         let format = prefs.imageFormat
         let source = SendableImage(original)
-        let encoded = await Task.detached { () -> (file: Data?, png: Data?, image: SendableImage, thumbnail: SendableImage?) in
+        let copies = plan.copies
+        let encoded = await Task.detached { () -> (file: Data?, png: Data?, image: SendableImage) in
             let image = downscale ? ImageCodec.downscaled(source.image, scale: originalScale) : source.image
             let scale = downscale ? 1 : originalScale
             let file = ImageCodec.data(from: image, scale: scale, format: format, windowShadow: windowShadow)
-            let png = format == .png ? file : ImageCodec.data(from: image, scale: scale)
-            let thumbnail = file.flatMap { ImageCodec.thumbnail(from: $0, maxPixelSize: 480) }.map(SendableImage.init)
-            return (file, png, SendableImage(image), thumbnail)
+            // The clipboard takes a PNG, which a PNG capture's file already is.
+            let png = format == .png ? file : copies ? ImageCodec.data(from: image, scale: scale) : nil
+            return (file, png, SendableImage(image))
         }.value
-        guard let fileData = encoded.file, let png = encoded.png else {
+        guard let fileData = encoded.file, !copies || encoded.png != nil else {
             throw CaptureError.encodingFailed
         }
         let image = encoded.image.image
         let scale = downscale ? 1 : originalScale
-        var savedURL: URL?
-        if prefs.saveAfterCapture || prefs.quickAccessAfterCapture || prefs.openEditorAfterCapture {
-            let folder = prefs.captureFolder
-            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            let url = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: format.fileExtension, prefix: prefs.filePrefix)
-            try fileData.write(to: url)
-            savedURL = url
-            log.notice("Saved \(url.path)")
-        }
-        if prefs.copyAfterCapture {
+        if copies, let png = encoded.png {
             Clipboard.copy(png: png)
             endCaptureInterval("copied")
         }
-        if let savedURL {
-            newCaptures = Array((newCaptures + [savedURL]).suffix(QuickAccessController.maxCards))
+        var savedURL: URL?
+        var thumbnail: CGImage?
+        if plan.writesFile {
+            let folder = prefs.captureFolder
+            let url = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: format.fileExtension, prefix: prefs.filePrefix)
+            // Only a Quick Access card needs the thumbnail.
+            let showsCard = plan.next == .quickAccess
+            thumbnail = try await Task.detached { () throws -> SendableImage? in
+                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+                try fileData.write(to: url)
+                return showsCard ? ImageCodec.thumbnail(from: fileData, maxPixelSize: 480).map(SendableImage.init) : nil
+            }.value?.image
+            savedURL = url
+            log.notice("Saved \(url.path)")
+            newCaptures = Array((newCaptures + [url]).suffix(QuickAccessController.maxCards))
         }
         var card: URL?
-        if let savedURL, prefs.openEditorAfterCapture {
-            EditorWindowController.open(savedURL, newCaptureStyle: newCaptureStyle(opening: savedURL))
-        } else if let savedURL, prefs.quickAccessAfterCapture {
-            let size = NSSize(width: CGFloat(image.width) / scale, height: CGFloat(image.height) / scale)
-            QuickAccessController.shared.add(fileURL: savedURL, thumbnail: encoded.thumbnail?.image ?? image, size: size)
-            card = savedURL
-        } else if prefs.copyAfterCapture {
-            Toast.show("Copied to clipboard")
-        } else if savedURL != nil {
-            Toast.show("Saved")
+        switch plan.next {
+        case .editor:
+            if let savedURL {
+                EditorWindowController.open(savedURL, newCaptureStyle: newCaptureStyle(opening: savedURL))
+            }
+        case .quickAccess:
+            if let savedURL {
+                let size = NSSize(width: CGFloat(image.width) / scale, height: CGFloat(image.height) / scale)
+                QuickAccessController.shared.add(fileURL: savedURL, thumbnail: thumbnail ?? image, size: size)
+                card = savedURL
+            }
+        case let .toast(message):
+            Toast.show(message)
+        case .nothing:
+            break
         }
-        if let newCaptureStyle = prefs.newCaptureStyle, prefs.copyAfterCapture || card != nil {
+        if let newCaptureStyle = prefs.newCaptureStyle, copies || card != nil {
             style(
                 image, scale: scale, with: newCaptureStyle, background: EditorDocument.defaultBackground(for: format), windowShadow: windowShadow,
-                copy: prefs.copyAfterCapture, card: card
+                copy: copies, card: card
             )
         }
         Confetti.burst(from: frame)
