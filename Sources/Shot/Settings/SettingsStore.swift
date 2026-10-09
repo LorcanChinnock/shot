@@ -49,24 +49,54 @@ final class SettingsStore {
     }
 }
 
-/// A setting in a view, declared like `@AppStorage` but read from `SettingsStore`.
+/// The defaults `Setting` falls back to, worked out once.
+@MainActor private let registeredDefaults = Preferences.defaults
+
+/// A setting in a view, declared like `@AppStorage` but read from `SettingsStore`. `@Setting(key) var name: Type` takes
+/// the default `Preferences` registers for `key`, so it's written in one place; an enum is stored as its raw value.
 @MainActor
 @propertyWrapper
 struct Setting<Value> {
     private let key: String
     private let fallback: Value
+    private let read: (Any?) -> Value?
+    private let write: (Value) -> Any
 
+    /// For a key with no registered default, such as a shortcut's.
     init(wrappedValue: Value, _ key: String) {
         self.key = key
         fallback = wrappedValue
+        read = { $0 as? Value }
+        write = { $0 }
+    }
+
+    /// For a key `Preferences.defaults` registers, which a test checks every such `@Setting` is.
+    init(_ key: String) {
+        guard let fallback = registeredDefaults[key] as? Value else {
+            preconditionFailure("\(key) has no registered default of type \(Value.self)")
+        }
+        self.init(wrappedValue: fallback, key)
     }
 
     var wrappedValue: Value {
-        get { SettingsStore.shared.value(forKey: key) as? Value ?? fallback }
-        nonmutating set { SettingsStore.shared.set(newValue, forKey: key) }
+        get { read(SettingsStore.shared.value(forKey: key)) ?? fallback }
+        nonmutating set { SettingsStore.shared.set(write(newValue), forKey: key) }
     }
 
     var projectedValue: Binding<Value> {
         Binding(get: { wrappedValue }, set: { wrappedValue = $0 })
+    }
+}
+
+extension Setting where Value: RawRepresentable, Value.RawValue == String {
+    /// An enum stored as its raw value, falling back to the registered default when the stored one isn't a case.
+    init(_ key: String) {
+        guard let fallback = (registeredDefaults[key] as? String).flatMap(Value.init(rawValue:)) else {
+            preconditionFailure("\(key) has no registered default that is a \(Value.self)")
+        }
+        self.key = key
+        self.fallback = fallback
+        read = { ($0 as? String).flatMap(Value.init(rawValue:)) }
+        write = { $0.rawValue }
     }
 }
