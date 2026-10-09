@@ -118,20 +118,6 @@ extension Annotation {
     }
 }
 
-extension EditorDocument {
-    /// Removes the annotations in `ids` that aren't locked, and the padding only they needed. Returns the ids removed.
-    @discardableResult
-    public mutating func deleteLayers(_ ids: Set<UUID>, margin: CGFloat) -> Set<UUID> {
-        let removable = Set(annotations.filter { ids.contains($0.id) && !$0.isLocked }.map(\.id))
-        guard !removable.isEmpty else {
-            return []
-        }
-        annotations.removeAll { removable.contains($0.id) }
-        shrinkPadding(margin: margin)
-        return removable
-    }
-}
-
 /// Where a clip dragged up or down the lanes lands.
 public enum LaneDrop: Equatable, Sendable {
     /// Onto the track at this index of `tracks`, or a new one just above it where that's locked, taken or of another kind.
