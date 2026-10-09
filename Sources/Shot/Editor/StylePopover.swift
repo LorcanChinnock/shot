@@ -43,6 +43,17 @@ struct StylePopover: View {
                         slider(value: model.targetCornerRadius, range: 0...48, name: "Corner radius", set: model.setTargetCornerRadius)
                     }
                 }
+                if kind == .capture {
+                    HStack(spacing: 10) {
+                        Toggle("Use this style for new captures", isOn: Binding(get: { model.usesStyleForNewCaptures }, set: model.setUsesStyleForNewCaptures))
+                            .toggleStyle(BrutalToggleStyle(color: Brutal.mint))
+                            .labelsHidden()
+                        Text("Use this style for new captures")
+                            .font(Brutal.caption)
+                            .foregroundStyle(Brutal.ink)
+                    }
+                    .brutalTip("New captures open and copy with this screenshot's style")
+                }
             } else {
                 Text("Select an image, shape, arrow or text, or nothing to style the screenshot.")
                     .font(Brutal.caption)

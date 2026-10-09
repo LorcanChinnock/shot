@@ -457,7 +457,7 @@ extension EditorDocument {
 
 /// A style copied from one object to paste on others. Its sizes are in points, so it looks the same pasted in a
 /// document of another scale.
-public struct CopiedStyle: Equatable, Sendable {
+public struct CopiedStyle: Equatable, Sendable, Codable {
     public var style: ObjectStyle
     /// The corner radius, in points; it's pasted only between kinds with corners.
     public var cornerRadius: CGFloat
@@ -468,5 +468,18 @@ public struct CopiedStyle: Equatable, Sendable {
         self.style = style
         self.cornerRadius = cornerRadius
         self.source = source
+    }
+}
+
+public extension CopiedStyle {
+    /// `image`, a new capture of `scale` pixels per point, with this style on it, as Use this style for new captures
+    /// copies it; `nil` when the style changes nothing.
+    func styledCapture(_ image: CGImage, scale: CGFloat) -> CGImage? {
+        guard !style.isEmpty || cornerRadius > 0 else {
+            return nil
+        }
+        var doc = EditorDocument(base: image)
+        doc.pasteStyle(self, to: [.capture], scale: scale, margin: 0)
+        return AnnotationRenderer.flatten(doc)
     }
 }

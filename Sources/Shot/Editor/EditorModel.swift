@@ -124,6 +124,8 @@ final class EditorModel {
     private var objectStyles: [StyleKind: ObjectStyle]
     /// The style Copy Style took last, in any editor window, which Paste Style puts on the selection.
     private static var copiedStyle: CopiedStyle?
+    /// What Use this style for new captures saved, as this window last saw it; `nil` while it's off.
+    private(set) var newCaptureStyle = Preferences().newCaptureStyle
     /// The layers picked, from the canvas or the layers panel. The toolbar styles an annotation only while it's the only one.
     var selectedIDs: Set<UUID> = []
     var selectedID: UUID? {
@@ -156,7 +158,8 @@ final class EditorModel {
     private var pickedKey: String?
     private var isDraggingStyle = false
 
-    init(fileURL: URL, image: CGImage, scale: CGFloat, style: EditorStyle = Preferences().editorStyle) {
+    /// `newCaptureStyle` is put on the screenshot as where the document starts, so it's no unsaved change.
+    init(fileURL: URL, image: CGImage, scale: CGFloat, style: EditorStyle = Preferences().editorStyle, newCaptureStyle: CopiedStyle? = nil) {
         self.fileURL = fileURL
         self.scale = scale
         let document = EditorDocument(base: image, background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension)))
@@ -175,6 +178,10 @@ final class EditorModel {
         customColors = style.customColors
         widthIndex = style.widthIndex
         objectStyles = style.objectStyles
+        if let newCaptureStyle {
+            self.document.pasteStyle(newCaptureStyle, to: [.capture], scale: scale, margin: canvasMargin)
+            savedSnapshot = self.document.snapshot
+        }
     }
 
     /// Saves only the value that changed, so another open editor's choices aren't overwritten with this
@@ -530,6 +537,17 @@ final class EditorModel {
             objectStyles[kind] = remembered
             rememberStyle { $0.objectStyles[kind] = remembered }
         }
+    }
+
+    /// Whether new captures get this screenshot's style: the setting is on, and the style it saved is this one.
+    var usesStyleForNewCaptures: Bool {
+        newCaptureStyle != nil && newCaptureStyle == document.copyStyle(of: .capture, scale: scale)
+    }
+
+    /// Saves the screenshot's style for new captures to open and copy with, or turns that off.
+    func setUsesStyleForNewCaptures(_ on: Bool) {
+        newCaptureStyle = on ? document.copyStyle(of: .capture, scale: scale) : nil
+        Preferences.styleNewCaptures(with: newCaptureStyle)
     }
 
     /// The style a new annotation of `kind` starts with: the last one given to that kind, else none.
