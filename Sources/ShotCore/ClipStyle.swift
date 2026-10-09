@@ -87,14 +87,17 @@ enum ClipStyler {
     /// `picture`, the clip's frame already placed on the canvas, with `clip`'s corners, border and shadow and faded by its
     /// opacity, over `image`. `placement` maps the clip's upright picture, y up, onto the canvas in Core Image's
     /// coordinates, and `fit` is how much it's scaled to fit the canvas at a clip scale of 1. `lift` raises the shadow.
+    /// `frame` is the frame as it comes, whose edge colour picks a hairline's and tints a glow, as an image's does.
     static func composite(
-        _ picture: CIImage, of clip: Clip, placement: CGAffineTransform, fit: CGFloat, lift: Double, over image: CIImage,
+        _ picture: CIImage, of clip: Clip, frame: CIImage, placement: CGAffineTransform, fit: CGFloat, lift: Double, over image: CIImage,
         shadows: ClipShadowCache, context: CIContext
     ) -> CIImage {
         let scale = CGFloat(clip.transform.scale), opacity = CGFloat(min(max(clip.transform.opacity, 0), 1))
         guard scale > 0, fit > 0 else {
             return image
         }
+        let needsEdge = clip.style.border?.kind == .hairline || clip.style.shadow?.tint == .object
+        let edge = needsEdge ? edgeColor(of: frame, context: context) : nil
         let look = Look(clip, scale: scale, fit: fit)
         // From canvas pixels about the upright picture, y up, to the canvas.
         let toCanvas = CGAffineTransform(scaleX: 1 / (fit * scale), y: 1 / (fit * scale)).concatenating(placement)
@@ -105,9 +108,9 @@ enum ClipStyler {
         }
         if let border = clip.style.border {
             // A solid border tucks half a pixel under the picture, so no seam shows between them, and casts the shadow
-            // with it; a hairline is a faint rim just outside the edge, light against the black canvas.
+            // with it; a hairline is a faint rim just outside the edge, light on a dark frame and dark on a light one.
             let overlap: CGFloat = border.kind == .solid ? 0.5 : 0
-            let color = border.kind == .hairline ? Border.hairlineColor(edge: RGBA(0, 0, 0)) : border.paint
+            let color = border.kind == .hairline ? Border.hairlineColor(edge: edge ?? RGBA(0, 0, 0)) : border.paint
             let outer = roundedRect(
                 look.rect.insetBy(dx: -look.borderWidth, dy: -look.borderWidth),
                 radius: look.radius > 0 ? look.radius + look.borderWidth : 0,
@@ -121,7 +124,7 @@ enum ClipStyler {
             body = body.applyingFilter("CIColorMatrix", parameters: ["inputAVector": CIVector(x: 0, y: 0, z: 0, w: opacity)])
         }
         guard let shadow = clip.style.shadow, opacity > 0,
-              let cast = Self.shadow(shadow, of: clip, scale: scale, fit: fit, lift: CGFloat(lift), placement: placement, opacity: opacity, shadows: shadows, context: context)
+              let cast = Self.shadow(shadow, of: clip, edge: edge, scale: scale, fit: fit, lift: CGFloat(lift), placement: placement, opacity: opacity, shadows: shadows, context: context)
         else {
             return body.composited(over: image)
         }
@@ -131,7 +134,7 @@ enum ClipStyler {
     /// The shadow `clip` casts on the canvas: one cached mask per layer, scaled from the scale it was blurred at, moved
     /// down by the layer's offset and tinted. Nothing is blurred unless the clip's scale or lift moved to a new step.
     private static func shadow(
-        _ shadow: Shadow, of clip: Clip, scale: CGFloat, fit: CGFloat, lift: CGFloat, placement: CGAffineTransform, opacity: CGFloat,
+        _ shadow: Shadow, of clip: Clip, edge: RGBA?, scale: CGFloat, fit: CGFloat, lift: CGFloat, placement: CGAffineTransform, opacity: CGFloat,
         shadows: ClipShadowCache, context: CIContext
     ) -> CIImage? {
         let stepped = exp2((log2(scale) * scaleSteps).rounded() / scaleSteps)
@@ -141,9 +144,8 @@ enum ClipStyler {
         blurred.elevation *= stepped * lifted
         shown.elevation *= scale * lift
         let toCanvas = CGAffineTransform(scaleX: 1 / (fit * stepped), y: 1 / (fit * stepped)).concatenating(placement)
-        // A glow takes the colour of a solid border, else white, since a frame of video has no one colour of its own.
-        let object = clip.style.border.flatMap { $0.kind == .solid ? $0.paint : nil } ?? RGBA(1, 1, 1)
-        let color = shadow.color(background: nil, object: object)
+        // A glow takes the colour of the frame's edge, as an image's does.
+        let color = shadow.color(background: nil, object: edge ?? RGBA(1, 1, 1))
         let alpha = shadow.opacity * opacity
         var result: CIImage?
         for (blur, offset) in zip(blurred.layers.map(\.blur), shown.layers.map(\.offset)) {
@@ -186,6 +188,42 @@ enum ClipStyler {
             return nil
         }
         return (mask, CGRect(x: pixels.minX / unit, y: pixels.minY / unit, width: pixels.width / unit, height: pixels.height / unit))
+    }
+
+    /// The average colour near `frame`'s edge, an eighth of its shorter side deep all round, as an image's is read; `nil`
+    /// for an empty frame. It's the whole frame's average less its middle's, so it reads back two pixels.
+    static func edgeColor(of frame: CIImage, context: CIContext) -> RGBA? {
+        let outer = frame.extent
+        guard !outer.isInfinite, outer.width >= 1, outer.height >= 1 else {
+            return nil
+        }
+        let depth = max(1, min(outer.width, outer.height) / 8)
+        let inner = outer.insetBy(dx: depth, dy: depth)
+        func average(_ rect: CGRect) -> [Float] {
+            var pixel = [Float](repeating: 0, count: 4)
+            guard !rect.isEmpty else {
+                return pixel
+            }
+            let filter = CIFilter.areaAverage()
+            filter.inputImage = frame
+            filter.extent = rect
+            if let output = filter.outputImage {
+                context.render(output, toBitmap: &pixel, rowBytes: 4 * MemoryLayout<Float>.size, bounds: output.extent, format: .RGBAf, colorSpace: nil)
+            }
+            return pixel
+        }
+        let all = average(outer), middle = average(inner)
+        let outerArea = outer.width * outer.height, innerArea = inner.isEmpty ? 0 : inner.width * inner.height
+        let ring = outerArea - innerArea
+        func channel(_ index: Int) -> CGFloat {
+            (CGFloat(all[index]) * outerArea - CGFloat(middle[index]) * innerArea) / ring
+        }
+        let alpha = channel(3)
+        guard ring > 0, alpha > 0.001 else {
+            return nil
+        }
+        // Premultiplied, so dividing by the alpha weighs each pixel by its own, as for an image.
+        return RGBA(min(max(channel(0) / alpha, 0), 1), min(max(channel(1) / alpha, 0), 1), min(max(channel(2) / alpha, 0), 1))
     }
 
     private static func roundedRect(_ rect: CGRect, radius: CGFloat, color: CIColor = .white) -> CIImage {

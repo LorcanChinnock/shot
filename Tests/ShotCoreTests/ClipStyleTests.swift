@@ -14,13 +14,14 @@ private func square(scale: Double, offset: CGSize = .zero, opacity: Double = 1, 
     return clip
 }
 
-/// `clip`'s red picture placed on a grey canvas of `side` pixels as the compositor places it, with its style.
-private func composite(_ clip: Clip, side: CGFloat, lift: Double = 1, shadows: ClipShadowCache = ClipShadowCache()) -> CIImage {
+/// `clip`'s picture, red unless `color` says otherwise, placed on a grey canvas of `side` pixels as the compositor places
+/// it, with its style.
+private func composite(_ clip: Clip, side: CGFloat, lift: Double = 1, color: CIColor = .red, shadows: ClipShadowCache = ClipShadowCache()) -> CIImage {
     let canvas = CGSize(width: side, height: side)
     let placement = LayerGeometry.imageTransform(orientation: .identity, geometry: LayerGeometry.transform(for: clip, canvas: canvas), sourceHeight: 100, canvasHeight: side)
-    let picture = CIImage(color: .red).cropped(to: CGRect(x: 0, y: 0, width: 100, height: 100)).transformed(by: placement)
+    let frame = CIImage(color: color).cropped(to: CGRect(x: 0, y: 0, width: 100, height: 100))
     let grey = CIImage(color: CIColor(red: 0.5, green: 0.5, blue: 0.5)).cropped(to: CGRect(origin: .zero, size: canvas))
-    return ClipStyler.composite(picture, of: clip, placement: placement, fit: side / 100, lift: lift, over: grey, shadows: shadows, context: context)
+    return ClipStyler.composite(frame.transformed(by: placement), of: clip, frame: frame, placement: placement, fit: side / 100, lift: lift, over: grey, shadows: shadows, context: context)
 }
 
 /// The red and green of the pixel at (`x`, `y`) from the top left of an image of `side` pixels.
@@ -127,4 +128,23 @@ private func pixel(_ image: CIImage, x: CGFloat, y: CGFloat, side: CGFloat) -> (
     let rising = try #require(popped.rendered(atTimeline: 0.225).annotation.style.shadow)
     let scale = popped.values(atTimeline: 0.225).scale
     #expect(rising.elevation > float.elevation * scale * 1.9)
+}
+
+@Test func aClipsHairlineAndGlowTakeTheirColourFromTheFramesEdge() {
+    // On a white frame the hairline is the dark rim, so it darkens the grey just outside the clip, from 50 to 150.
+    let light = pixel(composite(square(scale: 0.5, style: ObjectStyle(border: .hairline)), side: 200, color: .white), x: 49, y: 100, side: 200)
+    let dark = pixel(composite(square(scale: 0.5, style: ObjectStyle(border: .hairline)), side: 200, color: .black), x: 49, y: 100, side: 200)
+    #expect(light.r < 128, "dark rim on a light frame, got \(light)")
+    #expect(dark.r > 128, "light rim on a dark frame, got \(dark)")
+    // A glow around a red frame is red.
+    let glow = pixel(composite(square(scale: 0.5, style: ObjectStyle(shadow: ShadowPreset.glow.shadow(scale: 1))), side: 200), x: 100, y: 46, side: 200)
+    #expect(glow.r > 140 && glow.g < 120, "a red glow, got \(glow)")
+}
+
+@Test func theEdgeColourIsTheAverageNearTheEdgeNotTheMiddle() throws {
+    // A white frame with a black middle, inside its outer eighth.
+    let middle = CIImage(color: .black).cropped(to: CGRect(x: 20, y: 20, width: 60, height: 60))
+    let frame = middle.composited(over: CIImage(color: .white).cropped(to: CGRect(x: 0, y: 0, width: 100, height: 100)))
+    let edge = try #require(ClipStyler.edgeColor(of: frame, context: context))
+    #expect(edge.r > 0.95 && edge.g > 0.95 && edge.b > 0.95)
 }

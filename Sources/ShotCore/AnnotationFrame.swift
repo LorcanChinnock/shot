@@ -1,11 +1,13 @@
 import CoreImage
 
 /// Annotation clips being edited, which the compositor draws in place of what the project has for them,
-/// so a drag shows at once without rebuilding the preview. Safe to change from any thread.
+/// so a drag shows at once without rebuilding the preview, and the styles of pictures being restyled or previewed.
+/// Safe to change from any thread.
 public final class LiveAnnotations: @unchecked Sendable {
     private let lock = NSLock()
     private var hidden: Set<UUID> = []
     private var drawn: [AnnotationClip] = []
+    private var clipStyles: [UUID: ObjectStyle] = [:]
 
     public init() {}
 
@@ -17,12 +19,21 @@ public final class LiveAnnotations: @unchecked Sendable {
         }
     }
 
-    public func clear() {
-        set(hidden: [], drawn: [])
+    /// Draws the picture of clip `id` with `style` in place of the project's, or as the project has it when `nil`.
+    public func set(style: ObjectStyle?, ofClip id: UUID) {
+        lock.withLock { clipStyles[id] = style }
     }
 
-    func snapshot() -> (hidden: Set<UUID>, drawn: [AnnotationClip]) {
-        lock.withLock { (hidden, drawn) }
+    public func clear() {
+        lock.withLock {
+            hidden = []
+            drawn = []
+            clipStyles = [:]
+        }
+    }
+
+    func snapshot() -> (hidden: Set<UUID>, drawn: [AnnotationClip], clipStyles: [UUID: ObjectStyle]) {
+        lock.withLock { (hidden, drawn, clipStyles) }
     }
 }
 

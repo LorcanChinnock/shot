@@ -1,7 +1,10 @@
 import AppKit
+import os
 import Observation
 import ShotCore
 import SwiftUI
+
+private let log = Logger.shot("quick-access")
 
 struct QuickAccessCard: Identifiable {
     static let width: CGFloat = 240
@@ -10,8 +13,11 @@ struct QuickAccessCard: Identifiable {
 
     let id = UUID()
     let fileURL: URL
-    let thumbnail: NSImage
+    var thumbnail: NSImage
     let isVideo: Bool
+    /// The capture with the style Use this style for new captures gave it, which Copy and dragging use in place of the
+    /// plain file; `nil` while it's drawn, and for a capture with no style.
+    var styledURL: URL?
 
     var height: CGFloat {
         let size = thumbnail.size
@@ -51,6 +57,41 @@ final class QuickAccessController {
         add(QuickAccessCard(fileURL: fileURL, thumbnail: NSImage(cgImage: thumbnail, size: size), isVideo: false))
     }
 
+    /// Gives the card for the capture at `fileURL` the look Use this style for new captures gives it: `png` for its Copy and
+    /// drag, and `thumbnail`, `size` points big, to show. The PNG is written to a temporary file, named as the capture is,
+    /// for dragging.
+    func setStyled(_ png: Data, thumbnail: CGImage, size: NSSize, of fileURL: URL) async {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Styled captures/\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent(fileURL.deletingPathExtension().lastPathComponent)
+            .appendingPathExtension("png")
+        let written = await Task.detached {
+            do {
+                try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try png.write(to: url, options: .atomic)
+                return true
+            } catch {
+                log.error("Could not write the styled capture: \(error.localizedDescription, privacy: .public)")
+                return false
+            }
+        }.value
+        guard written else {
+            return
+        }
+        guard let index = model.cards.firstIndex(where: { $0.fileURL == fileURL && !$0.isVideo }) else {
+            Self.removeStyled(url)
+            return
+        }
+        model.cards[index].thumbnail = NSImage(cgImage: thumbnail, size: size)
+        model.cards[index].styledURL = url
+        layout()
+    }
+
+    /// Deletes a styled capture's temporary file and its folder.
+    private static func removeStyled(_ url: URL) {
+        try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+    }
+
     func add(videoURL: URL, thumbnail: CGImage?) {
         let image = thumbnail.map { NSImage(cgImage: $0, size: .zero) } ?? NSImage(systemSymbolName: "film", accessibilityDescription: nil) ?? NSImage()
         add(QuickAccessCard(fileURL: videoURL, thumbnail: image, isVideo: true))
@@ -78,6 +119,9 @@ final class QuickAccessController {
 
     func remove(_ id: UUID) {
         timers.removeValue(forKey: id)?.cancel()
+        if let styled = model.cards.first(where: { $0.id == id })?.styledURL {
+            Self.removeStyled(styled)
+        }
         withAnimation(QuickAccessMotion.exit) {
             model.cards.removeAll { $0.id == id }
         }
@@ -175,7 +219,7 @@ final class QuickAccessController {
     func copy(_ card: QuickAccessCard) {
         if card.isVideo {
             Clipboard.copy(fileURL: card.fileURL)
-        } else if !Clipboard.copy(imageAt: card.fileURL) {
+        } else if !Clipboard.copy(imageAt: card.styledURL ?? card.fileURL) {
             Toast.error("Could not read \(card.fileURL.lastPathComponent)")
             return
         }

@@ -131,6 +131,21 @@ struct SampledImage: Equatable, Sendable {
 enum ShadowCaster: Equatable, Sendable {
     case annotation(Annotation)
     case image(SampledImage, rect: CGRect, cornerRadius: CGFloat, style: ObjectStyle)
+
+    /// The caster with `origin` moved to zero and every position on a grid of 1/64 of a pixel, so the same caster
+    /// anywhere else, even moved by a fraction of a pixel, compares equal, and its shadow only needs moving.
+    func relative(to origin: CGPoint) -> ShadowCaster {
+        func snap(_ point: CGPoint) -> CGPoint {
+            CGPoint(x: ((point.x - origin.x) * 64).rounded() / 64, y: ((point.y - origin.y) * 64).rounded() / 64)
+        }
+        switch self {
+        case var .annotation(annotation):
+            annotation.movePositions(snap)
+            return .annotation(annotation)
+        case let .image(image, rect, cornerRadius, style):
+            return .image(image, rect: CGRect(origin: snap(rect.origin), size: rect.size), cornerRadius: cornerRadius, style: style)
+        }
+    }
 }
 
 /// A spotlight with a soft edge, which fades the dim rather than cutting it out.

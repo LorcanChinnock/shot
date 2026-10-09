@@ -523,3 +523,16 @@ private func same(_ a: CGRect, _ b: CGRect) -> Bool {
     Preferences.resetAll(in: store)
     #expect(prefs.editorStyle.objectStyles.isEmpty)
 }
+
+@Test func aStylePastesOnAnythingOfAKindWithoutADocument() {
+    let solid = Border(kind: .solid, lineWidth: EditorStyle.widths[2], color: RGBA(1, 0, 0))
+    let copied = CopiedStyle(style: ObjectStyle(shadow: soft, border: solid), cornerRadius: 6, source: .image)
+    // A video clip's picture is an opaque image: it takes all of it, at the scale of its canvas.
+    let clip = copied.pasted(on: ObjectStyle(border: .hairline), of: .image, transparent: false, scale: 2)
+    #expect(clip == ObjectStyle(shadow: soft, border: solid).scaled(by: 2))
+    #expect(copied.pastedCornerRadius(on: .image, scale: 2) == 12)
+    // Text takes the shadow and keeps its outline, and has no corners.
+    let outline = Border(kind: .outline, lineWidth: 1, color: RGBA(0, 0, 0))
+    #expect(copied.pasted(on: ObjectStyle(border: outline), of: .text, transparent: false, scale: 1) == ObjectStyle(shadow: soft, border: outline))
+    #expect(copied.pastedCornerRadius(on: .text, scale: 1) == nil)
+}

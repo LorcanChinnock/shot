@@ -78,3 +78,42 @@ private func alpha(_ image: CGImage, _ x: Int, _ y: Int) throws -> UInt8 {
     #expect(!doc.captureHas(copied, scale: 2))
     #expect(!doc.captureHas(nil, scale: 2))
 }
+
+@Test(arguments: [ImageFormat.png, .jpeg])
+func aWindowCapturedWithTheMacOSShadowSaysSoInItsFile(format: ImageFormat) throws {
+    let marked = try #require(ImageCodec.data(from: grey(width: 20, height: 10), scale: 2, format: format, windowShadow: true))
+    let plain = try #require(ImageCodec.data(from: grey(width: 20, height: 10), scale: 2, format: format))
+    #expect(ImageCodec.hasWindowShadow(of: marked))
+    #expect(!ImageCodec.hasWindowShadow(of: plain))
+    #expect(ImageCodec.scale(of: marked) == 2)
+}
+
+@Test func aWindowWithTheMacOSShadowTakesNoSecondShadowButKeepsTheRestOfAStyle() {
+    var doc = EditorDocument(base: grey(width: 40, height: 30))
+    doc.hasWindowShadow = true
+    doc.setStyle(ObjectStyle(shadow: ShadowPreset.soft.shadow(scale: 2), border: .hairline), of: .capture, margin: 0)
+    #expect(doc.captureStyle == ObjectStyle(border: .hairline))
+    // A pasted style loses its shadow the same way, and a shadow alone changes nothing.
+    let copied = CopiedStyle(style: ObjectStyle(shadow: ShadowPreset.float.shadow(scale: 1)), cornerRadius: 0, source: .capture)
+    doc.pasteStyle(copied, to: [.capture], scale: 2, margin: 0)
+    #expect(doc.captureStyle.shadow == nil)
+    #expect(copied.styledCapture(grey(width: 40, height: 30), scale: 2, background: nil, windowShadow: true) == nil)
+    #expect(copied.styledCapture(grey(width: 40, height: 30), scale: 2, background: nil) != nil)
+}
+
+@Test func aWindowWithTheMacOSShadowHasTheNewCaptureStyleWithoutItsShadowAndKeepsItWhenSaving() throws {
+    let saved = CopiedStyle(style: ObjectStyle(shadow: ShadowPreset.soft.shadow(scale: 1), border: .hairline), cornerRadius: 8, source: .capture)
+    var doc = EditorDocument(base: grey(width: 40, height: 30))
+    doc.hasWindowShadow = true
+    doc.pasteStyle(saved, to: [.capture], scale: 2, margin: 0)
+    #expect(doc.captureHas(saved, scale: 2))
+    // Saving this screenshot's style for new captures keeps the shadow saved before, for captures that can take one.
+    doc.setCornerRadius(4, of: .capture)
+    let resaved = try #require(doc.newCaptureStyle(keeping: saved, scale: 2))
+    #expect(resaved.style.shadow == saved.style.shadow)
+    #expect(resaved.cornerRadius == 2)
+    var plain = EditorDocument(base: grey(width: 40, height: 30))
+    plain.pasteStyle(saved, to: [.capture], scale: 2, margin: 0)
+    plain.setStyle(ObjectStyle(border: .hairline), of: .capture, margin: 0)
+    #expect(plain.newCaptureStyle(keeping: saved, scale: 2)?.style.shadow == nil)
+}

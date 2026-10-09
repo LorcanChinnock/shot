@@ -73,9 +73,8 @@ final class VideoEditorModel {
     var editingText: Annotation?
     /// Called when the panel opens, closes or changes height, so the window can grow or shrink to fit.
     @ObservationIgnored var onLayoutChanged: (() -> Void)?
-    /// A style the pointer is over in the Style popover, drawn on the selected annotation until it moves off. It's not part
-    /// of the project, so it's never an undo step. A clip's picture shows its style only once the preview is rebuilt, so
-    /// it isn't previewed.
+    /// A style the pointer or the arrow keys are on in the Style popover, drawn on the selected annotation or clip until
+    /// they move off. It's not part of the project, so it's never an undo step.
     var stylePreview: ObjectStyle? {
         didSet {
             if stylePreview != oldValue {
@@ -85,8 +84,9 @@ final class VideoEditorModel {
     }
     /// The annotation clip `stylePreview` was last drawn on.
     @ObservationIgnored private var styledPreviewClip: UUID?
-    /// The colour a border picked from the custom colour editor had last, which its rainbow swatch applies again.
-    private(set) var lastBorderColor = RGBA(1, 1, 1)
+    /// The colour a border picked from the custom colour editor had last, which its rainbow swatch applies again; `nil`
+    /// until one is picked, so the swatch doesn't offer white, which the palette has.
+    private(set) var lastBorderColor: RGBA?
     /// The clip whose border colour was picked last, and the project that left, so the picker's run of changes is one step.
     @ObservationIgnored private var pickedBorderColor: (clip: UUID, project: Project)?
 
@@ -1249,17 +1249,23 @@ extension VideoEditorModel {
     }
 
     /// Redraws the frame the paused player is showing, which a change to the live annotations doesn't do by itself.
+    /// Seeking to where the player already is draws nothing new, so the item is handed its composition again, which does.
     private func refreshFrame() {
-        guard itemIsComposite, !isPlaying else {
+        guard itemIsComposite, !isPlaying, let item = player.currentItem, let composition = item.videoComposition else {
             return
         }
-        player.seek(to: player.currentTime(), toleranceBefore: .zero, toleranceAfter: .zero)
+        item.videoComposition = composition.mutableCopy() as? AVVideoComposition
     }
 
-    /// Puts `annotation` on the timeline at the playhead and selects it.
+    /// Puts `annotation` on the timeline at the playhead and selects it. One that can be styled starts with the last style
+    /// given to its kind, but for an outline on an image without see-through pixels for it.
     func addAnnotation(_ annotation: Annotation) {
         guard !isExporting else {
             return
+        }
+        var annotation = annotation
+        if let kind = annotation.styleKind, annotation.style.isEmpty {
+            annotation.style = annotationStyle.objectStyle(for: kind, scale: styleScale).restricted(to: kind, transparent: annotation.hasTransparency)
         }
         let (added, id) = project.adding(annotation: annotation, at: playhead)
         undoStack.record(edit)
@@ -1458,6 +1464,20 @@ extension VideoEditorModel: StyleEditing {
         selectedAnnotation?.annotation.style ?? selectedClip?.style ?? ObjectStyle()
     }
 
+    /// What the Style popover's tiles draw: a placed image, mark or text, or a frame of a clip once its thumbnails load.
+    var targetThumbnail: StyleThumbnail.Subject? {
+        if let annotation = selectedAnnotation?.annotation {
+            if case let .image(image, _) = annotation.kind {
+                return .image(image.image)
+            }
+            return .annotation(annotation)
+        }
+        guard targetStyleKind != nil, let clip = selectedClip, let frame = thumbnailSets[clip.source]?.lazy.compactMap(\.self).first else {
+            return nil
+        }
+        return .image(frame)
+    }
+
     /// In points.
     var targetCornerRadius: CGFloat {
         (selectedAnnotation.map { $0.annotation.cornerRadius ?? 0 } ?? selectedClip?.cornerRadius ?? 0) / scale
@@ -1478,9 +1498,10 @@ extension VideoEditorModel: StyleEditing {
         return Border(kind: kind, lineWidth: widths[widths.count / 2] * scale, color: color)
     }
 
+    /// Restyles before ending the preview, so the picture never shows its old style in between.
     func setTargetStyle(_ style: ObjectStyle) {
-        stylePreview = nil
         restyleTarget { $0 = style }
+        stylePreview = nil
     }
 
     func setShadowElevation(_ points: CGFloat) {
@@ -1533,22 +1554,68 @@ extension VideoEditorModel: StyleEditing {
         }
     }
 
-    /// Restyles the selected annotation or clip as one undo step, or without `recording` as part of the last one. An
-    /// annotation is redrawn at once; a clip's picture once the preview is rebuilt.
+    /// Restyles the selected annotation or clip as one undo step, or without `recording` as part of the last one, and
+    /// redraws it at once. An annotation's style is remembered for the next one of its kind.
     private func restyleTarget(recording: Bool = true, _ change: (inout ObjectStyle) -> Void) {
+        var style = targetStyle
+        change(&style)
+        restyleTarget(style, cornerRadius: nil, recording: recording)
+    }
+
+    /// Gives the selected annotation or clip `style` and, unless it's `nil`, `cornerRadius` in canvas pixels, as one step.
+    private func restyleTarget(_ style: ObjectStyle, cornerRadius: CGFloat?, recording: Bool = true) {
         guard let kind = targetStyleKind else {
             return
         }
-        var style = targetStyle
-        change(&style)
         if let note = selectedAnnotation {
             var annotation = note.annotation
             annotation.style = style.restricted(to: kind, transparent: annotation.hasTransparency)
+            if let cornerRadius, kind.takesCorners {
+                annotation.cornerRadius = cornerRadius == 0 ? nil : cornerRadius
+            }
             commitAnnotation(annotation, id: note.id, recording: recording)
+            rememberStyle(annotation.style, of: kind)
             refreshFrame()
-        } else if let id = selectedClipID, let changed = project.setting(style: style, of: id) {
+        } else if let id = selectedClipID, var changed = project.setting(style: style, of: id) {
+            if let cornerRadius {
+                changed = changed.setting(cornerRadius: cornerRadius, of: id) ?? changed
+            }
             replaceProject(with: changed, recording: recording)
+            // The compositor draws the new style until the rebuilt preview has it too.
+            compositeLive?.set(style: changed.clip(id)?.style, ofClip: id)
+            refreshFrame()
         }
+    }
+
+    /// Remembers `style`, in canvas pixels, as the one new annotations of `kind` start with, here and in the photo editor.
+    private func rememberStyle(_ style: ObjectStyle, of kind: StyleKind) {
+        let points = style.scaled(by: 1 / scale)
+        annotationStyle.objectStyles[kind] = points
+        var remembered = Preferences().editorStyle
+        remembered.objectStyles[kind] = points
+        Preferences.remember(remembered)
+    }
+
+    /// Copies the selected annotation's or clip's style for Paste Style, here or in the photo editor.
+    func copyStyle() {
+        guard let kind = targetStyleKind else {
+            Toast.error("Select a clip, image, shape, arrow or text to copy its style")
+            return
+        }
+        StyleClipboard.copied = CopiedStyle(style: targetStyle.scaled(by: 1 / scale), cornerRadius: targetCornerRadius, source: kind)
+        Toast.show("Copied style")
+    }
+
+    var canPasteStyle: Bool { StyleClipboard.copied != nil && targetStyleKind != nil && editingText == nil }
+
+    /// Puts the copied style on the selected annotation or clip as one undo step: what it can have of it.
+    func pasteStyle() {
+        guard let copied = StyleClipboard.copied, let kind = targetStyleKind, editingText == nil else {
+            return
+        }
+        let transparent = copied.style.border?.kind == .outline && targetHasTransparency
+        let style = copied.pasted(on: targetStyle, of: kind, transparent: transparent, scale: scale)
+        restyleTarget(style, cornerRadius: copied.pastedCornerRadius(on: kind, scale: scale))
     }
 
     /// Replaces the project as one undo step, or without `recording` as part of the last one; between `beginDrag` and
@@ -1563,9 +1630,14 @@ extension VideoEditorModel: StyleEditing {
         project = changed
     }
 
-    /// Draws the selected annotation with the style the pointer is over, or, once it moves off, the annotation it was
-    /// drawn on as the project has it.
+    /// Draws the selected annotation or clip with the style the pointer is over, or, once it moves off, as the project
+    /// has it.
     private func previewStyle() {
+        if selectedAnnotation == nil, targetStyleKind != nil, let clip = selectedClip {
+            compositeLive?.set(style: stylePreview ?? clip.style, ofClip: clip.id)
+            refreshFrame()
+            return
+        }
         var shown: AnnotationClip?
         if let stylePreview, var clip = selectedAnnotation, let kind = clip.annotation.styleKind {
             clip.annotation.style = stylePreview.restricted(to: kind, transparent: clip.annotation.hasTransparency)

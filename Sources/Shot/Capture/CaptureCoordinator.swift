@@ -131,6 +131,7 @@ final class CaptureCoordinator {
         let image: CGImage
         let scale: CGFloat
         let frame: CGRect
+        var windowShadow = false
         switch selection {
         case let .area(index, rect, _):
             let display = frozen[index]
@@ -142,7 +143,8 @@ final class CaptureCoordinator {
             scale = display.scale
             frame = rect.offsetBy(dx: display.frame.minX, dy: display.frame.minY)
         case let .window(info):
-            let result = try await WindowCapturer.capture(windowID: info.windowID, includeShadow: Preferences().windowShadow)
+            windowShadow = Preferences().windowShadow
+            let result = try await WindowCapturer.capture(windowID: info.windowID, includeShadow: windowShadow)
             image = result.image
             scale = result.scale
             frame = Geometry.flip(info.frame, primaryHeight: NSScreen.screens.first?.frame.height ?? 0)
@@ -151,7 +153,7 @@ final class CaptureCoordinator {
             scale = frozen[index].scale
             frame = frozen[index].frame
         }
-        try await finish(image: image, scale: scale, from: frame)
+        try await finish(image: image, scale: scale, from: frame, windowShadow: windowShadow)
     }
 
     func togglePause() {
@@ -245,8 +247,9 @@ final class CaptureCoordinator {
     }
 
     /// Runs the enabled after-capture actions: save, copy, then Quick Access or the editor. `frame` is where the capture was
-    /// on screen, as an AppKit global rect.
-    func finish(image original: CGImage, scale originalScale: CGFloat, from frame: CGRect) async throws {
+    /// on screen, as an AppKit global rect. `windowShadow` marks a window captured with the macOS shadow, which the file
+    /// records so the editor doesn't offer a second one.
+    func finish(image original: CGImage, scale originalScale: CGFloat, from frame: CGRect, windowShadow: Bool = false) async throws {
         let prefs = Preferences()
         if prefs.playSound {
             Sound.capture()
@@ -257,7 +260,7 @@ final class CaptureCoordinator {
         let encoded = await Task.detached { () -> (file: Data?, png: Data?, image: SendableImage, thumbnail: SendableImage?) in
             let image = downscale ? ImageCodec.downscaled(source.image, scale: originalScale) : source.image
             let scale = downscale ? 1 : originalScale
-            let file = ImageCodec.data(from: image, scale: scale, format: format)
+            let file = ImageCodec.data(from: image, scale: scale, format: format, windowShadow: windowShadow)
             let png = format == .png ? file : ImageCodec.data(from: image, scale: scale)
             let thumbnail = file.flatMap { ImageCodec.thumbnail(from: $0, maxPixelSize: 480) }.map(SendableImage.init)
             return (file, png, SendableImage(image), thumbnail)
@@ -279,22 +282,27 @@ final class CaptureCoordinator {
         if prefs.copyAfterCapture {
             Clipboard.copy(png: png)
             endCaptureInterval("copied")
-            if let newCaptureStyle = prefs.newCaptureStyle {
-                copyStyled(image, scale: scale, style: newCaptureStyle, background: EditorDocument.defaultBackground(for: format))
-            }
         }
         if let savedURL {
             newCaptures = Array((newCaptures + [savedURL]).suffix(QuickAccessController.maxCards))
         }
+        var card: URL?
         if let savedURL, prefs.openEditorAfterCapture {
             EditorWindowController.open(savedURL, newCaptureStyle: newCaptureStyle(opening: savedURL))
         } else if let savedURL, prefs.quickAccessAfterCapture {
             let size = NSSize(width: CGFloat(image.width) / scale, height: CGFloat(image.height) / scale)
             QuickAccessController.shared.add(fileURL: savedURL, thumbnail: encoded.thumbnail?.image ?? image, size: size)
+            card = savedURL
         } else if prefs.copyAfterCapture {
             Toast.show("Copied to clipboard")
         } else if savedURL != nil {
             Toast.show("Saved")
+        }
+        if let newCaptureStyle = prefs.newCaptureStyle, prefs.copyAfterCapture || card != nil {
+            style(
+                image, scale: scale, with: newCaptureStyle, background: EditorDocument.defaultBackground(for: format), windowShadow: windowShadow,
+                copy: prefs.copyAfterCapture, card: card
+            )
         }
         Confetti.burst(from: frame)
     }
@@ -309,26 +317,34 @@ final class CaptureCoordinator {
         return Preferences().newCaptureStyle
     }
 
-    /// Replaces the plain capture just copied with `style` on it, over `background` as the editor shows it, once that's
-    /// drawn off the main actor, so the copy itself waits for nothing. Leaves the clipboard alone if something else was
-    /// copied in the meantime.
-    private func copyStyled(_ image: CGImage, scale: CGFloat, style: CopiedStyle, background: RGBA?) {
+    /// Draws `style` on the capture just taken, over `background` as the editor shows it, off the main actor, so the copy
+    /// and Quick Access wait for nothing. Then, if `copy`, it replaces the plain capture on the clipboard, unless something
+    /// else was copied in the meantime, and gives the Quick Access card for `card` its look for its thumbnail, Copy and drag.
+    private func style(_ image: CGImage, scale: CGFloat, with style: CopiedStyle, background: RGBA?, windowShadow: Bool, copy: Bool, card: URL?) {
         let copied = NSPasteboard.general.changeCount
         let source = SendableImage(image)
         Task {
             let start = ContinuousClock.now
-            let png = await Task.detached {
-                style.styledCapture(source.image, scale: scale, background: background).flatMap { ImageCodec.data(from: $0, scale: scale) }
+            let styled = await Task.detached { () -> (png: Data, thumbnail: SendableImage?, size: CGSize)? in
+                guard let styled = style.styledCapture(source.image, scale: scale, background: background, windowShadow: windowShadow),
+                      let png = ImageCodec.data(from: styled, scale: scale)
+                else {
+                    return nil
+                }
+                let size = CGSize(width: CGFloat(styled.width) / scale, height: CGFloat(styled.height) / scale)
+                return (png, ImageCodec.thumbnail(from: png, maxPixelSize: 480).map(SendableImage.init), size)
             }.value
-            guard let png else {
-                log.error("Could not draw the capture with its style; the plain capture stays copied")
+            guard let styled else {
+                // A style the capture can't take, such as a shadow alone on a window with its own, leaves it plain.
                 return
             }
-            guard NSPasteboard.general.changeCount == copied else {
-                return
+            if copy, NSPasteboard.general.changeCount == copied {
+                Clipboard.copy(png: styled.png)
             }
-            Clipboard.copy(png: png)
-            log.debug("Styled copy took \(ContinuousClock.now - start, privacy: .public)")
+            if let card, let thumbnail = styled.thumbnail {
+                await QuickAccessController.shared.setStyled(styled.png, thumbnail: thumbnail.image, size: styled.size, of: card)
+            }
+            log.debug("Styled capture took \(ContinuousClock.now - start, privacy: .public)")
         }
     }
 

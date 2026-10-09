@@ -5,8 +5,13 @@ import UniformTypeIdentifiers
 
 /// Encodes and decodes captures as PNG or JPEG, preserving the Retina scale as DPI.
 public enum ImageCodec {
-    /// Encodes with DPI = 72 × scale so Retina captures open at point size.
-    public static func data(from image: CGImage, scale: CGFloat, format: ImageFormat = .png) -> Data? {
+    /// What a window capture that includes the macOS window shadow says in its Exif comment, so the editor opened on it
+    /// later knows not to offer a second shadow.
+    static let windowShadowMarker = "Shot: includes the macOS window shadow"
+
+    /// Encodes with DPI = 72 × scale so Retina captures open at point size. `windowShadow` marks a window capture that
+    /// includes the macOS window shadow.
+    public static func data(from image: CGImage, scale: CGFloat, format: ImageFormat = .png, windowShadow: Bool = false) -> Data? {
         let data = NSMutableData()
         let type = format == .png ? UTType.png : UTType.jpeg
         guard let destination = CGImageDestinationCreateWithData(data, type.identifier as CFString, 1, nil) else {
@@ -16,6 +21,9 @@ public enum ImageCodec {
         var properties: [CFString: Any] = [kCGImagePropertyDPIWidth: dpi, kCGImagePropertyDPIHeight: dpi]
         if format == .jpeg {
             properties[kCGImageDestinationLossyCompressionQuality] = 0.9
+        }
+        if windowShadow {
+            properties[kCGImagePropertyExifDictionary] = [kCGImagePropertyExifUserComment: windowShadowMarker]
         }
         CGImageDestinationAddImage(destination, image, properties as CFDictionary)
         guard CGImageDestinationFinalize(destination) else {
@@ -78,6 +86,21 @@ public enum ImageCodec {
             return 1
         }
         return scale(of: source)
+    }
+
+    /// Whether the image file at `url` is a window capture that includes the macOS window shadow.
+    public static func hasWindowShadow(ofFileAt url: URL) -> Bool {
+        CGImageSourceCreateWithURL(url as CFURL, nil).map(hasWindowShadow) ?? false
+    }
+
+    public static func hasWindowShadow(of data: Data) -> Bool {
+        CGImageSourceCreateWithData(data as CFData, nil).map(hasWindowShadow) ?? false
+    }
+
+    private static func hasWindowShadow(_ source: CGImageSource) -> Bool {
+        let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+        let exif = properties?[kCGImagePropertyExifDictionary] as? [CFString: Any]
+        return exif?[kCGImagePropertyExifUserComment] as? String == windowShadowMarker
     }
 
     private static func scale(of source: CGImageSource) -> CGFloat {

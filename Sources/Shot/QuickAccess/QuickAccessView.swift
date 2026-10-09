@@ -75,7 +75,7 @@ private struct QuickAccessCardView: View {
             }
             controller.setHovering(inside, card: card.id)
         }
-        .onDrag { NSItemProvider(contentsOf: card.fileURL) ?? NSItemProvider() }
+        .onDrag { NSItemProvider(contentsOf: card.styledURL ?? card.fileURL) ?? NSItemProvider() }
     }
 
     private var hoverActions: some View {
