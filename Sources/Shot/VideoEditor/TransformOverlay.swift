@@ -29,7 +29,7 @@ struct TransformOverlay: View {
                 ZStack {
                     Rectangle()
                         .fill(Color.white.opacity(0.001))
-                        .overlay(Rectangle().strokeBorder(Brutal.yellow, lineWidth: 2))
+                        .inkBorder(Rectangle(), width: 2, color: Brutal.yellow)
                         .frame(width: size.width, height: size.height)
                         .gesture(move(clip, fit: fit))
                     ForEach(Array([(-1.0, -1.0), (1, -1), (1, 1), (-1, 1)].enumerated()), id: \.offset) { _, corner in

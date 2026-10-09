@@ -218,7 +218,7 @@ struct TracksView: View {
             if let selection = model.selection, let main = layout.lane(ofTrack: 0) {
                 let from = timeline.x(for: selection.lowerBound), to = timeline.x(for: selection.upperBound)
                 Rectangle().fill(Brutal.sky.opacity(0.35))
-                    .overlay(Rectangle().strokeBorder(Brutal.sky, lineWidth: 2))
+                    .inkBorder(Rectangle(), width: 2, color: Brutal.sky)
                     .frame(width: max(0, to - from), height: layout.height - main.y)
                     .offset(x: from, y: layout.lanes.first?.y ?? main.y)
                     .allowsHitTesting(false)
@@ -374,7 +374,7 @@ struct TracksView: View {
         }
         .frame(width: width, height: height)
         .clipShape(RoundedRectangle(cornerRadius: 4, style: .circular))
-        .overlay(RoundedRectangle(cornerRadius: 4, style: .circular).strokeBorder(selected ? Brutal.yellow : Brutal.ink, lineWidth: selected ? 3 : 1.5))
+        .inkBorder(RoundedRectangle(cornerRadius: 4, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.ink)
         .allowsHitTesting(false)
     }
 
@@ -403,7 +403,7 @@ struct TracksView: View {
         .frame(width: width, height: height)
         .background(Brutal.mint)
         .clipShape(RoundedRectangle(cornerRadius: 4, style: .circular))
-        .overlay(RoundedRectangle(cornerRadius: 4, style: .circular).strokeBorder(selected ? Brutal.yellow : Brutal.ink, lineWidth: selected ? 3 : 1.5))
+        .inkBorder(RoundedRectangle(cornerRadius: 4, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.ink)
         .allowsHitTesting(false)
         .task(id: clip.source) { await model.loadWaveform(for: clip.source) }
     }
@@ -422,7 +422,7 @@ struct TracksView: View {
         .background(Color(red: color.r, green: color.g, blue: color.b).opacity(0.55))
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 4, style: .circular))
-        .overlay(RoundedRectangle(cornerRadius: 4, style: .circular).strokeBorder(selected ? Brutal.yellow : Brutal.ink, lineWidth: selected ? 3 : 1.5))
+        .inkBorder(RoundedRectangle(cornerRadius: 4, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.ink)
         .allowsHitTesting(false)
     }
 
