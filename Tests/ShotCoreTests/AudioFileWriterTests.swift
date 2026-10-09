@@ -53,6 +53,22 @@ extension MediaTests {
         }
         #expect(!FileManager.default.fileExists(atPath: audio[0].microphone.path))
     }
+
+    @Test func anAudioFileThatCantBeWrittenSaysWhy() async throws {
+        let url = URL(fileURLWithPath: "/nonexistent-\(UUID().uuidString)/mic.mov")
+        let writer = AudioFileWriter(url: url)
+        writer.start(at: CMTime(seconds: 10, preferredTimescale: 48000))
+        try await writeTone(to: writer, from: 10, seconds: 0.5, amplitude: 0.5, frequency: 440)
+        await writer.finish()
+        #expect(writer.failure != nil)
+        #expect(!FileManager.default.fileExists(atPath: url.path))
+    }
+
+    @Test func anAudioSourceThatSentNothingIsNoFailure() async {
+        let writer = AudioFileWriter(url: FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).mov"))
+        await writer.finish()
+        #expect(writer.failure == nil)
+    }
 }
 
 /// Feeds a mono sine to `writer` in tenth-second buffers timed from `start` seconds.
