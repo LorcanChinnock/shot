@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0-beta.36](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.35...v0.7.0-beta.36) (2026-10-09)
+
+
+### Bug Fixes
+
+* **capture:** copy before saving, and share the after-capture decision with recordings ([#316](https://github.com/LorcanChinnock/shot/issues/316)) ([d248e83](https://github.com/LorcanChinnock/shot/commit/d248e838869859f40b7421542179e3b0ecc9cc70))
+* **recording:** a recording-output failure leaves the stream capturing and joins the failed segment ([#325](https://github.com/LorcanChinnock/shot/issues/325)) ([ac69648](https://github.com/LorcanChinnock/shot/commit/ac69648c779e3af669243303cae927e437a91f29))
+* **recording:** a stop during resume leaves a live stream with no session ([#308](https://github.com/LorcanChinnock/shot/issues/308)) ([8fb2c79](https://github.com/LorcanChinnock/shot/commit/8fb2c79b041e80e3500fa239dfaa2de9ca566b67))
+* **recording:** AudioFileWriter failures produce a silent recording with no log or toast ([#326](https://github.com/LorcanChinnock/shot/issues/326)) ([65c8677](https://github.com/LorcanChinnock/shot/commit/65c86773f409c2d218bd28847d7fd5c8c834e478))
+* **recording:** quitting mid-recording loses the recording; segments dir is never swept ([#328](https://github.com/LorcanChinnock/shot/issues/328)) ([c3b6fea](https://github.com/LorcanChinnock/shot/commit/c3b6fea2dc016cef45cca822cdfee9f522c19ab7))
+* **settings:** shortcut recorder saves duplicate and reserved combos; many keys have no label ([#324](https://github.com/LorcanChinnock/shot/issues/324)) ([a2baa0a](https://github.com/LorcanChinnock/shot/commit/a2baa0a2b25b5487c550d187d66c1bdcfff19265))
+* three swallowed errors (video save reload, waveform load, magnifier capture) ([#327](https://github.com/LorcanChinnock/shot/issues/327)) ([d89d933](https://github.com/LorcanChinnock/shot/commit/d89d9337f2abef8137418fcbdd70810b09146490))
+
 ## [0.7.0-beta.35](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.34...v0.7.0-beta.35) (2026-10-09)
 
 
