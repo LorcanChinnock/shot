@@ -29,6 +29,8 @@ Only `make dist` keeps the update feed in `Info.plist`. Every other build leaves
 |---|---|
 | `make run` | Build, install to `/Applications/Shot.app`, and launch |
 | `make test` | Run the `ShotCore` unit tests |
+| `make perf` | Time the `ShotCore` paths that have [performance budgets](docs/performance.md) |
+| `make perf-app` | Measure launch, capture, memory and idle CPU of the installed app against its budgets |
 | `make app` | Build and install without launching (`INSTALL_DIR=~/Applications make app` to install elsewhere) |
 | `make bundle` | Build and sign `build/Shot.app` only |
 | `make dist` | Build `build/Shot.zip`, as the release workflow does |
@@ -65,7 +67,7 @@ The `shot://` [URL scheme](docs/usage.md#url-scheme) drives every action without
 ## Sending a change
 
 - Keep each pull request focused on one change, and match the style of the surrounding code.
-- Run `make test`, then run the app and try your change. CI runs the lint and the tests on every pull request; a pull request that only changes docs is linted alone.
+- Run `make test`, then run the app and try your change. CI runs the lint, the tests and `make perf` on every pull request; a pull request that only changes docs is linted alone.
 - Use a [Conventional Commits](https://www.conventionalcommits.org) title for the pull request, such as `fix(recording): …` or `feat(editor): …`. Pull requests are squash-merged, so the title becomes the commit on `main`, and release notes are generated from it.
 
 By contributing, you agree that your contributions are licensed under the project's [GPL-3.0 license](LICENSE).
@@ -73,6 +75,8 @@ By contributing, you agree that your contributions are licensed under the projec
 ## Releases
 
 Releases are automated with [release-please](https://github.com/googleapis/release-please). Don't create tags or edit the version by hand.
+
+Before a release, run `make app` and then `make perf-app`, which CI can't run because it needs the Screen Recording permission. See [docs/performance.md](docs/performance.md).
 
 1. When `main` gets a `feat:` or `fix:` commit, release-please opens or updates a release pull request. It bumps the version in `Resources/Info.plist` and `.release-please-manifest.json`, and adds the changes to `CHANGELOG.md`. Before 1.0, `feat` bumps the minor version and `fix` bumps the patch. Other types such as `docs`, `chore`, `ci`, `refactor`, and `build` appear in the history but don't trigger a release.
 2. Merging the release pull request tags `vX.Y.Z` and publishes a GitHub release. The release workflow then builds `Shot-vX.Y.Z.zip`, signs it for Sparkle, and attaches it with `appcast.xml`, the update feed. Installed copies read the feed from the latest release.

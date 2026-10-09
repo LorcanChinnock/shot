@@ -15,6 +15,9 @@ final class CaptureCoordinator {
     /// The region being recorded, as an AppKit global rect.
     private var recordingRegion = CGRect.zero
     private var gifExports: [URL: Task<Void, Never>] = [:]
+    /// From a full-screen capture action to its clipboard write; ended with "copied", or "not copied" when nothing was copied.
+    /// Area and window captures wait for the user's selection, so their time says nothing about Shot's speed.
+    private var captureInterval: OSSignpostIntervalState?
 
     init(state: AppState) {
         self.state = state
@@ -51,8 +54,14 @@ final class CaptureCoordinator {
             return
         }
         busy = true
+        if action == .captureFullscreen {
+            captureInterval = Perf.signposter.beginInterval("Capture to clipboard", id: Perf.signposter.makeSignpostID())
+        }
         Task {
-            defer { busy = false }
+            defer {
+                busy = false
+                endCaptureInterval("not copied")
+            }
             do {
                 switch action {
                 case .captureFullscreen:
@@ -266,6 +275,7 @@ final class CaptureCoordinator {
         }
         if prefs.copyAfterCapture {
             Clipboard.copy(png: png)
+            endCaptureInterval("copied")
         }
         if let savedURL, prefs.openEditorAfterCapture {
             EditorWindowController.open(savedURL)
@@ -278,6 +288,13 @@ final class CaptureCoordinator {
             Toast.show("Saved")
         }
         Confetti.burst(from: frame)
+    }
+
+    private func endCaptureInterval(_ outcome: StaticString) {
+        if let captureInterval {
+            Perf.signposter.endInterval("Capture to clipboard", captureInterval, "\(String(describing: outcome), privacy: .public)")
+            self.captureInterval = nil
+        }
     }
 
     func report(_ error: Error) {

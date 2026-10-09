@@ -17,6 +17,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.coordinator.perform(action)
         }
         HotkeyCenter.shared.reloadFromPreferences()
+        if let launch = Perf.millisecondsSinceLaunch() {
+            Perf.signposter.emitEvent("Ready", "launch ms=\(launch)")
+        }
         QuickAccessController.shared.onAnnotate = { [weak self] url in
             self?.coordinator.annotate(url)
         }
