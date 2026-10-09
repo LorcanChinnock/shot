@@ -24,7 +24,7 @@ make run                          # build, install to /Applications/Shot.app, re
 swift test --filter <testName>    # one test, e.g. --filter hitTestFilledKinds
 ```
 
-- With only the Command Line Tools selected, the Makefile pins the 26.5 SDK and adds the testing plugin path, so a bare `swift build`/`swift test` can fail on SwiftUI macros. Prefer `make`, or prefix with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
+- With only the Command Line Tools selected, the Makefile pins the newest 26.x SDK and adds the testing plugin path, so a bare `swift build`/`swift test` can fail on SwiftUI macros. Prefer `make`, or prefix with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
 - Signing uses the `Shot Dev` certificate from `scripts/make-dev-cert.sh` so the Screen Recording permission survives rebuilds. `make reset-tcc` clears it.
 - Logs: `log stream --predicate 'subsystem == "dev.lorcan.Shot"'`. Use `Logger.shot("category")` from `Sources/Shot/Log.swift`.
 - The `shot://` URL scheme drives every action without a keyboard (`shot://annotate?path=`, `shot://edit-video?path=`, `shot://gallery`, `shot://settings?section=`; full list in `docs/usage.md`). An installed release also registers it, so quit other copies before testing a build.
@@ -38,9 +38,9 @@ Two targets:
 Flow:
 - `ShotApp` is a `MenuBarExtra` with an `AppDelegate` adaptor. `AppDelegate` owns `AppState` and the `CaptureCoordinator`, wires hotkeys and controller callbacks to it, and routes `shot://` URLs. Other long-lived controllers are `.shared` singletons.
 - `CaptureCoordinator.perform(_: ShotAction)` is the central dispatcher. `ShotAction` and `EditorRoute` live in ShotCore.
-- Capture: `DisplayCapturer` freezes every display, then `SelectionOverlayController.select` returns an area, window or display. `finish` encodes off the main actor, saves and copies, then opens Quick Access or the editor.
+- Capture: for an area or window pick, `DisplayCapturer` freezes every display, then `SelectionOverlayController.select` returns an area, window or display. Fullscreen freezes only its screen and shows no overlay, a picked window is captured afresh, live, and recording runs live. `finish` encodes off the main actor, saves and copies, then opens Quick Access or the editor.
 - Image editor: `EditorDocument` / `Annotation` (ShotCore) is the model. `AnnotationRenderer` is shared by the on-screen canvas, flattened export, and the video compositor (`ProjectCompositor` via `AnnotationFrame`/`RenderCache`), so a rendering change affects all three. Undo is snapshot-based through ShotCore's generic `UndoStack`, not `NSUndoManager`. Group continuous edits (slider drags, held keys) into one step; view state like zoom is not undoable.
-- Recording: `Recorder` uses `SCStream` + `SCRecordingOutput`. Each pause starts a new segment, and `VideoConcatenator` joins them on stop. Mic and system audio are written to separate files.
+- Recording: `Recorder` uses `SCStream` + `SCRecordingOutput`. Each pause starts a new segment, and `VideoConcatenator` joins them on stop. With both the microphone and system audio on, each is also written to its own file, so mute silences only the microphone.
 - Video editor: `VideoEditorModel` keeps its own `UndoStack`. The timeline, keyframe, trim, cut and composition logic is in ShotCore (`Timeline*`, `VideoCuts`, `ProjectComposition`). GIF export is entirely ShotCore (`GIFExporter`, `GIFStreamWriter`).
 - Settings: keys and defaults live in ShotCore `Preferences`. `SettingsStore` is an `@Observable` cache, and views use its `@Setting(key)` wrapper.
 - Design system: `Sources/Shot/Design`. `Brutal` holds the tokens in `BrutalStyle.swift`, and `GlassWindow.swift` the window chrome.
@@ -49,9 +49,10 @@ Concurrency: UI and model types are `@MainActor`. Heavy work runs in `Task.detac
 
 ## Rules enforced by `make lint`
 
-- Use `NSHostingView(fixedFrame:)`, never `NSHostingView(rootView:)`/`NSHostingController`; a plain hosting view crashes when content changes under a visible window.
+- Use `NSView(hosting:)`, never `NSHostingView(rootView:)`/`NSHostingController`; a plain hosting view crashes when content changes under a visible window. `GlassWindow.swift`, which defines the helper, is exempt.
 - Use `@Setting`, never `@AppStorage`; `@AppStorage` updates late, so views show inconsistent state.
-- Use `inkBorder(_:width:)` rather than `strokeBorder(Brutal.ink…)`, and only whole-point ink widths.
+- Use `inkBorder(_:width:color:)` rather than `strokeBorder` with any `Brutal` colour (a ternary included), and only whole-point ink widths and line widths. `BrutalStyle.swift`, which defines `inkBorder`, is exempt.
+- Use `style: .circular`, never `.continuous`, for rounded corners; continuous corners leave steps under ink borders.
 
 ## Conventions
 
