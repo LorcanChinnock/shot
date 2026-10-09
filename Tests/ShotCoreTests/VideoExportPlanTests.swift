@@ -42,7 +42,8 @@ private func drawn() -> Project {
         Issue.record("expected a drawn export")
         return
     }
-    #expect(exported.tracks.filter { $0.kind == .audio }.allSatisfy(\.isMuted))
+    let soundTracks = exported.tracks.filter { $0.kind == .audio }
+    #expect(!soundTracks.isEmpty && soundTracks.allSatisfy { $0.isMuted })
     #expect(exported.tracks[0].isHidden)
 }
 
