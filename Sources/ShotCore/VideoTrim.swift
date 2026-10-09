@@ -129,27 +129,6 @@ public struct TrimTimeline: Sendable {
     }
 }
 
-/// Which editor a file opens in: `shot://annotate` picks by file type, `shot://edit-video` always uses the video editor.
-public enum EditorRoute: Equatable, Sendable {
-    case image(URL)
-    case video(URL)
-
-    public static let hosts: Set<String> = ["annotate", "edit-video"]
-
-    public init?(host: String, path: String?) {
-        guard Self.hosts.contains(host), let path, !path.isEmpty else {
-            return nil
-        }
-        let url = URL(fileURLWithPath: (path as NSString).expandingTildeInPath)
-        self = host == "edit-video" ? .video(url) : EditorRoute(fileURL: url)
-    }
-
-    public init(fileURL: URL) {
-        let isVideo = UTType(filenameExtension: fileURL.pathExtension)?.conforms(to: .movie) == true
-        self = isVideo ? .video(fileURL) : .image(fileURL)
-    }
-}
-
 public enum VideoTrimmer {
     public enum TrimError: LocalizedError {
         case unsupportedFileType
