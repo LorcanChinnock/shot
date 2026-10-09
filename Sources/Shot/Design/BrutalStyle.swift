@@ -4,6 +4,10 @@ import SwiftUI
 /// Design tokens and components for the glass × neo-brutalist settings UI.
 enum Brutal {
     static let ink = Color(red: 0.07, green: 0.07, blue: 0.10)
+    /// `ink`, `yellow` and `red` for AppKit drawing.
+    static var inkNS: NSColor { NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1) }
+    static var yellowNS: NSColor { NSColor(srgbRed: 1, green: 0xD4 / 255, blue: 0x3B / 255, alpha: 1) }
+    static var redNS: NSColor { NSColor(srgbRed: 1, green: 0x5C / 255, blue: 0x5C / 255, alpha: 1) }
     static let border: CGFloat = 3
     static let radius: CGFloat = 12
     static let shadow: CGFloat = 4

@@ -21,7 +21,10 @@ public enum ShotAction: String, CaseIterable, Sendable {
     }
 
     public var isRecording: Bool {
-        [.record, .recordFullscreen, .recordWindow].contains(self)
+        switch self {
+        case .record, .recordFullscreen, .recordWindow: true
+        case .captureArea, .captureFullscreen, .captureWindow: false
+        }
     }
 
     /// Mirrors the macOS screenshot keys with ⌃ in place of ⌘. Record fullscreen and window
@@ -47,7 +50,7 @@ public enum ShotAction: String, CaseIterable, Sendable {
         case .captureArea: return KeyCombo(keyCode: 21, modifiers: KeyCombo.command | KeyCombo.shift)
         case .record: return KeyCombo(keyCode: 23, modifiers: KeyCombo.command | KeyCombo.shift)
         case .captureWindow: return nil
-        default: return defaultCombo
+        case .recordFullscreen, .recordWindow: return defaultCombo
         }
     }
 

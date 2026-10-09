@@ -149,7 +149,7 @@ private final class CameraBubblePanel: NSPanel {
         view.layer?.addSublayer(ringLayer)
         ringLayer.addSublayer(previewLayer)
         ringLayer.masksToBounds = true
-        ringLayer.borderColor = NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1).cgColor
+        ringLayer.borderColor = Brutal.inkNS.cgColor
         ringLayer.borderWidth = Self.border
         ringLayer.backgroundColor = NSColor.black.cgColor
         shadowLayer.fillColor = ringLayer.borderColor

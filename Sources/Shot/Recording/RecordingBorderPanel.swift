@@ -56,7 +56,7 @@ final class RecordingBorderPanel: NSPanel {
             path.lineWidth = width
             switch style {
             case .setup:
-                NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1).setStroke()
+                Brutal.inkNS.setStroke()
                 path.stroke()
                 let inner = NSBezierPath(rect: bounds.insetBy(dx: width / 2, dy: width / 2))
                 inner.lineWidth = 1.5
@@ -64,10 +64,10 @@ final class RecordingBorderPanel: NSPanel {
                 NSColor.white.setStroke()
                 inner.stroke()
             case .recording:
-                NSColor.systemRed.setStroke()
+                Brutal.redNS.setStroke()
                 path.stroke()
             case .paused:
-                NSColor.systemYellow.setStroke()
+                Brutal.yellowNS.setStroke()
                 path.setLineDash([10, 6], count: 2, phase: 0)
                 path.stroke()
             }

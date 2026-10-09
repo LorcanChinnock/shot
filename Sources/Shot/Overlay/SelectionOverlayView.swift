@@ -289,8 +289,8 @@ final class SelectionOverlayView: NSView {
         ctx.strokeEllipse(in: loupe.insetBy(dx: 0.75, dy: 0.75))
     }
 
-    private static let ink = NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1)
-    private static let yellow = NSColor(srgbRed: 1, green: 0.83, blue: 0.23, alpha: 1)
+    private static let ink = Brutal.inkNS
+    private static let yellow = Brutal.yellowNS
 
     /// Neo-brutalist chip: flat fill, ink border, hard offset shadow.
     private func drawChip(_ text: String, at origin: CGPoint, fill: NSColor, font: NSFont) -> CGRect {
