@@ -23,6 +23,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         QuickAccessController.shared.onAnnotate = { [weak self] url in
             self?.coordinator.annotate(url)
         }
+        QuickAccessController.shared.onExportGIF = { [weak self] url in
+            self?.coordinator.exportGIF(url)
+        }
         GalleryController.shared.onEdit = { [weak self] url in
             self?.coordinator.annotate(url)
         }
