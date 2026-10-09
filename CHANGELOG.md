@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.0-beta.34](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.33...v0.7.0-beta.34) (2026-10-09)
+
+
+### Features
+
+* **editor:** add a Style popover with shadows, hairline borders and rounded corners ([#275](https://github.com/LorcanChinnock/shot/issues/275)) ([e5b0404](https://github.com/LorcanChinnock/shot/commit/e5b0404321f6b0731222f3052c95465aea292545))
+* **editor:** add solid and outline borders, annotation shadows and copy/paste style ([#281](https://github.com/LorcanChinnock/shot/issues/281)) ([b6372db](https://github.com/LorcanChinnock/shot/commit/b6372dba5fac989097a1fc164b563f311c1c2427))
+* **editor:** add white to the default colours ([#280](https://github.com/LorcanChinnock/shot/issues/280)) ([f12b56e](https://github.com/LorcanChinnock/shot/commit/f12b56e95317e29beb086d36a6f458ef1dea15df))
+* **editor:** use a screenshot's style for new captures ([#282](https://github.com/LorcanChinnock/shot/issues/282)) ([d97262b](https://github.com/LorcanChinnock/shot/commit/d97262b51b77072b08be255d15ff8d8dcfca6acb))
+* **perf:** add performance budgets for the fast and idle paths ([#274](https://github.com/LorcanChinnock/shot/issues/274)) ([5f9e706](https://github.com/LorcanChinnock/shot/commit/5f9e7068d17f27b38f60c14fb5f5e6c314d99197))
+* **recording:** start on one press, with the setup panel and countdown opt-in ([#273](https://github.com/LorcanChinnock/shot/issues/273)) ([9eeaad2](https://github.com/LorcanChinnock/shot/commit/9eeaad22f639368fa1bd48de6bec5265f62eb0dd))
+* **video-editor:** style clips with shadows, borders and rounded corners ([#283](https://github.com/LorcanChinnock/shot/issues/283)) ([ea09f6d](https://github.com/LorcanChinnock/shot/commit/ea09f6db5f4100dbf21d3fb6704c10dec03e3a61))
+
+
+### Bug Fixes
+
+* **capture:** stop 20 quick captures from holding ~580 MB ([#278](https://github.com/LorcanChinnock/shot/issues/278)) ([b0afe96](https://github.com/LorcanChinnock/shot/commit/b0afe9650e2e8c9ff1a632cd729b5d0f66f1c6a5))
+
 ## [0.7.0-beta.33](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.32...v0.7.0-beta.33) (2026-10-08)
 
 
