@@ -802,6 +802,19 @@ public struct UndoStack<State> {
     }
 }
 
+extension UndoStack where State: Equatable {
+    /// Records `before`, the state as a gesture such as a drag began, as one step, unless `after`, the state as it
+    /// ended, is the same: a drag that ends where it began leaves nothing to undo. Returns whether it recorded.
+    @discardableResult
+    public mutating func record(_ before: State, endingAt after: State) -> Bool {
+        guard before != after else {
+            return false
+        }
+        record(before)
+        return true
+    }
+}
+
 public struct TextLayout {
     public let lines: [CTLine]
     public let lineHeight: CGFloat

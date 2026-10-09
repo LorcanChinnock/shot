@@ -146,6 +146,23 @@ private func isWhite(_ p: [UInt8]) -> Bool { p.allSatisfy { $0 > 245 } }
     #expect(doc.annotations == [label])
 }
 
+@Test func aDragThatEndsWhereItBeganRecordsNoStep() {
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100))
+    let box = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 20, y: 20, width: 40, height: 40)), color: blue, lineWidth: 4)
+    doc.annotations.append(box)
+    var stack = UndoStack<EditorSnapshot>()
+    let before = doc.snapshot
+    doc.move(box.id, by: CGVector(dx: 30, dy: 0), margin: 10)
+    doc.move(box.id, by: CGVector(dx: -30, dy: 0), margin: 10)
+    #expect(!stack.record(before, endingAt: doc.snapshot))
+    #expect(!stack.canUndo)
+
+    doc.move(box.id, by: CGVector(dx: 30, dy: 0), margin: 10)
+    #expect(stack.record(before, endingAt: doc.snapshot))
+    doc.restore(stack.undo(from: doc.snapshot)!)
+    #expect(doc.annotations == [box])
+}
+
 @Test func defaultBackgroundIsTransparentOnlyForPNG() {
     #expect(EditorDocument.defaultBackground(for: .png) == nil)
     #expect(EditorDocument.defaultBackground(for: .jpeg) == RGBA(1, 1, 1))
