@@ -143,7 +143,11 @@ Open a recording from its Quick Access card (**Edit**), or with [`shot://edit-vi
 
 - **Trim:** drag the handles at either end of the timeline.
 - **Cut:** Shift-drag on the timeline to select a section, then press Delete to cut it out. Esc clears the selection.
-- **Play:** Space plays and pauses; ← and → step one frame.
+- **Play:** Space plays and pauses; ← and → step one frame, ⇧← and ⇧→ one second, and Home and End go to the start and end.
+- **Split:** **Split** (S) splits the clips under the playhead, and **Delete** (⌫) cuts out the selected clip and closes the gap. **Snap** (N) snaps the playhead to clip edges, and T shows or hides the tracks.
+- **Import:** add video or audio files at the playhead, or videos to the end of the main track.
+- **Annotate:** draw arrows, shapes, text, blur and more over the video, with the same tools as the annotation editor. Esc stops annotating.
+- **Inspector:** the selected clip's position, scale, rotation, opacity and volume, and their keyframes. K keys everything at the playhead, or takes those keyframes away; Delete takes away the selected keyframe.
 - **Layers:** the annotation and picture lanes above the main track are the layers, topmost first. Drag an annotation or an imported clip up or down to put it on another lane; drop it between lanes, or on a lane that's taken at that time or holds the other kind, and it gets a new lane of its own. ⌘] and ⌘[ move the selected annotation or clip a lane up or down, and ⌥⌘] and ⌥⌘[ to the top or bottom. Right-click a lane to lock, hide or delete it. A blur, pixelate or spotlight affects the lanes under it, video included, not those over it.
 - **Style:** select a clip or an annotation and click **Style** in the **Inspector** for the same shadows, borders and corners as the [annotation editor's Style](#style). A clip can have rounded corners, a shadow, and a Hairline or Solid border; the recording itself can too, which makes the video drawn rather than only trimmed. The corners, shadow and border grow and shrink with the clip's scale, and Pop and Slide in lift the shadow briefly as the clip comes in. On a clip, Glow takes the colour of the frame's edge, and a Hairline is light on a dark frame and dark on a light one, as on an image; the edge is read once a second. Pointing at a preset, or moving to it with the arrow keys, previews it on the annotation or clip; a recording you've only trimmed shows a clip's new style a moment after you click instead. Each click is one undo step, and so is each slider drag. **Edit › Copy Style** (⌥⌘C) and **Paste Style** (⌥⌘V) work here as in the annotation editor, and an annotation you style is remembered for the next one of its kind, as there.
 - ⌘Z undoes and ⇧⌘Z redoes.
@@ -158,7 +162,7 @@ Then:
   - for an MP4, **Mute** to leave the sound out
   - 1×, 1.5× or 2× speed
 
-The estimated size of the exported file is shown before you export. Closing the window with unsaved trims or cuts asks whether to save them.
+The estimated size of the exported file is shown before you export, and Esc cancels an export under way. Closing the window with unsaved trims or cuts asks whether to save them.
 
 ## Keyboard shortcuts
 
@@ -197,7 +201,7 @@ Record Fullscreen and Record Window have no shortcut until you set one. Capture 
 
 | Key | Action |
 |---|---|
-| V A L R O D T S H F P B N C | Choose a tool (see [Tools](#tools)) |
+| V H A L R D T S M F B N C | Choose a tool (see [Tools](#tools)) |
 | Delete | Delete the selection |
 | Esc | Deselect |
 | Arrow keys | Nudge the selection 1 pixel (10 with Shift) |
