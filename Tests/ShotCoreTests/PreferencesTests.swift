@@ -294,7 +294,9 @@ import Testing
         store.set(true, forKey: key)
     }
     Preferences.resetAll(in: store)
-    #expect(store.object(forKey: PreferenceKey.editorShowsLayers) == nil)
-    #expect(store.object(forKey: PreferenceKey.videoEditorShowsTracks) == nil)
-    #expect(store.object(forKey: PreferenceKey.videoEditorShowsInspector) == nil)
+    // The registration domain is shared by every store in the process, so a cleared key reads its registered default.
+    for key in [PreferenceKey.editorShowsLayers, PreferenceKey.videoEditorShowsTracks, PreferenceKey.videoEditorShowsInspector] {
+        #expect(store.persistentDomain(forName: suite)?[key] == nil, Comment(rawValue: key))
+        #expect(!store.bool(forKey: key), Comment(rawValue: key))
+    }
 }
