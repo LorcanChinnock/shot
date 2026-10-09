@@ -320,21 +320,26 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     }
 
     public mutating func offset(by delta: CGVector) {
-        func move(_ p: CGPoint) -> CGPoint { CGPoint(x: p.x + delta.dx, y: p.y + delta.dy) }
+        movePositions { CGPoint(x: $0.x + delta.dx, y: $0.y + delta.dy) }
+    }
+
+    /// Moves every point, and the origin of every rect, through `move`, which only moves them, never scales.
+    mutating func movePositions(_ move: (CGPoint) -> CGPoint) {
+        func moved(_ rect: CGRect) -> CGRect { CGRect(origin: move(rect.origin), size: rect.size) }
         switch kind {
         case let .arrow(from, to): kind = .arrow(from: move(from), to: move(to))
         case let .line(from, to): kind = .line(from: move(from), to: move(to))
-        case let .shape(shape, rect): kind = .shape(shape, rect: rect.offsetBy(dx: delta.dx, dy: delta.dy))
-        case let .highlight(rect): kind = .highlight(rect.offsetBy(dx: delta.dx, dy: delta.dy))
-        case let .pixelate(rect, amount): kind = .pixelate(rect.offsetBy(dx: delta.dx, dy: delta.dy), amount: amount)
-        case let .blur(rect, amount): kind = .blur(rect.offsetBy(dx: delta.dx, dy: delta.dy), amount: amount)
-        case let .spotlight(rect, style): kind = .spotlight(rect.offsetBy(dx: delta.dx, dy: delta.dy), style: style)
+        case let .shape(shape, rect): kind = .shape(shape, rect: moved(rect))
+        case let .highlight(rect): kind = .highlight(moved(rect))
+        case let .pixelate(rect, amount): kind = .pixelate(moved(rect), amount: amount)
+        case let .blur(rect, amount): kind = .blur(moved(rect), amount: amount)
+        case let .spotlight(rect, style): kind = .spotlight(moved(rect), style: style)
         case let .text(string, origin, size): kind = .text(string, origin: move(origin), fontSize: size)
         case let .counter(number, center): kind = .counter(number, center: move(center))
-        case let .note(string, rect): kind = .note(string, rect: rect.offsetBy(dx: delta.dx, dy: delta.dy))
+        case let .note(string, rect): kind = .note(string, rect: moved(rect))
         case let .freehand(points): kind = .freehand(points.map(move))
         case let .marker(points): kind = .marker(points.map(move))
-        case let .image(image, rect): kind = .image(image, rect: rect.offsetBy(dx: delta.dx, dy: delta.dy))
+        case let .image(image, rect): kind = .image(image, rect: moved(rect))
         }
     }
 
@@ -601,6 +606,8 @@ public struct EditorDocument: @unchecked Sendable {
     public var captureCornerRadius: CGFloat = 0
     /// The image's shadow and border.
     public var captureStyle = ObjectStyle()
+    /// Whether the image is a window capture that includes the macOS window shadow, so it takes no shadow of its own.
+    public var hasWindowShadow = false
 
     public init(base: CGImage, annotations: [Annotation] = [], canvasRect: CGRect? = nil, background: RGBA? = nil) {
         self.base = base

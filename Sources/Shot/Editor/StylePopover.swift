@@ -9,12 +9,19 @@ protocol StyleEditing: AnyObject, Observable {
     /// The popover's heading.
     var targetStyleTitle: String { get }
     var targetHasTransparency: Bool { get }
+    /// Whether the target is a window captured with the macOS shadow, which takes no shadow of its own.
+    var targetHasWindowShadow: Bool { get }
     var targetStyle: ObjectStyle { get }
     var targetCornerRadius: CGFloat { get }
+    /// What the preset tiles draw with each preset on it; `nil` draws a plain card instead.
+    var targetThumbnail: StyleThumbnail.Subject? { get }
+    /// The canvas background, which tints a tile's shadow as it does the target's.
+    var thumbnailBackground: RGBA? { get }
     var scale: CGFloat { get }
-    /// A style the pointer is over, shown in place of the target's until it moves off.
+    /// A style the pointer or the arrow keys are on, shown in place of the target's until they move off.
     var stylePreview: ObjectStyle? { get set }
-    var lastBorderColor: RGBA { get }
+    /// The colour last picked for a border in the custom colour editor; `nil` until one is.
+    var lastBorderColor: RGBA? { get }
     func newBorder(_ kind: Border.Kind) -> Border
     func setTargetStyle(_ style: ObjectStyle)
     func setShadowElevation(_ points: CGFloat)
@@ -28,55 +35,63 @@ protocol StyleEditing: AnyObject, Observable {
 
 extension StyleEditing {
     var targetStyleTitle: String { targetStyleKind?.title ?? "" }
+    var targetHasWindowShadow: Bool { false }
+    var thumbnailBackground: RGBA? { nil }
+}
+
+/// The style Copy Style took last, in any editor window, photo or video, which Paste Style puts on the selection.
+@MainActor
+enum StyleClipboard {
+    static var copied: CopiedStyle?
 }
 
 extension EditorModel: StyleEditing {}
 
 /// The shadow, border and corner radius of the selected image, mark or text, or of the screenshot when nothing is selected.
-/// Pointing at a preset shows it on the canvas; clicking it applies it. The sliders show only once there's a shadow to tune,
+/// Each preset tile shows the target with that preset on it. Pointing at a tile, or moving to it with the arrow keys,
+/// shows it on the canvas; clicking it or pressing Return applies it. The sliders show only once there's a shadow to tune,
 /// and the width and colour only once there's a border that has them. It offers only what the target can have.
 struct StylePopover<Model: StyleEditing>: View {
     @Bindable var model: Model
+    /// The tile the arrow keys are on, which Return applies.
+    @State private var highlighted: String?
+    @FocusState private var focused: Bool
+    @Environment(\.displayScale) private var displayScale
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             if let kind = model.targetStyleKind {
                 let style = model.targetStyle
-                let borders = kind.borders(transparent: model.targetHasTransparency)
+                let rows = presetRows(kind, style)
                 Text(model.targetStyleTitle)
                     .font(.system(size: 11, weight: .black))
                     .tracking(1.2)
                     .foregroundStyle(Brutal.ink.opacity(0.75))
-                row("SHADOW") {
-                    tile("None", style, { $0.shadow = nil }, selected: style.shadow == nil) { Swatch() }
-                    ForEach(ShadowPreset.allCases, id: \.self) { preset in
-                        let shadow = preset.shadow(scale: model.scale)
-                        tile(preset.title, style, { $0.shadow = shadow }, selected: style.shadow == shadow) { Swatch(shadow: preset) }
-                    }
-                }
-                if let shadow = style.shadow {
-                    shadowSliders(shadow)
-                }
-                if !borders.isEmpty {
-                    row("BORDER") {
-                        tile("None", style, { $0.border = nil }, selected: style.border == nil) { Swatch() }
-                        ForEach(borders, id: \.self) { borderKind in
-                            let border = model.newBorder(borderKind)
-                            tile(borderKind.title, style, { $0.border = border }, selected: style.border?.kind == borderKind) { Swatch(border: borderKind) }
+                if model.targetHasWindowShadow {
+                    // Its image includes the shadow's see-through margin, which a border or corners would go round.
+                    Text("Uses macOS window shadow")
+                        .font(Brutal.caption)
+                        .foregroundStyle(Brutal.ink.opacity(0.6))
+                        .brutalTip("This window was captured with its own shadow, so it takes no other style")
+                } else {
+                    ForEach(rows, id: \.title) { presetRow in
+                        tiles(presetRow)
+                        if presetRow.title == "SHADOW", let shadow = style.shadow {
+                            shadowSliders(shadow)
+                        }
+                        if presetRow.title == "BORDER", let border = style.border, border.kind != .hairline {
+                            borderOptions(border, on: kind)
                         }
                     }
-                    if let border = style.border, border.kind != .hairline {
-                        borderOptions(border, on: kind)
+                    if kind.takesCorners {
+                        row("CORNERS") {
+                            slider(value: model.targetCornerRadius, range: 0...48, name: "Corner radius", set: { model.setTargetCornerRadius($0) })
+                        }
                     }
-                }
-                if kind.takesCorners {
-                    row("CORNERS") {
-                        slider(value: model.targetCornerRadius, range: 0...48, name: "Corner radius", set: { model.setTargetCornerRadius($0) })
+                    // Only the photo editor has a screenshot to style.
+                    if kind == .capture, let editor = model as? EditorModel {
+                        NewCaptureStyleSwitch(model: editor)
                     }
-                }
-                // Only the photo editor has a screenshot to style.
-                if kind == .capture, let editor = model as? EditorModel {
-                    NewCaptureStyleSwitch(model: editor)
                 }
             } else {
                 Text("Select an image, shape, arrow or text, or nothing to style the screenshot.")
@@ -86,25 +101,143 @@ struct StylePopover<Model: StyleEditing>: View {
         }
         .padding(14)
         .padding(.top, 6)
-        .onDisappear { model.stylePreview = nil }
+        .focusable()
+        .focused($focused)
+        .focusEffectDisabled()
+        .onKeyPress(keys: [.leftArrow, .rightArrow, .upArrow, .downArrow, .return]) { press in
+            handle(press.key)
+        }
+        .onAppear { focused = true }
+        .onDisappear {
+            model.stylePreview = nil
+            StyleThumbnail.forgetShrunk()
+        }
     }
 
-    /// A preset tile for `style` with `change` made to it: pointing at it previews that, clicking applies it.
-    private func tile<Picture: View>(
-        _ title: String, _ style: ObjectStyle, _ change: (inout ObjectStyle) -> Void, selected: Bool, @ViewBuilder swatch: () -> Picture
-    ) -> some View {
-        var candidate = style
-        change(&candidate)
-        return StyleTile(title: title, selected: selected, preview: { [model, candidate] inside in
-            if inside {
-                model.stylePreview = candidate
-            } else if model.stylePreview == candidate {
-                // Moving straight onto another tile can report entering it before leaving this one.
-                model.stylePreview = nil
+    /// A row of preset tiles.
+    private struct PresetRow {
+        let title: String
+        let presets: [Preset]
+    }
+
+    /// A preset tile: the target's style with one change made to it.
+    private struct Preset: Identifiable {
+        let id: String
+        let title: String
+        let style: ObjectStyle
+        let selected: Bool
+        /// The plain card drawn when there's no picture of the target.
+        let swatch: Swatch
+    }
+
+    /// The shadow presets, then the borders the target can have; none for a window with the macOS shadow.
+    private func presetRows(_ kind: StyleKind, _ style: ObjectStyle) -> [PresetRow] {
+        guard !model.targetHasWindowShadow else {
+            return []
+        }
+        func preset(_ id: String, _ title: String, selected: Bool, swatch: Swatch, _ change: (inout ObjectStyle) -> Void) -> Preset {
+            var candidate = style
+            change(&candidate)
+            return Preset(id: id, title: title, style: candidate, selected: selected, swatch: swatch)
+        }
+        let shadows = [preset("shadow-none", "None", selected: style.shadow == nil, swatch: Swatch()) { $0.shadow = nil }]
+            + ShadowPreset.allCases.map { shadowPreset in
+                let shadow = shadowPreset.shadow(scale: model.scale)
+                return preset("shadow-\(shadowPreset.rawValue)", shadowPreset.title, selected: style.shadow == shadow, swatch: Swatch(shadow: shadowPreset)) { $0.shadow = shadow }
             }
-        }, action: { [model, candidate] in
-            model.setTargetStyle(candidate)
-        }, swatch: swatch())
+        var rows = [PresetRow(title: "SHADOW", presets: shadows)]
+        let borderKinds = kind.borders(transparent: model.targetHasTransparency)
+        if !borderKinds.isEmpty {
+            let borders = [preset("border-none", "None", selected: style.border == nil, swatch: Swatch()) { $0.border = nil }]
+                + borderKinds.map { borderKind in
+                    let border = model.newBorder(borderKind)
+                    return preset("border-\(borderKind.rawValue)", borderKind.title, selected: style.border?.kind == borderKind, swatch: Swatch(border: borderKind)) { $0.border = border }
+                }
+            rows.append(PresetRow(title: "BORDER", presets: borders))
+        }
+        return rows
+    }
+
+    private func tiles(_ presetRow: PresetRow) -> some View {
+        row(presetRow.title) {
+            ForEach(presetRow.presets) { preset in
+                tile(preset)
+            }
+        }
+    }
+
+    /// A tile for `preset`: pointing at it previews it, clicking applies it.
+    private func tile(_ preset: Preset) -> some View {
+        StyleTile(
+            title: preset.title,
+            selected: preset.selected,
+            highlighted: highlighted == preset.id,
+            picture: picture(of: preset.style),
+            preview: { [model] inside in
+                if inside {
+                    highlighted = preset.id
+                    model.stylePreview = preset.style
+                } else if model.stylePreview == preset.style {
+                    // Moving straight onto another tile can report entering it before leaving this one.
+                    model.stylePreview = nil
+                }
+            },
+            action: { [model] in
+                highlighted = preset.id
+                model.setTargetStyle(preset.style)
+            },
+            swatch: preset.swatch
+        )
+    }
+
+    private static var pictureSize: CGSize { CGSize(width: 48, height: 28) }
+
+    /// The target drawn with `style`, or `nil` when there's no picture of it to draw.
+    private func picture(of style: ObjectStyle) -> CGImage? {
+        guard let subject = model.targetThumbnail else {
+            return nil
+        }
+        return StyleThumbnail.render(
+            subject, style: style.scaled(by: 1 / model.scale), cornerRadius: model.targetCornerRadius, size: Self.pictureSize,
+            pixelsPerPoint: displayScale, background: model.thumbnailBackground
+        )
+    }
+
+    /// The arrow keys move between tiles, previewing each, and Return applies the one they're on.
+    private func handle(_ key: KeyEquivalent) -> KeyPress.Result {
+        guard let kind = model.targetStyleKind else {
+            return .ignored
+        }
+        let rows = presetRows(kind, model.targetStyle).map(\.presets)
+        guard !rows.isEmpty else {
+            return .ignored
+        }
+        let position = highlighted.flatMap { id in
+            rows.indices.lazy.compactMap { row in rows[row].firstIndex { $0.id == id }.map { (row, $0) } }.first
+        }
+        if key == .return {
+            guard let (row, column) = position else {
+                return .ignored
+            }
+            model.setTargetStyle(rows[row][column].style)
+            return .handled
+        }
+        var (row, column) = position ?? (0, rows[0].firstIndex(where: \.selected) ?? 0)
+        // The first press lands on the tile the target has; later ones move from there.
+        if position != nil {
+            switch key {
+            case .leftArrow: column -= 1
+            case .rightArrow: column += 1
+            case .upArrow: row -= 1
+            default: row += 1
+            }
+            row = min(max(row, 0), rows.count - 1)
+            column = min(max(column, 0), rows[row].count - 1)
+        }
+        let preset = rows[row][column]
+        highlighted = preset.id
+        model.stylePreview = preset.style
+        return .handled
     }
 
     private func row<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -186,29 +319,45 @@ struct StylePopover<Model: StyleEditing>: View {
     }
 }
 
-/// A preset: a small picture of its look over its name.
-private struct StyleTile<Picture: View>: View {
+/// A preset: a picture of the target with it on, or a plain card's, over its name.
+private struct StyleTile: View {
     let title: String
     let selected: Bool
+    /// Whether the arrow keys are on it.
+    let highlighted: Bool
+    let picture: CGImage?
     /// Called with true as the pointer moves onto the tile and false as it leaves.
     let preview: (Bool) -> Void
     let action: () -> Void
-    let swatch: Picture
+    let swatch: Swatch
     @State private var hovering = false
+    @Environment(\.displayScale) private var displayScale
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 5) {
-                swatch.frame(width: 24, height: 16)
+            VStack(spacing: 3) {
+                Group {
+                    if let picture {
+                        Image(decorative: picture, scale: displayScale)
+                    } else {
+                        swatch.frame(width: 24, height: 16)
+                    }
+                }
+                .frame(width: 48, height: 28)
                 Text(title).font(.system(size: 10, weight: .bold))
             }
             .foregroundStyle(Brutal.ink)
-            .frame(width: 56, height: 48)
+            .frame(width: 56, height: 52)
             .background {
                 if selected {
                     PartyColor(Brutal.sky) { Color.clear.brutalSurface($0, radius: 7, shadow: 2) }
-                } else if hovering {
+                } else if hovering || highlighted {
                     RoundedRectangle(cornerRadius: 7, style: .circular).fill(Brutal.ink.opacity(0.08))
+                }
+            }
+            .overlay {
+                if highlighted, !selected {
+                    Color.clear.inkBorder(RoundedRectangle(cornerRadius: 7, style: .circular), width: 1)
                 }
             }
             .contentShape(Rectangle())

@@ -122,8 +122,6 @@ final class EditorModel {
     }
     /// The last shadow and border given to each kind, in points, which new ones of that kind start with.
     private var objectStyles: [StyleKind: ObjectStyle]
-    /// The style Copy Style took last, in any editor window, which Paste Style puts on the selection.
-    private static var copiedStyle: CopiedStyle?
     /// Bumped when this window changes Use this style for new captures, so the popover's switch redraws.
     private var newCaptureSettingChanges = 0
     /// The layers picked, from the canvas or the layers panel. The toolbar styles an annotation only while it's the only one.
@@ -158,11 +156,16 @@ final class EditorModel {
     private var pickedKey: String?
     private var isDraggingStyle = false
 
-    /// `newCaptureStyle` is put on the screenshot as where the document starts, so it's no unsaved change.
-    init(fileURL: URL, image: CGImage, scale: CGFloat, style: EditorStyle = Preferences().editorStyle, newCaptureStyle: CopiedStyle? = nil) {
+    /// `newCaptureStyle` is put on the screenshot as where the document starts, so it's no unsaved change. `windowShadow`
+    /// says the image is a window captured with the macOS shadow.
+    init(
+        fileURL: URL, image: CGImage, scale: CGFloat, windowShadow: Bool = false, style: EditorStyle = Preferences().editorStyle,
+        newCaptureStyle: CopiedStyle? = nil
+    ) {
         self.fileURL = fileURL
         self.scale = scale
-        let document = EditorDocument(base: image, background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension)))
+        var document = EditorDocument(base: image, background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension)))
+        document.hasWindowShadow = windowShadow
         self.document = document
         savedSnapshot = document.snapshot
         tool = style.tool
@@ -443,6 +446,31 @@ final class EditorModel {
         styleTarget.map { document.hasTransparency(of: $0) } ?? false
     }
 
+    /// Whether the Style popover's target is a window captured with the macOS shadow.
+    var targetHasWindowShadow: Bool {
+        styleTarget == .capture && document.hasWindowShadow
+    }
+
+    /// What the Style popover's tiles draw: the screenshot or placed image itself, or the mark or text.
+    var targetThumbnail: StyleThumbnail.Subject? {
+        switch styleTarget {
+        case .capture:
+            return .image(document.base)
+        case let .annotation(id):
+            guard let annotation = document.annotations.first(where: { $0.id == id }) else {
+                return nil
+            }
+            if case let .image(image, _) = annotation.kind {
+                return .image(image.image)
+            }
+            return .annotation(annotation)
+        case nil:
+            return nil
+        }
+    }
+
+    var thumbnailBackground: RGBA? { document.background }
+
     /// The style the Style popover shows: its target's.
     var targetStyle: ObjectStyle {
         styleTarget.map { document.style(of: $0) } ?? ObjectStyle()
@@ -483,8 +511,9 @@ final class EditorModel {
         restyleTarget(coalescing: "shadow") { $0.shadow?.opacity = opacity }
     }
 
-    /// The colour a border picked from the custom colour editor had last, which its rainbow swatch applies again.
-    private(set) var lastBorderColor = RGBA(1, 1, 1)
+    /// The colour a border picked from the custom colour editor had last, which its rainbow swatch applies again; `nil`
+    /// until one is picked, so the swatch doesn't offer white, which the palette has.
+    private(set) var lastBorderColor: RGBA?
 
     /// A new `kind` border for the target, at the middle width, in the colour of the border it has, else white, or
     /// for text the ink that stands out from its colour.
@@ -563,16 +592,16 @@ final class EditorModel {
             Toast.error("Select an image, shape, arrow or text to copy its style")
             return
         }
-        Self.copiedStyle = copied
+        StyleClipboard.copied = copied
         Toast.show("Copied style")
     }
 
-    var canPasteStyle: Bool { Self.copiedStyle != nil }
+    var canPasteStyle: Bool { StyleClipboard.copied != nil }
 
     /// Puts the copied style on every selected annotation that takes one, or on the screenshot when nothing is selected,
     /// as one undo step. Each takes only what it can have.
     func pasteStyle() {
-        guard let copied = Self.copiedStyle, editingText == nil else {
+        guard let copied = StyleClipboard.copied, editingText == nil else {
             return
         }
         let targets: [StyleTarget] = selectedIDs.isEmpty ? [.capture] : document.annotations.filter { selectedIDs.contains($0.id) }.map { .annotation($0.id) }
@@ -581,7 +610,7 @@ final class EditorModel {
 
     /// Puts the copied style on the screenshot and every placed image as one undo step.
     func applyStyleToAllImages() {
-        guard let copied = Self.copiedStyle, editingText == nil else {
+        guard let copied = StyleClipboard.copied, editingText == nil else {
             return
         }
         edit { $0.pasteStyle(copied, to: $0.imageStyleTargets, scale: scale, margin: canvasMargin) }
@@ -911,10 +940,12 @@ final class EditorModel {
     private func rendered(as format: ImageFormat = .png) async -> (image: CGImage, png: Data, file: Data)? {
         let document = document, scale = scale
         let result = await Task.detached { () -> (image: SendableImage, png: Data, file: Data)? in
-            guard let image = AnnotationRenderer.flatten(document), let png = ImageCodec.data(from: image, scale: scale) else {
+            // A window with the macOS shadow still has it once saved, so the file keeps saying so.
+            let windowShadow = document.hasWindowShadow
+            guard let image = AnnotationRenderer.flatten(document), let png = ImageCodec.data(from: image, scale: scale, windowShadow: windowShadow) else {
                 return nil
             }
-            guard let file = format == .png ? png : ImageCodec.data(from: image, scale: scale, format: format) else {
+            guard let file = format == .png ? png : ImageCodec.data(from: image, scale: scale, format: format, windowShadow: windowShadow) else {
                 return nil
             }
             return (SendableImage(image), png, file)

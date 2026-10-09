@@ -121,3 +121,40 @@ func aCachedRenderMatchesAnUncachedOneByteForByte(effect: SpotlightStyle.Effect)
     _ = cache.value(for: key, make: make)
     #expect(made == 2)
 }
+
+@Test func aShadowCasterMovedAnywhereIsTheSameShadowMoved() {
+    var arrow = Annotation(kind: .arrow(from: CGPoint(x: 10.3, y: 20.7), to: CGPoint(x: 80.1, y: 45.9)), color: RGBA(1, 0, 0), lineWidth: 4)
+    arrow.style = ObjectStyle(shadow: ShadowPreset.soft.shadow(scale: 1))
+    let origin = arrow.paintedBounds.origin
+    // Moved by fractions of a pixel, as a keyframed move does, which leaves its points rounded differently.
+    for delta in [CGSize(width: 0.37, height: 1.21), CGSize(width: 123.456, height: -7.89), CGSize(width: 1e-9, height: 0)] {
+        let moved = arrow.moved(by: delta)
+        #expect(ShadowCaster.annotation(moved).relative(to: moved.paintedBounds.origin) == ShadowCaster.annotation(arrow).relative(to: origin))
+    }
+    var bigger = arrow
+    bigger.lineWidth = 6
+    #expect(ShadowCaster.annotation(bigger).relative(to: bigger.paintedBounds.origin) != ShadowCaster.annotation(arrow).relative(to: origin))
+}
+
+@Test func aMovedAnnotationsCachedShadowIsDrawnWhereItNowIs() throws {
+    var line = Annotation(kind: .line(from: CGPoint(x: 20, y: 40), to: CGPoint(x: 120, y: 40)), color: RGBA(1, 0, 0), lineWidth: 4)
+    line.style = ObjectStyle(shadow: ShadowPreset.soft.shadow(scale: 1))
+    let base = pattern(width: 1, height: 1)
+    func render(_ annotation: Annotation) throws -> CGImage {
+        let ctx = try #require(CGContext(data: nil, width: 260, height: 160, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        ctx.translateBy(x: 0, y: 160)
+        ctx.scaleBy(x: 1, y: -1)
+        AnnotationRenderer.draw(annotation, base: base, in: ctx)
+        return try #require(ctx.makeImage())
+    }
+    // Drawn here first, so the moved one comes from the cache.
+    let first = try render(line)
+    let moved = try render(line.moved(by: CGSize(width: 100, height: 70)))
+    let a = try bytes(first), b = try bytes(moved), row = first.bytesPerRow
+    // Under the line, where only the shadow is, the shadow moved with it.
+    for (x, y) in [(70, 52), (40, 60), (100, 48)] {
+        let before = a[y * row + x * 4 + 3], after = b[(y + 70) * row + (x + 100) * 4 + 3]
+        #expect(before > 0)
+        #expect(abs(Int(before) - Int(after)) <= 2)
+    }
+}

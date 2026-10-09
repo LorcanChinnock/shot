@@ -195,6 +195,7 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
     private let queue = DispatchQueue(label: "Shot.compositor", attributes: .concurrent)
     private let overlays = OverlayCache()
     private let shadows = ClipShadowCache()
+    private let edges = ClipEdgeCache()
 
     var sourcePixelBufferAttributes: [String: any Sendable]? { Self.pixelFormat }
     var requiredPixelBufferAttributesForRenderContext: [String: any Sendable] { Self.pixelFormat }
@@ -211,7 +212,7 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
             var image = CIImage(color: .black).cropped(to: canvas)
             var firstFrame: CVPixelBuffer?
             let time = request.compositionTime.seconds
-            let (hidden, drawn) = instruction.live.snapshot()
+            let (hidden, drawn, clipStyles) = instruction.live.snapshot()
             let replacements = Dictionary(drawn.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
             var stacked: Set<UUID> = []
             var run: [AnnotationFrame.Item] = []
@@ -241,9 +242,13 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
                     }
                     flush()
                     firstFrame = firstFrame ?? frame
-                    var picture = CIImage(cvPixelBuffer: frame)
+                    let source = CIImage(cvPixelBuffer: frame)
+                    var picture = source
                     var placed = layer.clip
                     placed.transform = layer.clip.transform(atTimeline: time)
+                    if let style = clipStyles[placed.id] {
+                        placed.style = style
+                    }
                     let geometry = LayerGeometry.transform(for: placed, canvas: layer.canvas)
                     let matrix = LayerGeometry.imageTransform(orientation: layer.orientation, geometry: geometry, sourceHeight: CGFloat(CVPixelBufferGetHeight(frame)), canvasHeight: canvas.height)
                     picture = picture.transformed(by: matrix)
@@ -251,7 +256,10 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
                         let fit = min(layer.canvas.width / placed.size.width, layer.canvas.height / placed.size.height)
                         let placement = LayerGeometry.imageTransform(orientation: .identity, geometry: geometry, sourceHeight: placed.size.height, canvasHeight: canvas.height)
                         let lift = placed.animation.lift(at: time - placed.start)
-                        image = ClipStyler.composite(picture, of: placed, placement: placement, fit: fit, lift: lift, over: image, shadows: self.shadows, context: self.context)
+                        image = ClipStyler.composite(
+                            picture, of: placed, frame: source, time: time - placed.start, placement: placement, fit: fit, lift: lift,
+                            over: image, shadows: self.shadows, edges: self.edges, context: self.context
+                        )
                         continue
                     }
                     if placed.transform.opacity < 1 {

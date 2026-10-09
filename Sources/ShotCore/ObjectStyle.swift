@@ -360,7 +360,9 @@ extension EditorDocument {
     }
 
     /// Restyles `target`, growing the canvas to hold its shadow and border and pulling back padding they no longer need.
-    /// A border the target can't have is dropped. A locked annotation, or one that can't be styled, is left alone.
+    /// A border the target can't have is dropped. A window captured with the macOS shadow takes no style: its image
+    /// includes the shadow's see-through margin, which a border or corners would go round. A locked annotation, or one
+    /// that can't be styled, is left alone.
     public mutating func setStyle(_ style: ObjectStyle, of target: StyleTarget, margin: CGFloat) {
         guard let kind = styleKind(of: target) else {
             return
@@ -368,7 +370,7 @@ extension EditorDocument {
         let style = style.restricted(to: kind, transparent: style.border?.kind == .outline && hasTransparency(of: target))
         switch target {
         case .capture:
-            captureStyle = style
+            captureStyle = hasWindowShadow ? ObjectStyle() : style
             growToFitCapture()
         case let .annotation(id):
             guard let index = annotations.firstIndex(where: { $0.id == id }), !annotations[index].isLocked else {
@@ -380,12 +382,13 @@ extension EditorDocument {
         shrinkPadding(margin: margin)
     }
 
-    /// Sets the corner radius of `target`. A locked annotation, or one without corners to round, is left alone.
+    /// Sets the corner radius of `target`. A locked annotation, one without corners to round, and a window captured with
+    /// the macOS shadow are left alone.
     public mutating func setCornerRadius(_ radius: CGFloat, of target: StyleTarget) {
         let radius = max(0, radius)
         switch target {
         case .capture:
-            captureCornerRadius = radius
+            captureCornerRadius = hasWindowShadow ? 0 : radius
         case let .annotation(id):
             guard let index = annotations.firstIndex(where: { $0.id == id }), annotations[index].styleKind?.takesCorners == true, !annotations[index].isLocked else {
                 return
@@ -407,32 +410,14 @@ extension EditorDocument {
     /// have. Every kind has a shadow; the border goes only on a target that can have that border, and S, M and L stay S,
     /// M and L; the corners go only between things with corners. Locked annotations are left alone.
     public mutating func pasteStyle(_ copied: CopiedStyle, to targets: [StyleTarget], scale: CGFloat, margin: CGFloat) {
-        let sourceBorders = copied.source.borders(transparent: true)
         for target in targets {
             guard let kind = styleKind(of: target) else {
                 continue
             }
-            var copy = copied.style
-            if var border = copy.border, let lineWidth = border.lineWidth {
-                let from = Border.widths(border.kind, on: copied.source), to = Border.widths(border.kind, on: kind)
-                if let size = from.firstIndex(of: lineWidth), to.indices.contains(size) {
-                    border.lineWidth = to[size]
-                    copy.border = border
-                }
-            }
-            let pasted = copy.scaled(by: scale)
-            var restyled = style(of: target)
-            restyled.shadow = pasted.shadow
-            if let border = pasted.border {
-                if kind.borders(transparent: border.kind == .outline && hasTransparency(of: target)).contains(border.kind) {
-                    restyled.border = border
-                }
-            } else if !sourceBorders.isEmpty, !kind.borders(transparent: true).isEmpty {
-                restyled.border = nil
-            }
-            setStyle(restyled, of: target, margin: margin)
-            if copied.source.takesCorners, kind.takesCorners {
-                setCornerRadius(copied.cornerRadius * scale, of: target)
+            let transparent = copied.style.border?.kind == .outline && hasTransparency(of: target)
+            setStyle(copied.pasted(on: style(of: target), of: kind, transparent: transparent, scale: scale), of: target, margin: margin)
+            if let radius = copied.pastedCornerRadius(on: kind, scale: scale) {
+                setCornerRadius(radius, of: target)
             }
         }
     }
@@ -472,14 +457,47 @@ public struct CopiedStyle: Equatable, Sendable, Codable {
 }
 
 public extension CopiedStyle {
+    /// `style`, the style of a `kind` object on a document of `scale` pixels per point, with this pasted on it: the fields
+    /// both have. Every kind has a shadow; the border goes only on a kind that can have that border, `transparent` saying
+    /// whether the object has see-through pixels for an outline, and S, M and L stay S, M and L.
+    func pasted(on style: ObjectStyle, of kind: StyleKind, transparent: Bool, scale: CGFloat) -> ObjectStyle {
+        var copy = self.style
+        if var border = copy.border, let lineWidth = border.lineWidth {
+            let from = Border.widths(border.kind, on: source), to = Border.widths(border.kind, on: kind)
+            if let size = from.firstIndex(of: lineWidth), to.indices.contains(size) {
+                border.lineWidth = to[size]
+                copy.border = border
+            }
+        }
+        let pasted = copy.scaled(by: scale)
+        var restyled = style
+        restyled.shadow = pasted.shadow
+        if let border = pasted.border {
+            if kind.borders(transparent: transparent).contains(border.kind) {
+                restyled.border = border
+            }
+        } else if !source.borders(transparent: true).isEmpty, !kind.borders(transparent: true).isEmpty {
+            restyled.border = nil
+        }
+        return restyled
+    }
+
+    /// The corner radius pasted on a `kind` object, in pixels of a document of `scale` pixels per point; `nil` unless both
+    /// it and what this was copied from have corners.
+    func pastedCornerRadius(on kind: StyleKind, scale: CGFloat) -> CGFloat? {
+        source.takesCorners && kind.takesCorners ? cornerRadius * scale : nil
+    }
+
     /// `image`, a new capture of `scale` pixels per point, with this style on it over `background`, as Use this style
-    /// for new captures copies it; `nil` when the style changes nothing.
-    func styledCapture(_ image: CGImage, scale: CGFloat, background: RGBA?) -> CGImage? {
-        guard !style.isEmpty || cornerRadius > 0 else {
+    /// for new captures copies it; `nil` when the style changes nothing. A window captured with the macOS shadow,
+    /// `windowShadow`, takes no style, so it's `nil` for one.
+    func styledCapture(_ image: CGImage, scale: CGFloat, background: RGBA?, windowShadow: Bool = false) -> CGImage? {
+        var doc = EditorDocument(base: image, background: background)
+        doc.hasWindowShadow = windowShadow
+        doc.pasteStyle(self, to: [.capture], scale: scale, margin: 0)
+        guard !doc.captureStyle.isEmpty || doc.captureCornerRadius > 0 else {
             return nil
         }
-        var doc = EditorDocument(base: image, background: background)
-        doc.pasteStyle(self, to: [.capture], scale: scale, margin: 0)
         return AnnotationRenderer.flatten(doc)
     }
 

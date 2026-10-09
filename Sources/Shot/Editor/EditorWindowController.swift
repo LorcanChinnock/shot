@@ -36,7 +36,11 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
             Toast.error("Cannot open \(url.lastPathComponent): \(reason)")
             return
         }
-        let controller = EditorWindowController(model: EditorModel(fileURL: url, image: image, scale: ImageCodec.scale(ofFileAt: url), newCaptureStyle: newCaptureStyle))
+        let model = EditorModel(
+            fileURL: url, image: image, scale: ImageCodec.scale(ofFileAt: url), windowShadow: ImageCodec.hasWindowShadow(ofFileAt: url),
+            newCaptureStyle: newCaptureStyle
+        )
+        let controller = EditorWindowController(model: model)
         open.append(controller)
         controller.show()
         log.notice("Editor opened: \(url.path)")

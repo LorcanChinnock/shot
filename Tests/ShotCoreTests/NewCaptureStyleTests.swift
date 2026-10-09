@@ -78,3 +78,29 @@ private func alpha(_ image: CGImage, _ x: Int, _ y: Int) throws -> UInt8 {
     #expect(!doc.captureHas(copied, scale: 2))
     #expect(!doc.captureHas(nil, scale: 2))
 }
+
+@Test(arguments: [ImageFormat.png, .jpeg])
+func aWindowCapturedWithTheMacOSShadowSaysSoInItsFile(format: ImageFormat) throws {
+    let marked = try #require(ImageCodec.data(from: grey(width: 20, height: 10), scale: 2, format: format, windowShadow: true))
+    let plain = try #require(ImageCodec.data(from: grey(width: 20, height: 10), scale: 2, format: format))
+    #expect(ImageCodec.hasWindowShadow(of: marked))
+    #expect(!ImageCodec.hasWindowShadow(of: plain))
+    #expect(ImageCodec.scale(of: marked) == 2)
+}
+
+@Test func aWindowWithTheMacOSShadowTakesNoStyleOfItsOwn() {
+    var doc = EditorDocument(base: grey(width: 40, height: 30))
+    doc.hasWindowShadow = true
+    // Its image includes the shadow's see-through margin, which a border or corners would go round.
+    doc.setStyle(ObjectStyle(shadow: ShadowPreset.soft.shadow(scale: 2), border: .hairline), of: .capture, margin: 0)
+    doc.setCornerRadius(12, of: .capture)
+    #expect(doc.captureStyle.isEmpty)
+    #expect(doc.captureCornerRadius == 0)
+    // A pasted style, and the style saved for new captures, change nothing either.
+    let copied = CopiedStyle(style: ObjectStyle(shadow: ShadowPreset.float.shadow(scale: 1), border: .hairline), cornerRadius: 8, source: .capture)
+    doc.pasteStyle(copied, to: [.capture], scale: 2, margin: 0)
+    #expect(doc.captureStyle.isEmpty)
+    #expect(doc.captureCornerRadius == 0)
+    #expect(copied.styledCapture(grey(width: 40, height: 30), scale: 2, background: nil, windowShadow: true) == nil)
+    #expect(copied.styledCapture(grey(width: 40, height: 30), scale: 2, background: nil) != nil)
+}

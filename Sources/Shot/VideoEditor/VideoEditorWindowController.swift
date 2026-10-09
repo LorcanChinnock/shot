@@ -32,7 +32,7 @@ private final class VideoEditorWindow: NSWindow {
 }
 
 @MainActor
-final class VideoEditorWindowController: NSObject, NSWindowDelegate {
+final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValidation {
     private static var open: [VideoEditorWindowController] = []
 
     private let model: VideoEditorModel
@@ -120,6 +120,11 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
         switch key {
         case "z":
             shift ? model.redo() : model.undo()
+        // ⌥⌘C and ⌥⌘V copy and paste a style, so they're matched before ⌘C.
+        case "c" where option:
+            model.copyStyle()
+        case "v" where option:
+            model.pasteStyle()
         case "c":
             Task { await model.copy() }
         case "s":
@@ -182,6 +187,25 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate {
             return false
         }
         return true
+    }
+
+    // The Edit menu's style items, which reach the editor through the key window's delegate. Apply Style to All Images
+    // is the photo editor's alone.
+
+    @objc func copyStyle(_ sender: Any?) {
+        model.copyStyle()
+    }
+
+    @objc func pasteStyle(_ sender: Any?) {
+        model.pasteStyle()
+    }
+
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        switch menuItem.action {
+        case #selector(copyStyle(_:)): model.targetStyleKind != nil
+        case #selector(pasteStyle(_:)): model.canPasteStyle
+        default: true
+        }
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {

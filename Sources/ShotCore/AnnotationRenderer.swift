@@ -454,20 +454,20 @@ public enum AnnotationRenderer {
     /// Draws the shadow `silhouette` casts from `rect`, which reaches no further than `area`. It's drawn into a bitmap of
     /// `area` at the context's resolution, but no finer than the image's pixels, and coarser the softer its sharpest layer,
     /// as a soft spotlight's mask is, since a blurry shadow has no detail to lose. It's kept while `caster` and the
-    /// resolution stay the same, so redrawing while editing draws an image rather than blurring again, and a shadow that
-    /// does change blurs only its own area, not the whole canvas.
+    /// resolution stay the same, wherever the caster moves, so redrawing while editing or moving an annotation clip
+    /// draws an image rather than blurring again, and a shadow that does change blurs only its own area, not the whole canvas.
     private static func drawCachedShadow(
         _ shadow: Shadow, color: RGBA, of rect: CGRect, area: CGRect, caster: ShadowCaster, ctx: CGContext, silhouette: (CGContext) -> Void
     ) {
         let ctm = ctx.ctm
         let sharpest = shadow.layers.map(\.blur).min() ?? 0
         let unit = min(1, hypot(ctm.a, ctm.b), sharpest > 0 ? 8 / sharpest : 1)
-        let area = area.integral
         let size = CGSize(width: (area.width * unit).rounded(.up), height: (area.height * unit).rounded(.up))
         guard size.width >= 1, size.height >= 1 else {
             return
         }
-        let cached = cache.value(for: .shadow(caster, color: color, unit: unit)) {
+        // Kept relative to where the shadow starts, which is where it's drawn back.
+        let cached = cache.value(for: .shadow(caster.relative(to: area.origin), color: color, unit: unit)) {
             guard let bitmap = CGContext(
                 data: nil, width: Int(size.width), height: Int(size.height), bitsPerComponent: 8, bytesPerRow: 0,
                 space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
@@ -478,10 +478,10 @@ public enum AnnotationRenderer {
             bitmap.scaleBy(x: unit, y: -unit)
             bitmap.translateBy(x: -area.minX, y: -area.minY)
             drawShadow(shadow, color: color, of: rect, ctx: bitmap) { silhouette(bitmap) }
-            return bitmap.makeImage().map { ($0, CGRect(origin: area.origin, size: CGSize(width: size.width / unit, height: size.height / unit))) }
+            return bitmap.makeImage().map { ($0, CGRect(origin: .zero, size: CGSize(width: size.width / unit, height: size.height / unit))) }
         }
         if let cached {
-            drawUpright(cached.image, in: cached.frame, ctx: ctx)
+            drawUpright(cached.image, in: cached.frame.offsetBy(dx: area.minX, dy: area.minY), ctx: ctx)
         }
     }
 
