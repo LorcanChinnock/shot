@@ -1,7 +1,7 @@
 # Building with only the Command Line Tools: their default SDK (27) makes SwiftUI's @State a
-# macro whose compiler plugin ships with Xcode alone, so pin the 26.5 SDK when it's there.
+# macro whose compiler plugin ships with Xcode alone, so pin the newest 26.x SDK when there is one.
 # With Xcode selected, the default SDK works and nothing is pinned.
-CLT_SDK := /Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk
+CLT_SDK := $(lastword $(sort $(wildcard /Library/Developer/CommandLineTools/SDKs/MacOSX26.*.sdk)))
 ifeq ($(findstring CommandLineTools,$(shell xcode-select -p)),CommandLineTools)
 ifneq ($(wildcard $(CLT_SDK)),)
 export SDKROOT ?= $(CLT_SDK)

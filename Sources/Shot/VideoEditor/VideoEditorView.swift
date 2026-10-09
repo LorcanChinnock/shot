@@ -261,18 +261,18 @@ struct TrimTimelineView: View {
                 ForEach(model.cuts.cuts, id: \.self) { cut in
                     let x = timeline.x(for: cut.lowerBound)
                     Rectangle().fill(Color.black.opacity(0.7))
-                        .overlay(Rectangle().strokeBorder(Brutal.pink, lineWidth: 2))
+                        .inkBorder(Rectangle(), width: 2, color: Brutal.pink)
                         .frame(width: max(0, timeline.x(for: cut.upperBound) - x), height: Self.height)
                         .offset(x: x)
                 }
                 if let selection = model.selection {
                     let x = timeline.x(for: model.project.sourceTime(atTimeline: selection.lowerBound))
                     Rectangle().fill(Brutal.sky.opacity(0.35))
-                        .overlay(Rectangle().strokeBorder(Brutal.sky, lineWidth: 2))
+                        .inkBorder(Rectangle(), width: 2, color: Brutal.sky)
                         .frame(width: max(0, timeline.x(for: model.project.sourceTime(atTimeline: selection.upperBound)) - x), height: Self.height)
                         .offset(x: x)
                 }
-                Rectangle().strokeBorder(Brutal.yellow, lineWidth: 3)
+                Color.clear.inkBorder(Rectangle(), width: 3, color: Brutal.yellow)
                     .frame(width: max(0, endX - startX), height: Self.height)
                     .offset(x: startX)
                 handle(symbol: "chevron.compact.left")
