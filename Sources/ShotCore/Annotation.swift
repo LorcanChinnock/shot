@@ -16,7 +16,7 @@ public struct RGBA: Equatable, Hashable, Sendable, Codable {
 
     public static let presets: [RGBA] = [
         RGBA(1, 0.23, 0.19), RGBA(1, 0.58, 0), RGBA(1, 0.8, 0),
-        RGBA(0.2, 0.78, 0.35), RGBA(0, 0.48, 1), RGBA(0, 0, 0),
+        RGBA(0.2, 0.78, 0.35), RGBA(0, 0.48, 1), RGBA(0, 0, 0), RGBA(1, 1, 1),
     ]
 
     /// A sticky note's paper: the colour mixed most of the way to white.
