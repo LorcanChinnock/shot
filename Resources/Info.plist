@@ -24,6 +24,13 @@
 	<string>© 2026 Lorcan Chinnock</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>15.0</string>
+	<!-- Each capture frees several screen-sized buffers, and malloc's large-block cache kept them resident for minutes,
+	     about 580 MB after 20 captures. Shot makes few large allocations otherwise, so the cache only costs it (#276). -->
+	<key>LSEnvironment</key>
+	<dict>
+		<key>MallocLargeCache</key>
+		<string>0</string>
+	</dict>
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSHighResolutionCapable</key>

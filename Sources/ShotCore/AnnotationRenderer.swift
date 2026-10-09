@@ -12,12 +12,13 @@ public enum AnnotationRenderer {
 
     /// Draws the document into a bottom-left-origin context of size `doc.exportSize`.
     public static func render(_ doc: EditorDocument, into ctx: CGContext) {
-        renderLayers(doc, into: ctx)
+        renderLayers(doc, into: ctx, shadowBackground: doc.background)
         cache.sweep()
     }
 
     /// `render` without sweeping the cache, so a backdrop can be drawn with it partway through a render.
-    static func renderLayers(_ doc: EditorDocument, into ctx: CGContext) {
+    /// `shadowBackground` tints the shadows, which a backdrop drawn without the background still needs.
+    static func renderLayers(_ doc: EditorDocument, into ctx: CGContext, shadowBackground: RGBA?) {
         var doc = doc
         doc.annotations.removeAll(where: \.isHidden)
         let canvas = doc.canvasRect
@@ -35,7 +36,8 @@ public enum AnnotationRenderer {
         if dim != nil {
             ctx.beginTransparencyLayer(auxiliaryInfo: nil)
         }
-        drawUpright(doc.base, in: doc.fullRect, ctx: ctx)
+        let look = CaptureLook(cornerRadius: doc.captureCornerRadius, style: doc.captureStyle, background: shadowBackground)
+        drawImage(doc.base, in: doc.fullRect, cornerRadius: doc.clampedCaptureCornerRadius, style: doc.captureStyle, shadowBackground: shadowBackground, ctx: ctx)
         // Each layer acts on everything under it and nothing over it. The spotlights share one dim, at the lowest one's layer.
         let dimIndex = doc.annotations.firstIndex { if case .spotlight = $0.kind { true } else { false } }
         for (index, annotation) in doc.annotations.enumerated() {
@@ -43,9 +45,9 @@ public enum AnnotationRenderer {
                 // Only what's within the dim's reach of the canvas shows in it.
                 let reach = annotation.backdropReach(base: doc.base) ?? 0
                 let read = canvas.insetBy(dx: -reach, dy: -reach)
-                drawSpotlightDim(dim, style: style, softSpotlights: doc.softSpotlights, base: doc.base, below: doc.annotations[..<index], reading: read, in: ctx)
+                drawSpotlightDim(dim, style: style, softSpotlights: doc.softSpotlights, base: doc.base, below: doc.annotations[..<index], look: look, reading: read, in: ctx)
             }
-            draw(annotation, base: doc.base, over: doc.annotations[..<index], in: ctx)
+            draw(annotation, base: doc.base, over: doc.annotations[..<index], look: look, in: ctx)
         }
         if dim != nil {
             ctx.endTransparencyLayer()
@@ -56,7 +58,7 @@ public enum AnnotationRenderer {
     /// Darkens or blurs `dim`, everything under the lowest spotlight outside every spotlight, faded where `softSpotlights` light it.
     private static func drawSpotlightDim(
         _ dim: CGPath, style: SpotlightStyle, softSpotlights: [(rect: CGRect, style: SpotlightStyle, cornerRadius: CGFloat?)],
-        base: CGImage, below: ArraySlice<Annotation>, reading read: CGRect, in ctx: CGContext
+        base: CGImage, below: ArraySlice<Annotation>, look: CaptureLook, reading read: CGRect, in ctx: CGContext
     ) {
         ctx.saveGState()
         defer { ctx.restoreGState() }
@@ -78,7 +80,7 @@ public enum AnnotationRenderer {
             guard !area.isEmpty else {
                 return
             }
-            let backdrop = Backdrop(base, below: below, around: area, outset: 0)
+            let backdrop = Backdrop(base, below: below, around: area, outset: 0, look: look)
             let blurred = cache.value(for: .dimBlur(backdrop, radius: radius)) {
                 let source = backdrop.draw()
                 return blurredWhole(source.image, radius: radius).map { ($0, CGRect(origin: source.origin, size: CGSize(width: $0.width, height: $0.height))) }
@@ -188,8 +190,13 @@ public enum AnnotationRenderer {
     }
 
     /// Draws in a top-left-origin context. `below` are the annotations drawn before it, which a pixelate or blur
-    /// covers along with the screenshot.
-    public static func draw(_ annotation: Annotation, base: CGImage, over below: ArraySlice<Annotation> = [], in ctx: CGContext) {
+    /// covers along with the screenshot. `background` is the canvas's, which tints a shadow.
+    public static func draw(_ annotation: Annotation, base: CGImage, over below: ArraySlice<Annotation> = [], background: RGBA? = nil, in ctx: CGContext) {
+        draw(annotation, base: base, over: below, look: CaptureLook(background: background), in: ctx)
+    }
+
+    /// `look` is how the screenshot under it is drawn, which a pixelate or blur covers too.
+    static func draw(_ annotation: Annotation, base: CGImage, over below: ArraySlice<Annotation>, look: CaptureLook, in ctx: CGContext) {
         let color = annotation.color.cgColor
         let width = annotation.lineWidth
         ctx.saveGState()
@@ -251,7 +258,7 @@ public enum AnnotationRenderer {
             break
         case let .pixelate(rect, _):
             let scale = redactionSize(annotation, base: base)
-            let backdrop = Backdrop(base, below: below, around: rect, outset: annotation.backdropReach(base: base) ?? 0)
+            let backdrop = Backdrop(base, below: below, around: rect, outset: annotation.backdropReach(base: base) ?? 0, look: look)
             let pixelated = cache.value(for: .pixelate(backdrop, rect: rect, scale: scale)) {
                 let source = backdrop.draw()
                 return pixelate(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y), scale: scale).map { ($0, rect.integral) }
@@ -261,7 +268,7 @@ public enum AnnotationRenderer {
             }
         case let .blur(rect, _):
             let radius = redactionSize(annotation, base: base)
-            let backdrop = Backdrop(base, below: below, around: rect, outset: annotation.backdropReach(base: base) ?? 0)
+            let backdrop = Backdrop(base, below: below, around: rect, outset: annotation.backdropReach(base: base) ?? 0, look: look)
             let blurred = cache.value(for: .blur(backdrop, rect: rect, radius: radius)) {
                 let source = backdrop.draw()
                 return blur(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y), radius: radius).map { ($0, rect.integral) }
@@ -270,7 +277,7 @@ public enum AnnotationRenderer {
                 drawUpright(blurred.image, in: blurred.frame, ctx: ctx)
             }
         case let .image(image, rect):
-            drawUpright(image.image, in: pixelAligned(rect), ctx: ctx)
+            drawImage(image.image, in: pixelAligned(rect), cornerRadius: annotation.imageCornerRadius, style: annotation.style, shadowBackground: look.background, ctx: ctx)
         case let .text(string, origin, fontSize):
             let layout = TextLayout(string: string, fontSize: fontSize, color: annotation.color)
             ctx.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
@@ -321,6 +328,99 @@ public enum AnnotationRenderer {
                 CTLineDraw(line, ctx)
             }
         }
+    }
+
+    /// Draws `image` right side up into `rect` of a top-left-origin context, its corners rounded by `cornerRadius`,
+    /// with `style`'s shadow under it and border around it. A plain image is drawn as it is.
+    static func drawImage(_ image: CGImage, in rect: CGRect, cornerRadius: CGFloat, style: ObjectStyle, shadowBackground: RGBA?, ctx: CGContext) {
+        func drawRounded() {
+            ctx.saveGState()
+            if cornerRadius > 0 {
+                ctx.addPath(CGPath(roundedRect: rect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil))
+                ctx.clip()
+            }
+            drawUpright(image, in: rect, ctx: ctx)
+            ctx.restoreGState()
+        }
+        let needsEdge = style.border != nil || style.shadow?.tint == .object
+        let edge = needsEdge ? edgeColor(of: image) : nil
+        if let shadow = style.shadow {
+            drawShadow(shadow, color: shadow.color(background: shadowBackground, object: edge ?? RGBA(0, 0, 0)), of: rect, ctx: ctx, silhouette: drawRounded)
+        }
+        drawRounded()
+        if let border = style.border {
+            switch border.kind {
+            case .hairline:
+                // Centred just outside the edge, its corners concentric with the image's, so it hugs them evenly.
+                let width = border.width
+                let radius = cornerRadius > 0 ? cornerRadius + width / 2 : 0
+                ctx.saveGState()
+                ctx.setStrokeColor(Border.hairlineColor(edge: edge).cgColor)
+                ctx.setLineWidth(width)
+                ctx.addPath(CGPath(roundedRect: rect.insetBy(dx: -width / 2, dy: -width / 2), cornerWidth: radius, cornerHeight: radius, transform: nil))
+                ctx.strokePath()
+                ctx.restoreGState()
+            }
+        }
+    }
+
+    /// Draws only the shadow `silhouette` casts from `rect`, one pass per layer of `shadow`. Each pass draws the silhouette
+    /// well clear of what's shown, with the shadow offset back under it, so no copy of the object is left to show through it.
+    private static func drawShadow(_ shadow: Shadow, color: RGBA, of rect: CGRect, ctx: CGContext, silhouette: () -> Void) {
+        // Shadows ignore the CTM, so map the offset and blur through it to look the same at any zoom, as a note's do.
+        let ctm = ctx.ctm
+        let unit = hypot(ctm.a, ctm.b)
+        let shown = ctx.boundingBoxOfClipPath
+        let clear = (shown.isNull || shown.isInfinite ? rect.width : max(shown.maxX - rect.minX, rect.width)) + shadow.reach.side * 2 + 1
+        for layer in shadow.layers {
+            ctx.saveGState()
+            ctx.setShadow(
+                offset: CGSize(width: -clear, height: layer.offset).applying(ctm),
+                blur: layer.blur * unit,
+                color: RGBA(color.r, color.g, color.b, shadow.opacity).cgColor
+            )
+            ctx.beginTransparencyLayer(auxiliaryInfo: nil)
+            ctx.translateBy(x: clear, y: 0)
+            silhouette()
+            ctx.endTransparencyLayer()
+            ctx.restoreGState()
+        }
+    }
+
+    /// The average colour near `image`'s edge, each pixel weighed by its alpha; `nil` if it's clear all round.
+    /// It's read from a small copy, kept while the image is drawn.
+    static func edgeColor(of image: CGImage) -> RGBA? {
+        let side = 16
+        let sample = cache.value(for: .edgeSample(SampledImage(image: image))) {
+            guard let ctx = CGContext(
+                data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: side * 4,
+                space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            ) else {
+                return nil
+            }
+            ctx.interpolationQuality = .medium
+            ctx.draw(image, in: CGRect(x: 0, y: 0, width: side, height: side))
+            return ctx.makeImage().map { ($0, .zero) }
+        }
+        guard let sample, let data = sample.image.dataProvider?.data, let bytes = CFDataGetBytePtr(data) else {
+            return nil
+        }
+        let bytesPerRow = sample.image.bytesPerRow
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        for y in 0..<side {
+            for x in 0..<side where x < 2 || y < 2 || x >= side - 2 || y >= side - 2 {
+                let offset = y * bytesPerRow + x * 4
+                // Premultiplied, so the sums weigh each pixel by its alpha.
+                r += CGFloat(bytes[offset])
+                g += CGFloat(bytes[offset + 1])
+                b += CGFloat(bytes[offset + 2])
+                a += CGFloat(bytes[offset + 3])
+            }
+        }
+        guard a > 0 else {
+            return nil
+        }
+        return RGBA(r / a, g / a, b / a)
     }
 
     /// `rect` on whole pixels, so an image dragged by a fraction of a pixel still exports pixel for pixel.

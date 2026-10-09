@@ -93,6 +93,18 @@ struct EditorToolbar: View {
                             model.addImageFiles(urls)
                         }
                     }
+                    Tile(
+                        selected: model.showsStylePopover, color: Brutal.sky, help: "Style",
+                        detail: "Round the corners and add a shadow or border to the selected image, or to the screenshot when nothing is selected",
+                        isEnabled: model.styleTarget != nil
+                    ) {
+                        model.showsStylePopover.toggle()
+                    } label: {
+                        Image(systemName: "shadow").font(.system(size: 13, weight: .bold))
+                    }
+                    .popover(isPresented: $model.showsStylePopover, arrowEdge: .bottom) {
+                        StylePopover(model: model)
+                    }
                 }
                 Spacer(minLength: 0)
                 ToolGroup {
@@ -644,7 +656,7 @@ private struct CanvasMenu: View {
     var body: some View {
         BrutalDropdown(title: "Canvas", entries: [
             .item("Fit to Content") { model.fitToContent() },
-            .item("Trim to Image", enabled: model.document.hasPadding) { model.trimToImage() },
+            .item("Trim to Image", enabled: !model.document.capturePaintedBounds.contains(model.document.canvasRect)) { model.trimToImage() },
             .divider,
             .header("Background"),
         ] + backgrounds.map { name, color in

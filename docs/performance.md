@@ -42,12 +42,12 @@ It needs Screen Recording for Shot, and Accessibility for the terminal, which cl
 |---|---|---|
 | Launch → ready | 101 ms | 150 ms |
 | Capture → clipboard (full screen, 2880×1864) | 189 ms | 285 ms |
-| Memory after 20 captures | 577 MB | 865 MB |
+| Memory after 20 captures | 20 MB | 30 MB |
 | Idle CPU, no windows open | 0.0% | under 1% |
 
 Idle CPU has an absolute budget. The others are about 1.5× the baseline, set in `scripts/perf.sh`; change both together.
 
-Memory after 20 captures is high, and falls slowly afterwards: to 316 MB a minute later, most of it large malloc blocks. Whether that's a cache or a leak is tracked in #276. The budget records where it is today, so it can't grow unnoticed.
+Memory after 20 captures was 577 MB before #276: macOS kept each capture's freed screen-sized buffers resident for minutes. Shot now turns off malloc's large-block cache and copies PNG only (#278).
 
 ## Reference Mac
 

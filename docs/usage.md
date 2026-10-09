@@ -91,6 +91,16 @@ Each layer acts on everything under it and nothing over it: a blur, pixelate or 
 
 Annotations can reach past the edges of the screenshot: the canvas grows to fit them. The **Canvas** menu fits the canvas to its content, trims it back to the image, and sets the background of the extra space to transparent (PNG only), white, or one of the palette colours.
 
+### Style
+
+Click **Style** in the toolbar to round the corners of your screenshot and give it a shadow or a border. With an image you placed selected, Style acts on that image instead; it's greyed out while anything else is selected. Nothing is styled until you ask.
+
+- **Shadow:** None, Soft, Float, Contact or Glow. Point at one to preview it on the canvas, and click to apply it. Once there's a shadow, **Elevation** and **Opacity** sliders tune it into a custom one. The light comes from above, so shadows fall below. On a coloured background the shadow takes a dark shade of it; on a transparent one it's black, and it's saved in the PNG so it looks right pasted anywhere. Glow takes the colour of the image's edge.
+- **Border:** **Hairline** draws a one-pixel rim, light on dark content and dark on light, so a screenshot keeps its edge on a page of the same colour.
+- **Corners:** the slider rounds the corners.
+
+A shadow or border on the screenshot grows the canvas just enough to fit it, and removing it shrinks the canvas back. Each click is one undo step, and so is each slider drag.
+
 ### Combine images
 
 Click **Add an image** (⇧⌘I) to pick one of your recent captures, or **Choose File…** for any image files. You can also drag an image file or a Quick Access card onto the canvas, or press ⌘V with an image on the clipboard, to place another image beside your screenshot. A picked image goes beside the canvas. A dropped image is centred where you drop it; a pasted one goes beside the canvas. Placed images keep their full resolution, keep their aspect ratio when you resize them, and can be moved, nudged, copied and deleted like any other annotation.
@@ -105,7 +115,9 @@ Pinch, or press ⌘+ and ⌘-, to zoom. ⌘0 fits the canvas to the window and �
 
 ## Screen recording
 
-Press ⌘⇧5, then drag out an area (the magnifier helps here too), press Space and click a window, or press Enter for the full screen. Before recording, you can adjust the frame, switch between area, screen and window, and turn the camera bubble, microphone and cursor on or off for this recording; **Settings › Recording** sets what each recording starts with. Press Return or click **Record** to start after a 3-second countdown, or Esc to cancel.
+Press ⌘⇧5, then drag out an area (the magnifier helps here too), press Space and click a window, or press Enter for the full screen. Recording starts as soon as you let go, with the camera bubble, microphone and cursor set as in **Settings › Recording**. Record Fullscreen starts on its shortcut.
+
+To adjust first, hold ⌥ as you finish the selection, or turn on **Adjust before recording** in **Settings › Recording** to do it every time. You can then adjust the frame, switch between area, screen and window, and turn the camera bubble, microphone and cursor on or off for this recording. Press Return or click **Record** to start, or Esc to cancel. **Countdown** in the same settings adds a 3 or 5 second countdown before recording starts, with or without this step. Esc during the countdown goes back to the adjust step if it was shown, and otherwise cancels the recording.
 
 If you picked the area with a ratio (Tab or Shift), the frame's handles keep it.
 
@@ -173,7 +185,7 @@ Record Fullscreen and Record Window have no shortcut until you set one. Capture 
 
 | Key | Action |
 |---|---|
-| Return | Start recording after a 3-second countdown |
+| Return | Start recording, after the countdown if one is set |
 | Esc | Cancel |
 
 ### Annotation editor

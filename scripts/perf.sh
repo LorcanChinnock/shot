@@ -17,7 +17,7 @@ bundle_id=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$app/Content
 # Budgets, about 1.5x the baselines in docs/performance.md. Empty means not measured: printed, not checked.
 budget_launch_ms="150"
 budget_capture_ms="285"
-budget_memory_mb="865"
+budget_memory_mb="30"
 budget_idle_cpu="1.0"
 
 work=$(mktemp -d "${TMPDIR:-/tmp}/shot-perf.XXXXXX")

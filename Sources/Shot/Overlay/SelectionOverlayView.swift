@@ -122,7 +122,7 @@ final class SelectionOverlayView: NSView {
     override func mouseUp(with event: NSEvent) {
         if controller.windowMode {
             if let window = controller.hoveredWindow {
-                controller.finish(.window(window))
+                controller.finish(.window(window), modifiers: event.modifierFlags)
             }
             return
         }
@@ -137,7 +137,7 @@ final class SelectionOverlayView: NSView {
         }
         let shape = event.modifierFlags.contains(.shift) ? AspectRatio.square : controller.aspectRatio
         let ratio = shape.value.map { selection.width >= selection.height ? $0 : 1 / $0 }
-        controller.finish(.area(display: index, rect: selection, ratio: ratio))
+        controller.finish(.area(display: index, rect: selection, ratio: ratio), modifiers: event.modifierFlags)
     }
 
     override func keyDown(with event: NSEvent) {
@@ -165,7 +165,7 @@ final class SelectionOverlayView: NSView {
             }
         case 36, 76:
             if controller.isLive {
-                controller.finish(.fullDisplay(index))
+                controller.finish(.fullDisplay(index), modifiers: event.modifierFlags)
             }
         default:
             super.keyDown(with: event)

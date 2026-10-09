@@ -49,6 +49,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             _ = model.document.annotations
             _ = model.document.canvasRect
             _ = model.document.background
+            _ = model.stylePreview
             _ = model.selectedIDs
             _ = model.tool
             _ = model.editingText
@@ -71,9 +72,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     // MARK: Geometry
 
-    /// The canvas as it will be once the draft or note being typed is committed, so it grows and shrinks as they do.
+    /// The canvas as it will be once the draft or note being typed is committed, so it grows and shrinks as they do,
+    /// and as a style previewed in the Style popover would make it.
     private var canvasRect: CGRect {
-        var doc = model.document
+        var doc = model.previewDocument
         for pending in [draft, editingPaper].compactMap({ $0 }) {
             doc.grow(toFit: pending, margin: model.canvasMargin)
         }
@@ -128,7 +130,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard let ctx = NSGraphicsContext.current?.cgContext else {
             return
         }
-        var doc = model.document
+        var doc = model.previewDocument
         doc.canvasRect = canvasRect
         // The text being edited is drawn by its text field instead, a note's over blank paper.
         if let editingText {

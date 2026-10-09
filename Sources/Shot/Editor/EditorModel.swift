@@ -129,6 +129,8 @@ final class EditorModel {
     var showsLayers = UserDefaults.standard.bool(forKey: EditorModel.showsLayersKey)
     /// Whether the picker of images to place on the canvas is open.
     var showsImagePicker = false
+    /// Whether the Style popover is open.
+    var showsStylePopover = false
     private static let showsLayersKey = "editorShowsLayers"
     /// The text or note whose text field is open, with the colour and size picked for it so far; it may not be in the document yet.
     var editingText: Annotation?
@@ -400,6 +402,82 @@ final class EditorModel {
         spotlight.effect = effect
         spotlight.strength = strength
         edit(coalescing: isDraggingStyle ? "spotlight-look" : nil) { $0.setSpotlights(effect: effect, strength: strength) }
+    }
+
+    // MARK: Object style
+
+    /// What the Style popover changes: the selected image, else the capture when nothing is selected. `nil` while text is
+    /// typed or the selection can't take a style.
+    var styleTarget: StyleTarget? {
+        guard editingText == nil else {
+            return nil
+        }
+        guard !selectedIDs.isEmpty else {
+            return .capture
+        }
+        guard let selection, selection.takesObjectStyle, !selection.isLocked else {
+            return nil
+        }
+        return .annotation(selection.id)
+    }
+
+    /// The style the Style popover shows: its target's.
+    var targetStyle: ObjectStyle {
+        styleTarget.map { document.style(of: $0) } ?? ObjectStyle()
+    }
+
+    /// The corner radius the Style popover shows, in points.
+    var targetCornerRadius: CGFloat {
+        styleTarget.map { document.cornerRadius(of: $0) / scale } ?? 0
+    }
+
+    /// A style the pointer is over in the Style popover, shown on the canvas in place of the target's until it moves off.
+    /// It's not part of the document, so it's never an undo step.
+    var stylePreview: ObjectStyle?
+
+    /// The document with the style previewed, which the canvas draws.
+    var previewDocument: EditorDocument {
+        guard let stylePreview, let styleTarget else {
+            return document
+        }
+        var doc = document
+        doc.setStyle(stylePreview, of: styleTarget, margin: canvasMargin)
+        return doc
+    }
+
+    /// Sets the target's shadow and border as one undo step.
+    func setTargetStyle(_ style: ObjectStyle) {
+        stylePreview = nil
+        restyleTarget { $0 = style }
+    }
+
+    /// Changes during a drag of a style slider are one undo step.
+    func setShadowElevation(_ points: CGFloat) {
+        restyleTarget(coalescing: "shadow") { $0.shadow?.elevation = points * scale }
+    }
+
+    /// Changes during a drag of a style slider are one undo step.
+    func setShadowOpacity(_ opacity: CGFloat) {
+        restyleTarget(coalescing: "shadow") { $0.shadow?.opacity = opacity }
+    }
+
+    /// Changes during a drag of a style slider are one undo step.
+    func setTargetCornerRadius(_ points: CGFloat) {
+        guard let styleTarget else {
+            return
+        }
+        edit(coalescing: isDraggingStyle ? "\(styleTarget)-corners" : nil) { $0.setCornerRadius(points * scale, of: styleTarget) }
+    }
+
+    /// Changes the target's style as one undo step, growing the canvas to hold it. While a style slider is dragged,
+    /// calls with the same `key` amend that step.
+    private func restyleTarget(coalescing key: String? = nil, _ change: (inout ObjectStyle) -> Void) {
+        guard let styleTarget else {
+            return
+        }
+        var style = document.style(of: styleTarget)
+        change(&style)
+        edit(coalescing: isDraggingStyle ? key.map { "\(styleTarget)-\($0)" } : nil) { $0.setStyle(style, of: styleTarget, margin: canvasMargin) }
     }
 
     /// Call as a drag of a style slider starts and ends, so each drag is one undo step.
@@ -748,7 +826,7 @@ final class EditorModel {
             Toast.error("Could not render image")
             return
         }
-        Clipboard.copy(png: result.png, image: result.image)
+        Clipboard.copy(png: result.png)
         Toast.show("Copied")
     }
 
@@ -769,7 +847,7 @@ final class EditorModel {
         let destination = FileNaming.nextVersionURL(of: fileURL)
         do {
             try result.file.write(to: destination, options: .atomic)
-            Clipboard.copy(png: result.png, image: result.image)
+            Clipboard.copy(png: result.png)
             savedSnapshot = snapshot
             isDirty = document.snapshot != snapshot
             Toast.show("Saved as \(destination.lastPathComponent) and copied", duration: .seconds(3))
