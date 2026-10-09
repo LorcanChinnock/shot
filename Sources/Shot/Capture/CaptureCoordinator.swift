@@ -18,6 +18,9 @@ final class CaptureCoordinator {
     /// From a full-screen capture action to its clipboard write; ended with "copied", or "not copied" when nothing was copied.
     /// Area and window captures wait for the user's selection, so their time says nothing about Shot's speed.
     private var captureInterval: OSSignpostIntervalState?
+    /// The latest captures not yet opened in the editor, as many as Quick Access shows: the ones Use this style for new
+    /// captures still styles when they're opened. An older file opened from the Gallery stays as it is.
+    private var newCaptures: [URL] = []
 
     init(state: AppState) {
         self.state = state
@@ -92,7 +95,7 @@ final class CaptureCoordinator {
         switch route {
         case let .image(url):
             log.notice("Annotate requested: \(url.path)")
-            EditorWindowController.open(url)
+            EditorWindowController.open(url, newCaptureStyle: newCaptureStyle(opening: url))
         case let .video(url):
             log.notice("Video edit requested: \(url.path)")
             VideoEditorWindowController.open(url)
@@ -276,9 +279,15 @@ final class CaptureCoordinator {
         if prefs.copyAfterCapture {
             Clipboard.copy(png: png)
             endCaptureInterval("copied")
+            if let newCaptureStyle = prefs.newCaptureStyle {
+                copyStyled(image, scale: scale, style: newCaptureStyle, background: EditorDocument.defaultBackground(for: format))
+            }
+        }
+        if let savedURL {
+            newCaptures = Array((newCaptures + [savedURL]).suffix(QuickAccessController.maxCards))
         }
         if let savedURL, prefs.openEditorAfterCapture {
-            EditorWindowController.open(savedURL)
+            EditorWindowController.open(savedURL, newCaptureStyle: newCaptureStyle(opening: savedURL))
         } else if let savedURL, prefs.quickAccessAfterCapture {
             let size = NSSize(width: CGFloat(image.width) / scale, height: CGFloat(image.height) / scale)
             QuickAccessController.shared.add(fileURL: savedURL, thumbnail: encoded.thumbnail?.image ?? image, size: size)
@@ -288,6 +297,39 @@ final class CaptureCoordinator {
             Toast.show("Saved")
         }
         Confetti.burst(from: frame)
+    }
+
+    /// The style a capture opens with: the one Use this style for new captures saved, if `url` is a new capture opened
+    /// for the first time and the setting is still on.
+    private func newCaptureStyle(opening url: URL) -> CopiedStyle? {
+        guard let index = newCaptures.firstIndex(of: url) else {
+            return nil
+        }
+        newCaptures.remove(at: index)
+        return Preferences().newCaptureStyle
+    }
+
+    /// Replaces the plain capture just copied with `style` on it, over `background` as the editor shows it, once that's
+    /// drawn off the main actor, so the copy itself waits for nothing. Leaves the clipboard alone if something else was
+    /// copied in the meantime.
+    private func copyStyled(_ image: CGImage, scale: CGFloat, style: CopiedStyle, background: RGBA?) {
+        let copied = NSPasteboard.general.changeCount
+        let source = SendableImage(image)
+        Task {
+            let start = ContinuousClock.now
+            let png = await Task.detached {
+                style.styledCapture(source.image, scale: scale, background: background).flatMap { ImageCodec.data(from: $0, scale: scale) }
+            }.value
+            guard let png else {
+                log.error("Could not draw the capture with its style; the plain capture stays copied")
+                return
+            }
+            guard NSPasteboard.general.changeCount == copied else {
+                return
+            }
+            Clipboard.copy(png: png)
+            log.debug("Styled copy took \(ContinuousClock.now - start, privacy: .public)")
+        }
     }
 
     private func endCaptureInterval(_ outcome: StaticString) {

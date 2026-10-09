@@ -101,7 +101,7 @@ Click **Style** in the toolbar to round the corners of your screenshot and give 
 
 A shadow or border on the screenshot grows the canvas just enough to fit it, and removing it shrinks the canvas back. Each click is one undo step, and so is each slider drag.
 
-The style you give an image, a shape or arrow, or text is remembered: the next one you draw or add of that kind starts with it, even in a new editor window, until you pick None. The screenshot always starts plain.
+The style you give an image, a shape or arrow, or text is remembered: the next one you draw or add of that kind starts with it, even in a new editor window, until you pick None. The screenshot starts plain unless you turn on **Use this style for new captures**, at the bottom of Style when nothing is selected. New captures then open in the editor with the screenshot's current style. They're copied with it too: the plain capture is copied straight away, and the styled one replaces it a moment later, unless you've copied something else since. The saved file stays plain, so you can still change the style. Turn the switch off to stop, or style a screenshot differently and turn it on again to save the new style.
 
 To reuse a style, select something and choose **Edit › Copy Style** (⌥⌘C), then select something else and choose **Paste Style** (⌥⌘V); with nothing selected, they copy from and paste on the screenshot. Each thing takes only what it can have: a shape keeps its own corners, and text only takes an outline. **Edit › Apply Style to All Images** pastes it on the screenshot and every image you placed. Pasting is one undo step.
 
