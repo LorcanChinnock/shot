@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 public enum ShotAction: String, CaseIterable, Sendable {
@@ -49,6 +50,35 @@ public enum ShotAction: String, CaseIterable, Sendable {
         default: return defaultCombo
         }
     }
+
+    /// Why `combo` can't be this action's shortcut.
+    public enum Conflict: Equatable, Sendable {
+        /// macOS or every app uses it: quit, close, switch apps, Spotlight, hide or minimise.
+        case reserved
+        /// Another of Shot's actions has it.
+        case taken(by: ShotAction)
+
+        public func message(for combo: KeyCombo) -> String {
+            switch self {
+            case .reserved: "\(combo.displayString) is used by macOS and every app"
+            case let .taken(action): "\(combo.displayString) is already \(action.title)"
+            }
+        }
+    }
+
+    /// Shortcuts Shot never takes, since a global one would steal them from every app.
+    /// ⌘Q, ⌘W, ⌘Tab, ⌘Space, ⌘H and ⌘M.
+    public static let reservedCombos = Set([12, 13, 48, 49, 4, 46].map { KeyCombo(keyCode: $0, modifiers: KeyCombo.command) })
+
+    /// Why `combo` can't be this action's shortcut given Shot's `bindings`, or `nil` when it can. Only Shot's own
+    /// shortcuts and the reserved ones are checked; other apps' aren't known.
+    public func conflict(for combo: KeyCombo, bindings: [ShotAction: KeyCombo]) -> Conflict? {
+        if Self.reservedCombos.contains(combo) {
+            return .reserved
+        }
+        // In `allCases` order, so the answer doesn't depend on the dictionary's.
+        return Self.allCases.first { $0 != self && bindings[$0] == combo }.map { .taken(by: $0) }
+    }
 }
 
 /// A key code plus Carbon modifier mask, as used by `RegisterEventHotKey`.
@@ -78,6 +108,26 @@ public struct KeyCombo: Equatable, Hashable, Sendable {
 
     public var keyLabel: String { Self.keyLabels[keyCode] ?? "#\(keyCode)" }
 
+    /// The combo of `keyCode` with the modifiers among `flags`, which `NSEvent.ModifierFlags` shares the bits of.
+    public init(keyCode: UInt32, eventFlags flags: CGEventFlags) {
+        var modifiers: UInt32 = 0
+        if flags.contains(.maskCommand) { modifiers |= Self.command }
+        if flags.contains(.maskShift) { modifiers |= Self.shift }
+        if flags.contains(.maskAlternate) { modifiers |= Self.option }
+        if flags.contains(.maskControl) { modifiers |= Self.control }
+        self.init(keyCode: keyCode, modifiers: modifiers)
+    }
+
+    /// The modifiers as event flags, which `NSEvent.ModifierFlags` shares the bits of.
+    public var eventFlags: CGEventFlags {
+        var flags: CGEventFlags = []
+        if modifiers & Self.command != 0 { flags.insert(.maskCommand) }
+        if modifiers & Self.shift != 0 { flags.insert(.maskShift) }
+        if modifiers & Self.option != 0 { flags.insert(.maskAlternate) }
+        if modifiers & Self.control != 0 { flags.insert(.maskControl) }
+        return flags
+    }
+
     public var displayString: String {
         var result = ""
         if modifiers & Self.control != 0 { result += "⌃" }
@@ -96,5 +146,9 @@ public struct KeyCombo: Equatable, Hashable, Sendable {
         39: "'", 40: "K", 41: ";", 42: "\\", 43: ",", 44: "/", 45: "N", 46: "M", 47: ".",
         49: "Space", 50: "`", 122: "F1", 120: "F2", 99: "F3", 118: "F4", 96: "F5", 97: "F6",
         98: "F7", 100: "F8", 101: "F9", 109: "F10", 103: "F11", 111: "F12",
+        36: "↩", 48: "⇥", 53: "⎋", 51: "⌫", 117: "⌦", 123: "←", 124: "→", 125: "↓", 126: "↑",
+        115: "↖", 119: "↘", 116: "⇞", 121: "⇟",
+        82: "Keypad 0", 83: "Keypad 1", 84: "Keypad 2", 85: "Keypad 3", 86: "Keypad 4", 87: "Keypad 5",
+        88: "Keypad 6", 89: "Keypad 7", 91: "Keypad 8", 92: "Keypad 9",
     ]
 }
