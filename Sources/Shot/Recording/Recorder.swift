@@ -64,6 +64,8 @@ final class Recorder: NSObject {
     }
 
     private struct Session {
+        /// Tells a segment start that finished after its session ended apart from one that belongs to the current session.
+        let id = UUID()
         let screen: NSScreen
         let region: CGRect
         let windowID: CGWindowID?
@@ -71,6 +73,9 @@ final class Recorder: NSObject {
         let showsCursor: Bool
         /// `nil` means the system default.
         let microphoneID: String?
+        /// Read once at start, so every segment of one recording has the same frame rate and audio tracks.
+        let fps: Int
+        let systemAudio: Bool
         let finalURL: URL
     }
 
@@ -82,6 +87,8 @@ final class Recorder: NSObject {
     private var segmentFinished: CheckedContinuation<Void, Never>?
     private var segmentTimeout: Task<Void, Never>?
     private var finishing: Task<Void, Never>?
+    /// A resume's segment start; a stop waits for it so the new stream is stopped and kept rather than left running.
+    private var starting: Task<Void, Error>?
     private var border: RecordingBorderPanel?
     private var controls: NSPanel?
     private var sampleSink = SampleSink(meter: AudioMeter())
@@ -111,7 +118,7 @@ final class Recorder: NSObject {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let finalURL = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "mp4", prefix: prefs.filePrefix)
         let microphoneID = prefs.microphoneDeviceID.isEmpty ? nil : AVCaptureDevice(uniqueID: prefs.microphoneDeviceID)?.uniqueID
-        session = Session(screen: screen, region: region, windowID: options.windowID, microphone: microphone, showsCursor: options.showsCursor, microphoneID: microphoneID, finalURL: finalURL)
+        session = Session(screen: screen, region: region, windowID: options.windowID, microphone: microphone, showsCursor: options.showsCursor, microphoneID: microphoneID, fps: prefs.recordingFPS, systemAudio: prefs.recordSystemAudio, finalURL: finalURL)
         segments = []
         segmentAudio = []
         mutes = CutList()
@@ -148,16 +155,34 @@ final class Recorder: NSObject {
     }
 
     func resume() async {
-        guard phase == .paused else {
+        guard phase == .paused, starting == nil else {
             return
         }
+        // A quick pause then resume would otherwise start a segment while the last one is still being written.
+        await finishing?.value
+        guard phase == .paused, starting == nil else {
+            return
+        }
+        let task = Task { try await self.startSegment() }
+        starting = task
+        defer {
+            if starting == task {
+                starting = nil
+            }
+        }
         do {
-            try await startSegment()
+            try await task.value
+            // A stop while the segment started has already ended the recording.
+            guard phase == .paused else {
+                return
+            }
             phase = .recording
             model.isPaused = false
             model.run()
             border?.setStyle(.recording)
             log.notice("Recording resumed")
+        } catch is CancellationError {
+            log.notice("Resume abandoned; the recording ended while its segment started")
         } catch {
             failed(error)
         }
@@ -178,6 +203,8 @@ final class Recorder: NSObject {
         phase = .finishing
         endMute()
         hidePanels()
+        // A resume still starting its segment would otherwise leave a live stream after the session ends.
+        _ = try? await starting?.value
         // Also waits for a segment that a pause is still finishing.
         await finishSegment()
         CameraBubble.shared.hide()
@@ -314,8 +341,10 @@ final class Recorder: NSObject {
         guard let session else {
             return
         }
-        let prefs = Preferences()
         let filter = try await makeFilter(session)
+        guard self.session?.id == session.id else {
+            throw CancellationError()
+        }
         let config = SCStreamConfiguration()
         if session.windowID != nil {
             let scale = CGFloat(filter.pointPixelScale)
@@ -328,11 +357,11 @@ final class Recorder: NSObject {
             config.width = Geometry.evenFloor(local.width * scale)
             config.height = Geometry.evenFloor(local.height * scale)
         }
-        config.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(prefs.recordingFPS))
+        config.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(session.fps))
         config.showsCursor = session.showsCursor
         config.captureMicrophone = session.microphone
         config.microphoneCaptureDeviceID = session.microphoneID
-        config.capturesAudio = prefs.recordSystemAudio
+        config.capturesAudio = session.systemAudio
         config.excludesCurrentProcessAudio = true
 
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("Shot/segments")
@@ -340,10 +369,10 @@ final class Recorder: NSObject {
         let id = UUID().uuidString
         let url = folder.appendingPathComponent("\(id).mp4")
         // SCK mixes the microphone into system audio's track, so with both on each is also written apart, to mute only the microphone.
-        let audio = session.microphone && prefs.recordSystemAudio
+        let audio = session.microphone && session.systemAudio
             ? VideoConcatenator.SegmentAudio(system: folder.appendingPathComponent("\(id)-system.mov"), microphone: folder.appendingPathComponent("\(id)-microphone.mov"))
             : nil
-        sampleSink = SampleSink(meter: model.meter, audio: audio)
+        let sink = SampleSink(meter: model.meter, audio: audio)
         let outputConfig = SCRecordingOutputConfiguration()
         outputConfig.outputURL = url
         outputConfig.outputFileType = .mp4
@@ -351,23 +380,33 @@ final class Recorder: NSObject {
 
         let stream = SCStream(filter: filter, configuration: config, delegate: self)
         // Without a screen output SCK logs a dropped-frame error for every frame.
-        try stream.addStreamOutput(sampleSink, type: .screen, sampleHandlerQueue: sampleSink.queue)
+        try stream.addStreamOutput(sink, type: .screen, sampleHandlerQueue: sink.queue)
         if session.microphone {
-            try stream.addStreamOutput(sampleSink, type: .microphone, sampleHandlerQueue: sampleSink.queue)
+            try stream.addStreamOutput(sink, type: .microphone, sampleHandlerQueue: sink.queue)
         }
         if audio != nil {
-            try stream.addStreamOutput(sampleSink, type: .audio, sampleHandlerQueue: sampleSink.queue)
+            try stream.addStreamOutput(sink, type: .audio, sampleHandlerQueue: sink.queue)
         }
         let output = SCRecordingOutput(configuration: outputConfig, delegate: self)
         try stream.addRecordingOutput(output)
         try await stream.startCapture()
+        guard self.session?.id == session.id else {
+            // The recording ended while this segment started, so nothing would ever stop or join it.
+            try? await stream.stopCapture()
+            await sink.finish()
+            for file in [url] + (audio?.files ?? []) {
+                try? FileManager.default.removeItem(at: file)
+            }
+            throw CancellationError()
+        }
+        sampleSink = sink
         self.stream = stream
         recordingOutput = output
         segments.append(url)
         if let audio {
             segmentAudio.append(audio)
         }
-        log.notice("Segment \(self.segments.count) started: \(config.width)x\(config.height) at \(prefs.recordingFPS) fps, mic \(session.microphone), system audio \(prefs.recordSystemAudio), camera \(CameraBubble.shared.isVisible)")
+        log.notice("Segment \(self.segments.count) started: \(config.width)x\(config.height) at \(session.fps) fps, mic \(session.microphone), system audio \(session.systemAudio), camera \(CameraBubble.shared.isVisible)")
     }
 
     /// Stops the current stream and waits until SCK has finished writing its file.
