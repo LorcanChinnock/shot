@@ -91,8 +91,8 @@ final class VideoEditorModel {
     /// dragged) amends that step instead of adding one each; see `replaceProject`.
     @ObservationIgnored private var coalescingKey: String?
 
-    private static let showsTracksKey = "videoEditorShowsTracks"
-    private static let showsInspectorKey = "videoEditorShowsInspector"
+    private static let showsTracksKey = PreferenceKey.videoEditorShowsTracks
+    private static let showsInspectorKey = PreferenceKey.videoEditorShowsInspector
 
     @ObservationIgnored private var dragOrigin: Project?
     /// Where the annotation clip being dragged to another lane will land.
