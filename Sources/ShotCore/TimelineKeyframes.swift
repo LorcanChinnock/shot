@@ -184,6 +184,19 @@ extension Project {
         return replacing(animation: animation.applying(preset, length: length, base: base, canvas: canvasSize), ofClip: id)
     }
 
+    /// What the clip can key, which K keys at once and the Inspector shows: the volume of a sound clip; the position,
+    /// scale, rotation and opacity of anything else; and how much is drawn of an arrow, line or pen stroke. Empty for no clip.
+    public func keyableProperties(ofClip id: UUID) -> [AnimatedProperty] {
+        if let clip = clip(id) {
+            let isSound = tracks.contains { $0.kind == .audio && $0.clips.contains { $0.id == clip.id } }
+            return isSound ? [.volume] : [.position, .scale, .rotation, .opacity]
+        }
+        guard let note = annotationClip(id) else {
+            return []
+        }
+        return [.position, .scale, .rotation, .opacity] + (note.annotation.canReveal ? [.reveal] : [])
+    }
+
     /// Whether `preset` makes sense for the clip: draw-on needs an arrow, line or pen stroke.
     public func supports(_ preset: AnimationPreset, forClip id: UUID) -> Bool {
         if clip(id) != nil {
@@ -198,14 +211,7 @@ extension Project {
     // MARK: Private
 
     private static func differs(_ property: AnimatedProperty, _ a: PropertyValues, _ b: PropertyValues) -> Bool {
-        switch property {
-        case .position: abs(a.position.width - b.position.width) > 1e-9 || abs(a.position.height - b.position.height) > 1e-9
-        case .scale: abs(a.scale - b.scale) > 1e-9
-        case .rotation: abs(a.rotation - b.rotation) > 1e-9
-        case .opacity: abs(a.opacity - b.opacity) > 1e-9
-        case .volume: abs(a.volume - b.volume) > 1e-9
-        case .reveal: abs(a.reveal - b.reveal) > 1e-9
-        }
+        a[property].differs(from: b[property])
     }
 
     private func replacing(clip changed: Clip) -> Project {
