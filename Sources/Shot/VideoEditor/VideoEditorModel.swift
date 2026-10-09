@@ -946,6 +946,14 @@ extension VideoEditorModel {
     var lineWidth: CGFloat { EditorStyle.widths[annotationStyle.widthIndex] * styleScale }
     var fontSize: CGFloat { lineWidth * 6 }
     var cornerRadius: CGFloat { Annotation.defaultCornerRadius * styleScale }
+    /// What the palette gives the annotation the canvas draws next.
+    var draftStyle: AnnotationDraft.Style {
+        let style = annotationStyle
+        return AnnotationDraft.Style(
+            color: nextColor, fill: style.fill, noteColor: style.noteColor, lineWidth: lineWidth, cornerRadius: cornerRadius, shape: style.shape,
+            redaction: style.redaction, redactionAmount: style.redactionAmount, spotlight: nextSpotlightStyle, alignment: style.alignment
+        )
+    }
 
     /// Picks the tool that draws over the video, or nil to stop; the preview plays the composite while one is picked.
     func setAnnotationTool(_ tool: EditorTool?) {

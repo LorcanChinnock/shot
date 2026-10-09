@@ -313,84 +313,31 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard let start = dragStart, let last = lastPoint else {
             return
         }
-        var point = imagePoint(event)
+        let point = imagePoint(event)
         defer { lastPoint = point }
-        // Shift keeps shapes square and lines and highlights at 45° steps; Option draws a shape out from where it started.
-        let constrain = event.modifierFlags.contains(.shift)
-        let fromCenter = event.modifierFlags.contains(.option)
         if resizeHandle != nil {
             dragSelection(to: point, from: last)
             return
         }
-        var rect = Geometry.normalized(from: start, to: point)
-        switch model.tool {
-        case .shape, .redact, .spotlight:
-            if constrain {
-                rect = Geometry.square(from: start, to: point)
-            }
-            if fromCenter {
-                let corner = constrain ? CGPoint(x: rect.minX == start.x ? rect.maxX : rect.minX, y: rect.minY == start.y ? rect.maxY : rect.minY) : point
-                rect = Geometry.normalized(from: CGPoint(x: 2 * start.x - corner.x, y: 2 * start.y - corner.y), to: corner)
-            }
-        case .arrow, .line:
-            if constrain {
-                point = Geometry.snapped(from: start, to: point)
-            }
-        default:
-            break
-        }
-        let kind: Annotation.Kind
         switch model.tool {
         case .select:
             dragSelection(to: point, from: last)
-            return
         case .crop:
             cropDraft = Geometry.normalized(from: clampedToCanvas(start), to: clampedToCanvas(point))
             needsDisplay = true
-            return
-        case .counter, .text, .hand:
-            return
-        case .arrow:
-            kind = .arrow(from: start, to: point)
-        case .line:
-            kind = .line(from: start, to: point)
-        case .shape:
-            kind = .shape(model.shape, rect: rect)
-        case .highlight:
-            if constrain {
-                kind = .marker([start, Geometry.snapped(from: start, to: point)])
-            } else if let draft, case let .marker(drawn) = draft.kind {
-                kind = .marker(Freehand.adding(point, to: drawn, minDistance: 1 / viewScale))
-            } else {
-                kind = .marker([start, point])
+        case .arrow, .line, .shape, .pen, .text, .note, .highlight, .spotlight, .redact, .counter, .hand:
+            // Shift keeps shapes square and lines and highlights at 45° steps; Option draws a shape out from where it started.
+            // Points closer than a view point apart add nothing a stroke's curve can show.
+            guard let drawn = AnnotationDraft.annotation(
+                tool: model.tool, from: start, to: point, previous: draft,
+                constrain: event.modifierFlags.contains(.shift), fromCenter: event.modifierFlags.contains(.option),
+                minDistance: 1 / viewScale, style: model.draftStyle
+            ) else {
+                return
             }
-        case .redact:
-            kind = .redaction(model.redaction, rect: rect, amount: model.redactionAmount)
-        case .spotlight:
-            kind = .spotlight(rect, style: model.nextSpotlightStyle)
-        case .pen:
-            let points: [CGPoint]
-            if let draft, case let .freehand(drawn) = draft.kind {
-                points = drawn
-            } else {
-                points = [start]
-            }
-            // Points closer than a view point apart add nothing the curve can show.
-            kind = .freehand(Freehand.adding(point, to: points, minDistance: 1 / viewScale))
-        case .note:
-            draft = newNote(id: draft?.id ?? UUID(), from: start, to: point)
+            draft = drawn
             viewportDidChange()
-            return
         }
-        var shape = Annotation(id: draft?.id ?? UUID(), kind: kind, color: model.nextColor, lineWidth: model.lineWidth)
-        if shape.supportsFill {
-            shape.fill = model.fill
-        }
-        if shape.canRound {
-            shape.cornerRadius = model.cornerRadius
-        }
-        draft = shape
-        viewportDidChange()
     }
 
     /// Resizes the selection from the handle pressed, else moves it with the pointer.
@@ -738,10 +685,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     // MARK: Notes
 
     private func newNote(id: UUID, from start: CGPoint, to end: CGPoint) -> Annotation {
-        var note = Annotation(id: id, kind: .note("", rect: .zero), color: model.noteColor, lineWidth: model.lineWidth)
-        note.alignment = model.alignment
-        note.kind = .note("", rect: NoteLayout.placementRect(from: start, to: end, fontSize: note.noteFontSize))
-        return note
+        AnnotationDraft.note(id: id, from: start, to: end, style: model.draftStyle)
     }
 
     /// Blank paper the size the note will be, under its text field.
