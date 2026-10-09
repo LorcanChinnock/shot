@@ -90,8 +90,8 @@ final class VideoEditorModel {
     /// The clip whose border colour was picked last, and the project that left, so the picker's run of changes is one step.
     @ObservationIgnored private var pickedBorderColor: (clip: UUID, project: Project)?
 
-    private static let showsTracksKey = "videoEditorShowsTracks"
-    private static let showsInspectorKey = "videoEditorShowsInspector"
+    private static let showsTracksKey = PreferenceKey.videoEditorShowsTracks
+    private static let showsInspectorKey = PreferenceKey.videoEditorShowsInspector
 
     @ObservationIgnored private var dragOrigin: Project?
     /// Where the annotation clip being dragged to another lane will land.

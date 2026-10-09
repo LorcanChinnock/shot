@@ -135,7 +135,7 @@ final class EditorModel {
     var showsImagePicker = false
     /// Whether the Style popover is open.
     var showsStylePopover = false
-    private static let showsLayersKey = "editorShowsLayers"
+    private static let showsLayersKey = PreferenceKey.editorShowsLayers
     /// The text or note whose text field is open, with the colour and size picked for it so far; it may not be in the document yet.
     var editingText: Annotation?
     var isDirty = false

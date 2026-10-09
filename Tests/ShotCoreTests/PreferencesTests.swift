@@ -256,3 +256,45 @@ import Testing
         #expect(ShotAction(rawValue: "capture-text") == nil)
     }
 }
+
+/// `@Setting(key)` with no default of its own takes the one `Preferences` registers, so every key a view declares that way
+/// must have one. Reads the app's sources, since the views can't be built here; a `PreferenceKey` is named as its value.
+@Test func everySettingKeyHasARegisteredDefault() throws {
+    let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    let sources = root.appendingPathComponent("Sources/Shot")
+    let files = (FileManager.default.enumerator(at: sources, includingPropertiesForKeys: nil)?.allObjects ?? [])
+        .compactMap { $0 as? URL }
+        .filter { $0.pathExtension == "swift" }
+    var keys: Set<String> = []
+    for file in files {
+        let text = try String(contentsOf: file, encoding: .utf8)
+        for match in text.matches(of: /@Setting\(PreferenceKey\.(\w+)\)/) {
+            keys.insert(String(match.1))
+        }
+    }
+    #expect(keys.count > 20)
+    let defaults = Preferences.defaults
+    for key in keys.sorted() {
+        #expect(defaults[key] != nil, Comment(rawValue: key))
+    }
+}
+
+@Test func theFilePrefixIsTrimmedDefaultedAndHasNoSlash() {
+    #expect(Preferences.sanitizedPrefix("  Bug report ") == "Bug report")
+    #expect(Preferences.sanitizedPrefix("   ") == Preferences.defaultFilePrefix)
+    #expect(Preferences.sanitizedPrefix("") == Preferences.defaultFilePrefix)
+    #expect(Preferences.sanitizedPrefix("a/b") == "a-b")
+}
+
+@Test func resettingSettingsAlsoResetsTheWindowLayout() throws {
+    let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
+    let store = try #require(UserDefaults(suiteName: suite))
+    defer { store.removePersistentDomain(forName: suite) }
+    for key in [PreferenceKey.editorShowsLayers, PreferenceKey.videoEditorShowsTracks, PreferenceKey.videoEditorShowsInspector] {
+        store.set(true, forKey: key)
+    }
+    Preferences.resetAll(in: store)
+    #expect(store.object(forKey: PreferenceKey.editorShowsLayers) == nil)
+    #expect(store.object(forKey: PreferenceKey.videoEditorShowsTracks) == nil)
+    #expect(store.object(forKey: PreferenceKey.videoEditorShowsInspector) == nil)
+}
