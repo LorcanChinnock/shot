@@ -200,30 +200,8 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         guard let start = dragStart, let last = lastPoint, let tool = model.annotationTool else {
             return
         }
-        var point = canvasPoint(event)
+        let point = canvasPoint(event)
         defer { lastPoint = point }
-        // Shift keeps shapes square and lines and highlights at 45° steps; Option draws a shape out from where it started.
-        let constrain = event.modifierFlags.contains(.shift)
-        let fromCenter = event.modifierFlags.contains(.option)
-        var rect = Geometry.normalized(from: start, to: point)
-        switch tool {
-        case .shape, .redact, .spotlight:
-            if constrain {
-                rect = Geometry.square(from: start, to: point)
-            }
-            if fromCenter {
-                let corner = constrain ? CGPoint(x: rect.minX == start.x ? rect.maxX : rect.minX, y: rect.minY == start.y ? rect.maxY : rect.minY) : point
-                rect = Geometry.normalized(from: CGPoint(x: 2 * start.x - corner.x, y: 2 * start.y - corner.y), to: corner)
-            }
-        case .arrow, .line:
-            if constrain {
-                point = Geometry.snapped(from: start, to: point)
-            }
-        default:
-            break
-        }
-        let style = model.annotationStyle
-        let kind: Annotation.Kind
         switch tool {
         case .select:
             guard let clip = selected else {
@@ -239,47 +217,20 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             editing = changed
             model.previewAnnotation(changed, replacing: clip.id)
             needsDisplay = true
-            return
         case .crop, .hand, .counter, .text:
             return
-        case .arrow: kind = .arrow(from: start, to: point)
-        case .line: kind = .line(from: start, to: point)
-        case .shape: kind = .shape(style.shape, rect: rect)
-        case .highlight:
-            if constrain {
-                kind = .marker([start, Geometry.snapped(from: start, to: point)])
-            } else if let draft, case let .marker(drawn) = draft.kind {
-                kind = .marker(Freehand.adding(point, to: drawn, minDistance: 1 / fit))
-            } else {
-                kind = .marker([start, point])
+        case .arrow, .line, .shape, .highlight, .redact, .spotlight, .pen, .note:
+            // Shift keeps shapes square and lines and highlights at 45° steps; Option draws a shape out from where it started.
+            guard let drawn = AnnotationDraft.annotation(
+                tool: tool, from: start, to: point, previous: draft,
+                constrain: event.modifierFlags.contains(.shift), fromCenter: event.modifierFlags.contains(.option),
+                minDistance: 1 / fit, style: model.draftStyle
+            ) else {
+                return
             }
-        case .redact: kind = .redaction(style.redaction, rect: rect, amount: style.redactionAmount)
-        case .spotlight: kind = .spotlight(rect, style: model.nextSpotlightStyle)
-        case .pen:
-            let points: [CGPoint]
-            if let draft, case let .freehand(drawn) = draft.kind {
-                points = drawn
-            } else {
-                points = [start]
-            }
-            kind = .freehand(Freehand.adding(point, to: points, minDistance: 1 / fit))
-        case .note:
-            var note = Annotation(id: draft?.id ?? UUID(), kind: .note("", rect: .zero), color: style.noteColor, lineWidth: model.lineWidth)
-            note.alignment = style.alignment
-            note.kind = .note("", rect: NoteLayout.placementRect(from: start, to: point, fontSize: note.noteFontSize))
-            draft = note
-            model.previewAnnotation(note)
-            return
+            draft = drawn
+            model.previewAnnotation(drawn)
         }
-        var shape = Annotation(id: draft?.id ?? UUID(), kind: kind, color: model.nextColor, lineWidth: model.lineWidth)
-        if shape.supportsFill {
-            shape.fill = style.fill
-        }
-        if shape.canRound {
-            shape.cornerRadius = model.cornerRadius
-        }
-        draft = shape
-        model.previewAnnotation(shape)
     }
 
     override func mouseUp(with event: NSEvent) {

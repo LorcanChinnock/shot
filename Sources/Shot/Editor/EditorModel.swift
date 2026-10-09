@@ -733,6 +733,13 @@ final class EditorModel {
     var lineWidth: CGFloat { Self.baseWidths[widthIndex] * scale }
     var fontSize: CGFloat { lineWidth * 6 }
     var cornerRadius: CGFloat { Annotation.defaultCornerRadius * scale }
+    /// What the toolbar gives the annotation the canvas draws next.
+    var draftStyle: AnnotationDraft.Style {
+        AnnotationDraft.Style(
+            color: nextColor, fill: fill, noteColor: noteColor, lineWidth: lineWidth, cornerRadius: cornerRadius, shape: shape,
+            redaction: redaction, redactionAmount: redactionAmount, spotlight: nextSpotlightStyle, alignment: alignment
+        )
+    }
     /// Space kept between an annotation and a canvas edge that grew to hold it.
     var canvasMargin: CGFloat { 16 * scale }
     /// How far down and right a paste or duplicate lands from the original.
