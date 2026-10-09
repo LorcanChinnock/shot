@@ -419,7 +419,7 @@ struct TracksView: View {
         .foregroundStyle(Brutal.ink)
         .padding(.horizontal, 6)
         .frame(width: width, height: height, alignment: .leading)
-        .background(Color(red: color.r, green: color.g, blue: color.b).opacity(0.55))
+        .background(color.swiftUIColor.opacity(0.55))
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 4, style: .circular))
         .inkBorder(RoundedRectangle(cornerRadius: 4, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.ink)

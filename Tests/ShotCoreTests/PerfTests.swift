@@ -4,15 +4,11 @@ import Foundation
 import Testing
 @testable import ShotCore
 
-extension Tag {
-    @Tag static var perf: Self
-}
-
 /// Times the pure paths that have budgets in `docs/performance.md`. `make test` skips this suite and `make perf` runs it alone,
 /// one test at a time, so other tests don't skew the timings. Budgets are 2× the baseline measured on the CI runner, the
 /// slowest machine that runs them, which leaves room for noise but still fails on a regression that does the work again
 /// on every call.
-@Suite(.serialized, .tags(.perf)) struct PerfTests {
+@Suite(.serialized) struct PerfTests {
     @Test func flatteningAndEncodingA5KCaptureStaysInBudget() throws {
         let doc = EditorDocument(base: try gradient(width: 5120, height: 2880), annotations: twentyAnnotations(in: CGSize(width: 5120, height: 2880), special: true))
         let time = try median {
