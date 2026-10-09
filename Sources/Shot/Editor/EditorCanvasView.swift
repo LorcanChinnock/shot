@@ -399,17 +399,20 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             return
         }
         if !movedSinceMouseDown {
-            model.recordUndo()
+            model.beginGesture()
             movedSinceMouseDown = true
         }
+        let margin = model.canvasMargin
         if let resizeHandle, var resized = resizeStart {
             resized.resize(resizeHandle, to: point, tolerance: handleTolerance)
-            model.document.annotations[index] = resized
+            model.apply { doc in
+                doc.annotations[index] = resized
+                doc.grow(toFit: resized, margin: margin)
+                doc.shrinkPadding(margin: margin)
+            }
         } else {
-            model.document.annotations[index].offset(by: CGVector(dx: point.x - last.x, dy: point.y - last.y))
+            model.apply { $0.move(id, by: CGVector(dx: point.x - last.x, dy: point.y - last.y), margin: margin) }
         }
-        model.document.grow(toFit: model.document.annotations[index], margin: model.canvasMargin)
-        model.document.shrinkPadding(margin: model.canvasMargin)
     }
 
     override func mouseUp(with event: NSEvent) {
@@ -430,8 +433,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             return
         }
         if let cropDraft, cropDraft.width >= 4, cropDraft.height >= 4 {
-            model.recordUndo()
-            model.document.crop(to: cropDraft)
+            model.crop(to: cropDraft)
         }
         // A spotlight with no area would light nothing, so it isn't added.
         if let draft, case .spotlight = draft.kind, draft.bounds.isEmpty {
@@ -440,10 +442,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         if let draft, draft.bounds.width + draft.bounds.height >= 4 {
             model.add(draft)
         }
-        // The move or resize recorded its undo step when it began, so growing joins that step.
-        if movedSinceMouseDown, let id = model.selectedID, let moved = model.document.annotations.first(where: { $0.id == id }) {
-            model.document.grow(toFit: moved, margin: model.canvasMargin)
-            model.document.shrinkPadding(margin: model.canvasMargin)
+        // Each step of the move or resize already grew the canvas to fit, so ending it only records it.
+        if movedSinceMouseDown {
+            model.endGesture()
         }
     }
 

@@ -67,7 +67,7 @@ final class EditorModel {
 
     let fileURL: URL
     let scale: CGFloat
-    var document: EditorDocument
+    private(set) var document: EditorDocument
     // The tool, colours and width are remembered for the next editor window as they change.
     // They're not part of the document, so changing them is never an undo step.
     var tool: EditorTool {
@@ -148,12 +148,11 @@ final class EditorModel {
     /// Zoom is view state, not part of the document, so it isn't undoable.
     var zoom: CGFloat = 1
     private(set) var undoStack = UndoStack<EditorSnapshot>()
-    /// The annotation the arrow keys last moved, while that move is still the latest undo step,
-    /// so holding an arrow key down undoes as one step.
-    private var nudgedID: UUID?
-    /// Which property a custom colour pick or a style slider last changed, while that is still the latest undo step,
-    /// so dragging through the colour panel or along a slider undoes as one step.
+    /// Which property a custom colour pick, a style slider or an arrow key last changed, while that is still the latest
+    /// undo step, so dragging through the colour panel or along a slider, or holding an arrow key down, undoes as one step.
     private var pickedKey: String?
+    /// The document as the canvas gesture in progress, a move or resize, began; the gesture undoes as one step when it ends.
+    private var gestureStart: EditorSnapshot?
     private var isDraggingStyle = false
 
     /// `newCaptureStyle` is put on the screenshot as where the document starts, so it's no unsaved change. `windowShadow`
@@ -260,9 +259,10 @@ final class EditorModel {
         guard !copies.isEmpty else {
             return
         }
-        recordUndo()
         tool = .select
-        selectedIDs = Set(copies.map { document.paste($0, step: pasteStep, margin: canvasMargin) })
+        var pasted: [UUID] = []
+        edit { doc in pasted = copies.map { doc.paste($0, step: pasteStep, margin: canvasMargin) } }
+        selectedIDs = Set(pasted)
     }
 
     func deleteLayers(_ ids: Set<UUID>) {
@@ -739,16 +739,40 @@ final class EditorModel {
     var pasteStep: CGFloat { 10 * scale }
     var isJPEG: Bool { ImageFormat(fileExtension: fileURL.pathExtension) == .jpeg }
 
-    /// Call before every change so it can be undone.
-    func recordUndo() {
-        undoStack.record(document.snapshot)
-        nudgedID = nil
-        pickedKey = nil
-        isDirty = true
+    /// Call as a move or resize on the canvas starts. Its changes, made with `apply`, undo as one step once it ends.
+    func beginGesture() {
+        endGesture()
+        gestureStart = document.snapshot
+    }
+
+    /// Makes one change of the gesture in progress; outside a gesture it's an undo step of its own.
+    func apply(_ change: (inout EditorDocument) -> Void) {
+        guard gestureStart != nil else {
+            edit(change)
+            return
+        }
+        change(&document)
+    }
+
+    /// Records the gesture in progress as one undo step, or none if it left the document as it was.
+    func endGesture() {
+        guard let gestureStart else {
+            return
+        }
+        self.gestureStart = nil
+        if undoStack.record(gestureStart, endingAt: document.snapshot) {
+            pickedKey = nil
+            isDirty = true
+        }
+    }
+
+    /// Crops the canvas to `rect` as one undoable step.
+    func crop(to rect: CGRect) {
+        edit { $0.crop(to: rect) }
     }
 
     func undo() {
-        nudgedID = nil
+        endGesture()
         pickedKey = nil
         if let previous = undoStack.undo(from: document.snapshot) {
             document.restore(previous)
@@ -758,7 +782,7 @@ final class EditorModel {
     }
 
     func redo() {
-        nudgedID = nil
+        endGesture()
         pickedKey = nil
         if let next = undoStack.redo(from: document.snapshot) {
             document.restore(next)
@@ -770,13 +794,14 @@ final class EditorModel {
     /// Adds `annotation` as one undoable step, growing the canvas if it reaches past the edge, and selects it
     /// so the toolbar can fix its style until the next one is drawn. A mark or text starts with the last style given to its kind.
     func add(_ annotation: Annotation) {
-        recordUndo()
         var annotation = annotation
         if let kind = annotation.styleKind, annotation.style.isEmpty {
             annotation.style = startingStyle(for: kind)
         }
-        document.annotations.append(annotation)
-        document.grow(toFit: annotation, margin: canvasMargin)
+        edit { doc in
+            doc.annotations.append(annotation)
+            doc.grow(toFit: annotation, margin: canvasMargin)
+        }
         selectedID = annotation.id
     }
 
@@ -849,7 +874,6 @@ final class EditorModel {
             return
         }
         undoStack.record(before)
-        nudgedID = nil
         pickedKey = key
         isDirty = true
     }
@@ -860,17 +884,16 @@ final class EditorModel {
         guard let selectedID = selection?.id, selection?.isLocked != true else {
             return
         }
-        if !repeated || nudgedID != selectedID {
-            recordUndo()
+        if !repeated {
+            pickedKey = nil
         }
-        nudgedID = selectedID
-        document.move(selectedID, by: direction.offset(large: large), margin: canvasMargin)
+        edit(coalescing: "\(selectedID)-nudge") { $0.move(selectedID, by: direction.offset(large: large), margin: canvasMargin) }
     }
 
     /// Adds an offset copy of `annotation` as one undoable step and selects it.
     private func insertCopy(of annotation: Annotation) {
-        recordUndo()
-        let id = document.paste(annotation, step: pasteStep, margin: canvasMargin)
+        var id: UUID?
+        edit { id = $0.paste(annotation, step: pasteStep, margin: canvasMargin) }
         tool = .select
         selectedID = id
     }
@@ -914,18 +937,21 @@ final class EditorModel {
             Toast.error("Could not read the image")
             return
         }
-        recordUndo()
         tool = .select
         let style = startingStyle(for: .image)
-        for (index, (image, imageScale)) in decoded.enumerated() {
-            let center = point.map { CGPoint(x: $0.x + pasteStep * CGFloat(index), y: $0.y + pasteStep * CGFloat(index)) }
-            let id = document.addImage(image, scale: imageScale, documentScale: scale, centeredAt: center, margin: canvasMargin)
-            // It starts with the last style given to an image, but for an outline it has no see-through pixels for.
-            if !style.isEmpty {
-                document.setStyle(style, of: .annotation(id), margin: canvasMargin)
+        var added: UUID?
+        edit { doc in
+            for (index, (image, imageScale)) in decoded.enumerated() {
+                let center = point.map { CGPoint(x: $0.x + pasteStep * CGFloat(index), y: $0.y + pasteStep * CGFloat(index)) }
+                let id = doc.addImage(image, scale: imageScale, documentScale: scale, centeredAt: center, margin: canvasMargin)
+                // It starts with the last style given to an image, but for an outline it has no see-through pixels for.
+                if !style.isEmpty {
+                    doc.setStyle(style, of: .annotation(id), margin: canvasMargin)
+                }
+                added = id
             }
-            selectedID = id
         }
+        selectedID = added
     }
 
     /// Places the images in the files at `urls` beside the canvas, as pasting them does.
