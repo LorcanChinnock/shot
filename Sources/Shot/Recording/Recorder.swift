@@ -285,28 +285,42 @@ final class Recorder: NSObject {
         guard let session, session.windowID == nil else {
             return
         }
-        if CameraBubble.shared.isVisible {
+        let wasVisible = CameraBubble.shared.isVisible
+        if wasVisible {
             CameraBubble.shared.hide()
         } else {
             await CameraBubble.shared.showFromPreferences(in: session.region)
         }
         model.cameraOn = CameraBubble.shared.isVisible
-        await refreshFilter()
+        guard await refreshFilter() else {
+            // The video didn't follow, so the bubble goes back to how the recording has it.
+            if wasVisible {
+                await CameraBubble.shared.showFromPreferences(in: session.region)
+            } else {
+                CameraBubble.shared.hide()
+            }
+            model.cameraOn = CameraBubble.shared.isVisible
+            Toast.error("Could not \(wasVisible ? "hide" : "show") the camera in the recording")
+            return
+        }
     }
 
     func cycleCameraSize() {
         CameraBubble.shared.cycleSize()
     }
 
-    /// Re-applies the filter so a bubble shown or hidden mid-recording is included or dropped.
-    private func refreshFilter() async {
+    /// Re-applies the filter so a bubble shown or hidden mid-recording is included or dropped. False when that failed;
+    /// while paused there's no stream, and the next segment picks the bubble up.
+    private func refreshFilter() async -> Bool {
         guard phase == .recording, let stream, let session else {
-            return
+            return true
         }
         do {
             try await stream.updateContentFilter(try await makeFilter(session))
+            return true
         } catch {
             log.error("updateContentFilter failed: \(error.localizedDescription, privacy: .public)")
+            return false
         }
     }
 
@@ -485,7 +499,9 @@ final class Recorder: NSObject {
         controls = nil
     }
 
-    private func failed(_ error: Error) {
+    /// Ends the recording after `error`, keeping what was recorded before it. `output` is the recording output that
+    /// failed, if one did: its segment's file can't be trusted, so it's left out.
+    private func failed(_ error: Error, output: ObjectIdentifier? = nil) {
         guard isRecording else {
             return
         }
@@ -493,6 +509,19 @@ final class Recorder: NSObject {
         phase = .finishing
         endMute()
         hidePanels()
+        // A recording output can fail, a full disk say, while its stream goes on capturing the display and microphone.
+        if let stream {
+            Task {
+                try? await stream.stopCapture()
+            }
+        }
+        if let output, output == recordingOutput.map(ObjectIdentifier.init), let failed = segments.popLast() {
+            let audio = segmentAudio.count > segments.count ? segmentAudio.popLast() : nil
+            for url in [failed] + (audio?.files ?? []) {
+                try? FileManager.default.removeItem(at: url)
+            }
+            log.notice("Left out the segment whose recording failed")
+        }
         stream = nil
         recordingOutput = nil
         resolveSegment()
@@ -513,7 +542,8 @@ extension Recorder: SCStreamDelegate, SCRecordingOutputDelegate {
     }
 
     nonisolated func recordingOutput(_ recordingOutput: SCRecordingOutput, didFailWithError error: Error) {
-        Task { @MainActor in self.failed(error) }
+        let output = ObjectIdentifier(recordingOutput)
+        Task { @MainActor in self.failed(error, output: output) }
     }
 
     nonisolated func recordingOutputDidFinishRecording(_ recordingOutput: SCRecordingOutput) {
