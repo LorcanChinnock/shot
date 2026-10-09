@@ -65,7 +65,7 @@ private struct CanvasHost: NSViewRepresentable {
 
 struct EditorToolbar: View {
     /// Matches `RGBA.presets`.
-    static let colorNames = ["Red", "Orange", "Yellow", "Green", "Blue", "Black"]
+    static let colorNames = ["Red", "Orange", "Yellow", "Green", "Blue", "Black", "White"]
 
     @Bindable var model: EditorModel
 
@@ -675,7 +675,7 @@ private struct CanvasMenu: View {
     private var backgrounds: [(name: String, color: RGBA?)] {
         // JPEG has no alpha, so it can't keep transparent padding.
         (model.isJPEG ? [] : [("Transparent", nil)]) + [("White", Self.white)]
-            + RGBA.presets.indices.map { (EditorToolbar.colorNames[$0], RGBA.presets[$0]) }
+            + RGBA.presets.indices.filter { RGBA.presets[$0] != Self.white }.map { (EditorToolbar.colorNames[$0], RGBA.presets[$0]) }
     }
 }
 
