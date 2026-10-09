@@ -43,6 +43,8 @@ final class VideoEditorModel {
     private var exportTask: Task<Bool, Never>?
     private(set) var thumbnailSets: [URL: [CGImage?]] = [:]
     @ObservationIgnored private var thumbnailSources: [URL: ThumbnailSource] = [:]
+    /// Sources whose waveform failed to load, so the failure is logged once however often the lane asks again.
+    @ObservationIgnored private var failedWaveforms: Set<URL> = []
     /// Applies to Export only; Copy and Save keep the original format, speed and sound.
     private(set) var options = Preferences().videoExportOptions
     /// Bytes Export would write, or nil until it's worked out.
@@ -434,10 +436,16 @@ final class VideoEditorModel {
     // MARK: Waveforms
 
     func loadWaveform(for source: URL) async {
-        guard waveforms[source] == nil, let waveform = try? await Waveform.load(source) else {
+        guard waveforms[source] == nil else {
             return
         }
-        waveforms[source] = waveform
+        do {
+            waveforms[source] = try await Waveform.load(source)
+        } catch {
+            if failedWaveforms.insert(source).inserted {
+                log.error("Waveform of \(source.lastPathComponent, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
     }
 
     // MARK: Cutting
@@ -764,7 +772,12 @@ final class VideoEditorModel {
         log.notice("Saved edited video: \(self.fileURL.path)")
         Clipboard.copy(fileURL: fileURL)
         Toast.show("Saved and copied")
-        try? await load()
+        do {
+            try await load()
+        } catch {
+            log.error("Reloading the saved video failed: \(error.localizedDescription, privacy: .public)")
+            Toast.error("Saved, but could not reload it: \(error.localizedDescription)")
+        }
         return true
     }
 

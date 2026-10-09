@@ -1,5 +1,8 @@
 import AppKit
+import os
 import ShotCore
+
+private let log = Logger.shot("overlay")
 
 struct OverlayDisplay {
     /// AppKit global frame in points.
@@ -118,7 +121,13 @@ final class SelectionOverlayController {
     /// A live overlay has nothing frozen to magnify, so the loupe reads from stills taken while it is open.
     private func loadMagnifierImages() {
         magnifierTask = Task {
-            guard let frozen = try? await DisplayCapturer.captureForMagnifier() else {
+            let frozen: [FrozenDisplay]
+            do {
+                frozen = try await DisplayCapturer.captureForMagnifier()
+            } catch is CancellationError {
+                return
+            } catch {
+                log.error("Magnifier capture failed: \(error.localizedDescription, privacy: .public)")
                 return
             }
             for view in views {
