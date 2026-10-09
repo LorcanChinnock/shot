@@ -71,7 +71,7 @@ struct StylePopover<Model: StyleEditing>: View {
                 }
                 if kind.takesCorners {
                     row("CORNERS") {
-                        slider(value: model.targetCornerRadius, range: 0...48, name: "Corner radius", set: model.setTargetCornerRadius)
+                        slider(value: model.targetCornerRadius, range: 0...48, name: "Corner radius", set: { model.setTargetCornerRadius($0) })
                     }
                 }
             } else {
@@ -120,14 +120,14 @@ struct StylePopover<Model: StyleEditing>: View {
         VStack(alignment: .leading, spacing: 4) {
             row("") {
                 label("Elevation")
-                slider(value: shadow.elevation / model.scale, range: Shadow.elevations, name: "Elevation", set: model.setShadowElevation)
+                slider(value: shadow.elevation / model.scale, range: Shadow.elevations, name: "Elevation", set: { model.setShadowElevation($0) })
                 if ShadowPreset.matching(shadow, scale: model.scale) == nil {
                     BrutalChip(text: "CUSTOM", color: Brutal.sky)
                 }
             }
             row("") {
                 label("Opacity")
-                slider(value: shadow.opacity, range: Shadow.opacities, name: "Opacity", set: model.setShadowOpacity)
+                slider(value: shadow.opacity, range: Shadow.opacities, name: "Opacity", set: { model.setShadowOpacity($0) })
             }
         }
     }
@@ -154,7 +154,7 @@ struct StylePopover<Model: StyleEditing>: View {
                     lastCustom: model.lastBorderColor,
                     customHelp: "Custom border colour",
                     choose: { if let color = $0 { model.setBorderColor(color) } },
-                    pickCustom: model.pickBorderColor
+                    pickCustom: { model.pickBorderColor($0) }
                 )
             }
         }
@@ -175,7 +175,7 @@ struct StylePopover<Model: StyleEditing>: View {
             range: Double(range.lowerBound)...Double(range.upperBound),
             track: LinearGradient(colors: [.white, Brutal.sky], startPoint: .leading, endPoint: .trailing),
             width: 160,
-            onEditingChanged: model.setDraggingStyle
+            onEditingChanged: { model.setDraggingStyle($0) }
         )
         .frame(height: 30)
         .accessibilityLabel(Text(name))
