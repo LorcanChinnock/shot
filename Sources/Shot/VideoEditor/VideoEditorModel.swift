@@ -788,25 +788,14 @@ final class VideoEditorModel {
         url.pathExtension.lowercased() == "mov" ? "mov" : "mp4"
     }
 
-    /// The project as exported: with the sound left out if the options say so.
-    private var exportProject: Project {
-        var exported = project
-        if options.muted {
-            for index in exported.tracks.indices where exported.tracks[index].kind == .audio {
-                exported.tracks[index].isMuted = true
-            }
-        }
-        return exported
-    }
-
     /// Writes a new file next to the original with the trim, cuts and export options, and copies it.
     func export() async {
         // Checked before picking a name, so two exports can't pick the same one.
         guard !isExporting else {
             return
         }
-        let options = options, range = range, cuts = cuts, source = fileURL, composite = isComposite, edited = exportProject
-        let output = FileNaming.uniqueURL(in: source.deletingLastPathComponent(), date: Date(), pathExtension: options.format.fileExtension, prefix: Preferences().filePrefix)
+        let options = options, plan = VideoExportPlan(project: project, options: options)
+        let output = FileNaming.uniqueURL(in: fileURL.deletingLastPathComponent(), date: Date(), pathExtension: options.format.fileExtension, prefix: Preferences().filePrefix)
         var note = ""
         let progress = PercentProgress { percent in
             Task { @MainActor in
@@ -814,31 +803,9 @@ final class VideoEditorModel {
             }
         }
         let exported = await exporting {
-            if composite {
-                switch options.format {
-                case .mp4:
-                    try await ProjectExporter.export(edited, to: output, as: .mp4)
-                    log.notice("Exported composite MP4, muted \(options.muted, privacy: .public)")
-                case .gif:
-                    let built = try await CompositionBuilder.build(edited)
-                    let result = try await GIFExporter.export(composition: built, to: output, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed, progress: progress.report)
-                    note = result.truncated ? " (first \(Int(GIFExporter.maxDuration)) s only)" : ""
-                    log.notice("Exported composite GIF: \(result.frameCount, privacy: .public) frames")
-                }
-                return
-            }
-            switch options.format {
-            case .mp4:
-                let passthrough = try await VideoTrimmer.trim(source, range: range, cuts: cuts, speed: options.speed, muted: options.muted, to: output, as: .mp4)
-                log.notice("Exported MP4 at \(options.speed, privacy: .public)×, muted \(options.muted, privacy: .public), passthrough \(passthrough, privacy: .public)")
-            case .gif:
-                let result = try await GIFExporter.export(
-                    videoURL: source, to: output, range: range, cuts: cuts, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed,
-                    progress: progress.report
-                )
-                note = result.truncated ? " (first \(Int(GIFExporter.maxDuration)) s only)" : ""
-                log.notice("Exported GIF: \(result.frameCount, privacy: .public) frames at \(options.gifFrameRate, privacy: .public) fps, width \(options.gifWidth, privacy: .public), \(options.speed, privacy: .public)×")
-            }
+            let outcome = try await plan.run(to: output, progress: progress.report)
+            note = outcome.truncated ? " (first \(Int(GIFExporter.maxDuration)) s only)" : ""
+            log.notice("Exported \(plan.kind.rawValue, privacy: .public) at \(options.speed, privacy: .public)×, muted \(options.muted, privacy: .public), passthrough \(outcome.passthrough, privacy: .public), \(outcome.frameCount ?? 0, privacy: .public) GIF frames")
         }
         guard exported else {
             try? FileManager.default.removeItem(at: output)
@@ -850,23 +817,14 @@ final class VideoEditorModel {
 
     /// Works out `estimatedSize` for the current trim, cuts and options; call again when any change.
     func refreshEstimate() async {
-        let options = options, range = range, cuts = cuts, source = fileURL, composite = isComposite, edited = exportProject
+        let plan = VideoExportPlan(project: project, options: options)
         // Wait for a drag or a run of clicks to settle before reading frames.
         try? await Task.sleep(for: .milliseconds(250))
         guard !Task.isCancelled else {
             return
         }
         do {
-            let size = switch options.format {
-            case .mp4 where composite:
-                ProjectExporter.estimatedSize(of: edited)
-            case .gif where composite:
-                try await GIFExporter.estimatedSize(of: CompositionBuilder.build(edited), fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed)
-            case .mp4:
-                try await VideoTrimmer.estimatedSize(of: source, range: range, cuts: cuts, speed: options.speed, muted: options.muted)
-            case .gif:
-                try await GIFExporter.estimatedSize(of: source, range: range, cuts: cuts, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, speed: options.speed)
-            }
+            let size = try await plan.estimate()
             if !Task.isCancelled {
                 estimatedSize = size
             }
@@ -879,17 +837,13 @@ final class VideoEditorModel {
     }
 
     private func export(to output: URL, creating folder: URL?) async -> Bool {
-        await exporting { [self] in
+        let plan = VideoExportPlan.copy(of: project, as: Self.copyExtension(of: fileURL) == "mov" ? .mov : .mp4)
+        return await exporting {
             if let folder {
                 try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             }
-            if isComposite {
-                try await ProjectExporter.export(project, to: output, as: Self.copyExtension(of: fileURL) == "mov" ? .mov : .mp4)
-                log.notice("Exported the edit with \(self.project.tracks.count, privacy: .public) tracks")
-                return
-            }
-            let passthrough = try await VideoTrimmer.trim(fileURL, range: range, cuts: cuts, to: output)
-            log.notice("Trimmed \(self.range.start, privacy: .public)–\(self.range.end, privacy: .public) s less \(self.cuts.cuts.count, privacy: .public) cuts, passthrough \(passthrough, privacy: .public)")
+            let outcome = try await plan.run(to: output)
+            log.notice("Wrote the edit as \(plan.kind.rawValue, privacy: .public), passthrough \(outcome.passthrough, privacy: .public)")
         }
     }
 
