@@ -260,3 +260,34 @@ private func box() -> Annotation {
     let soundID = plain.tracks[1].clips[0].id
     #expect(try #require(plain.togglingKeyframe(.volume, ofClip: soundID, at: 2)).trimEdit == nil)
 }
+
+@Test func eachKindOfClipKeysItsOwnProperties() {
+    let base = project()
+    #expect(base.keyableProperties(ofClip: base.main.clips[0].id) == [.position, .scale, .rotation, .opacity])
+    #expect(base.keyableProperties(ofClip: base.tracks[1].clips[0].id) == [.volume])
+    let arrow = Annotation(kind: .arrow(from: .zero, to: CGPoint(x: 50, y: 0)), color: RGBA(1, 0, 0), lineWidth: 4)
+    let drawn = base.adding(annotation: arrow, at: 1)
+    #expect(drawn.project.keyableProperties(ofClip: drawn.clip) == [.position, .scale, .rotation, .opacity, .reveal])
+    let box = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 0, y: 0, width: 20, height: 20)), color: RGBA(1, 0, 0), lineWidth: 4)
+    let boxed = base.adding(annotation: box, at: 1)
+    #expect(boxed.project.keyableProperties(ofClip: boxed.clip) == [.position, .scale, .rotation, .opacity])
+    #expect(base.keyableProperties(ofClip: UUID()).isEmpty)
+}
+
+@Test func everyPropertyReadsAndWritesThroughOneAccessor() {
+    var values = PropertyValues()
+    var animation = ClipAnimation()
+    for (index, property) in AnimatedProperty.allCases.enumerated() {
+        let value: PropertyValue = property == .position ? .size(CGSize(width: index, height: 1)) : .number(Double(index) / 10)
+        values[property] = value
+        #expect(values[property] == value)
+        animation.set(property, at: Double(index), to: values)
+        #expect(animation.hasKeyframe(property, at: Double(index)))
+        #expect(animation.values(at: Double(index), base: PropertyValues())[property] == value)
+    }
+    #expect(animation.times == AnimatedProperty.allCases.indices.map(Double.init))
+    #expect(animation.removingKeyframes(at: 0).hasKeyframes(.position) == false)
+    let (before, after) = animation.splitting(at: 2.5)
+    #expect(before.times.last == 2.5)
+    #expect(after.times.first == 0)
+}
