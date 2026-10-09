@@ -56,7 +56,7 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
     public var sizesText: Bool {
         switch self {
         case .text, .note, .counter: true
-        default: false
+        case .select, .hand, .arrow, .line, .shape, .pen, .highlight, .spotlight, .redact, .crop: false
         }
     }
 }
@@ -132,13 +132,13 @@ public enum ColorSlot: String, Codable, CodingKeyRepresentable, Sendable {
             switch shown.kind {
             case .note: self = .note
             case .marker: self = .highlight
-            default: self = .stroke
+            case .arrow, .line, .shape, .highlight, .pixelate, .blur, .spotlight, .text, .counter, .freehand, .image: self = .stroke
             }
         } else {
             switch tool {
             case .note: self = .note
             case .highlight: self = .highlight
-            default: self = .stroke
+            case .select, .hand, .arrow, .line, .shape, .pen, .text, .spotlight, .redact, .counter, .crop, nil: self = .stroke
             }
         }
     }

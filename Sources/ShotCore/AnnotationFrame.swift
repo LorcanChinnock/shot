@@ -89,7 +89,7 @@ enum AnnotationFrame {
     private static func needsPicture(_ annotation: Annotation) -> Bool {
         switch annotation.kind {
         case .highlight, .marker, .spotlight, .pixelate, .blur: true
-        default: false
+        case .arrow, .line, .shape, .text, .counter, .note, .freehand, .image: false
         }
     }
 
