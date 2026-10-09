@@ -154,11 +154,13 @@ private func isWhite(_ p: [UInt8]) -> Bool { p.allSatisfy { $0 > 245 } }
     let before = doc.snapshot
     doc.move(box.id, by: CGVector(dx: 30, dy: 0), margin: 10)
     doc.move(box.id, by: CGVector(dx: -30, dy: 0), margin: 10)
-    #expect(!stack.record(before, endingAt: doc.snapshot))
+    let recordedReturn = stack.record(before, endingAt: doc.snapshot)
+    #expect(!recordedReturn)
     #expect(!stack.canUndo)
 
     doc.move(box.id, by: CGVector(dx: 30, dy: 0), margin: 10)
-    #expect(stack.record(before, endingAt: doc.snapshot))
+    let recordedMove = stack.record(before, endingAt: doc.snapshot)
+    #expect(recordedMove)
     doc.restore(stack.undo(from: doc.snapshot)!)
     #expect(doc.annotations == [box])
 }
