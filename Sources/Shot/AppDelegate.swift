@@ -54,40 +54,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func handle(_ url: URL) {
-        guard url.scheme == "shot", let host = url.host() else {
+        guard url.scheme == "shot" else {
             return
         }
         log.notice("URL received: \(url.absoluteString)")
-        if host == "pause" {
+        let route: ShotURL
+        do {
+            route = try ShotURL(url)
+        } catch ShotURL.ParseError.notShot {
+            return
+        } catch {
+            Toast.error(error.localizedDescription)
+            return
+        }
+        switch route {
+        case .pause:
             coordinator.togglePause()
-            return
-        }
-        if host == "gallery" {
+        case .gallery:
             GalleryController.shared.show()
-            return
-        }
-        if host == "settings" {
-            let name = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "section" }?.value
-            MainWindowController.showSettings(section: name.flatMap(SettingsSection.init(rawValue:)))
-            return
-        }
-        if EditorRoute.hosts.contains(host) {
-            let path = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "path" }?.value
-            guard let route = EditorRoute(host: host, path: path) else {
-                Toast.error("Missing path for \(host)")
-                return
-            }
+        case let .settings(section):
+            MainWindowController.showSettings(section: section.flatMap(SettingsSection.init(rawValue:)))
+        case let .edit(route):
             coordinator.edit(route)
-            return
+        case let .action(action):
+            coordinator.perform(action)
         }
-        guard let action = ShotAction(rawValue: host) else {
-            Toast.error("Unknown action: \(host)")
-            return
-        }
-        let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
-        // `shot://record?full=1` predates `shot://record-fullscreen`; keep it working.
-        let legacyFull = action == .record && query.contains { $0.name == "full" && $0.value == "1" }
-        coordinator.perform(legacyFull ? .recordFullscreen : action)
     }
 
     /// Shown while a glass window puts Shot in the Dock; otherwise only routes ⌘W to the key window,
