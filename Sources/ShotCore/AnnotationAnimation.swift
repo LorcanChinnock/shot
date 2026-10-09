@@ -17,7 +17,8 @@ extension Annotation {
         return copy
     }
 
-    /// The annotation scaled by `factor` about the centre of its bounds; strokes, text and counters grow with it.
+    /// The annotation scaled by `factor` about the centre of its bounds; strokes, text, counters, corners, shadows and
+    /// borders grow with it.
     public func scaled(by factor: Double) -> Annotation {
         guard abs(factor - 1) > 1e-9, factor > 0 else {
             return self
@@ -34,6 +35,7 @@ extension Annotation {
         copy.lineWidth = lineWidth * s
         copy.bend = bend.map { CGVector(dx: $0.dx * s, dy: $0.dy * s) }
         copy.cornerRadius = cornerRadius.map { $0 * s }
+        copy.style = style.scaled(by: s)
         switch kind {
         case let .arrow(from, to): copy.kind = .arrow(from: point(from), to: point(to))
         case let .line(from, to): copy.kind = .line(from: point(from), to: point(to))
@@ -104,10 +106,15 @@ extension Annotation {
 }
 
 extension AnnotationClip {
-    /// What to draw at timeline `time`: the annotation with its keyframes applied, and the turn and fade to give the result.
+    /// What to draw at timeline `time`: the annotation with its keyframes applied, its shadow lifted while it comes in,
+    /// and the turn and fade to give the result.
     public func rendered(atTimeline time: Double) -> (annotation: Annotation, rotation: Double, opacity: Double) {
         let values = values(atTimeline: time)
-        let drawn = annotation.revealed(values.reveal).scaled(by: values.scale).moved(by: values.position)
+        var drawn = annotation.revealed(values.reveal).scaled(by: values.scale).moved(by: values.position)
+        let lift = animation.lift(at: time - start)
+        if lift > 1 {
+            drawn.style.shadow?.elevation *= lift
+        }
         return (drawn, values.rotation, values.opacity)
     }
 }

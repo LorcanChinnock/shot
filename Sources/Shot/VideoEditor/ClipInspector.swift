@@ -2,12 +2,14 @@ import ShotCore
 import SwiftUI
 
 /// The selected clip's position, scale, rotation, opacity and volume, each with a diamond that keys it at the playhead,
-/// and the one-click animations. Changing a keyed property at another time adds a keyframe there.
+/// the one-click animations, and the Style popover's shadow, border and corners. Changing a keyed property at another
+/// time adds a keyframe there.
 struct ClipInspector: View {
     /// Two rows of controls and the gap between them.
     static let height: CGFloat = 2 * 32 + 8
 
     let model: VideoEditorModel
+    @State private var showsStyle = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -24,6 +26,14 @@ struct ClipInspector: View {
                                     .brutalTip("\(preset.title) animation at the start of the \(isNote ? "annotation" : "clip")")
                             }
                         }
+                    }
+                    if !isSound, model.targetStyleKind != nil {
+                        Button("Style") { showsStyle.toggle() }
+                            .buttonStyle(BrutalButtonStyle(color: Brutal.sky.opacity(0.7), compact: true))
+                            .brutalTip("Add a shadow, border or rounded corners to the \(isNote ? "annotation" : "clip")")
+                            .popover(isPresented: $showsStyle, arrowEdge: .top) {
+                                StylePopover(model: model)
+                            }
                     }
                     Spacer(minLength: 8)
                     if let time = model.selectedKeyframe, let easing = animation.easing(at: time) {

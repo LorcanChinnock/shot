@@ -1,18 +1,49 @@
 import ShotCore
 import SwiftUI
 
+/// What the Style popover edits: the photo editor's selection or screenshot, or the video editor's selected clip. Sizes are
+/// in points, which `scale` turns into the target's pixels.
+@MainActor
+protocol StyleEditing: AnyObject, Observable {
+    var targetStyleKind: StyleKind? { get }
+    /// The popover's heading.
+    var targetStyleTitle: String { get }
+    var targetHasTransparency: Bool { get }
+    var targetStyle: ObjectStyle { get }
+    var targetCornerRadius: CGFloat { get }
+    var scale: CGFloat { get }
+    /// A style the pointer is over, shown in place of the target's until it moves off.
+    var stylePreview: ObjectStyle? { get set }
+    var lastBorderColor: RGBA { get }
+    func newBorder(_ kind: Border.Kind) -> Border
+    func setTargetStyle(_ style: ObjectStyle)
+    func setShadowElevation(_ points: CGFloat)
+    func setShadowOpacity(_ opacity: CGFloat)
+    func setBorderWidth(_ points: CGFloat)
+    func setBorderColor(_ color: RGBA)
+    func pickBorderColor(_ color: RGBA)
+    func setTargetCornerRadius(_ points: CGFloat)
+    func setDraggingStyle(_ dragging: Bool)
+}
+
+extension StyleEditing {
+    var targetStyleTitle: String { targetStyleKind?.title ?? "" }
+}
+
+extension EditorModel: StyleEditing {}
+
 /// The shadow, border and corner radius of the selected image, mark or text, or of the screenshot when nothing is selected.
 /// Pointing at a preset shows it on the canvas; clicking it applies it. The sliders show only once there's a shadow to tune,
 /// and the width and colour only once there's a border that has them. It offers only what the target can have.
-struct StylePopover: View {
-    @Bindable var model: EditorModel
+struct StylePopover<Model: StyleEditing>: View {
+    @Bindable var model: Model
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             if let kind = model.targetStyleKind {
                 let style = model.targetStyle
                 let borders = kind.borders(transparent: model.targetHasTransparency)
-                Text(kind.title)
+                Text(model.targetStyleTitle)
                     .font(.system(size: 11, weight: .black))
                     .tracking(1.2)
                     .foregroundStyle(Brutal.ink.opacity(0.75))
@@ -40,19 +71,12 @@ struct StylePopover: View {
                 }
                 if kind.takesCorners {
                     row("CORNERS") {
-                        slider(value: model.targetCornerRadius, range: 0...48, name: "Corner radius", set: model.setTargetCornerRadius)
+                        slider(value: model.targetCornerRadius, range: 0...48, name: "Corner radius", set: { model.setTargetCornerRadius($0) })
                     }
                 }
-                if kind == .capture {
-                    HStack(spacing: 10) {
-                        Toggle("Use this style for new captures", isOn: Binding(get: { model.usesStyleForNewCaptures }, set: { model.setUsesStyleForNewCaptures($0) }))
-                            .toggleStyle(BrutalToggleStyle(color: Brutal.mint))
-                            .labelsHidden()
-                        Text("Use this style for new captures")
-                            .font(Brutal.caption)
-                            .foregroundStyle(Brutal.ink)
-                    }
-                    .brutalTip("New captures open and copy with this screenshot's style")
+                // Only the photo editor has a screenshot to style.
+                if kind == .capture, let editor = model as? EditorModel {
+                    NewCaptureStyleSwitch(model: editor)
                 }
             } else {
                 Text("Select an image, shape, arrow or text, or nothing to style the screenshot.")
@@ -100,14 +124,14 @@ struct StylePopover: View {
         VStack(alignment: .leading, spacing: 4) {
             row("") {
                 label("Elevation")
-                slider(value: shadow.elevation / model.scale, range: Shadow.elevations, name: "Elevation", set: model.setShadowElevation)
+                slider(value: shadow.elevation / model.scale, range: Shadow.elevations, name: "Elevation", set: { model.setShadowElevation($0) })
                 if ShadowPreset.matching(shadow, scale: model.scale) == nil {
                     BrutalChip(text: "CUSTOM", color: Brutal.sky)
                 }
             }
             row("") {
                 label("Opacity")
-                slider(value: shadow.opacity, range: Shadow.opacities, name: "Opacity", set: model.setShadowOpacity)
+                slider(value: shadow.opacity, range: Shadow.opacities, name: "Opacity", set: { model.setShadowOpacity($0) })
             }
         }
     }
@@ -134,13 +158,13 @@ struct StylePopover: View {
                     lastCustom: model.lastBorderColor,
                     customHelp: "Custom border colour",
                     choose: { if let color = $0 { model.setBorderColor(color) } },
-                    pickCustom: model.pickBorderColor
+                    pickCustom: { model.pickBorderColor($0) }
                 )
             }
         }
     }
 
-    private static let sizeNames = ["Small", "Medium", "Large"]
+    private static var sizeNames: [String] { ["Small", "Medium", "Large"] }
 
     private func label(_ text: String) -> some View {
         Text(text)
@@ -155,7 +179,7 @@ struct StylePopover: View {
             range: Double(range.lowerBound)...Double(range.upperBound),
             track: LinearGradient(colors: [.white, Brutal.sky], startPoint: .leading, endPoint: .trailing),
             width: 160,
-            onEditingChanged: model.setDraggingStyle
+            onEditingChanged: { model.setDraggingStyle($0) }
         )
         .frame(height: 30)
         .accessibilityLabel(Text(name))
@@ -272,5 +296,22 @@ private struct Swatch: View {
         case .soft: 2
         case .float: 4
         }
+    }
+}
+
+/// Use this style for new captures: saves the screenshot's style for new captures to open and copy with.
+private struct NewCaptureStyleSwitch: View {
+    let model: EditorModel
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Toggle("Use this style for new captures", isOn: Binding(get: { model.usesStyleForNewCaptures }, set: { model.setUsesStyleForNewCaptures($0) }))
+                .toggleStyle(BrutalToggleStyle(color: Brutal.mint))
+                .labelsHidden()
+            Text("Use this style for new captures")
+                .font(Brutal.caption)
+                .foregroundStyle(Brutal.ink)
+        }
+        .brutalTip("New captures open and copy with this screenshot's style")
     }
 }
