@@ -277,10 +277,10 @@ struct StylePopover<Model: StyleEditing>: View {
                 label("Width")
                 ForEach(widths.indices, id: \.self) { index in
                     let points = widths[index]
-                    Tile(selected: abs(points * model.scale - border.width) < 0.01, color: Brutal.sky, help: Self.sizeNames[index]) {
+                    Tile(selected: abs(points * model.scale - border.width) < 0.01, color: Brutal.sky, help: WidthOptions.sizeNames[index]) {
                         model.setBorderWidth(points)
                     } label: {
-                        Text(Self.sizeNames[index].prefix(1)).font(.system(size: 12, weight: .heavy))
+                        Text(WidthOptions.sizeNames[index].prefix(1)).font(.system(size: 12, weight: .heavy))
                     }
                 }
             }
@@ -296,8 +296,6 @@ struct StylePopover<Model: StyleEditing>: View {
             }
         }
     }
-
-    private static var sizeNames: [String] { ["Small", "Medium", "Large"] }
 
     private func label(_ text: String) -> some View {
         Text(text)
