@@ -52,12 +52,15 @@ struct ShortcutRecorderView: View {
                     NSSound.beep()
                     return nil
                 }
-                var modifiers: UInt32 = 0
-                if flags.contains(.command) { modifiers |= KeyCombo.command }
-                if flags.contains(.shift) { modifiers |= KeyCombo.shift }
-                if flags.contains(.option) { modifiers |= KeyCombo.option }
-                if flags.contains(.control) { modifiers |= KeyCombo.control }
-                encoded = KeyCombo(keyCode: UInt32(event.keyCode), modifiers: modifiers).encoded
+                let combo = KeyCombo(keyCode: UInt32(event.keyCode), eventFlags: CGEventFlags(rawValue: UInt64(flags.rawValue)))
+                let prefs = Preferences()
+                let bindings = ShotAction.allCases.reduce(into: [ShotAction: KeyCombo]()) { $0[$1] = prefs.hotkey(for: $1) }
+                if let conflict = action.conflict(for: combo, bindings: bindings) {
+                    NSSound.beep()
+                    Toast.error(conflict.message(for: combo))
+                } else {
+                    encoded = combo.encoded
+                }
                 stop()
             }
             return nil

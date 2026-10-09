@@ -92,20 +92,27 @@ private struct ActionButton: View {
 }
 
 extension KeyCombo {
+    /// Keys whose label isn't the character they type.
+    private static let specialKeys: [UInt32: KeyEquivalent] = [
+        49: .space, 36: .return, 48: .tab, 53: .escape, 51: .delete, 117: .deleteForward,
+        123: .leftArrow, 124: .rightArrow, 125: .downArrow, 126: .upArrow, 115: .home, 119: .end, 116: .pageUp, 121: .pageDown,
+    ]
+
     var swiftUIShortcut: KeyboardShortcut? {
         let key: KeyEquivalent
-        if keyLabel == "Space" {
-            key = .space
+        if let special = Self.specialKeys[keyCode] {
+            key = special
         } else if keyLabel.count == 1, let character = keyLabel.lowercased().first {
             key = KeyEquivalent(character)
         } else {
             return nil
         }
+        let flags = eventFlags
         var mods: EventModifiers = []
-        if modifiers & KeyCombo.command != 0 { mods.insert(.command) }
-        if modifiers & KeyCombo.shift != 0 { mods.insert(.shift) }
-        if modifiers & KeyCombo.option != 0 { mods.insert(.option) }
-        if modifiers & KeyCombo.control != 0 { mods.insert(.control) }
+        if flags.contains(.maskCommand) { mods.insert(.command) }
+        if flags.contains(.maskShift) { mods.insert(.shift) }
+        if flags.contains(.maskAlternate) { mods.insert(.option) }
+        if flags.contains(.maskControl) { mods.insert(.control) }
         return KeyboardShortcut(key, modifiers: mods)
     }
 }
