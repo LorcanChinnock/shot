@@ -177,7 +177,8 @@ struct EditorToolbar: View {
 
 /// Line widths, or text sizes for text, notes and counters, whose width sets their size.
 struct WidthOptions: View {
-    private static let sizeNames = ["Small", "Medium", "Large"]
+    /// What the three widths are called, here and for border widths in the Style popover.
+    static let sizeNames = ["Small", "Medium", "Large"]
 
     let selected: Int
     let sizesText: Bool
@@ -201,14 +202,6 @@ struct WidthOptions: View {
 }
 
 extension TextAlign {
-    var symbol: String {
-        switch self {
-        case .left: "text.alignleft"
-        case .center: "text.aligncenter"
-        case .right: "text.alignright"
-        }
-    }
-
     var textAlignment: NSTextAlignment {
         switch self {
         case .left: .left
@@ -231,19 +224,6 @@ struct AlignmentOptions: View {
                     Image(systemName: alignment.symbol).font(.system(size: 13, weight: .bold))
                 }
             }
-        }
-    }
-}
-
-extension BoxShape {
-    var symbol: String {
-        switch self {
-        case .rectangle: "rectangle"
-        case .rounded: "app"
-        case .ellipse: "circle"
-        case .triangle: "triangle"
-        case .diamond: "diamond"
-        case .star: "star"
         }
     }
 }

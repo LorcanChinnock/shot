@@ -20,6 +20,18 @@ public enum BoxShape: String, CaseIterable, Codable, Sendable {
         }
     }
 
+    /// The SF Symbol the toolbar and the layers show for it.
+    public var symbol: String {
+        switch self {
+        case .rectangle: "rectangle"
+        case .rounded: "app"
+        case .ellipse: "circle"
+        case .triangle: "triangle"
+        case .diamond: "diamond"
+        case .star: "star"
+        }
+    }
+
     /// The outline stretched to fill `rect`, a rounded rectangle's corners rounded by `cornerRadius`.
     public func path(in rect: CGRect, cornerRadius: CGFloat? = nil) -> CGPath {
         switch self {
@@ -102,6 +114,15 @@ public enum TextAlign: String, CaseIterable, Codable, Sendable {
         case .left: "Align Left"
         case .center: "Align Centre"
         case .right: "Align Right"
+        }
+    }
+
+    /// The SF Symbol the toolbar shows for it.
+    public var symbol: String {
+        switch self {
+        case .left: "text.alignleft"
+        case .center: "text.aligncenter"
+        case .right: "text.alignright"
         }
     }
 

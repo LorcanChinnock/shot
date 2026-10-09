@@ -41,25 +41,6 @@ extension EditorTool {
     }
 }
 
-extension Annotation {
-    var layerSymbol: String {
-        switch kind {
-        case .arrow: "arrow.up.right"
-        case .line: "line.diagonal"
-        case .shape: "square.on.circle"
-        case .highlight, .marker: "highlighter"
-        case .pixelate: "squareshape.split.3x3"
-        case .blur: "drop.halffull"
-        case .spotlight: "flashlight.on.fill"
-        case .text: "textformat"
-        case .counter: "1.circle"
-        case .note: "note.text"
-        case .freehand: "scribble"
-        case .image: "photo"
-        }
-    }
-}
-
 @MainActor
 @Observable
 final class EditorModel {

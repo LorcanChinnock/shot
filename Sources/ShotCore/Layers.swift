@@ -78,6 +78,24 @@ extension Annotation {
         }
     }
 
+    /// The SF Symbol for it in the layers panel and the video editor's tracks.
+    public var layerSymbol: String {
+        switch kind {
+        case .arrow: "arrow.up.right"
+        case .line: "line.diagonal"
+        case let .shape(shape, _): shape.symbol
+        case .highlight, .marker: "highlighter"
+        case .pixelate: "squareshape.split.3x3"
+        case .blur: "drop.halffull"
+        case .spotlight: "flashlight.on.fill"
+        case .text: "textformat"
+        case .counter: "1.circle"
+        case .note: "note.text"
+        case .freehand: "scribble"
+        case .image: "photo"
+        }
+    }
+
     /// Where drawing it changes the canvas: what it paints, or for a spotlight, everywhere, since the spotlights share one dim.
     var drawnArea: CGRect {
         if case .spotlight = kind {
