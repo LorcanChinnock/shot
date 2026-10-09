@@ -6,7 +6,7 @@ import ShotCore
 
 private let log = Logger.shot("video-editor")
 
-/// What one undo step restores.
+/// What one undo step restores. The export options are part of it on purpose, so ⌘Z also takes back a change of format.
 struct VideoEdit: Equatable {
     var project: Project
     var options: VideoExportOptions
@@ -87,8 +87,11 @@ final class VideoEditorModel {
     /// The colour a border picked from the custom colour editor had last, which its rainbow swatch applies again; `nil`
     /// until one is picked, so the swatch doesn't offer white, which the palette has.
     private(set) var lastBorderColor: RGBA?
-    /// The clip whose border colour was picked last, and the project that left, so the picker's run of changes is one step.
-    @ObservationIgnored private var pickedBorderColor: (clip: UUID, project: Project)?
+    /// What the latest undo step changed, while it's still the latest, so a run of changes to it (a colour picker
+    /// dragged) amends that step instead of adding one each; see `replaceProject`.
+    @ObservationIgnored private var coalescingKey: String?
+    /// Set while a custom colour from the colour editor is applied, so its run of changes is one step.
+    @ObservationIgnored private var pickingKey: String?
 
     private static let showsTracksKey = "videoEditorShowsTracks"
     private static let showsInspectorKey = "videoEditorShowsInspector"
@@ -249,6 +252,7 @@ final class VideoEditorModel {
             return
         }
         undoStack.record(VideoEdit(project: origin, options: options))
+        coalescingKey = nil
         fitDuration = max(fitDuration, project.duration)
         projectDidChange()
     }
@@ -342,8 +346,7 @@ final class VideoEditorModel {
         guard !isExporting, let split = project.splitting(at: playhead) else {
             return false
         }
-        undoStack.record(edit)
-        project = split
+        replaceProject(with: split)
         return true
     }
 
@@ -352,8 +355,9 @@ final class VideoEditorModel {
         guard !isExporting, project.tracks.indices.contains(index) else {
             return
         }
-        undoStack.record(edit)
-        project.tracks[index][keyPath: flag].toggle()
+        var changed = project
+        changed.tracks[index][keyPath: flag].toggle()
+        replaceProject(with: changed)
     }
 
     // MARK: Lanes
@@ -365,8 +369,7 @@ final class VideoEditorModel {
             return false
         }
         if !isExporting, let moved = project.moving(clip: id, move) {
-            undoStack.record(edit)
-            project = moved
+            replaceProject(with: moved)
         }
         return true
     }
@@ -379,8 +382,7 @@ final class VideoEditorModel {
         if let id = selectedClipID, project.tracks[index].annotations.contains(where: { $0.id == id }) {
             selectedClipID = nil
         }
-        undoStack.record(edit)
-        project = project.deletingOverlays([project.tracks[index].id])
+        replaceProject(with: project.deletingOverlays([project.tracks[index].id]))
     }
 
     /// Cuts the selected clip out, closing the gap on the main track, as one undo step; false when none is selected.
@@ -394,8 +396,7 @@ final class VideoEditorModel {
             return true
         }
         let joinedAt = project.main.clips.first { $0.id == id }?.start ?? playhead
-        undoStack.record(edit)
-        project = cut
+        replaceProject(with: cut)
         seekTimeline(to: min(joinedAt, project.duration))
         return true
     }
@@ -426,8 +427,7 @@ final class VideoEditorModel {
         guard let added else {
             return
         }
-        undoStack.record(edit)
-        project = changed
+        replaceProject(with: changed)
         selectedClipID = added
         setShowsTracks(true)
         log.notice("Imported \(urls.count, privacy: .public) files")
@@ -476,10 +476,7 @@ final class VideoEditorModel {
             Toast.error("Can't cut all of the video")
             return true
         }
-        if cut != project {
-            undoStack.record(edit)
-            project = cut
-        }
+        replaceProject(with: cut)
         return true
     }
 
@@ -488,18 +485,21 @@ final class VideoEditorModel {
             return
         }
         undoStack.record(edit)
+        coalescingKey = nil
         options = new
         Preferences.remember(options)
     }
 
     /// Undo and redo wait for an export, since Save reloads the file and would drop the change.
     func undo() {
+        coalescingKey = nil
         if !isExporting, let previous = undoStack.undo(from: edit) {
             restore(previous)
         }
     }
 
     func redo() {
+        coalescingKey = nil
         if !isExporting, let next = undoStack.redo(from: edit) {
             restore(next)
         }
@@ -510,6 +510,11 @@ final class VideoEditorModel {
         selection = nil
         if let selectedClipID, project.clip(selectedClipID) == nil {
             self.selectedClipID = nil
+        }
+        // A keyframe the restored project doesn't have can't be worked on, and Delete would act on nothing.
+        let keyframes = selectedClipID.flatMap(project.animation(ofClip:))
+        if let selectedKeyframe, !AnimatedProperty.allCases.contains(where: { keyframes?.hasKeyframe($0, at: selectedKeyframe) == true }) {
+            self.selectedKeyframe = nil
         }
         if options != edit.options {
             options = edit.options
@@ -1109,13 +1114,7 @@ extension VideoEditorModel {
         annotationStyle.spotlight.effect = effect
         annotationStyle.spotlight.strength = strength
         let changed = project.settingSpotlights(effect: effect, strength: strength)
-        guard !isExporting, changed != project else {
-            return
-        }
-        if dragOrigin == nil {
-            undoStack.record(edit)
-        }
-        project = changed
+        replaceProject(with: changed)
     }
 
     /// The alignment the palette shows: the text being typed's, else the selected annotation's, else the next text's or note's.
@@ -1176,6 +1175,9 @@ extension VideoEditorModel {
     }
 
     func pickCustom(_ color: RGBA, forFill: Bool) {
+        // The colour editor reports every change as the user drags, so its run of changes to one annotation is one step.
+        pickingKey = selectedClipID.map { "\($0)-custom-\(forFill)" }
+        defer { pickingKey = nil }
         if forFill {
             paletteFill = color
         } else {
@@ -1205,7 +1207,7 @@ extension VideoEditorModel {
         }
         var restyled = clip.annotation
         change(&restyled)
-        commitAnnotation(restyled, id: clip.id)
+        commitAnnotation(restyled, id: clip.id, coalescing: pickingKey)
     }
 
     /// Shows the compositor `annotation` at the playhead, in place of the clip `id` when it has one, before it's committed.
@@ -1268,21 +1270,16 @@ extension VideoEditorModel {
             annotation.style = annotationStyle.objectStyle(for: kind, scale: styleScale).restricted(to: kind, transparent: annotation.hasTransparency)
         }
         let (added, id) = project.adding(annotation: annotation, at: playhead)
-        undoStack.record(edit)
-        project = added
+        replaceProject(with: added)
         selectedClipID = id
     }
 
     /// Replaces what the annotation clip `id` shows, as one undo step; between `beginDrag` and `endDrag`, `endDrag` records it.
-    /// Without `recording` it's part of the last step.
-    func commitAnnotation(_ annotation: Annotation, id: UUID, recording: Bool = true) {
-        guard !isExporting, let changed = project.setting(annotation: annotation, ofClip: id), changed != project else {
+    /// Calls with the same `coalescing` key in a row amend that step.
+    func commitAnnotation(_ annotation: Annotation, id: UUID, coalescing key: String? = nil) {
+        guard let changed = project.setting(annotation: annotation, ofClip: id), replaceProject(with: changed, coalescing: key) else {
             return
         }
-        if recording, dragOrigin == nil {
-            undoStack.record(edit)
-        }
-        project = changed
         // The compositor keeps drawing the live version until the rebuilt preview has it too.
         let clip = changed.annotationClip(id)
         liveState = ([id], clip.map { [$0] } ?? [])
@@ -1338,14 +1335,10 @@ extension VideoEditorModel {
         guard !isExporting, let id = id ?? selectedClipID else {
             return
         }
-        let before = dragOrigin
-        guard let changed = (before ?? project).setting(values: values, ofClip: id, at: playhead), changed != project else {
+        guard let changed = (dragOrigin ?? project).setting(values: values, ofClip: id, at: playhead) else {
             return
         }
-        if before == nil {
-            undoStack.record(edit)
-        }
-        project = changed
+        replaceProject(with: changed)
     }
 
     /// Adds a keyframe of `property` at the playhead holding its current value, or takes the one there away.
@@ -1353,8 +1346,7 @@ extension VideoEditorModel {
         guard !isExporting, let id = selectedClipID, let changed = project.togglingKeyframe(property, ofClip: id, at: playhead) else {
             return
         }
-        undoStack.record(edit)
-        project = changed
+        replaceProject(with: changed)
     }
 
     /// Keys everything the selected clip can animate at the playhead, or takes those keyframes away if any are there already.
@@ -1373,16 +1365,14 @@ extension VideoEditorModel {
         guard changed != project else {
             return
         }
-        undoStack.record(edit)
-        project = changed
+        replaceProject(with: changed)
     }
 
     func applyPreset(_ preset: AnimationPreset) {
         guard !isExporting, let id = selectedClipID, let changed = project.applying(preset, toClip: id), changed != project else {
             return
         }
-        undoStack.record(edit)
-        project = changed
+        replaceProject(with: changed)
     }
 
     /// Selects a keyframe, `time` seconds into the selected clip, and puts the playhead on it.
@@ -1397,8 +1387,7 @@ extension VideoEditorModel {
         guard !isExporting, let id = selectedClipID, let time = selectedKeyframe, let changed = project.settingEasing(easing, ofClip: id, at: time), changed != project else {
             return
         }
-        undoStack.record(edit)
-        project = changed
+        replaceProject(with: changed)
     }
 
     /// Takes away the selected keyframe, with those of other properties at the same moment; false when none is selected.
@@ -1408,8 +1397,7 @@ extension VideoEditorModel {
         }
         selectedKeyframe = nil
         if let changed = project.removingKeyframes(ofClip: id, at: time) {
-            undoStack.record(edit)
-            project = changed
+            replaceProject(with: changed)
         }
         return true
     }
@@ -1422,9 +1410,8 @@ extension VideoEditorModel {
         for time in animation.times {
             changed = changed.removingKeyframes(ofClip: id, at: time) ?? changed
         }
-        undoStack.record(edit)
         selectedKeyframe = nil
-        project = changed
+        replaceProject(with: changed)
     }
 
     /// Drags the keyframes at `time` to timeline `target`; call between `beginDrag` and `endDrag`.
@@ -1525,9 +1512,7 @@ extension VideoEditorModel: StyleEditing {
     /// Changes in a row to the same clip are one undo step.
     func pickBorderColor(_ color: RGBA) {
         lastBorderColor = color
-        let amending = pickedBorderColor.map { $0.clip == selectedClipID && $0.project == project } ?? false
-        restyleTarget(recording: !amending) { $0.border?.color = color }
-        pickedBorderColor = selectedClipID.map { ($0, project) }
+        restyleTarget(coalescing: selectedClipID.map { "\($0)-border-color" }) { $0.border?.color = color }
     }
 
     func setTargetCornerRadius(_ points: CGFloat) {
@@ -1554,16 +1539,16 @@ extension VideoEditorModel: StyleEditing {
         }
     }
 
-    /// Restyles the selected annotation or clip as one undo step, or without `recording` as part of the last one, and
-    /// redraws it at once. An annotation's style is remembered for the next one of its kind.
-    private func restyleTarget(recording: Bool = true, _ change: (inout ObjectStyle) -> Void) {
+    /// Restyles the selected annotation or clip as one undo step, which calls with the same `coalescing` key in a row share,
+    /// and redraws it at once. An annotation's style is remembered for the next one of its kind.
+    private func restyleTarget(coalescing key: String? = nil, _ change: (inout ObjectStyle) -> Void) {
         var style = targetStyle
         change(&style)
-        restyleTarget(style, cornerRadius: nil, recording: recording)
+        restyleTarget(style, cornerRadius: nil, coalescing: key)
     }
 
     /// Gives the selected annotation or clip `style` and, unless it's `nil`, `cornerRadius` in canvas pixels, as one step.
-    private func restyleTarget(_ style: ObjectStyle, cornerRadius: CGFloat?, recording: Bool = true) {
+    private func restyleTarget(_ style: ObjectStyle, cornerRadius: CGFloat?, coalescing key: String? = nil) {
         guard let kind = targetStyleKind else {
             return
         }
@@ -1573,14 +1558,14 @@ extension VideoEditorModel: StyleEditing {
             if let cornerRadius, kind.takesCorners {
                 annotation.cornerRadius = cornerRadius == 0 ? nil : cornerRadius
             }
-            commitAnnotation(annotation, id: note.id, recording: recording)
+            commitAnnotation(annotation, id: note.id, coalescing: key)
             rememberStyle(annotation.style, of: kind)
             refreshFrame()
         } else if let id = selectedClipID, var changed = project.setting(style: style, of: id) {
             if let cornerRadius {
                 changed = changed.setting(cornerRadius: cornerRadius, of: id) ?? changed
             }
-            replaceProject(with: changed, recording: recording)
+            replaceProject(with: changed, coalescing: key)
             // The compositor draws the new style until the rebuilt preview has it too.
             compositeLive?.set(style: changed.clip(id)?.style, ofClip: id)
             refreshFrame()
@@ -1619,15 +1604,20 @@ extension VideoEditorModel: StyleEditing {
     }
 
     /// Replaces the project as one undo step, or without `recording` as part of the last one; between `beginDrag` and
-    /// `endDrag`, `endDrag` records it.
-    private func replaceProject(with changed: Project, recording: Bool = true) {
+    /// `endDrag`, `endDrag` records it. Calls with the same `coalescing` key in a row amend that step instead of adding
+    /// another. The only writer of `project` besides loading, undo and redo, and a drag. False when nothing changed,
+    /// or an export is running.
+    @discardableResult
+    private func replaceProject(with changed: Project, recording: Bool = true, coalescing key: String? = nil) -> Bool {
         guard !isExporting, changed != project else {
-            return
+            return false
         }
-        if recording, dragOrigin == nil {
+        if dragOrigin == nil, recording, key == nil || key != coalescingKey {
             undoStack.record(edit)
+            coalescingKey = key
         }
         project = changed
+        return true
     }
 
     /// Draws the selected annotation or clip with the style the pointer is over, or, once it moves off, as the project
