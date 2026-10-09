@@ -413,8 +413,8 @@ struct TracksView: View {
         let selected = model.selectedClipID == clip.id
         let color = clip.annotation.color
         return HStack(spacing: 4) {
-            Image(systemName: clip.annotation.symbol).font(.system(size: 11, weight: .bold))
-            Text(clip.annotation.label).font(.system(size: 11, weight: .bold)).lineLimit(1)
+            Image(systemName: clip.annotation.layerSymbol).font(.system(size: 11, weight: .bold))
+            Text(clip.annotation.layerName).font(.system(size: 11, weight: .bold)).lineLimit(1)
         }
         .foregroundStyle(Brutal.ink)
         .padding(.horizontal, 6)
@@ -651,44 +651,6 @@ private enum LaneControl: CaseIterable {
         case .lock: isOn ? "Unlock the track" : "Lock the track, so Split and new annotations leave it alone"
         case .hide: isOn ? "Show the track" : "Hide the track"
         case .mute: isOn ? "Unmute the track" : "Mute the track"
-        }
-    }
-}
-
-extension Annotation {
-    /// The icon for its lane in the tracks.
-    var symbol: String {
-        switch kind {
-        case .arrow: "arrow.up.right"
-        case .line: "line.diagonal"
-        case let .shape(shape, _): shape.symbol
-        case .highlight, .marker: "highlighter"
-        case .pixelate: "square.grid.3x3"
-        case .blur: "drop.halffull"
-        case .spotlight: "flashlight.on.fill"
-        case .text: "textformat"
-        case .counter: "1.circle"
-        case .note: "note.text"
-        case .freehand: "scribble"
-        case .image: "photo"
-        }
-    }
-
-    /// A word or two for its lane in the tracks.
-    var label: String {
-        switch kind {
-        case .arrow: "Arrow"
-        case .line: "Line"
-        case let .shape(shape, _): shape.title
-        case .highlight, .marker: "Highlight"
-        case .pixelate: "Pixelate"
-        case .blur: "Blur"
-        case .spotlight: "Spotlight"
-        case let .text(string, _, _): string
-        case let .counter(number, _): "\(number)"
-        case let .note(string, _): string
-        case .freehand: "Pen"
-        case .image: "Image"
         }
     }
 }

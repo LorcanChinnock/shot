@@ -418,3 +418,13 @@ private func mixedProject() throws -> (project: Project, below: UUID, picture: U
     #expect(front.trackIndex(of: picture) == 3 && front.tracks[2].annotations.map(\.id) == [above])
     #expect(back.moving(clip: picture, .backward) == nil, "already at the bottom")
 }
+
+@Test func layersAndTracksShareOneNameAndSymbolPerKind() {
+    let rect = CGRect(x: 0, y: 0, width: 10, height: 10)
+    func annotation(_ kind: Annotation.Kind) -> Annotation { Annotation(kind: kind, color: RGBA(1, 0, 0), lineWidth: 4) }
+    #expect(annotation(.pixelate(rect)).layerSymbol == "squareshape.split.3x3")
+    #expect(annotation(.marker([.zero, CGPoint(x: 5, y: 5)])).layerName == "Highlighter")
+    for shape in BoxShape.allCases {
+        #expect(annotation(.shape(shape, rect: rect)).layerSymbol == shape.symbol)
+    }
+}
