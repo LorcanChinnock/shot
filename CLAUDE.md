@@ -21,6 +21,7 @@ make lint                         # scripts/lint.sh: bans patterns that caused b
 make build                        # swift build
 make bundle                       # build and sign build/Shot.app only
 make run                          # build, install to /Applications/Shot.app, relaunch
+cd site && npm run dev            # the marketing site (see site/README.md)
 swift test --filter <testName>    # one test, e.g. --filter hitTestFilledKinds
 ```
 
@@ -44,6 +45,8 @@ Flow:
 - Video editor: `VideoEditorModel` keeps its own `UndoStack`. The timeline, keyframe, trim, cut and composition logic is in ShotCore (`Timeline*`, `VideoCuts`, `ProjectComposition`). GIF export is entirely ShotCore (`GIFExporter`, `GIFStreamWriter`).
 - Settings: keys and defaults live in ShotCore `Preferences`. `SettingsStore` is an `@Observable` cache, and views use its `@Setting(key)` wrapper.
 - Design system: `Sources/Shot/Design`. `Brutal` holds the tokens in `BrutalStyle.swift`, and `GlassWindow.swift` the window chrome.
+
+Website: `site/` is the Astro marketing site, deployed to Cloudflare by `.github/workflows/site.yml`. It renders `docs/usage.md` and `CHANGELOG.md` directly, so changes to those show up on the site. release-please ignores `site/`.
 
 Concurrency: UI and model types are `@MainActor`. Heavy work runs in `Task.detached`, and CG types cross actors through `@unchecked Sendable` wrappers (`SendableImage`, `EditorDocument`).
 

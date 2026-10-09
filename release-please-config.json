@@ -7,6 +7,7 @@
       "prerelease-type": "beta",
       "prerelease": true,
       "package-name": "Shot",
+      "exclude-paths": ["site"],
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
       "draft": true,

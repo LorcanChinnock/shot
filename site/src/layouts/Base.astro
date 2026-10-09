@@ -1,0 +1,90 @@
+---
+import '../styles/global.css';
+import { latestRelease } from '../lib/release';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title,
+  description = 'Screenshots, annotations and screen recordings for macOS, from the menu bar. Free, open source and private: no account, no cloud, no analytics.',
+} = Astro.props;
+const fullTitle = title ? `${title} · Shot` : 'Shot: screenshots and recordings for macOS';
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL('/og.png', Astro.site);
+const release = await latestRelease();
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const current = (href: string) => (path === href ? 'page' : undefined);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.png" type="image/png" sizes="64x64" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#ffd43b" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Shot" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="sitemap" href="/sitemap.xml" />
+    <slot name="head" />
+  </head>
+  <body>
+    <div class="backdrop" aria-hidden="true">
+      <div class="blob pink"></div>
+      <div class="blob yellow"></div>
+      <div class="blob mint"></div>
+      <div class="blob sky"></div>
+    </div>
+
+    <header class="site-header wrap">
+      <div class="bar card solid">
+        <a class="brand" href="/" aria-label="Shot home">
+          <img src="/icon-64.png" alt="" width="32" height="32" />
+          <span>Shot<sup>beta</sup></span>
+        </a>
+        <nav aria-label="Main">
+          <a href="/docs/" aria-current={current('/docs')}>Guide</a>
+          <a class="hide-sm" href="/changelog/" aria-current={current('/changelog')}>Changelog</a>
+          <a class="hide-sm" href="https://github.com/LorcanChinnock/shot">GitHub</a>
+          <a class="button small" href="/download" title={`Download Shot ${release.version}`}>Download</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer wrap">
+      <div class="bar card">
+        <a class="brand" href="/">
+          <img src="/icon-64.png" alt="" width="32" height="32" />
+          <span>Shot</span>
+        </a>
+        <nav aria-label="Footer">
+          <a href="/docs/">Guide</a>
+          <a href="/changelog/">Changelog</a>
+          <a href="/privacy/">Privacy</a>
+          <a href="https://github.com/LorcanChinnock/shot">Source</a>
+          <a href="https://github.com/LorcanChinnock/shot/issues">Report a bug</a>
+          <a href="https://github.com/LorcanChinnock/shot/blob/main/LICENSE">GPL-3.0</a>
+        </nav>
+        <small>Made by <a href="https://lorcanchinnock.com">Lorcan Chinnock</a>. Not affiliated with Apple.</small>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,275 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import Loop from '../components/Loop.astro';
+import Window from '../components/Window.astro';
+import Copy from '../components/Copy.astro';
+import { latestRelease } from '../lib/release';
+import capture from '../../../docs/media/capture-light.png';
+import editor from '../../../docs/media/editor.png';
+import videoEditor from '../../../docs/media/video-editor.png';
+import openAnyway from '../../../docs/media/open-anyway.png';
+
+const release = await latestRelease();
+const sizes = '(min-width: 1120px) 620px, 100vw';
+
+const features = [
+  {
+    id: 'capture',
+    chip: 'Capture',
+    tint: 'var(--yellow)',
+    title: 'Pick it, copy it, done.',
+    body: 'The screen freezes while you pick an area, so menus and hover states stay put. A magnifier finds the exact edge. Press Space for a window, or capture the whole screen.',
+    points: ['Copied and saved the moment you let go', 'A floating card to copy, save, annotate or drag into any app', 'Aspect ratios on Tab, square on Shift'],
+    media: { image: capture, alt: 'Selecting an area with the magnifier, then the Quick Access card in the corner of the screen' },
+  },
+  {
+    id: 'annotate',
+    chip: 'Annotate',
+    tint: 'var(--pink)',
+    title: 'Point at the problem.',
+    body: 'Arrows, sticky notes, text, shapes, a highlighter and a pen. Blur or pixelate anything private before it leaves your Mac.',
+    points: ['Spotlight, counters, crop and a canvas that grows past the edges', 'Combine several screenshots on one canvas', 'Shadows, borders and rounded corners in one click'],
+    media: { image: editor, alt: 'The annotation editor with arrows, a sticky note, a blurred email address, and notes beside the screenshot' },
+  },
+  {
+    id: 'record',
+    chip: 'Record',
+    tint: 'var(--mint)',
+    title: 'Show it, don’t write it up.',
+    body: 'Press ⌘⇧5, drag out an area, and you’re recording. Add your microphone, system audio and a round camera bubble when you want them.',
+    points: ['An area, a screen, or one window that it follows', 'Pause and resume; mute the mic without losing system audio', 'H.264 MP4 at 30 or 60 fps, copied when you stop'],
+    loop: { name: 'recording', label: 'Recording an area of the screen with the round camera bubble in the corner' },
+  },
+  {
+    id: 'trim',
+    chip: 'Trim & GIF',
+    tint: 'var(--sky)',
+    title: 'Cut the boring bits.',
+    body: 'Trim the ends, cut out the middle, then export an MP4 or a GIF at the frame rate, width and speed you choose. You see the file size before you export.',
+    points: ['Trims save without re-encoding where possible', 'GIFs at 10, 15 or 24 fps, up to 1080 px wide', '1×, 1.5× or 2× speed'],
+    media: { image: videoEditor, alt: 'The video editor with trim handles, a cut, and the GIF export options' },
+  },
+];
+
+const extras = [
+  ['Gallery', 'Every screenshot, recording and GIF, grouped by day and filtered by kind.'],
+  ['Layers', 'Reorder, lock and hide annotations like a design tool.'],
+  ['Keyframes', 'Move, scale and fade clips over time in the video editor.'],
+  ['Import', 'Drop other videos and audio onto the timeline.'],
+  ['Window shadows', 'Keep the macOS shadow on window captures, or turn it off.'],
+  ['Notch-aware', 'Recording controls tuck into the notch when space is tight.'],
+  ['URL scheme', 'Drive every action from scripts and launchers with shot://.'],
+  ['Your shortcuts', 'Rebind everything, or keep the macOS screenshot tool.'],
+];
+---
+
+<Base>
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <span class="chip">Free for macOS</span>
+        <h1>Screenshots and recordings, <mark>straight from the menu bar.</mark></h1>
+        <p class="lede">Capture, annotate, record and trim without leaving what you’re doing. Free, open source and private: no account, no cloud, no analytics.</p>
+        <div class="cta">
+          <a class="button big" href="/download">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.8 1.3 10.3.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.4-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9 0 0-2.8-1.1-2.8-4.2ZM13.9 5c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.5-.7.8-1.2 2-1.1 3.1 1.2.1 2.3-.6 3.1-1.4Z"/></svg>
+            <span>Download for Mac</span>
+          </a>
+          <Copy command="brew install lorcanchinnock/tap/shot" />
+        </div>
+        <p class="meta">Version {release.version} · macOS 15 or later · Apple Silicon · <a href="#install">Install notes</a></p>
+      </div>
+      <div class="hero-media">
+        <Window title="⌘⇧4 → annotate → paste">
+          <Loop name="hero" label="Pressing ⌘⇧4, drawing an arrow and a note on the screenshot, then pasting it into another app" eager />
+        </Window>
+      </div>
+    </div>
+  </section>
+
+  <section class="keys" aria-labelledby="keys-title">
+    <div class="wrap">
+      <h2 id="keys-title" class="visually-hidden">Shortcuts</h2>
+      <ol class="key-row">
+        <li class="card"><span class="keys-combo"><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">3</kbd></span><strong>Full screen</strong><span>The screen under the pointer.</span></li>
+        <li class="card"><span class="keys-combo"><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd></span><strong>Area or window</strong><span>Drag an area, or press Space for a window.</span></li>
+        <li class="card"><span class="keys-combo"><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">5</kbd></span><strong>Record</strong><span>Drag an area and you’re rolling.</span></li>
+      </ol>
+      <p class="keys-note">The keys you already know. Shot takes them over while it runs, and gives them back when you quit.</p>
+    </div>
+  </section>
+
+  {features.map((feature, index) => (
+    <section class="feature" id={feature.id}>
+      <div class={`wrap feature-grid ${index % 2 ? 'flip' : ''}`}>
+        <div class="feature-copy">
+          <span class="chip" style={`--chip: ${feature.tint}`}>{feature.chip}</span>
+          <h2>{feature.title}</h2>
+          <p>{feature.body}</p>
+          <ul class="ticks">
+            {feature.points.map((point) => <li>{point}</li>)}
+          </ul>
+        </div>
+        <Window tint={feature.tint}>
+          {feature.media && <Image src={feature.media.image} alt={feature.media.alt} widths={[640, 960, 1280, 1600]} sizes={sizes} />}
+          {feature.loop && <Loop name={feature.loop.name} label={feature.loop.label} />}
+        </Window>
+      </div>
+    </section>
+  ))}
+
+  <section class="extras" aria-labelledby="extras-title">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="chip" style="--chip: var(--violet)">More, when you want it</span>
+        <h2 id="extras-title">Out of the way until you ask.</h2>
+        <p>The quick path stays quick. Everything else is there when you reach for it.</p>
+      </div>
+      <ul class="extras-grid">
+        {extras.map(([name, text]) => (
+          <li class="card"><strong>{name}</strong><span>{text}</span></li>
+        ))}
+      </ul>
+      <p class="more"><a href="/docs/">Read the full guide →</a></p>
+    </div>
+  </section>
+
+  <section class="privacy" aria-labelledby="privacy-title">
+    <div class="wrap">
+      <div class="card ink privacy-card">
+        <h2 id="privacy-title">No account.<br />No cloud.<br /><span>No analytics.</span></h2>
+        <div>
+          <p>Your captures stay on your Mac, in the folder you choose. Shot only goes online to check for updates, and only after you say yes.</p>
+          <p>It’s free software under the GPL. <a href="https://github.com/LorcanChinnock/shot">Read every line</a>, or build it yourself.</p>
+          <p class="small">This site doesn’t track you either: no cookies, no analytics. <a href="/privacy/">Privacy</a></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="install" id="install" aria-labelledby="install-title">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="chip" style="--chip: var(--mint)">Install</span>
+        <h2 id="install-title">Up and running in a minute.</h2>
+        <p>Shot needs macOS 15 or later on an Apple Silicon Mac. It updates itself once you allow it to.</p>
+      </div>
+      <div class="install-grid">
+        <div class="card solid install-card">
+          <h3>With Homebrew</h3>
+          <Copy command="brew install lorcanchinnock/tap/shot" />
+        </div>
+        <div class="card solid install-card">
+          <h3>Or by hand</h3>
+          <p>Download the zip, unzip it and move <strong>Shot.app</strong> to Applications.</p>
+          <a class="button small" href="/download">Download Shot {release.version}</a>
+        </div>
+      </div>
+
+      <div class="card solid first-launch">
+        <div>
+          <h3>Opening Shot for the first time</h3>
+          <p class="aside">Shot isn’t notarized by Apple yet, so macOS asks you to confirm it once.</p>
+          <ol class="steps">
+            <li>Open Shot from Applications. When macOS says it can’t verify Shot, click <strong>Done</strong>.</li>
+            <li>In <strong>System Settings › Privacy &amp; Security</strong>, click <strong>Open Anyway</strong> next to the message about Shot, then confirm.</li>
+            <li>In Shot’s permission window, click <strong>Grant</strong>, turn on Shot in System Settings, then click <strong>Relaunch</strong>.</li>
+            <li>Press <kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd> for your first screenshot.</li>
+          </ol>
+        </div>
+        <Image src={openAnyway} alt="Privacy & Security in System Settings, with the Open Anyway button next to the message that Shot was blocked" widths={[480, 723]} sizes="(min-width: 900px) 420px, 100vw" class="shot" />
+      </div>
+    </div>
+  </section>
+
+  <section class="closing">
+    <div class="narrow closing-inner">
+      <img src="/icon-256.png" alt="" width="112" height="112" loading="lazy" />
+      <h2>Take your next screenshot with Shot.</h2>
+      <a class="button big" href="/download">Download for Mac</a>
+      <p class="meta">Free · Open source · Version {release.version}</p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  .hero { padding-top: clamp(40px, 7vw, 88px); padding-bottom: 32px; }
+  .hero-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 48px; align-items: center; }
+  .hero-grid > *, .feature-grid > * { min-width: 0; }
+  @media (min-width: 980px) { .hero-grid { grid-template-columns: 0.9fr 1.1fr; } }
+  .hero h1 { font-size: clamp(40px, 6.4vw, 70px); margin: 18px 0 20px; }
+  .hero mark { background: none; color: inherit; box-shadow: inset 0 -0.32em 0 var(--yellow); }
+  .lede { font-size: clamp(18px, 2vw, 21px); color: var(--muted); margin: 0 0 28px; max-width: 34em; }
+  .cta { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+  .cta :global(.copy) { flex: 1 1 280px; min-width: 0; }
+  .button.big { min-height: 56px; padding: 12px 24px; font-size: 19px; }
+  .meta { margin: 18px 0 0; font-size: 14px; font-weight: 600; color: var(--muted); }
+  .hero-media { transform: rotate(0.6deg); }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-media { animation: rise 600ms cubic-bezier(.2, .8, .2, 1) both; }
+    @keyframes rise { from { opacity: 0; transform: translateY(24px) rotate(2deg); } }
+  }
+
+  .keys { padding-top: 32px; }
+  .key-row { list-style: none; padding: 0; margin: 0; display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .key-row li { display: grid; gap: 4px; padding: 20px; }
+  .keys-combo { display: flex; gap: 6px; font-size: 22px; margin-bottom: 10px; }
+  .key-row strong { font: 900 20px/1.2 var(--display); }
+  .key-row li > span:last-child { color: var(--muted); font-size: 15px; }
+  .keys-note { text-align: center; color: var(--muted); font-size: 15px; margin: 24px 0 0; }
+
+  .feature-grid { display: grid; gap: 40px; align-items: center; }
+  @media (min-width: 900px) {
+    .feature-grid { grid-template-columns: 0.8fr 1.2fr; gap: 64px; }
+    .feature-grid.flip { grid-template-columns: 1.2fr 0.8fr; }
+    .feature-grid.flip .feature-copy { order: 2; }
+  }
+  .feature h2 { font-size: clamp(32px, 4.6vw, 48px); margin: 16px 0 14px; }
+  .feature-copy > p { font-size: 18px; color: var(--muted); margin: 0 0 20px; }
+  .ticks { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .ticks li { position: relative; padding-left: 34px; font-weight: 600; }
+  .ticks li::before {
+    content: ""; position: absolute; left: 0; top: 2px; width: 20px; height: 20px;
+    border: 2px solid var(--ink); border-radius: 6px; background: var(--mint);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 10.5l3 3 7-7' fill='none' stroke='%2312121a' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+
+  .extras-grid { list-style: none; padding: 0; margin: 0; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+  .extras-grid li { display: grid; gap: 4px; padding: 16px 18px; }
+  .extras-grid strong { font: 900 17px/1.2 var(--display); }
+  .extras-grid span { font-size: 15px; color: var(--muted); }
+  .more { margin: 28px 0 0; font-weight: 800; }
+
+  .privacy-card { display: grid; gap: 28px; padding: clamp(28px, 5vw, 56px); }
+  @media (min-width: 860px) { .privacy-card { grid-template-columns: 1fr 1fr; align-items: center; } }
+  .privacy-card h2 { font-size: clamp(40px, 6vw, 64px); }
+  .privacy-card h2 span { color: var(--yellow); }
+  .privacy-card p { font-size: 18px; margin: 0 0 14px; color: rgb(255 255 255 / 0.82); }
+  .privacy-card a:hover { text-decoration-color: var(--yellow); }
+  .privacy-card .small { font-size: 14px; color: rgb(255 255 255 / 0.6); margin: 0; }
+
+  .install-grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); }
+  .install-card { min-width: 0; }
+  .install-card { padding: 22px; display: grid; gap: 14px; align-content: start; justify-items: start; }
+  .install-card h3, .first-launch h3 { font-size: 22px; }
+  .install-card p { margin: 0; }
+  .install-card :global(.copy) { width: 100%; }
+  .first-launch { margin-top: 24px; padding: 24px; display: grid; gap: 28px; align-items: center; }
+  @media (min-width: 900px) { .first-launch { grid-template-columns: 1.1fr 0.9fr; } }
+  .aside { color: var(--muted); margin: 8px 0 16px; }
+  .steps { margin: 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 12px; }
+  .steps li { counter-increment: step; position: relative; padding-left: 42px; }
+  .steps li::before {
+    content: counter(step); position: absolute; left: 0; top: -1px;
+    display: grid; place-items: center; width: 28px; height: 28px;
+    font: 900 14px/1 var(--font); background: var(--yellow); border: 2px solid var(--ink); border-radius: 50%;
+  }
+  .first-launch :global(.shot) { border: 2px solid var(--ink); border-radius: 10px; }
+
+  .closing-inner { display: grid; justify-items: center; text-align: center; gap: 20px; }
+  .closing h2 { font-size: clamp(32px, 5vw, 52px); }
+  .closing .meta { margin: 0; }
+</style>
