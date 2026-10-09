@@ -6,7 +6,7 @@ extension Annotation {
     public var canReveal: Bool {
         switch kind {
         case .arrow, .line, .freehand: true
-        default: false
+        case .shape, .highlight, .pixelate, .blur, .spotlight, .text, .counter, .note, .marker, .image: false
         }
     }
 
@@ -76,7 +76,7 @@ extension Annotation {
             copy.kind = .freehand(Self.prefix(of: points, fraction: p))
         case let .marker(points):
             copy.kind = .marker(Self.prefix(of: points, fraction: p))
-        default:
+        case .shape, .highlight, .pixelate, .blur, .spotlight, .text, .counter, .note, .image:
             break
         }
         return copy

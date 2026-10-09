@@ -129,7 +129,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public var canRound: Bool {
         switch kind {
         case .shape, .spotlight: true
-        default: false
+        case .arrow, .line, .highlight, .pixelate, .blur, .text, .counter, .note, .freehand, .marker, .image: false
         }
     }
 
@@ -147,7 +147,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public var supportsFill: Bool {
         switch kind {
         case .shape: true
-        default: false
+        case .arrow, .line, .highlight, .pixelate, .blur, .spotlight, .text, .counter, .note, .freehand, .marker, .image: false
         }
     }
 
@@ -155,7 +155,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public var sizesText: Bool {
         switch kind {
         case .text, .note, .counter: true
-        default: false
+        case .arrow, .line, .shape, .highlight, .pixelate, .blur, .spotlight, .freehand, .marker, .image: false
         }
     }
 
@@ -163,7 +163,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public var alignsText: Bool {
         switch kind {
         case .text, .note: true
-        default: false
+        case .arrow, .line, .shape, .highlight, .pixelate, .blur, .spotlight, .counter, .freehand, .marker, .image: false
         }
     }
 
@@ -172,7 +172,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         switch kind {
         case .blur: .blur
         case .pixelate: .pixelate
-        default: nil
+        case .arrow, .line, .shape, .highlight, .spotlight, .text, .counter, .note, .freehand, .marker, .image: nil
         }
     }
 
@@ -364,7 +364,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public var text: String? {
         switch kind {
         case let .text(string, _, _), let .note(string, _): string
-        default: nil
+        case .arrow, .line, .shape, .highlight, .pixelate, .blur, .spotlight, .counter, .freehand, .marker, .image: nil
         }
     }
 
@@ -373,7 +373,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         switch kind {
         case let .text(_, origin, fontSize): kind = .text(string, origin: origin, fontSize: fontSize)
         case let .note(_, rect): kind = .note(string, rect: rect)
-        default: break
+        case .arrow, .line, .shape, .highlight, .pixelate, .blur, .spotlight, .counter, .freehand, .marker, .image: break
         }
     }
 

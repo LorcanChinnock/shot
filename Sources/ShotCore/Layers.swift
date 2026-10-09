@@ -97,7 +97,7 @@ extension Annotation {
         case let .spotlight(_, style):
             // A Gaussian blur spreads about three times its radius; a darkening reads only the pixel it darkens.
             style.effect == .blur ? style.blurRadius(forImageLength: AnnotationRenderer.longerSide(of: base)) * 3 : 0
-        default:
+        case .arrow, .line, .shape, .highlight, .text, .counter, .note, .freehand, .marker, .image:
             nil
         }
     }
