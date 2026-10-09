@@ -1,7 +1,8 @@
 import ShotCore
 import SwiftUI
 
-/// The selected clip's position, scale, rotation, opacity and volume, each with a diamond that keys it at the playhead,
+/// The selected clip's position, scale, rotation, opacity, volume or how much of a stroke is drawn, as
+/// `Project.keyableProperties` lists them, each with a diamond that keys it at the playhead,
 /// the one-click animations, and the Style popover's shadow, border and corners. Changing a keyed property at another
 /// time adds a keyframe there.
 struct ClipInspector: View {
@@ -14,9 +15,10 @@ struct ClipInspector: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let id = model.selectedClipID, let values = model.selectedValues, let animation = model.selectedAnimation {
-                let isSound = model.project.clip(id).map { clip in model.project.tracks.contains { $0.kind == .audio && $0.clips.contains { $0.id == clip.id } } } ?? false
+                let keyable = model.project.keyableProperties(ofClip: id)
+                let isSound = keyable == [.volume]
                 let isNote = model.project.annotationClip(id) != nil
-                properties(values, animation, isSound: isSound)
+                properties(values, animation, keyable: keyable)
                 HStack(spacing: 8) {
                     if !isSound {
                         ForEach(AnimationPreset.allCases, id: \.self) { preset in
@@ -48,7 +50,7 @@ struct ClipInspector: View {
                 }
                 .frame(height: 32)
             } else {
-                properties(PropertyValues(), ClipAnimation(), isSound: false)
+                properties(PropertyValues(), ClipAnimation(), keyable: [.position, .scale, .rotation, .opacity])
                     .disabled(true)
                     .opacity(0.5)
                 Text("Select a clip to move, scale, turn or fade it, and to key it over time.")
@@ -63,35 +65,53 @@ struct ClipInspector: View {
 
     // MARK: Controls
 
-    private func properties(_ values: PropertyValues, _ animation: ClipAnimation, isSound: Bool) -> some View {
+    /// A control for each property in `keyable`, in its order.
+    private func properties(_ values: PropertyValues, _ animation: ClipAnimation, keyable: [AnimatedProperty]) -> some View {
         HStack(spacing: 14) {
-            if isSound {
-                slider("VOLUME", property: .volume, value: values.volume, range: 0...2, format: { "\(Int(($0 * 100).rounded()))%" }, animation: animation) {
-                    var changed = values
-                    changed.volume = $0
-                    return changed
-                }
-            } else {
-                position(values, animation)
-                slider("SCALE", property: .scale, value: log2(values.scale), range: PropertyValues.scaleDoublings, format: { String(format: "%.2f×", exp2($0)) }, animation: animation) {
-                    var changed = values
-                    changed.scale = exp2($0)
-                    return changed
-                }
-                slider("TURN", property: .rotation, value: values.rotation * 180 / .pi, range: -180...180, format: { "\(Int($0.rounded()))°" }, animation: animation) {
-                    var changed = values
-                    changed.rotation = $0 * .pi / 180
-                    return changed
-                }
-                slider("OPACITY", property: .opacity, value: values.opacity, range: 0...1, format: { "\(Int(($0 * 100).rounded()))%" }, animation: animation) {
-                    var changed = values
-                    changed.opacity = $0
-                    return changed
-                }
+            ForEach(keyable, id: \.self) { property in
+                control(property, values, animation)
             }
             Spacer(minLength: 0)
         }
         .frame(height: 32)
+    }
+
+    @ViewBuilder
+    private func control(_ property: AnimatedProperty, _ values: PropertyValues, _ animation: ClipAnimation) -> some View {
+        switch property {
+        case .position:
+            position(values, animation)
+        case .scale:
+            slider("SCALE", property: .scale, value: log2(values.scale), range: PropertyValues.scaleDoublings, format: { String(format: "%.2f×", exp2($0)) }, animation: animation) {
+                var changed = values
+                changed.scale = exp2($0)
+                return changed
+            }
+        case .rotation:
+            slider("TURN", property: .rotation, value: values.rotation * 180 / .pi, range: -180...180, format: { "\(Int($0.rounded()))°" }, animation: animation) {
+                var changed = values
+                changed.rotation = $0 * .pi / 180
+                return changed
+            }
+        case .opacity:
+            slider("OPACITY", property: .opacity, value: values.opacity, range: 0...1, format: { "\(Int(($0 * 100).rounded()))%" }, animation: animation) {
+                var changed = values
+                changed.opacity = $0
+                return changed
+            }
+        case .volume:
+            slider("VOLUME", property: .volume, value: values.volume, range: 0...2, format: { "\(Int(($0 * 100).rounded()))%" }, animation: animation) {
+                var changed = values
+                changed.volume = $0
+                return changed
+            }
+        case .reveal:
+            slider("DRAWN", property: .reveal, value: values.reveal, range: 0...1, format: { "\(Int(($0 * 100).rounded()))%" }, animation: animation) {
+                var changed = values
+                changed.reveal = $0
+                return changed
+            }
+        }
     }
 
     private func position(_ values: PropertyValues, _ animation: ClipAnimation) -> some View {

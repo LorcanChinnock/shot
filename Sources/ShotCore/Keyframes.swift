@@ -124,6 +124,29 @@ public enum Keyframes {
         after.insert(Keyframe(time: 0, value: held, easing: easing), at: 0)
         return (before, after)
     }
+
+    /// Sets how the keyframe at `time`, if there is one, eases towards the next.
+    public static func settingEasing<V>(_ keyframes: [Keyframe<V>], _ easing: Easing, at time: Double) -> [Keyframe<V>] {
+        var result = keyframes
+        if let index = index(of: result, at: time) {
+            result[index].easing = easing
+        }
+        return result
+    }
+
+    /// Moves the keyframe at `time`, if there is one, to `new`, replacing one already there.
+    public static func moving<V>(_ keyframes: [Keyframe<V>], from time: Double, to new: Double) -> [Keyframe<V>] {
+        guard let index = index(of: keyframes, at: time) else {
+            return keyframes
+        }
+        var result = keyframes
+        var moved = result.remove(at: index)
+        result = removing(result, at: new)
+        moved.time = new
+        result.append(moved)
+        result.sort { $0.time < $1.time }
+        return result
+    }
 }
 
 /// What a clip can animate.
@@ -157,6 +180,141 @@ public struct PropertyValues: Equatable, Sendable {
     }
 }
 
+/// One property's value, typed as the property is: a position is a size, everything else a number.
+public enum PropertyValue: Equatable, Sendable {
+    case size(CGSize)
+    case number(Double)
+
+    /// False within a rounding error.
+    public func differs(from other: PropertyValue) -> Bool {
+        switch (self, other) {
+        case let (.size(a), .size(b)): abs(a.width - b.width) > 1e-9 || abs(a.height - b.height) > 1e-9
+        case let (.number(a), .number(b)): abs(a - b) > 1e-9
+        case (.size, .number), (.number, .size): true
+        }
+    }
+}
+
+extension PropertyValues {
+    /// The value of `property`. Setting a value of the wrong type leaves it as it was.
+    public subscript(property: AnimatedProperty) -> PropertyValue {
+        get {
+            switch property {
+            case .position: .size(position)
+            case .scale: .number(scale)
+            case .rotation: .number(rotation)
+            case .opacity: .number(opacity)
+            case .volume: .number(volume)
+            case .reveal: .number(reveal)
+            }
+        }
+        set {
+            switch (property, newValue) {
+            case let (.position, .size(value)): position = value
+            case let (.scale, .number(value)): scale = value
+            case let (.rotation, .number(value)): rotation = value
+            case let (.opacity, .number(value)): opacity = value
+            case let (.volume, .number(value)): volume = value
+            case let (.reveal, .number(value)): reveal = value
+            case (.position, .number), (.scale, .size), (.rotation, .size), (.opacity, .size), (.volume, .size), (.reveal, .size):
+                assertionFailure("\(property) can't hold \(newValue)")
+            }
+        }
+    }
+}
+
+/// One property's keyframes, typed as the property is, so `ClipAnimation` can go through its properties in a loop.
+public enum PropertyKeyframes: Equatable, Sendable {
+    case size([Keyframe<CGSize>])
+    case number([Keyframe<Double>])
+
+    public var isEmpty: Bool {
+        switch self {
+        case let .size(keyframes): keyframes.isEmpty
+        case let .number(keyframes): keyframes.isEmpty
+        }
+    }
+
+    public var times: [Double] {
+        switch self {
+        case let .size(keyframes): keyframes.map(\.time)
+        case let .number(keyframes): keyframes.map(\.time)
+        }
+    }
+
+    public func hasKeyframe(at time: Double) -> Bool {
+        switch self {
+        case let .size(keyframes): Keyframes.index(of: keyframes, at: time) != nil
+        case let .number(keyframes): Keyframes.index(of: keyframes, at: time) != nil
+        }
+    }
+
+    /// The easing of the keyframe at `time`, if there is one.
+    public func easing(at time: Double) -> Easing? {
+        switch self {
+        case let .size(keyframes): Keyframes.index(of: keyframes, at: time).map { keyframes[$0].easing }
+        case let .number(keyframes): Keyframes.index(of: keyframes, at: time).map { keyframes[$0].easing }
+        }
+    }
+
+    /// The value at `time`, or `base` with no keyframes.
+    public func value(at time: Double, base: PropertyValue) -> PropertyValue {
+        switch (self, base) {
+        case let (.size(keyframes), .size(base)): .size(Keyframes.value(keyframes, at: time, base: base))
+        case let (.number(keyframes), .number(base)): .number(Keyframes.value(keyframes, at: time, base: base))
+        case (.size, .number), (.number, .size): base
+        }
+    }
+
+    /// With the value at `time` set to `value`; a value of the wrong type changes nothing.
+    public func setting(at time: Double, to value: PropertyValue) -> PropertyKeyframes {
+        switch (self, value) {
+        case let (.size(keyframes), .size(value)): .size(Keyframes.setting(keyframes, at: time, to: value))
+        case let (.number(keyframes), .number(value)): .number(Keyframes.setting(keyframes, at: time, to: value))
+        case (.size, .number), (.number, .size): self
+        }
+    }
+
+    public func removing(at time: Double) -> PropertyKeyframes {
+        switch self {
+        case let .size(keyframes): .size(Keyframes.removing(keyframes, at: time))
+        case let .number(keyframes): .number(Keyframes.removing(keyframes, at: time))
+        }
+    }
+
+    public func shifted(by delta: Double) -> PropertyKeyframes {
+        switch self {
+        case let .size(keyframes): .size(Keyframes.shifted(keyframes, by: delta))
+        case let .number(keyframes): .number(Keyframes.shifted(keyframes, by: delta))
+        }
+    }
+
+    public func splitting(at time: Double) -> (before: PropertyKeyframes, after: PropertyKeyframes) {
+        switch self {
+        case let .size(keyframes):
+            let (before, after) = Keyframes.splitting(keyframes, at: time)
+            return (.size(before), .size(after))
+        case let .number(keyframes):
+            let (before, after) = Keyframes.splitting(keyframes, at: time)
+            return (.number(before), .number(after))
+        }
+    }
+
+    public func settingEasing(_ easing: Easing, at time: Double) -> PropertyKeyframes {
+        switch self {
+        case let .size(keyframes): .size(Keyframes.settingEasing(keyframes, easing, at: time))
+        case let .number(keyframes): .number(Keyframes.settingEasing(keyframes, easing, at: time))
+        }
+    }
+
+    public func moving(from time: Double, to new: Double) -> PropertyKeyframes {
+        switch self {
+        case let .size(keyframes): .size(Keyframes.moving(keyframes, from: time, to: new))
+        case let .number(keyframes): .number(Keyframes.moving(keyframes, from: time, to: new))
+        }
+    }
+}
+
 /// Keyframes for each property of a clip, in seconds from the clip's start. A property with none keeps its plain value.
 public struct ClipAnimation: Codable, Equatable, Sendable {
     public var position: [Keyframe<CGSize>] = []
@@ -168,14 +326,49 @@ public struct ClipAnimation: Codable, Equatable, Sendable {
 
     public init() {}
 
+    /// The keyframes of `property`: the one place that names each property's storage. Setting keyframes of the wrong
+    /// type leaves them as they were.
+    public subscript(property: AnimatedProperty) -> PropertyKeyframes {
+        get {
+            switch property {
+            case .position: .size(position)
+            case .scale: .number(scale)
+            case .rotation: .number(rotation)
+            case .opacity: .number(opacity)
+            case .volume: .number(volume)
+            case .reveal: .number(reveal)
+            }
+        }
+        set {
+            switch (property, newValue) {
+            case let (.position, .size(keyframes)): position = keyframes
+            case let (.scale, .number(keyframes)): scale = keyframes
+            case let (.rotation, .number(keyframes)): rotation = keyframes
+            case let (.opacity, .number(keyframes)): opacity = keyframes
+            case let (.volume, .number(keyframes)): volume = keyframes
+            case let (.reveal, .number(keyframes)): reveal = keyframes
+            case (.position, .number), (.scale, .size), (.rotation, .size), (.opacity, .size), (.volume, .size), (.reveal, .size):
+                assertionFailure("\(property) can't hold \(newValue)")
+            }
+        }
+    }
+
+    /// Applies `change` to each property's keyframes.
+    private func mapped(_ change: (PropertyKeyframes) -> PropertyKeyframes) -> ClipAnimation {
+        var result = self
+        for property in AnimatedProperty.allCases {
+            result[property] = change(self[property])
+        }
+        return result
+    }
+
     public var isEmpty: Bool {
-        position.isEmpty && scale.isEmpty && rotation.isEmpty && opacity.isEmpty && volume.isEmpty && reveal.isEmpty
+        AnimatedProperty.allCases.allSatisfy { self[$0].isEmpty }
     }
 
     /// Every time that has a keyframe of any property, in order.
     public var times: [Double] {
-        var all = position.map(\.time) + scale.map(\.time) + rotation.map(\.time) + opacity.map(\.time) + volume.map(\.time) + reveal.map(\.time)
-        all.sort()
+        let all = AnimatedProperty.allCases.flatMap { self[$0].times }.sorted()
         return all.reduce(into: []) { result, time in
             if result.last.map({ abs($0 - time) > Keyframes.tolerance }) ?? true {
                 result.append(time)
@@ -184,37 +377,20 @@ public struct ClipAnimation: Codable, Equatable, Sendable {
     }
 
     public func hasKeyframes(_ property: AnimatedProperty) -> Bool {
-        switch property {
-        case .position: !position.isEmpty
-        case .scale: !scale.isEmpty
-        case .rotation: !rotation.isEmpty
-        case .opacity: !opacity.isEmpty
-        case .volume: !volume.isEmpty
-        case .reveal: !reveal.isEmpty
-        }
+        !self[property].isEmpty
     }
 
     public func hasKeyframe(_ property: AnimatedProperty, at time: Double) -> Bool {
-        switch property {
-        case .position: Keyframes.index(of: position, at: time) != nil
-        case .scale: Keyframes.index(of: scale, at: time) != nil
-        case .rotation: Keyframes.index(of: rotation, at: time) != nil
-        case .opacity: Keyframes.index(of: opacity, at: time) != nil
-        case .volume: Keyframes.index(of: volume, at: time) != nil
-        case .reveal: Keyframes.index(of: reveal, at: time) != nil
-        }
+        self[property].hasKeyframe(at: time)
     }
 
     /// The values at `time`, with `base` for any property that has no keyframes.
     public func values(at time: Double, base: PropertyValues) -> PropertyValues {
-        PropertyValues(
-            position: Keyframes.value(position, at: time, base: base.position),
-            scale: Keyframes.value(scale, at: time, base: base.scale),
-            rotation: Keyframes.value(rotation, at: time, base: base.rotation),
-            opacity: Keyframes.value(opacity, at: time, base: base.opacity),
-            volume: Keyframes.value(volume, at: time, base: base.volume),
-            reveal: Keyframes.value(reveal, at: time, base: base.reveal)
-        )
+        var result = base
+        for property in AnimatedProperty.allCases {
+            result[property] = self[property].value(at: time, base: base[property])
+        }
+        return result
     }
 
     /// Adds a keyframe of `property` at `time` holding what it is there now, or takes the one that's there away.
@@ -229,120 +405,50 @@ public struct ClipAnimation: Codable, Equatable, Sendable {
     }
 
     public mutating func remove(_ property: AnimatedProperty, at time: Double) {
-        switch property {
-        case .position: position = Keyframes.removing(position, at: time)
-        case .scale: scale = Keyframes.removing(scale, at: time)
-        case .rotation: rotation = Keyframes.removing(rotation, at: time)
-        case .opacity: opacity = Keyframes.removing(opacity, at: time)
-        case .volume: volume = Keyframes.removing(volume, at: time)
-        case .reveal: reveal = Keyframes.removing(reveal, at: time)
-        }
+        self[property] = self[property].removing(at: time)
     }
 
     /// Takes away every keyframe at `time`.
     public func removingKeyframes(at time: Double) -> ClipAnimation {
-        var result = self
-        for property in AnimatedProperty.allCases {
-            result.remove(property, at: time)
-        }
-        return result
+        mapped { $0.removing(at: time) }
     }
 
     public mutating func set(_ property: AnimatedProperty, at time: Double, to values: PropertyValues) {
-        switch property {
-        case .position: position = Keyframes.setting(position, at: time, to: values.position)
-        case .scale: scale = Keyframes.setting(scale, at: time, to: values.scale)
-        case .rotation: rotation = Keyframes.setting(rotation, at: time, to: values.rotation)
-        case .opacity: opacity = Keyframes.setting(opacity, at: time, to: values.opacity)
-        case .volume: volume = Keyframes.setting(volume, at: time, to: values.volume)
-        case .reveal: reveal = Keyframes.setting(reveal, at: time, to: values.reveal)
-        }
+        self[property] = self[property].setting(at: time, to: values[property])
     }
 
     /// Sets how the keyframes at `time` ease towards the next.
     public func settingEasing(_ easing: Easing, at time: Double) -> ClipAnimation {
-        var result = self
-        func apply<V>(_ keyframes: inout [Keyframe<V>]) {
-            if let index = Keyframes.index(of: keyframes, at: time) {
-                keyframes[index].easing = easing
-            }
-        }
-        apply(&result.position)
-        apply(&result.scale)
-        apply(&result.rotation)
-        apply(&result.opacity)
-        apply(&result.volume)
-        apply(&result.reveal)
-        return result
+        mapped { $0.settingEasing(easing, at: time) }
     }
 
     /// The easing of a keyframe at `time`, if there is one.
     public func easing(at time: Double) -> Easing? {
-        position.first { abs($0.time - time) <= Keyframes.tolerance }?.easing
-            ?? scale.first { abs($0.time - time) <= Keyframes.tolerance }?.easing
-            ?? rotation.first { abs($0.time - time) <= Keyframes.tolerance }?.easing
-            ?? opacity.first { abs($0.time - time) <= Keyframes.tolerance }?.easing
-            ?? volume.first { abs($0.time - time) <= Keyframes.tolerance }?.easing
-            ?? reveal.first { abs($0.time - time) <= Keyframes.tolerance }?.easing
+        AnimatedProperty.allCases.lazy.compactMap { self[$0].easing(at: time) }.first
     }
 
     /// Moves every keyframe at `time` to `new`.
     public func movingKeyframes(from time: Double, to new: Double) -> ClipAnimation {
-        var result = self
-        func apply<V>(_ keyframes: inout [Keyframe<V>]) {
-            guard let index = Keyframes.index(of: keyframes, at: time) else {
-                return
-            }
-            var moved = keyframes[index]
-            keyframes.remove(at: index)
-            keyframes = Keyframes.removing(keyframes, at: new)
-            moved.time = new
-            keyframes.append(moved)
-            keyframes.sort { $0.time < $1.time }
-        }
-        apply(&result.position)
-        apply(&result.scale)
-        apply(&result.rotation)
-        apply(&result.opacity)
-        apply(&result.volume)
-        apply(&result.reveal)
-        return result
+        mapped { $0.moving(from: time, to: new) }
     }
 
     public func shifted(by delta: Double) -> ClipAnimation {
-        var result = self
-        result.position = Keyframes.shifted(position, by: delta)
-        result.scale = Keyframes.shifted(scale, by: delta)
-        result.rotation = Keyframes.shifted(rotation, by: delta)
-        result.opacity = Keyframes.shifted(opacity, by: delta)
-        result.volume = Keyframes.shifted(volume, by: delta)
-        result.reveal = Keyframes.shifted(reveal, by: delta)
-        return result
+        mapped { $0.shifted(by: delta) }
     }
 
     /// The animation of the part of a clip before `time`, and of the part after it with times counted from the cut.
     public func splitting(at time: Double) -> (before: ClipAnimation, after: ClipAnimation) {
         var before = self, after = self
-        (before.position, after.position) = Keyframes.splitting(position, at: time)
-        (before.scale, after.scale) = Keyframes.splitting(scale, at: time)
-        (before.rotation, after.rotation) = Keyframes.splitting(rotation, at: time)
-        (before.opacity, after.opacity) = Keyframes.splitting(opacity, at: time)
-        (before.volume, after.volume) = Keyframes.splitting(volume, at: time)
-        (before.reveal, after.reveal) = Keyframes.splitting(reveal, at: time)
+        for property in AnimatedProperty.allCases {
+            (before[property], after[property]) = self[property].splitting(at: time)
+        }
         return (before, after)
     }
 
     /// Takes the keyframes of `property` in `other`.
     public func replacing(_ property: AnimatedProperty, with other: ClipAnimation) -> ClipAnimation {
         var result = self
-        switch property {
-        case .position: result.position = other.position
-        case .scale: result.scale = other.scale
-        case .rotation: result.rotation = other.rotation
-        case .opacity: result.opacity = other.opacity
-        case .volume: result.volume = other.volume
-        case .reveal: result.reveal = other.reveal
-        }
+        result[property] = other[property]
         return result
     }
 }
