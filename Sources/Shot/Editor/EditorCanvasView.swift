@@ -141,7 +141,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             doc.annotations.append(draft)
         }
         let rect = imageRect
-        let ink = NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1)
+        let ink = Brutal.inkNS
         if doc.background == nil, doc.hasPadding {
             let padding = NSBezierPath(rect: rect)
             let image = doc.fullRect.intersection(doc.canvasRect)
@@ -698,7 +698,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     /// Opens a text field over `note`, which is either new or already in the document.
     private func beginNote(_ note: Annotation) {
-        guard case let .note(string, _) = note.kind, let layout = note.noteLayout else {
+        guard case let .note(string, _) = note.kind, note.noteLayout != nil else {
             return
         }
         dragStart = nil
@@ -770,7 +770,7 @@ extension NSView {
         if chip.maxY > bounds.maxY {
             chip.origin.y = point.y - 12 - chip.height
         }
-        NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 0.9).setFill()
+        Brutal.inkNS.withAlphaComponent(0.9).setFill()
         NSBezierPath(roundedRect: chip, xRadius: 4, yRadius: 4).fill()
         text.draw(at: CGPoint(x: chip.minX + 6, y: chip.minY + 3))
     }

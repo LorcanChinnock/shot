@@ -348,7 +348,7 @@ private final class HandleView: NSView {
     private let handle: RegionHandle
     private let onDrag: (CGVector) -> Void
     private var last: CGPoint?
-    private static let ink = NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1)
+    private static let ink = Brutal.inkNS
 
     init(handle: RegionHandle, onDrag: @escaping (CGVector) -> Void) {
         self.handle = handle

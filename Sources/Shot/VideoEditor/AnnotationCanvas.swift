@@ -113,14 +113,14 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         let outline = NSBezierPath(rect: viewRect(annotation.paintedBounds))
         outline.lineWidth = 1.5
         outline.setLineDash([5, 3], count: 2, phase: 0)
-        NSColor(srgbRed: 1, green: 0.83, blue: 0.23, alpha: 1).setStroke()
+        Brutal.yellowNS.setStroke()
         outline.stroke()
         for (_, point) in annotation.handles {
             let center = CGPoint(x: origin.x + point.x * fit, y: origin.y + point.y * fit)
             let square = NSBezierPath(rect: CGRect(x: center.x - 4, y: center.y - 4, width: 8, height: 8))
             NSColor.white.setFill()
             square.fill()
-            NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1).setStroke()
+            Brutal.inkNS.setStroke()
             square.lineWidth = 1.5
             square.stroke()
         }
@@ -130,7 +130,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             let dot = NSBezierPath(ovalIn: CGRect(x: center.x - 4, y: center.y - 4, width: 8, height: 8))
             NSColor.white.setFill()
             dot.fill()
-            NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1).setStroke()
+            Brutal.inkNS.setStroke()
             dot.lineWidth = 1.5
             dot.stroke()
         }

@@ -84,7 +84,7 @@ enum Toast {
 
     private static func scheduleHide() {
         hideTask?.cancel()
-        guard let duration, let panel else {
+        guard let duration, panel != nil else {
             return
         }
         hideTask = Task {
@@ -118,6 +118,7 @@ enum Toast {
     }
 }
 
+@MainActor
 @Observable
 private final class ToastText {
     var message: String
