@@ -47,7 +47,7 @@ public enum PreferenceKey {
     public static let editorSpotlight = "editorSpotlight"
     public static let editorAlignment = "editorAlignment"
     public static let editorObjectStyles = "editorObjectStyles"
-    public static let styleNewCaptures = "styleNewCaptures"
+    /// The style Use this style for new captures saved; empty while it's off.
     public static let newCaptureStyle = "newCaptureStyle"
     public static let galleryTileSize = "galleryTileSize"
     public static let partyModeUnlocked = "partyModeUnlocked"
@@ -131,7 +131,6 @@ public struct Preferences {
             PreferenceKey.editorSpotlight: Data(),
             PreferenceKey.editorAlignment: EditorStyle().alignment.rawValue,
             PreferenceKey.editorObjectStyles: Data(),
-            PreferenceKey.styleNewCaptures: false,
             PreferenceKey.newCaptureStyle: Data(),
             PreferenceKey.galleryTileSize: Gallery.defaultTileSize,
             PreferenceKey.partyModeUnlocked: false,
@@ -315,15 +314,11 @@ public struct Preferences {
 
     /// The style new captures open and copy with, when Use this style for new captures is on; `nil` when it's off.
     public var newCaptureStyle: CopiedStyle? {
-        guard store.bool(forKey: PreferenceKey.styleNewCaptures), let data = store.data(forKey: PreferenceKey.newCaptureStyle) else {
-            return nil
-        }
-        return try? JSONDecoder().decode(CopiedStyle.self, from: data)
+        store.data(forKey: PreferenceKey.newCaptureStyle).flatMap { try? JSONDecoder().decode(CopiedStyle.self, from: $0) }
     }
 
     /// Turns Use this style for new captures on with `style`, or off when it's `nil`.
     public static func styleNewCaptures(with style: CopiedStyle?, in store: UserDefaults = .standard) {
-        store.set(style != nil, forKey: PreferenceKey.styleNewCaptures)
         store.set(style.flatMap { try? JSONEncoder().encode($0) } ?? Data(), forKey: PreferenceKey.newCaptureStyle)
     }
 

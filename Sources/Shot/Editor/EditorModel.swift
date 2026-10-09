@@ -124,8 +124,8 @@ final class EditorModel {
     private var objectStyles: [StyleKind: ObjectStyle]
     /// The style Copy Style took last, in any editor window, which Paste Style puts on the selection.
     private static var copiedStyle: CopiedStyle?
-    /// What Use this style for new captures saved, as this window last saw it; `nil` while it's off.
-    private(set) var newCaptureStyle = Preferences().newCaptureStyle
+    /// Bumped when this window changes Use this style for new captures, so the popover's switch redraws.
+    private var newCaptureSettingChanges = 0
     /// The layers picked, from the canvas or the layers panel. The toolbar styles an annotation only while it's the only one.
     var selectedIDs: Set<UUID> = []
     var selectedID: UUID? {
@@ -540,14 +540,16 @@ final class EditorModel {
     }
 
     /// Whether new captures get this screenshot's style: the setting is on, and the style it saved is this one.
+    /// Read from Settings each time, so another window's change shows here too.
     var usesStyleForNewCaptures: Bool {
-        newCaptureStyle != nil && newCaptureStyle == document.copyStyle(of: .capture, scale: scale)
+        _ = newCaptureSettingChanges
+        return document.captureHas(Preferences().newCaptureStyle, scale: scale)
     }
 
     /// Saves the screenshot's style for new captures to open and copy with, or turns that off.
     func setUsesStyleForNewCaptures(_ on: Bool) {
-        newCaptureStyle = on ? document.copyStyle(of: .capture, scale: scale) : nil
-        Preferences.styleNewCaptures(with: newCaptureStyle)
+        Preferences.styleNewCaptures(with: on ? document.copyStyle(of: .capture, scale: scale) : nil)
+        newCaptureSettingChanges += 1
     }
 
     /// The style a new annotation of `kind` starts with: the last one given to that kind, else none.

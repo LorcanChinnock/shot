@@ -19,7 +19,7 @@ private func alpha(_ image: CGImage, _ x: Int, _ y: Int) throws -> UInt8 {
 @Test func aNewCaptureWithAShadowGrowsToHoldItAndStaysClearAtTheCorners() throws {
     let capture = grey(width: 200, height: 120)
     let copied = CopiedStyle(style: ObjectStyle(shadow: ShadowPreset.float.shadow(scale: 1)), cornerRadius: 12, source: .capture)
-    let styled = try #require(copied.styledCapture(capture, scale: 2))
+    let styled = try #require(copied.styledCapture(capture, scale: 2, background: nil))
     #expect(styled.width > capture.width)
     #expect(styled.height > capture.height)
     // No background, so the corner of the canvas stays clear for pasting on any page.
@@ -28,12 +28,12 @@ private func alpha(_ image: CGImage, _ x: Int, _ y: Int) throws -> UInt8 {
 
 @Test func aNewCaptureStyleThatChangesNothingStylesNothing() {
     let copied = CopiedStyle(style: ObjectStyle(), cornerRadius: 0, source: .capture)
-    #expect(copied.styledCapture(grey(width: 20, height: 20), scale: 2) == nil)
+    #expect(copied.styledCapture(grey(width: 20, height: 20), scale: 2, background: nil) == nil)
 }
 
 @Test func roundingTheCornersAloneKeepsTheCaptureSize() throws {
     let capture = grey(width: 100, height: 60)
-    let styled = try #require(CopiedStyle(style: ObjectStyle(), cornerRadius: 10, source: .capture).styledCapture(capture, scale: 1))
+    let styled = try #require(CopiedStyle(style: ObjectStyle(), cornerRadius: 10, source: .capture).styledCapture(capture, scale: 1, background: nil))
     #expect(styled.width == capture.width)
     #expect(styled.height == capture.height)
     #expect(try alpha(styled, 0, 0) == 0)
@@ -52,4 +52,29 @@ private func alpha(_ image: CGImage, _ x: Int, _ y: Int) throws -> UInt8 {
     #expect(prefs.newCaptureStyle == copied)
     Preferences.styleNewCaptures(with: nil, in: store)
     #expect(prefs.newCaptureStyle == nil)
+}
+
+@Test func aJPEGCaptureIsStyledOverTheBackgroundTheEditorShowsItOn() throws {
+    let copied = CopiedStyle(style: ObjectStyle(shadow: ShadowPreset.soft.shadow(scale: 1)), cornerRadius: 12, source: .capture)
+    let styled = try #require(copied.styledCapture(grey(width: 100, height: 60), scale: 1, background: EditorDocument.defaultBackground(for: .jpeg)))
+    #expect(try alpha(styled, 0, 0) == 255)
+}
+
+@Test func aScreenshotOpenedWithTheNewCaptureStyleStillHasItAtAnyScale() {
+    let copied = CopiedStyle(style: ObjectStyle(shadow: Shadow(elevation: 10.1, opacity: 0.13, tint: .ambient, isOffset: true), border: .hairline), cornerRadius: 0.1, source: .capture)
+    for scale: CGFloat in [1, 1.5, 2, 3] {
+        var doc = EditorDocument(base: grey(width: 40, height: 30))
+        doc.pasteStyle(copied, to: [.capture], scale: scale, margin: 0)
+        #expect(doc.captureHas(copied, scale: scale))
+    }
+}
+
+@Test func aScreenshotStyledDifferentlyDoesNotHaveTheNewCaptureStyle() {
+    let copied = CopiedStyle(style: ObjectStyle(shadow: ShadowPreset.soft.shadow(scale: 1)), cornerRadius: 12, source: .capture)
+    var doc = EditorDocument(base: grey(width: 40, height: 30))
+    #expect(!doc.captureHas(copied, scale: 2))
+    doc.pasteStyle(copied, to: [.capture], scale: 2, margin: 0)
+    doc.setCornerRadius(4, of: .capture)
+    #expect(!doc.captureHas(copied, scale: 2))
+    #expect(!doc.captureHas(nil, scale: 2))
 }

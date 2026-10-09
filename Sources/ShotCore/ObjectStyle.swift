@@ -472,14 +472,58 @@ public struct CopiedStyle: Equatable, Sendable, Codable {
 }
 
 public extension CopiedStyle {
-    /// `image`, a new capture of `scale` pixels per point, with this style on it, as Use this style for new captures
-    /// copies it; `nil` when the style changes nothing.
-    func styledCapture(_ image: CGImage, scale: CGFloat) -> CGImage? {
+    /// `image`, a new capture of `scale` pixels per point, with this style on it over `background`, as Use this style
+    /// for new captures copies it; `nil` when the style changes nothing.
+    func styledCapture(_ image: CGImage, scale: CGFloat, background: RGBA?) -> CGImage? {
         guard !style.isEmpty || cornerRadius > 0 else {
             return nil
         }
-        var doc = EditorDocument(base: image)
+        var doc = EditorDocument(base: image, background: background)
         doc.pasteStyle(self, to: [.capture], scale: scale, margin: 0)
         return AnnotationRenderer.flatten(doc)
+    }
+
+    /// Whether `other` is the same style, allowing for the rounding a trip from points to pixels and back leaves.
+    func isSameStyle(as other: CopiedStyle) -> Bool {
+        func same(_ a: CGFloat, _ b: CGFloat) -> Bool { abs(a - b) < 0.001 }
+        func same(_ a: CGFloat?, _ b: CGFloat?) -> Bool {
+            switch (a, b) {
+            case (nil, nil): true
+            case let (a?, b?): same(a, b)
+            default: false
+            }
+        }
+        guard source == other.source, same(cornerRadius, other.cornerRadius) else {
+            return false
+        }
+        switch (style.shadow, other.style.shadow) {
+        case (nil, nil):
+            break
+        case let (a?, b?):
+            guard a.tint == b.tint, a.isOffset == b.isOffset, same(a.elevation, b.elevation), same(a.opacity, b.opacity) else {
+                return false
+            }
+        default:
+            return false
+        }
+        switch (style.border, other.style.border) {
+        case (nil, nil):
+            return true
+        case let (a?, b?):
+            return a.kind == b.kind && a.color == b.color && same(a.lineWidth, b.lineWidth)
+        default:
+            return false
+        }
+    }
+}
+
+public extension EditorDocument {
+    /// Whether this screenshot, in a document of `scale` pixels per point, has `newCaptureStyle`, the style Use this
+    /// style for new captures saved; false when that's off.
+    func captureHas(_ newCaptureStyle: CopiedStyle?, scale: CGFloat) -> Bool {
+        guard let newCaptureStyle, let style = copyStyle(of: .capture, scale: scale) else {
+            return false
+        }
+        return style.isSameStyle(as: newCaptureStyle)
     }
 }
