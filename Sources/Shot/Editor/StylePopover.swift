@@ -45,7 +45,7 @@ struct StylePopover: View {
                 }
                 if kind == .capture {
                     HStack(spacing: 10) {
-                        Toggle("Use this style for new captures", isOn: Binding(get: { model.usesStyleForNewCaptures }, set: model.setUsesStyleForNewCaptures))
+                        Toggle("Use this style for new captures", isOn: Binding(get: { model.usesStyleForNewCaptures }, set: { model.setUsesStyleForNewCaptures($0) }))
                             .toggleStyle(BrutalToggleStyle(color: Brutal.mint))
                             .labelsHidden()
                         Text("Use this style for new captures")
