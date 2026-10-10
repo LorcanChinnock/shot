@@ -707,14 +707,19 @@ private struct AboutSettings: View {
                 Button("GitHub") { NSWorkspace.shared.open(Self.repository) }
                     .buttonStyle(BrutalButtonStyle(compact: true))
             }
-            SettingRow(title: "Report a problem", subtitle: "Bug reports and ideas are welcome.", divider: false) {
+            SettingRow(title: "Report a problem", subtitle: "Bug reports and ideas are welcome.") {
                 Button("New issue") { NSWorkspace.shared.open(Self.repository.appending(path: "issues/new/choose")) }
+                    .buttonStyle(BrutalButtonStyle(compact: true))
+            }
+            SettingRow(title: "Support Shot", subtitle: "Shot is free, with no ads or account. Sponsoring keeps it that way.", divider: false) {
+                Button("Sponsor") { NSWorkspace.shared.open(Self.sponsor) }
                     .buttonStyle(BrutalButtonStyle(compact: true))
             }
         }
     }
 
     private static let repository = URL(string: "https://github.com/LorcanChinnock/shot")!
+    private static let sponsor = URL(string: "https://github.com/sponsors/LorcanChinnock")!
 }
 
 private struct PermissionRow: View {

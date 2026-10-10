@@ -14,6 +14,7 @@
   <img src="https://img.shields.io/badge/status-beta-yellow" alt="Beta">
   <img src="https://img.shields.io/badge/macOS-15%2B-black" alt="macOS 15 or later">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="GPL-3.0 license"></a>
+  <a href="https://github.com/sponsors/LorcanChinnock"><img src="https://img.shields.io/github/sponsors/LorcanChinnock?label=sponsor&logo=githubsponsors" alt="Sponsor Shot"></a>
 </p>
 
 <p align="center">
@@ -88,3 +89,4 @@ Shot takes these keys over from macOS. To keep the macOS screenshot tool, and fo
 - **[Privacy](docs/usage.md#privacy):** no analytics; the network is used only to check for updates, after you agree.
 - **[Contributing](CONTRIBUTING.md):** build from source, run the tests, and send a change.
 - **[License](LICENSE):** free software under the GNU General Public License v3.0.
+- **[Sponsor](https://github.com/sponsors/LorcanChinnock):** Shot is free. If it saves you time, sponsoring keeps it that way.

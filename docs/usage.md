@@ -314,7 +314,7 @@ Open Settings from the menu bar icon, or with ⌘, while a Shot window is in fro
 | Quick Access | The screen corner and how long cards stay |
 | Recording | Adjust before recording, the countdown, frame rate, cursor, region outline, copying to the clipboard, the microphone and its input (with a **Test**), system audio, and the camera bubble's camera (with a **Preview**) and size. It also sums up the GIF settings the video editor last used. |
 | Shortcuts | The macOS screenshot keys and every global shortcut |
-| About | The version, updates, permissions, the capture folder, links to the code and to report a bug, and resetting all settings |
+| About | The version, updates, permissions, the capture folder, links to the code, to report a bug and to sponsor Shot, and resetting all settings |
 
 ## Updates
 
