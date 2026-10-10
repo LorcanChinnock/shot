@@ -4,34 +4,47 @@ interface Props {
   command: string;
 }
 const { command } = Astro.props;
+// Let a long command wrap after its slashes on narrow screens, instead of scrolling out of sight.
+const parts = command.split('/');
 ---
 
 <div class="copy card solid">
-  <code><span aria-hidden="true">$ </span>{command}</code>
+  <code><span aria-hidden="true">$ </span>{parts.map((part, i) => (i ? <Fragment>/<wbr />{part}</Fragment> : part))}</code>
   <button type="button" class="button small white" data-copy={command}>Copy</button>
+  <span class="status" aria-live="polite"></span>
 </div>
 
 <style>
   .copy { display: flex; min-width: 0; align-items: center; gap: 12px; padding: 6px 6px 6px 16px; max-width: 100%; }
-  code { font-size: 14px; font-weight: 600; white-space: nowrap; overflow-x: auto; flex: 1; scrollbar-width: none; }
+  code { font-size: 14px; font-weight: 600; flex: 1; min-width: 0; overflow-wrap: anywhere; }
   code span { opacity: 0.45; }
   button { flex: none; min-width: 78px; }
+  .status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 </style>
 
 <script>
   for (const button of document.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
+    // Screen readers don't reliably read a button's new label, so the live region says it too.
+    const status = button.nextElementSibling!;
+    let reset: ReturnType<typeof setTimeout> | undefined;
     button.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(button.dataset.copy!);
         button.textContent = 'Copied';
+        status.textContent = 'Copied to the clipboard';
       } catch {
         button.textContent = 'Press ⌘C';
+        status.textContent = 'Selected. Press Command-C to copy.';
         const range = document.createRange();
         range.selectNodeContents(button.previousElementSibling!);
         getSelection()?.removeAllRanges();
         getSelection()?.addRange(range);
       }
-      setTimeout(() => (button.textContent = 'Copy'), 1600);
+      clearTimeout(reset);
+      reset = setTimeout(() => {
+        button.textContent = 'Copy';
+        status.textContent = '';
+      }, 1600);
     });
   }
 </script>
