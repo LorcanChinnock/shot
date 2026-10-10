@@ -30,20 +30,20 @@ The app emits `OSSignposter` signposts under its bundle identifier, in category 
 
 The script:
 
-1. Quits any running Shot, then launches the app three times and takes the median **launch → ready** time.
+1. Quits any running copy of the app it measures (an installed release keeps running), then launches the app three times and takes the median **launch → ready** time.
 2. Takes 20 full-screen captures and reports the median **capture → clipboard** time.
 3. Waits for the Quick Access cards to close, then reads the **memory footprint**.
 4. Opens and closes the editor, the video editor (with a clip made by `ffmpeg`, if it's installed) and the gallery. It then averages **idle CPU** over 30 seconds.
 5. Moves this run's captures out of your capture folder and prints where they went.
 
-It needs Screen Recording for Shot, and Accessibility for the terminal, which closes Shot's windows with ⌘W. It exits non-zero if a metric is over budget or couldn't be measured.
+It needs Screen Recording for Shot, **Copy after capture** turned on, and Accessibility for the terminal, which closes Shot's windows with ⌘W. It exits non-zero if a metric is over budget or couldn't be measured.
 
 | Metric | Reference Mac | Budget |
 |---|---|---|
 | Launch → ready | 101 ms | 150 ms |
 | Capture → clipboard (full screen, 3840×2486 px: the 15″ panel at a scaled resolution) | 189 ms | 285 ms |
 | Memory after 20 captures | 20 MB | 30 MB |
-| Idle CPU, no windows open | 0.0% | under 1% |
+| Idle CPU, no windows open | 0.0% | at most 1% |
 
 Idle CPU has an absolute budget. The others are about 1.5× the baseline, set in `scripts/perf.sh`; change both together.
 

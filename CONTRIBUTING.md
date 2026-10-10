@@ -8,7 +8,7 @@ The default is the simplest, most seamless state. Extra tools, panels and contro
 
 ## Set up
 
-You need macOS 15 or later and either Xcode or the Xcode Command Line Tools. Shot is a SwiftPM package whose only dependency is [Sparkle](https://sparkle-project.org), for updates.
+You need an Apple Silicon Mac with macOS 15 or later, and either Xcode or the Xcode Command Line Tools. Shot is a SwiftPM package whose only dependency is [Sparkle](https://sparkle-project.org), for updates.
 
 ```bash
 git clone https://github.com/LorcanChinnock/shot.git
@@ -28,7 +28,9 @@ Only `make dist` builds `Shot.app` with the update feed. Every other build is `S
 | Target | What it does |
 |---|---|
 | `make run` | Build, install to `/Applications/ShotDev.app`, and launch |
+| `make build` | `swift build`, without making an app |
 | `make test` | Run the `ShotCore` unit tests |
+| `make lint` | Check for code patterns that have caused bugs (`scripts/lint.sh`) |
 | `make perf` | Time the `ShotCore` paths that have [performance budgets](docs/performance.md) |
 | `make perf-app` | Measure launch, capture, memory and idle CPU of the installed app against its budgets |
 | `make app` | Build and install without launching (`INSTALL_DIR=~/Applications make app` to install elsewhere) |
@@ -38,7 +40,7 @@ Only `make dist` builds `Shot.app` with the update feed. Every other build is `S
 | `make reset-tcc` | Clear ShotDev's Screen Recording permission |
 | `make clean` | Remove build output |
 
-**Command Line Tools only:** the CLT's default SDK (27) makes SwiftUI's `@State` a macro whose compiler plugin ships only with Xcode. The Makefile pins the CLT's 26.5 SDK when Xcode isn't selected. With Xcode, nothing is pinned.
+**Command Line Tools only:** the CLT's default SDK (27) makes SwiftUI's `@State` a macro whose compiler plugin ships only with Xcode. When Xcode isn't selected, the Makefile pins the newest 26.x SDK the CLT has and points the tests at the CLT's testing plugin, so use `make` rather than a bare `swift build`. With Xcode, nothing is pinned.
 
 ## Project layout
 
@@ -47,9 +49,13 @@ Sources/ShotCore/    Pure logic with unit tests: geometry, file naming, image en
                      annotations and rendering, redaction, GIF export, segment joining,
                      video trim and cuts, hotkeys, preferences
 Sources/Shot/        The app: capture, selection overlay, Quick Access, editor,
-                     video editor, recording, settings, and the design system
+                     video editor, recording, gallery, settings, and the design system
 Tests/ShotCoreTests/ Swift Testing suite
-scripts/             Bundling, install, signing certificate, icon generation
+Resources/           Info.plist and the app icon
+scripts/             Bundling, install, signing certificate, icon, lint, performance
+                     checks, and the Homebrew cask
+docs/                The user guide, its screenshots, and the demo app they show
+site/                The website (see site/README.md)
 ```
 
 If logic can be tested without a window, a display, or a permission, put it in `ShotCore` and add a test. `Shot` holds the AppKit and SwiftUI code that needs a real session.
@@ -67,7 +73,7 @@ The `shot://` [URL scheme](docs/usage.md#url-scheme) drives every action without
 ## Sending a change
 
 - Keep each pull request focused on one change, and match the style of the surrounding code.
-- Run `make test`, then run the app and try your change. CI runs the lint, the tests and `make perf` on every pull request; a pull request that only changes docs is linted alone.
+- Run `make lint` and `make test`, then run the app and try your change. CI runs the lint, the tests and the performance budgets on every pull request and every push to `main`. A pull request that only changes Markdown, `docs/`, `site/` or the issue templates is linted alone.
 - Use a [Conventional Commits](https://www.conventionalcommits.org) title for the pull request, such as `fix(recording): …` or `feat(editor): …`. Pull requests are squash-merged, so the title becomes the commit on `main`, and release notes are generated from it.
 
 By contributing, you agree that your contributions are licensed under the project's [GPL-3.0 license](LICENSE).
@@ -76,16 +82,16 @@ By contributing, you agree that your contributions are licensed under the projec
 
 Releases are automated with [release-please](https://github.com/googleapis/release-please). Don't create tags or edit the version by hand.
 
-Before a release, run `make app` and then `make perf-app`, which CI can't run because it needs the Screen Recording permission. See [docs/performance.md](docs/performance.md).
+Before a release, run `make app` and then `make perf-app`, which CI can't run because it needs the Screen Recording permission. It exits non-zero if anything is over budget. See [docs/performance.md](docs/performance.md).
 
-1. When `main` gets a `feat:` or `fix:` commit, release-please opens or updates a release pull request. It bumps the version in `Resources/Info.plist` and `.release-please-manifest.json`, and adds the changes to `CHANGELOG.md`. Before 1.0, `feat` bumps the minor version and `fix` bumps the patch. Other types such as `docs`, `chore`, `ci`, `refactor`, and `build` appear in the history but don't trigger a release.
-2. Merging the release pull request tags `vX.Y.Z` and publishes a GitHub release. The release workflow then builds `Shot-vX.Y.Z.zip`, signs it for Sparkle, and attaches it with `appcast.xml`, the update feed. Installed copies read the feed from the latest release.
+1. When `main` gets a `feat:` or `fix:` commit, release-please opens or updates a release pull request. It bumps the version in `Resources/Info.plist` and `.release-please-manifest.json`, and adds the changes to `CHANGELOG.md`. While Shot is in beta, each release only bumps the beta number, for example `0.7.0-beta.35` to `0.7.0-beta.36`, whether it has features or only fixes. Changes under `site/` never trigger one. Other types such as `docs`, `chore`, `ci`, `refactor`, and `build` appear in the history but don't trigger a release.
+2. Merging the release pull request tags it (`v0.7.0-beta.36`, say) and creates a draft GitHub release. The release workflow then builds `Shot-<tag>.zip`, signs it for Sparkle, attaches it with `appcast.xml`, the update feed, and only then publishes the release, so the latest release always has a feed. Installed copies read the feed from the latest release. Last, the workflow rebuilds the website and updates the Homebrew cask.
 
 To force a particular version, add a `Release-As: X.Y.Z` line to the body of a commit on `main`.
 
 ### Release secrets
 
-The release workflow needs four repository secrets. Create them once, and keep a backup of each somewhere safe: if you lose the Sparkle key, installed copies can't verify updates and you have to ship a new key by hand.
+The release workflow needs five repository secrets. Create them once, and keep a backup of each somewhere safe: if you lose the Sparkle key, installed copies can't verify updates and you have to ship a new key by hand.
 
 | Secret | What it is |
 |---|---|
@@ -93,6 +99,7 @@ The release workflow needs four repository secrets. Create them once, and keep a
 | `SHOT_SIGNING_CERT_P12` | A base64 `.p12` of the self-signed `Shot Release` code-signing certificate. Every release signs with it, so macOS keeps the Screen Recording permission across updates. |
 | `SHOT_SIGNING_CERT_PASSWORD` | The password for that `.p12`. |
 | `HOMEBREW_TAP_DEPLOY_KEY` | The private half of an SSH deploy key with write access to `LorcanChinnock/homebrew-tap` only. The workflow uses it to update `Casks/shot.rb` there; the tap's `main` ruleset lets deploy keys push. |
+| `SITE_DEPLOY_HOOK` | The URL of the website's Cloudflare deploy hook, which rebuilds the site so its download button moves to the new release. See [site/README.md](site/README.md). |
 
 ```bash
 make build                                                     # fetches Sparkle's tools
@@ -110,4 +117,6 @@ ssh-keygen -t ed25519 -N "" -C "shot release workflow" -f tap_key
 gh repo deploy-key add tap_key.pub -R LorcanChinnock/homebrew-tap --allow-write --title "shot release workflow"
 gh secret set HOMEBREW_TAP_DEPLOY_KEY < tap_key
 rm tap_key tap_key.pub                                         # make a new key if you lose it
+
+gh secret set SITE_DEPLOY_HOOK                                 # paste the hook URL from Cloudflare
 ```
