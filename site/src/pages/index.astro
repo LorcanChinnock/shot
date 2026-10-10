@@ -11,182 +11,99 @@ import videoEditor from '../../../docs/media/video-editor.png';
 import openAnyway from '../../../docs/media/open-anyway.png';
 
 const release = await latestRelease();
-const wide = '(min-width: 1120px) 1088px, 100vw';
-
-const tools = [
-  ['A', 'Arrow'],
-  ['T', 'Text'],
-  ['S', 'Sticky note'],
-  ['R', 'Shapes'],
-  ['D', 'Pen'],
-  ['M', 'Highlighter'],
-  ['B', 'Blur or pixelate'],
-  ['F', 'Spotlight'],
-  ['N', 'Counter'],
-  ['C', 'Crop'],
-];
+const full = '(min-width: 1120px) 1088px, 100vw';
+const half = '(min-width: 900px) 540px, 100vw';
 ---
 
 <Base>
   <section class="hero">
     <div class="wrap">
-      <div class="hero-copy">
-        <h1>Screenshots, annotations and screen recordings, from the menu bar.</h1>
-        <p class="lede">
-          Shot replaces the macOS screenshot tool. Press <kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd> as usual and drag out an area. Shot copies the capture, saves it, and puts a small card in the corner of the screen so you can mark it up or drag it into another app.
-        </p>
-        <div class="cta">
-          <a class="button big" href="/download">Download Shot {release.version}</a>
-          <Copy command="brew install lorcanchinnock/tap/shot" />
-        </div>
-        <p class="meta">Free and open source (GPL-3.0). macOS 15 or later, Apple Silicon only. Still in beta.</p>
+      <h1>A better <kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd></h1>
+      <p class="lede">Shot is a screenshot app that sits in your menu bar. It uses the keys you already know.</p>
+      <div class="cta">
+        <a class="button big" href="/download">Download Shot</a>
+        <Copy command="brew install lorcanchinnock/tap/shot" />
       </div>
+      <p class="meta">Free and open source. Version {release.version}, for macOS 15 on Apple Silicon.</p>
       <Window>
         <Loop name="hero" label="Pressing ⌘⇧4, drawing an arrow and a note on the screenshot, then pasting it into another app" eager />
       </Window>
     </div>
   </section>
 
-  <section class="feature" id="capture">
+  <section>
     <div class="wrap">
-      <div class="intro">
-        <h2>Capture and Quick Access</h2>
-        <p>Pick an area on a frozen screen with a magnifier, or a window or the full screen, then copy, save, annotate or drag the capture from a floating card.</p>
-      </div>
-      <Window><Image src={capture} alt="Selecting an area with the magnifier, then the Quick Access card in the corner of the screen" widths={[640, 1088, 1600]} sizes={wide} /></Window>
-      <dl class="facts">
-        <div><dt><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">3</kbd></dt><dd>The screen under the pointer</dd></div>
-        <div><dt><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd></dt><dd>An area. Hold Shift for a square, or Tab through 1:1, 4:3, 3:2 and 16:9.</dd></div>
-        <div><dt><kbd class="key">Space</kbd></dt><dd>Pick a window instead, with or without its shadow</dd></div>
-        <div><dt><kbd class="key">Esc</kbd></dt><dd>Cancel</dd></div>
-      </dl>
-      <p class="note">Shot gives the keys back to macOS when you quit it. If you'd rather keep the macOS tool, Shot can use ⌃⇧3 to ⌃⇧5 instead.</p>
+      <p class="say">Let go of the mouse and the screenshot is already copied and saved. A little card shows up in the corner, and you can drag it straight into a message.</p>
+      <Window><Image src={capture} alt="Selecting an area with the magnifier, then the Quick Access card in the corner of the screen" widths={[640, 1088, 1600]} sizes={full} /></Window>
     </div>
   </section>
 
-  <section class="feature" id="annotate">
-    <div class="wrap">
-      <div class="intro">
-        <h2>Annotate anything</h2>
-        <p>Arrows, sticky notes, blur and pixelate, a spotlight, a pen and more, with room to annotate outside the screenshot and to combine several images on one canvas.</p>
-      </div>
-      <Window><Image src={editor} alt="The annotation editor with arrows, a sticky note, a blurred email address, and notes beside the screenshot" widths={[640, 1088, 1600]} sizes={wide} /></Window>
-      <ul class="tools" aria-label="Tool shortcuts">
-        {tools.map(([key, name]) => <li><kbd class="key">{key}</kbd> {name}</li>)}
-      </ul>
-      <p class="note">Saving never overwrites the original. The edited copy goes next to it as <code>name (2).png</code>.</p>
-    </div>
-  </section>
-
-  <section class="feature" id="record">
-    <div class="wrap">
-      <div class="intro">
-        <h2>Record your screen, and yourself</h2>
-        <p>Record an area, a screen or a window to MP4, with your microphone, system audio, and a round camera bubble.</p>
-      </div>
-      <Window><Loop name="recording" label="Recording an area of the screen with the round camera bubble in the corner" /></Window>
-      <dl class="facts">
-        <div><dt>Format</dt><dd>H.264 MP4, 30 or 60 fps</dd></div>
-        <div><dt>Audio</dt><dd>Microphone and system audio. Muting the microphone leaves system audio running.</dd></div>
-        <div><dt>Camera</dt><dd>A round bubble in three sizes. Drag it anywhere.</dd></div>
-        <div><dt>Window</dt><dd>Follows the window as it moves and leaves out anything on top of it</dd></div>
-      </dl>
-    </div>
-  </section>
-
-  <section class="feature" id="trim">
-    <div class="wrap">
-      <div class="intro">
-        <h2>Trim and export to GIF</h2>
-        <p>Trim a recording, cut sections out, and export an MP4 or a GIF at the frame rate, width and speed you choose.</p>
-      </div>
-      <Window><Image src={videoEditor} alt="The video editor with trim handles, a cut, and the GIF export options" widths={[640, 1088, 1600]} sizes={wide} /></Window>
-      <dl class="facts">
-        <div><dt>GIF</dt><dd>10, 15 or 24 fps; 480, 720 or 1080 px wide; up to 60 seconds</dd></div>
-        <div><dt>Speed</dt><dd>1×, 1.5× or 2×</dd></div>
-        <div><dt>Size</dt><dd>Shown before you export</dd></div>
-        <div><dt>Save</dt><dd>A trim alone saves without re-encoding</dd></div>
-      </dl>
-    </div>
-  </section>
-
-  <section class="plain">
-    <div class="wrap split">
+  <section>
+    <div class="wrap pair">
       <div>
-        <h2>Privacy</h2>
-        <p>Shot has no account and no analytics. Captures are saved to <code>~/Pictures/Shot</code>, or wherever you choose. The only time it goes online is a daily check for updates on GitHub, and only after you've said yes to it.</p>
-        <p>The <a href="https://github.com/LorcanChinnock/shot">source is on GitHub</a>. <a href="/privacy/">More on privacy</a></p>
+        <p class="say">Press A for an arrow, or B to blur a phone number.</p>
+        <Window><Image src={editor} alt="The annotation editor with arrows, a sticky note, a blurred email address, and notes beside the screenshot" widths={[540, 1080]} sizes={half} /></Window>
       </div>
       <div>
-        <h2>Also in Shot</h2>
-        <p>A gallery of everything you've captured. Layers, styles and shadows in the editor. Keyframes, imported clips and annotations in the video editor. A <code>shot://</code> URL for every action, for scripts and launchers. Every shortcut can be changed.</p>
-        <p><a href="/docs/">Read the user guide</a></p>
+        <p class="say"><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">5</kbd> records instead. Your face can come too.</p>
+        <Window><Loop name="recording" label="Recording an area of the screen with the round camera bubble in the corner" /></Window>
       </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="say">Then cut the part where you went looking for the right tab, and save it as a GIF.</p>
+      <Window><Image src={videoEditor} alt="The video editor with trim handles, a cut, and the GIF export options" widths={[640, 1088, 1600]} sizes={full} /></Window>
+    </div>
+  </section>
+
+  <section class="small">
+    <div class="wrap narrow-text">
+      <p>There's no account to make. Shot only goes online to check for updates, and it asks you first. The <a href="https://github.com/LorcanChinnock/shot">code is on GitHub</a> if you want to look.</p>
+      <p>Everything else is in the <a href="/docs/">guide</a>.</p>
     </div>
   </section>
 
   <section class="install" id="install">
-    <div class="wrap">
-      <h2>Install</h2>
-      <div class="split">
-        <div>
-          <h3>With Homebrew</h3>
-          <Copy command="brew install lorcanchinnock/tap/shot" />
-          <h3>Or by hand</h3>
-          <p>Download <a href="/download">Shot-v{release.version}.zip</a>, unzip it, and move <strong>Shot.app</strong> to Applications.</p>
-          <h3>First launch</h3>
-          <p>Releases aren't notarized by Apple yet, so macOS asks you to confirm Shot once:</p>
-          <ol class="steps">
-            <li>Open Shot from Applications. When macOS says it can't verify Shot, click <strong>Done</strong>.</li>
-            <li>In <strong>System Settings › Privacy &amp; Security</strong>, scroll down to the message about Shot, click <strong>Open Anyway</strong>, then confirm.</li>
-            <li>In Shot's permission window, click <strong>Grant</strong>, turn on Shot in System Settings, then click <strong>Relaunch</strong>.</li>
-          </ol>
-        </div>
-        <Image src={openAnyway} alt="Privacy & Security in System Settings, with the Open Anyway button next to the message that Shot was blocked" widths={[480, 723]} sizes="(min-width: 900px) 520px, 100vw" class="shot" />
+    <div class="wrap pair">
+      <div>
+        <h2>Install</h2>
+        <Copy command="brew install lorcanchinnock/tap/shot" />
+        <p>Or <a href="/download">download the zip</a> and drag Shot into Applications.</p>
+        <p>Shot isn't notarized by Apple yet, so macOS blocks it the first time. Open System Settings, go to Privacy &amp; Security, and click Open Anyway.</p>
       </div>
+      <Image src={openAnyway} alt="Privacy & Security in System Settings, with the Open Anyway button next to the message that Shot was blocked" widths={[480, 723]} sizes={half} class="shot" />
     </div>
   </section>
 </Base>
 
 <style>
   .hero { padding-top: clamp(40px, 6vw, 72px); }
-  .hero .wrap { display: grid; gap: 40px; }
-  .hero-copy { max-width: 760px; min-width: 0; }
-  .hero h1 { font-size: clamp(36px, 5.4vw, 60px); margin-bottom: 20px; }
-  .lede { font-size: clamp(18px, 2vw, 20px); margin: 0 0 28px; max-width: 36em; }
-  .lede .key { font-size: 0.8em; }
-  .cta { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
-  .cta :global(.copy) { flex: 0 1 400px; min-width: 0; }
+  .hero .wrap { justify-items: start; }
+  .hero h1 { font-size: clamp(44px, 7vw, 80px); display: flex; flex-wrap: wrap; align-items: center; gap: 0.18em; }
+  .hero h1 .key { font-size: 0.62em; padding: 0.05em 0.3em; border-width: 3px; border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); }
+  .lede { font-size: clamp(19px, 2.2vw, 22px); margin: 0; max-width: 30em; }
+  .cta { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; width: 100%; }
+  .cta :global(.copy) { flex: 0 1 460px; min-width: 0; }
   .button.big { min-height: 52px; padding: 12px 22px; font-size: 18px; }
-  .meta { margin: 16px 0 0; font-size: 15px; color: var(--muted); }
+  .meta { margin: 0 0 28px; font-size: 15px; color: var(--muted); }
+  .hero :global(.window) { width: 100%; }
 
-  .feature .wrap { display: grid; gap: 28px; }
-  .intro { max-width: 640px; }
-  .feature h2, .plain h2, .install h2 { font-size: clamp(28px, 3.6vw, 38px); }
-  .intro p { font-size: 18px; margin: 12px 0 0; }
+  section { padding-block: clamp(40px, 6vw, 72px); }
+  .wrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .say { font: 800 clamp(20px, 2.4vw, 26px)/1.3 var(--display); letter-spacing: -0.015em; margin: 0; max-width: 30em; text-wrap: pretty; }
+  .say .key { font-size: 0.75em; }
 
-  .facts { margin: 0; display: grid; gap: 12px 32px; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); }
-  .facts div { display: grid; gap: 6px; align-content: start; padding-top: 12px; border-top: var(--border) solid var(--ink); }
-  .facts dt { font-weight: 800; font-size: 15px; display: flex; gap: 4px; }
-  .facts dd { margin: 0; font-size: 15px; color: var(--muted); }
+  .pair { display: grid; gap: 40px; }
+  @media (min-width: 900px) { .pair { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
+  .pair > * { min-width: 0; display: grid; gap: 20px; align-content: start; }
 
-  .tools { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(200px, 45%), 1fr)); gap: 12px 24px; font-size: 15px; font-weight: 600; }
-  .tools li { display: flex; align-items: center; gap: 8px; }
+  .narrow-text p { max-width: 36em; }
+  .small p { font-size: 19px; margin: 0; }
+  .small a, .install a { font-weight: 700; }
 
-  .note { margin: 0; font-size: 15px; color: var(--muted); max-width: 46em; }
-  .note .key { font-size: 0.85em; }
-  .note code, .plain code { font-size: 0.88em; padding: 0.1em 0.35em; background: rgb(18 18 26 / 0.07); border-radius: 5px; }
-
-  .split { display: grid; gap: 40px; }
-  @media (min-width: 900px) { .split { grid-template-columns: 1fr 1fr; } }
-  .split > * { min-width: 0; }
-  .plain p { margin: 12px 0 0; }
-  .plain a, .install a { font-weight: 600; }
-
-  .install h2 { margin-bottom: 24px; }
-  .install h3 { font-size: 18px; margin: 24px 0 10px; }
-  .install h3:first-child { margin-top: 0; }
+  .install h2 { font-size: clamp(28px, 3.6vw, 38px); }
   .install p { margin: 0; }
-  .steps { margin: 12px 0 0; padding-left: 1.3em; display: grid; gap: 8px; }
-  .install :global(.shot) { border: 2px solid var(--ink); border-radius: 10px; align-self: start; }
+  .install :global(.shot) { border: 2px solid var(--ink); border-radius: 10px; }
 </style>

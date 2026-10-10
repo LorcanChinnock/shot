@@ -9,9 +9,9 @@ interface Props {
 
 const {
   title,
-  description = 'Screenshots, annotations and screen recordings for macOS, from the menu bar. Free and open source, with no account and no analytics.',
+  description = 'A screenshot and screen recording app for the Mac menu bar. Free and open source.',
 } = Astro.props;
-const fullTitle = title ? `${title} · Shot` : 'Shot, screenshots and recordings for macOS';
+const fullTitle = title ? `${title} · Shot` : 'Shot';
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = new URL('/og.png', Astro.site);
 const release = await latestRelease();
