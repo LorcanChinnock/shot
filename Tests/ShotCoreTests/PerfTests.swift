@@ -63,21 +63,28 @@ import Testing
     }
 }
 
-/// Twice the CI runner's baselines in `docs/performance.md`, the overlay's three times; change both together.
+/// Twice the CI runner's baselines in `docs/performance.md`; change both together.
 private enum Budget {
-    static let flattenAndEncode = 860
-    static let overlayFrame = 61
+    static let flattenAndEncode = 847
+    static let overlayFrame = 39
     static let gifExportMegabytes = 452
-    static let galleryGrouping = 6
+    static let galleryGrouping = 5.8
 }
 
-/// The fastest of fifteen runs of `body`, after one untimed run that warms caches. A busy runner can only add time,
-/// so the fastest run is the closest to what the work costs, and fifteen spread over long enough that a slow spell
-/// rarely covers them all.
+/// The fastest run of `body`, after one untimed run that warms caches. It runs at least fifteen times and for at least
+/// half a second. A busy runner can only add time, so the fastest run is the closest to what the work costs, and a
+/// slow spell would have to last the whole half second to fail the test.
 private func fastest(_ body: () throws -> Void) throws -> Duration {
     try body()
     let clock = ContinuousClock()
-    return try (0..<15).map { _ in try clock.measure(body) }.min()!
+    let start = clock.now
+    var best = Duration.seconds(Int64.max)
+    var runs = 0
+    while runs < 15 || clock.now - start < .milliseconds(500) {
+        best = min(best, try clock.measure(body))
+        runs += 1
+    }
+    return best
 }
 
 private func check(_ time: Duration, budget: Duration, _ name: String) throws {
