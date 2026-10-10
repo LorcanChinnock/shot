@@ -53,7 +53,7 @@ A window recording captures just that window: it follows the window when it move
 
 While recording, the controls let you pause and resume, stop and save, and discard the recording; for 5 seconds after a discard, **Undo** brings it back. With the microphone on, they also show its level and a button to mute it, which silences only the microphone. With the camera bubble on, they show, hide or resize it. The menu bar menu has **Pause Recording** and **Stop Recording** too. On a Mac with a notch, when there's no room for the controls outside the recorded area, they move into the notch: a black pill shows the elapsed time, and hovering it shows the controls. Pressing any record shortcut again, or opening `shot://record`, stops the recording.
 
-Recordings are H.264 MP4 at 30 or 60 fps, written to your save folder as they record. When a recording finishes, Shot copies the file to the clipboard unless you turn off **Copy to clipboard** in **Settings › Recording**, and shows it in [Quick Access](#quick-access) unless you turn that off in **Settings › Capture**. A recording never opens in the video editor by itself. In **Settings › Recording** you can also show the cursor, outline the recorded area with **Region border** (the outline never appears in the video), and record your microphone and system audio. System audio is sound from other apps; Shot's own sounds are left out.
+Recordings are H.264 MP4 at 30 or 60 fps, written to your save folder as they record. With a display that refreshes at 120 Hz or faster, such as a ProMotion MacBook Pro, **Settings › Recording** also offers 120 fps, which records, and exports from the video editor, as HEVC MP4; on a slower screen that recording drops to 60 fps. When a recording finishes, Shot copies the file to the clipboard unless you turn off **Copy to clipboard** in **Settings › Recording**, and shows it in [Quick Access](#quick-access) unless you turn that off in **Settings › Capture**. A recording never opens in the video editor by itself. In **Settings › Recording** you can also show the cursor, outline the recorded area with **Region border** (the outline never appears in the video), and record your microphone and system audio. System audio is sound from other apps; Shot's own sounds are left out.
 
 ### Camera bubble
 
@@ -162,7 +162,7 @@ Then:
 - **Export** writes a new file next to the recording, with these options, and copies it:
   - **MP4** or **GIF**
   - for a GIF, 10, 15 or 24 fps, and 480, 720 or 1080 px wide or the recording's own width (**Full**; never wider than the recording). A GIF keeps the first 60 seconds of what plays, so 120 seconds of video at 2×.
-  - for an MP4, **Mute** to leave the sound out. An MP4 is H.264, or HEVC when a recording above 30 fps is larger than 2560 × 1600, such as a full Retina screen, so it keeps every frame
+  - for an MP4, **Mute** to leave the sound out. An MP4 is H.264, or HEVC when H.264 would drop frames: a 120 fps recording, or one above 30 fps that is larger than 2560 × 1600, such as a full Retina screen
   - 1×, 1.5× or 2× speed. An MP4 with imports, annotations or transforms exports at 1×.
 
 The estimated size of the exported file is shown before you export. **Cancel**, or Esc, stops an export under way. Closing the window with unsaved edits asks whether to save them, or to save a copy.

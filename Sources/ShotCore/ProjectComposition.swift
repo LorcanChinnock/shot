@@ -24,8 +24,8 @@ public enum CompositionBuilder {
         }
     }
 
-    /// Frame rates above this aren't kept, since the compositor draws every frame.
-    static let maximumFrameRate: Float = 60
+    /// Frame rates above this aren't kept, since the compositor draws every frame. It matches the fastest recording.
+    static let maximumFrameRate: Float = 120
 
     public static func build(_ project: Project) async throws -> ProjectComposition {
         let composition = AVMutableComposition()
@@ -297,9 +297,11 @@ public enum ProjectExporter {
     /// The largest canvas H.264 export keeps above 30 fps at; past it the export halves the frame rate.
     static let largestH264Canvas = CGSize(width: 2560, height: 1600)
 
-    /// Whether the export is HEVC rather than H.264: only when H.264 would drop frames, such as a 60 fps Retina recording.
+    /// Whether the export is HEVC rather than H.264: only when H.264 would drop frames. It caps every canvas at 60 fps,
+    /// and halves the rate of one larger than `largestH264Canvas`, such as a 60 fps Retina recording.
     static func usesHEVC(canvas: CGSize, frameRate: Int) -> Bool {
-        frameRate > 30 && canvas.width * canvas.height > largestH264Canvas.width * largestH264Canvas.height
+        RecordingFrameRate.usesHEVC(fps: frameRate)
+            || frameRate > 30 && canvas.width * canvas.height > largestH264Canvas.width * largestH264Canvas.height
     }
 
     /// Writes the project to `output`, replacing it, drawn at the canvas size and re-encoded as H.264, or HEVC when `usesHEVC`.
