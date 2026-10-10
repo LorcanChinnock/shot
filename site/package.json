@@ -1,0 +1,20 @@
+{
+  "name": "shot-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro build && wrangler dev",
+    "media": "sh scripts/media.sh",
+    "deploy": "astro build && wrangler deploy",
+    "icons": "node scripts/icons.mjs"
+  },
+  "dependencies": {
+    "@astrojs/markdown-remark": "^7.3.2",
+    "astro": "^7.3.8"
+  },
+  "devDependencies": {
+    "wrangler": "^4.149.0"
+  }
+}

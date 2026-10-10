@@ -98,6 +98,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release edit "$TAG" --draft=false --latest --prerelease=false
+      # The site reads the latest release at build time, so rebuild it now that this one is published.
+      - name: Update the website
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run site.yml --repo "$GITHUB_REPOSITORY" --ref main
       # GITHUB_TOKEN can't push to another repo, so the tap has a write deploy key, which its
       # ruleset lets push to main. See CONTRIBUTING.md › Release secrets.
       - name: Update the Homebrew cask

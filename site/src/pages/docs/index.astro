@@ -1,0 +1,13 @@
+---
+import Prose from '../../layouts/Prose.astro';
+import { Content, getHeadings } from '../../../../docs/usage.md';
+---
+
+<Prose title="User guide" description="Every Shot feature, shortcut and setting, plus the shot:// URL scheme." headings={getHeadings()}>
+  <Content />
+</Prose>
+
+<style is:global>
+  /* usage.md opens with its own table of contents; the sidebar replaces it. */
+  .with-toc .prose h1 + p + ul { display: none; }
+</style>

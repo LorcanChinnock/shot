@@ -1,0 +1,109 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import Loop from '../components/Loop.astro';
+import Window from '../components/Window.astro';
+import Copy from '../components/Copy.astro';
+import { latestRelease } from '../lib/release';
+import capture from '../../../docs/media/capture-light.png';
+import editor from '../../../docs/media/editor.png';
+import videoEditor from '../../../docs/media/video-editor.png';
+import openAnyway from '../../../docs/media/open-anyway.png';
+
+const release = await latestRelease();
+const full = '(min-width: 1120px) 1088px, 100vw';
+const half = '(min-width: 900px) 540px, 100vw';
+---
+
+<Base>
+  <section class="hero">
+    <div class="wrap">
+      <h1>A better <kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd></h1>
+      <p class="lede">Shot is a screenshot app that sits in your menu bar. It uses the keys you already know.</p>
+      <div class="cta">
+        <a class="button big" href="/download">Download Shot</a>
+        <Copy command="brew install lorcanchinnock/tap/shot" />
+      </div>
+      <p class="meta">Free and open source. Version {release.version}, for macOS 15 on Apple Silicon.</p>
+      <Window>
+        <Loop name="hero" label="Pressing ⌘⇧4, drawing an arrow and a note on the screenshot, then pasting it into another app" eager />
+      </Window>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="say">Let go of the mouse and the screenshot is already copied and saved. A little card shows up in the corner, and you can drag it straight into a message.</p>
+      <Window><Image src={capture} alt="Selecting an area with the magnifier, then the Quick Access card in the corner of the screen" widths={[640, 1088, 1600]} sizes={full} /></Window>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap pair">
+      <div>
+        <p class="say">Press A for an arrow, or B to blur a phone number.</p>
+        <Window><Image src={editor} alt="The annotation editor with arrows, a sticky note, a blurred email address, and notes beside the screenshot" widths={[540, 1080]} sizes={half} /></Window>
+      </div>
+      <div>
+        <p class="say"><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">5</kbd> records instead. Your face can come too.</p>
+        <Window><Loop name="recording" label="Recording an area of the screen with the round camera bubble in the corner" /></Window>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="say">Then cut the part where you went looking for the right tab, and save it as a GIF.</p>
+      <Window><Image src={videoEditor} alt="The video editor with trim handles, a cut, and the GIF export options" widths={[640, 1088, 1600]} sizes={full} /></Window>
+    </div>
+  </section>
+
+  <section class="small">
+    <div class="wrap narrow-text">
+      <p>There's no account to make. Shot only goes online to check for updates, and it asks you first. The <a href="https://github.com/LorcanChinnock/shot">code is on GitHub</a> if you want to look.</p>
+      <p>Everything else is in the <a href="/docs/">guide</a>.</p>
+    </div>
+  </section>
+
+  <section class="install" id="install">
+    <div class="wrap pair">
+      <div>
+        <h2>Install</h2>
+        <Copy command="brew install lorcanchinnock/tap/shot" />
+        <p>Or <a href="/download">download the zip</a> and drag Shot into Applications.</p>
+        <p>Shot isn't notarized by Apple yet, so macOS blocks it the first time. Open System Settings, go to Privacy &amp; Security, and click Open Anyway.</p>
+      </div>
+      <Image src={openAnyway} alt="Privacy & Security in System Settings, with the Open Anyway button next to the message that Shot was blocked" widths={[480, 723]} sizes={half} class="shot" />
+    </div>
+  </section>
+</Base>
+
+<style>
+  .hero { padding-top: clamp(40px, 6vw, 72px); }
+  .hero .wrap { justify-items: start; }
+  .hero h1 { font-size: clamp(44px, 7vw, 80px); display: flex; flex-wrap: wrap; align-items: center; gap: 0.18em; }
+  .hero h1 .key { font-size: 0.62em; padding: 0.05em 0.3em; border-width: 3px; border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); }
+  .lede { font-size: clamp(19px, 2.2vw, 22px); margin: 0; max-width: 30em; }
+  .cta { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; width: 100%; }
+  .cta :global(.copy) { flex: 0 1 460px; min-width: 0; }
+  .button.big { min-height: 52px; padding: 12px 22px; font-size: 18px; }
+  .meta { margin: 0 0 28px; font-size: 15px; color: var(--muted); }
+  .hero :global(.window) { width: 100%; }
+
+  section { padding-block: clamp(40px, 6vw, 72px); }
+  .wrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .say { font: 800 clamp(20px, 2.4vw, 26px)/1.3 var(--display); letter-spacing: -0.015em; margin: 0; max-width: 30em; text-wrap: pretty; }
+  .say .key { font-size: 0.75em; }
+
+  .pair { display: grid; gap: 40px; }
+  @media (min-width: 900px) { .pair { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
+  .pair > * { min-width: 0; display: grid; gap: 20px; align-content: start; }
+
+  .narrow-text p { max-width: 36em; }
+  .small p { font-size: 19px; margin: 0; }
+  .small a, .install a { font-weight: 700; }
+
+  .install h2 { font-size: clamp(28px, 3.6vw, 38px); }
+  .install p { margin: 0; }
+  .install :global(.shot) { border: 2px solid var(--ink); border-radius: 10px; }
+</style>

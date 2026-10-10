@@ -1,0 +1,45 @@
+name: Site
+
+# Builds the marketing site in site/ on every PR that touches it, and deploys it to Cloudflare
+# (shot.lorcanchinnock.com) from main. release.yml dispatches this after publishing a release,
+# so the download button moves to the new version once its zip is attached.
+on:
+  pull_request:
+    paths: [site/**, docs/**, CHANGELOG.md, .github/workflows/site.yml]
+  push:
+    branches: [main]
+    paths: [site/**, docs/**, CHANGELOG.md, .github/workflows/site.yml]
+  workflow_dispatch:
+
+concurrency:
+  group: site-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    env:
+      ASTRO_TELEMETRY_DISABLED: 1
+      # Reads the latest release for the download button without hitting the anonymous rate limit.
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - name: Deploy to Cloudflare
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy

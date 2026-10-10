@@ -1,0 +1,51 @@
+---
+/** A muted, looping clip converted from the README's GIFs by scripts/media.sh. */
+interface Props {
+  name: string;
+  label: string;
+  eager?: boolean;
+}
+const { name, label, eager = false } = Astro.props;
+---
+
+<video
+  class="loop"
+  autoplay
+  muted
+  loop
+  playsinline
+  disablepictureinpicture
+  preload={eager ? 'auto' : 'none'}
+  poster={`/media/${name}.webp`}
+  width="960"
+  height="600"
+  aria-label={label}
+>
+  <source src={`/media/${name}.webm`} type="video/webm" />
+  <source src={`/media/${name}.mp4`} type="video/mp4" />
+</video>
+
+<script>
+  // Hold every loop on its poster when the viewer asks for less motion, and only load loops as they scroll into view.
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const seen = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      const video = entry.target as HTMLVideoElement;
+      if (entry.isIntersecting) {
+        if (reduce) continue;
+        if (video.preload === 'none') video.preload = 'auto';
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
+    }
+  }, { rootMargin: '200px' });
+  for (const video of document.querySelectorAll<HTMLVideoElement>('video.loop')) {
+    if (reduce) {
+      video.removeAttribute('autoplay');
+      video.pause();
+      video.controls = true;
+    }
+    seen.observe(video);
+  }
+</script>

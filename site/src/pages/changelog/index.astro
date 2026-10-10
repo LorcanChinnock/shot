@@ -1,0 +1,17 @@
+---
+import Prose from '../../layouts/Prose.astro';
+import { Content } from '../../../../CHANGELOG.md';
+---
+
+<Prose title="Changelog" description="What changed in each Shot release.">
+  <div class="changelog"><Content /></div>
+</Prose>
+
+<style is:global>
+  .changelog h2 { font-size: 24px; }
+  .changelog h2 a { text-decoration: none; }
+  .changelog h3 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 20px; }
+  .changelog li { font-size: 15px; }
+  /* Commit hashes are noise here; the issue link stays. */
+  .changelog li > a:last-child { display: none; }
+</style>

@@ -1,0 +1,28 @@
+---
+/** Glass window chrome around a screenshot or loop, like the app's GlassWindow. */
+interface Props {
+  title?: string;
+  tint?: string;
+}
+const { title, tint = 'var(--yellow)' } = Astro.props;
+---
+
+<figure class="window card" style={`--tint: ${tint}`}>
+  <div class="titlebar">
+    <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
+    {title && <span class="name">{title}</span>}
+  </div>
+  <div class="pane"><slot /></div>
+</figure>
+
+<style>
+  .window { margin: 0; padding: 0 8px 8px; background: var(--glass-strong); overflow: hidden; }
+  .titlebar { display: flex; align-items: center; gap: 12px; height: 36px; padding: 0 6px; }
+  .lights { display: flex; gap: 7px; }
+  .lights i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--ink); background: var(--red); }
+  .lights i:nth-child(2) { background: var(--yellow); }
+  .lights i:nth-child(3) { background: var(--mint); }
+  .name { font: 800 13px/1 var(--font); }
+  .pane { border: 2px solid var(--ink); border-radius: 6px; overflow: hidden; background: var(--tint); }
+  .pane :global(img), .pane :global(video) { width: 100%; }
+</style>
