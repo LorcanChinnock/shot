@@ -29,12 +29,6 @@ private func render(_ doc: EditorDocument, scale: CGFloat) throws -> CGImage {
 }
 
 /// The pixel at (`x`, `y`) of the export, top-left origin, as fractions; the image is `scale` times the export.
-private func pixel(_ image: CGImage, _ x: CGFloat, _ y: CGFloat, scale: CGFloat = 1) throws -> [CGFloat] {
-    let data = try #require(image.dataProvider?.data as Data?)
-    let offset = Int(y * scale) * image.bytesPerRow + Int(x * scale) * 4
-    return data[offset..<offset + 4].map { CGFloat($0) / 255 }
-}
-
 @Test func anAnnotationSavedBeforeStylesDecodesUnchanged() throws {
     let json = #"{"id":"9F0C1E2A-3B4C-4D5E-8F60-718293A4B5C6","kind":{"arrow":{"from":[0,0],"to":[10,10]}},"color":{"r":1,"g":0,"b":0,"a":1},"lineWidth":4}"#
     let decoded = try JSONDecoder().decode(Annotation.self, from: Data(json.utf8))

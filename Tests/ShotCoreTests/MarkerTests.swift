@@ -10,12 +10,6 @@ private func marker(_ points: [CGPoint], lineWidth: CGFloat = 4) -> Annotation {
     Annotation(kind: .marker(points), color: blue, lineWidth: lineWidth)
 }
 
-private func pixel(_ image: CGImage, _ x: Int, _ y: Int) throws -> [CGFloat] {
-    let data = try #require(image.dataProvider?.data as Data?)
-    let offset = y * image.bytesPerRow + x * 4
-    return data[offset..<offset + 4].map { CGFloat($0) / 255 }
-}
-
 @Test func theHighlighterIsKeyedMAndTakesAColourAndWidth() {
     #expect(EditorTool.highlight.key == "m")
     #expect(EditorTool.highlight.isStyled)

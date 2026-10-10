@@ -21,12 +21,6 @@ private func image(_ image: CGImage, in rect: CGRect) -> Annotation {
 }
 
 /// The pixel at (`x`, `y`), top-left origin, as bytes.
-private func pixel(_ image: CGImage, _ x: Int, _ y: Int) throws -> [UInt8] {
-    let data = try #require(image.dataProvider?.data as Data?)
-    let offset = y * image.bytesPerRow + x * 4
-    return Array(data[offset..<offset + 4])
-}
-
 private func near(_ p: [UInt8], _ r: UInt8, _ g: UInt8, _ b: UInt8, tolerance: Int = 3) -> Bool {
     abs(Int(p[0]) - Int(r)) <= tolerance && abs(Int(p[1]) - Int(g)) <= tolerance && abs(Int(p[2]) - Int(b)) <= tolerance && p[3] == 255
 }
@@ -171,8 +165,8 @@ private func storage(_ annotation: Annotation) -> AnnotationImage? {
     #expect(decoded == a)
     let stored = try #require(storage(decoded))
     #expect(stored.image.width == 30 && stored.image.height == 20)
-    #expect(near(try pixel(stored.image, 0, 0), 255, 0, 0))
-    #expect(near(try pixel(stored.image, 1, 0), 0, 0, 255))
+    #expect(near(try pixelBytes(stored.image, 0, 0), 255, 0, 0))
+    #expect(near(try pixelBytes(stored.image, 1, 0), 0, 0, 255))
 }
 
 @Test func imageDataDecodesWithItsScale() throws {
@@ -199,16 +193,16 @@ private func storage(_ annotation: Annotation) -> AnnotationImage? {
     #expect(exported.height == 300)
 
     // The first screenshot, untouched.
-    #expect(near(try pixel(exported, 0, 0), 255, 0, 0))
-    #expect(near(try pixel(exported, 399, 299), 255, 0, 0))
+    #expect(near(try pixelBytes(exported, 0, 0), 255, 0, 0))
+    #expect(near(try pixelBytes(exported, 399, 299), 255, 0, 0))
     // The second, pixel for pixel, at its top-left, its far corner and in between.
     for (x, y) in [(0, 0), (1, 0), (2, 100), (151, 100), (298, 199), (299, 199)] {
-        let p = try pixel(exported, 416 + x, y)
+        let p = try pixelBytes(exported, 416 + x, y)
         #expect(x.isMultiple(of: 2) ? near(p, 0, 0, 255) : near(p, 0, 255, 0), "(\(x), \(y)): \(p)")
     }
     // The gap beside it and the padding below it are transparent.
-    #expect(try pixel(exported, 408, 10)[3] == 0)
-    #expect(try pixel(exported, 500, 250)[3] == 0)
+    #expect(try pixelBytes(exported, 408, 10)[3] == 0)
+    #expect(try pixelBytes(exported, 500, 250)[3] == 0)
 }
 
 @Test func aMovedImageStillExportsPixelForPixel() throws {
@@ -217,8 +211,8 @@ private func storage(_ annotation: Annotation) -> AnnotationImage? {
     // A drag at a zoom below 100% moves by fractions of a pixel.
     doc.move(id, by: CGVector(dx: 0.4, dy: 0.3), margin: 16)
     let flat = try #require(AnnotationRenderer.flatten(doc))
-    #expect(near(try pixel(flat, 30, 30), 0, 0, 255))
-    #expect(near(try pixel(flat, 31, 30), 0, 255, 0))
+    #expect(near(try pixelBytes(flat, 30, 30), 0, 0, 255))
+    #expect(near(try pixelBytes(flat, 31, 30), 0, 255, 0))
 }
 
 @Test func aLowerDensityImageIsScaledUpToMatch() throws {
@@ -227,7 +221,7 @@ private func storage(_ annotation: Annotation) -> AnnotationImage? {
     doc.addImage(blue, scale: 1, documentScale: 2, centeredAt: nil, margin: 16)
     let flat = try #require(AnnotationRenderer.flatten(doc))
     #expect(flat.width == 400 + 16 + 100 + 16)
-    #expect(near(try pixel(flat, 416 + 99, 99), 0, 0, 255))
+    #expect(near(try pixelBytes(flat, 416 + 99, 99), 0, 0, 255))
 }
 
 @Test func laterImagesDrawOverEarlierOnes() throws {
@@ -237,8 +231,8 @@ private func storage(_ annotation: Annotation) -> AnnotationImage? {
         image(columns(width: 40, height: 40, (0, 1, 0), (0, 1, 0)), in: CGRect(x: 30, y: 30, width: 40, height: 40)),
     ]
     let flat = try #require(AnnotationRenderer.flatten(doc))
-    #expect(near(try pixel(flat, 20, 20), 0, 0, 255))
-    #expect(near(try pixel(flat, 40, 40), 0, 255, 0))
+    #expect(near(try pixelBytes(flat, 20, 20), 0, 0, 255))
+    #expect(near(try pixelBytes(flat, 40, 40), 0, 255, 0))
 }
 
 @Test(arguments: [Annotation.Kind.pixelate(CGRect(x: 120, y: 10, width: 60, height: 40)), .blur(CGRect(x: 120, y: 10, width: 60, height: 40))])
@@ -249,11 +243,11 @@ func redactingOverAPlacedImageHidesItsDetail(kind: Annotation.Kind) throws {
     doc.annotations.append(Annotation(kind: kind, color: black, lineWidth: 4))
     let flat = try #require(AnnotationRenderer.flatten(doc))
     // Outside the redaction, the columns are sharp.
-    #expect(near(try pixel(flat, 116, 55), 0, 0, 0))
-    #expect(near(try pixel(flat, 117, 55), 255, 255, 255))
+    #expect(near(try pixelBytes(flat, 116, 55), 0, 0, 0))
+    #expect(near(try pixelBytes(flat, 117, 55), 255, 255, 255))
     // Inside it, neighbouring columns run together, and the image is still there rather than the empty padding.
     for x in [140, 150, 160] {
-        let p = try pixel(flat, x, 30), q = try pixel(flat, x + 1, 30)
+        let p = try pixelBytes(flat, x, 30), q = try pixelBytes(flat, x + 1, 30)
         #expect(p[3] == 255 && q[3] == 255, "\(x): \(p) \(q)")
         #expect(abs(Int(p[0]) - Int(q[0])) < 40, "\(x): \(p) \(q)")
         // Grey, from the image's black and white, not the red screenshot's edge stretched out.
@@ -271,6 +265,6 @@ func redactingOverAPlacedImageHidesItsDetail(kind: Annotation.Kind) throws {
     // The gap between the screenshot and the image isn't dimmed.
     #expect(!dim.contains(CGPoint(x: 108, y: 50)))
     let flat = try #require(AnnotationRenderer.flatten(doc))
-    #expect(near(try pixel(flat, 130, 20), 255, 255, 255))
-    #expect(near(try pixel(flat, 180, 80), 128, 128, 128, tolerance: 8))
+    #expect(near(try pixelBytes(flat, 130, 20), 255, 255, 255))
+    #expect(near(try pixelBytes(flat, 180, 80), 128, 128, 128, tolerance: 8))
 }

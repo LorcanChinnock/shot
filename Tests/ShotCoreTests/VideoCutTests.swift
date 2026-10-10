@@ -121,30 +121,7 @@ import Testing
     #expect(cuts.playbackStart(from: 6.995, in: range) == 1)
 }
 
-@Test func cutsShortenTheSizeEstimateAndOutputLength() async throws {
-    let range = TrimRange(start: 2, end: 8, duration: 10)
-    let cuts = CutList([3..<4, 5..<6])
-    var options = VideoExportOptions()
-    #expect(options.outputLength(of: range, cuts: cuts) == 4)
-    options.speed = 2
-    #expect(options.outputLength(of: range, cuts: cuts) == 2)
-    let plan = GIFFramePlan(sourceSize: CGSize(width: 640, height: 360), range: range, cuts: cuts, fps: 10, maxWidth: nil, speed: 2)
-    // 4 s kept at 2× plays for 2 s.
-    #expect(plan.frameCount == 20)
-    // Kept: 2–3, 4–5, 6–8. Frame i is 0.2 × i s into the kept time.
-    #expect(plan.sourceTime(ofFrame: 0) == 2)
-    #expect(abs(plan.sourceTime(ofFrame: 4) - 2.8) < 1e-9)
-    #expect(abs(plan.sourceTime(ofFrame: 7) - 4.4) < 1e-9)
-    #expect(abs(plan.sourceTime(ofFrame: 15) - 7) < 1e-9)
-}
-
 // MARK: Export
-
-private func temporaryFolder() throws -> URL {
-    let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-    return folder
-}
 
 /// Kept: 0–1 s (tone), 2–3.5 s (tone, then silence from 3), 4.5–6 s (tone to 5, then silence).
 private let twoCutRange = TrimRange(duration: 6)
@@ -254,7 +231,7 @@ extension MediaTests {
         let input = folder.appendingPathComponent("in.mp4")
         try await writeSyntheticVideo(to: input, seconds: 1, fps: 30, width: 320, height: 240)
 
-        await #expect(throws: VideoTrimmer.TrimError.self) {
+        await #expect(throws: VideoTrimmer.TrimError.nothingLeft) {
             try await VideoTrimmer.trim(input, range: TrimRange(duration: 1), cuts: CutList([0..<1]), to: folder.appendingPathComponent("out.mp4"))
         }
     }
@@ -262,79 +239,12 @@ extension MediaTests {
 
 // MARK: Helpers
 
-/// Source seconds 0–1, 2–3 and 4–5 have the tone; the rest is silent.
-private func hasTone(atSource time: Double) -> Bool {
-    Int(time) % 2 == 0
-}
-
-/// A 320 × 240, 30 fps video whose frame `n` is gray level `n`, with a 440 Hz tone during even seconds.
-private func writeTimedRecording(to url: URL, seconds: Int) async throws {
-    let width = 320, height = 240, fps = 30, sampleRate = 44100
-    let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
-    let video = AVAssetWriterInput(mediaType: .video, outputSettings: [
-        AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: width, AVVideoHeightKey: height,
-    ])
-    video.expectsMediaDataInRealTime = true
-    let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: video, sourcePixelBufferAttributes: [
-        kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA, kCVPixelBufferWidthKey as String: width, kCVPixelBufferHeightKey as String: height,
-    ])
-    writer.add(video)
-    let sound = AVAssetWriterInput(mediaType: .audio, outputSettings: [
-        AVFormatIDKey: kAudioFormatMPEG4AAC, AVSampleRateKey: sampleRate, AVNumberOfChannelsKey: 1,
-    ])
-    sound.expectsMediaDataInRealTime = true
-    writer.add(sound)
-    var pcm = AudioStreamBasicDescription(
-        mSampleRate: Double(sampleRate), mFormatID: kAudioFormatLinearPCM, mFormatFlags: kLinearPCMFormatFlagIsSignedInteger | kLinearPCMFormatFlagIsPacked,
-        mBytesPerPacket: 2, mFramesPerPacket: 1, mBytesPerFrame: 2, mChannelsPerFrame: 1, mBitsPerChannel: 16, mReserved: 0
-    )
-    var format: CMAudioFormatDescription?
-    CMAudioFormatDescriptionCreate(allocator: nil, asbd: &pcm, layoutSize: 0, layout: nil, magicCookieSize: 0, magicCookie: nil, extensions: nil, formatDescriptionOut: &format)
-    let audioFormat = try #require(format)
-    writer.startWriting()
-    writer.startSession(atSourceTime: .zero)
-
-    let chunk = sampleRate / fps
-    for frame in 0..<(fps * seconds) {
-        let loud = hasTone(atSource: Double(frame) / Double(fps))
-        let samples = (0..<chunk).map { loud ? Int16(8000 * sin(Double(frame * chunk + $0) * 2 * .pi * 440 / Double(sampleRate))) : 0 }
-        var block: CMBlockBuffer?
-        CMBlockBufferCreateWithMemoryBlock(allocator: nil, memoryBlock: nil, blockLength: chunk * 2, blockAllocator: nil, customBlockSource: nil, offsetToData: 0, dataLength: chunk * 2, flags: 0, blockBufferOut: &block)
-        let data = try #require(block)
-        samples.withUnsafeBytes { _ = CMBlockBufferReplaceDataBytes(with: $0.baseAddress!, blockBuffer: data, offsetIntoDestination: 0, dataLength: chunk * 2) }
-        var audioBuffer: CMSampleBuffer?
-        CMAudioSampleBufferCreateReadyWithPacketDescriptions(allocator: nil, dataBuffer: data, formatDescription: audioFormat, sampleCount: chunk, presentationTimeStamp: CMTime(value: CMTimeValue(frame * chunk), timescale: CMTimeScale(sampleRate)), packetDescriptions: nil, sampleBufferOut: &audioBuffer)
-        try await waitUntilReady(sound, of: writer)
-        sound.append(try #require(audioBuffer))
-
-        try await waitUntilReady(video, of: writer)
-        var buffer: CVPixelBuffer?
-        CVPixelBufferPoolCreatePixelBuffer(nil, try #require(adaptor.pixelBufferPool), &buffer)
-        let pixels = try #require(buffer)
-        CVPixelBufferLockBaseAddress(pixels, [])
-        memset(CVPixelBufferGetBaseAddress(pixels), Int32(frame), CVPixelBufferGetDataSize(pixels))
-        CVPixelBufferUnlockBaseAddress(pixels, [])
-        adaptor.append(pixels, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: CMTimeScale(fps)))
-    }
-    video.markAsFinished()
-    sound.markAsFinished()
-    await writer.finishWriting()
-    #expect(writer.status == .completed)
-}
-
 /// The gray level of the frame shown at `time`; neighbouring source frames differ by about one level.
 private func grayLevel(in asset: AVAsset, at time: Double) async throws -> Int {
     let generator = AVAssetImageGenerator(asset: asset)
     generator.requestedTimeToleranceBefore = .zero
     generator.requestedTimeToleranceAfter = .zero
     return try await grayLevel(of: generator.image(at: CMTime(seconds: time, preferredTimescale: 600)).image)
-}
-
-private func grayLevel(of image: CGImage) throws -> Int {
-    var pixel = [UInt8](repeating: 0, count: 4)
-    let context = try #require(CGContext(data: &pixel, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
-    context.draw(image, in: CGRect(x: 0, y: 0, width: 1, height: 1))
-    return Int(pixel[1])
 }
 
 /// Whether the audio in the 0.1 s around `time` carries the tone rather than silence.

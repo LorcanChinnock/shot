@@ -100,6 +100,23 @@ import Testing
     #expect(single.sampleFrames(4) == [0])
 }
 
+@Test func cutsShortenTheSizeEstimateAndOutputLength() async throws {
+    let range = TrimRange(start: 2, end: 8, duration: 10)
+    let cuts = CutList([3..<4, 5..<6])
+    var options = VideoExportOptions()
+    #expect(options.outputLength(of: range, cuts: cuts) == 4)
+    options.speed = 2
+    #expect(options.outputLength(of: range, cuts: cuts) == 2)
+    let plan = GIFFramePlan(sourceSize: CGSize(width: 640, height: 360), range: range, cuts: cuts, fps: 10, maxWidth: nil, speed: 2)
+    // 4 s kept at 2× plays for 2 s.
+    #expect(plan.frameCount == 20)
+    // Kept: 2–3, 4–5, 6–8. Frame i is 0.2 × i s into the kept time.
+    #expect(plan.sourceTime(ofFrame: 0) == 2)
+    #expect(abs(plan.sourceTime(ofFrame: 4) - 2.8) < 1e-9)
+    #expect(abs(plan.sourceTime(ofFrame: 7) - 4.4) < 1e-9)
+    #expect(abs(plan.sourceTime(ofFrame: 15) - 7) < 1e-9)
+}
+
 // MARK: Size estimates
 
 @Test func mp4EstimateDropsMutedAudioAndSqueezesItWithSpeed() {
@@ -118,12 +135,6 @@ import Testing
 }
 
 // MARK: Rendering
-
-private func temporaryFolder() throws -> URL {
-    let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-    return folder
-}
 
 extension MediaTests {
     @Test func gifExportUsesTheRangeFrameRateWidthAndSpeed() async throws {
@@ -306,13 +317,6 @@ extension MediaTests {
 
 // MARK: Helpers
 
-private func grayLevel(of image: CGImage) throws -> Int {
-    var pixel = [UInt8](repeating: 0, count: 4)
-    let context = try #require(CGContext(data: &pixel, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
-    context.draw(image, in: CGRect(x: 0, y: 0, width: 1, height: 1))
-    return Int(pixel[1])
-}
-
 private func sampleCount(of track: AVAssetTrack, in asset: AVAsset) throws -> Int {
     let reader = try AVAssetReader(asset: asset)
     let output = AVAssetReaderTrackOutput(track: track, outputSettings: nil)
@@ -323,96 +327,4 @@ private func sampleCount(of track: AVAssetTrack, in asset: AVAsset) throws -> In
         count += CMSampleBufferGetNumSamples(buffer)
     }
     return count
-}
-
-/// A 640 × 400, 30 fps stand-in for a screen recording: a static window with lines of text,
-/// a line being typed, and a moving pointer, plus an optional 440 Hz tone.
-func writeScreenRecording(to url: URL, seconds: Int, audio: Bool) async throws {
-    let width = 640, height = 400, fps = 30, sampleRate = 44100
-    let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
-    let video = AVAssetWriterInput(mediaType: .video, outputSettings: [
-        AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: width, AVVideoHeightKey: height,
-    ])
-    // Both inputs are fed from one loop, so neither may wait for the other to catch up.
-    video.expectsMediaDataInRealTime = true
-    let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: video, sourcePixelBufferAttributes: [
-        kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA, kCVPixelBufferWidthKey as String: width, kCVPixelBufferHeightKey as String: height,
-    ])
-    writer.add(video)
-    let sound = AVAssetWriterInput(mediaType: .audio, outputSettings: [
-        AVFormatIDKey: kAudioFormatMPEG4AAC, AVSampleRateKey: sampleRate, AVNumberOfChannelsKey: 1,
-    ])
-    sound.expectsMediaDataInRealTime = true
-    if audio {
-        writer.add(sound)
-    }
-    var pcm = AudioStreamBasicDescription(
-        mSampleRate: Double(sampleRate), mFormatID: kAudioFormatLinearPCM, mFormatFlags: kLinearPCMFormatFlagIsSignedInteger | kLinearPCMFormatFlagIsPacked,
-        mBytesPerPacket: 2, mFramesPerPacket: 1, mBytesPerFrame: 2, mChannelsPerFrame: 1, mBitsPerChannel: 16, mReserved: 0
-    )
-    var format: CMAudioFormatDescription?
-    CMAudioFormatDescriptionCreate(allocator: nil, asbd: &pcm, layoutSize: 0, layout: nil, magicCookieSize: 0, magicCookie: nil, extensions: nil, formatDescriptionOut: &format)
-    let audioFormat = try #require(format)
-    writer.startWriting()
-    writer.startSession(atSourceTime: .zero)
-
-    let chunk = sampleRate / fps
-    for frame in 0..<(fps * seconds) {
-        if audio {
-            let samples = (0..<chunk).map { Int16(8000 * sin(Double(frame * chunk + $0) * 2 * .pi * 440 / Double(sampleRate))) }
-            var block: CMBlockBuffer?
-            CMBlockBufferCreateWithMemoryBlock(allocator: nil, memoryBlock: nil, blockLength: chunk * 2, blockAllocator: nil, customBlockSource: nil, offsetToData: 0, dataLength: chunk * 2, flags: 0, blockBufferOut: &block)
-            let data = try #require(block)
-            samples.withUnsafeBytes { _ = CMBlockBufferReplaceDataBytes(with: $0.baseAddress!, blockBuffer: data, offsetIntoDestination: 0, dataLength: chunk * 2) }
-            var buffer: CMSampleBuffer?
-            CMAudioSampleBufferCreateReadyWithPacketDescriptions(allocator: nil, dataBuffer: data, formatDescription: audioFormat, sampleCount: chunk, presentationTimeStamp: CMTime(value: CMTimeValue(frame * chunk), timescale: CMTimeScale(sampleRate)), packetDescriptions: nil, sampleBufferOut: &buffer)
-            try await waitUntilReady(sound, of: writer)
-            sound.append(try #require(buffer))
-        }
-        try await waitUntilReady(video, of: writer)
-        var buffer: CVPixelBuffer?
-        CVPixelBufferPoolCreatePixelBuffer(nil, try #require(adaptor.pixelBufferPool), &buffer)
-        let pixels = try #require(buffer)
-        CVPixelBufferLockBaseAddress(pixels, [])
-        let context = try #require(CGContext(
-            data: CVPixelBufferGetBaseAddress(pixels), width: width, height: height, bitsPerComponent: 8, bytesPerRow: CVPixelBufferGetBytesPerRow(pixels),
-            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
-        ))
-        drawScreen(in: context, width: width, height: height, frame: frame)
-        CVPixelBufferUnlockBaseAddress(pixels, [])
-        adaptor.append(pixels, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: CMTimeScale(fps)))
-    }
-    video.markAsFinished()
-    if audio {
-        sound.markAsFinished()
-    }
-    await writer.finishWriting()
-    #expect(writer.status == .completed)
-}
-
-private func drawScreen(in context: CGContext, width: Int, height: Int, frame: Int) {
-    context.setFillColor(CGColor(red: 0.2, green: 0.4, blue: 0.7, alpha: 1))
-    context.fill(CGRect(x: 0, y: 0, width: width, height: height))
-    let window = CGRect(x: 40, y: 30, width: width - 80, height: height - 60)
-    context.setFillColor(CGColor(gray: 0.97, alpha: 1))
-    context.fill(window)
-    context.setFillColor(CGColor(gray: 0.85, alpha: 1))
-    context.fill(CGRect(x: window.minX, y: window.maxY - 24, width: window.width, height: 24))
-    context.setFillColor(CGColor(gray: 0.2, alpha: 1))
-    // Static "text": rows of words with fixed, varied widths.
-    for row in 0..<14 {
-        var x = window.minX + 16
-        for word in 0..<9 {
-            let wordWidth = CGFloat(12 + (row * 7 + word * 13) % 38)
-            context.fill(CGRect(x: x, y: window.maxY - 44 - CGFloat(row) * 20, width: wordWidth, height: 8))
-            x += wordWidth + 7
-        }
-    }
-    // A line being typed, one character every other frame.
-    context.setFillColor(CGColor(red: 0.6, green: 0.1, blue: 0.1, alpha: 1))
-    context.fill(CGRect(x: window.minX + 16, y: window.minY + 20, width: min(window.width - 32, CGFloat(frame / 2) * 6), height: 8))
-    // The pointer moves across the window.
-    context.setFillColor(CGColor(gray: 0, alpha: 1))
-    let t = CGFloat(frame) / 30
-    context.fill(CGRect(x: window.minX + 40 + t * 70, y: window.midY + 60 * sin(t), width: 10, height: 14))
 }

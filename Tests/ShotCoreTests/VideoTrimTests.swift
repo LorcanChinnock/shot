@@ -87,13 +87,21 @@ private let timeline = TrimTimeline(duration: 10, minX: 20, width: 500)
 
 @Test func handleHitTesting() {
     let range = TrimRange(start: 2, end: 8, duration: 10)
-    // The start handle sits left of the in point (x 120) and the end handle right of the out point (x 420).
-    #expect(timeline.handle(at: 110, range: range) == .start)
-    #expect(timeline.handle(at: 121, range: range) == .start)
-    #expect(timeline.handle(at: 430, range: range) == .end)
-    #expect(timeline.handle(at: 418, range: range) == .end)
-    #expect(timeline.handle(at: 270, range: range) == nil)
-    #expect(timeline.handle(at: 60, range: range) == nil)
+    let inX = timeline.x(for: range.start), outX = timeline.x(for: range.end)
+    let width = TrimTimeline.handleWidth, reach = TrimTimeline.slop
+    // The start handle sits left of the in point and the end handle right of the out point.
+    #expect(timeline.handle(at: inX - width / 2, range: range) == .start)
+    #expect(timeline.handle(at: outX + width / 2, range: range) == .end)
+    // A little either side of a handle still grabs it.
+    #expect(timeline.handle(at: inX + reach, range: range) == .start)
+    #expect(timeline.handle(at: inX - width - reach, range: range) == .start)
+    #expect(timeline.handle(at: outX - reach, range: range) == .end)
+    #expect(timeline.handle(at: outX + width + reach, range: range) == .end)
+    // Past that reach, and between the handles, is neither.
+    #expect(timeline.handle(at: inX + reach + 1, range: range) == nil)
+    #expect(timeline.handle(at: inX - width - reach - 1, range: range) == nil)
+    #expect(timeline.handle(at: outX + width + reach + 1, range: range) == nil)
+    #expect(timeline.handle(at: (inX + outX) / 2, range: range) == nil)
 }
 
 @Test func touchingHandlesPickTheNearerSide() {
@@ -109,36 +117,11 @@ private let timeline = TrimTimeline(duration: 10, minX: 20, width: 500)
     #expect(timeline.thumbnailTimes(count: 4) == [1.25, 3.75, 6.25, 8.75])
 }
 
-// MARK: Routing
-
-@Test func annotateRoutesByFileType() {
-    #expect(EditorRoute(host: "annotate", path: "/tmp/a.png") == .image(URL(fileURLWithPath: "/tmp/a.png")))
-    #expect(EditorRoute(host: "annotate", path: "/tmp/a.mp4") == .video(URL(fileURLWithPath: "/tmp/a.mp4")))
-    #expect(EditorRoute(host: "annotate", path: "/tmp/a.MOV") == .video(URL(fileURLWithPath: "/tmp/a.MOV")))
-    #expect(EditorRoute(fileURL: URL(fileURLWithPath: "/tmp/b.m4v")) == .video(URL(fileURLWithPath: "/tmp/b.m4v")))
-    #expect(EditorRoute(fileURL: URL(fileURLWithPath: "/tmp/b.jpg")) == .image(URL(fileURLWithPath: "/tmp/b.jpg")))
-}
-
-@Test func editVideoAlwaysOpensTheVideoEditor() {
-    #expect(EditorRoute(host: "edit-video", path: "/tmp/a.mp4") == .video(URL(fileURLWithPath: "/tmp/a.mp4")))
-    #expect(EditorRoute(host: "edit-video", path: "/tmp/a.png") == .video(URL(fileURLWithPath: "/tmp/a.png")))
-}
-
-@Test func routeExpandsTildeAndRejectsMissingPaths() {
-    let home = FileManager.default.homeDirectoryForCurrentUser.path
-    #expect(EditorRoute(host: "annotate", path: "~/x.png") == .image(URL(fileURLWithPath: home).appendingPathComponent("x.png")))
-    #expect(EditorRoute(host: "annotate", path: nil) == nil)
-    #expect(EditorRoute(host: "edit-video", path: "") == nil)
-    #expect(EditorRoute(host: "capture-area", path: "/tmp/a.png") == nil)
-    #expect(EditorRoute.hosts == ["annotate", "edit-video"])
-}
-
 // MARK: Export
 
 extension MediaTests {
     @Test func trimsWithoutReencoding() async throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let folder = try temporaryFolder()
         defer { try? FileManager.default.removeItem(at: folder) }
         let input = folder.appendingPathComponent("in.mp4")
         let output = folder.appendingPathComponent("out.mp4")
@@ -157,8 +140,7 @@ extension MediaTests {
     }
 
     @Test func trimReplacesAnExistingOutput() async throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let folder = try temporaryFolder()
         defer { try? FileManager.default.removeItem(at: folder) }
         let input = folder.appendingPathComponent("in.mp4")
         let output = folder.appendingPathComponent("out.mp4")
@@ -169,5 +151,29 @@ extension MediaTests {
 
         let duration = try await AVURLAsset(url: output).load(.duration).seconds
         #expect(abs(duration - 1) < 0.1)
+    }
+
+    @Test func trimRefusesAFileTypeItCantWrite() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let input = folder.appendingPathComponent("in.mp4")
+        try await writeSyntheticVideo(to: input, seconds: 1, fps: 30, width: 320, height: 240)
+        let output = folder.appendingPathComponent("out.gif")
+
+        await #expect(throws: VideoTrimmer.TrimError.unsupportedFileType) {
+            try await VideoTrimmer.trim(input, range: TrimRange(duration: 1), to: output, as: AVFileType("com.compuserve.gif"))
+        }
+        #expect(!FileManager.default.fileExists(atPath: output.path))
+    }
+
+    @Test func trimCantTellTheFileTypeOfAnInputWithNoExtension() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let input = folder.appendingPathComponent("recording")
+        try await writeSyntheticVideo(to: input, seconds: 1, fps: 30, width: 320, height: 240)
+
+        await #expect(throws: VideoTrimmer.TrimError.unsupportedFileType) {
+            try await VideoTrimmer.trim(input, range: TrimRange(duration: 1), to: folder.appendingPathComponent("out"))
+        }
     }
 }

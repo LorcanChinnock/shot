@@ -5,12 +5,6 @@ import Testing
 
 private let blue = RGBA(0, 0, 1)
 
-private func pixel(_ image: CGImage, x: Int, y: Int) throws -> [UInt8] {
-    let data = try #require(image.dataProvider?.data as Data?)
-    let offset = y * image.bytesPerRow + x * 4
-    return Array(data[offset..<offset + 4])
-}
-
 // The test images use device RGB, so sRGB annotation colours can land a step off their exact values.
 private func isBlue(_ p: [UInt8]) -> Bool { p[0] < 30 && p[1] < 30 && p[2] > 225 && p[3] == 255 }
 private func isRed(_ p: [UInt8]) -> Bool { p[0] > 225 && p[1] < 30 && p[2] < 30 && p[3] == 255 }
@@ -183,7 +177,7 @@ private func isWhite(_ p: [UInt8]) -> Bool { p.allSatisfy { $0 > 245 } }
     #expect(CGSize(width: image.width, height: image.height) == doc.exportSize)
     #expect(image.width > 170)
     let origin = doc.canvasRect.origin
-    func at(_ x: CGFloat, _ y: CGFloat) throws -> [UInt8] { try pixel(image, x: Int(x - origin.x), y: Int(y - origin.y)) }
+    func at(_ x: CGFloat, _ y: CGFloat) throws -> [UInt8] { try pixelBytes(image, Int(x - origin.x), Int(y - origin.y)) }
     // Arrow shaft inside the image, the label outside it, untouched image, and transparent padding.
     #expect(isBlue(try at(70, 50)))
     #expect(isBlue(try at(160, 32)))
@@ -197,9 +191,9 @@ private func isWhite(_ p: [UInt8]) -> Bool { p.allSatisfy { $0 > 245 } }
     doc.background = RGBA(1, 1, 1)
     let image = try #require(AnnotationRenderer.flatten(doc))
     #expect(image.width == 140 && image.height == 120)
-    #expect(isWhite(try pixel(image, x: 5, y: 5)))
-    #expect(isRed(try pixel(image, x: 70, y: 60)))
-    #expect(isWhite(try pixel(image, x: 135, y: 115)))
+    #expect(isWhite(try pixelBytes(image, 5, 5)))
+    #expect(isRed(try pixelBytes(image, 70, 60)))
+    #expect(isWhite(try pixelBytes(image, 135, 115)))
 }
 
 @Test func shrinkingPullsPaddingBackAsAnAnnotationMovesOrGoes() {

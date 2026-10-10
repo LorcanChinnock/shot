@@ -7,12 +7,6 @@ private let blue = RGBA(0, 0, 1)
 private let canvas = CGRect(x: 0, y: 0, width: 400, height: 300)
 private let view = CGSize(width: 800, height: 600)
 
-private func pixel(_ image: CGImage, x: Int, y: Int) throws -> [UInt8] {
-    let data = try #require(image.dataProvider?.data as Data?)
-    let offset = y * image.bytesPerRow + x * 4
-    return Array(data[offset..<offset + 4])
-}
-
 private func isBlue(_ p: [UInt8]) -> Bool { p[0] < 30 && p[1] < 30 && p[2] > 225 && p[3] == 255 }
 private func isRed(_ p: [UInt8]) -> Bool { p[0] > 225 && p[1] < 30 && p[2] < 30 && p[3] == 255 }
 
@@ -133,15 +127,15 @@ private func isRed(_ p: [UInt8]) -> Bool { p[0] > 225 && p[1] < 30 && p[2] < 30 
 
     // The 2 px stroke straddles each edge: pixels 56–57 and 96–97 across, and nothing outside it.
     for x in [56, 57, 96, 97] {
-        #expect(isBlue(try pixel(image, x: x, y: 67)))
+        #expect(isBlue(try pixelBytes(image, x, 67)))
     }
     for x in [54, 59, 77, 94, 99] {
-        #expect(isRed(try pixel(image, x: x, y: 67)))
+        #expect(isRed(try pixelBytes(image, x, 67)))
     }
     for y in [56, 57, 76, 77] {
-        #expect(isBlue(try pixel(image, x: 77, y: y)))
+        #expect(isBlue(try pixelBytes(image, 77, y)))
     }
     for y in [54, 59, 67, 74, 79] {
-        #expect(isRed(try pixel(image, x: 77, y: y)))
+        #expect(isRed(try pixelBytes(image, 77, y)))
     }
 }

@@ -17,12 +17,6 @@ private func solid(width: Int, height: Int) -> CGImage {
     return ctx.makeImage()!
 }
 
-private func pixel(_ image: CGImage, _ x: Int, _ y: Int) throws -> [UInt8] {
-    let data = try #require(image.dataProvider?.data as Data?)
-    let offset = y * image.bytesPerRow + x * 4
-    return Array(data[offset..<offset + 4])
-}
-
 private struct Item: Identifiable, Equatable {
     let id: Int
 }
@@ -94,9 +88,9 @@ private func ids(_ items: [Item]) -> [Int] { items.map(\.id) }
     var filled = annotation(.shape(.rectangle, rect: box))
     filled.fill = red
     var doc = EditorDocument(base: solid(width: 60, height: 60), annotations: [filled])
-    #expect(try pixel(try #require(AnnotationRenderer.flatten(doc)), 25, 25) != [255, 255, 255, 255])
+    #expect(try pixelBytes(try #require(AnnotationRenderer.flatten(doc)), 25, 25) != [255, 255, 255, 255])
     doc.annotations[0].isHidden = true
-    #expect(try pixel(try #require(AnnotationRenderer.flatten(doc)), 25, 25) == [255, 255, 255, 255])
+    #expect(try pixelBytes(try #require(AnnotationRenderer.flatten(doc)), 25, 25) == [255, 255, 255, 255])
 }
 
 private func effect(_ name: String) -> Annotation {
@@ -116,7 +110,7 @@ private func square() -> Annotation {
 
 /// The pixels where `square()` is drawn.
 private func square(of image: CGImage) throws -> [[UInt8]] {
-    try stride(from: 13, to: 43, by: 1).flatMap { y in try stride(from: 13, to: 43, by: 1).map { x in try pixel(image, x, y) } }
+    try stride(from: 13, to: 43, by: 1).flatMap { y in try stride(from: 13, to: 43, by: 1).map { x in try pixelBytes(image, x, y) } }
 }
 
 @Test(arguments: ["spotlight", "blur", "pixelate"])
@@ -158,8 +152,8 @@ func aHiddenLayerIsLeftOutOfTheEffectOverIt(_ name: String) throws {
         return try #require(context.createCGImage(image, from: canvas, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!))
     }
     let plain = try frame([square()])
-    #expect(try pixel(try frame([square(), effect("spotlight")]), 28, 28) != pixel(plain, 28, 28))
-    #expect(try pixel(try frame([effect("spotlight"), square()]), 28, 28) == pixel(plain, 28, 28))
+    #expect(try pixelBytes(try frame([square(), effect("spotlight")]), 28, 28) != pixelBytes(plain, 28, 28))
+    #expect(try pixelBytes(try frame([effect("spotlight"), square()]), 28, 28) == pixelBytes(plain, 28, 28))
 }
 
 private func overlayProject() -> (project: Project, bottom: UUID, middle: UUID, top: UUID) {
