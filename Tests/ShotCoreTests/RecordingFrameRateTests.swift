@@ -42,3 +42,14 @@ import Testing
     #expect(!RecordingFrameRate.usesHEVC(fps: 60))
     #expect(RecordingFrameRate.usesHEVC(fps: 120))
 }
+
+@Test func aStored120StaysSelectableOnASlowerDisplay() {
+    #expect(RecordingFrameRate.selectable(maximumDisplayRate: 60, current: 120) == [30, 60, 120])
+    #expect(RecordingFrameRate.selectable(maximumDisplayRate: 120, current: 120) == [30, 60, 120])
+    #expect(RecordingFrameRate.selectable(maximumDisplayRate: 60, current: 60) == [30, 60])
+}
+
+@Test func anUnknownStoredRateIsNotOffered() {
+    #expect(RecordingFrameRate.selectable(maximumDisplayRate: 120, current: 90) == [30, 60, 120])
+    #expect(RecordingFrameRate.selectable(maximumDisplayRate: 60, current: 0) == [30, 60])
+}

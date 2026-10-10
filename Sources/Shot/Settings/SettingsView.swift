@@ -406,8 +406,7 @@ private struct RecordingSettings: View {
 
     /// 120 fps shows only with a display that fast, or when it's already chosen so the selection never disappears.
     private var frameRates: [Int] {
-        let offered = RecordingFrameRate.offered(maximumDisplayRate: NSScreen.screens.map(\.maximumFramesPerSecond).max() ?? 0)
-        return offered.contains(fps) || !RecordingFrameRate.all.contains(fps) ? offered : offered + [fps]
+        RecordingFrameRate.selectable(maximumDisplayRate: NSScreen.screens.map(\.maximumFramesPerSecond).max() ?? 0, current: fps)
     }
 
     var body: some View {

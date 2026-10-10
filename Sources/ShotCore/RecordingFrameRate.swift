@@ -11,6 +11,13 @@ public enum RecordingFrameRate {
         all.filter { $0 <= max(maximumDisplayRate, `default`) }
     }
 
+    /// The rates the picker shows: those `offered`, plus `current` when it's one of `all`, so a 120 chosen on a faster display stays selectable.
+    public static func selectable(maximumDisplayRate: Int, current: Int) -> [Int] {
+        let rates = offered(maximumDisplayRate: maximumDisplayRate)
+        guard all.contains(current), !rates.contains(current) else { return rates }
+        return rates + [current]
+    }
+
     /// The rate to record at on a display refreshing at `displayRate`: the setting, unless the display can't offer it.
     /// A setting that isn't one of `all` falls back to the default.
     public static func effective(setting: Int, displayRate: Int) -> Int {
