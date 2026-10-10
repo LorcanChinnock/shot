@@ -1,0 +1,19 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Not found">
+  <section>
+    <div class="narrow lost card solid">
+      <span class="chip" style="--chip: var(--red)">404</span>
+      <h1>Page not found</h1>
+      <p>Try the <a href="/">home page</a> or the <a href="/docs/">user guide</a>.</p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .lost { padding: 40px; display: grid; gap: 16px; justify-items: start; }
+  h1 { font-size: clamp(36px, 6vw, 56px); }
+  p { margin: 0; font-size: 18px; }
+</style>
