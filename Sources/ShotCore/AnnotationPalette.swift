@@ -125,7 +125,7 @@ public struct AnnotationPalette: Equatable, Sendable {
 
     /// True when the toolbar offers a colour and width: the text being typed or the selection takes them, or else the tool does.
     public var showsStyle: Bool {
-        editingText != nil || (selection?.isStyled ?? tool?.isStyled ?? false)
+        editingText != nil || (selection?.takesColorAndWidth ?? tool?.takesColorAndWidth ?? false)
     }
 
     /// True when the width sets a text size, so the toolbar offers sizes rather than line widths.

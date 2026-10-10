@@ -30,13 +30,13 @@ struct QuickAccessView: View {
     }
 
     var body: some View {
-        VStack(spacing: QuickAccessController.spacing) {
+        VStack(spacing: QuickAccessLayout.spacing) {
             ForEach(model.cards) { card in
                 QuickAccessCardView(card: card, controller: controller)
                     .transition(transition)
             }
         }
-        .padding(QuickAccessController.padding)
+        .padding(QuickAccessLayout.padding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         .environment(\.colorScheme, .light)
     }

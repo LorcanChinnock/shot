@@ -113,11 +113,11 @@ private let shapeFrame = CGRect(x: 20, y: 20, width: 100, height: 60)
 }
 
 @Test func onlyDrawnMarksTakeAColourAndWidth() {
-    #expect(EditorTool.allCases.filter { !$0.isStyled } == [.select, .hand, .spotlight, .redact, .crop])
-    #expect(annotation(.freehand([.zero, CGPoint(x: 9, y: 9)])).isStyled)
-    #expect(annotation(.note("Hi", rect: shapeFrame)).isStyled)
+    #expect(EditorTool.allCases.filter { !$0.takesColorAndWidth } == [.select, .hand, .spotlight, .redact, .crop])
+    #expect(annotation(.freehand([.zero, CGPoint(x: 9, y: 9)])).takesColorAndWidth)
+    #expect(annotation(.note("Hi", rect: shapeFrame)).takesColorAndWidth)
     for kind in [Annotation.Kind.highlight(shapeFrame), .pixelate(shapeFrame), .blur(shapeFrame), .spotlight(shapeFrame, style: SpotlightStyle())] {
-        #expect(!annotation(kind).isStyled)
+        #expect(!annotation(kind).takesColorAndWidth)
     }
 }
 
