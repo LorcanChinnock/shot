@@ -106,7 +106,7 @@ public struct Preferences {
             PreferenceKey.windowShadow: true,
             PreferenceKey.quickAccessPosition: QuickAccessPosition.left.rawValue,
             PreferenceKey.quickAccessDuration: 8.0,
-            PreferenceKey.recordingFPS: 60,
+            PreferenceKey.recordingFPS: RecordingFrameRate.default,
             PreferenceKey.recordShowsCursor: true,
             PreferenceKey.recordMicrophone: false,
             PreferenceKey.microphoneDeviceID: "",

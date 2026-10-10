@@ -24,8 +24,8 @@ public enum CompositionBuilder {
         }
     }
 
-    /// Frame rates above this aren't kept, since the compositor draws every frame.
-    static let maximumFrameRate: Float = 60
+    /// Frame rates above this aren't kept, since the compositor draws every frame. It matches the fastest recording.
+    static let maximumFrameRate: Float = 120
 
     public static func build(_ project: Project) async throws -> ProjectComposition {
         let composition = AVMutableComposition()
@@ -294,10 +294,13 @@ public enum ProjectExporter {
         }
     }
 
-    /// Writes the project to `output`, replacing it, drawn at the canvas size and re-encoded.
+    /// Writes the project to `output`, replacing it, drawn at the canvas size and re-encoded: H.264, or HEVC above 60 fps.
     public static func export(_ project: Project, to output: URL, as fileType: AVFileType = .mp4) async throws {
         let built = try await CompositionBuilder.build(project)
-        guard let export = AVAssetExportSession(asset: built.asset, presetName: AVAssetExportPresetHighestQuality) else {
+        // H.264 drops a 120 fps Retina-size picture to 30 fps, so a high-frame-rate project is HEVC, like its recording.
+        let fps = Int((1 / built.videoComposition.frameDuration.seconds).rounded())
+        let preset = RecordingFrameRate.usesHEVC(fps: fps) ? AVAssetExportPresetHEVCHighestQuality : AVAssetExportPresetHighestQuality
+        guard let export = AVAssetExportSession(asset: built.asset, presetName: preset) else {
             throw ExportError.failed
         }
         guard export.supportedFileTypes.contains(fileType) else {
