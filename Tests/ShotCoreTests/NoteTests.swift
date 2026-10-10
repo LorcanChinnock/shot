@@ -245,12 +245,6 @@ private func render(_ doc: EditorDocument, scale: CGFloat) throws -> CGImage {
     return try #require(ctx.makeImage())
 }
 
-private func pixel(_ image: CGImage, _ x: CGFloat, _ y: CGFloat, scale: CGFloat = 1) throws -> [CGFloat] {
-    let data = try #require(image.dataProvider?.data as Data?)
-    let offset = Int(y * scale) * image.bytesPerRow + Int(x * scale) * 4
-    return data[offset..<offset + 4].map { CGFloat($0) / 255 }
-}
-
 @Test(arguments: [1.0, 2.0])
 func noteRendersTheSameInTheEditorAndTheExport(scale: CGFloat) throws {
     let n = note("Hello world", CGRect(x: 20, y: 20, width: 160, height: 60))

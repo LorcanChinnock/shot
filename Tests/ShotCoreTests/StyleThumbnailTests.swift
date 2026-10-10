@@ -11,12 +11,6 @@ private func filled(width: Int, height: Int, grey: CGFloat) -> CGImage {
 }
 
 /// The pixel at (`x`, `y`), top-left origin, from 0 to 255.
-private func pixel(_ image: CGImage, _ x: Int, _ y: Int) throws -> [UInt8] {
-    let data = try #require(image.dataProvider?.data as Data?)
-    let offset = y * image.bytesPerRow + x * 4
-    return Array(data[offset..<offset + 4])
-}
-
 private let tile = CGSize(width: 48, height: 28)
 
 @Test func aTileShowsTheScreenshotItselfShrunkToFit() throws {
@@ -24,8 +18,8 @@ private let tile = CGSize(width: 48, height: 28)
     let plain = try #require(StyleThumbnail.render(.image(capture), style: ObjectStyle(), cornerRadius: 0, size: tile, pixelsPerPoint: 2))
     #expect(plain.width == 96 && plain.height == 56)
     // The middle is the screenshot's grey, and the corners, outside the picture, are clear.
-    #expect(try pixel(plain, 48, 26) == [128, 128, 128, 255])
-    #expect(try pixel(plain, 0, 0)[3] == 0)
+    #expect(try pixelBytes(plain, 48, 26) == [128, 128, 128, 255])
+    #expect(try pixelBytes(plain, 0, 0)[3] == 0)
 }
 
 @Test func aTilesShadowAndBorderShowAroundThePicture() throws {
@@ -33,12 +27,12 @@ private let tile = CGSize(width: 48, height: 28)
     let plain = try #require(StyleThumbnail.render(.image(capture), style: ObjectStyle(), cornerRadius: 0, size: tile, pixelsPerPoint: 2))
     let shadow = try #require(StyleThumbnail.render(.image(capture), style: ObjectStyle(shadow: ShadowPreset.float.shadow(scale: 1)), cornerRadius: 0, size: tile, pixelsPerPoint: 2))
     // Below the picture, which ends about 40 pixels down, only the shadow paints.
-    #expect(try pixel(plain, 48, 46)[3] == 0)
-    #expect(try pixel(shadow, 48, 46)[3] > 0)
+    #expect(try pixelBytes(plain, 48, 46)[3] == 0)
+    #expect(try pixelBytes(shadow, 48, 46)[3] > 0)
     let border = Border(kind: .solid, lineWidth: EditorStyle.widths[2], color: RGBA(1, 0, 0))
     let bordered = try #require(StyleThumbnail.render(.image(capture), style: ObjectStyle(border: border), cornerRadius: 0, size: tile, pixelsPerPoint: 2))
     // The picture is 52 pixels wide from x = 22, and the large border 3.2 pixels at this size, so just left of it is red.
-    let edge = try pixel(bordered, 20, 26)
+    let edge = try pixelBytes(bordered, 20, 26)
     #expect(edge[0] > 200 && edge[1] < 40 && edge[3] == 255)
 }
 

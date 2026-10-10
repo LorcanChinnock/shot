@@ -35,12 +35,6 @@ private func render(_ doc: EditorDocument, scale: CGFloat) throws -> CGImage {
 }
 
 /// The pixel at image point (`x`, `y`), top-left origin, as 0...1 components.
-private func pixel(_ image: CGImage, _ x: CGFloat, _ y: CGFloat, scale: CGFloat = 1) throws -> [CGFloat] {
-    let data = try #require(image.dataProvider?.data as Data?)
-    let offset = Int(y * scale) * image.bytesPerRow + Int(x * scale) * 4
-    return data[offset..<offset + 4].map { CGFloat($0) / 255 }
-}
-
 @Test func blurIsAFilledBoxThatMoves() {
     let rect = CGRect(x: 10, y: 10, width: 50, height: 20)
     var a = blur(rect)

@@ -4,74 +4,6 @@ import ImageIO
 import Testing
 @testable import ShotCore
 
-struct Color {
-    var r: UInt8, g: UInt8, b: UInt8
-    static let red = Color(r: 255, g: 0, b: 0)
-    /// Mid-tone, since a primary at the edge of the gamut shifts the most through a video encode and decode.
-    static let green = Color(r: 60, g: 200, b: 90)
-    static let blue = Color(r: 0, g: 0, b: 255)
-    static let black = Color(r: 0, g: 0, b: 0)
-
-    func isNear(_ other: Color, tolerance: Int = 60) -> Bool {
-        abs(Int(r) - Int(other.r)) <= tolerance && abs(Int(g) - Int(other.g)) <= tolerance && abs(Int(b) - Int(other.b)) <= tolerance
-    }
-}
-
-/// A video of one flat colour, optionally with a corner marked in a second colour so orientation shows.
-func writeSolidVideo(to url: URL, color: Color, corner: Color? = nil, size: CGSize, seconds: Double, rotated: Bool = false) async throws {
-    let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
-    let input = AVAssetWriterInput(mediaType: .video, outputSettings: [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: Int(size.width), AVVideoHeightKey: Int(size.height)])
-    if rotated {
-        input.transform = CGAffineTransform(rotationAngle: .pi / 2)
-    }
-    let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [
-        kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA, kCVPixelBufferWidthKey as String: Int(size.width), kCVPixelBufferHeightKey as String: Int(size.height),
-    ])
-    writer.add(input)
-    writer.startWriting()
-    writer.startSession(atSourceTime: .zero)
-    // Every frame is the same, so it's filled once: per pixel per frame is slow in a debug build.
-    var buffer: CVPixelBuffer?
-    CVPixelBufferCreate(nil, Int(size.width), Int(size.height), kCVPixelFormatType_32BGRA, nil, &buffer)
-    let pixels = try #require(buffer)
-    CVPixelBufferLockBaseAddress(pixels, [])
-    let base = CVPixelBufferGetBaseAddress(pixels)!.assumingMemoryBound(to: UInt8.self)
-    let stride = CVPixelBufferGetBytesPerRow(pixels)
-    for y in 0..<Int(size.height) {
-        for x in 0..<Int(size.width) {
-            let marked = corner != nil && x < Int(size.width) / 4 && y < Int(size.height) / 4
-            let c = marked ? corner! : color
-            let p = base + y * stride + x * 4
-            p[0] = c.b; p[1] = c.g; p[2] = c.r; p[3] = 255
-        }
-    }
-    CVPixelBufferUnlockBaseAddress(pixels, [])
-    for frame in 0..<Int(seconds * 30) {
-        while !input.isReadyForMoreMediaData {
-            try await Task.sleep(for: .milliseconds(2))
-        }
-        adaptor.append(pixels, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: 30))
-    }
-    input.markAsFinished()
-    await writer.finishWriting()
-    #expect(writer.status == .completed)
-}
-
-/// The colour at (`x`, `y`), as fractions of the frame from the top left, of the frame shown at `seconds`.
-func pixel(in url: URL, at seconds: Double, x: Double, y: Double) async throws -> Color {
-    let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
-    generator.appliesPreferredTrackTransform = true
-    generator.requestedTimeToleranceBefore = .zero
-    generator.requestedTimeToleranceAfter = .zero
-    let image = try await generator.image(at: CMTime(seconds: seconds, preferredTimescale: 600)).image
-    var bytes = [UInt8](repeating: 0, count: 4)
-    let context = CGContext(data: &bytes, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
-    // Draw so the wanted pixel falls on the one pixel of the context.
-    let width = Double(image.width), height = Double(image.height)
-    context.draw(image, in: CGRect(x: -x * width, y: -(1 - y) * height, width: width, height: height))
-    return Color(r: bytes[0], g: bytes[1], b: bytes[2])
-}
-
 private let canvas = CGSize(width: 640, height: 360)
 
 private func temp(_ name: String) -> URL {
@@ -383,5 +315,75 @@ extension MediaTests {
         #expect(parameters.getVolumeRamp(for: CMTime(seconds: 1, preferredTimescale: 600), startVolume: &from, endVolume: &to, timeRange: &range))
         #expect(from < 1 && from > 0.3 && to < from, "halfway down, got \(from) to \(to)")
         #expect(range.duration.seconds <= 0.11)
+    }
+
+    @Test func aStyledClipKeepsItsCornersAndShadowWhileItsScaleIsKeyframed() async throws {
+        let base = temp("base.mp4"), top = temp("top.mp4"), output = temp("out.mp4")
+        defer { [base, top, output].forEach { try? FileManager.default.removeItem(at: $0) } }
+        try await writeSolidVideo(to: base, color: Color(r: 128, g: 128, b: 128), size: canvas, seconds: 3)
+        try await writeSolidVideo(to: top, color: .green, size: canvas, seconds: 3)
+        let (imported, id) = try #require(Project(source: base, duration: 3, canvasSize: canvas, hasAudio: false)
+            .importing(ImportedMedia(source: top, duration: 3, size: canvas, hasAudio: false), at: 0))
+        var project = try #require(imported.setting(transform: ClipTransform(scale: 0.5), of: id))
+        project = try #require(project.setting(cornerRadius: 80, of: id))
+        project = try #require(project.setting(style: ObjectStyle(shadow: ShadowPreset.float.shadow(scale: 1)), of: id))
+        // Half size at the start, growing to full size by 2 s and held there.
+        project = try #require(project.togglingKeyframe(.scale, ofClip: id, at: 0))
+        var values = try #require(project.values(ofClip: id, at: 2))
+        values.scale = 1
+        project = try #require(project.setting(values: values, ofClip: id, at: 2))
+        try await ProjectExporter.export(project, to: output)
+
+        // At half size the clip sits from 160 to 480 across and 90 to 270 down.
+        let clear = try await pixel(in: output, at: 0, x: 0.05, y: 0.5)
+        #expect(!clear.isNear(.green), "the side shows what's under it, got \(clear)")
+        #expect(try await pixel(in: output, at: 0, x: 0.5, y: 0.5).isNear(.green))
+        #expect(try await pixel(in: output, at: 0, x: 162 / 640, y: 92 / 360).isNear(clear, tolerance: 20), "a rounded corner")
+        let below = try await pixel(in: output, at: 0, x: 0.5, y: 282 / 360)
+        #expect(Int(below.r) < Int(clear.r) - 8, "a shadow below, got \(below) by \(clear)")
+        // At full size it covers the side, and its corner is still rounded.
+        #expect(try await pixel(in: output, at: 2.5, x: 0.05, y: 0.5).isNear(.green))
+        let corner = try await pixel(in: output, at: 2.5, x: 2 / 640, y: 2 / 360)
+        #expect(corner.isNear(clear, tolerance: 20), "the corner shows what's under it, got \(corner) by \(clear)")
+    }
+
+    @Test func aDrawOnRevealDrawsALineFromItsStart() async throws {
+        let base = temp("base.mp4"), output = temp("out.mp4")
+        defer { [base, output].forEach { try? FileManager.default.removeItem(at: $0) } }
+        let gray = Color(r: 128, g: 128, b: 128)
+        try await writeSolidVideo(to: base, color: gray, size: canvas, seconds: 3)
+        let line = Annotation(kind: .line(from: CGPoint(x: 40, y: 180), to: CGPoint(x: 600, y: 180)), color: RGBA(1, 0, 0), lineWidth: 20)
+        var (project, id) = Project(source: base, duration: 3, canvasSize: canvas, hasAudio: false).adding(annotation: line, at: 0, duration: 3)
+        project = try #require(project.applying(.drawOn, toClip: id))
+        try await ProjectExporter.export(project, to: output)
+
+        // Drawn over the first 1.8 s, easing in and out, so halfway through it's half drawn.
+        #expect(try await pixel(in: output, at: 0, x: 0.5, y: 0.5).isNear(gray), "nothing at first")
+        #expect(try await pixel(in: output, at: 0.9, x: 80 / 640, y: 0.5).isNear(.red), "its start, halfway")
+        #expect(try await pixel(in: output, at: 0.9, x: 560 / 640, y: 0.5).isNear(gray), "not yet its end")
+        #expect(try await pixel(in: output, at: 2.5, x: 80 / 640, y: 0.5).isNear(.red), "its start, once drawn")
+        #expect(try await pixel(in: output, at: 2.5, x: 560 / 640, y: 0.5).isNear(.red), "its end, once drawn")
+    }
+
+    @Test func aClipWithNoPictureSaysWhichFile() async throws {
+        let sound = temp("sound.mp4")
+        defer { try? FileManager.default.removeItem(at: sound) }
+        try await writeScreenRecording(to: sound, seconds: 1, audio: true, video: false)
+        let project = Project(source: sound, duration: 1, canvasSize: canvas, hasAudio: true)
+
+        let error = await #expect(throws: CompositionBuilder.BuildError.self) { try await CompositionBuilder.build(project) }
+        #expect(error?.errorDescription == "\(sound.lastPathComponent) has no video to show")
+    }
+
+    @Test func aProjectRefusesAFileTypeItCantWrite() async throws {
+        let base = temp("base.mp4"), output = temp("out.gif")
+        defer { [base, output].forEach { try? FileManager.default.removeItem(at: $0) } }
+        try await writeSolidVideo(to: base, color: .red, size: canvas, seconds: 1)
+        let project = Project(source: base, duration: 1, canvasSize: canvas, hasAudio: false)
+
+        await #expect(throws: ProjectExporter.ExportError.unsupportedFileType) {
+            try await ProjectExporter.export(project, to: output, as: AVFileType("com.compuserve.gif"))
+        }
+        #expect(!FileManager.default.fileExists(atPath: output.path))
     }
 }
