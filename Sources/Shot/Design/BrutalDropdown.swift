@@ -266,7 +266,7 @@ private struct DropdownList: View {
         }
         .padding(Brutal.groupInset)
         .frame(minWidth: minWidth, alignment: .leading)
-        .brutalSurface(Color.white, radius: 10, shadow: 3)
+        .brutalSurface(Color.white, radius: Brutal.Radius.panel, shadow: 3)
         // Room for the shadow, which draws outside the surface.
         .padding([.trailing, .bottom], 3)
         .fixedSize()
@@ -309,7 +309,7 @@ private struct DropdownRow: View {
             .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
             .background {
                 if highlighted && item.isEnabled {
-                    Color.clear.brutalSurface(Brutal.yellow, radius: 7, shadow: 0, border: 2)
+                    Color.clear.brutalSurface(Brutal.yellow, radius: Brutal.Radius.inset, shadow: 0, border: 2)
                 }
             }
             .contentShape(Rectangle())

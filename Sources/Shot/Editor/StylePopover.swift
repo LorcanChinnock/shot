@@ -31,12 +31,17 @@ protocol StyleEditing: AnyObject, Observable {
     func pickBorderColor(_ color: RGBA)
     func setTargetCornerRadius(_ points: CGFloat)
     func setDraggingStyle(_ dragging: Bool)
+    /// Whether new captures get the screenshot's style; `nil` hides the switch, as the video editor has no screenshot.
+    var newCaptureStyle: Binding<Bool>? { get }
+    /// Call as the colour editor opens, so its picks start a new undo step.
+    func beginColorPick()
 }
 
 extension StyleEditing {
     var targetStyleTitle: String { targetStyleKind?.title ?? "" }
     var targetHasWindowShadow: Bool { false }
     var thumbnailBackground: RGBA? { nil }
+    var newCaptureStyle: Binding<Bool>? { nil }
 }
 
 /// The style Copy Style took last, in any editor window, photo or video, which Paste Style puts on the selection.
@@ -45,7 +50,11 @@ enum StyleClipboard {
     static var copied: CopiedStyle?
 }
 
-extension EditorModel: StyleEditing {}
+extension EditorModel: StyleEditing {
+    var newCaptureStyle: Binding<Bool>? {
+        Binding(get: { self.usesStyleForNewCaptures }, set: { self.setUsesStyleForNewCaptures($0) })
+    }
+}
 
 /// The shadow, border and corner radius of the selected image, mark or text, or of the screenshot when nothing is selected.
 /// Each preset tile shows the target with that preset on it. Pointing at a tile, or moving to it with the arrow keys,
@@ -64,9 +73,7 @@ struct StylePopover<Model: StyleEditing>: View {
                 let style = model.targetStyle
                 let rows = presetRows(kind, style)
                 Text(model.targetStyleTitle)
-                    .font(.system(size: 11, weight: .black))
-                    .tracking(1.2)
-                    .foregroundStyle(Brutal.ink.opacity(0.75))
+                    .sectionCaption()
                 if model.targetHasWindowShadow {
                     // Its image includes the shadow's see-through margin, which a border or corners would go round.
                     Text("Uses macOS window shadow")
@@ -88,9 +95,8 @@ struct StylePopover<Model: StyleEditing>: View {
                             slider(value: model.targetCornerRadius, range: 0...48, name: "Corner radius", set: { model.setTargetCornerRadius($0) })
                         }
                     }
-                    // Only the photo editor has a screenshot to style.
-                    if kind == .capture, let editor = model as? EditorModel {
-                        NewCaptureStyleSwitch(model: editor)
+                    if kind == .capture, let newCaptureStyle = model.newCaptureStyle {
+                        NewCaptureStyleSwitch(isOn: newCaptureStyle)
                     }
                 }
             } else {
@@ -291,7 +297,8 @@ struct StylePopover<Model: StyleEditing>: View {
                     lastCustom: model.lastBorderColor,
                     customHelp: "Custom border colour",
                     choose: { if let color = $0 { model.setBorderColor(color) } },
-                    pickCustom: { model.pickBorderColor($0) }
+                    pickCustom: { model.pickBorderColor($0) },
+                    beginPicking: model.beginColorPick
                 )
             }
         }
@@ -348,14 +355,14 @@ private struct StyleTile: View {
             .frame(width: 56, height: 52)
             .background {
                 if selected {
-                    PartyColor(Brutal.sky) { Color.clear.brutalSurface($0, radius: 7, shadow: 2) }
+                    PartyColor(Brutal.sky) { Color.clear.brutalSurface($0, radius: Brutal.Radius.inset, shadow: 2) }
                 } else if hovering || highlighted {
-                    RoundedRectangle(cornerRadius: 7, style: .circular).fill(Brutal.ink.opacity(0.08))
+                    RoundedRectangle(cornerRadius: Brutal.Radius.inset, style: .circular).fill(Brutal.ink.opacity(0.08))
                 }
             }
             .overlay {
                 if highlighted, !selected {
-                    Color.clear.inkBorder(RoundedRectangle(cornerRadius: 7, style: .circular), width: 1)
+                    Color.clear.inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.inset, style: .circular), width: 1)
                 }
             }
             .contentShape(Rectangle())
@@ -398,7 +405,7 @@ private struct Swatch: View {
     var border: Border.Kind?
 
     var body: some View {
-        let card = RoundedRectangle(cornerRadius: 4, style: .circular)
+        let card = RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular)
         if border == .outline {
             Circle().fill(Brutal.sky)
                 .padding(3)
@@ -448,11 +455,11 @@ private struct Swatch: View {
 
 /// Use this style for new captures: saves the screenshot's style for new captures to open and copy with.
 private struct NewCaptureStyleSwitch: View {
-    let model: EditorModel
+    let isOn: Binding<Bool>
 
     var body: some View {
         HStack(spacing: 10) {
-            Toggle("Use this style for new captures", isOn: Binding(get: { model.usesStyleForNewCaptures }, set: { model.setUsesStyleForNewCaptures($0) }))
+            Toggle("Use this style for new captures", isOn: isOn)
                 .toggleStyle(BrutalToggleStyle(color: Brutal.mint))
                 .labelsHidden()
             Text("Use this style for new captures")

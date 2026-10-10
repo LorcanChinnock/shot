@@ -102,7 +102,7 @@ private struct Step: View {
                 .font(.system(size: 12, weight: .black))
                 .foregroundStyle(Brutal.ink)
                 .frame(width: 22, height: 22)
-                .brutalSurface(Brutal.pink, radius: 6, shadow: 2)
+                .brutalSurface(Brutal.pink, radius: Brutal.Radius.chip, shadow: 2)
             Text(text).font(Brutal.label).foregroundStyle(Brutal.ink)
         }
     }

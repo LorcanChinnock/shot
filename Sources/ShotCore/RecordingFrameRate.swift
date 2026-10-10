@@ -8,7 +8,7 @@ public enum RecordingFrameRate {
 
     /// The rates worth offering when the fastest display refreshes at `maximumDisplayRate` frames per second.
     public static func offered(maximumDisplayRate: Int) -> [Int] {
-        all.filter { $0 <= max(maximumDisplayRate, default) }
+        all.filter { $0 <= max(maximumDisplayRate, `default`) }
     }
 
     /// The rate to record at on a display refreshing at `displayRate`: the setting, unless the display can't offer it.

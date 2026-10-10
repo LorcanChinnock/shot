@@ -102,6 +102,7 @@ final class VideoEditorModel {
     /// Where in the recording the playhead was before a trim handle drag moved it to show the edge.
     @ObservationIgnored private var trimResume: Double?
     @ObservationIgnored private var rebuildTask: Task<Void, Never>?
+    @ObservationIgnored private var importTask: Task<Void, Never>?
     /// What the compositor draws over the project's own annotations while one is being edited.
     @ObservationIgnored private var liveState: (hidden: Set<UUID>, drawn: [AnnotationClip]) = ([], [])
     @ObservationIgnored private var compositeLive: LiveAnnotations?
@@ -204,6 +205,7 @@ final class VideoEditorModel {
 
     func teardown() {
         rebuildTask?.cancel()
+        importTask?.cancel()
         player.pause()
         for observer in [timeObserver, cutObserver].compactMap(\.self) {
             player.removeTimeObserver(observer)
@@ -239,7 +241,9 @@ final class VideoEditorModel {
     func endDrag() {
         let origin = dragOrigin
         dragOrigin = nil
-        if let landed = laneDrop?.result {
+        // Setting `project` once the drag is over brings the player up to date itself.
+        let landed = laneDrop?.result
+        if let landed {
             project = landed
         }
         laneDrop = nil
@@ -253,8 +257,10 @@ final class VideoEditorModel {
         }
         undoStack.record(VideoEdit(project: origin, options: options))
         coalescingKey = nil
-        fitDuration = max(fitDuration, project.duration)
-        projectDidChange()
+        if landed == nil {
+            fitDuration = max(fitDuration, project.duration)
+            projectDidChange()
+        }
     }
 
     /// Drags a clip that isn't on the main track so it starts at timeline `time`; call between `beginDrag` and `endDrag`.
@@ -403,34 +409,45 @@ final class VideoEditorModel {
 
     // MARK: Importing
 
-    /// Puts each file on new tracks at the playhead, or after the main track when `appendToMain` is set.
-    func importMedia(_ urls: [URL], appendToMain: Bool = false) async {
+    /// Puts each file on new tracks at the playhead, or after the main track when `appendToMain` is set. Imports run one
+    /// after another, and `teardown` stops one still reading its files.
+    func importMedia(_ urls: [URL], appendToMain: Bool = false) {
         guard !isExporting else {
             return
         }
-        var changed = project
-        var added: UUID?
-        for url in urls {
-            do {
-                let media = try await MediaProbe.probe(url)
-                let result = appendToMain ? changed.appending(media) : changed.importing(media, at: playhead)
-                guard let result else {
+        let previous = importTask
+        importTask = Task {
+            await previous?.value
+            var media: [(url: URL, media: ImportedMedia)] = []
+            for url in urls {
+                do {
+                    media.append((url, try await MediaProbe.probe(url)))
+                } catch {
+                    Toast.error(error.localizedDescription)
+                }
+            }
+            // Built on the project as it is now, so edits made while the files were read are kept.
+            guard !Task.isCancelled else {
+                return
+            }
+            var changed = project
+            var added: UUID?
+            for (url, media) in media {
+                guard let result = appendToMain ? changed.appending(media) : changed.importing(media, at: playhead) else {
                     Toast.error("Can't add \(url.lastPathComponent) there")
                     continue
                 }
                 changed = result.project
                 added = result.clip
-            } catch {
-                Toast.error(error.localizedDescription)
             }
+            guard let added else {
+                return
+            }
+            replaceProject(with: changed)
+            selectedClipID = added
+            setShowsTracks(true)
+            log.notice("Imported \(urls.count, privacy: .public) files")
         }
-        guard let added else {
-            return
-        }
-        replaceProject(with: changed)
-        selectedClipID = added
-        setShowsTracks(true)
-        log.notice("Imported \(urls.count, privacy: .public) files")
     }
 
     // MARK: Waveforms
@@ -831,6 +848,8 @@ final class VideoEditorModel {
     /// Works out `estimatedSize` for the current trim, cuts and options; call again when any change.
     func refreshEstimate() async {
         let plan = VideoExportPlan(project: project, options: options)
+        // The last estimate was for the old edit, so show none until this one's ready.
+        estimatedSize = nil
         // Wait for a drag or a run of clicks to settle before reading frames.
         try? await Task.sleep(for: .milliseconds(250))
         guard !Task.isCancelled else {
@@ -1065,6 +1084,11 @@ extension VideoEditorModel {
         }
     }
 
+    /// Call as the colour editor opens, so its run of picks doesn't join the last one's undo step.
+    func beginColorPick() {
+        coalescingKey = nil
+    }
+
     /// Sets the colour, or the fill, to one picked from the colour editor, which reports every change as the user drags,
     /// so its run of changes to one annotation is one step. It becomes the palette's last custom colour.
     func pickCustom(_ color: RGBA, forFill: Bool) {
@@ -1073,9 +1097,7 @@ extension VideoEditorModel {
         adopt(changed, coalescing: selectedClipID.map { "\($0)-custom-\(forFill)" })
         let slot = changed.customSlot(forFill: forFill)
         // Only the custom colour is remembered: the video editor's other choices last as long as its window.
-        var style = Preferences().editorStyle
-        style.customColors[slot] = color
-        Preferences.remember(style)
+        Preferences.changeEditorStyle { $0.customColors[slot] = color }
     }
 
     /// The colour or fill palette's last custom colour.
@@ -1448,9 +1470,7 @@ extension VideoEditorModel: StyleEditing {
     private func rememberStyle(_ style: ObjectStyle, of kind: StyleKind) {
         let points = style.scaled(by: 1 / scale)
         annotationStyle.objectStyles[kind] = points
-        var remembered = Preferences().editorStyle
-        remembered.objectStyles[kind] = points
-        Preferences.remember(remembered)
+        Preferences.changeEditorStyle { $0.objectStyles[kind] = points }
     }
 
     /// Copies the selected annotation's or clip's style for Paste Style, here or in the photo editor.

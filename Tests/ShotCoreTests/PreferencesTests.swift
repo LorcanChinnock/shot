@@ -158,6 +158,25 @@ import Testing
         #expect(store.object(forKey: "editorRecentColors") == nil)
     }
 
+    @Test func changingTheEditorStyleWritesOnlyWhatChanged() throws {
+        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
+        let store = try #require(UserDefaults(suiteName: suite))
+        defer { store.removePersistentDomain(forName: suite) }
+        Preferences.registerDefaults(in: store)
+        let prefs = Preferences(store: store)
+        Preferences.remember(EditorStyle(tool: .pen), in: store)
+        Preferences.changeEditorStyle(in: store) { $0.color = RGBA.presets[2] }
+        #expect(prefs.editorStyle.color == RGBA.presets[2])
+        // Every key the change didn't touch is left as it was, here with nothing stored at all.
+        store.removeObject(forKey: PreferenceKey.editorTool)
+        store.removeObject(forKey: PreferenceKey.editorWidth)
+        Preferences.changeEditorStyle(in: store) { $0.color = RGBA.presets[3] }
+        let saved = store.persistentDomain(forName: suite) ?? [:]
+        #expect(saved[PreferenceKey.editorTool] == nil)
+        #expect(saved[PreferenceKey.editorWidth] == nil)
+        #expect(prefs.editorStyle.color == RGBA.presets[3])
+    }
+
     @Test func selectAndCropAreNeverTheStartingTool() throws {
         let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
         let store = try #require(UserDefaults(suiteName: suite))

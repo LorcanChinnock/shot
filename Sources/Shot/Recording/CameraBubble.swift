@@ -188,7 +188,7 @@ private final class CameraBubblePanel: NSPanel {
     func cycleSize() {
         let circle = circle
         size = size.next
-        UserDefaults.standard.set(size.rawValue, forKey: PreferenceKey.cameraSize)
+        SettingsStore.shared.set(size.rawValue, forKey: PreferenceKey.cameraSize)
         place(CameraBubbleLayout.resized(circle, to: size.diameter))
         layoutLayers()
     }

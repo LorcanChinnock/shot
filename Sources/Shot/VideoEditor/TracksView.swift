@@ -68,7 +68,7 @@ struct ImportMenu: View {
         guard panel.runModal() == .OK else {
             return
         }
-        Task { await model.importMedia(panel.urls, appendToMain: appendToMain) }
+        model.importMedia(panel.urls, appendToMain: appendToMain)
     }
 }
 
@@ -252,9 +252,9 @@ struct TracksView: View {
         let width = max(CGFloat(preview.range.upperBound - preview.range.lowerBound) * pointsPerSecond, 8)
         let onto: Int? = if case let .onto(track) = preview.drop, preview.result.trackID(of: preview.clip) == project.tracks[track].id { track } else { nil }
         if let onto, let lane = layout.lane(ofTrack: onto) {
-            RoundedRectangle(cornerRadius: 4, style: .circular)
+            RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular)
                 .fill(Brutal.yellow.opacity(0.45))
-                .inkBorder(RoundedRectangle(cornerRadius: 4, style: .circular), width: 2, dash: [4, 3])
+                .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: 2, dash: [4, 3])
                 .frame(width: width, height: lane.height)
                 .offset(x: x, y: lane.y)
                 .allowsHitTesting(false)
@@ -313,7 +313,7 @@ struct TracksView: View {
                 .foregroundStyle(Brutal.ink)
                 .frame(width: 20, height: 20)
                 .background(isOn ? Brutal.yellow : Color.white)
-                .inkBorder(RoundedRectangle(cornerRadius: 4, style: .circular), width: 2)
+                .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: 2)
         }
         .buttonStyle(.plain)
         .brutalTip(control.tip(isOn: isOn))
@@ -373,8 +373,8 @@ struct TracksView: View {
             }
         }
         .frame(width: width, height: height)
-        .clipShape(RoundedRectangle(cornerRadius: 4, style: .circular))
-        .inkBorder(RoundedRectangle(cornerRadius: 4, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.ink)
+        .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
+        .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.ink)
         .allowsHitTesting(false)
     }
 
@@ -402,8 +402,8 @@ struct TracksView: View {
         }
         .frame(width: width, height: height)
         .background(Brutal.mint)
-        .clipShape(RoundedRectangle(cornerRadius: 4, style: .circular))
-        .inkBorder(RoundedRectangle(cornerRadius: 4, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.ink)
+        .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
+        .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.ink)
         .allowsHitTesting(false)
         .task(id: clip.source) { await model.loadWaveform(for: clip.source) }
     }
@@ -421,8 +421,8 @@ struct TracksView: View {
         .frame(width: width, height: height, alignment: .leading)
         .background(color.swiftUIColor.opacity(0.55))
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 4, style: .circular))
-        .inkBorder(RoundedRectangle(cornerRadius: 4, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.ink)
+        .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
+        .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.ink)
         .allowsHitTesting(false)
     }
 

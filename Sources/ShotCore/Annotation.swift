@@ -206,7 +206,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     }
 
     /// True for the kinds drawn in their colour and sized by their width.
-    public var isStyled: Bool {
+    public var takesColorAndWidth: Bool {
         switch kind {
         case .arrow, .line, .shape, .text, .counter, .note, .freehand, .marker: true
         case .highlight, .pixelate, .blur, .spotlight, .image: false

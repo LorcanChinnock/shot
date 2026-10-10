@@ -41,6 +41,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = Updater.shared
         Task.detached(priority: .utility) {
             Recorder.sweepLeftoverSegments()
+            let swept = TemporaryCaptures.sweep()
+            if swept > 0 {
+                log.notice("Swept \(swept) old captures taken with saving off")
+            }
         }
         Permissions.showOnboardingIfNeeded()
         if Permissions.hasScreenCapture {

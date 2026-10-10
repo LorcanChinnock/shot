@@ -71,9 +71,9 @@ final class Recorder: NSObject {
         let windowID: CGWindowID?
         let microphone: Bool
         let showsCursor: Bool
-        /// `nil` means the system default.
+        /// The microphone picked in Settings, or the default at start; `nil` only with no microphone at all.
         let microphoneID: String?
-        /// Read once at start, so every segment of one recording has the same frame rate and audio tracks.
+        /// Read once at start, so every segment of one recording has the same frame rate, audio tracks and microphone.
         let fps: Int
         let systemAudio: Bool
         let finalURL: URL
@@ -141,7 +141,7 @@ final class Recorder: NSObject {
         let folder = prefs.captureFolder
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let finalURL = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "mp4", prefix: prefs.filePrefix)
-        let microphoneID = prefs.microphoneDeviceID.isEmpty ? nil : AVCaptureDevice(uniqueID: prefs.microphoneDeviceID)?.uniqueID
+        let microphoneID = CaptureDevices.device(id: prefs.microphoneDeviceID, for: .audio)?.uniqueID
         session = Session(screen: screen, region: region, windowID: options.windowID, microphone: microphone, showsCursor: options.showsCursor, microphoneID: microphoneID, fps: RecordingFrameRate.effective(setting: prefs.recordingFPS, displayRate: screen.maximumFramesPerSecond), systemAudio: prefs.recordSystemAudio, finalURL: finalURL)
         segments = []
         segmentAudio = []

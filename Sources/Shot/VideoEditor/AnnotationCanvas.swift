@@ -69,30 +69,29 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
 
     // MARK: Canvas and view
 
-    private var fit: CGFloat {
+    /// The canvas aspect-fitted and centred in the view, matching the player under it, so no inset.
+    private var viewport: Viewport {
         let canvas = model.project.canvasSize
         guard canvas.width > 0, canvas.height > 0 else {
-            return 1
+            return Viewport(scale: 1, origin: .zero)
         }
-        return min(bounds.width / canvas.width, bounds.height / canvas.height)
+        let fit = min(bounds.width / canvas.width, bounds.height / canvas.height)
+        return Viewport(scale: fit, origin: CGPoint(x: (bounds.width - canvas.width * fit) / 2, y: (bounds.height - canvas.height * fit) / 2))
     }
 
-    private var origin: CGPoint {
-        let canvas = model.project.canvasSize
-        return CGPoint(x: (bounds.width - canvas.width * fit) / 2, y: (bounds.height - canvas.height * fit) / 2)
-    }
+    private var fit: CGFloat { viewport.scale }
 
     private func canvasPoint(_ event: NSEvent) -> CGPoint {
-        let point = convert(event.locationInWindow, from: nil)
+        let point = viewport.imagePoint(convert(event.locationInWindow, from: nil))
         let canvas = model.project.canvasSize
-        return CGPoint(x: min(max((point.x - origin.x) / fit, 0), canvas.width), y: min(max((point.y - origin.y) / fit, 0), canvas.height))
+        return CGPoint(x: min(max(point.x, 0), canvas.width), y: min(max(point.y, 0), canvas.height))
     }
 
     /// How near, in canvas pixels, a press must be to grab a handle.
     private var handleTolerance: CGFloat { 6 / fit }
 
     private func viewRect(_ rect: CGRect) -> CGRect {
-        CGRect(x: origin.x + rect.minX * fit, y: origin.y + rect.minY * fit, width: rect.width * fit, height: rect.height * fit)
+        viewport.viewRect(rect)
     }
 
     /// The annotation clip showing at the playhead that the selection is, if it is one.
@@ -116,7 +115,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         Brutal.yellowNS.setStroke()
         outline.stroke()
         for (_, point) in annotation.handles {
-            let center = CGPoint(x: origin.x + point.x * fit, y: origin.y + point.y * fit)
+            let center = viewport.viewPoint(point)
             let square = NSBezierPath(rect: CGRect(x: center.x - 4, y: center.y - 4, width: 8, height: 8))
             NSColor.white.setFill()
             square.fill()
@@ -126,7 +125,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         }
         let radiusHandles = annotation.radiusHandles(tolerance: handleTolerance)
         for (_, point) in radiusHandles {
-            let center = CGPoint(x: origin.x + point.x * fit, y: origin.y + point.y * fit)
+            let center = viewport.viewPoint(point)
             let dot = NSBezierPath(ovalIn: CGRect(x: center.x - 4, y: center.y - 4, width: 8, height: 8))
             NSColor.white.setFill()
             dot.fill()
@@ -135,7 +134,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             dot.stroke()
         }
         if editing != nil, let dragged = radiusHandles.first(where: { $0.handle == resizeHandle }), let radius = annotation.roundedBox?.radius {
-            drawRadiusLabel(radius / model.styleScale, near: CGPoint(x: origin.x + dragged.point.x * fit, y: origin.y + dragged.point.y * fit))
+            drawRadiusLabel(radius / model.styleScale, near: viewport.viewPoint(dragged.point))
         }
     }
 

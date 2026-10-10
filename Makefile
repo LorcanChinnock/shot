@@ -10,6 +10,8 @@ TEST_FLAGS := -Xswiftc -plugin-path -Xswiftc $(shell xcode-select -p)/usr/lib/sw
 endif
 
 INSTALL_DIR ?= /Applications
+# Extra `swift test` flags, e.g. ARGS=--skip-build in CI.
+ARGS ?=
 
 .PHONY: build test perf perf-app lint bundle app run dist reset-tcc icon clean
 
@@ -17,11 +19,11 @@ build:
 	swift build
 
 test:
-	swift test $(TEST_FLAGS) --skip PerfTests
+	swift test $(TEST_FLAGS) $(ARGS) --skip PerfTests
 
 # Budgets and baselines: docs/performance.md.
 perf:
-	swift test $(TEST_FLAGS) --filter PerfTests
+	swift test $(TEST_FLAGS) $(ARGS) --filter PerfTests
 
 perf-app:
 	scripts/perf.sh

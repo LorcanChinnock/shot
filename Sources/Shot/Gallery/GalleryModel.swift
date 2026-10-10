@@ -24,9 +24,12 @@ final class GalleryModel {
     /// Set by the grid as it lays out, so the up and down arrows know a row's width.
     var columns = 1
     var searchFocusRequest = 0
-    var tileSize = Preferences().galleryTileSize {
-        didSet { UserDefaults.standard.set(tileSize, forKey: PreferenceKey.galleryTileSize) }
+    /// Read through `SettingsStore`, so Reset All in Settings shows here while the gallery is open.
+    var tileSize: Double {
+        get { Gallery.tileSizes.contains(storedTileSize) ? storedTileSize : Gallery.defaultTileSize }
+        set { storedTileSize = newValue }
     }
+    @ObservationIgnored @Setting(PreferenceKey.galleryTileSize) private var storedTileSize: Double
 
     /// Opening more items than this at once asks first.
     private static let editConfirmationThreshold = 8

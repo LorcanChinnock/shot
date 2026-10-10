@@ -46,8 +46,9 @@ enum Clipboard {
 
     private static let annotationType = NSPasteboard.PasteboardType(AnnotationClipboard.pasteboardType)
 
-    static func copy(annotation: Annotation) throws {
-        let data = try AnnotationClipboard.data(for: annotation)
+    /// Encodes off the main actor, since a placed image is encoded as PNG.
+    static func copy(annotation: Annotation) async throws {
+        let data = try await Task.detached { try AnnotationClipboard.data(for: annotation) }.value
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setData(data, forType: annotationType)

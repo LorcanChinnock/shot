@@ -18,13 +18,13 @@ struct AnnotationPalette: View {
                             model.annotationStyle.tool = tool
                             model.setAnnotationTool(tool)
                         } label: {
-                            Image(systemName: tool.symbol).font(.system(size: 13, weight: .bold))
+                            Image(systemName: tool.symbol).font(Brutal.toolIcon)
                         }
                     }
                     Tile(selected: false, color: Brutal.yellow, help: "Add an image") {
                         pickImage()
                     } label: {
-                        Image(systemName: "photo").font(.system(size: 13, weight: .bold))
+                        Image(systemName: "photo").font(Brutal.toolIcon)
                     }
                 }
                 Spacer(minLength: 0)
@@ -65,7 +65,8 @@ struct AnnotationPalette: View {
                 lastCustom: model.lastCustom(forFill: false),
                 customHelp: "Custom colour",
                 choose: { if let color = $0 { model.paletteColor = color } },
-                pickCustom: { model.pickCustom($0, forFill: false) }
+                pickCustom: { model.pickCustom($0, forFill: false) },
+                beginPicking: model.beginColorPick
             )
         }
         if model.showsFill {
@@ -77,7 +78,8 @@ struct AnnotationPalette: View {
                     allowsNone: true,
                     customHelp: "Custom fill colour",
                     choose: { model.paletteFill = $0 },
-                    pickCustom: { model.pickCustom($0, forFill: true) }
+                    pickCustom: { model.pickCustom($0, forFill: true) },
+                    beginPicking: model.beginColorPick
                 )
             }
         }

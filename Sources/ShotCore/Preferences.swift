@@ -191,21 +191,62 @@ public struct Preferences {
     /// Remembers the editor's tool, colours and width for the next editor window. Select and crop
     /// aren't remembered, so the last drawing tool stays.
     public static func remember(_ style: EditorStyle, in store: UserDefaults = .standard) {
-        if style.tool.isDrawing {
+        remember(style, changedFrom: nil, in: store)
+    }
+
+    /// Changes the remembered editor style, writing only the values that changed, so another open editor's choices aren't
+    /// overwritten with this window's, and a colour dragged in the colour editor writes one key per change, not all of them.
+    public static func changeEditorStyle(in store: UserDefaults = .standard, _ change: (inout EditorStyle) -> Void) {
+        let old = Preferences(store: store).editorStyle
+        var style = old
+        change(&style)
+        remember(style, changedFrom: old, in: store)
+    }
+
+    /// Writes the values of `style` that differ from `old`, or all of them when there's no `old`.
+    private static func remember(_ style: EditorStyle, changedFrom old: EditorStyle?, in store: UserDefaults) {
+        func changed<T: Equatable>(_ value: (EditorStyle) -> T) -> Bool {
+            old.map { value($0) != value(style) } ?? true
+        }
+        if style.tool.isDrawing, changed(\.tool) {
             store.set(style.tool.rawValue, forKey: PreferenceKey.editorTool)
         }
-        store.set(try? JSONEncoder().encode(style.color), forKey: PreferenceKey.editorColor)
-        store.set(try? JSONEncoder().encode(style.noteColor), forKey: PreferenceKey.editorNoteColor)
-        store.set(try? JSONEncoder().encode(style.highlightColor), forKey: PreferenceKey.editorHighlightColor)
-        store.set(style.fill.flatMap { try? JSONEncoder().encode($0) } ?? Data(), forKey: PreferenceKey.editorFill)
-        store.set(try? JSONEncoder().encode(style.customColors), forKey: PreferenceKey.editorCustomColors)
-        store.set(style.widthIndex, forKey: PreferenceKey.editorWidth)
-        store.set(style.shape.rawValue, forKey: PreferenceKey.editorShape)
-        store.set(style.redaction.rawValue, forKey: PreferenceKey.editorRedaction)
-        store.set(Double(style.redactionAmount), forKey: PreferenceKey.editorRedactionAmount)
-        store.set(try? JSONEncoder().encode(style.spotlight), forKey: PreferenceKey.editorSpotlight)
-        store.set(style.alignment.rawValue, forKey: PreferenceKey.editorAlignment)
-        store.set(try? JSONEncoder().encode(style.objectStyles), forKey: PreferenceKey.editorObjectStyles)
+        if changed(\.color) {
+            store.set(try? JSONEncoder().encode(style.color), forKey: PreferenceKey.editorColor)
+        }
+        if changed(\.noteColor) {
+            store.set(try? JSONEncoder().encode(style.noteColor), forKey: PreferenceKey.editorNoteColor)
+        }
+        if changed(\.highlightColor) {
+            store.set(try? JSONEncoder().encode(style.highlightColor), forKey: PreferenceKey.editorHighlightColor)
+        }
+        if changed(\.fill) {
+            store.set(style.fill.flatMap { try? JSONEncoder().encode($0) } ?? Data(), forKey: PreferenceKey.editorFill)
+        }
+        if changed(\.customColors) {
+            store.set(try? JSONEncoder().encode(style.customColors), forKey: PreferenceKey.editorCustomColors)
+        }
+        if changed(\.widthIndex) {
+            store.set(style.widthIndex, forKey: PreferenceKey.editorWidth)
+        }
+        if changed(\.shape) {
+            store.set(style.shape.rawValue, forKey: PreferenceKey.editorShape)
+        }
+        if changed(\.redaction) {
+            store.set(style.redaction.rawValue, forKey: PreferenceKey.editorRedaction)
+        }
+        if changed(\.redactionAmount) {
+            store.set(Double(style.redactionAmount), forKey: PreferenceKey.editorRedactionAmount)
+        }
+        if changed(\.spotlight) {
+            store.set(try? JSONEncoder().encode(style.spotlight), forKey: PreferenceKey.editorSpotlight)
+        }
+        if changed(\.alignment) {
+            store.set(style.alignment.rawValue, forKey: PreferenceKey.editorAlignment)
+        }
+        if changed(\.objectStyles) {
+            store.set(try? JSONEncoder().encode(style.objectStyles), forKey: PreferenceKey.editorObjectStyles)
+        }
     }
 
     public static func resetHotkeys(in store: UserDefaults = .standard) {
@@ -230,7 +271,7 @@ public struct Preferences {
     public var downscaleRetina: Bool { store.bool(forKey: PreferenceKey.downscaleRetina) }
     public var saveAfterCapture: Bool { store.bool(forKey: PreferenceKey.saveAfterCapture) }
     /// Where captures and recordings are written: the save folder, or a temporary one Quick Access and the editors can still open.
-    public var captureFolder: URL { saveAfterCapture ? saveFolder : FileManager.default.temporaryDirectory.appendingPathComponent("Shot") }
+    public var captureFolder: URL { saveAfterCapture ? saveFolder : TemporaryCaptures.folder }
     public var copyAfterCapture: Bool { store.bool(forKey: PreferenceKey.copyAfterCapture) }
     public var quickAccessAfterCapture: Bool { store.bool(forKey: PreferenceKey.quickAccessAfterCapture) }
     public var openEditorAfterCapture: Bool { store.bool(forKey: PreferenceKey.openEditorAfterCapture) }

@@ -12,8 +12,8 @@ private func marker(_ points: [CGPoint], lineWidth: CGFloat = 4) -> Annotation {
 
 @Test func theHighlighterIsKeyedMAndTakesAColourAndWidth() {
     #expect(EditorTool.highlight.key == "m")
-    #expect(EditorTool.highlight.isStyled)
-    #expect(marker(across).isStyled)
+    #expect(EditorTool.highlight.takesColorAndWidth)
+    #expect(marker(across).takesColorAndWidth)
 }
 
 @Test func theHighlighterKeepsItsOwnColour() {

@@ -65,7 +65,8 @@ final class ThumbnailStore {
 enum Thumbnails {
     private static let maxPixels = 640
 
-    /// Decodes off the main actor; cancelling the caller skips the decode if it hasn't started yet.
+    /// Decodes off the main actor. Cancelling the caller skips the decode if it hasn't started yet, and a video's frame if
+    /// its duration was still loading; an image already decoding finishes.
     static func make(_ item: GalleryItem) async -> Thumbnail? {
         let task = Task.detached(priority: .utility) { await decode(item) }
         return await withTaskCancellationHandler {
@@ -93,6 +94,9 @@ enum Thumbnails {
         case .video:
             let asset = AVURLAsset(url: item.url)
             let duration = (try? await asset.load(.duration))?.seconds
+            guard !Task.isCancelled else {
+                return nil
+            }
             let generator = AVAssetImageGenerator(asset: asset)
             generator.appliesPreferredTrackTransform = true
             generator.maximumSize = CGSize(width: maxPixels, height: maxPixels)

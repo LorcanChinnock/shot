@@ -15,7 +15,7 @@ struct EditorToolbar: View {
                         Tile(selected: model.tool == tool, color: Brutal.yellow, help: "\(tool.title) (\(String(tool.key).uppercased()))", detail: tool.summary) {
                             model.tool = tool
                         } label: {
-                            Image(systemName: tool.symbol).font(.system(size: 13, weight: .bold))
+                            Image(systemName: tool.symbol).font(Brutal.toolIcon)
                         }
                     }
                 }
@@ -23,7 +23,7 @@ struct EditorToolbar: View {
                     Tile(selected: model.showsImagePicker, color: Brutal.sky, help: "Add an image (⇧⌘I)", detail: "Place a recent capture or an image file beside your screenshot") {
                         model.showsImagePicker.toggle()
                     } label: {
-                        Image(systemName: "photo.badge.plus").font(.system(size: 13, weight: .bold))
+                        Image(systemName: "photo.badge.plus").font(Brutal.toolIcon)
                     }
                     .popover(isPresented: $model.showsImagePicker, arrowEdge: .bottom) {
                         ImagePicker(excluding: model.fileURL) { urls in
@@ -38,7 +38,7 @@ struct EditorToolbar: View {
                     ) {
                         model.showsStylePopover.toggle()
                     } label: {
-                        Image(systemName: "shadow").font(.system(size: 13, weight: .bold))
+                        Image(systemName: "shadow").font(Brutal.toolIcon)
                     }
                     .popover(isPresented: $model.showsStylePopover, arrowEdge: .bottom) {
                         StylePopover(model: model)
@@ -49,12 +49,12 @@ struct EditorToolbar: View {
                     Tile(selected: false, color: .white, help: "Undo (⌘Z)", isEnabled: model.undoStack.canUndo) {
                         model.undo()
                     } label: {
-                        Image(systemName: "arrow.uturn.backward").font(.system(size: 13, weight: .bold))
+                        Image(systemName: "arrow.uturn.backward").font(Brutal.toolIcon)
                     }
                     Tile(selected: false, color: .white, help: "Redo (⇧⌘Z)", isEnabled: model.undoStack.canRedo) {
                         model.redo()
                     } label: {
-                        Image(systemName: "arrow.uturn.forward").font(.system(size: 13, weight: .bold))
+                        Image(systemName: "arrow.uturn.forward").font(Brutal.toolIcon)
                     }
                 }
             }
@@ -90,7 +90,8 @@ struct EditorToolbar: View {
                 lastCustom: model.lastCustom(forFill: false),
                 customHelp: "Custom colour",
                 choose: { if let color = $0 { model.paletteColor = color } },
-                pickCustom: { model.pickCustom($0, forFill: false) }
+                pickCustom: { model.pickCustom($0, forFill: false) },
+                beginPicking: model.beginColorPick
             )
         }
         if model.showsFill {
@@ -102,7 +103,8 @@ struct EditorToolbar: View {
                     allowsNone: true,
                     customHelp: "Custom fill colour",
                     choose: { model.paletteFill = $0 },
-                    pickCustom: { model.pickCustom($0, forFill: true) }
+                    pickCustom: { model.pickCustom($0, forFill: true) },
+                    beginPicking: model.beginColorPick
                 )
             }
         }
@@ -159,7 +161,7 @@ struct AlignmentOptions: View {
                 Tile(selected: selected == alignment, color: Brutal.sky, help: alignment.title) {
                     choose(alignment)
                 } label: {
-                    Image(systemName: alignment.symbol).font(.system(size: 13, weight: .bold))
+                    Image(systemName: alignment.symbol).font(Brutal.toolIcon)
                 }
             }
         }
@@ -177,7 +179,7 @@ struct ShapeOptions: View {
                 Tile(selected: selected == shape, color: Brutal.sky, help: shape.title) {
                     choose(shape)
                 } label: {
-                    Image(systemName: shape.symbol).font(.system(size: 13, weight: .bold))
+                    Image(systemName: shape.symbol).font(Brutal.toolIcon)
                 }
             }
         }
@@ -195,7 +197,7 @@ struct ShapeMenu: View {
                 .item(shape.title, symbol: shape.symbol, selected: shape == selected) { choose(shape) }
             }) {
                 HStack(spacing: 6) {
-                    Image(systemName: selected.symbol).font(.system(size: 13, weight: .bold))
+                    Image(systemName: selected.symbol).font(Brutal.toolIcon)
                     Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
                 }
                 .foregroundStyle(Brutal.ink)
@@ -223,7 +225,7 @@ struct RedactionOptions: View {
                 Tile(selected: selected == redaction, color: Brutal.sky, help: redaction.title) {
                     choose(redaction)
                 } label: {
-                    Image(systemName: redaction == .blur ? "drop.halffull" : "square.grid.3x3").font(.system(size: 13, weight: .bold))
+                    Image(systemName: redaction == .blur ? "drop.halffull" : "square.grid.3x3").font(Brutal.toolIcon)
                 }
             }
         }
@@ -258,7 +260,7 @@ struct SpotlightOptions: View {
                 Tile(selected: style.effect == effect, color: Brutal.sky, help: "\(effect.title) outside", detail: "Applies to every spotlight in the image.") {
                     chooseLook(effect, style.strength)
                 } label: {
-                    Image(systemName: effect == .darken ? "moon.fill" : "drop.halffull").font(.system(size: 13, weight: .bold))
+                    Image(systemName: effect == .darken ? "moon.fill" : "drop.halffull").font(Brutal.toolIcon)
                 }
             }
         }
