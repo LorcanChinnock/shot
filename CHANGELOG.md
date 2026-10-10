@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0-beta.37](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.36...v0.7.0-beta.37) (2026-10-10)
+
+
+### Features
+
+* **site:** sharper homepage media, a capture loop and numbered Open Anyway steps ([#356](https://github.com/LorcanChinnock/shot/issues/356)) ([6cd4e82](https://github.com/LorcanChinnock/shot/commit/6cd4e82fae9f41ddd7a5e035bc48cd03059c9303))
+
+
+### Bug Fixes
+
+* **site:** drop the changelog's empty "()" and bold its version links ([#346](https://github.com/LorcanChinnock/shot/issues/346)) ([430ab50](https://github.com/LorcanChinnock/shot/commit/430ab502ff086bdb8f09835bcb2b28f3d484d4c5))
+
 ## [0.7.0-beta.36](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.35...v0.7.0-beta.36) (2026-10-09)
 
 
