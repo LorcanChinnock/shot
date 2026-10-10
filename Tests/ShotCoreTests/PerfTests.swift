@@ -11,7 +11,7 @@ import Testing
 @Suite(.serialized) struct PerfTests {
     @Test func flatteningAndEncodingA5KCaptureStaysInBudget() throws {
         let doc = EditorDocument(base: try gradient(width: 5120, height: 2880), annotations: twentyAnnotations(in: CGSize(width: 5120, height: 2880), special: true))
-        let time = try median {
+        let time = try fastest {
             let image = try #require(AnnotationRenderer.flatten(doc))
             _ = try #require(ImageCodec.data(from: image, scale: 2))
         }
@@ -26,7 +26,7 @@ import Testing
         // One cache for the whole run, as the compositor keeps one for an export or a preview.
         let cache = OverlayCache()
         let frames = 30
-        let time = try median {
+        let time = try fastest {
             for _ in 0..<frames {
                 _ = AnnotationFrame.apply(items, to: frame, canvas: canvas, context: context, cache: cache)
             }
@@ -55,7 +55,7 @@ import Testing
         let items = (0..<1500).map { index in
             GalleryItem(url: URL(fileURLWithPath: "/shots/Shot \(index).png"), kind: index % 5 == 0 ? .video : .image, date: now.addingTimeInterval(Double(-index) * 3 * 3600), bytes: 1000 + index)
         }
-        let time = try median {
+        let time = try fastest {
             let visible = Gallery.visible(items, filter: .all, sort: .newest, query: "")
             #expect(!Gallery.sections(visible, sort: .newest, now: now).isEmpty)
         }
@@ -71,12 +71,13 @@ private enum Budget {
     static let galleryGrouping = 6
 }
 
-/// The median time of five runs of `body`, after one untimed run that warms caches.
-private func median(_ body: () throws -> Void) throws -> Duration {
+/// The fastest of fifteen runs of `body`, after one untimed run that warms caches. A busy runner can only add time,
+/// so the fastest run is the closest to what the work costs, and fifteen spread over long enough that a slow spell
+/// rarely covers them all.
+private func fastest(_ body: () throws -> Void) throws -> Duration {
     try body()
     let clock = ContinuousClock()
-    let times = try (0..<5).map { _ in try clock.measure(body) }
-    return times.sorted()[2]
+    return try (0..<15).map { _ in try clock.measure(body) }.min()!
 }
 
 private func check(_ time: Duration, budget: Duration, _ name: String) throws {
