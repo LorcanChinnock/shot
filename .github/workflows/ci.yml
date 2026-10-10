@@ -38,7 +38,7 @@ jobs:
         run: |
           if [ "$EVENT" = pull_request ]; then
             # HEAD is the PR merged into main, so its first parent is main.
-            code=$(git diff --name-only HEAD^1 HEAD | grep -qvE '\.md$|^docs/|^site/|^\.github/ISSUE_TEMPLATE/|^\.github/workflows/site\.yml$' && echo true || echo false)
+            code=$(git diff --name-only HEAD^1 HEAD | grep -qvE '\.md$|^docs/|^site/|^\.github/ISSUE_TEMPLATE/' && echo true || echo false)
           elif [ "$LINT_ONLY" = true ]; then
             code=false
           else

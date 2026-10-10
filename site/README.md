@@ -11,15 +11,19 @@ npm run preview   # build, then serve dist/ with wrangler, _redirects and _heade
 ```
 
 - `/docs/` renders `docs/usage.md` and `/changelog/` renders `CHANGELOG.md`, so they never drift from the repo.
-- The download button and `/download` redirect use the latest published GitHub release, read at build time (`src/lib/release.ts`). `release.yml` redeploys the site after each release.
+- The download button and `/download` redirect use the latest published GitHub release, read at build time (`src/lib/release.ts`). `release.yml` rebuilds the site through a deploy hook after each release.
 - The look follows the app's design system (`Sources/Shot/Design/BrutalStyle.swift`); the tokens are at the top of `src/styles/global.css`.
 - `npm run media` turns the README's GIFs into the looping videos in `public/media/` (needs ffmpeg). `npm run icons` regenerates the favicons and the social card from `docs/icon.png`. Run them after changing those files and commit the output.
 
 ## Deploying
 
-`.github/workflows/site.yml` builds every PR that touches the site, docs or changelog, and deploys from `main`. It needs two repository secrets:
+Cloudflare Workers Builds builds and deploys the site from the GitHub repo, so it uses no GitHub Actions minutes. The `shot-site` Worker is connected to the repo with:
 
-- `CLOUDFLARE_API_TOKEN`: an API token with the **Workers Scripts: Edit** and **Workers Routes: Edit** permissions on the account, and **Zone: Read** plus **DNS: Edit** on `lorcanchinnock.com`.
-- `CLOUDFLARE_ACCOUNT_ID`
+- Root directory: `site` (the build also reads `../docs`, `../CHANGELOG.md` and `../.release-please-manifest.json`)
+- Build command: `npm run build`; deploy command: `npx wrangler deploy`
+- Production branch `main`; build watch paths `site/*`, `docs/*`, `CHANGELOG.md`
+- Build variable `GITHUB_TOKEN`: a read-only token, so `src/lib/release.ts` doesn't hit GitHub's anonymous rate limit on shared build IPs
+
+`release.yml` POSTs to a deploy hook (Settings › Builds › Deploy Hooks, branch `main`) after publishing a release, so the download button moves to the new zip. Its URL is the repository secret `SITE_DEPLOY_HOOK`.
 
 `lorcanchinnock.com` must be a zone on the same Cloudflare account; the first deploy creates the `shot` custom domain and its DNS record. To deploy by hand: `npx wrangler login`, then `npm run deploy`.
