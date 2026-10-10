@@ -68,7 +68,7 @@ struct ImportMenu: View {
         guard panel.runModal() == .OK else {
             return
         }
-        Task { await model.importMedia(panel.urls, appendToMain: appendToMain) }
+        model.importMedia(panel.urls, appendToMain: appendToMain)
     }
 }
 

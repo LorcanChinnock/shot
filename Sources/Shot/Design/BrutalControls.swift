@@ -11,6 +11,8 @@ struct ColorSwatches: View {
     let customHelp: String
     let choose: (RGBA?) -> Void
     let pickCustom: (RGBA) -> Void
+    /// Called as the colour editor opens, so its picks are an undo step of their own rather than joining the last time's.
+    let beginPicking: () -> Void
 
     var body: some View {
         if allowsNone {
@@ -26,7 +28,8 @@ struct ColorSwatches: View {
             lastCustom: lastCustom,
             fallback: selected ?? RGBA(1, 1, 1),
             help: customHelp,
-            pick: pickCustom
+            pick: pickCustom,
+            beginPicking: beginPicking
         )
     }
 }
@@ -40,6 +43,7 @@ private struct CustomColorButton: View {
     let fallback: RGBA
     let help: String
     let pick: (RGBA) -> Void
+    let beginPicking: () -> Void
     @State private var isOpen = false
 
     private var isSelected: Bool { isOpen || custom != nil }
@@ -74,6 +78,7 @@ private struct CustomColorButton: View {
             isOpen = false
             return
         }
+        beginPicking()
         if let lastCustom, lastCustom != custom {
             pick(lastCustom)
         }

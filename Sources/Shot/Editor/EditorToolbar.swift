@@ -90,7 +90,8 @@ struct EditorToolbar: View {
                 lastCustom: model.lastCustom(forFill: false),
                 customHelp: "Custom colour",
                 choose: { if let color = $0 { model.paletteColor = color } },
-                pickCustom: { model.pickCustom($0, forFill: false) }
+                pickCustom: { model.pickCustom($0, forFill: false) },
+                beginPicking: model.beginColorPick
             )
         }
         if model.showsFill {
@@ -102,7 +103,8 @@ struct EditorToolbar: View {
                     allowsNone: true,
                     customHelp: "Custom fill colour",
                     choose: { model.paletteFill = $0 },
-                    pickCustom: { model.pickCustom($0, forFill: true) }
+                    pickCustom: { model.pickCustom($0, forFill: true) },
+                    beginPicking: model.beginColorPick
                 )
             }
         }
