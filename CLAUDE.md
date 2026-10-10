@@ -46,7 +46,7 @@ Flow:
 - Settings: keys and defaults live in ShotCore `Preferences`. `SettingsStore` is an `@Observable` cache, and views use its `@Setting(key)` wrapper.
 - Design system: `Sources/Shot/Design`. `Brutal` holds the tokens in `BrutalStyle.swift`, and `GlassWindow.swift` the window chrome.
 
-Website: `site/` is the Astro marketing site, deployed to Cloudflare by `.github/workflows/site.yml`. It renders `docs/usage.md` and `CHANGELOG.md` directly, so changes to those show up on the site. release-please ignores `site/`.
+Website: `site/` is the Astro marketing site, built and deployed by Cloudflare Workers Builds (see `site/README.md`). It renders `docs/usage.md` and `CHANGELOG.md` directly, so changes to those show up on the site. release-please ignores `site/`.
 
 Concurrency: UI and model types are `@MainActor`. Heavy work runs in `Task.detached`, and CG types cross actors through `@unchecked Sendable` wrappers (`SendableImage`, `EditorDocument`).
 
