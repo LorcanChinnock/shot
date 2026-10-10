@@ -31,6 +31,19 @@ extension MediaTests {
         #expect(try await pixel(in: output, at: 3.5, x: 0.5, y: 0.5).isNear(.red), "after the overlay")
     }
 
+    @Test func a60FpsRetinaRecordingExportsAsHEVCAtEveryFrame() async throws {
+        let source = temp("source.mp4"), output = temp("out.mp4")
+        defer { [source, output].forEach { try? FileManager.default.removeItem(at: $0) } }
+        let size = CGSize(width: 3024, height: 1964)
+        try await writeSyntheticVideo(to: source, seconds: 1, fps: 60, width: Int(size.width), height: Int(size.height))
+        try await ProjectExporter.export(Project(source: source, duration: 1, canvasSize: size, hasAudio: false), to: output)
+
+        let track = try #require(try await AVURLAsset(url: output).loadTracks(withMediaType: .video).first)
+        let format = try #require(try await track.load(.formatDescriptions).first)
+        #expect(CMFormatDescriptionGetMediaSubType(format) == kCMVideoCodecType_HEVC)
+        #expect(abs(try await track.load(.nominalFrameRate) - 60) < 1)
+    }
+
     @Test func a120FpsRetinaRecordingExportsAsHEVCAtEveryFrame() async throws {
         let source = temp("source.mp4"), output = temp("out.mp4")
         defer { [source, output].forEach { try? FileManager.default.removeItem(at: $0) } }
@@ -399,4 +412,13 @@ extension MediaTests {
         }
         #expect(!FileManager.default.fileExists(atPath: output.path))
     }
+}
+
+@Test func exportStaysH264UnlessH264WouldDropFrames() {
+    #expect(!ProjectExporter.usesHEVC(canvas: CGSize(width: 1920, height: 1080), frameRate: 60))
+    #expect(!ProjectExporter.usesHEVC(canvas: CGSize(width: 2560, height: 1600), frameRate: 60))
+    #expect(!ProjectExporter.usesHEVC(canvas: CGSize(width: 3024, height: 1964), frameRate: 30))
+    #expect(ProjectExporter.usesHEVC(canvas: CGSize(width: 2880, height: 1800), frameRate: 60))
+    #expect(ProjectExporter.usesHEVC(canvas: CGSize(width: 3024, height: 1964), frameRate: 48))
+    #expect(ProjectExporter.usesHEVC(canvas: CGSize(width: 1920, height: 1080), frameRate: 120))
 }
