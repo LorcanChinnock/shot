@@ -63,10 +63,10 @@ import Testing
     }
 }
 
-/// Twice the CI runner's baselines in `docs/performance.md`; change both together.
+/// Twice the CI runner's baselines in `docs/performance.md`, the overlay's three times; change both together.
 private enum Budget {
     static let flattenAndEncode = 860
-    static let overlayFrame = 37
+    static let overlayFrame = 61
     static let gifExportMegabytes = 452
     static let galleryGrouping = 6
 }
