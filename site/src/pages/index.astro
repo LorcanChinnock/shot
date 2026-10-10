@@ -4,6 +4,7 @@ import Base from '../layouts/Base.astro';
 import Loop from '../components/Loop.astro';
 import Window from '../components/Window.astro';
 import Copy from '../components/Copy.astro';
+import ForMacs from '../components/ForMacs.astro';
 import { latestRelease } from '../lib/release';
 import capture from '../../../docs/media/capture-light.png';
 import editor from '../../../docs/media/editor.png';
@@ -24,6 +25,7 @@ const half = '(min-width: 900px) 540px, 100vw';
         <a class="button big" href="/download">Download Shot</a>
         <Copy command="brew install lorcanchinnock/tap/shot" />
       </div>
+      <ForMacs />
       <p class="meta">Free and open source. Version {release.version}, for macOS 15 on Apple Silicon.</p>
       <Window>
         <Loop name="hero" label="Pressing ⌘⇧4, drawing an arrow and a note on the screenshot, then pasting it into another app" eager />
@@ -71,6 +73,7 @@ const half = '(min-width: 900px) 540px, 100vw';
         <h2>Install</h2>
         <Copy command="brew install lorcanchinnock/tap/shot" />
         <p>Or <a href="/download">download the zip</a> and drag Shot into Applications.</p>
+        <ForMacs />
         <p>Shot isn't notarized by Apple yet, so macOS blocks it the first time. Open System Settings, go to Privacy &amp; Security, and click Open Anyway.</p>
       </div>
       <Image src={openAnyway} alt="Privacy & Security in System Settings, with the Open Anyway button next to the message that Shot was blocked" widths={[480, 723]} sizes={half} class="shot" />

@@ -1,0 +1,46 @@
+---
+/** Under a download link: tells phone and other non-Mac visitors that Shot needs a Mac, and lets them copy the link. */
+const url = Astro.site!.href;
+---
+
+<p class="for-macs" hidden>
+  <span>Shot runs on a Mac. Open <span class="url">{url.replace(/^https:\/\/|\/$/g, '')}</span> on yours.</span>
+  <button type="button" class="button small white" data-copy-link={url}>Copy link</button>
+  <span class="status" aria-live="polite"></span>
+</p>
+
+<style>
+  .for-macs { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0; font-weight: 700; }
+  .for-macs[hidden] { display: none; }
+  .url { overflow-wrap: anywhere; }
+  .status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+</style>
+
+<script>
+  // iPadOS asks for desktop sites as a Mac, so a touch screen rules it out too.
+  const mac = /Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints < 2;
+  for (const note of document.querySelectorAll<HTMLElement>('.for-macs')) {
+    if (mac) continue;
+    note.hidden = false;
+    const button = note.querySelector<HTMLButtonElement>('[data-copy-link]')!;
+    const status = note.querySelector('.status')!;
+    let reset: ReturnType<typeof setTimeout> | undefined;
+    button.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(button.dataset.copyLink!);
+        button.textContent = 'Copied';
+        status.textContent = 'Link copied to the clipboard';
+      } catch {
+        const range = document.createRange();
+        range.selectNodeContents(note.querySelector('.url')!);
+        getSelection()?.removeAllRanges();
+        getSelection()?.addRange(range);
+      }
+      clearTimeout(reset);
+      reset = setTimeout(() => {
+        button.textContent = 'Copy link';
+        status.textContent = '';
+      }, 1600);
+    });
+  }
+</script>
