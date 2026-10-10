@@ -75,5 +75,6 @@ Concurrency: UI and model types are `@MainActor`. Heavy work runs in `Task.detac
 
 - Strings are hard-coded English; there's no localization.
 - PR titles use Conventional Commits (`feat(editor): …`, `fix(recording): …`). PRs are squash-merged and release-please generates versions and `CHANGELOG.md`, so never edit the version or tags by hand.
+- Any substantial change or new feature must keep docs and marketing in line in the same PR: `docs/usage.md` (also rendered on the site), `README.md`, the landing page `site/src/pages/index.astro`, and the media in `docs/media/` if they now show stale UI. If an update needs new screenshots or recordings you can't make, say so rather than skipping it silently. `CHANGELOG.md` is generated, so don't edit it.
 - Only `make dist` builds `Shot.app` with the Sparkle feed. Every other build is `ShotDev.app` (bundle ID `dev.lorcan.Shot.dev`, executable `ShotDev`, scheme `shot-dev://`, no feed), so dev builds never self-update or replace the installed release. `scripts/bundle.sh` does the renaming.
 - To QA UI changes by driving the real app, use the `.agents/skills/ux-qa` skill.
