@@ -9,7 +9,7 @@ const parts = command.split('/');
 ---
 
 <div class="copy card solid">
-  <code><span aria-hidden="true">$ </span>{parts.map((part, i) => (i ? <Fragment>/<wbr />{part}</Fragment> : part))}</code>
+  <code>{parts.map((part, i) => (i ? <Fragment>/<wbr />{part}</Fragment> : part))}</code>
   <button type="button" class="button small white" data-copy={command}>Copy</button>
   <span class="status" aria-live="polite"></span>
 </div>
@@ -17,7 +17,8 @@ const parts = command.split('/');
 <style>
   .copy { display: flex; min-width: 0; align-items: center; gap: 12px; padding: 6px 6px 6px 16px; max-width: 100%; }
   code { font-size: 14px; font-weight: 600; flex: 1; min-width: 0; overflow-wrap: anywhere; }
-  code span { opacity: 0.45; }
+  /* Generated content, so selecting the command (triple-click included) never picks up the prompt. */
+  code::before { content: '$ '; opacity: 0.45; }
   button { flex: none; min-width: 78px; }
   .status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 </style>
