@@ -14,8 +14,10 @@ const toc = headings.filter((h) => h.depth === 2);
   <div id="top" class={`wrap doc ${toc.length ? 'with-toc' : ''}`}>
     {toc.length > 0 && (
       <nav class="toc card solid" aria-label="On this page">
-        <strong>On this page</strong>
-        <ul>{toc.map((h) => <li><a href={`#${h.slug}`}>{h.text}</a></li>)}</ul>
+        <details>
+          <summary>On this page</summary>
+          <ul>{toc.map((h) => <li><a href={`#${h.slug}`}>{h.text}</a></li>)}</ul>
+        </details>
       </nav>
     )}
     <article class="prose card solid">
@@ -33,7 +35,8 @@ const toc = headings.filter((h) => h.depth === 2);
     .toc { position: sticky; top: 96px; }
   }
   .toc { padding: 16px 18px; font-size: 15px; }
-  .toc strong { display: block; font-weight: 900; margin-bottom: 8px; }
+  .toc summary { font-weight: 900; cursor: pointer; }
+  .toc details[open] summary { margin-bottom: 8px; }
   .toc ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
   @media (max-width: 999px) { .toc ul { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); } }
   .toc a { display: block; padding: 3px 8px; margin-inline: -8px; border-radius: 6px; text-decoration: none; font-weight: 600; }
@@ -64,6 +67,14 @@ const toc = headings.filter((h) => h.depth === 2);
   // even when a single jump (End, Page Down, a dragged scrollbar) carries it past.
   const sections = new IntersectionObserver(mark, { rootMargin: '100000px 0px -66% 0px' });
   headings.forEach((h) => sections.observe(h));
+
+  // "On this page" starts collapsed so it doesn't push the guide down on phones; the sidebar opens it.
+  const details = document.querySelector<HTMLDetailsElement>('.toc details');
+  const wide = matchMedia('(min-width: 1000px)');
+  if (details) {
+    details.open = wide.matches;
+    wide.addEventListener('change', () => (details.open = wide.matches));
+  }
 
   if (title && toTop) {
     new IntersectionObserver(([entry]) => (toTop.hidden = entry.isIntersecting || entry.boundingClientRect.top > 0)).observe(title);

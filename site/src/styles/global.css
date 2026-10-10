@@ -139,6 +139,12 @@ section { padding-block: clamp(48px, 8vw, 96px); }
 @media (max-width: 560px) {
   .site-header nav a.hide-sm { display: none; }
 }
+/* The smallest phones can't fit the badge beside Guide and Download. */
+@media (max-width: 380px) {
+  .brand sup { display: none; }
+  .site-header nav a:not(.button) { padding-inline: 6px; }
+  .site-header nav .button.small { padding-inline: 10px; }
+}
 
 /* Footer */
 .site-footer { padding: 48px 0 40px; }
