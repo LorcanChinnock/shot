@@ -24,8 +24,8 @@ public enum CompositionBuilder {
         }
     }
 
-    /// Frame rates above this aren't kept, since the compositor draws every frame.
-    static let maximumFrameRate: Float = 60
+    /// Frame rates above this aren't kept, since the compositor draws every frame. It matches the fastest recording.
+    static let maximumFrameRate: Float = 120
 
     public static func build(_ project: Project) async throws -> ProjectComposition {
         let composition = AVMutableComposition()

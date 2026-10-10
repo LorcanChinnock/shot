@@ -142,7 +142,7 @@ final class Recorder: NSObject {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let finalURL = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "mp4", prefix: prefs.filePrefix)
         let microphoneID = prefs.microphoneDeviceID.isEmpty ? nil : AVCaptureDevice(uniqueID: prefs.microphoneDeviceID)?.uniqueID
-        session = Session(screen: screen, region: region, windowID: options.windowID, microphone: microphone, showsCursor: options.showsCursor, microphoneID: microphoneID, fps: prefs.recordingFPS, systemAudio: prefs.recordSystemAudio, finalURL: finalURL)
+        session = Session(screen: screen, region: region, windowID: options.windowID, microphone: microphone, showsCursor: options.showsCursor, microphoneID: microphoneID, fps: RecordingFrameRate.effective(setting: prefs.recordingFPS, displayRate: screen.maximumFramesPerSecond), systemAudio: prefs.recordSystemAudio, finalURL: finalURL)
         segments = []
         segmentAudio = []
         mutes = CutList()
@@ -415,7 +415,7 @@ final class Recorder: NSObject {
         let outputConfig = SCRecordingOutputConfiguration()
         outputConfig.outputURL = url
         outputConfig.outputFileType = .mp4
-        outputConfig.videoCodecType = .h264
+        outputConfig.videoCodecType = RecordingFrameRate.usesHEVC(fps: session.fps) ? .hevc : .h264
 
         let stream = SCStream(filter: filter, configuration: config, delegate: self)
         // Without a screen output SCK logs a dropped-frame error for every frame.

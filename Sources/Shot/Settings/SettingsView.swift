@@ -404,6 +404,12 @@ private struct RecordingSettings: View {
     @Setting(PreferenceKey.gifWidth) private var gifWidth: Int
     private let color = SettingsSection.recording.color
 
+    /// 120 fps shows only with a display that fast, or when it's already chosen so the selection never disappears.
+    private var frameRates: [Int] {
+        let offered = RecordingFrameRate.offered(maximumDisplayRate: NSScreen.screens.map(\.maximumFramesPerSecond).max() ?? 0)
+        return offered.contains(fps) || !RecordingFrameRate.all.contains(fps) ? offered : offered + [fps]
+    }
+
     var body: some View {
         SettingsCard(title: "Starting", symbol: "record.circle") {
             ToggleRow(title: "Adjust before recording", subtitle: "Shows the frame handles and options first. Hold ⌥ as you finish the selection to show them once.", isOn: $adjust, color: color)
@@ -412,8 +418,8 @@ private struct RecordingSettings: View {
             }
         }
         SettingsCard(title: "Video", symbol: "film.fill") {
-            SettingRow(title: "Frame rate", subtitle: "H.264 MP4.") {
-                BrutalSegmented(selection: $fps, options: [(30, "30 fps"), (60, "60 fps")], color: color)
+            SettingRow(title: "Frame rate", subtitle: RecordingFrameRate.usesHEVC(fps: fps) ? "HEVC MP4, on displays that refresh this fast." : "H.264 MP4.") {
+                BrutalSegmented(selection: $fps, options: frameRates.map { ($0, "\($0) fps") }, color: color)
             }
             ToggleRow(title: "Show cursor", isOn: $showsCursor, color: color)
             ToggleRow(title: "Region border", subtitle: "Red outline around the recorded area. It never appears in the video.", isOn: $border, color: color)
