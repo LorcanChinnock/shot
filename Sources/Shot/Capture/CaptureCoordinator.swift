@@ -34,8 +34,8 @@ final class CaptureCoordinator {
         recorder.onStopRequested = { [weak self] discard in
             self?.stopRecording(discard: discard)
         }
+        // Both phase changes and errors arrive after the recorder has left `.recording`, so `onPhaseChange` has already cleared `state`.
         recorder.onError = { [weak self] error in
-            self?.state.isRecording = false
             self?.report(error)
         }
     }
@@ -197,7 +197,6 @@ final class CaptureCoordinator {
     }
 
     private func recordingFinished(_ url: URL) {
-        state.isRecording = false
         let plan = AfterCapture.plan(prefs: Preferences(), isVideo: true)
         if plan.copies {
             Clipboard.copy(fileURL: url)

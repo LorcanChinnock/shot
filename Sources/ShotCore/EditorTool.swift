@@ -45,7 +45,7 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
     public var isDrawing: Bool { self != .select && self != .hand && self != .crop }
 
     /// True for the tools that draw in the chosen colour and width.
-    public var isStyled: Bool {
+    public var takesColorAndWidth: Bool {
         switch self {
         case .arrow, .line, .shape, .pen, .text, .note, .highlight, .counter: true
         case .select, .hand, .spotlight, .redact, .crop: false

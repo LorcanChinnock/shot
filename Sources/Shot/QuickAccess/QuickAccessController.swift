@@ -7,7 +7,7 @@ import SwiftUI
 private let log = Logger.shot("quick-access")
 
 struct QuickAccessCard: Identifiable {
-    static let width: CGFloat = 240
+    static let width = QuickAccessLayout.cardWidth
     static let minHeight: CGFloat = 135
     static let maxHeight: CGFloat = 180
 
@@ -39,8 +39,6 @@ final class QuickAccessController {
     static let shared = QuickAccessController()
     static let maxCards = 5
     static let inset: CGFloat = 20
-    static let spacing: CGFloat = 14
-    static let padding: CGFloat = 10
 
     var onAnnotate: ((URL) -> Void)?
     var onExportGIF: ((URL) -> Void)?
@@ -170,16 +168,11 @@ final class QuickAccessController {
         guard let panel, panel.isVisible else {
             return false
         }
-        // Mirrors QuickAccessView: cards stack upward from the panel's bottom, newest lowest.
-        var y = panel.frame.minY + Self.padding
-        for card in model.cards.reversed() {
-            let frame = NSRect(x: panel.frame.minX + Self.padding, y: y, width: QuickAccessCard.width, height: card.height)
-            if card.id == id {
-                return frame.contains(NSEvent.mouseLocation)
-            }
-            y += card.height + Self.spacing
+        guard let index = model.cards.firstIndex(where: { $0.id == id }) else {
+            return false
         }
-        return false
+        let frame = QuickAccessLayout(cardHeights: model.cards.map(\.height)).cardFrames[index]
+        return frame.offsetBy(dx: panel.frame.minX, dy: panel.frame.minY).contains(NSEvent.mouseLocation)
     }
 
     private func ensurePanel() {
@@ -205,8 +198,7 @@ final class QuickAccessController {
         guard let panel else {
             return
         }
-        let cardsHeight = cards.reduce(0) { $0 + $1.height } + Self.spacing * CGFloat(max(0, cards.count - 1))
-        let size = CGSize(width: QuickAccessCard.width + Self.padding * 2, height: cardsHeight + Self.padding * 2)
+        let size = QuickAccessLayout(cardHeights: cards.map(\.height)).size
         let screen = NSScreen.underPointer ?? NSScreen.screens[0]
         let visible = screen.visibleFrame
         let x = Preferences().quickAccessPosition == .left ? visible.minX + Self.inset : visible.maxX - Self.inset - size.width
