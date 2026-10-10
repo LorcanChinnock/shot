@@ -6,12 +6,12 @@ Shot is meant to be fast by default. Its worst regressions so far were power fea
 
 `Tests/ShotCoreTests/PerfTests.swift` times the pure paths with `ContinuousClock`, taking the median of five runs after one warm-up run. `make test` skips the suite. `make perf` and CI's **Perf** step run it alone, one test at a time, so other tests don't skew the timings.
 
-Each budget is 2× the baseline measured on the CI runner, which is slower than the reference Mac. That leaves room for a noisy runner but still fails a change that does the work again on every call: removing the overlay cache from #222 makes the overlay test about 140× slower.
+Each budget is 2× the baseline measured on the CI runner, which is slower than the reference Mac. That leaves room for a noisy runner but still fails a change that does the work again on every call: removing the overlay cache from #222 makes the overlay test about 140× slower. The overlay's budget is 3× instead: it times microseconds, so a slow runner swings it further, up to 2.7× its baseline, and 3× still fails that 140× regression.
 
 | Path | What's measured | Reference Mac | CI runner | Budget |
 |---|---|---|---|---|
 | Flatten + encode | Flatten a 5120×2880 capture with 20 annotations, including a blur and a spotlight, and encode it as PNG | 272 ms | 430 ms | 860 ms |
-| Overlay render | `AnnotationFrame.apply` of 20 annotations at 1920×1080, per frame over 30 frames, with the compositor's overlay cache | 10.8 µs | 18.3 µs | 37 µs |
+| Overlay render | `AnnotationFrame.apply` of 20 annotations at 1920×1080, per frame over 30 frames, with the compositor's overlay cache | 10.8 µs | 20.3 µs | 61 µs |
 | GIF export memory | Peak growth of the process footprint while exporting a 20 s 1080p video as a GIF | < 1 MB | 226 MB | 452 MB |
 | Gallery grouping | Filter, sort and group 1,500 items into date sections | 1.4 ms | 2.9 ms | 6 ms |
 
