@@ -1,18 +1,20 @@
 #!/bin/bash
 # Measures the app's fast and idle paths on this Mac and checks them against the budgets in docs/performance.md.
-# Drives an installed Shot through the shot:// scheme, so it quits any running copy first and needs:
+# Drives an installed Shot through its URL scheme (shot-dev:// for ShotDev), so it quits any running copy first and needs:
 #   - Screen Recording permission for Shot (the captures),
 #   - Accessibility permission for this terminal (closing Shot's windows with ⌘W).
 # It takes 20 full-screen screenshots and moves them out of the capture folder afterwards, into a folder it prints.
-# Usage: scripts/perf.sh [path/to/Shot.app]   (default /Applications/Shot.app)
+# Usage: scripts/perf.sh [path/to/Shot.app]   (default /Applications/ShotDev.app, which make app installs)
 set -euo pipefail
 
-app="${1:-/Applications/Shot.app}"
+app="${1:-/Applications/ShotDev.app}"
 [ -d "$app" ] || { echo "No app at $app; run make app first" >&2; exit 1; }
 # Absolute and resolved, as ps reports the running executable.
 app=$(cd "$app" && pwd -P)
 cd "$(dirname "$0")/.."
 bundle_id=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$app/Contents/Info.plist")
+executable=$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$app/Contents/Info.plist")
+scheme=$(/usr/libexec/PlistBuddy -c "Print :CFBundleURLTypes:0:CFBundleURLSchemes:0" "$app/Contents/Info.plist")
 
 # Budgets, about 1.5x the baselines in docs/performance.md. Empty means not measured: printed, not checked.
 budget_launch_ms="150"
@@ -31,11 +33,11 @@ signposts() { # name → ndjson lines of that signpost from this app since the s
 median() { python3 -c 'import sys,statistics; v=[float(x) for x in sys.stdin.read().split()]; print(round(statistics.median(v)) if v else "")'; }
 
 quit_shot() {
-  pkill -x Shot || true
-  while pgrep -x Shot >/dev/null; do sleep 0.1; done
+  pkill -x "$executable" || true
+  while pgrep -x "$executable" >/dev/null; do sleep 0.1; done
 }
 
-pid() { pgrep -x Shot | head -1; }
+pid() { pgrep -x "$executable" | head -1; }
 
 # Launch → ready: process start to hotkeys registered, from the app's "Ready" event, three launches.
 ready_count() { signposts Ready | grep -c '"signpostType":"event"' || true; }
@@ -62,7 +64,7 @@ for line in sys.stdin:
     if entry.get("signpostType") == "event" and match:
         print(match.group(1))' | median)
 running=$(pid)
-[ "$(ps -o comm= -p "$running")" = "$app/Contents/MacOS/Shot" ] || { echo "The running Shot isn't $app" >&2; exit 1; }
+[ "$(ps -o comm= -p "$running")" = "$app/Contents/MacOS/$executable" ] || { echo "The running Shot isn't $app" >&2; exit 1; }
 
 # Capture → clipboard: 20 full-screen captures, timed by the app's "Capture to clipboard" interval.
 # Shot writes to the save folder, or to a temporary one when saving is off (Preferences.captureFolder).
@@ -85,7 +87,7 @@ move_captures() {
 }
 trap move_captures EXIT
 for i in $(seq 20); do
-  open -g -a "$app" "shot://capture-fullscreen"
+  open -g -a "$app" "$scheme://capture-fullscreen"
   sleep 1.5
   # Stop after the first capture if it wasn't copied, usually a missing Screen Recording permission, rather than fail 20 times.
   if [ "$i" = 1 ] && ! signposts "Capture to clipboard" | grep -q '"eventMessage":"copied"'; then
@@ -124,19 +126,19 @@ if command -v ffmpeg >/dev/null; then
 fi
 encode() { python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$1"; }
 [ -n "$shot" ] || { echo "No capture found in $folder to open in the editor" >&2; exit 1; }
-open -g -a "$app" "shot://annotate?path=$(encode "$shot")"
+open -g -a "$app" "$scheme://annotate?path=$(encode "$shot")"
 if [ -f "$clip" ]; then
-  open -g -a "$app" "shot://edit-video?path=$(encode "$clip")"
+  open -g -a "$app" "$scheme://edit-video?path=$(encode "$clip")"
 fi
-open -g -a "$app" "shot://gallery"
+open -g -a "$app" "$scheme://gallery"
 sleep 4
-osascript -e 'tell application "System Events" to tell process "Shot"
+osascript -e "tell application \"System Events\" to tell process \"$executable\"
   set frontmost to true
   repeat (count of windows) times
-    keystroke "w" using command down
+    keystroke \"w\" using command down
     delay 0.5
   end repeat
-end tell' >/dev/null
+end tell" >/dev/null
 sleep 5
 # ps %cpu is a decaying average over about a minute, so it would still count the windows just closed; CPU time isn't.
 cpu_seconds() { ps -o time= -p "$(pid)" | python3 -c '

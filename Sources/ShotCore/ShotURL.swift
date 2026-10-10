@@ -12,6 +12,10 @@ public enum ShotURL: Equatable, Sendable {
     case settings(section: String?)
     case edit(EditorRoute)
 
+    /// Releases register `shot`. Dev builds (ShotDev.app) register `shot-dev`, so the two can run side by side without
+    /// one answering URLs meant for the other.
+    public static let schemes: Set<String> = ["shot", "shot-dev"]
+
     public enum ParseError: LocalizedError, Equatable {
         /// Not a `shot://` URL at all, which is ignored.
         case notShot
@@ -28,7 +32,7 @@ public enum ShotURL: Equatable, Sendable {
     }
 
     public init(_ url: URL) throws(ParseError) {
-        guard url.scheme == "shot", let host = url.host() else {
+        guard let scheme = url.scheme, Self.schemes.contains(scheme), let host = url.host() else {
             throw .notShot
         }
         let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []

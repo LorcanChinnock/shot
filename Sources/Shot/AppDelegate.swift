@@ -73,7 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func handle(_ url: URL) {
-        guard url.scheme == "shot" else {
+        guard let scheme = url.scheme, ShotURL.schemes.contains(scheme) else {
             return
         }
         log.notice("URL received: \(url.absoluteString)")

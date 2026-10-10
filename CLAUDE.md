@@ -19,16 +19,16 @@ make perf                         # ShotCore performance budgets (PerfTests; mak
 make perf-app                     # scripts/perf.sh: launch, capture, memory, idle CPU of the installed app
 make lint                         # scripts/lint.sh: bans patterns that caused bugs (see below)
 make build                        # swift build
-make bundle                       # build and sign build/Shot.app only
-make run                          # build, install to /Applications/Shot.app, relaunch
+make bundle                       # build and sign build/ShotDev.app only
+make run                          # build, install to /Applications/ShotDev.app, relaunch
 cd site && npm run dev            # the marketing site (see site/README.md)
 swift test --filter <testName>    # one test, e.g. --filter hitTestFilledKinds
 ```
 
 - With only the Command Line Tools selected, the Makefile pins the newest 26.x SDK and adds the testing plugin path, so a bare `swift build`/`swift test` can fail on SwiftUI macros. Prefer `make`, or prefix with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
 - Signing uses the `Shot Dev` certificate from `scripts/make-dev-cert.sh` so the Screen Recording permission survives rebuilds. `make reset-tcc` clears it.
-- Logs: `log stream --predicate 'subsystem == "dev.lorcan.Shot"'`. Use `Logger.shot("category")` from `Sources/Shot/Log.swift`.
-- The `shot://` URL scheme drives every action without a keyboard (`shot://annotate?path=`, `shot://edit-video?path=`, `shot://gallery`, `shot://settings?section=`; full list in `docs/usage.md`). An installed release also registers it, so quit other copies before testing a build.
+- Logs: `log stream --predicate 'subsystem == "dev.lorcan.Shot.dev"'` for ShotDev, `dev.lorcan.Shot` for a release. Use `Logger.shot("category")` from `Sources/Shot/Log.swift`.
+- The `shot://` URL scheme drives every action without a keyboard (`shot://annotate?path=`, `shot://edit-video?path=`, `shot://gallery`, `shot://settings?section=`; full list in `docs/usage.md`). ShotDev registers `shot-dev://` instead, so it never collides with an installed release.
 
 ## Architecture
 
@@ -61,5 +61,5 @@ Concurrency: UI and model types are `@MainActor`. Heavy work runs in `Task.detac
 
 - Strings are hard-coded English; there's no localization.
 - PR titles use Conventional Commits (`feat(editor): …`, `fix(recording): …`). PRs are squash-merged and release-please generates versions and `CHANGELOG.md`, so never edit the version or tags by hand.
-- Only `make dist` keeps the Sparkle feed in `Info.plist`, so dev builds never self-update.
+- Only `make dist` builds `Shot.app` with the Sparkle feed. Every other build is `ShotDev.app` (bundle ID `dev.lorcan.Shot.dev`, executable `ShotDev`, scheme `shot-dev://`, no feed), so dev builds never self-update or replace the installed release. `scripts/bundle.sh` does the renaming.
 - To QA UI changes by driving the real app, use the `.agents/skills/ux-qa` skill.

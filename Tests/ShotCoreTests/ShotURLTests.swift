@@ -22,6 +22,7 @@ private let home = FileManager.default.homeDirectoryForCurrentUser
     ("shot://annotate?path=/tmp/a.mov", .edit(.video(URL(fileURLWithPath: "/tmp/a.mov")))),
     ("shot://edit-video?path=/tmp/a.png", .edit(.video(URL(fileURLWithPath: "/tmp/a.png")))),
     ("shot://annotate?path=~/My%20Shot.png", .edit(.image(home.appendingPathComponent("My Shot.png")))),
+    ("shot-dev://gallery", .gallery),
 ])
 func everyShotURLHasARoute(_ string: String, _ expected: ShotURL) throws {
     let url = try #require(URL(string: string))

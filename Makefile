@@ -36,17 +36,18 @@ app: bundle
 	scripts/install.sh "$(INSTALL_DIR)"
 
 run: app
-	pkill -x Shot || true
-	while pgrep -x Shot >/dev/null; do sleep 0.1; done
-	open "$(INSTALL_DIR)/Shot.app"
+	pkill -x ShotDev || true
+	while pgrep -x ShotDev >/dev/null; do sleep 0.1; done
+	open "$(INSTALL_DIR)/ShotDev.app"
 
 dist: export SHOT_RELEASE = 1
 dist: bundle
 	ditto -c -k --keepParent build/Shot.app build/Shot.zip
 	@echo "Wrote build/Shot.zip"
 
+# Clears ShotDev's permission (scripts/bundle.sh gives dev builds the release ID plus .dev), never the release's.
 reset-tcc:
-	tccutil reset ScreenCapture $$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" Resources/Info.plist)
+	tccutil reset ScreenCapture $$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" Resources/Info.plist).dev
 
 icon:
 	swift scripts/make-icon.swift .
