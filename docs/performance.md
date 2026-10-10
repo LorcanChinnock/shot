@@ -21,7 +21,7 @@ To change a budget, measure again, then update both this table and `Budget` in `
 
 ## Locally: `make perf-app`
 
-`scripts/perf.sh` drives an installed Shot (`/Applications/Shot.app` by default, or a path you pass) through the `shot://` scheme. CI can't run it, because its runners can't grant the Screen Recording permission. Run it before each release, after `make app`.
+`scripts/perf.sh` drives an installed Shot (`/Applications/ShotDev.app` by default, or a path you pass) through its URL scheme. CI can't run it, because its runners can't grant the Screen Recording permission. Run it before each release, after `make app`.
 
 The app emits `OSSignposter` signposts under its bundle identifier, in category `perf`, which the script reads with `log show --signpost`. Instruments shows them too.
 

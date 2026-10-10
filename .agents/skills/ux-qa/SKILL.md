@@ -24,9 +24,10 @@ This runs on a real desktop that the person may be using at the same time.
   `session.sh` re-raises the window first. `open`/`activate` do not reliably take focus while someone is typing; setting
   `frontmost` and `AXRaise` through System Events does. Keystrokes (`uxqa_key`) have no guard of their own, so always follow
   `uxqa_focus` with a screenshot that proves where the focus is before typing anything.
-- **Test the build under review, and only that.** Kill every running copy first (an installed release registers the `shot://`
-  scheme and silently answers URLs meant for your build, which makes you test the wrong binary). Launch with an absolute
-  path: `open -a /abs/path/Shot.app` (a relative path is looked up as an app *name*). Confirm the running binary's path.
+- **Test the build under review, and only that.** Kill every running ShotDev first (another copy, such as one `make app`
+  installed, registers the same `shot-dev://` scheme and silently answers URLs meant for your build, which makes you test the
+  wrong binary). An installed release answers `shot://` only, so it can keep running. Launch with an absolute path:
+  `open -a /abs/path/ShotDev.app` (a relative path is looked up as an app *name*). Confirm the running binary's path.
 - **Work in a worktree** (`~/dev/worktrees/…`), never the main checkout. Don't commit, push, or touch the user's settings,
   captures or other apps. Put test media and screenshots in the scratchpad, not the user's folders. Quit the app you launched
   when you finish unless the user wants to look.
@@ -37,14 +38,14 @@ This runs on a real desktop that the person may be using at the same time.
 
 ```sh
 cd <worktree>
-make bundle                                   # build the app under test → build/Shot.app
+make bundle                                   # build the app under test → build/ShotDev.app
 source .agents/skills/ux-qa/scripts/session.sh
 uxqa_setup                                    # compiles the input, axdump and measure tools
 .agents/skills/ux-qa/scripts/make-clips.sh "$UXQA_DIR/clips"     # 10 s 720p, 6 s 1080p, 3 s portrait, all with sound
-uxqa_launch "shot://edit-video?path=$UXQA_DIR/clips/a.mp4"
+uxqa_launch "shot-dev://edit-video?path=$UXQA_DIR/clips/a.mp4"
 ```
 
-Other entry points: `shot://annotate?path=`, `shot://gallery`, `shot://settings?section=`. See `docs/usage.md`. Screen
+Other entry points: `shot-dev://annotate?path=`, `shot-dev://gallery`, `shot-dev://settings?section=`. See `docs/usage.md`. Screen
 capture and recording need real permissions and a person, so test the editors on files and say that capture itself was out of scope.
 
 **Units.** Everything is in screen *points*. `uxqa_shot` writes images at point size (1 px = 1 pt), `axdump` reports frames in

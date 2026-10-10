@@ -1,6 +1,7 @@
 #!/bin/bash
-# Builds a release binary and assembles a signed build/Shot.app.
-# Only SHOT_RELEASE=1 (make dist) keeps the update feed, so Sparkle never replaces a local build with a release.
+# Builds a release binary and assembles a signed app in build/.
+# Only SHOT_RELEASE=1 (make dist) builds Shot.app, with the update feed. Every other build is ShotDev.app, with its own
+# name, bundle ID, executable and shot-dev:// scheme and no feed, so it never replaces or answers for an installed release.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -9,17 +10,31 @@ swift build -c release --arch arm64
 bin_path="$(swift build -c release --arch arm64 --show-bin-path)"
 binary="$bin_path/Shot"
 
-app=build/Shot.app
+if [ "${SHOT_RELEASE:-}" = 1 ]; then
+    name=Shot
+else
+    name=ShotDev
+fi
+app="build/$name.app"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$app/Contents/Frameworks"
-cp "$binary" "$app/Contents/MacOS/Shot"
+cp "$binary" "$app/Contents/MacOS/$name"
 ditto "$bin_path/Sparkle.framework" "$app/Contents/Frameworks/Sparkle.framework"
 cp Resources/Info.plist "$app/Contents/Info.plist"
 cp Resources/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
 build_number="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $build_number" "$app/Contents/Info.plist"
-if [ "${SHOT_RELEASE:-}" != 1 ]; then
-    /usr/libexec/PlistBuddy -c "Delete :SUFeedURL" "$app/Contents/Info.plist"
+if [ "$name" = ShotDev ]; then
+    dev_id="$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" Resources/Info.plist).dev"
+    /usr/libexec/PlistBuddy \
+        -c "Set :CFBundleIdentifier $dev_id" \
+        -c "Set :CFBundleName ShotDev" \
+        -c "Set :CFBundleDisplayName ShotDev" \
+        -c "Set :CFBundleExecutable ShotDev" \
+        -c "Set :CFBundleURLTypes:0:CFBundleURLName $dev_id" \
+        -c "Set :CFBundleURLTypes:0:CFBundleURLSchemes:0 shot-dev" \
+        -c "Delete :SUFeedURL" \
+        "$app/Contents/Info.plist"
 fi
 
 identity="${SHOT_SIGN_IDENTITY:-Shot Dev}"
@@ -35,4 +50,4 @@ done
 codesign --force --sign "$identity" "$app/Contents/Frameworks/Sparkle.framework"
 codesign --force --sign "$identity" "$app"
 version="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist")"
-echo "Built $app $version ($build_number) for $(lipo -archs "$app/Contents/MacOS/Shot")"
+echo "Built $app $version ($build_number) for $(lipo -archs "$app/Contents/MacOS/$name")"

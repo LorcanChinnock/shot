@@ -4,7 +4,7 @@
 # Everything works in screen POINTS: `uxqa_shot` writes images at point size, so a pixel in the PNG is a point on screen.
 #
 #   uxqa_setup                 compile the input, axdump and measure tools into $UXQA_DIR/bin (once per session)
-#   uxqa_launch [url]          kill every running copy, start THIS worktree's build, optionally open a shot:// URL
+#   uxqa_launch [url]          kill every running copy, start THIS worktree's build, optionally open a shot-dev:// URL
 #   uxqa_focus                 bring the app's front window to the front (works while someone is typing, unlike `activate`)
 #   uxqa_shot NAME [X Y W H]   screenshot of the whole screen (toasts live at its bottom edge) or of a rect, to $UXQA_DIR/NAME.png
 #   uxqa_click X Y | uxqa_dclick X Y | uxqa_drag X1 Y1 X2 Y2 [shift] | uxqa_scroll X Y DX DY
@@ -12,8 +12,8 @@
 #   uxqa_window                prints the front window's x y w h; uxqa_resize W H sets its size
 #   uxqa_ax [--json]           accessibility tree plus the problems it spots
 
-UXQA_APP="${UXQA_APP:-Shot}"
-UXQA_BUNDLE="${UXQA_BUNDLE:-$PWD/build/Shot.app}"
+UXQA_APP="${UXQA_APP:-ShotDev}"
+UXQA_BUNDLE="${UXQA_BUNDLE:-$PWD/build/ShotDev.app}"
 UXQA_DIR="${UXQA_DIR:-${TMPDIR:-/tmp}/uxqa}"
 UXQA_SKILL="${UXQA_SKILL:-${${(%):-%x}:A:h}}"
 export UXQA_APP
@@ -28,7 +28,8 @@ uxqa_setup() {
 
 uxqa_launch() {
   pkill -x "$UXQA_APP"; sleep 1.5
-  # A second copy (an installed release, say) would claim the shot:// URL scheme and the test would silently run the wrong build.
+  # A second ShotDev (an installed make app build, say) would claim the shot-dev:// URL scheme and the test would silently
+  # run the wrong build. An installed release answers shot:// only, so it can keep running.
   pgrep -x "$UXQA_APP" >/dev/null && { echo "another $UXQA_APP is still running" >&2; return 1; }
   open -a "$UXQA_BUNDLE" || return 1
   sleep 3

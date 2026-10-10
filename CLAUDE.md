@@ -19,16 +19,30 @@ make perf                         # ShotCore performance budgets (PerfTests; mak
 make perf-app                     # scripts/perf.sh: launch, capture, memory, idle CPU of the installed app
 make lint                         # scripts/lint.sh: bans patterns that caused bugs (see below)
 make build                        # swift build
-make bundle                       # build and sign build/Shot.app only
-make run                          # build, install to /Applications/Shot.app, relaunch
+make bundle                       # build and sign build/ShotDev.app only
+make run                          # build, install to /Applications/ShotDev.app, relaunch
 cd site && npm run dev            # the marketing site (see site/README.md)
 swift test --filter <testName>    # one test, e.g. --filter hitTestFilledKinds
 ```
 
 - With only the Command Line Tools selected, the Makefile pins the newest 26.x SDK and adds the testing plugin path, so a bare `swift build`/`swift test` can fail on SwiftUI macros. Prefer `make`, or prefix with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
 - Signing uses the `Shot Dev` certificate from `scripts/make-dev-cert.sh` so the Screen Recording permission survives rebuilds. `make reset-tcc` clears it.
-- Logs: `log stream --predicate 'subsystem == "dev.lorcan.Shot"'`. Use `Logger.shot("category")` from `Sources/Shot/Log.swift`.
-- The `shot://` URL scheme drives every action without a keyboard (`shot://annotate?path=`, `shot://edit-video?path=`, `shot://gallery`, `shot://settings?section=`; full list in `docs/usage.md`). An installed release also registers it, so quit other copies before testing a build.
+- Logs: `log stream --predicate 'subsystem == "dev.lorcan.Shot.dev"'` for ShotDev, `dev.lorcan.Shot` for a release. Use `Logger.shot("category")` from `Sources/Shot/Log.swift`.
+- The `shot://` URL scheme drives every action without a keyboard (`shot://annotate?path=`, `shot://edit-video?path=`, `shot://gallery`, `shot://settings?section=`; full list in `docs/usage.md`). ShotDev registers `shot-dev://` instead, so it never collides with an installed release.
+
+## Running and testing locally
+
+Local builds are `ShotDev.app`. The real installed version is `/Applications/Shot.app`, usually from Homebrew. Never install over, rename or delete `Shot.app`, or Homebrew loses track of it.
+
+1. **Quit the installed release first:** `pkill -x Shot`. Both apps register the same global shortcuts, so with both running a hotkey can reach the wrong one. `-x` matches the executable name exactly, so `pkill -x Shot` never kills ShotDev, and `pkill -x ShotDev` never kills the release.
+2. **Run the dev build:** `make run` builds, installs `/Applications/ShotDev.app` and launches it. Drive it with `shot-dev://` URLs, and confirm the running binary with `pgrep -lf ShotDev`. The ux-qa skill runs `build/ShotDev.app` from `make bundle` without installing it.
+3. **When finished, quit and uninstall the dev build,** then reopen the release if it was running:
+   ```bash
+   pkill -x ShotDev
+   rm -rf /Applications/ShotDev.app build/ShotDev.app   # or $INSTALL_DIR/ShotDev.app if you set it
+   open /Applications/Shot.app
+   ```
+   Leave ShotDev's settings (`dev.lorcan.Shot.dev`) and its Screen Recording permission in place, so the next run doesn't ask for the permission again.
 
 ## Architecture
 
@@ -61,5 +75,5 @@ Concurrency: UI and model types are `@MainActor`. Heavy work runs in `Task.detac
 
 - Strings are hard-coded English; there's no localization.
 - PR titles use Conventional Commits (`feat(editor): …`, `fix(recording): …`). PRs are squash-merged and release-please generates versions and `CHANGELOG.md`, so never edit the version or tags by hand.
-- Only `make dist` keeps the Sparkle feed in `Info.plist`, so dev builds never self-update.
+- Only `make dist` builds `Shot.app` with the Sparkle feed. Every other build is `ShotDev.app` (bundle ID `dev.lorcan.Shot.dev`, executable `ShotDev`, scheme `shot-dev://`, no feed), so dev builds never self-update or replace the installed release. `scripts/bundle.sh` does the renaming.
 - To QA UI changes by driving the real app, use the `.agents/skills/ux-qa` skill.

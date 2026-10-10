@@ -14,28 +14,28 @@ You need macOS 15 or later and either Xcode or the Xcode Command Line Tools. Sho
 git clone https://github.com/LorcanChinnock/shot.git
 cd shot
 scripts/make-dev-cert.sh   # once: a stable signing identity, so the Screen Recording permission survives rebuilds
-make run                   # build, install to /Applications/Shot.app, and launch
+make run                   # build, install to /Applications/ShotDev.app, and launch
 ```
 
 macOS ties the Screen Recording permission to the app's code signature. An ad-hoc signature changes on every build, so the permission would reset each time. `make-dev-cert.sh` creates a self-signed certificate named `Shot Dev` in your login keychain, and the build signs with it. Keychain Access shows it as "not trusted"; that's expected and signing still works. To sign with another identity, set `SHOT_SIGN_IDENTITY`.
 
 On the first run, turn on Shot in System Settings › Privacy & Security › Screen & System Audio Recording, then relaunch it.
 
-Only `make dist` keeps the update feed in `Info.plist`. Every other build leaves it out, so the updater stays off and Sparkle never replaces your build with a release.
+Only `make dist` builds `Shot.app` with the update feed. Every other build is `ShotDev.app`: a separate app with its own bundle ID (`dev.lorcan.Shot.dev`), settings, Screen Recording permission and `shot-dev://` URL scheme, and no update feed. It installs beside a released Shot rather than over it, and Sparkle never replaces it.
 
 ### Make targets
 
 | Target | What it does |
 |---|---|
-| `make run` | Build, install to `/Applications/Shot.app`, and launch |
+| `make run` | Build, install to `/Applications/ShotDev.app`, and launch |
 | `make test` | Run the `ShotCore` unit tests |
 | `make perf` | Time the `ShotCore` paths that have [performance budgets](docs/performance.md) |
 | `make perf-app` | Measure launch, capture, memory and idle CPU of the installed app against its budgets |
 | `make app` | Build and install without launching (`INSTALL_DIR=~/Applications make app` to install elsewhere) |
-| `make bundle` | Build and sign `build/Shot.app` only |
+| `make bundle` | Build and sign `build/ShotDev.app` only |
 | `make dist` | Build `build/Shot.zip`, as the release workflow does |
 | `make icon` | Regenerate `Resources/AppIcon.icns` from `scripts/make-icon.swift` |
-| `make reset-tcc` | Clear Shot's Screen Recording permission |
+| `make reset-tcc` | Clear ShotDev's Screen Recording permission |
 | `make clean` | Remove build output |
 
 **Command Line Tools only:** the CLT's default SDK (27) makes SwiftUI's `@State` a macro whose compiler plugin ships only with Xcode. The Makefile pins the CLT's 26.5 SDK when Xcode isn't selected. With Xcode, nothing is pinned.
@@ -59,7 +59,7 @@ If logic can be tested without a window, a display, or a permission, put it in `
 Shot logs to the unified log under its bundle identifier. File paths are redacted unless you've enabled private data logging.
 
 ```bash
-log stream --predicate 'subsystem == "dev.lorcan.Shot"'
+log stream --predicate 'subsystem == "dev.lorcan.Shot.dev"'   # ShotDev; a release logs under dev.lorcan.Shot
 ```
 
 The `shot://` [URL scheme](docs/usage.md#url-scheme) drives every action without a keyboard, which helps when you reproduce a bug.
