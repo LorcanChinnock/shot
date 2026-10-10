@@ -16,16 +16,14 @@ struct ImagePicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("RECENT CAPTURES")
-                .font(.system(size: 11, weight: .black))
-                .tracking(1.2)
-                .foregroundStyle(Brutal.ink.opacity(0.75))
+                .sectionCaption()
             if let recent, !recent.isEmpty {
                 LazyVGrid(columns: Array(repeating: GridItem(.fixed(Self.tile), spacing: 8), count: 3), spacing: 8) {
                     ForEach(recent) { item in
                         Button { pick([item.url]) } label: {
                             CaptureThumbnail(item: item)
                                 .frame(width: Self.tile, height: Self.tile * 0.7)
-                                .inkBorder(RoundedRectangle(cornerRadius: 6, style: .circular), width: 2)
+                                .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.chip, style: .circular), width: 2)
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(Text(item.name))

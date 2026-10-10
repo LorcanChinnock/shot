@@ -12,6 +12,20 @@ enum Brutal {
     static let radius: CGFloat = 12
     static let shadow: CGFloat = 4
 
+    /// Corner radii smaller than `radius`, by what they round.
+    enum Radius {
+        /// Timeline clips and thumbnails.
+        static let tiny: CGFloat = 4
+        /// Chips and small buttons.
+        static let chip: CGFloat = 6
+        /// Options inside a bordered group, such as segments, tiles and layer rows, which sit `groupInset` in.
+        static let inset: CGFloat = 7
+        /// Buttons and cards.
+        static let button: CGFloat = 8
+        /// Floating panels: toasts, popovers and menus.
+        static let panel: CGFloat = 10
+    }
+
     // Spacing rule: keep at least `minGap` of clear space between any two ink lines, shadows included.
     static let minGap: CGFloat = 6
     /// Content inset from the window border.
@@ -31,6 +45,10 @@ enum Brutal {
     static let label = Font.system(size: 13, weight: .semibold)
     static let caption = Font.system(size: 11.5, weight: .medium)
     static let mono = Font.system(size: 12, weight: .bold, design: .monospaced)
+    /// A toolbar button's symbol.
+    static let toolIcon = Font.system(size: 13, weight: .bold)
+    /// A section's small capitals heading; use `sectionCaption()` for its tracking and colour too.
+    static let sectionCaption = Font.system(size: 11, weight: .black)
 
     /// How far content under an ink line stops short of its outer edge: under the line, so nothing bleeds past it, and a whole
     /// point, because a fractional rounded clip leaves stray pixels at its corner on 1x displays.
@@ -98,6 +116,11 @@ extension View {
 
     func glassCard() -> some View {
         brutalSurface(Color.white.opacity(0.42), glass: true)
+    }
+
+    /// A section's small capitals heading, as the Style popover and the video inspector have.
+    func sectionCaption() -> some View {
+        font(Brutal.sectionCaption).tracking(1.2).foregroundStyle(Brutal.ink.opacity(0.75))
     }
 
     /// An ink border with the content stopping under the line, so no colour bleeds through its anti-aliased outer edge.
@@ -210,7 +233,7 @@ struct BrutalButtonStyle: ButtonStyle {
             .foregroundStyle(Brutal.ink)
             .padding(.horizontal, compact ? 10 : 14)
             .padding(.vertical, compact ? 5 : 7)
-            .brutalSurface(color, radius: 8, shadow: pressed ? 0 : 3)
+            .brutalSurface(color, radius: Brutal.Radius.button, shadow: pressed ? 0 : 3)
             .offset(x: pressed ? 3 : 0, y: pressed ? 3 : 0)
             .opacity(isEnabled ? 1 : 0.4)
             .animation(.spring(response: 0.15, dampingFraction: 0.7), value: pressed)
@@ -231,11 +254,11 @@ struct BrutalToggleStyle: ToggleStyle {
                 Color.clear
                     .frame(width: 48, height: 28)
                 Color.white
-                    .inkBorder(RoundedRectangle(cornerRadius: 4, style: .circular), width: 2)
+                    .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: 2)
                     .frame(width: 16, height: 16)
                     .padding(.horizontal, 6)
             }
-            .brutalSurface(configuration.isOn ? color : Color.white.opacity(0.7), radius: 7, shadow: 2)
+            .brutalSurface(configuration.isOn ? color : Color.white.opacity(0.7), radius: Brutal.Radius.inset, shadow: 2)
         }
         .buttonStyle(.plain)
         .accessibilityValue(Text(configuration.isOn ? "On" : "Off"))
@@ -272,8 +295,8 @@ struct BrutalSegmented<Value: Hashable>: View {
             }
         }
         .fixedSize()
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .circular).inset(by: Brutal.underInk(Brutal.border)))
-        .brutalSurface(Color.white.opacity(0.7), radius: 8, shadow: 2)
+        .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.button, style: .circular).inset(by: Brutal.underInk(Brutal.border)))
+        .brutalSurface(Color.white.opacity(0.7), radius: Brutal.Radius.button, shadow: 2)
     }
 }
 
@@ -287,7 +310,7 @@ struct BrutalChip: View {
             .foregroundStyle(Brutal.ink)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
-            .brutalSurface(color, radius: 6, shadow: 2)
+            .brutalSurface(color, radius: Brutal.Radius.chip, shadow: 2)
     }
 }
 
@@ -304,7 +327,7 @@ struct SettingsCard<Content: View>: View {
                 if let symbol {
                     Image(systemName: symbol).font(.system(size: 11, weight: .bold))
                 }
-                Text(title.uppercased()).font(.system(size: 11, weight: .black)).tracking(1.2)
+                Text(title.uppercased()).font(Brutal.sectionCaption).tracking(1.2)
             }
             .foregroundStyle(Brutal.ink.opacity(0.75))
             .padding(.bottom, 6)

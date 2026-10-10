@@ -39,7 +39,7 @@ struct ClipInspector: View {
                     }
                     Spacer(minLength: 8)
                     if let time = model.selectedKeyframe, let easing = animation.easing(at: time) {
-                        Text("EASING").font(.system(size: 11, weight: .black)).tracking(1.2).foregroundStyle(Brutal.ink.opacity(0.75))
+                        Text("EASING").sectionCaption()
                         BrutalSegmented(selection: Binding(get: { easing }, set: { model.setKeyframeEasing($0) }), options: Easing.allCases.map { ($0, $0.title) }, color: Brutal.mint)
                             .brutalTip("How the value moves from this keyframe to the next")
                     }
@@ -149,7 +149,7 @@ struct ClipInspector: View {
             .multilineTextAlignment(.trailing)
             .padding(.horizontal, 6)
             .frame(width: 56, height: 24)
-            .brutalSurface(Color.white.opacity(0.7), radius: 6, shadow: 0, border: 2)
+            .brutalSurface(Color.white.opacity(0.7), radius: Brutal.Radius.chip, shadow: 0, border: 2)
             .accessibilityLabel(Text(label))
     }
 
@@ -167,7 +167,7 @@ struct ClipInspector: View {
                     }
                 }
                 .frame(width: 26, height: 26)
-                .background(here ? Brutal.yellow : Color.clear, in: RoundedRectangle(cornerRadius: 6, style: .circular))
+                .background(here ? Brutal.yellow : Color.clear, in: RoundedRectangle(cornerRadius: Brutal.Radius.chip, style: .circular))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -176,6 +176,6 @@ struct ClipInspector: View {
     }
 
     private func caption(_ text: String) -> some View {
-        Text(text).font(.system(size: 11, weight: .black)).tracking(1.2).foregroundStyle(Brutal.ink.opacity(0.75)).fixedSize()
+        Text(text).sectionCaption().fixedSize()
     }
 }

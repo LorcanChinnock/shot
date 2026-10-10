@@ -208,7 +208,7 @@ private struct SidebarItem: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Brutal.ink)
                     .frame(width: 28, height: 28)
-                    .brutalSurface(section.color, radius: 8, shadow: 0, border: 2)
+                    .brutalSurface(section.color, radius: Brutal.Radius.button, shadow: 0, border: 2)
                 Text(section.title)
                     .font(.system(size: 13.5, weight: selected ? .heavy : .semibold))
                     .foregroundStyle(Brutal.ink)
@@ -218,9 +218,9 @@ private struct SidebarItem: View {
             .padding(.vertical, 8)
             .background {
                 if selected {
-                    Color.clear.brutalSurface(Color.white.opacity(0.6), glass: true, radius: 10, shadow: 3)
+                    Color.clear.brutalSurface(Color.white.opacity(0.6), glass: true, radius: Brutal.Radius.panel, shadow: 3)
                 } else if hovering {
-                    RoundedRectangle(cornerRadius: 10, style: .circular).fill(Brutal.ink.opacity(0.06))
+                    RoundedRectangle(cornerRadius: Brutal.Radius.panel, style: .circular).fill(Brutal.ink.opacity(0.06))
                 }
             }
             .contentShape(Rectangle())
@@ -268,7 +268,7 @@ private struct GeneralSettings: View {
                     .font(.system(size: 13, weight: .semibold))
                     .padding(.horizontal, 10)
                     .frame(width: 150, height: 30)
-                    .brutalSurface(Color.white.opacity(0.85), radius: 8, shadow: 2)
+                    .brutalSurface(Color.white.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
             }
             SettingRow(title: "Image format", subtitle: "Clipboard copies always use PNG.") {
                 BrutalSegmented(selection: $imageFormat, options: [(ImageFormat.png, "PNG"), (.jpeg, "JPEG")], color: color)
