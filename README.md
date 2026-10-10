@@ -65,7 +65,7 @@ brew update && brew install lorcanchinnock/tap/shot
 1. Open Shot from Applications. Releases aren't notarized by Apple yet, so macOS says it can't verify Shot. Click **Done**.
 2. In **System Settings › Privacy & Security**, scroll down to the message about Shot, click **Open Anyway**, then confirm. You only do this once.
 
-   <img src="docs/media/open-anyway.png" width="500" alt="Privacy & Security in System Settings, with the Open Anyway button next to the message that Shot was blocked">
+   <img src="docs/media/open-anyway.png" width="495" alt="Privacy & Security in System Settings, with the Open Anyway button next to the message that Shot was blocked">
 
 3. In Shot's permission window, click **Grant**, then **Open System Settings** in the macOS prompt, and turn on Shot. Back in Shot's window, click **Relaunch**: macOS applies the permission only after a relaunch.
 4. Shot now lives in the menu bar. Press ⌘⇧4 to take your first screenshot.
