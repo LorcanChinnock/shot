@@ -13,7 +13,7 @@ npm run preview   # build, then serve dist/ with wrangler, _redirects and _heade
 - `/docs/` renders `docs/usage.md` and `/changelog/` renders `CHANGELOG.md`, so they never drift from the repo.
 - The download button and `/download` redirect use the latest published GitHub release, read at build time (`src/lib/release.ts`). `release.yml` rebuilds the site through a deploy hook after each release.
 - The look follows the app's design system (`Sources/Shot/Design/BrutalStyle.swift`); the tokens are at the top of `src/styles/global.css`.
-- `npm run media` turns the 2× recordings in `docs/media` (`hero.mp4`, `recording.mp4`) into the looping videos and posters in `public/media/` (needs ffmpeg). `npm run icons` regenerates the favicons and the social card from `docs/icon.png`. Run them after changing those files and commit the output.
+- `npm run media` turns the 2× recordings in `docs/media` (`hero.mp4`, `capture.mp4`, `recording.mp4`) into the looping videos and posters in `public/media/` (needs ffmpeg, and `cwebp` if your ffmpeg can't write WebP). `npm run icons` regenerates the favicons and the social card from `docs/icon.png`. Run them after changing those files and commit the output.
 
 ## Deploying
 
