@@ -170,9 +170,7 @@ final class EditorModel {
     /// Saves only the value that changed, so another open editor's choices aren't overwritten with this
     /// window's older ones. Select, hand and crop aren't remembered, so the next window starts with the last drawing tool.
     private func rememberStyle(_ change: (inout EditorStyle) -> Void) {
-        var style = Preferences().editorStyle
-        change(&style)
-        Preferences.remember(style)
+        Preferences.changeEditorStyle(change)
     }
 
     var selection: Annotation? {
@@ -598,6 +596,11 @@ final class EditorModel {
         }
     }
 
+    /// Call as the colour editor opens, so its run of picks doesn't join the last one's undo step.
+    func beginColorPick() {
+        pickedKey = nil
+    }
+
     /// Sets the border colour, or the fill, to one picked from the colour panel, which reports every
     /// change as the user drags. It's one undo step, and becomes the palette's last custom colour.
     func pickCustom(_ colour: RGBA, forFill: Bool) {
@@ -883,11 +886,13 @@ final class EditorModel {
         guard let selection else {
             return false
         }
-        do {
-            try Clipboard.copy(annotation: selection)
-            Toast.show("Copied annotation")
-        } catch {
-            Toast.error("Could not copy: \(error.localizedDescription)")
+        Task {
+            do {
+                try await Clipboard.copy(annotation: selection)
+                Toast.show("Copied annotation")
+            } catch {
+                Toast.error("Could not copy: \(error.localizedDescription)")
+            }
         }
         return true
     }

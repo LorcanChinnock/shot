@@ -96,7 +96,7 @@ struct VideoEditorRootView: View {
         .padding([.horizontal, .bottom], Brutal.windowInset)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { windowHeight = $0 }
         .dropDestination(for: URL.self) { urls, _ in
-            Task { await model.importMedia(urls) }
+            model.importMedia(urls)
             return !urls.isEmpty
         }
     }

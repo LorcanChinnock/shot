@@ -33,6 +33,8 @@ protocol StyleEditing: AnyObject, Observable {
     func setDraggingStyle(_ dragging: Bool)
     /// Whether new captures get the screenshot's style; `nil` hides the switch, as the video editor has no screenshot.
     var newCaptureStyle: Binding<Bool>? { get }
+    /// Call as the colour editor opens, so its picks start a new undo step.
+    func beginColorPick()
 }
 
 extension StyleEditing {
@@ -295,7 +297,8 @@ struct StylePopover<Model: StyleEditing>: View {
                     lastCustom: model.lastBorderColor,
                     customHelp: "Custom border colour",
                     choose: { if let color = $0 { model.setBorderColor(color) } },
-                    pickCustom: { model.pickBorderColor($0) }
+                    pickCustom: { model.pickBorderColor($0) },
+                    beginPicking: model.beginColorPick
                 )
             }
         }
