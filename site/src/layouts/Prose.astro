@@ -11,7 +11,7 @@ const toc = headings.filter((h) => h.depth === 2);
 ---
 
 <Base title={title} description={description}>
-  <div class={`wrap doc ${toc.length ? 'with-toc' : ''}`}>
+  <div id="top" class={`wrap doc ${toc.length ? 'with-toc' : ''}`}>
     {toc.length > 0 && (
       <nav class="toc card solid" aria-label="On this page">
         <strong>On this page</strong>
@@ -22,6 +22,7 @@ const toc = headings.filter((h) => h.depth === 2);
       <slot />
     </article>
   </div>
+  {toc.length > 0 && <a class="to-top button small white" href="#top" hidden>↑ Back to top</a>}
 </Base>
 
 <style>
@@ -37,5 +38,34 @@ const toc = headings.filter((h) => h.depth === 2);
   @media (max-width: 999px) { .toc ul { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); } }
   .toc a { display: block; padding: 3px 8px; margin-inline: -8px; border-radius: 6px; text-decoration: none; font-weight: 600; }
   .toc a:hover { background: rgb(18 18 26 / 0.07); }
+  .toc a[aria-current] { background: var(--yellow); font-weight: 800; }
+  .to-top { position: fixed; right: 16px; bottom: 16px; z-index: 10; }
+  .to-top[hidden] { display: none; }
   article { min-width: 0; }
 </style>
+
+<script>
+  // Mark the section being read in "On this page", and offer a way back up once the title has scrolled away.
+  const links = new Map([...document.querySelectorAll<HTMLAnchorElement>('.toc a')].map((a) => [a.hash.slice(1), a]));
+  const headings = [...document.querySelectorAll<HTMLElement>('.prose h2[id]')].filter((h) => links.has(h.id));
+  const title = document.querySelector('.prose h1');
+  const toTop = document.querySelector<HTMLElement>('.to-top');
+
+  // The current section is the last one whose heading has passed the top third of the window.
+  const mark = () => {
+    const line = innerHeight * 0.34;
+    const current = headings.findLast((h) => h.getBoundingClientRect().top <= line);
+    for (const [id, a] of links) {
+      if (id === current?.id) a.setAttribute('aria-current', 'location');
+      else a.removeAttribute('aria-current');
+    }
+  };
+  // The observed area runs from far above the window down to that line, so every heading that crosses it fires,
+  // even when a single jump (End, Page Down, a dragged scrollbar) carries it past.
+  const sections = new IntersectionObserver(mark, { rootMargin: '100000px 0px -66% 0px' });
+  headings.forEach((h) => sections.observe(h));
+
+  if (title && toTop) {
+    new IntersectionObserver(([entry]) => (toTop.hidden = entry.isIntersecting || entry.boundingClientRect.top > 0)).observe(title);
+  }
+</script>
