@@ -1,6 +1,6 @@
 # Using Shot
 
-The full guide to Shot. For a quick introduction, see the [README](../README.md).
+The full guide to Shot. For a quick introduction, see the [overview](../README.md).
 
 - [Screenshots](#screenshots)
 - [Quick Access](#quick-access)

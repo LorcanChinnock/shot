@@ -35,7 +35,7 @@ const half = '(min-width: 900px) 540px, 100vw';
 
   <section>
     <div class="wrap">
-      <p class="say">Let go of the mouse and the screenshot is already copied and saved. A little card shows up in the corner, and you can drag it straight into a message.</p>
+      <h2 class="say">Let go of the mouse and the screenshot is already copied and saved. A little card shows up in the corner, and you can drag it straight into a message.</h2>
       <Window><Image src={capture} alt="Selecting an area with the magnifier, then the Quick Access card in the corner of the screen" widths={[640, 1088, 1600]} sizes={full} /></Window>
     </div>
   </section>
@@ -43,11 +43,11 @@ const half = '(min-width: 900px) 540px, 100vw';
   <section>
     <div class="wrap pair">
       <div>
-        <p class="say">Press A for an arrow, or B to blur a phone number.</p>
+        <h2 class="say">Press <kbd class="key">A</kbd> for an arrow, or <kbd class="key">B</kbd> to blur a phone number.</h2>
         <Window><Image src={editor} alt="The annotation editor with arrows, a sticky note, a blurred email address, and notes beside the screenshot" widths={[540, 1080]} sizes={half} /></Window>
       </div>
       <div>
-        <p class="say"><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">5</kbd> records instead. Your face can come too.</p>
+        <h2 class="say"><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">5</kbd> records instead. Your face can come too.</h2>
         <Window><Loop name="recording" label="Recording an area of the screen with the round camera bubble in the corner" /></Window>
       </div>
     </div>
@@ -55,7 +55,7 @@ const half = '(min-width: 900px) 540px, 100vw';
 
   <section>
     <div class="wrap">
-      <p class="say">Then cut the part where you went looking for the right tab, and save it as a GIF.</p>
+      <h2 class="say">Then cut the part where you went looking for the right tab, and save it as a GIF.</h2>
       <Window><Image src={videoEditor} alt="The video editor with trim handles, a cut, and the GIF export options" widths={[640, 1088, 1600]} sizes={full} /></Window>
     </div>
   </section>
@@ -93,10 +93,12 @@ const half = '(min-width: 900px) 540px, 100vw';
   .meta { margin: 0 0 28px; font-size: 15px; color: var(--muted); }
   .hero :global(.window) { width: 100%; }
 
-  section { padding-block: clamp(40px, 6vw, 72px); }
+  section { padding-block: clamp(28px, 4vw, 48px); }
   .wrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
   .say { font: 800 clamp(20px, 2.4vw, 26px)/1.3 var(--display); letter-spacing: -0.015em; margin: 0; max-width: 30em; text-wrap: pretty; }
-  .say .key { font-size: 0.75em; }
+  /* A tight line height keeps the caps from making a caption's line taller than plain text. */
+  .say .key { font-size: 0.75em; line-height: 1.1; }
+  .say .key + .key { margin-left: 0.2em; }
 
   .pair { display: grid; gap: 40px; }
   @media (min-width: 900px) { .pair { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
