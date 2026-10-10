@@ -162,7 +162,7 @@ Then:
 - **Export** writes a new file next to the recording, with these options, and copies it:
   - **MP4** or **GIF**
   - for a GIF, 10, 15 or 24 fps, and 480, 720 or 1080 px wide or the recording's own width (**Full**; never wider than the recording). A GIF keeps the first 60 seconds of what plays, so 120 seconds of video at 2×.
-  - for an MP4, **Mute** to leave the sound out
+  - for an MP4, **Mute** to leave the sound out. An MP4 is H.264, or HEVC when a recording above 30 fps is larger than 2560 × 1600, such as a full Retina screen, so it keeps every frame
   - 1×, 1.5× or 2× speed. An MP4 with imports, annotations or transforms exports at 1×.
 
 The estimated size of the exported file is shown before you export. **Cancel**, or Esc, stops an export under way. Closing the window with unsaved edits asks whether to save them, or to save a copy.

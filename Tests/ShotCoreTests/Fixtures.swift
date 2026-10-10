@@ -51,10 +51,10 @@ func waitUntilReady(_ input: AVAssetWriterInput, of writer: AVAssetWriter) async
     }
 }
 
-func writeSyntheticVideo(to url: URL, seconds: Int, fps: Int32, width: Int, height: Int) async throws {
+func writeSyntheticVideo(to url: URL, seconds: Int, fps: Int32, width: Int, height: Int, codec: AVVideoCodecType = .h264) async throws {
     let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
     let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
-        AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: width, AVVideoHeightKey: height,
+        AVVideoCodecKey: codec, AVVideoWidthKey: width, AVVideoHeightKey: height,
     ])
     let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [
         kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA, kCVPixelBufferWidthKey as String: width, kCVPixelBufferHeightKey as String: height,

@@ -294,10 +294,20 @@ public enum ProjectExporter {
         }
     }
 
-    /// Writes the project to `output`, replacing it, drawn at the canvas size and re-encoded.
+    /// The largest canvas H.264 export keeps above 30 fps at; past it the export halves the frame rate.
+    static let largestH264Canvas = CGSize(width: 2560, height: 1600)
+
+    /// Whether the export is HEVC rather than H.264: only when H.264 would drop frames, such as a 60 fps Retina recording.
+    static func usesHEVC(canvas: CGSize, frameRate: Int) -> Bool {
+        frameRate > 30 && canvas.width * canvas.height > largestH264Canvas.width * largestH264Canvas.height
+    }
+
+    /// Writes the project to `output`, replacing it, drawn at the canvas size and re-encoded as H.264, or HEVC when `usesHEVC`.
     public static func export(_ project: Project, to output: URL, as fileType: AVFileType = .mp4) async throws {
         let built = try await CompositionBuilder.build(project)
-        guard let export = AVAssetExportSession(asset: built.asset, presetName: AVAssetExportPresetHighestQuality) else {
+        let frameRate = Int((1 / built.videoComposition.frameDuration.seconds).rounded())
+        let preset = usesHEVC(canvas: project.canvasSize, frameRate: frameRate) ? AVAssetExportPresetHEVCHighestQuality : AVAssetExportPresetHighestQuality
+        guard let export = AVAssetExportSession(asset: built.asset, presetName: preset) else {
             throw ExportError.failed
         }
         guard export.supportedFileTypes.contains(fileType) else {
