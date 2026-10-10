@@ -119,7 +119,7 @@ in a separate short list marked as such.
 
 ## 6. Fixing, if asked
 
-Fix the smallest thing that removes the cause, put pure logic in `ShotCore` with a unit test (`make test`), rebuild, and
+Fix the smallest thing that removes the cause, put pure logic in `ShotModel` (or `ShotCore` if it needs an Apple framework) with a unit test (`make test`), rebuild, and
 **re-run the exact repro** from the finding, with before and after images or numbers. Re-run the alignment and size
 passes on the states you touched, because layout fixes shift their neighbours. Finish by running `uxqa_ax` again and
 confirming the problem count only went down.

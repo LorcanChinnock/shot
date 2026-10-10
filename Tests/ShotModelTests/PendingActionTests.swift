@@ -1,5 +1,5 @@
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 @MainActor
 private final class Log {

@@ -1,6 +1,9 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
+#endif
+import Foundation
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 @Test func bubbleStartsInsideRegionBottomLeft() {
     let region = CGRect(x: -1920, y: -180, width: 1920, height: 1080)

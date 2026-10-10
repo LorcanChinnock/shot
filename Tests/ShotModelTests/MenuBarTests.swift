@@ -1,6 +1,9 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
+#endif
+import Foundation
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 private let builtIn = CGRect(x: -1512, y: 0, width: 1512, height: 982)
 

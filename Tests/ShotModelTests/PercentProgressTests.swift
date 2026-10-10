@@ -1,6 +1,6 @@
 import Synchronization
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 @Test func percentProgressPassesOnEachWholePercentOnce() {
     let reported = Mutex<[Int]>([])

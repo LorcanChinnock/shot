@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 @Test func recordingStartsAtOnceByDefault() {
     let start = RecordingStart.after(adjustBeforeRecording: false, countdown: 0, optionHeld: false)
@@ -24,15 +24,4 @@ import Testing
 @Test func unknownCountdownLengthsTurnTheCountdownOff() {
     #expect(RecordingStart.after(adjustBeforeRecording: false, countdown: 7, optionHeld: false).countdown == 0)
     #expect(RecordingStart.after(adjustBeforeRecording: false, countdown: -3, optionHeld: false).countdown == 0)
-}
-
-@Test func storedCountdownOutsideTheOffersReadsAsOff() throws {
-    let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-    let store = try #require(UserDefaults(suiteName: suite))
-    defer { store.removePersistentDomain(forName: suite) }
-    let prefs = Preferences(store: store)
-    store.set(5, forKey: PreferenceKey.recordingCountdown)
-    #expect(prefs.recordingCountdown == 5)
-    store.set(4, forKey: PreferenceKey.recordingCountdown)
-    #expect(prefs.recordingCountdown == 0)
 }

@@ -1,5 +1,5 @@
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 @Test func hotkeyEncodeDecodeRoundTrip() {
     for combo in ShotAction.allCases.compactMap(\.defaultCombo) {

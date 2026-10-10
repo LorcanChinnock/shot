@@ -1,5 +1,5 @@
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 struct ThumbnailCacheTests {
     private let timeline = TrimTimeline(duration: 10, minX: 0, width: 0)

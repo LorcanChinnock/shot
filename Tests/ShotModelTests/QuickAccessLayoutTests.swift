@@ -1,6 +1,9 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
+#endif
+import Foundation
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 @Test func quickAccessCardsStackUpFromTheBottomWithTheLastLowest() {
     let layout = QuickAccessLayout(cardHeights: [180, 135])

@@ -1,4 +1,7 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
+#endif
+import Foundation
 
 /// The strip along the top of a screen. All rects are in AppKit space.
 public enum MenuBar {

@@ -1,5 +1,5 @@
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 @Test func missingEntriesCountAsEnabled() {
     #expect(SystemScreenshotShortcut.anyEnabled(in: [:]))

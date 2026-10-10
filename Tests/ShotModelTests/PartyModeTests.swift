@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 @Test func partyHueTurnsOnceEachCycle() {
     let period = PartyMode.cycleSeconds

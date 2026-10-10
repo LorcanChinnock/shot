@@ -13,13 +13,17 @@ INSTALL_DIR ?= /Applications
 # Extra `swift test` flags, e.g. ARGS=--skip-build in CI.
 ARGS ?=
 
-.PHONY: build test perf perf-app lint bundle app run dist reset-tcc icon clean
+.PHONY: build test test-linux perf perf-app lint bundle app run dist reset-tcc icon clean
 
 build:
 	swift build
 
 test:
 	swift test $(TEST_FLAGS) $(ARGS) --skip PerfTests
+
+# ShotModel's tests on Linux, as CI's linux job runs them. Needs Docker; keep the image in step with ci.yml.
+test-linux:
+	docker run --rm -v "$(CURDIR)":/src -w /src swift:6.3 swift test --scratch-path .build/linux
 
 # Budgets and baselines: docs/performance.md.
 perf:

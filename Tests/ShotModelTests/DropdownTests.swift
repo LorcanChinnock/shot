@@ -1,6 +1,9 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
+#endif
+import Foundation
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 private let pickable = [true, false, true, true, false]
 
