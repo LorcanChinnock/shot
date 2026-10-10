@@ -37,9 +37,7 @@ struct LayersPanel: View {
     var body: some View {
         VStack(spacing: 0) {
             Text("LAYERS")
-                .font(.system(size: 11, weight: .black))
-                .tracking(1.2)
-                .foregroundStyle(Brutal.ink.opacity(0.75))
+                .sectionCaption()
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
@@ -344,9 +342,9 @@ private struct LayerRowView<Grip: Gesture>: View {
     @ViewBuilder
     private var background: some View {
         if isLifted {
-            Color.clear.brutalSurface(isSelected ? Brutal.yellow : Color.white, radius: 7, shadow: 2, border: 2)
+            Color.clear.brutalSurface(isSelected ? Brutal.yellow : Color.white, radius: Brutal.Radius.inset, shadow: 2, border: 2)
         } else if isSelected {
-            RoundedRectangle(cornerRadius: 7, style: .circular).fill(Brutal.yellow.opacity(isFocused ? 1 : 0.5))
+            RoundedRectangle(cornerRadius: Brutal.Radius.inset, style: .circular).fill(Brutal.yellow.opacity(isFocused ? 1 : 0.5))
         }
     }
 }

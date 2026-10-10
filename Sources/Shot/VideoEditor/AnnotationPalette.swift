@@ -18,13 +18,13 @@ struct AnnotationPalette: View {
                             model.annotationStyle.tool = tool
                             model.setAnnotationTool(tool)
                         } label: {
-                            Image(systemName: tool.symbol).font(.system(size: 13, weight: .bold))
+                            Image(systemName: tool.symbol).font(Brutal.toolIcon)
                         }
                     }
                     Tile(selected: false, color: Brutal.yellow, help: "Add an image") {
                         pickImage()
                     } label: {
-                        Image(systemName: "photo").font(.system(size: 13, weight: .bold))
+                        Image(systemName: "photo").font(Brutal.toolIcon)
                     }
                 }
                 Spacer(minLength: 0)

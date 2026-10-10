@@ -71,9 +71,7 @@ struct StylePopover<Model: StyleEditing>: View {
                 let style = model.targetStyle
                 let rows = presetRows(kind, style)
                 Text(model.targetStyleTitle)
-                    .font(.system(size: 11, weight: .black))
-                    .tracking(1.2)
-                    .foregroundStyle(Brutal.ink.opacity(0.75))
+                    .sectionCaption()
                 if model.targetHasWindowShadow {
                     // Its image includes the shadow's see-through margin, which a border or corners would go round.
                     Text("Uses macOS window shadow")
@@ -354,14 +352,14 @@ private struct StyleTile: View {
             .frame(width: 56, height: 52)
             .background {
                 if selected {
-                    PartyColor(Brutal.sky) { Color.clear.brutalSurface($0, radius: 7, shadow: 2) }
+                    PartyColor(Brutal.sky) { Color.clear.brutalSurface($0, radius: Brutal.Radius.inset, shadow: 2) }
                 } else if hovering || highlighted {
-                    RoundedRectangle(cornerRadius: 7, style: .circular).fill(Brutal.ink.opacity(0.08))
+                    RoundedRectangle(cornerRadius: Brutal.Radius.inset, style: .circular).fill(Brutal.ink.opacity(0.08))
                 }
             }
             .overlay {
                 if highlighted, !selected {
-                    Color.clear.inkBorder(RoundedRectangle(cornerRadius: 7, style: .circular), width: 1)
+                    Color.clear.inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.inset, style: .circular), width: 1)
                 }
             }
             .contentShape(Rectangle())
@@ -404,7 +402,7 @@ private struct Swatch: View {
     var border: Border.Kind?
 
     var body: some View {
-        let card = RoundedRectangle(cornerRadius: 4, style: .circular)
+        let card = RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular)
         if border == .outline {
             Circle().fill(Brutal.sky)
                 .padding(3)

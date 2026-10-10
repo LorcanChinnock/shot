@@ -177,9 +177,7 @@ struct ExportOptionsBar: View {
 
     private func caption(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 11, weight: .black))
-            .tracking(1.2)
-            .foregroundStyle(Brutal.ink.opacity(0.75))
+            .sectionCaption()
             .fixedSize()
             .padding(.trailing, -6)
     }
@@ -345,7 +343,7 @@ struct TrimTimelineView: View {
         }
         .frame(width: width, height: Self.height, alignment: .leading)
         .background(Color.black)
-        .clipShape(RoundedRectangle(cornerRadius: 4, style: .circular))
+        .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
     }
 
     private func handle(symbol: String) -> some View {

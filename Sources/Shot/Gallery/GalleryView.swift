@@ -65,7 +65,7 @@ struct GalleryRootView: View {
         }
         .padding(.horizontal, 10)
         .frame(width: 170, height: 30)
-        .brutalSurface(Color.white.opacity(0.85), radius: 8, shadow: 2)
+        .brutalSurface(Color.white.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
         .brutalTip("Search by file name (⌘F)")
     }
 
@@ -82,7 +82,7 @@ struct GalleryRootView: View {
             .foregroundStyle(Brutal.ink)
             .padding(.horizontal, 10)
             .frame(height: 30)
-            .brutalSurface(Color.white.opacity(0.85), radius: 8, shadow: 2)
+            .brutalSurface(Color.white.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
         }
         .buttonStyle(.plain)
         .fixedSize()
@@ -376,7 +376,7 @@ private struct SelectionCheckbox: View {
                 .foregroundStyle(Brutal.ink)
                 .opacity(checked ? 1 : 0)
                 .frame(width: 22, height: 22)
-                .brutalSurface(checked ? Brutal.violet : Color.white, radius: 6, shadow: 2)
+                .brutalSurface(checked ? Brutal.violet : Color.white, radius: Brutal.Radius.chip, shadow: 2)
         }
         .buttonStyle(.plain)
         // Focus stays on the grid, so the keyboard shortcuts keep working after a click.

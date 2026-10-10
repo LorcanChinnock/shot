@@ -132,7 +132,7 @@ private struct CornerButtonStyle: ButtonStyle {
         configuration.label
             .foregroundStyle(Brutal.ink)
             .frame(width: 24, height: 24)
-            .brutalSurface(Color.white, radius: 6, shadow: pressed ? 0 : 2)
+            .brutalSurface(Color.white, radius: Brutal.Radius.chip, shadow: pressed ? 0 : 2)
             .offset(x: pressed ? 2 : 0, y: pressed ? 2 : 0)
     }
 }

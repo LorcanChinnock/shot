@@ -143,7 +143,7 @@ private struct TipBubble: View {
             .foregroundStyle(Brutal.ink)
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
-            .brutalSurface(color, radius: 8, shadow: 2)
+            .brutalSurface(color, radius: Brutal.Radius.button, shadow: 2)
         }
         .fixedSize(horizontal: false, vertical: true)
         .frame(width: Self.maxWidth, height: 0, alignment: Alignment(horizontal: leading ? .leading : .trailing, vertical: below ? .top : .bottom))

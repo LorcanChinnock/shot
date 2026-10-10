@@ -146,7 +146,7 @@ private struct SaturationBrightnessField: View {
                     .inkBorder(Circle(), width: 1)
                     .position(x: saturation * size.width, y: (1 - brightness) * size.height)
             }
-            .inkBorder(RoundedRectangle(cornerRadius: 6, style: .circular), width: 2)
+            .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.chip, style: .circular), width: 2)
             .contentShape(Rectangle())
             .gesture(DragGesture(minimumDistance: 0).onChanged { drag in
                 saturation = min(max(drag.location.x / size.width, 0), 1)
@@ -250,7 +250,7 @@ struct ToolGroup<Content: View>: View {
             content
         }
         .padding(Brutal.groupInset)
-        .brutalSurface(Color.white.opacity(0.5), glass: true, radius: 10, shadow: 3)
+        .brutalSurface(Color.white.opacity(0.5), glass: true, radius: Brutal.Radius.panel, shadow: 3)
     }
 }
 
@@ -273,9 +273,9 @@ struct Tile<Label: View>: View {
                 .frame(width: 30, height: 30)
                 .background {
                     if selected {
-                        PartyColor(color) { Color.clear.brutalSurface($0, radius: 7, shadow: 2) }
+                        PartyColor(color) { Color.clear.brutalSurface($0, radius: Brutal.Radius.inset, shadow: 2) }
                     } else if hovering {
-                        RoundedRectangle(cornerRadius: 7, style: .circular).fill(Brutal.ink.opacity(0.08))
+                        RoundedRectangle(cornerRadius: Brutal.Radius.inset, style: .circular).fill(Brutal.ink.opacity(0.08))
                     }
                 }
                 .contentShape(Rectangle())
