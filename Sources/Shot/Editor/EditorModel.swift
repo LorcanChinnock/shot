@@ -137,14 +137,18 @@ final class EditorModel {
     private var isDraggingStyle = false
 
     /// `newCaptureStyle` is put on the screenshot as where the document starts, so it's no unsaved change. `windowShadow`
-    /// says the image is a window captured with the macOS shadow.
+    /// says the image is a window captured with the macOS shadow. `layers` are the live annotations and canvas of a version
+    /// saved from this file, which the document also starts with.
     init(
         fileURL: URL, image: CGImage, scale: CGFloat, windowShadow: Bool = false, style: EditorStyle = Preferences().editorStyle,
-        newCaptureStyle: CopiedStyle? = nil
+        newCaptureStyle: CopiedStyle? = nil, layers: (annotations: [Annotation], canvas: CGRect)? = nil
     ) {
         self.fileURL = fileURL
         self.scale = scale
-        var document = EditorDocument(base: image, background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension)))
+        var document = EditorDocument(
+            base: image, annotations: layers?.annotations ?? [], canvasRect: layers?.canvas,
+            background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension))
+        )
         document.hasWindowShadow = windowShadow
         self.document = document
         savedSnapshot = document.snapshot
@@ -929,8 +933,8 @@ final class EditorModel {
     }
 
     /// What a saved version records for agents while the Agents setting is on: the marks, in the saved file's pixels,
-    /// the file it came from, and that file's source, so the version still says which app and window it showed. The size
-    /// is filled in once rendered.
+    /// the file they're drawn on, which may itself be a version, and that file's source, so the version still says which app and window it showed. It's
+    /// editable when reopening the original with the marks gives this document back. The size is filled in once rendered.
     private func savedRecord() -> CaptureRecord? {
         guard Preferences().agentHandoff else {
             return nil
@@ -938,9 +942,11 @@ final class EditorModel {
         let canvas = document.canvasRect
         // The file is the canvas at 1:1, so the marks need no scaling beyond the canvas offset.
         return CaptureRecord(
-            original: FileNaming.originalName(of: fileURL), kind: "image", created: Date(), size: CaptureRecord.Size(width: 0, height: 0), scale: scale,
+            original: fileURL.lastPathComponent, kind: "image", created: Date(), size: CaptureRecord.Size(width: 0, height: 0), scale: scale,
             source: ImageCodec.record(ofFileAt: fileURL)?.source,
             canvas: [canvas.minX, canvas.minY, canvas.width, canvas.height].map { (Double($0) * 10).rounded() / 10 },
+            editable: CaptureMark.rebuildExactly(document.annotations, canvas: canvas) && document.captureStyle.isEmpty && document.captureCornerRadius == 0
+                && document.background == EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension)),
             annotations: CaptureMark.mapping(document.annotations, canvas: canvas)
         )
     }

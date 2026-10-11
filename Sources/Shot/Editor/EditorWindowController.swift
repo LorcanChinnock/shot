@@ -35,24 +35,40 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
     private var discarding = false
 
     /// `newCaptureStyle` styles a new capture's screenshot as the editor opens, as Use this style for new captures asks.
+    /// A version saved with marks Shot can rebuild opens as its original with those marks live, so they can be changed.
     static func open(_ url: URL, newCaptureStyle: CopiedStyle? = nil) {
-        if let existing = open.first(where: { $0.model.fileURL == url }) {
+        let saved = editableVersion(url)
+        let file = saved?.original ?? url
+        if let existing = open.first(where: { $0.model.fileURL == file }) {
             existing.show()
             return
         }
-        guard let image = ImageCodec.image(at: url) else {
+        guard let image = saved?.image ?? ImageCodec.image(at: url) else {
             let reason = FileManager.default.fileExists(atPath: url.path) ? "it isn't an image Shot can read" : "it doesn't exist"
             Toast.error("Cannot open \(url.lastPathComponent): \(reason)")
             return
         }
         let model = EditorModel(
-            fileURL: url, image: image, scale: ImageCodec.scale(ofFileAt: url), windowShadow: ImageCodec.hasWindowShadow(ofFileAt: url),
-            newCaptureStyle: newCaptureStyle
+            fileURL: file, image: image, scale: ImageCodec.scale(ofFileAt: file), windowShadow: ImageCodec.hasWindowShadow(ofFileAt: file),
+            newCaptureStyle: saved == nil ? newCaptureStyle : nil, layers: saved?.layers
         )
         let controller = EditorWindowController(model: model)
         open.append(controller)
         controller.show()
         log.notice("Editor opened: \(url.path)")
+    }
+
+    /// The original beside `url` and the live layers to open it with, when `url` is a version whose record can rebuild
+    /// them and the original is still there.
+    private static func editableVersion(_ url: URL) -> (original: URL, image: CGImage, layers: (annotations: [Annotation], canvas: CGRect))? {
+        guard let record = ImageCodec.record(ofFileAt: url), let layers = record.editableLayers, let name = record.original else {
+            return nil
+        }
+        let original = url.deletingLastPathComponent().appendingPathComponent(name)
+        guard original != url, let image = ImageCodec.image(at: original) else {
+            return nil
+        }
+        return (original, image, layers)
     }
 
     private init(model: EditorModel) {

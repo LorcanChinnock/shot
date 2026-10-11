@@ -64,10 +64,13 @@ public struct CaptureRecord: Codable, Equatable, Sendable {
     /// The part of `original` this version shows, as [x, y, width, height] in the original's pixels: a crop, or past its
     /// edges for padding. The marks are offset from its origin.
     public var canvas: [Double]?
+    /// True when the marks rebuild every layer of the version exactly, so Shot reopens it as `original` with them live
+    /// rather than flattened.
+    public var editable: Bool?
     public var coordinateSpace: String
     public var annotations: [CaptureMark]
 
-    public init(original: String? = nil, kind: String, created: Date, size: Size, scale: Double, source: Source? = nil, canvas: [Double]? = nil, annotations: [CaptureMark] = []) {
+    public init(original: String? = nil, kind: String, created: Date, size: Size, scale: Double, source: Source? = nil, canvas: [Double]? = nil, editable: Bool? = nil, annotations: [CaptureMark] = []) {
         schema = Self.currentSchema
         self.original = original
         self.kind = kind
@@ -76,6 +79,7 @@ public struct CaptureRecord: Codable, Equatable, Sendable {
         self.scale = scale
         self.source = source
         self.canvas = canvas
+        self.editable = editable
         coordinateSpace = Self.coordinateSpaceDescription
         self.annotations = annotations
     }

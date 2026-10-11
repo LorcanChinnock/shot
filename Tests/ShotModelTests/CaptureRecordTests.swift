@@ -42,6 +42,7 @@ private let record = CaptureRecord(
     #expect(json["source"] == nil)
     #expect(json["original"] == nil)
     #expect(json["canvas"] == nil)
+    #expect(json["editable"] == nil)
     #expect((json["annotations"] as? [Any])?.isEmpty == true)
 }
 
