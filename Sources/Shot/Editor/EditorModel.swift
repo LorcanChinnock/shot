@@ -767,8 +767,12 @@ final class EditorModel {
     private(set) var lastBackgroundColor: RGBA?
 
     /// Sets the background to one picked from the colour editor, which reports every change as the user drags. Each
-    /// opening of the editor is one undo step.
+    /// opening of the editor is one undo step. A JPEG's is opaque, since JPEG has no alpha to keep it see-through.
     func pickBackground(_ color: RGBA) {
+        var color = color
+        if isJPEG {
+            color.a = 1
+        }
         lastBackgroundColor = color
         edit(coalescing: "background") { $0.background = color }
     }
