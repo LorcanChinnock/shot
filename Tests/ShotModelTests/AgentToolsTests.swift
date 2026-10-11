@@ -37,10 +37,10 @@ private let captures = tools(in: folder, [
     ("Recording C.mp4", 5, true),
 ])
 
-@Test func thereAreSixToolsEachWithAnObjectSchema() {
-    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "annotate", "make_gif", "trim_video"])
+@Test func thereAreSevenToolsEachWithAnObjectSchema() {
+    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "annotate", "make_gif", "trim_video"])
     let required = AgentTools.definitions.map { $0.inputSchema["required"] }
-    #expect(required == [nil, nil, nil, .array([.string("annotations")]), nil, .array([.string("start"), .string("end")])])
+    #expect(required == [nil, nil, nil, nil, .array([.string("annotations")]), nil, .array([.string("start"), .string("end")])])
     for tool in AgentTools.definitions {
         #expect(tool.inputSchema["type"] == .string("object"))
         #expect(!tool.description.isEmpty)
@@ -227,4 +227,20 @@ private final class Ran: @unchecked Sendable {
     let result = await making(Ran(), fail: .data("rect 1 is off the image")).call("trim_video", .object(["start": .number(0), "end": .number(1)]))
     #expect(result.isError)
     #expect(texts(result) == ["rect 1 is off the image"])
+}
+
+@Test func getFramesReadsTheNewestRecordingAndClampsTheCount() async {
+    let asked = Ran()
+    var tools = captures
+    tools.frames = { entry, count throws(ShotCommandError) in
+        asked.commands.append(.frames(ShotCommand.FramesOptions(input: entry.url.path, count: count)))
+        return [.text("t=0.0s of 1.0s"), .image(data: "FRAME", mimeType: "image/jpeg")]
+    }
+    let result = await tools.call("get_frames", .object(["count": .number(50)]))
+    #expect(result.isError == false)
+    #expect(asked.commands == [.frames(ShotCommand.FramesOptions(input: "/shots/Recording C.mp4", count: 12))])
+    #expect(texts(result) == ["Recording C.mp4, at /shots/Recording C.mp4:", "t=0.0s of 1.0s"])
+    let screenshot = await tools.call("get_frames", .object(["name": .string("Shot B")]))
+    #expect(screenshot.isError)
+    #expect(asked.commands.count == 1)
 }

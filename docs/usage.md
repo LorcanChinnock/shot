@@ -243,13 +243,14 @@ Shot also comes with a small [MCP](https://modelcontextprotocol.io) server, so y
   args = ["mcp"]
   ```
 
-It has six tools. Three read your captures, and three make a new file from one. Their arguments are optional unless the table says otherwise, and a slightly wrong one is read as best it can be rather than refused.
+It has seven tools. Four read your captures, and three make a new file from one. Their arguments are optional unless the table says otherwise, and a slightly wrong one is read as best it can be rather than refused.
 
 | Tool | Arguments | Returns |
 |---|---|---|
 | `latest_capture` | `kind`: `image` (the default), `video` or `any` | The capture you just took: a preview image, its path, when it was taken, and what Shot recorded in it, as a few plain lines: the app and window, your notes, which areas are redacted, and each mark with where it is. A screenshot you saved again from the editor stands in for the original, since that version has your markup. A recording gives a frame from it, how long it runs, and whether it has sound. |
 | `list_captures` | `limit`: 1 to 50, 10 by default; `since`: a date such as `2026-10-10`, or a span back from now such as `10m`, `2h` or `3d` | Recent captures, newest first: name, path, kind and when. No images. |
 | `get_capture` | `path`, or `name`: a file name or a few words from it, so `shot 14.03` finds `Shot 2026-10-10 at 14.03.12.png` | The same as `latest_capture`, for that capture. If none matches, it names the closest ones. |
+| `get_frames` | `path` or `name`, else the newest recording; `count`: 1 to 12, 8 by default | Still frames of the recording, since a model can't watch video: the first and last, and the frame after each change on screen once it settles, each with its time. Nothing is written. |
 | `annotate` | `annotations` (required): marks in the [record's format](#using-shot-with-ai-agents); `path` or `name`, else the newest screenshot | A copy with the marks drawn on, saved as the screenshot's next version, and a preview of it. Open it in Shot and the marks are still live. |
 | `make_gif` | `path` or `name`, else the newest recording; `start`, `end` in seconds; `fps`, 1 to 30, 12 by default; `width`, 720 by default, or 0 for the recording's own | A GIF of the recording, or part of it, saved beside it. GIFs stop at 60 seconds. |
 | `trim_video` | `start` and `end` in seconds (required); `path` or `name`, else the newest recording | The part between the two times, saved beside the recording, without re-encoding where it can. |
@@ -260,7 +261,7 @@ The server reads only the capture folder: your save folder (`~/Pictures/Shot` by
 
 ### The `shot` command line
 
-The same `shot` command does the media work without Shot open and without any permission, so an agent with a shell, or a script, can turn a recording into a GIF for a pull request, or blur something before it shares a screenshot. After a Homebrew install it's on your PATH as `shot`; otherwise run `/Applications/Shot.app/Contents/MacOS/shot-cli`.
+The same `shot` command does the media work without Shot open and without any permission, so an agent with a shell, or a script, can see what happened in a recording, turn it into a GIF for a pull request, or blur something before it shares a screenshot. After a Homebrew install it's on your PATH as `shot`; otherwise run `/Applications/Shot.app/Contents/MacOS/shot-cli`.
 
 | Command | Does |
 |---|---|
@@ -268,11 +269,12 @@ The same `shot` command does the media work without Shot open and without any pe
 | `shot gif <video> [-o out.gif] [--fps 12] [--width 720] [--start 2.5] [--end 9]` | A GIF of the video, or part of it. `--width 0` keeps the video's width. GIFs stop at 60 seconds. |
 | `shot trim <video> --start 2.5 --end 9 [-o out.mov]` | The part between two times, as `.mov` or `.mp4`, without re-encoding where it can |
 | `shot redact <image> --rect x,y,w,h [--rect …] [--style blur\|pixelate] [-o out.png]` | Hides each rectangle, given in the image's pixels. Pixelate is the default. |
+| `shot frames <video> [--count 8 \| --every 2] [--width 1568] [-o folder]` | Still frames of the video in a new folder, `name frames`, as JPEGs named by their time: by default the first and last and the frame after each change on screen, or with `--every`, one every so many seconds (60 at most) |
 | `shot annotate <image> --json marks.json [-o out.png]` | Draws marks, in the [record's format](#using-shot-with-ai-agents), as an array or inside an `annotations` object. `--json -` reads them from standard input. |
 
 Times are seconds, such as `2.5`, or minutes and seconds, such as `1:02.5`. Without `-o`, the result goes beside the input as its next version, such as `name (2).png`, or `name.gif` for a GIF. Nothing is ever overwritten: an `-o` that exists is an error, and a name another program takes while `shot` works moves on to the next one. A redacted or annotated image records its marks inside it, so opening it in Shot keeps them live.
 
-Each command prints one JSON object on standard output, with at least the new file's `path`, its pixel `size` and its `bytes`; `gif` adds `frames` and `truncated`, and `trim` adds `duration`. Errors go to standard error, as `shot gif: …`, with an exit code for each kind:
+Each command prints one JSON object on standard output, with at least the new file's `path`, its pixel `size` and its `bytes`; `gif` adds `frames` and `truncated`, and `trim` adds `duration`. `frames` prints the folder's `path` and a `frames` list with each one's `path`, `time`, `size` and `bytes`. Errors go to standard error, as `shot gif: …`, with an exit code for each kind:
 
 | Exit code | Meaning |
 |---|---|
@@ -410,7 +412,7 @@ Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a scr
 | `shot://gallery` | Open the gallery |
 | `shot://settings?section=<name>` | Open Settings at `gallery`, `general`, `capture`, `quickAccess`, `recording`, `agents`, `shortcuts`, or `about` |
 
-For AI agents, `shot mcp` (`Shot.app/Contents/MacOS/shot-cli mcp`, or just `shot mcp` after a Homebrew install) is an MCP server for your captures; see [The MCP server](#the-mcp-server). The same command also makes GIFs, trims, redacts and annotates without the app; see [The `shot` command line](#the-shot-command-line).
+For AI agents, `shot mcp` (`Shot.app/Contents/MacOS/shot-cli mcp`, or just `shot mcp` after a Homebrew install) is an MCP server for your captures; see [The MCP server](#the-mcp-server). The same command also makes GIFs, trims, redacts, annotates and pulls key frames without the app; see [The `shot` command line](#the-shot-command-line).
 
 `path` can start with `~`. URL-encode spaces and other special characters, for example `open "shot://annotate?path=~/Desktop/My%20Shot.png"`. The older `shot://record?full=1` still works and does the same as `shot://record-fullscreen`. An unknown action, or `annotate` or `edit-video` without a `path`, shows an error instead.
 

@@ -23,6 +23,9 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(try parse("trim a.mov --start 1 --end 2") == .trim(ShotCommand.TrimOptions(input: "a.mov", start: 1, end: 2)))
     #expect(try parse("redact a.png --rect 1,2,3,4") == .redact(ShotCommand.RedactOptions(input: "a.png", rects: [[1, 2, 3, 4]])))
     #expect(try parse("annotate a.png --json m.json") == .annotate(ShotCommand.AnnotateOptions(input: "a.png", marks: .file("m.json"))))
+    #expect(try parse("frames a.mov") == .frames(ShotCommand.FramesOptions(input: "a.mov")))
+    #expect(try parse("frames a.mov --every 0:30 --width 800 -o out") == .frames(ShotCommand.FramesOptions(input: "a.mov", output: "out", every: 30, width: 800)))
+    #expect(try parse("frames a.mov --count 3") == .frames(ShotCommand.FramesOptions(input: "a.mov", count: 3)))
     #expect(try parse("mcp") == .mcp)
     #expect(try parse("--version") == .version)
     #expect(try parse("-v") == .version)
@@ -67,6 +70,9 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     ("redact a.png --rect 1,2,3,4 --style smudge", "redact", "--style smudge must be blur or pixelate"),
     ("annotate a.png", "annotate", "needs --json with a file of marks, or - to read them from standard input"),
     ("mcp now", "mcp", "mcp takes no arguments"),
+    ("frames a.mov --count 13", "frames", "--count 13 must be from 1 to 12"),
+    ("frames a.mov --count 2 --every 1", "frames", "use --count or --every, not both"),
+    ("frames a.mov --every 0", "frames", "--every 0 must be a time above 0, such as 2 or 0:30"),
 ] as [(String, String?, String)])
 func aMistakeIsAUsageErrorThatSaysWhat(_ line: String, _ command: String?, _ message: String) throws {
     let error = try #require(usage(line))

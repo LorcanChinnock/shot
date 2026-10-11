@@ -250,3 +250,82 @@ extension MediaTests {
         #expect(Set(try FileManager.default.contentsOfDirectory(atPath: folder.path)) == ["rec.mp4", "shot.png"])
     }
 }
+
+/// A video of flat gray scenes, one `levels` value a second, so each second starts a new scene.
+private func writeScenes(to url: URL, levels: [UInt8], fps: Int32 = 10) async throws {
+    let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
+    let input = AVAssetWriterInput(mediaType: .video, outputSettings: [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: 320, AVVideoHeightKey: 180])
+    let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [
+        kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA, kCVPixelBufferWidthKey as String: 320, kCVPixelBufferHeightKey as String: 180,
+    ])
+    writer.add(input)
+    writer.startWriting()
+    writer.startSession(atSourceTime: .zero)
+    for frame in 0 ..< Int(fps) * levels.count {
+        try await waitUntilReady(input, of: writer)
+        var buffer: CVPixelBuffer?
+        CVPixelBufferPoolCreatePixelBuffer(nil, adaptor.pixelBufferPool!, &buffer)
+        let pixels = try #require(buffer)
+        CVPixelBufferLockBaseAddress(pixels, [])
+        memset(CVPixelBufferGetBaseAddress(pixels), Int32(levels[frame / Int(fps)]), CVPixelBufferGetDataSize(pixels))
+        CVPixelBufferUnlockBaseAddress(pixels, [])
+        adaptor.append(pixels, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: fps))
+    }
+    input.markAsFinished()
+    await writer.finishWriting()
+    #expect(writer.status == .completed)
+}
+
+extension MediaTests {
+    @Test func framesFindEachSceneAndWriteThemToANewFolder() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let video = folder.appendingPathComponent("rec.mp4")
+        try await writeScenes(to: video, levels: [30, 30, 140, 140, 230, 230])
+
+        let times = try await KeyFrameExtractor.changeTimes(in: video, duration: 6, count: 4)
+        #expect(times.count == 4)
+        // The first frame, one just after each change at 2 s and 4 s, and the last.
+        #expect(times[0] < 0.3)
+        #expect((2 ... 2.6).contains(times[1]))
+        #expect((4 ... 4.6).contains(times[2]))
+        #expect(times[3] > 5.5)
+
+        let result = try await ShotCommands.run(.frames(.init(input: video.path, count: 4, width: 160)))
+        let written = try path(result)
+        #expect(written.lastPathComponent == "rec frames")
+        let frames = try #require(result["frames"].flatMap { if case let .array(frames) = $0 { frames } else { nil } })
+        #expect(frames.count == 4)
+        #expect(frames.first?["size"] == .object(["width": .number(160), "height": .number(90)]))
+        let names = try FileManager.default.contentsOfDirectory(atPath: written.path).sorted()
+        #expect(names.count == 4 && names[0].hasPrefix("01 0.") && names.allSatisfy { $0.hasSuffix("s.jpg") })
+        // Each frame shows its scene's gray.
+        var grays: [Int] = []
+        for frame in frames {
+            let file = URL(fileURLWithPath: try #require(frame["path"]?.string))
+            let image = try #require(ImageCodec.image(at: file))
+            grays.append(try grayLevel(of: image))
+        }
+        // Dark, middle, light, light; an encode shifts the levels a little, so only their order is exact.
+        #expect(grays.count == 4 && grays[0] < 70 && (100 ... 190).contains(grays[1]) && grays[2] > 200 && abs(grays[2] - grays[3]) < 10)
+
+        let again = try await ShotCommands.run(.frames(.init(input: video.path, every: 2)))
+        #expect(try path(again).lastPathComponent == "rec frames (2)")
+        #expect(again["frames"].flatMap { if case let .array(frames) = $0 { frames.count } else { nil } } == 3)
+        #expect(await failure(.frames(.init(input: video.path, output: written.path)))?.exitCode == 73)
+        #expect(await failure(.frames(.init(input: video.path, every: 0.05)))?.exitCode == 64)
+    }
+
+    @Test func getFramesReturnsTheirTimesAndImages() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let video = folder.appendingPathComponent("Recording.mp4")
+        try await writeScenes(to: video, levels: [30, 230])
+        let result = await AgentTools.live(folder: folder).call("get_frames", .object(["count": .number(2)]))
+        #expect(result.isError == false)
+        let images = result.content.filter { if case .image = $0 { true } else { false } }
+        #expect(images.count == 2)
+        #expect(result.content.compactMap { if case let .text(text) = $0 { text } else { nil } }.dropFirst().allSatisfy { $0.hasPrefix("t=") })
+        #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path) == ["Recording.mp4"])
+    }
+}
