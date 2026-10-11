@@ -40,6 +40,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         installEditMenu()
         _ = Updater.shared
         Task.detached(priority: .utility) {
+            // A loupe left by a run that quit or died mid-pick would otherwise swallow every click.
+            ColorSampler.endLoupe()
             Recorder.sweepLeftoverSegments()
             let swept = TemporaryCaptures.sweep()
             if swept > 0 {
@@ -67,6 +69,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        if ColorSampler.isShowing {
+            ColorSampler.endLoupe()
+        }
         SystemShortcuts.giveBackKeys()
     }
 
