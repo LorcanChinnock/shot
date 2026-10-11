@@ -20,6 +20,9 @@ targets += [
         // bundle.sh copies Sparkle.framework into Contents/Frameworks.
         linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]
     ),
+    // The MCP server and future command line. bundle.sh copies it into the app as shot-cli: a "shot" there would be
+    // the app's own Shot executable on a case-insensitive volume.
+    .executableTarget(name: "ShotCLI", dependencies: ["ShotCore"]),
     .testTarget(name: "ShotCoreTests", dependencies: ["ShotCore"]),
 ]
 #endif

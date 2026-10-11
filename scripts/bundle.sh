@@ -19,6 +19,8 @@ app="build/$name.app"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$app/Contents/Frameworks"
 cp "$binary" "$app/Contents/MacOS/$name"
+# The MCP server. Never "shot": on a case-insensitive volume that is the app's own Shot executable.
+cp "$bin_path/ShotCLI" "$app/Contents/MacOS/shot-cli"
 ditto "$bin_path/Sparkle.framework" "$app/Contents/Frameworks/Sparkle.framework"
 cp Resources/Info.plist "$app/Contents/Info.plist"
 cp Resources/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
@@ -48,6 +50,8 @@ for part in XPCServices/Installer.xpc XPCServices/Downloader.xpc Autoupdate Upda
     codesign --force --sign "$identity" --preserve-metadata=entitlements "$sparkle/$part"
 done
 codesign --force --sign "$identity" "$app/Contents/Frameworks/Sparkle.framework"
+# The outer signature doesn't cover a nested executable, and Sparkle checks nested code on update.
+codesign --force --sign "$identity" "$app/Contents/MacOS/shot-cli"
 codesign --force --sign "$identity" "$app"
 version="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist")"
 echo "Built $app $version ($build_number) for $(lipo -archs "$app/Contents/MacOS/$name")"

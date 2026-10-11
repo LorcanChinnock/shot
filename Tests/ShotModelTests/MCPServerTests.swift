@@ -11,72 +11,72 @@ private let server = MCPServer(
     }
 )
 
-@Test func initializeNamesTheServerAndOffersTools() {
-    let reply = server.respond(to: #"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"test","version":"1"}}}"#)
+@Test func initializeNamesTheServerAndOffersTools() async {
+    let reply = await server.respond(to: #"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"test","version":"1"}}}"#)
     #expect(reply == #"{"id":1,"jsonrpc":"2.0","result":{"capabilities":{"tools":{}},"protocolVersion":"2025-03-26","serverInfo":{"name":"shot","version":"1.0"}}}"#)
 }
 
-@Test func initializeWithAnUnknownVersionOffersTheNewest() {
-    let reply = server.respond(to: #"{"jsonrpc":"2.0","id":"a","method":"initialize","params":{"protocolVersion":"1999-01-01"}}"#)
+@Test func initializeWithAnUnknownVersionOffersTheNewest() async {
+    let reply = await server.respond(to: #"{"jsonrpc":"2.0","id":"a","method":"initialize","params":{"protocolVersion":"1999-01-01"}}"#)
     #expect(reply?.contains(#""protocolVersion":"\#(MCPServer.protocolVersion)""#) == true)
     #expect(reply?.hasPrefix(#"{"id":"a","#) == true)
 }
 
-@Test func notificationsAndBlankLinesGetNoReply() {
-    #expect(server.respond(to: #"{"jsonrpc":"2.0","method":"notifications/initialized"}"#) == nil)
-    #expect(server.respond(to: "") == nil)
-    #expect(server.respond(to: "  \n") == nil)
+@Test func notificationsAndBlankLinesGetNoReply() async {
+    #expect(await server.respond(to: #"{"jsonrpc":"2.0","method":"notifications/initialized"}"#) == nil)
+    #expect(await server.respond(to: "") == nil)
+    #expect(await server.respond(to: "  \n") == nil)
 }
 
-@Test func pingRepliesEmpty() {
-    #expect(server.respond(to: #"{"jsonrpc":"2.0","id":7,"method":"ping"}"#) == #"{"id":7,"jsonrpc":"2.0","result":{}}"#)
+@Test func pingRepliesEmpty() async {
+    #expect(await server.respond(to: #"{"jsonrpc":"2.0","id":7,"method":"ping"}"#) == #"{"id":7,"jsonrpc":"2.0","result":{}}"#)
 }
 
-@Test func toolsListDescribesEachTool() {
-    let reply = server.respond(to: #"{"jsonrpc":"2.0","id":2,"method":"tools/list"}"#)
+@Test func toolsListDescribesEachTool() async {
+    let reply = await server.respond(to: #"{"jsonrpc":"2.0","id":2,"method":"tools/list"}"#)
     #expect(reply == #"{"id":2,"jsonrpc":"2.0","result":{"tools":[{"description":"The newest capture","inputSchema":{"type":"object"},"name":"latest_capture"}]}}"#)
 }
 
-@Test func toolsCallRunsTheToolWithItsArguments() {
-    let reply = server.respond(to: #"{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"latest_capture","arguments":{"kind":"video"}}}"#)
+@Test func toolsCallRunsTheToolWithItsArguments() async {
+    let reply = await server.respond(to: #"{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"latest_capture","arguments":{"kind":"video"}}}"#)
     #expect(reply == #"{"id":3,"jsonrpc":"2.0","result":{"content":[{"text":"latest_capture kind=video","type":"text"}],"isError":false}}"#)
 }
 
 @Test(arguments: ["Latest-Capture", " latest capture ", "LATEST_CAPTURE"])
-func toolNamesMatchLoosely(_ name: String) {
-    let reply = server.respond(to: #"{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"\#(name)"}}"#)
+func toolNamesMatchLoosely(_ name: String) async {
+    let reply = await server.respond(to: #"{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"\#(name)"}}"#)
     #expect(reply?.contains("latest_capture kind=none") == true)
 }
 
-@Test func argumentsThatArentAnObjectAreIgnored() {
-    let reply = server.respond(to: #"{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"latest_capture","arguments":"video"}}"#)
+@Test func argumentsThatArentAnObjectAreIgnored() async {
+    let reply = await server.respond(to: #"{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"latest_capture","arguments":"video"}}"#)
     #expect(reply?.contains("latest_capture kind=none") == true)
 }
 
-@Test func anUnknownToolIsAnInvalidParamsError() {
-    let reply = server.respond(to: #"{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"delete_everything"}}"#)
+@Test func anUnknownToolIsAnInvalidParamsError() async {
+    let reply = await server.respond(to: #"{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"delete_everything"}}"#)
     #expect(reply == #"{"error":{"code":-32602,"message":"Unknown tool: delete_everything"},"id":6,"jsonrpc":"2.0"}"#)
 }
 
-@Test func anUnknownMethodIsMethodNotFound() {
-    let reply = server.respond(to: #"{"jsonrpc":"2.0","id":8,"method":"resources/list"}"#)
+@Test func anUnknownMethodIsMethodNotFound() async {
+    let reply = await server.respond(to: #"{"jsonrpc":"2.0","id":8,"method":"resources/list"}"#)
     #expect(reply == #"{"error":{"code":-32601,"message":"Method not found: resources/list"},"id":8,"jsonrpc":"2.0"}"#)
 }
 
-@Test func malformedJSONIsAParseError() {
-    #expect(server.respond(to: "{not json") == #"{"error":{"code":-32700,"message":"Parse error"},"id":null,"jsonrpc":"2.0"}"#)
+@Test func malformedJSONIsAParseError() async {
+    #expect(await server.respond(to: "{not json") == #"{"error":{"code":-32700,"message":"Parse error"},"id":null,"jsonrpc":"2.0"}"#)
 }
 
 @Test(arguments: [#"[1,2]"#, #"{"id":9,"method":"ping"}"#, #"{"jsonrpc":"2.0","id":9}"#])
-func aMessageThatIsntARequestIsInvalid(_ line: String) {
-    #expect(server.respond(to: line)?.contains(#""code":-32600"#) == true)
+func aMessageThatIsntARequestIsInvalid(_ line: String) async {
+    #expect(await server.respond(to: line)?.contains(#""code":-32600"#) == true)
 }
 
-@Test func repliesAreOneLineEvenWithNewlinesInText() {
+@Test func repliesAreOneLineEvenWithNewlinesInText() async {
     let multiline = MCPServer(name: "shot", version: "1", tools: server.tools) { _, _ in
         MCPServer.ToolResult(content: [.text("line one\nline two"), .image(data: "AAAA", mimeType: "image/jpeg")])
     }
-    let reply = multiline.respond(to: #"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"latest_capture"}}"#)
+    let reply = await multiline.respond(to: #"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"latest_capture"}}"#)
     #expect(reply?.contains("\n") == false)
     #expect(reply?.contains(#"{"data":"AAAA","mimeType":"image/jpeg","type":"image"}"#) == true)
 }

@@ -223,7 +223,36 @@ The file follows the `shot.capture/1` schema:
 - Coordinates are pixels of the saved file, from its top left, so a crop or padding and **Scale Retina captures to 1×** are already applied. `rect` is `[x, y, width, height]`, and `from`, `to` and `center` are `[x, y]`.
 - `type` is one of `arrow`, `line`, `rectangle`, `rounded`, `ellipse`, `triangle`, `diamond`, `star`, `highlight`, `text`, `note`, `counter`, `pen`, `marker`, `image`, `blur`, `pixelate` or `spotlight`. `color` is the nearest palette name, with the exact `hex` beside it. Text and notes give their `text`; a blur, pixelate, spotlight or placed image gives only where it is, never what is under it. Hidden layers are left out.
 
-An MCP server that lets an agent ask for your latest capture and what you marked on it is coming in a later release; **Settings › Agents** shows the setup commands for it.
+### The MCP server
+
+Shot also comes with a small [MCP](https://modelcontextprotocol.io) server, so you can ask an agent "what did I mark in my latest screenshot?" without pasting anything. It runs only while the agent uses it, works whether or not Shot is open, and needs no setting turned on, though without **Hand captures to agents** there are no `.shot.json` files for it to read. **Settings › Agents** shows the setup commands with the right path for your copy of Shot.
+
+- **Claude Code:** `claude mcp add shot -- /Applications/Shot.app/Contents/MacOS/shot-cli mcp`. If you installed Shot with Homebrew, the server is on your PATH as `shot`, so `claude mcp add shot -- shot mcp` works too.
+- **Cursor** and other apps that take a JSON config:
+
+  ```json
+  { "mcpServers": { "shot": { "command": "/Applications/Shot.app/Contents/MacOS/shot-cli", "args": ["mcp"] } } }
+  ```
+
+- **Codex**, in `~/.codex/config.toml`:
+
+  ```toml
+  [mcp_servers.shot]
+  command = "/Applications/Shot.app/Contents/MacOS/shot-cli"
+  args = ["mcp"]
+  ```
+
+It has three tools. All their arguments are optional, and a slightly wrong one is read as best it can be rather than refused.
+
+| Tool | Arguments | Returns |
+|---|---|---|
+| `latest_capture` | `kind`: `image` (the default), `video` or `any` | The newest capture: a preview image, its path, when it was taken, and its `.shot.json`. A screenshot you saved again from the editor stands in for the original, since that version has your markup. A recording gives a frame from it, how long it runs, and whether it has sound. |
+| `list_captures` | `limit`: 1 to 50, 10 by default; `since`: a date such as `2026-10-10`, or a span back from now such as `10m`, `2h` or `3d` | Recent captures, newest first: name, path, kind, when, and whether a `.shot.json` describes them. No images. |
+| `get_capture` | `path`, or `name`: a file name or a few words from it, so `shot 14.03` finds `Shot 2026-10-10 at 14.03.12.png` | The same as `latest_capture`, for that capture. If none matches, it names the closest ones. |
+
+Previews are JPEGs at most 1568 pixels on the long edge and about 1 MB, which is what vision models work at anyway. The path in the result lets an agent that can read files open the full-size original, and `.shot.json` coordinates are always in the full-size file's pixels.
+
+The server reads only the capture folder: your save folder (`~/Pictures/Shot` by default), or the temporary folder when **Save to folder** is off. It never captures, writes, moves or deletes anything, and it uploads nothing itself. Because the agent starts it, the first time it reads `~/Pictures` macOS may ask whether your terminal or editor can access that folder; allow it, or the agent sees no captures. To check which copy of Shot and which folder it uses, run `/Applications/Shot.app/Contents/MacOS/shot-cli --version`.
 
 Shot still sends nothing anywhere. Whatever an agent reads, though, goes to that agent's model provider, so blur or pixelate anything private before you hand a capture over.
 
@@ -347,6 +376,8 @@ Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a scr
 | `shot://edit-video?path=<file>` | Open a video in the video editor to trim it |
 | `shot://gallery` | Open the gallery |
 | `shot://settings?section=<name>` | Open Settings at `gallery`, `general`, `capture`, `quickAccess`, `recording`, `agents`, `shortcuts`, or `about` |
+
+For AI agents, `shot mcp` (`Shot.app/Contents/MacOS/shot-cli mcp`, or just `shot mcp` after a Homebrew install) is a read-only MCP server for your captures; see [The MCP server](#the-mcp-server).
 
 `path` can start with `~`. URL-encode spaces and other special characters, for example `open "shot://annotate?path=~/Desktop/My%20Shot.png"`. The older `shot://record?full=1` still works and does the same as `shot://record-fullscreen`. An unknown action, or `annotate` or `edit-video` without a `path`, shows an error instead.
 
