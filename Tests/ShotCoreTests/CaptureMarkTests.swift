@@ -212,6 +212,8 @@ private let red = RGBA.presets[0]
     let counter = try #require(Annotation(mark: CaptureMark(type: "counter", center: [4, 4], hex: "#00FF00")))
     #expect(counter.kind == .counter(1, center: CGPoint(x: 4, y: 4)))
     #expect(counter.color.hex == "#00FF00")
+    // Notes are yellow unless given a colour, as in the editor.
+    #expect(Annotation(mark: CaptureMark(type: "note", rect: [0, 0, 100, 40], text: "Fix"))?.color == RGBA.presets[2])
 }
 
 @Test func onlyAnEditableRecordOfTheWholeCanvasReopensLive() throws {

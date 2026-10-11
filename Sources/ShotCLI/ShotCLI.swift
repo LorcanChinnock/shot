@@ -1,31 +1,54 @@
 import Foundation
 import ShotCore
 
-/// `shot mcp`, the read-only MCP server AI agents talk to, and `shot --version`. It ships inside the app as
-/// `Contents/MacOS/shot-cli`, so it reads the app's settings to find the captures.
+/// The `shot` command line: `shot mcp`, the MCP server AI agents talk to, the headless media commands, and `--version`.
+/// It ships inside the app as `Contents/MacOS/shot-cli`, so it reads the app's settings to find the captures.
 @main
 enum ShotCLI {
     static func main() async {
-        let app = appBundle()
+        let program = URL(fileURLWithPath: CommandLine.arguments.first ?? "shot").lastPathComponent
+        let command: ShotCommand
+        do {
+            command = try ShotCommand.parse(Array(CommandLine.arguments.dropFirst()))
+        } catch {
+            let prefix = if case let .usage(name?, _) = error { "\(program) \(name)" } else { program }
+            printError("\(prefix): \(error.message)")
+            if case let .usage(name, _) = error {
+                printError(ShotCommand.usage(name, program: program))
+            }
+            exit(error.exitCode)
+        }
+        switch command {
+        case .mcp:
+            let app = appBundle()
+            await serve(folder: captureFolder(app: app), version: version(of: app))
+        case .version:
+            let app = appBundle()
+            print("Shot \(version(of: app))")
+            print("Bundle: \(app?.bundleIdentifier ?? "none, reading the \(fallbackSuite) settings")")
+            print("Captures: \(captureFolder(app: app).path)")
+        case let .help(name):
+            print(ShotCommand.usage(name, program: program))
+        default:
+            do {
+                let result = try await ShotCommands.run(command)
+                if result["truncated"] == .bool(true) {
+                    printError("\(program) \(command.name): GIFs stop at \(Int(GIFExporter.maxDuration)) seconds, so this one ends early")
+                }
+                print(ShotCommand.json(result))
+            } catch {
+                printError("\(program) \(command.name): \(error.message)")
+                exit(error.exitCode)
+            }
+        }
+    }
+
+    /// The folder the app saves captures to, from its settings.
+    static func captureFolder(app: Bundle?) -> URL {
         let store = defaultsStore(app: app)
         // Without the defaults, saveAfterCapture reads false and the capture folder silently becomes the temporary one.
         Preferences.registerDefaults(in: store)
-        let folder = Preferences(store: store).captureFolder
-        switch Array(CommandLine.arguments.dropFirst()) {
-        case ["mcp"]:
-            await serve(folder: folder, version: version(of: app))
-        case ["--version"], ["-v"]:
-            print("Shot \(version(of: app))")
-            print("Bundle: \(app?.bundleIdentifier ?? "none, reading the \(fallbackSuite) settings")")
-            print("Captures: \(folder.path)")
-        default:
-            let name = URL(fileURLWithPath: CommandLine.arguments.first ?? "shot").lastPathComponent
-            printError("""
-            Usage: \(name) mcp        serve Shot's captures to an AI agent over MCP, on stdin and stdout
-                   \(name) --version  print the version, settings and capture folder
-            """)
-            exit(64)
-        }
+        return Preferences(store: store).captureFolder
     }
 
     /// Reads one JSON-RPC message per line until the client closes stdin. Only replies go to stdout, since any other

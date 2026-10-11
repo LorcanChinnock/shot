@@ -1,7 +1,9 @@
 import Foundation
 
-/// The MCP server's three read-only tools: what they're called, what they take, and what they say back. Finding files
-/// and drawing previews need Apple frameworks, so they come in as closures; ShotCore's `live(folder:)` supplies them.
+/// The MCP server's tools: three that read captures, and three that make new files from one, never changing, moving or
+/// deleting anything. What they're called, what they take, and what they say back are here. Finding files, drawing
+/// previews and running the commands need Apple frameworks, so they come in as closures; ShotCore's `live(folder:)`
+/// supplies them.
 public struct AgentTools: Sendable {
     /// The folder the captures are read from, named when it has none.
     public var folder: URL
@@ -11,6 +13,8 @@ public struct AgentTools: Sendable {
     public var preview: @Sendable (AgentCaptures.Entry) async -> [MCPServer.Content]
     /// The record Shot wrote inside a capture, read from the file's metadata.
     public var record: @Sendable (AgentCaptures.Entry) -> CaptureRecord?
+    /// Runs a `shot` command, as the command line does, for the tools that make files.
+    public var run: @Sendable (ShotCommand) async throws(ShotCommandError) -> JSONValue
     public var now: @Sendable () -> Date
     public var timeZone: TimeZone
 
@@ -19,6 +23,7 @@ public struct AgentTools: Sendable {
         entries: @escaping @Sendable () -> [AgentCaptures.Entry],
         preview: @escaping @Sendable (AgentCaptures.Entry) async -> [MCPServer.Content],
         record: @escaping @Sendable (AgentCaptures.Entry) -> CaptureRecord? = { _ in nil },
+        run: @escaping @Sendable (ShotCommand) async throws(ShotCommandError) -> JSONValue = { _ throws(ShotCommandError) in throw .internal("can't run commands here") },
         now: @escaping @Sendable () -> Date = Date.init,
         timeZone: TimeZone = .current
     ) {
@@ -26,6 +31,7 @@ public struct AgentTools: Sendable {
         self.entries = entries
         self.preview = preview
         self.record = record
+        self.run = run
         self.now = now
         self.timeZone = timeZone
     }
@@ -33,6 +39,17 @@ public struct AgentTools: Sendable {
     public static let latestCapture = "latest_capture"
     public static let listCaptures = "list_captures"
     public static let getCapture = "get_capture"
+    public static let annotate = "annotate"
+    public static let makeGIF = "make_gif"
+    public static let trimVideo = "trim_video"
+
+    private static let capture: [String: JSONValue] = [
+        "path": .object(["type": .string("string"), "description": .string("The capture's full path. Without path or name, the newest one.")]),
+        "name": .object(["type": .string("string"), "description": .string("Its file name, or words from it.")]),
+    ]
+    private static func seconds(_ what: String) -> JSONValue {
+        .object(["type": .string("number"), "description": .string(what)])
+    }
 
     public static let definitions: [MCPServer.Tool] = [
         MCPServer.Tool(
@@ -68,6 +85,35 @@ public struct AgentTools: Sendable {
                 "name": .object(["type": .string("string"), "description": .string("Its file name, or words from it.")]),
             ])
         ),
+        MCPServer.Tool(
+            name: annotate,
+            description: "Draws marks on a copy of a screenshot, to point the user at something: arrows, boxes, numbered counters, text and notes. The copy is saved beside the original as its next version, which the user can open in Shot and change; nothing is overwritten. Coordinates are in the full-size file's pixels, top-left origin. Returns the new file's path and a preview.",
+            inputSchema: schema(capture.merging([
+                "annotations": .object([
+                    "type": .string("array"),
+                    "description": .string("The marks, each with a type (arrow, line, rectangle, rounded, ellipse, highlight, blur, pixelate, text, note, counter, pen or marker) and its geometry: from and to as [x, y] for arrow and line; rect as [x, y, width, height] for shapes, text and notes; center as [x, y] for counter; points as [[x, y], …] for pen and marker. Optional: color (red, orange, yellow, green, blue, black or white), text for text and note, number for counter."),
+                    "items": .object(["type": .string("object")]),
+                ]),
+            ]) { $1 }, required: ["annotations"])
+        ),
+        MCPServer.Tool(
+            name: makeGIF,
+            description: "Makes a GIF of a Shot recording, or part of it, for a pull request or README. Saved beside the recording; nothing is overwritten. GIFs stop at 60 seconds. Returns the GIF's path, size and frame count.",
+            inputSchema: schema(capture.merging([
+                "start": seconds("Where to start, in seconds. Default 0."),
+                "end": seconds("Where to end, in seconds. Default the end."),
+                "fps": .object(["type": .string("number"), "description": .string("Frames per second, 1 to 30. Default 12.")]),
+                "width": .object(["type": .string("integer"), "description": .string("Width in pixels, 16 to 8192, or 0 for the recording's own. Default 720.")]),
+            ]) { $1 })
+        ),
+        MCPServer.Tool(
+            name: trimVideo,
+            description: "Saves the part of a Shot recording between two times as a new video beside it, without re-encoding where it can. Nothing is overwritten. Returns the new video's path and length.",
+            inputSchema: schema(capture.merging([
+                "start": seconds("Where to start, in seconds."),
+                "end": seconds("Where to end, in seconds."),
+            ]) { $1 }, required: ["start", "end"])
+        ),
     ]
 
     public func server(version: String) -> MCPServer {
@@ -101,9 +147,64 @@ public struct AgentTools: Sendable {
                 return notFound(query, in: entries)
             }
             return await describe(entry)
+        case Self.annotate, Self.makeGIF, Self.trimVideo:
+            return await make(name, arguments, entries)
         default:
             return MCPServer.ToolResult(content: [.text("Unknown tool: \(name)")], isError: true)
         }
+    }
+
+    /// Runs one of the tools that make a file, on the capture `arguments` name, or the newest one of the right kind.
+    /// Only captures in the folder can be named, so nothing outside it is read or written beside.
+    func make(_ name: String, _ arguments: JSONValue, _ entries: [AgentCaptures.Entry]) async -> MCPServer.ToolResult {
+        let video = name != Self.annotate
+        let query = [arguments["path"]?.string, arguments["name"]?.string].compactMap { $0 }.first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        let found = query.map { AgentCaptures.named($0, in: entries) } ?? AgentCaptures.latest(entries, kind: video ? .video : .image)
+        guard let entry = found else {
+            return query.map { notFound($0, in: entries) } ?? MCPServer.ToolResult(content: [.text(empty(entries, kind: video ? .video : .image))], isError: true)
+        }
+        guard entry.isVideo == video else {
+            return MCPServer.ToolResult(content: [.text("\(entry.name) is \(entry.isVideo ? "a recording" : "a screenshot"); \(name) needs \(video ? "a recording" : "a screenshot").")], isError: true)
+        }
+        let command: ShotCommand
+        switch name {
+        case Self.annotate:
+            guard let marks = arguments["annotations"], case .array = marks, let data = try? JSONEncoder().encode(marks) else {
+                return MCPServer.ToolResult(content: [.text("annotate needs annotations: an array of marks.")], isError: true)
+            }
+            do {
+                command = .annotate(ShotCommand.AnnotateOptions(input: entry.url.path, marks: .marks(try CaptureMark.list(from: data))))
+            } catch {
+                return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
+            }
+        case Self.makeGIF:
+            var options = ShotCommand.GIFOptions(input: entry.url.path, start: arguments["start"]?.number, end: arguments["end"]?.number)
+            // Lenient like the other tools: out-of-range values are brought into range rather than refused.
+            if let fps = arguments["fps"]?.number, fps.isFinite {
+                options.fps = min(max(fps, 1), 30)
+            }
+            if let width = arguments["width"]?.number, width.isFinite {
+                options.width = width <= 0 ? 0 : Int(min(max(width, 16), 8192))
+            }
+            command = .gif(options)
+        default:
+            guard let start = arguments["start"]?.number, let end = arguments["end"]?.number, start.isFinite, end.isFinite, end > start, start >= 0 else {
+                return MCPServer.ToolResult(content: [.text("trim_video needs start and end in seconds, with end after start.")], isError: true)
+            }
+            command = .trim(ShotCommand.TrimOptions(input: entry.url.path, start: start, end: end))
+        }
+        let result: JSONValue
+        do {
+            result = try await run(command)
+        } catch {
+            return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
+        }
+        var content: [MCPServer.Content] = [.text(Self.json(result))]
+        if name == Self.annotate, let path = result["path"]?.string {
+            content = await preview(AgentCaptures.Entry(url: URL(fileURLWithPath: path), isVideo: false, date: now())) + content
+        }
+        content.append(.text("Saved as a new file beside \(entry.name); the original is unchanged."))
+        return MCPServer.ToolResult(content: content)
     }
 
     /// The preview, then the capture's details, then what Shot recorded in it, as plain lines.
@@ -190,8 +291,12 @@ public struct AgentTools: Sendable {
         return (try? encoder.encode(value)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
     }
 
-    private static func schema(_ properties: [String: JSONValue]) -> JSONValue {
-        .object(["type": .string("object"), "properties": .object(properties)])
+    private static func schema(_ properties: [String: JSONValue], required: [String] = []) -> JSONValue {
+        var object: [String: JSONValue] = ["type": .string("object"), "properties": .object(properties)]
+        if !required.isEmpty {
+            object["required"] = .array(required.map(JSONValue.string))
+        }
+        return .object(object)
     }
 
     private static func words(in text: String) -> [String] {
