@@ -90,7 +90,7 @@ final class RecordingSetupController {
             return Pick(screen: screen, region: screen.fullCaptureFrame, windowID: nil, ratio: nil)
         }
         let displays = screens.map { OverlayDisplay(frame: $0.frame, scale: $0.backingScaleFactor, image: nil) }
-        let windows = SelectionOverlayController.onScreenWindows()
+        let windows = WindowCapturer.onScreenWindows()
         let (picked, modifiers) = await SelectionOverlayController.selectWithModifiers(displays: displays, windowMode: mode == .window, windows: windows, isLive: true)
         guard let selection = picked else {
             return nil

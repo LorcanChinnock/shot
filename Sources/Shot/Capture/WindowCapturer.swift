@@ -10,6 +10,12 @@ enum WindowCapturer {
         let scale: CGFloat
     }
 
+    /// Other apps' normal windows on screen, front to back. Their titles need the Screen Recording permission.
+    static func onScreenWindows() -> [WindowInfo] {
+        let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
+        return WindowInfo.parse(list, excludingPID: ProcessInfo.processInfo.processIdentifier)
+    }
+
     /// Live capture of one window, so occluding windows do not appear.
     static func capture(windowID: CGWindowID, includeShadow: Bool) async throws -> Result {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)

@@ -1,7 +1,8 @@
 import Foundation
 
-/// The MCP server's tools: four that read captures, and three that make new files from one, never changing, moving or
-/// deleting anything. What they're called, what they take, and what they say back are here. Finding files, drawing
+/// The MCP server's tools: four that read captures, three that make new files from one, never changing, moving or
+/// deleting anything, and one that asks the running app for a screenshot of a window. What they're called, what they
+/// take, and what they say back are here. Finding files, drawing
 /// previews and running the commands need Apple frameworks, so they come in as closures; ShotCore's `live(folder:)`
 /// supplies them.
 public struct AgentTools: Sendable {
@@ -17,6 +18,8 @@ public struct AgentTools: Sendable {
     public var run: @Sendable (ShotCommand) async throws(ShotCommandError) -> JSONValue
     /// Up to the given number of a recording's key frames, each as its time then its image.
     public var frames: @Sendable (AgentCaptures.Entry, Int) async throws(ShotCommandError) -> [MCPServer.Content]
+    /// Sends a request to the running app over its agent socket, and gives back its answer's fields.
+    public var agent: @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue]
     public var now: @Sendable () -> Date
     public var timeZone: TimeZone
 
@@ -27,6 +30,7 @@ public struct AgentTools: Sendable {
         record: @escaping @Sendable (AgentCaptures.Entry) -> CaptureRecord? = { _ in nil },
         run: @escaping @Sendable (ShotCommand) async throws(ShotCommandError) -> JSONValue = { _ throws(ShotCommandError) in throw .internal("can't run commands here") },
         frames: @escaping @Sendable (AgentCaptures.Entry, Int) async throws(ShotCommandError) -> [MCPServer.Content] = { _, _ throws(ShotCommandError) in throw .internal("can't read frames here") },
+        agent: @escaping @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue] = { _ throws(ShotCommandError) in throw .unavailable("can't reach Shot from here") },
         now: @escaping @Sendable () -> Date = Date.init,
         timeZone: TimeZone = .current
     ) {
@@ -36,6 +40,7 @@ public struct AgentTools: Sendable {
         self.record = record
         self.run = run
         self.frames = frames
+        self.agent = agent
         self.now = now
         self.timeZone = timeZone
     }
@@ -47,6 +52,7 @@ public struct AgentTools: Sendable {
     public static let makeGIF = "make_gif"
     public static let trimVideo = "trim_video"
     public static let getFrames = "get_frames"
+    public static let captureWindow = "capture_window"
 
     private static let capture: [String: JSONValue] = [
         "path": .object(["type": .string("string"), "description": .string("The capture's full path. Without path or name, the newest one.")]),
@@ -126,6 +132,13 @@ public struct AgentTools: Sendable {
                 "end": seconds("Where to end, in seconds."),
             ]) { $1 }, required: ["start", "end"])
         ),
+        MCPServer.Tool(
+            name: captureWindow,
+            description: "Takes a screenshot of an open window, such as the iOS Simulator or the app you're building, through the running Shot app, without bringing it forward or taking focus, even when other windows cover it. Saved to the capture folder; returns a preview, its path and which window it was. Needs Shot running with Settings › Agents › Let agents capture and record turned on, and Shot shows a notice each time. If no window matches, the error lists the open ones.",
+            inputSchema: schema([
+                "window": .object(["type": .string("string"), "description": .string("Words from the window's title or its app's name, such as \"Simulator\" or \"Calculator\". Case and accents don't matter.")]),
+            ], required: ["window"])
+        ),
     ]
 
     public func server(version: String) -> MCPServer {
@@ -175,6 +188,8 @@ public struct AgentTools: Sendable {
             } catch {
                 return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
             }
+        case Self.captureWindow:
+            return await captureWindow(arguments)
         default:
             return MCPServer.ToolResult(content: [.text("Unknown tool: \(name)")], isError: true)
         }
@@ -230,6 +245,30 @@ public struct AgentTools: Sendable {
             content = await preview(AgentCaptures.Entry(url: URL(fileURLWithPath: path), isVideo: false, date: now())) + content
         }
         content.append(.text("Saved as a new file beside \(entry.name); the original is unchanged."))
+        return MCPServer.ToolResult(content: content)
+    }
+
+    /// Asks the app for a screenshot of the window `arguments` names, then shows it as `describe` does a capture.
+    func captureWindow(_ arguments: JSONValue) async -> MCPServer.ToolResult {
+        guard let window = arguments["window"]?.string, !window.trimmingCharacters(in: .whitespaces).isEmpty else {
+            return MCPServer.ToolResult(content: [.text("capture_window needs window: words from the window's title or its app's name.")], isError: true)
+        }
+        let fields: [String: JSONValue]
+        do {
+            fields = try await agent(AgentRequest(.capture, window: window))
+        } catch {
+            return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
+        }
+        guard let path = fields["path"]?.string else {
+            return MCPServer.ToolResult(content: [.text("Shot took the screenshot but didn't say where it saved it.")], isError: true)
+        }
+        let entry = AgentCaptures.Entry(url: URL(fileURLWithPath: path), isVideo: false, date: now())
+        var content = await preview(entry)
+        content.append(.text(Self.json(.object(fields))))
+        let lines = record(entry)?.summaryLines ?? []
+        if !lines.isEmpty {
+            content.append(.text(lines.joined(separator: "\n")))
+        }
         return MCPServer.ToolResult(content: content)
     }
 

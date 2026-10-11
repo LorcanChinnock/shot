@@ -50,11 +50,6 @@ final class SelectionOverlayController {
         self.isLive = isLive
     }
 
-    static func onScreenWindows() -> [WindowInfo] {
-        let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
-        return WindowInfo.parse(list, excludingPID: ProcessInfo.processInfo.processIdentifier)
-    }
-
     static func select(displays: [OverlayDisplay], windowMode: Bool, windows: [WindowInfo], isLive: Bool = false) async -> OverlaySelection? {
         await selectWithModifiers(displays: displays, windowMode: windowMode, windows: windows, isLive: isLive).selection
     }

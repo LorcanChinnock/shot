@@ -32,9 +32,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         GalleryController.shared.onExportGIF = { [weak self] url in
             self?.coordinator.exportGIF(url)
         }
+        AgentServer.shared.coordinator = coordinator
+        AgentServer.shared.update()
         defaultsObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated {
                 HotkeyCenter.shared.reloadFromPreferences()
+                AgentServer.shared.update()
             }
         }
         installEditMenu()
@@ -69,6 +72,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        AgentServer.shared.stop()
         if ColorSampler.isShowing {
             ColorSampler.endLoupe()
         }

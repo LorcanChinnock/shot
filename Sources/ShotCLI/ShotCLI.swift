@@ -1,8 +1,9 @@
 import Foundation
 import ShotCore
 
-/// The `shot` command line: `shot mcp`, the MCP server AI agents talk to, the headless media commands, and `--version`.
-/// It ships inside the app as `Contents/MacOS/shot-cli`, so it reads the app's settings to find the captures.
+/// The `shot` command line: `shot mcp`, the MCP server AI agents talk to, the headless media commands, `shot capture`,
+/// which asks the running app, and `--version`. It ships inside the app as `Contents/MacOS/shot-cli`, so it reads the
+/// app's settings to find the captures.
 @main
 enum ShotCLI {
     static func main() async {
@@ -21,7 +22,7 @@ enum ShotCLI {
         switch command {
         case .mcp:
             let app = appBundle()
-            await serve(folder: captureFolder(app: app), version: version(of: app))
+            await serve(folder: captureFolder(app: app), version: version(of: app), app: app)
         case .version:
             let app = appBundle()
             print("Shot \(version(of: app))")
@@ -29,6 +30,13 @@ enum ShotCLI {
             print("Captures: \(captureFolder(app: app).path)")
         case let .help(name):
             print(ShotCommand.usage(name, program: program))
+        case let .capture(window):
+            do {
+                print(ShotCommand.json(.object(try await ask(AgentRequest(.capture, window: window), app: appBundle()))))
+            } catch {
+                printError("\(program) \(command.name): \(error.message)")
+                exit(error.exitCode)
+            }
         default:
             do {
                 let result = try await ShotCommands.run(command)
@@ -53,14 +61,23 @@ enum ShotCLI {
 
     /// Reads one JSON-RPC message per line until the client closes stdin. Only replies go to stdout, since any other
     /// line there breaks the protocol; `FileHandle` writes straight through, so each reply is flushed as it's written.
-    static func serve(folder: URL, version: String) async {
-        let server = AgentTools.live(folder: folder).server(version: version)
+    static func serve(folder: URL, version: String, app: Bundle?) async {
+        let server = AgentTools.live(folder: folder) { request throws(ShotCommandError) in
+            try await ask(request, app: app)
+        }.server(version: version)
         printError("Shot MCP server \(version), reading \(folder.path)")
         while let line = readLine(strippingNewline: true) {
             if let reply = await server.respond(to: line) {
                 FileHandle.standardOutput.write(Data((reply + "\n").utf8))
             }
         }
+    }
+
+    /// Sends `request` to the running app, opening it in the background first if it isn't running.
+    static func ask(_ request: AgentRequest, app: Bundle?) async throws(ShotCommandError) -> [String: JSONValue] {
+        // Read on each request, so the MCP server, which runs for a whole session, sees the setting change.
+        let enabled = Preferences(store: defaultsStore(app: app)).agentCapture
+        return try await AgentSocket.ask(request, bundleID: app?.bundleIdentifier ?? fallbackSuite, enabled: enabled, timeout: .seconds(30))
     }
 
     /// The app this executable is inside. `Bundle.main` finds it when run by its real path, but not through a symlink
