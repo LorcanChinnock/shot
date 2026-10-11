@@ -10,6 +10,12 @@ public enum AnnotationRenderer {
     /// What Core Image made on the last render, so redrawing while editing doesn't filter what hasn't changed again.
     static let cache = RenderCache()
 
+    /// Lets go of the images kept for redrawing, so a closed editor's capture doesn't stay in memory.
+    public static func releaseCaches() {
+        cache.removeAll()
+        EditorDocument.forgetCaptureTransparency()
+    }
+
     /// Draws the document into a bottom-left-origin context of size `doc.exportSize`.
     public static func render(_ doc: EditorDocument, into ctx: CGContext) {
         renderLayers(doc, into: ctx, shadowBackground: doc.background)

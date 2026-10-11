@@ -12,6 +12,7 @@ Each budget is 2× the baseline measured on the CI runner, which is slower than 
 |---|---|---|---|---|
 | Flatten + encode | Flatten a 5120×2880 capture with 20 annotations, including a blur and a spotlight, and encode it as PNG | 261 ms | 423 ms | 847 ms |
 | Overlay render | `AnnotationFrame.apply` of 20 annotations at 1920×1080, per frame over 30 frames, with the compositor's overlay cache | 9.7 µs | 19.4 µs | 39 µs |
+| Marker render | `AnnotationFrame.apply` of one marker over a 1920×1080 frame, which draws the whole canvas on the CPU and sends it back, then reading the frame out | not measured | 14.3 ms | 29 ms |
 | GIF export memory | Peak growth of the process footprint while exporting a 20 s 1080p video as a GIF | < 1 MB | 226 MB | 452 MB |
 | Gallery grouping | Filter, sort and group 1,500 items into date sections | 1.2 ms | 2.9 ms | 5.8 ms |
 

@@ -45,6 +45,11 @@ final class RenderCache: Sendable {
         }
     }
 
+    /// Drops every image, used or not.
+    func removeAll() {
+        entries.withLock { $0.removeAll() }
+    }
+
     var count: Int { entries.withLock { $0.count } }
 }
 
