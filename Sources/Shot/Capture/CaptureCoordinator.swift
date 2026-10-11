@@ -156,7 +156,7 @@ final class CaptureCoordinator {
         // Read before the overlay shows, which makes Shot the frontmost app.
         var source = frontmostSource(mode: "area")
         let start = ContinuousClock.now
-        let windows = SelectionOverlayController.onScreenWindows()
+        let windows = WindowCapturer.onScreenWindows()
         let frozen = try await DisplayCapturer.captureAll()
         log.debug("Freeze capture of \(frozen.count) displays took \(ContinuousClock.now - start, privacy: .public)")
         let displays = frozen.map { OverlayDisplay(frame: $0.frame, scale: $0.scale, image: $0.image) }
@@ -324,33 +324,11 @@ final class CaptureCoordinator {
             Sound.capture()
         }
         let plan = AfterCapture.plan(prefs: prefs, isVideo: false)
-        let agentHandoff = prefs.agentHandoff
-        let downscale = prefs.downscaleRetina && originalScale > 1
-        let format = prefs.imageFormat
-        let sendable = SendableImage(original)
         let copies = plan.copies
-        var source = source
-        source?.screenFrame = Self.recordFrame(frame)
-        let recordSource = source
-        let encoded = await Task.detached { () -> (file: Data?, png: Data?, image: SendableImage) in
-            let image = downscale ? ImageCodec.downscaled(sendable.image, scale: originalScale) : sendable.image
-            let scale = downscale ? 1 : originalScale
-            // Written in the same encode, so the record costs no second pass. A PNG's goes on the clipboard with it.
-            let record = agentHandoff ? CaptureRecord(kind: "image", created: Date(), size: CaptureRecord.Size(width: image.width, height: image.height), scale: scale, source: recordSource) : nil
-            let file = ImageCodec.data(from: image, scale: scale, format: format, windowShadow: windowShadow, record: record)
-            // The clipboard takes a PNG, which a PNG capture's file already is.
-            let png = format == .png ? file : copies ? ImageCodec.data(from: image, scale: scale) : nil
-            return (file, png, SendableImage(image))
-        }.value
-        guard let fileData = encoded.file, !copies || encoded.png != nil else {
-            throw CaptureError.encodingFailed
-        }
-        let image = encoded.image.image
-        let scale = downscale ? 1 : originalScale
-        let folder = prefs.captureFolder
-        func newFileURL() -> URL {
-            FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: format.fileExtension, prefix: prefs.filePrefix)
-        }
+        let encoded = try await encode(original, scale: originalScale, from: frame, windowShadow: windowShadow, source: source, record: prefs.agentHandoff, clipboard: copies, prefs: prefs)
+        let image = encoded.image
+        let scale = encoded.scale
+        let format = prefs.imageFormat
         if copies, let png = encoded.png {
             Clipboard.copy(png: png)
             endCaptureInterval("copied")
@@ -358,17 +336,11 @@ final class CaptureCoordinator {
         var savedURL: URL?
         var thumbnail: CGImage?
         if plan.writesFile {
-            let url = newFileURL()
             // Only a Quick Access card needs the thumbnail.
-            let showsCard = plan.next == .quickAccess
-            thumbnail = try await Task.detached { () throws -> SendableImage? in
-                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-                try fileData.write(to: url)
-                return showsCard ? ImageCodec.thumbnail(from: fileData, maxPixelSize: 480).map(SendableImage.init) : nil
-            }.value?.image
-            savedURL = url
-            log.notice("Saved \(url.path)")
-            newCaptures = Array((newCaptures + [url]).suffix(QuickAccessController.maxCards))
+            let saved = try await write(encoded.file, prefs: prefs, thumbnail: plan.next == .quickAccess)
+            savedURL = saved.url
+            thumbnail = saved.thumbnail
+            newCaptures = Array((newCaptures + [saved.url]).suffix(QuickAccessController.maxCards))
         }
         var card: URL?
         switch plan.next {
@@ -394,6 +366,118 @@ final class CaptureCoordinator {
             )
         }
         Confetti.burst(from: frame)
+    }
+
+    /// Saves a capture to the capture folder and does nothing else: no sound, copy, Quick Access, editor or confetti. For
+    /// a capture an agent asked for, whose record always says which window it came from. Gives back the file and its
+    /// size in pixels.
+    func saveCapture(image: CGImage, scale: CGFloat, from frame: CGRect, windowShadow: Bool, source: CaptureRecord.Source) async throws -> (url: URL, width: Int, height: Int) {
+        let prefs = Preferences()
+        let encoded = try await encode(image, scale: scale, from: frame, windowShadow: windowShadow, source: source, record: true, clipboard: false, prefs: prefs)
+        let url = try await write(encoded.file, prefs: prefs, thumbnail: false).url
+        return (url, encoded.image.width, encoded.image.height)
+    }
+
+    /// A capture encoded for its file, and as a PNG for the clipboard when it's copied.
+    private struct EncodedCapture {
+        let file: Data
+        let png: Data?
+        /// The image as encoded, downscaled if Settings ask for that, and its scale.
+        let image: CGImage
+        let scale: CGFloat
+    }
+
+    /// Encodes the capture off the main actor as Settings ask, with its record inside the file when `record` is set, and
+    /// a PNG for the clipboard when `clipboard` is.
+    private func encode(
+        _ original: CGImage, scale originalScale: CGFloat, from frame: CGRect, windowShadow: Bool, source: CaptureRecord.Source?, record: Bool, clipboard copies: Bool,
+        prefs: Preferences
+    ) async throws -> EncodedCapture {
+        let downscale = prefs.downscaleRetina && originalScale > 1
+        let format = prefs.imageFormat
+        let sendable = SendableImage(original)
+        var source = source
+        source?.screenFrame = Self.recordFrame(frame)
+        let recordSource = source
+        let encoded = await Task.detached { () -> (file: Data?, png: Data?, image: SendableImage) in
+            let image = downscale ? ImageCodec.downscaled(sendable.image, scale: originalScale) : sendable.image
+            let scale = downscale ? 1 : originalScale
+            // Written in the same encode, so the record costs no second pass. A PNG's goes on the clipboard with it.
+            let record = record ? CaptureRecord(kind: "image", created: Date(), size: CaptureRecord.Size(width: image.width, height: image.height), scale: scale, source: recordSource) : nil
+            let file = ImageCodec.data(from: image, scale: scale, format: format, windowShadow: windowShadow, record: record)
+            // The clipboard takes a PNG, which a PNG capture's file already is.
+            let png = format == .png ? file : copies ? ImageCodec.data(from: image, scale: scale) : nil
+            return (file, png, SendableImage(image))
+        }.value
+        guard let file = encoded.file, !copies || encoded.png != nil else {
+            throw CaptureError.encodingFailed
+        }
+        return EncodedCapture(file: file, png: encoded.png, image: encoded.image.image, scale: downscale ? 1 : originalScale)
+    }
+
+    /// Writes a capture's file as a new file in the capture folder, with a thumbnail for its Quick Access card if
+    /// `thumbnail` is set.
+    private func write(_ data: Data, prefs: Preferences, thumbnail showsCard: Bool) async throws -> (url: URL, thumbnail: CGImage?) {
+        let folder = prefs.captureFolder
+        let url = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: prefs.imageFormat.fileExtension, prefix: prefs.filePrefix)
+        let thumbnail = try await Task.detached { () throws -> SendableImage? in
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try data.write(to: url)
+            return showsCard ? ImageCodec.thumbnail(from: data, maxPixelSize: 480).map(SendableImage.init) : nil
+        }.value?.image
+        log.notice("Saved \(url.path)")
+        return (url, thumbnail)
+    }
+
+    // MARK: Agents
+
+    /// A screenshot of the open window `query` names, for an agent. It's saved and nothing else, as `saveCapture` does,
+    /// and a notice says so, since the user didn't ask for it themselves. Never shows the permission onboarding, which
+    /// would take focus from whatever the agent is working on.
+    func agentCapture(window query: String) async throws(ShotCommandError) -> [String: JSONValue] {
+        guard Permissions.hasScreenCapture else {
+            throw .noPermission("Shot doesn't have the Screen Recording permission. Grant it in System Settings › Privacy & Security › Screen & System Audio Recording.")
+        }
+        guard !busy, setup == nil else {
+            throw .busy("Shot is in the middle of a capture or the recording setup; try again once it's done.")
+        }
+        let windows = WindowCapturer.onScreenWindows()
+        let candidates = windows.map { WindowMatch.Candidate(id: $0.windowID, app: $0.ownerName ?? "", title: $0.title ?? "") }
+        guard let match = WindowMatch.best(query, in: candidates), let info = windows.first(where: { $0.windowID == match.id }) else {
+            throw .noInput("No open window matches \"\(query)\". \(WindowMatch.listing(candidates))")
+        }
+        busy = true
+        defer { busy = false }
+        let owner = NSRunningApplication(processIdentifier: info.ownerPID)
+        let app = info.ownerName ?? owner?.localizedName ?? match.label
+        let source = CaptureRecord.Source(mode: "window", app: app, bundleID: owner?.bundleIdentifier, windowTitle: info.title)
+        let saved: (url: URL, width: Int, height: Int)
+        do {
+            let shadow = Preferences().windowShadow
+            let captured = try await WindowCapturer.capture(windowID: info.windowID, includeShadow: shadow)
+            let frame = Geometry.flip(info.frame, primaryHeight: NSScreen.screens.first?.frame.height ?? 0)
+            saved = try await saveCapture(image: captured.image, scale: captured.scale, from: frame, windowShadow: shadow, source: source)
+        } catch CaptureError.windowNotFound {
+            throw .noInput("\(match.label) closed before Shot could capture it.")
+        } catch {
+            throw .io("Couldn't capture \(match.label): \(error.localizedDescription)")
+        }
+        log.notice("Agent captured window \(info.windowID) of \(app, privacy: .public)")
+        Toast.show("An agent took a screenshot of \(app)", duration: .seconds(3))
+        let bytes = (try? saved.url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        return [
+            "path": .string(saved.url.path),
+            "size": .object(["width": .number(Double(saved.width)), "height": .number(Double(saved.height))]),
+            "bytes": .number(Double(bytes)),
+            "window": .object(["app": .string(app), "title": .string(info.title ?? "")]),
+        ]
+    }
+
+    /// What an agent's status request answers: whether a capture or the recording setup is under way, and the
+    /// recording in progress, if any.
+    func agentStatus() -> [String: JSONValue] {
+        let recording: JSONValue = recorder.isRecording ? .object(["byAgent": .bool(false), "elapsed": .number(recorder.elapsed)]) : .null
+        return ["capturing": .bool(busy || setup != nil), "recording": recording]
     }
 
     /// The style a capture opens with: the one Use this style for new captures saved, if `url` is a new capture opened

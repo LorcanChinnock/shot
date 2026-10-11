@@ -9,6 +9,8 @@ public enum ShotCommand: Equatable, Sendable {
     case redact(RedactOptions)
     case annotate(AnnotateOptions)
     case frames(FramesOptions)
+    /// A screenshot of the open window `window` names, taken by the running app.
+    case capture(window: String)
     case mcp
     case version
     /// Usage, for one command or for all of them.
@@ -110,7 +112,7 @@ public enum ShotCommand: Equatable, Sendable {
     }
 
     /// The commands `help` knows, in the order it lists them.
-    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "mcp"]
+    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "capture", "mcp"]
 
     /// The command's name, for error messages such as `shot gif: …`.
     public var name: String {
@@ -121,6 +123,7 @@ public enum ShotCommand: Equatable, Sendable {
         case .redact: "redact"
         case .annotate: "annotate"
         case .frames: "frames"
+        case .capture: "capture"
         case .mcp: "mcp"
         case .version: "version"
         case .help: "help"
@@ -152,6 +155,14 @@ public enum ShotCommand: Equatable, Sendable {
         case "info", "gif", "trim", "redact", "annotate", "frames":
             if rest.contains(where: isHelp) { return .help(first) }
             return try parseMedia(first, rest)
+        case "capture":
+            if rest.contains(where: isHelp) { return .help(first) }
+            let (positional, values) = try options(first, rest)
+            guard positional.isEmpty else { throw .usage(first, "takes no file; name the window with --window") }
+            guard let window = values["window"]?.first?.trimmingCharacters(in: .whitespaces), !window.isEmpty else {
+                throw .usage(first, "needs --window with words from the window's title or app, such as --window Simulator")
+            }
+            return .capture(window: window)
         default:
             throw .usage(nil, "no command named \"\(first)\"")
         }
@@ -169,9 +180,11 @@ public enum ShotCommand: Equatable, Sendable {
         "redact": ["output": false, "rect": true, "style": false],
         "annotate": ["output": false, "json": false],
         "frames": ["output": false, "count": false, "every": false, "width": false],
+        "capture": ["window": false],
     ]
 
-    private static func parseMedia(_ command: String, _ arguments: [String]) throws(ShotCommandError) -> ShotCommand {
+    /// The arguments that aren't flags, and each flag's values, checked against what `command` takes.
+    private static func options(_ command: String, _ arguments: [String]) throws(ShotCommandError) -> (positional: [String], values: [String: [String]]) {
         let allowed = flags[command] ?? [:]
         var positional: [String] = []
         var values: [String: [String]] = [:]
@@ -206,6 +219,11 @@ public enum ShotCommand: Equatable, Sendable {
             }
             values[name, default: []].append(value ?? "")
         }
+        return (positional, values)
+    }
+
+    private static func parseMedia(_ command: String, _ arguments: [String]) throws(ShotCommandError) -> ShotCommand {
+        let (positional, values) = try options(command, arguments)
         guard positional.count == 1, let input = positional.first else {
             throw .usage(command, positional.isEmpty ? "missing the file to work on" : "expected one file, got \(positional.count)")
         }
@@ -325,6 +343,7 @@ public enum ShotCommand: Equatable, Sendable {
             "redact": "\(program) redact <image> --rect x,y,w,h [--rect …] [--style blur|pixelate] [-o out.png]\n    Hides each rectangle, in the image's pixels. Pixelate is the default.",
             "annotate": "\(program) annotate <image> --json marks.json [-o out.png]\n    Draws marks on the image, in the format of Shot's capture record (see docs). --json - reads them from standard input.",
             "frames": "\(program) frames <video> [--count 8 | --every 2] [--width 1568] [-o folder]\n    Still frames of the video, for an agent that can't watch it: where the picture changes, or evenly every few seconds.",
+            "capture": "\(program) capture --window <title or app>\n    A screenshot of that open window, taken by Shot without taking focus, saved to the capture folder. Needs Shot running with Settings › Agents › Let agents capture and record on.",
             "mcp": "\(program) mcp\n    Serves Shot's captures to an AI agent over MCP, on standard input and output.",
         ]
         if let command, let line = lines[command] {
@@ -363,22 +382,47 @@ public enum ShotCommandError: Error, Equatable, Sendable {
     /// Reading or writing failed partway.
     case io(String)
     case `internal`(String)
+    /// Shot isn't running, or Let agents capture and record is off, so nothing answers.
+    case unavailable(String)
+    /// Shot is in the middle of something it can't share: a selection, the recording setup, or a recording.
+    case busy(String)
+    /// Shot doesn't have the Screen Recording permission.
+    case noPermission(String)
 
     public var exitCode: Int32 {
         switch self {
         case .usage: 64
         case .data: 65
         case .noInput: 66
+        case .unavailable: 69
         case .internal: 70
         case .cantCreate: 73
         case .io: 74
+        case .busy: 75
+        case .noPermission: 77
         }
     }
 
     public var message: String {
         switch self {
-        case let .usage(_, message), let .data(message), let .noInput(message), let .cantCreate(message), let .io(message), let .internal(message):
+        case let .usage(_, message), let .data(message), let .noInput(message), let .cantCreate(message), let .io(message), let .internal(message),
+             let .unavailable(message), let .busy(message), let .noPermission(message):
             message
+        }
+    }
+
+    /// The error with `exitCode`, as the app sends it back to the command line; an unknown code is `.internal`.
+    public init(exitCode: Int32, message: String) {
+        self = switch exitCode {
+        case 64: .usage(nil, message)
+        case 65: .data(message)
+        case 66: .noInput(message)
+        case 69: .unavailable(message)
+        case 73: .cantCreate(message)
+        case 74: .io(message)
+        case 75: .busy(message)
+        case 77: .noPermission(message)
+        default: .internal(message)
         }
     }
 }

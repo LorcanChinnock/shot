@@ -4,8 +4,11 @@ import ImageIO
 
 extension AgentTools {
     /// The tools reading the captures in `folder`, as the gallery lists them. GIFs count as images: an agent sees their
-    /// first frame.
-    public static func live(folder: URL) -> AgentTools {
+    /// first frame. `agent` sends a request to the running app, for the tools that capture.
+    public static func live(
+        folder: URL,
+        agent: @escaping @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue] = { _ throws(ShotCommandError) in throw .unavailable("can't reach Shot from here") }
+    ) -> AgentTools {
         AgentTools(
             folder: folder,
             entries: {
@@ -22,7 +25,8 @@ extension AgentTools {
             },
             frames: { entry, count throws(ShotCommandError) in
                 try await keyFrames(of: entry.url, count: count)
-            }
+            },
+            agent: agent
         )
     }
 

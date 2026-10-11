@@ -567,6 +567,7 @@ private struct DevicePicker: View {
 
 private struct AgentSettings: View {
     @Setting(PreferenceKey.agentHandoff) private var handoff: Bool
+    @Setting(PreferenceKey.agentCapture) private var capture: Bool
     private let color = SettingsSection.agents.color
 
     /// The MCP server inside this app's bundle, so a dev build names its own.
@@ -578,6 +579,13 @@ private struct AgentSettings: View {
                 title: "Hand captures to agents",
                 subtitle: "Records inside each capture which app and window it came from and what you marked, so an agent can read it. The record travels with the file and its copies. Copied captures are kept as files, so an agent can fetch them.",
                 isOn: $handoff, color: color, divider: false
+            )
+        }
+        SettingsCard(title: "Capture", symbol: "macwindow") {
+            ToggleRow(
+                title: "Let agents capture and record",
+                subtitle: "Lets an agent ask Shot, through the shot command or the MCP server, for a screenshot of an open window, such as the Simulator. Shot shows a notice each time, and never takes focus.",
+                isOn: $capture, color: color, divider: false
             )
         }
         SettingsCard(title: "MCP server", symbol: "terminal.fill") {

@@ -54,6 +54,9 @@ final class Recorder: NSObject {
 
     var isRecording: Bool { phase == .recording || phase == .paused }
 
+    /// How long the recording in progress has run, leaving out pauses.
+    var elapsed: TimeInterval { model.elapsed(at: Date()) }
+
     /// Choices made for one recording; Settings only holds the defaults they start from.
     struct Options {
         let camera: Bool

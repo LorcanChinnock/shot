@@ -37,10 +37,10 @@ private let captures = tools(in: folder, [
     ("Recording C.mp4", 5, true),
 ])
 
-@Test func thereAreSevenToolsEachWithAnObjectSchema() {
-    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "annotate", "make_gif", "trim_video"])
+@Test func thereAreEightToolsEachWithAnObjectSchema() {
+    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "annotate", "make_gif", "trim_video", "capture_window"])
     let required = AgentTools.definitions.map { $0.inputSchema["required"] }
-    #expect(required == [nil, nil, nil, nil, .array([.string("annotations")]), nil, .array([.string("start"), .string("end")])])
+    #expect(required == [nil, nil, nil, nil, .array([.string("annotations")]), nil, .array([.string("start"), .string("end")]), .array([.string("window")])])
     for tool in AgentTools.definitions {
         #expect(tool.inputSchema["type"] == .string("object"))
         #expect(!tool.description.isEmpty)
@@ -243,4 +243,47 @@ private final class Ran: @unchecked Sendable {
     let screenshot = await tools.call("get_frames", .object(["name": .string("Shot B")]))
     #expect(screenshot.isError)
     #expect(asked.commands.count == 1)
+}
+
+private final class Asked: @unchecked Sendable {
+    var requests: [AgentRequest] = []
+}
+
+private func capturing(_ asked: Asked, answer: Result<[String: JSONValue], ShotCommandError>) -> AgentTools {
+    var tools = captures
+    tools.agent = { request throws(ShotCommandError) in
+        asked.requests.append(request)
+        return try answer.get()
+    }
+    tools.record = { entry in
+        CaptureRecord(kind: "image", created: now, size: CaptureRecord.Size(width: 10, height: 10), scale: 2, source: CaptureRecord.Source(mode: "window", app: "Simulator", windowTitle: entry.name))
+    }
+    return tools
+}
+
+@Test func captureWindowAsksTheAppAndShowsWhatItSaved() async {
+    let asked = Asked()
+    let saved: [String: JSONValue] = [
+        "path": .string("/shots/Shot C.png"),
+        "bytes": .number(1200),
+        "window": .object(["app": .string("Simulator"), "title": .string("iPhone 17")]),
+    ]
+    let result = await capturing(asked, answer: .success(saved)).call("capture_window", .object(["window": .string("simulator")]))
+    #expect(result.isError == false)
+    #expect(asked.requests == [AgentRequest(.capture, window: "simulator")])
+    #expect(result.content.first == .image(data: "PREVIEW:Shot C.png", mimeType: "image/jpeg"))
+    let lines = texts(result)
+    #expect(lines.first?.contains(#""path" : "/shots/Shot C.png""#) == true)
+    #expect(lines.last?.contains("Simulator") == true)
+}
+
+@Test func captureWindowNeedsAWindowAndPassesOnTheAppsError() async {
+    let asked = Asked()
+    let tools = capturing(asked, answer: .failure(.unavailable("Turn on Let agents capture and record")))
+    let missing = await tools.call("capture_window", .object(["window": .string("  ")]))
+    #expect(missing.isError)
+    #expect(asked.requests.isEmpty)
+    let off = await tools.call("capture_window", .object(["window": .string("Calculator")]))
+    #expect(off.isError)
+    #expect(texts(off) == ["Turn on Let agents capture and record"])
 }
