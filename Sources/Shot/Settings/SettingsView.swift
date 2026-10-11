@@ -589,7 +589,8 @@ private struct AgentSettings: View {
                 .padding(.vertical, 9)
             CommandRow(title: "Claude Code", command: "claude mcp add shot -- \"\(Self.server)\" mcp")
             CommandRow(title: "Claude Code, after a Homebrew install", command: "claude mcp add shot -- shot mcp")
-            CommandRow(title: "Cursor and other JSON configs", command: #"{"mcpServers": {"shot": {"command": "\#(Self.server)", "args": ["mcp"]}}}"#, divider: false)
+            CommandRow(title: "Cursor and other JSON configs", command: #"{"mcpServers": {"shot": {"command": "\#(Self.server)", "args": ["mcp"]}}}"#)
+            CommandRow(title: "Codex, in ~/.codex/config.toml", command: "[mcp_servers.shot]\ncommand = \"\(Self.server)\"\nargs = [\"mcp\"]", divider: false)
         }
     }
 }
