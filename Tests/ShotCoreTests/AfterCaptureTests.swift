@@ -51,3 +51,15 @@ func afterCaptureFollowsTheSettings(_ row: AfterCaptureRow) {
     #expect(AfterCapture.plan(prefs: prefs, isVideo: false).copies)
     #expect(!AfterCapture.plan(prefs: prefs, isVideo: true).copies)
 }
+
+@Test func agentHandoffWritesEveryCopiedScreenshotAndChangesNothingElse() {
+    for bits in 0..<32 {
+        let (copy, save, quickAccess, openEditor, isVideo) = (bits & 1 != 0, bits & 2 != 0, bits & 4 != 0, bits & 8 != 0, bits & 16 != 0)
+        let without = AfterCapture.plan(copy: copy, save: save, quickAccess: quickAccess, openEditor: openEditor, isVideo: isVideo)
+        let with = AfterCapture.plan(copy: copy, save: save, quickAccess: quickAccess, openEditor: openEditor, isVideo: isVideo, agentHandoff: true)
+        #expect(with.copies == without.copies)
+        #expect(with.next == without.next)
+        // A recording is in its file from the start, so only a copied screenshot needs one written for its path.
+        #expect(with.writesFile == (without.writesFile || copy && !isVideo))
+    }
+}
