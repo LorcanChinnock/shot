@@ -1,5 +1,6 @@
 import AVFoundation
 import CoreImage
+import os
 
 /// A project as AVFoundation plays and exports it: its clips on composition tracks, and a compositor that draws the video layers.
 public struct ProjectComposition: @unchecked Sendable {
@@ -196,6 +197,8 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
     private let overlays = OverlayCache()
     private let shadows = ClipShadowCache()
     private let edges = ClipEdgeCache()
+    /// Counts cancels, so a frame a seek left behind stops drawing, since AVFoundation throws it away.
+    private let cancels = OSAllocatedUnfairLock(initialState: 0)
 
     var sourcePixelBufferAttributes: [String: any Sendable]? { Self.pixelFormat }
     var requiredPixelBufferAttributesForRenderContext: [String: any Sendable] { Self.pixelFormat }
@@ -203,7 +206,15 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
     func renderContextChanged(_ newRenderContext: AVVideoCompositionRenderContext) {}
 
     func startRequest(_ request: AVAsynchronousVideoCompositionRequest) {
+        let asked = cancels.withLock { $0 }
         queue.async {
+            func cancelled() -> Bool {
+                guard self.cancels.withLock({ $0 }) != asked else {
+                    return false
+                }
+                request.finishCancelledRequest()
+                return true
+            }
             guard let instruction = request.videoCompositionInstruction as? ProjectInstruction, let output = request.renderContext.newPixelBuffer() else {
                 request.finish(with: CocoaError(.fileReadUnknown))
                 return
@@ -225,6 +236,9 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
                 run = []
             }
             for layer in instruction.layers {
+                if cancelled() {
+                    return
+                }
                 switch layer {
                 case let .annotation(clip):
                     // One being edited draws where it is in the stack.
@@ -270,6 +284,9 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
             }
             run += drawn.filter { !stacked.contains($0.id) && $0.start <= time && time < $0.end }.map(item)
             flush()
+            if cancelled() {
+                return
+            }
             self.context.render(image.cropped(to: canvas), to: output, bounds: canvas, colorSpace: nil)
             if let tags = firstFrame.flatMap({ CVBufferCopyAttachments($0, .shouldPropagate) }) {
                 CVBufferSetAttachments(output, tags, .shouldPropagate)
@@ -278,7 +295,9 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
         }
     }
 
-    func cancelAllPendingVideoCompositionRequests() {}
+    func cancelAllPendingVideoCompositionRequests() {
+        cancels.withLock { $0 += 1 }
+    }
 }
 
 public enum ProjectExporter {
