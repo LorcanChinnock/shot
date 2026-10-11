@@ -412,6 +412,36 @@ extension MediaTests {
         }
         #expect(!FileManager.default.fileExists(atPath: output.path))
     }
+
+    @Test func playbackStillDrawsTheFrameItLandsOnAfterScrubbing() async throws {
+        let base = temp("base.mp4")
+        defer { try? FileManager.default.removeItem(at: base) }
+        try await writeSolidVideo(to: base, color: .green, size: canvas, seconds: 4)
+        let stroke = (0...20).map { CGPoint(x: 40 + CGFloat($0) * 28, y: 180 + 40 * sin(CGFloat($0) / 3)) }
+        let marker = Annotation(kind: .marker(stroke), color: RGBA(1, 1, 0), lineWidth: 24)
+        let project = Project(source: base, duration: 4, canvasSize: canvas, hasAudio: false).adding(annotation: marker, at: 0, duration: 4).project
+        let built = try await CompositionBuilder.build(project)
+        let item = await AVPlayerItem(asset: built.asset)
+        await MainActor.run { item.videoComposition = built.videoComposition }
+        let output = AVPlayerItemVideoOutput(pixelBufferAttributes: nil)
+        item.add(output)
+        let player = await AVPlayer(playerItem: item)
+        await player.play()
+        // Each seek cancels the frames the one before it asked for, some of them partway through drawing.
+        for step in 0..<30 {
+            await player.seek(to: CMTime(seconds: Double(step % 15) * 0.25, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: { _ in })
+            try await Task.sleep(for: .milliseconds(16))
+        }
+        await player.pause()
+        let target = CMTime(seconds: 2, preferredTimescale: 600)
+        #expect(await player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero))
+        var frame: CVPixelBuffer?
+        for _ in 0..<100 where frame == nil {
+            frame = output.copyPixelBuffer(forItemTime: target, itemTimeForDisplay: nil)
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(frame != nil)
+    }
 }
 
 @Test func exportStaysH264UnlessH264WouldDropFrames() {
