@@ -136,6 +136,8 @@ Pinch, or press ⌘+ and ⌘-, to zoom. ⌘0 fits the canvas to the window and �
 
 **Copy** copies the annotated image. **Save** (⌘S) writes it beside the original as `name (2).png` (or `.jpg`), then `name (3).png` and so on, and copies it; the original is never changed. Unsaved changes show **EDITED** in the title bar, and closing the window asks whether to save them. With [**Hand captures to agents**](#using-shot-with-ai-agents) on, opening a version you saved this way opens the file it came from with your marks still live, so you can move or change them; Save then writes the next version. A version with placed images, spotlights, styled marks, aligned text, hidden layers or a styled screenshot opens flattened, as before.
 
+![A saved version reopened in the editor as the screenshot it came from, with its counter, box and arrow still live: the arrow is selected with its handles, and the Layers panel lists Step 1, Rectangle and Arrow](media/editor-versions.png)
+
 ## Video editor
 
 ![The video editor timeline with an arrow on its own lane, a trimmed start, a cut, an audio track with its waveform, the Inspector and the GIF export options](media/video-timeline.png)
@@ -184,6 +186,8 @@ The estimated size of the exported file is shown before you export. **Cancel**, 
 ## Using Shot with AI agents
 
 Claude Code, Codex and Cursor all take a pasted screenshot, and your arrows and boxes show the agent where to look. Shot can also hand over the file itself, say exactly what you marked, and let the agent fetch your latest capture on its own.
+
+![Settings › Agents with Hand captures to agents and Let agents capture and record turned on, and the MCP setup commands for Claude Code, Cursor and Codex, each with a Copy button](media/agents-settings.png)
 
 - **Copy the path.** Right-click a Quick Access card and choose **Copy Path**, or give **Copy Latest Capture's Path** a shortcut in **Settings › Shortcuts**. An agent can open the file from its path, now or later in the conversation, and find what Shot recorded in it. Copies are always the image alone.
 - **Turn on Hand captures to agents** in **Settings › Agents** to record, inside each screenshot you take or save from the editor, which app and window it came from and what you marked. Agents read it through the [MCP server](#the-mcp-server). A copied capture is also kept as a file, even with **Save to folder** off, so the agent can fetch it. With the setting off, Shot records nothing.
