@@ -55,6 +55,8 @@ public enum ShotCommands {
                 }
                 return annotations
             }
+        case let .frames(options):
+            return try await frames(options)
         case .mcp, .version, .help:
             throw .internal("\(command.name) isn't a media command")
         }
@@ -140,6 +142,63 @@ public enum ShotCommands {
             }
         }
         return .object(object)
+    }
+
+    static func frames(_ options: ShotCommand.FramesOptions) async throws(ShotCommandError) -> JSONValue {
+        let input = url(options.input)
+        let duration = try await videoDuration(input)
+        let times: [Double]
+        if let every = options.every {
+            times = Array(stride(from: 0, to: duration, by: every))
+            guard times.count <= ShotCommand.FramesOptions.maximumEvery else {
+                throw .usage("frames", "--every \(String(format: "%g", every)) gives \(times.count) frames of the \(String(format: "%.1f", duration)) s video; the most is \(ShotCommand.FramesOptions.maximumEvery)")
+            }
+        } else {
+            do {
+                times = try await KeyFrameExtractor.changeTimes(in: input, duration: duration, count: options.count)
+            } catch {
+                throw .io("couldn't read the video's frames: \(error.localizedDescription)")
+            }
+        }
+        let folder = try makeFolder(beside: input, output: options.output)
+        do {
+            let frames = try await KeyFrameExtractor.frames(of: input, at: times, maxWidth: options.width)
+            var written: [JSONValue] = []
+            for (index, frame) in frames.enumerated() {
+                let file = folder.appendingPathComponent(String(format: "%02d %.1fs.jpg", index + 1, frame.time))
+                guard let data = ImageCodec.data(from: frame.image, scale: 1, format: .jpeg) else {
+                    throw ShotCommandError.internal("couldn't encode the frame at \(String(format: "%.1f", frame.time)) s")
+                }
+                try data.write(to: file, options: .withoutOverwriting)
+                var object = try Self.written(file)
+                object["time"] = .number((frame.time * 1000).rounded() / 1000)
+                written.append(.object(object))
+            }
+            return .object(["path": .string(folder.path), "frames": .array(written)])
+        } catch {
+            // The folder is new and only this command's, so a failure leaves nothing behind.
+            try? FileManager.default.removeItem(at: folder)
+            throw (error as? ShotCommandError) ?? .io("couldn't write the frames: \(error.localizedDescription)")
+        }
+    }
+
+    /// A new folder for `frames`: `output` if given, which must not exist, or `<name> frames` beside the video, as its
+    /// next version when that's taken. Creating it fails if it exists, so it's never one already in use.
+    static func makeFolder(beside input: URL, output: String?) throws(ShotCommandError) -> URL {
+        var folder = output.map(url) ?? input.deletingPathExtension().deletingLastPathComponent().appendingPathComponent(input.deletingPathExtension().lastPathComponent + " frames")
+        for _ in 0 ..< 1000 {
+            do {
+                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
+                return folder
+            } catch CocoaError.fileWriteFileExists where output == nil {
+                folder = FileNaming.nextVersionURL(of: folder)
+            } catch CocoaError.fileWriteFileExists {
+                throw .cantCreate("\(folder.path) already exists, and shot never overwrites")
+            } catch {
+                throw .cantCreate("couldn't make \(folder.path): \(error.localizedDescription)")
+            }
+        }
+        throw .cantCreate("couldn't find a free name beside \(input.path)")
     }
 
     /// Draws the annotations `make` gives for the input image, and the image's scale, onto a copy of it, recording them

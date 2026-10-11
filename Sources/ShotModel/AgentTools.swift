@@ -1,6 +1,6 @@
 import Foundation
 
-/// The MCP server's tools: three that read captures, and three that make new files from one, never changing, moving or
+/// The MCP server's tools: four that read captures, and three that make new files from one, never changing, moving or
 /// deleting anything. What they're called, what they take, and what they say back are here. Finding files, drawing
 /// previews and running the commands need Apple frameworks, so they come in as closures; ShotCore's `live(folder:)`
 /// supplies them.
@@ -15,6 +15,8 @@ public struct AgentTools: Sendable {
     public var record: @Sendable (AgentCaptures.Entry) -> CaptureRecord?
     /// Runs a `shot` command, as the command line does, for the tools that make files.
     public var run: @Sendable (ShotCommand) async throws(ShotCommandError) -> JSONValue
+    /// Up to the given number of a recording's key frames, each as its time then its image.
+    public var frames: @Sendable (AgentCaptures.Entry, Int) async throws(ShotCommandError) -> [MCPServer.Content]
     public var now: @Sendable () -> Date
     public var timeZone: TimeZone
 
@@ -24,6 +26,7 @@ public struct AgentTools: Sendable {
         preview: @escaping @Sendable (AgentCaptures.Entry) async -> [MCPServer.Content],
         record: @escaping @Sendable (AgentCaptures.Entry) -> CaptureRecord? = { _ in nil },
         run: @escaping @Sendable (ShotCommand) async throws(ShotCommandError) -> JSONValue = { _ throws(ShotCommandError) in throw .internal("can't run commands here") },
+        frames: @escaping @Sendable (AgentCaptures.Entry, Int) async throws(ShotCommandError) -> [MCPServer.Content] = { _, _ throws(ShotCommandError) in throw .internal("can't read frames here") },
         now: @escaping @Sendable () -> Date = Date.init,
         timeZone: TimeZone = .current
     ) {
@@ -32,6 +35,7 @@ public struct AgentTools: Sendable {
         self.preview = preview
         self.record = record
         self.run = run
+        self.frames = frames
         self.now = now
         self.timeZone = timeZone
     }
@@ -42,6 +46,7 @@ public struct AgentTools: Sendable {
     public static let annotate = "annotate"
     public static let makeGIF = "make_gif"
     public static let trimVideo = "trim_video"
+    public static let getFrames = "get_frames"
 
     private static let capture: [String: JSONValue] = [
         "path": .object(["type": .string("string"), "description": .string("The capture's full path. Without path or name, the newest one.")]),
@@ -84,6 +89,13 @@ public struct AgentTools: Sendable {
                 "path": .object(["type": .string("string"), "description": .string("The capture's full path.")]),
                 "name": .object(["type": .string("string"), "description": .string("Its file name, or words from it.")]),
             ])
+        ),
+        MCPServer.Tool(
+            name: getFrames,
+            description: "Still frames of a Shot recording, since a model can't watch video: the first and last, and the frame after each change on screen once it settles, each with its time in seconds. Use this to see what happened in a recording, such as the steps of a bug. Reads only; writes nothing.",
+            inputSchema: schema(capture.merging([
+                "count": .object(["type": .string("integer"), "description": .string("How many frames, 1 to \(ShotCommand.FramesOptions.maximumCount). Default 8.")]),
+            ]) { $1 })
         ),
         MCPServer.Tool(
             name: annotate,
@@ -149,6 +161,20 @@ public struct AgentTools: Sendable {
             return await describe(entry)
         case Self.annotate, Self.makeGIF, Self.trimVideo:
             return await make(name, arguments, entries)
+        case Self.getFrames:
+            let query = [arguments["path"]?.string, arguments["name"]?.string].compactMap { $0 }.first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+            guard let entry = query.map({ AgentCaptures.named($0, in: entries) }) ?? AgentCaptures.latest(entries, kind: .video) else {
+                return query.map { notFound($0, in: entries) } ?? MCPServer.ToolResult(content: [.text(empty(entries, kind: .video))], isError: true)
+            }
+            guard entry.isVideo else {
+                return MCPServer.ToolResult(content: [.text("\(entry.name) is a screenshot; get_frames needs a recording. latest_capture or get_capture shows a screenshot.")], isError: true)
+            }
+            let count = arguments["count"]?.number.flatMap { $0.isFinite ? Int(min(max($0, 1), Double(ShotCommand.FramesOptions.maximumCount))) : nil } ?? 8
+            do {
+                return MCPServer.ToolResult(content: [.text("\(entry.name), at \(entry.url.path):")] + (try await frames(entry, count)))
+            } catch {
+                return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
+            }
         default:
             return MCPServer.ToolResult(content: [.text("Unknown tool: \(name)")], isError: true)
         }

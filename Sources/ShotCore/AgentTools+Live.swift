@@ -19,6 +19,9 @@ extension AgentTools {
             },
             run: { command throws(ShotCommandError) in
                 try await ShotCommands.run(command)
+            },
+            frames: { entry, count throws(ShotCommandError) in
+                try await keyFrames(of: entry.url, count: count)
             }
         )
     }
@@ -33,6 +36,30 @@ extension AgentTools {
         if let file = pixelSize(of: CGImageSourceCreateWithURL(url as CFURL, nil)),
            let shown = pixelSize(of: CGImageSourceCreateWithData(jpeg as CFData, nil)), file != shown {
             content.append(.text("The preview is \(shown.width)×\(shown.height) pixels. The file is \(file.width)×\(file.height), which is what the marks' coordinates are in."))
+        }
+        return content
+    }
+
+    /// The key frames of the recording at `url`, each a line with its time and then a JPEG small enough that a dozen fit
+    /// in what clients accept in one result.
+    static func keyFrames(of url: URL, count: Int) async throws(ShotCommandError) -> [MCPServer.Content] {
+        guard let media = try? await MediaProbe.probe(url), media.size != nil else {
+            throw .data("Couldn't read \(url.lastPathComponent) as a video.")
+        }
+        let frames: [KeyFrameExtractor.Frame]
+        do {
+            let times = try await KeyFrameExtractor.changeTimes(in: url, duration: media.duration, count: count)
+            frames = try await KeyFrameExtractor.frames(of: url, at: times, maxWidth: 1024)
+        } catch {
+            throw .io("Couldn't read the frames of \(url.lastPathComponent): \(error.localizedDescription)")
+        }
+        var content: [MCPServer.Content] = []
+        for frame in frames {
+            guard let jpeg = ImageCodec.previewJPEG(of: frame.image, maxPixelSize: 1024, maxBytes: 400_000) else {
+                continue
+            }
+            content.append(.text(String(format: "t=%.1fs of %.1fs", frame.time, media.duration)))
+            content.append(.image(data: jpeg.base64EncodedString(), mimeType: "image/jpeg"))
         }
         return content
     }

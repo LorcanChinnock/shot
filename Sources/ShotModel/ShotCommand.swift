@@ -8,6 +8,7 @@ public enum ShotCommand: Equatable, Sendable {
     case trim(TrimOptions)
     case redact(RedactOptions)
     case annotate(AnnotateOptions)
+    case frames(FramesOptions)
     case mcp
     case version
     /// Usage, for one command or for all of them.
@@ -84,8 +85,32 @@ public enum ShotCommand: Equatable, Sendable {
         }
     }
 
+    public struct FramesOptions: Equatable, Sendable {
+        public static let maximumCount = 12
+        /// The most `every` may give, so a short interval on a long video can't fill a disk.
+        public static let maximumEvery = 60
+
+        public var input: String
+        /// The folder to write the frames into, which must not exist yet.
+        public var output: String?
+        /// How many frames to pick where the picture changes, 1 to `maximumCount`.
+        public var count: Int
+        /// Seconds between frames, taken evenly instead of where the picture changes.
+        public var every: Double?
+        /// The frames' width in pixels at most; they're never enlarged.
+        public var width: Int
+
+        public init(input: String, output: String? = nil, count: Int = 8, every: Double? = nil, width: Int = 1568) {
+            self.input = input
+            self.output = output
+            self.count = count
+            self.every = every
+            self.width = width
+        }
+    }
+
     /// The commands `help` knows, in the order it lists them.
-    public static let names = ["info", "gif", "trim", "redact", "annotate", "mcp"]
+    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "mcp"]
 
     /// The command's name, for error messages such as `shot gif: …`.
     public var name: String {
@@ -95,6 +120,7 @@ public enum ShotCommand: Equatable, Sendable {
         case .trim: "trim"
         case .redact: "redact"
         case .annotate: "annotate"
+        case .frames: "frames"
         case .mcp: "mcp"
         case .version: "version"
         case .help: "help"
@@ -123,7 +149,7 @@ public enum ShotCommand: Equatable, Sendable {
             if rest.contains(where: isHelp) { return .help("mcp") }
             guard rest.isEmpty else { throw .usage("mcp", "mcp takes no arguments") }
             return .mcp
-        case "info", "gif", "trim", "redact", "annotate":
+        case "info", "gif", "trim", "redact", "annotate", "frames":
             if rest.contains(where: isHelp) { return .help(first) }
             return try parseMedia(first, rest)
         default:
@@ -142,6 +168,7 @@ public enum ShotCommand: Equatable, Sendable {
         "trim": ["output": false, "start": false, "end": false],
         "redact": ["output": false, "rect": true, "style": false],
         "annotate": ["output": false, "json": false],
+        "frames": ["output": false, "count": false, "every": false, "width": false],
     ]
 
     private static func parseMedia(_ command: String, _ arguments: [String]) throws(ShotCommandError) -> ShotCommand {
@@ -233,6 +260,28 @@ public enum ShotCommand: Equatable, Sendable {
                 style = picked
             }
             return .redact(RedactOptions(input: input, output: output, rects: rects, style: style))
+        case "frames":
+            var options = FramesOptions(input: input, output: output)
+            if let text = values["count"]?.first {
+                guard let count = Int(text), (1...FramesOptions.maximumCount).contains(count) else {
+                    throw .usage(command, "--count \(text) must be from 1 to \(FramesOptions.maximumCount)")
+                }
+                options.count = count
+            }
+            if let text = values["every"]?.first {
+                guard values["count"] == nil else { throw .usage(command, "use --count or --every, not both") }
+                guard let every = Self.seconds(text), every > 0 else {
+                    throw .usage(command, "--every \(text) must be a time above 0, such as 2 or 0:30")
+                }
+                options.every = every
+            }
+            if let text = values["width"]?.first {
+                guard let width = Int(text), (16...8192).contains(width) else {
+                    throw .usage(command, "--width \(text) must be from 16 to 8192 pixels")
+                }
+                options.width = width
+            }
+            return .frames(options)
         default:
             guard let json = values["json"]?.first else {
                 throw .usage(command, "needs --json with a file of marks, or - to read them from standard input")
@@ -275,6 +324,7 @@ public enum ShotCommand: Equatable, Sendable {
             "trim": "\(program) trim <video> --start 2.5 --end 9 [-o out.mov]\n    The part of the video between two times, without re-encoding where it can.",
             "redact": "\(program) redact <image> --rect x,y,w,h [--rect …] [--style blur|pixelate] [-o out.png]\n    Hides each rectangle, in the image's pixels. Pixelate is the default.",
             "annotate": "\(program) annotate <image> --json marks.json [-o out.png]\n    Draws marks on the image, in the format of Shot's capture record (see docs). --json - reads them from standard input.",
+            "frames": "\(program) frames <video> [--count 8 | --every 2] [--width 1568] [-o folder]\n    Still frames of the video, for an agent that can't watch it: where the picture changes, or evenly every few seconds.",
             "mcp": "\(program) mcp\n    Serves Shot's captures to an AI agent over MCP, on standard input and output.",
         ]
         if let command, let line = lines[command] {
