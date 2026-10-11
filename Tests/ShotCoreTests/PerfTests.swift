@@ -81,7 +81,7 @@ import Testing
 private enum Budget {
     static let flattenAndEncode = 847
     static let overlayFrame = 39
-    static let markerFrame = 50_000
+    static let markerFrame = 23_000
     static let gifExportMegabytes = 452
     static let galleryGrouping = 5.8
 }
