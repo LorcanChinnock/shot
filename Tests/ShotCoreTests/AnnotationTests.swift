@@ -255,3 +255,8 @@ func draggingTheMidpointBendsIt(kind: Annotation.Kind) {
     #expect(annotation(.counter(1, center: .zero)).sizesText)
     #expect(!annotation(.line(from: .zero, to: CGPoint(x: 9, y: 9))).sizesText)
 }
+
+@Test func aColourCopiesAsHex() {
+    #expect(RGBA(0, 0.48, 1).hex == "#007AFF")
+    #expect(RGBA(1, 1, 1, 0.5).hex == "#FFFFFF80")
+}

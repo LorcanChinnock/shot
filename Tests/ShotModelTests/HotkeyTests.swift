@@ -31,6 +31,17 @@ import Testing
 
 @Test func replacementHotkeysTakeTheMacOSKeys() {
     let replaced = ShotAction.allCases.map { $0.defaultCombo(replacingSystemScreenshots: true)?.displayString }
-    #expect(replaced == ["⇧⌘4", "⇧⌘3", nil, "⇧⌘5", nil, nil])
+    #expect(replaced == ["⇧⌘4", "⇧⌘3", nil, "⇧⌘5", nil, nil, nil])
     #expect(ShotAction.allCases.allSatisfy { $0.defaultCombo(replacingSystemScreenshots: false) == $0.defaultCombo })
+}
+
+@Test func pickColourHasNoShortcutAndIsNeitherACaptureNorARecording() {
+    #expect(ShotAction.pickColor.defaultCombo == nil)
+    #expect(ShotAction.pickColor.defaultCombo(replacingSystemScreenshots: true) == nil)
+    #expect(!ShotAction.pickColor.isCapture)
+    #expect(!ShotAction.pickColor.isRecording)
+    #expect(ShotAction.pickColor.rawValue == "pick-color")
+    // HotkeyCenter numbers hotkeys by position, so a new action goes last and existing ones keep their ids.
+    #expect(ShotAction.allCases.last == .pickColor)
+    #expect(ShotAction.allCases.filter(\.isCapture) == [.captureArea, .captureFullscreen, .captureWindow])
 }

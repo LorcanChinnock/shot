@@ -117,8 +117,18 @@ private struct ColorEditor: View {
                 track: LinearGradient(colors: [color.opacity(0), color.opacity(1)], startPoint: .leading, endPoint: .trailing),
                 checkerboard: true
             )
-            Circle().fill(color).frame(width: 22, height: 22)
-                .inkBorder(Circle(), width: 2)
+            HStack {
+                Button(action: sample) {
+                    Image(systemName: "eyedropper")
+                }
+                .buttonStyle(BrutalButtonStyle(compact: true))
+                .brutalTip("Pick a colour on screen", detail: "Click anywhere, including the image. Esc cancels.")
+                .accessibilityLabel(Text("Pick a colour on screen"))
+                Spacer()
+                Circle().fill(color).frame(width: 22, height: 22)
+                    .inkBorder(Circle(), width: 2)
+            }
+            .frame(width: 200)
         }
         .padding(16)
         .onChange(of: hue) { commit() }
@@ -129,6 +139,21 @@ private struct ColorEditor: View {
 
     private func commit() {
         pick(RGBA(NSColor(hue: hue, saturation: saturation, brightness: brightness, alpha: opacity)))
+    }
+
+    /// Moves the editor to the colour sampled and applies it exactly, in the same undo step as the editor's other picks.
+    private func sample() {
+        Task {
+            guard let picked = await ColorSampler.sample() else {
+                return
+            }
+            let c = NSColor(srgbRed: picked.r, green: picked.g, blue: picked.b, alpha: picked.a)
+            hue = Double(c.hueComponent)
+            saturation = Double(c.saturationComponent)
+            brightness = Double(c.brightnessComponent)
+            opacity = Double(picked.a)
+            pick(picked)
+        }
     }
 }
 

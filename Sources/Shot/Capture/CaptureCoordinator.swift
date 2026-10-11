@@ -76,11 +76,22 @@ final class CaptureCoordinator {
                     try await startRecording(mode: .screen)
                 case .recordWindow:
                     try await startRecording(mode: .window)
+                case .pickColor:
+                    await pickColor()
                 }
             } catch {
                 report(error)
             }
         }
+    }
+
+    /// Copies the hex of the colour clicked on screen. Esc copies nothing.
+    private func pickColor() async {
+        guard let color = await ColorSampler.sample() else {
+            return
+        }
+        Clipboard.copy(string: color.hex)
+        Toast.show("Copied \(color.hex)")
     }
 
     /// Opens a capture in the editor that suits it.
