@@ -183,7 +183,7 @@ The estimated size of the exported file is shown before you export. **Cancel**, 
 
 ## Using Shot with AI agents
 
-Claude Code, Codex and Cursor all take a pasted screenshot, and your arrows and boxes show the agent where to look. Shot can also give the agent the file itself, say exactly what you marked, and let the agent fetch your latest capture on its own. All of it is off until you turn on **Hand captures to agents** in **Settings › Agents**; with it off, nothing here happens.
+Claude Code, Codex and Cursor all take a pasted screenshot, and your arrows and boxes show the agent where to look. Shot can also give the agent the file itself, say exactly what you marked, and let the agent fetch your latest capture on its own. The path on the clipboard and the `.shot.json` files are off until you turn on **Hand captures to agents** in **Settings › Agents**; the [MCP server](#the-mcp-server) needs no setting.
 
 With it on:
 
