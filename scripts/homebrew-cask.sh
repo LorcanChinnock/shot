@@ -27,6 +27,7 @@ cask "shot" do
   depends_on macos: :sequoia
 
   app "Shot.app"
+  binary "#{appdir}/Shot.app/Contents/MacOS/shot-cli", target: "shot"
 
   zap trash: [
     "~/Library/Caches/dev.lorcan.Shot",

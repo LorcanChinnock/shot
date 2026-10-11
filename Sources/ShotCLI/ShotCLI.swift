@@ -1,0 +1,78 @@
+import Foundation
+import ShotCore
+
+/// `shot mcp`, the read-only MCP server AI agents talk to, and `shot --version`. It ships inside the app as
+/// `Contents/MacOS/shot-cli`, so it reads the app's settings to find the captures.
+@main
+enum ShotCLI {
+    static func main() async {
+        let app = appBundle()
+        let store = defaultsStore(app: app)
+        // Without the defaults, saveAfterCapture reads false and the capture folder silently becomes the temporary one.
+        Preferences.registerDefaults(in: store)
+        let folder = Preferences(store: store).captureFolder
+        switch Array(CommandLine.arguments.dropFirst()) {
+        case ["mcp"]:
+            await serve(folder: folder, version: version(of: app))
+        case ["--version"], ["-v"]:
+            print("Shot \(version(of: app))")
+            print("Bundle: \(app?.bundleIdentifier ?? "none, reading the \(fallbackSuite) settings")")
+            print("Captures: \(folder.path)")
+        default:
+            let name = URL(fileURLWithPath: CommandLine.arguments.first ?? "shot").lastPathComponent
+            printError("""
+            Usage: \(name) mcp        serve Shot's captures to an AI agent over MCP, on stdin and stdout
+                   \(name) --version  print the version, settings and capture folder
+            """)
+            exit(64)
+        }
+    }
+
+    /// Reads one JSON-RPC message per line until the client closes stdin. Only replies go to stdout, since any other
+    /// line there breaks the protocol; `FileHandle` writes straight through, so each reply is flushed as it's written.
+    static func serve(folder: URL, version: String) async {
+        let server = AgentTools.live(folder: folder).server(version: version)
+        printError("Shot MCP server \(version), reading \(folder.path)")
+        while let line = readLine(strippingNewline: true) {
+            if let reply = await server.respond(to: line) {
+                FileHandle.standardOutput.write(Data((reply + "\n").utf8))
+            }
+        }
+    }
+
+    /// The app this executable is inside. `Bundle.main` finds it when run by its real path, but not through a symlink
+    /// such as Homebrew's `shot`, so that path is resolved first.
+    static func appBundle() -> Bundle? {
+        if Bundle.main.bundleIdentifier != nil {
+            return Bundle.main
+        }
+        guard let executable = Bundle.main.executableURL?.resolvingSymlinksInPath() else {
+            return nil
+        }
+        // Shot.app/Contents/MacOS/shot-cli
+        let bundle = Bundle(url: executable.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent())
+        return bundle?.bundleIdentifier != nil ? bundle : nil
+    }
+
+    static func version(of app: Bundle?) -> String {
+        app?.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
+    }
+
+    /// The settings of a dev build, for a bare `.build/debug/ShotCLI` with no bundle around it.
+    static var fallbackSuite: String {
+        ProcessInfo.processInfo.environment["SHOT_DEFAULTS"] ?? "dev.lorcan.Shot.dev"
+    }
+
+    /// The app's own settings. Those are `.standard` when `Bundle.main` is the app, where `UserDefaults(suiteName:)`
+    /// would return nil for its ID.
+    static func defaultsStore(app: Bundle?) -> UserDefaults {
+        if let app, app == Bundle.main {
+            return .standard
+        }
+        return UserDefaults(suiteName: app?.bundleIdentifier ?? fallbackSuite) ?? .standard
+    }
+
+    static func printError(_ text: String) {
+        FileHandle.standardError.write(Data((text + "\n").utf8))
+    }
+}

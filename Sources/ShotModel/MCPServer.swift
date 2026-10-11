@@ -114,9 +114,9 @@ public struct MCPServer: Sendable {
     public var version: String
     public var tools: [Tool]
     /// Runs the tool `name` with `arguments`, which is `.object([:])` when the client sends none.
-    public var call: @Sendable (_ name: String, _ arguments: JSONValue) -> ToolResult
+    public var call: @Sendable (_ name: String, _ arguments: JSONValue) async -> ToolResult
 
-    public init(name: String, version: String, tools: [Tool], call: @escaping @Sendable (String, JSONValue) -> ToolResult) {
+    public init(name: String, version: String, tools: [Tool], call: @escaping @Sendable (String, JSONValue) async -> ToolResult) {
         self.name = name
         self.version = version
         self.tools = tools
@@ -124,7 +124,7 @@ public struct MCPServer: Sendable {
     }
 
     /// The reply to one line from the client, or `nil` when it needs none: a notification, or a blank line.
-    public func respond(to line: String) -> String? {
+    public func respond(to line: String) async -> String? {
         guard !line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil
         }
@@ -161,7 +161,7 @@ public struct MCPServer: Sendable {
             if case .object = arguments {} else {
                 arguments = .object([:])
             }
-            let result = call(tool.name, arguments)
+            let result = await call(tool.name, arguments)
             return encode(result: .object([
                 "content": .array(result.content.map(\.json)),
                 "isError": .bool(result.isError),

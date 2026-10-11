@@ -59,6 +59,60 @@ public enum ImageCodec {
         return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
     }
 
+    /// A JPEG of the image file at `url` for an AI agent: at most `maxPixelSize` on its long edge, never enlarged, and
+    /// at most `maxBytes`, lowering the quality and then halving the size until it fits. 1568 pixels is what vision
+    /// models scale to anyway. Transparency, such as a window shadow, goes white, since JPEG has none.
+    public static func previewJPEG(at url: URL, maxPixelSize: Int = 1568, maxBytes: Int = 1_000_000) -> Data? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else {
+            return nil
+        }
+        return previewJPEG(of: source, maxPixelSize: maxPixelSize, maxBytes: maxBytes)
+    }
+
+    /// `previewJPEG(at:)` for an image already in memory, such as a video's poster frame.
+    public static func previewJPEG(of image: CGImage, maxPixelSize: Int = 1568, maxBytes: Int = 1_000_000) -> Data? {
+        guard let png = data(from: image, scale: 1), let source = CGImageSourceCreateWithData(png as CFData, nil) else {
+            return nil
+        }
+        return previewJPEG(of: source, maxPixelSize: maxPixelSize, maxBytes: maxBytes)
+    }
+
+    private static func previewJPEG(of source: CGImageSource, maxPixelSize: Int, maxBytes: Int) -> Data? {
+        var size = maxPixelSize
+        while size >= 16 {
+            let options: [CFString: Any] = [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+                kCGImageSourceThumbnailMaxPixelSize: size,
+            ]
+            guard let thumbnail = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary),
+                  let ctx = CGContext(data: nil, width: thumbnail.width, height: thumbnail.height, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)
+            else {
+                return nil
+            }
+            let bounds = CGRect(x: 0, y: 0, width: thumbnail.width, height: thumbnail.height)
+            ctx.setFillColor(CGColor(gray: 1, alpha: 1))
+            ctx.fill(bounds)
+            ctx.draw(thumbnail, in: bounds)
+            guard let opaque = ctx.makeImage() else {
+                return nil
+            }
+            for quality in [0.85, 0.7, 0.55, 0.4] {
+                let data = NSMutableData()
+                guard let destination = CGImageDestinationCreateWithData(data, UTType.jpeg.identifier as CFString, 1, nil) else {
+                    return nil
+                }
+                CGImageDestinationAddImage(destination, opaque, [kCGImageDestinationLossyCompressionQuality: quality] as CFDictionary)
+                if CGImageDestinationFinalize(destination), data.length <= maxBytes {
+                    return data as Data
+                }
+            }
+            // Halve what it is, not what was asked for, or a small image would take several rounds to shrink at all.
+            size = min(size, max(thumbnail.width, thumbnail.height)) / 2
+        }
+        return nil
+    }
+
     public static func image(at url: URL) -> CGImage? {
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else {
             return nil
