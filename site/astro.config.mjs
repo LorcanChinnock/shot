@@ -41,6 +41,7 @@ function redirects() {
         const lines = [
           `/download ${release.zip} 302`,
           `/github ${repo} 302`,
+          '/sponsor https://github.com/sponsors/LorcanChinnock 302',
           `/releases ${repo}/releases 302`,
         ];
         await writeFile(new URL('_redirects', dir), lines.join('\n') + '\n');
