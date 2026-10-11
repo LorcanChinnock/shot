@@ -174,31 +174,17 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         frame.stroke()
 
         for other in model.document.annotations where model.selectedIDs.count > 1 && model.selectedIDs.contains(other.id) {
-            let outline = NSBezierPath(rect: viewRect(other.bounds.insetBy(dx: -other.lineWidth, dy: -other.lineWidth).union(other.paintedBounds)))
-            outline.setLineDash([4, 3], count: 2, phase: 0)
-            NSColor.controlAccentColor.setStroke()
-            outline.stroke()
+            SelectionStyle.outline(viewRect(other.bounds.insetBy(dx: -other.lineWidth, dy: -other.lineWidth).union(other.paintedBounds)))
         }
         if let selected = model.selection, selected.id != editingText?.id {
-            let outline = NSBezierPath(rect: viewRect(selected.bounds.insetBy(dx: -selected.lineWidth, dy: -selected.lineWidth).union(selected.paintedBounds)))
-            outline.setLineDash([4, 3], count: 2, phase: 0)
-            NSColor.controlAccentColor.setStroke()
-            outline.stroke()
+            SelectionStyle.outline(viewRect(selected.bounds.insetBy(dx: -selected.lineWidth, dy: -selected.lineWidth).union(selected.paintedBounds)))
             if editingText == nil, !selected.isLocked {
                 for handle in selected.handles {
-                    let center = viewRect(CGRect(origin: handle.point, size: .zero)).origin
-                    let square = NSBezierPath(rect: CGRect(x: center.x - 4, y: center.y - 4, width: 8, height: 8))
-                    NSColor.white.setFill()
-                    square.fill()
-                    square.stroke()
+                    SelectionStyle.handle(at: viewRect(CGRect(origin: handle.point, size: .zero)).origin)
                 }
                 let radiusHandles = selected.radiusHandles(tolerance: handleTolerance)
                 for handle in radiusHandles {
-                    let center = viewRect(CGRect(origin: handle.point, size: .zero)).origin
-                    let dot = NSBezierPath(ovalIn: CGRect(x: center.x - 4, y: center.y - 4, width: 8, height: 8))
-                    NSColor.white.setFill()
-                    dot.fill()
-                    dot.stroke()
+                    SelectionStyle.handle(at: viewRect(CGRect(origin: handle.point, size: .zero)).origin, round: true)
                 }
                 if movedSinceMouseDown, let dragged = radiusHandles.first(where: { $0.handle == resizeHandle }), let radius = selected.roundedBox?.radius {
                     drawRadiusLabel(radius / model.scale, near: viewRect(CGRect(origin: dragged.point, size: .zero)).origin)
