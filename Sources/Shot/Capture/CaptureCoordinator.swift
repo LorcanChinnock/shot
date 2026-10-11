@@ -50,6 +50,11 @@ final class CaptureCoordinator {
             setup.confirm()
             return
         }
+        // Picking a colour captures nothing, so it doesn't hold up captures while the loupe waits for a click.
+        if action == .pickColor {
+            Task { await pickColor() }
+            return
+        }
         guard !busy else {
             return
         }
@@ -76,11 +81,22 @@ final class CaptureCoordinator {
                     try await startRecording(mode: .screen)
                 case .recordWindow:
                     try await startRecording(mode: .window)
+                case .pickColor:
+                    break
                 }
             } catch {
                 report(error)
             }
         }
+    }
+
+    /// Copies the hex of the colour clicked on screen. Esc copies nothing.
+    private func pickColor() async {
+        guard let color = await ColorSampler.sample() else {
+            return
+        }
+        Clipboard.copy(string: color.hex)
+        Toast.show("Copied \(color.hex)")
     }
 
     /// Opens a capture in the editor that suits it.

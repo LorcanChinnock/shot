@@ -10,6 +10,8 @@ public enum ShotAction: String, CaseIterable, Sendable {
     case record
     case recordFullscreen = "record-fullscreen"
     case recordWindow = "record-window"
+    /// Samples a colour on screen and copies its hex. Last, since `HotkeyCenter` numbers hotkeys by position.
+    case pickColor = "pick-color"
 
     public var title: String {
         switch self {
@@ -19,25 +21,34 @@ public enum ShotAction: String, CaseIterable, Sendable {
         case .record: "Record Area"
         case .recordFullscreen: "Record Fullscreen"
         case .recordWindow: "Record Window"
+        case .pickColor: "Pick Colour"
         }
     }
 
     public var isRecording: Bool {
         switch self {
         case .record, .recordFullscreen, .recordWindow: true
-        case .captureArea, .captureFullscreen, .captureWindow: false
+        case .captureArea, .captureFullscreen, .captureWindow, .pickColor: false
+        }
+    }
+
+    /// Takes a screenshot, as opposed to recording or a tool like Pick Colour.
+    public var isCapture: Bool {
+        switch self {
+        case .captureArea, .captureFullscreen, .captureWindow: true
+        case .record, .recordFullscreen, .recordWindow, .pickColor: false
         }
     }
 
     /// Mirrors the macOS screenshot keys with ⌃ in place of ⌘. Record fullscreen and window
-    /// have no default: press Enter or Space in the record overlay instead.
+    /// have no default: press Enter or Space in the record overlay instead. Pick Colour stays out of the way with none.
     public var defaultCombo: KeyCombo? {
         switch self {
         case .captureArea: KeyCombo(keyCode: 21, modifiers: KeyCombo.control | KeyCombo.shift)
         case .captureFullscreen: KeyCombo(keyCode: 20, modifiers: KeyCombo.control | KeyCombo.shift)
         case .captureWindow: KeyCombo(keyCode: 13, modifiers: KeyCombo.control | KeyCombo.shift)
         case .record: KeyCombo(keyCode: 23, modifiers: KeyCombo.control | KeyCombo.shift)
-        case .recordFullscreen, .recordWindow: nil
+        case .recordFullscreen, .recordWindow, .pickColor: nil
         }
     }
 
@@ -52,7 +63,7 @@ public enum ShotAction: String, CaseIterable, Sendable {
         case .captureArea: return KeyCombo(keyCode: 21, modifiers: KeyCombo.command | KeyCombo.shift)
         case .record: return KeyCombo(keyCode: 23, modifiers: KeyCombo.command | KeyCombo.shift)
         case .captureWindow: return nil
-        case .recordFullscreen, .recordWindow: return defaultCombo
+        case .recordFullscreen, .recordWindow, .pickColor: return defaultCombo
         }
     }
 

@@ -87,7 +87,7 @@ Press a tool's key when you aren't typing text.
 | N | Counter: numbered circles |
 | C | Crop |
 
-Hover a tool to see what it does. While you draw, Shift keeps a box square, keeps an arrow, line or highlight at 45° steps, and Option draws from the centre; Esc cancels what you're drawing. Tools that draw a mark show a colour and one of three line widths below the tools; for text, sticky notes and counters the widths are text sizes, and changing the size or colour while you type updates the text as you go. Text and sticky notes also offer left, centre or right alignment for their lines. The shape tool also offers the shape and a fill. Redact offers blur or pixelate, and an amount slider for how far the blur spreads or how big the blocks are. Spotlight offers its shape (rectangle, rounded rectangle or ellipse), a soft edge that fades it into the dim, whether to darken or blur outside it, and how strongly; the effect and strength apply to every spotlight in the image, since they share one dim. The highlight and sticky notes keep their own colours, yellow at first, so they don't take the colour of your arrows. The last swatch picks any colour, and each palette remembers the last one you picked. The editor remembers the colour, width and options you used, and the last drawing tool: a new window starts with it, or with the arrow.
+Hover a tool to see what it does. While you draw, Shift keeps a box square, keeps an arrow, line or highlight at 45° steps, and Option draws from the centre; Esc cancels what you're drawing. Tools that draw a mark show a colour and one of three line widths below the tools; for text, sticky notes and counters the widths are text sizes, and changing the size or colour while you type updates the text as you go. Text and sticky notes also offer left, centre or right alignment for their lines. The shape tool also offers the shape and a fill. Redact offers blur or pixelate, and an amount slider for how far the blur spreads or how big the blocks are. Spotlight offers its shape (rectangle, rounded rectangle or ellipse), a soft edge that fades it into the dim, whether to darken or blur outside it, and how strongly; the effect and strength apply to every spotlight in the image, since they share one dim. The highlight and sticky notes keep their own colours, yellow at first, so they don't take the colour of your arrows. The last swatch picks any colour, and each palette remembers the last one you picked. Its eyedropper samples a colour from anywhere on screen, such as a brand colour in the screenshot itself; Esc cancels. The video editor's palettes work the same way. The editor remembers the colour, width and options you used, and the last drawing tool: a new window starts with it, or with the arrow.
 
 ### Editing annotations
 
@@ -184,7 +184,7 @@ The estimated size of the exported file is shown before you export. **Cancel**, 
 
 ### Global
 
-Every capture and recording action can have a global shortcut, and a [`shot://` URL](#url-scheme). Once it has Screen Recording access, Shot takes over the macOS screenshot keys and turns off the matching macOS shortcuts while it runs. When Shot quits, macOS gets its keys back. If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧3 to ⌘⇧5** on again.
+Every capture and recording action, and **Pick Colour**, can have a global shortcut and a [`shot://` URL](#url-scheme). Once it has Screen Recording access, Shot takes over the macOS screenshot keys and turns off the matching macOS shortcuts while it runs. When Shot quits, macOS gets its keys back. If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧3 to ⌘⇧5** on again.
 
 | Shortcut | Action |
 |---|---|
@@ -196,7 +196,7 @@ While you set up a recording, the record shortcut starts it. While you record, i
 
 To keep the macOS screenshot tool, turn off **Use Shot for ⌘⇧3 to ⌘⇧5** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with ⌃ in place of ⌘: ⌃⇧3, ⌃⇧4, ⌃⇧5, plus ⌃⇧W for a window.
 
-Record Fullscreen and Record Window have no shortcut until you set one. Capture Window has none while Shot uses ⌘⇧3 to ⌘⇧5; press Space after ⌘⇧4 instead.
+Record Fullscreen, Record Window and Pick Colour have no shortcut until you set one. Pick Colour shows a loupe; click any pixel on screen to copy its hex, such as `#1E90FF`. Capture Window has none while Shot uses ⌘⇧3 to ⌘⇧5; press Space after ⌘⇧4 instead.
 
 ### While selecting
 
@@ -295,6 +295,7 @@ Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a scr
 | `shot://capture-area`, `capture-fullscreen`, `capture-window` | Take a screenshot |
 | `shot://record`, `record-fullscreen`, `record-window` | Set up, confirm, or stop a recording |
 | `shot://pause` | Pause or resume the recording |
+| `shot://pick-color` | Pick a colour on screen and copy its hex |
 | `shot://annotate?path=<file>` | Open an image in the editor, or a video in the video editor |
 | `shot://edit-video?path=<file>` | Open a video in the video editor to trim it |
 | `shot://gallery` | Open the gallery |

@@ -32,7 +32,7 @@ private struct ShotMenu: View {
             Divider()
         }
         Section("Capture") {
-            ForEach(ShotAction.allCases.filter { !$0.isRecording }, id: \.self) { action in
+            ForEach(ShotAction.allCases.filter(\.isCapture), id: \.self) { action in
                 ActionButton(action: action, title: action.title, coordinator: coordinator)
             }
         }
