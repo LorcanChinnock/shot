@@ -4,8 +4,8 @@ import ShotCore
 
 private let log = Logger.shot("agents")
 
-/// Answers agents on the app's socket while Let agents capture and record is on, so `shot capture` and the MCP server can
-/// ask for a screenshot that only the app, with its Screen Recording permission, can take.
+/// Answers agents on the app's socket while Let agents capture and record is on, so `shot capture`, `shot record` and the
+/// MCP server can ask for screenshots and recordings that only the app, with its Screen Recording permission, can make.
 @MainActor
 final class AgentServer {
     static let shared = AgentServer()
@@ -57,6 +57,18 @@ final class AgentServer {
         case .capture:
             do {
                 return .success(try await coordinator.agentCapture(window: request.window ?? ""))
+            } catch {
+                return .failure(error)
+            }
+        case .record:
+            do {
+                return .success(try await coordinator.agentRecord(window: request.window ?? "", duration: request.duration))
+            } catch {
+                return .failure(error)
+            }
+        case .stop:
+            do {
+                return .success(try await coordinator.agentStop(id: request.id))
             } catch {
                 return .failure(error)
             }

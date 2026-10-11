@@ -18,6 +18,10 @@ private func decodeRequest(_ json: String) -> ShotCommandError? {
     #expect(line.dropLast().contains(UInt8(ascii: "\n")) == false)
     #expect(try AgentRequest.decode(line) == request)
     #expect(try AgentRequest.decode(AgentRequest(.status).line) == AgentRequest(.status))
+    let record = AgentRequest(.record, window: "Simulator", duration: 2.5)
+    #expect(try AgentRequest.decode(record.line) == record)
+    #expect(try AgentRequest.decode(AgentRequest(.stop, id: "ab12cd34").line) == AgentRequest(.stop, id: "ab12cd34"))
+    #expect(try AgentRequest.decode(AgentRequest(.stop).line) == AgentRequest(.stop))
 }
 
 @Test(arguments: [
@@ -29,6 +33,9 @@ private func decodeRequest(_ json: String) -> ShotCommandError? {
     (#"{"v":1}"#, "unknown op (none)"),
     (#"{"v":1,"op":"capture"}"#, "capture needs a window"),
     (#"{"v":1,"op":"capture","window":" "}"#, "capture needs a window"),
+    (#"{"v":1,"op":"record"}"#, "record needs a window"),
+    (#"{"v":1,"op":"record","window":"a","duration":0}"#, "duration must be above 0 and at most 600 seconds"),
+    (#"{"v":1,"op":"record","window":"a","duration":601}"#, "duration must be above 0 and at most 600 seconds"),
 ])
 func aBadRequestIsAUsageError(_ json: String, _ message: String) throws {
     let error = try #require(decodeRequest(json))
