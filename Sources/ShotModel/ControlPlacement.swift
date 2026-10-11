@@ -1,4 +1,7 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
+#endif
+import Foundation
 
 public enum ControlPlacement {
     /// Below the region if there is room, else above it, else inside its bottom edge; all in AppKit space.

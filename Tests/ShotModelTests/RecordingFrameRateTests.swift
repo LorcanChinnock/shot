@@ -1,5 +1,5 @@
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 @Test func a60HzDisplayOffers30And60() {
     #expect(RecordingFrameRate.offered(maximumDisplayRate: 60) == [30, 60])

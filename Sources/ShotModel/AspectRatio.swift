@@ -1,4 +1,7 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
+#endif
+import Foundation
 
 /// The shape an area selection is held to while dragging; Tab steps through them.
 public enum AspectRatio: CaseIterable, Sendable {

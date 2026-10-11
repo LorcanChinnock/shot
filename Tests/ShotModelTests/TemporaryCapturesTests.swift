@@ -1,9 +1,10 @@
 import Foundation
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 @Test func sweepingTemporaryCapturesDeletesOnlyOldFilesAtTheTop() throws {
-    let folder = try temporaryFolder()
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: folder) }
     let old = Date().addingTimeInterval(-2 * TemporaryCaptures.maxAge)
     let stale = folder.appendingPathComponent("old.png")

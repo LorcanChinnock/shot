@@ -1,4 +1,7 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
+#endif
+import Foundation
 
 /// Keyboard and placement rules for a dropdown menu. Items that can't be picked (dividers, headers, disabled items) are
 /// skipped.

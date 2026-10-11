@@ -29,7 +29,8 @@ Only `make dist` builds `Shot.app` with the update feed. Every other build is `S
 |---|---|
 | `make run` | Build, install to `/Applications/ShotDev.app`, and launch |
 | `make build` | `swift build`, without making an app |
-| `make test` | Run the `ShotCore` unit tests |
+| `make test` | Run the `ShotModel` and `ShotCore` unit tests |
+| `make test-linux` | Run the `ShotModel` tests on Linux in Docker, as CI does |
 | `make lint` | Check for code patterns that have caused bugs (`scripts/lint.sh`) |
 | `make perf` | Time the `ShotCore` paths that have [performance budgets](docs/performance.md) |
 | `make perf-app` | Measure launch, capture, memory and idle CPU of the installed app against its budgets |
@@ -45,20 +46,23 @@ Only `make dist` builds `Shot.app` with the update feed. Every other build is `S
 ## Project layout
 
 ```
-Sources/ShotCore/    Pure logic with unit tests: geometry, file naming, image encoding,
-                     annotations and rendering, redaction, GIF export, segment joining,
-                     video trim and cuts, hotkeys, preferences
-Sources/Shot/        The app: capture, selection overlay, Quick Access, editor,
-                     video editor, recording, gallery, settings, and the design system
-Tests/ShotCoreTests/ Swift Testing suite
-Resources/           Info.plist and the app icon
-scripts/             Bundling, install, signing certificate, icon, lint, performance
-                     checks, and the Homebrew cask
-docs/                The user guide, its screenshots, and the demo app they show
-site/                The website (see site/README.md)
+Sources/ShotModel/    Pure logic that needs only Foundation, tested on Linux: undo, keyframes,
+                      video trim and cuts, hotkeys, layout math
+Sources/ShotCore/     Pure logic that needs Apple frameworks: geometry, file naming, image
+                      encoding, annotations and rendering, redaction, GIF export, segment
+                      joining, preferences
+Sources/Shot/         The app: capture, selection overlay, Quick Access, editor,
+                      video editor, recording, gallery, settings, and the design system
+Tests/ShotModelTests/ ShotModel's Swift Testing suite
+Tests/ShotCoreTests/  ShotCore's Swift Testing suite
+Resources/            Info.plist and the app icon
+scripts/              Bundling, install, signing certificate, icon, lint, performance
+                      checks, and the Homebrew cask
+docs/                 The user guide, its screenshots, and the demo app they show
+site/                 The website (see site/README.md)
 ```
 
-If logic can be tested without a window, a display, or a permission, put it in `ShotCore` and add a test. `Shot` holds the AppKit and SwiftUI code that needs a real session.
+If logic can be tested without a window, a display, or a permission, put it in `ShotModel` and add a test. If it needs an Apple framework, such as CoreText, AVFoundation or `CGPath`, put it in `ShotCore` instead, keeping the Apple part as thin as you can. CI runs `ShotModel`'s tests on Linux, where minutes cost a fraction of macOS ones. `Shot` holds the AppKit and SwiftUI code that needs a real session.
 
 ## Debugging
 
@@ -73,7 +77,7 @@ The `shot://` [URL scheme](docs/usage.md#url-scheme) drives every action without
 ## Sending a change
 
 - Keep each pull request focused on one change, and match the style of the surrounding code.
-- Run `make lint` and `make test`, then run the app and try your change. CI runs the lint, the tests and the performance budgets on every pull request and every push to `main`. A pull request that only changes Markdown, `docs/`, `site/` or the issue templates is linted alone.
+- Run `make lint` and `make test`, then run the app and try your change. CI lints and runs the `ShotModel` tests on Linux, then builds the app and runs the `ShotCore` tests on macOS. A pull request that changes only `ShotModel` skips the `ShotCore` tests, the performance budgets run when `Sources/ShotCore` changes and on every push to `main`, and a draft, or a pull request that only changes Markdown, `docs/`, `site/` or the issue templates, skips macOS.
 - Use a [Conventional Commits](https://www.conventionalcommits.org) title for the pull request, such as `fix(recording): …` or `feat(editor): …`. Pull requests are squash-merged, so the title becomes the commit on `main`, and release notes are generated from it.
 
 By contributing, you agree that your contributions are licensed under the project's [GPL-3.0 license](LICENSE).

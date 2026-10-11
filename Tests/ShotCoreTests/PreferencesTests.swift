@@ -286,3 +286,14 @@ import Testing
         #expect(!store.bool(forKey: key), Comment(rawValue: key))
     }
 }
+
+@Test func storedCountdownOutsideTheOffersReadsAsOff() throws {
+    let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
+    let store = try #require(UserDefaults(suiteName: suite))
+    defer { store.removePersistentDomain(forName: suite) }
+    let prefs = Preferences(store: store)
+    store.set(5, forKey: PreferenceKey.recordingCountdown)
+    #expect(prefs.recordingCountdown == 5)
+    store.set(4, forKey: PreferenceKey.recordingCountdown)
+    #expect(prefs.recordingCountdown == 0)
+}

@@ -39,3 +39,23 @@ if [ -n "$hits" ]; then
     echo "$hits"
     exit 1
 fi
+
+# ShotModel builds and tests on Linux, where only Foundation and the standard library exist. The Linux build is the
+# backstop; this names the cause first.
+hits=$(find Sources/ShotModel Tests/ShotModelTests -name '*.swift' -exec awk '
+    /^(@testable )?import / && !/^(@testable )?import (Foundation|Synchronization|Testing|ShotModel)$/ &&
+        !(/^import CoreGraphics$/ && prev == "#if canImport(CoreGraphics)") { print FILENAME ":" FNR ": " $0 }
+    { prev = $0 }' {} +)
+if [ -n "$hits" ]; then
+    echo "ShotModel runs on Linux: import only Foundation, or CoreGraphics inside #if canImport(CoreGraphics). Apple-only code goes in ShotCore:"
+    echo "$hits"
+    exit 1
+fi
+
+# macOS runner minutes cost about 15× Linux ones.
+hits=$(awk '/runs-on:.*macos/ && prev !~ /# macOS: / { print FILENAME ":" FNR ": " $0 } { prev = $0 }' .github/workflows/*.yml)
+if [ -n "$hits" ]; then
+    echo "Put a '# macOS: <reason>' comment above each macOS runs-on, saying why the job can't run on Linux:"
+    echo "$hits"
+    exit 1
+fi

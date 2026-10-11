@@ -14,7 +14,8 @@ By default, Shot is fast, convenient and bloat-free for its main use: taking qui
 ## Commands
 
 ```bash
-make test                         # ShotCore unit tests (Swift Testing)
+make test                         # ShotModel and ShotCore unit tests (Swift Testing)
+make test-linux                   # ShotModel tests in Docker on Linux, as CI runs them
 make perf                         # ShotCore performance budgets (PerfTests; make test skips them)
 make perf-app                     # scripts/perf.sh: launch, capture, memory, idle CPU of the installed app
 make lint                         # scripts/lint.sh: bans patterns that caused bugs (see below)
@@ -46,17 +47,20 @@ Local builds are `ShotDev.app`. The real installed version is `/Applications/Sho
 
 ## Architecture
 
-Two targets:
-- `Sources/ShotCore`: pure logic with no window, display or permission needs. Annotation model and renderer, timeline/clip model, trim and cuts, composition, GIF export, preferences, hotkeys, file naming. **If logic can be tested without a window, it goes here with a test.** Only ShotCore is tested (`Tests/ShotCoreTests`, mostly top-level `@Test func` with sentence-style names).
+Three targets:
+- `Sources/ShotModel`: logic that needs only Foundation, so CI builds and tests it on Linux. Undo stack, keyframes, cut list and trim range, hotkeys (`ShotAction`, `KeyCombo`), layout math, and small helpers. It may import CoreGraphics only inside `#if canImport(CoreGraphics)`, for the few members that need it. Linux Foundation has `CGFloat`, `CGPoint`, `CGSize` and `CGRect`, but not `CGVector`, `CGAffineTransform`, `CGPath`, `CGColor` or `CGImage`.
+- `Sources/ShotCore`: pure logic that needs Apple frameworks (CoreGraphics paths and images, CoreText, CoreImage, AVFoundation, ImageIO, UniformTypeIdentifiers), but no window, display or permission. Annotation model and renderer, timeline/clip model, composition, GIF export, preferences, file naming, gallery. It re-exports ShotModel, so the app needs only `import ShotCore`.
 - `Sources/Shot`: AppKit and SwiftUI that need a real session, grouped by feature (`Capture`, `Overlay`, `QuickAccess`, `Editor`, `Recording`, `VideoEditor`, `Gallery`, `Settings`, `Design`).
+
+**If logic can be tested without a window, it goes in ShotModel with a test, or in ShotCore if it needs an Apple framework.** Tests are mostly top-level `@Test func` with sentence-style names: `Tests/ShotModelTests` (run on Linux) and `Tests/ShotCoreTests` (macOS). The app target has no tests.
 
 Flow:
 - `ShotApp` is a `MenuBarExtra` with an `AppDelegate` adaptor. `AppDelegate` owns `AppState` and the `CaptureCoordinator`, wires hotkeys and controller callbacks to it, and routes `shot://` URLs. Other long-lived controllers are `.shared` singletons.
-- `CaptureCoordinator.perform(_: ShotAction)` is the central dispatcher. `ShotAction` and `EditorRoute` live in ShotCore.
+- `CaptureCoordinator.perform(_: ShotAction)` is the central dispatcher. `ShotAction` lives in ShotModel and `EditorRoute` in ShotCore.
 - Capture: for an area or window pick, `DisplayCapturer` freezes every display, then `SelectionOverlayController.select` returns an area, window or display. Fullscreen freezes only its screen and shows no overlay, a picked window is captured afresh, live, and recording runs live. `finish` encodes off the main actor, saves and copies, then opens Quick Access or the editor.
-- Image editor: `EditorDocument` / `Annotation` (ShotCore) is the model. `AnnotationRenderer` is shared by the on-screen canvas, flattened export, and the video compositor (`ProjectCompositor` via `AnnotationFrame`/`RenderCache`), so a rendering change affects all three. Undo is snapshot-based through ShotCore's generic `UndoStack`, not `NSUndoManager`. Group continuous edits (slider drags, held keys) into one step; view state like zoom is not undoable.
+- Image editor: `EditorDocument` / `Annotation` (ShotCore) is the model. `AnnotationRenderer` is shared by the on-screen canvas, flattened export, and the video compositor (`ProjectCompositor` via `AnnotationFrame`/`RenderCache`), so a rendering change affects all three. Undo is snapshot-based through ShotModel's generic `UndoStack`, not `NSUndoManager`. Group continuous edits (slider drags, held keys) into one step; view state like zoom is not undoable.
 - Recording: `Recorder` uses `SCStream` + `SCRecordingOutput`. Each pause starts a new segment, and `VideoConcatenator` joins them on stop. With both the microphone and system audio on, each is also written to its own file, so mute silences only the microphone.
-- Video editor: `VideoEditorModel` keeps its own `UndoStack`. The timeline, keyframe, trim, cut and composition logic is in ShotCore (`Timeline*`, `VideoCuts`, `ProjectComposition`). GIF export is entirely ShotCore (`GIFExporter`, `GIFStreamWriter`).
+- Video editor: `VideoEditorModel` keeps its own `UndoStack`. The timeline and composition logic is in ShotCore (`Timeline*`, `ProjectComposition`); keyframes, trim and cuts are in ShotModel (`Keyframes`, `TrimRange`, `VideoCuts`). GIF export is entirely ShotCore (`GIFExporter`, `GIFStreamWriter`).
 - Settings: keys and defaults live in ShotCore `Preferences`. `SettingsStore` is an `@Observable` cache, and views use its `@Setting(key)` wrapper.
 - Design system: `Sources/Shot/Design`. `Brutal` holds the tokens in `BrutalStyle.swift`, and `GlassWindow.swift` the window chrome.
 
@@ -70,6 +74,17 @@ Concurrency: UI and model types are `@MainActor`. Heavy work runs in `Task.detac
 - Use `@Setting`, never `@AppStorage`; `@AppStorage` updates late, so views show inconsistent state.
 - Use `inkBorder(_:width:color:)` rather than `strokeBorder` with any `Brutal` colour (a ternary included), and only whole-point ink widths and line widths. `BrutalStyle.swift`, which defines `inkBorder`, is exempt.
 - Use `style: .circular`, never `.continuous`, for rounded corners; continuous corners leave steps under ink borders.
+- ShotModel and its tests import only Foundation, Synchronization and Testing, plus CoreGraphics inside `#if canImport(CoreGraphics)`.
+- Every `runs-on: macos-*` needs a `# macOS: <reason>` comment on the line above.
+
+## CI minutes
+
+macOS runner minutes cost about 15× Linux ones, so CI keeps macOS work to what needs it (`.github/workflows/ci.yml`):
+- The `linux` job lints and tests ShotModel on every run. The `macos` job builds the app and runs `ShotCoreTests`; a PR that changes only ShotModel builds the app but skips `ShotCoreTests`, docs-only PRs and drafts skip macOS, and `PerfTests` runs on PRs that touch ShotCore and on every push to `main`. A push to `main` skips `ShotCoreTests`, which ran on the PR, unless the PR changed only ShotModel. The required `test` check passes when `linux` passed and `macos` passed or was skipped.
+- New logic and tests go in ShotModel unless they need an Apple framework. When they do, keep the Apple part in ShotCore as thin as you can and leave the rest portable.
+- Never add a step to the `macos` job that could run on Linux. New workflows and jobs use `ubuntu-latest`.
+- Run `make lint` and `make test` before every push, plus `make test-linux` when you change ShotModel, and push once per PR where you can, so CI is a check rather than a debugger. Every push re-runs CI, and a newer push cancels the run before it, wasting the minutes it used.
+- Each release builds on macOS, so let the release-please PR collect several merges rather than releasing after each one.
 
 ## Conventions
 

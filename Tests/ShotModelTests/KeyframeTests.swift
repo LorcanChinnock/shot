@@ -1,7 +1,9 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
+#endif
 import Foundation
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 private func keys(_ pairs: (Double, Double)...) -> [Keyframe<Double>] {
     pairs.map { Keyframe(time: $0.0, value: $0.1) }

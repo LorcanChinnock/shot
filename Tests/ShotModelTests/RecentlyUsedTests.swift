@@ -1,5 +1,5 @@
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 @Test func dropsLeastRecentlyUsedOverLimit() {
     var recent = RecentlyUsed<String>(limit: 10)

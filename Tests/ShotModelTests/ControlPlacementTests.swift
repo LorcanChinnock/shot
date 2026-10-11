@@ -1,6 +1,9 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
+#endif
+import Foundation
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 private let visible = CGRect(x: 0, y: 0, width: 1440, height: 875)
 private let size = CGSize(width: 400, height: 52)

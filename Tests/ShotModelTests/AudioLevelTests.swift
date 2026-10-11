@@ -1,5 +1,5 @@
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 @Test func rmsOfASquareWaveIsItsAmplitude() {
     #expect(AudioLevel.rms([0.5, -0.5, 0.5, -0.5]) == 0.5)

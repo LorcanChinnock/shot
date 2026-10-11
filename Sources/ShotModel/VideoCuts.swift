@@ -2,7 +2,7 @@
 /// What's left of a `TrimRange` once they're removed is what plays and exports.
 public struct CutList: Equatable, Sendable {
     /// Kept sections shorter than this are dropped, since a 600 timescale can't hold them.
-    static let shortestSection: Double = 1.0 / 600
+    public static let shortestSection: Double = 1.0 / 600
 
     public private(set) var cuts: [Range<Double>] = []
 
