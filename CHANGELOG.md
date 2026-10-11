@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.39](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.38...v0.7.0-beta.39) (2026-10-11)
+
+
+### Bug Fixes
+
+* **editor:** end a colour-picker loupe left behind by a quit or crash ([#382](https://github.com/LorcanChinnock/shot/issues/382)) ([b6be48c](https://github.com/LorcanChinnock/shot/commit/b6be48c8b0043c0983f787f57f4c04c0ec766f50))
+
 ## [0.7.0-beta.38](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.37...v0.7.0-beta.38) (2026-10-11)
 
 
