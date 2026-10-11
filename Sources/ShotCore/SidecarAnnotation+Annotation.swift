@@ -17,9 +17,10 @@ extension RGBA {
 
 extension SidecarAnnotation {
     /// `annotations` as an agent reads them, in the pixels of a file saved from `canvas` (in image pixels) and scaled by
-    /// `scale`, which is 0.5 for a Retina capture saved at half size. Hidden ones are left out, as they aren't in the file.
+    /// `scale`, which is 0.5 for a Retina capture saved at half size. Hidden ones, and ones cropped out of the canvas,
+    /// are left out, as they aren't in the file.
     public static func mapping(_ annotations: [Annotation], canvas: CGRect, scale: CGFloat = 1) -> [SidecarAnnotation] {
-        annotations.filter { !$0.isHidden }.map { SidecarAnnotation($0, origin: canvas.origin, scale: scale) }
+        annotations.filter { !$0.isHidden && $0.paintedBounds.intersects(canvas) }.map { SidecarAnnotation($0, origin: canvas.origin, scale: scale) }
     }
 
     init(_ annotation: Annotation, origin: CGPoint, scale: CGFloat) {

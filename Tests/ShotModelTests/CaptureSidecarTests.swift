@@ -23,6 +23,9 @@ private let sidecar = CaptureSidecar(
 
 @Test func theSidecarRoundTrips() throws {
     #expect(try CaptureSidecar.decoded(from: sidecar.encoded()) == sidecar)
+    var now = sidecar
+    now = CaptureSidecar(file: now.file, kind: now.kind, created: Date(timeIntervalSince1970: 1_791_640_992.437), size: now.size, scale: now.scale)
+    #expect(try CaptureSidecar.decoded(from: now.encoded()) == now)
 }
 
 @Test func theSidecarWritesTheVersionedSchemaAndLeavesUnusedFieldsOut() throws {

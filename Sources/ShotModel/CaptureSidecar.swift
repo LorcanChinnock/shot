@@ -54,6 +54,7 @@ public struct CaptureSidecar: Codable, Equatable, Sendable {
     public var original: String?
     /// "image" or "video".
     public var kind: String
+    /// To the second, as the file writes it.
     public var created: Date
     public var size: Size
     /// Pixels per point of the screen it was captured on.
@@ -67,7 +68,7 @@ public struct CaptureSidecar: Codable, Equatable, Sendable {
         self.file = file
         self.original = original
         self.kind = kind
-        self.created = created
+        self.created = Date(timeIntervalSince1970: created.timeIntervalSince1970.rounded(.down))
         self.size = size
         self.scale = scale
         self.source = source

@@ -64,6 +64,12 @@ private let red = RGBA.presets[0]
     #expect(cropped[0].rect == [0, 5, 15, 20])
 }
 
+@Test func annotationsCroppedOutAreLeftOut() {
+    let inside = Annotation(kind: .counter(1, center: CGPoint(x: 50, y: 50)), color: red, lineWidth: 4)
+    let outside = Annotation(kind: .counter(2, center: CGPoint(x: 500, y: 500)), color: red, lineWidth: 4)
+    #expect(SidecarAnnotation.mapping([inside, outside], canvas: CGRect(x: 0, y: 0, width: 100, height: 100)).map(\.number) == [1])
+}
+
 @Test func hiddenAnnotationsAreLeftOut() {
     var hidden = Annotation(kind: .counter(1, center: .zero), color: red, lineWidth: 4)
     hidden.isHidden = true

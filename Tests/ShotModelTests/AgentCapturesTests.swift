@@ -40,7 +40,7 @@ private let folder = [
     #expect(AgentCaptures.ranked(both).count == 2)
 }
 
-@Test(arguments: [("X (2)", "X", 2), ("X (12)", "X", 12), ("X", "X", 1), ("X (1)", "X (1)", 1), ("X(2)", "X(2)", 1), ("(2)", "(2)", 1), ("X (a)", "X (a)", 1)])
+@Test(arguments: [("X (2)", "X", 2), ("X (12)", "X", 12), ("X", "X", 1), ("X (1)", "X", 1), ("X (02)", "X", 2), ("X(2)", "X(2)", 1), ("(2)", "(2)", 1), ("X (a)", "X (a)", 1)])
 func versionSuffixesAreReadOnlyWhenTheyLookLikeOne(_ stem: String, _ base: String, _ version: Int) {
     #expect(AgentCaptures.versioned(stem) == (base, version))
 }
@@ -63,7 +63,12 @@ func kindIsLenient(_ text: String?, _ kind: AgentCaptures.Kind) {
     #expect(AgentCaptures.date(since: " 2H ", now: now) == now.addingTimeInterval(-7200))
     #expect(AgentCaptures.date(since: "1d", now: now) == now.addingTimeInterval(-86400))
     #expect(AgentCaptures.date(since: "2026-10-10T14:03:12Z", now: now) == Date(timeIntervalSince1970: 1_791_640_992))
-    #expect(AgentCaptures.date(since: "2026-10-10", now: now) == Date(timeIntervalSince1970: 1_791_590_400))
+    let utc = TimeZone(identifier: "UTC")!
+    #expect(AgentCaptures.date(since: "2026-10-10", now: now, timeZone: utc) == Date(timeIntervalSince1970: 1_791_590_400))
+    // A bare date or a time without a zone is local time.
+    #expect(AgentCaptures.date(since: "2026-10-10", now: now, timeZone: TimeZone(secondsFromGMT: -7 * 3600)!) == Date(timeIntervalSince1970: 1_791_590_400 + 7 * 3600))
+    #expect(AgentCaptures.date(since: "2026-10-10T14:03", now: now, timeZone: utc) == Date(timeIntervalSince1970: 1_791_640_980))
+    #expect(AgentCaptures.date(since: "2026-10-10T14:03:12", now: now, timeZone: utc) == Date(timeIntervalSince1970: 1_791_640_992))
     #expect(AgentCaptures.date(since: "yesterday", now: now) == nil)
     #expect(AgentCaptures.date(since: "-5m", now: now) == nil)
 }
@@ -71,9 +76,31 @@ func kindIsLenient(_ text: String?, _ kind: AgentCaptures.Kind) {
 @Test func aNameMatchesExactlyByPathOrLooselyByWords() {
     #expect(AgentCaptures.named("Shot A.png", in: folder)?.name == "Shot A.png")
     #expect(AgentCaptures.named("/shots/Shot A (2).png", in: folder)?.name == "Shot A (2).png")
-    // Loose matches take the newest file that has every word.
-    #expect(AgentCaptures.named("shot a", in: folder)?.name == "Shot A (2).png")
+    // Loose matches look among the captures `ranked` gives, so they find the version with the markup.
+    #expect(AgentCaptures.named("shot a", in: folder)?.name == "Shot A (3).png")
     #expect(AgentCaptures.named("RECORDING", in: folder)?.name == "Recording C.mp4")
     #expect(AgentCaptures.named("nothing like it", in: folder) == nil)
     #expect(AgentCaptures.named("  ", in: folder) == nil)
+}
+
+@Test func aSecondCaptureInTheSameSecondIsntAVersion() {
+    let quick = [entry("Shot E.png", minutesAgo: 3), entry("Shot E (2).png", minutesAgo: 3 - 1.0 / 60)]
+    #expect(AgentCaptures.ranked(quick).map(\.name) == ["Shot E (2).png", "Shot E.png"])
+}
+
+@Test func theSameNameInAnotherFolderIsAnotherCapture() {
+    let twoFolders = [
+        AgentCaptures.Entry(url: URL(fileURLWithPath: "/shots/Shot F.png"), isVideo: false, date: now),
+        AgentCaptures.Entry(url: URL(fileURLWithPath: "/tmp/Shot F (2).png"), isVideo: false, date: now.addingTimeInterval(60)),
+    ]
+    #expect(AgentCaptures.ranked(twoFolders).count == 2)
+}
+
+@Test func aLooseNameFavoursWordsThatSitTogether() {
+    let shots = [
+        entry("Shot 2026-10-10 at 14.03.12.png", minutesAgo: 60),
+        entry("Shot 2026-10-14 at 09.03.55.png", minutesAgo: 1),
+    ]
+    #expect(AgentCaptures.named("shot 14.03", in: shots)?.name == "Shot 2026-10-10 at 14.03.12.png")
+    #expect(AgentCaptures.named("...", in: shots) == nil)
 }
