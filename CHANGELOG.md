@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.7.0-beta.38](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.37...v0.7.0-beta.38) (2026-10-11)
+
+
+### Features
+
+* add sponsorship links ([#375](https://github.com/LorcanChinnock/shot/issues/375)) ([4541e4e](https://github.com/LorcanChinnock/shot/commit/4541e4e3ce769a853598ba0909a01167e7385382))
+* **editor:** add an eyedropper and a Pick Colour action ([#376](https://github.com/LorcanChinnock/shot/issues/376)) ([4cfb776](https://github.com/LorcanChinnock/shot/commit/4cfb7761d11a9432942f07c6e34b3e3fc8e2b57a))
+* **editor:** pick the canvas background from colour swatches ([#378](https://github.com/LorcanChinnock/shot/issues/378)) ([cd0f0af](https://github.com/LorcanChinnock/shot/commit/cd0f0af7c2c7a6932f91a6a0b6c51797fdfbcc48))
+* **recording:** support 120 fps recording on high-refresh displays ([#366](https://github.com/LorcanChinnock/shot/issues/366)) ([6fa6665](https://github.com/LorcanChinnock/shot/commit/6fa66651381d2bc0c09dabc8d26ee19f8e6b7d93))
+
+
+### Bug Fixes
+
+* behaviour nits flagged by the audit ([#363](https://github.com/LorcanChinnock/shot/issues/363)) ([86bea8c](https://github.com/LorcanChinnock/shot/commit/86bea8c5adf3a363261c7a0643added2d8796087))
+* **editor:** draw the selection in the system accent colour in both editors ([#380](https://github.com/LorcanChinnock/shot/issues/380)) ([b3758bd](https://github.com/LorcanChinnock/shot/commit/b3758bd1ec52bb3e4ee6621732e743ff97ab4dae))
+* **editor:** export high-resolution 60 fps projects as HEVC ([#372](https://github.com/LorcanChinnock/shot/issues/372)) ([a9db8f0](https://github.com/LorcanChinnock/shot/commit/a9db8f0eb158a816d3c7a1df9929a0bbf39e918d))
+
+
+### Performance Improvements
+
+* release render caches when the last editor closes and budget a marker frame ([#377](https://github.com/LorcanChinnock/shot/issues/377)) ([e43d714](https://github.com/LorcanChinnock/shot/commit/e43d714aeb6ea37298bbbda4bea0d84aef795783))
+* **video-editor:** stop drawing frames a seek has cancelled ([#381](https://github.com/LorcanChinnock/shot/issues/381)) ([13cacd4](https://github.com/LorcanChinnock/shot/commit/13cacd450a258487e45060e74d996cca4ebb096f))
+
 ## [0.7.0-beta.37](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.36...v0.7.0-beta.37) (2026-10-10)
 
 
