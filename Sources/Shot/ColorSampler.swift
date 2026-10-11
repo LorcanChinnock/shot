@@ -3,10 +3,20 @@ import ShotCore
 
 @MainActor
 enum ColorSampler {
-    /// Shows the system loupe and returns the colour clicked, in sRGB, or `nil` when Esc cancels. Needs no permission.
+    /// Held while the loupe shows, so only one shows at a time.
+    private static var showing: NSColorSampler?
+
+    /// Shows the system loupe and returns the colour clicked, in sRGB, or `nil` when Esc cancels or a loupe is
+    /// already showing. Needs no permission.
     static func sample() async -> RGBA? {
-        await withCheckedContinuation { continuation in
-            NSColorSampler().show { color in
+        guard showing == nil else {
+            return nil
+        }
+        let sampler = NSColorSampler()
+        showing = sampler
+        defer { showing = nil }
+        return await withCheckedContinuation { continuation in
+            sampler.show { color in
                 continuation.resume(returning: color.map { RGBA($0) })
             }
         }

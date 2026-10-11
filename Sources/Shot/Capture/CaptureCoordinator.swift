@@ -50,6 +50,11 @@ final class CaptureCoordinator {
             setup.confirm()
             return
         }
+        // Picking a colour captures nothing, so it doesn't hold up captures while the loupe waits for a click.
+        if action == .pickColor {
+            Task { await pickColor() }
+            return
+        }
         guard !busy else {
             return
         }
@@ -77,7 +82,7 @@ final class CaptureCoordinator {
                 case .recordWindow:
                     try await startRecording(mode: .window)
                 case .pickColor:
-                    await pickColor()
+                    break
                 }
             } catch {
                 report(error)

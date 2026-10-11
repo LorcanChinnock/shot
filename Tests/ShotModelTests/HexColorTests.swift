@@ -37,7 +37,7 @@ func hexParsesWithOrWithoutHashInEitherCase(_ hex: String) throws {
     #expect(try #require(HexColor.components("#FF000080")).alpha == 128.0 / 255)
 }
 
-@Test(arguments: ["", "#", "#12", "#12345", "#1234567", "#GGGGGG", "#12 456", "red", "##123456"])
+@Test(arguments: ["", "#", "#12", "#12345", "#1234567", "#GGGGGG", "#12 456", "red", "##123456", "#１２３４５６"])
 func malformedHexIsRejected(_ hex: String) {
     #expect(HexColor.components(hex) == nil)
 }

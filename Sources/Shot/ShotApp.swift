@@ -58,7 +58,6 @@ private struct ShotMenu: View {
                 Toast.error("Couldn't open the capture folder")
             }
         }
-        ActionButton(action: .pickColor, title: ShotAction.pickColor.title, coordinator: coordinator)
         UpdateButton(updater: Updater.shared)
         Button("Settings…") { MainWindowController.showSettings() }
         .keyboardShortcut(",")

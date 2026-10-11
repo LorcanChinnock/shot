@@ -9,13 +9,14 @@ public enum HexColor {
         return "#" + shown.map { String(format: "%02X", $0) }.joined()
     }
 
-    /// Reads `#RGB`, `#RRGGBB` or `#RRGGBBAA`, with or without the `#`, in either case. `nil` for anything else.
+    /// Reads `#RGB`, `#RRGGBB` or `#RRGGBBAA`, with or without the `#`, in either case. `nil` for anything else,
+    /// fullwidth digits included, which `isHexDigit` alone accepts.
     public static func components(_ hex: String) -> (red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat)? {
         var digits = Substring(hex.trimmingCharacters(in: .whitespaces))
         if digits.first == "#" {
             digits = digits.dropFirst()
         }
-        guard [3, 6, 8].contains(digits.count), digits.allSatisfy(\.isHexDigit) else {
+        guard [3, 6, 8].contains(digits.count), digits.allSatisfy({ $0.isASCII && $0.isHexDigit }) else {
             return nil
         }
         if digits.count == 3 {
