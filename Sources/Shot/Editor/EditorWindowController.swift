@@ -19,6 +19,15 @@ private final class EditorWindow: NSWindow {
 @MainActor
 final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValidation {
     private static var open: [EditorWindowController] = []
+    static var isAnyOpen: Bool { !open.isEmpty }
+
+    /// Lets go of the renderer's images once no image or video editor is left to use them. Editors share the cache, so
+    /// releasing it while one is open would only make that one draw its blurs and shadows again.
+    static func releaseCachesIfNoEditorIsOpen() {
+        if !isAnyOpen, !VideoEditorWindowController.isAnyOpen {
+            AnnotationRenderer.releaseCaches()
+        }
+    }
 
     private let model: EditorModel
     private let window: NSWindow
@@ -179,6 +188,6 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
 
     func windowWillClose(_ notification: Notification) {
         Self.open.removeAll { $0 === self }
-        AnnotationRenderer.releaseCaches()
+        Self.releaseCachesIfNoEditorIsOpen()
     }
 }

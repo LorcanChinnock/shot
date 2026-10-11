@@ -34,6 +34,7 @@ private final class VideoEditorWindow: NSWindow {
 @MainActor
 final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValidation {
     private static var open: [VideoEditorWindowController] = []
+    static var isAnyOpen: Bool { !open.isEmpty }
 
     private let model: VideoEditorModel
     private let window: NSWindow
@@ -252,6 +253,6 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
     func windowWillClose(_ notification: Notification) {
         model.teardown()
         Self.open.removeAll { $0 === self }
-        AnnotationRenderer.releaseCaches()
+        EditorWindowController.releaseCachesIfNoEditorIsOpen()
     }
 }

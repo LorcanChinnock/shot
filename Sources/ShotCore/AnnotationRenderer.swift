@@ -10,8 +10,7 @@ public enum AnnotationRenderer {
     /// What Core Image made on the last render, so redrawing while editing doesn't filter what hasn't changed again.
     static let cache = RenderCache()
 
-    /// Lets go of the images kept for redrawing, so a closed editor's capture doesn't stay in memory. Another open
-    /// editor just makes what it needs again on its next render.
+    /// Lets go of the images kept for redrawing, so a closed editor's capture doesn't stay in memory.
     public static func releaseCaches() {
         cache.removeAll()
         EditorDocument.forgetCaptureTransparency()
