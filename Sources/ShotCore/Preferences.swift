@@ -61,8 +61,8 @@ public enum PreferenceKey {
     public static let editorShowsLayers = "editorShowsLayers"
     public static let videoEditorShowsTracks = "videoEditorShowsTracks"
     public static let videoEditorShowsInspector = "videoEditorShowsInspector"
-    /// Hands captures to AI agents: the file path goes on the clipboard beside the image, and a `.shot.json` describing
-    /// the capture and its markup is written next to each file.
+    /// Hands captures to AI agents: each file records where it came from and what was marked on it, and a copied
+    /// capture is kept as a file an agent can fetch.
     public static let agentHandoff = "agentHandoff"
 
     public static func hotkey(_ action: ShotAction) -> String { "hotkey.\(action.rawValue)" }
@@ -382,8 +382,8 @@ public struct Preferences {
         Gallery.tileSizes.contains(store.double(forKey: PreferenceKey.galleryTileSize)) ? store.double(forKey: PreferenceKey.galleryTileSize) : Gallery.defaultTileSize
     }
 
-    /// Whether captures are handed to AI agents: their path beside the image on the clipboard, and a `.shot.json` next
-    /// to each file. Off by default, so nothing changes for anyone who doesn't ask for it.
+    /// Whether captures are handed to AI agents: a record inside each file, and copied captures kept as files. Off by
+    /// default, so nothing changes for anyone who doesn't ask for it.
     public var agentHandoff: Bool { store.bool(forKey: PreferenceKey.agentHandoff) }
 
     public var partyModeUnlocked: Bool { store.bool(forKey: PreferenceKey.partyModeUnlocked) }

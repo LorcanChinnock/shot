@@ -208,23 +208,17 @@ final class QuickAccessController {
 
     // MARK: Card actions
 
-    /// Copies the capture, with its path beside it when the Agents setting is on, as the capture itself was copied.
     func copy(_ card: QuickAccessCard) {
-        let path = Preferences().agentHandoff ? card.fileURL.path : nil
         if card.isVideo {
-            if let path {
-                Clipboard.copy(fileURL: card.fileURL, path: path)
-            } else {
-                Clipboard.copy(fileURL: card.fileURL)
-            }
-        } else if !Clipboard.copy(imageAt: card.styledURL ?? card.fileURL, path: path) {
+            Clipboard.copy(fileURL: card.fileURL)
+        } else if !Clipboard.copy(imageAt: card.styledURL ?? card.fileURL) {
             Toast.error("Could not read \(card.fileURL.lastPathComponent)")
             return
         }
         Toast.show("Copied")
     }
 
-    /// Copies the file's path as text, for a terminal or an agent that can't take the image.
+    /// Copies the file's path as text, for an agent to open the file itself.
     func copyPath(_ card: QuickAccessCard) {
         Clipboard.copy(string: card.fileURL.path)
         Toast.show("Copied path")

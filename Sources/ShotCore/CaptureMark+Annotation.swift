@@ -15,12 +15,12 @@ extension RGBA {
     }
 }
 
-extension SidecarAnnotation {
+extension CaptureMark {
     /// `annotations` as an agent reads them, in the pixels of a file saved from `canvas` (in image pixels) and scaled by
     /// `scale`, which is 0.5 for a Retina capture saved at half size. Hidden ones, and ones cropped out of the canvas,
     /// are left out, as they aren't in the file.
-    public static func mapping(_ annotations: [Annotation], canvas: CGRect, scale: CGFloat = 1) -> [SidecarAnnotation] {
-        annotations.filter { !$0.isHidden && $0.paintedBounds.intersects(canvas) }.map { SidecarAnnotation($0, origin: canvas.origin, scale: scale) }
+    public static func mapping(_ annotations: [Annotation], canvas: CGRect, scale: CGFloat = 1) -> [CaptureMark] {
+        annotations.filter { !$0.isHidden && $0.paintedBounds.intersects(canvas) }.map { CaptureMark($0, origin: canvas.origin, scale: scale) }
     }
 
     init(_ annotation: Annotation, origin: CGPoint, scale: CGFloat) {
@@ -28,6 +28,11 @@ extension SidecarAnnotation {
         func point(_ p: CGPoint) -> [Double] { [value(p.x - origin.x), value(p.y - origin.y)] }
         func box(_ r: CGRect) -> [Double] { [value(r.minX - origin.x), value(r.minY - origin.y), value(r.width), value(r.height)] }
         self.init(id: annotation.id.uuidString, type: "")
+        // Enough to rebuild the mark in the editor, in the file's pixels like the rest.
+        lineWidth = value(annotation.lineWidth)
+        fill = annotation.fill?.hex
+        bend = annotation.bend.map { [value($0.dx), value($0.dy)] }
+        cornerRadius = annotation.cornerRadius.map(value)
         let redacted = "redacted, content hidden"
         var colored = true
         switch annotation.kind {
@@ -41,14 +46,16 @@ extension SidecarAnnotation {
         case let .highlight(area):
             type = "highlight"
             rect = box(area)
-        case let .blur(area, _):
+        case let .blur(area, strength):
             type = "blur"
             rect = box(area)
+            amount = strength.map(Double.init)
             note = redacted
             colored = false
-        case let .pixelate(area, _):
+        case let .pixelate(area, strength):
             type = "pixelate"
             rect = box(area)
+            amount = strength.map(Double.init)
             note = redacted
             colored = false
         case let .spotlight(area, _):
@@ -56,10 +63,11 @@ extension SidecarAnnotation {
             rect = box(area)
             note = "the area outside is dimmed"
             colored = false
-        case let .text(string, _, _):
+        case let .text(string, _, size):
             type = "text"
             text = string
             rect = box(annotation.bounds)
+            fontSize = value(size)
         case let .counter(value, middle):
             type = "counter"
             number = value
@@ -68,12 +76,14 @@ extension SidecarAnnotation {
             type = "note"
             text = string
             rect = box(annotation.bounds)
-        case .freehand:
+        case let .freehand(stroke):
             type = "pen"
             rect = box(annotation.bounds)
-        case .marker:
+            points = stroke.map(point)
+        case let .marker(stroke):
             type = "marker"
             rect = box(annotation.bounds)
+            points = stroke.map(point)
         case let .image(_, area):
             type = "image"
             rect = box(area)

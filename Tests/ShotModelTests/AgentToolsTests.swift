@@ -5,7 +5,7 @@ import Testing
 private let now = Date(timeIntervalSince1970: 1_800_000_000)
 private let utc = TimeZone(identifier: "UTC")!
 
-private func tools(in folder: URL, _ names: [(String, Double, Bool)]) -> AgentTools {
+private func tools(in folder: URL, _ names: [(String, Double, Bool)], records: [String: CaptureRecord] = [:]) -> AgentTools {
     let entries = names.map { name, minutesAgo, video in
         AgentCaptures.Entry(url: folder.appendingPathComponent(name), isVideo: video, date: now.addingTimeInterval(-minutesAgo * 60))
     }
@@ -13,6 +13,7 @@ private func tools(in folder: URL, _ names: [(String, Double, Bool)]) -> AgentTo
         folder: folder,
         entries: { entries },
         preview: { entry in [.image(data: "PREVIEW:\(entry.name)", mimeType: "image/jpeg")] },
+        record: { records[$0.name] },
         now: { now },
         timeZone: utc
     )
@@ -68,21 +69,21 @@ func latestCaptureReadsKindLeniently(_ kind: String, _ expected: String) async {
     ]))
 }
 
-@Test func anImageWithoutAShotJSONSaysHowToGetOne() async {
+@Test func anImageWithoutARecordSaysHowToGetOne() async {
     let result = await captures.call("latest_capture", .object([:]))
     #expect(texts(result).last?.contains("Hand captures to agents") == true)
 }
 
-@Test func theShotJSONIsReturnedAsWritten() async throws {
-    let folder = try temporaryFolder()
-    defer { try? FileManager.default.removeItem(at: folder) }
-    let sidecar = #"{"schema":"shot.capture/1","annotations":[{"id":"1","type":"arrow"}]}"#
-    try Data(sidecar.utf8).write(to: folder.appendingPathComponent("Shot A (2).png.shot.json"))
-    let tools = tools(in: folder, [("Shot A.png", 30, false), ("Shot A (2).png", 20, false)])
+@Test func theRecordIsSummarisedInPlainLines() async throws {
+    let record = CaptureRecord(
+        original: "Shot A.png", kind: "image", created: now, size: .init(width: 100, height: 100), scale: 1,
+        annotations: [CaptureMark(id: "1", type: "arrow", from: [1, 2], to: [3, 4], color: "red")]
+    )
+    let tools = tools(in: URL(fileURLWithPath: "/shots"), [("Shot A.png", 30, false), ("Shot A (2).png", 20, false)], records: ["Shot A (2).png": record])
     let result = await tools.call("latest_capture", .object([:]))
     #expect(result.content.first == .image(data: "PREVIEW:Shot A (2).png", mimeType: "image/jpeg"))
-    #expect(texts(result).last == sidecar)
-    #expect(texts(result).first?.contains(#""shotJSON" : "\#(folder.path)/Shot A (2).png.shot.json""#) == true)
+    #expect(texts(result).last == record.summaryLines.joined(separator: "\n"))
+    #expect(texts(result).first?.contains("shotJSON") == false)
 }
 
 @Test func anEmptyFolderIsNotAnErrorAndSaysWhereItLooked() async {

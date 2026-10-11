@@ -5,7 +5,7 @@ import Testing
 
 private let red = RGBA.presets[0]
 
-@Test func everyKindMapsToItsSidecarType() throws {
+@Test func everyKindMapsToItsMarkType() throws {
     let context = try #require(CGContext(data: nil, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
     let image = AnnotationImage(try #require(context.makeImage()))
     let kinds: [(Annotation.Kind, String)] = [
@@ -24,18 +24,37 @@ private let red = RGBA.presets[0]
         (.image(image, rect: CGRect(x: 0, y: 0, width: 10, height: 10)), "image"),
     ]
     let annotations = kinds.map { Annotation(kind: $0.0, color: red, lineWidth: 4) }
-    let mapped = SidecarAnnotation.mapping(annotations, canvas: CGRect(x: 0, y: 0, width: 100, height: 100))
+    let mapped = CaptureMark.mapping(annotations, canvas: CGRect(x: 0, y: 0, width: 100, height: 100))
     #expect(mapped.map(\.type) == kinds.map(\.1))
     #expect(mapped.map(\.id) == annotations.map(\.id.uuidString))
 }
 
-@Test func redactionsGiveOnlyWhereTheyAre() {
-    let blur = SidecarAnnotation.mapping([Annotation(kind: .blur(CGRect(x: 40, y: 40, width: 300, height: 30)), color: red, lineWidth: 4)], canvas: CGRect(x: 0, y: 0, width: 400, height: 400))[0]
-    #expect(blur == SidecarAnnotation(id: blur.id, type: "blur", rect: [40, 40, 300, 30], note: "redacted, content hidden"))
+@Test func redactionsGiveOnlyWhereTheyAreAndHowStrong() {
+    let blur = CaptureMark.mapping([Annotation(kind: .blur(CGRect(x: 40, y: 40, width: 300, height: 30), amount: 0.012), color: red, lineWidth: 4)], canvas: CGRect(x: 0, y: 0, width: 400, height: 400))[0]
+    #expect(blur.amount.map { abs($0 - 0.012) < 1e-9 } == true)
+    #expect(blur == CaptureMark(id: blur.id, type: "blur", rect: [40, 40, 300, 30], note: "redacted, content hidden", lineWidth: 4, amount: blur.amount))
+}
+
+@Test func marksCarryWhatTheEditorNeedsToRebuildThem() {
+    var arrow = Annotation(kind: .arrow(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 50, y: 10)), color: red, lineWidth: 6)
+    arrow.bend = CGVector(dx: 0, dy: -8)
+    var box = Annotation(kind: .shape(.rounded, rect: CGRect(x: 0, y: 0, width: 40, height: 20)), color: red, fill: RGBA.presets[2], lineWidth: 4)
+    box.cornerRadius = 6
+    let pen = Annotation(kind: .freehand([CGPoint(x: 20, y: 20), CGPoint(x: 30, y: 25)]), color: red, lineWidth: 4)
+    let text = Annotation(kind: .text("Hi", origin: CGPoint(x: 20, y: 30), fontSize: 18), color: red, lineWidth: 4)
+    // A half-size Retina save halves widths, sizes and points along with positions.
+    let mapped = CaptureMark.mapping([arrow, box, pen, text], canvas: CGRect(x: 0, y: 0, width: 200, height: 200), scale: 0.5)
+    #expect(mapped[0].lineWidth == 3)
+    #expect(mapped[0].bend == [0, -4])
+    #expect(mapped[1].fill == RGBA.presets[2].hex)
+    #expect(mapped[1].cornerRadius == 3)
+    #expect(mapped[2].points == [[10, 10], [15, 12.5]])
+    #expect(mapped[3].fontSize == 9)
+    #expect(mapped[3].rect?.prefix(2) == [10, 15])
 }
 
 @Test func marksSayWhatTheySayAndTheirColour() {
-    let mapped = SidecarAnnotation.mapping([
+    let mapped = CaptureMark.mapping([
         Annotation(kind: .arrow(from: CGPoint(x: 410, y: 220), to: CGPoint(x: 612, y: 388)), color: red, lineWidth: 4),
         Annotation(kind: .counter(1, center: CGPoint(x: 300, y: 120)), color: RGBA(0.1, 0.45, 0.95), lineWidth: 4),
         Annotation(kind: .note("too tight here", rect: CGRect(x: 600, y: 450, width: 180, height: 32)), color: RGBA.presets[2], lineWidth: 4),
@@ -56,16 +75,16 @@ private let red = RGBA.presets[0]
     let arrow = Annotation(kind: .arrow(from: CGPoint(x: 0, y: 0), to: CGPoint(x: 100, y: 50)), color: red, lineWidth: 4)
     let box = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 10, y: 20, width: 30, height: 40)), color: red, lineWidth: 4)
     // Padding of 20 on the left and 10 on top moves everything right and down; a half-size Retina save halves it.
-    let padded = SidecarAnnotation.mapping([arrow, box], canvas: CGRect(x: -20, y: -10, width: 200, height: 200))
+    let padded = CaptureMark.mapping([arrow, box], canvas: CGRect(x: -20, y: -10, width: 200, height: 200))
     #expect(padded[0].from == [20, 10])
     #expect(padded[0].to == [120, 60])
     #expect(padded[1].rect == [30, 30, 30, 40])
-    let cropped = SidecarAnnotation.mapping([box], canvas: CGRect(x: 10, y: 10, width: 50, height: 50), scale: 0.5)
+    let cropped = CaptureMark.mapping([box], canvas: CGRect(x: 10, y: 10, width: 50, height: 50), scale: 0.5)
     #expect(cropped[0].rect == [0, 5, 15, 20])
 }
 
-/// The acceptance check from #355: the sidecar's pixels line up with the saved image's.
-@Test func sidecarCoordinatesLandOnTheMarksInTheSavedImage() throws {
+/// The acceptance check from #355: the record's pixels line up with the saved image's.
+@Test func recordCoordinatesLandOnTheMarksInTheSavedImage() throws {
     let context = try #require(CGContext(data: nil, width: 200, height: 200, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
     context.setFillColor(CGColor(gray: 1, alpha: 1))
     context.fill(CGRect(x: 0, y: 0, width: 200, height: 200))
@@ -80,7 +99,7 @@ private let red = RGBA.presets[0]
     let canvas = CGRect(x: 50, y: 50, width: 100, height: 100)
     let saved = try #require(AnnotationRenderer.flatten(EditorDocument(base: base, annotations: annotations, canvasRect: canvas)))
     #expect(saved.width == 100 && saved.height == 100)
-    let mapped = SidecarAnnotation.mapping(annotations, canvas: canvas)
+    let mapped = CaptureMark.mapping(annotations, canvas: canvas)
     func isRed(_ x: Double, _ y: Double) throws -> Bool {
         let p = try pixel(saved, CGFloat(x), CGFloat(y))
         return p[0] > 0.85 && p[1] < 0.45 && p[3] > 0.9
@@ -104,14 +123,14 @@ private let red = RGBA.presets[0]
 @Test func annotationsCroppedOutAreLeftOut() {
     let inside = Annotation(kind: .counter(1, center: CGPoint(x: 50, y: 50)), color: red, lineWidth: 4)
     let outside = Annotation(kind: .counter(2, center: CGPoint(x: 500, y: 500)), color: red, lineWidth: 4)
-    #expect(SidecarAnnotation.mapping([inside, outside], canvas: CGRect(x: 0, y: 0, width: 100, height: 100)).map(\.number) == [1])
+    #expect(CaptureMark.mapping([inside, outside], canvas: CGRect(x: 0, y: 0, width: 100, height: 100)).map(\.number) == [1])
 }
 
 @Test func hiddenAnnotationsAreLeftOut() {
     var hidden = Annotation(kind: .counter(1, center: .zero), color: red, lineWidth: 4)
     hidden.isHidden = true
     let shown = Annotation(kind: .counter(2, center: .zero), color: red, lineWidth: 4)
-    #expect(SidecarAnnotation.mapping([hidden, shown], canvas: CGRect(x: 0, y: 0, width: 10, height: 10)).map(\.number) == [2])
+    #expect(CaptureMark.mapping([hidden, shown], canvas: CGRect(x: 0, y: 0, width: 10, height: 10)).map(\.number) == [2])
 }
 
 @Test func everyPresetIsNamedAfterItself() {

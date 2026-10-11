@@ -576,7 +576,7 @@ private struct AgentSettings: View {
         SettingsCard(title: "Hand-off", symbol: "arrow.right.doc.on.clipboard") {
             ToggleRow(
                 title: "Hand captures to agents",
-                subtitle: "Puts the file path on the clipboard beside the image, so a terminal pastes the path, and writes a .shot.json next to each capture that says what you marked and where. Apps that prefer text may paste the path.",
+                subtitle: "Records inside each capture which app and window it came from and what you marked, so an agent can read it. The record travels with the file and its copies. Copied captures are kept as files, so an agent can fetch them.",
                 isOn: $handoff, color: color, divider: false
             )
         }

@@ -100,3 +100,26 @@ func previewJPEGStaysUnderTheByteCapForNoise(_ maxBytes: Int) throws {
     let decoded = try #require(ImageCodec.image(from: preview))
     #expect(try grayLevel(of: decoded) > 245)
 }
+
+@Test(arguments: [ImageFormat.png, .jpeg])
+func theRecordRoundTripsInsideTheFileAndKeepsItsScaleAndShadow(format: ImageFormat) throws {
+    let record = CaptureRecord(
+        original: "Shot.png", kind: "image", created: Date(timeIntervalSince1970: 1_791_640_992), size: .init(width: 20, height: 10), scale: 2,
+        source: CaptureRecord.Source(mode: "window", app: "Notes", windowTitle: "Ünïcode & <brackets> \"quoted\"\nnext line"),
+        annotations: [CaptureMark(id: "1", type: "note", rect: [1, 2, 3, 4], text: "too tight here ✓")]
+    )
+    let data = try #require(ImageCodec.data(from: solidImage(width: 20, height: 10), scale: 2, format: format, windowShadow: true, record: record))
+    #expect(ImageCodec.record(of: data) == record)
+    #expect(ImageCodec.scale(of: data) == 2)
+    #expect(ImageCodec.hasWindowShadow(of: data))
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent("record-\(UUID().uuidString).\(format.fileExtension)")
+    defer { try? FileManager.default.removeItem(at: url) }
+    try data.write(to: url)
+    #expect(ImageCodec.record(ofFileAt: url) == record)
+}
+
+@Test func anImageWithoutARecordHasNone() throws {
+    let data = try #require(ImageCodec.data(from: solidImage(width: 20, height: 10), scale: 1))
+    #expect(ImageCodec.record(of: data) == nil)
+    #expect(ImageCodec.record(of: Data("not an image".utf8)) == nil)
+}

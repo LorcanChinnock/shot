@@ -9,9 +9,14 @@ public enum ImageCodec {
     /// later knows not to offer a second shadow.
     static let windowShadowMarker = "Shot: includes the macOS window shadow"
 
+    /// The XMP namespace of `record`, and the property it's stored in as JSON text.
+    static let recordNamespace = "https://shot.lorcanchinnock.com/ns/capture/1.0/"
+    static let recordPath = "shot:record"
+
     /// Encodes with DPI = 72 × scale so Retina captures open at point size. `windowShadow` marks a window capture that
-    /// includes the macOS window shadow.
-    public static func data(from image: CGImage, scale: CGFloat, format: ImageFormat = .png, windowShadow: Bool = false) -> Data? {
+    /// includes the macOS window shadow. `record`, for agents, goes in the file's XMP, written in the same pass: copying
+    /// the image again with metadata added would be cheaper, but ImageIO then empties a PNG's Exif comment.
+    public static func data(from image: CGImage, scale: CGFloat, format: ImageFormat = .png, windowShadow: Bool = false, record: CaptureRecord? = nil) -> Data? {
         let data = NSMutableData()
         let type = format == .png ? UTType.png : UTType.jpeg
         guard let destination = CGImageDestinationCreateWithData(data, type.identifier as CFString, 1, nil) else {
@@ -25,11 +30,45 @@ public enum ImageCodec {
         if windowShadow {
             properties[kCGImagePropertyExifDictionary] = [kCGImagePropertyExifUserComment: windowShadowMarker]
         }
-        CGImageDestinationAddImage(destination, image, properties as CFDictionary)
+        if let metadata = record.flatMap(metadata) {
+            CGImageDestinationAddImageAndMetadata(destination, image, metadata, properties as CFDictionary)
+        } else {
+            CGImageDestinationAddImage(destination, image, properties as CFDictionary)
+        }
         guard CGImageDestinationFinalize(destination) else {
             return nil
         }
         return data as Data
+    }
+
+    private static func metadata(for record: CaptureRecord) -> CGImageMetadata? {
+        let metadata = CGImageMetadataCreateMutable()
+        guard let json = try? record.encoded(), let text = String(data: json, encoding: .utf8),
+              CGImageMetadataRegisterNamespaceForPrefix(metadata, recordNamespace as CFString, "shot" as CFString, nil),
+              CGImageMetadataSetValueWithPath(metadata, nil, recordPath as CFString, text as CFString)
+        else {
+            return nil
+        }
+        return metadata
+    }
+
+    /// The record Shot wrote in the image file at `url`, or `nil` when it has none or isn't an image.
+    public static func record(ofFileAt url: URL) -> CaptureRecord? {
+        CGImageSourceCreateWithURL(url as CFURL, nil).flatMap(record)
+    }
+
+    public static func record(of data: Data) -> CaptureRecord? {
+        CGImageSourceCreateWithData(data as CFData, nil).flatMap(record)
+    }
+
+    private static func record(_ source: CGImageSource) -> CaptureRecord? {
+        guard let metadata = CGImageSourceCopyMetadataAtIndex(source, 0, nil),
+              let tag = CGImageMetadataCopyTagWithPath(metadata, nil, recordPath as CFString),
+              let text = CGImageMetadataTagCopyValue(tag) as? String
+        else {
+            return nil
+        }
+        return try? CaptureRecord.decoded(from: Data(text.utf8))
     }
 
     /// Resamples a Retina capture to 1 pixel per point.
