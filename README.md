@@ -51,7 +51,7 @@ Trim a recording, cut sections out, draw over it, add music or other clips, and 
 
 ### Works with AI agents
 
-Turn on **Hand captures to agents** and every copy carries the file's path, so it pastes into Claude Code, Codex or Cursor where an image won't, and each capture gets a small `.shot.json` beside it that tells the agent exactly what you circled, and where. Then let the agent look for itself through Shot's read-only MCP server: `claude mcp add shot -- /Applications/Shot.app/Contents/MacOS/shot-cli mcp`, or `claude mcp add shot -- shot mcp` after a Homebrew install. See [Using Shot with AI agents](docs/usage.md#using-shot-with-ai-agents).
+Circle the bug, copy, and paste it into Claude Code, Codex or Cursor: your arrows and notes show the agent exactly where to look. Turn on **Hand captures to agents** and each capture also gets a small `.shot.json` beside it that tells the agent what you circled, and where. Or let the agent look for itself through Shot's read-only MCP server: `claude mcp add shot -- /Applications/Shot.app/Contents/MacOS/shot-cli mcp`, or `claude mcp add shot -- shot mcp` after a Homebrew install. See [Using Shot with AI agents](docs/usage.md#using-shot-with-ai-agents).
 
 ## Install
 

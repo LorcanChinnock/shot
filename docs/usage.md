@@ -183,7 +183,7 @@ The estimated size of the exported file is shown before you export. **Cancel**, 
 
 ## Using Shot with AI agents
 
-Pasting an image into a terminal agent such as Claude Code, Codex or Cursor often fails, so people save the screenshot and type its path by hand. Shot can do that part, and tell the agent exactly what you marked. All of it is off until you turn on **Hand captures to agents** in **Settings › Agents**; with it off, nothing here happens.
+Claude Code, Codex and Cursor all take a pasted screenshot, and your arrows and boxes show the agent where to look. Shot can also give the agent the file itself, say exactly what you marked, and let the agent fetch your latest capture on its own. All of it is off until you turn on **Hand captures to agents** in **Settings › Agents**; with it off, nothing here happens.
 
 With it on:
 
