@@ -10,8 +10,11 @@ public enum ShotAction: String, CaseIterable, Sendable {
     case record
     case recordFullscreen = "record-fullscreen"
     case recordWindow = "record-window"
-    /// Samples a colour on screen and copies its hex. Last, since `HotkeyCenter` numbers hotkeys by position.
+    /// Samples a colour on screen and copies its hex.
     case pickColor = "pick-color"
+    /// Copies the newest capture's path, for an agent to open the file itself. New actions go last, since
+    /// `HotkeyCenter` numbers hotkeys by position.
+    case copyPath = "copy-path"
 
     public var title: String {
         switch self {
@@ -22,13 +25,14 @@ public enum ShotAction: String, CaseIterable, Sendable {
         case .recordFullscreen: "Record Fullscreen"
         case .recordWindow: "Record Window"
         case .pickColor: "Pick Colour"
+        case .copyPath: "Copy Latest Capture's Path"
         }
     }
 
     public var isRecording: Bool {
         switch self {
         case .record, .recordFullscreen, .recordWindow: true
-        case .captureArea, .captureFullscreen, .captureWindow, .pickColor: false
+        case .captureArea, .captureFullscreen, .captureWindow, .pickColor, .copyPath: false
         }
     }
 
@@ -36,19 +40,20 @@ public enum ShotAction: String, CaseIterable, Sendable {
     public var isCapture: Bool {
         switch self {
         case .captureArea, .captureFullscreen, .captureWindow: true
-        case .record, .recordFullscreen, .recordWindow, .pickColor: false
+        case .record, .recordFullscreen, .recordWindow, .pickColor, .copyPath: false
         }
     }
 
     /// Mirrors the macOS screenshot keys with ⌃ in place of ⌘. Record fullscreen and window
-    /// have no default: press Enter or Space in the record overlay instead. Pick Colour stays out of the way with none.
+    /// have no default: press Enter or Space in the record overlay instead. Pick Colour and Copy Path stay out of the way
+    /// with none.
     public var defaultCombo: KeyCombo? {
         switch self {
         case .captureArea: KeyCombo(keyCode: 21, modifiers: KeyCombo.control | KeyCombo.shift)
         case .captureFullscreen: KeyCombo(keyCode: 20, modifiers: KeyCombo.control | KeyCombo.shift)
         case .captureWindow: KeyCombo(keyCode: 13, modifiers: KeyCombo.control | KeyCombo.shift)
         case .record: KeyCombo(keyCode: 23, modifiers: KeyCombo.control | KeyCombo.shift)
-        case .recordFullscreen, .recordWindow, .pickColor: nil
+        case .recordFullscreen, .recordWindow, .pickColor, .copyPath: nil
         }
     }
 
@@ -63,7 +68,7 @@ public enum ShotAction: String, CaseIterable, Sendable {
         case .captureArea: return KeyCombo(keyCode: 21, modifiers: KeyCombo.command | KeyCombo.shift)
         case .record: return KeyCombo(keyCode: 23, modifiers: KeyCombo.command | KeyCombo.shift)
         case .captureWindow: return nil
-        case .recordFullscreen, .recordWindow, .pickColor: return defaultCombo
+        case .recordFullscreen, .recordWindow, .pickColor, .copyPath: return defaultCombo
         }
     }
 

@@ -9,6 +9,8 @@ public struct AgentTools: Sendable {
     public var entries: @Sendable () -> [AgentCaptures.Entry]
     /// What an agent sees of a capture: a downscaled image, or a video's poster frame and duration.
     public var preview: @Sendable (AgentCaptures.Entry) async -> [MCPServer.Content]
+    /// The record Shot wrote inside a capture, read from the file's metadata.
+    public var record: @Sendable (AgentCaptures.Entry) -> CaptureRecord?
     public var now: @Sendable () -> Date
     public var timeZone: TimeZone
 
@@ -16,12 +18,14 @@ public struct AgentTools: Sendable {
         folder: URL,
         entries: @escaping @Sendable () -> [AgentCaptures.Entry],
         preview: @escaping @Sendable (AgentCaptures.Entry) async -> [MCPServer.Content],
+        record: @escaping @Sendable (AgentCaptures.Entry) -> CaptureRecord? = { _ in nil },
         now: @escaping @Sendable () -> Date = Date.init,
         timeZone: TimeZone = .current
     ) {
         self.folder = folder
         self.entries = entries
         self.preview = preview
+        self.record = record
         self.now = now
         self.timeZone = timeZone
     }
@@ -33,7 +37,7 @@ public struct AgentTools: Sendable {
     public static let definitions: [MCPServer.Tool] = [
         MCPServer.Tool(
             name: latestCapture,
-            description: "The newest screenshot or recording taken with Shot: a preview image (a poster frame for a video), its full-size path, and, when there is one, its .shot.json listing what the user marked on it (arrows, boxes, text, numbered counters) in the full-size file's pixels. Use this when the user mentions their latest screenshot or what they marked.",
+            description: "The screenshot or recording the user just took with Shot: a preview image (a poster frame for a video), its full-size path, and, when Shot recorded it, which app and window it came from, the user's notes, and what they marked (arrows, boxes, text, numbered counters) in the full-size file's pixels. Use this when the user mentions the screenshot they just took, their latest screenshot, or what they marked.",
             inputSchema: schema([
                 "kind": .object([
                     "type": .string("string"),
@@ -44,7 +48,7 @@ public struct AgentTools: Sendable {
         ),
         MCPServer.Tool(
             name: listCaptures,
-            description: "Recent Shot captures, newest first: name, path, kind, when it was taken and whether a .shot.json describes its markup. No images; pass a name to get_capture to see one.",
+            description: "Recent Shot captures, newest first: name, path, kind and when it was taken. No images; pass a name to get_capture to see one.",
             inputSchema: schema([
                 "limit": .object([
                     "type": .string("integer"),
@@ -102,14 +106,15 @@ public struct AgentTools: Sendable {
         }
     }
 
-    /// The preview, then the capture's details, then its `.shot.json` read as it is on disk.
+    /// The preview, then the capture's details, then what Shot recorded in it, as plain lines.
     func describe(_ entry: AgentCaptures.Entry) async -> MCPServer.ToolResult {
         var content = await preview(entry)
         content.append(.text(Self.json(metadata(entry))))
-        if let sidecar = sidecarText(for: entry) {
-            content.append(.text(sidecar))
+        let lines = record(entry)?.summaryLines ?? []
+        if !lines.isEmpty {
+            content.append(.text(lines.joined(separator: "\n")))
         } else if !entry.isVideo {
-            content.append(.text("No .shot.json beside it, so Shot has no record of its markup. Turning on Settings › Agents › Hand captures to agents writes one for each new capture."))
+            content.append(.text("Shot recorded nothing about where this came from or what was marked; the image shows any marks. Turning on Settings › Agents › Hand captures to agents records it in each new capture."))
         }
         return MCPServer.ToolResult(content: content)
     }
@@ -163,22 +168,13 @@ public struct AgentTools: Sendable {
     }
 
     func metadata(_ entry: AgentCaptures.Entry) -> JSONValue {
-        var object: [String: JSONValue] = [
+        let object: [String: JSONValue] = [
             "name": .string(entry.name),
             "path": .string(entry.url.path),
             "kind": .string(entry.isVideo ? "video" : "image"),
             "created": .string(stamp(entry.date)),
         ]
-        let sidecar = CaptureSidecar.url(for: entry.url)
-        if FileManager.default.fileExists(atPath: sidecar.path) {
-            object["shotJSON"] = .string(sidecar.path)
-        }
         return .object(object)
-    }
-
-    /// The `.shot.json` as written, so the agent reads the documented schema rather than a summary of it.
-    func sidecarText(for entry: AgentCaptures.Entry) -> String? {
-        (try? Data(contentsOf: CaptureSidecar.url(for: entry.url))).flatMap { String(data: $0, encoding: .utf8) }
     }
 
     func stamp(_ date: Date) -> String {

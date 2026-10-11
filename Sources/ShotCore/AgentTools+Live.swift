@@ -13,12 +13,15 @@ extension AgentTools {
             },
             preview: { entry in
                 entry.isVideo ? await videoPreview(of: entry.url) : imagePreview(of: entry.url)
+            },
+            record: { entry in
+                entry.isVideo ? nil : ImageCodec.record(ofFileAt: entry.url)
             }
         )
     }
 
-    /// A JPEG small enough for a model, and its size beside the file's when they differ, since `.shot.json`
-    /// coordinates are in the file's pixels.
+    /// A JPEG small enough for a model, and its size beside the file's when they differ, since the marks Shot records
+    /// are in the file's pixels.
     static func imagePreview(of url: URL) -> [MCPServer.Content] {
         guard let jpeg = ImageCodec.previewJPEG(at: url) else {
             return [.text("Couldn't read \(url.lastPathComponent) as an image.")]
@@ -26,7 +29,7 @@ extension AgentTools {
         var content: [MCPServer.Content] = [.image(data: jpeg.base64EncodedString(), mimeType: "image/jpeg")]
         if let file = pixelSize(of: CGImageSourceCreateWithURL(url as CFURL, nil)),
            let shown = pixelSize(of: CGImageSourceCreateWithData(jpeg as CFData, nil)), file != shown {
-            content.append(.text("The preview is \(shown.width)×\(shown.height) pixels. The file is \(file.width)×\(file.height), which is what .shot.json coordinates are in."))
+            content.append(.text("The preview is \(shown.width)×\(shown.height) pixels. The file is \(file.width)×\(file.height), which is what the marks' coordinates are in."))
         }
         return content
     }
@@ -57,12 +60,12 @@ extension AgentTools {
         return content
     }
 
-    private static func pixelSize(of source: CGImageSource?) -> CaptureSidecar.Size? {
+    private static func pixelSize(of source: CGImageSource?) -> CaptureRecord.Size? {
         guard let source, let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
               let width = properties[kCGImagePropertyPixelWidth] as? Int, let height = properties[kCGImagePropertyPixelHeight] as? Int
         else {
             return nil
         }
-        return CaptureSidecar.Size(width: width, height: height)
+        return CaptureRecord.Size(width: width, height: height)
     }
 }

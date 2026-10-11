@@ -21,9 +21,10 @@ private func writeCapture(_ name: String, in folder: URL, width: Int = 64, heigh
     let folder = try temporaryFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
     try writeCapture("Shot X.png", in: folder, minutesAgo: 10)
-    try writeCapture("Shot X (2).png", in: folder, minutesAgo: 5)
-    let sidecar = #"{"schema":"shot.capture/1","annotations":[]}"#
-    try Data(sidecar.utf8).write(to: folder.appendingPathComponent("Shot X (2).png.shot.json"))
+    let record = CaptureRecord(original: "Shot X.png", kind: "image", created: Date(), size: .init(width: 64, height: 48), scale: 1, annotations: [CaptureMark(type: "counter", center: [10, 10], number: 1)])
+    let marked = folder.appendingPathComponent("Shot X (2).png")
+    try #require(ImageCodec.data(from: solidImage(width: 64, height: 48), scale: 1, record: record)).write(to: marked)
+    try FileManager.default.setAttributes([.creationDate: Date().addingTimeInterval(-5 * 60)], ofItemAtPath: marked.path)
     try Data("notes".utf8).write(to: folder.appendingPathComponent("notes.txt"))
 
     let tools = AgentTools.live(folder: folder)
@@ -34,7 +35,7 @@ private func writeCapture(_ name: String, in folder: URL, width: Int = 64, heigh
     let image = try #require(ImageCodec.image(from: preview))
     #expect(image.width == 64 && image.height == 48)
     #expect(texts(result).first?.contains(#""name" : "Shot X (2).png""#) == true)
-    #expect(texts(result).last == sidecar)
+    #expect(texts(result).last == record.summaryLines.joined(separator: "\n"))
 }
 
 @Test func aLargeImagesPreviewSaysWhichSizeTheMarkupUses() async throws {
@@ -42,7 +43,7 @@ private func writeCapture(_ name: String, in folder: URL, width: Int = 64, heigh
     defer { try? FileManager.default.removeItem(at: folder) }
     try writeCapture("Shot Big.png", in: folder, width: 3136, height: 1000, minutesAgo: 1)
     let result = await AgentTools.live(folder: folder).call("latest_capture", .object([:]))
-    #expect(texts(result).first == "The preview is 1568×500 pixels. The file is 3136×1000, which is what .shot.json coordinates are in.")
+    #expect(texts(result).first == "The preview is 1568×500 pixels. The file is 3136×1000, which is what the marks' coordinates are in.")
 }
 
 @Test func anUnreadableImageSaysSoInsteadOfFailing() async throws {

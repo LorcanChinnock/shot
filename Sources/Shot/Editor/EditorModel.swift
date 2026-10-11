@@ -880,15 +880,20 @@ final class EditorModel {
         deleteLayers(selectedIDs)
     }
 
-    private func rendered(as format: ImageFormat = .png) async -> (image: CGImage, png: Data, file: Data)? {
+    /// `record` makes the saved file say, for agents, what was marked and which file it came from.
+    private func rendered(as format: ImageFormat = .png, record: CaptureRecord? = nil) async -> (image: CGImage, png: Data, file: Data)? {
         let document = document, scale = scale
         let result = await Task.detached { () -> (image: SendableImage, png: Data, file: Data)? in
             // A window with the macOS shadow still has it once saved, so the file keeps saying so.
             let windowShadow = document.hasWindowShadow
-            guard let image = AnnotationRenderer.flatten(document), let png = ImageCodec.data(from: image, scale: scale, windowShadow: windowShadow) else {
+            guard let image = AnnotationRenderer.flatten(document) else {
                 return nil
             }
-            guard let file = format == .png ? png : ImageCodec.data(from: image, scale: scale, format: format, windowShadow: windowShadow) else {
+            var record = record
+            record?.size = CaptureRecord.Size(width: image.width, height: image.height)
+            guard let png = ImageCodec.data(from: image, scale: scale, windowShadow: windowShadow, record: record),
+                  let file = format == .png ? png : ImageCodec.data(from: image, scale: scale, format: format, windowShadow: windowShadow, record: record)
+            else {
                 return nil
             }
             return (SendableImage(image), png, file)
@@ -923,6 +928,23 @@ final class EditorModel {
         Toast.show("Copied")
     }
 
+    /// What a saved version records for agents while the Agents setting is on: the marks, in the saved file's pixels,
+    /// the file it came from, and that file's source, so the version still says which app and window it showed. The size
+    /// is filled in once rendered.
+    private func savedRecord() -> CaptureRecord? {
+        guard Preferences().agentHandoff else {
+            return nil
+        }
+        let canvas = document.canvasRect
+        // The file is the canvas at 1:1, so the marks need no scaling beyond the canvas offset.
+        return CaptureRecord(
+            original: FileNaming.originalName(of: fileURL), kind: "image", created: Date(), size: CaptureRecord.Size(width: 0, height: 0), scale: scale,
+            source: ImageCodec.record(ofFileAt: fileURL)?.source,
+            canvas: [canvas.minX, canvas.minY, canvas.width, canvas.height].map { (Double($0) * 10).rounded() / 10 },
+            annotations: CaptureMark.mapping(document.annotations, canvas: canvas)
+        )
+    }
+
     /// Returns false if the save failed or another is still running.
     @discardableResult
     func save() async -> Bool {
@@ -933,25 +955,14 @@ final class EditorModel {
         defer { isSaving = false }
         commitPendingText?()
         let snapshot = document.snapshot
-        guard let result = await rendered(as: ImageFormat(fileExtension: fileURL.pathExtension)) else {
+        guard let result = await rendered(as: ImageFormat(fileExtension: fileURL.pathExtension), record: savedRecord()) else {
             Toast.error("Could not render image")
             return false
         }
         let destination = FileNaming.nextVersionURL(of: fileURL)
         do {
             try result.file.write(to: destination, options: .atomic)
-            if Preferences().agentHandoff {
-                Clipboard.copy(png: result.png, path: destination.path)
-                // The file is the canvas at 1:1, so the marks need no scaling beyond the canvas offset.
-                let sidecar = CaptureSidecar(
-                    file: destination.lastPathComponent, original: FileNaming.originalName(of: fileURL), kind: "image", created: Date(),
-                    size: CaptureSidecar.Size(width: result.image.width, height: result.image.height), scale: scale,
-                    annotations: SidecarAnnotation.mapping(document.annotations, canvas: document.canvasRect)
-                )
-                SidecarWriter.write(sidecar, for: destination, sourceFrom: fileURL)
-            } else {
-                Clipboard.copy(png: result.png)
-            }
+            Clipboard.copy(png: result.png)
             savedSnapshot = snapshot
             isDirty = document.snapshot != snapshot
             Toast.show("Saved as \(destination.lastPathComponent) and copied", duration: .seconds(3))

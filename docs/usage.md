@@ -183,19 +183,16 @@ The estimated size of the exported file is shown before you export. **Cancel**, 
 
 ## Using Shot with AI agents
 
-Claude Code, Codex and Cursor all take a pasted screenshot, and your arrows and boxes show the agent where to look. Shot can also give the agent the file itself, say exactly what you marked, and let the agent fetch your latest capture on its own. The path on the clipboard and the `.shot.json` files are off until you turn on **Hand captures to agents** in **Settings › Agents**; the [MCP server](#the-mcp-server) needs no setting.
+Claude Code, Codex and Cursor all take a pasted screenshot, and your arrows and boxes show the agent where to look. Shot can also hand over the file itself, say exactly what you marked, and let the agent fetch your latest capture on its own.
 
-With it on:
+- **Copy the path.** Right-click a Quick Access card and choose **Copy Path**, or give **Copy Latest Capture's Path** a shortcut in **Settings › Shortcuts**. An agent can open the file from its path, now or later in the conversation, and find what Shot recorded in it. Copies are always the image alone.
+- **Turn on Hand captures to agents** in **Settings › Agents** to record, inside each screenshot you take or save from the editor, which app and window it came from and what you marked. Agents read it through the [MCP server](#the-mcp-server). A copied capture is also kept as a file, even with **Save to folder** off, so the agent can fetch it. With the setting off, Shot records nothing.
 
-- **The path is on the clipboard.** Every copy, from a capture, the Quick Access card, the editor's **Save** or a finished recording, carries the file's path as plain text beside the image, so a terminal pastes the path and an app that takes images pastes the image. A copied capture is always written to a file, even with **Save to folder** off, so there is a path to paste. Apps that prefer text, such as a plain text editor, paste the path; the Quick Access card's **Copy** gives you the image again. To copy only the path, right-click a Quick Access card and choose **Copy Path**, which works with the setting off too.
-- **Each capture gets a `.shot.json` next to it**, named after the file (`Shot 2026-10-10 at 14.03.12.png.shot.json`), that says where it came from and, for a version saved from the editor, what you marked and where. The gallery never shows these files. An agent that has the image's path can find it on its own.
-
-The file follows the `shot.capture/1` schema:
+The record is stored in the image's own metadata, as JSON in the XMP property `shot:record` (namespace `https://shot.lorcanchinnock.com/ns/capture/1.0/`), so there's no extra file in your capture folder and it goes wherever the image goes, including a copied PNG. Window titles can be private, which is one reason it's opt-in. Recordings have no record. It follows the `shot.capture/2` schema:
 
 ```json
 {
-  "schema": "shot.capture/1",
-  "file": "Shot 2026-10-10 at 14.03.12 (2).png",
+  "schema": "shot.capture/2",
   "original": "Shot 2026-10-10 at 14.03.12.png",
   "kind": "image",
   "created": "2026-10-10T14:03:12Z",
@@ -207,25 +204,29 @@ The file follows the `shot.capture/1` schema:
     "windowTitle": "iPhone 17 Pro",
     "screenFrame": { "x": 120, "y": 80, "width": 1440, "height": 900 }
   },
+  "canvas": [0, 0, 2880, 1800],
   "coordinateSpace": "image pixels, top-left origin",
   "annotations": [
-    { "id": "…", "type": "arrow", "from": [410, 220], "to": [612, 388], "color": "red", "hex": "#FF3B30" },
-    { "id": "…", "type": "rectangle", "rect": [560, 340, 220, 96], "color": "red", "hex": "#FF3B30" },
-    { "id": "…", "type": "text", "text": "too tight here", "rect": [600, 450, 180, 32], "color": "red", "hex": "#FF3B30" },
-    { "id": "…", "type": "counter", "number": 1, "center": [300, 120], "color": "red", "hex": "#FF3B30" },
-    { "id": "…", "type": "blur", "rect": [40, 40, 300, 30], "note": "redacted, content hidden" }
+    { "id": "…", "type": "arrow", "from": [410, 220], "to": [612, 388], "color": "red", "hex": "#FF3B30", "lineWidth": 4 },
+    { "id": "…", "type": "rectangle", "rect": [560, 340, 220, 96], "color": "red", "hex": "#FF3B30", "lineWidth": 4 },
+    { "id": "…", "type": "text", "text": "too tight here", "rect": [600, 450, 180, 32], "color": "red", "hex": "#FF3B30", "fontSize": 24 },
+    { "id": "…", "type": "counter", "number": 1, "center": [300, 120], "color": "red", "hex": "#FF3B30", "lineWidth": 4 },
+    { "id": "…", "type": "blur", "rect": [40, 40, 300, 30], "note": "redacted, content hidden", "amount": 0.008 }
   ]
 }
 ```
 
-- `kind` is `image` or `video`. A recording has `size`, `source` and no annotations. `original` is set on a version saved from the editor, and names the capture it was saved from.
-- `source.mode` is `area`, `window` or `fullscreen`. A window capture names the app and its window; an area or fullscreen capture names the frontmost app. `screenFrame` is in points, with the origin at the top left of the main display. Window titles can be private, which is one reason the file is opt-in.
-- Coordinates are pixels of the saved file, from its top left, so a crop or padding and **Scale Retina captures to 1×** are already applied. `rect` is `[x, y, width, height]`, and `from`, `to` and `center` are `[x, y]`.
-- `type` is one of `arrow`, `line`, `rectangle`, `rounded`, `ellipse`, `triangle`, `diamond`, `star`, `highlight`, `text`, `note`, `counter`, `pen`, `marker`, `image`, `blur`, `pixelate` or `spotlight`. `color` is the nearest palette name, with the exact `hex` beside it. Text and notes give their `text`; a blur, pixelate, spotlight or placed image gives only where it is, never what is under it. Hidden layers are left out.
+- `original` is set on a version saved from the editor, and names the capture it was saved from, in the same folder. `canvas` is the part of that capture the version shows, in its pixels: a crop, or past its edges where you added padding.
+- `source.mode` is `area`, `window` or `fullscreen`. A window capture names the app and its window; an area or fullscreen capture names the frontmost app. `screenFrame` is in points, with the origin at the top left of the main display.
+- Coordinates are pixels of the saved file, from its top left, so a crop or padding and **Scale Retina captures to 1×** are already applied. `rect` is `[x, y, width, height]`; `from`, `to` and `center` are `[x, y]`; a pen or marker stroke's `points` are `[[x, y], …]`.
+- `type` is one of `arrow`, `line`, `rectangle`, `rounded`, `ellipse`, `triangle`, `diamond`, `star`, `highlight`, `text`, `note`, `counter`, `pen`, `marker`, `image`, `blur`, `pixelate` or `spotlight`. `color` is the nearest palette name, with the exact `hex` beside it. Text and notes give their `text`; a blur, pixelate, spotlight or placed image gives only where it is, never what's under it. Hidden layers are left out.
+- `lineWidth`, `fill`, `fontSize`, `amount` (a blur's or pixelation's strength), `bend` and `cornerRadius` are there so Shot can rebuild a mark; an agent can ignore them.
+
+Shot 0.7.0-beta.39 wrote this as a `.shot.json` file beside each capture instead. Nothing reads those any more, so you can delete them.
 
 ### The MCP server
 
-Shot also comes with a small [MCP](https://modelcontextprotocol.io) server, so you can ask an agent "what did I mark in my latest screenshot?" without pasting anything. It runs only while the agent uses it, works whether or not Shot is open, and needs no setting turned on, though without **Hand captures to agents** there are no `.shot.json` files for it to read. **Settings › Agents** shows the setup commands with the right path for your copy of Shot.
+Shot also comes with a small [MCP](https://modelcontextprotocol.io) server, so you can ask an agent "what did I mark in my latest screenshot?" without pasting anything. It runs only while the agent uses it, works whether or not Shot is open, and needs no setting turned on, though without **Hand captures to agents** Shot has no record of where a capture came from or what you marked; the agent still sees the image. **Settings › Agents** shows the setup commands with the right path for your copy of Shot.
 
 - **Claude Code:** `claude mcp add shot -- /Applications/Shot.app/Contents/MacOS/shot-cli mcp`. If you installed Shot with Homebrew, the server is on your PATH as `shot`, so `claude mcp add shot -- shot mcp` works too.
 - **Cursor** and other apps that take a JSON config:
@@ -246,11 +247,11 @@ It has three tools. All their arguments are optional, and a slightly wrong one i
 
 | Tool | Arguments | Returns |
 |---|---|---|
-| `latest_capture` | `kind`: `image` (the default), `video` or `any` | The newest capture: a preview image, its path, when it was taken, and its `.shot.json`. A screenshot you saved again from the editor stands in for the original, since that version has your markup. A recording gives a frame from it, how long it runs, and whether it has sound. |
-| `list_captures` | `limit`: 1 to 50, 10 by default; `since`: a date such as `2026-10-10`, or a span back from now such as `10m`, `2h` or `3d` | Recent captures, newest first: name, path, kind, when, and whether a `.shot.json` describes them. No images. |
+| `latest_capture` | `kind`: `image` (the default), `video` or `any` | The capture you just took: a preview image, its path, when it was taken, and what Shot recorded in it, as a few plain lines: the app and window, your notes, which areas are redacted, and each mark with where it is. A screenshot you saved again from the editor stands in for the original, since that version has your markup. A recording gives a frame from it, how long it runs, and whether it has sound. |
+| `list_captures` | `limit`: 1 to 50, 10 by default; `since`: a date such as `2026-10-10`, or a span back from now such as `10m`, `2h` or `3d` | Recent captures, newest first: name, path, kind and when. No images. |
 | `get_capture` | `path`, or `name`: a file name or a few words from it, so `shot 14.03` finds `Shot 2026-10-10 at 14.03.12.png` | The same as `latest_capture`, for that capture. If none matches, it names the closest ones. |
 
-Previews are JPEGs at most 1568 pixels on the long edge and about 1 MB, which is what vision models work at anyway. The path in the result lets an agent that can read files open the full-size original, and `.shot.json` coordinates are always in the full-size file's pixels.
+Previews are JPEGs at most 1568 pixels on the long edge and about 1 MB, which is what vision models work at anyway. The path in the result lets an agent that can read files open the full-size original, and the marks' coordinates are always in the full-size file's pixels.
 
 The server reads only the capture folder: your save folder (`~/Pictures/Shot` by default), or the temporary folder when **Save to folder** is off. It never captures, writes, moves or deletes anything, and it uploads nothing itself. Because the agent starts it, the first time it reads `~/Pictures` macOS may ask whether your terminal or editor can access that folder; allow it, or the agent sees no captures. To check which copy of Shot and which folder it uses, run `/Applications/Shot.app/Contents/MacOS/shot-cli --version`.
 
@@ -260,7 +261,7 @@ Shot still sends nothing anywhere. Whatever an agent reads, though, goes to that
 
 ### Global
 
-Every capture and recording action, and **Pick Colour**, can have a global shortcut and a [`shot://` URL](#url-scheme). Once it has Screen Recording access, Shot takes over the macOS screenshot keys and turns off the matching macOS shortcuts while it runs. When Shot quits, macOS gets its keys back. If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧3 to ⌘⇧5** on again.
+Every capture and recording action, **Pick Colour** and **Copy Latest Capture's Path** can have a global shortcut and a [`shot://` URL](#url-scheme). Once it has Screen Recording access, Shot takes over the macOS screenshot keys and turns off the matching macOS shortcuts while it runs. When Shot quits, macOS gets its keys back. If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧3 to ⌘⇧5** on again.
 
 | Shortcut | Action |
 |---|---|
@@ -272,7 +273,7 @@ While you set up a recording, the record shortcut starts it. While you record, i
 
 To keep the macOS screenshot tool, turn off **Use Shot for ⌘⇧3 to ⌘⇧5** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with ⌃ in place of ⌘: ⌃⇧3, ⌃⇧4, ⌃⇧5, plus ⌃⇧W for a window.
 
-Record Fullscreen, Record Window and Pick Colour have no shortcut until you set one. Pick Colour shows a loupe; click any pixel on screen to copy its hex, such as `#1E90FF`. Capture Window has none while Shot uses ⌘⇧3 to ⌘⇧5; press Space after ⌘⇧4 instead.
+Record Fullscreen, Record Window, Pick Colour and Copy Latest Capture's Path have no shortcut until you set one. Pick Colour shows a loupe; click any pixel on screen to copy its hex, such as `#1E90FF`. Capture Window has none while Shot uses ⌘⇧3 to ⌘⇧5; press Space after ⌘⇧4 instead.
 
 ### While selecting
 
@@ -372,6 +373,7 @@ Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a scr
 | `shot://record`, `record-fullscreen`, `record-window` | Set up, confirm, or stop a recording |
 | `shot://pause` | Pause or resume the recording |
 | `shot://pick-color` | Pick a colour on screen and copy its hex |
+| `shot://copy-path` | Copy the newest capture's path |
 | `shot://annotate?path=<file>` | Open an image in the editor, or a video in the video editor |
 | `shot://edit-video?path=<file>` | Open a video in the video editor to trim it |
 | `shot://gallery` | Open the gallery |
@@ -392,7 +394,7 @@ Open Settings from the menu bar icon, or with ⌘, while a Shot window is in fro
 | Capture | What happens after a capture (save, copy, Quick Access, or the editor), the magnifier, the crosshair, the cursor, and window shadows |
 | Quick Access | The screen corner and how long cards stay |
 | Recording | Adjust before recording, the countdown, frame rate, cursor, region outline, copying to the clipboard, the microphone and its input (with a **Test**), system audio, and the camera bubble's camera (with a **Preview**) and size. It also sums up the GIF settings the video editor last used. |
-| Agents | [Handing captures to AI agents](#using-shot-with-ai-agents): the path on the clipboard and the `.shot.json` beside each capture, and the setup commands for the MCP server |
+| Agents | [Handing captures to AI agents](#using-shot-with-ai-agents): a record inside each capture of where it came from and what you marked, and the setup commands for the MCP server |
 | Shortcuts | The macOS screenshot keys and every global shortcut |
 | About | The version, updates, permissions, the capture folder, links to the code, to report a bug and to sponsor Shot, and resetting all settings |
 

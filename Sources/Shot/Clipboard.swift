@@ -21,20 +21,8 @@ enum Clipboard {
         pasteboard.writeObjects([item])
     }
 
-    /// The PNG and, for agents, `path` as plain text on one item: a terminal pastes the path, and an app that reads
-    /// images pastes the image. The PNG goes first, so apps that take the first type they know take the image.
-    static func copy(png: Data, path: String) {
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        let item = NSPasteboardItem()
-        item.setData(png, forType: .png)
-        item.setString(path, forType: .string)
-        pasteboard.writeObjects([item])
-    }
-
-    /// Copies the image as PNG, which is the file's own bytes when it is one, with `path` beside it as `copy(png:path:)`
-    /// does when given; false if it can't be read.
-    static func copy(imageAt url: URL, path: String? = nil) -> Bool {
+    /// Copies the image as PNG, which is the file's own bytes when it is one; false if it can't be read.
+    static func copy(imageAt url: URL) -> Bool {
         guard let image = ImageCodec.image(at: url) else {
             return false
         }
@@ -42,11 +30,7 @@ enum Clipboard {
         guard let data = png ?? ImageCodec.data(from: image, scale: ImageCodec.scale(ofFileAt: url)) else {
             return false
         }
-        if let path {
-            copy(png: data, path: path)
-        } else {
-            copy(png: data)
-        }
+        copy(png: data)
         return true
     }
 
@@ -58,17 +42,6 @@ enum Clipboard {
 
     static func copy(fileURL: URL) {
         copy(fileURLs: [fileURL])
-    }
-
-    /// The file and, for agents, `path` as plain text on one item. The file URL type is what an `NSURL` writes, and Finder's
-    /// own copies carry the same pair, so apps that paste files are unaffected.
-    static func copy(fileURL: URL, path: String) {
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        let item = NSPasteboardItem()
-        item.setString(fileURL.absoluteString, forType: .fileURL)
-        item.setString(path, forType: .string)
-        pasteboard.writeObjects([item])
     }
 
     static func copy(fileURLs: [URL]) {
