@@ -3,7 +3,7 @@ import SwiftUI
 
 struct EditorToolbar: View {
     /// Matches `RGBA.presets`.
-    static let colorNames = ["Red", "Orange", "Yellow", "Green", "Blue", "Black", "White"]
+    static let colorNames = RGBA.presetNames
 
     @Bindable var model: EditorModel
 

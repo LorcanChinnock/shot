@@ -30,8 +30,9 @@ public struct AfterCapture: Equatable, Sendable {
         )
     }
 
-    /// A recording never opens the editor by itself (#209): it shows its Quick Access card instead.
-    static func plan(copy: Bool, save: Bool, quickAccess: Bool, openEditor: Bool, isVideo: Bool) -> AfterCapture {
+    /// A recording never opens the editor by itself (#209): it shows its Quick Access card instead. With `agentHandoff`,
+    /// a copied screenshot is also written to a file, so its path can go on the clipboard for an agent to read.
+    static func plan(copy: Bool, save: Bool, quickAccess: Bool, openEditor: Bool, isVideo: Bool, agentHandoff: Bool = false) -> AfterCapture {
         let next: Next = if openEditor, !isVideo {
             .editor
         } else if quickAccess {
@@ -43,6 +44,6 @@ public struct AfterCapture: Equatable, Sendable {
         } else {
             .nothing
         }
-        return AfterCapture(copies: copy, writesFile: !isVideo && (save || quickAccess || openEditor), next: next)
+        return AfterCapture(copies: copy, writesFile: !isVideo && (save || quickAccess || openEditor || agentHandoff && copy), next: next)
     }
 }
