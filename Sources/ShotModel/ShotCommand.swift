@@ -1,0 +1,419 @@
+import Foundation
+
+/// A `shot` command line, parsed: what to run and with what. Parsing is here, with no file access, so every flag is
+/// tested on Linux; ShotCore's `ShotCommands` runs the media commands, and the MCP tools build the same values.
+public enum ShotCommand: Equatable, Sendable {
+    case info(path: String)
+    case gif(GIFOptions)
+    case trim(TrimOptions)
+    case redact(RedactOptions)
+    case annotate(AnnotateOptions)
+    case mcp
+    case version
+    /// Usage, for one command or for all of them.
+    case help(String?)
+
+    public struct GIFOptions: Equatable, Sendable {
+        public var input: String
+        public var output: String?
+        public var fps: Double
+        /// The GIF's width in pixels; 0 keeps the video's.
+        public var width: Int
+        public var start: Double?
+        public var end: Double?
+
+        public init(input: String, output: String? = nil, fps: Double = 12, width: Int = 720, start: Double? = nil, end: Double? = nil) {
+            self.input = input
+            self.output = output
+            self.fps = fps
+            self.width = width
+            self.start = start
+            self.end = end
+        }
+    }
+
+    public struct TrimOptions: Equatable, Sendable {
+        public var input: String
+        public var output: String?
+        public var start: Double
+        public var end: Double
+
+        public init(input: String, output: String? = nil, start: Double, end: Double) {
+            self.input = input
+            self.output = output
+            self.start = start
+            self.end = end
+        }
+    }
+
+    public enum RedactStyle: String, CaseIterable, Sendable {
+        case blur, pixelate
+    }
+
+    public struct RedactOptions: Equatable, Sendable {
+        public var input: String
+        public var output: String?
+        /// Each `[x, y, width, height]`, in the image's pixels.
+        public var rects: [[Double]]
+        public var style: RedactStyle
+
+        public init(input: String, output: String? = nil, rects: [[Double]], style: RedactStyle = .pixelate) {
+            self.input = input
+            self.output = output
+            self.rects = rects
+            self.style = style
+        }
+    }
+
+    /// Where `annotate`'s marks come from: a JSON file, standard input, or already read, as the MCP tool gives them.
+    public enum Marks: Equatable, Sendable {
+        case file(String)
+        case standardInput
+        case marks([CaptureMark])
+    }
+
+    public struct AnnotateOptions: Equatable, Sendable {
+        public var input: String
+        public var output: String?
+        public var marks: Marks
+
+        public init(input: String, output: String? = nil, marks: Marks) {
+            self.input = input
+            self.output = output
+            self.marks = marks
+        }
+    }
+
+    /// The commands `help` knows, in the order it lists them.
+    public static let names = ["info", "gif", "trim", "redact", "annotate", "mcp"]
+
+    /// The command's name, for error messages such as `shot gif: …`.
+    public var name: String {
+        switch self {
+        case .info: "info"
+        case .gif: "gif"
+        case .trim: "trim"
+        case .redact: "redact"
+        case .annotate: "annotate"
+        case .mcp: "mcp"
+        case .version: "version"
+        case .help: "help"
+        }
+    }
+
+    // MARK: Parsing
+
+    /// `arguments` without the program name. A mistake throws a `.usage` error naming the command it was for.
+    public static func parse(_ arguments: [String]) throws(ShotCommandError) -> ShotCommand {
+        guard let first = arguments.first else {
+            throw .usage(nil, "missing a command")
+        }
+        let rest = Array(arguments.dropFirst())
+        switch first {
+        case "--version", "-v", "version":
+            guard rest.isEmpty else { throw .usage(nil, "--version takes no arguments") }
+            return .version
+        case "--help", "-h", "help":
+            guard rest.count <= 1 else { throw .usage(nil, "help takes at most one command") }
+            if let command = rest.first, !names.contains(command) {
+                throw .usage(nil, "no command named \"\(command)\"")
+            }
+            return .help(rest.first)
+        case "mcp":
+            if rest.contains(where: isHelp) { return .help("mcp") }
+            guard rest.isEmpty else { throw .usage("mcp", "mcp takes no arguments") }
+            return .mcp
+        case "info", "gif", "trim", "redact", "annotate":
+            if rest.contains(where: isHelp) { return .help(first) }
+            return try parseMedia(first, rest)
+        default:
+            throw .usage(nil, "no command named \"\(first)\"")
+        }
+    }
+
+    private static func isHelp(_ argument: String) -> Bool {
+        argument == "--help" || argument == "-h"
+    }
+
+    /// The flags each command takes, and whether each can repeat; `-o` is `--output`.
+    private static let flags: [String: [String: Bool]] = [
+        "info": [:],
+        "gif": ["output": false, "fps": false, "width": false, "start": false, "end": false],
+        "trim": ["output": false, "start": false, "end": false],
+        "redact": ["output": false, "rect": true, "style": false],
+        "annotate": ["output": false, "json": false],
+    ]
+
+    private static func parseMedia(_ command: String, _ arguments: [String]) throws(ShotCommandError) -> ShotCommand {
+        let allowed = flags[command] ?? [:]
+        var positional: [String] = []
+        var values: [String: [String]] = [:]
+        var index = 0
+        while index < arguments.count {
+            let argument = arguments[index]
+            index += 1
+            guard argument.hasPrefix("-"), argument != "-" else {
+                positional.append(argument)
+                continue
+            }
+            var name = argument.drop { $0 == "-" }.description
+            var value: String?
+            if let equals = name.firstIndex(of: "=") {
+                value = String(name[name.index(after: equals)...])
+                name = String(name[..<equals])
+            }
+            if argument == "-o" {
+                name = "output"
+            }
+            guard let repeats = allowed[name], argument.hasPrefix("--") || argument == "-o" else {
+                let known = allowed.keys.map { $0 == "output" ? "-o" : "--\($0)" }.sorted()
+                throw .usage(command, "unknown option \(argument)" + (known.isEmpty ? "; \(command) takes none" : "; it takes \(known.joined(separator: ", "))"))
+            }
+            if value == nil {
+                guard index < arguments.count else { throw .usage(command, "\(argument) needs a value") }
+                value = arguments[index]
+                index += 1
+            }
+            if !repeats, values[name] != nil {
+                throw .usage(command, "\(name == "output" ? "-o" : "--\(name)") is given twice")
+            }
+            values[name, default: []].append(value ?? "")
+        }
+        guard positional.count == 1, let input = positional.first else {
+            throw .usage(command, positional.isEmpty ? "missing the file to work on" : "expected one file, got \(positional.count)")
+        }
+        let output = values["output"]?.first
+        func time(_ name: String) throws(ShotCommandError) -> Double? {
+            guard let text = values[name]?.first else { return nil }
+            guard let seconds = Self.seconds(text) else {
+                throw .usage(command, "--\(name) \(text) isn't a time; use seconds such as 2.5, or m:ss such as 1:02.5")
+            }
+            return seconds
+        }
+        switch command {
+        case "info":
+            return .info(path: input)
+        case "gif":
+            var options = GIFOptions(input: input, output: output, start: try time("start"), end: try time("end"))
+            if let text = values["fps"]?.first {
+                guard let fps = Double(text), fps.isFinite, (1...30).contains(fps) else {
+                    throw .usage(command, "--fps \(text) must be a number from 1 to 30")
+                }
+                options.fps = fps
+            }
+            if let text = values["width"]?.first {
+                guard let width = Int(text), width == 0 || (16...8192).contains(width) else {
+                    throw .usage(command, "--width \(text) must be from 16 to 8192 pixels, or 0 for the video's own width")
+                }
+                options.width = width
+            }
+            if let start = options.start, let end = options.end, end <= start {
+                throw .usage(command, "--end must be after --start")
+            }
+            return .gif(options)
+        case "trim":
+            guard let start = try time("start"), let end = try time("end") else {
+                throw .usage(command, "needs both --start and --end")
+            }
+            guard end > start else { throw .usage(command, "--end must be after --start") }
+            return .trim(TrimOptions(input: input, output: output, start: start, end: end))
+        case "redact":
+            let rects = try (values["rect"] ?? []).map { (text: String) throws(ShotCommandError) -> [Double] in
+                guard let rect = Self.rect(text) else {
+                    throw .usage(command, "--rect \(text) must be x,y,width,height in pixels, with a width and height above 0")
+                }
+                return rect
+            }
+            guard !rects.isEmpty else { throw .usage(command, "needs at least one --rect x,y,width,height") }
+            var style = RedactStyle.pixelate
+            if let text = values["style"]?.first {
+                guard let picked = RedactStyle(rawValue: text.lowercased()) else {
+                    throw .usage(command, "--style \(text) must be blur or pixelate")
+                }
+                style = picked
+            }
+            return .redact(RedactOptions(input: input, output: output, rects: rects, style: style))
+        default:
+            guard let json = values["json"]?.first else {
+                throw .usage(command, "needs --json with a file of marks, or - to read them from standard input")
+            }
+            return .annotate(AnnotateOptions(input: input, output: output, marks: json == "-" ? .standardInput : .file(json)))
+        }
+    }
+
+    /// Seconds from `2.5`, `1:02.5` or `1:02:03`; `nil` for anything else, or below zero.
+    static func seconds(_ text: String) -> Double? {
+        let parts = text.split(separator: ":", omittingEmptySubsequences: false).map(String.init)
+        guard (1...3).contains(parts.count), let last = Double(parts[parts.count - 1]), last.isFinite, last >= 0 else {
+            return nil
+        }
+        var total = last
+        for (place, part) in parts.dropLast().reversed().enumerated() {
+            guard let whole = Int(part), whole >= 0, parts.count == 1 || last < 60 else { return nil }
+            total += Double(whole) * (place == 0 ? 60 : 3600)
+        }
+        return total
+    }
+
+    /// `[x, y, width, height]` from `x,y,w,h`, with a positive width and height.
+    static func rect(_ text: String) -> [Double]? {
+        let values = text.split(separator: ",", omittingEmptySubsequences: false).map { Double($0.trimmingCharacters(in: .whitespaces)) }
+        guard values.count == 4, values.allSatisfy({ $0?.isFinite == true }) else {
+            return nil
+        }
+        let rect = values.compactMap { $0 }
+        return rect[2] > 0 && rect[3] > 0 ? rect : nil
+    }
+
+    // MARK: Help
+
+    /// What `shot help` prints, or `shot help <command>`.
+    public static func usage(_ command: String?, program: String = "shot") -> String {
+        let lines: [String: String] = [
+            "info": "\(program) info <file>\n    The image's or video's size and length, and the record Shot keeps inside a capture.",
+            "gif": "\(program) gif <video> [-o out.gif] [--fps 12] [--width 720] [--start 2.5] [--end 9]\n    A GIF of the video, or of part of it. --width 0 keeps the video's width; GIFs stop at 60 seconds.",
+            "trim": "\(program) trim <video> --start 2.5 --end 9 [-o out.mov]\n    The part of the video between two times, without re-encoding where it can.",
+            "redact": "\(program) redact <image> --rect x,y,w,h [--rect …] [--style blur|pixelate] [-o out.png]\n    Hides each rectangle, in the image's pixels. Pixelate is the default.",
+            "annotate": "\(program) annotate <image> --json marks.json [-o out.png]\n    Draws marks on the image, in the format of Shot's capture record (see docs). --json - reads them from standard input.",
+            "mcp": "\(program) mcp\n    Serves Shot's captures to an AI agent over MCP, on standard input and output.",
+        ]
+        if let command, let line = lines[command] {
+            return "Usage: " + line
+        }
+        return """
+        Usage: \(program) <command> [options]
+
+        \(names.compactMap { lines[$0] }.joined(separator: "\n"))
+        \(program) --version
+            The version, settings and capture folder.
+
+        Without -o, the output goes beside the input as the next version, such as "name (2).png". Nothing is ever
+        overwritten. Results are JSON on standard output; errors go to standard error with an exit code for each kind.
+        """
+    }
+
+    /// `value` as `shot` prints it: pretty, with keys sorted, so it reads and diffs well.
+    public static func json(_ value: JSONValue) -> String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+        return (try? encoder.encode(value)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+    }
+}
+
+/// Why a `shot` command failed, and the exit code it ends with, following `sysexits.h`.
+public enum ShotCommandError: Error, Equatable, Sendable {
+    /// A bad flag, a missing argument or a value out of range; the command it was for, if any.
+    case usage(String?, String)
+    /// Not an image or video Shot can read, marks that don't make sense, or a rect off the image.
+    case data(String)
+    /// The input file isn't there.
+    case noInput(String)
+    /// The output can't be made: it exists, or its folder doesn't or isn't writable.
+    case cantCreate(String)
+    /// Reading or writing failed partway.
+    case io(String)
+    case `internal`(String)
+
+    public var exitCode: Int32 {
+        switch self {
+        case .usage: 64
+        case .data: 65
+        case .noInput: 66
+        case .internal: 70
+        case .cantCreate: 73
+        case .io: 74
+        }
+    }
+
+    public var message: String {
+        switch self {
+        case let .usage(_, message), let .data(message), let .noInput(message), let .cantCreate(message), let .io(message), let .internal(message):
+            message
+        }
+    }
+}
+
+extension CaptureMark {
+    /// Marks as `shot annotate` and the MCP `annotate` tool take them: a JSON array of marks, or an object with an
+    /// `annotations` array, such as a whole capture record. Each is checked, and the first problem names its mark.
+    public static func list(from data: Data) throws(ShotCommandError) -> [CaptureMark] {
+        struct Wrapped: Decodable {
+            var annotations: [CaptureMark]
+        }
+        let decoder = JSONDecoder()
+        let marks: [CaptureMark]
+        do {
+            // Decided by the first character, so a mistake in an array is reported as one.
+            if data.first(where: { !" \t\r\n".utf8.contains($0) }) == UInt8(ascii: "[") {
+                marks = try decoder.decode([CaptureMark].self, from: data)
+            } else {
+                marks = try decoder.decode(Wrapped.self, from: data).annotations
+            }
+        } catch {
+            throw .data("the marks aren't a JSON array of marks or an object with an \"annotations\" array: \(Self.reason(error))")
+        }
+        for (index, mark) in marks.enumerated() {
+            if let problem = mark.problem {
+                throw .data("mark \(index) (\(mark.type)): \(problem)")
+            }
+        }
+        return marks
+    }
+
+    private static func reason(_ error: Error) -> String {
+        switch error as? DecodingError {
+        case let .keyNotFound(key, context)?:
+            "\(Self.path(context.codingPath + [key])) is missing"
+        case let .typeMismatch(_, context)?, let .valueNotFound(_, context)?, let .dataCorrupted(context)?:
+            "\(Self.path(context.codingPath)): \(context.debugDescription)"
+        default:
+            error.localizedDescription
+        }
+    }
+
+    private static func path(_ keys: [CodingKey]) -> String {
+        keys.map { $0.intValue.map { "[\($0)]" } ?? ".\($0.stringValue)" }.joined().drop { $0 == "." }.description
+    }
+
+    /// The types a mark can have.
+    public static let types: Set<String> = [
+        "arrow", "line", "rectangle", "rounded", "ellipse", "triangle", "diamond", "star", "highlight", "blur", "pixelate",
+        "spotlight", "text", "counter", "note", "pen", "marker", "image",
+    ]
+
+    /// The palette names `color` can be.
+    public static let colorNames: Set<String> = ["red", "orange", "yellow", "green", "blue", "black", "white"]
+
+    /// What's wrong with this mark for drawing it, or `nil` when it can be drawn.
+    public var problem: String? {
+        func isPoint(_ p: [Double]?) -> Bool { p?.count == 2 && p?.allSatisfy(\.isFinite) == true }
+        func isRect(_ r: [Double]?) -> Bool { r?.count == 4 && r?.allSatisfy(\.isFinite) == true && (r?[2] ?? -1) >= 0 && (r?[3] ?? -1) >= 0 }
+        guard Self.types.contains(type) else {
+            return "unknown type; use one of \(Self.types.sorted().joined(separator: ", "))"
+        }
+        if let color, !Self.colorNames.contains(color.lowercased()) {
+            return "unknown color \"\(color)\"; use one of \(Self.colorNames.sorted().joined(separator: ", ")), or a hex"
+        }
+        for (name, value) in [("hex", hex), ("fill", fill)] {
+            if let value, HexColor.components(value) == nil {
+                return "\(name) \"\(value)\" isn't a colour such as #FF3B30"
+            }
+        }
+        switch type {
+        case "image":
+            return "a placed image can't be drawn from a record, which doesn't hold its pixels"
+        case "arrow", "line":
+            return isPoint(from) && isPoint(to) ? nil : "needs from and to, each [x, y]"
+        case "counter":
+            return isPoint(center) ? nil : "needs center, as [x, y]"
+        case "text", "note":
+            guard let text, !text.isEmpty else { return "needs text" }
+            return isRect(rect) ? nil : "needs rect, as [x, y, width, height]; a text starts at its x and y"
+        case "pen", "marker":
+            guard let points, !points.isEmpty else { return "needs points, as [[x, y], …]" }
+            return points.allSatisfy(isPoint) ? nil : "every point must be [x, y]"
+        default:
+            return isRect(rect) ? nil : "needs rect, as [x, y, width, height]"
+        }
+    }
+}

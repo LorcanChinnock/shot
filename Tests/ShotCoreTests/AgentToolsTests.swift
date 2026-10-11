@@ -68,3 +68,17 @@ extension MediaTests {
         #expect(texts(result).count == 2)
     }
 }
+
+@Test func theLiveAnnotateToolWritesANewVersionBesideTheCapture() async throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    try writeCapture("Shot Y.png", in: folder, width: 100, height: 80, minutesAgo: 1)
+    let marks: JSONValue = .array([.object(["type": .string("ellipse"), "rect": .array([10, 10, 50, 30].map(JSONValue.number)), "color": .string("blue")])])
+    let result = await AgentTools.live(folder: folder).call("annotate", .object(["annotations": marks]))
+    #expect(result.isError == false)
+    #expect(images(result).count == 1)
+    let written = folder.appendingPathComponent("Shot Y (2).png")
+    #expect(FileManager.default.fileExists(atPath: written.path))
+    #expect(ImageCodec.record(ofFileAt: written)?.annotations.first?.type == "ellipse")
+    #expect(texts(result).last == "Saved as a new file beside Shot Y.png; the original is unchanged.")
+}

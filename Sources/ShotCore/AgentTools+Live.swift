@@ -16,6 +16,9 @@ extension AgentTools {
             },
             record: { entry in
                 entry.isVideo ? nil : ImageCodec.record(ofFileAt: entry.url)
+            },
+            run: { command throws(ShotCommandError) in
+                try await ShotCommands.run(command)
             }
         )
     }

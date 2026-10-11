@@ -149,7 +149,7 @@ extension Annotation {
         }
         let color = mark.hex.flatMap(RGBA.init(hex:))
             ?? mark.color.flatMap { name in RGBA.presetNames.firstIndex { $0.lowercased() == name.lowercased() }.map { RGBA.presets[$0] } }
-            ?? RGBA.presets[0]
+            ?? (mark.type == "note" ? EditorStyle().noteColor : EditorStyle().color)
         self.init(id: mark.id.flatMap(UUID.init(uuidString:)) ?? UUID(), kind: kind, color: color, fill: mark.fill.flatMap(RGBA.init(hex:)), lineWidth: width)
         if let bend = mark.bend, bend.count == 2, let dx = length(bend[0]), let dy = length(bend[1]) {
             self.bend = CGVector(dx: dx, dy: dy)

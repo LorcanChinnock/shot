@@ -37,8 +37,10 @@ private let captures = tools(in: folder, [
     ("Recording C.mp4", 5, true),
 ])
 
-@Test func thereAreThreeToolsEachWithAnObjectSchema() {
-    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture"])
+@Test func thereAreSixToolsEachWithAnObjectSchema() {
+    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "annotate", "make_gif", "trim_video"])
+    let required = AgentTools.definitions.map { $0.inputSchema["required"] }
+    #expect(required == [nil, nil, nil, .array([.string("annotations")]), nil, .array([.string("start"), .string("end")])])
     for tool in AgentTools.definitions {
         #expect(tool.inputSchema["type"] == .string("object"))
         #expect(!tool.description.isEmpty)
@@ -161,4 +163,68 @@ func listCapturesClampsTheLimit(_ limit: JSONValue, _ count: Int) async throws {
     let reply = await server.respond(to: #"{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"Latest-Capture","arguments":{"kind":"video"}}}"#)
     #expect(reply?.contains(#""data":"PREVIEW:Recording C.mp4""#) == true)
     #expect(reply?.contains(#""isError":false"#) == true)
+}
+
+/// Tools over `captures` whose `run` records what it was asked and answers with a made-up file beside the input.
+private func making(_ ran: Ran, fail: ShotCommandError? = nil) -> AgentTools {
+    var tools = captures
+    tools.run = { command throws(ShotCommandError) in
+        ran.commands.append(command)
+        if let fail { throw fail }
+        return .object(["path": .string("/shots/new.png"), "bytes": .number(10)])
+    }
+    return tools
+}
+
+private final class Ran: @unchecked Sendable {
+    var commands: [ShotCommand] = []
+}
+
+@Test func annotateDrawsOnTheNewestScreenshotByDefaultAndShowsTheResult() async throws {
+    let ran = Ran()
+    let marks: JSONValue = .array([.object(["type": .string("rectangle"), "rect": .array([1, 2, 3, 4].map(JSONValue.number))])])
+    let result = await making(ran).call("annotate", .object(["annotations": marks]))
+    #expect(result.isError == false)
+    #expect(ran.commands == [.annotate(ShotCommand.AnnotateOptions(input: "/shots/Shot B.png", marks: .marks([CaptureMark(type: "rectangle", rect: [1, 2, 3, 4])])))])
+    #expect(result.content.first == .image(data: "PREVIEW:new.png", mimeType: "image/jpeg"))
+    #expect(texts(result).last == "Saved as a new file beside Shot B.png; the original is unchanged.")
+}
+
+@Test func aBadMarkIsAnErrorNamingIt() async {
+    let ran = Ran()
+    let marks: JSONValue = .array([.object(["type": .string("rectangle"), "rect": .array([1, 2, 3, 4].map(JSONValue.number))]), .object(["type": .string("squiggle")])])
+    let result = await making(ran).call("annotate", .object(["annotations": marks]))
+    #expect(result.isError)
+    #expect(texts(result).first?.hasPrefix("mark 1 (squiggle): unknown type") == true)
+    #expect(ran.commands.isEmpty)
+    #expect(await making(ran).call("annotate", .object([:])).isError)
+}
+
+@Test func gifAndTrimNeedARecordingAndPassTheirTimes() async {
+    let ran = Ran()
+    let tools = making(ran)
+    #expect(await tools.call("make_gif", .object(["start": .number(1), "fps": .number(99), "width": .string("400")])).isError == false)
+    #expect(await tools.call("trim_video", .object(["name": .string("recording c"), "start": .number(1), "end": .number(2.5)])).isError == false)
+    #expect(ran.commands == [
+        .gif(ShotCommand.GIFOptions(input: "/shots/Recording C.mp4", fps: 30, width: 400, start: 1)),
+        .trim(ShotCommand.TrimOptions(input: "/shots/Recording C.mp4", start: 1, end: 2.5)),
+    ])
+    let screenshot = await tools.call("make_gif", .object(["name": .string("Shot B")]))
+    #expect(screenshot.isError)
+    #expect(texts(screenshot).first == "Shot B.png is a screenshot; make_gif needs a recording.")
+    #expect(await tools.call("trim_video", .object(["start": .number(3), "end": .number(2)])).isError)
+    #expect(ran.commands.count == 2)
+}
+
+@Test func onlyCapturesInTheFolderCanBeNamed() async {
+    let ran = Ran()
+    let result = await making(ran).call("annotate", .object(["path": .string("/etc/passwd"), "annotations": .array([])]))
+    #expect(result.isError)
+    #expect(ran.commands.isEmpty)
+}
+
+@Test func aFailedCommandIsAnErrorWithItsMessage() async {
+    let result = await making(Ran(), fail: .data("rect 1 is off the image")).call("trim_video", .object(["start": .number(0), "end": .number(1)]))
+    #expect(result.isError)
+    #expect(texts(result) == ["rect 1 is off the image"])
 }
