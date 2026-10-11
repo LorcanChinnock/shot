@@ -107,7 +107,7 @@ Each layer acts on everything under it and nothing over it: a blur, pixelate or 
 
 ### Canvas
 
-Annotations can reach past the edges of the screenshot: the canvas grows to fit them, except for spotlights. The **Canvas** menu fits the canvas to its content, trims it back to the image, and sets the background of the extra space to transparent (PNG only), white, or one of the palette colours. It starts transparent for a PNG and white for a JPEG.
+Annotations can reach past the edges of the screenshot: the canvas grows to fit them, except for spotlights. The **Canvas** menu fits the canvas to its content and trims it back to the image. Its **Background…** item sets the colour of the extra space with the same swatches as the toolbar: transparent (PNG only), a palette colour, or any colour from the rainbow swatch, which remembers the last one you picked. It starts transparent for a PNG and white for a JPEG.
 
 ### Style
 

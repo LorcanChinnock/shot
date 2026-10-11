@@ -762,6 +762,21 @@ final class EditorModel {
         edit { $0.background = background }
     }
 
+    /// The background picked last from the custom colour editor, which its rainbow swatch applies again; `nil` until one
+    /// is picked.
+    private(set) var lastBackgroundColor: RGBA?
+
+    /// Sets the background to one picked from the colour editor, which reports every change as the user drags. Each
+    /// opening of the editor is one undo step. A JPEG's is opaque, since JPEG has no alpha to keep it see-through.
+    func pickBackground(_ color: RGBA) {
+        var color = color
+        if isJPEG {
+            color.a = 1
+        }
+        lastBackgroundColor = color
+        edit(coalescing: "background") { $0.background = color }
+    }
+
     /// Applies `change` as one undoable step, or does nothing if it leaves the document as it was.
     /// Calls with the same `key` in a row amend that step instead of adding another.
     private func edit(coalescing key: String? = nil, _ change: (inout EditorDocument) -> Void) {

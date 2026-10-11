@@ -89,19 +89,16 @@ private struct ZoomMenu: View {
 }
 
 private struct CanvasMenu: View {
-    private static let white = RGBA(1, 1, 1)
-
     @Bindable var model: EditorModel
+    @State private var showsBackground = false
 
     var body: some View {
         BrutalDropdown(title: "Canvas", entries: [
             .item("Fit to Content") { model.fitToContent() },
             .item("Trim to Image", enabled: !model.document.capturePaintedBounds.contains(model.document.canvasRect)) { model.trimToImage() },
             .divider,
-            .header("Background"),
-        ] + backgrounds.map { name, color in
-            .item(name, selected: model.document.background == color) { model.setBackground(color) }
-        }) {
+            .item("Background…") { showsBackground = true },
+        ]) {
             HStack(spacing: 6) {
                 Text("Canvas")
                 Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
@@ -110,11 +107,23 @@ private struct CanvasMenu: View {
         .buttonStyle(BrutalButtonStyle(compact: true))
         .fixedSize()
         .brutalTip("Canvas size and background")
-    }
-
-    private var backgrounds: [(name: String, color: RGBA?)] {
-        // JPEG has no alpha, so it can't keep transparent padding.
-        (model.isJPEG ? [] : [("Transparent", nil)]) + [("White", Self.white)]
-            + RGBA.presets.indices.filter { RGBA.presets[$0] != Self.white }.map { (EditorToolbar.colorNames[$0], RGBA.presets[$0]) }
+        .popover(isPresented: $showsBackground, arrowEdge: .bottom) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("BACKGROUND").font(Brutal.mono).foregroundStyle(Brutal.ink)
+                HStack(spacing: 2) {
+                    ColorSwatches(
+                        selected: model.document.background,
+                        lastCustom: model.lastBackgroundColor,
+                        // JPEG has no alpha, so it can't keep transparent padding.
+                        allowsNone: !model.isJPEG,
+                        customHelp: "Custom background colour",
+                        choose: model.setBackground,
+                        pickCustom: model.pickBackground,
+                        beginPicking: model.beginColorPick
+                    )
+                }
+            }
+            .padding(12)
+        }
     }
 }
