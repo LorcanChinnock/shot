@@ -4,7 +4,7 @@ import ShotCore
 import SwiftUI
 
 enum SettingsSection: String, CaseIterable, Identifiable {
-    case gallery, general, capture, quickAccess, recording, shortcuts, about
+    case gallery, general, capture, quickAccess, recording, agents, shortcuts, about
 
     var id: String { rawValue }
 
@@ -15,6 +15,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .capture: "Capture"
         case .quickAccess: "Quick Access"
         case .recording: "Recording"
+        case .agents: "Agents"
         case .shortcuts: "Shortcuts"
         case .about: "About"
         }
@@ -27,6 +28,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .capture: "What happens when you take a shot."
         case .quickAccess: "The floating card after each capture."
         case .recording: "Screen recording video and audio."
+        case .agents: "Hand captures to AI coding tools."
         case .shortcuts: "Global hotkeys for every action."
         case .about: "Version, updates, permissions and reset."
         }
@@ -39,6 +41,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .capture: "viewfinder"
         case .quickAccess: "rectangle.stack"
         case .recording: "record.circle"
+        case .agents: "terminal"
         case .shortcuts: "command"
         case .about: "info.circle"
         }
@@ -51,6 +54,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .capture: Brutal.pink
         case .quickAccess: Brutal.sky
         case .recording: Brutal.red
+        case .agents: Brutal.mint
         case .shortcuts: Brutal.violet
         case .about: Brutal.mint
         }
@@ -133,6 +137,7 @@ struct SettingsView: View {
         case .capture: CaptureSettings()
         case .quickAccess: QuickAccessSettings()
         case .recording: RecordingSettings()
+        case .agents: AgentSettings()
         case .shortcuts: ShortcutSettings()
         case .about: AboutSettings()
         }
@@ -555,6 +560,75 @@ private struct DevicePicker: View {
 
     private var selectedName: String {
         devices.first { $0.uniqueID == selection }?.localizedName ?? "System default"
+    }
+}
+
+// MARK: Agents
+
+private struct AgentSettings: View {
+    @Setting(PreferenceKey.agentHandoff) private var handoff: Bool
+    private let color = SettingsSection.agents.color
+
+    /// The MCP server inside this app's bundle, so a dev build names its own.
+    private static let server = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/shot-cli").path
+
+    var body: some View {
+        SettingsCard(title: "Hand-off", symbol: "arrow.right.doc.on.clipboard") {
+            ToggleRow(
+                title: "Hand captures to agents",
+                subtitle: "Puts the file path on the clipboard beside the image, so a terminal pastes the path, and writes a .shot.json next to each capture that says what you marked and where. Apps that prefer text may paste the path.",
+                isOn: $handoff, color: color, divider: false
+            )
+        }
+        SettingsCard(title: "MCP server", symbol: "terminal.fill") {
+            Text("Lets an agent read your latest captures and what you marked on them. Nothing is uploaded, but the agent you connect sees whatever it reads, so redact first.")
+                .font(Brutal.caption)
+                .foregroundStyle(Brutal.ink.opacity(0.65))
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 9)
+            CommandRow(title: "Claude Code", command: "claude mcp add shot -- \"\(Self.server)\" mcp")
+            CommandRow(title: "Cursor, Codex and others", command: #"{"mcpServers": {"shot": {"command": "\#(Self.server)", "args": ["mcp"]}}}"#, divider: false)
+            Text("The server arrives in the next release. The commands above will work then.")
+                .font(Brutal.caption)
+                .foregroundStyle(Brutal.ink.opacity(0.65))
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 9)
+        }
+    }
+}
+
+/// A command to paste into a terminal or a config file, with a button that copies it.
+private struct CommandRow: View {
+    let title: String
+    let command: String
+    var divider = true
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                Text(title).font(Brutal.label).foregroundStyle(Brutal.ink)
+                Spacer(minLength: 8)
+                Button("Copy") {
+                    Clipboard.copy(string: command)
+                    Toast.show("Copied")
+                }
+                .buttonStyle(BrutalButtonStyle(compact: true))
+            }
+            Text(command)
+                .font(Brutal.mono)
+                .foregroundStyle(Brutal.ink)
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .brutalSurface(Color.white.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
+        }
+        .padding(.vertical, 9)
+        if divider {
+            Rectangle().fill(Brutal.ink.opacity(0.12)).frame(height: 1.5)
+        }
     }
 }
 

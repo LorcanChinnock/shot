@@ -35,7 +35,8 @@ public struct CaptureSidecar: Codable, Equatable, Sendable {
         public var app: String?
         public var bundleID: String?
         public var windowTitle: String?
-        /// In screen points.
+        /// Where it was on screen, in points of the global CoreGraphics space: the origin at the top left of the main
+        /// display, y growing downwards, as `CGWindowListCopyWindowInfo` reports window bounds.
         public var screenFrame: Frame?
 
         public init(mode: String, app: String? = nil, bundleID: String? = nil, windowTitle: String? = nil, screenFrame: Frame? = nil) {

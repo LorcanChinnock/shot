@@ -29,8 +29,19 @@ private func item(_ name: String, _ date: Date, bytes: Int = 1) -> GalleryItem {
     #expect(GalleryKind(fileExtension: "gif") == .gif)
     #expect(GalleryKind(fileExtension: "txt") == nil)
     #expect(GalleryKind(fileExtension: "") == nil)
+    // The .shot.json an agent reads sits beside each capture and must never show as one.
+    #expect(GalleryKind(fileExtension: "json") == nil)
     #expect(GalleryKind.gif.isEditable == false)
     #expect(GalleryKind.video.isEditable)
+}
+
+@Test func listingLeavesOutTheAgentSidecars() throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let capture = folder.appendingPathComponent("Shot 1.png")
+    try Data([0x89, 0x50]).write(to: capture)
+    try Data("{}".utf8).write(to: CaptureSidecar.url(for: capture))
+    #expect(Gallery.items(in: folder).map(\.name) == ["Shot 1.png"])
 }
 
 @Test func filterAndSearch() {

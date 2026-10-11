@@ -64,6 +64,43 @@ private let red = RGBA.presets[0]
     #expect(cropped[0].rect == [0, 5, 15, 20])
 }
 
+/// The acceptance check from #355: the sidecar's pixels line up with the saved image's.
+@Test func sidecarCoordinatesLandOnTheMarksInTheSavedImage() throws {
+    let context = try #require(CGContext(data: nil, width: 200, height: 200, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+    context.setFillColor(CGColor(gray: 1, alpha: 1))
+    context.fill(CGRect(x: 0, y: 0, width: 200, height: 200))
+    let base = try #require(context.makeImage())
+    let annotations = [
+        Annotation(kind: .shape(.rectangle, rect: CGRect(x: 60, y: 60, width: 40, height: 30)), color: red, lineWidth: 4),
+        Annotation(kind: .arrow(from: CGPoint(x: 120, y: 120), to: CGPoint(x: 140, y: 140)), color: red, lineWidth: 4),
+        Annotation(kind: .counter(1, center: CGPoint(x: 100, y: 100)), color: red, lineWidth: 4),
+        Annotation(kind: .text("Hi", origin: CGPoint(x: 70, y: 110), fontSize: 14), color: red, lineWidth: 4),
+    ]
+    // Cropped to the middle, so every coordinate moves by 50 in the saved file.
+    let canvas = CGRect(x: 50, y: 50, width: 100, height: 100)
+    let saved = try #require(AnnotationRenderer.flatten(EditorDocument(base: base, annotations: annotations, canvasRect: canvas)))
+    #expect(saved.width == 100 && saved.height == 100)
+    let mapped = SidecarAnnotation.mapping(annotations, canvas: canvas)
+    func isRed(_ x: Double, _ y: Double) throws -> Bool {
+        let p = try pixel(saved, CGFloat(x), CGFloat(y))
+        return p[0] > 0.85 && p[1] < 0.45 && p[3] > 0.9
+    }
+    let box = try #require(mapped[0].rect)
+    #expect(box == [10, 10, 40, 30])
+    // The middle of the box's left edge is on its stroke; the middle of the box is not.
+    #expect(try isRed(box[0], box[1] + box[3] / 2))
+    #expect(try !isRed(box[0] + box[2] / 2, box[1] + box[3] / 2))
+    let from = try #require(mapped[1].from), to = try #require(mapped[1].to)
+    #expect(from == [70, 70] && to == [90, 90])
+    #expect(try isRed((from[0] + to[0]) / 2, (from[1] + to[1]) / 2))
+    let center = try #require(mapped[2].center)
+    #expect(center == [50, 50])
+    // Inside the counter's circle, clear of the white digit in its middle.
+    #expect(try isRed(center[0] - annotations[2].counterRadius * 0.6, center[1]))
+    let text = try #require(mapped[3].rect)
+    #expect(text[0] >= 0 && text[1] >= 0 && text[0] + text[2] <= 100 && text[1] + text[3] <= 100)
+}
+
 @Test func annotationsCroppedOutAreLeftOut() {
     let inside = Annotation(kind: .counter(1, center: CGPoint(x: 50, y: 50)), color: red, lineWidth: 4)
     let outside = Annotation(kind: .counter(2, center: CGPoint(x: 500, y: 500)), color: red, lineWidth: 4)

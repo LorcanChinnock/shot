@@ -92,6 +92,21 @@ func cropRectConversion(scale: CGFloat) {
     #expect(parsed.map(\.windowID) == [1])
 }
 
+@Test func windowParsingKeepsTheAppAndTitleWhenGiven() throws {
+    var entry: [String: Any] = [
+        kCGWindowNumber as String: 1, kCGWindowLayer as String: 0, kCGWindowOwnerPID as String: 5,
+        kCGWindowBounds as String: CGRect(x: 0, y: 0, width: 100, height: 100).dictionaryRepresentation,
+    ]
+    // Without Screen Recording access the window list leaves the title out.
+    let untitled = try #require(WindowInfo.parse([entry], excludingPID: 99).first)
+    #expect(untitled.ownerName == nil && untitled.title == nil)
+    entry[kCGWindowOwnerName as String] = "Simulator"
+    entry[kCGWindowName as String] = "iPhone 17 Pro"
+    let titled = try #require(WindowInfo.parse([entry], excludingPID: 99).first)
+    #expect(titled.ownerName == "Simulator")
+    #expect(titled.title == "iPhone 17 Pro")
+}
+
 @Test func snappingKeepsLengthAndLandsOnA45DegreeStep() {
     let anchor = CGPoint(x: 10, y: 10)
     let horizontal = Geometry.snapped(from: anchor, to: CGPoint(x: 110, y: 20))

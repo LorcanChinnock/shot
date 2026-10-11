@@ -26,6 +26,15 @@ private let date: Date = {
     #expect(FileNaming.baseName(for: date, prefix: "Bug") == "Bug 2026-10-02 at 14.03.11")
 }
 
+@Test func originalNameDropsTheVersionSuffix() {
+    let folder = URL(fileURLWithPath: "/tmp/shots")
+    #expect(FileNaming.originalName(of: folder.appendingPathComponent("Shot 1 (2).png")) == "Shot 1.png")
+    #expect(FileNaming.originalName(of: folder.appendingPathComponent("Shot 1 (12).jpg")) == "Shot 1.jpg")
+    #expect(FileNaming.originalName(of: folder.appendingPathComponent("Shot 1.png")) == "Shot 1.png")
+    // Only the trailing " (n)" is a version; brackets elsewhere are part of the name.
+    #expect(FileNaming.originalName(of: folder.appendingPathComponent("Shot (draft).png")) == "Shot (draft).png")
+}
+
 @Test func nextVersionNeverReusesAnExistingName() {
     let folder = URL(fileURLWithPath: "/tmp/shots")
     let original = folder.appendingPathComponent("Shot 1.png")

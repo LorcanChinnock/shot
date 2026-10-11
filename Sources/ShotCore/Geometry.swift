@@ -76,11 +76,17 @@ public struct WindowInfo: Equatable, Sendable {
     public let windowID: CGWindowID
     public let frame: CGRect
     public let ownerPID: pid_t
+    /// The owning app's name, as the window list gives it.
+    public let ownerName: String?
+    /// The window's title, which the window list gives only to a process with Screen Recording access.
+    public let title: String?
 
-    public init(windowID: CGWindowID, frame: CGRect, ownerPID: pid_t) {
+    public init(windowID: CGWindowID, frame: CGRect, ownerPID: pid_t, ownerName: String? = nil, title: String? = nil) {
         self.windowID = windowID
         self.frame = frame
         self.ownerPID = ownerPID
+        self.ownerName = ownerName
+        self.title = title
     }
 
     /// `windows` must be ordered front to back, as `CGWindowListCopyWindowInfo` returns them.
@@ -100,7 +106,10 @@ public struct WindowInfo: Equatable, Sendable {
             else {
                 return nil
             }
-            return WindowInfo(windowID: number, frame: bounds, ownerPID: pid)
+            return WindowInfo(
+                windowID: number, frame: bounds, ownerPID: pid,
+                ownerName: entry[kCGWindowOwnerName as String] as? String, title: entry[kCGWindowName as String] as? String
+            )
         }
     }
 }
