@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.0-beta.40](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.39...v0.7.0-beta.40) (2026-10-11)
+
+
+### Features
+
+* **agents:** add a read-only MCP server for AI agents ([#385](https://github.com/LorcanChinnock/shot/issues/385)) ([f1d6c08](https://github.com/LorcanChinnock/shot/commit/f1d6c08eedb29a39521ac7af92d9de92a98913e5))
+* **agents:** copy the capture path and write capture metadata for AI agents ([#384](https://github.com/LorcanChinnock/shot/issues/384)) ([2876f8c](https://github.com/LorcanChinnock/shot/commit/2876f8cb0ec7d7f682b4a0cab8bd403257df337c))
+* **agents:** keep the capture record inside the image, and add a Copy Path shortcut ([#388](https://github.com/LorcanChinnock/shot/issues/388)) ([616130c](https://github.com/LorcanChinnock/shot/commit/616130c56dfa74b2b0fc3da1a97de83f3867642f)), closes [#355](https://github.com/LorcanChinnock/shot/issues/355)
+* **agents:** let agents record a window and get its key frames ([#395](https://github.com/LorcanChinnock/shot/issues/395)) ([d8bc387](https://github.com/LorcanChinnock/shot/commit/d8bc387686cf9171e46a344201ca7721d2dc971e))
+* **agents:** let agents screenshot a window through the running app ([#394](https://github.com/LorcanChinnock/shot/issues/394)) ([b626efa](https://github.com/LorcanChinnock/shot/commit/b626efaa2c0a5d41e39eaf23dbf1e486017d6cc9))
+* **cli:** headless shot info, gif, trim, redact and annotate ([#390](https://github.com/LorcanChinnock/shot/issues/390)) ([0c1dd48](https://github.com/LorcanChinnock/shot/commit/0c1dd48f79e3bfd4dc9b6afdeb0dda1567977591)), closes [#355](https://github.com/LorcanChinnock/shot/issues/355)
+* **cli:** pull key frames out of a recording for agents ([#391](https://github.com/LorcanChinnock/shot/issues/391)) ([470ab28](https://github.com/LorcanChinnock/shot/commit/470ab284e4b8c12f4f634c5ba1a5eb1d581d0d67)), closes [#355](https://github.com/LorcanChinnock/shot/issues/355)
+* **editor:** reopen an annotated version with its marks still editable ([#389](https://github.com/LorcanChinnock/shot/issues/389)) ([02bdca5](https://github.com/LorcanChinnock/shot/commit/02bdca5d2269de52d4a3e9f3de2f9bd6dfd66ecd)), closes [#355](https://github.com/LorcanChinnock/shot/issues/355)
+
 ## [0.7.0-beta.39](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.38...v0.7.0-beta.39) (2026-10-11)
 
 
