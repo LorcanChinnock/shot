@@ -21,11 +21,32 @@ final class CaptureCoordinator {
     /// The latest captures not yet opened in the editor, as many as Quick Access shows: the ones Use this style for new
     /// captures still styles when they're opened. An older file opened from the Gallery stays as it is.
     private var newCaptures: [URL] = []
+    /// The recording an agent started, until it ends.
+    private var agentSession: AgentSession?
+    /// How agents' recordings ended, by ID, so a stop that comes after the user stopped one still gets its answer.
+    private var agentEndings: [String: (result: Result<[String: JSONValue], ShotCommandError>, at: Date)] = [:]
+    /// The files agents' recordings are saved as, by ID, so one that Undo saves after a discard is still theirs.
+    private var agentRecordings: [URL: String] = [:]
+
+    private struct AgentSession {
+        let id: String
+        let app: String
+        /// `app` and `title`, as the answers give it.
+        let window: JSONValue
+        let started: Date
+        /// The requests waiting for it to end: a timed `record`, and any `stop`.
+        var waiters: [CheckedContinuation<Result<[String: JSONValue], ShotCommandError>, Never>] = []
+        /// Stops it after its duration, or after `AgentRequest.maximumDuration` at most.
+        var limit: Task<Void, Never>?
+    }
 
     init(state: AppState) {
         self.state = state
         recorder.onFinish = { [weak self] url in
             self?.recordingFinished(url)
+        }
+        recorder.onEnd = { [weak self] url, ending in
+            self?.recordingEnded(url, ending)
         }
         recorder.onPhaseChange = { [weak self] phase in
             self?.state.isRecording = phase == .recording || phase == .paused
@@ -256,6 +277,11 @@ final class CaptureCoordinator {
     }
 
     private func recordingFinished(_ url: URL) {
+        // An agent's recording is only saved: no copy, Quick Access card or confetti.
+        if let id = agentRecordings[url] {
+            Task { await agentRecordingSaved(url, id: id) }
+            return
+        }
         let prefs = Preferences()
         let plan = AfterCapture.plan(prefs: prefs, isVideo: true)
         if plan.copies {
@@ -441,11 +467,7 @@ final class CaptureCoordinator {
         guard !busy, setup == nil else {
             throw .busy("Shot is in the middle of a capture or the recording setup; try again once it's done.")
         }
-        let windows = WindowCapturer.onScreenWindows()
-        let candidates = windows.map { WindowMatch.Candidate(id: $0.windowID, app: $0.ownerName ?? "", title: $0.title ?? "") }
-        guard let match = WindowMatch.best(query, in: candidates), let info = windows.first(where: { $0.windowID == match.id }) else {
-            throw .noInput("No open window matches \"\(query)\". \(WindowMatch.listing(candidates))")
-        }
+        let (info, match) = try matchWindow(query)
         busy = true
         defer { busy = false }
         let owner = NSRunningApplication(processIdentifier: info.ownerPID)
@@ -473,10 +495,168 @@ final class CaptureCoordinator {
         ]
     }
 
+    /// The open window `query` names best, or a `.noInput` error listing the open ones.
+    private func matchWindow(_ query: String) throws(ShotCommandError) -> (info: WindowInfo, match: WindowMatch.Candidate) {
+        let windows = WindowCapturer.onScreenWindows()
+        let candidates = windows.map { WindowMatch.Candidate(id: $0.windowID, app: $0.ownerName ?? "", title: $0.title ?? "") }
+        guard let match = WindowMatch.best(query, in: candidates), let info = windows.first(where: { $0.windowID == match.id }) else {
+            throw .noInput("No open window matches \"\(query)\". \(WindowMatch.listing(candidates))")
+        }
+        return (info, match)
+    }
+
+    /// Starts recording the open window `query` names, for an agent: never the microphone or camera, always with the
+    /// red border and the stop controls, and for at most `AgentRequest.maximumDuration`. Answers with the recording's
+    /// ID at once, or with `duration`, with the saved recording once it ends.
+    func agentRecord(window query: String, duration: Double?) async throws(ShotCommandError) -> [String: JSONValue] {
+        guard Permissions.hasScreenCapture else {
+            throw .noPermission("Shot doesn't have the Screen Recording permission. Grant it in System Settings › Privacy & Security › Screen & System Audio Recording.")
+        }
+        guard !busy, setup == nil, !recorder.isRecording, agentSession == nil else {
+            throw .busy("Shot is already recording, or in the middle of a capture or the recording setup; try again once it's done.")
+        }
+        let (info, match) = try matchWindow(query)
+        let app = info.ownerName ?? match.label
+        let (screen, region) = RecordingSetupController.region(of: info)
+        let options = Recorder.Options(camera: false, microphone: false, showsCursor: Preferences().recordShowsCursor, windowID: info.windowID, alwaysShowsBorder: true)
+        busy = true
+        do {
+            recordingRegion = region
+            try await recorder.start(screen: screen, region: region, options: options)
+        } catch {
+            busy = false
+            throw .io("Couldn't record \(match.label): \(error.localizedDescription)")
+        }
+        busy = false
+        guard let url = recorder.outputURL else {
+            throw .internal("the recording started without a file to save to")
+        }
+        let id = String(UUID().uuidString.prefix(8)).lowercased()
+        let started = Date()
+        var session = AgentSession(id: id, app: app, window: .object(["app": .string(app), "title": .string(info.title ?? "")]), started: started)
+        let seconds = min(duration ?? AgentRequest.maximumDuration, AgentRequest.maximumDuration)
+        session.limit = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(seconds))
+            guard !Task.isCancelled, let self, agentSession?.id == id, recorder.isRecording else {
+                return
+            }
+            log.notice("Agent recording \(id, privacy: .public) reached its \(seconds, privacy: .public) s limit")
+            stopRecording(discard: false)
+        }
+        agentSession = session
+        agentRecordings[url] = id
+        log.notice("Agent started recording window \(info.windowID) of \(app, privacy: .public) as \(id, privacy: .public)")
+        Toast.show("An agent is recording \(app)", duration: .seconds(3))
+        guard duration != nil else {
+            return ["id": .string(id), "window": session.window, "started": .string(ISO8601DateFormatter().string(from: started))]
+        }
+        return try await agentRecordingResult(id)
+    }
+
+    /// Stops the agent's recording `id`, or the agent's recording in progress, and answers once it's saved. One that has
+    /// already ended answers with how it ended. A recording the user started is theirs alone to stop.
+    func agentStop(id: String?) async throws(ShotCommandError) -> [String: JSONValue] {
+        pruneAgentEndings()
+        if let session = agentSession, id == nil || id == session.id {
+            if recorder.isRecording {
+                Toast.show("An agent stopped recording \(session.app)", duration: .seconds(3))
+                stopRecording(discard: false)
+            }
+            return try await agentRecordingResult(session.id)
+        }
+        if let id, let ending = agentEndings[id] {
+            return try ending.result.get()
+        }
+        if let id {
+            throw .noInput("No agent recording has the id \(id). Finished ones are kept for \(Int(AgentRequest.maximumDuration / 60)) minutes.")
+        }
+        if recorder.isRecording {
+            throw .busy("The recording in progress was started by the user, not an agent, so only they can stop it.")
+        }
+        throw .noInput("No agent recording is in progress.")
+    }
+
+    /// Waits for the agent's recording `id` to end, and gives how it ended.
+    private func agentRecordingResult(_ id: String) async throws(ShotCommandError) -> [String: JSONValue] {
+        let result = await withCheckedContinuation { (continuation: CheckedContinuation<Result<[String: JSONValue], ShotCommandError>, Never>) in
+            if agentSession?.id == id {
+                agentSession?.waiters.append(continuation)
+            } else {
+                continuation.resume(returning: agentEndings[id]?.result ?? .failure(.noInput("No agent recording has the id \(id).")))
+            }
+        }
+        return try result.get()
+    }
+
+    /// Answers whoever waits for the agent's recording saved at `url`.
+    private func agentRecordingSaved(_ url: URL, id: String) async {
+        let media = try? await MediaProbe.probe(url)
+        let bytes = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        var fields: [String: JSONValue] = [
+            "id": .string(id),
+            "path": .string(url.path),
+            "bytes": .number(Double(bytes)),
+            "duration": .number(((media?.duration ?? 0) * 10).rounded() / 10),
+        ]
+        if let size = media?.size {
+            fields["size"] = .object(["width": .number(Double(Int(size.width))), "height": .number(Double(Int(size.height)))])
+        }
+        if let session = agentSession, session.id == id {
+            Toast.show("Saved the agent's recording of \(session.app)", duration: .seconds(3))
+        }
+        endAgentRecording(id, with: .success(fields))
+    }
+
+    private func recordingEnded(_ url: URL?, _ ending: Recorder.Ending) {
+        guard let url, let id = agentRecordings[url] else {
+            return
+        }
+        switch ending {
+        case .saved:
+            // `agentRecordingSaved`, started from `onFinish`, answers once it has read the file.
+            break
+        case .discarded:
+            endAgentRecording(id, with: .failure(.noInput("The user discarded this recording.")))
+        case .failed:
+            endAgentRecording(id, with: .failure(.io("The recording failed, and nothing was saved.")))
+        }
+    }
+
+    /// Records how the agent's recording `id` ended, and answers everyone waiting for it.
+    private func endAgentRecording(_ id: String, with result: Result<[String: JSONValue], ShotCommandError>) {
+        agentEndings[id] = (result, Date())
+        pruneAgentEndings()
+        guard let session = agentSession, session.id == id else {
+            return
+        }
+        agentSession = nil
+        session.limit?.cancel()
+        for waiter in session.waiters {
+            waiter.resume(returning: result)
+        }
+    }
+
+    /// Forgets endings older than `AgentRequest.maximumDuration`.
+    private func pruneAgentEndings() {
+        let cutoff = Date().addingTimeInterval(-AgentRequest.maximumDuration)
+        for (id, ending) in agentEndings where ending.at < cutoff {
+            agentEndings[id] = nil
+            agentRecordings = agentRecordings.filter { $0.value != id }
+        }
+    }
+
     /// What an agent's status request answers: whether a capture or the recording setup is under way, and the
-    /// recording in progress, if any.
+    /// recording in progress, if any, with its ID when an agent started it.
     func agentStatus() -> [String: JSONValue] {
-        let recording: JSONValue = recorder.isRecording ? .object(["byAgent": .bool(false), "elapsed": .number(recorder.elapsed)]) : .null
+        var recording: JSONValue = .null
+        if recorder.isRecording {
+            var fields: [String: JSONValue] = ["byAgent": .bool(agentSession != nil), "elapsed": .number((recorder.elapsed * 10).rounded() / 10)]
+            if let agentSession {
+                fields["id"] = .string(agentSession.id)
+                fields["window"] = agentSession.window
+            }
+            recording = .object(fields)
+        }
         return ["capturing": .bool(busy || setup != nil), "recording": recording]
     }
 

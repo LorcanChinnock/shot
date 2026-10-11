@@ -1,8 +1,8 @@
 import Foundation
 import ShotCore
 
-/// The `shot` command line: `shot mcp`, the MCP server AI agents talk to, the headless media commands, `shot capture`,
-/// which asks the running app, and `--version`. It ships inside the app as `Contents/MacOS/shot-cli`, so it reads the
+/// The `shot` command line: `shot mcp`, the MCP server AI agents talk to, the headless media commands, `shot capture`
+/// and `shot record`, which ask the running app, and `--version`. It ships inside the app as `Contents/MacOS/shot-cli`, so it reads the
 /// app's settings to find the captures.
 @main
 enum ShotCLI {
@@ -33,6 +33,24 @@ enum ShotCLI {
         case let .capture(window):
             do {
                 print(ShotCommand.json(.object(try await ask(AgentRequest(.capture, window: window), app: appBundle()))))
+            } catch {
+                printError("\(program) \(command.name): \(error.message)")
+                exit(error.exitCode)
+            }
+        case let .record(action):
+            let request = switch action {
+            case let .start(window, duration): AgentRequest(.record, window: window, duration: duration)
+            case let .stop(id): AgentRequest(.stop, id: id)
+            case .status: AgentRequest(.status)
+            }
+            do {
+                let result = try await ask(request, app: appBundle())
+                print(ShotCommand.json(.object(result)))
+                if let path = result["path"]?.string {
+                    printError("\(program) frames \"\(path)\" shows what happened in it.")
+                } else if let id = result["id"]?.string {
+                    printError("Recording. \(program) record --stop \(id) ends it; it stops itself after \(Int(AgentRequest.maximumDuration / 60)) minutes.")
+                }
             } catch {
                 printError("\(program) \(command.name): \(error.message)")
                 exit(error.exitCode)
@@ -77,7 +95,16 @@ enum ShotCLI {
     static func ask(_ request: AgentRequest, app: Bundle?) async throws(ShotCommandError) -> [String: JSONValue] {
         // Read on each request, so the MCP server, which runs for a whole session, sees the setting change.
         let enabled = Preferences(store: defaultsStore(app: app)).agentCapture
-        return try await AgentSocket.ask(request, bundleID: app?.bundleIdentifier ?? fallbackSuite, enabled: enabled, timeout: .seconds(30))
+        return try await AgentSocket.ask(request, bundleID: app?.bundleIdentifier ?? fallbackSuite, enabled: enabled, timeout: timeout(for: request))
+    }
+
+    /// How long to wait for the app's answer: a stop or a timed recording waits for the video to be written too.
+    static func timeout(for request: AgentRequest) -> Duration {
+        switch request.op {
+        case .capture, .status: .seconds(30)
+        case .record: .seconds((request.duration ?? 0) + 120)
+        case .stop: .seconds(120)
+        }
     }
 
     /// The app this executable is inside. `Bundle.main` finds it when run by its real path, but not through a symlink

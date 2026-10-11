@@ -57,7 +57,7 @@ public enum ShotCommands {
             }
         case let .frames(options):
             return try await frames(options)
-        case .capture, .mcp, .version, .help:
+        case .capture, .record, .mcp, .version, .help:
             throw .internal("\(command.name) isn't a media command")
         }
     }

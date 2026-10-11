@@ -224,19 +224,20 @@ The record is stored in the image's own metadata, as JSON in the XMP property `s
 
 Shot 0.7.0-beta.39 wrote this as a `.shot.json` file beside each capture instead. Nothing reads those any more, so you can delete them.
 
-### Letting an agent capture a window
+### Letting an agent capture and record
 
-An agent can take its own screenshot of a window, such as the iOS Simulator or the app it's building, so it can check its work without asking you. Screen Recording access belongs to Shot, not to your terminal, so the agent asks the running Shot app through `shot capture` or the MCP server's `capture_window` tool.
+An agent can take its own screenshot or recording of a window, such as the iOS Simulator or the app it's building, so it can check its work without asking you: "record the Simulator while the UI test runs, then show me what happened." Screen Recording access belongs to Shot, not to your terminal, so the agent asks the running Shot app through `shot capture`, `shot record`, or the MCP server's `capture_window` and `record_window` tools.
 
 - **Turn on Let agents capture and record** in **Settings › Agents**. It's off by default and separate from **Hand captures to agents**. While it's off, Shot doesn't listen for agents at all.
 - The agent names the window by a few words of its title or its app, such as `Simulator`. Shot captures that window live, even when other windows cover it, and never brings it forward or takes focus.
 - The screenshot is saved to your capture folder, with a record inside it of which app and window it came from. Nothing else happens: no sound, no copy, no Quick Access card, no editor.
-- Each time, Shot shows a notice at the bottom of the screen, such as **An agent took a screenshot of Simulator**, so you always know.
+- An agent's recording never records the microphone or the camera. It always shows the red border and the recording controls, whatever **Settings › Recording** says, so you can pause, stop or discard it. It stops itself after 10 minutes. It's saved to your capture folder without a copy, a Quick Access card or confetti. An agent can only stop its own recordings, never one you started.
+- Each time, Shot shows a notice at the bottom of the screen, such as **An agent took a screenshot of Simulator** or **An agent is recording Simulator**, so you always know.
 - If Shot isn't running, `shot capture` opens it in the background first. Shot only answers requests from your own user account, over a socket in `~/Library/Application Support/dev.lorcan.Shot/`.
 
 ### The MCP server
 
-Shot also comes with a small [MCP](https://modelcontextprotocol.io) server, so you can ask an agent "what did I mark in my latest screenshot?" without pasting anything. It runs only while the agent uses it, works whether or not Shot is open, and needs no setting turned on, though without **Hand captures to agents** Shot has no record of where a capture came from or what you marked; the agent still sees the image. Only `capture_window` needs Shot running and [**Let agents capture and record**](#letting-an-agent-capture-a-window) on. **Settings › Agents** shows the setup commands with the right path for your copy of Shot.
+Shot also comes with a small [MCP](https://modelcontextprotocol.io) server, so you can ask an agent "what did I mark in my latest screenshot?" without pasting anything. It runs only while the agent uses it, works whether or not Shot is open, and needs no setting turned on, though without **Hand captures to agents** Shot has no record of where a capture came from or what you marked; the agent still sees the image. Only `capture_window` and `record_window` need Shot running and [**Let agents capture and record**](#letting-an-agent-capture-and-record) on. **Settings › Agents** shows the setup commands with the right path for your copy of Shot.
 
 - **Claude Code:** `claude mcp add shot -- /Applications/Shot.app/Contents/MacOS/shot-cli mcp`. If you installed Shot with Homebrew, the server is on your PATH as `shot`, so `claude mcp add shot -- shot mcp` works too.
 - **Cursor** and other apps that take a JSON config:
@@ -253,7 +254,7 @@ Shot also comes with a small [MCP](https://modelcontextprotocol.io) server, so y
   args = ["mcp"]
   ```
 
-It has eight tools. Four read your captures, three make a new file from one, and one takes a screenshot. Their arguments are optional unless the table says otherwise, and a slightly wrong one is read as best it can be rather than refused.
+It has nine tools. Four read your captures, three make a new file from one, and two take a screenshot or a recording. Their arguments are optional unless the table says otherwise, and a slightly wrong one is read as best it can be rather than refused.
 
 | Tool | Arguments | Returns |
 |---|---|---|
@@ -264,15 +265,16 @@ It has eight tools. Four read your captures, three make a new file from one, and
 | `annotate` | `annotations` (required): marks in the [record's format](#using-shot-with-ai-agents); `path` or `name`, else the newest screenshot | A copy with the marks drawn on, saved as the screenshot's next version, and a preview of it. Open it in Shot and the marks are still live. |
 | `make_gif` | `path` or `name`, else the newest recording; `start`, `end` in seconds; `fps`, 1 to 30, 12 by default; `width`, 720 by default, or 0 for the recording's own | A GIF of the recording, or part of it, saved beside it. GIFs stop at 60 seconds. |
 | `trim_video` | `start` and `end` in seconds (required); `path` or `name`, else the newest recording | The part between the two times, saved beside the recording, without re-encoding where it can. |
-| `capture_window` | `window` (required): a few words of the window's title or its app, such as `Simulator` | A [screenshot of that window](#letting-an-agent-capture-a-window), saved to the capture folder: a preview, its path and size, and which app and window it was. If no window matches, the error lists the open ones. |
+| `capture_window` | `window` (required): a few words of the window's title or its app, such as `Simulator` | A [screenshot of that window](#letting-an-agent-capture-and-record), saved to the capture folder: a preview, its path and size, and which app and window it was. If no window matches, the error lists the open ones. |
+| `record_window` | `action`: `start` (the default) or `stop`; for start, `window` and `duration` in seconds, up to 120; for stop, `id`, else the agent's recording in progress | A [recording of that window](#letting-an-agent-capture-and-record). With a `duration`, it waits, then gives the recording's path, length and about 6 key frames, as `get_frames` does. Without one, it gives an `id` at once; stopping it gives the path and frames. |
 
 Previews are JPEGs at most 1568 pixels on the long edge and about 1 MB, which is what vision models work at anyway. The path in the result lets an agent that can read files open the full-size original, and the marks' coordinates are always in the full-size file's pixels.
 
-The server reads only the capture folder: your save folder (`~/Pictures/Shot` by default), or the temporary folder when **Save to folder** is off. It captures a window only when you've turned on **Let agents capture and record**, and then only through the running Shot app. It never moves or deletes anything, and never changes a file: `annotate`, `make_gif` and `trim_video` only add a new file beside the capture they start from. It uploads nothing itself. Because the agent starts it, the first time it reads `~/Pictures` macOS may ask whether your terminal or editor can access that folder; allow it, or the agent sees no captures. To check which copy of Shot and which folder it uses, run `/Applications/Shot.app/Contents/MacOS/shot-cli --version`.
+The server reads only the capture folder: your save folder (`~/Pictures/Shot` by default), or the temporary folder when **Save to folder** is off. It captures or records a window only when you've turned on **Let agents capture and record**, and then only through the running Shot app. It never moves or deletes anything, and never changes a file: `annotate`, `make_gif` and `trim_video` only add a new file beside the capture they start from. It uploads nothing itself. Because the agent starts it, the first time it reads `~/Pictures` macOS may ask whether your terminal or editor can access that folder; allow it, or the agent sees no captures. To check which copy of Shot and which folder it uses, run `/Applications/Shot.app/Contents/MacOS/shot-cli --version`.
 
 ### The `shot` command line
 
-The same `shot` command does the media work without Shot open and without any permission, so an agent with a shell, or a script, can see what happened in a recording, turn it into a GIF for a pull request, or blur something before it shares a screenshot. After a Homebrew install it's on your PATH as `shot`; otherwise run `/Applications/Shot.app/Contents/MacOS/shot-cli`. Only `shot capture` needs Shot running, which it opens in the background if it isn't, with [**Let agents capture and record**](#letting-an-agent-capture-a-window) on.
+The same `shot` command does the media work without Shot open and without any permission, so an agent with a shell, or a script, can see what happened in a recording, turn it into a GIF for a pull request, or blur something before it shares a screenshot. After a Homebrew install it's on your PATH as `shot`; otherwise run `/Applications/Shot.app/Contents/MacOS/shot-cli`. Only `shot capture` and `shot record` need Shot running, which they open in the background if it isn't, with [**Let agents capture and record**](#letting-an-agent-capture-and-record) on.
 
 | Command | Does |
 |---|---|
@@ -283,6 +285,9 @@ The same `shot` command does the media work without Shot open and without any pe
 | `shot frames <video> [--count 8 \| --every 2] [--width 1568] [-o folder]` | Still frames of the video in a new folder, `name frames`, as JPEGs named by their time: by default the first and last and the frame after each change on screen, or with `--every`, one every so many seconds (60 at most) |
 | `shot annotate <image> --json marks.json [-o out.png]` | Draws marks, in the [record's format](#using-shot-with-ai-agents), as an array or inside an `annotations` object. `--json -` reads them from standard input. |
 | `shot capture --window "Simulator"` | A screenshot of the open window whose title or app matches, saved to the capture folder by the running Shot app, which prints its `path`, `size`, `bytes` and `window` (`app` and `title`) |
+| `shot record --window "Simulator" [--duration 10]` | Records that window through Shot. With `--duration`, waits and prints the recording's `path`, `size`, `bytes`, `duration` and `id`; without, prints an `id` at once. At most 10 minutes. |
+| `shot record --stop [<id>]` | Stops the agent's recording `id`, or the one in progress, and prints what `--duration` does. A recording you stopped yourself still answers with its path for 10 minutes. |
+| `shot record --status` | Whether Shot is capturing or recording, and the recording's `id`, `window`, `elapsed` seconds and `byAgent` |
 
 Times are seconds, such as `2.5`, or minutes and seconds, such as `1:02.5`. Without `-o`, the result goes beside the input as its next version, such as `name (2).png`, or `name.gif` for a GIF. Nothing is ever overwritten: an `-o` that exists is an error, and a name another program takes while `shot` works moves on to the next one. A redacted or annotated image records its marks inside it, so opening it in Shot keeps them live.
 
@@ -293,12 +298,12 @@ Each command prints one JSON object on standard output, with at least the new fi
 | 0 | Done |
 | 64 | A wrong option, a missing argument or a value out of range |
 | 65 | Not an image or video Shot can read, marks that don't make sense, or a rectangle off the image |
-| 66 | The input file doesn't exist, or no open window matches; the message lists up to 10 open ones |
+| 66 | The input file doesn't exist; no open window matches, and the message lists up to 10 open ones; or no agent recording has that id, or you discarded it |
 | 69 | Shot isn't answering agents: **Let agents capture and record** is off, or Shot couldn't be opened |
 | 70 | Something went wrong inside Shot |
 | 73 | The output can't be made: it already exists, or its folder doesn't |
 | 74 | Reading or writing failed partway |
-| 75 | Shot is busy with a selection or the recording setup; try again |
+| 75 | Shot is busy with a selection, the recording setup or another recording, or the recording to stop is one you started |
 | 77 | Shot doesn't have the Screen Recording permission |
 
 `shot help` and `shot <command> --help` show the options.
@@ -442,7 +447,7 @@ Open Settings from the menu bar icon, or with ⌘, while a Shot window is in fro
 | Capture | What happens after a capture (save, copy, Quick Access, or the editor), the magnifier, the crosshair, the cursor, and window shadows |
 | Quick Access | The screen corner and how long cards stay |
 | Recording | Adjust before recording, the countdown, frame rate, cursor, region outline, copying to the clipboard, the microphone and its input (with a **Test**), system audio, and the camera bubble's camera (with a **Preview**) and size. It also sums up the GIF settings the video editor last used. |
-| Agents | [Handing captures to AI agents](#using-shot-with-ai-agents): a record inside each capture of where it came from and what you marked, [letting agents capture a window](#letting-an-agent-capture-a-window), and the setup commands for the MCP server |
+| Agents | [Handing captures to AI agents](#using-shot-with-ai-agents): a record inside each capture of where it came from and what you marked, [letting agents capture and record a window](#letting-an-agent-capture-and-record), and the setup commands for the MCP server |
 | Shortcuts | The macOS screenshot keys and every global shortcut |
 | About | The version, updates, permissions, the capture folder, links to the code, to report a bug and to sponsor Shot, and resetting all settings |
 
@@ -458,7 +463,7 @@ Shot collects no analytics, and the only time it connects to the network is to c
 
 Captures go to the folder you choose in Settings (`~/Pictures/Shot` by default) or stay in a temporary folder when saving is off.
 
-An agent can take a screenshot through Shot only while **Let agents capture and record** is on, which it is not by default, and Shot shows a notice each time.
+An agent can take a screenshot or recording through Shot only while **Let agents capture and record** is on, which it is not by default. Shot shows a notice each time, an agent's recording always shows the red border and the controls to stop it, and it never records the microphone or camera.
 
 Shot needs Screen & System Audio Recording access for every capture. macOS asks for Microphone and Camera access only when Shot first uses them: when you record with them, or try them with **Test** or **Preview** in Settings › Recording.
 

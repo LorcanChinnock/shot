@@ -11,6 +11,8 @@ public enum ShotCommand: Equatable, Sendable {
     case frames(FramesOptions)
     /// A screenshot of the open window `window` names, taken by the running app.
     case capture(window: String)
+    /// Starts, stops or asks about a recording of a window, made by the running app.
+    case record(RecordAction)
     case mcp
     case version
     /// Usage, for one command or for all of them.
@@ -111,8 +113,16 @@ public enum ShotCommand: Equatable, Sendable {
         }
     }
 
+    public enum RecordAction: Equatable, Sendable {
+        /// Records `window`; with `duration`, waits for the recording to end.
+        case start(window: String, duration: Double?)
+        /// Stops the agent's recording `id`, or the one in progress.
+        case stop(id: String?)
+        case status
+    }
+
     /// The commands `help` knows, in the order it lists them.
-    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "capture", "mcp"]
+    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "capture", "record", "mcp"]
 
     /// The command's name, for error messages such as `shot gif: …`.
     public var name: String {
@@ -124,6 +134,7 @@ public enum ShotCommand: Equatable, Sendable {
         case .annotate: "annotate"
         case .frames: "frames"
         case .capture: "capture"
+        case .record: "record"
         case .mcp: "mcp"
         case .version: "version"
         case .help: "help"
@@ -163,6 +174,9 @@ public enum ShotCommand: Equatable, Sendable {
                 throw .usage(first, "needs --window with words from the window's title or app, such as --window Simulator")
             }
             return .capture(window: window)
+        case "record":
+            if rest.contains(where: isHelp) { return .help(first) }
+            return try parseRecord(rest)
         default:
             throw .usage(nil, "no command named \"\(first)\"")
         }
@@ -181,7 +195,39 @@ public enum ShotCommand: Equatable, Sendable {
         "annotate": ["output": false, "json": false],
         "frames": ["output": false, "count": false, "every": false, "width": false],
         "capture": ["window": false],
+        "record": ["window": false, "duration": false],
     ]
+
+    /// `record --window … [--duration s]`, `record --stop [id]` or `record --status`.
+    private static func parseRecord(_ arguments: [String]) throws(ShotCommandError) -> ShotCommand {
+        if arguments.first == "--status" {
+            guard arguments.count == 1 else { throw .usage("record", "--status takes nothing else") }
+            return .record(.status)
+        }
+        if arguments.first == "--stop" {
+            let rest = arguments.dropFirst()
+            guard rest.count <= 1, !(rest.first?.hasPrefix("-") ?? false) else {
+                throw .usage("record", "--stop takes at most a recording's id")
+            }
+            return .record(.stop(id: rest.first))
+        }
+        if arguments.contains("--stop") || arguments.contains("--status") {
+            throw .usage("record", "use --window, --stop or --status, one at a time")
+        }
+        let (positional, values) = try options("record", arguments)
+        guard positional.isEmpty else { throw .usage("record", "takes no file; name the window with --window") }
+        guard let window = values["window"]?.first?.trimmingCharacters(in: .whitespaces), !window.isEmpty else {
+            throw .usage("record", "needs --window with words from the window's title or app, such as --window Simulator, or --stop or --status")
+        }
+        var duration: Double?
+        if let text = values["duration"]?.first {
+            guard let seconds = Self.seconds(text), seconds > 0, seconds <= AgentRequest.maximumDuration else {
+                throw .usage("record", "--duration \(text) must be a time above 0 and at most \(Int(AgentRequest.maximumDuration / 60)) minutes, such as 10 or 1:30")
+            }
+            duration = seconds
+        }
+        return .record(.start(window: window, duration: duration))
+    }
 
     /// The arguments that aren't flags, and each flag's values, checked against what `command` takes.
     private static func options(_ command: String, _ arguments: [String]) throws(ShotCommandError) -> (positional: [String], values: [String: [String]]) {
@@ -344,6 +390,7 @@ public enum ShotCommand: Equatable, Sendable {
             "annotate": "\(program) annotate <image> --json marks.json [-o out.png]\n    Draws marks on the image, in the format of Shot's capture record (see docs). --json - reads them from standard input.",
             "frames": "\(program) frames <video> [--count 8 | --every 2] [--width 1568] [-o folder]\n    Still frames of the video, for an agent that can't watch it: where the picture changes, or evenly every few seconds.",
             "capture": "\(program) capture --window <title or app>\n    A screenshot of that open window, taken by Shot without taking focus, saved to the capture folder. Needs Shot running with Settings › Agents › Let agents capture and record on.",
+            "record": "\(program) record --window <title or app> [--duration 10] | --stop [<id>] | --status\n    Records that open window through Shot, without its microphone or camera, for at most 10 minutes. Without --duration it prints an id and returns at once; --stop ends it. Needs Shot running with Settings › Agents › Let agents capture and record on.",
             "mcp": "\(program) mcp\n    Serves Shot's captures to an AI agent over MCP, on standard input and output.",
         ]
         if let command, let line = lines[command] {

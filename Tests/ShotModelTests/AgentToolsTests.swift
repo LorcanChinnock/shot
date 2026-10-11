@@ -37,10 +37,10 @@ private let captures = tools(in: folder, [
     ("Recording C.mp4", 5, true),
 ])
 
-@Test func thereAreEightToolsEachWithAnObjectSchema() {
-    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "annotate", "make_gif", "trim_video", "capture_window"])
+@Test func thereAreNineToolsEachWithAnObjectSchema() {
+    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "annotate", "make_gif", "trim_video", "capture_window", "record_window"])
     let required = AgentTools.definitions.map { $0.inputSchema["required"] }
-    #expect(required == [nil, nil, nil, nil, .array([.string("annotations")]), nil, .array([.string("start"), .string("end")]), .array([.string("window")])])
+    #expect(required == [nil, nil, nil, nil, .array([.string("annotations")]), nil, .array([.string("start"), .string("end")]), .array([.string("window")]), nil])
     for tool in AgentTools.definitions {
         #expect(tool.inputSchema["type"] == .string("object"))
         #expect(!tool.description.isEmpty)
@@ -286,4 +286,57 @@ private func capturing(_ asked: Asked, answer: Result<[String: JSONValue], ShotC
     let off = await tools.call("capture_window", .object(["window": .string("Calculator")]))
     #expect(off.isError)
     #expect(texts(off) == ["Turn on Let agents capture and record"])
+}
+
+private func recording(_ asked: Asked, frameCounts: Ran? = nil, answer: [String: JSONValue]) -> AgentTools {
+    var tools = capturing(asked, answer: .success(answer))
+    tools.frames = { entry, count throws(ShotCommandError) in
+        frameCounts?.commands.append(.frames(ShotCommand.FramesOptions(input: entry.url.path, count: count)))
+        return [.text("t=0.0s of 3.0s"), .image(data: "FRAME", mimeType: "image/jpeg")]
+    }
+    return tools
+}
+
+private let saved: [String: JSONValue] = ["id": .string("ab12cd34"), "path": .string("/shots/Recording D.mp4"), "duration": .number(3)]
+
+@Test func recordWindowWithADurationWaitsThenShowsSixKeyFrames() async {
+    let asked = Asked()
+    let counts = Ran()
+    let result = await recording(asked, frameCounts: counts, answer: saved).call("record_window", .object(["window": .string("Simulator"), "duration": .number(3)]))
+    #expect(result.isError == false)
+    #expect(asked.requests == [AgentRequest(.record, window: "Simulator", duration: 3)])
+    #expect(counts.commands == [.frames(ShotCommand.FramesOptions(input: "/shots/Recording D.mp4", count: 6))])
+    #expect(result.content.last == .image(data: "FRAME", mimeType: "image/jpeg"))
+}
+
+@Test func recordWindowWaitsAtMostTwoMinutes() async {
+    let asked = Asked()
+    let result = await recording(asked, answer: saved).call("record_window", .object(["window": .string("Simulator"), "duration": .number(900)]))
+    #expect(asked.requests == [AgentRequest(.record, window: "Simulator", duration: 120)])
+    #expect(texts(result).contains { $0.hasPrefix("Recorded 120 seconds") })
+}
+
+@Test func recordWindowWithoutADurationGivesAnIDToStopItWith() async {
+    let asked = Asked()
+    let result = await recording(asked, answer: ["id": .string("ab12cd34")]).call("record_window", .object(["window": .string("Simulator")]))
+    #expect(result.isError == false)
+    #expect(asked.requests == [AgentRequest(.record, window: "Simulator")])
+    #expect(texts(result).last?.contains("action stop and id ab12cd34") == true)
+}
+
+@Test func recordWindowStopsByIDOrTheOneInProgress() async {
+    let asked = Asked()
+    let tools = recording(asked, answer: saved)
+    let byID = await tools.call("record_window", .object(["action": .string("stop"), "id": .string("ab12cd34")]))
+    _ = await tools.call("record_window", .object(["action": .string("STOP")]))
+    #expect(asked.requests == [AgentRequest(.stop, id: "ab12cd34"), AgentRequest(.stop)])
+    #expect(byID.content.last == .image(data: "FRAME", mimeType: "image/jpeg"))
+}
+
+@Test func recordWindowNeedsAWindowToStartAndAKnownAction() async {
+    let asked = Asked()
+    let tools = recording(asked, answer: saved)
+    #expect(await tools.call("record_window", .object([:])).isError)
+    #expect(await tools.call("record_window", .object(["action": .string("pause"), "window": .string("a")])).isError)
+    #expect(asked.requests.isEmpty)
 }

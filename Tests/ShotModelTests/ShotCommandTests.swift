@@ -28,6 +28,11 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(try parse("frames a.mov --count 3") == .frames(ShotCommand.FramesOptions(input: "a.mov", count: 3)))
     #expect(try parse("capture --window Simulator") == .capture(window: "Simulator"))
     #expect(try parse("capture --window=Calculator") == .capture(window: "Calculator"))
+    #expect(try parse("record --window Simulator") == .record(.start(window: "Simulator", duration: nil)))
+    #expect(try parse("record --duration 1:30 --window Simulator") == .record(.start(window: "Simulator", duration: 90)))
+    #expect(try parse("record --stop") == .record(.stop(id: nil)))
+    #expect(try parse("record --stop ab12cd34") == .record(.stop(id: "ab12cd34")))
+    #expect(try parse("record --status") == .record(.status))
     #expect(try parse("mcp") == .mcp)
     #expect(try parse("--version") == .version)
     #expect(try parse("-v") == .version)
@@ -82,6 +87,14 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     ("capture a.png --window Simulator", "capture", "takes no file; name the window with --window"),
     ("capture --window a --window b", "capture", "--window is given twice"),
     ("capture --window a -o b.png", "capture", "unknown option -o; it takes --window"),
+    ("record", "record", "needs --window with words from the window's title or app, such as --window Simulator, or --stop or --status"),
+    ("record --window a --duration 0", "record", "--duration 0 must be a time above 0 and at most 10 minutes, such as 10 or 1:30"),
+    ("record --window a --duration 10:01", "record", "--duration 10:01 must be a time above 0 and at most 10 minutes, such as 10 or 1:30"),
+    ("record --window a --stop", "record", "use --window, --stop or --status, one at a time"),
+    ("record --stop a b", "record", "--stop takes at most a recording's id"),
+    ("record --stop --status", "record", "--stop takes at most a recording's id"),
+    ("record --status now", "record", "--status takes nothing else"),
+    ("record --window a --fps 30", "record", "unknown option --fps; it takes --duration, --window"),
 ] as [(String, String?, String)])
 func aMistakeIsAUsageErrorThatSaysWhat(_ line: String, _ command: String?, _ message: String) throws {
     let error = try #require(usage(line))

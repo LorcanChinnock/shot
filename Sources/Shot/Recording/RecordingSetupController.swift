@@ -101,12 +101,19 @@ final class RecordingSetupController {
             let screen = screens[index]
             return Pick(screen: screen, region: rect.offsetBy(dx: screen.frame.minX, dy: screen.frame.minY), windowID: nil, ratio: ratio, optionHeld: optionHeld)
         case let .window(info):
-            let frame = Geometry.flip(info.frame, primaryHeight: screens.first?.frame.height ?? 0)
-            let screen = screens.first { $0.frame.contains(CGPoint(x: frame.midX, y: frame.midY)) } ?? screens[0]
-            return Pick(screen: screen, region: frame.intersection(screen.frame), windowID: info.windowID, ratio: nil, optionHeld: optionHeld)
+            let (screen, region) = region(of: info)
+            return Pick(screen: screen, region: region, windowID: info.windowID, ratio: nil, optionHeld: optionHeld)
         case let .fullDisplay(index):
             return Pick(screen: screens[index], region: screens[index].fullCaptureFrame, windowID: nil, ratio: nil, optionHeld: optionHeld)
         }
+    }
+
+    /// The screen a window is mostly on, by its centre, and the part of the window on that screen, as an AppKit global rect.
+    static func region(of window: WindowInfo) -> (screen: NSScreen, region: CGRect) {
+        let screens = NSScreen.screens
+        let frame = Geometry.flip(window.frame, primaryHeight: screens.first?.frame.height ?? 0)
+        let screen = screens.first { $0.frame.contains(CGPoint(x: frame.midX, y: frame.midY)) } ?? screens[0]
+        return (screen, frame.intersection(screen.frame))
     }
 
     func run() async -> Result {

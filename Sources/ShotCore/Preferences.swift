@@ -64,7 +64,7 @@ public enum PreferenceKey {
     /// Hands captures to AI agents: each file records where it came from and what was marked on it, and a copied
     /// capture is kept as a file an agent can fetch.
     public static let agentHandoff = "agentHandoff"
-    /// Lets agents ask the running app, through the `shot` command line or the MCP server, for a screenshot of a window.
+    /// Lets agents ask the running app, through the `shot` command line or the MCP server, to capture or record a window.
     public static let agentCapture = "agentCapture"
 
     public static func hotkey(_ action: ShotAction) -> String { "hotkey.\(action.rawValue)" }
@@ -389,7 +389,7 @@ public struct Preferences {
     /// default, so nothing changes for anyone who doesn't ask for it.
     public var agentHandoff: Bool { store.bool(forKey: PreferenceKey.agentHandoff) }
 
-    /// Whether the app answers agents' requests to capture a window. Off by default; the socket listens only while it's on.
+    /// Whether the app answers agents' requests to capture or record a window. Off by default; the socket listens only while it's on.
     public var agentCapture: Bool { store.bool(forKey: PreferenceKey.agentCapture) }
 
     public var partyModeUnlocked: Bool { store.bool(forKey: PreferenceKey.partyModeUnlocked) }

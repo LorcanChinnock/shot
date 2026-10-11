@@ -1,7 +1,7 @@
 import Foundation
 
 /// The MCP server's tools: four that read captures, three that make new files from one, never changing, moving or
-/// deleting anything, and one that asks the running app for a screenshot of a window. What they're called, what they
+/// deleting anything, and two that ask the running app to capture or record a window. What they're called, what they
 /// take, and what they say back are here. Finding files, drawing
 /// previews and running the commands need Apple frameworks, so they come in as closures; ShotCore's `live(folder:)`
 /// supplies them.
@@ -53,6 +53,11 @@ public struct AgentTools: Sendable {
     public static let trimVideo = "trim_video"
     public static let getFrames = "get_frames"
     public static let captureWindow = "capture_window"
+    public static let recordWindow = "record_window"
+    /// The longest `record_window` waits for, so its answer comes within what clients wait for a tool.
+    public static let maximumWait: Double = 120
+    /// How many key frames a finished `record_window` shows.
+    static let recordingFrames = 6
 
     private static let capture: [String: JSONValue] = [
         "path": .object(["type": .string("string"), "description": .string("The capture's full path. Without path or name, the newest one.")]),
@@ -139,6 +144,20 @@ public struct AgentTools: Sendable {
                 "window": .object(["type": .string("string"), "description": .string("Words from the window's title or its app's name, such as \"Simulator\" or \"Calculator\". Case and accents don't matter.")]),
             ], required: ["window"])
         ),
+        MCPServer.Tool(
+            name: recordWindow,
+            description: "Records an open window through the running Shot app, such as the Simulator while a UI test runs, then shows what happened. With a duration of up to \(Int(maximumWait)) seconds it waits, then returns the recording's path and about \(recordingFrames) key frames, each with its time. Without one it starts and returns an id; call again with action stop to end it and get the frames. Never records the microphone or camera, stops itself after \(Int(AgentRequest.maximumDuration / 60)) minutes, and Shot shows a red border, its stop controls and a notice, so the user can stop it. Needs Shot running with Settings › Agents › Let agents capture and record turned on.",
+            inputSchema: schema([
+                "action": .object([
+                    "type": .string("string"),
+                    "enum": .array([.string("start"), .string("stop")]),
+                    "description": .string("start (the default) or stop."),
+                ]),
+                "window": .object(["type": .string("string"), "description": .string("For start: words from the window's title or its app's name, such as \"Simulator\".")]),
+                "duration": seconds("For start: how long to record, up to \(Int(maximumWait)) seconds, waiting for it to end. Without it, the recording runs until stopped."),
+                "id": .object(["type": .string("string"), "description": .string("For stop: the id start gave. Without it, stops the agent's recording in progress.")]),
+            ])
+        ),
     ]
 
     public func server(version: String) -> MCPServer {
@@ -190,6 +209,8 @@ public struct AgentTools: Sendable {
             }
         case Self.captureWindow:
             return await captureWindow(arguments)
+        case Self.recordWindow:
+            return await recordWindow(arguments)
         default:
             return MCPServer.ToolResult(content: [.text("Unknown tool: \(name)")], isError: true)
         }
@@ -268,6 +289,51 @@ public struct AgentTools: Sendable {
         let lines = record(entry)?.summaryLines ?? []
         if !lines.isEmpty {
             content.append(.text(lines.joined(separator: "\n")))
+        }
+        return MCPServer.ToolResult(content: content)
+    }
+
+    /// Starts or stops a recording through the app. A finished one comes back with its key frames, since that's what
+    /// an agent can see of it.
+    func recordWindow(_ arguments: JSONValue) async -> MCPServer.ToolResult {
+        let action = arguments["action"]?.string?.trimmingCharacters(in: .whitespaces).lowercased() ?? "start"
+        let request: AgentRequest
+        var notes: [String] = []
+        switch action {
+        case "stop":
+            let id = arguments["id"]?.string.flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 }
+            request = AgentRequest(.stop, id: id)
+        case "start", "":
+            guard let window = arguments["window"]?.string, !window.trimmingCharacters(in: .whitespaces).isEmpty else {
+                return MCPServer.ToolResult(content: [.text("record_window needs window to start: words from the window's title or its app's name.")], isError: true)
+            }
+            var duration = arguments["duration"]?.number.flatMap { $0.isFinite ? $0 : nil }
+            if let asked = duration, asked > Self.maximumWait {
+                notes.append("Recorded \(Int(Self.maximumWait)) seconds, the most record_window waits for; for longer, start without a duration and stop it.")
+                duration = Self.maximumWait
+            } else if let asked = duration, asked < 1 {
+                duration = 1
+            }
+            request = AgentRequest(.record, window: window, duration: duration)
+        default:
+            return MCPServer.ToolResult(content: [.text("record_window's action is start or stop, not \"\(action)\".")], isError: true)
+        }
+        let fields: [String: JSONValue]
+        do {
+            fields = try await agent(request)
+        } catch {
+            return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
+        }
+        var content: [MCPServer.Content] = [.text(Self.json(.object(fields)))] + notes.map(MCPServer.Content.text)
+        guard let path = fields["path"]?.string else {
+            content.append(.text("Recording. Call record_window with action stop and id \(fields["id"]?.string ?? "") to end it; it stops itself after \(Int(AgentRequest.maximumDuration / 60)) minutes."))
+            return MCPServer.ToolResult(content: content)
+        }
+        let entry = AgentCaptures.Entry(url: URL(fileURLWithPath: path), isVideo: true, date: now())
+        do {
+            content += try await frames(entry, Self.recordingFrames)
+        } catch {
+            content.append(.text("Saved, but its frames couldn't be read: \(error.message)"))
         }
         return MCPServer.ToolResult(content: content)
     }

@@ -584,7 +584,7 @@ private struct AgentSettings: View {
         SettingsCard(title: "Capture", symbol: "macwindow") {
             ToggleRow(
                 title: "Let agents capture and record",
-                subtitle: "Lets an agent ask Shot, through the shot command or the MCP server, for a screenshot of an open window, such as the Simulator. Shot shows a notice each time, and never takes focus.",
+                subtitle: "Lets an agent ask Shot, through the shot command or the MCP server, to screenshot or record an open window, such as the Simulator. Shot shows a notice each time and never takes focus. An agent's recording shows the red border and stop controls, leaves out the microphone and camera, and stops after 10 minutes.",
                 isOn: $capture, color: color, divider: false
             )
         }

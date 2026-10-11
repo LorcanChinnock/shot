@@ -5,10 +5,16 @@ import Foundation
 public struct AgentRequest: Codable, Equatable, Sendable {
     /// The protocol's version; a request with another is refused, so an old app never half-understands a new one.
     public static let version = 1
+    /// The longest an agent's recording runs before it stops itself, in seconds.
+    public static let maximumDuration: Double = 600
 
     public enum Operation: String, Codable, Sendable {
         /// A screenshot of `window`.
         case capture
+        /// A recording of `window`: answered at once with its `id`, or with `duration`, when it ends.
+        case record
+        /// Ends the agent's recording `id`, or the agent's recording in progress.
+        case stop
         /// Whether the app is capturing or recording.
         case status
     }
@@ -17,11 +23,17 @@ public struct AgentRequest: Codable, Equatable, Sendable {
     public var op: Operation
     /// Words from the window's title or app, as `WindowMatch` reads them.
     public var window: String?
+    /// How long to record, in seconds, above 0 and at most `maximumDuration`.
+    public var duration: Double?
+    /// A recording's ID, as `record` gave it.
+    public var id: String?
 
-    public init(_ op: Operation, window: String? = nil) {
+    public init(_ op: Operation, window: String? = nil, duration: Double? = nil, id: String? = nil) {
         v = Self.version
         self.op = op
         self.window = window
+        self.duration = duration
+        self.id = id
     }
 
     /// The request as one line, newline included.
@@ -42,10 +54,14 @@ public struct AgentRequest: Codable, Equatable, Sendable {
             throw .usage(nil, "unknown op \(object["op"]?.string.map { "\"\($0)\"" } ?? "(none)")")
         }
         let window = object["window"]?.string
-        if op == .capture, (window ?? "").trimmingCharacters(in: .whitespaces).isEmpty {
-            throw .usage(nil, "capture needs a window")
+        if op == .capture || op == .record, (window ?? "").trimmingCharacters(in: .whitespaces).isEmpty {
+            throw .usage(nil, "\(op.rawValue) needs a window")
         }
-        return AgentRequest(op, window: window)
+        let duration = object["duration"]?.number
+        if let duration, !(duration > 0 && duration <= maximumDuration) {
+            throw .usage(nil, "duration must be above 0 and at most \(Int(maximumDuration)) seconds")
+        }
+        return AgentRequest(op, window: window, duration: duration, id: object["id"]?.string)
     }
 }
 

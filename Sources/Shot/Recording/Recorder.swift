@@ -43,6 +43,9 @@ final class Recorder: NSObject {
     }
 
     var onFinish: ((URL) -> Void)?
+    /// How a session ended, once it has, with the file it was to be saved as: after `onFinish` when saved; or discarded,
+    /// though Undo can still save it through `onFinish`; or with nothing saved.
+    var onEnd: ((URL?, Ending) -> Void)?
     var onError: ((Error) -> Void)?
     /// Called by the on-screen controls; `true` means discard.
     var onStopRequested: ((Bool) -> Void)?
@@ -54,6 +57,13 @@ final class Recorder: NSObject {
 
     var isRecording: Bool { phase == .recording || phase == .paused }
 
+    enum Ending {
+        case saved, discarded, failed
+    }
+
+    /// The file the recording in progress will be saved as.
+    var outputURL: URL? { session?.finalURL }
+
     /// How long the recording in progress has run, leaving out pauses.
     var elapsed: TimeInterval { model.elapsed(at: Date()) }
 
@@ -64,6 +74,8 @@ final class Recorder: NSObject {
         let showsCursor: Bool
         /// Set when recording one window, which then follows the window and leaves out anything covering it.
         let windowID: CGWindowID?
+        /// Shows the red border whatever Settings say, for a recording the user didn't start themselves.
+        var alwaysShowsBorder = false
     }
 
     private struct Session {
@@ -156,7 +168,7 @@ final class Recorder: NSObject {
         model.cameraAvailable = options.windowID == nil
         model.microphoneOn = microphone
         // Panels exist before the stream so the filter can exclude them by window ID.
-        showPanels(screen: screen, region: region, prefs: prefs)
+        showPanels(screen: screen, region: region, border: prefs.showRecordingBorder || options.alwaysShowsBorder)
         do {
             try await startSegment()
         } catch {
@@ -263,23 +275,29 @@ final class Recorder: NSObject {
                 }
             )
             Toast.show("Recording discarded", duration: .seconds(5), undoable: pending)
+            onEnd?(finalURL, .discarded)
             return
         }
-        await join(parts, audio: audio, to: finalURL, muting: muted)
+        let saved = await join(parts, audio: audio, to: finalURL, muting: muted)
+        onEnd?(finalURL, saved ? .saved : .failed)
     }
 
-    private func join(_ parts: [URL], audio: [VideoConcatenator.SegmentAudio], to finalURL: URL?, muting muted: CutList) async {
+    /// Joins the segments into `finalURL`; false when there was nothing to join or joining failed.
+    @discardableResult
+    private func join(_ parts: [URL], audio: [VideoConcatenator.SegmentAudio], to finalURL: URL?, muting muted: CutList) async -> Bool {
         guard let finalURL, !parts.isEmpty else {
-            return
+            return false
         }
         do {
             try await VideoConcatenator.concatenate(parts, audio: audio, to: finalURL, muting: muted)
             let size = (try? FileManager.default.attributesOfItem(atPath: finalURL.path)[.size] as? Int) ?? 0
             log.notice("Recording finished: \(finalURL.path), \(parts.count) segments, \(size) bytes")
             onFinish?(finalURL)
+            return true
         } catch {
             log.error("Joining segments failed; parts kept at \(parts.first?.deletingLastPathComponent().path ?? "")")
             onError?(error)
+            return false
         }
     }
 
@@ -512,8 +530,8 @@ final class Recorder: NSObject {
 
     // MARK: Panels
 
-    private func showPanels(screen: NSScreen, region: CGRect, prefs: Preferences) {
-        if prefs.showRecordingBorder {
+    private func showPanels(screen: NSScreen, region: CGRect, border showsBorder: Bool) {
+        if showsBorder {
             let border = RecordingBorderPanel(region: region, style: .recording)
             border.orderFrontRegardless()
             self.border = border
