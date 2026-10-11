@@ -52,6 +52,21 @@ func afterCaptureFollowsTheSettings(_ row: AfterCaptureRow) {
     #expect(!AfterCapture.plan(prefs: prefs, isVideo: true).copies)
 }
 
+@Test func agentHandoffComesFromItsSetting() throws {
+    let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
+    let store = try #require(UserDefaults(suiteName: suite))
+    defer { store.removePersistentDomain(forName: suite) }
+    store.set(true, forKey: PreferenceKey.copyAfterCapture)
+    store.set(false, forKey: PreferenceKey.saveAfterCapture)
+    store.set(false, forKey: PreferenceKey.quickAccessAfterCapture)
+    store.set(false, forKey: PreferenceKey.openEditorAfterCapture)
+    let prefs = Preferences(store: store)
+    #expect(!AfterCapture.plan(prefs: prefs, isVideo: false).writesFile)
+    store.set(true, forKey: PreferenceKey.agentHandoff)
+    #expect(AfterCapture.plan(prefs: prefs, isVideo: false).writesFile)
+    #expect(!AfterCapture.plan(prefs: prefs, isVideo: true).writesFile)
+}
+
 @Test func agentHandoffWritesEveryCopiedScreenshotAndChangesNothingElse() {
     for bits in 0..<32 {
         let (copy, save, quickAccess, openEditor, isVideo) = (bits & 1 != 0, bits & 2 != 0, bits & 4 != 0, bits & 8 != 0, bits & 16 != 0)

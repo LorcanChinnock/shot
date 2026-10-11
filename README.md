@@ -49,6 +49,10 @@ Trim a recording, cut sections out, draw over it, add music or other clips, and 
 
 <img src="docs/media/video-editor.png" width="720" alt="The video editor with a trimmed start, a cut, an arrow over the video, an audio track and the GIF export options">
 
+### Works with AI agents
+
+Turn on **Hand captures to agents** and every copy carries the file's path, so it pastes into Claude Code, Codex or Cursor where an image won't, and each capture gets a small `.shot.json` beside it that tells the agent exactly what you circled, and where. See [Using Shot with AI agents](docs/usage.md#using-shot-with-ai-agents).
+
 ## Install
 
 Shot needs macOS 15 or later and an Apple Silicon Mac. It doesn't run on Intel Macs.

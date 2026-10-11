@@ -61,6 +61,9 @@ public enum PreferenceKey {
     public static let editorShowsLayers = "editorShowsLayers"
     public static let videoEditorShowsTracks = "videoEditorShowsTracks"
     public static let videoEditorShowsInspector = "videoEditorShowsInspector"
+    /// Hands captures to AI agents: the file path goes on the clipboard beside the image, and a `.shot.json` describing
+    /// the capture and its markup is written next to each file.
+    public static let agentHandoff = "agentHandoff"
 
     public static func hotkey(_ action: ShotAction) -> String { "hotkey.\(action.rawValue)" }
 }
@@ -142,6 +145,7 @@ public struct Preferences {
             PreferenceKey.editorShowsLayers: false,
             PreferenceKey.videoEditorShowsTracks: false,
             PreferenceKey.videoEditorShowsInspector: false,
+            PreferenceKey.agentHandoff: false,
         ]
         for action in ShotAction.allCases {
             values[PreferenceKey.hotkey(action)] = action.defaultCombo?.encoded ?? ""
@@ -377,6 +381,10 @@ public struct Preferences {
     public var galleryTileSize: Double {
         Gallery.tileSizes.contains(store.double(forKey: PreferenceKey.galleryTileSize)) ? store.double(forKey: PreferenceKey.galleryTileSize) : Gallery.defaultTileSize
     }
+
+    /// Whether captures are handed to AI agents: their path beside the image on the clipboard, and a `.shot.json` next
+    /// to each file. Off by default, so nothing changes for anyone who doesn't ask for it.
+    public var agentHandoff: Bool { store.bool(forKey: PreferenceKey.agentHandoff) }
 
     public var partyModeUnlocked: Bool { store.bool(forKey: PreferenceKey.partyModeUnlocked) }
     public var partyMode: Bool { store.bool(forKey: PreferenceKey.partyMode) }

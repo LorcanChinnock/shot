@@ -19,11 +19,17 @@ public enum FileNaming {
         return url
     }
 
+    /// The name of the capture a version was saved from: "a (2).png" and "a (3).png" both give "a.png", and a name
+    /// without a version suffix gives itself.
+    public static func originalName(of url: URL) -> String {
+        let base = url.deletingPathExtension().lastPathComponent.replacingOccurrences(of: #" \(\d+\)$"#, with: "", options: .regularExpression)
+        return url.pathExtension.isEmpty ? base : "\(base).\(url.pathExtension)"
+    }
+
     /// The first "name (n)" from 2 up that doesn't exist beside `url`, so a save never overwrites
     /// the original or an earlier version. A version's own suffix is dropped first, so "a (2)" gives "a (3)".
     public static func nextVersionURL(of url: URL, exists: (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }) -> URL {
-        let name = url.deletingPathExtension().lastPathComponent
-        let base = name.replacingOccurrences(of: #" \(\d+\)$"#, with: "", options: .regularExpression)
+        let base = URL(fileURLWithPath: originalName(of: url)).deletingPathExtension().lastPathComponent
         let folder = url.deletingLastPathComponent()
         var counter = 2
         var next = folder.appendingPathComponent("\(base) (\(counter))").appendingPathExtension(url.pathExtension)

@@ -8,6 +8,7 @@ The full guide to Shot. For a quick introduction, see the [overview](../README.m
 - [Annotation editor](#annotation-editor)
 - [Video editor](#video-editor)
 - [Gallery](#gallery)
+- [Using Shot with AI agents](#using-shot-with-ai-agents)
 - [Keyboard shortcuts](#keyboard-shortcuts)
 - [URL scheme](#url-scheme)
 - [Settings](#settings)
@@ -180,6 +181,52 @@ The estimated size of the exported file is shown before you export. **Cancel**, 
 - The buttons at the bottom **Edit**, **Copy**, **Show in Finder** or **Move to Trash** the selection. Right-click for the same, plus **Quick Look**, **Export GIF** (a video) and **Rename…**. Trashed files go to the Trash; ⌘Z puts them back, and so can Finder.
 - Drag a thumbnail into another app.
 
+## Using Shot with AI agents
+
+Pasting an image into a terminal agent such as Claude Code, Codex or Cursor often fails, so people save the screenshot and type its path by hand. Shot can do that part, and tell the agent exactly what you marked. All of it is off until you turn on **Hand captures to agents** in **Settings › Agents**; with it off, nothing here happens.
+
+With it on:
+
+- **The path is on the clipboard.** Every copy, from a capture, the Quick Access card, the editor's **Save** or a finished recording, carries the file's path as plain text beside the image, so a terminal pastes the path and an app that takes images pastes the image. A copied capture is always written to a file, even with **Save to folder** off, so there is a path to paste. Apps that prefer text, such as a plain text editor, paste the path; the Quick Access card's **Copy** gives you the image again. To copy only the path, right-click a Quick Access card and choose **Copy Path**, which works with the setting off too.
+- **Each capture gets a `.shot.json` next to it**, named after the file (`Shot 2026-10-10 at 14.03.12.png.shot.json`), that says where it came from and, for a version saved from the editor, what you marked and where. The gallery never shows these files. An agent that has the image's path can find it on its own.
+
+The file follows the `shot.capture/1` schema:
+
+```json
+{
+  "schema": "shot.capture/1",
+  "file": "Shot 2026-10-10 at 14.03.12 (2).png",
+  "original": "Shot 2026-10-10 at 14.03.12.png",
+  "kind": "image",
+  "created": "2026-10-10T14:03:12Z",
+  "size": { "width": 2880, "height": 1800 },
+  "scale": 2,
+  "source": {
+    "mode": "window",
+    "app": "Simulator", "bundleID": "com.apple.iphonesimulator",
+    "windowTitle": "iPhone 17 Pro",
+    "screenFrame": { "x": 120, "y": 80, "width": 1440, "height": 900 }
+  },
+  "coordinateSpace": "image pixels, top-left origin",
+  "annotations": [
+    { "id": "…", "type": "arrow", "from": [410, 220], "to": [612, 388], "color": "red", "hex": "#FF3B30" },
+    { "id": "…", "type": "rectangle", "rect": [560, 340, 220, 96], "color": "red", "hex": "#FF3B30" },
+    { "id": "…", "type": "text", "text": "too tight here", "rect": [600, 450, 180, 32], "color": "red", "hex": "#FF3B30" },
+    { "id": "…", "type": "counter", "number": 1, "center": [300, 120], "color": "red", "hex": "#FF3B30" },
+    { "id": "…", "type": "blur", "rect": [40, 40, 300, 30], "note": "redacted, content hidden" }
+  ]
+}
+```
+
+- `kind` is `image` or `video`. A recording has `size`, `source` and no annotations. `original` is set on a version saved from the editor, and names the capture it was saved from.
+- `source.mode` is `area`, `window` or `fullscreen`. A window capture names the app and its window; an area or fullscreen capture names the frontmost app. `screenFrame` is in points, with the origin at the top left of the main display. Window titles can be private, which is one reason the file is opt-in.
+- Coordinates are pixels of the saved file, from its top left, so a crop or padding and **Scale Retina captures to 1×** are already applied. `rect` is `[x, y, width, height]`, and `from`, `to` and `center` are `[x, y]`.
+- `type` is one of `arrow`, `line`, `rectangle`, `rounded`, `ellipse`, `triangle`, `diamond`, `star`, `highlight`, `text`, `note`, `counter`, `pen`, `marker`, `image`, `blur`, `pixelate` or `spotlight`. `color` is the nearest palette name, with the exact `hex` beside it. Text and notes give their `text`; a blur, pixelate, spotlight or placed image gives only where it is, never what is under it. Hidden layers are left out.
+
+An MCP server that lets an agent ask for your latest capture and what you marked on it is coming in a later release; **Settings › Agents** shows the setup commands for it.
+
+Shot still sends nothing anywhere. Whatever an agent reads, though, goes to that agent's model provider, so blur or pixelate anything private before you hand a capture over.
+
 ## Keyboard shortcuts
 
 ### Global
@@ -299,7 +346,7 @@ Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a scr
 | `shot://annotate?path=<file>` | Open an image in the editor, or a video in the video editor |
 | `shot://edit-video?path=<file>` | Open a video in the video editor to trim it |
 | `shot://gallery` | Open the gallery |
-| `shot://settings?section=<name>` | Open Settings at `gallery`, `general`, `capture`, `quickAccess`, `recording`, `shortcuts`, or `about` |
+| `shot://settings?section=<name>` | Open Settings at `gallery`, `general`, `capture`, `quickAccess`, `recording`, `agents`, `shortcuts`, or `about` |
 
 `path` can start with `~`. URL-encode spaces and other special characters, for example `open "shot://annotate?path=~/Desktop/My%20Shot.png"`. The older `shot://record?full=1` still works and does the same as `shot://record-fullscreen`. An unknown action, or `annotate` or `edit-video` without a `path`, shows an error instead.
 
@@ -314,6 +361,7 @@ Open Settings from the menu bar icon, or with ⌘, while a Shot window is in fro
 | Capture | What happens after a capture (save, copy, Quick Access, or the editor), the magnifier, the crosshair, the cursor, and window shadows |
 | Quick Access | The screen corner and how long cards stay |
 | Recording | Adjust before recording, the countdown, frame rate, cursor, region outline, copying to the clipboard, the microphone and its input (with a **Test**), system audio, and the camera bubble's camera (with a **Preview**) and size. It also sums up the GIF settings the video editor last used. |
+| Agents | [Handing captures to AI agents](#using-shot-with-ai-agents): the path on the clipboard and the `.shot.json` beside each capture, and the setup commands for the MCP server |
 | Shortcuts | The macOS screenshot keys and every global shortcut |
 | About | The version, updates, permissions, the capture folder, links to the code, to report a bug and to sponsor Shot, and resetting all settings |
 

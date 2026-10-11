@@ -12,8 +12,9 @@ final class CaptureCoordinator {
     private var busy = false
     private let recorder = Recorder()
     private var setup: RecordingSetupController?
-    /// The region being recorded, as an AppKit global rect.
+    /// The region being recorded, as an AppKit global rect, and whether it is a window or the whole screen.
     private var recordingRegion = CGRect.zero
+    private var recordingSource = "area"
     private var gifExports: [URL: Task<Void, Never>] = [:]
     /// From a full-screen capture action to its clipboard write; ended with "copied", or "not copied" when nothing was copied.
     /// Area and window captures wait for the user's selection, so their time says nothing about Shot's speed.
@@ -119,6 +120,7 @@ final class CaptureCoordinator {
         guard let screen = NSScreen.underPointer else {
             throw CaptureError.displayNotFound
         }
+        let source = frontmostSource(mode: "fullscreen")
         let start = ContinuousClock.now
         guard let frozen = try await DisplayCapturer.captureAll(screens: [screen]).first else {
             throw CaptureError.displayNotFound
@@ -129,10 +131,12 @@ final class CaptureCoordinator {
         guard let image = frozen.image.cropping(to: pixels) else {
             throw CaptureError.encodingFailed
         }
-        try await finish(image: image, scale: frozen.scale, from: screen.fullCaptureFrame)
+        try await finish(image: image, scale: frozen.scale, from: screen.fullCaptureFrame, source: source)
     }
 
     private func captureWithOverlay(windowMode: Bool) async throws {
+        // Read before the overlay shows, which makes Shot the frontmost app.
+        var source = frontmostSource(mode: "area")
         let start = ContinuousClock.now
         let windows = SelectionOverlayController.onScreenWindows()
         let frozen = try await DisplayCapturer.captureAll()
@@ -161,12 +165,33 @@ final class CaptureCoordinator {
             image = result.image
             scale = result.scale
             frame = Geometry.flip(info.frame, primaryHeight: NSScreen.screens.first?.frame.height ?? 0)
+            if source != nil {
+                let owner = NSRunningApplication(processIdentifier: info.ownerPID)
+                source = CaptureSidecar.Source(mode: "window", app: info.ownerName ?? owner?.localizedName, bundleID: owner?.bundleIdentifier, windowTitle: info.title)
+            }
         case let .fullDisplay(index):
             image = frozen[index].image
             scale = frozen[index].scale
             frame = frozen[index].frame
+            source?.mode = "fullscreen"
         }
-        try await finish(image: image, scale: scale, from: frame, windowShadow: windowShadow)
+        try await finish(image: image, scale: scale, from: frame, windowShadow: windowShadow, source: source)
+    }
+
+    /// What the capture's `.shot.json` says about where it came from, when the Agents setting is on: the frontmost app,
+    /// which is the one on screen. `nil` when it's off, so the default capture path does none of this.
+    private func frontmostSource(mode: String) -> CaptureSidecar.Source? {
+        guard Preferences().agentHandoff else {
+            return nil
+        }
+        let app = NSWorkspace.shared.frontmostApplication
+        return CaptureSidecar.Source(mode: mode, app: app?.localizedName, bundleID: app?.bundleIdentifier)
+    }
+
+    /// `frame`, an AppKit global rect, as the sidecar gives it: CoreGraphics global points, top-left origin.
+    private static func sidecarFrame(_ frame: CGRect) -> CaptureSidecar.Frame {
+        let flipped = Geometry.flip(frame, primaryHeight: NSScreen.screens.first?.frame.height ?? 0)
+        return CaptureSidecar.Frame(x: flipped.minX, y: flipped.minY, width: flipped.width, height: flipped.height)
     }
 
     func togglePause() {
@@ -209,13 +234,24 @@ final class CaptureCoordinator {
             return
         }
         recordingRegion = region
+        // The setup panel can switch between area, screen and window, so read what it settled on.
+        recordingSource = options.windowID != nil ? "window" : region == screen.fullCaptureFrame ? "fullscreen" : "area"
         try await recorder.start(screen: screen, region: region, options: options)
     }
 
     private func recordingFinished(_ url: URL) {
-        let plan = AfterCapture.plan(prefs: Preferences(), isVideo: true)
+        let prefs = Preferences()
+        let plan = AfterCapture.plan(prefs: prefs, isVideo: true)
+        let agentHandoff = prefs.agentHandoff
         if plan.copies {
-            Clipboard.copy(fileURL: url)
+            if agentHandoff {
+                Clipboard.copy(fileURL: url, path: url.path)
+            } else {
+                Clipboard.copy(fileURL: url)
+            }
+        }
+        if agentHandoff {
+            SidecarWriter.write(recording: url, source: CaptureSidecar.Source(mode: recordingSource, screenFrame: Self.sidecarFrame(recordingRegion)))
         }
         Confetti.burst(from: recordingRegion)
         switch plan.next {
@@ -272,19 +308,21 @@ final class CaptureCoordinator {
     /// Runs the enabled after-capture actions: copy, save, then Quick Access or the editor. `frame` is where the capture was
     /// on screen, as an AppKit global rect. `windowShadow` marks a window captured with the macOS shadow, which the file
     /// records so the editor doesn't offer a second one. The copy comes first, so a save that fails still leaves the
-    /// capture on the clipboard, and the clipboard doesn't wait for the file.
-    func finish(image original: CGImage, scale originalScale: CGFloat, from frame: CGRect, windowShadow: Bool = false) async throws {
+    /// capture on the clipboard, and the clipboard doesn't wait for the file. `source` is what the capture's `.shot.json`
+    /// says about where it came from, given only while the Agents setting is on.
+    func finish(image original: CGImage, scale originalScale: CGFloat, from frame: CGRect, windowShadow: Bool = false, source: CaptureSidecar.Source? = nil) async throws {
         let prefs = Preferences()
         if prefs.playSound {
             Sound.capture()
         }
         let plan = AfterCapture.plan(prefs: prefs, isVideo: false)
+        let agentHandoff = prefs.agentHandoff
         let downscale = prefs.downscaleRetina && originalScale > 1
         let format = prefs.imageFormat
-        let source = SendableImage(original)
+        let sendable = SendableImage(original)
         let copies = plan.copies
         let encoded = await Task.detached { () -> (file: Data?, png: Data?, image: SendableImage) in
-            let image = downscale ? ImageCodec.downscaled(source.image, scale: originalScale) : source.image
+            let image = downscale ? ImageCodec.downscaled(sendable.image, scale: originalScale) : sendable.image
             let scale = downscale ? 1 : originalScale
             let file = ImageCodec.data(from: image, scale: scale, format: format, windowShadow: windowShadow)
             // The clipboard takes a PNG, which a PNG capture's file already is.
@@ -296,22 +334,40 @@ final class CaptureCoordinator {
         }
         let image = encoded.image.image
         let scale = downscale ? 1 : originalScale
+        let folder = prefs.captureFolder
+        func newFileURL() -> URL {
+            FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: format.fileExtension, prefix: prefs.filePrefix)
+        }
+        // With the Agents setting on, the path goes on the clipboard beside the image, so the name is picked first: a stat
+        // or two, and no second pasteboard write once the file is there. Otherwise the copy waits for nothing.
+        let pathCopied = agentHandoff && copies && plan.writesFile ? newFileURL() : nil
         if copies, let png = encoded.png {
-            Clipboard.copy(png: png)
+            if let pathCopied {
+                Clipboard.copy(png: png, path: pathCopied.path)
+            } else {
+                Clipboard.copy(png: png)
+            }
             endCaptureInterval("copied")
         }
         var savedURL: URL?
         var thumbnail: CGImage?
         if plan.writesFile {
-            let folder = prefs.captureFolder
-            let url = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: format.fileExtension, prefix: prefs.filePrefix)
+            let url = pathCopied ?? newFileURL()
             // Only a Quick Access card needs the thumbnail.
             let showsCard = plan.next == .quickAccess
-            thumbnail = try await Task.detached { () throws -> SendableImage? in
-                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-                try fileData.write(to: url)
-                return showsCard ? ImageCodec.thumbnail(from: fileData, maxPixelSize: 480).map(SendableImage.init) : nil
-            }.value?.image
+            do {
+                thumbnail = try await Task.detached { () throws -> SendableImage? in
+                    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+                    try fileData.write(to: url)
+                    return showsCard ? ImageCodec.thumbnail(from: fileData, maxPixelSize: 480).map(SendableImage.init) : nil
+                }.value?.image
+            } catch {
+                // The clipboard must never name a file that isn't there.
+                if pathCopied != nil, let png = encoded.png {
+                    Clipboard.copy(png: png)
+                }
+                throw error
+            }
             savedURL = url
             log.notice("Saved \(url.path)")
             newCaptures = Array((newCaptures + [url]).suffix(QuickAccessController.maxCards))
@@ -333,10 +389,19 @@ final class CaptureCoordinator {
         case .nothing:
             break
         }
+        if agentHandoff, let savedURL {
+            var source = source
+            source?.screenFrame = Self.sidecarFrame(frame)
+            let sidecar = CaptureSidecar(
+                file: savedURL.lastPathComponent, kind: "image", created: Date(),
+                size: CaptureSidecar.Size(width: image.width, height: image.height), scale: scale, source: source
+            )
+            SidecarWriter.write(sidecar, for: savedURL)
+        }
         if let newCaptureStyle = prefs.newCaptureStyle, copies || card != nil {
             style(
                 image, scale: scale, with: newCaptureStyle, background: EditorDocument.defaultBackground(for: format), windowShadow: windowShadow,
-                copy: copies, card: card
+                copy: copies, path: pathCopied?.path, card: card
             )
         }
         Confetti.burst(from: frame)
@@ -354,8 +419,9 @@ final class CaptureCoordinator {
 
     /// Draws `style` on the capture just taken, over `background` as the editor shows it, off the main actor, so the copy
     /// and Quick Access wait for nothing. Then, if `copy`, it replaces the plain capture on the clipboard, unless something
-    /// else was copied in the meantime, and gives the Quick Access card for `card` its look for its thumbnail, Copy and drag.
-    private func style(_ image: CGImage, scale: CGFloat, with style: CopiedStyle, background: RGBA?, windowShadow: Bool, copy: Bool, card: URL?) {
+    /// else was copied in the meantime, keeping `path` beside it if the plain copy had it, and gives the Quick Access card
+    /// for `card` its look for its thumbnail, Copy and drag.
+    private func style(_ image: CGImage, scale: CGFloat, with style: CopiedStyle, background: RGBA?, windowShadow: Bool, copy: Bool, path: String?, card: URL?) {
         let copied = NSPasteboard.general.changeCount
         let source = SendableImage(image)
         Task {
@@ -374,7 +440,11 @@ final class CaptureCoordinator {
                 return
             }
             if copy, NSPasteboard.general.changeCount == copied {
-                Clipboard.copy(png: styled.png)
+                if let path {
+                    Clipboard.copy(png: styled.png, path: path)
+                } else {
+                    Clipboard.copy(png: styled.png)
+                }
             }
             if let card, let thumbnail = styled.thumbnail {
                 await QuickAccessController.shared.setStyled(styled.png, thumbnail: thumbnail.image, size: styled.size, of: card)

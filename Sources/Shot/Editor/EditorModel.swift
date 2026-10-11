@@ -940,7 +940,18 @@ final class EditorModel {
         let destination = FileNaming.nextVersionURL(of: fileURL)
         do {
             try result.file.write(to: destination, options: .atomic)
-            Clipboard.copy(png: result.png)
+            if Preferences().agentHandoff {
+                Clipboard.copy(png: result.png, path: destination.path)
+                // The file is the canvas at 1:1, so the marks need no scaling beyond the canvas offset.
+                let sidecar = CaptureSidecar(
+                    file: destination.lastPathComponent, original: FileNaming.originalName(of: fileURL), kind: "image", created: Date(),
+                    size: CaptureSidecar.Size(width: result.image.width, height: result.image.height), scale: scale,
+                    annotations: SidecarAnnotation.mapping(document.annotations, canvas: document.canvasRect)
+                )
+                SidecarWriter.write(sidecar, for: destination, sourceFrom: fileURL)
+            } else {
+                Clipboard.copy(png: result.png)
+            }
             savedSnapshot = snapshot
             isDirty = document.snapshot != snapshot
             Toast.show("Saved as \(destination.lastPathComponent) and copied", duration: .seconds(3))

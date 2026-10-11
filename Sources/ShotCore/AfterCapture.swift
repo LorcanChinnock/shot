@@ -26,7 +26,8 @@ public struct AfterCapture: Equatable, Sendable {
     public static func plan(prefs: Preferences, isVideo: Bool) -> AfterCapture {
         plan(
             copy: isVideo ? prefs.copyAfterRecording : prefs.copyAfterCapture, save: prefs.saveAfterCapture,
-            quickAccess: prefs.quickAccessAfterCapture, openEditor: prefs.openEditorAfterCapture, isVideo: isVideo
+            quickAccess: prefs.quickAccessAfterCapture, openEditor: prefs.openEditorAfterCapture, isVideo: isVideo,
+            agentHandoff: prefs.agentHandoff
         )
     }
 

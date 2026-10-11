@@ -76,6 +76,21 @@ private struct QuickAccessCardView: View {
             controller.setHovering(inside, card: card.id)
         }
         .onDrag { NSItemProvider(contentsOf: card.styledURL ?? card.fileURL) ?? NSItemProvider() }
+        .contextMenu { menu }
+    }
+
+    /// The hover buttons' actions again, plus Copy Path, which has no button: the card stays as plain as it is.
+    @ViewBuilder
+    private var menu: some View {
+        Button("Copy") { controller.copy(card) }
+        Button("Copy Path") { controller.copyPath(card) }
+        Button("Save As…") { controller.saveAs(card) }
+        Divider()
+        Button(card.isVideo ? "Edit" : "Annotate") { controller.annotate(card) }
+        if card.isVideo {
+            Button("Export GIF") { controller.exportGIF(card) }
+        }
+        Button("Show in Finder") { controller.showInFinder(card) }
     }
 
     private var hoverActions: some View {
