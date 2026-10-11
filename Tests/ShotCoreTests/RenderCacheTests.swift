@@ -158,3 +158,11 @@ func aCachedRenderMatchesAnUncachedOneByteForByte(effect: SpotlightStyle.Effect)
         #expect(abs(Int(before) - Int(after)) <= 2)
     }
 }
+
+@Test func releasingTheCacheDropsImagesARenderStillUses() {
+    let cache = RenderCache()
+    let key = RenderCache.Key.softSpotlight(SoftSpotlight(rect: CGRect(x: 0, y: 0, width: 4, height: 4), style: SpotlightStyle(softEdge: 0.5), cornerRadius: nil))
+    _ = cache.value(for: key) { (pattern(width: 4, height: 4), .zero) }
+    cache.removeAll()
+    #expect(cache.count == 0)
+}

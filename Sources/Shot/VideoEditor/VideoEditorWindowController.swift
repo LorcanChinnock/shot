@@ -252,5 +252,6 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
     func windowWillClose(_ notification: Notification) {
         model.teardown()
         Self.open.removeAll { $0 === self }
+        AnnotationRenderer.releaseCaches()
     }
 }

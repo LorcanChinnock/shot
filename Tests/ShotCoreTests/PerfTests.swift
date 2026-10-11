@@ -34,6 +34,20 @@ import Testing
         try check(time / frames, budget: .microseconds(Budget.overlayFrame), "Overlay per frame")
     }
 
+    @Test func drawingAMarkerOverAVideoFrameStaysInBudget() throws {
+        let canvas = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+        let stroke = (0...40).map { CGPoint(x: 200 + CGFloat($0) * 30, y: 500 + 80 * sin(CGFloat($0) / 4)) }
+        let marker = Annotation(kind: .marker(stroke), color: RGBA.presets[2], lineWidth: 24)
+        let frame = CIImage(color: .gray).cropped(to: canvas)
+        let context = CIContext()
+        // A marker blends with the picture under it, so every frame draws the whole canvas on the CPU and sends it back.
+        let time = try fastest {
+            let composite = AnnotationFrame.apply([marker], to: frame, canvas: canvas, context: context, cache: OverlayCache())
+            _ = try #require(context.createCGImage(composite, from: canvas))
+        }
+        try check(time, budget: .microseconds(Budget.markerFrame), "Marker per frame")
+    }
+
     @Test func exportingA20SecondGIFStaysInItsMemoryBudget() async throws {
         let video = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString)-perf.mp4")
         let gif = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString)-perf.gif")
@@ -67,6 +81,7 @@ import Testing
 private enum Budget {
     static let flattenAndEncode = 847
     static let overlayFrame = 39
+    static let markerFrame = 50_000
     static let gifExportMegabytes = 452
     static let galleryGrouping = 5.8
 }

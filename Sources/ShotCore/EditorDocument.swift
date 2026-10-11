@@ -183,6 +183,11 @@ public struct EditorSnapshot: Equatable, Sendable {
 private let lastCaptureTransparency = OSAllocatedUnfairLock<(image: CGImage, transparent: Bool)?>(initialState: nil)
 
 extension EditorDocument {
+    /// Drops the screenshot `hasTransparency(of: .capture)` kept.
+    static func forgetCaptureTransparency() {
+        lastCaptureTransparency.withLock { $0 = nil }
+    }
+
     /// The capture's corner radius, within what the image can take.
     public var clampedCaptureCornerRadius: CGFloat {
         BoxShape.cornerRadius(captureCornerRadius, in: fullRect)

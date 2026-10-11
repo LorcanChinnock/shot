@@ -179,5 +179,6 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
 
     func windowWillClose(_ notification: Notification) {
         Self.open.removeAll { $0 === self }
+        AnnotationRenderer.releaseCaches()
     }
 }
