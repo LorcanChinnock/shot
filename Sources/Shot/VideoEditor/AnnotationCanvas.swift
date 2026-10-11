@@ -109,29 +109,13 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             return
         }
         let annotation = editing ?? clip.annotation
-        let outline = NSBezierPath(rect: viewRect(annotation.paintedBounds))
-        outline.lineWidth = 1.5
-        outline.setLineDash([5, 3], count: 2, phase: 0)
-        Brutal.yellowNS.setStroke()
-        outline.stroke()
+        SelectionStyle.outline(viewRect(annotation.paintedBounds))
         for (_, point) in annotation.handles {
-            let center = viewport.viewPoint(point)
-            let square = NSBezierPath(rect: CGRect(x: center.x - 4, y: center.y - 4, width: 8, height: 8))
-            NSColor.white.setFill()
-            square.fill()
-            Brutal.inkNS.setStroke()
-            square.lineWidth = 1.5
-            square.stroke()
+            SelectionStyle.handle(at: viewport.viewPoint(point))
         }
         let radiusHandles = annotation.radiusHandles(tolerance: handleTolerance)
         for (_, point) in radiusHandles {
-            let center = viewport.viewPoint(point)
-            let dot = NSBezierPath(ovalIn: CGRect(x: center.x - 4, y: center.y - 4, width: 8, height: 8))
-            NSColor.white.setFill()
-            dot.fill()
-            Brutal.inkNS.setStroke()
-            dot.lineWidth = 1.5
-            dot.stroke()
+            SelectionStyle.handle(at: viewport.viewPoint(point), round: true)
         }
         if editing != nil, let dragged = radiusHandles.first(where: { $0.handle == resizeHandle }), let radius = annotation.roundedBox?.radius {
             drawRadiusLabel(radius / model.styleScale, near: viewport.viewPoint(dragged.point))
