@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.7.0-beta.42](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.41...v0.7.0-beta.42) (2026-10-12)
+
+
+### Features
+
+* **agents:** mark the read-only MCP tools with readOnlyHint ([#422](https://github.com/LorcanChinnock/shot/issues/422)) ([a23445c](https://github.com/LorcanChinnock/shot/commit/a23445c034a590a42af21205c6cfe22c7bdb4ee2))
+
+
+### Bug Fixes
+
+* **agents:** accurate MCP tool descriptions and CLI help ([#408](https://github.com/LorcanChinnock/shot/issues/408)) ([20d868a](https://github.com/LorcanChinnock/shot/commit/20d868a7ecd7c93306d2d763890baeb438200a14))
+* **agents:** build annotate's colour list from the palette ([#425](https://github.com/LorcanChinnock/shot/issues/425)) ([3408d66](https://github.com/LorcanChinnock/shot/commit/3408d66db6bbbd5d65201ed4714eaca1ca9aec0d))
+* clearer error messages, tooltips and accessibility labels ([#407](https://github.com/LorcanChinnock/shot/issues/407)) ([d4a145b](https://github.com/LorcanChinnock/shot/commit/d4a145bf3adb5e9ea36e2a6052fcd88f418f9929))
+* complete the cask's zap list, add a Gatekeeper caveat, point homepage at the site ([#424](https://github.com/LorcanChinnock/shot/issues/424)) ([7a02e2f](https://github.com/LorcanChinnock/shot/commit/7a02e2f349ca7eb0dd386a6d11e76aaa3e500c71))
+* dim the hovered Quick Access card, keep keyframes off clip names, and reshoot the docs media ([#430](https://github.com/LorcanChinnock/shot/issues/430)) ([d199ef9](https://github.com/LorcanChinnock/shot/commit/d199ef9d007f56b2bb03243141e93d367dcc452e))
+* **editor:** a Style icon that covers more than shadows ([#405](https://github.com/LorcanChinnock/shot/issues/405)) ([58a7f0a](https://github.com/LorcanChinnock/shot/commit/58a7f0ad8bdc4ab5bb50a05c71bde8adc8c4a2eb))
+* **editor:** save a HEIC or TIFF's annotated version as .png ([#415](https://github.com/LorcanChinnock/shot/issues/415)) ([fb2cd12](https://github.com/LorcanChinnock/shot/commit/fb2cd12c9330e1da62da82827659cd3b48962c57))
+* **editor:** say when new captures keep another saved style ([#423](https://github.com/LorcanChinnock/shot/issues/423)) ([730fe42](https://github.com/LorcanChinnock/shot/commit/730fe420637650d3a5cfe8e712dfaedd35d80c20))
+* last "failed:" toasts, agent time limit and unknown settings section ([#418](https://github.com/LorcanChinnock/shot/issues/418)) ([1e9a190](https://github.com/LorcanChinnock/shot/commit/1e9a1902aa00384c814106d16bb6618eb777c948))
+* **onboarding:** stop a second Grant from wiping a fresh grant ([#402](https://github.com/LorcanChinnock/shot/issues/402)) ([452a9ab](https://github.com/LorcanChinnock/shot/commit/452a9abbaffab4c49d5993bba373f88ab935cfb5))
+* one name per setting, Return, Title Case buttons and action tooltips ([#419](https://github.com/LorcanChinnock/shot/issues/419)) ([1685887](https://github.com/LorcanChinnock/shot/commit/1685887676cb2380ad7c0261754c2cbdf99eaba6))
+* **updates:** don't call a reinstall an update in the relaunch prompt ([#426](https://github.com/LorcanChinnock/shot/issues/426)) ([baf66e8](https://github.com/LorcanChinnock/shot/commit/baf66e87572947e49e95a56c04fed9b4590946dd))
+* **updates:** offer a relaunch when Shot was replaced while running ([#400](https://github.com/LorcanChinnock/shot/issues/400)) ([97afcdf](https://github.com/LorcanChinnock/shot/commit/97afcdfc5e1f705493b5b0f5290c5181f22679d8))
+* **video-editor:** keep the preview from going black when you annotate next to a cut ([#432](https://github.com/LorcanChinnock/shot/issues/432)) ([ad4e8c4](https://github.com/LorcanChinnock/shot/commit/ad4e8c41c0a2e0e057b042a152d0ca93b41f5e61))
+
 ## [0.7.0-beta.41](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.40...v0.7.0-beta.41) (2026-10-12)
 
 
