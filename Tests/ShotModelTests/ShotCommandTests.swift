@@ -78,7 +78,7 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     ("redact a.png --rect 1,2,3", "redact", "--rect 1,2,3 must be x,y,width,height in pixels, with a width and height above 0"),
     ("redact a.png --rect 1,2,3,4 --style smudge", "redact", "--style smudge must be blur or pixelate"),
     ("annotate a.png", "annotate", "needs --json with a file of marks, or - to read them from standard input"),
-    ("mcp now", "mcp", "mcp takes no arguments"),
+    ("mcp now", "mcp", "takes no arguments"),
     ("frames a.mov --count 13", "frames", "--count 13 must be from 1 to 12"),
     ("frames a.mov --count 2 --every 1", "frames", "use --count or --every, not both"),
     ("frames a.mov --every 0", "frames", "--every 0 must be a time above 0, such as 2 or 0:30"),

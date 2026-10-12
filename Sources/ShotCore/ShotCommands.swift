@@ -331,7 +331,7 @@ public enum ShotCommands {
     static func range(start: Double?, end: Double?, duration: Double, command: String) throws(ShotCommandError) -> TrimRange {
         let start = start ?? 0
         guard start < duration else {
-            throw .usage(command, "--start \(String(format: "%g", start)) is past the end of the \(String(format: "%.2f", duration)) s video")
+            throw .usage(command, "the start, \(String(format: "%g", start)) s, is past the end of the \(String(format: "%.2f", duration)) s video")
         }
         return TrimRange(start: start, end: min(end ?? duration, duration), duration: duration)
     }

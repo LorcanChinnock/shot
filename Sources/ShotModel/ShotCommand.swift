@@ -161,7 +161,7 @@ public enum ShotCommand: Equatable, Sendable {
             return .help(rest.first)
         case "mcp":
             if rest.contains(where: isHelp) { return .help("mcp") }
-            guard rest.isEmpty else { throw .usage("mcp", "mcp takes no arguments") }
+            guard rest.isEmpty else { throw .usage("mcp", "takes no arguments") }
             return .mcp
         case "info", "gif", "trim", "redact", "annotate", "frames":
             if rest.contains(where: isHelp) { return .help(first) }
@@ -383,14 +383,14 @@ public enum ShotCommand: Equatable, Sendable {
     /// What `shot help` prints, or `shot help <command>`.
     public static func usage(_ command: String?, program: String = "shot") -> String {
         let lines: [String: String] = [
-            "info": "\(program) info <file>\n    The image's or video's size and length, and the record Shot keeps inside a capture.",
+            "info": "\(program) info <file>\n    An image's size and scale or a video's size and length, and the record Shot keeps inside a capture.",
             "gif": "\(program) gif <video> [-o out.gif] [--fps 12] [--width 720] [--start 2.5] [--end 9]\n    A GIF of the video, or of part of it. --width 0 keeps the video's width; GIFs stop at 60 seconds.",
             "trim": "\(program) trim <video> --start 2.5 --end 9 [-o out.mov]\n    The part of the video between two times, without re-encoding where it can.",
             "redact": "\(program) redact <image> --rect x,y,w,h [--rect …] [--style blur|pixelate] [-o out.png]\n    Hides each rectangle, in the image's pixels. Pixelate is the default.",
-            "annotate": "\(program) annotate <image> --json marks.json [-o out.png]\n    Draws marks on the image, in the format of Shot's capture record (see docs). --json - reads them from standard input.",
+            "annotate": "\(program) annotate <image> --json marks.json [-o out.png]\n    Draws marks on the image, in the format of Shot's capture record. --json - reads them from standard input.\n    A mark: {\"type\": \"arrow\", \"from\": [410, 220], \"to\": [612, 388], \"color\": \"red\"}\n    Every type and field: \(docs)#using-shot-with-ai-agents",
             "frames": "\(program) frames <video> [--count 8 | --every 2] [--width 1568] [-o folder]\n    Still frames of the video, for an agent that can't watch it: where the picture changes, or evenly every few seconds.",
-            "capture": "\(program) capture --window <title or app>\n    A screenshot of that open window, taken by Shot without taking focus, saved to the capture folder. Needs Shot running with Settings › Agents › Let agents capture and record on.",
-            "record": "\(program) record --window <title or app> [--duration 10] | --stop [<id>] | --status\n    Records that open window through Shot, without its microphone or camera, for at most 10 minutes. Without --duration it prints an id and returns at once; --stop ends it. Needs Shot running with Settings › Agents › Let agents capture and record on.",
+            "capture": "\(program) capture --window <title or app>\n    A screenshot of that open window, taken by Shot without taking focus, saved to the capture folder. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
+            "record": "\(program) record --window <title or app> [--duration 10] | --stop [<id>] | --status\n    Records that open window through Shot, without its microphone or camera, for at most \(Int(AgentRequest.maximumDuration / 60)) minutes, saved to the capture folder. Without --duration it prints an id and returns at once; --stop ends it. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
             "mcp": "\(program) mcp\n    Serves Shot's captures to an AI agent over MCP, on standard input and output.",
         ]
         if let command, let line = lines[command] {
@@ -404,9 +404,15 @@ public enum ShotCommand: Equatable, Sendable {
             The version, settings and capture folder.
 
         Without -o, the output goes beside the input as the next version, such as "name (2).png". Nothing is ever
-        overwritten. Results are JSON on standard output; errors go to standard error with an exit code for each kind.
+        overwritten. Results are JSON on standard output; errors go to standard error with an exit code for each kind:
+        64 a wrong option, 65 a file or marks Shot can't use, 66 no such file, window or recording, 69 Shot isn't
+        answering agents, 70 an internal error, 73 the output can't be made, 74 reading or writing failed, 75 Shot is
+        busy, 77 no Screen Recording permission. More: \(docs)#the-shot-command-line
         """
     }
+
+    /// The online docs, which render `docs/usage.md`.
+    static let docs = "https://shot.lorcanchinnock.com/docs/"
 
     /// `value` as `shot` prints it: pretty, with keys sorted, so it reads and diffs well.
     public static func json(_ value: JSONValue) -> String {
@@ -533,7 +539,7 @@ extension CaptureMark {
             return "unknown type; use one of \(Self.types.sorted().joined(separator: ", "))"
         }
         if let color, !Self.colorNames.contains(color.lowercased()) {
-            return "unknown color \"\(color)\"; use one of \(Self.colorNames.sorted().joined(separator: ", ")), or a hex"
+            return "unknown color \"\(color)\"; use one of \(Self.colorNames.sorted().joined(separator: ", ")), or put a colour such as #FF3B30 in hex instead"
         }
         for (name, value) in [("hex", hex), ("fill", fill)] {
             if let value, HexColor.components(value) == nil {

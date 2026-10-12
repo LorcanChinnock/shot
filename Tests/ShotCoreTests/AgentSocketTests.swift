@@ -113,7 +113,7 @@ private func permissions(_ path: String) throws -> Int {
     try server.start()
     defer { server.stop() }
     #expect(try await AgentSocket.send(AgentRequest(.capture, window: "slow"), to: url, timeout: .seconds(5))["window"] == .string("slow"))
-    #expect(await failure(AgentRequest(.status), at: url, timeout: .milliseconds(100)) == .unavailable("Shot didn't answer within 0.1 seconds"))
+    #expect(await failure(AgentRequest(.status), at: url, timeout: .milliseconds(100)) == .unavailable("Shot didn't answer within 0.1 seconds. Check that it isn't waiting on a dialog, such as a permission prompt, then try again."))
 }
 
 @Test func severalClientsAreAnsweredAtOnce() async throws {

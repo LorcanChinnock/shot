@@ -574,7 +574,7 @@ final class CaptureCoordinator {
         if recorder.isRecording {
             throw .busy("The recording in progress was started by the user, not an agent, so only they can stop it.")
         }
-        throw .noInput("No agent recording is in progress.")
+        throw .noInput("No agent recording is in progress. To get one that has already ended, stop it by the id it started with.")
     }
 
     /// Waits for the agent's recording `id` to end, and gives how it ended.
