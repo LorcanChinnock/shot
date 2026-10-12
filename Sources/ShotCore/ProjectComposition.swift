@@ -185,6 +185,43 @@ final class ProjectInstruction: NSObject, AVVideoCompositionInstructionProtocol,
     }
 }
 
+/// What a compositor did with its requests, for a test to say why a frame never came (#414). It records nothing until
+/// `start` is called, so playback and export only pay for one uncontended lock per event.
+final class RequestLog: Sendable {
+    enum Event: Equatable, Sendable, CustomStringConvertible {
+        case started(Double)
+        case finished(Double)
+        case cancelled(Double)
+        case failed(Double)
+        case cancelAll
+
+        var description: String {
+            switch self {
+            case let .started(time): "started \(time)"
+            case let .finished(time): "finished \(time)"
+            case let .cancelled(time): "cancelled \(time)"
+            case let .failed(time): "failed \(time)"
+            case .cancelAll: "cancel all"
+            }
+        }
+    }
+
+    private let state = OSAllocatedUnfairLock<[Event]?>(initialState: nil)
+
+    /// Starts recording, dropping whatever was recorded before.
+    func start() {
+        state.withLock { $0 = [] }
+    }
+
+    func record(_ event: Event) {
+        state.withLock { $0?.append(event) }
+    }
+
+    var events: [Event] {
+        state.withLock { $0 ?? [] }
+    }
+}
+
 /// Draws each frame: the canvas background, then each layer bottom to top, a picture placed by its geometry or a run of annotations
 /// drawn together, so an effect acts on everything under it.
 final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable {
@@ -199,6 +236,7 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
     private let edges = ClipEdgeCache()
     /// Counts cancels, so a frame a seek left behind stops drawing, since AVFoundation throws it away.
     private let cancels = OSAllocatedUnfairLock(initialState: 0)
+    let requests = RequestLog()
 
     var sourcePixelBufferAttributes: [String: any Sendable]? { Self.pixelFormat }
     var requiredPixelBufferAttributesForRenderContext: [String: any Sendable] { Self.pixelFormat }
@@ -207,22 +245,25 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
 
     func startRequest(_ request: AVAsynchronousVideoCompositionRequest) {
         let asked = cancels.withLock { $0 }
+        let time = request.compositionTime.seconds
+        requests.record(.started(time))
         queue.async {
             func cancelled() -> Bool {
                 guard self.cancels.withLock({ $0 }) != asked else {
                     return false
                 }
                 request.finishCancelledRequest()
+                self.requests.record(.cancelled(time))
                 return true
             }
             guard let instruction = request.videoCompositionInstruction as? ProjectInstruction, let output = request.renderContext.newPixelBuffer() else {
                 request.finish(with: CocoaError(.fileReadUnknown))
+                self.requests.record(.failed(time))
                 return
             }
             let canvas = CGRect(origin: .zero, size: instruction.canvas)
             var image = CIImage(color: .black).cropped(to: canvas)
             var firstFrame: CVPixelBuffer?
-            let time = request.compositionTime.seconds
             let (hidden, drawn, clipStyles) = instruction.live.snapshot()
             let replacements = Dictionary(drawn.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
             var stacked: Set<UUID> = []
@@ -292,11 +333,13 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
                 CVBufferSetAttachments(output, tags, .shouldPropagate)
             }
             request.finish(withComposedVideoFrame: output)
+            self.requests.record(.finished(time))
         }
     }
 
     func cancelAllPendingVideoCompositionRequests() {
         cancels.withLock { $0 += 1 }
+        requests.record(.cancelAll)
     }
 }
 
