@@ -11,18 +11,21 @@ on:
   push:
     branches: [main]
 
+# Each job asks for what it needs; the build job has every secret, so it gets no more than the release upload.
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: googleapis/release-please-action@v5
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
         id: release
         with:
           config-file: release-please-config.json
@@ -33,13 +36,17 @@ jobs:
     if: needs.release-please.outputs.release_created == 'true'
     # macOS: builds and signs the app bundle, which needs Xcode.
     runs-on: macos-26
+    # Uploads and publishes the release's assets with GITHUB_TOKEN.
+    permissions:
+      contents: write
     env:
       TAG: ${{ needs.release-please.outputs.tag_name }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           ref: ${{ needs.release-please.outputs.tag_name }}
           fetch-depth: 0 # The build number counts commits.
+          persist-credentials: false # Later steps run scripts with every secret, and none of them pushes to this repo.
       # Every release signs with the same self-signed certificate, so macOS keeps the
       # Screen Recording permission across updates. See CONTRIBUTING.md › Release secrets.
       - name: Import the signing certificate

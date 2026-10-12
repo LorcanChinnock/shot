@@ -918,6 +918,14 @@ private struct AboutSettings: View {
                 Button("GitHub") { NSWorkspace.shared.open(Self.repository) }
                     .buttonStyle(BrutalButtonStyle(compact: true))
             }
+            SettingRow(title: "Acknowledgements", subtitle: "Shot comes with no warranty. It updates itself with Sparkle, under the MIT license.") {
+                Button("View") {
+                    if let url = Bundle.main.url(forResource: "Acknowledgements", withExtension: "txt") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+                .buttonStyle(BrutalButtonStyle(compact: true))
+            }
             SettingRow(title: "Support Shot", subtitle: "Shot is free, with no ads or account. Sponsoring keeps it that way.") {
                 Button("Sponsor") { NSWorkspace.shared.open(Self.sponsors) }
                     .buttonStyle(BrutalButtonStyle(compact: true))
