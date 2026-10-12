@@ -805,7 +805,13 @@ final class CaptureCoordinator {
             }
             recording = .object(fields)
         }
-        return ["capturing": .bool(busy || setup != nil), "recording": recording]
+        return [
+            "capturing": .bool(busy || setup != nil),
+            "recording": recording,
+            // For shot doctor, which can't check the app's permission or which copy is running from outside.
+            "screenRecording": .bool(Permissions.hasScreenCapture),
+            "version": .string(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"),
+        ]
     }
 
     /// The style a capture opens with: the one Use this style for new captures saved, if `url` is a new capture opened

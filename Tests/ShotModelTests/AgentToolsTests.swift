@@ -183,6 +183,41 @@ func listCapturesClampsTheLimit(_ limit: JSONValue, _ count: Int) async throws {
     #expect(texts(inside).first?.contains("outside") == false)
 }
 
+@Test func theCommandLineGetsWhatTheToolsGiveAsJSON() throws {
+    #expect(try captures.latestJSON(kind: .image)["name"] == .string("Shot B.png"))
+    #expect(try captures.latestJSON(kind: .video)["path"] == .string("/shots/Recording C.mp4"))
+    #expect(try captures.getJSON(nil)["name"] == .string("Recording C.mp4"))
+    #expect(try captures.getJSON("shot b") == .object([
+        "name": .string("Shot B.png"), "path": .string("/shots/Shot B.png"), "kind": .string("image"),
+        "created": .string("2027-01-15T07:50:00Z"), "summary": .array([]),
+    ]))
+    #expect(try captures.listJSON(limit: 2, since: nil) == .array([captures.metadata(captures.entries()[3]), captures.metadata(captures.entries()[2])]))
+    #expect(try captures.listJSON(limit: nil, since: "7m") == .array([captures.metadata(captures.entries()[3])]))
+    #expect(try captures.listJSON(limit: nil, since: "1m") == .array([]))
+}
+
+@Test func theCommandLineSummarisesTheRecord() throws {
+    let record = CaptureRecord(
+        original: "Shot A.png", kind: "image", created: now, size: .init(width: 100, height: 100), scale: 1,
+        annotations: [CaptureMark(id: "1", type: "arrow", from: [1, 2], to: [3, 4], color: "red")]
+    )
+    let tools = tools(in: folder, [("Shot A.png", 30, false)], records: ["Shot A.png": record])
+    #expect(try tools.latestJSON(kind: .image)["summary"] == .array(record.summaryLines.map(JSONValue.string)))
+}
+
+@Test func theCommandLineFailsWhereTheToolsWouldSaySo() throws {
+    #expect(throws: ShotCommandError.noInput(#"No capture matches "shot zebra". The nearest are "Shot B.png", "Shot A (2).png", "Recording C.mp4"."#)) {
+        try captures.getJSON("shot zebra")
+    }
+    let empty = tools(in: folder, [])
+    #expect(throws: ShotCommandError.noInput("No recordings in /shots yet.")) { try empty.latestJSON(kind: .video) }
+    #expect(throws: ShotCommandError.noInput("No captures in /shots yet.")) { try empty.getJSON("  ") }
+    #expect(try empty.listJSON(limit: nil, since: nil) == .array([]))
+    #expect(throws: ShotCommandError.usage("list", "--since soon isn't a date, such as 2026-10-10 or 2026-10-10T14:00, or a span back from now, such as 10m, 2h or 3d")) {
+        try captures.listJSON(limit: nil, since: "soon")
+    }
+}
+
 @Test func theServerRunsTheToolsOverJSONRPC() async {
     let server = captures.server(version: "1.2.3")
     let list = await server.respond(to: #"{"jsonrpc":"2.0","id":1,"method":"tools/list"}"#)

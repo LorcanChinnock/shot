@@ -592,11 +592,61 @@ public struct AgentTools: Sendable {
         return "No \(noun) in \(folder.path) yet."
     }
 
+    // MARK: The command line
+
+    /// What `shot latest` prints: what `latest_capture` gives, as JSON, without the preview.
+    public func latestJSON(kind: AgentCaptures.Kind) throws(ShotCommandError) -> JSONValue {
+        let entries = entries()
+        guard let entry = AgentCaptures.latest(entries, kind: kind) else {
+            throw .noInput(empty(entries, kind: kind))
+        }
+        return details(entry)
+    }
+
+    /// What `shot get` prints: what `get_capture` gives, as JSON, without the preview. Without a query, the newest
+    /// capture of any kind.
+    public func getJSON(_ query: String?) throws(ShotCommandError) -> JSONValue {
+        let entries = entries()
+        guard let query, !query.trimmingCharacters(in: .whitespaces).isEmpty else {
+            return try latestJSON(kind: .any)
+        }
+        guard let entry = AgentCaptures.named(query, in: entries) else {
+            throw .noInput(notFoundMessage(query, in: entries))
+        }
+        return details(entry)
+    }
+
+    /// What `shot list` prints: what `list_captures` gives, as a JSON array, which is empty when nothing matches.
+    /// Stricter than the tool: a `since` it can't read is a mistake, not ignored.
+    public func listJSON(limit: Int?, since: String?) throws(ShotCommandError) -> JSONValue {
+        var date: Date?
+        if let since {
+            date = AgentCaptures.date(since: since, now: now(), timeZone: timeZone)
+            guard date != nil else {
+                throw .usage("list", "--since \(since) isn't a date, such as 2026-10-10 or 2026-10-10T14:00, or a span back from now, such as 10m, 2h or 3d")
+            }
+        }
+        return .array(AgentCaptures.list(entries(), limit: limit, since: date).map(metadata))
+    }
+
+    /// A capture's details and the lines `describe` adds about what Shot recorded in it.
+    func details(_ entry: AgentCaptures.Entry) -> JSONValue {
+        guard case var .object(object) = metadata(entry) else {
+            return metadata(entry)
+        }
+        object["summary"] = .array((record(entry)?.summaryLines ?? []).map(JSONValue.string))
+        return .object(object)
+    }
+
     /// An error naming the captures whose names share the most words with `query`, so the agent can try again.
     func notFound(_ query: String, in entries: [AgentCaptures.Entry]) -> MCPServer.ToolResult {
+        MCPServer.ToolResult(content: [.text(notFoundMessage(query, in: entries))], isError: true)
+    }
+
+    func notFoundMessage(_ query: String, in entries: [AgentCaptures.Entry]) -> String {
         let ranked = AgentCaptures.ranked(entries)
         guard !ranked.isEmpty else {
-            return MCPServer.ToolResult(content: [.text("No capture matches \"\(query)\": \(empty(entries, kind: .any))\(outside(query))")], isError: true)
+            return "No capture matches \"\(query)\": \(empty(entries, kind: .any))\(outside(query))"
         }
         let wanted = Self.words(in: query)
         func shared(_ entry: AgentCaptures.Entry) -> Int {
@@ -608,7 +658,7 @@ public struct AgentTools: Sendable {
             .prefix(5)
         let names = nearest.map { "\"\($0.name)\"" }.joined(separator: ", ")
         let which = nearest.contains { $0.shared > 0 } ? "nearest" : "newest"
-        return MCPServer.ToolResult(content: [.text("No capture matches \"\(query)\".\(outside(query)) The \(which) are \(names).")], isError: true)
+        return "No capture matches \"\(query)\".\(outside(query)) The \(which) are \(names)."
     }
 
     /// Why a full path outside `folder` names nothing, after a space, or nothing for a name or a path inside it.

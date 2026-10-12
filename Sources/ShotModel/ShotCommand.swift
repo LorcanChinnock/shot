@@ -20,6 +20,14 @@ public enum ShotCommand: Equatable, Sendable {
     case watch(WatchOptions)
     /// The open windows and displays, as the running app sees them.
     case windows
+    /// The newest capture of a kind, as `latest_capture` gives it.
+    case latest(AgentCaptures.Kind)
+    /// Recent captures, as `list_captures` gives them.
+    case list(limit: Int?, since: String?)
+    /// The capture a name or path names, or the newest, as `get_capture` gives it.
+    case get(String?)
+    /// Checks what agents need and says how to fix what's wrong.
+    case doctor
     case mcp
     case version
     /// Usage, for one command or for all of them.
@@ -163,7 +171,7 @@ public enum ShotCommand: Equatable, Sendable {
     }
 
     /// The commands `help` knows, in the order it lists them.
-    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "text", "diff", "windows", "capture", "record", "watch", "mcp"]
+    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "text", "diff", "latest", "list", "get", "windows", "capture", "record", "watch", "doctor", "mcp"]
 
     /// The command's name, for error messages such as `shot gif: …`.
     public var name: String {
@@ -180,6 +188,10 @@ public enum ShotCommand: Equatable, Sendable {
         case .record: "record"
         case .watch: "watch"
         case .windows: "windows"
+        case .latest: "latest"
+        case .list: "list"
+        case .get: "get"
+        case .doctor: "doctor"
         case .mcp: "mcp"
         case .version: "version"
         case .help: "help"
@@ -204,10 +216,13 @@ public enum ShotCommand: Equatable, Sendable {
                 throw .usage(nil, "no command named \"\(command)\"")
             }
             return .help(rest.first)
-        case "mcp":
-            if rest.contains(where: isHelp) { return .help("mcp") }
-            guard rest.isEmpty else { throw .usage("mcp", "takes no arguments") }
-            return .mcp
+        case "mcp", "doctor":
+            if rest.contains(where: isHelp) { return .help(first) }
+            guard rest.isEmpty else { throw .usage(first, "takes no arguments") }
+            return first == "mcp" ? .mcp : .doctor
+        case "latest", "list", "get":
+            if rest.contains(where: isHelp) { return .help(first) }
+            return try parseCaptures(first, rest)
         case "info", "gif", "trim", "redact", "annotate", "frames", "text":
             if rest.contains(where: isHelp) { return .help(first) }
             return try parseMedia(first, rest)
@@ -251,6 +266,9 @@ public enum ShotCommand: Equatable, Sendable {
         "capture": ["window": false, "bundle-id": false, "display": false, "rect": false, "no-shadow": false, "wait-stable": false],
         "record": ["window": false, "bundle-id": false, "display": false, "rect": false, "no-shadow": false, "duration": false],
         "watch": ["kind": false, "timeout": false],
+        "latest": ["kind": false],
+        "list": ["limit": false, "since": false],
+        "get": [:],
     ]
     /// Flags that take no value, or one only after `=`, such as `--wait-stable=10`.
     private static let switches: Set<String> = ["no-shadow", "wait-stable"]
@@ -316,6 +334,38 @@ public enum ShotCommand: Equatable, Sendable {
             options.timeout = seconds
         }
         return .watch(options)
+    }
+
+    /// `latest [--kind image|video|any]`, `list [--limit n] [--since when]` or `get [<name or path>]`, which read the
+    /// capture folder as the MCP tools do.
+    private static func parseCaptures(_ command: String, _ arguments: [String]) throws(ShotCommandError) -> ShotCommand {
+        let (positional, values) = try options(command, arguments)
+        switch command {
+        case "get":
+            guard positional.count <= 1 else {
+                throw .usage(command, "expected one name or path, got \(positional.count); quote a name with spaces")
+            }
+            return .get(positional.first)
+        case "latest":
+            guard positional.isEmpty else { throw .usage(command, "takes no file; use shot get to name one") }
+            guard let text = values["kind"]?.first else {
+                return .latest(.image)
+            }
+            guard let kind = AgentCaptures.Kind(rawValue: text.lowercased()) else {
+                throw .usage(command, "--kind \(text) must be image, video or any")
+            }
+            return .latest(kind)
+        default:
+            guard positional.isEmpty else { throw .usage(command, "takes no file; use shot get to name one") }
+            var limit: Int?
+            if let text = values["limit"]?.first {
+                guard let number = Int(text), (1...AgentCaptures.maximumLimit).contains(number) else {
+                    throw .usage(command, "--limit \(text) must be from 1 to \(AgentCaptures.maximumLimit)")
+                }
+                limit = number
+            }
+            return .list(limit: limit, since: values["since"]?.first)
+        }
     }
 
     /// `record --window … [--duration s]`, `record --stop [id]` or `record --status`.
@@ -529,10 +579,14 @@ public enum ShotCommand: Equatable, Sendable {
             "frames": "\(program) frames <video> [--count 8 | --every 2] [--width 1568] [-o folder]\n    Still frames of the video, for an agent that can't watch it: where the picture changes, or evenly every few seconds.",
             "text": "\(program) text <image>\n    The text in the image, read on this Mac: each line and word with its box, [x, y, width, height] in the image's pixels from the top left.",
             "diff": "\(program) diff <a> <b> [-o out.png] [--threshold 0.1]\n    Where image b differs from a: a dimmed copy of b with the changes highlighted and boxed, and the boxes in b's pixels.\n    Images of different sizes are compared at b's size. --threshold 0 counts any difference; 0.1, the default, ignores anti-aliasing.",
+            "latest": "\(program) latest [--kind image|video|any]\n    The newest capture, a screenshot unless --kind says otherwise: its name, path, kind, when it was taken, and what Shot recorded in it, as latest_capture gives it.",
+            "list": "\(program) list [--limit 10] [--since 2h]\n    Recent captures, newest first, as list_captures gives them. --since takes a date such as 2026-10-10 or a span back from now such as 10m, 2h or 3d.",
+            "get": "\(program) get [<name or path>]\n    The capture a file name, words from it or its path names, or the newest of any kind, as get_capture gives it.",
             "windows": "\(program) windows\n    The open windows, front to back, with each one's app, bundle ID, title and size and which is frontmost, and the displays. Needs Settings › Agents › Let agents capture and record on.",
             "capture": "\(program) capture --window <title or app> | --bundle-id <id> | --display <n> [--rect x,y,w,h] [--no-shadow] [--wait-stable[=5]]\n    A screenshot of that open window or whole display, taken by Shot without taking focus, saved to the capture folder. --bundle-id picks the app's front window, or with --window one of its windows. --rect keeps that part, in points from the top-left corner. --wait-stable waits, up to 5 seconds or the time given, for the picture to stop changing. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
             "record": "\(program) record --window <title or app> | --bundle-id <id> | --display <n> [--rect x,y,w,h] [--no-shadow] [--duration 10] | --stop [<id>] | --status\n    Records that open window or display through Shot, without its microphone or camera, for at most \(Int(AgentRequest.maximumDuration / 60)) minutes, saved to the capture folder. --rect records that part of the screen, so anything in front of it shows. Without --duration it prints an id and returns at once; --stop ends it. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
             "watch": "\(program) watch [--kind image|video|any] [--timeout 60] [--follow]\n    Waits for your next capture and prints its name, path, kind and when it was taken. Exits with 66 if none comes before the timeout. --follow prints one line per capture as each comes, until interrupted or the timeout. Reads the capture folder only, so Shot needn't be running.",
+            "doctor": "\(program) doctor\n    Checks which copy of Shot answers and its version, Let agents capture and record, the socket, the Screen Recording permission and the capture folder, and says how to fix each problem. Exits 1 if a check fails.",
             "mcp": "\(program) mcp\n    Serves Shot's captures to an AI agent over MCP, on standard input and output.",
         ]
         if let command, let line = lines[command] {
@@ -547,9 +601,9 @@ public enum ShotCommand: Equatable, Sendable {
 
         Without -o, the output goes beside the input as the next version, such as "name (2).png". Nothing is ever
         overwritten. Results are JSON on standard output; errors go to standard error with an exit code for each kind:
-        64 a wrong option, 65 a file or marks Shot can't use, 66 no such file, window or recording, or no new capture,
-        69 Shot isn't answering agents, 70 an internal error, 73 the output can't be made, 74 reading or writing failed,
-        75 Shot is busy, 77 no Screen Recording permission. More: \(docs)#the-shot-command-line
+        64 a wrong option, 65 a file or marks Shot can't use, 66 no such file, capture, window or recording, or no new
+        capture, 69 Shot isn't answering agents, 70 an internal error, 73 the output can't be made, 74 reading or writing
+        failed, 75 Shot is busy, 77 no Screen Recording permission. More: \(docs)#the-shot-command-line
         """
     }
 
