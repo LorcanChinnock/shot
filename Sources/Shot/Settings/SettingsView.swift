@@ -577,31 +577,41 @@ private struct AgentSettings: View {
         SettingsCard(title: "Hand-off", symbol: "arrow.right.doc.on.clipboard") {
             ToggleRow(
                 title: "Hand captures to agents",
-                subtitle: "Saves the source app, the window and your marks inside each screenshot, so an agent can tell where it came from and what you pointed at. Screenshots you only copy are also saved as files, so an agent can open them.",
+                subtitle: "Saves the app, window and your marks in each screenshot, and saves copied ones as files too, so agents can read them.",
                 isOn: $handoff, color: color, divider: false
             )
         }
         SettingsCard(title: "Capture", symbol: "macwindow") {
             ToggleRow(
                 title: "Let agents capture and record",
-                subtitle: "Lets an agent screenshot or record a window it names, through the shot command or the MCP server. Shot shows a notice each time and never brings the window forward. An agent's recordings leave out the microphone and camera, show the stop controls, and end after \(Int(AgentRequest.maximumDuration / 60)) minutes.",
+                subtitle: "Lets agents screenshot or record a window by name. Shot shows a notice each time. Recordings skip the microphone and camera and stop after \(Int(AgentRequest.maximumDuration / 60)) minutes.",
                 isOn: $capture, color: color, divider: false
             )
         }
+        SettingsCard(title: "Command line", symbol: "apple.terminal") {
+            CardNote(text: "For agents and scripts that run in a terminal. The MCP server works without it.")
+            CommandLinkRow(cli: Self.server)
+        }
         SettingsCard(title: "MCP server", symbol: "terminal.fill") {
-            Text("Lets an agent read your recent captures and your marks on them, and save new files beside them, such as annotated copies, GIFs and trims. Your originals never change. Shot never uploads your captures, but whatever the agent reads goes to its model provider, so blur anything private first.")
-                .font(Brutal.caption)
-                .foregroundStyle(Brutal.ink.opacity(0.65))
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 9)
+            CardNote(text: "Lets agents read your captures and save edited copies beside them. Your originals never change. What an agent reads goes to its model provider, so blur private details first.")
             CommandRow(title: "Claude Code, for every project", command: "claude mcp add -s user shot -- \"\(Self.server)\" mcp")
             CommandRow(title: "Cursor, or any app with a JSON config", command: #"{"mcpServers": {"shot": {"command": "\#(Self.server)", "args": ["mcp"]}}}"#)
             CommandRow(title: "Codex, in ~/.codex/config.toml", command: "[mcp_servers.shot]\ncommand = \"\(Self.server)\"\nargs = [\"mcp\"]", divider: false)
         }
-        SettingsCard(title: "Command line", symbol: "apple.terminal") {
-            CommandLinkRow(cli: Self.server)
-        }
+    }
+}
+
+/// A short note at the top of a card, above its rows.
+private struct CardNote: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(Brutal.caption)
+            .foregroundStyle(Brutal.ink.opacity(0.65))
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 9)
     }
 }
 
@@ -635,11 +645,11 @@ private struct CommandLinkRow: View {
 
     private var subtitle: String {
         switch status {
-        case .missing: "Run \(name) from any terminal, for you and your agents. macOS asks for your password once."
-        case .linked: "Installed at \(link). It updates with Shot."
-        case .homebrew: "Installed by Homebrew. It updates with Shot."
-        case .stale: "\(link) points to a copy of Shot that has moved. Reinstall to point it at this one."
-        case .taken: "Something else is already at \(link), so Shot leaves it alone. Run \(cli) instead."
+        case .missing: "Installing asks for your password once."
+        case .linked: "Installed at \(link). Updates with Shot."
+        case .homebrew: "Installed by Homebrew. Updates with Shot."
+        case .stale: "Points to a copy of Shot that has moved. Reinstall to fix it."
+        case .taken: "Another program uses \(link). Run \(cli) instead."
         }
     }
 
