@@ -80,12 +80,14 @@ Concurrency: UI and model types are `@MainActor`. Heavy work runs in `Task.detac
 
 ## CI minutes
 
-macOS runner minutes cost about 15× Linux ones, so CI keeps macOS work to what needs it (`.github/workflows/ci.yml`):
-- The `linux` job lints and tests ShotModel on every run. The `macos` job builds the app and runs `ShotCoreTests`; a PR that changes only ShotModel builds the app but skips `ShotCoreTests`, docs-only PRs and drafts skip macOS, and `PerfTests` runs on PRs that touch ShotCore and on pushes to `main` that touch ShotCore or ShotModel. A push to `main` skips `ShotCoreTests`, which ran on the PR, unless the PR changed only ShotModel. The required `test` check passes when `linux` passed and `macos` passed or was skipped.
+macOS runner minutes cost about 15× Linux ones, so CI runs macOS only at the release gate (`.github/workflows/ci.yml`):
+- Every PR runs one Linux job, the required `test` check: `scripts/lint.sh` and ShotModel's tests. Nothing runs on push to `main`.
+- The release PR has no `test` check until `make release-gate` runs the gate on it: on macOS, it builds the app, checks the strings catalog, and runs `ShotCoreTests`, `ShotModelTests` and `PerfTests`. A push to the release PR drops the check again, so only a commit that passed the gate can be released. If the gate fails, fix it in a normal PR, then run the gate again once release-please has updated the release PR.
+- CI never builds the app or runs ShotCore's tests on a PR, so local `make lint` and `make test` are the real check for Apple-side code. A break that slips through stays on `main` until the next gate.
 - New logic and tests go in ShotModel unless they need an Apple framework. When they do, keep the Apple part in ShotCore as thin as you can and leave the rest portable.
-- Never add a step to the `macos` job that could run on Linux. New workflows and jobs use `ubuntu-latest`.
+- Never add a gate step that could run on Linux. New workflows and jobs use `ubuntu-latest`.
 - Run `make lint` and `make test` before every push, plus `make test-linux` when you change ShotModel, and push once per PR where you can, so CI is a check rather than a debugger. Every push re-runs CI, and a newer push cancels the run before it, wasting the minutes it used.
-- Each release builds on macOS, so let the release-please PR collect several merges rather than releasing after each one.
+- Each release runs the gate and builds on macOS, so let the release-please PR collect several merges rather than releasing after each one.
 
 ## Conventions
 

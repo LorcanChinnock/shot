@@ -1,150 +1,53 @@
 name: CI
 
+# Pull requests get lint and ShotModel's tests on Linux, and nothing else. macOS runs only at the release gate:
+# `make release-gate` dispatches this with gate=true on release-please's PR branch, whose pushes come from
+# GITHUB_TOKEN and so never trigger runs. Without the gate's `test` check the release PR can't merge, and any later
+# push to it drops the check again, so only a commit that passed the gate can be released.
+# There's no run on push to main: PRs are squash-merged, and their merge commit was already tested.
 on:
   pull_request:
-    # ready_for_review runs macOS once a draft is marked ready, since drafts skip it.
-    types: [opened, synchronize, reopened, ready_for_review]
-  # Each merge runs once more, which also saves the build cache that PRs restore.
-  push:
-    branches: [main]
-  # release.yml dispatches this on release-please's PR branch, whose pushes come from
-  # GITHUB_TOKEN and so never trigger pull_request runs.
   workflow_dispatch:
     inputs:
-      lint-only:
-        description: Skip macOS. For the release PR, which changes no code but still needs the `test` check.
+      gate:
+        description: Build the app and run every test on macOS, as the release gate. Off runs the pull request check.
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
-  # Runs on main queue instead, so every merge gets checked and saves a cache.
-  cancel-in-progress: ${{ github.event_name != 'push' }}
+  cancel-in-progress: true
 
 jobs:
-  # Decides which macOS work a change needs; macOS minutes cost about 15× Linux ones. A PR that only changes docs or
-  # the site runs only the linux job. paths-ignore would skip the workflow instead, leaving the required `test` check pending.
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      macos: ${{ steps.diff.outputs.macos }}
-      core-tests: ${{ steps.diff.outputs.core-tests }}
-      perf: ${{ steps.diff.outputs.perf }}
+  # The required check, so main's ruleset needs it by name. One job, because each job's Linux minutes round up.
+  test:
+    # macOS: the gate builds the app and runs ShotCore's tests, which need AppKit, AVFoundation, CoreImage and ImageIO.
+    runs-on: ${{ inputs.gate && 'macos-26' || 'ubuntu-latest' }}
+    # The Swift release of the macos-26 runner's default Xcode. `make test-linux` uses the same image. An empty
+    # container runs the gate on the runner itself.
+    container: ${{ !inputs.gate && 'swift:6.3' || '' }}
     steps:
       - uses: actions/checkout@v5
-        if: github.event_name != 'workflow_dispatch'
-        with:
-          fetch-depth: 2
-      - id: diff
-        env:
-          EVENT: ${{ github.event_name }}
-          LINT_ONLY: ${{ inputs.lint-only }}
-          DRAFT: ${{ github.event.pull_request.draft }}
-        run: |
-          if [ "$EVENT" = workflow_dispatch ]; then
-            [ "$LINT_ONLY" = true ] && all=false || all=true
-            printf 'macos=%s\ncore-tests=%s\nperf=%s\n' "$all" "$all" "$all" | tee -a "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # On a PR, HEAD is the PR merged into main, so its first parent is main. PRs are squash-merged, so a push
-          # to main is one commit.
-          files=$(git diff --name-only HEAD^1 HEAD)
-          code=$(echo "$files" | grep -vE '\.md$|^docs/|^site/|^\.github/ISSUE_TEMPLATE/' | grep -q . && echo true || echo false)
-          # Anything but ShotModel and its tests, which the linux job covers.
-          apple=$(echo "$files" | grep -vE '\.md$|^docs/|^site/|^\.github/ISSUE_TEMPLATE/|^Sources/ShotModel/|^Tests/ShotModelTests/' | grep -q . && echo true || echo false)
-          # PerfTests times ShotCore's rendering, encoding, GIF and gallery paths.
-          perf_paths='^Sources/ShotCore/|^Tests/ShotCoreTests/PerfTests\.swift$|^Package\.|^Makefile$|^\.github/workflows/ci\.yml$'
-          if [ "$EVENT" = pull_request ]; then
-            # A ShotModel-only PR still builds the app, which catches a signature change that breaks it.
-            [ "$code" = true ] && [ "$DRAFT" != true ] && macos=true || macos=false
-            core_tests=$apple
-            perf=$(echo "$files" | grep -qE "$perf_paths" && echo true || echo false)
-          else
-            macos=$code
-            # The PR ran ShotCoreTests on its merge commit, unless it changed only ShotModel. Then they run here, so a
-            # ShotModel change that breaks ShotCore's behaviour is caught right after the merge.
-            [ "$code" = true ] && [ "$apple" = false ] && core_tests=true || core_tests=false
-            # ShotCore runs on ShotModel, whose PRs skip Perf, so a ShotModel change that slows ShotCore is caught here.
-            perf=$(echo "$files" | grep -qE "$perf_paths|^Sources/ShotModel/" && echo true || echo false)
-          fi
-          printf 'macos=%s\ncore-tests=%s\nperf=%s\n' "$macos" "$core_tests" "$perf" | tee -a "$GITHUB_OUTPUT"
-
-  # Lint and ShotModel's tests, on every run. A cold build takes about 10 s, so there's no cache.
-  linux:
-    runs-on: ubuntu-latest
-    # The Swift release of the macos-26 runner's default Xcode. `make test-linux` uses the same image.
-    container: swift:6.3
-    steps:
-      - uses: actions/checkout@v5
-      # The image has no make, so these call what `make lint` and `make test-linux` run.
+      # The image has no make, so this calls what `make lint` runs. A cold Linux build takes about 10 s.
       - name: Lint
         run: scripts/lint.sh
       - name: Test
+        if: ${{ !inputs.gate }}
         run: swift test
-
-  # Builds the app and runs the tests that need Apple frameworks, when the change needs them.
-  macos:
-    needs: changes
-    if: needs.changes.outputs.macos == 'true'
-    # macOS: the app and ShotCore need AppKit, AVFoundation, CoreImage and ImageIO.
-    runs-on: macos-26
-    permissions:
-      actions: write # Deletes the previous cache on main.
-      contents: read
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-      # A fresh checkout gives every file a new mtime, so the restored build would recompile everything.
-      # Each file gets its last commit's time instead. A PR's merge commit is new, so its changes still rebuild.
-      - name: Restore file times
-        run: |
-          git log --first-parent --diff-merges=first-parent --format='T %ct' --name-only --no-renames |
-            perl -ne 'chomp; if (/^T (\d+)$/) { $t = $1; next } next if $_ eq "" || $seen{$_}++; utime $t, $t, $_ if -e $_'
-      # Only main saves, so PRs restore the build of the latest merge.
-      - uses: actions/cache/restore@v4
-        with:
-          path: .build
-          key: build-${{ runner.os }}-${{ hashFiles('Package.resolved') }}-${{ github.sha }}
-          restore-keys: build-${{ runner.os }}-${{ hashFiles('Package.resolved') }}-
       - name: Build
+        if: inputs.gate
         run: swift build --build-tests
-      # Saved before testing, so a failing test still leaves a cache for the fix.
-      - uses: actions/cache/save@v4
-        if: github.event_name == 'push'
-        with:
-          path: .build
-          key: build-${{ runner.os }}-${{ hashFiles('Package.resolved') }}-${{ github.sha }}
-      # Restores only use the newest cache, so older ones just take up the repo's 10 GB.
-      - name: Delete older caches
-        if: github.event_name == 'push'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          KEEP: build-${{ runner.os }}-${{ hashFiles('Package.resolved') }}-${{ github.sha }}
-        run: |
-          gh cache list --repo "$GITHUB_REPOSITORY" --ref refs/heads/main --key build- --limit 100 --json key --jq '.[].key' |
-            grep -vxF "$KEEP" | while read -r key; do gh cache delete "$key" --repo "$GITHUB_REPOSITORY"; done
       # Every build extracts the app's strings, so this needs the build above. See scripts/strings.sh.
       - name: Check strings
+        if: inputs.gate
         run: scripts/strings.sh --check
-      - name: Test
-        if: needs.changes.outputs.core-tests == 'true'
-        run: make test ARGS="--skip-build --filter ShotCoreTests"
+      - name: Test on macOS
+        if: inputs.gate
+        run: make test ARGS=--skip-build
       # Alone, so other tests running in parallel don't skew the timings. Budgets: docs/performance.md.
       - name: Perf
-        if: needs.changes.outputs.perf == 'true'
+        if: inputs.gate
         run: make perf ARGS=--skip-build
-
-  # The required check: passes when linux passed and macos passed or wasn't needed, so main's ruleset needn't change.
-  test:
-    needs: [changes, linux, macos]
-    if: ${{ !cancelled() }}
-    runs-on: ubuntu-latest
-    steps:
-      - env:
-          CHANGES: ${{ needs.changes.result }}
-          LINUX: ${{ needs.linux.result }}
-          MACOS: ${{ needs.macos.result }}
-        run: |
-          echo "changes: $CHANGES, linux: $LINUX, macos: $MACOS"
-          [ "$CHANGES" = success ] && [ "$LINUX" = success ] && { [ "$MACOS" = success ] || [ "$MACOS" = skipped ]; }
