@@ -95,3 +95,18 @@ func aMessageThatIsntARequestIsInvalid(_ line: String) async {
     #expect(value["c"]?.number == nil)
     #expect(value["c"] == .bool(true))
 }
+
+@Test func initializeKeepsTheClientsNameForProvenance() async {
+    let fresh = MCPServer(name: "shot", version: "1.0", tools: []) { _, _ in MCPServer.ToolResult(content: []) }
+    #expect(fresh.client == nil)
+    _ = await fresh.respond(to: #"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","clientInfo":{"name":"claude-code","version":"2.1.0"}}}"#)
+    #expect(fresh.client == MCPServer.Client(name: "claude-code", version: "2.1.0"))
+}
+
+@Test func aClientWithNoNameIsntKept() async {
+    let fresh = MCPServer(name: "shot", version: "1.0", tools: []) { _, _ in MCPServer.ToolResult(content: []) }
+    _ = await fresh.respond(to: #"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"clientInfo":{"name":"","version":"1"}}}"#)
+    #expect(fresh.client == nil)
+    _ = await fresh.respond(to: #"{"jsonrpc":"2.0","id":2,"method":"initialize","params":{"clientInfo":{"name":"cursor"}}}"#)
+    #expect(fresh.client == MCPServer.Client(name: "cursor", version: nil))
+}

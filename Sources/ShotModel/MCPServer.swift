@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 
 /// Any JSON value, for the parts of an MCP message whose shape the server doesn't fix.
 public enum JSONValue: Codable, Equatable, Sendable {
@@ -109,6 +110,17 @@ public struct MCPServer: Sendable {
         case invalidParams = -32602
     }
 
+    /// The client, as it named itself in `initialize`.
+    public struct Client: Equatable, Sendable {
+        public var name: String
+        public var version: String?
+    }
+
+    /// Holds `client` for a server that's otherwise a value, so copies of it share what `initialize` said.
+    private final class ClientBox: Sendable {
+        let client = Mutex<Client?>(nil)
+    }
+
     /// The newest protocol revision this server speaks, offered to a client that asks for one it doesn't know.
     public static let protocolVersion = "2025-06-18"
     static let knownVersions: Set<String> = ["2024-11-05", "2025-03-26", protocolVersion]
@@ -118,6 +130,10 @@ public struct MCPServer: Sendable {
     public var tools: [Tool]
     /// Runs the tool `name` with `arguments`, which is `.object([:])` when the client sends none.
     public var call: @Sendable (_ name: String, _ arguments: JSONValue) async -> ToolResult
+    private let clientBox = ClientBox()
+
+    /// The client from `clientInfo` in `initialize`, for a project's provenance; `nil` until then, or when it sent none.
+    public var client: Client? { clientBox.client.withLock { $0 } }
 
     public init(name: String, version: String, tools: [Tool], call: @escaping @Sendable (String, JSONValue) async -> ToolResult) {
         self.name = name
@@ -145,6 +161,9 @@ public struct MCPServer: Sendable {
         switch method {
         case "initialize":
             let asked = params["protocolVersion"]?.string ?? Self.protocolVersion
+            let info = params["clientInfo"]
+            let client = info?["name"]?.string.flatMap { $0.isEmpty ? nil : Client(name: $0, version: info?["version"]?.string) }
+            clientBox.client.withLock { $0 = client }
             return encode(result: .object([
                 "protocolVersion": .string(Self.knownVersions.contains(asked) ? asked : Self.protocolVersion),
                 "capabilities": .object(["tools": .object([:])]),

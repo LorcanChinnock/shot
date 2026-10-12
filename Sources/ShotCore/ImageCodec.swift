@@ -12,11 +12,14 @@ public enum ImageCodec {
     /// The XMP namespace of `record`, and the property it's stored in as JSON text.
     static let recordNamespace = "https://shot.lorcanchinnock.com/ns/capture/1.0/"
     static let recordPath = "shot:record"
+    /// Where the ID of the file's project in Shot's own store goes, in the same namespace.
+    static let projectPath = "shot:project"
 
     /// Encodes with DPI = 72 × scale so Retina captures open at point size. `windowShadow` marks a window capture that
     /// includes the macOS window shadow. `record`, for agents, goes in the file's XMP, written in the same pass: copying
-    /// the image again with metadata added would be cheaper, but ImageIO then empties a PNG's Exif comment.
-    public static func data(from image: CGImage, scale: CGFloat, format: ImageFormat = .png, windowShadow: Bool = false, record: CaptureRecord? = nil) -> Data? {
+    /// the image again with metadata added would be cheaper, but ImageIO then empties a PNG's Exif comment. `projectID`
+    /// keys the file's project in `ProjectStore` and goes in the XMP too, whatever the Agents setting.
+    public static func data(from image: CGImage, scale: CGFloat, format: ImageFormat = .png, windowShadow: Bool = false, record: CaptureRecord? = nil, projectID: String? = nil) -> Data? {
         let data = NSMutableData()
         let type = format == .png ? UTType.png : UTType.jpeg
         guard let destination = CGImageDestinationCreateWithData(data, type.identifier as CFString, 1, nil) else {
@@ -30,7 +33,7 @@ public enum ImageCodec {
         if windowShadow {
             properties[kCGImagePropertyExifDictionary] = [kCGImagePropertyExifUserComment: windowShadowMarker]
         }
-        if let metadata = record.flatMap(metadata) {
+        if let metadata = metadata(record: record, projectID: projectID) {
             CGImageDestinationAddImageAndMetadata(destination, image, metadata, properties as CFDictionary)
         } else {
             CGImageDestinationAddImage(destination, image, properties as CFDictionary)
@@ -41,15 +44,30 @@ public enum ImageCodec {
         return data as Data
     }
 
-    private static func metadata(for record: CaptureRecord) -> CGImageMetadata? {
+    private static func metadata(record: CaptureRecord?, projectID: String?) -> CGImageMetadata? {
+        let text = record.flatMap { try? $0.encoded() }.flatMap { String(data: $0, encoding: .utf8) }
+        guard text != nil || projectID != nil else {
+            return nil
+        }
         let metadata = CGImageMetadataCreateMutable()
-        guard let json = try? record.encoded(), let text = String(data: json, encoding: .utf8),
-              CGImageMetadataRegisterNamespaceForPrefix(metadata, recordNamespace as CFString, "shot" as CFString, nil),
-              CGImageMetadataSetValueWithPath(metadata, nil, recordPath as CFString, text as CFString)
+        guard CGImageMetadataRegisterNamespaceForPrefix(metadata, recordNamespace as CFString, "shot" as CFString, nil),
+              text.map({ CGImageMetadataSetValueWithPath(metadata, nil, recordPath as CFString, $0 as CFString) }) ?? true,
+              projectID.map({ CGImageMetadataSetValueWithPath(metadata, nil, projectPath as CFString, $0 as CFString) }) ?? true
         else {
             return nil
         }
         return metadata
+    }
+
+    /// The project ID stamped in the image file at `url`, or `nil` when it has none or isn't an image.
+    public static func projectID(ofFileAt url: URL) -> String? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let metadata = CGImageSourceCopyMetadataAtIndex(source, 0, nil),
+              let tag = CGImageMetadataCopyTagWithPath(metadata, nil, projectPath as CFString)
+        else {
+            return nil
+        }
+        return CGImageMetadataTagCopyValue(tag) as? String
     }
 
     /// The record Shot wrote in the image file at `url`, or `nil` when it has none or isn't an image.
