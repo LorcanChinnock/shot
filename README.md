@@ -51,7 +51,7 @@ Trim a recording, cut sections out, draw over it, add music or other clips, and 
 
 ### Works with AI agents
 
-Circle the bug, copy, and paste it into Claude Code, Codex or Cursor: your arrows and notes show the agent exactly where to look. Turn on **Hand captures to agents** and each screenshot also records, inside the image, which app it came from and what you circled, and where. Or let the agent look for itself through Shot's MCP server: `claude mcp add shot -- /Applications/Shot.app/Contents/MacOS/shot-cli mcp`, or `claude mcp add shot -- shot mcp` after a Homebrew install. Agents can't watch video, so `shot frames` hands them the key frames of a recording. Turn on **Let agents capture and record** and an agent can screenshot or record a window, such as the Simulator, with `shot capture --window Simulator` or `shot record --window Simulator --duration 10`, then see what happened in its key frames. Shot tells you each time. The same `shot` command makes GIFs, trims, redacts and annotates with no window open, and never overwrites a file. See [Using Shot with AI agents](docs/usage.md#using-shot-with-ai-agents).
+Circle the bug, copy, and paste it into Claude Code, Codex or Cursor: your arrows and notes show the agent exactly where to look. Through Shot's MCP server and `shot` command, an agent can also read your captures and what you marked, and screenshot or record a window such as the Simulator; see [Using Shot with AI agents](docs/usage.md#using-shot-with-ai-agents).
 
 <img src="docs/media/agents-settings.png" width="720" alt="Settings › Agents with Hand captures to agents and Let agents capture and record turned on, and the MCP setup commands for Claude Code, Cursor and Codex, each with a Copy button">
 
@@ -62,7 +62,7 @@ Shot needs macOS 15 or later and an Apple Silicon Mac. It doesn't run on Intel M
 **With [Homebrew](https://brew.sh):**
 
 ```sh
-brew update && brew install lorcanchinnock/tap/shot
+brew install lorcanchinnock/tap/shot
 ```
 
 **Or by hand:** download `Shot-v<version>.zip` from the [latest release](https://github.com/LorcanChinnock/shot/releases/latest), unzip it, and move **Shot.app** to Applications.
