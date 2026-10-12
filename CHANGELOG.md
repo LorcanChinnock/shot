@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.41](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.40...v0.7.0-beta.41) (2026-10-12)
+
+
+### Features
+
+* **onboarding:** a three-step welcome window for first launch ([#398](https://github.com/LorcanChinnock/shot/issues/398)) ([b8989a4](https://github.com/LorcanChinnock/shot/commit/b8989a4b0b19a9fc92a9f20f884e42e99103f057))
+
 ## [0.7.0-beta.40](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.39...v0.7.0-beta.40) (2026-10-11)
 
 
