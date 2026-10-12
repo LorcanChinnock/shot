@@ -118,8 +118,8 @@ private func permissions(_ path: String) throws -> Int {
 
 @Test func severalClientsAreAnsweredAtOnce() async throws {
     let url = try socketURL()
-    // Each waits, so answering them one at a time would take over two seconds.
-    let server = echoServer(at: url, delay: .milliseconds(300))
+    // Each waits a second, so answering them one at a time would take eight. The bound leaves room for a loaded CI runner.
+    let server = echoServer(at: url, delay: .seconds(1))
     try server.start()
     defer { server.stop() }
     let start = ContinuousClock.now
@@ -137,7 +137,7 @@ private func permissions(_ path: String) throws -> Int {
         return windows
     }
     #expect(Set(windows) == Set((0..<8).map { "w\($0)" }))
-    #expect(ContinuousClock.now - start < .seconds(2))
+    #expect(ContinuousClock.now - start < .seconds(5))
 }
 
 @Test func stoppingRemovesTheSocket() async throws {
