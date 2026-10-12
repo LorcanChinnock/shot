@@ -334,7 +334,7 @@ final class CaptureCoordinator {
                 Toast.show("Export cancelled")
             } catch {
                 try? FileManager.default.removeItem(at: gifURL)
-                Toast.error("GIF export failed: \(error.localizedDescription)")
+                Toast.error("Couldn't export the GIF: \(error.localizedDescription)")
             }
         }
     }

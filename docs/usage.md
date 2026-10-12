@@ -493,7 +493,7 @@ Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a scr
 
 For AI agents, `shot mcp` (`Shot.app/Contents/MacOS/shot-cli mcp`, or just `shot mcp` after a Homebrew install) is an MCP server for your captures; see [The MCP server](#the-mcp-server). The same command also makes GIFs, trims, redacts, annotates and pulls key frames without the app; see [The `shot` command line](#the-shot-command-line).
 
-`path` can start with `~`. URL-encode spaces and other special characters, for example `open "shot://annotate?path=~/Desktop/My%20Shot.png"`. The older `shot://record?full=1` still works and does the same as `shot://record-fullscreen`. An unknown action, or `annotate` or `edit-video` without a `path`, shows an error instead.
+`path` can start with `~`. URL-encode spaces and other special characters, for example `open "shot://annotate?path=~/Desktop/My%20Shot.png"`. The older `shot://record?full=1` still works and does the same as `shot://record-fullscreen`. An unknown action or settings section, or `annotate` or `edit-video` without a `path`, shows an error instead.
 
 ## Settings
 

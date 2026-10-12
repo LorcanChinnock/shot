@@ -897,7 +897,7 @@ final class VideoEditorModel {
                 return false
             } catch {
                 log.error("Export failed: \(error.localizedDescription, privacy: .public)")
-                Toast.error("Export failed: \(error.localizedDescription)")
+                Toast.error("Couldn't export: \(error.localizedDescription)")
                 return false
             }
         }
