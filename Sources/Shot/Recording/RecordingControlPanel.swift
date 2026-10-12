@@ -154,7 +154,7 @@ struct RecordingControls: View {
 private struct IconButton: View {
     let symbol: String
     let color: Color
-    let help: String
+    let help: LocalizedStringResource
     let action: () -> Void
 
     var body: some View {

@@ -327,8 +327,11 @@ final class CaptureCoordinator {
             defer { gifExports[videoURL] = nil }
             do {
                 let result = try await GIFExporter.export(videoURL: videoURL, to: gifURL, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, progress: progress.report)
-                let note = result.truncated ? " (first \(Int(GIFExporter.maxDuration)) s only)" : ""
-                Toast.show("Saved \(gifURL.lastPathComponent)\(note)", duration: .seconds(3))
+                if result.truncated {
+                    Toast.show("Saved \(gifURL.lastPathComponent) (first \(Int(GIFExporter.maxDuration)) s only)", duration: .seconds(3))
+                } else {
+                    Toast.show("Saved \(gifURL.lastPathComponent)", duration: .seconds(3))
+                }
             } catch where Task.isCancelled {
                 try? FileManager.default.removeItem(at: gifURL)
                 Toast.show("Export cancelled")

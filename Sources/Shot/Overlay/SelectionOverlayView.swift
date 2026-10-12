@@ -329,17 +329,17 @@ final class SelectionOverlayView: NSView {
     private func drawHint(in ctx: CGContext) {
         var parts: [String]
         if controller.windowMode {
-            parts = ["Click a window", "Space: area", "Esc: cancel"]
+            parts = [String(localized: "Click a window"), String(localized: "Space: area"), String(localized: "Esc: cancel")]
         } else {
-            parts = ["Drag an area", "Tab: ratio (\(controller.aspectRatio.label))"]
+            parts = [String(localized: "Drag an area"), String(localized: "Tab: ratio (\(controller.aspectRatio.label))")]
             if controller.aspectRatio != .free {
-                parts.append("X: rotate")
+                parts.append(String(localized: "X: rotate"))
             }
-            parts.append("Space: window")
+            parts.append(String(localized: "Space: window"))
             if controller.isLive {
-                parts.append("Return: full screen")
+                parts.append(String(localized: "Return: full screen"))
             }
-            parts.append("Esc: cancel")
+            parts.append(String(localized: "Esc: cancel"))
         }
         let text = parts.joined(separator: "   ·   ")
         let font = NSFont.systemFont(ofSize: 13, weight: .bold)
