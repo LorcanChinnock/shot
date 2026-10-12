@@ -435,12 +435,34 @@ extension MediaTests {
         await player.pause()
         let target = CMTime(seconds: 2, preferredTimescale: 600)
         #expect(await player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero))
-        var frame: CVPixelBuffer?
-        for _ in 0..<100 where frame == nil {
-            frame = output.copyPixelBuffer(forItemTime: target, itemTimeForDisplay: nil)
+        // copyPixelBuffer gives the newest buffer, which can be one drawn for an earlier seek, so only the frame for 2 s counts.
+        var shown = CMTime.invalid
+        var seen: [Double] = []
+        func landed() -> Bool {
+            guard output.copyPixelBuffer(forItemTime: target, itemTimeForDisplay: &shown) != nil else {
+                return false
+            }
+            seen.append(shown.seconds)
+            return shown == target
+        }
+        var arrived = false
+        for _ in 0..<100 where !arrived {
+            arrived = landed()
             try await Task.sleep(for: .milliseconds(20))
         }
-        #expect(frame != nil)
+        // It fails after 2 s either way. Waiting on up to 10 s more only tells a slow runner from a frame that never comes (#414).
+        var late: Duration?
+        if !arrived {
+            let start = ContinuousClock.now
+            while late == nil, ContinuousClock.now - start < .seconds(10) {
+                if landed() {
+                    late = ContinuousClock.now - start
+                }
+                try await Task.sleep(for: .milliseconds(20))
+            }
+        }
+        let outcome = late.map { "arrived \($0) after the 2 s wait" } ?? "never arrived in 10 s more"
+        #expect(arrived, "The frame for 2 s \(outcome); buffers seen were for \(seen) s; item at \(item.currentTime().seconds) s, status \(item.status.rawValue)")
     }
 }
 
