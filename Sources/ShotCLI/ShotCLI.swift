@@ -2,7 +2,8 @@ import Foundation
 import ShotCore
 
 /// The `shot` command line: `shot mcp`, the MCP server AI agents talk to, the headless media commands, `shot capture`
-/// and `shot record`, which ask the running app, `shot watch`, and `--version`. It ships inside the app as `Contents/MacOS/shot-cli`, so it reads the
+/// and `shot record`, which ask the running app, `shot latest`, `list` and `get`, which read captures as the MCP tools
+/// do, `shot watch`, `shot doctor`, and `--version`. It ships inside the app as `Contents/MacOS/shot-cli`, so it reads the
 /// app's settings to find the captures.
 @main
 enum ShotCLI {
@@ -30,6 +31,19 @@ enum ShotCLI {
             print("Captures: \(captureFolder(app: app).path)")
         case let .help(name):
             print(ShotCommand.usage(name, program: program))
+        case .latest, .list, .get:
+            do {
+                print(ShotCommand.json(try readCaptures(command, tools: AgentTools.live(folder: captureFolder(app: appBundle())))))
+            } catch {
+                printError("\(program) \(command.name): \(error.message)")
+                exit(error.exitCode)
+            }
+        case .doctor:
+            let checks = Doctor.checks(await doctorFacts(app: appBundle()))
+            print(ShotCommand.json(Doctor.json(checks)))
+            if checks.contains(where: { $0.outcome == .fail }) {
+                exit(1)
+            }
         case .capture, .windows:
             let request = if case let .capture(target) = command { AgentRequest(.capture, target: target) } else { AgentRequest(.windows) }
             do {
@@ -119,6 +133,51 @@ enum ShotCLI {
         // Read on each request, so the MCP server, which runs for a whole session, sees the setting change.
         let enabled = Preferences(store: defaultsStore(app: app)).agentCapture
         return try await AgentSocket.ask(request, bundleID: app?.bundleIdentifier ?? fallbackSuite, enabled: enabled, timeout: timeout(for: request))
+    }
+
+    /// What `shot latest`, `shot list` and `shot get` print, as the MCP tools give it.
+    static func readCaptures(_ command: ShotCommand, tools: AgentTools) throws(ShotCommandError) -> JSONValue {
+        switch command {
+        case let .latest(kind): try tools.latestJSON(kind: kind)
+        case let .list(limit, since): try tools.listJSON(limit: limit, since: since)
+        case let .get(query): try tools.getJSON(query)
+        default: throw .internal("\(command.name) doesn't read captures")
+        }
+    }
+
+    /// What `shot doctor` checks, found without opening Shot: it only asks the app for its status if it's already
+    /// answering.
+    static func doctorFacts(app: Bundle?) async -> Doctor.Facts {
+        let bundleID = app?.bundleIdentifier ?? fallbackSuite
+        let socket = AgentSocket.url(bundleID: bundleID)
+        let listening = AgentSocket.isListening(at: socket)
+        var status: Result<[String: JSONValue], ShotCommandError>?
+        if listening {
+            do {
+                status = .success(try await AgentSocket.send(AgentRequest(.status), to: socket, timeout: .seconds(5)))
+            } catch {
+                status = .failure(error)
+            }
+        }
+        let folder = captureFolder(app: app)
+        var isFolder: ObjCBool = false
+        let exists = FileManager.default.fileExists(atPath: folder.path, isDirectory: &isFolder) && isFolder.boolValue
+        var folderError: String?
+        var captures = 0
+        if exists {
+            // macOS's privacy controls let a process see that the folder is there, but can refuse to list it.
+            do {
+                _ = try FileManager.default.contentsOfDirectory(atPath: folder.path)
+                captures = Gallery.items(in: folder).count
+            } catch {
+                folderError = error.localizedDescription
+            }
+        }
+        return Doctor.Facts(
+            bundleID: app?.bundleIdentifier, appPath: app?.bundlePath, version: version(of: app), settingsSuite: fallbackSuite,
+            agentCapture: Preferences(store: defaultsStore(app: app)).agentCapture, socketPath: socket.path, listening: listening,
+            status: status, folder: folder.path, folderExists: exists, folderError: folderError, captures: captures
+        )
     }
 
     /// How long to wait for the app's answer: a stop or a timed recording waits for the video to be written too.

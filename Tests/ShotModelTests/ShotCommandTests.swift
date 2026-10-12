@@ -42,6 +42,13 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(try parse("watch --follow") == .watch(ShotCommand.WatchOptions(timeout: nil, follow: true)))
     #expect(try parse("watch --timeout 600 --follow") == .watch(ShotCommand.WatchOptions(timeout: 600, follow: true)))
     #expect(try parse("mcp") == .mcp)
+    #expect(try parse("latest") == .latest(.image))
+    #expect(try parse("latest --kind VIDEO") == .latest(.video))
+    #expect(try parse("list") == .list(limit: nil, since: nil))
+    #expect(try parse("list --limit 50 --since 2h") == .list(limit: 50, since: "2h"))
+    #expect(try parse("get") == .get(nil))
+    #expect(try parse("get /shots/a.png") == .get("/shots/a.png"))
+    #expect(try parse("doctor") == .doctor)
     #expect(try parse("--version") == .version)
     #expect(try parse("-v") == .version)
 }
@@ -104,6 +111,14 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     ("redact a.png --rect 1,2,3,4 --style smudge", "redact", "--style smudge must be blur or pixelate"),
     ("annotate a.png", "annotate", "needs --json with a file of marks, or - to read them from standard input"),
     ("mcp now", "mcp", "takes no arguments"),
+    ("doctor --fix", "doctor", "takes no arguments"),
+    ("latest a.png", "latest", "takes no file; use shot get to name one"),
+    ("latest --kind gif", "latest", "--kind gif must be image, video or any"),
+    ("list --limit 0", "list", "--limit 0 must be from 1 to 50"),
+    ("list --limit 51", "list", "--limit 51 must be from 1 to 50"),
+    ("list --since", "list", "--since needs a value"),
+    ("get a b", "get", "expected one name or path, got 2; quote a name with spaces"),
+    ("get a --kind image", "get", "unknown option --kind; get takes none"),
     ("frames a.mov --count 13", "frames", "--count 13 must be from 1 to 12"),
     ("frames a.mov --count 2 --every 1", "frames", "use --count or --every, not both"),
     ("frames a.mov --every 0", "frames", "--every 0 must be a time above 0, such as 2 or 0:30"),

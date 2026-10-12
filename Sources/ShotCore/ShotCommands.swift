@@ -61,7 +61,7 @@ public enum ShotCommands {
             return try await text(url(path))
         case let .diff(options):
             return try diff(options)
-        case .capture, .record, .watch, .windows, .mcp, .version, .help:
+        case .capture, .record, .watch, .windows, .latest, .list, .get, .doctor, .mcp, .version, .help:
             throw .internal("\(command.name) isn't a media command")
         }
     }
