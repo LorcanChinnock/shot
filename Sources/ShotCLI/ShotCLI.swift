@@ -2,7 +2,7 @@ import Foundation
 import ShotCore
 
 /// The `shot` command line: `shot mcp`, the MCP server AI agents talk to, the headless media commands, `shot capture`
-/// and `shot record`, which ask the running app, and `--version`. It ships inside the app as `Contents/MacOS/shot-cli`, so it reads the
+/// and `shot record`, which ask the running app, `shot watch`, and `--version`. It ships inside the app as `Contents/MacOS/shot-cli`, so it reads the
 /// app's settings to find the captures.
 @main
 enum ShotCLI {
@@ -55,6 +55,8 @@ enum ShotCLI {
                 printError("\(program) \(command.name): \(error.message)")
                 exit(error.exitCode)
             }
+        case let .watch(options):
+            await watch(options, folder: captureFolder(app: appBundle()), program: program)
         default:
             do {
                 let result = try await ShotCommands.run(command)
@@ -88,6 +90,26 @@ enum ShotCLI {
             if let reply = await server.respond(to: line) {
                 FileHandle.standardOutput.write(Data((reply + "\n").utf8))
             }
+        }
+    }
+
+    /// Prints the next capture to arrive in `folder`, or with `follow`, one line for each until the timeout or ^C. Each
+    /// line is written straight through, so a reader sees it at once.
+    static func watch(_ options: ShotCommand.WatchOptions, folder: URL, program: String) async {
+        let tools = AgentTools.live(folder: folder)
+        let span = options.timeout.map { "\(String(format: "%g", $0)) second\($0 == 1 ? "" : "s")" } ?? ""
+        printError("Watching \(folder.path) for \(options.follow ? "new captures" : "the next capture")\(span.isEmpty ? "" : ", for up to \(span)")")
+        var found = false
+        await CaptureWatch.watch(kind: options.kind, timeout: options.timeout, entries: tools.entries) { entry in
+            found = true
+            let line = options.follow ? ShotCommand.jsonLine(tools.metadata(entry)) : ShotCommand.json(tools.metadata(entry))
+            FileHandle.standardOutput.write(Data((line + "\n").utf8))
+            return options.follow
+        }
+        if !found, !options.follow {
+            let error = ShotCommandError.noInput("no new capture in \(folder.path) within \(span)")
+            printError("\(program) watch: \(error.message)")
+            exit(error.exitCode)
         }
     }
 
