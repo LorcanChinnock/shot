@@ -38,10 +38,10 @@ private let captures = tools(in: folder, [
     ("Recording C.mp4", 5, true),
 ])
 
-@Test func thereAreElevenToolsEachWithAnObjectSchema() {
-    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "wait_for_capture", "annotate", "make_gif", "trim_video", "capture_window", "record_window"])
+@Test func thereAreTwelveToolsEachWithAnObjectSchema() {
+    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "wait_for_capture", "annotate", "make_gif", "trim_video", "capture_window", "record_window", "compare"])
     let required = AgentTools.definitions.map { $0.inputSchema["required"] }
-    #expect(required == [nil, nil, nil, nil, nil, nil, .array([.string("annotations")]), nil, .array([.string("start"), .string("end")]), .array([.string("window")]), nil])
+    #expect(required == [nil, nil, nil, nil, nil, nil, .array([.string("annotations")]), nil, .array([.string("start"), .string("end")]), .array([.string("window")]), nil, .array([.string("a"), .string("b")])])
     for tool in AgentTools.definitions {
         #expect(tool.inputSchema["type"] == .string("object"))
         #expect(!tool.description.isEmpty)
@@ -49,7 +49,7 @@ private let captures = tools(in: folder, [
 }
 
 @Test func onlyTheToolsThatChangeNothingAreMarkedReadOnly() {
-    // annotate, make_gif and trim_video add files, and capture_window and record_window take new captures.
+    // annotate, make_gif, trim_video and compare add files, and capture_window and record_window take new captures.
     #expect(AgentTools.definitions.filter(\.readOnly).map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "wait_for_capture"])
 }
 
@@ -241,6 +241,28 @@ private final class Ran: @unchecked Sendable {
     #expect(texts(screenshot).first == "Shot B.png is a screenshot; make_gif needs a recording.")
     #expect(await tools.call("trim_video", .object(["start": .number(3), "end": .number(2)])).isError)
     #expect(ran.commands.count == 2)
+}
+
+@Test func compareRunsADiffOfTwoScreenshotsAndShowsIt() async {
+    let ran = Ran()
+    let result = await making(ran).call("compare", .object(["a": .string("shot a"), "b": .string("/shots/Shot B.png"), "threshold": .number(5)]))
+    #expect(result.isError == false)
+    // "shot a" finds the newest version of Shot A, which has the markup.
+    #expect(ran.commands == [.diff(ShotCommand.DiffOptions(a: "/shots/Shot A (2).png", b: "/shots/Shot B.png", threshold: 1))])
+    #expect(result.content.first == .image(data: "PREVIEW:new.png", mimeType: "image/jpeg"))
+    #expect(texts(result).last == "Saved the diff as a new file beside Shot B.png; neither screenshot is changed.")
+}
+
+@Test func compareNeedsTwoScreenshotsInTheFolder() async {
+    let ran = Ran()
+    let tools = making(ran)
+    let missing = await tools.call("compare", .object(["a": .string("Shot A")]))
+    #expect(missing.isError)
+    #expect(texts(missing) == ["compare needs a and b: the screenshots before and after, each a path or words from its name."])
+    let video = await tools.call("compare", .object(["a": .string("Shot A"), "b": .string("Recording C")]))
+    #expect(texts(video) == ["Recording C.mp4 is a recording; compare needs two screenshots. get_frames shows a recording's frames."])
+    #expect(await tools.call("compare", .object(["a": .string("/etc/passwd"), "b": .string("Shot B")])).isError)
+    #expect(ran.commands.isEmpty)
 }
 
 @Test func onlyCapturesInTheFolderCanBeNamed() async {

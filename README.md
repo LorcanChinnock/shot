@@ -51,7 +51,7 @@ Trim a recording, cut sections out, draw over it, add music or other clips, and 
 
 ### Works with AI agents
 
-Circle the bug, copy, and paste it into Claude Code, Codex or Cursor: your arrows and notes show the agent exactly where to look. Through Shot's MCP server and `shot` command, an agent can also read your captures, the text in them and what you marked, wait for your next one, and screenshot or record a window such as the Simulator; see [Using Shot with AI agents](docs/usage.md#using-shot-with-ai-agents).
+Circle the bug, copy, and paste it into Claude Code, Codex or Cursor: your arrows and notes show the agent exactly where to look. Through Shot's MCP server and `shot` command, an agent can also read your captures, the text in them and what you marked, wait for your next one, screenshot or record a window such as the Simulator, and compare two screenshots to see what changed; see [Using Shot with AI agents](docs/usage.md#using-shot-with-ai-agents).
 
 <img src="docs/media/agents-settings.png" width="720" alt="Settings › Agents with Hand captures to agents and Let agents capture and record turned on, the shot command installed, and the MCP setup commands for Claude Code, Cursor and Codex, each with a Copy button">
 

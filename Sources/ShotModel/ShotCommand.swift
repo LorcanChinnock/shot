@@ -11,6 +11,7 @@ public enum ShotCommand: Equatable, Sendable {
     case frames(FramesOptions)
     /// The text in an image, read on the device, with each line's and word's box.
     case text(path: String)
+    case diff(DiffOptions)
     /// A screenshot of the open window `window` names, taken by the running app.
     case capture(window: String)
     /// Starts, stops or asks about a recording of a window, made by the running app.
@@ -134,6 +135,23 @@ public enum ShotCommand: Equatable, Sendable {
         }
     }
 
+    public struct DiffOptions: Equatable, Sendable {
+        /// The image before.
+        public var a: String
+        /// The image after, whose size and pixels the result is in, and beside which the diff image goes.
+        public var b: String
+        public var output: String?
+        /// How much a channel may differ, from 0 to 1 of its range, before a pixel counts as changed.
+        public var threshold: Double
+
+        public init(a: String, b: String, output: String? = nil, threshold: Double = ImageDiff.defaultThreshold) {
+            self.a = a
+            self.b = b
+            self.output = output
+            self.threshold = threshold
+        }
+    }
+
     public enum RecordAction: Equatable, Sendable {
         /// Records `window`; with `duration`, waits for the recording to end.
         case start(window: String, duration: Double?)
@@ -143,7 +161,7 @@ public enum ShotCommand: Equatable, Sendable {
     }
 
     /// The commands `help` knows, in the order it lists them.
-    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "text", "capture", "record", "watch", "mcp"]
+    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "text", "diff", "capture", "record", "watch", "mcp"]
 
     /// The command's name, for error messages such as `shot gif: …`.
     public var name: String {
@@ -155,6 +173,7 @@ public enum ShotCommand: Equatable, Sendable {
         case .annotate: "annotate"
         case .frames: "frames"
         case .text: "text"
+        case .diff: "diff"
         case .capture: "capture"
         case .record: "record"
         case .watch: "watch"
@@ -189,6 +208,9 @@ public enum ShotCommand: Equatable, Sendable {
         case "info", "gif", "trim", "redact", "annotate", "frames", "text":
             if rest.contains(where: isHelp) { return .help(first) }
             return try parseMedia(first, rest)
+        case "diff":
+            if rest.contains(where: isHelp) { return .help(first) }
+            return try parseDiff(rest)
         case "capture":
             if rest.contains(where: isHelp) { return .help(first) }
             let (positional, values) = try options(first, rest)
@@ -221,6 +243,7 @@ public enum ShotCommand: Equatable, Sendable {
         "annotate": ["output": false, "json": false],
         "frames": ["output": false, "count": false, "every": false, "width": false],
         "text": [:],
+        "diff": ["output": false, "threshold": false],
         "capture": ["window": false],
         "record": ["window": false, "duration": false],
         "watch": ["kind": false, "timeout": false],
@@ -279,6 +302,22 @@ public enum ShotCommand: Equatable, Sendable {
             duration = seconds
         }
         return .record(.start(window: window, duration: duration))
+    }
+
+    /// `diff <a> <b> [-o out.png] [--threshold 0.1]`.
+    private static func parseDiff(_ arguments: [String]) throws(ShotCommandError) -> ShotCommand {
+        let (positional, values) = try options("diff", arguments)
+        guard positional.count == 2 else {
+            throw .usage("diff", "needs two images, the one before and the one after; got \(positional.count)")
+        }
+        var options = DiffOptions(a: positional[0], b: positional[1], output: values["output"]?.first)
+        if let text = values["threshold"]?.first {
+            guard let threshold = Double(text), threshold.isFinite, (0 ... 1).contains(threshold) else {
+                throw .usage("diff", "--threshold \(text) must be a number from 0 to 1: how much of a colour's range a pixel may change by and still count as the same")
+            }
+            options.threshold = threshold
+        }
+        return .diff(options)
     }
 
     /// The arguments that aren't flags, and each flag's values, checked against what `command` takes.
@@ -444,6 +483,7 @@ public enum ShotCommand: Equatable, Sendable {
             "annotate": "\(program) annotate <image> --json marks.json [-o out.png]\n    Draws marks on the image, in the format of Shot's capture record. --json - reads them from standard input.\n    A mark: {\"type\": \"arrow\", \"from\": [410, 220], \"to\": [612, 388], \"color\": \"red\"}\n    Every type and field: \(docs)#using-shot-with-ai-agents",
             "frames": "\(program) frames <video> [--count 8 | --every 2] [--width 1568] [-o folder]\n    Still frames of the video, for an agent that can't watch it: where the picture changes, or evenly every few seconds.",
             "text": "\(program) text <image>\n    The text in the image, read on this Mac: each line and word with its box, [x, y, width, height] in the image's pixels from the top left.",
+            "diff": "\(program) diff <a> <b> [-o out.png] [--threshold 0.1]\n    Where image b differs from a: a dimmed copy of b with the changes highlighted and boxed, and the boxes in b's pixels.\n    Images of different sizes are compared at b's size. --threshold 0 counts any difference; 0.1, the default, ignores anti-aliasing.",
             "capture": "\(program) capture --window <title or app>\n    A screenshot of that open window, taken by Shot without taking focus, saved to the capture folder. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
             "record": "\(program) record --window <title or app> [--duration 10] | --stop [<id>] | --status\n    Records that open window through Shot, without its microphone or camera, for at most \(Int(AgentRequest.maximumDuration / 60)) minutes, saved to the capture folder. Without --duration it prints an id and returns at once; --stop ends it. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
             "watch": "\(program) watch [--kind image|video|any] [--timeout 60] [--follow]\n    Waits for your next capture and prints its name, path, kind and when it was taken. Exits with 66 if none comes before the timeout. --follow prints one line per capture as each comes, until interrupted or the timeout. Reads the capture folder only, so Shot needn't be running.",

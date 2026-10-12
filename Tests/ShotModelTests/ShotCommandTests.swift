@@ -27,6 +27,8 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(try parse("frames a.mov --every 0:30 --width 800 -o out") == .frames(ShotCommand.FramesOptions(input: "a.mov", output: "out", every: 30, width: 800)))
     #expect(try parse("frames a.mov --count 3") == .frames(ShotCommand.FramesOptions(input: "a.mov", count: 3)))
     #expect(try parse("text a.png") == .text(path: "a.png"))
+    #expect(try parse("diff a.png b.png") == .diff(ShotCommand.DiffOptions(a: "a.png", b: "b.png")))
+    #expect(try parse("diff --threshold 0 a.png b.png -o d.png") == .diff(ShotCommand.DiffOptions(a: "a.png", b: "b.png", output: "d.png", threshold: 0)))
     #expect(try parse("capture --window Simulator") == .capture(window: "Simulator"))
     #expect(try parse("capture --window=Calculator") == .capture(window: "Calculator"))
     #expect(try parse("record --window Simulator") == .record(.start(window: "Simulator", duration: nil)))
@@ -60,6 +62,8 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(ShotCommand.usage("trim").hasPrefix("Usage: shot trim <video> --start"))
     #expect(ShotCommand.usage(nil, program: "shot-cli").contains("shot-cli annotate <image> --json"))
     #expect(try parse("capture --help") == .help("capture"))
+    #expect(try parse("diff a.png -h") == .help("diff"))
+    #expect(ShotCommand.usage("diff").hasPrefix("Usage: shot diff <a> <b> [-o out.png]"))
     #expect(ShotCommand.usage("capture").hasPrefix("Usage: shot capture --window <title or app>"))
     #expect(try parse("text --help") == .help("text"))
     #expect(ShotCommand.usage(nil).contains("shot text <image>"))
@@ -93,6 +97,10 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     ("frames a.mov --every 0", "frames", "--every 0 must be a time above 0, such as 2 or 0:30"),
     ("text", "text", "missing the file to work on"),
     ("text a.png -o b.json", "text", "unknown option -o; text takes none"),
+    ("diff a.png", "diff", "needs two images, the one before and the one after; got 1"),
+    ("diff a.png b.png c.png", "diff", "needs two images, the one before and the one after; got 3"),
+    ("diff a.png b.png --threshold 2", "diff", "--threshold 2 must be a number from 0 to 1: how much of a colour's range a pixel may change by and still count as the same"),
+    ("diff a.png b.png --fps 2", "diff", "unknown option --fps; it takes --threshold, -o"),
     ("capture", "capture", "needs --window with words from the window's title or app, such as --window Simulator"),
     ("capture --window", "capture", "--window needs a value"),
     ("capture a.png --window Simulator", "capture", "takes no file; name the window with --window"),

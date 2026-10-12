@@ -1,6 +1,6 @@
 import Foundation
 
-/// The MCP server's tools: six that read captures, one by waiting for the next, three that make new files from one, never changing, moving or
+/// The MCP server's tools: six that read captures, one by waiting for the next, four that make new files from them, never changing, moving or
 /// deleting anything, and two that ask the running app to capture or record a window. What they're called, what they
 /// take, and what they say back are here. Finding files, drawing
 /// previews and running the commands need Apple frameworks, so they come in as closures; ShotCore's `live(folder:)`
@@ -62,6 +62,7 @@ public struct AgentTools: Sendable {
     public static let waitForCapture = "wait_for_capture"
     public static let captureWindow = "capture_window"
     public static let recordWindow = "record_window"
+    public static let compare = "compare"
     /// The longest `record_window` and `wait_for_capture` wait for, so their answer comes within what clients wait for a tool.
     public static let maximumWait: Double = 120
     /// How long `wait_for_capture` waits without a timeout.
@@ -200,6 +201,15 @@ public struct AgentTools: Sendable {
                 "id": .object(["type": .string("string"), "description": .string("For stop: the id start gave. Without it, stops the agent's recording in progress.")]),
             ])
         ),
+        MCPServer.Tool(
+            name: compare,
+            description: "Compares two Shot screenshots, such as before and after a fix, to check what moved or changed and that nothing else did. Returns a diff image (a dimmed copy of b with the changes highlighted and boxed), the boxes of the changed regions as [x, y, width, height] in b's pixels, and the share of pixels changed. Screenshots of different sizes are compared at b's size, and the result says so. The diff is saved beside b as a new file; neither screenshot changes.",
+            inputSchema: schema([
+                "a": .object(["type": .string("string"), "description": .string("The screenshot before: its full path in Shot's capture folder, or its file name or words from it.")]),
+                "b": .object(["type": .string("string"), "description": .string("The screenshot after, named the same way. The regions are in its pixels.")]),
+                "threshold": .object(["type": .string("number"), "description": .string("How much a colour may change, from 0 to 1 of its range, and still count as the same, so anti-aliasing isn't reported. 0 counts any difference. Default \(ImageDiff.defaultThreshold).")]),
+            ], required: ["a", "b"])
+        ),
     ]
 
     public func server(version: String) -> MCPServer {
@@ -257,6 +267,8 @@ public struct AgentTools: Sendable {
             return await captureWindow(arguments)
         case Self.recordWindow:
             return await recordWindow(arguments)
+        case Self.compare:
+            return await compare(arguments, entries)
         default:
             return MCPServer.ToolResult(content: [.text("Unknown tool: \(name)")], isError: true)
         }
@@ -372,6 +384,41 @@ public struct AgentTools: Sendable {
             "match is the box of the words that matched, inside the line's box. Both are [x, y, width, height] in the file's pixels, from the top left."
         }
         return MCPServer.ToolResult(content: [.text(Self.json(.object(object))), .text(note)])
+    }
+
+    /// Compares the screenshots `a` and `b` name, which must both be in the folder, and shows the diff it saved beside `b`.
+    func compare(_ arguments: JSONValue, _ entries: [AgentCaptures.Entry]) async -> MCPServer.ToolResult {
+        var found: [AgentCaptures.Entry] = []
+        for key in ["a", "b"] {
+            guard let query = arguments[key]?.string, !query.trimmingCharacters(in: .whitespaces).isEmpty else {
+                return MCPServer.ToolResult(content: [.text("compare needs a and b: the screenshots before and after, each a path or words from its name.")], isError: true)
+            }
+            guard let entry = AgentCaptures.named(query, in: entries) else {
+                return notFound(query, in: entries)
+            }
+            guard !entry.isVideo else {
+                return MCPServer.ToolResult(content: [.text("\(entry.name) is a recording; compare needs two screenshots. get_frames shows a recording's frames.")], isError: true)
+            }
+            found.append(entry)
+        }
+        var options = ShotCommand.DiffOptions(a: found[0].url.path, b: found[1].url.path)
+        // Lenient like the other tools: a threshold out of range is brought into it.
+        if let threshold = arguments["threshold"]?.number, threshold.isFinite {
+            options.threshold = min(max(threshold, 0), 1)
+        }
+        let result: JSONValue
+        do {
+            result = try await run(.diff(options))
+        } catch {
+            return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
+        }
+        var content: [MCPServer.Content] = []
+        if let path = result["path"]?.string {
+            content = await preview(AgentCaptures.Entry(url: URL(fileURLWithPath: path), isVideo: false, date: now()))
+        }
+        content.append(.text(Self.json(result)))
+        content.append(.text("Saved the diff as a new file beside \(found[1].name); neither screenshot is changed."))
+        return MCPServer.ToolResult(content: content)
     }
 
     /// Asks the app for a screenshot of the window `arguments` names, then shows it as `describe` does a capture.
