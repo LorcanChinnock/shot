@@ -42,7 +42,7 @@ struct VideoEditorRootView: View {
                         .buttonStyle(BrutalButtonStyle(color: Brutal.sky, compact: true))
                         .brutalTip("Export a new \(model.options.format.rawValue.uppercased()) with these options next to the video, and copy it")
                     PartyColor(Brutal.yellow) { color in
-                        Button(model.isComposite ? "Save copy" : "Save") { Task { await model.save() } }
+                        Button(model.isComposite ? "Save Copy" : "Save") { Task { await model.save() } }
                             .buttonStyle(BrutalButtonStyle(color: color, compact: true))
                     }
                     .brutalTip(model.isComposite ? "Write the edit as a new video next to the original and copy it (⌘S)" : "Save the edited video and copy it (⌘S)")

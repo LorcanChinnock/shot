@@ -23,18 +23,18 @@ The full guide to Shot. For a quick introduction, see the [overview](../README.m
 The first time you open Shot, a welcome window takes about 30 seconds, in three steps. Close it at any step to skip the rest.
 
 1. **Screen Recording access.** macOS requires it for every capture. Click **Grant**, or **Open System Settings**, and turn on Shot under **Screen & System Audio Recording**. Once you've been to System Settings, the window asks you to **Relaunch**, since macOS applies access only after a relaunch. Then the window carries on. If Shot already has access, this step is skipped.
-2. **Make it yours.** **Use ⌘⇧3, ⌘⇧4 and ⌘⇧5 for Shot** is on: macOS's own screenshot shortcuts turn off while Shot runs, and come back when it quits. Turn it off to keep them, and Shot uses ⌃⇧3, ⌃⇧4 and ⌃⇧5 instead. **Open Shot at login** is ticked, so your shortcuts work after a restart. **Continue** applies both. If you close the window here instead, macOS keeps its shortcuts and Shot isn't added to your login items. The **Agents** button opens [Settings › Agents](#using-shot-with-ai-agents), for Claude Code, Codex or Cursor.
+2. **Make it yours.** **Use Shot for ⌘⇧3 to ⌘⇧5** is on: macOS's own screenshot shortcuts turn off while Shot runs, and come back when it quits. Turn it off to keep them, and Shot uses ⌃⇧3, ⌃⇧4 and ⌃⇧5 instead. **Open Shot at login** is ticked, so your shortcuts work after a restart. **Continue** applies both. If you close the window here instead, macOS keeps its shortcuts and Shot isn't added to your login items. The **Agents** button opens [Settings › Agents](#using-shot-with-ai-agents), for Claude Code, Codex or Cursor.
 3. **Try it.** Press your area shortcut and drag out any area. Once the capture is done, the window comes back with a few tips, and **Done** closes it. **Skip** closes it before you capture.
 
 If you used Shot before the welcome window existed, you won't see it. To open it again, use **Welcome window › Show** in **Settings › About**, or [`shot://welcome`](#url-scheme); opened that way, it starts from your current settings and closing it changes nothing. If Shot loses its Screen Recording access later, a capture opens the window at the access step.
 
 ## Screenshots
 
-Shot lives in the menu bar. Its menu lists every capture and recording action with its shortcut, **Open Gallery** and **Open Capture Folder**, and while you record, **Pause Recording** (**Resume Recording** while paused) and **Stop Recording**.
+Shot lives in the menu bar. Its menu lists every capture and recording action with its shortcut, **Open Gallery** and **Open Save Folder**, and while you record, **Pause Recording** (**Resume Recording** while paused) and **Stop Recording**.
 
 - **Area (⌘⇧4):** the screen freezes, and you drag out an area. A magnifier next to the pointer helps you find exact edges. Hold Shift for a square, or press Tab to step through 1:1, 4:3, 3:2, 16:9 and back to free (Shift-Tab steps back); the direction you start dragging picks landscape or portrait, and X rotates it mid-drag. Hold Space while dragging to move the area. A label by the pointer shows the size in pixels, and the ratio when one is set. Press Esc to cancel.
 - **Window:** press Space after ⌘⇧4, then click a window. Shot keeps the macOS window shadow unless you turn it off in Settings › Capture.
-- **Fullscreen (⌘⇧3):** captures the screen under the pointer.
+- **Full screen (⌘⇧3):** captures the screen under the pointer.
 
 After a capture, Shot saves it, copies it, and shows it in [Quick Access](#quick-access). Choose which of these happen, or open the editor straight away, in **Settings › Capture**. Clipboard copies are always PNG.
 
@@ -58,7 +58,7 @@ New cards stack above older ones, up to five; a sixth closes the oldest. Cards c
 
 ![The recording controls: elapsed time, Pause, the camera bubble, discard and Stop](media/recording-controls.png)
 
-Press ⌘⇧5, then drag out an area (the magnifier helps here too), press Space and click a window, or press Enter for the full screen. Recording starts as soon as you let go, with the camera bubble, microphone and cursor set as in **Settings › Recording**. Record Fullscreen and Record Window start on their own shortcuts, once you set them.
+Press ⌘⇧5, then drag out an area (the magnifier helps here too), press Space and click a window, or press Return for the full screen. Recording starts as soon as you let go, with the camera bubble, microphone and cursor set as in **Settings › Recording**. Record Full Screen and Record Window start on their own shortcuts, once you set them.
 
 To adjust first, hold ⌥ as you finish the selection, or turn on **Adjust before recording** in **Settings › Recording** to do it every time. You can then adjust the frame, switch between area, screen and window, and turn the camera bubble, microphone and cursor on or off for this recording. Press Return or click **Record** to start, or Esc to cancel. **Countdown** in the same settings adds a 3 or 5 second countdown before recording starts, with or without this step. Esc during the countdown goes back to the adjust step if it was shown, and otherwise cancels the recording.
 
@@ -68,7 +68,7 @@ A window recording captures just that window: it follows the window when it move
 
 While recording, the controls let you pause and resume, stop and save, and discard the recording; for 5 seconds after a discard, **Undo** brings it back. With the microphone on, they also show its level and a button to mute it, which silences only the microphone. With the camera bubble on, they show, hide or resize it. The menu bar menu has **Pause Recording** (or **Resume Recording**) and **Stop Recording** too. On a Mac with a notch, when there's no room for the controls outside the recorded area, they move into the notch: a black pill shows the elapsed time, and hovering it shows the controls. Pressing any record shortcut again, or opening `shot://record`, stops the recording. Quitting Shot while it records stops and saves the recording first.
 
-Recordings are H.264 MP4 at 30 or 60 fps. Each stretch between pauses is written to a temporary folder as it records, and they're joined into one file in your save folder when you stop. With a display that refreshes at 120 Hz or faster, such as a ProMotion MacBook Pro, **Settings › Recording** also offers 120 fps, which records, and exports from the video editor, as HEVC MP4; on a slower screen that recording drops to 60 fps. When a recording finishes, Shot copies the file to the clipboard unless you turn off **Copy to clipboard** in **Settings › Recording**, and shows it in [Quick Access](#quick-access) unless you turn that off in **Settings › Capture**. A recording never opens in the video editor by itself. In **Settings › Recording** you can also show the cursor, outline the recorded area with **Region border** (the outline never appears in the video), and record your microphone and system audio. System audio is sound from other apps; Shot's own sounds are left out.
+Recordings are H.264 MP4 at 30 or 60 fps. Each stretch between pauses is written to a temporary folder as it records, and they're joined into one file in your save folder when you stop. With a display that refreshes at 120 Hz or faster, such as a ProMotion MacBook Pro, **Settings › Recording** also offers 120 fps, which records, and exports from the video editor, as HEVC MP4; on a slower screen that recording drops to 60 fps. When a recording finishes, Shot copies the file to the clipboard unless you turn off **Copy to clipboard** in **Settings › Recording**, and shows it in [Quick Access](#quick-access) unless you turn that off in **Settings › Capture**. A recording never opens in the video editor by itself. In **Settings › Recording** you can also show the cursor, outline the recorded area with **Region border** (the border never appears in the video), and record your microphone and system audio. System audio is sound from other apps; Shot's own sounds are left out.
 
 ### Camera bubble
 
@@ -198,14 +198,14 @@ Open a recording from its Quick Access card (the scissors button, **Edit Video**
   - **Drawn**, how much of an arrow, line or pen stroke is drawn.
 - **Keyframes:** the diamond beside each property in the Inspector keys it at the playhead, or takes that keyframe away. Once a property has keyframes, changing it at another time keys it there. K keys everything the selected clip or annotation can animate at the playhead, or takes those keyframes away.
   - Keyframes show as diamonds on the lane. Click one to go to it and choose its **Easing** (Linear, Ease in, Ease out, Ease in-out or Spring), drag it to move it, or press Delete to take it away.
-  - **Fade in**, **Fade out**, **Pop**, **Slide in** and **Draw on** add ready-made keyframes at the start or end, and **Clear keyframes** removes them all.
+  - **Fade In**, **Fade Out**, **Pop**, **Slide In** and **Draw On** add ready-made keyframes at the start or end, and **Clear Keyframes** removes them all.
 - **Layers:** the annotation and picture lanes above the main track are the layers, topmost first. A blur, pixelate or spotlight affects the lanes under it, video included, not those over it.
   - Drag an annotation or an imported clip up or down to put it on another lane. Drop it between lanes, or on a lane that's locked, taken at that time or holds the other kind, and it gets a new lane of its own.
   - ⌘] and ⌘[ move the selected annotation or clip a lane up or down, and ⌥⌘] and ⌥⌘[ to the top or bottom.
   - Right-click a lane to lock it (Split and new annotations then leave it alone), hide it, mute a sound lane, or delete an annotation lane. The same buttons show at the lane's left edge when you point at it.
 - **Style:** select a clip or an annotation and click **Style** in the **Inspector** for the same shadows, borders and corners as the [annotation editor's Style](#style).
   - A clip can have rounded corners, a shadow, and a Hairline or Solid border. The recording itself can too, which makes the video drawn rather than only trimmed.
-  - The corners, shadow and border grow and shrink with the clip's scale, and Pop and Slide in lift the shadow briefly as the clip comes in.
+  - The corners, shadow and border grow and shrink with the clip's scale, and Pop and Slide In lift the shadow briefly as the clip comes in.
   - On a clip, Glow takes the colour of the frame's edge, and a Hairline is light on a dark frame and dark on a light one, as on an image. The edge is read once a second.
   - Pointing at a preset, or moving to it with the arrow keys, previews it on the annotation or clip. A recording you've only trimmed shows a clip's new style a moment after you click instead.
   - Each click is one undo step, and so is each slider drag. **Edit › Copy Style** (⌥⌘C) and **Paste Style** (⌥⌘V) work here as in the annotation editor, and an annotation you style is remembered for the next one of its kind, as there.
@@ -214,13 +214,13 @@ Open a recording from its Quick Access card (the scissors button, **Edit Video**
 
 Then:
 
-- **Save** (⌘S) replaces the recording with the trimmed version, without re-encoding where possible, and copies it. Once the edit is more than trims and cuts, the button reads **Save copy** and writes a new file next to the recording instead. Imports, annotations, keyframes, a moved or styled recording, a changed volume, reordered clips, and a hidden or muted track all count. The title shows **TRIMMED** while you've only trimmed the ends, and **EDITED** once there's a cut or more.
+- **Save** (⌘S) replaces the recording with the trimmed version, without re-encoding where possible, and copies it. Once the edit is more than trims and cuts, the button reads **Save Copy** and writes a new file next to the recording instead. Imports, annotations, keyframes, a moved or styled recording, a changed volume, reordered clips, and a hidden or muted track all count. The title shows **TRIMMED** while you've only trimmed the ends, and **EDITED** once there's a cut or more.
 - **Copy** (⌘C) copies the edited video, everything included.
 - **Export** writes a new file next to the recording, with these options, and copies it:
   - **MP4** or **GIF**
   - for a GIF, 10, 15 or 24 fps, and 480, 720 or 1080 px wide or the recording's own width (**Full**; never wider than the recording). A GIF keeps the first 60 seconds of what plays, so 120 seconds of video at 2×.
   - for an MP4, **Mute** to leave the sound out. An MP4 that's re-encoded is H.264, or HEVC when H.264 would drop frames: a 120 fps recording, or one above 30 fps that is larger than 2560 × 1600, such as a full Retina screen.
-  - 1×, 1.5× or 2× speed. Speed is unavailable for an MP4 whenever Save reads **Save copy**.
+  - 1×, 1.5× or 2× speed. Speed is unavailable for an MP4 whenever Save reads **Save Copy**.
 
 The estimated size of the exported file is shown before you export. **Cancel**, or Esc, stops an export under way. Closing the window with unsaved edits asks whether to save them, or to save a copy.
 
@@ -275,7 +275,7 @@ The record is stored in the image's own metadata, as JSON in the XMP property `s
 ```
 
 - `original` is set on a version saved from the editor, and names the file it was saved from, in the same folder. `canvas` is the part of that file the version shows, in its pixels: a crop, or past its edges where you added padding. `editable` is `true` when the marks rebuild every layer exactly, and Shot then reopens the version as `original` with the marks live.
-- `source.mode` is `area`, `window` or `fullscreen`. A window capture names the app and its window; an area or fullscreen capture names the frontmost app. `screenFrame` is in points, with the origin at the top left of the main display.
+- `source.mode` is `area`, `window` or `fullscreen`. A window capture names the app and its window; an area or full screen capture names the frontmost app. `screenFrame` is in points, with the origin at the top left of the main display.
 - Coordinates are pixels of the saved file, from its top left, so a crop or padding and **Scale Retina captures to 1×** are already applied. `rect` is `[x, y, width, height]`; `from`, `to` and `center` are `[x, y]`; a pen or marker stroke's `points` are `[[x, y], …]`.
 - `type` is one of `arrow`, `line`, `rectangle`, `rounded`, `ellipse`, `triangle`, `diamond`, `star`, `highlight`, `text`, `note`, `counter`, `pen`, `marker`, `image`, `blur`, `pixelate` or `spotlight`. `color` is the nearest palette name, with the exact `hex` beside it. Text and notes give their `text`; a blur, pixelate, spotlight or placed image gives only where it is, never what's under it. Hidden layers are left out.
 - `lineWidth`, `fill`, `fontSize`, `amount` (a blur's or pixelation's strength), `bend` and `cornerRadius` are there so Shot can rebuild a mark; an agent can ignore them.
@@ -289,7 +289,7 @@ An agent can take its own screenshot or recording of a window, such as the iOS S
 - **Turn on Let agents capture and record** in **Settings › Agents**. It's off by default and separate from **Hand captures to agents**. While it's off, Shot doesn't listen for agents at all.
 - The agent names the window by a few words of its title or its app, such as `Simulator`. Shot captures that window live, even when other windows cover it, and never brings it forward or takes focus.
 - The screenshot is saved to your capture folder, with a record inside it of which app and window it came from. Nothing else happens: no sound, no copy, no Quick Access card, no editor.
-- An agent's recording never records the microphone or the camera. System audio follows **Settings › Recording**. It always shows the red border and the recording controls, whatever **Settings › Recording** says, so you can pause, stop or discard it. It stops itself after 10 minutes. It's saved to your capture folder without a copy, a Quick Access card or confetti. An agent can only stop its own recordings, never one you started.
+- An agent's recording never records the microphone or the camera. System audio follows **Settings › Recording**. It always shows the region border and the recording controls, whatever **Settings › Recording** says, so you can pause, stop or discard it. It stops itself after 10 minutes. It's saved to your capture folder without a copy, a Quick Access card or confetti. An agent can only stop its own recordings, never one you started.
 - Each time, Shot shows a notice at the bottom of the screen, such as **An agent took a screenshot of Simulator** or **An agent is recording Simulator**, so you always know.
 - If Shot isn't running, `shot capture` opens it in the background first. Shot only answers requests from your own user account, over a socket in `~/Library/Application Support/dev.lorcan.Shot/`.
 
@@ -376,15 +376,15 @@ Every capture and recording action, **Pick Colour** and **Copy Latest Capture's 
 
 | Shortcut | Action |
 |---|---|
-| ⌘⇧3 | Capture fullscreen |
+| ⌘⇧3 | Capture the full screen |
 | ⌘⇧4 | Capture an area. Press Space to pick a window instead. |
-| ⌘⇧5 | Record an area. Press Space to pick a window, or Enter for the full screen. |
+| ⌘⇧5 | Record an area. Press Space to pick a window, or Return for the full screen. |
 
-While you set up a recording, the record shortcut starts it. While you record, it stops the recording. You can change any shortcut in **Settings › Shortcuts**: click a shortcut, then press the new keys, which must include ⌘, ⌥ or ⌃. Esc cancels and Delete clears it. Shot refuses a shortcut another action already has, and ⌘Q, ⌘W, ⌘Tab, ⌘Space, ⌘H and ⌘M. **Restore defaults** puts them all back, and turns **Use Shot for ⌘⇧3 to ⌘⇧5** back on.
+While you set up a recording, the record shortcut starts it. While you record, it stops the recording. You can change any shortcut in **Settings › Shortcuts**: click a shortcut, then press the new keys, which must include ⌘, ⌥ or ⌃. Esc cancels and Delete clears it. Shot refuses a shortcut another action already has, and ⌘Q, ⌘W, ⌘Tab, ⌘Space, ⌘H and ⌘M. **Restore Defaults** puts them all back, and turns **Use Shot for ⌘⇧3 to ⌘⇧5** back on.
 
 To keep the macOS screenshot tool, turn off **Use Shot for ⌘⇧3 to ⌘⇧5** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with ⌃ in place of ⌘: ⌃⇧3, ⌃⇧4, ⌃⇧5, plus ⌃⇧W for a window.
 
-Record Fullscreen, Record Window, Pick Colour and Copy Latest Capture's Path have no shortcut until you set one. Pick Colour shows a loupe; click any pixel on screen to copy its hex, such as `#1E90FF`. Capture Window has none while Shot uses ⌘⇧3 to ⌘⇧5; press Space after ⌘⇧4 instead.
+Record Full Screen, Record Window, Pick Colour and Copy Latest Capture's Path have no shortcut until you set one. Pick Colour shows a loupe; click any pixel on screen to copy its hex, such as `#1E90FF`. Capture Window has none while Shot uses ⌘⇧3 to ⌘⇧5; press Space after ⌘⇧4 instead.
 
 ### While selecting
 
@@ -502,13 +502,13 @@ Open Settings from the menu bar icon, or with ⌘, while a Shot window is in fro
 | Section | What you can change |
 |---|---|
 | Gallery | The [gallery](#gallery) |
-| General | Launch at login, the capture sound, hiding Shot's own windows from captures, cropping the menu bar off full-screen captures, the save folder, the file name, PNG or JPEG, and scaling Retina captures to 1× |
+| General | Open Shot at login, the capture sound, hiding Shot from captures, cropping the menu bar off captures of the full screen, the save folder, the file name, PNG or JPEG, and scaling Retina captures to 1× |
 | Capture | What happens after a capture (save, copy, Quick Access, or the editor), the magnifier, the crosshair, the cursor, and window shadows |
 | Quick Access | The screen corner and how long cards stay |
 | Recording | Adjust before recording, the countdown, frame rate, cursor, region outline, copying to the clipboard, the microphone and its input (with a **Test**), system audio, and the camera bubble's camera (with a **Preview**) and size. It also sums up the GIF settings the video editor last used. |
 | Agents | [Handing captures to AI agents](#using-shot-with-ai-agents): a record inside each capture of where it came from and what you marked, [letting agents capture and record a window](#letting-an-agent-capture-and-record), and the setup commands for the MCP server |
 | Shortcuts | The macOS screenshot keys and every global shortcut |
-| About | The version, updates, permissions, the welcome window, the capture folder, links to the code, to report a bug and to sponsor Shot, and resetting all settings |
+| About | The version, updates, permissions, the welcome window, the save folder, links to the code, to report a bug and to sponsor Shot, and resetting all settings |
 
 ## Updates
 
@@ -522,7 +522,7 @@ Shot collects no analytics, and the only time it connects to the network is to c
 
 Captures go to the folder you choose in Settings (`~/Pictures/Shot` by default). When saving is off, they go to a temporary folder, and Shot deletes ones older than a day when it launches.
 
-An agent can take a screenshot or recording through Shot only while **Let agents capture and record** is on, which it is not by default. Shot shows a notice each time, an agent's recording always shows the red border and the controls to stop it, and it never records the microphone or camera. It records system audio only if **Settings › Recording** has it on.
+An agent can take a screenshot or recording through Shot only while **Let agents capture and record** is on, which it is not by default. Shot shows a notice each time, an agent's recording always shows the region border and the controls to stop it, and it never records the microphone or camera. It records system audio only if **Settings › Recording** has it on.
 
 Shot needs Screen & System Audio Recording access for every capture. macOS asks for Microphone and Camera access only when Shot first uses them: when you record with them, or try them with **Test** or **Preview** in Settings › Recording.
 
@@ -538,7 +538,7 @@ Quit Shot and move it to the Trash. Quitting gives the screenshot keys back to m
 
 To remove everything else Shot keeps:
 
-- **Login item:** turn off **Launch at login** in **Settings › General** before you quit, or remove Shot in **System Settings › General › Login Items & Extensions**.
+- **Login item:** turn off **Open Shot at login** in **Settings › General** before you quit, or remove Shot in **System Settings › General › Login Items & Extensions**.
 - **Settings:** run `defaults delete dev.lorcan.Shot`, which removes `~/Library/Preferences/dev.lorcan.Shot.plist`.
 - **Agent socket:** delete `~/Library/Application Support/dev.lorcan.Shot`.
 - **Permissions:** run `tccutil reset All dev.lorcan.Shot` to clear every permission you gave Shot.

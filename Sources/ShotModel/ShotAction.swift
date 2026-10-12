@@ -19,10 +19,10 @@ public enum ShotAction: String, CaseIterable, Sendable {
     public var title: String {
         switch self {
         case .captureArea: "Capture Area"
-        case .captureFullscreen: "Capture Fullscreen"
+        case .captureFullscreen: "Capture Full Screen"
         case .captureWindow: "Capture Window"
         case .record: "Record Area"
-        case .recordFullscreen: "Record Fullscreen"
+        case .recordFullscreen: "Record Full Screen"
         case .recordWindow: "Record Window"
         case .pickColor: "Pick Colour"
         case .copyPath: "Copy Latest Capture's Path"

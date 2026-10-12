@@ -253,7 +253,7 @@ private struct SetupStep: View {
         Header(symbol: "keyboard.fill", color: Brutal.pink, title: "Make it yours", subtitle: "Two choices, both in Settings later.")
         VStack(spacing: 0) {
             ToggleRow(
-                title: "Use ⌘⇧3, ⌘⇧4 and ⌘⇧5 for Shot",
+                title: "Use Shot for ⌘⇧3 to ⌘⇧5",
                 subtitle: model.usesSystemKeys
                     ? "macOS's own screenshot shortcuts turn off while Shot runs, and come back when it quits."
                     : "macOS keeps its shortcuts, and Shot uses \(ownKeys) instead.",

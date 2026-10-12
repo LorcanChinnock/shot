@@ -250,13 +250,13 @@ private struct GeneralSettings: View {
 
     var body: some View {
         SettingsCard(title: "Behaviour", symbol: "slider.horizontal.3") {
-            ToggleRow(title: "Launch at login", subtitle: "Start Shot when you log in to your Mac.", isOn: $launchAtLogin, color: color)
+            ToggleRow(title: "Open Shot at login", subtitle: "Start Shot when you log in to your Mac.", isOn: $launchAtLogin, color: color)
                 .onChange(of: launchAtLogin) { _, enabled in
                     setLaunchAtLogin(enabled)
                 }
             ToggleRow(title: "Play capture sound", isOn: $playSound, color: color)
-            ToggleRow(title: "Hide Shot UI", subtitle: "Keep Quick Access cards, toasts and other Shot windows out of screenshots and recordings. The camera bubble always shows.", isOn: $hidesShotUI, color: color)
-            ToggleRow(title: "Exclude menu bar", subtitle: "Crop the menu bar and notch off full-screen screenshots and recordings.", isOn: $excludesMenuBar, color: color, divider: false)
+            ToggleRow(title: "Hide Shot from captures", subtitle: "Keep Quick Access cards, toasts and other Shot windows out of screenshots and recordings. The camera bubble always shows.", isOn: $hidesShotUI, color: color)
+            ToggleRow(title: "Exclude menu bar", subtitle: "Crop the menu bar and notch off screenshots and recordings of the full screen.", isOn: $excludesMenuBar, color: color, divider: false)
         }
         SettingsCard(title: "Files", symbol: "folder.fill") {
             SettingRow(title: "Save folder", subtitle: (saveFolder as NSString).abbreviatingWithTildeInPath) {
@@ -334,7 +334,7 @@ private struct CaptureSettings: View {
         SettingsCard(title: "Selection", symbol: "plus.viewfinder") {
             ToggleRow(title: "Magnifier", subtitle: "8× loupe next to the pointer for pixel-precise edges.", isOn: $magnifier, color: color)
             ToggleRow(title: "Crosshair", subtitle: "Full-screen guide lines through the pointer.", isOn: $crosshair, color: color)
-            ToggleRow(title: "Include cursor", subtitle: "Show the pointer in area and fullscreen captures.", isOn: $showsCursor, color: color)
+            ToggleRow(title: "Show cursor", subtitle: "Show the pointer when you capture an area or the full screen.", isOn: $showsCursor, color: color)
             ToggleRow(title: "Window shadow", subtitle: "Keep the macOS drop shadow in window captures.", isOn: $windowShadow, color: color, divider: false)
         }
     }
@@ -426,7 +426,7 @@ private struct RecordingSettings: View {
                 BrutalSegmented(selection: $fps, options: frameRates.map { ($0, "\($0) fps") }, color: color)
             }
             ToggleRow(title: "Show cursor", isOn: $showsCursor, color: color)
-            ToggleRow(title: "Region border", subtitle: "Red outline around the recorded area. It never appears in the video.", isOn: $border, color: color)
+            ToggleRow(title: "Region border", subtitle: "A red border around the recorded area. It never appears in the video.", isOn: $border, color: color)
             ToggleRow(title: "Copy to clipboard", subtitle: "Copies the finished recording, ready to paste as a file.", isOn: $copy, color: color, divider: false)
         }
         AudioSettings(color: color)
@@ -584,7 +584,7 @@ private struct AgentSettings: View {
         SettingsCard(title: "Capture", symbol: "macwindow") {
             ToggleRow(
                 title: "Let agents capture and record",
-                subtitle: "Lets an agent ask Shot, through the shot command or the MCP server, to screenshot or record an open window, such as the Simulator. Shot shows a notice each time and never takes focus. An agent's recording shows the red border and stop controls, leaves out the microphone and camera, and stops after \(Int(AgentRequest.maximumDuration / 60)) minutes.",
+                subtitle: "Lets an agent ask Shot, through the shot command or the MCP server, to screenshot or record an open window, such as the Simulator. Shot shows a notice each time and never takes focus. An agent's recording shows the region border and stop controls, leaves out the microphone and camera, and stops after \(Int(AgentRequest.maximumDuration / 60)) minutes.",
                 isOn: $capture, color: color, divider: false
             )
         }
@@ -677,7 +677,7 @@ private struct ShortcutSettings: View {
                 .foregroundStyle(Brutal.ink.opacity(0.65))
                 .fixedSize(horizontal: false, vertical: true)
             Spacer()
-            Button("Restore defaults") {
+            Button("Restore Defaults") {
                 Preferences.resetHotkeys()
                 SystemShortcuts.useShot(true)
                 macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
@@ -766,7 +766,7 @@ private struct AboutSettings: View {
         }
 
         SettingsCard(title: "Data", symbol: "externaldrive.fill") {
-            SettingRow(title: "Capture folder", subtitle: (Preferences().saveFolder.path as NSString).abbreviatingWithTildeInPath) {
+            SettingRow(title: "Save folder", subtitle: (Preferences().saveFolder.path as NSString).abbreviatingWithTildeInPath) {
                 Button("Open") {
                     let folder = Preferences().saveFolder
                     try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -799,7 +799,7 @@ private struct AboutSettings: View {
                     .buttonStyle(BrutalButtonStyle(compact: true))
             }
             SettingRow(title: "Report a problem", subtitle: "Bug reports and ideas are welcome.", divider: false) {
-                Button("New issue") { NSWorkspace.shared.open(Self.repository.appending(path: "issues/new/choose")) }
+                Button("New Issue") { NSWorkspace.shared.open(Self.repository.appending(path: "issues/new/choose")) }
                     .buttonStyle(BrutalButtonStyle(compact: true))
             }
         }

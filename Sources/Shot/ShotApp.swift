@@ -45,17 +45,17 @@ private struct ShotMenu: View {
         }
         Divider()
         Button("Open Gallery") { GalleryController.shared.show() }
-        Button("Open Capture Folder") {
+        Button("Open Save Folder") {
             // Where captures land: the save folder, or Shot's temporary folder with saving off.
             let folder = Preferences().captureFolder
             do {
                 try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             } catch {
-                Toast.error("Couldn't open the capture folder: \(error.localizedDescription)")
+                Toast.error("Couldn't open the save folder: \(error.localizedDescription)")
                 return
             }
             if !NSWorkspace.shared.open(folder) {
-                Toast.error("Couldn't open the capture folder")
+                Toast.error("Couldn't open the save folder")
             }
         }
         UpdateButton(updater: Updater.shared)
