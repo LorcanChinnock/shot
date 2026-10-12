@@ -533,6 +533,12 @@ final class EditorModel {
         return document.captureHas(Preferences().newCaptureStyle, scale: scale)
     }
 
+    /// Whether new captures get a saved style that isn't this screenshot's.
+    var newCapturesHaveOtherStyle: Bool {
+        _ = newCaptureSettingChanges
+        return Preferences().newCaptureStyle != nil && !usesStyleForNewCaptures
+    }
+
     /// Saves the screenshot's style for new captures to open and copy with, or turns that off.
     func setUsesStyleForNewCaptures(_ on: Bool) {
         Preferences.styleNewCaptures(with: on ? document.copyStyle(of: .capture, scale: scale) : nil)
