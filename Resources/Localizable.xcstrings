@@ -3317,6 +3317,9 @@
         }
       }
     },
+    "Any app with a JSON config" : {
+
+    },
     "Applies to every spotlight in the image." : {
       "localizations" : {
         "de" : {
