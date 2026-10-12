@@ -14,6 +14,8 @@ final class CaptureCoordinator {
     private var setup: RecordingSetupController?
     /// The region being recorded, as an AppKit global rect, and whether it is a window or the whole screen.
     private var recordingRegion = CGRect.zero
+    /// The last area an area screenshot took, as a global AppKit rect, for Capture Previous Area. It's forgotten on quit.
+    private var previousArea: CGRect?
     private var gifExports: [URL: Task<Void, Never>] = [:]
     /// From a full-screen capture action to its clipboard write; ended with "copied", or "not copied" when nothing was copied.
     /// Area and window captures wait for the user's selection, so their time says nothing about Shot's speed.
@@ -102,6 +104,8 @@ final class CaptureCoordinator {
                     try await captureWithOverlay(windowMode: false)
                 case .captureWindow:
                     try await captureWithOverlay(windowMode: true)
+                case .capturePrevious:
+                    try await capturePreviousArea()
                 case .record:
                     try await startRecording(mode: .area)
                 case .recordFullscreen:
@@ -200,6 +204,7 @@ final class CaptureCoordinator {
             image = cropped
             scale = display.scale
             frame = rect.offsetBy(dx: display.frame.minX, dy: display.frame.minY)
+            previousArea = frame
         case let .window(info):
             windowShadow = Preferences().windowShadow
             let result = try await WindowCapturer.capture(windowID: info.windowID, includeShadow: windowShadow)
@@ -217,6 +222,29 @@ final class CaptureCoordinator {
             source?.mode = "fullscreen"
         }
         try await finish(image: image, scale: scale, from: frame, windowShadow: windowShadow, source: source)
+    }
+
+    /// Takes the area the last area screenshot took, without the overlay.
+    private func capturePreviousArea() async throws {
+        guard let area = previousArea else {
+            Toast.show("No previous area yet. Capture an area first.")
+            return
+        }
+        // The display layout may have changed since, so the area must still sit on one display.
+        guard let screen = NSScreen.screens.first(where: { $0.frame.contains(area) }) else {
+            Toast.show("The previous area isn't on a display now")
+            return
+        }
+        let source = frontmostSource(mode: "area")
+        guard let frozen = try await DisplayCapturer.captureAll(screens: [screen]).first else {
+            throw CaptureError.displayNotFound
+        }
+        let local = area.offsetBy(dx: -screen.frame.minX, dy: -screen.frame.minY)
+        let pixels = Geometry.pixelRect(forViewRect: local, viewHeight: frozen.frame.height, scale: frozen.scale)
+        guard let image = frozen.image.cropping(to: pixels) else {
+            throw CaptureError.encodingFailed
+        }
+        try await finish(image: image, scale: frozen.scale, from: area, source: source)
     }
 
     /// What the capture's record says about where it came from, when the Agents setting is on: the frontmost app, which

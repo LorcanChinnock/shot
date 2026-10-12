@@ -5354,6 +5354,9 @@
         }
       }
     },
+    "Capture Previous Area" : {
+
+    },
     "Capture Window" : {
       "localizations" : {
         "de" : {
@@ -19908,6 +19911,9 @@
         }
       }
     },
+    "No previous area yet. Capture an area first." : {
+
+    },
     "No screenshots in your save folder yet" : {
       "localizations" : {
         "de" : {
@@ -31871,6 +31877,9 @@
           }
         }
       }
+    },
+    "The previous area isn't on a display now" : {
+
     },
     "The recording has no video track" : {
       "localizations" : {
