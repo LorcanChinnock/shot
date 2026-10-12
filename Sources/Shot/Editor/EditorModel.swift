@@ -961,11 +961,12 @@ final class EditorModel {
         defer { isSaving = false }
         commitPendingText?()
         let snapshot = document.snapshot
-        guard let result = await rendered(as: ImageFormat(fileExtension: fileURL.pathExtension), record: savedRecord()) else {
+        let format = ImageFormat(fileExtension: fileURL.pathExtension)
+        guard let result = await rendered(as: format, record: savedRecord()) else {
             Toast.error("Couldn't save the image")
             return false
         }
-        let destination = FileNaming.nextVersionURL(of: fileURL)
+        let destination = FileNaming.nextVersionURL(of: fileURL, savedAs: format)
         do {
             try result.file.write(to: destination, options: .atomic)
             Clipboard.copy(png: result.png)

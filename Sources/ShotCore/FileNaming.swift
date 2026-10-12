@@ -39,4 +39,12 @@ public enum FileNaming {
         }
         return next
     }
+
+    /// The next version of `url` for a file written as `format`. It keeps the original's extension when that names
+    /// `format`, so "a.jpeg" gives "a (2).jpeg", and otherwise takes the format's own, so "a.heic" saved as PNG gives "a (2).png".
+    public static func nextVersionURL(of url: URL, savedAs format: ImageFormat, exists: (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }) -> URL {
+        let names = format == .png ? ["png"] : ["jpg", "jpeg"]
+        let ext = names.contains(url.pathExtension.lowercased()) ? url.pathExtension : format.fileExtension
+        return nextVersionURL(of: url.deletingPathExtension().appendingPathExtension(ext), exists: exists)
+    }
 }
