@@ -802,7 +802,7 @@ final class VideoEditorModel {
         guard !isExporting else {
             return false
         }
-        let output = FileNaming.uniqueURL(in: fileURL.deletingLastPathComponent(), date: Date(), pathExtension: Self.copyExtension(of: fileURL), prefix: Preferences().filePrefix)
+        let output = VersionWriter.videoCopyURL(of: fileURL, prefix: Preferences().filePrefix)
         guard await export(to: output, creating: nil) else {
             try? FileManager.default.removeItem(at: output)
             return false
@@ -811,11 +811,6 @@ final class VideoEditorModel {
         Clipboard.copy(fileURL: output)
         Toast.show("Saved a copy and copied \(output.lastPathComponent)", duration: .seconds(3))
         return true
-    }
-
-    /// Copies keep the recording's format when AVFoundation can write it, and are MP4 otherwise.
-    private static func copyExtension(of url: URL) -> String {
-        url.pathExtension.lowercased() == "mov" ? "mov" : "mp4"
     }
 
     /// Writes a new file next to the original with the trim, cuts and export options, and copies it.
@@ -869,7 +864,7 @@ final class VideoEditorModel {
     }
 
     private func export(to output: URL, creating folder: URL?) async -> Bool {
-        let plan = VideoExportPlan.copy(of: project, as: Self.copyExtension(of: fileURL) == "mov" ? .mov : .mp4)
+        let plan = VersionWriter.videoPlan(for: project, of: fileURL)
         return await exporting {
             if let folder {
                 try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

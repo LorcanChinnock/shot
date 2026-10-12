@@ -151,7 +151,7 @@ public enum AgentCaptures {
     }
 
     /// "X (3)" is version 3 of "X"; anything else is version 1 of itself. The suffix is the one
-    /// `FileNaming.nextVersionURL` drops: a space, then digits in brackets.
+    /// `VersionNaming.nextVersionURL` drops: a space, then digits in brackets.
     static func versioned(_ stem: String) -> (stem: String, version: Int) {
         guard stem.hasSuffix(")"), let open = stem.lastIndex(of: "("), open > stem.startIndex,
               stem[stem.index(before: open)] == " ",

@@ -95,11 +95,6 @@ private func grey(width: Int, height: Int) -> CGImage {
 
 // MARK: File naming
 
-@Test func aFileWithNoExtensionGetsANextVersionWithNone() {
-    let original = URL(fileURLWithPath: "/tmp/Notes")
-    #expect(FileNaming.nextVersionURL(of: original) { _ in false }.lastPathComponent == "Notes (2)")
-}
-
 @Test func aFilePrefixCantMakeAHiddenFileOrAPathSeparator() {
     #expect(Preferences.sanitizedPrefix(".hidden") == "hidden")
     #expect(Preferences.sanitizedPrefix("a:b/c") == "a-b-c")

@@ -207,7 +207,7 @@ public enum ShotCommands {
                 try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
                 return folder
             } catch CocoaError.fileWriteFileExists where output == nil {
-                folder = FileNaming.nextVersionURL(of: folder)
+                folder = VersionNaming.nextVersionURL(of: folder)
             } catch CocoaError.fileWriteFileExists {
                 throw .cantCreate("\(folder.path) already exists, and shot never overwrites")
             } catch {
@@ -218,7 +218,8 @@ public enum ShotCommands {
     }
 
     /// Draws the annotations `make` gives for the input image, and the image's scale, onto a copy of it, recording them
-    /// inside the new file so a person can open it in Shot and change them.
+    /// inside the new file so a person can open it in Shot and change them. The record and the drawing are the editor's,
+    /// from `VersionWriter`; unlike the editor, a command records whether or not agents are handed captures.
     static func draw(input path: String, output: String?, _ make: (CGImage, CGFloat) throws(ShotCommandError) -> [Annotation]) throws(ShotCommandError) -> JSONValue {
         let input = url(path)
         try requireInput(input)
@@ -229,20 +230,16 @@ public enum ShotCommands {
         let target = try destination(for: input, output: output, extensions: ["png", "jpg", "jpeg"], default: ["png", "jpg", "jpeg"].contains(own) ? own : "png", command: "draw")
         let format = ImageFormat(fileExtension: target.url.pathExtension)
         let scale = ImageCodec.scale(ofFileAt: input)
-        let annotations = try make(image, scale)
-        let canvas = CGRect(x: 0, y: 0, width: image.width, height: image.height)
-        var document = EditorDocument(base: image, annotations: annotations, background: EditorDocument.defaultBackground(for: format))
+        var document = EditorDocument(base: image, annotations: try make(image, scale), background: EditorDocument.defaultBackground(for: format))
         document.hasWindowShadow = ImageCodec.hasWindowShadow(ofFileAt: input)
         defer { AnnotationRenderer.releaseCaches() }
-        guard let flat = AnnotationRenderer.flatten(document) else {
+        let data: Data
+        do throws(VersionWriter.Failure) {
+            let record = VersionWriter.record(of: document, drawnOn: input, savedAs: format, scale: scale)
+            data = try VersionWriter.render(document, scale: scale, as: format, record: record).file
+        } catch .draw {
             throw .internal("couldn't draw the image")
-        }
-        let record = CaptureRecord(
-            original: input.lastPathComponent, kind: "image", created: Date(), size: CaptureRecord.Size(width: flat.width, height: flat.height),
-            scale: Double(scale), source: ImageCodec.record(ofFileAt: input)?.source, canvas: [0, 0, canvas.width, canvas.height],
-            editable: CaptureMark.rebuildExactly(annotations, canvas: canvas), annotations: CaptureMark.mapping(annotations, canvas: canvas)
-        )
-        guard let data = ImageCodec.data(from: flat, scale: scale, format: format, windowShadow: document.hasWindowShadow, record: record) else {
+        } catch {
             throw .internal("couldn't encode the image")
         }
         let temporary = temporaryURL(beside: target.url, pathExtension: target.url.pathExtension)
@@ -280,9 +277,7 @@ public enum ShotCommands {
             }
             return (url, true)
         }
-        let candidate = input.deletingPathExtension().appendingPathExtension(ext)
-        let url = candidate == input || FileManager.default.fileExists(atPath: candidate.path) ? FileNaming.nextVersionURL(of: candidate) : candidate
-        return (url, false)
+        return (VersionNaming.commandOutputURL(for: input, pathExtension: ext), false)
     }
 
     /// A hidden file in the same folder as `url`, so moving it there is a rename on one volume.
@@ -305,7 +300,7 @@ public enum ShotCommands {
             guard !target.exact else {
                 throw .cantCreate("\(url.path) already exists, and shot never overwrites")
             }
-            url = FileNaming.nextVersionURL(of: url)
+            url = VersionNaming.nextVersionURL(of: url)
         }
         throw .cantCreate("couldn't find a free name beside \(target.url.path)")
     }
