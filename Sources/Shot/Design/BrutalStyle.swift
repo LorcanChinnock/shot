@@ -40,6 +40,8 @@ enum Brutal {
     static let sky = Color(hex: 0x6FC3FF)
     static let violet = Color(hex: 0x9B8CFF)
     static let red = Color(hex: 0xFF5C5C)
+    static let orange = Color(hex: 0xFF9F43)
+    static let lime = Color(hex: 0xB6E24B)
 
     static func title(_ size: CGFloat) -> Font { .system(size: size, weight: .black) }
     static let label = Font.system(size: 13, weight: .semibold)
