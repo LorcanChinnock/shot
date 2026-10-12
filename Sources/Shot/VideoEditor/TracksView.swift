@@ -228,7 +228,8 @@ struct TracksView: View {
             if let id = model.selectedClipID, let animation = model.selectedAnimation, let start = project.clipStart(id), let lane = layout.lane(ofTrack: trackIndex(of: id)) {
                 ForEach(animation.times, id: \.self) { time in
                     diamond(selected: model.selectedKeyframe.map { abs($0 - time) <= Keyframes.tolerance } ?? false)
-                        .offset(x: timeline.x(for: start + time) - 6, y: lane.y + 9 - 6)
+                        // On the lane's bottom edge, clear of the clip's name.
+                        .offset(x: timeline.x(for: start + time) - 6, y: lane.y + lane.height - 6)
                 }
             }
             if let main = layout.lane(ofTrack: 0), let first = project.main.clips.first, let last = project.main.clips.last {
@@ -509,7 +510,7 @@ struct TracksView: View {
         model.clearSelection()
         // A diamond on the selected clip is grabbed before the clip under it.
         if let id = model.selectedClipID, let animation = model.selectedAnimation, let start = project.clipStart(id), let keyed = layout.lane(ofTrack: trackIndex(of: id)) {
-            for time in animation.times where abs(point.x - timeline.x(for: start + time)) <= 8 && abs(point.y - (keyed.y + 9)) <= 9 {
+            for time in animation.times where abs(point.x - timeline.x(for: start + time)) <= 8 && abs(point.y - (keyed.y + keyed.height)) <= 9 {
                 model.selectKeyframe(time)
                 return .keyframe(id, time: time)
             }

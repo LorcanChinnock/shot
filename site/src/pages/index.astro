@@ -27,7 +27,7 @@ const half = '(min-width: 900px) 540px, 100vw';
       <ForMacs />
       <p class="meta">Free and open source. Version {release.version}, for macOS 15 or later on Apple Silicon. <a href="#install">How to install</a></p>
       <Window>
-        <Loop name="hero" label="Pressing ⌘⇧4, drawing an arrow and a note on the screenshot, then pasting it into another app" eager />
+        <Loop name="hero" label="Pressing ⌘⇧4, adding a note with an arrow to the problem, then pasting the screenshot into a chat" eager />
       </Window>
     </div>
   </section>
@@ -43,11 +43,11 @@ const half = '(min-width: 900px) 540px, 100vw';
     <div class="wrap pair">
       <div>
         <h2 class="say">Press <kbd class="key">A</kbd> for an arrow, or <kbd class="key">B</kbd> to blur an email address.</h2>
-        <Window><Image src={editor} alt="The annotation editor with a blurred email address, a highlighted line, numbered counters, an arrow and a sticky note beside the screenshot" widths={[540, 1080]} sizes={half} /></Window>
+        <Window><Image src={editor} alt="The annotation editor with a blurred email address, the discount line highlighted, and a sticky note with an arrow pointing at it" widths={[540, 1080]} sizes={half} /></Window>
       </div>
       <div>
-        <h2 class="say"><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">5</kbd> records instead. Your face can come too.</h2>
-        <Window><Loop name="recording" label="Recording an area of the screen with the round camera bubble in the corner" /></Window>
+        <h2 class="say"><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">5</kbd> records instead.</h2>
+        <Window><Loop name="recording" label="Recording an area of the screen while a chart animates" /></Window>
       </div>
     </div>
   </section>
@@ -55,7 +55,7 @@ const half = '(min-width: 900px) 540px, 100vw';
   <section>
     <div class="wrap">
       <h2 class="say">Then cut the part where you went looking for the right tab, and save it as a GIF.</h2>
-      <Window><Image src={videoEditor} alt="The video editor with trim handles, a cut, and the GIF export options" widths={[640, 1088, 1600]} sizes={full} /></Window>
+      <Window><Image src={videoEditor} alt="The video editor with a trimmed start, a cut where the recording went to another page, a Best day label and an arrow, and the GIF export options" widths={[640, 1088, 1600]} sizes={full} /></Window>
     </div>
   </section>
 

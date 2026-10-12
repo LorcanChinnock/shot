@@ -5,6 +5,14 @@ import SwiftUI
 
 let brand = Color(red: 0.13, green: 0.55, blue: 0.45)
 
+/// A time of day in the scenes, such as "09:42", moved by `--clock`. Anything else, such as "Yesterday", is left as it is.
+func clock(_ time: String) -> String {
+    let n = time.split(separator: ":").compactMap { Int($0) }
+    guard n.count == 2 else { return time }
+    let minutes = ((n[0] * 60 + n[1] + Options.launch.clock) % 1440 + 1440) % 1440
+    return String(format: "%02d:%02d", minutes / 60, minutes % 60)
+}
+
 struct Person {
     let name: String
     let initials: String
@@ -51,7 +59,7 @@ struct Tag: View {
     }
 }
 
-/// The left column every main scene shares, with the scene's own item selected.
+/// The left column every main scene shares, with the scene's own item selected. With `select`, the items can be clicked.
 struct Sidebar: View {
     enum Item: String, CaseIterable {
         case inbox = "Inbox", tickets = "Tickets", customers = "Customers", reports = "Reports", settings = "Settings"
@@ -68,6 +76,7 @@ struct Sidebar: View {
     }
 
     let selected: Item
+    var select: ((Item) -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -94,6 +103,8 @@ struct Sidebar: View {
                 .padding(.horizontal, 8)
                 .frame(height: 28)
                 .background(item == selected ? brand.opacity(0.13) : .clear, in: RoundedRectangle(cornerRadius: 6))
+                .contentShape(Rectangle())
+                .onTapGesture { select?(item) }
             }
 
             Spacer()

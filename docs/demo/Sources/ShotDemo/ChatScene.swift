@@ -12,8 +12,8 @@ struct ChatScene: View {
     }
 
     @State private var messages = [
-        Message(id: 0, person: People.chris, time: "09:51", text: "Anyone else seeing SPRING20 fail at checkout?"),
-        Message(id: 1, person: People.sam, time: "09:53", text: "Got a screenshot? It works on staging."),
+        Message(id: 0, person: People.chris, time: clock("09:51"), text: "Anyone else seeing SPRING20 fail at checkout?"),
+        Message(id: 1, person: People.sam, time: clock("09:53"), text: "Got a screenshot? It works on staging."),
     ]
     @State private var draft = ""
     @State private var attachment: NSImage?
@@ -121,7 +121,7 @@ struct ChatScene: View {
     private func send() {
         guard canSend else { return }
         withAnimation(.spring(duration: 0.35)) {
-            messages.append(Message(id: messages.count, person: People.alex, time: "09:54", text: draft, image: attachment))
+            messages.append(Message(id: messages.count, person: People.alex, time: clock("09:54"), text: draft, image: attachment))
         }
         draft = ""
         attachment = nil

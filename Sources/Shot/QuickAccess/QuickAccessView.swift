@@ -96,8 +96,8 @@ private struct QuickAccessCardView: View {
 
     private var hoverActions: some View {
         ZStack {
-            Rectangle().fill(.ultraThinMaterial)
-            Color.white.opacity(0.25)
+            // Dimmed rather than blurred, so the screenshot still shows behind the buttons.
+            Color.black.opacity(0.35)
             VStack(spacing: 9) {
                 Button("Copy") { controller.copy(card) }
                     .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))

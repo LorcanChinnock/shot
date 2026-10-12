@@ -9,13 +9,15 @@ import SwiftUI
 /// left to right and centred on the main screen. `--appearance light|dark` overrides the system appearance.
 /// `--area x,y,w,h` centres the windows in that rectangle instead (screen points, from the top left), to line them
 /// up with a capture region. `--backdrop` puts a plain backdrop behind the windows, so captures show no wallpaper or other apps.
+/// `--clock HH:MM` moves every time of day in the scenes so the message you send in the chat is at HH:MM, to match the
+/// time in a capture's file name. Without it, that message is at 09:54.
 /// ⌘R replays the animations.
 @main
 @MainActor
 enum DemoMain {
     static func main() {
         let app = NSApplication.shared
-        let delegate = AppDelegate(options: Options(CommandLine.arguments))
+        let delegate = AppDelegate(options: .launch)
         app.delegate = delegate
         app.setActivationPolicy(.regular)
         withExtendedLifetime(delegate) { app.run() }
@@ -37,10 +39,14 @@ enum Scene: String, CaseIterable {
 }
 
 struct Options {
+    static let launch = Options(CommandLine.arguments)
+
     var scenes: [Scene] = [.ticket]
     var appearance: NSAppearance.Name?
     var backdrop = false
     var area: CGRect?
+    /// Minutes to add to every time of day in the scenes.
+    var clock = 0
 
     init(_ arguments: [String]) {
         var rest = arguments.dropFirst()
@@ -57,6 +63,9 @@ struct Options {
             case "--area":
                 let n = value.split(separator: ",").compactMap { Double($0) }
                 if n.count == 4 { area = CGRect(x: n[0], y: n[1], width: n[2], height: n[3]) }
+            case "--clock":
+                let n = value.split(separator: ":").compactMap { Int($0) }
+                if n.count == 2 { clock = n[0] * 60 + n[1] - (9 * 60 + 54) }
             case "--appearance":
                 appearance = value == "dark" ? .darkAqua : value == "light" ? .aqua : nil
             default:
