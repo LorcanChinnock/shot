@@ -890,25 +890,12 @@ final class EditorModel {
         deleteLayers(selectedIDs)
     }
 
-    /// `record` makes the saved file say, for agents, what was marked and which file it came from.
-    private func rendered(as format: ImageFormat = .png, record: CaptureRecord? = nil) async -> (image: CGImage, png: Data, file: Data)? {
+    /// The flattened image as a PNG, for the clipboard.
+    private func renderedPNG() async -> Data? {
         let document = document, scale = scale
-        let result = await Task.detached { () -> (image: SendableImage, png: Data, file: Data)? in
-            // A window with the macOS shadow still has it once saved, so the file keeps saying so.
-            let windowShadow = document.hasWindowShadow
-            guard let image = AnnotationRenderer.flatten(document) else {
-                return nil
-            }
-            var record = record
-            record?.size = CaptureRecord.Size(width: image.width, height: image.height)
-            guard let png = ImageCodec.data(from: image, scale: scale, windowShadow: windowShadow, record: record),
-                  let file = format == .png ? png : ImageCodec.data(from: image, scale: scale, format: format, windowShadow: windowShadow, record: record)
-            else {
-                return nil
-            }
-            return (SendableImage(image), png, file)
+        return await Task.detached {
+            try? VersionWriter.render(document, scale: scale, as: .png, record: nil).file
         }.value
-        return result.map { ($0.image.image, $0.png, $0.file) }
     }
 
     /// Copies the selected annotation. Returns false if nothing is selected.
@@ -930,31 +917,12 @@ final class EditorModel {
     /// Copies the flattened image.
     func copy() async {
         commitPendingText?()
-        guard let result = await rendered() else {
+        guard let png = await renderedPNG() else {
             Toast.error("Couldn't copy the image")
             return
         }
-        Clipboard.copy(png: result.png)
+        Clipboard.copy(png: png)
         Toast.show("Copied")
-    }
-
-    /// What a saved version records for agents while the Agents setting is on: the marks, in the saved file's pixels,
-    /// the file they're drawn on, which may itself be a version, and that file's source, so the version still says which app and window it showed. It's
-    /// editable when reopening the original with the marks gives this document back. The size is filled in once rendered.
-    private func savedRecord() -> CaptureRecord? {
-        guard Preferences().agentHandoff else {
-            return nil
-        }
-        let canvas = document.canvasRect
-        // The file is the canvas at 1:1, so the marks need no scaling beyond the canvas offset.
-        return CaptureRecord(
-            original: fileURL.lastPathComponent, kind: "image", created: Date(), size: CaptureRecord.Size(width: 0, height: 0), scale: scale,
-            source: ImageCodec.record(ofFileAt: fileURL)?.source,
-            canvas: [canvas.minX, canvas.minY, canvas.width, canvas.height].map { (Double($0) * 10).rounded() / 10 },
-            editable: CaptureMark.rebuildExactly(document.annotations, canvas: canvas) && document.captureStyle.isEmpty && document.captureCornerRadius == 0
-                && document.background == EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension)),
-            annotations: CaptureMark.mapping(document.annotations, canvas: canvas)
-        )
     }
 
     /// Returns false if the save failed or another is still running.
@@ -967,20 +935,21 @@ final class EditorModel {
         defer { isSaving = false }
         commitPendingText?()
         let snapshot = document.snapshot
-        let format = ImageFormat(fileExtension: fileURL.pathExtension)
-        guard let result = await rendered(as: format, record: savedRecord()) else {
+        let document = document, scale = scale, fileURL = fileURL
+        let saved = await Task.detached {
+            Result { () throws(VersionWriter.Failure) in try VersionWriter.saveImage(document, of: fileURL, scale: scale) }
+        }.value
+        switch saved {
+        case let .success(version):
+            Clipboard.copy(png: version.png)
+            savedSnapshot = snapshot
+            isDirty = self.document.snapshot != snapshot
+            Toast.show("Saved as \(version.url.lastPathComponent) and copied", duration: .seconds(3))
+            return true
+        case .failure(.draw), .failure(.encode):
             Toast.error("Couldn't save the image")
             return false
-        }
-        let destination = FileNaming.nextVersionURL(of: fileURL, savedAs: format)
-        do {
-            try result.file.write(to: destination, options: .atomic)
-            Clipboard.copy(png: result.png)
-            savedSnapshot = snapshot
-            isDirty = document.snapshot != snapshot
-            Toast.show("Saved as \(destination.lastPathComponent) and copied", duration: .seconds(3))
-            return true
-        } catch {
+        case let .failure(.write(error)):
             Toast.error("Couldn't save: \(error.localizedDescription)")
             return false
         }

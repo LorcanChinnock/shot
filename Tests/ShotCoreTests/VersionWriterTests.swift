@@ -1,0 +1,86 @@
+import CoreGraphics
+import Foundation
+import Testing
+@testable import ShotCore
+
+private func plainImage(width: Int = 120, height: Int = 80) -> CGImage {
+    let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+    ctx.setFillColor(CGColor(gray: 0.5, alpha: 1))
+    ctx.fill(CGRect(x: 0, y: 0, width: width, height: height))
+    return ctx.makeImage()!
+}
+
+private let arrow = Annotation(kind: .arrow(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 60, y: 40)), color: RGBA.presets[0], lineWidth: 4)
+
+@Test func aVersionSavedInAnotherFormatTakesThatFormatsExtension() {
+    let folder = URL(fileURLWithPath: "/tmp/shots")
+    let none: (URL) -> Bool = { _ in false }
+    // Shot writes only PNG and JPEG, so a HEIC or TIFF saves as PNG and its version must say so.
+    #expect(VersionWriter.nextVersionURL(of: folder.appendingPathComponent("Photo.heic"), savedAs: .png, exists: none).lastPathComponent == "Photo (2).png")
+    #expect(VersionWriter.nextVersionURL(of: folder.appendingPathComponent("Scan (2).tiff"), savedAs: .png, exists: none).lastPathComponent == "Scan (2).png")
+    // An extension that already names the format is kept as written.
+    #expect(VersionWriter.nextVersionURL(of: folder.appendingPathComponent("Photo.jpeg"), savedAs: .jpeg, exists: none).lastPathComponent == "Photo (2).jpeg")
+    #expect(VersionWriter.nextVersionURL(of: folder.appendingPathComponent("Photo.JPG"), savedAs: .jpeg, exists: none).lastPathComponent == "Photo (2).JPG")
+    let taken: Set<String> = ["Photo (2).png"]
+    #expect(VersionWriter.nextVersionURL(of: folder.appendingPathComponent("Photo.heic"), savedAs: .png) { taken.contains($0.lastPathComponent) }.lastPathComponent == "Photo (3).png")
+}
+
+@Test func savingAnImageWritesItsNextVersionAndRecordsMarksOnlyForAgents() throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let original = folder.appendingPathComponent("Shot.png")
+    try #require(ImageCodec.data(from: plainImage(), scale: 2)).write(to: original)
+    let document = EditorDocument(base: plainImage(), annotations: [arrow])
+
+    let quiet = try VersionWriter.saveImage(document, of: original, scale: 2, recordForAgents: false)
+    #expect(quiet.url.lastPathComponent == "Shot (2).png")
+    #expect(try Data(contentsOf: quiet.url) == quiet.png)
+    #expect(ImageCodec.record(ofFileAt: quiet.url) == nil)
+    #expect(ImageCodec.scale(ofFileAt: quiet.url) == 2)
+
+    let recorded = try VersionWriter.saveImage(document, of: original, scale: 2, recordForAgents: true)
+    #expect(recorded.url.lastPathComponent == "Shot (3).png")
+    let record = try #require(ImageCodec.record(ofFileAt: recorded.url))
+    #expect(record.original == "Shot.png")
+    #expect(record.size == CaptureRecord.Size(width: 120, height: 80))
+    #expect(record.canvas == [0, 0, 120, 80])
+    #expect(record.editable == true)
+    #expect(record.annotations.map(\.type) == ["arrow"])
+}
+
+@Test func aJPEGVersionStaysJPEGAndStillGivesAPNGForTheClipboard() throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let original = folder.appendingPathComponent("Shot.jpeg")
+    try #require(ImageCodec.data(from: plainImage(), scale: 1, format: .jpeg)).write(to: original)
+    let document = EditorDocument(base: plainImage(), annotations: [arrow], background: EditorDocument.defaultBackground(for: .jpeg))
+
+    let saved = try VersionWriter.saveImage(document, of: original, scale: 1, recordForAgents: true)
+    #expect(saved.url.lastPathComponent == "Shot (2).jpeg")
+    #expect(ImageCodec.image(from: saved.png) != nil)
+    #expect(try Data(contentsOf: saved.url) != saved.png)
+    #expect(ImageCodec.record(ofFileAt: saved.url)?.editable == true)
+}
+
+@Test func aRecordIsntEditableOnceTheCaptureIsStyledOrItsBackgroundChanged() {
+    let original = URL(fileURLWithPath: "/tmp/shots/Shot.png")
+    var document = EditorDocument(base: plainImage(), annotations: [arrow])
+    #expect(VersionWriter.record(of: document, drawnOn: original, savedAs: .png, scale: 1).editable == true)
+    document.captureCornerRadius = 8
+    #expect(VersionWriter.record(of: document, drawnOn: original, savedAs: .png, scale: 1).editable == false)
+    document.captureCornerRadius = 0
+    document.background = RGBA(1, 1, 1)
+    #expect(VersionWriter.record(of: document, drawnOn: original, savedAs: .png, scale: 1).editable == false)
+    // White is JPEG's own background, so there it's no change.
+    #expect(VersionWriter.record(of: document, drawnOn: original, savedAs: .jpeg, scale: 1).editable == true)
+}
+
+@Test func aVideoCopyIsANewCaptureNameInTheRecordingsFormat() {
+    let folder = URL(fileURLWithPath: "/tmp/shots-\(UUID().uuidString)")
+    var components = DateComponents()
+    components.year = 2026; components.month = 10; components.day = 2
+    components.hour = 14; components.minute = 3; components.second = 11
+    let date = Calendar.current.date(from: components)!
+    #expect(VersionWriter.videoCopyURL(of: folder.appendingPathComponent("Clip.mov"), prefix: "Shot", date: date).lastPathComponent == "Shot 2026-10-02 at 14.03.11.mov")
+    #expect(VersionWriter.videoCopyURL(of: folder.appendingPathComponent("Clip.m4v"), prefix: "Bug", date: date).lastPathComponent == "Bug 2026-10-02 at 14.03.11.mp4")
+}
