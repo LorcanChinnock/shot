@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.45](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.44...v0.7.0-beta.45) (2026-10-12)
+
+
+### Features
+
+* make the app localizable ([#468](https://github.com/LorcanChinnock/shot/issues/468)) ([60c258e](https://github.com/LorcanChinnock/shot/commit/60c258e5cbbb9fcbb701f9568657803a0203d906))
+
 ## [0.7.0-beta.44](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.43...v0.7.0-beta.44) (2026-10-12)
 
 
