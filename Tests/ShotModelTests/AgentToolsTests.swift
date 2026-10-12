@@ -47,6 +47,11 @@ private let captures = tools(in: folder, [
     }
 }
 
+@Test func onlyTheToolsThatChangeNothingAreMarkedReadOnly() {
+    // annotate, make_gif and trim_video add files, and capture_window and record_window take new captures.
+    #expect(AgentTools.definitions.filter(\.readOnly).map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames"])
+}
+
 @Test func latestCaptureDefaultsToTheNewestImage() async {
     let result = await captures.call("latest_capture", .object([:]))
     #expect(result.isError == false)

@@ -37,6 +37,13 @@ private let server = MCPServer(
     #expect(reply == #"{"id":2,"jsonrpc":"2.0","result":{"tools":[{"description":"The newest capture","inputSchema":{"type":"object"},"name":"latest_capture"}]}}"#)
 }
 
+@Test func toolsListMarksAReadOnlyToolWithItsHint() async {
+    let tool = MCPServer.Tool(name: "list_captures", description: "Recent captures", inputSchema: .object(["type": .string("object")]), readOnly: true)
+    let listing = MCPServer(name: "shot", version: "1.0", tools: [tool]) { _, _ in MCPServer.ToolResult(content: []) }
+    let reply = await listing.respond(to: #"{"jsonrpc":"2.0","id":3,"method":"tools/list"}"#)
+    #expect(reply == #"{"id":3,"jsonrpc":"2.0","result":{"tools":[{"annotations":{"readOnlyHint":true},"description":"Recent captures","inputSchema":{"type":"object"},"name":"list_captures"}]}}"#)
+}
+
 @Test func toolsCallRunsTheToolWithItsArguments() async {
     let reply = await server.respond(to: #"{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"latest_capture","arguments":{"kind":"video"}}}"#)
     #expect(reply == #"{"id":3,"jsonrpc":"2.0","result":{"content":[{"text":"latest_capture kind=video","type":"text"}],"isError":false}}"#)

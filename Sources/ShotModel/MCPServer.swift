@@ -66,11 +66,14 @@ public struct MCPServer: Sendable {
         public var description: String
         /// A JSON Schema object for the arguments.
         public var inputSchema: JSONValue
+        /// Sent as the `readOnlyHint` annotation, so a client can run the tool without asking, since it changes nothing.
+        public var readOnly: Bool
 
-        public init(name: String, description: String, inputSchema: JSONValue) {
+        public init(name: String, description: String, inputSchema: JSONValue, readOnly: Bool = false) {
             self.name = name
             self.description = description
             self.inputSchema = inputSchema
+            self.readOnly = readOnly
         }
     }
 
@@ -151,7 +154,11 @@ public struct MCPServer: Sendable {
             return encode(result: .object([:]), id: id)
         case "tools/list":
             return encode(result: .object(["tools": .array(tools.map { tool in
-                .object(["name": .string(tool.name), "description": .string(tool.description), "inputSchema": tool.inputSchema])
+                var listed: [String: JSONValue] = ["name": .string(tool.name), "description": .string(tool.description), "inputSchema": tool.inputSchema]
+                if tool.readOnly {
+                    listed["annotations"] = .object(["readOnlyHint": .bool(true)])
+                }
+                return .object(listed)
             })]), id: id)
         case "tools/call":
             guard let requested = params["name"]?.string, let tool = Self.tool(named: requested, in: tools) else {
