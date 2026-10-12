@@ -29,6 +29,8 @@ cask "shot" do
   app "Shot.app"
   binary "#{appdir}/Shot.app/Contents/MacOS/shot-cli", target: "shot"
 
+  uninstall quit: "dev.lorcan.Shot"
+
   zap trash: [
     "~/Library/Caches/dev.lorcan.Shot",
     "~/Library/HTTPStorages/dev.lorcan.Shot",
