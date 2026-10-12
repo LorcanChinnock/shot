@@ -9,6 +9,8 @@ public enum ShotCommand: Equatable, Sendable {
     case redact(RedactOptions)
     case annotate(AnnotateOptions)
     case frames(FramesOptions)
+    /// The text in an image, read on the device, with each line's and word's box.
+    case text(path: String)
     /// A screenshot of the open window `window` names, taken by the running app.
     case capture(window: String)
     /// Starts, stops or asks about a recording of a window, made by the running app.
@@ -122,7 +124,7 @@ public enum ShotCommand: Equatable, Sendable {
     }
 
     /// The commands `help` knows, in the order it lists them.
-    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "capture", "record", "mcp"]
+    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "text", "capture", "record", "mcp"]
 
     /// The command's name, for error messages such as `shot gif: …`.
     public var name: String {
@@ -133,6 +135,7 @@ public enum ShotCommand: Equatable, Sendable {
         case .redact: "redact"
         case .annotate: "annotate"
         case .frames: "frames"
+        case .text: "text"
         case .capture: "capture"
         case .record: "record"
         case .mcp: "mcp"
@@ -163,7 +166,7 @@ public enum ShotCommand: Equatable, Sendable {
             if rest.contains(where: isHelp) { return .help("mcp") }
             guard rest.isEmpty else { throw .usage("mcp", "takes no arguments") }
             return .mcp
-        case "info", "gif", "trim", "redact", "annotate", "frames":
+        case "info", "gif", "trim", "redact", "annotate", "frames", "text":
             if rest.contains(where: isHelp) { return .help(first) }
             return try parseMedia(first, rest)
         case "capture":
@@ -194,6 +197,7 @@ public enum ShotCommand: Equatable, Sendable {
         "redact": ["output": false, "rect": true, "style": false],
         "annotate": ["output": false, "json": false],
         "frames": ["output": false, "count": false, "every": false, "width": false],
+        "text": [:],
         "capture": ["window": false],
         "record": ["window": false, "duration": false],
     ]
@@ -284,6 +288,8 @@ public enum ShotCommand: Equatable, Sendable {
         switch command {
         case "info":
             return .info(path: input)
+        case "text":
+            return .text(path: input)
         case "gif":
             var options = GIFOptions(input: input, output: output, start: try time("start"), end: try time("end"))
             if let text = values["fps"]?.first {
@@ -389,6 +395,7 @@ public enum ShotCommand: Equatable, Sendable {
             "redact": "\(program) redact <image> --rect x,y,w,h [--rect …] [--style blur|pixelate] [-o out.png]\n    Hides each rectangle, in the image's pixels. Pixelate is the default.",
             "annotate": "\(program) annotate <image> --json marks.json [-o out.png]\n    Draws marks on the image, in the format of Shot's capture record. --json - reads them from standard input.\n    A mark: {\"type\": \"arrow\", \"from\": [410, 220], \"to\": [612, 388], \"color\": \"red\"}\n    Every type and field: \(docs)#using-shot-with-ai-agents",
             "frames": "\(program) frames <video> [--count 8 | --every 2] [--width 1568] [-o folder]\n    Still frames of the video, for an agent that can't watch it: where the picture changes, or evenly every few seconds.",
+            "text": "\(program) text <image>\n    The text in the image, read on this Mac: each line and word with its box, [x, y, width, height] in the image's pixels from the top left.",
             "capture": "\(program) capture --window <title or app>\n    A screenshot of that open window, taken by Shot without taking focus, saved to the capture folder. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
             "record": "\(program) record --window <title or app> [--duration 10] | --stop [<id>] | --status\n    Records that open window through Shot, without its microphone or camera, for at most \(Int(AgentRequest.maximumDuration / 60)) minutes, saved to the capture folder. Without --duration it prints an id and returns at once; --stop ends it. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
             "mcp": "\(program) mcp\n    Serves Shot's captures to an AI agent over MCP, on standard input and output.",

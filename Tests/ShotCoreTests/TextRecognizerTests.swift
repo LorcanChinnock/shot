@@ -4,8 +4,8 @@ import Foundation
 import Testing
 @testable import ShotCore
 
-/// A white image with each line of text drawn in black at its point from the top left.
-private func image(width: Int, height: Int, _ lines: [(text: String, x: CGFloat, top: CGFloat)], size: CGFloat = 28) throws -> CGImage {
+/// A white image, for tests that read text, with each line of text drawn in black at its point from the top left.
+func textImage(width: Int, height: Int, _ lines: [(text: String, x: CGFloat, top: CGFloat)], size: CGFloat = 28) throws -> CGImage {
     let context = try #require(CGContext(
         data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
         space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
@@ -26,7 +26,7 @@ private func image(width: Int, height: Int, _ lines: [(text: String, x: CGFloat,
 }
 
 @Test func textIsReadInReadingOrderWithBoxesFromTheTopLeft() async throws {
-    let picture = try image(width: 800, height: 300, [
+    let picture = try textImage(width: 800, height: 300, [
         ("Invoice settings", 40, 30),
         ("Billing email", 40, 150),
     ])
@@ -46,7 +46,7 @@ private func image(width: Int, height: Int, _ lines: [(text: String, x: CGFloat,
 }
 
 @Test func sensitiveTextReadFromAnImageIsBoxedWhereItWasDrawn() async throws {
-    let picture = try image(width: 900, height: 200, [("Contact jane@example.com today", 40, 80)])
+    let picture = try textImage(width: 900, height: 200, [("Contact jane@example.com today", 40, 80)])
     let text = try await TextRecognizer.recognize(picture)
     let found = try #require(text.sensitive().first)
     #expect(found.kind == .email)
@@ -58,7 +58,7 @@ private func image(width: Int, height: Int, _ lines: [(text: String, x: CGFloat,
 }
 
 @Test func anImageWithNoTextHasNoLines() async throws {
-    let text = try await TextRecognizer.recognize(try image(width: 200, height: 100, []))
+    let text = try await TextRecognizer.recognize(try textImage(width: 200, height: 100, []))
     #expect(text.lines.isEmpty)
     #expect(text.string.isEmpty)
 }

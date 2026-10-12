@@ -69,6 +69,38 @@ private func found(_ text: String, _ kinds: Set<SensitiveText.Kind> = Set(Sensit
     #expect(line.box(of: try #require(line.text.range(of: "words"))) == line.box)
 }
 
+// MARK: Finding
+
+@Test func aQueryMatchesLinesIgnoringCaseAndAccentsWithTheBoxOfItsWords() {
+    let text = CaptureText(width: 400, height: 100, lines: [spaced("Résumé saved"), spaced("Save changes")])
+    let hits = text.lines(matching: " resume ")
+    #expect(hits.map(\.line.text) == ["Résumé saved"])
+    #expect(hits.first?.box == CGRect(x: 0, y: 40, width: 60, height: 20))
+    #expect(text.lines(matching: "SAVE").map(\.line.text) == ["Résumé saved", "Save changes"])
+    #expect(text.lines(matching: "  ").isEmpty)
+    #expect(text.lines(matching: "delete").isEmpty)
+}
+
+@Test func jsonGivesBoxesAsXYWidthHeightAndWordsOnlyWhenAsked() {
+    var first = spaced("Save now")
+    first.confidence = 0.876
+    let text = CaptureText(width: 400, height: 100, lines: [first])
+    #expect(text.json(words: false) == [
+        "size": .object(["width": .number(400), "height": .number(100)]),
+        "text": .string("Save now"),
+        "lines": .array([.object(["text": .string("Save now"), "box": .array([0, 40, 80, 20].map(JSONValue.number))])]),
+    ])
+    #expect(text.json(words: true)["lines"] == .array([.object([
+        "text": .string("Save now"),
+        "box": .array([0, 40, 80, 20].map(JSONValue.number)),
+        "confidence": .number(0.88),
+        "words": .array([
+            .object(["text": .string("Save"), "box": .array([0, 40, 40, 20].map(JSONValue.number))]),
+            .object(["text": .string("now"), "box": .array([50, 40, 30, 20].map(JSONValue.number))]),
+        ]),
+    ])]))
+}
+
 // MARK: Emails
 
 @Test func emailsAreFoundInsideOtherText() {

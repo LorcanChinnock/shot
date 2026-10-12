@@ -37,10 +37,10 @@ private let captures = tools(in: folder, [
     ("Recording C.mp4", 5, true),
 ])
 
-@Test func thereAreNineToolsEachWithAnObjectSchema() {
-    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "annotate", "make_gif", "trim_video", "capture_window", "record_window"])
+@Test func thereAreTenToolsEachWithAnObjectSchema() {
+    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "annotate", "make_gif", "trim_video", "capture_window", "record_window"])
     let required = AgentTools.definitions.map { $0.inputSchema["required"] }
-    #expect(required == [nil, nil, nil, nil, .array([.string("annotations")]), nil, .array([.string("start"), .string("end")]), .array([.string("window")]), nil])
+    #expect(required == [nil, nil, nil, nil, nil, .array([.string("annotations")]), nil, .array([.string("start"), .string("end")]), .array([.string("window")]), nil])
     for tool in AgentTools.definitions {
         #expect(tool.inputSchema["type"] == .string("object"))
         #expect(!tool.description.isEmpty)
@@ -49,7 +49,7 @@ private let captures = tools(in: folder, [
 
 @Test func onlyTheToolsThatChangeNothingAreMarkedReadOnly() {
     // annotate, make_gif and trim_video add files, and capture_window and record_window take new captures.
-    #expect(AgentTools.definitions.filter(\.readOnly).map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames"])
+    #expect(AgentTools.definitions.filter(\.readOnly).map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text"])
 }
 
 @Test func annotateNamesExactlyThePaletteColours() throws {
@@ -365,4 +365,88 @@ private let saved: [String: JSONValue] = ["id": .string("ab12cd34"), "path": .st
     #expect(await tools.call("record_window", .object([:])).isError)
     #expect(await tools.call("record_window", .object(["action": .string("pause"), "window": .string("a")])).isError)
     #expect(asked.requests.isEmpty)
+}
+
+// MARK: find_text
+
+private let screenText = CaptureText(width: 1200, height: 800, lines: [
+    CaptureText.Line(text: "Settings", box: CGRect(x: 20, y: 10, width: 120, height: 30), words: [
+        CaptureText.Word(text: "Settings", box: CGRect(x: 20, y: 10, width: 120, height: 30)),
+    ]),
+    CaptureText.Line(text: "Cancel Save", box: CGRect(x: 900, y: 740, width: 200, height: 30), words: [
+        CaptureText.Word(text: "Cancel", box: CGRect(x: 900, y: 740, width: 90, height: 30)),
+        CaptureText.Word(text: "Save", box: CGRect(x: 1020, y: 740, width: 80, height: 30)),
+    ]),
+])
+
+private func reading(_ read: Ran) -> AgentTools {
+    var tools = captures
+    tools.text = { entry throws(ShotCommandError) in
+        read.commands.append(.text(path: entry.url.path))
+        return screenText
+    }
+    return tools
+}
+
+private func object(_ result: MCPServer.ToolResult) throws -> [String: JSONValue] {
+    let json = try #require(texts(result).first)
+    let value = try JSONDecoder().decode(JSONValue.self, from: Data(json.utf8))
+    guard case let .object(object) = value else {
+        Issue.record("not an object: \(json)")
+        return [:]
+    }
+    return object
+}
+
+private func box(_ x: Double, _ y: Double, _ width: Double, _ height: Double) -> JSONValue {
+    .array([x, y, width, height].map(JSONValue.number))
+}
+
+@Test func findTextReadsEveryLineOfTheNewestScreenshot() async throws {
+    let read = Ran()
+    let result = await reading(read).call("find_text", .object([:]))
+    #expect(result.isError == false)
+    #expect(read.commands == [.text(path: "/shots/Shot B.png")])
+    let found = try object(result)
+    #expect(found["path"] == .string("/shots/Shot B.png"))
+    #expect(found["text"] == .string("Settings\nCancel Save"))
+    #expect(found["size"] == .object(["width": .number(1200), "height": .number(800)]))
+    // Lines without their words, which would fill an agent's context.
+    #expect(found["lines"] == .array([
+        .object(["text": .string("Settings"), "box": box(20, 10, 120, 30)]),
+        .object(["text": .string("Cancel Save"), "box": box(900, 740, 200, 30)]),
+    ]))
+}
+
+@Test func findTextWithAQueryGivesOnlyTheMatchingLinesAndWhereTheMatchIs() async throws {
+    let read = Ran()
+    let result = await reading(read).call("find_text", .object(["path": .string("/shots/Shot A.png"), "query": .string("SAVE")]))
+    #expect(read.commands == [.text(path: "/shots/Shot A.png")])
+    let found = try object(result)
+    #expect(found["query"] == .string("SAVE"))
+    #expect(found["lines"] == nil && found["text"] == nil)
+    #expect(found["matches"] == .array([
+        .object(["text": .string("Cancel Save"), "box": box(900, 740, 200, 30), "match": box(1020, 740, 80, 30)]),
+    ]))
+}
+
+@Test func findTextWithNoMatchSaysSoAndGivesAllTheText() async throws {
+    let result = await reading(Ran()).call("find_text", .object(["query": .string("Delete")]))
+    #expect(result.isError == false)
+    let found = try object(result)
+    #expect(found["matches"] == .array([]))
+    #expect(found["text"] == .string("Settings\nCancel Save"))
+    #expect(texts(result).last?.contains(#"No line in Shot B.png contains "Delete""#) == true)
+}
+
+@Test func findTextRefusesARecordingAndPassesOnAnError() async {
+    let read = Ran()
+    let recording = await reading(read).call("find_text", .object(["name": .string("Recording C")]))
+    #expect(recording.isError)
+    #expect(read.commands.isEmpty)
+    var failing = captures
+    failing.text = { _ throws(ShotCommandError) in throw .data("Couldn't read Shot B.png as an image.") }
+    let failed = await failing.call("find_text", .object([:]))
+    #expect(failed.isError)
+    #expect(texts(failed) == ["Couldn't read Shot B.png as an image."])
 }
