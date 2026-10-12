@@ -93,7 +93,7 @@ The `shot://` [URL scheme](docs/usage.md#url-scheme) drives every action without
 ## Sending a change
 
 - Keep each pull request focused on one change, and match the style of the surrounding code.
-- Run `make lint` and `make test`, then run the app and try your change. CI lints and runs the `ShotModel` tests on Linux, then builds the app and runs the `ShotCore` tests on macOS. A pull request that changes only `ShotModel` skips the `ShotCore` tests, the performance budgets run when `Sources/ShotCore` changes and on every push to `main` that changes code, and a draft, or a pull request that only changes Markdown, `docs/`, `site/` or the issue templates, skips macOS.
+- Run `make lint` and `make test`, then run the app and try your change. CI only lints and runs the `ShotModel` tests on Linux. It doesn't build the app or run the `ShotCore` tests until the release gate, so run them yourself.
 - Use a [Conventional Commits](https://www.conventionalcommits.org) title for the pull request, such as `fix(recording): …` or `feat(editor): …`. Pull requests are squash-merged, so the title becomes the commit on `main`, and release notes are generated from it.
 
 By contributing, you agree that your contributions are licensed under the project's [GPL-3.0 license](LICENSE).
@@ -105,7 +105,8 @@ Releases are automated with [release-please](https://github.com/googleapis/relea
 Before a release, run `make app` and then `make perf-app`, which CI can't run because it needs the Screen Recording permission. It exits non-zero if anything is over budget. See [docs/performance.md](docs/performance.md).
 
 1. When `main` gets a `feat:` or `fix:` commit, release-please opens or updates a release pull request. It bumps the version in `Resources/Info.plist` and `.release-please-manifest.json`, and adds the changes to `CHANGELOG.md`. While Shot is in beta, each release only bumps the beta number, for example `0.7.0-beta.35` to `0.7.0-beta.36`, whether it has features or only fixes. Changes under `site/` never trigger one. Other types such as `docs`, `chore`, `ci`, `refactor`, and `build` appear in the history but don't trigger a release.
-2. Merging the release pull request tags it (`v0.7.0-beta.36`, say) and creates a draft GitHub release. The release workflow then builds `Shot-<tag>.zip`, signs it for Sparkle, attaches it with `appcast.xml`, the update feed, and only then publishes the release, so the latest release always has a feed. Installed copies read the feed from the latest release. Last, the workflow rebuilds the website and updates the Homebrew cask.
+2. Run `make release-gate`. It runs CI on the release pull request on macOS: it builds the app, checks the strings catalog, and runs every test, the performance budgets included. The pull request can't merge until the gate passes, and if anything merges to `main` afterwards, release-please updates the pull request and the gate has to run again. If the gate fails, fix it in a normal pull request first.
+3. Merging the release pull request tags it (`v0.7.0-beta.36`, say) and creates a draft GitHub release. The release workflow then builds `Shot-<tag>.zip`, signs it for Sparkle, attaches it with `appcast.xml`, the update feed, and only then publishes the release, so the latest release always has a feed. Installed copies read the feed from the latest release. Last, the workflow rebuilds the website and updates the Homebrew cask.
 
 To force a particular version, add a `Release-As: X.Y.Z` line to the body of a commit on `main`.
 
