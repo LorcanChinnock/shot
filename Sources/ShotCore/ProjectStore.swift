@@ -1,4 +1,3 @@
-import AVFoundation
 import Foundation
 
 /// The layered projects behind captures and versions, kept app-private in
@@ -55,16 +54,16 @@ public struct ProjectStore: Sendable {
     }
 
     /// The project of `file`, with its layers decoded as `Document`; `nil` when it has none, or they aren't one.
-    public func project<Document: Codable & Sendable>(for file: URL, as type: Document.Type = Document.self) async -> StoredProject<Document>? {
-        guard let id = await id(of: file), let data = read(id) else {
+    public func project<Document: Codable & Sendable>(for file: URL, as type: Document.Type = Document.self) -> StoredProject<Document>? {
+        guard let id = id(of: file), let data = read(id) else {
             return nil
         }
         return try? ProjectEntry.decoder().decode(StoredProject<Document>.self, from: data)
     }
 
     /// The entry of `file`, without its layers, such as for the provenance the gallery shows.
-    public func entry(for file: URL) async -> ProjectEntry? {
-        guard let id = await id(of: file) else {
+    public func entry(for file: URL) -> ProjectEntry? {
+        guard let id = id(of: file) else {
             return nil
         }
         return entry(id)
@@ -73,7 +72,7 @@ public struct ProjectStore: Sendable {
     /// Removes the projects whose files are gone, and returns how many. Run at launch, off the main actor: it reads
     /// every entry and looks for its file. An entry it can't read, perhaps from a newer Shot, is left alone.
     @discardableResult
-    public func prune(now: Date = Date()) async -> Int {
+    public func prune(now: Date = Date()) -> Int {
         let mounted = Set((FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: [.volumeUUIDStringKey], options: []) ?? [])
             .compactMap { try? $0.resourceValues(forKeys: [.volumeUUIDStringKey]).volumeUUIDString })
         var pruned = 0
@@ -82,7 +81,7 @@ public struct ProjectStore: Sendable {
                 continue
             }
             let volumeMounted = entry.file.volume.map(mounted.contains) ?? true
-            if !ProjectPruning.keeps(entry, sightings: await sightings(of: entry), volumeMounted: volumeMounted, now: now) {
+            if !ProjectPruning.keeps(entry, sightings: sightings(of: entry), volumeMounted: volumeMounted, now: now) {
                 remove(id)
                 pruned += 1
             }
@@ -94,9 +93,9 @@ public struct ProjectStore: Sendable {
 
     /// The ID `file`'s project is kept under: the one stamped in it, or for a file that can't hold one, the entry whose
     /// file it is, by inode first and then by path.
-    private func id(of file: URL) async -> String? {
+    private func id(of file: URL) -> String? {
         if ProjectKey.stamps(pathExtension: file.pathExtension) {
-            return await ProjectStamp.id(ofFileAt: file)
+            return ProjectStamp.id(ofFileAt: file)
         }
         guard let located = ProjectFile(at: file) else {
             return nil
@@ -112,7 +111,7 @@ public struct ProjectStore: Sendable {
     }
 
     /// The files where `entry`'s file was and where its bookmark leads, as they are now.
-    private func sightings(of entry: ProjectEntry) async -> [ProjectSighting] {
+    private func sightings(of entry: ProjectEntry) -> [ProjectSighting] {
         var urls = [URL(fileURLWithPath: entry.file.path)]
         if let moved = entry.file.resolvedBookmark(), moved.standardizedFileURL.path != urls[0].standardizedFileURL.path {
             urls.append(moved)
@@ -122,7 +121,7 @@ public struct ProjectStore: Sendable {
             guard let file = ProjectFile(at: url, bookmark: false) else {
                 continue
             }
-            sightings.append(ProjectSighting(file: file, stampedID: entry.stamped ? await ProjectStamp.id(ofFileAt: url) : nil))
+            sightings.append(ProjectSighting(file: file, stampedID: entry.stamped ? ProjectStamp.id(ofFileAt: url) : nil))
         }
         return sightings
     }
@@ -178,52 +177,78 @@ public struct StoredProject<Document: Codable & Sendable>: Codable, Sendable {
 
 extension StoredProject: Equatable where Document: Equatable {}
 
-/// The project ID in a file's own metadata: XMP for PNG and JPEG, written by `ImageCodec`, and a QuickTime metadata
-/// item for MP4 and MOV.
+/// The project ID in a file's own metadata: XMP for PNG and JPEG, written by `ImageCodec`, and a `uuid` box of Shot's
+/// own for MP4 and MOV (`MovieStampBox`).
 public enum ProjectStamp {
-    /// A QuickTime metadata (`mdta`) key for MOV. An MP4 export drops `mdta` keys, so it gets an iTunes atom of its own,
-    /// which it keeps.
-    static let movieIdentifier = AVMetadataIdentifier(rawValue: "mdta/dev.lorcan.shot.project")
-    static let mp4Identifier = AVMetadataIdentifier(rawValue: "itsk/shpj")
-
-    /// The item an export adds to its `metadata` to stamp `id` in the movie of `fileType` it writes.
-    public static func metadataItem(id: String, for fileType: AVFileType) -> AVMetadataItem {
-        let item = AVMutableMetadataItem()
-        item.identifier = fileType == .mov ? movieIdentifier : mp4Identifier
-        item.value = id as NSString
-        item.dataType = kCMMetadataBaseDataType_UTF8 as String
-        return item
-    }
-
     /// The ID stamped in the image or movie at `url`, or `nil` when it has none.
-    public static func id(ofFileAt url: URL) async -> String? {
+    public static func id(ofFileAt url: URL) -> String? {
         switch url.pathExtension.lowercased() {
         case "mp4", "mov":
-            guard let metadata = try? await AVURLAsset(url: url).load(.metadata),
-                  let item = metadata.first(where: { [movieIdentifier, mp4Identifier].contains($0.identifier) })
-            else {
+            guard let handle = try? FileHandle(forReadingFrom: url) else {
                 return nil
             }
-            return try? await item.load(.stringValue)
+            defer { try? handle.close() }
+            return ownBoxes(in: handle).last?.id
         default:
             return ImageCodec.projectID(ofFileAt: url)
         }
     }
 
-    /// Stamps `id` in the movie at `url`, such as a recording, by copying it without re-encoding and swapping the copy
-    /// in. An export that writes the movie itself should add `metadataItem(id:for:)` instead.
-    public static func stamp(movieAt url: URL, id: String) async throws {
-        let asset = AVURLAsset(url: url)
-        let kept = try await asset.load(.metadata).filter { ![movieIdentifier, mp4Identifier].contains($0.identifier) }
-        guard let export = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetPassthrough) else {
-            throw CocoaError(.fileWriteUnknown)
-        }
-        let fileType: AVFileType = url.pathExtension.lowercased() == "mov" ? .mov : .mp4
-        export.metadata = kept + [metadataItem(id: id, for: fileType)]
+    /// Stamps `id` in the movie at `url`, such as a recording or an export, by adding a box after its own and retiring
+    /// any earlier stamp as free space. It works on a clone, which costs nothing on APFS, and swaps it in, so the movie
+    /// is never left half-written. Throws when the movie's boxes don't run to its end, since a box added then would be lost.
+    public static func stamp(movieAt url: URL, id: String) throws {
         let copy = url.deletingLastPathComponent().appendingPathComponent(".\(UUID().uuidString).\(url.pathExtension)")
         defer { try? FileManager.default.removeItem(at: copy) }
-        try await export.export(to: copy, as: fileType)
+        try FileManager.default.copyItem(at: url, to: copy)
+        let handle = try FileHandle(forUpdating: copy)
+        defer { try? handle.close() }
+        let fileSize = try handle.seekToEnd()
+        guard MovieStampBox.tiles(boxes(in: handle, fileSize: fileSize), fileSize: fileSize) else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        for own in ownBoxes(in: handle) {
+            try handle.seek(toOffset: own.box.offset + 4)
+            try handle.write(contentsOf: Data("free".utf8))
+        }
+        try handle.seek(toOffset: fileSize)
+        try handle.write(contentsOf: MovieStampBox.box(id: id))
+        try handle.synchronize()
         _ = try FileManager.default.replaceItemAt(url, withItemAt: copy)
+    }
+
+    /// The movie's top-level boxes, as far as they're whole.
+    private static func boxes(in handle: FileHandle, fileSize: UInt64) -> [MovieStampBox.Box] {
+        var boxes: [MovieStampBox.Box] = []
+        var offset: UInt64 = 0
+        while offset < fileSize {
+            guard (try? handle.seek(toOffset: offset)) != nil, let header = try? handle.read(upToCount: 16),
+                  let box = MovieStampBox.box(header: header, at: offset, fileSize: fileSize)
+            else {
+                break
+            }
+            boxes.append(box)
+            offset += box.size
+        }
+        return boxes
+    }
+
+    /// Shot's own `uuid` boxes in the movie, with the ID each holds.
+    private static func ownBoxes(in handle: FileHandle) -> [(box: MovieStampBox.Box, id: String)] {
+        guard let fileSize = try? handle.seekToEnd() else {
+            return []
+        }
+        // An ID is a UUID; a box much longer than one isn't Shot's, and isn't worth reading.
+        let longest: UInt64 = 16 + 256
+        return boxes(in: handle, fileSize: fileSize).compactMap { box in
+            let length = box.size - box.headerSize
+            guard box.type == "uuid", length <= longest, (try? handle.seek(toOffset: box.offset + box.headerSize)) != nil,
+                  let body = try? handle.read(upToCount: Int(length)), let id = MovieStampBox.id(inUUIDBody: body)
+            else {
+                return nil
+            }
+            return (box, id)
+        }
     }
 }
 

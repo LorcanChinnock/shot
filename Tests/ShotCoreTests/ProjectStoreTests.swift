@@ -35,7 +35,7 @@ func theProjectIDGoesInTheImagesXMPBesideTheRecord(format: ImageFormat) throws {
     #expect(ProjectStore(bundleID: "dev.lorcan.Shot.dev").folder.path.hasSuffix("Application Support/dev.lorcan.Shot.dev/Projects"))
 }
 
-@Test func aVersionsLayersComeBackAfterItAndItsOriginalMove() async throws {
+@Test func aVersionsLayersComeBackAfterItAndItsOriginalMove() throws {
     let folder = try temporaryFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
     let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
@@ -51,13 +51,13 @@ func theProjectIDGoesInTheImagesXMPBesideTheRecord(format: ImageFormat) throws {
     try FileManager.default.moveItem(at: original, to: moved.appendingPathComponent("Shot.png"))
     try FileManager.default.moveItem(at: version, to: moved.appendingPathComponent("Renamed.png"))
 
-    let project = try #require(await store.project(for: moved.appendingPathComponent("Renamed.png"), as: Layers.self))
+    let project = try #require(store.project(for: moved.appendingPathComponent("Renamed.png"), as: Layers.self))
     #expect(project.document == Layers(marks: ["arrow", "blur"]))
     #expect(project.entry.origin == origin)
     #expect(project.entry.original?.locate()?.resolvingSymlinksInPath() == moved.appendingPathComponent("Shot.png").resolvingSymlinksInPath())
 }
 
-@Test func aCaptureWithNoLayersKeepsOnlyItsOrigin() async throws {
+@Test func aCaptureWithNoLayersKeepsOnlyItsOrigin() throws {
     let folder = try temporaryFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
     let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
@@ -65,28 +65,28 @@ func theProjectIDGoesInTheImagesXMPBesideTheRecord(format: ImageFormat) throws {
     try writePNG(to: capture, id: id)
     try store.save(origin: ProjectOrigin(via: .cli, action: "capture"), for: capture, id: id)
 
-    let entry = try #require(await store.entry(for: capture))
+    let entry = try #require(store.entry(for: capture))
     #expect(entry.origin.via == .cli)
     #expect(entry.origin.action == "capture")
     #expect(entry.original == nil)
-    #expect(await store.project(for: capture, as: Layers.self)?.document == nil)
+    #expect(store.project(for: capture, as: Layers.self)?.document == nil)
 }
 
-@Test func aFileWithNoStampOrOneTheStoreDoesntKnowHasNoProject() async throws {
+@Test func aFileWithNoStampOrOneTheStoreDoesntKnowHasNoProject() throws {
     let folder = try temporaryFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
     let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
     let plain = folder.appendingPathComponent("Plain.png"), unknown = folder.appendingPathComponent("Unknown.png")
     try writePNG(to: plain, id: nil)
     try writePNG(to: unknown, id: ProjectKey.newID())
-    #expect(await store.entry(for: plain) == nil)
-    #expect(await store.entry(for: unknown) == nil)
+    #expect(store.entry(for: plain) == nil)
+    #expect(store.entry(for: unknown) == nil)
     #expect(throws: ProjectStore.StoreError.noFile) {
         try store.save(origin: ProjectOrigin(via: .app), for: folder.appendingPathComponent("Missing.png"), id: "ID")
     }
 }
 
-@Test func aGIFIsFoundByItsInodeAfterARename() async throws {
+@Test func aGIFIsFoundByItsInodeAfterARename() throws {
     let folder = try temporaryFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
     let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
@@ -98,10 +98,10 @@ func theProjectIDGoesInTheImagesXMPBesideTheRecord(format: ImageFormat) throws {
 
     let renamed = folder.appendingPathComponent("Renamed.gif")
     try FileManager.default.moveItem(at: gif, to: renamed)
-    #expect(await store.project(for: renamed, as: Layers.self)?.document == Layers(marks: ["trim"]))
+    #expect(store.project(for: renamed, as: Layers.self)?.document == Layers(marks: ["trim"]))
 }
 
-@Test func aGIFReplacedAtItsPathIsAnotherFileUntilItsSavedAgain() async throws {
+@Test func aGIFReplacedAtItsPathIsAnotherFileUntilItsSavedAgain() throws {
     let folder = try temporaryFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
     let projects = folder.appendingPathComponent("Projects")
@@ -111,14 +111,14 @@ func theProjectIDGoesInTheImagesXMPBesideTheRecord(format: ImageFormat) throws {
     try store.save(Layers(marks: ["first"]), for: gif, id: nil, origin: ProjectOrigin(via: .app))
 
     try Data("GIF89a, another".utf8).write(to: gif, options: .atomic)
-    #expect(await store.entry(for: gif) == nil)
+    #expect(store.entry(for: gif) == nil)
 
     try store.save(Layers(marks: ["second"]), for: gif, id: nil, origin: ProjectOrigin(via: .cli, action: "gif"))
-    #expect(await store.project(for: gif, as: Layers.self)?.document == Layers(marks: ["second"]))
+    #expect(store.project(for: gif, as: Layers.self)?.document == Layers(marks: ["second"]))
     #expect(try FileManager.default.contentsOfDirectory(atPath: projects.path).count == 1)
 }
 
-@Test func pruningDropsProjectsWhoseFilesAreGoneOrReplaced() async throws {
+@Test func pruningDropsProjectsWhoseFilesAreGoneOrReplaced() throws {
     let folder = try temporaryFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
     let projects = folder.appendingPathComponent("Projects")
@@ -138,13 +138,13 @@ func theProjectIDGoesInTheImagesXMPBesideTheRecord(format: ImageFormat) throws {
     // An entry it can't read, perhaps from a newer Shot, stays.
     try Data("{}".utf8).write(to: projects.appendingPathComponent("\(ProjectKey.newID()).json"))
 
-    #expect(await store.prune() == 0)
-    #expect(await store.prune(now: later) == 3)
-    #expect(await store.entry(for: kept)?.id == keptID)
+    #expect(store.prune() == 0)
+    #expect(store.prune(now: later) == 3)
+    #expect(store.entry(for: kept)?.id == keptID)
     #expect(try FileManager.default.contentsOfDirectory(atPath: projects.path).count == 2)
 }
 
-@Test func pruningFollowsAFileThatMoved() async throws {
+@Test func pruningFollowsAFileThatMoved() throws {
     let folder = try temporaryFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
     let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
@@ -153,7 +153,7 @@ func theProjectIDGoesInTheImagesXMPBesideTheRecord(format: ImageFormat) throws {
     try store.save(origin: ProjectOrigin(via: .app), for: capture, id: id)
     try FileManager.default.moveItem(at: capture, to: folder.appendingPathComponent("Moved.png"))
 
-    #expect(await store.prune(now: later) == 0)
+    #expect(store.prune(now: later) == 0)
 }
 
 extension MediaTests {
@@ -161,19 +161,41 @@ extension MediaTests {
     func aMoviesProjectIDIsStampedWithoutReencoding(_ fileExtension: String) async throws {
         let folder = try temporaryFolder()
         defer { try? FileManager.default.removeItem(at: folder) }
-        let movie = folder.appendingPathComponent("Recording.\(fileExtension)")
-        try await writeSyntheticVideo(to: movie, seconds: 1, fps: 30, width: 320, height: 180)
-        #expect(await ProjectStamp.id(ofFileAt: movie) == nil)
+        let source = folder.appendingPathComponent("Source.mp4"), movie = folder.appendingPathComponent("Recording.\(fileExtension)")
+        try await writeSyntheticVideo(to: source, seconds: 1, fps: 30, width: 320, height: 180)
+        // A real QuickTime movie for MOV, not an MP4 under another name.
+        let export = try #require(AVAssetExportSession(asset: AVURLAsset(url: source), presetName: AVAssetExportPresetPassthrough))
+        try await export.export(to: movie, as: fileExtension == "mov" ? .mov : .mp4)
+        try FileManager.default.removeItem(at: source)
+        #expect(ProjectStamp.id(ofFileAt: movie) == nil)
+        let size = try #require(try FileManager.default.attributesOfItem(atPath: movie.path)[.size] as? Int)
 
         let id = ProjectKey.newID()
-        try await ProjectStamp.stamp(movieAt: movie, id: id)
-        #expect(await ProjectStamp.id(ofFileAt: movie) == id)
-        let track = try #require(await AVURLAsset(url: movie).loadTracks(withMediaType: .video).first)
-        #expect(try await track.load(.naturalSize) == CGSize(width: 320, height: 180))
+        try ProjectStamp.stamp(movieAt: movie, id: id)
+        #expect(ProjectStamp.id(ofFileAt: movie) == id)
+        #expect(try FileManager.default.attributesOfItem(atPath: movie.path)[.size] as? Int == size + MovieStampBox.box(id: id).count)
         #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path) == ["Recording.\(fileExtension)"])
+        // AVFoundation still reads the whole movie, frames included.
+        let asset = AVURLAsset(url: movie)
+        let track = try #require(await asset.loadTracks(withMediaType: .video).first)
+        #expect(try await track.load(.naturalSize) == CGSize(width: 320, height: 180))
+        #expect(abs(try await asset.load(.duration).seconds - 1) < 0.1)
+        #expect(try await AVAssetImageGenerator(asset: asset).image(at: CMTime(value: 1, timescale: 2)).image.width == 320)
 
-        try await ProjectStamp.stamp(movieAt: movie, id: "ID-2")
-        #expect(await ProjectStamp.id(ofFileAt: movie) == "ID-2")
+        try ProjectStamp.stamp(movieAt: movie, id: "ID-2")
+        #expect(ProjectStamp.id(ofFileAt: movie) == "ID-2")
+    }
+
+    @Test func aMovieWhoseLastBoxRunsToTheEndIsntStamped() throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let movie = folder.appendingPathComponent("Open.mp4")
+        // An ftyp box, then an mdat of size 0, which means "to the end of the file", so nothing may follow it.
+        let ftyp: [UInt8] = [0, 0, 0, 16] + Array("ftypisom".utf8) + [0, 0, 2, 0]
+        let mdat: [UInt8] = [0, 0, 0, 0] + Array("mdat".utf8) + [1, 2, 3, 4]
+        try Data(ftyp + mdat).write(to: movie)
+        #expect(throws: CocoaError.self) { try ProjectStamp.stamp(movieAt: movie, id: "ID") }
+        #expect(try Data(contentsOf: movie) == Data(ftyp + mdat))
     }
 
     @Test func aRecordingsVideoProjectRoundTrips() async throws {
@@ -184,13 +206,13 @@ extension MediaTests {
         try await writeSyntheticVideo(to: recording, seconds: 1, fps: 30, width: 320, height: 180)
         try FileManager.default.copyItem(at: recording, to: copy)
         let id = ProjectKey.newID()
-        try await ProjectStamp.stamp(movieAt: copy, id: id)
+        try ProjectStamp.stamp(movieAt: copy, id: id)
         let project = Project(source: recording, duration: 1, canvasSize: CGSize(width: 320, height: 180), hasAudio: false)
         try store.save(project, for: copy, id: id, original: recording, origin: ProjectOrigin(via: .mcp, client: "cursor", action: "trim_video"))
 
-        let stored = try #require(await store.project(for: copy, as: Project.self))
+        let stored = try #require(store.project(for: copy, as: Project.self))
         #expect(stored.document == project)
         #expect(stored.entry.origin.client == "cursor")
-        #expect(await store.entry(for: recording) == nil)
+        #expect(store.entry(for: recording) == nil)
     }
 }
