@@ -499,9 +499,9 @@ private func same(_ a: CGRect, _ b: CGRect) -> Bool {
     for kind in StyleKind.allCases {
         #expect(EditorStyle().objectStyle(for: kind, scale: 2).isEmpty)
     }
-    let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-    let store = try #require(UserDefaults(suiteName: suite))
-    defer { store.removePersistentDomain(forName: suite) }
+    let suite = try TestDefaults()
+    let store = suite.store
+    defer { suite.remove() }
     Preferences.registerDefaults(in: store)
     let prefs = Preferences(store: store)
     #expect(prefs.editorStyle.objectStyles.isEmpty)
