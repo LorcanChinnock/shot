@@ -241,7 +241,7 @@ The estimated size of the exported file is shown before you export. **Cancel**, 
 
 Claude Code, Codex and Cursor all take a pasted screenshot, and your arrows and boxes show the agent where to look. Shot can also hand over the file itself, say exactly what you marked, and let the agent fetch your latest capture on its own.
 
-![Settings › Agents with Hand captures to agents and Let agents capture and record turned on, and the MCP setup commands for Claude Code, Cursor and Codex, each with a Copy button](media/agents-settings.png)
+![Settings › Agents with Hand captures to agents and Let agents capture and record turned on, the shot command installed, and the MCP setup commands for Claude Code, Cursor and Codex, each with a Copy button](media/agents-settings.png)
 
 - **Copy the path.** Right-click a Quick Access card and choose **Copy Path**, or give **Copy Latest Capture's Path** a shortcut in **Settings › Shortcuts**. An agent can open the file from its path, now or later in the conversation, and find what Shot recorded in it. Copies are always the image alone.
 - **Turn on Hand captures to agents** in **Settings › Agents** to record, inside each screenshot you take or save from the editor, which app and window it came from and what you marked. Agents read it through the [MCP server](#the-mcp-server). A copied capture is also kept as a file, even with **Save to folder** off, so the agent can fetch it. With saving off, that file stays in a temporary folder for about a day: Shot deletes older ones when it launches. With the setting off, Shot records nothing.
