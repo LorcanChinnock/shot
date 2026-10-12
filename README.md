@@ -22,7 +22,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/media/hero.gif" width="720" alt="Capturing an order with ⌘⇧4, opening it from the Quick Access card, adding an arrow and a note, then pasting it into a chat">
+  <img src="docs/media/hero.gif" width="720" alt="Capturing an order with ⌘⇧4, opening it from the Quick Access card, adding a note with an arrow to the $0 discount, then pasting it into a chat">
 </p>
 
 ### Capture and Quick Access
@@ -35,19 +35,19 @@ Pick an area on a frozen screen with a magnifier, or a window or the full screen
 
 Arrows, sticky notes, blur and pixelate, a spotlight, a pen and more, with room to annotate outside the screenshot and to combine several images on one canvas.
 
-<img src="docs/media/editor.png" width="720" alt="The annotation editor with a blurred email address, a highlighted line, numbered counters, an arrow and a sticky note beside the screenshot">
+<img src="docs/media/editor.png" width="720" alt="The annotation editor with a blurred email address, the discount line highlighted, and a sticky note with an arrow pointing at it">
 
 ### Record your screen, and yourself
 
 Record an area, a screen or a window to MP4, with your microphone, system audio, and a round camera bubble.
 
-<img src="docs/media/recording.gif" width="720" alt="Picking an area to record, then the recording outline, the controls and the round camera bubble while a chart animates">
+<img src="docs/media/recording.gif" width="720" alt="Picking an area to record, then the recording outline and the controls while a chart animates">
 
 ### Trim and export to GIF
 
 Trim a recording, cut sections out, draw over it, add music or other clips, and export an MP4 or a GIF at the frame rate, width and speed you choose.
 
-<img src="docs/media/video-editor.png" width="720" alt="The video editor with a trimmed start, a cut, an arrow over the video, an audio track and the GIF export options">
+<img src="docs/media/video-editor.png" width="720" alt="The video editor with a trimmed start, a cut where the recording went to another page, a Best day label and an arrow over the video, and the GIF export options">
 
 ### Works with AI agents
 

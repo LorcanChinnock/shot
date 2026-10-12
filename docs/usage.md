@@ -40,7 +40,7 @@ After a capture, Shot saves it, copies it, and shows it in [Quick Access](#quick
 
 ## Quick Access
 
-![The Quick Access card, hovered, with Close, Annotate, Copy, Save As… and Show in Finder](media/quick-access.png)
+![The Quick Access card, hovered: the screenshot dimmed behind Close, Annotate, Copy, Save As… and Show in Finder](media/quick-access.png)
 
 A floating card appears in a bottom corner of the screen under the pointer after each capture. Hover it to show its buttons:
 
@@ -180,7 +180,7 @@ Pinch, or press ⌘+ and ⌘-, to zoom. ⌘0 fits the canvas to the window and �
 
 ## Video editor
 
-![The video editor timeline with an arrow on its own lane, a trimmed start, a cut, an audio track with its waveform, the Inspector and the GIF export options](media/video-timeline.png)
+![The video editor timeline with a text label and an arrow on their own lanes, the arrow's Pop keyframes, a trimmed start, a cut, the Inspector and the GIF export options](media/video-timeline.png)
 
 Open a recording from its Quick Access card (the scissors button, **Edit Video**), from the [gallery](#gallery), or with [`shot://edit-video`](#url-scheme).
 
@@ -226,7 +226,7 @@ The estimated size of the exported file is shown before you export. **Cancel**, 
 
 ## Gallery
 
-![The gallery: screenshots, a recording and a GIF, with filters, sort and the thumbnail size slider](media/gallery.png)
+![The gallery: an annotated screenshot, a GIF, a recording and three screenshots, with filters, sort and the thumbnail size slider](media/gallery.png)
 
 **Open Gallery** in the menu bar menu (or [`shot://gallery`](#url-scheme)) shows every image, movie and GIF in your save folder, Shot's or not, kept up to date as you capture. It's the first section of the same window as Settings. Captures taken with saving turned off aren't in it.
 

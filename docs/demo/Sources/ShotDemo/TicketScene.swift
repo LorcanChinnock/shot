@@ -6,7 +6,7 @@ struct TicketScene: View {
     @State private var choosing = false
     @State private var toast: String?
 
-    private let tickets: [(subject: String, customer: String, time: String, tag: (String, Color))] = [
+    static let tickets: [(subject: String, customer: String, time: String, tag: (String, Color))] = [
         ("Discount code isn't applied at checkout", "Jane Doe", "09:42", ("High", .red)),
         ("Can I change my delivery address?", "John Smith", "09:17", ("Orders", .blue)),
         ("Refund for a damaged mug", "Mary Jones", "08:55", ("Refunds", .orange)),
@@ -39,13 +39,13 @@ struct TicketScene: View {
             .padding(.top, 40)
             .padding(.bottom, 10)
 
-            ForEach(tickets.indices, id: \.self) { index in
-                let ticket = tickets[index]
+            ForEach(Self.tickets.indices, id: \.self) { index in
+                let ticket = Self.tickets[index]
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Text(ticket.customer).font(.system(size: 12, weight: .semibold))
                         Spacer()
-                        Text(ticket.time).font(.system(size: 11)).foregroundStyle(.secondary)
+                        Text(clock(ticket.time)).font(.system(size: 11)).foregroundStyle(.secondary)
                     }
                     Text(ticket.subject).font(.system(size: 12)).lineLimit(1)
                     Tag(ticket.tag.0, ticket.tag.1)
@@ -93,7 +93,7 @@ struct TicketScene: View {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
                             Text("Jane Doe").font(.system(size: 13, weight: .semibold))
-                            Text("09:42").font(.system(size: 11)).foregroundStyle(.secondary)
+                            Text(clock("09:42")).font(.system(size: 11)).foregroundStyle(.secondary)
                         }
                         Text("jane.doe@example.com").font(.system(size: 12)).foregroundStyle(.secondary)
                         Text("I entered SPRING20 and it says the code is valid, but the total doesn't change. I tried twice on my phone and once on my laptop.")

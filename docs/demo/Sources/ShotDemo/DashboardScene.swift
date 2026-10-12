@@ -2,7 +2,9 @@ import Charts
 import SwiftUI
 
 /// A revenue report whose chart grows in and whose order list fills in, so a recording has something moving.
+/// Tickets in the sidebar opens a ticket list and Reports comes back, so a recording has a detour to cut.
 struct DashboardScene: View {
+    @State private var page = Sidebar.Item.reports
     @State private var shown = false
     @State private var rows = 0
 
@@ -17,57 +19,15 @@ struct DashboardScene: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            Sidebar(selected: .reports)
-            Divider()
-            VStack(alignment: .leading, spacing: 16) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("Revenue").font(.system(size: 20, weight: .bold))
-                    Text("Last 14 days").foregroundStyle(.secondary)
-                    Spacer()
-                    Button("Export CSV", systemImage: "square.and.arrow.down") {}
-                }
-                .padding(.top, 34)
-
-                HStack(spacing: 12) {
-                    tile("Revenue", "$19,890", "+12%", .green)
-                    tile("Orders", "412", "+8%", .green)
-                    tile("Conversion", "3.4%", "−0.2 pt", .red)
-                    tile("Refunds", "6", "−3", .green)
-                }
-
-                Card {
-                    Chart(revenue.indices, id: \.self) { day in
-                        BarMark(x: .value("Day", day + 1), y: .value("Revenue", shown ? revenue[day] : 0), width: 22)
-                            .foregroundStyle(day == revenue.count - 1 ? brand.gradient : brand.opacity(0.45).gradient)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                    }
-                    .chartXScale(domain: 0.4...14.6)
-                    .chartYScale(domain: 0...2200)
-                    .chartXAxis { AxisMarks(values: [1, 7, 14]) { value in AxisValueLabel("\(value.as(Int.self) ?? 0)") } }
-                    .chartYAxis { AxisMarks(position: .leading, values: [0, 1000, 2000]) { AxisGridLine(); AxisValueLabel() } }
-                    .frame(height: 170)
-                }
-
-                Card {
-                    VStack(spacing: 8) {
-                        ForEach(orders.indices.prefix(rows), id: \.self) { index in
-                            let order = orders[index]
-                            HStack {
-                                Text(order.id).font(.system(size: 12, design: .monospaced)).frame(width: 80, alignment: .leading)
-                                Text(order.customer).font(.system(size: 13))
-                                Spacer()
-                                Tag(order.status.0, order.status.1)
-                                Text(order.amount).font(.system(size: 13, weight: .medium)).monospacedDigit().frame(width: 70, alignment: .trailing)
-                            }
-                            .transition(.move(edge: .top).combined(with: .opacity))
-                        }
-                        Spacer(minLength: 0)
-                    }
-                    .frame(height: 150, alignment: .top)
-                }
-                Spacer(minLength: 0)
+            Sidebar(selected: page) { item in
+                if item == .reports || item == .tickets { page = item }
             }
-            .padding(.horizontal, 20)
+            Divider()
+            if page == .tickets {
+                ticketList
+            } else {
+                report
+            }
         }
         .task {
             try? await Task.sleep(for: .milliseconds(300))
@@ -77,6 +37,81 @@ struct DashboardScene: View {
                 withAnimation(.spring(duration: 0.4)) { rows += 1 }
             }
         }
+    }
+
+    private var ticketList: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Tickets").font(.system(size: 20, weight: .bold))
+                .padding(.top, 34)
+            Card {
+                VStack(spacing: 12) {
+                    ForEach(TicketScene.tickets.indices, id: \.self) { index in
+                        let ticket = TicketScene.tickets[index]
+                        HStack {
+                            Text(ticket.customer).font(.system(size: 13, weight: .semibold)).frame(width: 110, alignment: .leading)
+                            Text(ticket.subject).font(.system(size: 13)).lineLimit(1)
+                            Spacer()
+                            Tag(ticket.tag.0, ticket.tag.1)
+                            Text(clock(ticket.time)).font(.system(size: 12)).foregroundStyle(.secondary).frame(width: 70, alignment: .trailing)
+                        }
+                    }
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 20)
+    }
+
+    private var report: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Revenue").font(.system(size: 20, weight: .bold))
+                Text("Last 14 days").foregroundStyle(.secondary)
+                Spacer()
+                Button("Export CSV", systemImage: "square.and.arrow.down") {}
+            }
+            .padding(.top, 34)
+
+            HStack(spacing: 12) {
+                tile("Revenue", "$19,890", "+12%", .green)
+                tile("Orders", "412", "+8%", .green)
+                tile("Conversion", "3.4%", "−0.2 pt", .red)
+                tile("Refunds", "6", "−3", .green)
+            }
+
+            Card {
+                Chart(revenue.indices, id: \.self) { day in
+                    BarMark(x: .value("Day", day + 1), y: .value("Revenue", shown ? revenue[day] : 0), width: 22)
+                        .foregroundStyle(day == revenue.count - 1 ? brand.gradient : brand.opacity(0.45).gradient)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                }
+                .chartXScale(domain: 0.4...14.6)
+                .chartYScale(domain: 0...2200)
+                .chartXAxis { AxisMarks(values: [1, 7, 14]) { value in AxisValueLabel("\(value.as(Int.self) ?? 0)") } }
+                .chartYAxis { AxisMarks(position: .leading, values: [0, 1000, 2000]) { AxisGridLine(); AxisValueLabel() } }
+                .frame(height: 170)
+            }
+
+            Card {
+                VStack(spacing: 8) {
+                    ForEach(orders.indices.prefix(rows), id: \.self) { index in
+                        let order = orders[index]
+                        HStack {
+                            Text(order.id).font(.system(size: 12, design: .monospaced)).frame(width: 80, alignment: .leading)
+                            Text(order.customer).font(.system(size: 13))
+                            Spacer()
+                            Tag(order.status.0, order.status.1)
+                            Text(order.amount).font(.system(size: 13, weight: .medium)).monospacedDigit().frame(width: 70, alignment: .trailing)
+                        }
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+                    Spacer(minLength: 0)
+                }
+                .frame(height: 150, alignment: .top)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 20)
     }
 
     private func tile(_ label: String, _ value: String, _ change: String, _ colour: Color) -> some View {
