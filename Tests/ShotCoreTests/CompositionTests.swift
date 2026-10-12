@@ -433,6 +433,10 @@ extension MediaTests {
             try await Task.sleep(for: .milliseconds(16))
         }
         await player.pause()
+        // Records what the compositor does from the last seek on, so a failure can say whether the frame for 2 s was
+        // asked for and how its request ended (#414).
+        let compositor = await MainActor.run { item.customVideoCompositor as? ProjectCompositor }
+        compositor?.requests.start()
         let target = CMTime(seconds: 2, preferredTimescale: 600)
         #expect(await player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero))
         // copyPixelBuffer gives the newest buffer, which can be one drawn for an earlier seek, so only the frame for 2 s counts.
@@ -462,7 +466,11 @@ extension MediaTests {
             }
         }
         let outcome = late.map { "arrived \($0) after the 2 s wait" } ?? "never arrived in 10 s more"
-        #expect(arrived, "The frame for 2 s \(outcome); buffers seen were for \(seen) s; item at \(item.currentTime().seconds) s, status \(item.status.rawValue)")
+        let requests = compositor.map { "\($0.requests.events)" } ?? "unknown, since the item had no ProjectCompositor"
+        #expect(
+            arrived,
+            "The frame for 2 s \(outcome); buffers seen were for \(seen) s; item at \(item.currentTime().seconds) s, status \(item.status.rawValue); new buffer for 2 s: \(output.hasNewPixelBuffer(forItemTime: target)); compositor since the last seek: \(requests)"
+        )
     }
 }
 
