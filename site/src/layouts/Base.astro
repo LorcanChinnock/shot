@@ -11,7 +11,7 @@ const {
   title,
   description = 'A screenshot, annotation and screen recording app for the Mac menu bar. Free and open source.',
 } = Astro.props;
-const fullTitle = title ? `${title} · Shot` : 'Shot';
+const fullTitle = title ? `${title} · Shot` : 'Shot: screenshots and screen recording for macOS';
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = new URL('/og.png', Astro.site);
 const release = await latestRelease();
