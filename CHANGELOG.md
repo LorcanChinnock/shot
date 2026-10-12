@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.43](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.42...v0.7.0-beta.43) (2026-10-12)
+
+
+### Features
+
+* **agents:** install the shot command from Settings and add Shot to Claude Code for every project ([#434](https://github.com/LorcanChinnock/shot/issues/434)) ([2640e26](https://github.com/LorcanChinnock/shot/commit/2640e26fe8b084746da946af82c7e0b61f67396a))
+
 ## [0.7.0-beta.42](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.41...v0.7.0-beta.42) (2026-10-12)
 
 
