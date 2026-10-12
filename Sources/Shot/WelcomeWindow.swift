@@ -59,7 +59,7 @@ enum WelcomeWindow {
             return
         }
         let model = WelcomeModel(steps: steps, replay: replay)
-        let window = GlassWindow.make(size: size, title: "Welcome to Shot") { WelcomeView(model: model) }
+        let window = GlassWindow.make(size: size, title: String(localized: "Welcome to Shot")) { WelcomeView(model: model) }
         self.model = model
         self.window = window
         closeObserver = NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { _ in
@@ -246,7 +246,13 @@ private struct SetupStep: View {
     /// The keys Shot uses when macOS keeps its own.
     private var ownKeys: String {
         let keys = [ShotAction.captureFullscreen, .captureArea, .record].compactMap { $0.defaultCombo(replacingSystemScreenshots: false)?.displayString }
-        return keys.dropLast().joined(separator: ", ") + " and " + (keys.last ?? "")
+        return keys.formatted(.list(type: .and))
+    }
+
+    private var keysSubtitle: LocalizedStringResource {
+        model.usesSystemKeys
+            ? "macOS's own screenshot shortcuts turn off while Shot runs, and come back when it quits."
+            : "macOS keeps its shortcuts, and Shot uses \(ownKeys) instead."
     }
 
     var body: some View {
@@ -254,9 +260,7 @@ private struct SetupStep: View {
         VStack(spacing: 0) {
             ToggleRow(
                 title: "Use Shot for ⌘⇧3 to ⌘⇧5",
-                subtitle: model.usesSystemKeys
-                    ? "macOS's own screenshot shortcuts turn off while Shot runs, and come back when it quits."
-                    : "macOS keeps its shortcuts, and Shot uses \(ownKeys) instead.",
+                subtitle: keysSubtitle,
                 isOn: $model.usesSystemKeys, color: Brutal.pink
             )
             ToggleRow(title: "Open Shot at login", subtitle: "So your shortcuts work after a restart.", isOn: $model.opensAtLogin, color: Brutal.pink, divider: false)
@@ -335,8 +339,8 @@ private struct TryItStep: View {
 private struct Header: View {
     let symbol: String
     let color: Color
-    let title: String
-    let subtitle: String
+    let title: LocalizedStringResource
+    let subtitle: LocalizedStringResource
 
     var body: some View {
         HStack(spacing: 14) {
@@ -355,7 +359,7 @@ private struct Header: View {
 
 private struct Instruction: View {
     let number: Int
-    let text: String
+    let text: LocalizedStringResource
 
     var body: some View {
         HStack(spacing: 10) {
@@ -371,7 +375,7 @@ private struct Instruction: View {
 
 private struct Tip: View {
     let symbol: String
-    let text: String
+    let text: LocalizedStringResource
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {

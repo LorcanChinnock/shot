@@ -75,10 +75,10 @@ extension Updater: SPUUpdaterDelegate {
     private static func offerRelaunch(installed: String) {
         NSApp.activate()
         let alert = NSAlert()
-        alert.messageText = "Shot \(installed) is installed"
-        alert.informativeText = "It was installed while Shot was running. Relaunch to use it."
-        alert.addButton(withTitle: "Relaunch")
-        alert.addButton(withTitle: "Later")
+        alert.messageText = String(localized: "Shot \(installed) is installed")
+        alert.informativeText = String(localized: "It was installed while Shot was running. Relaunch to use it.")
+        alert.addButton(withTitle: String(localized: "Relaunch"))
+        alert.addButton(withTitle: String(localized: "Later"))
         if alert.runModal() == .alertFirstButtonReturn {
             Permissions.relaunch()
         }

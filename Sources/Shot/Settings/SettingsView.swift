@@ -10,27 +10,27 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .gallery: "Gallery"
-        case .general: "General"
-        case .capture: "Capture"
-        case .quickAccess: "Quick Access"
-        case .recording: "Recording"
-        case .agents: "Agents"
-        case .shortcuts: "Shortcuts"
-        case .about: "About"
+        case .gallery: String(localized: "Gallery")
+        case .general: String(localized: "General")
+        case .capture: String(localized: "Capture")
+        case .quickAccess: String(localized: "Quick Access")
+        case .recording: String(localized: "Recording")
+        case .agents: String(localized: "Agents")
+        case .shortcuts: String(localized: "Shortcuts")
+        case .about: String(localized: "About")
         }
     }
 
     var subtitle: String {
         switch self {
-        case .gallery: "Every capture in your folder."
-        case .general: "Behaviour, files and formats."
-        case .capture: "What happens when you take a shot."
-        case .quickAccess: "The floating card after each capture."
-        case .recording: "Screen recording video and audio."
-        case .agents: "Hand captures to AI coding tools."
-        case .shortcuts: "Global hotkeys for every action."
-        case .about: "Version, updates, permissions and reset."
+        case .gallery: String(localized: "Every capture in your folder.")
+        case .general: String(localized: "Behaviour, files and formats.")
+        case .capture: String(localized: "What happens when you take a shot.")
+        case .quickAccess: String(localized: "The floating card after each capture.")
+        case .recording: String(localized: "Screen recording video and audio.")
+        case .agents: String(localized: "Hand captures to AI coding tools.")
+        case .shortcuts: String(localized: "Global hotkeys for every action.")
+        case .about: String(localized: "Version, updates, permissions and reset.")
         }
     }
 
@@ -259,7 +259,7 @@ private struct GeneralSettings: View {
             ToggleRow(title: "Exclude menu bar", subtitle: "Crop the menu bar and notch off screenshots and recordings of the full screen.", isOn: $excludesMenuBar, color: color, divider: false)
         }
         SettingsCard(title: "Files", symbol: "folder.fill") {
-            SettingRow(title: "Save folder", subtitle: (saveFolder as NSString).abbreviatingWithTildeInPath) {
+            SettingRow(title: String(localized: "Save folder"), subtitle: (saveFolder as NSString).abbreviatingWithTildeInPath) {
                 HStack(spacing: 10) {
                     Button("Reveal") { NSWorkspace.shared.open(URL(fileURLWithPath: saveFolder)) }
                         .buttonStyle(BrutalButtonStyle(compact: true))
@@ -414,6 +414,10 @@ private struct RecordingSettings: View {
         RecordingFrameRate.selectable(maximumDisplayRate: NSScreen.screens.map(\.maximumFramesPerSecond).max() ?? 0, current: fps)
     }
 
+    private var frameRateSubtitle: LocalizedStringResource {
+        RecordingFrameRate.usesHEVC(fps: fps) ? "HEVC MP4, on displays that refresh this fast." : "H.264 MP4."
+    }
+
     var body: some View {
         SettingsCard(title: "Starting", symbol: "record.circle") {
             ToggleRow(title: "Adjust before recording", subtitle: "Shows the frame handles and options first. Hold ⌥ as you finish the selection to show them once.", isOn: $adjust, color: color)
@@ -422,7 +426,7 @@ private struct RecordingSettings: View {
             }
         }
         SettingsCard(title: "Video", symbol: "film.fill") {
-            SettingRow(title: "Frame rate", subtitle: RecordingFrameRate.usesHEVC(fps: fps) ? "HEVC MP4, on displays that refresh this fast." : "H.264 MP4.") {
+            SettingRow(title: "Frame rate", subtitle: frameRateSubtitle) {
                 BrutalSegmented(selection: $fps, options: frameRates.map { ($0, "\($0) fps") }, color: color)
             }
             ToggleRow(title: "Show cursor", isOn: $showsCursor, color: color)
@@ -447,13 +451,17 @@ private struct AudioSettings: View {
     @State private var devices: [AVCaptureDevice] = []
     private let preview = DevicePreview.microphone
 
+    private var testSubtitle: LocalizedStringResource {
+        preview.isRunning ? "Speak to see the level." : "Shows the input level of the microphone above."
+    }
+
     var body: some View {
         SettingsCard(title: "Audio", symbol: "waveform") {
             ToggleRow(title: "Microphone", subtitle: "macOS asks for permission on first use. Mute it from the recording controls.", isOn: $microphone, color: color)
             SettingRow(title: "Microphone input") {
                 DevicePicker(devices: devices, selection: $deviceID)
             }
-            SettingRow(title: "Test microphone", subtitle: preview.isRunning ? "Speak to see the level." : "Shows the input level of the microphone above.") {
+            SettingRow(title: "Test microphone", subtitle: testSubtitle) {
                 HStack(spacing: 10) {
                     LevelMeter(meter: preview.meter, muted: !preview.isRunning)
                     Button(preview.isRunning ? "Stop" : "Test") {
@@ -514,7 +522,7 @@ private struct CameraSettings: View {
                 }
             }
             SettingRow(title: "Bubble size", divider: false) {
-                BrutalSegmented(selection: $size, options: CameraBubbleSize.allCases.map { ($0, $0.rawValue.capitalized) }, color: color)
+                BrutalSegmented(selection: $size, options: CameraBubbleSize.allCases.map { ($0, Self.title(of: $0)) }, color: color)
             }
         }
         .onAppear {
@@ -525,6 +533,14 @@ private struct CameraSettings: View {
         }
         .onDisappear {
             preview.stop()
+        }
+    }
+
+    private static func title(of size: CameraBubbleSize) -> String {
+        switch size {
+        case .small: String(localized: "Small")
+        case .medium: String(localized: "Medium")
+        case .large: String(localized: "Large")
         }
     }
 }
@@ -559,7 +575,7 @@ private struct DevicePicker: View {
     }
 
     private var selectedName: String {
-        devices.first { $0.uniqueID == selection }?.localizedName ?? "System default"
+        devices.first { $0.uniqueID == selection }?.localizedName ?? String(localized: "System default")
     }
 }
 
@@ -603,7 +619,7 @@ private struct AgentSettings: View {
 
 /// A short note at the top of a card, above its rows.
 private struct CardNote: View {
-    let text: String
+    let text: LocalizedStringResource
 
     var body: some View {
         Text(text)
@@ -625,7 +641,7 @@ private struct CommandLinkRow: View {
     private var link: String { (CommandLink.folder as NSString).appendingPathComponent(name) }
 
     var body: some View {
-        SettingRow(title: "\(name) command", subtitle: subtitle, divider: false) {
+        SettingRow(title: String(localized: "\(name) command"), subtitle: subtitle, divider: false) {
             switch status {
             case .missing:
                 button("Install", CommandLink.installScript(name: name, cli: cli))
@@ -645,16 +661,16 @@ private struct CommandLinkRow: View {
 
     private var subtitle: String {
         switch status {
-        case .missing: "Installing asks for your password once."
-        case .linked: "Installed at \(link). Updates with Shot."
-        case .homebrew: "Installed by Homebrew. Updates with Shot."
-        case .stale: "Points to a copy of Shot that has moved. Reinstall to fix it."
-        case .taken: "Another program uses \(link). Run \(cli) instead."
+        case .missing: String(localized: "Installing asks for your password once.")
+        case .linked: String(localized: "Installed at \(link). Updates with Shot.")
+        case .homebrew: String(localized: "Installed by Homebrew. Updates with Shot.")
+        case .stale: String(localized: "Points to a copy of Shot that has moved. Reinstall to fix it.")
+        case .taken: String(localized: "Another program uses \(link). Run \(cli) instead.")
         }
     }
 
-    private func button(_ title: String, _ script: String) -> some View {
-        Button(title) { run(script) }
+    private func button(_ title: LocalizedStringResource, _ script: String) -> some View {
+        Button(String(localized: title)) { run(script) }
             .buttonStyle(BrutalButtonStyle(compact: true))
             .disabled(working)
     }
@@ -697,7 +713,7 @@ private struct CommandLinkRow: View {
 
 /// A command to paste into a terminal or a config file, with a button that copies it.
 private struct CommandRow: View {
-    let title: String
+    let title: LocalizedStringResource
     let command: String
     var divider = true
 
@@ -858,7 +874,7 @@ private struct AboutSettings: View {
         }
 
         SettingsCard(title: "Data", symbol: "externaldrive.fill") {
-            SettingRow(title: "Save folder", subtitle: (Preferences().saveFolder.path as NSString).abbreviatingWithTildeInPath) {
+            SettingRow(title: String(localized: "Save folder"), subtitle: (Preferences().saveFolder.path as NSString).abbreviatingWithTildeInPath) {
                 Button("Open") {
                     let folder = Preferences().saveFolder
                     try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -902,8 +918,8 @@ private struct AboutSettings: View {
 }
 
 private struct PermissionRow: View {
-    let title: String
-    let subtitle: String
+    let title: LocalizedStringResource
+    let subtitle: LocalizedStringResource
     let status: AVAuthorizationStatus
     let pane: String
     var divider = true
@@ -920,7 +936,7 @@ private struct PermissionRow: View {
         }
     }
 
-    private var label: String {
+    private var label: LocalizedStringResource {
         switch status {
         case .authorized: "GRANTED"
         case .notDetermined: "NOT ASKED"

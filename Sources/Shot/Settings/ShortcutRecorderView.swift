@@ -17,9 +17,9 @@ struct ShortcutRecorderView: View {
 
     private var label: String {
         if isRecording {
-            return "Press keys…"
+            return String(localized: "Press keys…")
         }
-        return KeyCombo(encoded: encoded)?.displayString ?? "None"
+        return KeyCombo(encoded: encoded)?.displayString ?? String(localized: "None")
     }
 
     var body: some View {
