@@ -74,8 +74,9 @@ brew update && brew install lorcanchinnock/tap/shot
 
    <img src="docs/media/open-anyway.png" width="495" alt="Privacy & Security in System Settings, with the Open Anyway button next to the message that Shot was blocked">
 
-3. In Shot's permission window, click **Grant**, then **Open System Settings** in the macOS prompt, and turn on Shot. Back in Shot's window, click **Relaunch**: macOS applies the permission only after a relaunch.
-4. Shot now lives in the menu bar. Press ⌘⇧4 to take your first screenshot.
+3. In Shot's welcome window, click **Grant**, then **Open System Settings** in the macOS prompt, and turn on Shot. Back in Shot's window, click **Relaunch**: macOS applies the permission only after a relaunch.
+4. Choose whether Shot takes over ⌘⇧3 to ⌘⇧5 (macOS gets them back when Shot quits) and opens at login, then click **Continue**.
+5. Shot now lives in the menu bar. Press ⌘⇧4 and drag out an area to take your first screenshot; the window shows a few tips once it's done. See [First launch](docs/usage.md#first-launch) for more.
 
 Shot updates itself once you allow it to; see [Updates](docs/usage.md#updates). To uninstall, see [Removing Shot](docs/usage.md#removing-shot), or quit Shot and run `brew uninstall --zap shot` if you used Homebrew.
 

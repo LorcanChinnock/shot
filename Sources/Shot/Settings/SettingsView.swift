@@ -753,7 +753,11 @@ private struct AboutSettings: View {
                 }
             }
             PermissionRow(title: "Microphone", subtitle: "Only needed to record your voice.", status: microphoneStatus, pane: "Privacy_Microphone")
-            PermissionRow(title: "Camera", subtitle: "Only needed for the camera bubble.", status: cameraStatus, pane: "Privacy_Camera", divider: false)
+            PermissionRow(title: "Camera", subtitle: "Only needed for the camera bubble.", status: cameraStatus, pane: "Privacy_Camera")
+            SettingRow(title: "Welcome window", subtitle: "Go through setup and a first capture again.", divider: false) {
+                Button("Show") { WelcomeWindow.showAgain() }
+                    .buttonStyle(BrutalButtonStyle(compact: true))
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             screenGranted = Permissions.hasScreenCapture

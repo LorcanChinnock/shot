@@ -297,3 +297,23 @@ import Testing
     store.set(4, forKey: PreferenceKey.recordingCountdown)
     #expect(prefs.recordingCountdown == 0)
 }
+
+@Test func savedSettingsMarkSomeoneWhoUsedShotBefore() {
+    #expect(Preferences.hasSavedSettings([PreferenceKey.gaveBackTextCaptureKey]))
+    #expect(Preferences.hasSavedSettings([PreferenceKey.saveFolder]))
+    #expect(Preferences.hasSavedSettings(["hotkey.capture-text"]))
+}
+
+@Test func keysMacOSAndSparkleSaveDoNotMarkSomeoneWhoUsedShotBefore() {
+    #expect(!Preferences.hasSavedSettings([]))
+    #expect(!Preferences.hasSavedSettings(["NSStatusItem Preferred Position Item-0", "NSWindow Frame Shot", "SUHasLaunchedBefore"]))
+}
+
+@Test func resettingSettingsKeepsTheOnboardingProgress() throws {
+    let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
+    let store = try #require(UserDefaults(suiteName: suite))
+    defer { store.removePersistentDomain(forName: suite) }
+    store.set(OnboardingProgress.done.rawValue, forKey: PreferenceKey.onboarding)
+    Preferences.resetAll(in: store)
+    #expect(store.persistentDomain(forName: suite)?[PreferenceKey.onboarding] as? String == "done")
+}
