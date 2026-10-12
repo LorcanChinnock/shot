@@ -440,7 +440,19 @@ extension MediaTests {
             frame = output.copyPixelBuffer(forItemTime: target, itemTimeForDisplay: nil)
             try await Task.sleep(for: .milliseconds(20))
         }
-        #expect(frame != nil)
+        // It fails after 2 s either way. Waiting on up to 10 s more only tells a slow runner from a frame that never comes (#414).
+        var late: Duration?
+        if frame == nil {
+            let start = ContinuousClock.now
+            while late == nil, ContinuousClock.now - start < .seconds(10) {
+                if output.copyPixelBuffer(forItemTime: target, itemTimeForDisplay: nil) != nil {
+                    late = ContinuousClock.now - start
+                }
+                try await Task.sleep(for: .milliseconds(20))
+            }
+        }
+        let outcome = late.map { "arrived \($0) after the 2 s wait" } ?? "never arrived in 10 s more"
+        #expect(frame != nil, "The frame \(outcome); item at \(item.currentTime().seconds) s, status \(item.status.rawValue)")
     }
 }
 
