@@ -12,7 +12,7 @@ extension AgentTools {
         AgentTools(
             folder: folder,
             entries: {
-                Gallery.items(in: folder).map { AgentCaptures.Entry(url: $0.url, isVideo: $0.kind == .video, date: $0.date) }
+                Gallery.items(in: folder).map { AgentCaptures.Entry(url: $0.url, isVideo: $0.kind == .video, date: $0.date, bytes: $0.bytes) }
             },
             preview: { entry in
                 entry.isVideo ? await videoPreview(of: entry.url) : imagePreview(of: entry.url)

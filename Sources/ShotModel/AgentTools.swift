@@ -1,6 +1,6 @@
 import Foundation
 
-/// The MCP server's tools: five that read captures, three that make new files from one, never changing, moving or
+/// The MCP server's tools: six that read captures, one by waiting for the next, three that make new files from one, never changing, moving or
 /// deleting anything, and two that ask the running app to capture or record a window. What they're called, what they
 /// take, and what they say back are here. Finding files, drawing
 /// previews and running the commands need Apple frameworks, so they come in as closures; ShotCore's `live(folder:)`
@@ -24,6 +24,8 @@ public struct AgentTools: Sendable {
     public var agent: @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue]
     public var now: @Sendable () -> Date
     public var timeZone: TimeZone
+    /// How often `wait_for_capture` looks at the folder.
+    public var pollInterval: Duration = CaptureWatch.interval
 
     public init(
         folder: URL,
@@ -57,10 +59,13 @@ public struct AgentTools: Sendable {
     public static let trimVideo = "trim_video"
     public static let getFrames = "get_frames"
     public static let findText = "find_text"
+    public static let waitForCapture = "wait_for_capture"
     public static let captureWindow = "capture_window"
     public static let recordWindow = "record_window"
-    /// The longest `record_window` waits for, so its answer comes within what clients wait for a tool.
+    /// The longest `record_window` and `wait_for_capture` wait for, so their answer comes within what clients wait for a tool.
     public static let maximumWait: Double = 120
+    /// How long `wait_for_capture` waits without a timeout.
+    public static let defaultWait: Double = 60
     /// How many key frames a finished `record_window` shows.
     static let recordingFrames = 6
 
@@ -130,6 +135,19 @@ public struct AgentTools: Sendable {
             inputSchema: schema(capture.merging([
                 "query": .object(["type": .string("string"), "description": .string("Words to find, ignoring case and accents, such as \"Save\". Without it, all the text.")]),
             ]) { $1 }),
+            readOnly: true
+        ),
+        MCPServer.Tool(
+            name: waitForCapture,
+            description: "Waits for the user's next Shot capture and returns it as latest_capture does. Use this when you've asked the user to take a screenshot or recording, so you can carry on once they have. Only a capture taken after the call counts. Reads the capture folder only; writes nothing.",
+            inputSchema: schema([
+                "kind": .object([
+                    "type": .string("string"),
+                    "enum": .array([.string("image"), .string("video"), .string("any")]),
+                    "description": .string("image, video or any (the default)."),
+                ]),
+                "timeout": seconds("How long to wait, up to \(Int(maximumWait)) seconds. Default \(Int(defaultWait))."),
+            ]),
             readOnly: true
         ),
         MCPServer.Tool(
@@ -215,6 +233,8 @@ public struct AgentTools: Sendable {
                 return notFound(query, in: entries)
             }
             return await describe(entry)
+        case Self.waitForCapture:
+            return await waitForCapture(arguments)
         case Self.annotate, Self.makeGIF, Self.trimVideo:
             return await make(name, arguments, entries)
         case Self.getFrames:
@@ -240,6 +260,22 @@ public struct AgentTools: Sendable {
         default:
             return MCPServer.ToolResult(content: [.text("Unknown tool: \(name)")], isError: true)
         }
+    }
+
+    /// Waits for the next capture of the kind `arguments` asks for, then shows it as `latest_capture` does. Running out
+    /// of time isn't an error, since the user may just not have taken it yet.
+    func waitForCapture(_ arguments: JSONValue) async -> MCPServer.ToolResult {
+        let kind = AgentCaptures.Kind(lenient: arguments["kind"]?.string)
+        let timeout = arguments["timeout"]?.number.flatMap { $0.isFinite ? min(max($0, 1), Self.maximumWait) : nil } ?? Self.defaultWait
+        guard let entry = await CaptureWatch.next(kind: kind, timeout: timeout, interval: pollInterval, entries: entries) else {
+            let noun = switch kind {
+            case .image: "screenshot"
+            case .video: "recording"
+            case .any: "capture"
+            }
+            return MCPServer.ToolResult(content: [.text("No new \(noun) in \(folder.path) after \(String(format: "%g", timeout)) second\(timeout == 1 ? "" : "s"). Call wait_for_capture again to keep waiting.")])
+        }
+        return await describe(entry)
     }
 
     /// Runs one of the tools that make a file, on the capture `arguments` name, or the newest one of the right kind.
@@ -478,7 +514,8 @@ public struct AgentTools: Sendable {
         return " Only captures in Shot's capture folder, \(folder.path), can be named, and that path is outside it."
     }
 
-    func metadata(_ entry: AgentCaptures.Entry) -> JSONValue {
+    /// A capture's name, path, kind and when it was taken, as `list_captures` and `shot watch` give it.
+    public func metadata(_ entry: AgentCaptures.Entry) -> JSONValue {
         let object: [String: JSONValue] = [
             "name": .string(entry.name),
             "path": .string(entry.url.path),

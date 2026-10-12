@@ -34,6 +34,10 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(try parse("record --stop") == .record(.stop(id: nil)))
     #expect(try parse("record --stop ab12cd34") == .record(.stop(id: "ab12cd34")))
     #expect(try parse("record --status") == .record(.status))
+    #expect(try parse("watch") == .watch(ShotCommand.WatchOptions()))
+    #expect(try parse("watch --kind VIDEO --timeout 1:30") == .watch(ShotCommand.WatchOptions(kind: .video, timeout: 90)))
+    #expect(try parse("watch --follow") == .watch(ShotCommand.WatchOptions(timeout: nil, follow: true)))
+    #expect(try parse("watch --timeout 600 --follow") == .watch(ShotCommand.WatchOptions(timeout: 600, follow: true)))
     #expect(try parse("mcp") == .mcp)
     #expect(try parse("--version") == .version)
     #expect(try parse("-v") == .version)
@@ -59,6 +63,8 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(ShotCommand.usage("capture").hasPrefix("Usage: shot capture --window <title or app>"))
     #expect(try parse("text --help") == .help("text"))
     #expect(ShotCommand.usage(nil).contains("shot text <image>"))
+    #expect(try parse("watch --follow -h") == .help("watch"))
+    #expect(ShotCommand.usage("watch").hasPrefix("Usage: shot watch [--kind image|video|any] [--timeout 60] [--follow]"))
 }
 
 @Test(arguments: [
@@ -100,6 +106,11 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     ("record --stop --status", "record", "--stop takes at most a recording's id"),
     ("record --status now", "record", "--status takes nothing else"),
     ("record --window a --fps 30", "record", "unknown option --fps; it takes --duration, --window"),
+    ("watch a.png", "watch", "takes no file; it watches Shot's capture folder"),
+    ("watch --kind gif", "watch", "--kind gif must be image, video or any"),
+    ("watch --timeout 0", "watch", "--timeout 0 must be a time above 0, such as 30 or 5:00"),
+    ("watch --follow --follow", "watch", "--follow is given twice"),
+    ("watch --window a", "watch", "unknown option --window; it takes --kind, --timeout"),
 ] as [(String, String?, String)])
 func aMistakeIsAUsageErrorThatSaysWhat(_ line: String, _ command: String?, _ message: String) throws {
     let error = try #require(usage(line))

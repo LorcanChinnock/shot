@@ -15,6 +15,8 @@ public enum ShotCommand: Equatable, Sendable {
     case capture(window: String)
     /// Starts, stops or asks about a recording of a window, made by the running app.
     case record(RecordAction)
+    /// Waits for the user's next capture, or with `follow`, reports each one as it comes.
+    case watch(WatchOptions)
     case mcp
     case version
     /// Usage, for one command or for all of them.
@@ -115,6 +117,23 @@ public enum ShotCommand: Equatable, Sendable {
         }
     }
 
+    public struct WatchOptions: Equatable, Sendable {
+        /// How long `watch` waits without `--timeout`.
+        public static let defaultTimeout: Double = 60
+
+        public var kind: AgentCaptures.Kind
+        /// Seconds to wait; with `follow`, nil runs until interrupted.
+        public var timeout: Double?
+        /// Keep going after the first capture, printing each as it comes.
+        public var follow: Bool
+
+        public init(kind: AgentCaptures.Kind = .any, timeout: Double? = defaultTimeout, follow: Bool = false) {
+            self.kind = kind
+            self.timeout = timeout
+            self.follow = follow
+        }
+    }
+
     public enum RecordAction: Equatable, Sendable {
         /// Records `window`; with `duration`, waits for the recording to end.
         case start(window: String, duration: Double?)
@@ -124,7 +143,7 @@ public enum ShotCommand: Equatable, Sendable {
     }
 
     /// The commands `help` knows, in the order it lists them.
-    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "text", "capture", "record", "mcp"]
+    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "text", "capture", "record", "watch", "mcp"]
 
     /// The command's name, for error messages such as `shot gif: …`.
     public var name: String {
@@ -138,6 +157,7 @@ public enum ShotCommand: Equatable, Sendable {
         case .text: "text"
         case .capture: "capture"
         case .record: "record"
+        case .watch: "watch"
         case .mcp: "mcp"
         case .version: "version"
         case .help: "help"
@@ -180,6 +200,9 @@ public enum ShotCommand: Equatable, Sendable {
         case "record":
             if rest.contains(where: isHelp) { return .help(first) }
             return try parseRecord(rest)
+        case "watch":
+            if rest.contains(where: isHelp) { return .help(first) }
+            return try parseWatch(rest)
         default:
             throw .usage(nil, "no command named \"\(first)\"")
         }
@@ -200,7 +223,32 @@ public enum ShotCommand: Equatable, Sendable {
         "text": [:],
         "capture": ["window": false],
         "record": ["window": false, "duration": false],
+        "watch": ["kind": false, "timeout": false],
     ]
+
+    /// `watch [--kind image|video|any] [--timeout 60] [--follow]`.
+    private static func parseWatch(_ arguments: [String]) throws(ShotCommandError) -> ShotCommand {
+        let follow = arguments.contains("--follow")
+        if arguments.filter({ $0 == "--follow" }).count > 1 {
+            throw .usage("watch", "--follow is given twice")
+        }
+        let (positional, values) = try options("watch", arguments.filter { $0 != "--follow" })
+        guard positional.isEmpty else { throw .usage("watch", "takes no file; it watches Shot's capture folder") }
+        var options = WatchOptions(timeout: follow ? nil : WatchOptions.defaultTimeout, follow: follow)
+        if let text = values["kind"]?.first {
+            guard let kind = AgentCaptures.Kind(rawValue: text.lowercased()) else {
+                throw .usage("watch", "--kind \(text) must be image, video or any")
+            }
+            options.kind = kind
+        }
+        if let text = values["timeout"]?.first {
+            guard let seconds = Self.seconds(text), seconds > 0 else {
+                throw .usage("watch", "--timeout \(text) must be a time above 0, such as 30 or 5:00")
+            }
+            options.timeout = seconds
+        }
+        return .watch(options)
+    }
 
     /// `record --window … [--duration s]`, `record --stop [id]` or `record --status`.
     private static func parseRecord(_ arguments: [String]) throws(ShotCommandError) -> ShotCommand {
@@ -398,6 +446,7 @@ public enum ShotCommand: Equatable, Sendable {
             "text": "\(program) text <image>\n    The text in the image, read on this Mac: each line and word with its box, [x, y, width, height] in the image's pixels from the top left.",
             "capture": "\(program) capture --window <title or app>\n    A screenshot of that open window, taken by Shot without taking focus, saved to the capture folder. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
             "record": "\(program) record --window <title or app> [--duration 10] | --stop [<id>] | --status\n    Records that open window through Shot, without its microphone or camera, for at most \(Int(AgentRequest.maximumDuration / 60)) minutes, saved to the capture folder. Without --duration it prints an id and returns at once; --stop ends it. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
+            "watch": "\(program) watch [--kind image|video|any] [--timeout 60] [--follow]\n    Waits for your next capture and prints its name, path, kind and when it was taken. Exits with 66 if none comes before the timeout. --follow prints one line per capture as each comes, until interrupted or the timeout. Reads the capture folder only, so Shot needn't be running.",
             "mcp": "\(program) mcp\n    Serves Shot's captures to an AI agent over MCP, on standard input and output.",
         ]
         if let command, let line = lines[command] {
@@ -412,14 +461,21 @@ public enum ShotCommand: Equatable, Sendable {
 
         Without -o, the output goes beside the input as the next version, such as "name (2).png". Nothing is ever
         overwritten. Results are JSON on standard output; errors go to standard error with an exit code for each kind:
-        64 a wrong option, 65 a file or marks Shot can't use, 66 no such file, window or recording, 69 Shot isn't
-        answering agents, 70 an internal error, 73 the output can't be made, 74 reading or writing failed, 75 Shot is
-        busy, 77 no Screen Recording permission. More: \(docs)#the-shot-command-line
+        64 a wrong option, 65 a file or marks Shot can't use, 66 no such file, window or recording, or no new capture,
+        69 Shot isn't answering agents, 70 an internal error, 73 the output can't be made, 74 reading or writing failed,
+        75 Shot is busy, 77 no Screen Recording permission. More: \(docs)#the-shot-command-line
         """
     }
 
     /// The online docs, which render `docs/usage.md`.
     static let docs = "https://shot.lorcanchinnock.com/docs/"
+
+    /// `value` on one line, as `shot watch --follow` prints each capture, so each line is a whole JSON object.
+    public static func jsonLine(_ value: JSONValue) -> String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+        return (try? encoder.encode(value)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+    }
 
     /// `value` as `shot` prints it: pretty, with keys sorted, so it reads and diffs well.
     public static func json(_ value: JSONValue) -> String {

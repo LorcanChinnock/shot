@@ -7,11 +7,14 @@ public enum AgentCaptures {
         public var url: URL
         public var isVideo: Bool
         public var date: Date
+        /// The file's size, when it's known, so a capture still being written can be told apart.
+        public var bytes: Int?
 
-        public init(url: URL, isVideo: Bool, date: Date) {
+        public init(url: URL, isVideo: Bool, date: Date, bytes: Int? = nil) {
             self.url = url
             self.isVideo = isVideo
             self.date = date
+            self.bytes = bytes
         }
 
         public var name: String { url.lastPathComponent }

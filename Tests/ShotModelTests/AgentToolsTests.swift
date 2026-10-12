@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 import Testing
 @testable import ShotModel
 
@@ -37,10 +38,10 @@ private let captures = tools(in: folder, [
     ("Recording C.mp4", 5, true),
 ])
 
-@Test func thereAreTenToolsEachWithAnObjectSchema() {
-    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "annotate", "make_gif", "trim_video", "capture_window", "record_window"])
+@Test func thereAreElevenToolsEachWithAnObjectSchema() {
+    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "wait_for_capture", "annotate", "make_gif", "trim_video", "capture_window", "record_window"])
     let required = AgentTools.definitions.map { $0.inputSchema["required"] }
-    #expect(required == [nil, nil, nil, nil, nil, .array([.string("annotations")]), nil, .array([.string("start"), .string("end")]), .array([.string("window")]), nil])
+    #expect(required == [nil, nil, nil, nil, nil, nil, .array([.string("annotations")]), nil, .array([.string("start"), .string("end")]), .array([.string("window")]), nil])
     for tool in AgentTools.definitions {
         #expect(tool.inputSchema["type"] == .string("object"))
         #expect(!tool.description.isEmpty)
@@ -49,7 +50,7 @@ private let captures = tools(in: folder, [
 
 @Test func onlyTheToolsThatChangeNothingAreMarkedReadOnly() {
     // annotate, make_gif and trim_video add files, and capture_window and record_window take new captures.
-    #expect(AgentTools.definitions.filter(\.readOnly).map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text"])
+    #expect(AgentTools.definitions.filter(\.readOnly).map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "wait_for_capture"])
 }
 
 @Test func annotateNamesExactlyThePaletteColours() throws {
@@ -449,4 +450,31 @@ private func box(_ x: Double, _ y: Double, _ width: Double, _ height: Double) ->
     let failed = await failing.call("find_text", .object([:]))
     #expect(failed.isError)
     #expect(texts(failed) == ["Couldn't read Shot B.png as an image."])
+}
+
+@Test func waitForCaptureReturnsTheNextCaptureAsLatestCaptureDoes() async {
+    let listed = Mutex([AgentCaptures.Entry(url: folder.appendingPathComponent("Shot A.png"), isVideo: false, date: now.addingTimeInterval(-60))])
+    var tools = AgentTools(
+        folder: folder,
+        entries: { listed.withLock { $0 } },
+        preview: { entry in [.image(data: "PREVIEW:\(entry.name)", mimeType: "image/jpeg")] },
+        now: { now },
+        timeZone: utc
+    )
+    tools.pollInterval = .milliseconds(10)
+    let waiting = Task { [tools] in await tools.call("wait_for_capture", .object(["timeout": .number(5)])) }
+    try? await Task.sleep(for: .milliseconds(50))
+    listed.withLock { $0.append(AgentCaptures.Entry(url: folder.appendingPathComponent("Recording B.mp4"), isVideo: true, date: now)) }
+    let result = await waiting.value
+    #expect(result.isError == false)
+    #expect(result.content.first == .image(data: "PREVIEW:Recording B.mp4", mimeType: "image/jpeg"))
+    #expect(texts(result).first?.contains(#""kind" : "video""#) == true)
+}
+
+@Test func waitForCaptureSaysWhenNothingCameInTime() async {
+    var tools = captures
+    tools.pollInterval = .milliseconds(10)
+    let result = await tools.call("wait_for_capture", .object(["kind": .string("image"), "timeout": .string("0")]))
+    #expect(result.isError == false)
+    #expect(texts(result) == ["No new screenshot in /shots after 1 second. Call wait_for_capture again to keep waiting."])
 }
