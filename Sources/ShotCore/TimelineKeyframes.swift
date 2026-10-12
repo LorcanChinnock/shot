@@ -7,11 +7,11 @@ public enum AnimationPreset: String, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .fadeIn: "Fade in"
-        case .fadeOut: "Fade out"
+        case .fadeIn: "Fade In"
+        case .fadeOut: "Fade Out"
         case .pop: "Pop"
-        case .slideIn: "Slide in"
-        case .drawOn: "Draw on"
+        case .slideIn: "Slide In"
+        case .drawOn: "Draw On"
         }
     }
 

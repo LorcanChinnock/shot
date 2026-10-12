@@ -10,7 +10,7 @@ private let log = Logger.shot("recording")
 enum RecordingMode: String, CaseIterable {
     case area, screen, window
 
-    var title: String { rawValue.capitalized }
+    var title: String { self == .screen ? "Full Screen" : rawValue.capitalized }
 }
 
 @MainActor
@@ -445,7 +445,7 @@ private final class SetupBarPanel: NSPanel {
         let cancel: @MainActor () -> Void
     }
 
-    static let size = NSSize(width: 620, height: 66)
+    static let size = NSSize(width: 660, height: 66)
 
     override var canBecomeKey: Bool { true }
 
@@ -476,9 +476,9 @@ private struct SetupBarView: View {
             BrutalChip(text: "\(Int(model.pixelSize.width)) × \(Int(model.pixelSize.height))")
                 .fixedSize()
             Rectangle().fill(Brutal.ink.opacity(0.2)).frame(width: 2, height: 28)
-            OptionToggle(on: model.cameraOn, symbol: model.cameraOn ? "video.fill" : "video.slash.fill", help: model.cameraOn ? "Camera bubble on" : "Camera bubble off", action: actions.toggleCamera)
-            OptionToggle(on: model.microphoneOn, symbol: model.microphoneOn ? "mic.fill" : "mic.slash.fill", help: model.microphoneOn ? "Microphone on" : "Microphone off", action: actions.toggleMicrophone)
-            OptionToggle(on: model.cursorOn, symbol: model.cursorOn ? "cursorarrow" : "cursorarrow.slash", help: model.cursorOn ? "Cursor shown" : "Cursor hidden", action: actions.toggleCursor)
+            OptionToggle(on: model.cameraOn, symbol: model.cameraOn ? "video.fill" : "video.slash.fill", help: model.cameraOn ? "Hide camera bubble" : "Show camera bubble", action: actions.toggleCamera)
+            OptionToggle(on: model.microphoneOn, symbol: model.microphoneOn ? "mic.fill" : "mic.slash.fill", help: model.microphoneOn ? "Turn off microphone" : "Turn on microphone", action: actions.toggleMicrophone)
+            OptionToggle(on: model.cursorOn, symbol: model.cursorOn ? "cursorarrow" : "cursorarrow.slash", help: model.cursorOn ? "Hide cursor" : "Show cursor", action: actions.toggleCursor)
             Spacer(minLength: 0)
             Button {
                 actions.cancel()

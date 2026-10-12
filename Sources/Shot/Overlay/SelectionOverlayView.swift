@@ -337,7 +337,7 @@ final class SelectionOverlayView: NSView {
             }
             parts.append("Space: window")
             if controller.isLive {
-                parts.append("Enter: full screen")
+                parts.append("Return: full screen")
             }
             parts.append("Esc: cancel")
         }

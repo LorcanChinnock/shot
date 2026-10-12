@@ -44,7 +44,7 @@ struct ClipInspector: View {
                             .brutalTip("How the value moves from this keyframe to the next")
                     }
                     if !animation.isEmpty {
-                        Button("Clear keyframes") { model.clearKeyframes() }
+                        Button("Clear Keyframes") { model.clearKeyframes() }
                             .buttonStyle(BrutalButtonStyle(compact: true))
                     }
                 }

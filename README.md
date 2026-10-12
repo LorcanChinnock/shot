@@ -86,7 +86,7 @@ Shot updates itself once you allow it to; see [Updates](docs/usage.md#updates). 
 |---|---|
 | ⌘⇧3 | Capture the full screen |
 | ⌘⇧4 | Capture an area. Press Space to pick a window instead. |
-| ⌘⇧5 | Record an area. Press Space to pick a window, or Enter for the full screen. |
+| ⌘⇧5 | Record an area. Press Space to pick a window, or Return for the full screen. |
 
 Shot takes these keys over from macOS. To keep the macOS screenshot tool, and for every other shortcut, see [Keyboard shortcuts](docs/usage.md#keyboard-shortcuts).
 
