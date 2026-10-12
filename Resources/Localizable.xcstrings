@@ -1548,7 +1548,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "15s"
+            "value" : "15 s"
           }
         },
         "es" : {
@@ -1600,7 +1600,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "30s"
+            "value" : "30 s"
           }
         },
         "es" : {
@@ -1652,7 +1652,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "4s"
+            "value" : "4 s"
           }
         },
         "es" : {
@@ -1704,7 +1704,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "8s"
+            "value" : "8 s"
           }
         },
         "es" : {
@@ -18566,7 +18566,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mach es zu deinem"
+            "value" : "Mach Shot zu deinem"
           }
         },
         "es" : {
@@ -23626,7 +23626,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "収録中"
+            "value" : "収録"
           }
         },
         "ko" : {
@@ -29372,7 +29372,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Durchgezogen"
+            "value" : "Massiv"
           }
         },
         "es" : {
