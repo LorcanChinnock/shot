@@ -27,6 +27,8 @@ private func decodeRequest(_ json: String) -> ShotCommandError? {
     #expect(try AgentRequest.decode(AgentRequest(.capture, target: target).line).target == target)
     let display = AgentRequest(.record, target: AgentTarget(display: 2), duration: 10)
     #expect(try AgentRequest.decode(display.line) == display)
+    let mark = AgentRequest(.mark, id: "ab12cd34", label: "tapped Login")
+    #expect(try AgentRequest.decode(mark.line) == mark)
 }
 
 @Test func aPlainRequestSendsNoTargetFieldsItDoesntUse() {
@@ -57,6 +59,9 @@ private func decodeRequest(_ json: String) -> ShotCommandError? {
     (#"{"v":1,"op":"record","window":"a","waitStable":5}"#, "record can't wait for the window to settle"),
     (#"{"v":1,"op":"record","window":"a","duration":0}"#, "duration must be above 0 and at most 600 seconds"),
     (#"{"v":1,"op":"record","window":"a","duration":601}"#, "duration must be above 0 and at most 600 seconds"),
+    (#"{"v":1,"op":"mark"}"#, "mark needs a label"),
+    (#"{"v":1,"op":"mark","label":" "}"#, "mark needs a label"),
+    (#"{"v":1,"op":"mark","label":""# + String(repeating: "a", count: 201) + #""}"#, "a mark's label can be at most 200 characters"),
 ])
 func aBadRequestIsAUsageError(_ json: String, _ message: String) throws {
     let error = try #require(decodeRequest(json))

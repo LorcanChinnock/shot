@@ -435,4 +435,42 @@ extension MediaTests {
         #expect(result.content.compactMap { if case let .text(text) = $0 { text } else { nil } }.dropFirst().allSatisfy { $0.hasPrefix("t=") })
         #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path) == ["Recording.mp4"])
     }
+
+    @Test func getFramesShowsTheFrameAtEachMarkWithItsLabel() async throws {
+        let folder = try temporaryFolder()
+        let store = try temporaryFolder().appendingPathComponent("recording-marks.json")
+        defer {
+            try? FileManager.default.removeItem(at: folder)
+            try? FileManager.default.removeItem(at: store.deletingLastPathComponent())
+        }
+        let video = folder.appendingPathComponent("Recording.mp4")
+        try await writeScenes(to: video, levels: [30, 130, 230])
+        try RecordingMarks.save([RecordingMark(time: 1.5, label: "tapped Login")], for: video, in: store)
+        let result = await AgentTools.live(folder: folder, marks: store).call("get_frames", .object(["count": .number(2)]))
+        #expect(result.isError == false)
+        let lines = result.content.compactMap { if case let .text(text) = $0 { text } else { nil } }.dropFirst()
+        #expect(lines.count == 3)
+        #expect(lines.filter { $0.hasSuffix(#", marked "tapped Login""#) }.count == 1)
+        #expect(lines.contains { $0.hasPrefix("t=1.5s of 3.0s, marked") })
+        #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path) == ["Recording.mp4"])
+    }
+}
+
+@Test func recordingMarksAreKeptByPathAndForgottenWithTheirFile() throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let store = folder.appendingPathComponent("Support/recording-marks.json")
+    let kept = folder.appendingPathComponent("kept.mp4")
+    let gone = folder.appendingPathComponent("gone.mp4")
+    try Data().write(to: kept)
+    try Data().write(to: gone)
+    #expect(RecordingMarks.marks(for: kept, in: store).isEmpty)
+    let marks = [RecordingMark(time: 1, label: "a"), RecordingMark(time: 2, label: "b")]
+    try RecordingMarks.save(marks, for: kept, in: store)
+    try RecordingMarks.save([RecordingMark(time: 3, label: "c")], for: gone, in: store)
+    #expect(RecordingMarks.marks(for: URL(fileURLWithPath: folder.path + "/./kept.mp4"), in: store) == marks)
+    try FileManager.default.removeItem(at: gone)
+    try RecordingMarks.save([], for: folder.appendingPathComponent("other.mp4"), in: store)
+    let saved = try JSONDecoder().decode([String: [RecordingMark]].self, from: Data(contentsOf: store))
+    #expect(saved == [kept.standardizedFileURL.path: marks])
 }

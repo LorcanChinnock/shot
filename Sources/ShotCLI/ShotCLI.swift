@@ -53,17 +53,20 @@ enum ShotCLI {
                 exit(error.exitCode)
             }
         case let .record(action):
-            let request = switch action {
-            case let .start(target, duration): AgentRequest(.record, target: target, duration: duration)
-            case let .stop(id): AgentRequest(.stop, id: id)
-            case .status: AgentRequest(.status)
+            let request: AgentRequest
+            switch action {
+            case let .start(target, duration): request = AgentRequest(.record, target: target, duration: duration)
+            case let .stop(id): request = AgentRequest(.stop, id: id)
+            case .status: request = AgentRequest(.status)
+            case let .mark(label, id): request = AgentRequest(.mark, id: id, label: label)
+            case let .run(target, arguments): exit(await record(target, running: arguments, program: program))
             }
             do {
                 let result = try await ask(request, app: appBundle())
                 print(ShotCommand.json(.object(result)))
                 if let path = result["path"]?.string {
                     printError("\(program) frames \"\(path)\" shows what happened in it.")
-                } else if let id = result["id"]?.string {
+                } else if case .start = action, let id = result["id"]?.string {
                     printError("Recording. \(program) record --stop \(id) ends it; it stops itself after \(Int(AgentRequest.maximumDuration / 60)) minutes.")
                 }
             } catch {
@@ -97,7 +100,7 @@ enum ShotCLI {
     /// Reads one JSON-RPC message per line until the client closes stdin. Only replies go to stdout, since any other
     /// line there breaks the protocol; `FileHandle` writes straight through, so each reply is flushed as it's written.
     static func serve(folder: URL, version: String, app: Bundle?) async {
-        let server = AgentTools.live(folder: folder) { request throws(ShotCommandError) in
+        let server = AgentTools.live(folder: folder, marks: RecordingMarks.url(bundleID: app?.bundleIdentifier ?? fallbackSuite)) { request throws(ShotCommandError) in
             try await ask(request, app: app)
         }.server(version: version)
         printError("Shot MCP server \(version), reading \(folder.path)")
@@ -184,7 +187,7 @@ enum ShotCLI {
     static func timeout(for request: AgentRequest) -> Duration {
         switch request.op {
         case .capture: .seconds(30 + (request.waitStable ?? 0))
-        case .status, .windows: .seconds(30)
+        case .status, .windows, .mark: .seconds(30)
         case .record: .seconds((request.duration ?? 0) + 120)
         case .stop: .seconds(120)
         }

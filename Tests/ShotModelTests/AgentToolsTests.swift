@@ -417,6 +417,21 @@ private let saved: [String: JSONValue] = ["id": .string("ab12cd34"), "path": .st
     #expect(byID.content.last == .image(data: "FRAME", mimeType: "image/jpeg"))
 }
 
+@Test func recordWindowMarksTheRecordingWithoutStoppingIt() async {
+    let asked = Asked()
+    let counts = Ran()
+    let tools = recording(asked, frameCounts: counts, answer: ["id": .string("ab12cd34"), "time": .number(2.5), "label": .string("tapped Login")])
+    let result = await tools.call("record_window", .object(["action": .string("mark"), "label": .string(" tapped Login ")]))
+    #expect(result.isError == false)
+    _ = await tools.call("record_window", .object(["action": .string("mark"), "label": .string(String(repeating: "a", count: 300)), "id": .string("ab12cd34")]))
+    #expect(asked.requests == [AgentRequest(.mark, label: "tapped Login"), AgentRequest(.mark, id: "ab12cd34", label: String(repeating: "a", count: 200))])
+    #expect(counts.commands.isEmpty)
+    #expect(texts(result).first?.contains(#""time" : 2.5"#) == true)
+    let unlabelled = await tools.call("record_window", .object(["action": .string("mark")]))
+    #expect(unlabelled.isError)
+    #expect(asked.requests.count == 2)
+}
+
 @Test func recordWindowNeedsAWindowToStartAndAKnownAction() async {
     let asked = Asked()
     let tools = recording(asked, answer: saved)

@@ -4,9 +4,11 @@ import ImageIO
 
 extension AgentTools {
     /// The tools reading the captures in `folder`, as the gallery lists them. GIFs count as images: an agent sees their
-    /// first frame. `agent` sends a request to the running app, for the tools that capture.
+    /// first frame. `marks` is the app's `RecordingMarks` store, whose marks the key frames show. `agent` sends a request
+    /// to the running app, for the tools that capture.
     public static func live(
         folder: URL,
+        marks: URL? = nil,
         agent: @escaping @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue] = { _ throws(ShotCommandError) in throw .unavailable("can't reach Shot from here") }
     ) -> AgentTools {
         AgentTools(
@@ -24,7 +26,7 @@ extension AgentTools {
                 try await ShotCommands.run(command)
             },
             frames: { entry, count throws(ShotCommandError) in
-                try await keyFrames(of: entry.url, count: count)
+                try await keyFrames(of: entry.url, count: count, marks: marks.map { RecordingMarks.marks(for: entry.url, in: $0) } ?? [])
             },
             text: { entry throws(ShotCommandError) in
                 let read: CaptureText?
@@ -57,24 +59,39 @@ extension AgentTools {
     }
 
     /// The key frames of the recording at `url`, each a line with its time and then a JPEG small enough that a dozen fit
-    /// in what clients accept in one result.
-    static func keyFrames(of url: URL, count: Int) async throws(ShotCommandError) -> [MCPServer.Content] {
+    /// in what clients accept in one result. The frame at each of `marks` comes too, with its label, beside `count`
+    /// where the picture changes, fewer of those when they'd go over a dozen in all.
+    static func keyFrames(of url: URL, count: Int, marks: [RecordingMark] = []) async throws(ShotCommandError) -> [MCPServer.Content] {
         guard let media = try? await MediaProbe.probe(url), media.size != nil else {
             throw .data("Couldn't read \(url.lastPathComponent) as a video.")
         }
+        let limit = ShotCommand.FramesOptions.maximumCount
+        let marked = RecordingMark.frames(for: marks, duration: media.duration, limit: limit)
+        let keyFrames: [RecordingMark.KeyFrame]
         let frames: [KeyFrameExtractor.Frame]
         do {
-            let times = try await KeyFrameExtractor.changeTimes(in: url, duration: media.duration, count: count)
-            frames = try await KeyFrameExtractor.frames(of: url, at: times, maxWidth: 1024)
+            let changes = try await KeyFrameExtractor.changeTimes(in: url, duration: media.duration, count: RecordingMark.changeCount(count, marked: marked.count, limit: limit))
+            keyFrames = RecordingMark.merge(changes: changes, marked: marked)
+            frames = try await KeyFrameExtractor.frames(of: url, at: keyFrames.map(\.time), maxWidth: 1024)
         } catch {
             throw .io("Couldn't read the frames of \(url.lastPathComponent): \(error.localizedDescription)")
         }
         var content: [MCPServer.Content] = []
+        let shown = marked.reduce(0) { $0 + $1.labels.count }
+        if shown < marks.count {
+            content.append(.text("Showing the frames of the first \(shown) of its \(marks.count) marks."))
+        }
         for frame in frames {
             guard let jpeg = ImageCodec.previewJPEG(of: frame.image, maxPixelSize: 1024, maxBytes: 400_000) else {
                 continue
             }
-            content.append(.text(String(format: "t=%.1fs of %.1fs", frame.time, media.duration)))
+            // The frame decoded nearest the time asked for; frames asked for are at least a quarter second apart.
+            let labels = keyFrames.min { abs($0.time - frame.time) < abs($1.time - frame.time) }?.labels ?? []
+            var line = String(format: "t=%.1fs of %.1fs", frame.time, media.duration)
+            if !labels.isEmpty {
+                line += ", marked " + labels.map { "\"\($0)\"" }.joined(separator: ", ")
+            }
+            content.append(.text(line))
             content.append(.image(data: jpeg.base64EncodedString(), mimeType: "image/jpeg"))
         }
         return content
