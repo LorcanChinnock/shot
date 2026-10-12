@@ -76,7 +76,7 @@ extension Updater: SPUUpdaterDelegate {
         NSApp.activate()
         let alert = NSAlert()
         alert.messageText = "Shot \(installed) is installed"
-        alert.informativeText = "Shot was updated while it was running. Relaunch to finish."
+        alert.informativeText = "It was installed while Shot was running. Relaunch to use it."
         alert.addButton(withTitle: "Relaunch")
         alert.addButton(withTitle: "Later")
         if alert.runModal() == .alertFirstButtonReturn {
