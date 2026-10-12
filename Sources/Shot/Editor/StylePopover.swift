@@ -352,7 +352,7 @@ private struct StyleTile: View {
                     }
                 }
                 .frame(width: 48, height: 28)
-                Text(title).font(.system(size: 10, weight: .bold))
+                Text(title).font(.system(size: 10, weight: .bold)).lineLimit(1).minimumScaleFactor(0.75)
             }
             .foregroundStyle(Brutal.ink)
             .frame(width: 56, height: 52)
