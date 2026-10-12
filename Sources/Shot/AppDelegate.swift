@@ -107,8 +107,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             coordinator.togglePause()
         case .gallery:
             GalleryController.shared.show()
-        case let .settings(section):
-            MainWindowController.showSettings(section: section.flatMap(SettingsSection.init(rawValue:)))
+        case let .settings(name):
+            let section = name.flatMap(SettingsSection.init(rawValue:))
+            if let name, section == nil {
+                Toast.error("Unknown settings section: \(name)")
+                return
+            }
+            MainWindowController.showSettings(section: section)
         case .welcome:
             WelcomeWindow.showAgain()
         case let .edit(route):

@@ -156,7 +156,7 @@ private final class WelcomeModel {
                 }
             } catch {
                 log.error("Open at login failed: \(error.localizedDescription, privacy: .public)")
-                Toast.error("Open at login failed: \(error.localizedDescription)")
+                Toast.error("Couldn't change whether Shot opens at login: \(error.localizedDescription)")
             }
         }
         WelcomeWindow.markDone()
