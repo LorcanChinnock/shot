@@ -1,4 +1,7 @@
 import Foundation
+import os
+
+private let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Shot", category: "preferences")
 
 public enum PreferenceKey {
     public static let playSound = "playSound"
@@ -353,7 +356,13 @@ public struct Preferences {
             (store.object(forKey: key) as? Int).flatMap { range.contains($0) ? $0 : nil } ?? value
         }
         func decoded<T: Decodable>(_ key: String, as type: T.Type = T.self) -> T? {
-            store.data(forKey: key).flatMap { try? JSONDecoder().decode(type, from: $0) }
+            guard let data = store.data(forKey: key) else { return nil }
+            do {
+                return try JSONDecoder().decode(type, from: data)
+            } catch {
+                log.error("Couldn't decode \(key, privacy: .public), using the default: \(error.localizedDescription, privacy: .public)")
+                return nil
+            }
         }
         // Older versions saved a colour as an index into the presets.
         func colour(_ key: String, default value: RGBA) -> RGBA {
@@ -383,7 +392,13 @@ public struct Preferences {
 
     /// The style new captures open and copy with, when Use this style for new captures is on; `nil` when it's off.
     public var newCaptureStyle: CopiedStyle? {
-        store.data(forKey: PreferenceKey.newCaptureStyle).flatMap { try? JSONDecoder().decode(CopiedStyle.self, from: $0) }
+        guard let data = store.data(forKey: PreferenceKey.newCaptureStyle), !data.isEmpty else { return nil }
+        do {
+            return try JSONDecoder().decode(CopiedStyle.self, from: data)
+        } catch {
+            log.error("Couldn't decode \(PreferenceKey.newCaptureStyle, privacy: .public), using the default: \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
     }
 
     /// Turns Use this style for new captures on with `style`, or off when it's `nil`.

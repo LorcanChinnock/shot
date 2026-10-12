@@ -454,7 +454,7 @@ final class CaptureCoordinator {
         let url = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: prefs.imageFormat.fileExtension, prefix: prefs.filePrefix)
         let thumbnail = try await Task.detached { () throws -> SendableImage? in
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            try data.write(to: url)
+            try data.write(to: url, options: [.atomic, .withoutOverwriting])
             return showsCard ? ImageCodec.thumbnail(from: data, maxPixelSize: 480).map(SendableImage.init) : nil
         }.value?.image
         log.notice("Saved \(url.path)")
