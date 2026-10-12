@@ -8,6 +8,8 @@ private let log = Logger.shot("update")
 /// Wraps Sparkle. Nothing goes over the network until the user agrees: Sparkle asks once whether to
 /// check automatically (Info.plist leaves SUEnableAutomaticChecks unset), and "Check for Updates…" is always manual.
 /// Local builds have no SUFeedURL, so the updater never starts and Sparkle can't replace them with a release.
+/// Homebrew or a drag-and-drop can replace the app while it runs, so before offering an update it checks the
+/// copy on disk and offers a relaunch instead.
 @MainActor
 @Observable
 final class Updater: NSObject {
@@ -24,7 +26,7 @@ final class Updater: NSObject {
     private override init() {
         super.init()
         let isEnabled = Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") != nil
-        controller = SPUStandardUpdaterController(startingUpdater: isEnabled, updaterDelegate: nil, userDriverDelegate: self)
+        controller = SPUStandardUpdaterController(startingUpdater: isEnabled, updaterDelegate: self, userDriverDelegate: self)
         canCheckObservation = controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) { [weak self] _, _ in
             MainActor.assumeIsolated {
                 guard let self else {
@@ -51,6 +53,35 @@ final class Updater: NSObject {
     func checkForUpdates() {
         NSApp.activate()
         controller.checkForUpdates(nil)
+    }
+}
+
+extension Updater: SPUUpdaterDelegate {
+    nonisolated func updater(_ updater: SPUUpdater, shouldProceedWithUpdate updateItem: SUAppcastItem, updateCheck: SPUUpdateCheck) throws {
+        let running = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        let infoURL = Bundle.main.bundleURL.appending(path: "Contents/Info.plist")
+        guard let installed = NSDictionary(contentsOf: infoURL)?["CFBundleShortVersionString"] as? String, installed != running else {
+            return
+        }
+        log.notice("Shot \(installed) is installed but \(running ?? "?") is running; offering a relaunch")
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated {
+                Self.offerRelaunch(installed: installed)
+            }
+        }
+        throw NSError(domain: SUSparkleErrorDomain, code: Int(SUError.installationCanceledError.rawValue))
+    }
+
+    private static func offerRelaunch(installed: String) {
+        NSApp.activate()
+        let alert = NSAlert()
+        alert.messageText = "Shot \(installed) is installed"
+        alert.informativeText = "Shot was updated while it was running. Relaunch to finish."
+        alert.addButton(withTitle: "Relaunch")
+        alert.addButton(withTitle: "Later")
+        if alert.runModal() == .alertFirstButtonReturn {
+            Permissions.relaunch()
+        }
     }
 }
 
