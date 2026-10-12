@@ -4,7 +4,7 @@ Shot is meant to be fast by default. Its worst regressions so far were power fea
 
 ## In CI: `make perf`
 
-`Tests/ShotCoreTests/PerfTests.swift` times the pure paths with `ContinuousClock`. After one warm-up run, it keeps the fastest of at least 15 runs spread over at least half a second. A busy runner can only add time, so the fastest run is the closest to what the work costs, and a slow spell would have to last the whole half second to fail a test. `make test` skips the suite. `make perf` and CI's **Perf** step run it alone, one test at a time, so other tests don't skew the timings. CI runs it on pull requests that change `Sources/ShotCore`, whose paths it times, and on every push to `main`, so a regression elsewhere is still caught within one merge.
+`Tests/ShotCoreTests/PerfTests.swift` times the pure paths with `ContinuousClock`. After one warm-up run, it keeps the fastest of at least 15 runs spread over at least half a second. A busy runner can only add time, so the fastest run is the closest to what the work costs, and a slow spell would have to last the whole half second to fail a test. `make test` skips the suite. `make perf` and CI's **Perf** step run it alone, one test at a time, so other tests don't skew the timings. CI runs it on pull requests that change `Sources/ShotCore`, whose paths it times, and on every push to `main` that changes code, so a regression elsewhere is still caught within one merge.
 
 Each budget is 2× the baseline measured on the CI runner, which is slower than the reference Mac. The baseline is the slowest of three CI runs. That leaves room for a noisy runner but still fails a change that does the work again on every call: removing the overlay cache from #222 makes the overlay test about 140× slower.
 
@@ -37,7 +37,7 @@ The script:
 4. Opens and closes the editor, the video editor (with a clip made by `ffmpeg`, if it's installed) and the gallery. It then averages **idle CPU** over 30 seconds.
 5. Moves this run's captures out of your capture folder and prints where they went.
 
-It needs Screen Recording for Shot, **Copy after capture** turned on, and Accessibility for the terminal, which closes Shot's windows with ⌘W. It exits non-zero if a metric is over budget or couldn't be measured.
+It needs Screen Recording for Shot, **Copy to clipboard** turned on in **Settings › Capture**, and Accessibility for the terminal, which closes Shot's windows with ⌘W. It exits non-zero if a metric is over budget or couldn't be measured.
 
 | Metric | Reference Mac | Budget |
 |---|---|---|

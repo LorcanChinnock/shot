@@ -15,6 +15,7 @@ The full guide to Shot. For a quick introduction, see the [overview](../README.m
 - [Settings](#settings)
 - [Updates](#updates)
 - [Privacy](#privacy)
+- [Troubleshooting](#troubleshooting)
 - [Removing Shot](#removing-shot)
 
 ## First launch
@@ -23,13 +24,13 @@ The first time you open Shot, a welcome window takes about 30 seconds, in three 
 
 1. **Screen Recording access.** macOS requires it for every capture. Click **Grant**, or **Open Settings**, and turn on Shot under **Screen & System Audio Recording**. Once you've been to System Settings, the window asks you to **Relaunch**, since macOS applies access only after a relaunch. Then the window carries on. If Shot already has access, this step is skipped.
 2. **Make it yours.** **Use ⌘⇧3, ⌘⇧4 and ⌘⇧5 for Shot** is on: macOS's own screenshot shortcuts turn off while Shot runs, and come back when it quits. Turn it off to keep them, and Shot uses ⌃⇧3, ⌃⇧4 and ⌃⇧5 instead. **Open Shot at login** is ticked, so your shortcuts work after a restart. **Continue** applies both. If you close the window here instead, macOS keeps its shortcuts and Shot isn't added to your login items. The **Agents** button opens [Settings › Agents](#using-shot-with-ai-agents), for Claude Code, Codex or Cursor.
-3. **Try it.** Press your area shortcut and drag out any area. Once the capture is done, the window comes back with a few tips. **Skip** closes it.
+3. **Try it.** Press your area shortcut and drag out any area. Once the capture is done, the window comes back with a few tips, and **Done** closes it. **Skip** closes it before you capture.
 
 If you used Shot before the welcome window existed, you won't see it. To open it again, use **Welcome window › Show** in **Settings › About**, or [`shot://welcome`](#url-scheme); opened that way, it starts from your current settings and closing it changes nothing. If Shot loses its Screen Recording access later, a capture opens the window at the access step.
 
 ## Screenshots
 
-Shot lives in the menu bar. Its menu lists every capture and recording action with its shortcut, **Open Gallery** and **Open Capture Folder**, and while you record, **Pause Recording** and **Stop Recording**.
+Shot lives in the menu bar. Its menu lists every capture and recording action with its shortcut, **Open Gallery** and **Open Capture Folder**, and while you record, **Pause Recording** (**Resume Recording** while paused) and **Stop Recording**.
 
 - **Area (⌘⇧4):** the screen freezes, and you drag out an area. A magnifier next to the pointer helps you find exact edges. Hold Shift for a square, or press Tab to step through 1:1, 4:3, 3:2, 16:9 and back to free (Shift-Tab steps back); the direction you start dragging picks landscape or portrait, and X rotates it mid-drag. Hold Space while dragging to move the area. A label by the pointer shows the size in pixels, and the ratio when one is set. Press Esc to cancel.
 - **Window:** press Space after ⌘⇧4, then click a window. Shot keeps the macOS window shadow unless you turn it off in Settings › Capture.
@@ -49,6 +50,8 @@ A floating card appears in a bottom corner of the screen under the pointer after
 - **Show in Finder**, or **Close** the card
 - Drag the card into another app, or onto an open editor to [combine images](#combine-images)
 
+Right-click a card for the same actions, plus **Copy Path**.
+
 New cards stack above older ones, up to five; a sixth closes the oldest. Cards close on their own after 8 seconds, and hovering a card pauses the timer. In **Settings › Quick Access**, pick the bottom-left or bottom-right corner, and 4, 8, 15 or 30 seconds, or **Never**.
 
 ## Screen recording
@@ -63,9 +66,9 @@ If you picked the area with a ratio (Tab or Shift), the frame's handles keep it.
 
 A window recording captures just that window: it follows the window when it moves and leaves out anything on top of it. It has no camera bubble, and dragging the frame turns it into an area recording.
 
-While recording, the controls let you pause and resume, stop and save, and discard the recording; for 5 seconds after a discard, **Undo** brings it back. With the microphone on, they also show its level and a button to mute it, which silences only the microphone. With the camera bubble on, they show, hide or resize it. The menu bar menu has **Pause Recording** and **Stop Recording** too. On a Mac with a notch, when there's no room for the controls outside the recorded area, they move into the notch: a black pill shows the elapsed time, and hovering it shows the controls. Pressing any record shortcut again, or opening `shot://record`, stops the recording.
+While recording, the controls let you pause and resume, stop and save, and discard the recording; for 5 seconds after a discard, **Undo** brings it back. With the microphone on, they also show its level and a button to mute it, which silences only the microphone. With the camera bubble on, they show, hide or resize it. The menu bar menu has **Pause Recording** (or **Resume Recording**) and **Stop Recording** too. On a Mac with a notch, when there's no room for the controls outside the recorded area, they move into the notch: a black pill shows the elapsed time, and hovering it shows the controls. Pressing any record shortcut again, or opening `shot://record`, stops the recording. Quitting Shot while it records stops and saves the recording first.
 
-Recordings are H.264 MP4 at 30 or 60 fps, written to your save folder as they record. With a display that refreshes at 120 Hz or faster, such as a ProMotion MacBook Pro, **Settings › Recording** also offers 120 fps, which records, and exports from the video editor, as HEVC MP4; on a slower screen that recording drops to 60 fps. When a recording finishes, Shot copies the file to the clipboard unless you turn off **Copy to clipboard** in **Settings › Recording**, and shows it in [Quick Access](#quick-access) unless you turn that off in **Settings › Capture**. A recording never opens in the video editor by itself. In **Settings › Recording** you can also show the cursor, outline the recorded area with **Region border** (the outline never appears in the video), and record your microphone and system audio. System audio is sound from other apps; Shot's own sounds are left out.
+Recordings are H.264 MP4 at 30 or 60 fps. Each stretch between pauses is written to a temporary folder as it records, and they're joined into one file in your save folder when you stop. With a display that refreshes at 120 Hz or faster, such as a ProMotion MacBook Pro, **Settings › Recording** also offers 120 fps, which records, and exports from the video editor, as HEVC MP4; on a slower screen that recording drops to 60 fps. When a recording finishes, Shot copies the file to the clipboard unless you turn off **Copy to clipboard** in **Settings › Recording**, and shows it in [Quick Access](#quick-access) unless you turn that off in **Settings › Capture**. A recording never opens in the video editor by itself. In **Settings › Recording** you can also show the cursor, outline the recorded area with **Region border** (the outline never appears in the video), and record your microphone and system audio. System audio is sound from other apps; Shot's own sounds are left out.
 
 ### Camera bubble
 
@@ -77,7 +80,7 @@ macOS asks for Microphone and Camera access the first time Shot uses them.
 
 ![The editor toolbar: the tools, then the colours and line widths for the arrow tool](media/editor-toolbar.png)
 
-Open the editor from a Quick Access card, by turning on **Open in editor** in Settings › Capture, or with [`shot://annotate`](#url-scheme).
+Open the editor from a Quick Access card, with **Annotate** in the [gallery](#gallery), by turning on **Open in editor** in Settings › Capture, or with [`shot://annotate`](#url-scheme).
 
 ### Tools
 
@@ -99,13 +102,25 @@ Press a tool's key when you aren't typing text.
 | N | Counter: numbered circles |
 | C | Crop |
 
-Hover a tool to see what it does. While you draw, Shift keeps a box square, keeps an arrow, line or highlight at 45° steps, and Option draws from the centre; Esc cancels what you're drawing. Tools that draw a mark show a colour and one of three line widths below the tools; for text, sticky notes and counters the widths are text sizes, and changing the size or colour while you type updates the text as you go. Text and sticky notes also offer left, centre or right alignment for their lines. The shape tool also offers the shape and a fill. Redact offers blur or pixelate, and an amount slider for how far the blur spreads or how big the blocks are. Spotlight offers its shape (rectangle, rounded rectangle or ellipse), a soft edge that fades it into the dim, whether to darken or blur outside it, and how strongly; the effect and strength apply to every spotlight in the image, since they share one dim. The highlight and sticky notes keep their own colours, yellow at first, so they don't take the colour of your arrows. The last swatch picks any colour, and each palette remembers the last one you picked. Its eyedropper samples a colour from anywhere on screen, such as a brand colour in the screenshot itself; Esc cancels. The video editor's palettes work the same way. The editor remembers the colour, width and options you used, and the last drawing tool: a new window starts with it, or with the arrow.
+Hover a tool to see what it does. While you draw, Shift keeps a box square, keeps an arrow, line or highlight at 45° steps, and Option draws from the centre. Esc cancels what you're drawing.
+
+Tools that draw a mark show their options below the tools:
+
+- **Colour and width:** a colour and one of three line widths. For text, sticky notes and counters the widths are text sizes, and changing the size or colour while you type updates the text as you go.
+- **Text and sticky notes:** left, centre or right alignment for their lines.
+- **Shape:** the shape and a fill.
+- **Redact:** blur or pixelate, and an amount slider for how far the blur spreads or how big the blocks are.
+- **Spotlight:** its shape (rectangle, rounded rectangle or ellipse), a soft edge that fades it into the dim, whether to darken or blur outside it, and how strongly. The effect and strength apply to every spotlight in the image, since they share one dim.
+
+The highlight and sticky notes keep their own colours, yellow at first, so they don't take the colour of your arrows. The last swatch picks any colour, and each palette remembers the last one you picked. Its eyedropper samples a colour from anywhere on screen, such as a brand colour in the screenshot itself. Esc cancels it. The video editor's palettes work the same way.
+
+The editor remembers the options you last used and the last drawing tool. A new window starts with that tool, or with the arrow.
 
 ### Editing annotations
 
 - Click an annotation with the select tool to select it, then drag it, or drag its handles to resize it. Text and counters have no handles, and a placed image has handles at its corners only. Drag the middle handle of a line or arrow to bend it. Drag one of the round handles inside a rounded rectangle's corners to set how round all four are, up to a pill; they hide on a box too small to grab them. Choosing a colour, width or option restyles the selection.
 - What you've just drawn stays selected until you draw the next thing, click elsewhere or press Esc, so you can fix its shape, colour, width or fill from the toolbar, or drag its handles, without switching to the select tool. The change also applies to what you draw next.
-- Double-click text or a sticky note to edit it. Clicking a note with the note tool edits it too.
+- With the select tool, double-click text or a sticky note to edit it. Clicking a note with the note tool edits it too.
 - Press Delete to remove the selection, and Esc to deselect. While you type in a text box or sticky note, Esc finishes it; ⌘Z removes it again.
 - Arrow keys nudge the selected annotation by 1 pixel, or 10 with Shift.
 - ⌘C copies the selected annotation, ⌘V pastes it, and ⌘D duplicates it. You can paste into another editor window. With nothing or several things selected, ⌘C copies the whole image.
@@ -113,25 +128,39 @@ Hover a tool to see what it does. While you draw, Shift keeps a box square, keep
 
 ### Layers
 
-Click **Layers** (⌘L) to list the annotations, frontmost first, with the image locked at the bottom. Click a row to select it on the canvas, ⌘-click or ⇧-click to select several, drag a row by its handle to reorder (Escape or dropping outside the list cancels), and press Delete or click the bin to delete. The eye hides a layer, which also leaves it out of Copy and Save, and the lock stops it being picked, moved or deleted. Right-click a row to duplicate, delete, lock or hide. ⌘] and ⌘[ move the selection forward and back, and ⌥⌘] and ⌥⌘[ bring it to the front or send it to the back.
+Click **Layers** (⌘L) to list the annotations, frontmost first, with the image locked at the bottom. Click a row to select it on the canvas, ⌘-click or ⇧-click to select several, drag a row by its handle to reorder (Escape or dropping outside the list cancels), and press Delete or click the bin to delete. The eye hides a layer, which also leaves it out of Copy and Save, and the lock stops it being picked on the canvas, moved or deleted. You can still select a locked layer in the list and drag it to another place. Right-click a row to duplicate, delete, lock or hide. ⌘] and ⌘[ move the selection forward and back, and ⌥⌘] and ⌥⌘[ bring it to the front or send it to the back.
 
 Each layer acts on everything under it and nothing over it: a blur, pixelate or spotlight covers the layers below it, and layers above it are drawn over it. All spotlights share one dim, at the lowest spotlight's place in the list.
 
 ### Canvas
 
-Annotations can reach past the edges of the screenshot: the canvas grows to fit them, except for spotlights. The **Canvas** menu fits the canvas to its content and trims it back to the image. Its **Background…** item sets the colour of the extra space with the same swatches as the toolbar: transparent (PNG only), a palette colour, or any colour from the rainbow swatch, which remembers the last one you picked. It starts transparent for a PNG and white for a JPEG.
+Annotations can reach past the edges of the screenshot: the canvas grows to fit them, except for spotlights. In the **Canvas** menu, **Fit to Content** fits the canvas to everything on it, and **Trim to Image** trims it back to the screenshot. Its **Background…** item sets the colour of the extra space with the same swatches as the toolbar: transparent (PNG only), a palette colour, or any colour from the rainbow swatch, which remembers the last one you picked. It starts transparent for a PNG and white for a JPEG.
 
 ### Style
 
-Click **Style** in the toolbar to round the corners of your screenshot and give it a shadow or a border. With something selected, Style acts on that instead: a placed image gets the same choices, and a shape, arrow, line, pen stroke, counter or text gets a shadow or glow, and text an outline too. It's greyed out for blurs, pixelates, spotlights, the highlight and notes, which already have a shadow of their own, and when several things or a locked one are selected. Nothing is styled until you ask. Each preset shows your screenshot, image, shape or text with that preset on it.
+Click **Style** in the toolbar to round the corners of your screenshot and give it a shadow or a border. With something selected, Style acts on that instead. Nothing is styled until you ask, and each preset shows your screenshot, image, mark or text with that preset on it.
 
-- **Shadow:** None, Soft, Float, Contact or Glow. Point at one to preview it on the canvas, and click to apply it. The arrow keys move between the presets, previewing each, and Return applies the one they're on. A window captured with the macOS shadow already has one, so Style shows **Uses macOS window shadow** in place of its choices: its image includes the shadow's see-through margin, which a second shadow, a border or corners would go round. Pasted styles and Use this style for new captures leave it as it is. Once there's a shadow, **Elevation** and **Opacity** sliders tune it into a custom one. The light comes from above, so shadows fall below. On a coloured background the shadow takes a dark shade of it; on a transparent one it's black, and it's saved in the PNG so it looks right pasted anywhere. Glow takes the colour of the image's edge, or of the shape, arrow or text.
+| Selected | Style offers |
+|---|---|
+| Nothing: the screenshot | Shadow, border and corners |
+| A placed image | The same as the screenshot |
+| A shape, arrow, line, pen stroke or counter | A shadow or glow |
+| Text | A shadow or glow, and an outline |
+| A blur, pixelate, spotlight, highlight or note | Nothing, so Style is greyed out. A note has a shadow of its own. |
+| Several things, or a locked one | Nothing |
+
+Style is also greyed out while you type text.
+
+- **Shadow:** None, Soft, Float, Contact or Glow. Point at one to preview it on the canvas, and click to apply it. The arrow keys move between the presets, previewing each, and Return applies the one they're on. Once there's a shadow, **Elevation** and **Opacity** sliders tune it into a custom one. The light comes from above, so shadows fall below. On a coloured background the shadow takes a dark shade of it. On a transparent one it's black, and it's saved in the PNG so it looks right pasted anywhere. Glow takes the colour of the image's edge, or of the shape, arrow or text.
+- **macOS window shadow:** a window captured with the macOS shadow already has one, so Style shows **Uses macOS window shadow** in place of its choices. Its image includes the shadow's see-through margin, which a second shadow, a border or corners would go round. Pasted styles and Use this style for new captures leave it as it is.
 - **Border:** **Hairline** draws a one-pixel rim, light on dark content and dark on light, so a screenshot keeps its edge on a page of the same colour. **Solid** draws a line of one colour just outside the edge, following the rounded corners. **Outline** shows only for a screenshot or image with see-through pixels, such as a logo or a cut-out: it traces the image's shape, like a sticker. On text, Outline strokes round each letter, so it reads on a busy screenshot. Solid and Outline offer three widths, **S**, **M** and **L**, and the palette colours. They start at M, in the colour of the border already there, or else white, or on text black or white to stand out from its colour.
 - **Corners:** the slider rounds the corners of the screenshot or an image.
 
 A shadow or border on the screenshot grows the canvas just enough to fit it, and removing it shrinks the canvas back. Each click is one undo step, and so is each slider drag.
 
-The style you give an image, a shape or arrow, or text is remembered: the next one you draw or add of that kind starts with it, even in a new editor window, until you pick None. The screenshot starts plain unless you turn on **Use this style for new captures**, at the bottom of Style when nothing is selected. New captures then open in the editor with the screenshot's current style. They're copied with it too: the plain capture is copied straight away, and the styled one replaces it a moment later, unless you've copied something else since. Quick Access shows the styled capture a moment later too, and its Copy and dragging the card use it. The saved file stays plain, so you can still change the style. Turn the switch off to stop, or style a screenshot differently and turn it on again to save the new style.
+A style you pick in Style for an image, a mark or text is remembered: the next one of that kind you draw or add starts with it, even in a new editor window, until you pick None. Paste Style and Apply Style to All Images don't change what's remembered.
+
+The screenshot starts plain unless you turn on **Use this style for new captures**, at the bottom of Style when nothing is selected. It saves the screenshot's style as it is when you turn it on, and each new capture gets that style when you open it in the editor. New captures are copied with it too: the plain capture is copied straight away, and the styled one replaces it a moment later, unless you've copied something else since. Quick Access shows the styled capture a moment later too, and its Copy and dragging the card use it. The saved file stays plain, so you can still change the style. Turn the switch off to stop, or style a screenshot differently and turn it on again to save the new style.
 
 To reuse a style, select something and choose **Edit › Copy Style** (⌥⌘C), then select something else and choose **Paste Style** (⌥⌘V); with nothing selected, they copy from and paste on the screenshot. A style copied here pastes in the video editor too, and the other way round. Each thing takes only what it can have: a shape keeps its own corners, and text takes only an outline as its border. Copy Style needs one thing selected; Paste Style pastes on everything selected. **Edit › Apply Style to All Images** pastes it on the screenshot and every image you placed. Pasting is one undo step.
 
@@ -145,7 +174,7 @@ Pinch, or press ⌘+ and ⌘-, to zoom. ⌘0 fits the canvas to the window and �
 
 ### Saving
 
-**Copy** copies the annotated image. **Save** (⌘S) writes it beside the original as `name (2).png` (or `.jpg`), then `name (3).png` and so on, and copies it; the original is never changed. Unsaved changes show **EDITED** in the title bar, and closing the window asks whether to save them. With [**Hand captures to agents**](#using-shot-with-ai-agents) on, opening a version you saved this way opens the file it came from with your marks still live, so you can move or change them; Save then writes the next version. A version with placed images, spotlights, styled marks, aligned text, hidden layers or a styled screenshot opens flattened, as before.
+**Copy** copies the annotated image. **Save** (⌘S) writes it beside the original as `name (2).png` (or `.jpg`), then `name (3).png` and so on, and copies it; the original is never changed. Unsaved changes show **EDITED** in the title bar, and closing the window asks whether to save them. With [**Hand captures to agents**](#using-shot-with-ai-agents) on, opening a version you saved this way opens the file it came from with your marks still live, as long as that file is still in the same folder, so you can move or change them; Save then writes the next version. A version with placed images, spotlights, styled marks, aligned text, hidden layers or a styled screenshot opens flattened, as before.
 
 ![A saved version reopened in the editor as the screenshot it came from, with its counter, box and arrow still live: the arrow is selected with its handles, and the Layers panel lists Step 1, Rectangle and Arrow](media/editor-versions.png)
 
@@ -158,26 +187,40 @@ Open a recording from its Quick Access card (the scissors button, **Edit**), fro
 - **Play:** Space plays and pauses; ← and → step one frame, ⇧← and ⇧→ one second, and Home and End go to the start and end. Click the ruler to move the playhead.
 - **Trim:** drag the yellow handles at either end of the main track. What you trim off stays greyed out.
 - **Cut:** Shift-drag on the timeline to select a section, then press Delete to cut it out.
-- **Split:** **Split** (S) splits the clips under the playhead, and **Delete** (⌫) cuts out the selected clip and closes the gap. **Snap** (N) snaps the playhead, and clips you drag or trim, to clip edges and the playhead. T shows or hides the tracks.
+- **Split:** **Split** (S) splits the clips under the playhead, and **Delete** (⌫) cuts out the selected clip and closes the gap. **Snap** (N) snaps the playhead, and clips you drag or trim, to clip edges and the playhead. **Tracks** (T) shows or hides the tracks; once the edit is more than trims and cuts, they stay shown.
 - **Zoom:** pinch, or ⌘+ and ⌘−, to zoom the timeline, and **Fit** or ⌘0 to fit it to the window.
-- **Import:** **Add Video or Audio at Playhead…** puts a file's picture on a new lane above the main track and its sound on a lane of its own, or drop the file on the window. **Add Video to End…** adds a video to the end of the main track. Drag a clip on another lane to move it in time, or drag its edges to trim it. Sound lanes show the sound's waveform, which grows and shrinks with the clip's volume.
-- **Annotate:** draw arrows, shapes, text, blur and more over the video, with the annotation editor's tools except crop and hand. To add a picture, use the image button in the same toolbar. Each annotation starts at the playhead and shows for 3 seconds, on its own lane.
+- **Import:** in the **Import** menu, **Add Video or Audio at Playhead…** puts a file's picture on a new lane above the main track and its sound on a lane of its own, or drop the file on the window. **Add Video to End…** adds a video to the end of the main track. Drag a clip on another lane to move it in time, or drag its edges to trim it. Sound lanes show the sound's waveform, which grows and shrinks with the clip's volume.
+- **Annotate:** click **Annotate** to draw arrows, shapes, text, blur and more over the video, with the annotation editor's tools except crop and hand. To add a picture, use the image button in the same toolbar. Each annotation starts at the playhead and shows for 3 seconds, on the first annotation lane that's free at that time and not locked, or else on a new lane.
 - **Move, scale and rotate:** select a clip, the recording included, while the playhead is on it, and a yellow box appears over the video. Drag inside it to move the clip, drag a corner to scale it about its centre, and drag the pink knob above it to rotate it.
-- **Inspector:** the selected clip's or annotation's position, scale, rotation (**Turn**) and opacity, the volume of a clip on a sound lane, and **Drawn**, how much of an arrow, line or pen stroke is drawn. The diamond beside each one keys it at the playhead, or takes that keyframe away, and once a property has keyframes, changing it at another time keys it there. K keys everything at the playhead, or takes those keyframes away. Keyframes show as diamonds on the lane: click one to go to it and choose its **Easing** (Linear, Ease in, Ease out, Ease in-out or Spring), drag it to move it, or press Delete to take it away. **Fade in**, **Fade out**, **Pop**, **Slide in** and **Draw on** add ready-made keyframes at the start or end, and **Clear keyframes** removes them all.
-- **Layers:** the annotation and picture lanes above the main track are the layers, topmost first. Drag an annotation or an imported clip up or down to put it on another lane; drop it between lanes, or on a lane that's taken at that time or holds the other kind, and it gets a new lane of its own. ⌘] and ⌘[ move the selected annotation or clip a lane up or down, and ⌥⌘] and ⌥⌘[ to the top or bottom. Right-click a lane to lock it (Split and new annotations then leave it alone), hide it, mute a sound lane, or delete an annotation lane; the same buttons show at the lane's left edge when you point at it. A blur, pixelate or spotlight affects the lanes under it, video included, not those over it.
-- **Style:** select a clip or an annotation and click **Style** in the **Inspector** for the same shadows, borders and corners as the [annotation editor's Style](#style). A clip can have rounded corners, a shadow, and a Hairline or Solid border; the recording itself can too, which makes the video drawn rather than only trimmed. The corners, shadow and border grow and shrink with the clip's scale, and Pop and Slide in lift the shadow briefly as the clip comes in. On a clip, Glow takes the colour of the frame's edge, and a Hairline is light on a dark frame and dark on a light one, as on an image; the edge is read once a second. Pointing at a preset, or moving to it with the arrow keys, previews it on the annotation or clip; a recording you've only trimmed shows a clip's new style a moment after you click instead. Each click is one undo step, and so is each slider drag. **Edit › Copy Style** (⌥⌘C) and **Paste Style** (⌥⌘V) work here as in the annotation editor, and an annotation you style is remembered for the next one of its kind, as there.
+- **Inspector:** click **Inspector** to see the selected clip's or annotation's properties:
+  - Position, scale, rotation (**Turn**) and opacity.
+  - The volume of a clip on a sound lane, from 0 to 200%.
+  - **Drawn**, how much of an arrow, line or pen stroke is drawn.
+- **Keyframes:** the diamond beside each property in the Inspector keys it at the playhead, or takes that keyframe away. Once a property has keyframes, changing it at another time keys it there. K keys everything the selected clip or annotation can animate at the playhead, or takes those keyframes away.
+  - Keyframes show as diamonds on the lane. Click one to go to it and choose its **Easing** (Linear, Ease in, Ease out, Ease in-out or Spring), drag it to move it, or press Delete to take it away.
+  - **Fade in**, **Fade out**, **Pop**, **Slide in** and **Draw on** add ready-made keyframes at the start or end, and **Clear keyframes** removes them all.
+- **Layers:** the annotation and picture lanes above the main track are the layers, topmost first. A blur, pixelate or spotlight affects the lanes under it, video included, not those over it.
+  - Drag an annotation or an imported clip up or down to put it on another lane. Drop it between lanes, or on a lane that's locked, taken at that time or holds the other kind, and it gets a new lane of its own.
+  - ⌘] and ⌘[ move the selected annotation or clip a lane up or down, and ⌥⌘] and ⌥⌘[ to the top or bottom.
+  - Right-click a lane to lock it (Split and new annotations then leave it alone), hide it, mute a sound lane, or delete an annotation lane. The same buttons show at the lane's left edge when you point at it.
+- **Style:** select a clip or an annotation and click **Style** in the **Inspector** for the same shadows, borders and corners as the [annotation editor's Style](#style).
+  - A clip can have rounded corners, a shadow, and a Hairline or Solid border. The recording itself can too, which makes the video drawn rather than only trimmed.
+  - The corners, shadow and border grow and shrink with the clip's scale, and Pop and Slide in lift the shadow briefly as the clip comes in.
+  - On a clip, Glow takes the colour of the frame's edge, and a Hairline is light on a dark frame and dark on a light one, as on an image. The edge is read once a second.
+  - Pointing at a preset, or moving to it with the arrow keys, previews it on the annotation or clip. A recording you've only trimmed shows a clip's new style a moment after you click instead.
+  - Each click is one undo step, and so is each slider drag. **Edit › Copy Style** (⌥⌘C) and **Paste Style** (⌥⌘V) work here as in the annotation editor, and an annotation you style is remembered for the next one of its kind, as there.
 - **Delete** takes away, in this order, the selected keyframe, the selected section, or the selected clip or annotation. **Esc** cancels an export, then clears the selected section, then deselects, then stops annotating.
 - ⌘Z undoes and ⇧⌘Z redoes.
 
 Then:
 
-- **Save** (⌘S) replaces the recording with the trimmed version, without re-encoding where possible, and copies it. Once the edit is more than trims and cuts, with imports, annotations, keyframes, a moved or styled recording, or a hidden or muted track, the button reads **Save copy** and writes a new file next to the recording instead.
+- **Save** (⌘S) replaces the recording with the trimmed version, without re-encoding where possible, and copies it. Once the edit is more than trims and cuts, the button reads **Save copy** and writes a new file next to the recording instead. Imports, annotations, keyframes, a moved or styled recording, a changed volume, reordered clips, and a hidden or muted track all count. The title shows **TRIMMED** while you've only trimmed the ends, and **EDITED** once there's a cut or more.
 - **Copy** (⌘C) copies the edited video, everything included.
 - **Export** writes a new file next to the recording, with these options, and copies it:
   - **MP4** or **GIF**
   - for a GIF, 10, 15 or 24 fps, and 480, 720 or 1080 px wide or the recording's own width (**Full**; never wider than the recording). A GIF keeps the first 60 seconds of what plays, so 120 seconds of video at 2×.
-  - for an MP4, **Mute** to leave the sound out. An MP4 is H.264, or HEVC when H.264 would drop frames: a 120 fps recording, or one above 30 fps that is larger than 2560 × 1600, such as a full Retina screen
-  - 1×, 1.5× or 2× speed. An MP4 with imports, annotations or transforms exports at 1×.
+  - for an MP4, **Mute** to leave the sound out. An MP4 that's re-encoded is H.264, or HEVC when H.264 would drop frames: a 120 fps recording, or one above 30 fps that is larger than 2560 × 1600, such as a full Retina screen.
+  - 1×, 1.5× or 2× speed. Speed is unavailable for an MP4 whenever Save reads **Save copy**.
 
 The estimated size of the exported file is shown before you export. **Cancel**, or Esc, stops an export under way. Closing the window with unsaved edits asks whether to save them, or to save a copy.
 
@@ -185,13 +228,13 @@ The estimated size of the exported file is shown before you export. **Cancel**, 
 
 ![The gallery: screenshots, a recording and a GIF, with filters, sort and the thumbnail size slider](media/gallery.png)
 
-**Open Gallery** in the menu bar menu (or [`shot://gallery`](#url-scheme)) shows every screenshot, recording and GIF in your save folder, kept up to date as you capture. It's the first section of the same window as Settings. Captures taken with saving turned off aren't in it.
+**Open Gallery** in the menu bar menu (or [`shot://gallery`](#url-scheme)) shows every image, movie and GIF in your save folder, Shot's or not, kept up to date as you capture. It's the first section of the same window as Settings. Captures taken with saving turned off aren't in it.
 
 - **Filter** by All, Screenshots, Videos or GIFs, **search** by file name (⌘F), and **sort** by **Newest first**, **Oldest first**, **Name** or **Largest first**. Sorted by date, the gallery groups captures into Today, Yesterday, This Week, This Month and then each older month. The slider (or ⌘+ and ⌘−) sets the thumbnail size.
 - **Select** with a click, ⌘-click, ⇧-click, ⌘A or the arrow keys, or tick the checkbox on a thumbnail to add it to the selection. **Select All** and **Deselect All** sit next to the count at the bottom.
-- **Edit** (or Return) opens the selection, when none of it is a GIF, in the [annotation editor](#annotation-editor) or [video editor](#video-editor), and asks first if that's more than 8 items. Double-click a thumbnail, or use the pencil or scissors button on a hovered one, to open just that one.
+- **Edit** (or Return) opens the selection, when none of it is a GIF, in the [annotation editor](#annotation-editor) or [video editor](#video-editor), and asks first if that's more than 8 items. Double-click a screenshot or recording, or use the pencil or scissors button on a hovered one, to open just that one.
 - **Quick Look** with Space.
-- The buttons at the bottom **Edit**, **Copy**, **Show in Finder** or **Move to Trash** the selection. Right-click for the same, plus **Quick Look**, **Export GIF** (a video) and **Rename…**. Trashed files go to the Trash; ⌘Z puts them back, and so can Finder.
+- The buttons at the bottom **Edit**, **Copy**, **Show in Finder** or **Move to Trash** the selection. Right-click for the same, plus **Quick Look**. Right-click a single item and **Edit** reads **Annotate** or **Edit Video**, with **Rename…** too, and **Export GIF** for a video. Trashed files go to the Trash; ⌘Z puts them back, and so can Finder.
 - Drag a thumbnail into another app.
 
 ## Using Shot with AI agents
@@ -201,9 +244,9 @@ Claude Code, Codex and Cursor all take a pasted screenshot, and your arrows and 
 ![Settings › Agents with Hand captures to agents and Let agents capture and record turned on, and the MCP setup commands for Claude Code, Cursor and Codex, each with a Copy button](media/agents-settings.png)
 
 - **Copy the path.** Right-click a Quick Access card and choose **Copy Path**, or give **Copy Latest Capture's Path** a shortcut in **Settings › Shortcuts**. An agent can open the file from its path, now or later in the conversation, and find what Shot recorded in it. Copies are always the image alone.
-- **Turn on Hand captures to agents** in **Settings › Agents** to record, inside each screenshot you take or save from the editor, which app and window it came from and what you marked. Agents read it through the [MCP server](#the-mcp-server). A copied capture is also kept as a file, even with **Save to folder** off, so the agent can fetch it. With the setting off, Shot records nothing.
+- **Turn on Hand captures to agents** in **Settings › Agents** to record, inside each screenshot you take or save from the editor, which app and window it came from and what you marked. Agents read it through the [MCP server](#the-mcp-server). A copied capture is also kept as a file, even with **Save to folder** off, so the agent can fetch it. With saving off, that file stays in a temporary folder for about a day: Shot deletes older ones when it launches. With the setting off, Shot records nothing.
 
-The record is stored in the image's own metadata, as JSON in the XMP property `shot:record` (namespace `https://shot.lorcanchinnock.com/ns/capture/1.0/`), so there's no extra file in your capture folder and it goes wherever the image goes, including a copied PNG. Window titles can be private, which is one reason it's opt-in. Recordings have no record. It follows the `shot.capture/2` schema:
+The record is stored in the image's own metadata, as JSON in the XMP property `shot:record` (namespace `https://shot.lorcanchinnock.com/ns/capture/1.0/`), so there's no extra file in your capture folder and it goes wherever the file goes. A copy of a PNG capture keeps it too, but a copy of a JPEG capture or of a styled capture doesn't, since those are new PNGs. Window titles can be private, which is one reason it's opt-in. Recordings have no record. It follows the `shot.capture/2` schema:
 
 ```json
 {
@@ -237,7 +280,7 @@ The record is stored in the image's own metadata, as JSON in the XMP property `s
 - `type` is one of `arrow`, `line`, `rectangle`, `rounded`, `ellipse`, `triangle`, `diamond`, `star`, `highlight`, `text`, `note`, `counter`, `pen`, `marker`, `image`, `blur`, `pixelate` or `spotlight`. `color` is the nearest palette name, with the exact `hex` beside it. Text and notes give their `text`; a blur, pixelate, spotlight or placed image gives only where it is, never what's under it. Hidden layers are left out.
 - `lineWidth`, `fill`, `fontSize`, `amount` (a blur's or pixelation's strength), `bend` and `cornerRadius` are there so Shot can rebuild a mark; an agent can ignore them.
 
-Shot 0.7.0-beta.39 wrote this as a `.shot.json` file beside each capture instead. Nothing reads those any more, so you can delete them.
+Development builds before 0.7.0-beta.40 wrote this as a `.shot.json` file beside each capture instead. Nothing reads those any more, so you can delete them.
 
 ### Letting an agent capture and record
 
@@ -246,13 +289,13 @@ An agent can take its own screenshot or recording of a window, such as the iOS S
 - **Turn on Let agents capture and record** in **Settings › Agents**. It's off by default and separate from **Hand captures to agents**. While it's off, Shot doesn't listen for agents at all.
 - The agent names the window by a few words of its title or its app, such as `Simulator`. Shot captures that window live, even when other windows cover it, and never brings it forward or takes focus.
 - The screenshot is saved to your capture folder, with a record inside it of which app and window it came from. Nothing else happens: no sound, no copy, no Quick Access card, no editor.
-- An agent's recording never records the microphone or the camera. It always shows the red border and the recording controls, whatever **Settings › Recording** says, so you can pause, stop or discard it. It stops itself after 10 minutes. It's saved to your capture folder without a copy, a Quick Access card or confetti. An agent can only stop its own recordings, never one you started.
+- An agent's recording never records the microphone or the camera. System audio follows **Settings › Recording**. It always shows the red border and the recording controls, whatever **Settings › Recording** says, so you can pause, stop or discard it. It stops itself after 10 minutes. It's saved to your capture folder without a copy, a Quick Access card or confetti. An agent can only stop its own recordings, never one you started.
 - Each time, Shot shows a notice at the bottom of the screen, such as **An agent took a screenshot of Simulator** or **An agent is recording Simulator**, so you always know.
 - If Shot isn't running, `shot capture` opens it in the background first. Shot only answers requests from your own user account, over a socket in `~/Library/Application Support/dev.lorcan.Shot/`.
 
 ### The MCP server
 
-Shot also comes with a small [MCP](https://modelcontextprotocol.io) server, so you can ask an agent "what did I mark in my latest screenshot?" without pasting anything. It runs only while the agent uses it, works whether or not Shot is open, and needs no setting turned on, though without **Hand captures to agents** Shot has no record of where a capture came from or what you marked; the agent still sees the image. Only `capture_window` and `record_window` need Shot running and [**Let agents capture and record**](#letting-an-agent-capture-and-record) on. **Settings › Agents** shows the setup commands with the right path for your copy of Shot.
+Shot also comes with a small [MCP](https://modelcontextprotocol.io) server, so you can ask an agent "what did I mark in my latest screenshot?" without pasting anything. It runs only while the agent uses it, works whether or not Shot is open, and needs no setting turned on, though without **Hand captures to agents** Shot has no record of where a capture came from or what you marked; the agent still sees the image. Only `capture_window` and `record_window` need [**Let agents capture and record**](#letting-an-agent-capture-and-record) on, and they open Shot in the background if it isn't running. **Settings › Agents** shows the setup commands with the right path for your copy of Shot.
 
 - **Claude Code:** `claude mcp add shot -- /Applications/Shot.app/Contents/MacOS/shot-cli mcp`. If you installed Shot with Homebrew, the server is on your PATH as `shot`, so `claude mcp add shot -- shot mcp` works too.
 - **Cursor** and other apps that take a JSON config:
@@ -277,13 +320,13 @@ It has nine tools. Four read your captures, three make a new file from one, and 
 | `list_captures` | `limit`: 1 to 50, 10 by default; `since`: a date such as `2026-10-10`, or a span back from now such as `10m`, `2h` or `3d` | Recent captures, newest first: name, path, kind and when. No images. |
 | `get_capture` | `path`, or `name`: a file name or a few words from it, so `shot 14.03` finds `Shot 2026-10-10 at 14.03.12.png` | The same as `latest_capture`, for that capture. If none matches, it names the closest ones. |
 | `get_frames` | `path` or `name`, else the newest recording; `count`: 1 to 12, 8 by default | Still frames of the recording, since a model can't watch video: the first and last, and the frame after each change on screen once it settles, each with its time. Nothing is written. |
-| `annotate` | `annotations` (required): marks in the [record's format](#using-shot-with-ai-agents); `path` or `name`, else the newest screenshot | A copy with the marks drawn on, saved as the screenshot's next version, and a preview of it. Open it in Shot and the marks are still live. |
+| `annotate` | `annotations` (required): marks in the [record's format](#using-shot-with-ai-agents), except `image`; `path` or `name`, else the newest screenshot | A copy with the marks drawn on, saved as the screenshot's next version, and a preview of it. Open it in Shot and the marks are still live. |
 | `make_gif` | `path` or `name`, else the newest recording; `start`, `end` in seconds; `fps`, 1 to 30, 12 by default; `width`, 720 by default, or 0 for the recording's own | A GIF of the recording, or part of it, saved beside it. GIFs stop at 60 seconds. |
 | `trim_video` | `start` and `end` in seconds (required); `path` or `name`, else the newest recording | The part between the two times, saved beside the recording, without re-encoding where it can. |
 | `capture_window` | `window` (required): a few words of the window's title or its app, such as `Simulator` | A [screenshot of that window](#letting-an-agent-capture-and-record), saved to the capture folder: a preview, its path and size, and which app and window it was. If no window matches, the error lists the open ones. |
-| `record_window` | `action`: `start` (the default) or `stop`; for start, `window` and `duration` in seconds, up to 120; for stop, `id`, else the agent's recording in progress | A [recording of that window](#letting-an-agent-capture-and-record). With a `duration`, it waits, then gives the recording's path, length and about 6 key frames, as `get_frames` does. Without one, it gives an `id` at once; stopping it gives the path and frames. |
+| `record_window` | `action`: `start` (the default) or `stop`; for start, `window` (required) and `duration` in seconds, where more than 120 records 120; for stop, `id`, else the agent's recording in progress | A [recording of that window](#letting-an-agent-capture-and-record). With a `duration`, it waits, then gives the recording's path, length and about 6 key frames, as `get_frames` does. Without one, it gives an `id` at once; stopping it gives the path and frames. |
 
-Previews are JPEGs at most 1568 pixels on the long edge and about 1 MB, which is what vision models work at anyway. The path in the result lets an agent that can read files open the full-size original, and the marks' coordinates are always in the full-size file's pixels.
+Previews are JPEGs at most 1568 pixels on the long edge and about 1 MB, which is what vision models work at anyway. The key frames from `get_frames` and `record_window` are at most 1024 pixels and 400 KB each, so a dozen fit in one result. The path in the result lets an agent that can read files open the full-size original, and the marks' coordinates are always in the full-size file's pixels.
 
 The server reads only the capture folder: your save folder (`~/Pictures/Shot` by default), or the temporary folder when **Save to folder** is off. It captures or records a window only when you've turned on **Let agents capture and record**, and then only through the running Shot app. It never moves or deletes anything, and never changes a file: `annotate`, `make_gif` and `trim_video` only add a new file beside the capture they start from. It uploads nothing itself. Because the agent starts it, the first time it reads `~/Pictures` macOS may ask whether your terminal or editor can access that folder; allow it, or the agent sees no captures. To check which copy of Shot and which folder it uses, run `/Applications/Shot.app/Contents/MacOS/shot-cli --version`.
 
@@ -293,20 +336,20 @@ The same `shot` command does the media work without Shot open and without any pe
 
 | Command | Does |
 |---|---|
-| `shot info <file>` | The size, length and scale of an image or video, and the record Shot keeps inside a capture |
+| `shot info <file>` | An image's size and scale, and the record Shot keeps inside a capture, or a video's size, `duration` and `hasAudio` |
 | `shot gif <video> [-o out.gif] [--fps 12] [--width 720] [--start 2.5] [--end 9]` | A GIF of the video, or part of it. `--width 0` keeps the video's width. GIFs stop at 60 seconds. |
 | `shot trim <video> --start 2.5 --end 9 [-o out.mov]` | The part between two times, as `.mov` or `.mp4`, without re-encoding where it can |
 | `shot redact <image> --rect x,y,w,h [--rect …] [--style blur\|pixelate] [-o out.png]` | Hides each rectangle, given in the image's pixels. Pixelate is the default. |
-| `shot frames <video> [--count 8 \| --every 2] [--width 1568] [-o folder]` | Still frames of the video in a new folder, `name frames`, as JPEGs named by their time: by default the first and last and the frame after each change on screen, or with `--every`, one every so many seconds (60 at most) |
-| `shot annotate <image> --json marks.json [-o out.png]` | Draws marks, in the [record's format](#using-shot-with-ai-agents), as an array or inside an `annotations` object. `--json -` reads them from standard input. |
+| `shot frames <video> [--count 8 \| --every 2] [--width 1568] [-o folder]` | Still frames of the video in a new folder, `name frames`, as JPEGs named by their time: by default the first and last and the frame after each change on screen, or with `--every`, one every so many seconds, up to 60 frames |
+| `shot annotate <image> --json marks.json [-o out.png]` | Draws marks, in the [record's format](#using-shot-with-ai-agents) except `image`, as an array or inside an `annotations` object. `--json -` reads them from standard input. |
 | `shot capture --window "Simulator"` | A screenshot of the open window whose title or app matches, saved to the capture folder by the running Shot app, which prints its `path`, `size`, `bytes` and `window` (`app` and `title`) |
 | `shot record --window "Simulator" [--duration 10]` | Records that window through Shot. With `--duration`, waits and prints the recording's `path`, `size`, `bytes`, `duration` and `id`; without, prints an `id` at once. At most 10 minutes. |
 | `shot record --stop [<id>]` | Stops the agent's recording `id`, or the one in progress, and prints what `--duration` does. A recording you stopped yourself still answers with its path for 10 minutes. |
 | `shot record --status` | Whether Shot is capturing or recording, and the recording's `id`, `window`, `elapsed` seconds and `byAgent` |
 
-Times are seconds, such as `2.5`, or minutes and seconds, such as `1:02.5`. Without `-o`, the result goes beside the input as its next version, such as `name (2).png`, or `name.gif` for a GIF. Nothing is ever overwritten: an `-o` that exists is an error, and a name another program takes while `shot` works moves on to the next one. A redacted or annotated image records its marks inside it, so opening it in Shot keeps them live.
+Times are seconds, such as `2.5`, or minutes and seconds, such as `1:02.5`. Without `-o`, the result goes beside the input as its next version, such as `name (2).png`, or `name.gif` for a GIF. Nothing is ever overwritten: an `-o` that exists, or that another program takes while `shot` works, is an error. Without `-o`, a name taken meanwhile moves on to the next one. A redacted or annotated image records its marks inside it, so opening it in Shot keeps them live.
 
-Each command prints one JSON object on standard output, with at least the new file's `path`, its pixel `size` and its `bytes`; `gif` adds `frames` and `truncated`, and `trim` adds `duration`. `frames` prints the folder's `path` and a `frames` list with each one's `path`, `time`, `size` and `bytes`. Errors go to standard error, as `shot gif: …`, with an exit code for each kind:
+Each command prints one JSON object on standard output. A command that writes a file gives at least the new file's `path`, its pixel `size` and its `bytes`; `gif` adds `frames` and `truncated`, and `trim` adds `duration`. `frames` prints the folder's `path` and a `frames` list with each one's `path`, `time`, `size` and `bytes`. Errors go to standard error, as `shot gif: …`, with an exit code for each kind:
 
 | Exit code | Meaning |
 |---|---|
@@ -314,7 +357,7 @@ Each command prints one JSON object on standard output, with at least the new fi
 | 64 | A wrong option, a missing argument or a value out of range |
 | 65 | Not an image or video Shot can read, marks that don't make sense, or a rectangle off the image |
 | 66 | The input file doesn't exist; no open window matches, and the message lists up to 10 open ones; or no agent recording has that id, or you discarded it |
-| 69 | Shot isn't answering agents: **Let agents capture and record** is off, or Shot couldn't be opened |
+| 69 | Shot isn't answering agents: **Let agents capture and record** is off, Shot couldn't be opened, or it didn't answer in time |
 | 70 | Something went wrong inside Shot |
 | 73 | The output can't be made: it already exists, or its folder doesn't |
 | 74 | Reading or writing failed partway |
@@ -337,7 +380,7 @@ Every capture and recording action, **Pick Colour** and **Copy Latest Capture's 
 | ⌘⇧4 | Capture an area. Press Space to pick a window instead. |
 | ⌘⇧5 | Record an area. Press Space to pick a window, or Enter for the full screen. |
 
-While you set up a recording, the record shortcut starts it. While you record, it stops the recording. You can change any shortcut in **Settings › Shortcuts**: click a shortcut, then press the new keys, which must include ⌘, ⌥ or ⌃. Esc cancels and Delete clears it. Shot refuses a shortcut another action already has, and ⌘Q, ⌘W, ⌘Tab, ⌘Space, ⌘H and ⌘M. **Restore defaults** puts them all back.
+While you set up a recording, the record shortcut starts it. While you record, it stops the recording. You can change any shortcut in **Settings › Shortcuts**: click a shortcut, then press the new keys, which must include ⌘, ⌥ or ⌃. Esc cancels and Delete clears it. Shot refuses a shortcut another action already has, and ⌘Q, ⌘W, ⌘Tab, ⌘Space, ⌘H and ⌘M. **Restore defaults** puts them all back, and turns **Use Shot for ⌘⇧3 to ⌘⇧5** back on.
 
 To keep the macOS screenshot tool, turn off **Use Shot for ⌘⇧3 to ⌘⇧5** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with ⌃ in place of ⌘: ⌃⇧3, ⌃⇧4, ⌃⇧5, plus ⌃⇧W for a window.
 
@@ -365,7 +408,7 @@ Record Fullscreen, Record Window, Pick Colour and Copy Latest Capture's Path hav
 | V H A L R D T S M F B N C | Choose a tool (see [Tools](#tools)) |
 | Shift / Option while drawing | Keep it square or at 45° / draw from the centre |
 | Delete | Delete the selection |
-| Esc | Deselect, or cancel what you're drawing |
+| Esc | Deselect, cancel what you're drawing, or finish typing |
 | Arrow keys | Nudge the selection 1 pixel (10 with Shift) |
 | ⌘C | Copy the selected annotation, or the whole image |
 | ⌘V | Paste an annotation or an image |
@@ -393,11 +436,11 @@ Record Fullscreen, Record Window, Pick Colour and Copy Latest Capture's Path hav
 | Home / End | Go to the start / end |
 | Shift-drag | Select a section of the timeline |
 | S | Split the clips under the playhead |
-| K | Key everything at the playhead, or take those keyframes away |
+| K | Key everything the selected clip or annotation can animate at the playhead, or take those keyframes away |
 | N | Turn snapping on or off |
 | T | Show or hide the tracks |
 | Delete | Take away the selected keyframe, section, or clip or annotation |
-| Esc | Cancel an export, clear the selection, or stop annotating |
+| Esc | Cancel an export, clear the selected section, deselect, or stop annotating |
 | ⌘] / ⌘[ | Move the selected annotation or clip a lane up / down |
 | ⌥⌘] / ⌥⌘[ | Move the selected annotation or clip to the top / bottom lane |
 | ⌘+ / ⌘− / ⌘0 | Zoom the timeline in / out / to fit |
@@ -477,12 +520,28 @@ Every release is signed with the same certificate, so macOS keeps Shot's Screen 
 
 Shot collects no analytics, and the only time it connects to the network is to check for updates, after you agree to it (see [Updates](#updates)). The GitHub links in Settings › About, including Sponsor, open in your browser.
 
-Captures go to the folder you choose in Settings (`~/Pictures/Shot` by default) or stay in a temporary folder when saving is off.
+Captures go to the folder you choose in Settings (`~/Pictures/Shot` by default). When saving is off, they go to a temporary folder, and Shot deletes ones older than a day when it launches.
 
-An agent can take a screenshot or recording through Shot only while **Let agents capture and record** is on, which it is not by default. Shot shows a notice each time, an agent's recording always shows the red border and the controls to stop it, and it never records the microphone or camera.
+An agent can take a screenshot or recording through Shot only while **Let agents capture and record** is on, which it is not by default. Shot shows a notice each time, an agent's recording always shows the red border and the controls to stop it, and it never records the microphone or camera. It records system audio only if **Settings › Recording** has it on.
 
 Shot needs Screen & System Audio Recording access for every capture. macOS asks for Microphone and Camera access only when Shot first uses them: when you record with them, or try them with **Test** or **Preview** in Settings › Recording.
+
+## Troubleshooting
+
+- **You turned on Screen Recording access, but captures still fail.** macOS applies the access only after Shot relaunches, so quit Shot and open it again. **Settings › About** shows **GRANTED** or **MISSING** beside **Screen & System Audio Recording**, and **Open** goes to that list in System Settings. If it still says MISSING, run `tccutil reset ScreenCapture dev.lorcan.Shot`, then open Shot and grant access again.
+- **⌘⇧4 still opens the macOS screenshot tool.** Shot takes over ⌘⇧3 to ⌘⇧5 only once it has Screen Recording access, and only while **Use Shot for ⌘⇧3 to ⌘⇧5** is on in **Settings › Shortcuts**. If you turned the macOS shortcuts back on in System Settings, turn that setting on again. A **Shortcut unavailable** message means another app already uses that shortcut: pick another in **Settings › Shortcuts**.
+- **Something else is wrong.** Shot writes to the macOS log. Run `log stream --predicate 'subsystem == "dev.lorcan.Shot"'` in Terminal while you try again, and add what it prints to a bug report from **Settings › About**. File paths show as `<private>`.
 
 ## Removing Shot
 
 Quit Shot and move it to the Trash. Quitting gives the screenshot keys back to macOS. If ⌘⇧3 to ⌘⇧5 still do nothing, for example because Shot crashed before you removed it, turn the shortcuts back on in **System Settings › Keyboard › Keyboard Shortcuts › Screenshots**.
+
+To remove everything else Shot keeps:
+
+- **Login item:** turn off **Launch at login** in **Settings › General** before you quit, or remove Shot in **System Settings › General › Login Items & Extensions**.
+- **Settings:** run `defaults delete dev.lorcan.Shot`, which removes `~/Library/Preferences/dev.lorcan.Shot.plist`.
+- **Agent socket:** delete `~/Library/Application Support/dev.lorcan.Shot`.
+- **Permissions:** run `tccutil reset All dev.lorcan.Shot` to clear every permission you gave Shot.
+- **AI agents:** remove the MCP server from each agent you added it to: `claude mcp remove shot` for Claude Code, the `shot` entry under `mcpServers` for Cursor, and `[mcp_servers.shot]` in `~/.codex/config.toml` for Codex.
+
+Your captures stay in your save folder until you delete them.

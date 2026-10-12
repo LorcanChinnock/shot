@@ -4,7 +4,7 @@ Thanks for helping. Bug reports, ideas, and pull requests are all welcome. For a
 
 ## Design principle
 
-The default is the simplest, most seamless state. Extra tools, panels and controls start off, and the user turns them on if they want them.
+The default is the simplest state. Extra tools, panels and controls start off, and the user turns them on if they want them.
 
 ## Set up
 
@@ -19,7 +19,7 @@ make run                   # build, install to /Applications/ShotDev.app, and la
 
 macOS ties the Screen Recording permission to the app's code signature. An ad-hoc signature changes on every build, so the permission would reset each time. `make-dev-cert.sh` creates a self-signed certificate named `Shot Dev` in your login keychain, and the build signs with it. Keychain Access shows it as "not trusted"; that's expected and signing still works. To sign with another identity, set `SHOT_SIGN_IDENTITY`.
 
-On the first run, turn on Shot in System Settings › Privacy & Security › Screen & System Audio Recording, then relaunch it.
+On the first run, the welcome window asks for the Screen Recording permission. Once you've turned on ShotDev in System Settings › Privacy & Security › Screen & System Audio Recording, click **Relaunch** in the window so the permission takes effect.
 
 Only `make dist` builds `Shot.app` with the update feed. Every other build is `ShotDev.app`: a separate app with its own bundle ID (`dev.lorcan.Shot.dev`), settings, Screen Recording permission and `shot-dev://` URL scheme, and no update feed. It installs beside a released Shot rather than over it, and Sparkle never replaces it.
 
@@ -52,7 +52,9 @@ Sources/ShotCore/     Pure logic that needs Apple frameworks: geometry, file nam
                       encoding, annotations and rendering, redaction, GIF export, segment
                       joining, preferences
 Sources/Shot/         The app: capture, selection overlay, Quick Access, editor,
-                      video editor, recording, gallery, settings, and the design system
+                      video editor, recording, gallery, settings, the welcome window,
+                      the agent server (Agents/), and the design system
+Sources/ShotCLI/      The `shot` command and MCP server, bundled as shot-cli
 Tests/ShotModelTests/ ShotModel's Swift Testing suite
 Tests/ShotCoreTests/  ShotCore's Swift Testing suite
 Resources/            Info.plist and the app icon
@@ -77,7 +79,7 @@ The `shot://` [URL scheme](docs/usage.md#url-scheme) drives every action without
 ## Sending a change
 
 - Keep each pull request focused on one change, and match the style of the surrounding code.
-- Run `make lint` and `make test`, then run the app and try your change. CI lints and runs the `ShotModel` tests on Linux, then builds the app and runs the `ShotCore` tests on macOS. A pull request that changes only `ShotModel` skips the `ShotCore` tests, the performance budgets run when `Sources/ShotCore` changes and on every push to `main`, and a draft, or a pull request that only changes Markdown, `docs/`, `site/` or the issue templates, skips macOS.
+- Run `make lint` and `make test`, then run the app and try your change. CI lints and runs the `ShotModel` tests on Linux, then builds the app and runs the `ShotCore` tests on macOS. A pull request that changes only `ShotModel` skips the `ShotCore` tests, the performance budgets run when `Sources/ShotCore` changes and on every push to `main` that changes code, and a draft, or a pull request that only changes Markdown, `docs/`, `site/` or the issue templates, skips macOS.
 - Use a [Conventional Commits](https://www.conventionalcommits.org) title for the pull request, such as `fix(recording): …` or `feat(editor): …`. Pull requests are squash-merged, so the title becomes the commit on `main`, and release notes are generated from it.
 
 By contributing, you agree that your contributions are licensed under the project's [GPL-3.0 license](LICENSE).
