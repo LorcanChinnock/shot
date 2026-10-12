@@ -45,7 +45,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         }
         guard let image = saved?.image ?? ImageCodec.image(at: url) else {
             let reason = FileManager.default.fileExists(atPath: url.path) ? "it isn't an image Shot can read" : "it doesn't exist"
-            Toast.error("Cannot open \(url.lastPathComponent): \(reason)")
+            Toast.error("Can't open \(url.lastPathComponent): \(reason)")
             return
         }
         let model = EditorModel(

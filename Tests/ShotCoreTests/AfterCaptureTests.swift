@@ -10,7 +10,7 @@ struct AfterCaptureRow: Sendable, CustomTestStringConvertible {
     var testDescription: String { "copy \(copy), save \(save), Quick Access \(quickAccess), editor \(openEditor)" }
 }
 
-private let copied = AfterCapture.Next.toast("Copied to clipboard")
+private let copied = AfterCapture.Next.toast("Copied")
 private let saved = AfterCapture.Next.toast("Saved")
 
 private let rows: [AfterCaptureRow] = [

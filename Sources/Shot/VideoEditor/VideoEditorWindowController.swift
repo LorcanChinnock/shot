@@ -53,7 +53,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
                 try await model.load()
             } catch {
                 model.teardown()
-                Toast.error("Cannot open \(url.lastPathComponent): \(error.localizedDescription)")
+                Toast.error("Can't open \(url.lastPathComponent): \(error.localizedDescription)")
                 return
             }
             // A second request for the same file may have finished loading first.
@@ -226,7 +226,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             return false
         }
         let alert = NSAlert()
-        alert.messageText = model.isComposite ? "Save a copy of the edited \(model.fileURL.lastPathComponent)?" : "Save the edited \(model.fileURL.lastPathComponent)?"
+        alert.messageText = model.isComposite ? "Save changes to \(model.fileURL.lastPathComponent) as a copy?" : "Save changes to \(model.fileURL.lastPathComponent)?"
         alert.informativeText = "Your edits are lost if you discard them."
         alert.addButton(withTitle: model.isComposite ? "Save Copy" : "Save")
         alert.addButton(withTitle: "Discard")

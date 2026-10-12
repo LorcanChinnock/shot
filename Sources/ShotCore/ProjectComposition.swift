@@ -20,7 +20,7 @@ public enum CompositionBuilder {
         public var errorDescription: String? {
             switch self {
             case .noVideo(let name): "\(name) has no video to show"
-            case .cannotInsert(let name): "Could not add \(name) to the video"
+            case .cannotInsert(let name): "Couldn't add \(name) to the video"
             }
         }
     }
@@ -307,7 +307,7 @@ public enum ProjectExporter {
 
         public var errorDescription: String? {
             switch self {
-            case .failed: "Could not export the video"
+            case .failed: "Couldn't export the video"
             case .unsupportedFileType: "Can't write this kind of video"
             }
         }

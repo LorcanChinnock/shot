@@ -54,7 +54,7 @@ final class CameraBubble {
     @discardableResult
     func showFromPreferences(in region: CGRect) async -> Bool {
         guard await AVCaptureDevice.requestAccess(for: .video) else {
-            Toast.error("Camera access denied")
+            Toast.error("Shot can't use the camera. Turn it on in System Settings › Privacy & Security › Camera.")
             return false
         }
         let prefs = Preferences()

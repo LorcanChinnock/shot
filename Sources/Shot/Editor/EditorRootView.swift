@@ -71,7 +71,7 @@ private struct ZoomMenu: View {
     var body: some View {
         BrutalDropdown(title: "Zoom", entries: [
             .item("Zoom In", shortcut: "⌘+") { canvas.zoomIn() },
-            .item("Zoom Out", shortcut: "⌘-") { canvas.zoomOut() },
+            .item("Zoom Out", shortcut: "⌘−") { canvas.zoomOut() },
             .divider,
             .item("Zoom to Fit", shortcut: "⌘0") { canvas.zoomToFit() },
             .item("Actual Size", shortcut: "⌘1") { canvas.zoomToActualSize() },
@@ -84,7 +84,7 @@ private struct ZoomMenu: View {
         }
         .buttonStyle(BrutalButtonStyle(compact: true))
         .fixedSize()
-        .brutalTip("Zoom in (⌘+), out (⌘-), to fit (⌘0) or to actual size (⌘1). Pinch to zoom; scroll, Space-drag, middle-drag or the hand tool (H) to move around.")
+        .brutalTip("Zoom in (⌘+), out (⌘−), to fit (⌘0) or to actual size (⌘1). Pinch to zoom; scroll, Space-drag, middle-drag or the hand tool (H) to move around.")
     }
 }
 

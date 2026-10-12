@@ -24,7 +24,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     var subtitle: String {
         switch self {
         case .gallery: "Every capture in your folder."
-        case .general: "Behavior, files and formats."
+        case .general: "Behaviour, files and formats."
         case .capture: "What happens when you take a shot."
         case .quickAccess: "The floating card after each capture."
         case .recording: "Screen recording video and audio."
@@ -249,7 +249,7 @@ private struct GeneralSettings: View {
     private let color = SettingsSection.general.color
 
     var body: some View {
-        SettingsCard(title: "Behavior", symbol: "slider.horizontal.3") {
+        SettingsCard(title: "Behaviour", symbol: "slider.horizontal.3") {
             ToggleRow(title: "Launch at login", subtitle: "Start Shot when you log in to your Mac.", isOn: $launchAtLogin, color: color)
                 .onChange(of: launchAtLogin) { _, enabled in
                     setLaunchAtLogin(enabled)

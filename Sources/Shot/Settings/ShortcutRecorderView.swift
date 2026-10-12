@@ -32,6 +32,8 @@ struct ShortcutRecorderView: View {
                 .frame(minWidth: 96)
         }
         .buttonStyle(BrutalButtonStyle(color: isRecording ? color : Color.white.opacity(0.85), compact: true))
+        .accessibilityLabel(Text("\(action.title) shortcut"))
+        .accessibilityValue(Text(label))
         .onDisappear(perform: stop)
     }
 

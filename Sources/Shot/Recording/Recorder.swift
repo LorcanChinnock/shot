@@ -144,7 +144,7 @@ final class Recorder: NSObject {
         var microphone = options.microphone
         if microphone, !(await AVCaptureDevice.requestAccess(for: .audio)) {
             microphone = false
-            Toast.error("Microphone access denied; recording without it")
+            Toast.error("Recording without the microphone. Turn it on in System Settings › Privacy & Security › Microphone.")
         }
         // A window recording captures only that window, so the bubble would never appear in it.
         let camera = options.camera && options.windowID == nil
@@ -346,7 +346,7 @@ final class Recorder: NSObject {
                 CameraBubble.shared.hide()
             }
             model.cameraOn = CameraBubble.shared.isVisible
-            Toast.error("Could not \(wasVisible ? "hide" : "show") the camera in the recording")
+            Toast.error("Couldn't \(wasVisible ? "hide" : "show") the camera bubble in the recording")
             return
         }
     }

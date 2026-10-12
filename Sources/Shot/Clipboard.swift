@@ -90,7 +90,7 @@ enum Clipboard {
                 do {
                     return try Data(contentsOf: url)
                 } catch {
-                    Toast.error("Could not read \(url.lastPathComponent): \(error.localizedDescription)")
+                    Toast.error("Couldn't read \(url.lastPathComponent): \(error.localizedDescription)")
                     return nil
                 }
             }

@@ -32,12 +32,14 @@ struct TracksToolbar: View {
             Button { model.zoom(bySteps: -1) } label: { Image(systemName: "minus.magnifyingglass") }
                 .buttonStyle(BrutalButtonStyle(compact: true))
                 .brutalTip("Zoom out (⌘−)")
+                .accessibilityLabel(Text("Zoom out"))
             Button { model.resetZoom() } label: { Text("Fit") }
                 .buttonStyle(BrutalButtonStyle(compact: true))
                 .brutalTip("Fit the whole project in the window (⌘0)")
             Button { model.zoom(bySteps: 1) } label: { Image(systemName: "plus.magnifyingglass") }
                 .buttonStyle(BrutalButtonStyle(compact: true))
                 .brutalTip("Zoom in (⌘+)")
+                .accessibilityLabel(Text("Zoom in"))
         }
         .frame(height: Self.height)
         .disabled(model.isExporting)
@@ -317,6 +319,7 @@ struct TracksView: View {
         }
         .buttonStyle(.plain)
         .brutalTip(control.tip(isOn: isOn))
+        .accessibilityLabel(Text(control.menuTitle(isOn: isOn)))
     }
 
     private func ruler(_ timeline: TrimTimeline, pointsPerSecond: CGFloat) -> some View {

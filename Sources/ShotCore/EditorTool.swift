@@ -32,7 +32,7 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
         case .shape: "Shape"
         case .pen: "Pen"
         case .text: "Text"
-        case .note: "Sticky Note"
+        case .note: "Sticky note"
         case .highlight: "Highlight"
         case .spotlight: "Spotlight"
         case .redact: "Redact"

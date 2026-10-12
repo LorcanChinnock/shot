@@ -597,7 +597,7 @@ final class VideoEditorModel {
                 compositeLive = built.live
             } catch {
                 log.error("Could not build the composite: \(error.localizedDescription, privacy: .public)")
-                Toast.error("Could not show the edit: \(error.localizedDescription)")
+                Toast.error("Couldn't show the edit: \(error.localizedDescription)")
             }
         }
     }
@@ -762,7 +762,7 @@ final class VideoEditorModel {
     @discardableResult
     func save() async -> Bool {
         guard isDirty else {
-            Toast.error("Trim or cut the video first")
+            Toast.error("Nothing to save yet")
             return false
         }
         if isComposite {
@@ -772,7 +772,7 @@ final class VideoEditorModel {
         do {
             replacements = try FileManager.default.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: fileURL, create: true)
         } catch {
-            Toast.error("Save failed: \(error.localizedDescription)")
+            Toast.error("Couldn't save: \(error.localizedDescription)")
             return false
         }
         defer { try? FileManager.default.removeItem(at: replacements) }
@@ -783,7 +783,7 @@ final class VideoEditorModel {
         do {
             _ = try FileManager.default.replaceItemAt(fileURL, withItemAt: trimmed)
         } catch {
-            Toast.error("Save failed: \(error.localizedDescription)")
+            Toast.error("Couldn't save: \(error.localizedDescription)")
             return false
         }
         log.notice("Saved edited video: \(self.fileURL.path)")
@@ -793,7 +793,7 @@ final class VideoEditorModel {
             try await load()
         } catch {
             log.error("Reloading the saved video failed: \(error.localizedDescription, privacy: .public)")
-            Toast.error("Saved, but could not reload it: \(error.localizedDescription)")
+            Toast.error("Saved, but couldn't reload it: \(error.localizedDescription)")
         }
         return true
     }
@@ -1195,7 +1195,7 @@ extension VideoEditorModel {
     /// Puts an image from `url` on the video, centred and fitted inside half the canvas.
     func addImage(from url: URL) {
         guard let data = try? Data(contentsOf: url), let image = ImageCodec.image(from: data) else {
-            Toast.error("Cannot open \(url.lastPathComponent): it isn't an image Shot can read")
+            Toast.error("Can't open \(url.lastPathComponent): it isn't an image Shot can read")
             return
         }
         let canvas = project.canvasSize
