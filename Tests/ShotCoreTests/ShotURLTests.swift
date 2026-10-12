@@ -14,6 +14,9 @@ private let home = FileManager.default.homeDirectoryForCurrentUser
     ("shot://record-window", .action(.recordWindow)),
     ("shot://record?full=1", .action(.recordFullscreen)),
     ("shot://record?full=0", .action(.record)),
+    ("shot://capture-timer", .captureTimer(seconds: 5)),
+    ("shot://capture-timer?seconds=3", .captureTimer(seconds: 3)),
+    ("shot://capture-timer?seconds=60", .captureTimer(seconds: 60)),
     ("shot://pause", .pause),
     ("shot://gallery", .gallery),
     ("shot://settings", .settings(section: nil)),
@@ -42,6 +45,9 @@ func everyShotURLHasARoute(_ string: String, _ expected: ShotURL) throws {
     ("shot://annotate", ShotURL.ParseError.missingPath(host: "annotate")),
     ("shot://edit-video?path=", .missingPath(host: "edit-video")),
     ("shot://capture", .unknownHost("capture")),
+    ("shot://capture-timer?seconds=0", .invalidSeconds("0")),
+    ("shot://capture-timer?seconds=61", .invalidSeconds("61")),
+    ("shot://capture-timer?seconds=soon", .invalidSeconds("soon")),
     ("https://capture-area", .notShot),
 ])
 func aBadShotURLSaysWhy(_ string: String, _ expected: ShotURL.ParseError) throws {
@@ -54,4 +60,8 @@ func aBadShotURLSaysWhy(_ string: String, _ expected: ShotURL.ParseError) throws
 @Test func aBadShotURLsMessageNamesTheHost() {
     #expect(ShotURL.ParseError.missingPath(host: "annotate").localizedDescription == "Missing path for annotate")
     #expect(ShotURL.ParseError.unknownHost("capture").localizedDescription == "Unknown action: capture")
+}
+
+@Test func aBadTimerURLsMessageSaysWhatIsAllowed() {
+    #expect(ShotURL.ParseError.invalidSeconds("soon").localizedDescription == "Seconds must be a whole number from 1 to 60, not soon")
 }

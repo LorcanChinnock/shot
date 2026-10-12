@@ -35,6 +35,11 @@ private struct ShotMenu: View {
             ForEach(ShotAction.allCases.filter(\.isCapture), id: \.self) { action in
                 ActionButton(action: action, title: action.title, coordinator: coordinator)
             }
+            Menu("Capture Full Screen After Delay") {
+                ForEach(ScreenshotTimer.delays, id: \.self) { seconds in
+                    Button("\(seconds) seconds") { coordinator.captureAfterCountdown(seconds: seconds) }
+                }
+            }
         }
         if !state.isRecording {
             Section("Record") {

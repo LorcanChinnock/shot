@@ -12,6 +12,8 @@ public enum ShotURL: Equatable, Sendable {
     case settings(section: String?)
     /// Opens the welcome window again.
     case welcome
+    /// Takes a full-screen screenshot after counting down `seconds`.
+    case captureTimer(seconds: Int)
     case edit(EditorRoute)
 
     /// Releases register `shot`. Dev builds (ShotDev.app) register `shot-dev`, so the two can run side by side without
@@ -23,12 +25,14 @@ public enum ShotURL: Equatable, Sendable {
         case notShot
         case missingPath(host: String)
         case unknownHost(String)
+        case invalidSeconds(String)
 
         public var errorDescription: String? {
             switch self {
             case .notShot: "Not a shot:// URL"
             case let .missingPath(host): "Missing path for \(host)"
             case let .unknownHost(host): "Unknown action: \(host)"
+            case let .invalidSeconds(value): "Seconds must be a whole number from \(ScreenshotTimer.urlDelays.lowerBound) to \(ScreenshotTimer.urlDelays.upperBound), not \(value)"
             }
         }
     }
@@ -50,6 +54,15 @@ public enum ShotURL: Equatable, Sendable {
             self = .settings(section: value("section"))
         case "welcome":
             self = .welcome
+        case "capture-timer":
+            guard let text = value("seconds") else {
+                self = .captureTimer(seconds: ScreenshotTimer.defaultDelay)
+                break
+            }
+            guard let seconds = Int(text), ScreenshotTimer.urlDelays.contains(seconds) else {
+                throw .invalidSeconds(text)
+            }
+            self = .captureTimer(seconds: seconds)
         case _ where EditorRoute.hosts.contains(host):
             guard let route = EditorRoute(host: host, path: value("path")) else {
                 throw .missingPath(host: host)
