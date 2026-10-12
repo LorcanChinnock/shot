@@ -5,9 +5,9 @@ import Testing
 /// Registered defaults are shared by the whole process, so tests that register them run one at a time.
 @Suite(.serialized) struct RegisteredDefaultsTests {
     @Test func registeringDefaultsFollowsReplacementButKeepsCustomShortcuts() throws {
-        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-        let store = try #require(UserDefaults(suiteName: suite))
-        defer { store.removePersistentDomain(forName: suite) }
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
         Preferences.registerDefaults(in: store)
         let prefs = Preferences(store: store)
         #expect(prefs.hotkey(for: .record)?.displayString == "⇧⌘5")
@@ -24,9 +24,9 @@ import Testing
     }
 
     @Test func preferenceDefaults() throws {
-        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-        let store = try #require(UserDefaults(suiteName: suite))
-        defer { store.removePersistentDomain(forName: suite) }
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
         Preferences.registerDefaults(in: store)
         let prefs = Preferences(store: store)
         #expect(prefs.saveFolder.path.hasSuffix("/Pictures/Shot"))
@@ -68,9 +68,9 @@ import Testing
     }
 
     @Test func resetAndPrefixSanitizing() throws {
-        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-        let store = try #require(UserDefaults(suiteName: suite))
-        defer { store.removePersistentDomain(forName: suite) }
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
         Preferences.registerDefaults(in: store)
         let prefs = Preferences(store: store)
         store.set("  ", forKey: PreferenceKey.filePrefix)
@@ -90,9 +90,9 @@ import Testing
     }
 
     @Test func capturesGoToTheSaveFolderOnlyWhenSavingIsOn() throws {
-        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-        let store = try #require(UserDefaults(suiteName: suite))
-        defer { store.removePersistentDomain(forName: suite) }
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
         Preferences.registerDefaults(in: store)
         let prefs = Preferences(store: store)
         store.set("/tmp/ShotSaves", forKey: PreferenceKey.saveFolder)
@@ -102,9 +102,9 @@ import Testing
     }
 
     @Test func exportOptionsRememberFormatAndGIFSettingsOnly() throws {
-        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-        let store = try #require(UserDefaults(suiteName: suite))
-        defer { store.removePersistentDomain(forName: suite) }
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
         Preferences.registerDefaults(in: store)
         let prefs = Preferences(store: store)
         Preferences.remember(VideoExportOptions(format: .gif, gifFrameRate: 24, gifWidth: VideoExportOptions.originalWidth, muted: true, speed: 2), in: store)
@@ -120,9 +120,9 @@ import Testing
     }
 
     @Test func editorStyleStartsWithArrowFirstColourAndMiddleWidth() throws {
-        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-        let store = try #require(UserDefaults(suiteName: suite))
-        defer { store.removePersistentDomain(forName: suite) }
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
         Preferences.registerDefaults(in: store)
         let style = Preferences(store: store).editorStyle
         #expect(style == EditorStyle())
@@ -135,9 +135,9 @@ import Testing
     }
 
     @Test func editorStyleRemembersToolColoursAndWidth() throws {
-        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-        let store = try #require(UserDefaults(suiteName: suite))
-        defer { store.removePersistentDomain(forName: suite) }
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
         Preferences.registerDefaults(in: store)
         let prefs = Preferences(store: store)
         // The Done-when case: the star shape, blue and the thick width carry over to the next editor.
@@ -159,9 +159,9 @@ import Testing
     }
 
     @Test func changingTheEditorStyleWritesOnlyWhatChanged() throws {
-        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-        let store = try #require(UserDefaults(suiteName: suite))
-        defer { store.removePersistentDomain(forName: suite) }
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
         Preferences.registerDefaults(in: store)
         let prefs = Preferences(store: store)
         Preferences.remember(EditorStyle(tool: .pen), in: store)
@@ -171,16 +171,16 @@ import Testing
         store.removeObject(forKey: PreferenceKey.editorTool)
         store.removeObject(forKey: PreferenceKey.editorWidth)
         Preferences.changeEditorStyle(in: store) { $0.color = RGBA.presets[3] }
-        let saved = store.persistentDomain(forName: suite) ?? [:]
+        let saved = store.persistentDomain(forName: suite.name) ?? [:]
         #expect(saved[PreferenceKey.editorTool] == nil)
         #expect(saved[PreferenceKey.editorWidth] == nil)
         #expect(prefs.editorStyle.color == RGBA.presets[3])
     }
 
     @Test func selectAndCropAreNeverTheStartingTool() throws {
-        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-        let store = try #require(UserDefaults(suiteName: suite))
-        defer { store.removePersistentDomain(forName: suite) }
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
         Preferences.registerDefaults(in: store)
         let prefs = Preferences(store: store)
         Preferences.remember(EditorStyle(tool: .pen), in: store)
@@ -196,9 +196,9 @@ import Testing
     }
 
     @Test func editorStyleIgnoresValuesShotDoesNotOffer() throws {
-        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-        let store = try #require(UserDefaults(suiteName: suite))
-        defer { store.removePersistentDomain(forName: suite) }
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
         Preferences.registerDefaults(in: store)
         let prefs = Preferences(store: store)
         // From an older or newer Shot: a tool it doesn't have, and indexes past the palette and widths.
@@ -218,9 +218,9 @@ import Testing
     }
 
     @Test func toolsFromOlderVersionsBecomeTheToolsThatReplacedThem() throws {
-        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-        let store = try #require(UserDefaults(suiteName: suite))
-        defer { store.removePersistentDomain(forName: suite) }
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
         Preferences.registerDefaults(in: store)
         let prefs = Preferences(store: store)
         for (old, tool) in [("rect", EditorTool.shape), ("ellipse", .shape), ("pixelate", .redact), ("blur", .redact)] {
@@ -230,9 +230,9 @@ import Testing
     }
 
     @Test func removingTextCaptureDeletesItsShortcut() throws {
-        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-        let store = try #require(UserDefaults(suiteName: suite))
-        defer { store.removePersistentDomain(forName: suite) }
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
         Preferences.registerDefaults(in: store)
         store.set("17:4608", forKey: "hotkey.capture-text")
         store.set("", forKey: PreferenceKey.hotkey(.record))
@@ -273,24 +273,24 @@ import Testing
 }
 
 @Test func resettingSettingsAlsoResetsTheWindowLayout() throws {
-    let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-    let store = try #require(UserDefaults(suiteName: suite))
-    defer { store.removePersistentDomain(forName: suite) }
+    let suite = try TestDefaults()
+    let store = suite.store
+    defer { suite.remove() }
     for key in [PreferenceKey.editorShowsLayers, PreferenceKey.videoEditorShowsTracks, PreferenceKey.videoEditorShowsInspector] {
         store.set(true, forKey: key)
     }
     Preferences.resetAll(in: store)
     // The registration domain is shared by every store in the process, so a cleared key reads its registered default.
     for key in [PreferenceKey.editorShowsLayers, PreferenceKey.videoEditorShowsTracks, PreferenceKey.videoEditorShowsInspector] {
-        #expect(store.persistentDomain(forName: suite)?[key] == nil, Comment(rawValue: key))
+        #expect(store.persistentDomain(forName: suite.name)?[key] == nil, Comment(rawValue: key))
         #expect(!store.bool(forKey: key), Comment(rawValue: key))
     }
 }
 
 @Test func storedCountdownOutsideTheOffersReadsAsOff() throws {
-    let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-    let store = try #require(UserDefaults(suiteName: suite))
-    defer { store.removePersistentDomain(forName: suite) }
+    let suite = try TestDefaults()
+    let store = suite.store
+    defer { suite.remove() }
     let prefs = Preferences(store: store)
     store.set(5, forKey: PreferenceKey.recordingCountdown)
     #expect(prefs.recordingCountdown == 5)
@@ -310,10 +310,10 @@ import Testing
 }
 
 @Test func resettingSettingsKeepsTheOnboardingProgress() throws {
-    let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-    let store = try #require(UserDefaults(suiteName: suite))
-    defer { store.removePersistentDomain(forName: suite) }
+    let suite = try TestDefaults()
+    let store = suite.store
+    defer { suite.remove() }
     store.set(OnboardingProgress.done.rawValue, forKey: PreferenceKey.onboarding)
     Preferences.resetAll(in: store)
-    #expect(store.persistentDomain(forName: suite)?[PreferenceKey.onboarding] as? String == "done")
+    #expect(store.persistentDomain(forName: suite.name)?[PreferenceKey.onboarding] as? String == "done")
 }

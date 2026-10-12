@@ -16,6 +16,25 @@ func temporaryFolder() throws -> URL {
     return folder
 }
 
+/// A preferences store of its own for one test. It lives in a temporary folder, not ~/Library/Preferences, because
+/// removing a domain there still leaves cfprefsd to write an empty plist for it a moment later. `remove()` deletes both.
+struct TestDefaults {
+    let name: String
+    let store: UserDefaults
+    private let folder: URL
+
+    init() throws {
+        folder = try temporaryFolder()
+        name = folder.appendingPathComponent("defaults").path
+        store = try #require(UserDefaults(suiteName: name))
+    }
+
+    func remove() {
+        store.removePersistentDomain(forName: name)
+        try? FileManager.default.removeItem(at: folder)
+    }
+}
+
 // MARK: Images
 
 /// The pixel at (`x`, `y`) points from the top left of an 8-bit RGBA bitmap, as fractions; `scale` is pixels per point.

@@ -41,9 +41,9 @@ private func alpha(_ image: CGImage, _ x: Int, _ y: Int) throws -> UInt8 {
 }
 
 @Test func theNewCaptureStyleIsSavedOnlyWhileItsSettingIsOn() throws {
-    let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-    let store = try #require(UserDefaults(suiteName: suite))
-    defer { store.removePersistentDomain(forName: suite) }
+    let suite = try TestDefaults()
+    let store = suite.store
+    defer { suite.remove() }
     Preferences.registerDefaults(in: store)
     let prefs = Preferences(store: store)
     #expect(prefs.newCaptureStyle == nil)

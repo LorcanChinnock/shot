@@ -109,9 +109,9 @@ private func grey(width: Int, height: Int) -> CGImage {
 // MARK: Preferences
 
 @Test func quickAccessNeverClosingIsKeptAndATileSizeOutOfRangeFallsBack() throws {
-    let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-    let store = try #require(UserDefaults(suiteName: suite))
-    defer { store.removePersistentDomain(forName: suite) }
+    let suite = try TestDefaults()
+    let store = suite.store
+    defer { suite.remove() }
     Preferences.registerDefaults(in: store)
     let prefs = Preferences(store: store)
     store.set(0.0, forKey: PreferenceKey.quickAccessDuration)

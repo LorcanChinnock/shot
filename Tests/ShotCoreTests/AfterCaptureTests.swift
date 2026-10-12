@@ -39,9 +39,9 @@ func afterCaptureFollowsTheSettings(_ row: AfterCaptureRow) {
 }
 
 @Test func recordingsUseTheirOwnCopySetting() throws {
-    let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-    let store = try #require(UserDefaults(suiteName: suite))
-    defer { store.removePersistentDomain(forName: suite) }
+    let suite = try TestDefaults()
+    let store = suite.store
+    defer { suite.remove() }
     store.set(true, forKey: PreferenceKey.copyAfterCapture)
     store.set(false, forKey: PreferenceKey.copyAfterRecording)
     store.set(false, forKey: PreferenceKey.quickAccessAfterCapture)
@@ -53,9 +53,9 @@ func afterCaptureFollowsTheSettings(_ row: AfterCaptureRow) {
 }
 
 @Test func agentHandoffComesFromItsSetting() throws {
-    let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-    let store = try #require(UserDefaults(suiteName: suite))
-    defer { store.removePersistentDomain(forName: suite) }
+    let suite = try TestDefaults()
+    let store = suite.store
+    defer { suite.remove() }
     store.set(true, forKey: PreferenceKey.copyAfterCapture)
     store.set(false, forKey: PreferenceKey.saveAfterCapture)
     store.set(false, forKey: PreferenceKey.quickAccessAfterCapture)
