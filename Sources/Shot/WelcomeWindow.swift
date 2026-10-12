@@ -105,6 +105,8 @@ private final class WelcomeModel {
     /// Set once Grant or Open Settings sent the user to System Settings. macOS can report access only after a
     /// relaunch, so from then on the step asks for one rather than waiting for the check below.
     var visitedSettings = false
+    /// Set once Grant has asked. It clears Shot's entry first, so a second Grant would wipe a grant made since.
+    var requestedAccess = false
     var usesSystemKeys: Bool
     var opensAtLogin: Bool
     var captured = false
@@ -205,7 +207,7 @@ private struct PermissionStep: View {
                 Header(symbol: "lock.open.fill", color: Brutal.yellow, title: "One permission to go", subtitle: "macOS requires Screen Recording access for every capture.")
             }
             VStack(alignment: .leading, spacing: 10) {
-                Instruction(number: 1, text: "Select Grant, or open System Settings.")
+                Instruction(number: 1, text: model.requestedAccess ? "Open System Settings." : "Select Grant, or open System Settings.")
                 Instruction(number: 2, text: "Turn on Shot under Screen & System Audio Recording.")
                 Instruction(number: 3, text: "Relaunch Shot.")
             }
@@ -214,11 +216,16 @@ private struct PermissionStep: View {
             .glassCard()
             Spacer(minLength: 0)
             HStack(spacing: 12) {
-                Button("Grant") {
-                    Permissions.requestScreenCapture()
-                    model.visitedSettings = true
+                // Only Grant puts Shot in the System Settings list, so Open Settings leaves it. Once it has asked, it
+                // goes: macOS can keep reporting access as missing until the relaunch, and asking again would wipe the grant.
+                if !model.requestedAccess {
+                    Button("Grant") {
+                        Permissions.requestScreenCapture()
+                        model.requestedAccess = true
+                        model.visitedSettings = true
+                    }
+                        .buttonStyle(BrutalButtonStyle(color: Brutal.mint))
                 }
-                    .buttonStyle(BrutalButtonStyle(color: Brutal.mint))
                 Button("Open Settings") {
                     Permissions.openSettings()
                     model.visitedSettings = true
