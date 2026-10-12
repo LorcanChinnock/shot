@@ -52,7 +52,7 @@ struct ImagePicker: View {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.image]
         panel.allowsMultipleSelection = true
-        panel.message = "Choose images to place beside your screenshot"
+        panel.message = String(localized: "Choose images to place beside your screenshot")
         if panel.runModal() == .OK, !panel.urls.isEmpty {
             pick(panel.urls)
         }

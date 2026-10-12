@@ -2,8 +2,11 @@ import ShotCore
 import SwiftUI
 
 struct EditorToolbar: View {
-    /// Matches `RGBA.presets`.
-    static let colorNames = RGBA.presetNames
+    /// Matches `RGBA.presets`. Not `RGBA.presetNames`, which agents read and so stays English.
+    static let colorNames = [
+        String(localized: "Red"), String(localized: "Orange"), String(localized: "Yellow"), String(localized: "Green"),
+        String(localized: "Blue"), String(localized: "Black"), String(localized: "White"),
+    ]
 
     @Bindable var model: EditorModel
 
@@ -118,7 +121,7 @@ struct EditorToolbar: View {
 /// Line widths, or text sizes for text, notes and counters, whose width sets their size.
 struct WidthOptions: View {
     /// What the three widths are called, here and for border widths in the Style popover.
-    static let sizeNames = ["Small", "Medium", "Large"]
+    static let sizeNames = [String(localized: "Small"), String(localized: "Medium"), String(localized: "Large")]
 
     let selected: Int
     let sizesText: Bool
@@ -207,7 +210,7 @@ struct ShapeMenu: View {
             }
             .buttonStyle(.plain)
             .fixedSize()
-            .brutalTip("Shape", detail: selected.title)
+            .brutalTip(String(localized: "Shape"), detail: selected.title)
         }
     }
 }
@@ -217,6 +220,14 @@ struct RedactionOptions: View {
     let amount: CGFloat
     let choose: (Redaction) -> Void
     let setAmount: (CGFloat) -> Void
+
+    // A switch, since string extraction misses the second branch of a ternary passed as an optional.
+    private var amountDetail: LocalizedStringResource {
+        switch selected {
+        case .blur: "How far the blur spreads."
+        case .pixelate: "How big the blocks are."
+        }
+    }
     let dragAmount: (Bool) -> Void
 
     var body: some View {
@@ -240,7 +251,7 @@ struct RedactionOptions: View {
             .frame(height: 30)
             .padding(.horizontal, 6)
             .accessibilityLabel(Text("Amount"))
-            .brutalTip("Amount", detail: selected == .blur ? "How far the blur spreads." : "How big the blocks are.")
+            .brutalTip("Amount", detail: amountDetail)
         }
     }
 }

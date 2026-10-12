@@ -44,7 +44,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
             return
         }
         guard let image = saved?.image ?? ImageCodec.image(at: url) else {
-            let reason = FileManager.default.fileExists(atPath: url.path) ? "it isn't an image Shot can read" : "it doesn't exist"
+            let reason = FileManager.default.fileExists(atPath: url.path) ? String(localized: "it isn't an image Shot can read") : String(localized: "it doesn't exist")
             Toast.error("Can't open \(url.lastPathComponent): \(reason)")
             return
         }
@@ -167,11 +167,11 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
             return false
         }
         let alert = NSAlert()
-        alert.messageText = "Save changes to \(model.fileURL.lastPathComponent)?"
-        alert.informativeText = "Your annotations are lost if you discard them."
-        alert.addButton(withTitle: "Save")
-        alert.addButton(withTitle: "Discard")
-        alert.addButton(withTitle: "Cancel")
+        alert.messageText = String(localized: "Save changes to \(model.fileURL.lastPathComponent)?")
+        alert.informativeText = String(localized: "Your annotations are lost if you discard them.")
+        alert.addButton(withTitle: String(localized: "Save"))
+        alert.addButton(withTitle: String(localized: "Discard"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
         alert.beginSheetModal(for: sender) { [self] response in
             switch response {
             case .alertFirstButtonReturn:
