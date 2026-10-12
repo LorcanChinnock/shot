@@ -2,6 +2,7 @@
 
 The full guide to Shot. For a quick introduction, see the [overview](../README.md).
 
+- [First launch](#first-launch)
 - [Screenshots](#screenshots)
 - [Quick Access](#quick-access)
 - [Screen recording](#screen-recording)
@@ -15,6 +16,16 @@ The full guide to Shot. For a quick introduction, see the [overview](../README.m
 - [Updates](#updates)
 - [Privacy](#privacy)
 - [Removing Shot](#removing-shot)
+
+## First launch
+
+The first time you open Shot, a welcome window takes about 30 seconds, in three steps. Close it at any step to skip the rest.
+
+1. **Screen Recording access.** macOS requires it for every capture. Click **Grant**, or **Open Settings**, and turn on Shot under **Screen & System Audio Recording**. The window notices when access is on and asks you to **Relaunch**, since macOS applies it only after a relaunch. Then the window carries on. If Shot already has access, this step is skipped.
+2. **Make it yours.** **Use ⌘⇧3, ⌘⇧4 and ⌘⇧5 for Shot** is on: macOS's own screenshot shortcuts turn off while Shot runs, and come back when it quits. Turn it off to keep them, and Shot uses ⌃⇧3, ⌃⇧4 and ⌃⇧5 instead. **Open Shot at login** is ticked, so your shortcuts work after a restart. **Continue** applies both. If you close the window here instead, macOS keeps its shortcuts and Shot isn't added to your login items. The **Agents** button opens [Settings › Agents](#using-shot-with-ai-agents), for Claude Code, Codex or Cursor.
+3. **Try it.** Press your area shortcut and drag out any area. Once the capture is done, the window comes back with a few tips. **Skip** closes it.
+
+If you used Shot before the welcome window existed, you won't see it. To open it again, use **Welcome window › Show** in **Settings › About**, or [`shot://welcome`](#url-scheme); opened that way, it starts from your current settings and closing it changes nothing. If Shot loses its Screen Recording access later, a capture opens the window at the access step.
 
 ## Screenshots
 
@@ -318,7 +329,7 @@ Shot still sends nothing anywhere. Whatever an agent reads, though, goes to that
 
 ### Global
 
-Every capture and recording action, **Pick Colour** and **Copy Latest Capture's Path** can have a global shortcut and a [`shot://` URL](#url-scheme). Once it has Screen Recording access, Shot takes over the macOS screenshot keys and turns off the matching macOS shortcuts while it runs. When Shot quits, macOS gets its keys back. If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧3 to ⌘⇧5** on again.
+Every capture and recording action, **Pick Colour** and **Copy Latest Capture's Path** can have a global shortcut and a [`shot://` URL](#url-scheme). Unless you turned it off in the [welcome window](#first-launch), Shot takes over the macOS screenshot keys and turns off the matching macOS shortcuts while it runs, once it has Screen Recording access. When Shot quits, macOS gets its keys back. If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧3 to ⌘⇧5** on again.
 
 | Shortcut | Action |
 |---|---|
@@ -435,6 +446,7 @@ Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a scr
 | `shot://edit-video?path=<file>` | Open a video in the video editor to trim it |
 | `shot://gallery` | Open the gallery |
 | `shot://settings?section=<name>` | Open Settings at `gallery`, `general`, `capture`, `quickAccess`, `recording`, `agents`, `shortcuts`, or `about` |
+| `shot://welcome` | Open the [welcome window](#first-launch) again |
 
 For AI agents, `shot mcp` (`Shot.app/Contents/MacOS/shot-cli mcp`, or just `shot mcp` after a Homebrew install) is an MCP server for your captures; see [The MCP server](#the-mcp-server). The same command also makes GIFs, trims, redacts, annotates and pulls key frames without the app; see [The `shot` command line](#the-shot-command-line).
 
@@ -453,7 +465,7 @@ Open Settings from the menu bar icon, or with ⌘, while a Shot window is in fro
 | Recording | Adjust before recording, the countdown, frame rate, cursor, region outline, copying to the clipboard, the microphone and its input (with a **Test**), system audio, and the camera bubble's camera (with a **Preview**) and size. It also sums up the GIF settings the video editor last used. |
 | Agents | [Handing captures to AI agents](#using-shot-with-ai-agents): a record inside each capture of where it came from and what you marked, [letting agents capture and record a window](#letting-an-agent-capture-and-record), and the setup commands for the MCP server |
 | Shortcuts | The macOS screenshot keys and every global shortcut |
-| About | The version, updates, permissions, the capture folder, links to the code, to report a bug and to sponsor Shot, and resetting all settings |
+| About | The version, updates, permissions, the welcome window, the capture folder, links to the code, to report a bug and to sponsor Shot, and resetting all settings |
 
 ## Updates
 

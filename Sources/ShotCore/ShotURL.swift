@@ -10,6 +10,8 @@ public enum ShotURL: Equatable, Sendable {
     case gallery
     /// `section` is the raw name of a Settings section, `nil` for none.
     case settings(section: String?)
+    /// Opens the welcome window again.
+    case welcome
     case edit(EditorRoute)
 
     /// Releases register `shot`. Dev builds (ShotDev.app) register `shot-dev`, so the two can run side by side without
@@ -46,6 +48,8 @@ public enum ShotURL: Equatable, Sendable {
             self = .gallery
         case "settings":
             self = .settings(section: value("section"))
+        case "welcome":
+            self = .welcome
         case _ where EditorRoute.hosts.contains(host):
             guard let route = EditorRoute(host: host, path: value("path")) else {
                 throw .missingPath(host: host)

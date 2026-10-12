@@ -392,6 +392,7 @@ final class CaptureCoordinator {
             )
         }
         Confetti.burst(from: frame)
+        WelcomeWindow.captureFinished()
     }
 
     /// Saves a capture to the capture folder and does nothing else: no sound, copy, Quick Access, editor or confetti. For
@@ -712,7 +713,7 @@ final class CaptureCoordinator {
     func report(_ error: Error) {
         log.error("Action failed: \(error.localizedDescription, privacy: .public)")
         if !Permissions.hasScreenCapture {
-            Permissions.showOnboarding()
+            WelcomeWindow.showIfNeeded()
         }
         Toast.error(error.localizedDescription)
     }

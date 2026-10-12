@@ -66,6 +66,8 @@ public enum PreferenceKey {
     public static let agentHandoff = "agentHandoff"
     /// Lets agents ask the running app, through the `shot` command line or the MCP server, to capture or record a window.
     public static let agentCapture = "agentCapture"
+    /// How far the welcome window got, an `OnboardingProgress`. Not a setting, so resetting settings keeps it.
+    public static let onboarding = "onboarding"
 
     public static func hotkey(_ action: ShotAction) -> String { "hotkey.\(action.rawValue)" }
 }
@@ -172,6 +174,14 @@ public struct Preferences {
             hotkeys[PreferenceKey.hotkey(action)] = action.defaultCombo(replacingSystemScreenshots: replacing)?.encoded ?? ""
         }
         store.register(defaults: hotkeys)
+    }
+
+    /// Whether `keys`, the keys saved in Shot's defaults domain, hold any of Shot's own, so Shot was used before. Takes the
+    /// saved keys rather than reading `UserDefaults`, which also answers with registered defaults. Call it before
+    /// launch writes anything: `gaveBackTextCaptureKey` is saved on every launch, so from then on it's always true.
+    public static func hasSavedSettings(_ keys: some Sequence<String>) -> Bool {
+        let own = Set(defaults.keys).union([PreferenceKey.disabledSystemScreenshots, PreferenceKey.gaveBackTextCaptureKey])
+        return keys.contains { own.contains($0) || $0.hasPrefix("hotkey.") }
     }
 
     /// Removes every stored value so the registered defaults apply again.

@@ -11,6 +11,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var defaultsObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // First, before anything below saves a setting and makes a new user look like an earlier one.
+        WelcomeWindow.loadProgress()
         Preferences.registerDefaults()
         SystemShortcuts.giveBackTextCaptureKeyIfNeeded()
         HotkeyCenter.shared.onPress = { [weak self] action in
@@ -51,8 +53,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 log.notice("Swept \(swept) old captures taken with saving off")
             }
         }
-        Permissions.showOnboardingIfNeeded()
-        if Permissions.hasScreenCapture {
+        WelcomeWindow.showIfNeeded()
+        // Someone new hasn't been told about the takeover yet; the welcome window's setup step takes the keys.
+        if Permissions.hasScreenCapture, WelcomeWindow.progress == .done {
             SystemShortcuts.takeKeys()
         }
         log.notice("Shot launched")
@@ -106,6 +109,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             GalleryController.shared.show()
         case let .settings(section):
             MainWindowController.showSettings(section: section.flatMap(SettingsSection.init(rawValue:)))
+        case .welcome:
+            WelcomeWindow.showAgain()
         case let .edit(route):
             coordinator.edit(route)
         case let .action(action):
