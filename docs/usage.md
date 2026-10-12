@@ -13,6 +13,7 @@ The full guide to Shot. For a quick introduction, see the [overview](../README.m
 - [Keyboard shortcuts](#keyboard-shortcuts)
 - [URL scheme](#url-scheme)
 - [Settings](#settings)
+- [Languages](#languages)
 - [Updates](#updates)
 - [Privacy](#privacy)
 - [Troubleshooting](#troubleshooting)
@@ -509,6 +510,10 @@ Open Settings from the menu bar icon, or with ⌘, while a Shot window is in fro
 | Agents | [Handing captures to AI agents](#using-shot-with-ai-agents): a record inside each capture of where it came from and what you marked, [letting agents capture and record a window](#letting-an-agent-capture-and-record), and the setup commands for the MCP server |
 | Shortcuts | The macOS screenshot keys and every global shortcut |
 | About | The version, updates, permissions, the welcome window, the save folder, links to the code, to report a bug and to sponsor Shot, and resetting all settings |
+
+## Languages
+
+Shot is in English, German, French, Spanish, Italian, Brazilian Portuguese, Japanese, Korean and Simplified Chinese. It follows the language your Mac is set to. To run Shot in a different language from the rest of your Mac, choose it for Shot in **System Settings › General › Language & Region › Applications**. File names stay in English, as do the `shot` command, the MCP server and the setup text in **Settings › Agents**, which tools read.
 
 ## Updates
 

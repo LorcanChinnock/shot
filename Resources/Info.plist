@@ -14,6 +14,14 @@
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>en</string>
+		<string>de</string>
+		<string>es</string>
+		<string>fr</string>
+		<string>it</string>
+		<string>ja</string>
+		<string>ko</string>
+		<string>pt-BR</string>
+		<string>zh-Hans</string>
 	</array>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>

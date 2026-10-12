@@ -5,10 +5,58 @@
       "comment" : "Asked the first time a recording turns the camera on.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shot zeigt deine Kamera bei Bildschirmaufzeichnungen in einer Blase, wenn du sie einschaltest."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Shot shows your camera in a bubble during screen recordings when you turn it on."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shot muestra tu cámara en una burbuja durante las grabaciones de pantalla cuando la activas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shot affiche votre caméra dans une bulle pendant les enregistrements d'écran, si vous l'activez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shot mostra la fotocamera in una bolla durante le registrazioni dello schermo, se la attivi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shotは、オンにすると画面収録中にカメラの映像をバブルで表示します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "화면 녹화 중에 카메라를 켜면 Shot이 카메라 화면을 버블로 표시합니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Shot mostra sua câmera em uma bolha durante as gravações de tela, quando você ativa essa opção."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开启后，Shot 会在录屏时以气泡形式显示你的摄像头画面。"
           }
         }
       }
@@ -17,10 +65,58 @@
       "comment" : "Asked the first time a recording turns the microphone on.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shot zeichnet bei Bildschirmaufzeichnungen dein Mikrofon auf, wenn du es einschaltest."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Shot records your microphone during screen recordings when you turn it on."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shot graba tu micrófono durante las grabaciones de pantalla cuando lo activas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shot enregistre votre micro pendant les enregistrements d'écran, si vous l'activez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shot registra il microfono durante le registrazioni dello schermo, se lo attivi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shotは、オンにすると画面収録中にマイクの音声を収録します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "화면 녹화 중에 마이크를 켜면 Shot이 마이크 소리를 녹음합니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Shot grava seu microfone durante as gravações de tela, quando você ativa essa opção."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开启后，Shot 会在录屏时录制你的麦克风。"
           }
         }
       }

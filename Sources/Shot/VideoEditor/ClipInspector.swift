@@ -122,7 +122,7 @@ struct ClipInspector: View {
             caption(title)
             field(values.position.width, label: "Horizontal position") { var changed = values; changed.position.width = $0; return changed }
             field(values.position.height, label: "Vertical position") { var changed = values; changed.position.height = $0; return changed }
-            diamond(.position, animation, name: title.lowercased())
+            diamond(.position, animation, name: title.localizedCapitalized)
         }
     }
 
@@ -142,7 +142,7 @@ struct ClipInspector: View {
             .accessibilityLabel(Text(title.capitalized))
             .accessibilityValue(Text(format(value)))
             Text(format(value)).font(Brutal.mono).foregroundStyle(Brutal.ink.opacity(0.75)).frame(width: 48, alignment: .leading)
-            diamond(property, animation, name: title.lowercased())
+            diamond(property, animation, name: title.localizedCapitalized)
         }
     }
 

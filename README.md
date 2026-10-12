@@ -59,6 +59,8 @@ Circle the bug, copy, and paste it into Claude Code, Codex or Cursor: your arrow
 
 Shot needs macOS 15 or later and an Apple Silicon Mac. It doesn't run on Intel Macs.
 
+Shot is in English, German, French, Spanish, Italian, Brazilian Portuguese, Japanese, Korean and Simplified Chinese. It uses your Mac's language, or the one you pick for Shot in **System Settings › General › Language & Region › Applications**.
+
 **With [Homebrew](https://brew.sh):**
 
 ```sh
