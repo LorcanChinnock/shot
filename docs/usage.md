@@ -313,7 +313,7 @@ Shot also comes with a small [MCP](https://modelcontextprotocol.io) server, so y
   args = ["mcp"]
   ```
 
-It has nine tools. Four read your captures, three make a new file from one, and two take a screenshot or a recording. Their arguments are optional unless the table says otherwise, and a slightly wrong one is read as best it can be rather than refused.
+It has ten tools. Five read your captures, three make a new file from one, and two take a screenshot or a recording. Their arguments are optional unless the table says otherwise, and a slightly wrong one is read as best it can be rather than refused.
 
 | Tool | Arguments | Returns |
 |---|---|---|
@@ -321,6 +321,7 @@ It has nine tools. Four read your captures, three make a new file from one, and 
 | `list_captures` | `limit`: 1 to 50, 10 by default; `since`: a date such as `2026-10-10`, or a span back from now such as `10m`, `2h` or `3d` | Recent captures, newest first: name, path, kind and when. No images. |
 | `get_capture` | `path`, or `name`: a file name or a few words from it, so `shot 14.03` finds `Shot 2026-10-10 at 14.03.12.png` | The same as `latest_capture`, for that capture. If none matches, it names the closest ones. |
 | `get_frames` | `path` or `name`, else the newest recording; `count`: 1 to 12, 8 by default | Still frames of the recording, since a model can't watch video: the first and last, and the frame after each change on screen once it settles, each with its time. Nothing is written. |
+| `find_text` | `path` or `name`, else the newest screenshot; `query`: words to find, ignoring case and accents | The text in the screenshot, read on your Mac: each line with its box, `[x, y, width, height]` in the file's pixels from the top left, the space `annotate` takes. With `query`, only the lines that contain it, each with the box of the matching words, so an agent can check what the screen says or find the button to point at. Nothing is written. |
 | `annotate` | `annotations` (required): marks in the [record's format](#using-shot-with-ai-agents), except `image`; `path` or `name`, else the newest screenshot | A copy with the marks drawn on, saved as the screenshot's next version, and a preview of it. Open it in Shot and the marks are still live. |
 | `make_gif` | `path` or `name`, else the newest recording; `start`, `end` in seconds; `fps`, 1 to 30, 12 by default; `width`, 720 by default, or 0 for the recording's own | A GIF of the recording, or part of it, saved beside it. GIFs stop at 60 seconds. |
 | `trim_video` | `start` and `end` in seconds (required); `path` or `name`, else the newest recording | The part between the two times, saved beside the recording, without re-encoding where it can. |
@@ -342,6 +343,7 @@ The same `shot` command does the media work without Shot open and without any pe
 | `shot trim <video> --start 2.5 --end 9 [-o out.mov]` | The part between two times, as `.mov` or `.mp4`, without re-encoding where it can |
 | `shot redact <image> --rect x,y,w,h [--rect …] [--style blur\|pixelate] [-o out.png]` | Hides each rectangle, given in the image's pixels. Pixelate is the default. |
 | `shot frames <video> [--count 8 \| --every 2] [--width 1568] [-o folder]` | Still frames of the video in a new folder, `name frames`, as JPEGs named by their time: by default the first and last and the frame after each change on screen, or with `--every`, one every so many seconds, up to 60 frames |
+| `shot text <image>` | The text in the image, read on your Mac: its `size`, all its `text`, and `lines`, each with its `text`, `box`, `confidence` and `words`, each word with its own `box`. Boxes are `[x, y, width, height]` in the image's pixels from the top left. |
 | `shot annotate <image> --json marks.json [-o out.png]` | Draws marks, in the [record's format](#using-shot-with-ai-agents) except `image`, as an array or inside an `annotations` object. `--json -` reads them from standard input. |
 | `shot capture --window "Simulator"` | A screenshot of the open window whose title or app matches, saved to the capture folder by the running Shot app, which prints its `path`, `size`, `bytes` and `window` (`app` and `title`) |
 | `shot record --window "Simulator" [--duration 10]` | Records that window through Shot. With `--duration`, waits and prints the recording's `path`, `size`, `bytes`, `duration` and `id`; without, prints an `id` at once. At most 10 minutes. |
@@ -492,7 +494,7 @@ Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a scr
 | `shot://settings?section=<name>` | Open Settings at `gallery`, `general`, `capture`, `quickAccess`, `recording`, `agents`, `shortcuts`, or `about` |
 | `shot://welcome` | Open the [welcome window](#first-launch) again |
 
-For AI agents, `shot mcp` is an MCP server for your captures; see [The MCP server](#the-mcp-server). Install the `shot` command from **Settings › Agents**, or let Homebrew install it for you; without it, run `Shot.app/Contents/MacOS/shot-cli mcp`. The same command also makes GIFs, trims, redacts, annotates and pulls key frames without the app; see [The `shot` command line](#the-shot-command-line). `shot://capture-window` and `record-window` open the window picker for you to click a window. An agent's `capture_window` and `record_window` tools, and `shot capture` and `shot record`, skip the picker and take the window they name, once you've turned on [**Let agents capture and record**](#letting-an-agent-capture-and-record).
+For AI agents, `shot mcp` is an MCP server for your captures; see [The MCP server](#the-mcp-server). Install the `shot` command from **Settings › Agents**, or let Homebrew install it for you; without it, run `Shot.app/Contents/MacOS/shot-cli mcp`. The same command also makes GIFs, trims, redacts, annotates, pulls key frames and reads text without the app; see [The `shot` command line](#the-shot-command-line). `shot://capture-window` and `record-window` open the window picker for you to click a window. An agent's `capture_window` and `record_window` tools, and `shot capture` and `shot record`, skip the picker and take the window they name, once you've turned on [**Let agents capture and record**](#letting-an-agent-capture-and-record).
 
 `path` can start with `~`. URL-encode spaces and other special characters, for example `open "shot://annotate?path=~/Desktop/My%20Shot.png"`. The older `shot://record?full=1` still works and does the same as `shot://record-fullscreen`. An unknown action or settings section, or `annotate` or `edit-video` without a `path`, shows an error instead.
 

@@ -26,6 +26,7 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(try parse("frames a.mov") == .frames(ShotCommand.FramesOptions(input: "a.mov")))
     #expect(try parse("frames a.mov --every 0:30 --width 800 -o out") == .frames(ShotCommand.FramesOptions(input: "a.mov", output: "out", every: 30, width: 800)))
     #expect(try parse("frames a.mov --count 3") == .frames(ShotCommand.FramesOptions(input: "a.mov", count: 3)))
+    #expect(try parse("text a.png") == .text(path: "a.png"))
     #expect(try parse("capture --window Simulator") == .capture(window: "Simulator"))
     #expect(try parse("capture --window=Calculator") == .capture(window: "Calculator"))
     #expect(try parse("record --window Simulator") == .record(.start(window: "Simulator", duration: nil)))
@@ -56,6 +57,8 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(ShotCommand.usage(nil, program: "shot-cli").contains("shot-cli annotate <image> --json"))
     #expect(try parse("capture --help") == .help("capture"))
     #expect(ShotCommand.usage("capture").hasPrefix("Usage: shot capture --window <title or app>"))
+    #expect(try parse("text --help") == .help("text"))
+    #expect(ShotCommand.usage(nil).contains("shot text <image>"))
 }
 
 @Test(arguments: [
@@ -82,6 +85,8 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     ("frames a.mov --count 13", "frames", "--count 13 must be from 1 to 12"),
     ("frames a.mov --count 2 --every 1", "frames", "use --count or --every, not both"),
     ("frames a.mov --every 0", "frames", "--every 0 must be a time above 0, such as 2 or 0:30"),
+    ("text", "text", "missing the file to work on"),
+    ("text a.png -o b.json", "text", "unknown option -o; text takes none"),
     ("capture", "capture", "needs --window with words from the window's title or app, such as --window Simulator"),
     ("capture --window", "capture", "--window needs a value"),
     ("capture a.png --window Simulator", "capture", "takes no file; name the window with --window"),
