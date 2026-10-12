@@ -34,6 +34,9 @@ extension Project {
         let shown = tracks.filter { $0.kind != .audio && !$0.isHidden }
         let edges = Set(shown.flatMap { $0.clips.flatMap { [$0.start, $0.end] } + $0.annotations.flatMap { [$0.start, $0.end] } } + [0, total]).filter { $0 >= 0 && $0 <= total }.sorted()
         var segments: [VideoSegment] = []
+        // A sliver too short to keep goes to the piece after it, so the pieces still meet end to end: rounded to the
+        // composition's ticks, its two ends can differ, and a gap between instructions turns the whole preview black.
+        var start = 0.0
         for (from, to) in zip(edges, edges.dropFirst()) where to - from >= Self.shortestClip {
             let active = shown.flatMap { track in
                 track.clips.filter { $0.start <= from + 1e-9 && $0.end >= to - 1e-9 }.map { VideoSegment.Layer.clip($0.id) }
@@ -42,8 +45,9 @@ extension Project {
             if let last = segments.last, last.layers == active {
                 segments[segments.count - 1].range = last.range.lowerBound..<to
             } else {
-                segments.append(VideoSegment(range: from..<to, layers: active))
+                segments.append(VideoSegment(range: start..<to, layers: active))
             }
+            start = to
         }
         return segments
     }

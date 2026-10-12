@@ -56,6 +56,15 @@ private func overlay(duration: Double = 4, size: CGSize = CGSize(width: 640, hei
     #expect(imported.videoSegments()[1].clips.isEmpty)
 }
 
+@Test func anAnnotationJustBeforeACutLeavesNoGapBetweenSegments() throws {
+    let cut = try #require(project().cutting(source: 4.1462..<6.0946))
+    // The playhead, on the player's 1/600 s grid, sits less than a tick before the cut at 4.1462.
+    let arrow = Annotation(kind: .arrow(from: .zero, to: CGPoint(x: 100, y: 0)), color: RGBA.presets[0], lineWidth: 4)
+    let segments = cut.adding(annotation: arrow, at: 4.145).project.videoSegments()
+    #expect(segments.first?.range.lowerBound == 0)
+    #expect(zip(segments, segments.dropFirst()).allSatisfy { $0.range.upperBound == $1.range.lowerBound })
+}
+
 @Test func fittedAtRestFillsTheCanvasWidthOfAWideClip() {
     let clip = Clip(source: recording, sourceDuration: 1, size: CGSize(width: 640, height: 360))
     #expect(LayerGeometry.frame(of: clip, canvas: canvas) == CGRect(x: 0, y: 0, width: 1920, height: 1080))
