@@ -332,7 +332,7 @@ The server reads only the capture folder: your save folder (`~/Pictures/Shot` by
 
 ### The `shot` command line
 
-The same `shot` command does the media work without Shot open and without any permission, so an agent with a shell, or a script, can see what happened in a recording, turn it into a GIF for a pull request, or blur something before it shares a screenshot. Homebrew puts it on your PATH as `shot`. Otherwise, click **Install** beside **shot command** in **Settings › Agents**: after you enter your password, Shot links `/usr/local/bin/shot` to the copy inside the app, which updates with Shot, and **Uninstall** removes the link. You can also run `/Applications/Shot.app/Contents/MacOS/shot-cli` directly. Only `shot capture` and `shot record` need Shot running, which they open in the background if it isn't, with [**Let agents capture and record**](#letting-an-agent-capture-and-record) on.
+The same `shot` command does the media work without Shot open and without any permission, so an agent with a shell, or a script, can see what happened in a recording, turn it into a GIF for a pull request, or blur something before it shares a screenshot. To put it on your PATH, click **Install** beside **shot command** in **Settings › Agents** and enter your password. Shot links `/usr/local/bin/shot` to the copy inside the app, so the command updates with Shot, and **Uninstall** removes the link. Homebrew installs it for you. Without it, run `/Applications/Shot.app/Contents/MacOS/shot-cli`. Only `shot capture` and `shot record` need Shot running, which they open in the background if it isn't, with [**Let agents capture and record**](#letting-an-agent-capture-and-record) on.
 
 | Command | Does |
 |---|---|
@@ -491,7 +491,7 @@ Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a scr
 | `shot://settings?section=<name>` | Open Settings at `gallery`, `general`, `capture`, `quickAccess`, `recording`, `agents`, `shortcuts`, or `about` |
 | `shot://welcome` | Open the [welcome window](#first-launch) again |
 
-For AI agents, `shot mcp` is an MCP server for your captures; see [The MCP server](#the-mcp-server). Homebrew installs the `shot` command, and **Settings › Agents** can install it for any other copy of Shot; without it, run `Shot.app/Contents/MacOS/shot-cli mcp`. The same command also makes GIFs, trims, redacts, annotates and pulls key frames without the app; see [The `shot` command line](#the-shot-command-line). `shot://capture-window` and `record-window` open the window picker for you to click a window. An agent's `capture_window` and `record_window` tools, and `shot capture` and `shot record`, skip the picker and take the window they name, once you've turned on [**Let agents capture and record**](#letting-an-agent-capture-and-record).
+For AI agents, `shot mcp` is an MCP server for your captures; see [The MCP server](#the-mcp-server). Install the `shot` command from **Settings › Agents**, or let Homebrew install it for you; without it, run `Shot.app/Contents/MacOS/shot-cli mcp`. The same command also makes GIFs, trims, redacts, annotates and pulls key frames without the app; see [The `shot` command line](#the-shot-command-line). `shot://capture-window` and `record-window` open the window picker for you to click a window. An agent's `capture_window` and `record_window` tools, and `shot capture` and `shot record`, skip the picker and take the window they name, once you've turned on [**Let agents capture and record**](#letting-an-agent-capture-and-record).
 
 `path` can start with `~`. URL-encode spaces and other special characters, for example `open "shot://annotate?path=~/Desktop/My%20Shot.png"`. The older `shot://record?full=1` still works and does the same as `shot://record-fullscreen`. An unknown action or settings section, or `annotate` or `edit-video` without a `path`, shows an error instead.
 
@@ -542,7 +542,7 @@ To remove everything else Shot keeps:
 - **Settings:** run `defaults delete dev.lorcan.Shot`, which removes `~/Library/Preferences/dev.lorcan.Shot.plist`.
 - **Agent socket:** delete `~/Library/Application Support/dev.lorcan.Shot`.
 - **Permissions:** run `tccutil reset All dev.lorcan.Shot` to clear every permission you gave Shot.
-- **`shot` command:** click **Uninstall** beside **shot command** in **Settings › Agents** before you quit, or run `sudo rm /usr/local/bin/shot`. Homebrew removes its own link when you run `brew uninstall shot`.
+- **`shot` command:** click **Uninstall** beside **shot command** in **Settings › Agents** before you quit, or run `sudo rm /usr/local/bin/shot`. `brew uninstall shot` removes Homebrew's.
 - **AI agents:** remove the MCP server from each agent you added it to: `claude mcp remove shot` for Claude Code, the `shot` entry under `mcpServers` for Cursor, and `[mcp_servers.shot]` in `~/.codex/config.toml` for Codex.
 
 Your captures stay in your save folder until you delete them.
