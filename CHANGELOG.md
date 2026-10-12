@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.44](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.43...v0.7.0-beta.44) (2026-10-12)
+
+
+### Features
+
+* **agents:** put the command line above the MCP server and shorten the Agents page ([#438](https://github.com/LorcanChinnock/shot/issues/438)) ([e2b3a14](https://github.com/LorcanChinnock/shot/commit/e2b3a147fc2e62d43360963c93004d7a869fcb98))
+
 ## [0.7.0-beta.43](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.42...v0.7.0-beta.43) (2026-10-12)
 
 
