@@ -25,7 +25,7 @@ const half = '(min-width: 900px) 540px, 100vw';
         <Copy command="brew install lorcanchinnock/tap/shot" />
       </div>
       <ForMacs />
-      <p class="meta">Free and open source. Version {release.version}, for macOS 15 on Apple Silicon.</p>
+      <p class="meta">Free and open source. Version {release.version}, for macOS 15 or later on Apple Silicon.</p>
       <Window>
         <Loop name="hero" label="Pressing ⌘⇧4, drawing an arrow and a note on the screenshot, then pasting it into another app" eager />
       </Window>
@@ -42,8 +42,8 @@ const half = '(min-width: 900px) 540px, 100vw';
   <section>
     <div class="wrap pair">
       <div>
-        <h2 class="say">Press <kbd class="key">A</kbd> for an arrow, or <kbd class="key">B</kbd> to blur a phone number.</h2>
-        <Window><Image src={editor} alt="The annotation editor with arrows, a sticky note, a blurred email address, and notes beside the screenshot" widths={[540, 1080]} sizes={half} /></Window>
+        <h2 class="say">Press <kbd class="key">A</kbd> for an arrow, or <kbd class="key">B</kbd> to blur an email address.</h2>
+        <Window><Image src={editor} alt="The annotation editor with a blurred email address, a highlighted line, numbered counters, an arrow and a sticky note beside the screenshot" widths={[540, 1080]} sizes={half} /></Window>
       </div>
       <div>
         <h2 class="say"><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">5</kbd> records instead. Your face can come too.</h2>
@@ -62,6 +62,7 @@ const half = '(min-width: 900px) 540px, 100vw';
   <section class="small">
     <div class="wrap narrow-text">
       <h2 class="say">Circle the bug, and your coding agent sees exactly what you marked. Or let it ask Shot for your latest screenshot, or the key frames of a recording.</h2>
+      <p>For your marks to reach the agent, turn on <b>Hand captures to agents</b> in <b>Settings › Agents</b>. The <a href="/docs/#using-shot-with-ai-agents">guide</a> shows how to connect your agent.</p>
     </div>
   </section>
 
@@ -81,10 +82,13 @@ const half = '(min-width: 900px) 540px, 100vw';
         <ForMacs />
         <p>Shot isn't notarized by Apple yet, so macOS blocks it the first time:</p>
         <ol class="steps">
-          <li>Open <b>System Settings</b>.</li>
-          <li>Go to <b>Privacy &amp; Security</b> and scroll down to Security.</li>
+          <li>Open Shot from Applications. macOS says it can't verify Shot. Click <b>Done</b>.</li>
+          <li>Open <b>System Settings</b>, go to <b>Privacy &amp; Security</b> and scroll down to Security.</li>
           <li>Click <b>Open Anyway</b> next to the message about Shot, then confirm.</li>
+          <li>In Shot's welcome window, click <b>Grant</b>, turn Shot on under Screen &amp; System Audio Recording, then click <b>Relaunch</b>.</li>
+          <li>Press <kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd> and drag out an area.</li>
         </ol>
+        <p>The <a href="/docs/#first-launch">guide</a> covers the rest of the first launch.</p>
       </div>
       <Image src={openAnyway} alt="The Security section of Privacy & Security, with the Open Anyway button circled next to the message that Shot was blocked" widths={[495, 990]} sizes={half} class="shot" />
     </div>
