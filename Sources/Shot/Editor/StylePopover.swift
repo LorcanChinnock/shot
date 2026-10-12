@@ -33,6 +33,8 @@ protocol StyleEditing: AnyObject, Observable {
     func setDraggingStyle(_ dragging: Bool)
     /// Whether new captures get the screenshot's style; `nil` hides the switch, as the video editor has no screenshot.
     var newCaptureStyle: Binding<Bool>? { get }
+    /// Whether new captures get a saved style other than this screenshot's, so the switch is off but they're still styled.
+    var newCapturesHaveOtherStyle: Bool { get }
     /// Call as the colour editor opens, so its picks start a new undo step.
     func beginColorPick()
 }
@@ -42,6 +44,7 @@ extension StyleEditing {
     var targetHasWindowShadow: Bool { false }
     var thumbnailBackground: RGBA? { nil }
     var newCaptureStyle: Binding<Bool>? { nil }
+    var newCapturesHaveOtherStyle: Bool { false }
 }
 
 /// The style Copy Style took last, in any editor window, photo or video, which Paste Style puts on the selection.
@@ -96,7 +99,7 @@ struct StylePopover<Model: StyleEditing>: View {
                         }
                     }
                     if kind == .capture, let newCaptureStyle = model.newCaptureStyle {
-                        NewCaptureStyleSwitch(isOn: newCaptureStyle)
+                        NewCaptureStyleSwitch(isOn: newCaptureStyle, otherStyleSaved: model.newCapturesHaveOtherStyle)
                     }
                 }
             } else {
@@ -454,17 +457,26 @@ private struct Swatch: View {
 }
 
 /// Use this style for new captures: saves the screenshot's style for new captures to open and copy with.
+/// Off while new captures still get another saved style says so, since the switch alone reads as "new captures are plain".
 private struct NewCaptureStyleSwitch: View {
     let isOn: Binding<Bool>
+    let otherStyleSaved: Bool
 
     var body: some View {
-        HStack(spacing: 10) {
-            Toggle("Use this style for new captures", isOn: isOn)
-                .toggleStyle(BrutalToggleStyle(color: Brutal.mint))
-                .labelsHidden()
-            Text("Use this style for new captures")
-                .font(Brutal.caption)
-                .foregroundStyle(Brutal.ink)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 10) {
+                Toggle("Use this style for new captures", isOn: isOn)
+                    .toggleStyle(BrutalToggleStyle(color: Brutal.mint))
+                    .labelsHidden()
+                Text("Use this style for new captures")
+                    .font(Brutal.caption)
+                    .foregroundStyle(Brutal.ink)
+            }
+            if otherStyleSaved {
+                Text("New captures keep a different saved style.")
+                    .font(Brutal.caption)
+                    .foregroundStyle(Brutal.ink.opacity(0.65))
+            }
         }
         .brutalTip("New captures open and copy with this screenshot's style")
     }
