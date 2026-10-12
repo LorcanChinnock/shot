@@ -14,21 +14,34 @@ enum Toast {
     private static let shadow: CGFloat = 4
 
     /// Shows `message` for something that didn't happen or went wrong, long enough to read.
-    static func error(_ message: String) {
-        show(message, duration: .seconds(5))
+    static func error(_ message: LocalizedStringResource) {
+        error(String(localized: message))
+    }
+
+    /// An error whose text is already localized, such as an error's `localizedDescription`.
+    @_disfavoredOverload
+    static func error<S: StringProtocol>(_ message: S) {
+        show(String(message), duration: .seconds(5))
     }
 
     /// Shows `message`; `duration` nil keeps it visible until the next call. The pointer holds it, and a click dismisses it.
     /// With `undoable`, the toast offers Undo, and the action commits once the toast goes away any other way.
     /// With `cancel`, it offers Cancel for the work it describes.
-    static func show(_ message: String, duration: Duration? = .seconds(1.5), undoable: PendingAction? = nil, cancel: (() -> Void)? = nil) {
+    static func show(_ message: LocalizedStringResource, duration: Duration? = .seconds(1.5), undoable: PendingAction? = nil, cancel: (() -> Void)? = nil) {
+        show(String(localized: message), duration: duration, undoable: undoable, cancel: cancel)
+    }
+
+    /// A toast whose text is already localized.
+    @_disfavoredOverload
+    static func show<S: StringProtocol>(_ message: S, duration: Duration? = .seconds(1.5), undoable: PendingAction? = nil, cancel: (() -> Void)? = nil) {
+        let message = String(message)
         settle()
         self.undoable = undoable
         let panel = panel ?? makePanel()
         let action: ToastView.Action? = if let undoable {
-            ToastView.Action(title: "Undo") { undoable.undo(); hide() }
+            ToastView.Action(title: String(localized: "Undo")) { undoable.undo(); hide() }
         } else if let cancel {
-            ToastView.Action(title: "Cancel", perform: cancel)
+            ToastView.Action(title: String(localized: "Cancel"), perform: cancel)
         } else {
             nil
         }
@@ -48,7 +61,14 @@ enum Toast {
 
     /// Shows `message` until the next call, changing the toast's text in place without announcing it, so a percentage
     /// can tick up without VoiceOver reading every step. Does nothing when `message` is already showing.
-    static func progress(_ message: String) {
+    static func progress(_ message: LocalizedStringResource) {
+        progress(String(localized: message))
+    }
+
+    /// Progress whose text is already localized.
+    @_disfavoredOverload
+    static func progress<S: StringProtocol>(_ message: S) {
+        let message = String(message)
         guard let panel, let shown, undoable == nil else {
             show(message, duration: nil)
             return

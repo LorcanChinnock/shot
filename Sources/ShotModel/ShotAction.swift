@@ -16,19 +16,6 @@ public enum ShotAction: String, CaseIterable, Sendable {
     /// `HotkeyCenter` numbers hotkeys by position.
     case copyPath = "copy-path"
 
-    public var title: String {
-        switch self {
-        case .captureArea: "Capture Area"
-        case .captureFullscreen: "Capture Full Screen"
-        case .captureWindow: "Capture Window"
-        case .record: "Record Area"
-        case .recordFullscreen: "Record Full Screen"
-        case .recordWindow: "Record Window"
-        case .pickColor: "Pick Colour"
-        case .copyPath: "Copy Latest Capture's Path"
-        }
-    }
-
     public var isRecording: Bool {
         switch self {
         case .record, .recordFullscreen, .recordWindow: true
@@ -78,13 +65,6 @@ public enum ShotAction: String, CaseIterable, Sendable {
         case reserved
         /// Another of Shot's actions has it.
         case taken(by: ShotAction)
-
-        public func message(for combo: KeyCombo) -> String {
-            switch self {
-            case .reserved: "\(combo.displayString) is reserved by macOS"
-            case let .taken(action): "\(combo.displayString) is already used by \(action.title)"
-            }
-        }
     }
 
     /// Shortcuts Shot never takes, since a global one would steal them from every app.

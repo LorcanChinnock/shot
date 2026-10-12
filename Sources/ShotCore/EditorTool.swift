@@ -25,19 +25,19 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
 
     public var title: String {
         switch self {
-        case .select: "Select"
-        case .hand: "Hand"
-        case .arrow: "Arrow"
-        case .line: "Line"
-        case .shape: "Shape"
-        case .pen: "Pen"
-        case .text: "Text"
-        case .note: "Sticky note"
-        case .highlight: "Highlight"
-        case .spotlight: "Spotlight"
-        case .redact: "Redact"
-        case .counter: "Counter"
-        case .crop: "Crop"
+        case .select: String(localized: "Select")
+        case .hand: String(localized: "Hand")
+        case .arrow: String(localized: "Arrow")
+        case .line: String(localized: "Line")
+        case .shape: String(localized: "Shape")
+        case .pen: String(localized: "Pen")
+        case .text: String(localized: "Text")
+        case .note: String(localized: "Sticky note")
+        case .highlight: String(localized: "Highlight")
+        case .spotlight: String(localized: "Spotlight")
+        case .redact: String(localized: "Redact")
+        case .counter: String(localized: "Counter")
+        case .crop: String(localized: "Crop")
         }
     }
 

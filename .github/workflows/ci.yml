@@ -124,6 +124,9 @@ jobs:
         run: |
           gh cache list --repo "$GITHUB_REPOSITORY" --ref refs/heads/main --key build- --limit 100 --json key --jq '.[].key' |
             grep -vxF "$KEEP" | while read -r key; do gh cache delete "$key" --repo "$GITHUB_REPOSITORY"; done
+      # Every build extracts the app's strings, so this needs the build above. See scripts/strings.sh.
+      - name: Check strings
+        run: scripts/strings.sh --check
       - name: Test
         if: needs.changes.outputs.core-tests == 'true'
         run: make test ARGS="--skip-build --filter ShotCoreTests"

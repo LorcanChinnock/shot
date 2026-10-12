@@ -7,8 +7,8 @@ public enum VideoConcatenator {
 
         public var errorDescription: String? {
             switch self {
-            case .noSegments: "Nothing was recorded"
-            case .exportFailed: "Couldn't join the recording's segments"
+            case .noSegments: String(localized: "Nothing was recorded")
+            case .exportFailed: String(localized: "Couldn't join the recording's segments")
             }
         }
     }

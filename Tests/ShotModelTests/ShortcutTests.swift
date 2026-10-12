@@ -12,7 +12,6 @@ import Testing
     #expect(ShotAction.record.conflict(for: KeyCombo(keyCode: 49, modifiers: KeyCombo.command), bindings: [:]) == .reserved)
     // ⇧⌘Q is free: only the plain ⌘ keys are everyone's.
     #expect(ShotAction.record.conflict(for: KeyCombo(keyCode: 12, modifiers: KeyCombo.command | KeyCombo.shift), bindings: bindings) == nil)
-    #expect(ShotAction.Conflict.taken(by: .captureArea).message(for: area) == "⇧⌘4 is already used by Capture Area")
 }
 
 @Test func editingAndArrowKeysHaveLabels() {

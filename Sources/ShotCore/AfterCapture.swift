@@ -39,9 +39,9 @@ public struct AfterCapture: Equatable, Sendable {
         } else if quickAccess {
             .quickAccess
         } else if copy {
-            .toast("Copied")
+            .toast(String(localized: "Copied"))
         } else if save {
-            .toast("Saved")
+            .toast(String(localized: "Saved"))
         } else {
             .nothing
         }

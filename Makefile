@@ -13,7 +13,7 @@ INSTALL_DIR ?= /Applications
 # Extra `swift test` flags, e.g. ARGS=--skip-build in CI.
 ARGS ?=
 
-.PHONY: build test test-linux perf perf-app lint bundle app run dist reset-tcc icon clean
+.PHONY: build test test-linux perf perf-app lint strings bundle app run dist reset-tcc icon clean
 
 build:
 	swift build
@@ -32,8 +32,18 @@ perf:
 perf-app:
 	scripts/perf.sh
 
+# On a Mac, also checks Resources/Localizable.xcstrings has every string the app shows; CI's linux job can't.
 lint:
 	scripts/lint.sh
+ifeq ($(shell uname),Darwin)
+	swift build
+	scripts/strings.sh --check
+endif
+
+# Adds new strings to Resources/Localizable.xcstrings and drops ones the source no longer uses.
+strings:
+	swift build
+	scripts/strings.sh
 
 bundle:
 	scripts/bundle.sh

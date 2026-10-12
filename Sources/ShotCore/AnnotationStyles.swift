@@ -11,12 +11,12 @@ public enum BoxShape: String, CaseIterable, Codable, Sendable {
 
     public var title: String {
         switch self {
-        case .rectangle: "Rectangle"
-        case .rounded: "Rounded Rectangle"
-        case .ellipse: "Ellipse"
-        case .triangle: "Triangle"
-        case .diamond: "Diamond"
-        case .star: "Star"
+        case .rectangle: String(localized: "Rectangle")
+        case .rounded: String(localized: "Rounded Rectangle")
+        case .ellipse: String(localized: "Ellipse")
+        case .triangle: String(localized: "Triangle")
+        case .diamond: String(localized: "Diamond")
+        case .star: String(localized: "Star")
         }
     }
 
@@ -82,8 +82,8 @@ public enum Redaction: String, CaseIterable, Codable, Sendable {
 
     public var title: String {
         switch self {
-        case .blur: "Blur"
-        case .pixelate: "Pixelate"
+        case .blur: String(localized: "Blur")
+        case .pixelate: String(localized: "Pixelate")
         }
     }
 
@@ -111,9 +111,9 @@ public enum TextAlign: String, CaseIterable, Codable, Sendable {
 
     public var title: String {
         switch self {
-        case .left: "Align Left"
-        case .center: "Align Centre"
-        case .right: "Align Right"
+        case .left: String(localized: "Align Left")
+        case .center: String(localized: "Align Centre")
+        case .right: String(localized: "Align Right")
         }
     }
 
@@ -151,8 +151,8 @@ public struct SpotlightStyle: Equatable, Hashable, Codable, Sendable {
 
         public var title: String {
             switch self {
-            case .darken: "Darken"
-            case .blur: "Blur"
+            case .darken: String(localized: "Darken")
+            case .blur: String(localized: "Blur")
             }
         }
     }

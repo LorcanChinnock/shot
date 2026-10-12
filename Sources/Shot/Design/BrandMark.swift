@@ -27,8 +27,8 @@ enum BrandMark {
         image.isTemplate = true
         image.accessibilityDescription = switch state {
         case .idle: "Shot"
-        case .recording: "Shot, recording"
-        case .paused: "Shot, recording paused"
+        case .recording: String(localized: "Shot, recording")
+        case .paused: String(localized: "Shot, recording paused")
         }
         return image
     }
