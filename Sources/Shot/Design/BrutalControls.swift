@@ -8,7 +8,7 @@ struct ColorSwatches: View {
     /// The custom colour picked last in this palette, which the rainbow swatch applies again.
     let lastCustom: RGBA?
     var allowsNone = false
-    let customHelp: String
+    let customHelp: LocalizedStringResource
     let choose: (RGBA?) -> Void
     let pickCustom: (RGBA) -> Void
     /// Called as the colour editor opens, so its picks are an undo step of their own rather than joining the last time's.
@@ -16,7 +16,7 @@ struct ColorSwatches: View {
 
     var body: some View {
         if allowsNone {
-            Swatch(color: nil, isSelected: selected == nil, name: "Transparent") { choose(nil) }
+            Swatch(color: nil, isSelected: selected == nil, name: String(localized: "Transparent")) { choose(nil) }
         }
         ForEach(RGBA.presets.indices, id: \.self) { index in
             Swatch(color: RGBA.presets[index], isSelected: selected == RGBA.presets[index], name: EditorToolbar.colorNames[index]) {
@@ -27,7 +27,7 @@ struct ColorSwatches: View {
             custom: selected.flatMap { RGBA.presets.contains($0) ? nil : $0 },
             lastCustom: lastCustom,
             fallback: selected ?? RGBA(1, 1, 1),
-            help: customHelp,
+            help: String(localized: customHelp),
             pick: pickCustom,
             beginPicking: beginPicking
         )
@@ -305,6 +305,22 @@ struct Tile<Label: View>: View {
     let action: () -> Void
     @ViewBuilder let label: Label
     @State private var hovering = false
+
+    init(selected: Bool, color: Color, help: LocalizedStringResource, detail: LocalizedStringResource? = nil, isEnabled: Bool = true, action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
+        self.init(selected: selected, color: color, help: String(localized: help), detail: detail.map { String(localized: $0) }, isEnabled: isEnabled, action: action, label: label)
+    }
+
+    /// A tile whose help is already localized, such as a tool's title.
+    @_disfavoredOverload
+    init<S: StringProtocol>(selected: Bool, color: Color, help: S, detail: String? = nil, isEnabled: Bool = true, action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
+        self.selected = selected
+        self.color = color
+        self.help = String(help)
+        self.detail = detail
+        self.isEnabled = isEnabled
+        self.action = action
+        self.label = label()
+    }
 
     var body: some View {
         Button(action: action) {

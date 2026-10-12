@@ -45,10 +45,10 @@ public enum GalleryFilter: String, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .all: "All"
-        case .screenshots: "Screenshots"
-        case .videos: "Videos"
-        case .gifs: "GIFs"
+        case .all: String(localized: "All")
+        case .screenshots: String(localized: "Screenshots")
+        case .videos: String(localized: "Videos")
+        case .gifs: String(localized: "GIFs")
         }
     }
 
@@ -67,10 +67,10 @@ public enum GallerySort: String, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .newest: "Newest first"
-        case .oldest: "Oldest first"
-        case .name: "Name"
-        case .size: "Largest first"
+        case .newest: String(localized: "Newest first")
+        case .oldest: String(localized: "Oldest first")
+        case .name: String(localized: "Name")
+        case .size: String(localized: "Largest first")
         }
     }
 
@@ -125,23 +125,23 @@ public enum Gallery {
     }
 
     /// Day buckets for a date-sorted list: Today, Yesterday, This Week, This Month, then each older month.
-    /// Any other order is one untitled section.
-    public static func sections(_ items: [GalleryItem], sort: GallerySort, now: Date = Date(), calendar: Calendar = .current) -> [GallerySection] {
+    /// Any other order is one untitled section. Months are named in `locale`.
+    public static func sections(_ items: [GalleryItem], sort: GallerySort, now: Date = Date(), calendar: Calendar = .current, locale: Locale = .current) -> [GallerySection] {
         guard sort.isByDate else {
             return items.isEmpty ? [] : [GallerySection(title: "", items: items)]
         }
         let recent = [
-            ("Today", calendar.dateInterval(of: .day, for: now)),
-            ("Yesterday", calendar.date(byAdding: .day, value: -1, to: now).flatMap { calendar.dateInterval(of: .day, for: $0) }),
-            ("This Week", calendar.dateInterval(of: .weekOfYear, for: now)),
-            ("This Month", calendar.dateInterval(of: .month, for: now)),
+            (String(localized: "Today"), calendar.dateInterval(of: .day, for: now)),
+            (String(localized: "Yesterday"), calendar.date(byAdding: .day, value: -1, to: now).flatMap { calendar.dateInterval(of: .day, for: $0) }),
+            (String(localized: "This Week"), calendar.dateInterval(of: .weekOfYear, for: now)),
+            (String(localized: "This Month"), calendar.dateInterval(of: .month, for: now)),
         ].compactMap { title, interval in interval.map { (title: title, dates: $0.start..<$0.end) } }
         lazy var monthFormatter = {
             let formatter = DateFormatter()
             formatter.calendar = calendar
             formatter.timeZone = calendar.timeZone
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            formatter.dateFormat = "MMMM yyyy"
+            formatter.locale = locale
+            formatter.setLocalizedDateFormatFromTemplate("MMMM yyyy")
             return formatter
         }()
         var lastMonth: (title: String, dates: Range<Date>)?

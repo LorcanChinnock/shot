@@ -270,6 +270,18 @@ struct BrutalSegmented<Value: Hashable>: View {
     let options: [(value: Value, label: String)]
     var color: Color
 
+    init(selection: Binding<Value>, options: [(value: Value, label: LocalizedStringResource)], color: Color) {
+        self.init(selection: selection, options: options.map { ($0.value, String(localized: $0.label)) }, color: color)
+    }
+
+    /// Options whose labels are already localized, such as a filter's titles.
+    @_disfavoredOverload
+    init<S: StringProtocol>(selection: Binding<Value>, options: [(value: Value, label: S)], color: Color) {
+        _selection = selection
+        self.options = options.map { ($0.value, String($0.label)) }
+        self.color = color
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             ForEach(options.indices, id: \.self) { index in
@@ -304,6 +316,17 @@ struct BrutalChip: View {
     let text: String
     var color: Color = .white
 
+    init(text: LocalizedStringResource, color: Color = .white) {
+        self.init(text: String(localized: text), color: color)
+    }
+
+    /// A chip whose text is already localized, or is a number or name.
+    @_disfavoredOverload
+    init<S: StringProtocol>(text: S, color: Color = .white) {
+        self.text = String(text)
+        self.color = color
+    }
+
     var body: some View {
         Text(text)
             .font(.system(size: 11, weight: .heavy))
@@ -317,7 +340,7 @@ struct BrutalChip: View {
 // MARK: Layout
 
 struct SettingsCard<Content: View>: View {
-    let title: String
+    let title: LocalizedStringResource
     var symbol: String?
     @ViewBuilder let content: Content
 
@@ -327,7 +350,7 @@ struct SettingsCard<Content: View>: View {
                 if let symbol {
                     Image(systemName: symbol).font(.system(size: 11, weight: .bold))
                 }
-                Text(title.uppercased()).font(Brutal.sectionCaption).tracking(1.2)
+                Text(String(localized: title).uppercased()).font(Brutal.sectionCaption).tracking(1.2)
             }
             .foregroundStyle(Brutal.ink.opacity(0.75))
             .padding(.bottom, 6)
@@ -347,6 +370,19 @@ struct SettingRow<Control: View>: View {
     var subtitle: String?
     var divider = true
     @ViewBuilder let control: Control
+
+    init(title: LocalizedStringResource, subtitle: LocalizedStringResource? = nil, divider: Bool = true, @ViewBuilder control: () -> Control) {
+        self.init(title: String(localized: title), subtitle: subtitle.map { String(localized: $0) }, divider: divider, control: control)
+    }
+
+    /// A row whose title is already localized, such as an action's.
+    @_disfavoredOverload
+    init<S: StringProtocol>(title: S, subtitle: String? = nil, divider: Bool = true, @ViewBuilder control: () -> Control) {
+        self.title = String(title)
+        self.subtitle = subtitle
+        self.divider = divider
+        self.control = control()
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -370,15 +406,15 @@ struct SettingRow<Control: View>: View {
 }
 
 struct ToggleRow: View {
-    let title: String
-    var subtitle: String?
+    let title: LocalizedStringResource
+    var subtitle: LocalizedStringResource?
     @Binding var isOn: Bool
     var color: Color
     var divider = true
 
     var body: some View {
         SettingRow(title: title, subtitle: subtitle, divider: divider) {
-            Toggle(title, isOn: $isOn).toggleStyle(BrutalToggleStyle(color: color)).labelsHidden()
+            Toggle(String(localized: title), isOn: $isOn).toggleStyle(BrutalToggleStyle(color: color)).labelsHidden()
                 .accessibilityLabel(Text(title))
         }
     }

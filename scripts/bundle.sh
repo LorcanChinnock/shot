@@ -24,6 +24,10 @@ cp "$bin_path/ShotCLI" "$app/Contents/MacOS/shot-cli"
 ditto "$bin_path/Sparkle.framework" "$app/Contents/Frameworks/Sparkle.framework"
 cp Resources/Info.plist "$app/Contents/Info.plist"
 cp Resources/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
+# One .lproj folder per language, where Bundle.main finds the app's strings and the permission prompts' text.
+for catalog in Resources/*.xcstrings; do
+    xcrun xcstringstool compile "$catalog" --output-directory "$app/Contents/Resources"
+done
 build_number="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $build_number" "$app/Contents/Info.plist"
 if [ "$name" = ShotDev ]; then

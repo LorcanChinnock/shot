@@ -17,8 +17,14 @@ extension EnvironmentValues {
 
 extension View {
     /// Explains the view in a tip after a hover: `title`, with `detail` below it when there is one.
-    func brutalTip(_ title: String, detail: String? = nil) -> some View {
-        modifier(TipTrigger(title: title, detail: detail))
+    func brutalTip(_ title: LocalizedStringResource, detail: LocalizedStringResource? = nil) -> some View {
+        modifier(TipTrigger(title: String(localized: title), detail: detail.map { String(localized: $0) }))
+    }
+
+    /// A tip whose text is already localized, or needs no translating, as `Text` takes a string variable as is.
+    @_disfavoredOverload
+    func brutalTip<S: StringProtocol>(_ title: S, detail: String? = nil) -> some View {
+        modifier(TipTrigger(title: String(title), detail: detail))
     }
 
     /// Draws the tips of the views inside over all of them, kept within its bounds. Glass windows install it on their content.

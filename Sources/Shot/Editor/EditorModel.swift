@@ -24,19 +24,19 @@ extension EditorTool {
     /// What the tool does, for its tooltip.
     var summary: String {
         switch self {
-        case .select: "Click an annotation to move, resize or restyle it."
-        case .hand: "Drag to move around when zoomed in."
-        case .arrow: "Drag to point at something."
-        case .line: "Drag to draw a straight line."
-        case .shape: "Drag to draw a box, circle, star or other shape, outlined or filled."
-        case .pen: "Drag to draw freehand."
-        case .text: "Click to type a label."
-        case .note: "Drag to add a sticky note."
-        case .highlight: "Drag over text to highlight it. Hold Shift for a straight line."
-        case .spotlight: "Drag to dim or blur everything outside an area."
-        case .redact: "Drag over private details to blur or pixelate them."
-        case .counter: "Click to add numbered steps: 1, 2, 3…"
-        case .crop: "Drag to choose the area to keep."
+        case .select: String(localized: "Click an annotation to move, resize or restyle it.")
+        case .hand: String(localized: "Drag to move around when zoomed in.")
+        case .arrow: String(localized: "Drag to point at something.")
+        case .line: String(localized: "Drag to draw a straight line.")
+        case .shape: String(localized: "Drag to draw a box, circle, star or other shape, outlined or filled.")
+        case .pen: String(localized: "Drag to draw freehand.")
+        case .text: String(localized: "Click to type a label.")
+        case .note: String(localized: "Drag to add a sticky note.")
+        case .highlight: String(localized: "Drag over text to highlight it. Hold Shift for a straight line.")
+        case .spotlight: String(localized: "Drag to dim or blur everything outside an area.")
+        case .redact: String(localized: "Drag over private details to blur or pixelate them.")
+        case .counter: String(localized: "Click to add numbered steps: 1, 2, 3…")
+        case .crop: String(localized: "Drag to choose the area to keep.")
         }
     }
 }

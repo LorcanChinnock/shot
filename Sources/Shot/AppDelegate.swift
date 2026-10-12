@@ -127,32 +127,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// ⌘X/⌘C/⌘V/⌘A/⌘Z to text fields and ⌥⌘C/⌥⌘V to the image editor.
     private func installEditMenu() {
         let app = NSMenu(title: "Shot")
-        app.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",").target = self
+        app.addItem(withTitle: String(localized: "Settings…"), action: #selector(showSettings), keyEquivalent: ",").target = self
         app.addItem(.separator())
-        app.addItem(withTitle: "Quit Shot", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        app.addItem(withTitle: String(localized: "Quit Shot"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         let appItem = NSMenuItem(title: "Shot", action: nil, keyEquivalent: "")
         appItem.submenu = app
 
-        let file = NSMenu(title: "File")
-        file.addItem(withTitle: "Close Window", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
-        let fileItem = NSMenuItem(title: "File", action: nil, keyEquivalent: "")
+        let file = NSMenu(title: String(localized: "File"))
+        file.addItem(withTitle: String(localized: "Close Window"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        let fileItem = NSMenuItem(title: String(localized: "File"), action: nil, keyEquivalent: "")
         fileItem.submenu = file
 
-        let edit = NSMenu(title: "Edit")
-        edit.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
-        let redo = edit.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "z")
+        let edit = NSMenu(title: String(localized: "Edit"))
+        edit.addItem(withTitle: String(localized: "Undo"), action: Selector(("undo:")), keyEquivalent: "z")
+        let redo = edit.addItem(withTitle: String(localized: "Redo"), action: Selector(("redo:")), keyEquivalent: "z")
         redo.keyEquivalentModifierMask = [.command, .shift]
         edit.addItem(.separator())
-        edit.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
-        edit.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
-        edit.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
-        edit.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        edit.addItem(withTitle: String(localized: "Cut"), action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        edit.addItem(withTitle: String(localized: "Copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        edit.addItem(withTitle: String(localized: "Paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        edit.addItem(withTitle: String(localized: "Select All"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         // The editors'; elsewhere nothing answers them, so they're greyed out. Apply Style to All Images is the image editor's.
         edit.addItem(.separator())
-        edit.addItem(withTitle: "Copy Style", action: Selector(("copyStyle:")), keyEquivalent: "c").keyEquivalentModifierMask = [.command, .option]
-        edit.addItem(withTitle: "Paste Style", action: Selector(("pasteStyle:")), keyEquivalent: "v").keyEquivalentModifierMask = [.command, .option]
-        edit.addItem(withTitle: "Apply Style to All Images", action: Selector(("applyStyleToAllImages:")), keyEquivalent: "")
-        let editItem = NSMenuItem(title: "Edit", action: nil, keyEquivalent: "")
+        edit.addItem(withTitle: String(localized: "Copy Style"), action: Selector(("copyStyle:")), keyEquivalent: "c").keyEquivalentModifierMask = [.command, .option]
+        edit.addItem(withTitle: String(localized: "Paste Style"), action: Selector(("pasteStyle:")), keyEquivalent: "v").keyEquivalentModifierMask = [.command, .option]
+        edit.addItem(withTitle: String(localized: "Apply Style to All Images"), action: Selector(("applyStyleToAllImages:")), keyEquivalent: "")
+        let editItem = NSMenuItem(title: String(localized: "Edit"), action: nil, keyEquivalent: "")
         editItem.submenu = edit
         let main = NSMenu()
         main.addItem(appItem)

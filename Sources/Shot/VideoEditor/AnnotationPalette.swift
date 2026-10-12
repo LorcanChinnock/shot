@@ -92,7 +92,7 @@ struct AnnotationPalette: View {
     private func pickImage() {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.image]
-        panel.message = "Choose an image to show over the video"
+        panel.message = String(localized: "Choose an image to show over the video")
         if panel.runModal() == .OK, let url = panel.url {
             model.addImage(from: url)
         }

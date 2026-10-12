@@ -698,7 +698,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         field.cell?.isScrollable = false
         field.maximumNumberOfLines = 0
         field.lineBreakMode = .byWordWrapping
-        field.placeholderString = "Note"
+        field.placeholderString = String(localized: "Note")
         field.delegate = self
         field.target = self
         field.action = #selector(textFieldAction)
@@ -744,7 +744,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 extension NSView {
     /// A chip beside `point` showing the corner radius being dragged, in points.
     func drawRadiusLabel(_ radius: CGFloat, near point: CGPoint) {
-        let text = NSAttributedString(string: "Radius \(Int(radius.rounded()))", attributes: [
+        let text = NSAttributedString(string: String(localized: "Radius \(Int(radius.rounded()))"), attributes: [
             .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .semibold),
             .foregroundColor: NSColor.white,
         ])

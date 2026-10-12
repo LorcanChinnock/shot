@@ -62,19 +62,19 @@ extension Annotation {
     /// What the layers panel calls it: the first words of a text or note, else its kind.
     public var layerName: String {
         switch kind {
-        case .arrow: "Arrow"
-        case .line: "Line"
+        case .arrow: String(localized: "Arrow")
+        case .line: String(localized: "Line")
         case let .shape(shape, _): shape.title
-        case .highlight: "Highlight"
-        case .pixelate: "Pixelate"
-        case .blur: "Blur"
-        case .spotlight: "Spotlight"
-        case let .text(string, _, _): Self.firstWords(of: string) ?? "Text"
-        case let .note(string, _): Self.firstWords(of: string) ?? "Note"
-        case let .counter(number, _): "Step \(number)"
-        case .freehand: "Pen"
-        case .marker: "Highlighter"
-        case .image: "Image"
+        case .highlight: String(localized: "Highlight")
+        case .pixelate: String(localized: "Pixelate")
+        case .blur: String(localized: "Blur")
+        case .spotlight: String(localized: "Spotlight")
+        case let .text(string, _, _): Self.firstWords(of: string) ?? String(localized: "Text")
+        case let .note(string, _): Self.firstWords(of: string) ?? String(localized: "Note")
+        case let .counter(number, _): String(localized: "Step \(number)")
+        case .freehand: String(localized: "Pen")
+        case .marker: String(localized: "Highlighter")
+        case .image: String(localized: "Image")
         }
     }
 

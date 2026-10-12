@@ -8,6 +8,13 @@
 	<string>Shot</string>
 	<key>CFBundleExecutable</key>
 	<string>Shot</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<!-- The languages Resources/*.xcstrings translate into, so macOS shows the app in the first one the user prefers. -->
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+	</array>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

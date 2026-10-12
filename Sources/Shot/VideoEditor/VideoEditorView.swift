@@ -171,11 +171,11 @@ struct ExportOptionsBar: View {
         }
     }
 
-    private static let speedLockedReason = "Speed isn't available for an MP4 with imports, annotations or transforms. A GIF can change speed."
+    private static let speedLockedReason: LocalizedStringResource = "Speed isn't available for an MP4 with imports, annotations or transforms. A GIF can change speed."
 
     private var speedIsLocked: Bool { model.isComposite && model.options.format == .mp4 }
 
-    private func caption(_ text: String) -> some View {
+    private func caption(_ text: LocalizedStringResource) -> some View {
         Text(text)
             .sectionCaption()
             .fixedSize()
@@ -194,7 +194,7 @@ struct ExportOptionsBar: View {
     }
 
     private static func widthLabel(_ width: Int) -> String {
-        width == VideoExportOptions.originalWidth ? "Full" : "\(width)"
+        width == VideoExportOptions.originalWidth ? String(localized: "Full") : "\(width)"
     }
 
     private static func speedLabel(_ speed: Double) -> String {

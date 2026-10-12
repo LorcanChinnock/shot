@@ -54,7 +54,7 @@ private struct QuickAccessCardView: View {
                 .interpolation(.high)
                 .aspectRatio(contentMode: .fit)
                 .frame(width: QuickAccessCard.width, height: card.height)
-                .accessibilityLabel(Text("\(card.isVideo ? "Recording" : "Screenshot") \(card.fileURL.lastPathComponent)"))
+                .accessibilityLabel(Text(card.isVideo ? "Recording \(card.fileURL.lastPathComponent)" : "Screenshot \(card.fileURL.lastPathComponent)"))
             if hovering {
                 hoverActions
                     .transition(.opacity)
@@ -128,7 +128,7 @@ private struct QuickAccessCardView: View {
 
 struct CornerButton: View {
     let symbol: String
-    let help: String
+    let help: LocalizedStringResource
     let action: () -> Void
 
     var body: some View {

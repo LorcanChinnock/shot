@@ -346,7 +346,7 @@ final class Recorder: NSObject {
                 CameraBubble.shared.hide()
             }
             model.cameraOn = CameraBubble.shared.isVisible
-            Toast.error("Couldn't \(wasVisible ? "hide" : "show") the camera bubble in the recording")
+            Toast.error(wasVisible ? "Couldn't hide the camera bubble in the recording" : "Couldn't show the camera bubble in the recording")
             return
         }
     }

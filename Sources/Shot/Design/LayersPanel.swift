@@ -353,7 +353,7 @@ private struct LayerRowView<Grip: Gesture>: View {
 private struct RowButton: View {
     let symbol: String
     let isOn: Bool
-    let label: String
+    let label: LocalizedStringResource
     let action: () -> Void
     @State private var isHovered = false
     @Environment(\.isEnabled) private var isEnabled

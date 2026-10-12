@@ -19,8 +19,8 @@ public enum CompositionBuilder {
 
         public var errorDescription: String? {
             switch self {
-            case .noVideo(let name): "\(name) has no video to show"
-            case .cannotInsert(let name): "Couldn't add \(name) to the video"
+            case .noVideo(let name): String(localized: "\(name) has no video to show")
+            case .cannotInsert(let name): String(localized: "Couldn't add \(name) to the video")
             }
         }
     }
@@ -44,7 +44,7 @@ public enum CompositionBuilder {
         var frameRate: Float = 30
         for track in project.videoTracks {
             guard let target = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
-                throw BuildError.cannotInsert("the video")
+                throw BuildError.cannotInsert(String(localized: "the video"))
             }
             for clip in track.clips {
                 guard let source = try await asset(clip.source).loadTracks(withMediaType: .video).first else {
@@ -70,7 +70,7 @@ public enum CompositionBuilder {
         var parameters: [AVMutableAudioMixInputParameters] = []
         for track in project.tracks where track.kind == .audio && !track.isMuted {
             guard let target = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else {
-                throw BuildError.cannotInsert("the sound")
+                throw BuildError.cannotInsert(String(localized: "the sound"))
             }
             let mix = AVMutableAudioMixInputParameters(track: target)
             for clip in track.clips {
@@ -350,8 +350,8 @@ public enum ProjectExporter {
 
         public var errorDescription: String? {
             switch self {
-            case .failed: "Couldn't export the video"
-            case .unsupportedFileType: "Can't write this kind of video"
+            case .failed: String(localized: "Couldn't export the video")
+            case .unsupportedFileType: String(localized: "Can't write this kind of video")
             }
         }
     }

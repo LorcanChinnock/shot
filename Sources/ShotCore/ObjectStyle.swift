@@ -158,10 +158,10 @@ public enum ShadowPreset: String, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .soft: "Soft"
-        case .float: "Float"
-        case .contact: "Contact"
-        case .glow: "Glow"
+        case .soft: String(localized: "Soft")
+        case .float: String(localized: "Float")
+        case .contact: String(localized: "Contact")
+        case .glow: String(localized: "Glow")
         }
     }
 

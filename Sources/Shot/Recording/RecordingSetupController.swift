@@ -10,7 +10,13 @@ private let log = Logger.shot("recording")
 enum RecordingMode: String, CaseIterable {
     case area, screen, window
 
-    var title: String { self == .screen ? "Full Screen" : rawValue.capitalized }
+    var title: String {
+        switch self {
+        case .area: String(localized: "Area")
+        case .screen: String(localized: "Full Screen")
+        case .window: String(localized: "Window")
+        }
+    }
 }
 
 @MainActor
@@ -510,7 +516,7 @@ private struct SetupBarView: View {
 private struct OptionToggle: View {
     let on: Bool
     let symbol: String
-    let help: String
+    let help: LocalizedStringResource
     let action: () -> Void
 
     var body: some View {

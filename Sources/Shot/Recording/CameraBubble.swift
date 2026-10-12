@@ -12,9 +12,9 @@ enum CameraError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .noCamera: "No camera found"
-        case .cannotUseCamera: "The camera is in use or unavailable"
-        case .regionTooSmall: "The area is too small for the camera bubble"
+        case .noCamera: String(localized: "No camera found")
+        case .cannotUseCamera: String(localized: "The camera is in use or unavailable")
+        case .regionTooSmall: String(localized: "The area is too small for the camera bubble")
         }
     }
 }

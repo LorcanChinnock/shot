@@ -15,6 +15,7 @@ private func day(_ month: Int, _ day: Int, hour: Int = 12) -> Date {
 
 // Wednesday 7 October 2026.
 private let now = day(10, 7)
+private let locale = Locale(identifier: "en_US")
 
 private func item(_ name: String, _ date: Date, bytes: Int = 1) -> GalleryItem {
     let kind = GalleryKind(fileExtension: (name as NSString).pathExtension)!
@@ -70,7 +71,7 @@ private func item(_ name: String, _ date: Date, bytes: Int = 1) -> GalleryItem {
         item("sep2.png", day(9, 2)),
         item("old.png", day(1, 15)),
     ]
-    let sections = Gallery.sections(items, sort: .newest, now: now, calendar: calendar)
+    let sections = Gallery.sections(items, sort: .newest, now: now, calendar: calendar, locale: locale)
     #expect(sections.map(\.title) == ["Today", "Yesterday", "This Week", "This Month", "September 2026", "January 2026"])
     #expect(sections[4].items.map(\.name) == ["sep.png", "sep2.png"])
 }
@@ -86,15 +87,21 @@ private func item(_ name: String, _ date: Date, bytes: Int = 1) -> GalleryItem {
         item("dec.png", day(12, 31).addingTimeInterval(-366 * 86_400)),
     ]
     let expected = ["Today", "Yesterday", "This Month", "September 2026", "August 2026", "December 2025"]
-    #expect(Gallery.sections(items, sort: .newest, now: now, calendar: calendar).map(\.title) == expected)
-    #expect(Gallery.sections(items.reversed(), sort: .oldest, now: now, calendar: calendar).map(\.title) == expected.reversed())
+    #expect(Gallery.sections(items, sort: .newest, now: now, calendar: calendar, locale: locale).map(\.title) == expected)
+    #expect(Gallery.sections(items.reversed(), sort: .oldest, now: now, calendar: calendar, locale: locale).map(\.title) == expected.reversed())
+}
+
+@Test func olderMonthsAreNamedInTheLocale() {
+    let items = [item("sep.png", day(9, 2))]
+    let sections = Gallery.sections(items, sort: .newest, now: now, calendar: calendar, locale: Locale(identifier: "fr_FR"))
+    #expect(sections.map(\.title) == ["septembre 2026"])
 }
 
 @Test func nonDateSortIsOneSection() {
     let items = [item("a.png", now), item("b.png", day(1, 1))]
-    #expect(Gallery.sections(items, sort: .name, now: now, calendar: calendar).map(\.items.count) == [2])
-    #expect(Gallery.sections([], sort: .name, now: now, calendar: calendar).isEmpty)
-    #expect(Gallery.sections([], sort: .newest, now: now, calendar: calendar).isEmpty)
+    #expect(Gallery.sections(items, sort: .name, now: now, calendar: calendar, locale: locale).map(\.items.count) == [2])
+    #expect(Gallery.sections([], sort: .name, now: now, calendar: calendar, locale: locale).isEmpty)
+    #expect(Gallery.sections([], sort: .newest, now: now, calendar: calendar, locale: locale).isEmpty)
 }
 
 @Test func renameKeepsExtensionAndCleansName() {

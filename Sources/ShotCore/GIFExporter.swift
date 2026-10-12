@@ -63,9 +63,9 @@ public enum GIFExporter {
 
         public var errorDescription: String? {
             switch self {
-            case .noVideoTrack: "The recording has no video track"
-            case .cannotCreateDestination: "Couldn't create the GIF file"
-            case .finalizeFailed: "Couldn't finish writing the GIF"
+            case .noVideoTrack: String(localized: "The recording has no video track")
+            case .cannotCreateDestination: String(localized: "Couldn't create the GIF file")
+            case .finalizeFailed: String(localized: "Couldn't finish writing the GIF")
             }
         }
     }

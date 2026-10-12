@@ -27,7 +27,7 @@ private struct ShotMenu: View {
 
     var body: some View {
         if state.isRecording {
-            ActionButton(action: .record, title: "Stop Recording", coordinator: coordinator)
+            ActionButton(action: .record, title: String(localized: "Stop Recording"), coordinator: coordinator)
             Button(state.isPaused ? "Resume Recording" : "Pause Recording") { coordinator.togglePause() }
             Divider()
         }

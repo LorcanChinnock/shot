@@ -177,10 +177,10 @@ final class GalleryModel {
             return
         }
         let alert = NSAlert()
-        alert.messageText = "Open \(items.count) items?"
-        alert.informativeText = "Each one opens in its own editor window."
-        alert.addButton(withTitle: "Open \(items.count)")
-        alert.addButton(withTitle: "Cancel")
+        alert.messageText = String(localized: "Open \(items.count) items?")
+        alert.informativeText = String(localized: "Each one opens in its own editor window.")
+        alert.addButton(withTitle: String(localized: "Open \(items.count)"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
         alert.beginSheetModal(for: window) { [weak self] response in
             if response == .alertFirstButtonReturn {
                 items.forEach { self?.onEdit?($0.url) }
@@ -200,7 +200,7 @@ final class GalleryModel {
         } else {
             Clipboard.copy(fileURLs: items.map(\.url))
         }
-        Toast.show(items.count == 1 ? "Copied" : "Copied \(items.count) files")
+        Toast.show("Copied \(items.count) files")
     }
 
     func exportGIF(_ item: GalleryItem) {
@@ -213,9 +213,9 @@ final class GalleryModel {
 
     func rename(_ item: GalleryItem) {
         let alert = NSAlert()
-        alert.messageText = "Rename"
-        alert.addButton(withTitle: "Rename")
-        alert.addButton(withTitle: "Cancel")
+        alert.messageText = String(localized: "Rename")
+        alert.addButton(withTitle: String(localized: "Rename"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
         let field = NSTextField(string: item.url.deletingPathExtension().lastPathComponent)
         field.frame = NSRect(x: 0, y: 0, width: 300, height: 24)
         alert.accessoryView = field
@@ -270,9 +270,9 @@ final class GalleryModel {
         selection.subtract(trashed)
         if trashed.count < items.count {
             let failed = items.count - trashed.count
-            Toast.error(failed == 1 ? "Couldn't move 1 file to the Trash" : "Couldn't move \(failed) files to the Trash")
+            Toast.error("Couldn't move \(failed) files to the Trash")
         } else {
-            Toast.show(items.count == 1 ? "Moved to the Trash (⌘Z to undo)" : "Moved \(items.count) files to the Trash (⌘Z to undo)")
+            Toast.show("Moved \(items.count) files to the Trash (⌘Z to undo)")
         }
         if !moves.isEmpty {
             trashHistory.append(moves)
@@ -295,7 +295,7 @@ final class GalleryModel {
         }
         selection = Set(restored)
         reload()
-        Toast.show(restored.count == 1 ? "Restored from the Trash" : "Restored \(restored.count) files from the Trash")
+        Toast.show("Restored \(restored.count) files from the Trash")
     }
 
     func zoom(by step: Double) {

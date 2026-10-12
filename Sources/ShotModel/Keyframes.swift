@@ -7,16 +7,6 @@ import Foundation
 public enum Easing: String, Codable, CaseIterable, Sendable {
     case linear, easeIn, easeOut, easeInOut, spring
 
-    public var title: String {
-        switch self {
-        case .linear: "Linear"
-        case .easeIn: "Ease in"
-        case .easeOut: "Ease out"
-        case .easeInOut: "Ease in-out"
-        case .spring: "Spring"
-        }
-    }
-
     /// How far along the move from 0 to 1 a fraction `t` of the time has got; 0 at 0 and 1 at 1. A spring overshoots on the way.
     public func progress(_ t: Double) -> Double {
         let t = min(max(t, 0), 1)

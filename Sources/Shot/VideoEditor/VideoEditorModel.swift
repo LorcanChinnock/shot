@@ -167,10 +167,10 @@ final class VideoEditorModel {
         do {
             let duration = try await asset.load(.duration).seconds
             guard duration > 0 else {
-                throw LoadFailure(reason: "it has no length")
+                throw LoadFailure(reason: String(localized: "it has no length"))
             }
             guard let track = try await asset.loadTracks(withMediaType: .video).first else {
-                throw LoadFailure(reason: "it has no video track")
+                throw LoadFailure(reason: String(localized: "it has no video track"))
             }
             let (naturalSize, transform) = try await track.load(.naturalSize, .preferredTransform)
             let size = naturalSize.applying(transform)
@@ -182,7 +182,7 @@ final class VideoEditorModel {
             throw failure
         } catch {
             log.error("Could not load video: \(error.localizedDescription, privacy: .public)")
-            throw LoadFailure(reason: "it isn't a video Shot can read")
+            throw LoadFailure(reason: String(localized: "it isn't a video Shot can read"))
         }
         rebuildTask?.cancel()
         itemIsComposite = false
@@ -398,7 +398,7 @@ final class VideoEditorModel {
         }
         selectedClipID = nil
         guard let cut = project.deleting(clip: id) else {
-            Toast.error(project.clip(id).map { _ in "Can't delete this clip" } ?? "Can't cut all of the video")
+            Toast.error(project.clip(id).map { _ in String(localized: "Can't delete this clip") } ?? String(localized: "Can't cut all of the video"))
             return true
         }
         let joinedAt = project.main.clips.first { $0.id == id }?.start ?? playhead
@@ -826,7 +826,7 @@ final class VideoEditorModel {
         }
         let options = options, plan = VideoExportPlan(project: project, options: options)
         let output = FileNaming.uniqueURL(in: fileURL.deletingLastPathComponent(), date: Date(), pathExtension: options.format.fileExtension, prefix: Preferences().filePrefix)
-        var note = ""
+        var truncated = false
         let progress = PercentProgress { percent in
             Task { @MainActor in
                 Toast.progress("Exporting… \(percent)%")
@@ -834,7 +834,7 @@ final class VideoEditorModel {
         }
         let exported = await exporting {
             let outcome = try await plan.run(to: output, progress: progress.report)
-            note = outcome.truncated ? " (first \(Int(GIFExporter.maxDuration)) s only)" : ""
+            truncated = outcome.truncated
             log.notice("Exported \(plan.kind.rawValue, privacy: .public) at \(options.speed, privacy: .public)×, muted \(options.muted, privacy: .public), passthrough \(outcome.passthrough, privacy: .public), \(outcome.frameCount ?? 0, privacy: .public) GIF frames")
         }
         guard exported else {
@@ -842,7 +842,7 @@ final class VideoEditorModel {
             return
         }
         Clipboard.copy(fileURL: output)
-        Toast.show("Exported and copied \(output.lastPathComponent)\(note)", duration: .seconds(3))
+        Toast.show(truncated ? "Exported and copied \(output.lastPathComponent) (first \(Int(GIFExporter.maxDuration)) s only)" : "Exported and copied \(output.lastPathComponent)", duration: .seconds(3))
     }
 
     /// Works out `estimatedSize` for the current trim, cuts and options; call again when any change.
@@ -1334,7 +1334,7 @@ extension VideoEditorModel: StyleEditing {
     }
 
     var targetStyleTitle: String {
-        selectedAnnotation == nil && targetStyleKind != nil ? "CLIP STYLE" : targetStyleKind?.title ?? ""
+        selectedAnnotation == nil && targetStyleKind != nil ? String(localized: "CLIP STYLE") : targetStyleKind?.title ?? ""
     }
 
     var targetHasTransparency: Bool {

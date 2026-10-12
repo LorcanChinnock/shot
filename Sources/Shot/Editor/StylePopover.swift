@@ -86,15 +86,15 @@ struct StylePopover<Model: StyleEditing>: View {
                 } else {
                     ForEach(rows, id: \.title) { presetRow in
                         tiles(presetRow)
-                        if presetRow.title == "SHADOW", let shadow = style.shadow {
+                        if presetRow.title == String(localized: "SHADOW"), let shadow = style.shadow {
                             shadowSliders(shadow)
                         }
-                        if presetRow.title == "BORDER", let border = style.border, border.kind != .hairline {
+                        if presetRow.title == String(localized: "BORDER"), let border = style.border, border.kind != .hairline {
                             borderOptions(border, on: kind)
                         }
                     }
                     if kind.takesCorners {
-                        row("CORNERS") {
+                        row(String(localized: "CORNERS")) {
                             slider(value: model.targetCornerRadius, range: 0...48, name: "Corner radius", set: { model.setTargetCornerRadius($0) })
                         }
                     }
@@ -149,20 +149,20 @@ struct StylePopover<Model: StyleEditing>: View {
             change(&candidate)
             return Preset(id: id, title: title, style: candidate, selected: selected, swatch: swatch)
         }
-        let shadows = [preset("shadow-none", "None", selected: style.shadow == nil, swatch: Swatch()) { $0.shadow = nil }]
+        let shadows = [preset("shadow-none", String(localized: "None"), selected: style.shadow == nil, swatch: Swatch()) { $0.shadow = nil }]
             + ShadowPreset.allCases.map { shadowPreset in
                 let shadow = shadowPreset.shadow(scale: model.scale)
                 return preset("shadow-\(shadowPreset.rawValue)", shadowPreset.title, selected: style.shadow == shadow, swatch: Swatch(shadow: shadowPreset)) { $0.shadow = shadow }
             }
-        var rows = [PresetRow(title: "SHADOW", presets: shadows)]
+        var rows = [PresetRow(title: String(localized: "SHADOW"), presets: shadows)]
         let borderKinds = kind.borders(transparent: model.targetHasTransparency)
         if !borderKinds.isEmpty {
-            let borders = [preset("border-none", "None", selected: style.border == nil, swatch: Swatch()) { $0.border = nil }]
+            let borders = [preset("border-none", String(localized: "None"), selected: style.border == nil, swatch: Swatch()) { $0.border = nil }]
                 + borderKinds.map { borderKind in
                     let border = model.newBorder(borderKind)
                     return preset("border-\(borderKind.rawValue)", borderKind.title, selected: style.border?.kind == borderKind, swatch: Swatch(border: borderKind)) { $0.border = border }
                 }
-            rows.append(PresetRow(title: "BORDER", presets: borders))
+            rows.append(PresetRow(title: String(localized: "BORDER"), presets: borders))
         }
         return rows
     }
@@ -307,14 +307,14 @@ struct StylePopover<Model: StyleEditing>: View {
         }
     }
 
-    private func label(_ text: String) -> some View {
+    private func label(_ text: LocalizedStringResource) -> some View {
         Text(text)
             .font(Brutal.caption)
             .foregroundStyle(Brutal.ink.opacity(0.6))
             .frame(width: 60, alignment: .leading)
     }
 
-    private func slider(value: CGFloat, range: ClosedRange<CGFloat>, name: String, set: @escaping (CGFloat) -> Void) -> some View {
+    private func slider(value: CGFloat, range: ClosedRange<CGFloat>, name: LocalizedStringResource, set: @escaping (CGFloat) -> Void) -> some View {
         BrutalSlider(
             value: Binding(get: { Double(value) }, set: { set(CGFloat($0)) }),
             range: Double(range.lowerBound)...Double(range.upperBound),
@@ -384,10 +384,10 @@ extension StyleKind {
     /// The Style popover's heading.
     var title: String {
         switch self {
-        case .capture: "SCREENSHOT STYLE"
-        case .image: "IMAGE STYLE"
-        case .mark: "SHAPE STYLE"
-        case .text: "TEXT STYLE"
+        case .capture: String(localized: "SCREENSHOT STYLE")
+        case .image: String(localized: "IMAGE STYLE")
+        case .mark: String(localized: "SHAPE STYLE")
+        case .text: String(localized: "TEXT STYLE")
         }
     }
 }
@@ -395,9 +395,9 @@ extension StyleKind {
 extension Border.Kind {
     var title: String {
         switch self {
-        case .hairline: "Hairline"
-        case .solid: "Solid"
-        case .outline: "Outline"
+        case .hairline: String(localized: "Hairline")
+        case .solid: String(localized: "Solid")
+        case .outline: String(localized: "Outline")
         }
     }
 }

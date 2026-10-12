@@ -17,8 +17,14 @@ enum BrutalMenuEntry {
     case header(String)
     case divider
 
-    static func item(_ title: String, symbol: String? = nil, shortcut: String? = nil, selected: Bool = false, enabled: Bool = true, action: @escaping () -> Void) -> Self {
-        .button(BrutalMenuItem(title: title, symbol: symbol, shortcut: shortcut, isSelected: selected, isEnabled: enabled, action: action))
+    static func item(_ title: LocalizedStringResource, symbol: String? = nil, shortcut: String? = nil, selected: Bool = false, enabled: Bool = true, action: @escaping () -> Void) -> Self {
+        item(String(localized: title), symbol: symbol, shortcut: shortcut, selected: selected, enabled: enabled, action: action)
+    }
+
+    /// An item whose title is already localized, or is a name such as a device's.
+    @_disfavoredOverload
+    static func item<S: StringProtocol>(_ title: S, symbol: String? = nil, shortcut: String? = nil, selected: Bool = false, enabled: Bool = true, action: @escaping () -> Void) -> Self {
+        .button(BrutalMenuItem(title: String(title), symbol: symbol, shortcut: shortcut, isSelected: selected, isEnabled: enabled, action: action))
     }
 
     fileprivate var pickable: BrutalMenuItem? {
@@ -33,14 +39,14 @@ enum BrutalMenuEntry {
 /// The menu is its own window, so it draws over everything in the window and is never clipped.
 struct BrutalDropdown<Label: View>: View {
     /// What the menu is for, which VoiceOver reads as the button's label.
-    let title: String
+    let title: LocalizedStringResource
     let entries: [BrutalMenuEntry]
     @ViewBuilder let label: Label
     @State private var menu = DropdownMenu()
 
     var body: some View {
         Button {
-            menu.open(title, entries)
+            menu.open(String(localized: title), entries)
         } label: {
             label
         }
