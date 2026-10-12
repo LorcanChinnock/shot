@@ -443,7 +443,15 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     /// bounds, and mirrors when flipped. An image keeps its aspect ratio and never flips.
     /// A radius handle sets one radius for all four corners from how far along its diagonal `point` is; pass the
     /// `tolerance` its handles were placed with. A handle the kind doesn't have changes nothing.
-    public mutating func resize(_ handle: AnnotationHandle, to point: CGPoint, tolerance: CGFloat = 0) {
+    ///
+    /// `constrain` (Shift) and `fromCenter` (Option) work as they do when drawing:
+    /// - A box corner keeps the proportions it started with; an edge keeps them too, growing the other axis around its centre.
+    ///   A note keeps its own text-fitting rules and ignores both.
+    /// - A line or arrow end snaps to 45° steps around the other end.
+    /// - An image corner, which keeps its proportions by default, resizes freely with `constrain`.
+    /// - With `fromCenter`, the opposite side mirrors the drag, so the shape grows around its centre (a line or arrow's
+    ///   ends move symmetrically around its midpoint, and an edge mirrors only on its own axis).
+    public mutating func resize(_ handle: AnnotationHandle, to point: CGPoint, tolerance: CGFloat = 0, constrain: Bool = false, fromCenter: Bool = false) {
         if case let .radius(corner) = handle {
             if let (rect, _) = roundedBox {
                 let cornerPoint = corner.point(in: rect)
@@ -454,28 +462,28 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         }
         /// `rect`'s corners with the handle's sides moved to `point`; past the opposite side, `max` is less than `min`.
         func corners(_ rect: CGRect) -> (min: CGPoint, max: CGPoint) {
-            var minX = rect.minX, minY = rect.minY, maxX = rect.maxX, maxY = rect.maxY
-            switch handle.dx {
-            case -1: minX = point.x
-            case 1: maxX = point.x
-            default: break
-            }
-            switch handle.dy {
-            case -1: minY = point.y
-            case 1: maxY = point.y
-            default: break
-            }
-            return (CGPoint(x: minX, y: minY), CGPoint(x: maxX, y: maxY))
+            Self.boxCorners(of: rect, handle: handle, to: point, constrain: constrain, fromCenter: fromCenter)
+        }
+        /// The ends of a line or arrow with the one `handle` names moved to `point`.
+        func ends(_ from: CGPoint, _ to: CGPoint) -> (from: CGPoint, to: CGPoint) {
+            let middle = CGPoint(x: (from.x + to.x) / 2, y: (from.y + to.y) / 2)
+            let fixed = handle == .start ? to : from
+            let anchor = fromCenter ? middle : fixed
+            let moved = constrain ? Geometry.snapped(from: anchor, to: point) : point
+            let other = fromCenter ? CGPoint(x: 2 * middle.x - moved.x, y: 2 * middle.y - moved.y) : fixed
+            return handle == .start ? (moved, other) : (other, moved)
         }
         func box(_ rect: CGRect) -> CGRect {
             let (min, max) = corners(rect)
             return Geometry.normalized(from: min, to: max)
         }
         switch (kind, handle) {
-        case let (.arrow(_, to), .start): kind = .arrow(from: point, to: to)
-        case let (.arrow(from, _), .end): kind = .arrow(from: from, to: point)
-        case let (.line(_, to), .start): kind = .line(from: point, to: to)
-        case let (.line(from, _), .end): kind = .line(from: from, to: point)
+        case let (.arrow(from, to), .start), let (.arrow(from, to), .end):
+            let moved = ends(from, to)
+            kind = .arrow(from: moved.from, to: moved.to)
+        case let (.line(from, to), .start), let (.line(from, to), .end):
+            let moved = ends(from, to)
+            kind = .line(from: moved.from, to: moved.to)
         case (.arrow(let from, let to), .mid), (.line(let from, let to), .mid):
             let drag = CGVector(dx: point.x - (from.x + to.x) / 2, dy: point.y - (from.y + to.y) / 2)
             bend = hypot(drag.dx, drag.dy) < Self.minBend ? nil : drag
@@ -495,23 +503,74 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             let (min, max) = corners(rect)
             kind = .marker(Freehand.scaled(points, from: rect, min: min, max: max))
         case let (.image(image, rect), _):
-            kind = .image(image, rect: Self.resizedImageRect(rect, handle: handle, to: point))
+            kind = .image(image, rect: Self.resizedImageRect(rect, handle: handle, to: point, free: constrain, fromCenter: fromCenter))
         }
     }
 
-    /// The opposite corner stays put and the image grows or shrinks by whichever axis was dragged further,
-    /// down to `AnnotationImage.minSide` on its shorter side. An edge handle changes nothing.
-    private static func resizedImageRect(_ rect: CGRect, handle: AnnotationHandle, to point: CGPoint) -> CGRect {
+    /// `rect`'s corners with `handle`'s sides moved to `point`, in the order `resize` needs them: past the opposite side,
+    /// `max` is less than `min`. See `resize` for `constrain` and `fromCenter`.
+    private static func boxCorners(of rect: CGRect, handle: AnnotationHandle, to point: CGPoint, constrain: Bool, fromCenter: Bool) -> (min: CGPoint, max: CGPoint) {
+        let sideX = CGFloat(handle.dx), sideY = CGFloat(handle.dy)
+        let centre = CGPoint(x: rect.midX, y: rect.midY)
+        var point = point
+        // A corner scales both axes by the same factor, whichever the pointer has dragged further, and follows the pointer
+        // across the anchor so the box can still flip.
+        if constrain, sideX != 0, sideY != 0, rect.width > 0, rect.height > 0 {
+            let anchor = fromCenter ? centre : handle.opposite.point(in: rect)
+            let half: CGFloat = fromCenter ? 0.5 : 1
+            let dx = point.x - anchor.x, dy = point.y - anchor.y
+            let factor = max(abs(dx) / (rect.width * half), abs(dy) / (rect.height * half))
+            point = CGPoint(
+                x: anchor.x + (dx == 0 ? sideX : dx < 0 ? -1 : 1) * rect.width * half * factor,
+                y: anchor.y + (dy == 0 ? sideY : dy < 0 ? -1 : 1) * rect.height * half * factor
+            )
+        }
+        func axis(_ side: CGFloat, to value: CGFloat, low: CGFloat, high: CGFloat) -> (low: CGFloat, high: CGFloat) {
+            switch side {
+            case -1: (value, fromCenter ? low + high - value : high)
+            case 1: (fromCenter ? low + high - value : low, value)
+            default: (low, high)
+            }
+        }
+        var (minX, maxX) = axis(sideX, to: point.x, low: rect.minX, high: rect.maxX)
+        var (minY, maxY) = axis(sideY, to: point.y, low: rect.minY, high: rect.maxY)
+        // An edge keeps the proportions by growing the other axis around its centre.
+        if constrain, (sideX == 0) != (sideY == 0), rect.width > 0, rect.height > 0 {
+            if sideX != 0 {
+                let height = abs(maxX - minX) * rect.height / rect.width
+                (minY, maxY) = (centre.y - height / 2, centre.y + height / 2)
+            } else {
+                let width = abs(maxY - minY) * rect.width / rect.height
+                (minX, maxX) = (centre.x - width / 2, centre.x + width / 2)
+            }
+        }
+        return (CGPoint(x: minX, y: minY), CGPoint(x: maxX, y: maxY))
+    }
+
+    /// The opposite corner stays put and the image grows or shrinks by whichever axis was dragged further, down to
+    /// `AnnotationImage.minSide` on its shorter side. With `free`, each axis follows the pointer on its own, down to
+    /// `minSide` on each. With `fromCenter`, the centre stays put instead. An edge handle changes nothing.
+    private static func resizedImageRect(_ rect: CGRect, handle: AnnotationHandle, to point: CGPoint, free: Bool, fromCenter: Bool) -> CGRect {
         guard handle.dx != 0, handle.dy != 0, rect.width > 0, rect.height > 0 else {
             return rect
         }
-        let anchor = handle.opposite.point(in: rect)
-        let factor = max(
-            (point.x - anchor.x) * CGFloat(handle.dx) / rect.width,
-            (point.y - anchor.y) * CGFloat(handle.dy) / rect.height,
-            AnnotationImage.minSide / min(rect.width, rect.height)
-        )
-        let width = rect.width * factor, height = rect.height * factor
+        let centre = CGPoint(x: rect.midX, y: rect.midY)
+        let anchor = fromCenter ? centre : handle.opposite.point(in: rect)
+        // How far the pointer is from the anchor, along the handle's own diagonal; a centre anchor counts for half a side.
+        let reachX = (point.x - anchor.x) * CGFloat(handle.dx), reachY = (point.y - anchor.y) * CGFloat(handle.dy)
+        let share: CGFloat = fromCenter ? 2 : 1
+        let width: CGFloat, height: CGFloat
+        if free {
+            width = max(reachX * share, AnnotationImage.minSide)
+            height = max(reachY * share, AnnotationImage.minSide)
+        } else {
+            let factor = max(reachX * share / rect.width, reachY * share / rect.height, AnnotationImage.minSide / min(rect.width, rect.height))
+            width = rect.width * factor
+            height = rect.height * factor
+        }
+        if fromCenter {
+            return CGRect(x: centre.x - width / 2, y: centre.y - height / 2, width: width, height: height)
+        }
         return CGRect(x: handle.dx < 0 ? anchor.x - width : anchor.x, y: handle.dy < 0 ? anchor.y - height : anchor.y, width: width, height: height)
     }
 

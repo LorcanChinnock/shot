@@ -18,6 +18,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private var resizeHandle: AnnotationHandle?
     /// The selection as it was when the resize began; every drag resizes from it.
     private var resizeStart: Annotation?
+    /// While Space is held during a resize, the pointer moves the whole shape: where it was pressed, and the shape then.
+    private var spaceMove: (origin: CGPoint, shape: Annotation)?
     /// The zoom and scroll position, or nil to fit the canvas to the view as it resizes.
     /// They're view state, not part of the document, so they aren't undoable.
     private var zoomedViewport: Viewport?
@@ -302,12 +304,12 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         let point = imagePoint(event)
         defer { lastPoint = point }
         if resizeHandle != nil {
-            dragSelection(to: point, from: last)
+            dragSelection(to: point, from: last, modifiers: event.modifierFlags)
             return
         }
         switch model.tool {
         case .select:
-            dragSelection(to: point, from: last)
+            dragSelection(to: point, from: last, modifiers: event.modifierFlags)
         case .crop:
             cropDraft = Geometry.normalized(from: clampedToCanvas(start), to: clampedToCanvas(point))
             needsDisplay = true
@@ -326,8 +328,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
     }
 
-    /// Resizes the selection from the handle pressed, else moves it with the pointer.
-    private func dragSelection(to point: CGPoint, from last: CGPoint) {
+    /// Resizes the selection from the handle pressed, else moves it with the pointer. Shift keeps proportions or snaps
+    /// to 45°, and Option resizes from the centre; see `Annotation.resize`. Space moves the shape instead of resizing it.
+    private func dragSelection(to point: CGPoint, from last: CGPoint, modifiers: NSEvent.ModifierFlags) {
         guard let id = model.selectedID, let index = model.document.annotations.firstIndex(where: { $0.id == id }), !model.document.annotations[index].isLocked else {
             return
         }
@@ -337,7 +340,12 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
         let margin = model.canvasMargin
         if let resizeHandle, var resized = resizeStart {
-            resized.resize(resizeHandle, to: point, tolerance: handleTolerance)
+            if let spaceMove {
+                resized = spaceMove.shape
+                resized.offset(by: CGVector(dx: point.x - spaceMove.origin.x, dy: point.y - spaceMove.origin.y))
+            } else {
+                resized.resize(resizeHandle, to: point, tolerance: handleTolerance, constrain: modifiers.contains(.shift), fromCenter: modifiers.contains(.option))
+            }
             model.apply { doc in
                 doc.annotations[index] = resized
                 doc.grow(toFit: resized, margin: margin)
@@ -359,6 +367,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             dragStart = nil
             resizeHandle = nil
             resizeStart = nil
+            spaceMove = nil
             viewportDidChange()
         }
         if model.tool == .note, resizeHandle == nil, let start = dragStart {
@@ -435,6 +444,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             if !spaceHeld, dragStart == nil {
                 spaceHeld = true
                 NSCursor.openHand.set()
+            } else if resizeHandle != nil, spaceMove == nil, !event.isARepeat, let last = lastPoint,
+                      let id = model.selectedID, let shape = model.document.annotations.first(where: { $0.id == id }) {
+                spaceMove = (last, shape)
             }
             return
         }
@@ -466,9 +478,23 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         super.keyDown(with: event)
     }
 
+    /// Pressing or releasing Shift or Option mid-resize updates the shape at once, without waiting for the pointer to move.
+    override func flagsChanged(with event: NSEvent) {
+        if resizeHandle != nil, movedSinceMouseDown, panPoint == nil, let last = lastPoint {
+            dragSelection(to: last, from: last, modifiers: event.modifierFlags)
+        }
+        super.flagsChanged(with: event)
+    }
+
     override func keyUp(with event: NSEvent) {
         guard event.keyCode == 49 else {
             super.keyUp(with: event)
+            return
+        }
+        // Letting go of Space puts the shape where it was moved to, and resizing carries on from the pointer.
+        if let spaceMove, let last = lastPoint {
+            resizeStart?.offset(by: CGVector(dx: last.x - spaceMove.origin.x, dy: last.y - spaceMove.origin.y))
+            self.spaceMove = nil
             return
         }
         spaceHeld = false
