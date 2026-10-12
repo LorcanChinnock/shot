@@ -62,6 +62,15 @@ public struct CaptureText: Equatable, Sendable {
             }
             return touched.dropFirst().reduce(first) { $0.union($1) }
         }
+
+        func json(words: Bool) -> JSONValue {
+            var object: [String: JSONValue] = ["text": .string(text), "box": CaptureText.json(box)]
+            if words {
+                object["confidence"] = .number((confidence * 100).rounded() / 100)
+                object["words"] = .array(self.words.map { .object(["text": .string($0.text), "box": CaptureText.json($0.box)]) })
+            }
+            return .object(object)
+        }
     }
 
     /// The image's size in pixels.
@@ -93,6 +102,38 @@ public struct CaptureText: Equatable, Sendable {
             }
         }
         return rows.flatMap { $0.sorted { $0.box.minX < $1.box.minX } }
+    }
+
+    /// A line that contains a query, and the box of the words in it that match.
+    public struct Hit: Equatable, Sendable {
+        public var line: Line
+        public var box: CGRect
+    }
+
+    /// The lines that contain `query`, ignoring case and accents, in reading order. A blank query matches nothing.
+    public func lines(matching query: String) -> [Hit] {
+        let wanted = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !wanted.isEmpty else {
+            return []
+        }
+        return lines.compactMap { line in
+            line.text.range(of: wanted, options: [.caseInsensitive, .diacriticInsensitive]).map { Hit(line: line, box: line.box(of: $0)) }
+        }
+    }
+
+    /// The image's size, then its text and lines, as `shot text` prints them and `find_text` gives them. `words` adds
+    /// each line's words and the recogniser's confidence.
+    public func json(words: Bool) -> [String: JSONValue] {
+        [
+            "size": .object(["width": .number(Double(width)), "height": .number(Double(height))]),
+            "text": .string(string),
+            "lines": .array(lines.map { $0.json(words: words) }),
+        ]
+    }
+
+    /// `[x, y, width, height]`, as boxes and rects are everywhere agents see them.
+    public static func json(_ box: CGRect) -> JSONValue {
+        .array([box.minX, box.minY, box.width, box.height].map { .number(Double($0)) })
     }
 
     /// Text that looks private, with the box to hide.

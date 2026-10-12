@@ -57,6 +57,8 @@ public enum ShotCommands {
             }
         case let .frames(options):
             return try await frames(options)
+        case let .text(path):
+            return try await text(url(path))
         case .capture, .record, .mcp, .version, .help:
             throw .internal("\(command.name) isn't a media command")
         }
@@ -179,6 +181,20 @@ public enum ShotCommands {
             // The folder is new and only this command's, so a failure leaves nothing behind.
             try? FileManager.default.removeItem(at: folder)
             throw (error as? ShotCommandError) ?? .io("couldn't write the frames: \(error.localizedDescription)")
+        }
+    }
+
+    static func text(_ url: URL) async throws(ShotCommandError) -> JSONValue {
+        try requireInput(url)
+        guard let image = ImageCodec.image(at: url) else {
+            throw .data("\(url.lastPathComponent) isn't an image Shot can read")
+        }
+        do {
+            var object = try await TextRecognizer.recognize(image).json(words: true)
+            object["path"] = .string(url.path)
+            return .object(object)
+        } catch {
+            throw .internal("couldn't read the text in \(url.lastPathComponent): \(error.localizedDescription)")
         }
     }
 

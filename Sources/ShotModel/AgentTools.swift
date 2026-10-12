@@ -1,6 +1,6 @@
 import Foundation
 
-/// The MCP server's tools: four that read captures, three that make new files from one, never changing, moving or
+/// The MCP server's tools: five that read captures, three that make new files from one, never changing, moving or
 /// deleting anything, and two that ask the running app to capture or record a window. What they're called, what they
 /// take, and what they say back are here. Finding files, drawing
 /// previews and running the commands need Apple frameworks, so they come in as closures; ShotCore's `live(folder:)`
@@ -18,6 +18,8 @@ public struct AgentTools: Sendable {
     public var run: @Sendable (ShotCommand) async throws(ShotCommandError) -> JSONValue
     /// Up to the given number of a recording's key frames, each as its time then its image.
     public var frames: @Sendable (AgentCaptures.Entry, Int) async throws(ShotCommandError) -> [MCPServer.Content]
+    /// The text in a screenshot, read on the device.
+    public var text: @Sendable (AgentCaptures.Entry) async throws(ShotCommandError) -> CaptureText
     /// Sends a request to the running app over its agent socket, and gives back its answer's fields.
     public var agent: @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue]
     public var now: @Sendable () -> Date
@@ -30,6 +32,7 @@ public struct AgentTools: Sendable {
         record: @escaping @Sendable (AgentCaptures.Entry) -> CaptureRecord? = { _ in nil },
         run: @escaping @Sendable (ShotCommand) async throws(ShotCommandError) -> JSONValue = { _ throws(ShotCommandError) in throw .internal("can't run commands here") },
         frames: @escaping @Sendable (AgentCaptures.Entry, Int) async throws(ShotCommandError) -> [MCPServer.Content] = { _, _ throws(ShotCommandError) in throw .internal("can't read frames here") },
+        text: @escaping @Sendable (AgentCaptures.Entry) async throws(ShotCommandError) -> CaptureText = { _ throws(ShotCommandError) in throw .internal("can't read text here") },
         agent: @escaping @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue] = { _ throws(ShotCommandError) in throw .unavailable("can't reach Shot from here") },
         now: @escaping @Sendable () -> Date = Date.init,
         timeZone: TimeZone = .current
@@ -40,6 +43,7 @@ public struct AgentTools: Sendable {
         self.record = record
         self.run = run
         self.frames = frames
+        self.text = text
         self.agent = agent
         self.now = now
         self.timeZone = timeZone
@@ -52,6 +56,7 @@ public struct AgentTools: Sendable {
     public static let makeGIF = "make_gif"
     public static let trimVideo = "trim_video"
     public static let getFrames = "get_frames"
+    public static let findText = "find_text"
     public static let captureWindow = "capture_window"
     public static let recordWindow = "record_window"
     /// The longest `record_window` waits for, so its answer comes within what clients wait for a tool.
@@ -116,6 +121,14 @@ public struct AgentTools: Sendable {
             description: "Still frames of a Shot recording, since a model can't watch video: the first and last, and the frame after each change on screen once it settles, each with its time in seconds. Use this to see what happened in a recording, such as the steps of a bug. Reads only; writes nothing.",
             inputSchema: schema(capture.merging([
                 "count": .object(["type": .string("integer"), "description": .string("How many frames, 1 to \(ShotCommand.FramesOptions.maximumCount). Default 8.")]),
+            ]) { $1 }),
+            readOnly: true
+        ),
+        MCPServer.Tool(
+            name: findText,
+            description: "Reads the text in a Shot screenshot, on this Mac: each line with its box as [x, y, width, height] in the full-size file's pixels, top-left origin, the space annotate takes. With query, only the lines that contain it, each with the box of the words that match, to check what the screen says or find where something is, such as a button to point at. Without path or name, the newest screenshot. Reads only; writes nothing.",
+            inputSchema: schema(capture.merging([
+                "query": .object(["type": .string("string"), "description": .string("Words to find, ignoring case and accents, such as \"Save\". Without it, all the text.")]),
             ]) { $1 }),
             readOnly: true
         ),
@@ -218,6 +231,8 @@ public struct AgentTools: Sendable {
             } catch {
                 return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
             }
+        case Self.findText:
+            return await findText(arguments, entries)
         case Self.captureWindow:
             return await captureWindow(arguments)
         case Self.recordWindow:
@@ -278,6 +293,49 @@ public struct AgentTools: Sendable {
         }
         content.append(.text("Saved as a new file beside \(entry.name); the original is unchanged."))
         return MCPServer.ToolResult(content: content)
+    }
+
+    /// The text in the screenshot `arguments` names, or the newest one: every line, or with a query only the lines that
+    /// contain it, each with its box. Words are left out, since an agent rarely needs them and they'd fill its context.
+    func findText(_ arguments: JSONValue, _ entries: [AgentCaptures.Entry]) async -> MCPServer.ToolResult {
+        let name = [arguments["path"]?.string, arguments["name"]?.string].compactMap { $0 }.first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        guard let entry = name.map({ AgentCaptures.named($0, in: entries) }) ?? AgentCaptures.latest(entries, kind: .image) else {
+            return name.map { notFound($0, in: entries) } ?? MCPServer.ToolResult(content: [.text(empty(entries, kind: .image))], isError: true)
+        }
+        guard !entry.isVideo else {
+            return MCPServer.ToolResult(content: [.text("\(entry.name) is a recording; find_text reads screenshots. get_frames shows a recording's frames.")], isError: true)
+        }
+        let read: CaptureText
+        do {
+            read = try await text(entry)
+        } catch {
+            return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
+        }
+        var object = read.json(words: false)
+        object["name"] = .string(entry.name)
+        object["path"] = .string(entry.url.path)
+        guard let query = arguments["query"]?.string, !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            let note = read.lines.isEmpty ? "No text found in \(entry.name)." : "Boxes are [x, y, width, height] in the file's pixels, from the top left."
+            return MCPServer.ToolResult(content: [.text(Self.json(.object(object))), .text(note)])
+        }
+        let hits = read.lines(matching: query)
+        object["lines"] = nil
+        object["query"] = .string(query)
+        object["matches"] = .array(hits.map { hit in
+            .object(["text": .string(hit.line.text), "box": CaptureText.json(hit.line.box), "match": CaptureText.json(hit.box)])
+        })
+        // The whole text stays only when nothing matched, so the agent sees what the screen says instead.
+        if !hits.isEmpty {
+            object["text"] = nil
+        }
+        let note = if read.lines.isEmpty {
+            "No text found in \(entry.name)."
+        } else if hits.isEmpty {
+            "No line in \(entry.name) contains \"\(query)\"; text is everything it reads."
+        } else {
+            "match is the box of the words that matched, inside the line's box. Both are [x, y, width, height] in the file's pixels, from the top left."
+        }
+        return MCPServer.ToolResult(content: [.text(Self.json(.object(object))), .text(note)])
     }
 
     /// Asks the app for a screenshot of the window `arguments` names, then shows it as `describe` does a capture.

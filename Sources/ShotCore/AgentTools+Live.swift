@@ -26,6 +26,18 @@ extension AgentTools {
             frames: { entry, count throws(ShotCommandError) in
                 try await keyFrames(of: entry.url, count: count)
             },
+            text: { entry throws(ShotCommandError) in
+                let read: CaptureText?
+                do {
+                    read = try await TextRecognizer.recognize(fileAt: entry.url)
+                } catch {
+                    throw .internal("Couldn't read the text in \(entry.name): \(error.localizedDescription)")
+                }
+                guard let read else {
+                    throw .data("Couldn't read \(entry.name) as an image.")
+                }
+                return read
+            },
             agent: agent
         )
     }

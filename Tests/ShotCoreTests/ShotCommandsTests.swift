@@ -67,6 +67,25 @@ private func failure(_ command: ShotCommand) async -> ShotCommandError? {
     #expect(await failure(.info(path: folder.path))?.exitCode == 65)
 }
 
+@Test func textReadsEachLineAndWordWithItsBox() async throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let image = try writeImage("dialog.png", in: folder, image: textImage(width: 600, height: 200, [("Save changes", 40, 60)]))
+    let result = try await ShotCommands.run(.text(path: image.path))
+    #expect(result["path"] == .string(image.path))
+    #expect(result["size"] == .object(["width": .number(600), "height": .number(200)]))
+    #expect(result["text"] == .string("Save changes"))
+    guard case let .array(lines)? = result["lines"], let line = lines.first,
+          case let .array(words)? = line["words"], case let .array(box)? = line["box"] else {
+        Issue.record("no line with words and a box: \(result)")
+        return
+    }
+    #expect(words.map { $0["text"] } == [.string("Save"), .string("changes")])
+    #expect(box.count == 4)
+    #expect((box[1].number ?? 0) >= 40 && (box[1].number ?? 0) <= 70)
+    #expect(await failure(.text(path: folder.appendingPathComponent("missing.png").path))?.exitCode == 66)
+}
+
 @Test(arguments: [ShotCommand.RedactStyle.blur, .pixelate])
 func redactHidesOnlyTheRectAndLeavesTheInputAlone(style: ShotCommand.RedactStyle) async throws {
     let folder = try temporaryFolder()
