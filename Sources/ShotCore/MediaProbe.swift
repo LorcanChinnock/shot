@@ -7,8 +7,8 @@ public enum MediaProbe {
 
         public var errorDescription: String? {
             switch self {
-            case .unreadable(let name): "Can't open \(name)"
-            case .empty(let name): "\(name) has no video or sound"
+            case .unreadable(let name): String(localized: "Can't open \(name)")
+            case .empty(let name): String(localized: "\(name) has no video or sound")
             }
         }
     }

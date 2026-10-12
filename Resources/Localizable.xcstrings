@@ -1,28 +1,29 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "%@ %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ %2$@"
-          }
-        }
-      }
-    },
     "%@ already exists" : {
 
     },
-    "%@ animation at the %@ of the %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ animation at the %2$@ of the %3$@"
-          }
-        }
-      }
+    "%@ animation at the end of the annotation" : {
+
+    },
+    "%@ animation at the end of the clip" : {
+
+    },
+    "%@ animation at the start of the annotation" : {
+
+    },
+    "%@ animation at the start of the clip" : {
+
+    },
+    "%@ command" : {
+
+    },
+    "%@ has no video or sound" : {
+
+    },
+    "%@ has no video to show" : {
+
     },
     "%@ is already used by %@" : {
       "localizations" : {
@@ -53,6 +54,9 @@
     "%@ outside" : {
 
     },
+    "%@ records an area of the screen." : {
+
+    },
     "%@ shortcut" : {
 
     },
@@ -71,6 +75,58 @@
     },
     "%lld fps" : {
 
+    },
+    "%lld fps, full width, first %lld seconds." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld fps, full width, first %2$lld seconds."
+          }
+        }
+      }
+    },
+    "%lld fps, up to %lld px wide, first %lld seconds." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld fps, up to %2$lld px wide, first %3$lld seconds."
+          }
+        }
+      }
+    },
+    "%lld items" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld items"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld of %lld selected" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld selected"
+          }
+        }
+      }
     },
     "%lld percent" : {
 
@@ -112,7 +168,16 @@
     "A" : {
 
     },
+    "A few more things worth knowing." : {
+
+    },
     "A red border around the recorded area. It never appears in the video." : {
+
+    },
+    "About" : {
+
+    },
+    "Access granted" : {
 
     },
     "Actual Size" : {
@@ -127,7 +192,10 @@
     "Add Video to End…" : {
 
     },
-    "Add a shadow, border or rounded corners to the %@" : {
+    "Add a shadow, border or rounded corners to the annotation" : {
+
+    },
+    "Add a shadow, border or rounded corners to the clip" : {
 
     },
     "Add a shadow, border or rounded corners to the selected image, a shadow or glow to a shape, arrow or text, or style the screenshot when nothing is selected" : {
@@ -181,7 +249,23 @@
     "Annotate" : {
 
     },
+    "Another program uses %@. Run %@ instead." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Another program uses %1$@. Run %2$@ instead."
+          }
+        }
+      }
+    },
     "Applies to every spotlight in the image." : {
+
+    },
+    "Apply Style to All Images" : {
+
+    },
+    "Area" : {
 
     },
     "Arrow" : {
@@ -199,10 +283,22 @@
     "BETA" : {
 
     },
+    "BORDER" : {
+
+    },
     "Background…" : {
 
     },
     "Behaviour" : {
+
+    },
+    "Behaviour, files and formats." : {
+
+    },
+    "Black" : {
+
+    },
+    "Blue" : {
 
     },
     "Blur" : {
@@ -218,6 +314,12 @@
 
     },
     "Bug reports and ideas are welcome." : {
+
+    },
+    "CLIP STYLE" : {
+
+    },
+    "CORNERS" : {
 
     },
     "CUSTOM" : {
@@ -239,6 +341,9 @@
 
     },
     "Can't delete this clip" : {
+
+    },
+    "Can't open %@" : {
 
     },
     "Can't open %@: %@" : {
@@ -281,6 +386,9 @@
     "Capture Window" : {
 
     },
+    "Change camera bubble size" : {
+
+    },
     "Check" : {
 
     },
@@ -299,7 +407,22 @@
     "Choose File…" : {
 
     },
+    "Choose an image to show over the video" : {
+
+    },
+    "Choose images to place beside your screenshot" : {
+
+    },
+    "Choose videos or audio to add at the playhead" : {
+
+    },
+    "Choose videos to add to the end" : {
+
+    },
     "Choose…" : {
+
+    },
+    "Claude Code, for every project" : {
 
     },
     "Clear Keyframes" : {
@@ -308,7 +431,16 @@
     "Clear search" : {
 
     },
+    "Click Grant, or open System Settings." : {
+
+    },
     "Click a shortcut, then press the new keys. Esc cancels, Delete clears." : {
+
+    },
+    "Click a window" : {
+
+    },
+    "Click an annotation to move, resize or restyle it." : {
 
     },
     "Click anywhere, including the image. Esc cancels." : {
@@ -317,10 +449,28 @@
     "Click the Shot icon in the menu bar, then Capture Area, and drag out any area." : {
 
     },
+    "Click to add numbered steps: 1, 2, 3…" : {
+
+    },
     "Click to confirm" : {
 
     },
+    "Click to type a label." : {
+
+    },
     "Clipboard copies always use PNG." : {
+
+    },
+    "Close" : {
+
+    },
+    "Close Window" : {
+
+    },
+    "Codex, in ~/.codex/config.toml" : {
+
+    },
+    "Colour" : {
 
     },
     "Command line" : {
@@ -342,7 +492,26 @@
 
     },
     "Copied %lld files" : {
-
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Copied"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Copied %lld files"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Copied annotation" : {
 
@@ -371,6 +540,9 @@
     "Copy Path" : {
 
     },
+    "Copy Style" : {
+
+    },
     "Copy image (⌘C)" : {
 
     },
@@ -380,7 +552,13 @@
     "Copy video (⌘C)" : {
 
     },
-    "Couldn't %@ the camera bubble in the recording" : {
+    "Corner radius" : {
+
+    },
+    "Couldn't add %@ to the video" : {
+
+    },
+    "Couldn't add the audio to its file" : {
 
     },
     "Couldn't change the %@ command: %@" : {
@@ -414,20 +592,42 @@
     "Couldn't export the trimmed video" : {
 
     },
+    "Couldn't export the video" : {
+
+    },
     "Couldn't export: %@" : {
 
     },
     "Couldn't finish writing the GIF" : {
 
     },
+    "Couldn't hide the camera bubble in the recording" : {
+
+    },
     "Couldn't join the recording's segments" : {
 
     },
     "Couldn't move %lld files to the Trash" : {
-
-    },
-    "Couldn't move 1 file to the Trash" : {
-
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Couldn't move 1 file to the Trash"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Couldn't move %lld files to the Trash"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Couldn't open the save folder" : {
 
@@ -469,7 +669,13 @@
     "Couldn't save: %@" : {
 
     },
+    "Couldn't show the camera bubble in the recording" : {
+
+    },
     "Couldn't show the edit: %@" : {
+
+    },
+    "Couldn't start writing the audio file" : {
 
     },
     "Countdown" : {
@@ -490,6 +696,9 @@
     "Crosshair" : {
 
     },
+    "Cursor, or any app with a JSON config" : {
+
+    },
     "Custom background colour" : {
 
     },
@@ -502,7 +711,16 @@
     "Custom fill colour" : {
 
     },
+    "Cut" : {
+
+    },
     "Cut out the selected clip and close the gap (⌫)" : {
+
+    },
+    "DENIED" : {
+
+    },
+    "DRAWN" : {
 
     },
     "Darken" : {
@@ -535,10 +753,52 @@
     "Diamond" : {
 
     },
+    "Discard" : {
+
+    },
+    "Discard recording" : {
+
+    },
     "Done" : {
 
     },
+    "Drag an area" : {
+
+    },
+    "Drag over private details to blur or pixelate them." : {
+
+    },
+    "Drag over text to highlight it. Hold Shift for a straight line." : {
+
+    },
+    "Drag the card in the corner into any app, or click the pencil to annotate." : {
+
+    },
     "Drag the handles to trim. Shift-drag to select a section, then press Delete to cut it." : {
+
+    },
+    "Drag to add a sticky note." : {
+
+    },
+    "Drag to choose the area to keep." : {
+
+    },
+    "Drag to dim or blur everything outside an area." : {
+
+    },
+    "Drag to draw a box, circle, star or other shape, outlined or filled." : {
+
+    },
+    "Drag to draw a straight line." : {
+
+    },
+    "Drag to draw freehand." : {
+
+    },
+    "Drag to move around when zoomed in." : {
+
+    },
+    "Drag to point at something." : {
 
     },
     "Drag to reorder" : {
@@ -565,6 +825,9 @@
     "EDITED" : {
 
     },
+    "Each one opens in its own editor window." : {
+
+    },
     "Ease in" : {
 
     },
@@ -580,13 +843,28 @@
     "Edit Video" : {
 
     },
+    "Edit video" : {
+
+    },
+    "Elevation" : {
+
+    },
     "Ellipse" : {
 
     },
     "Enter a name" : {
 
     },
+    "Esc: cancel" : {
+
+    },
     "Estimated size of the exported file" : {
+
+    },
+    "Every capture in your folder." : {
+
+    },
+    "Everything else is in the Shot icon in the menu bar." : {
 
     },
     "Exclude menu bar" : {
@@ -607,12 +885,15 @@
     "Export format" : {
 
     },
-    "Exported and copied %@%@" : {
+    "Exported and copied %@" : {
+
+    },
+    "Exported and copied %@ (first %lld s only)" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Exported and copied %1$@%2$@"
+            "value" : "Exported and copied %1$@ (first %2$lld s only)"
           }
         }
       }
@@ -632,6 +913,9 @@
     "FILL" : {
 
     },
+    "FPS" : {
+
+    },
     "Fade In" : {
 
     },
@@ -639,6 +923,9 @@
 
     },
     "Fades the spotlight into the dim." : {
+
+    },
+    "File" : {
 
     },
     "File name" : {
@@ -659,6 +946,9 @@
     "Float" : {
 
     },
+    "For agents and scripts that run in a terminal. The MCP server works without it." : {
+
+    },
     "Frame rate" : {
 
     },
@@ -669,6 +959,12 @@
 
     },
     "From the Quick Access card" : {
+
+    },
+    "Full" : {
+
+    },
+    "Full Screen" : {
 
     },
     "Full-screen guide lines through the pointer." : {
@@ -695,10 +991,19 @@
     "GRANTED" : {
 
     },
+    "Gallery" : {
+
+    },
+    "General" : {
+
+    },
     "GitHub" : {
 
     },
     "Global hotkeys" : {
+
+    },
+    "Global hotkeys for every action." : {
 
     },
     "Glow" : {
@@ -710,13 +1015,25 @@
     "Grant" : {
 
     },
+    "Green" : {
+
+    },
+    "H.264 MP4." : {
+
+    },
     "HEVC MP4, on displays that refresh this fast." : {
+
+    },
+    "Hairline" : {
 
     },
     "Halves pixel size on 2× displays. Smaller files, less detail." : {
 
     },
     "Hand" : {
+
+    },
+    "Hand captures to AI coding tools." : {
 
     },
     "Hand captures to agents" : {
@@ -731,19 +1048,40 @@
     "Hide Shot from captures" : {
 
     },
+    "Hide Track" : {
+
+    },
+    "Hide camera bubble" : {
+
+    },
+    "Hide cursor" : {
+
+    },
+    "Hide the track" : {
+
+    },
     "Highlight" : {
 
     },
     "Highlighter" : {
 
     },
+    "Horizontal position" : {
+
+    },
     "Hovering a card pauses the timer." : {
+
+    },
+    "How big the blocks are." : {
 
     },
     "How far the blur spreads." : {
 
     },
     "How the value moves from this keyframe to the next" : {
+
+    },
+    "IMAGE STYLE" : {
 
     },
     "INSTALLED" : {
@@ -761,6 +1099,21 @@
     "Inspector" : {
 
     },
+    "Install" : {
+
+    },
+    "Installed at %@. Updates with Shot." : {
+
+    },
+    "Installed by Homebrew. Updates with Shot." : {
+
+    },
+    "Installing asks for your password once." : {
+
+    },
+    "It was installed while Shot was running. Relaunch to use it." : {
+
+    },
     "JPEG" : {
 
     },
@@ -776,7 +1129,13 @@
     "LAYERS" : {
 
     },
+    "Large" : {
+
+    },
     "Largest first" : {
+
+    },
+    "Later" : {
 
     },
     "Layers" : {
@@ -786,6 +1145,9 @@
 
     },
     "Let agents capture and record" : {
+
+    },
+    "Lets agents read your captures and save edited copies beside them. Your originals never change. What an agent reads goes to its model provider, so blur private details first." : {
 
     },
     "Lets agents screenshot or record a window by name. Shot shows a notice each time. Recordings skip the microphone and camera and stop after %lld minutes." : {
@@ -806,6 +1168,12 @@
     "Lock" : {
 
     },
+    "Lock Track" : {
+
+    },
+    "Lock the track, so Split and new annotations leave it alone" : {
+
+    },
     "Looks for a new version once, even when automatic checks are off." : {
 
     },
@@ -818,7 +1186,16 @@
     "MP4" : {
 
     },
+    "MUTE" : {
+
+    },
     "Magnifier" : {
+
+    },
+    "Make it yours" : {
+
+    },
+    "Medium" : {
 
     },
     "Microphone" : {
@@ -840,12 +1217,40 @@
 
     },
     "Moved %lld files to the Trash (⌘Z to undo)" : {
-
-    },
-    "Moved to the Trash (⌘Z to undo)" : {
-
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Moved to the Trash (⌘Z to undo)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Moved %lld files to the Trash (⌘Z to undo)"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Mute" : {
+
+    },
+    "Mute Track" : {
+
+    },
+    "Mute microphone" : {
+
+    },
+    "Mute the track" : {
+
+    },
+    "NOT ASKED" : {
 
     },
     "Name" : {
@@ -881,6 +1286,9 @@
     "No screenshots in your save folder yet" : {
 
     },
+    "None" : {
+
+    },
     "Note" : {
 
     },
@@ -896,6 +1304,9 @@
     "Nothing was recorded" : {
 
     },
+    "OPACITY" : {
+
+    },
     "Off" : {
 
     },
@@ -905,7 +1316,28 @@
     "On" : {
 
     },
+    "Once Shot is on in System Settings, macOS applies it after a relaunch." : {
+
+    },
+    "One permission to go" : {
+
+    },
+    "Only needed for the camera bubble." : {
+
+    },
+    "Only needed to record your voice." : {
+
+    },
+    "Opacity" : {
+
+    },
     "Open" : {
+
+    },
+    "Open %lld" : {
+
+    },
+    "Open %lld items?" : {
 
     },
     "Open Folder" : {
@@ -923,6 +1355,9 @@
     "Open System Settings" : {
 
     },
+    "Open System Settings." : {
+
+    },
     "Open in editor" : {
 
     },
@@ -935,13 +1370,28 @@
     "Opens the annotation editor instead of Quick Access." : {
 
     },
+    "Orange" : {
+
+    },
+    "Outline" : {
+
+    },
     "PNG" : {
+
+    },
+    "POSITION" : {
 
     },
     "PREVIEW" : {
 
     },
     "Party mode" : {
+
+    },
+    "Paste" : {
+
+    },
+    "Paste Style" : {
 
     },
     "Pause" : {
@@ -992,6 +1442,12 @@
     "Play capture sound" : {
 
     },
+    "Playback speed" : {
+
+    },
+    "Points to a copy of Shot that has moved. Reinstall to fix it." : {
+
+    },
     "Pop" : {
 
     },
@@ -1001,10 +1457,19 @@
     "Press %@, then drag out any area." : {
 
     },
+    "Press Space while you pick an area to capture a window instead." : {
+
+    },
+    "Press keys…" : {
+
+    },
     "Preview" : {
 
     },
     "Project" : {
+
+    },
+    "Quick Access" : {
 
     },
     "Quick Look" : {
@@ -1014,6 +1479,9 @@
 
     },
     "RECENT CAPTURES" : {
+
+    },
+    "Radius %lld" : {
 
     },
     "Record" : {
@@ -1031,6 +1499,9 @@
     "Recording" : {
 
     },
+    "Recording %@" : {
+
+    },
     "Recording discarded" : {
 
     },
@@ -1040,7 +1511,13 @@
     "Rectangle" : {
 
     },
+    "Red" : {
+
+    },
     "Redact" : {
+
+    },
+    "Redo" : {
 
     },
     "Redo (⇧⌘Z)" : {
@@ -1049,13 +1526,28 @@
     "Region border" : {
 
     },
+    "Reinstall" : {
+
+    },
     "Relaunch" : {
+
+    },
+    "Relaunch Shot to start capturing." : {
+
+    },
+    "Relaunch Shot." : {
+
+    },
+    "Relaunch to finish" : {
 
     },
     "Remove %@ keyframe" : {
 
     },
     "Remove this keyframe" : {
+
+    },
+    "Rename" : {
 
     },
     "Rename…" : {
@@ -1077,10 +1569,26 @@
 
     },
     "Restored %lld files from the Trash" : {
-
-    },
-    "Restored from the Trash" : {
-
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Restored from the Trash"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Restored %lld files from the Trash"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Restores every setting and shortcut. Your captures stay." : {
 
@@ -1094,6 +1602,9 @@
     "Resume recording" : {
 
     },
+    "Return: full screen" : {
+
+    },
     "Reveal" : {
 
     },
@@ -1101,6 +1612,21 @@
 
     },
     "Rounded Rectangle" : {
+
+    },
+    "SCALE" : {
+
+    },
+    "SCREENSHOT STYLE" : {
+
+    },
+    "SHADOW" : {
+
+    },
+    "SHAPE STYLE" : {
+
+    },
+    "SPEED" : {
 
     },
     "Save" : {
@@ -1115,6 +1641,15 @@
     "Save and copy (⌘S)" : {
 
     },
+    "Save changes to %@ as a copy?" : {
+
+    },
+    "Save changes to %@?" : {
+
+    },
+    "Save folder" : {
+
+    },
     "Save the edited video and copy it (⌘S)" : {
 
     },
@@ -1127,12 +1662,12 @@
     "Saved %@" : {
 
     },
-    "Saved %@%@" : {
+    "Saved %@ (first %lld s only)" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Saved %1$@%2$@"
+            "value" : "Saved %1$@ (first %2$lld s only)"
           }
         }
       }
@@ -1162,6 +1697,12 @@
 
     },
     "Screen corner" : {
+
+    },
+    "Screen recording video and audio." : {
+
+    },
+    "Screenshot %@" : {
 
     },
     "Screenshots" : {
@@ -1218,7 +1759,13 @@
     "Shortcut unavailable: %@. Another app may use it, so choose a different one in Settings › Shortcuts." : {
 
     },
+    "Shortcuts" : {
+
+    },
     "Shot" : {
+
+    },
+    "Shot %@ is installed" : {
 
     },
     "Shot asks GitHub once a day whether a new version is out, and installs it when you agree. Nothing else is sent." : {
@@ -1245,6 +1792,12 @@
     "Show Quick Access" : {
 
     },
+    "Show Track" : {
+
+    },
+    "Show camera bubble" : {
+
+    },
     "Show cursor" : {
 
     },
@@ -1260,16 +1813,25 @@
     "Show the pointer when you capture an area or the full screen." : {
 
     },
+    "Show the track" : {
+
+    },
     "Show the tracks (T)" : {
 
     },
     "Shows the frame handles and options first. Hold ⌥ as you finish the selection to show them once." : {
 
     },
+    "Shows the input level of the microphone above." : {
+
+    },
     "Skip" : {
 
     },
     "Slide In" : {
+
+    },
+    "Small" : {
 
     },
     "Snap" : {
@@ -1287,6 +1849,9 @@
     "Soft edge" : {
 
     },
+    "Solid" : {
+
+    },
     "Sort" : {
 
     },
@@ -1296,7 +1861,16 @@
     "Source code" : {
 
     },
+    "Space: area" : {
+
+    },
+    "Space: window" : {
+
+    },
     "Speak to see the level." : {
+
+    },
+    "Speed isn't available for an MP4 with imports, annotations or transforms. A GIF can change speed." : {
 
     },
     "Split" : {
@@ -1348,6 +1922,9 @@
     "Stop" : {
 
     },
+    "Stop Recording" : {
+
+    },
     "Stop and save" : {
 
     },
@@ -1372,7 +1949,19 @@
     "System default" : {
 
     },
+    "TEXT STYLE" : {
+
+    },
     "TRIMMED" : {
+
+    },
+    "TURN" : {
+
+    },
+    "Tab: ratio (%@)" : {
+
+    },
+    "Take your first screenshot." : {
 
     },
     "Test" : {
@@ -1390,7 +1979,22 @@
     "That video's GIF is already exporting" : {
 
     },
+    "That's it" : {
+
+    },
+    "The area is too small for the camera bubble" : {
+
+    },
+    "The audio's format can't be written" : {
+
+    },
+    "The camera is in use or unavailable" : {
+
+    },
     "The cuts leave nothing to export" : {
+
+    },
+    "The floating card after each capture." : {
 
     },
     "The microphone couldn't be recorded: %@" : {
@@ -1435,10 +2039,25 @@
     "Try another search, or show All." : {
 
     },
+    "Try it" : {
+
+    },
+    "Turn off microphone" : {
+
+    },
     "Turn off the Screenshots shortcuts under Keyboard Shortcuts." : {
 
     },
+    "Turn on Shot under Screen & System Audio Recording." : {
+
+    },
+    "Turn on microphone" : {
+
+    },
     "Turns off the matching macOS shortcuts, so these keys and a keyboard's screenshot key open Shot. macOS gets them back while Shot isn't running, or when you turn this off." : {
+
+    },
+    "Two choices, both in Settings later." : {
 
     },
     "Undo" : {
@@ -1447,10 +2066,28 @@
     "Undo (⌘Z)" : {
 
     },
+    "Uninstall" : {
+
+    },
     "Unknown settings section: %@" : {
 
     },
     "Unlock" : {
+
+    },
+    "Unlock Track" : {
+
+    },
+    "Unlock the track" : {
+
+    },
+    "Unmute Track" : {
+
+    },
+    "Unmute microphone" : {
+
+    },
+    "Unmute the track" : {
 
     },
     "Update to Shot %@…" : {
@@ -1474,13 +2111,40 @@
     "Using Claude Code, Codex or Cursor? Shot can hand them your captures." : {
 
     },
+    "VOLUME" : {
+
+    },
+    "Version, updates, permissions and reset." : {
+
+    },
+    "Vertical position" : {
+
+    },
     "Video" : {
 
     },
     "Videos" : {
 
     },
+    "WIDTH" : {
+
+    },
+    "Welcome to Shot" : {
+
+    },
     "Welcome window" : {
+
+    },
+    "What happens when you take a shot." : {
+
+    },
+    "White" : {
+
+    },
+    "Width" : {
+
+    },
+    "Window" : {
 
     },
     "Window shadow" : {
@@ -1489,10 +2153,22 @@
     "Write the edit as a new video next to the original and copy it (⌘S)" : {
 
     },
+    "X: rotate" : {
+
+    },
+    "Yellow" : {
+
+    },
     "Yesterday" : {
 
     },
     "You found it" : {
+
+    },
+    "Your annotations are lost if you discard them." : {
+
+    },
+    "Your edits are lost if you discard them." : {
 
     },
     "Zoom" : {
@@ -1522,7 +2198,28 @@
     "Zoom to Fit" : {
 
     },
+    "it doesn't exist" : {
+
+    },
+    "it has no length" : {
+
+    },
+    "it has no video track" : {
+
+    },
+    "it isn't a video Shot can read" : {
+
+    },
+    "it isn't an image Shot can read" : {
+
+    },
     "macOS asks for permission on first use. Mute it from the recording controls." : {
+
+    },
+    "macOS keeps its shortcuts, and Shot uses %@ instead." : {
+
+    },
+    "macOS requires Screen Recording access for every capture." : {
 
     },
     "macOS screenshot keys" : {
@@ -1532,6 +2229,12 @@
 
     },
     "macOS's own screenshot shortcuts turn off while Shot runs, and come back when it quits." : {
+
+    },
+    "the sound" : {
+
+    },
+    "the video" : {
 
     },
     "v%@" : {

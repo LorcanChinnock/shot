@@ -34,8 +34,10 @@ public struct VideoExportOptions: Equatable, Sendable {
 
     /// Describes a GIF made with these options, for Settings.
     public var gifSummary: String {
-        let width = gifWidth == Self.originalWidth ? "full width" : "up to \(gifWidth) px wide"
-        return "\(gifFrameRate) fps, \(width), first \(Int(GIFExporter.maxDuration)) seconds."
+        let seconds = Int(GIFExporter.maxDuration)
+        return gifWidth == Self.originalWidth
+            ? String(localized: "\(gifFrameRate) fps, full width, first \(seconds) seconds.")
+            : String(localized: "\(gifFrameRate) fps, up to \(gifWidth) px wide, first \(seconds) seconds.")
     }
 
     /// How long `range`, less `cuts`, plays for at this speed.

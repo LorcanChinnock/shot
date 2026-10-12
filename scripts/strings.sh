@@ -40,8 +40,9 @@ if ! cmp -s "$catalog" "$work/Localizable.xcstrings"; then
     exit 1
 fi
 # sync keeps a string the source dropped when it has translations, marked stale.
-if grep -q '"extractionState" : "stale"' "$catalog"; then
-    echo "$catalog has strings the app no longer uses; delete the ones marked stale:"
-    jq -r '.strings | to_entries[] | select(.value.extractionState == "stale") | .key' "$catalog"
+stale=$(jq -r '.strings | to_entries[] | select(.value.extractionState == "stale") | .key' "$catalog")
+if [ -n "$stale" ]; then
+    echo "$catalog has strings the app no longer uses; delete these, which it marks stale:"
+    echo "$stale"
     exit 1
 fi

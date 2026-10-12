@@ -18,7 +18,8 @@ make test                         # ShotModel and ShotCore unit tests (Swift Tes
 make test-linux                   # ShotModel tests in Docker on Linux, as CI runs them
 make perf                         # ShotCore performance budgets (PerfTests; make test skips them)
 make perf-app                     # scripts/perf.sh: launch, capture, memory, idle CPU of the installed app
-make lint                         # scripts/lint.sh: bans patterns that caused bugs (see below)
+make lint                         # scripts/lint.sh: bans patterns that caused bugs (see below); on macOS also scripts/strings.sh --check
+make strings                      # sync Resources/Localizable.xcstrings with the strings the build extracted
 make build                        # swift build
 make bundle                       # build and sign build/ShotDev.app only
 make run                          # build, install to /Applications/ShotDev.app, relaunch
@@ -88,7 +89,7 @@ macOS runner minutes cost about 15× Linux ones, so CI keeps macOS work to what 
 
 ## Conventions
 
-- Strings are hard-coded English; there's no localization.
+- UI strings go through `Resources/Localizable.xcstrings` (English only so far; CONTRIBUTING.md › Strings and translations). Pass literals to localizing APIs: SwiftUI views, the Design components and `Toast`, which take `LocalizedStringResource` with a `@_disfavoredOverload` generic `StringProtocol` overload for text that's already localized. Keep that overload generic: a concrete `String` one, even disfavoured, wins over `LocalizedStringResource` when the call has other arguments, and the literal goes unlocalized. Two traps remain: a literal title next to a `String` subtitle or detail picks the verbatim overload (wrap the title in `String(localized:)`), and a ternary passed to an optional `LocalizedStringResource?` parameter extracts only its first branch (use a computed property). Anything else, such as AppKit titles or a `String` property, uses `String(localized:)`. ShotModel can't (no `String(localized:)` on Linux), so its labels live in ShotCore (`ShotModelTitles.swift`). Agent, MCP, CLI and `shot://` output, logs and file names stay English. After adding strings, run `make strings` and commit the catalog; `make lint` and CI fail while it's stale.
 - PR titles use Conventional Commits (`feat(editor): …`, `fix(recording): …`). PRs are squash-merged and release-please generates versions and `CHANGELOG.md`, so never edit the version or tags by hand.
 - Any substantial change or new feature must keep docs and marketing in line in the same PR: `docs/usage.md` (also rendered on the site), `README.md`, the landing page `site/src/pages/index.astro`, and the media in `docs/media/` if they now show stale UI. If an update needs new screenshots or recordings you can't make, say so rather than skipping it silently. `CHANGELOG.md` is generated, so don't edit it.
 - Only `make dist` builds `Shot.app` with the Sparkle feed. Every other build is `ShotDev.app` (bundle ID `dev.lorcan.Shot.dev`, executable `ShotDev`, scheme `shot-dev://`, no feed), so dev builds never self-update or replace the installed release. `scripts/bundle.sh` does the renaming.

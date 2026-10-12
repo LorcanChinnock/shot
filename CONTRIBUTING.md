@@ -31,7 +31,8 @@ Only `make dist` builds `Shot.app` with the update feed. Every other build is `S
 | `make build` | `swift build`, without making an app |
 | `make test` | Run the `ShotModel` and `ShotCore` unit tests |
 | `make test-linux` | Run the `ShotModel` tests on Linux in Docker, as CI does |
-| `make lint` | Check for code patterns that have caused bugs (`scripts/lint.sh`) |
+| `make lint` | Check for code patterns that have caused bugs (`scripts/lint.sh`) and, on a Mac, that the string catalog is up to date |
+| `make strings` | Add new strings to `Resources/Localizable.xcstrings` and drop unused ones |
 | `make perf` | Time the `ShotCore` paths that have [performance budgets](docs/performance.md) |
 | `make perf-app` | Measure launch, capture, memory and idle CPU of the installed app against its budgets |
 | `make app` | Build and install without launching (`INSTALL_DIR=~/Applications make app` to install elsewhere) |
@@ -57,7 +58,7 @@ Sources/Shot/         The app: capture, selection overlay, Quick Access, editor,
 Sources/ShotCLI/      The `shot` command and MCP server, bundled as shot-cli
 Tests/ShotModelTests/ ShotModel's Swift Testing suite
 Tests/ShotCoreTests/  ShotCore's Swift Testing suite
-Resources/            Info.plist and the app icon
+Resources/            Info.plist, the app icon and the string catalogs
 scripts/              Bundling, install, signing certificate, icon, lint, performance
                       checks, and the Homebrew cask
 docs/                 The user guide, its screenshots, and the demo app they show
@@ -65,6 +66,19 @@ site/                 The website (see site/README.md)
 ```
 
 If logic can be tested without a window, a display, or a permission, put it in `ShotModel` and add a test. If it needs an Apple framework, such as CoreText, AVFoundation or `CGPath`, put it in `ShotCore` instead, keeping the Apple part as thin as you can. CI runs `ShotModel`'s tests on Linux, where minutes cost a fraction of macOS ones. `Shot` holds the AppKit and SwiftUI code that needs a real session.
+
+## Strings and translations
+
+Shot's interface is in English, and every string it shows goes through `Resources/Localizable.xcstrings`, so it can be translated. Each build extracts the strings from `Sources/Shot` and `Sources/ShotCore` (see `Package.swift`), and `make strings` adds the new ones to the catalog. `make lint` and CI fail while the catalog is out of date.
+
+A string reaches the catalog when it's a literal passed to an API that localizes:
+
+- SwiftUI's `Text`, `Button`, `Toggle` and the like, and Shot's own `brutalTip`, `Tile`, `SettingRow`, `BrutalChip`, `Toast` and other design components. A `String` variable passed to one of these is shown as it is, so a string that needs translating has to be localized where it's defined.
+- `String(localized: "…")`, for AppKit titles, alerts, panel messages and any `String` property that holds text the user reads.
+
+Interpolate values into one string, such as `"Saved \(name)"`, rather than joining fragments, so a translator can reorder the words. Leave text that agents, the `shot` command or scripts read in English, and the same goes for log messages and file names.
+
+To add a language, open the catalogs in Xcode, add the language, translate each string and add its code to `CFBundleLocalizations` in `Resources/Info.plist`. `Resources/InfoPlist.xcstrings` holds the camera and microphone permission prompts. To try a language without changing your Mac's, run `open -a ShotDev --args -AppleLanguages '(de)'`.
 
 ## Debugging
 
