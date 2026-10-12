@@ -76,6 +76,8 @@ final class Recorder: NSObject {
         let windowID: CGWindowID?
         /// Shows the red border whatever Settings say, for a recording the user didn't start themselves.
         var alwaysShowsBorder = false
+        /// Leaves out the window's shadow, for an agent that asked for it.
+        var ignoresShadow = false
     }
 
     private struct Session {
@@ -92,6 +94,7 @@ final class Recorder: NSObject {
         let fps: Int
         let systemAudio: Bool
         let finalURL: URL
+        var ignoresShadow = false
     }
 
     private var session: Session?
@@ -157,7 +160,7 @@ final class Recorder: NSObject {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let finalURL = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "mp4", prefix: prefs.filePrefix)
         let microphoneID = CaptureDevices.device(id: prefs.microphoneDeviceID, for: .audio)?.uniqueID
-        session = Session(screen: screen, region: region, windowID: options.windowID, microphone: microphone, showsCursor: options.showsCursor, microphoneID: microphoneID, fps: RecordingFrameRate.effective(setting: prefs.recordingFPS, displayRate: screen.maximumFramesPerSecond), systemAudio: prefs.recordSystemAudio, finalURL: finalURL)
+        session = Session(screen: screen, region: region, windowID: options.windowID, microphone: microphone, showsCursor: options.showsCursor, microphoneID: microphoneID, fps: RecordingFrameRate.effective(setting: prefs.recordingFPS, displayRate: screen.maximumFramesPerSecond), systemAudio: prefs.recordSystemAudio, finalURL: finalURL, ignoresShadow: options.ignoresShadow)
         segments = []
         segmentAudio = []
         mutes = CutList()
@@ -410,6 +413,9 @@ final class Recorder: NSObject {
             let scale = CGFloat(filter.pointPixelScale)
             config.width = Geometry.evenFloor(filter.contentRect.width * scale)
             config.height = Geometry.evenFloor(filter.contentRect.height * scale)
+            if session.ignoresShadow {
+                config.ignoreShadowsSingleWindow = true
+            }
         } else {
             let scale = session.screen.backingScaleFactor
             let local = Geometry.displayLocalTopLeft(session.region, screenFrame: session.screen.frame)

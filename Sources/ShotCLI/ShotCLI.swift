@@ -30,16 +30,17 @@ enum ShotCLI {
             print("Captures: \(captureFolder(app: app).path)")
         case let .help(name):
             print(ShotCommand.usage(name, program: program))
-        case let .capture(window):
+        case .capture, .windows:
+            let request = if case let .capture(target) = command { AgentRequest(.capture, target: target) } else { AgentRequest(.windows) }
             do {
-                print(ShotCommand.json(.object(try await ask(AgentRequest(.capture, window: window), app: appBundle()))))
+                print(ShotCommand.json(.object(try await ask(request, app: appBundle()))))
             } catch {
                 printError("\(program) \(command.name): \(error.message)")
                 exit(error.exitCode)
             }
         case let .record(action):
             let request = switch action {
-            case let .start(window, duration): AgentRequest(.record, window: window, duration: duration)
+            case let .start(target, duration): AgentRequest(.record, target: target, duration: duration)
             case let .stop(id): AgentRequest(.stop, id: id)
             case .status: AgentRequest(.status)
             }
@@ -123,7 +124,8 @@ enum ShotCLI {
     /// How long to wait for the app's answer: a stop or a timed recording waits for the video to be written too.
     static func timeout(for request: AgentRequest) -> Duration {
         switch request.op {
-        case .capture, .status: .seconds(30)
+        case .capture: .seconds(30 + (request.waitStable ?? 0))
+        case .status, .windows: .seconds(30)
         case .record: .seconds((request.duration ?? 0) + 120)
         case .stop: .seconds(120)
         }

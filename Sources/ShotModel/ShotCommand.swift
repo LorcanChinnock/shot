@@ -12,12 +12,14 @@ public enum ShotCommand: Equatable, Sendable {
     /// The text in an image, read on the device, with each line's and word's box.
     case text(path: String)
     case diff(DiffOptions)
-    /// A screenshot of the open window `window` names, taken by the running app.
-    case capture(window: String)
+    /// A screenshot of an open window or a display, taken by the running app.
+    case capture(AgentTarget)
     /// Starts, stops or asks about a recording of a window, made by the running app.
     case record(RecordAction)
     /// Waits for the user's next capture, or with `follow`, reports each one as it comes.
     case watch(WatchOptions)
+    /// The open windows and displays, as the running app sees them.
+    case windows
     case mcp
     case version
     /// Usage, for one command or for all of them.
@@ -153,15 +155,15 @@ public enum ShotCommand: Equatable, Sendable {
     }
 
     public enum RecordAction: Equatable, Sendable {
-        /// Records `window`; with `duration`, waits for the recording to end.
-        case start(window: String, duration: Double?)
+        /// Records the target; with `duration`, waits for the recording to end.
+        case start(AgentTarget, duration: Double?)
         /// Stops the agent's recording `id`, or the one in progress.
         case stop(id: String?)
         case status
     }
 
     /// The commands `help` knows, in the order it lists them.
-    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "text", "diff", "capture", "record", "watch", "mcp"]
+    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "text", "diff", "windows", "capture", "record", "watch", "mcp"]
 
     /// The command's name, for error messages such as `shot gif: …`.
     public var name: String {
@@ -177,6 +179,7 @@ public enum ShotCommand: Equatable, Sendable {
         case .capture: "capture"
         case .record: "record"
         case .watch: "watch"
+        case .windows: "windows"
         case .mcp: "mcp"
         case .version: "version"
         case .help: "help"
@@ -215,16 +218,17 @@ public enum ShotCommand: Equatable, Sendable {
             if rest.contains(where: isHelp) { return .help(first) }
             let (positional, values) = try options(first, rest)
             guard positional.isEmpty else { throw .usage(first, "takes no file; name the window with --window") }
-            guard let window = values["window"]?.first?.trimmingCharacters(in: .whitespaces), !window.isEmpty else {
-                throw .usage(first, "needs --window with words from the window's title or app, such as --window Simulator")
-            }
-            return .capture(window: window)
+            return .capture(try target(first, values))
         case "record":
             if rest.contains(where: isHelp) { return .help(first) }
             return try parseRecord(rest)
         case "watch":
             if rest.contains(where: isHelp) { return .help(first) }
             return try parseWatch(rest)
+        case "windows":
+            if rest.contains(where: isHelp) { return .help(first) }
+            guard rest.isEmpty else { throw .usage(first, "takes no arguments") }
+            return .windows
         default:
             throw .usage(nil, "no command named \"\(first)\"")
         }
@@ -244,10 +248,51 @@ public enum ShotCommand: Equatable, Sendable {
         "frames": ["output": false, "count": false, "every": false, "width": false],
         "text": [:],
         "diff": ["output": false, "threshold": false],
-        "capture": ["window": false],
-        "record": ["window": false, "duration": false],
+        "capture": ["window": false, "bundle-id": false, "display": false, "rect": false, "no-shadow": false, "wait-stable": false],
+        "record": ["window": false, "bundle-id": false, "display": false, "rect": false, "no-shadow": false, "duration": false],
         "watch": ["kind": false, "timeout": false],
     ]
+    /// Flags that take no value, or one only after `=`, such as `--wait-stable=10`.
+    private static let switches: Set<String> = ["no-shadow", "wait-stable"]
+
+    /// What `capture` or `record` is pointed at, from `--window`, `--bundle-id`, `--display`, `--rect`, `--no-shadow`
+    /// and `--wait-stable`.
+    private static func target(_ command: String, _ values: [String: [String]]) throws(ShotCommandError) -> AgentTarget {
+        func text(_ name: String) -> String? {
+            values[name]?.first.map { $0.trimmingCharacters(in: .whitespaces) }.flatMap { $0.isEmpty ? nil : $0 }
+        }
+        var target = AgentTarget(window: text("window"), bundleID: text("bundle-id"), noShadow: values["no-shadow"] != nil)
+        guard target.window != nil || target.bundleID != nil || values["display"] != nil else {
+            let others = command == "record" ? ", --bundle-id or --display, or --stop or --status" : ", --bundle-id or --display"
+            throw .usage(command, "needs --window with words from the window's title or app, such as --window Simulator\(others)")
+        }
+        if values["no-shadow"]?.first?.isEmpty == false {
+            throw .usage(command, "--no-shadow takes no value")
+        }
+        if let text = values["display"]?.first {
+            guard let display = Int(text), display >= 1 else {
+                throw .usage(command, "--display \(text) must be a display's number, from 1, as shot windows lists them")
+            }
+            target.display = display
+        }
+        if let text = values["rect"]?.first {
+            guard let rect = Self.rect(text), AgentTarget.isRect(rect) else {
+                throw .usage(command, "--rect \(text) must be x,y,width,height in points from the top-left corner, with a width and height above 0")
+            }
+            target.rect = rect
+        }
+        if let text = values["wait-stable"]?.first {
+            let seconds = text.isEmpty ? AgentTarget.defaultWaitStable : Self.seconds(text)
+            guard let seconds, seconds > 0, seconds <= AgentTarget.maximumWaitStable else {
+                throw .usage(command, "--wait-stable=\(text) must be a time above 0 and at most \(Int(AgentTarget.maximumWaitStable)) seconds, such as --wait-stable=10")
+            }
+            target.waitStable = seconds
+        }
+        if let problem = target.problem {
+            throw .usage(command, problem)
+        }
+        return target
+    }
 
     /// `watch [--kind image|video|any] [--timeout 60] [--follow]`.
     private static func parseWatch(_ arguments: [String]) throws(ShotCommandError) -> ShotCommand {
@@ -291,9 +336,7 @@ public enum ShotCommand: Equatable, Sendable {
         }
         let (positional, values) = try options("record", arguments)
         guard positional.isEmpty else { throw .usage("record", "takes no file; name the window with --window") }
-        guard let window = values["window"]?.first?.trimmingCharacters(in: .whitespaces), !window.isEmpty else {
-            throw .usage("record", "needs --window with words from the window's title or app, such as --window Simulator, or --stop or --status")
-        }
+        let picked = try target("record", values)
         var duration: Double?
         if let text = values["duration"]?.first {
             guard let seconds = Self.seconds(text), seconds > 0, seconds <= AgentRequest.maximumDuration else {
@@ -301,7 +344,7 @@ public enum ShotCommand: Equatable, Sendable {
             }
             duration = seconds
         }
-        return .record(.start(window: window, duration: duration))
+        return .record(.start(picked, duration: duration))
     }
 
     /// `diff <a> <b> [-o out.png] [--threshold 0.1]`.
@@ -346,7 +389,9 @@ public enum ShotCommand: Equatable, Sendable {
                 let known = allowed.keys.map { $0 == "output" ? "-o" : "--\($0)" }.sorted()
                 throw .usage(command, "unknown option \(argument)" + (known.isEmpty ? "; \(command) takes none" : "; it takes \(known.joined(separator: ", "))"))
             }
-            if value == nil {
+            if value == nil, switches.contains(name) {
+                value = ""
+            } else if value == nil {
                 guard index < arguments.count else { throw .usage(command, "\(argument) needs a value") }
                 value = arguments[index]
                 index += 1
@@ -484,8 +529,9 @@ public enum ShotCommand: Equatable, Sendable {
             "frames": "\(program) frames <video> [--count 8 | --every 2] [--width 1568] [-o folder]\n    Still frames of the video, for an agent that can't watch it: where the picture changes, or evenly every few seconds.",
             "text": "\(program) text <image>\n    The text in the image, read on this Mac: each line and word with its box, [x, y, width, height] in the image's pixels from the top left.",
             "diff": "\(program) diff <a> <b> [-o out.png] [--threshold 0.1]\n    Where image b differs from a: a dimmed copy of b with the changes highlighted and boxed, and the boxes in b's pixels.\n    Images of different sizes are compared at b's size. --threshold 0 counts any difference; 0.1, the default, ignores anti-aliasing.",
-            "capture": "\(program) capture --window <title or app>\n    A screenshot of that open window, taken by Shot without taking focus, saved to the capture folder. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
-            "record": "\(program) record --window <title or app> [--duration 10] | --stop [<id>] | --status\n    Records that open window through Shot, without its microphone or camera, for at most \(Int(AgentRequest.maximumDuration / 60)) minutes, saved to the capture folder. Without --duration it prints an id and returns at once; --stop ends it. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
+            "windows": "\(program) windows\n    The open windows, front to back, with each one's app, bundle ID, title and size and which is frontmost, and the displays. Needs Settings › Agents › Let agents capture and record on.",
+            "capture": "\(program) capture --window <title or app> | --bundle-id <id> | --display <n> [--rect x,y,w,h] [--no-shadow] [--wait-stable[=5]]\n    A screenshot of that open window or whole display, taken by Shot without taking focus, saved to the capture folder. --bundle-id picks the app's front window, or with --window one of its windows. --rect keeps that part, in points from the top-left corner. --wait-stable waits, up to 5 seconds or the time given, for the picture to stop changing. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
+            "record": "\(program) record --window <title or app> | --bundle-id <id> | --display <n> [--rect x,y,w,h] [--no-shadow] [--duration 10] | --stop [<id>] | --status\n    Records that open window or display through Shot, without its microphone or camera, for at most \(Int(AgentRequest.maximumDuration / 60)) minutes, saved to the capture folder. --rect records that part of the screen, so anything in front of it shows. Without --duration it prints an id and returns at once; --stop ends it. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
             "watch": "\(program) watch [--kind image|video|any] [--timeout 60] [--follow]\n    Waits for your next capture and prints its name, path, kind and when it was taken. Exits with 66 if none comes before the timeout. --follow prints one line per capture as each comes, until interrupted or the timeout. Reads the capture folder only, so Shot needn't be running.",
             "mcp": "\(program) mcp\n    Serves Shot's captures to an AI agent over MCP, on standard input and output.",
         ]

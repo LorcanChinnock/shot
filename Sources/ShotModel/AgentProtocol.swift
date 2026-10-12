@@ -9,14 +9,16 @@ public struct AgentRequest: Codable, Equatable, Sendable {
     public static let maximumDuration: Double = 600
 
     public enum Operation: String, Codable, Sendable {
-        /// A screenshot of `window`.
+        /// A screenshot of the target.
         case capture
-        /// A recording of `window`: answered at once with its `id`, or with `duration`, when it ends.
+        /// A recording of the target: answered at once with its `id`, or with `duration`, when it ends.
         case record
         /// Ends the agent's recording `id`, or the agent's recording in progress.
         case stop
         /// Whether the app is capturing or recording.
         case status
+        /// The open windows and the displays, for an agent to pick from.
+        case windows
     }
 
     public var v: Int
@@ -27,6 +29,12 @@ public struct AgentRequest: Codable, Equatable, Sendable {
     public var duration: Double?
     /// A recording's ID, as `record` gave it.
     public var id: String?
+    /// The rest of `AgentTarget`, sent only when set, so a plain request reads as it always has.
+    public var bundleID: String?
+    public var display: Int?
+    public var rect: [Double]?
+    public var noShadow: Bool?
+    public var waitStable: Double?
 
     public init(_ op: Operation, window: String? = nil, duration: Double? = nil, id: String? = nil) {
         v = Self.version
@@ -36,9 +44,23 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         self.id = id
     }
 
+    public init(_ op: Operation, target: AgentTarget, duration: Double? = nil) {
+        self.init(op, window: target.window, duration: duration)
+        bundleID = target.bundleID
+        display = target.display
+        rect = target.rect
+        noShadow = target.noShadow ? true : nil
+        waitStable = target.waitStable
+    }
+
+    /// What `capture` or `record` is pointed at.
+    public var target: AgentTarget {
+        AgentTarget(window: window, bundleID: bundleID, display: display, rect: rect, noShadow: noShadow ?? false, waitStable: waitStable)
+    }
+
     /// The request as one line, newline included.
     public var line: Data {
-        // Encoding a struct of strings and an int can't fail.
+        // Encoding a struct of strings and numbers can't fail.
         ((try? JSONEncoder().encode(self)) ?? Data()) + Data("\n".utf8)
     }
 
@@ -53,15 +75,31 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         guard let name = object["op"]?.string, let op = Operation(rawValue: name) else {
             throw .usage(nil, "unknown op \(object["op"]?.string.map { "\"\($0)\"" } ?? "(none)")")
         }
-        let window = object["window"]?.string
-        if op == .capture || op == .record, (window ?? "").trimmingCharacters(in: .whitespaces).isEmpty {
-            throw .usage(nil, "\(op.rawValue) needs a window")
+        let target = AgentTarget(
+            window: object["window"]?.string,
+            bundleID: object["bundleID"]?.string,
+            // A display that isn't a whole number reads as 0, which `problem` refuses.
+            display: object["display"]?.number.map { $0.isFinite ? Int(exactly: $0) ?? 0 : 0 },
+            rect: object["rect"].map { value in
+                guard case let .array(items) = value else { return [] }
+                return items.map { $0.number ?? .nan }
+            },
+            noShadow: object["noShadow"] == .bool(true),
+            waitStable: object["waitStable"]?.number
+        )
+        if op == .capture || op == .record, let problem = target.problem {
+            throw .usage(nil, "\(op.rawValue) \(problem)")
+        }
+        if op == .record, target.waitStable != nil {
+            throw .usage(nil, "record \(AgentTarget.waitStableIsForCapture)")
         }
         let duration = object["duration"]?.number
         if let duration, !(duration > 0 && duration <= maximumDuration) {
             throw .usage(nil, "duration must be above 0 and at most \(Int(maximumDuration)) seconds")
         }
-        return AgentRequest(op, window: window, duration: duration, id: object["id"]?.string)
+        var request = AgentRequest(op, target: target, duration: duration)
+        request.id = object["id"]?.string
+        return request
     }
 }
 
