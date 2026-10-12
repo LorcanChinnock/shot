@@ -66,7 +66,7 @@ struct ImportMenu: View {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.movie, .audio]
         panel.allowsMultipleSelection = true
-        panel.message = appendToMain ? "Choose videos to add to the end" : "Choose videos or audio to add at the playhead"
+        panel.message = appendToMain ? String(localized: "Choose videos to add to the end") : String(localized: "Choose videos or audio to add at the playhead")
         guard panel.runModal() == .OK else {
             return
         }
@@ -642,7 +642,7 @@ private enum LaneControl: CaseIterable {
         }
     }
 
-    func menuTitle(isOn: Bool) -> String {
+    func menuTitle(isOn: Bool) -> LocalizedStringResource {
         switch self {
         case .lock: isOn ? "Unlock Track" : "Lock Track"
         case .hide: isOn ? "Show Track" : "Hide Track"
@@ -650,7 +650,7 @@ private enum LaneControl: CaseIterable {
         }
     }
 
-    func tip(isOn: Bool) -> String {
+    func tip(isOn: Bool) -> LocalizedStringResource {
         switch self {
         case .lock: isOn ? "Unlock the track" : "Lock the track, so Split and new annotations leave it alone"
         case .hide: isOn ? "Show the track" : "Hide the track"

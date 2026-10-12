@@ -265,7 +265,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             field.cell?.isScrollable = false
             field.maximumNumberOfLines = 0
             field.lineBreakMode = .byWordWrapping
-            field.placeholderString = "Note"
+            field.placeholderString = String(localized: "Note")
         } else {
             field.drawsBackground = true
             field.backgroundColor = NSColor.white.withAlphaComponent(0.6)

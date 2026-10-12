@@ -226,9 +226,8 @@ struct GalleryRootView: View {
 
     private var status: String {
         let total = model.visible.count
-        let noun = total == 1 ? "item" : "items"
         let count = model.selection.count
-        return count > 0 ? "\(count) of \(total) selected" : "\(total) \(noun)"
+        return count > 0 ? String(localized: "\(count) of \(total) selected") : String(localized: "\(total) items")
     }
 }
 

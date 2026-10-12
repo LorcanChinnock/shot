@@ -226,11 +226,11 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             return false
         }
         let alert = NSAlert()
-        alert.messageText = model.isComposite ? "Save changes to \(model.fileURL.lastPathComponent) as a copy?" : "Save changes to \(model.fileURL.lastPathComponent)?"
-        alert.informativeText = "Your edits are lost if you discard them."
-        alert.addButton(withTitle: model.isComposite ? "Save Copy" : "Save")
-        alert.addButton(withTitle: "Discard")
-        alert.addButton(withTitle: "Cancel")
+        alert.messageText = model.isComposite ? String(localized: "Save changes to \(model.fileURL.lastPathComponent) as a copy?") : String(localized: "Save changes to \(model.fileURL.lastPathComponent)?")
+        alert.informativeText = String(localized: "Your edits are lost if you discard them.")
+        alert.addButton(withTitle: model.isComposite ? String(localized: "Save Copy") : String(localized: "Save"))
+        alert.addButton(withTitle: String(localized: "Discard"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
         alert.beginSheetModal(for: sender) { [self] response in
             switch response {
             case .alertFirstButtonReturn:

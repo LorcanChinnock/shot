@@ -25,14 +25,16 @@ struct ClipInspector: View {
                             if model.project.supports(preset, forClip: id) {
                                 Button(preset.title) { model.applyPreset(preset) }
                                     .buttonStyle(BrutalButtonStyle(color: Brutal.violet.opacity(0.7), compact: true))
-                                    .brutalTip("\(preset.title) animation at the \(preset.playsAtEnd ? "end" : "start") of the \(isNote ? "annotation" : "clip")")
+                                    .brutalTip(preset.playsAtEnd
+                                        ? isNote ? "\(preset.title) animation at the end of the annotation" : "\(preset.title) animation at the end of the clip"
+                                        : isNote ? "\(preset.title) animation at the start of the annotation" : "\(preset.title) animation at the start of the clip")
                             }
                         }
                     }
                     if !isSound, model.targetStyleKind != nil {
                         Button("Style") { showsStyle.toggle() }
                             .buttonStyle(BrutalButtonStyle(color: Brutal.sky.opacity(0.7), compact: true))
-                            .brutalTip("Add a shadow, border or rounded corners to the \(isNote ? "annotation" : "clip")")
+                            .brutalTip(isNote ? "Add a shadow, border or rounded corners to the annotation" : "Add a shadow, border or rounded corners to the clip")
                             .popover(isPresented: $showsStyle, arrowEdge: .top) {
                                 StylePopover(model: model)
                             }
@@ -116,15 +118,17 @@ struct ClipInspector: View {
 
     private func position(_ values: PropertyValues, _ animation: ClipAnimation) -> some View {
         HStack(spacing: 6) {
-            caption("POSITION")
+            let title = String(localized: "POSITION")
+            caption(title)
             field(values.position.width, label: "Horizontal position") { var changed = values; changed.position.width = $0; return changed }
             field(values.position.height, label: "Vertical position") { var changed = values; changed.position.height = $0; return changed }
-            diamond(.position, animation, name: "position")
+            diamond(.position, animation, name: title.lowercased())
         }
     }
 
-    private func slider(_ title: String, property: AnimatedProperty, value: Double, range: ClosedRange<Double>, format: (Double) -> String, animation: ClipAnimation, make: @escaping (Double) -> PropertyValues) -> some View {
-        HStack(spacing: 6) {
+    private func slider(_ title: LocalizedStringResource, property: AnimatedProperty, value: Double, range: ClosedRange<Double>, format: (Double) -> String, animation: ClipAnimation, make: @escaping (Double) -> PropertyValues) -> some View {
+        let title = String(localized: title)
+        return HStack(spacing: 6) {
             caption(title)
             Slider(value: Binding(get: { min(max(value, range.lowerBound), range.upperBound) }, set: { model.setValues(make($0)) }), in: range) { editing in
                 if editing {
@@ -142,7 +146,7 @@ struct ClipInspector: View {
         }
     }
 
-    private func field(_ value: Double, label: String, make: @escaping (Double) -> PropertyValues) -> some View {
+    private func field(_ value: Double, label: LocalizedStringResource, make: @escaping (Double) -> PropertyValues) -> some View {
         TextField("0", value: Binding(get: { value.rounded() }, set: { model.setValues(make($0)) }), format: .number.precision(.fractionLength(0)))
             .textFieldStyle(.plain)
             .font(Brutal.mono)
