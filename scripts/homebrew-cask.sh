@@ -15,7 +15,7 @@ cask "shot" do
   url "https://github.com/LorcanChinnock/shot/releases/download/v#{version}/Shot-v#{version}.zip"
   name "Shot"
   desc "Screenshots, annotations and screen recordings from the menu bar"
-  homepage "https://github.com/LorcanChinnock/shot"
+  homepage "https://shot.lorcanchinnock.com"
 
   livecheck do
     url :url
@@ -32,9 +32,18 @@ cask "shot" do
   uninstall quit: "dev.lorcan.Shot"
 
   zap trash: [
+    "~/Library/Application Support/dev.lorcan.Shot",
     "~/Library/Caches/dev.lorcan.Shot",
     "~/Library/HTTPStorages/dev.lorcan.Shot",
+    "~/Library/HTTPStorages/dev.lorcan.Shot.binarycookies",
     "~/Library/Preferences/dev.lorcan.Shot.plist",
   ]
+
+  caveats <<~EOS
+    Shot isn't notarized by Apple yet, so macOS blocks it the first time you open it.
+    Open Shot and click Done, then click Open Anyway in
+    System Settings > Privacy & Security and confirm. You only do this once.
+    Steps with pictures: https://shot.lorcanchinnock.com/#install
+  EOS
 end
 EOF
