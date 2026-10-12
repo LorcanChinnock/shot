@@ -80,6 +80,12 @@ final class AgentServer {
             } catch {
                 return .failure(error)
             }
+        case .mark:
+            do {
+                return .success(try coordinator.agentMark(label: request.label ?? "", id: request.id))
+            } catch {
+                return .failure(error)
+            }
         }
     }
 }

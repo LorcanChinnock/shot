@@ -19,6 +19,8 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         case status
         /// The open windows and the displays, for an agent to pick from.
         case windows
+        /// Stamps `label` on the agent's recording `id`, or the agent's recording in progress, at the time it's at.
+        case mark
     }
 
     public var v: Int
@@ -35,13 +37,16 @@ public struct AgentRequest: Codable, Equatable, Sendable {
     public var rect: [Double]?
     public var noShadow: Bool?
     public var waitStable: Double?
+    /// What a mark says, at most `RecordingMark.maximumLabel` characters.
+    public var label: String?
 
-    public init(_ op: Operation, window: String? = nil, duration: Double? = nil, id: String? = nil) {
+    public init(_ op: Operation, window: String? = nil, duration: Double? = nil, id: String? = nil, label: String? = nil) {
         v = Self.version
         self.op = op
         self.window = window
         self.duration = duration
         self.id = id
+        self.label = label
     }
 
     public init(_ op: Operation, target: AgentTarget, duration: Double? = nil) {
@@ -97,8 +102,18 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         if let duration, !(duration > 0 && duration <= maximumDuration) {
             throw .usage(nil, "duration must be above 0 and at most \(Int(maximumDuration)) seconds")
         }
+        let label = object["label"]?.string
+        if op == .mark {
+            guard let label, !label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw .usage(nil, "mark needs a label")
+            }
+            guard label.count <= RecordingMark.maximumLabel else {
+                throw .usage(nil, "a mark's label can be at most \(RecordingMark.maximumLabel) characters")
+            }
+        }
         var request = AgentRequest(op, target: target, duration: duration)
         request.id = object["id"]?.string
+        request.label = label
         return request
     }
 }

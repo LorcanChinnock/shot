@@ -38,6 +38,8 @@ final class CaptureCoordinator {
         var waiters: [CheckedContinuation<Result<[String: JSONValue], ShotCommandError>, Never>] = []
         /// Stops it after its duration, or after `AgentRequest.maximumDuration` at most.
         var limit: Task<Void, Never>?
+        /// The moments the agent marked, at the recording's elapsed time, pauses left out.
+        var marks: [RecordingMark] = []
     }
 
     init(state: AppState) {
@@ -724,6 +726,31 @@ final class CaptureCoordinator {
         throw .noInput("No agent recording is in progress. To get one that has already ended, stop it by the id it started with.")
     }
 
+    /// Stamps `label` on the agent's recording `id`, or the agent's recording in progress, at its elapsed time, so its
+    /// key frames show that moment. A recording the user started can't be marked.
+    func agentMark(label: String, id: String?) throws(ShotCommandError) -> [String: JSONValue] {
+        guard var session = agentSession, id == nil || id == session.id, recorder.isRecording else {
+            if let id, agentEndings[id] != nil || agentSession?.id == id {
+                throw .noInput("The agent recording \(id) has ended, so it can't be marked.")
+            }
+            if let id {
+                throw .noInput("No agent recording has the id \(id).")
+            }
+            if recorder.isRecording, agentSession == nil {
+                throw .busy("The recording in progress was started by the user, not an agent, so it can't be marked.")
+            }
+            throw .noInput("No agent recording is in progress to mark.")
+        }
+        guard session.marks.count < RecordingMark.maximumCount else {
+            throw .usage(nil, "This recording already has \(RecordingMark.maximumCount) marks, the most it keeps.")
+        }
+        let mark = RecordingMark(time: (recorder.elapsed * 1000).rounded() / 1000, label: String(label.prefix(RecordingMark.maximumLabel)))
+        session.marks.append(mark)
+        agentSession = session
+        log.notice("Agent marked recording \(session.id, privacy: .public) at \(mark.time, privacy: .public) s")
+        return ["id": .string(session.id), "time": .number(mark.time), "label": .string(mark.label)]
+    }
+
     /// Waits for the agent's recording `id` to end, and gives how it ended.
     private func agentRecordingResult(_ id: String) async throws(ShotCommandError) -> [String: JSONValue] {
         let result = await withCheckedContinuation { (continuation: CheckedContinuation<Result<[String: JSONValue], ShotCommandError>, Never>) in
@@ -751,6 +778,17 @@ final class CaptureCoordinator {
         }
         if let session = agentSession, session.id == id {
             Toast.show("Saved the agent's recording of \(session.app)", duration: .seconds(3))
+            if !session.marks.isEmpty {
+                let marks = session.marks
+                fields["marks"] = .array(marks.map { .object(["time": .number($0.time), "label": .string($0.label)]) })
+                // Saved before answering, so the key frames the answer leads to show the marks.
+                let store = RecordingMarks.url(bundleID: Bundle.main.bundleIdentifier ?? "dev.lorcan.Shot.dev")
+                do {
+                    try await Task.detached { try RecordingMarks.save(marks, for: url, in: store) }.value
+                } catch {
+                    log.error("Couldn't keep the marks of \(url.path): \(error.localizedDescription, privacy: .public)")
+                }
+            }
         }
         endAgentRecording(id, with: .success(fields))
     }

@@ -145,10 +145,10 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     ("capture --window a --wait-stable=31", "capture", "--wait-stable=31 must be a time above 0 and at most 30 seconds, such as --wait-stable=10"),
     ("windows now", "windows", "takes no arguments"),
     ("record --window a --wait-stable", "record", "unknown option --wait-stable; it takes --bundle-id, --display, --duration, --no-shadow, --rect, --window"),
-    ("record", "record", "needs --window with words from the window's title or app, such as --window Simulator, --bundle-id or --display, or --stop or --status"),
+    ("record", "record", "needs --window with words from the window's title or app, such as --window Simulator, --bundle-id or --display, or --mark, --stop or --status"),
     ("record --window a --duration 0", "record", "--duration 0 must be a time above 0 and at most 10 minutes, such as 10 or 1:30"),
     ("record --window a --duration 10:01", "record", "--duration 10:01 must be a time above 0 and at most 10 minutes, such as 10 or 1:30"),
-    ("record --window a --stop", "record", "use --window, --stop or --status, one at a time"),
+    ("record --window a --stop", "record", "use --window, --mark, --stop or --status, one at a time"),
     ("record --stop a b", "record", "--stop takes at most a recording's id"),
     ("record --stop --status", "record", "--stop takes at most a recording's id"),
     ("record --status now", "record", "--status takes nothing else"),
@@ -158,11 +158,55 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     ("watch --timeout 0", "watch", "--timeout 0 must be a time above 0, such as 30 or 5:00"),
     ("watch --follow --follow", "watch", "--follow is given twice"),
     ("watch --window a", "watch", "unknown option --window; it takes --kind, --timeout"),
+    ("record --window a --", "record", "-- needs a command after it, such as -- xcodebuild test"),
+    ("record --window a --duration 5 -- make test", "record", "use --duration or a command, not both; with a command, the recording stops when it exits"),
+    ("record -- make test", "record", "needs --window with words from the window's title or app, such as --window Simulator, --bundle-id or --display, or --mark, --stop or --status"),
+    ("record --window a --mark b -- make", "record", "use --window, --mark, --stop or --status, one at a time"),
+    ("record --mark", "record", "--mark needs a label, such as --mark \"tapped Login\""),
+    ("record --mark a b c", "record", "--mark takes a label and at most a recording's id"),
+    ("record --mark a --stop", "record", "--mark takes a label and at most a recording's id"),
 ] as [(String, String?, String)])
 func aMistakeIsAUsageErrorThatSaysWhat(_ line: String, _ command: String?, _ message: String) throws {
     let error = try #require(usage(line))
     #expect(error.command == command)
     #expect(error.message == message)
+}
+
+@Test func recordRunsACommandWithEverythingAfterTheDoubleDashItsOwn() throws {
+    #expect(try parse("record --window Simulator -- make test") == .record(.run(AgentTarget(window: "Simulator"), command: ["make", "test"])))
+    // The command's own flags, --help and -- included, are never Shot's.
+    let command = ["xcodebuild", "test", "--stop", "--help", "--", "-o", "x"]
+    #expect(try ShotCommand.parse(["record", "--window", "Sim", "--"] + command) == .record(.run(AgentTarget(window: "Sim"), command: command)))
+    #expect(try parse("record --help -- make") == .help("record"))
+}
+
+@Test func recordMarksTheRecordingInProgressOrOneByID() throws {
+    #expect(try ShotCommand.parse(["record", "--mark", " tapped Login "]) == .record(.mark(label: "tapped Login", id: nil)))
+    #expect(try ShotCommand.parse(["record", "--mark", "tapped Login", "ab12cd34"]) == .record(.mark(label: "tapped Login", id: "ab12cd34")))
+    #expect(throws: ShotCommandError.usage("record", "--mark needs a label, such as --mark \"tapped Login\"")) {
+        try ShotCommand.parse(["record", "--mark", "  "])
+    }
+    #expect(throws: ShotCommandError.usage("record", "--mark's label is over 200 characters")) {
+        try ShotCommand.parse(["record", "--mark", String(repeating: "a", count: 201)])
+    }
+    #expect(ShotCommand.usage("record").contains("-- <command> [args…]] | --mark <label> [<id>]"))
+}
+
+@Test func aRecordedCommandExitsAsAShellWouldReportIt() {
+    #expect(RecordedCommand.exitCode(waitStatus: 0) == (0, nil))
+    #expect(RecordedCommand.exitCode(waitStatus: 3 << 8) == (3, nil))
+    #expect(RecordedCommand.exitCode(waitStatus: 255 << 8) == (255, nil))
+    #expect(RecordedCommand.exitCode(waitStatus: 2) == (130, 2))
+    #expect(RecordedCommand.exitCode(waitStatus: 15) == (143, 15))
+    // A core dump sets the bit above the signal.
+    #expect(RecordedCommand.exitCode(waitStatus: 0x80 | 11) == (139, 11))
+}
+
+@Test func shotExitsWithTheCommandsCodeUnlessOnlyTheRecordingFailed() {
+    #expect(RecordedCommand.exitCode(command: 0, recording: nil) == 0)
+    #expect(RecordedCommand.exitCode(command: 3, recording: nil) == 3)
+    #expect(RecordedCommand.exitCode(command: 3, recording: .io("lost")) == 3)
+    #expect(RecordedCommand.exitCode(command: 0, recording: .noInput("discarded")) == 66)
 }
 
 @Test func timesReadAsSecondsOrClockTime() {

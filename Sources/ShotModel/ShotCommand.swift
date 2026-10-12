@@ -168,6 +168,10 @@ public enum ShotCommand: Equatable, Sendable {
         /// Stops the agent's recording `id`, or the one in progress.
         case stop(id: String?)
         case status
+        /// Records the target while `command` runs, and stops when it exits.
+        case run(AgentTarget, command: [String])
+        /// Stamps `label` on the agent's recording `id`, or the one in progress.
+        case mark(label: String, id: String?)
     }
 
     /// The commands `help` knows, in the order it lists them.
@@ -235,7 +239,8 @@ public enum ShotCommand: Equatable, Sendable {
             guard positional.isEmpty else { throw .usage(first, "takes no file; name the window with --window") }
             return .capture(try target(first, values))
         case "record":
-            if rest.contains(where: isHelp) { return .help(first) }
+            // What follows -- is the command's own, its --help included.
+            if rest.prefix(while: { $0 != "--" }).contains(where: isHelp) { return .help(first) }
             return try parseRecord(rest)
         case "watch":
             if rest.contains(where: isHelp) { return .help(first) }
@@ -281,7 +286,7 @@ public enum ShotCommand: Equatable, Sendable {
         }
         var target = AgentTarget(window: text("window"), bundleID: text("bundle-id"), noShadow: values["no-shadow"] != nil)
         guard target.window != nil || target.bundleID != nil || values["display"] != nil else {
-            let others = command == "record" ? ", --bundle-id or --display, or --stop or --status" : ", --bundle-id or --display"
+            let others = command == "record" ? ", --bundle-id or --display, or --mark, --stop or --status" : ", --bundle-id or --display"
             throw .usage(command, "needs --window with words from the window's title or app, such as --window Simulator\(others)")
         }
         if values["no-shadow"]?.first?.isEmpty == false {
@@ -368,8 +373,22 @@ public enum ShotCommand: Equatable, Sendable {
         }
     }
 
-    /// `record --window … [--duration s]`, `record --stop [id]` or `record --status`.
+    /// `record --window … [--duration s | -- command …]`, `record --mark label [id]`, `record --stop [id]` or
+    /// `record --status`.
     private static func parseRecord(_ arguments: [String]) throws(ShotCommandError) -> ShotCommand {
+        if arguments.first == "--mark" {
+            let rest = arguments.dropFirst()
+            guard let label = rest.first?.trimmingCharacters(in: .whitespacesAndNewlines), !label.isEmpty else {
+                throw .usage("record", "--mark needs a label, such as --mark \"tapped Login\"")
+            }
+            guard label.count <= RecordingMark.maximumLabel else {
+                throw .usage("record", "--mark's label is over \(RecordingMark.maximumLabel) characters")
+            }
+            guard rest.count <= 2, !(rest.dropFirst().first?.hasPrefix("-") ?? false) else {
+                throw .usage("record", "--mark takes a label and at most a recording's id")
+            }
+            return .record(.mark(label: label, id: rest.dropFirst().first))
+        }
         if arguments.first == "--status" {
             guard arguments.count == 1 else { throw .usage("record", "--status takes nothing else") }
             return .record(.status)
@@ -381,12 +400,22 @@ public enum ShotCommand: Equatable, Sendable {
             }
             return .record(.stop(id: rest.first))
         }
-        if arguments.contains("--stop") || arguments.contains("--status") {
-            throw .usage("record", "use --window, --stop or --status, one at a time")
+        let split = arguments.firstIndex(of: "--")
+        let own = split.map { Array(arguments[..<$0]) } ?? arguments
+        if own.contains("--stop") || own.contains("--status") || own.contains("--mark") {
+            throw .usage("record", "use --window, --mark, --stop or --status, one at a time")
         }
-        let (positional, values) = try options("record", arguments)
+        let (positional, values) = try options("record", own)
         guard positional.isEmpty else { throw .usage("record", "takes no file; name the window with --window") }
         let picked = try target("record", values)
+        if let split {
+            let command = Array(arguments[(split + 1)...])
+            guard !command.isEmpty else { throw .usage("record", "-- needs a command after it, such as -- xcodebuild test") }
+            guard values["duration"] == nil else {
+                throw .usage("record", "use --duration or a command, not both; with a command, the recording stops when it exits")
+            }
+            return .record(.run(picked, command: command))
+        }
         var duration: Double?
         if let text = values["duration"]?.first {
             guard let seconds = Self.seconds(text), seconds > 0, seconds <= AgentRequest.maximumDuration else {
@@ -584,7 +613,7 @@ public enum ShotCommand: Equatable, Sendable {
             "get": "\(program) get [<name or path>]\n    The capture a file name, words from it or its path names, or the newest of any kind, as get_capture gives it.",
             "windows": "\(program) windows\n    The open windows, front to back, with each one's app, bundle ID, title and size and which is frontmost, and the displays. Needs Settings › Agents › Let agents capture and record on.",
             "capture": "\(program) capture --window <title or app> | --bundle-id <id> | --display <n> [--rect x,y,w,h] [--no-shadow] [--wait-stable[=5]]\n    A screenshot of that open window or whole display, taken by Shot without taking focus, saved to the capture folder. --bundle-id picks the app's front window, or with --window one of its windows. --rect keeps that part, in points from the top-left corner. --wait-stable waits, up to 5 seconds or the time given, for the picture to stop changing. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
-            "record": "\(program) record --window <title or app> | --bundle-id <id> | --display <n> [--rect x,y,w,h] [--no-shadow] [--duration 10] | --stop [<id>] | --status\n    Records that open window or display through Shot, without its microphone or camera, for at most \(Int(AgentRequest.maximumDuration / 60)) minutes, saved to the capture folder. --rect records that part of the screen, so anything in front of it shows. Without --duration it prints an id and returns at once; --stop ends it. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
+            "record": "\(program) record --window <title or app> | --bundle-id <id> | --display <n> [--rect x,y,w,h] [--no-shadow] [--duration 10 | -- <command> [args…]] | --mark <label> [<id>] | --stop [<id>] | --status\n    Records that open window or display through Shot, without its microphone or camera, for at most \(Int(AgentRequest.maximumDuration / 60)) minutes, saved to the capture folder. --rect records that part of the screen, so anything in front of it shows. Without --duration it prints an id and returns at once; --stop ends it. With -- and a command, it records while the command runs, passes its output through, stops when it exits, and exits with its code. --mark labels this moment of the recording, and its key frames show it. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
             "watch": "\(program) watch [--kind image|video|any] [--timeout 60] [--follow]\n    Waits for your next capture and prints its name, path, kind and when it was taken. Exits with 66 if none comes before the timeout. --follow prints one line per capture as each comes, until interrupted or the timeout. Reads the capture folder only, so Shot needn't be running.",
             "doctor": "\(program) doctor\n    Checks which copy of Shot answers and its version, Let agents capture and record, the socket, the Screen Recording permission and the capture folder, and says how to fix each problem. Exits 1 if a check fails.",
             "mcp": "\(program) mcp\n    Serves Shot's captures to an AI agent over MCP, on standard input and output.",

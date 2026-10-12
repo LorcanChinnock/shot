@@ -136,7 +136,7 @@ public struct AgentTools: Sendable {
         ),
         MCPServer.Tool(
             name: getFrames,
-            description: "Still frames of a Shot recording, since a model can't watch video: the first and last, and the frame after each change on screen once it settles, each with its time in seconds. Use this to see what happened in a recording, such as the steps of a bug. Reads only; writes nothing.",
+            description: "Still frames of a Shot recording, since a model can't watch video: the first and last, the frame after each change on screen once it settles, and the frame at each mark an agent made while recording, with its label, each with its time in seconds. Use this to see what happened in a recording, such as the steps of a bug. Reads only; writes nothing.",
             inputSchema: schema(capture.merging([
                 "count": .object(["type": .string("integer"), "description": .string("How many frames, 1 to \(ShotCommand.FramesOptions.maximumCount). Default 8.")]),
             ]) { $1 }),
@@ -211,16 +211,17 @@ public struct AgentTools: Sendable {
         ),
         MCPServer.Tool(
             name: recordWindow,
-            description: "Records an open window through the running Shot app, such as the Simulator while a UI test runs, then shows what happened. Saved to the capture folder. With a duration of up to \(Int(maximumWait)) seconds it waits, then returns the recording's path and about \(recordingFrames) key frames, each with its time. Without one it starts and returns an id; call again with action stop to end it and get the frames. Never records the microphone or camera, stops itself after \(Int(AgentRequest.maximumDuration / 60)) minutes, and Shot shows a red border, its stop controls and a notice, so the user can stop it. Shot opens in the background if it isn't running. Needs Settings › Agents › Let agents capture and record turned on.",
+            description: "Records an open window through the running Shot app, such as the Simulator while a UI test runs, then shows what happened. Saved to the capture folder. With a duration of up to \(Int(maximumWait)) seconds it waits, then returns the recording's path and about \(recordingFrames) key frames, each with its time. Without one it starts and returns an id; call again with action stop to end it and get the frames. While it records, action mark with a label, such as \"tapped Login\", marks that moment, and the key frames include the frame there, labelled. Never records the microphone or camera, stops itself after \(Int(AgentRequest.maximumDuration / 60)) minutes, and Shot shows a red border, its stop controls and a notice, so the user can stop it. Shot opens in the background if it isn't running. Needs Settings › Agents › Let agents capture and record turned on.",
             inputSchema: schema(target.merging([
                 "action": .object([
                     "type": .string("string"),
-                    "enum": .array([.string("start"), .string("stop")]),
-                    "description": .string("start (the default) or stop."),
+                    "enum": .array([.string("start"), .string("stop"), .string("mark")]),
+                    "description": .string("start (the default), stop, or mark."),
                 ]),
+                "label": .object(["type": .string("string"), "description": .string("For mark: what's happening now, such as \"tapped Login\", at most \(RecordingMark.maximumLabel) characters.")]),
                 "window": .object(["type": .string("string"), "description": .string("For start: words from the window's title or its app's name, such as \"Simulator\".")]),
                 "duration": seconds("For start: how long to record, up to \(Int(maximumWait)) seconds, waiting for it to end. Without it, the recording runs until stopped."),
-                "id": .object(["type": .string("string"), "description": .string("For stop: the id start gave. Without it, stops the agent's recording in progress.")]),
+                "id": .object(["type": .string("string"), "description": .string("For stop and mark: the id start gave. Without it, the agent's recording in progress.")]),
             ]) { $1 })
         ),
         MCPServer.Tool(
@@ -512,6 +513,13 @@ public struct AgentTools: Sendable {
         case "stop":
             let id = arguments["id"]?.string.flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 }
             request = AgentRequest(.stop, id: id)
+        case "mark":
+            let id = arguments["id"]?.string.flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 }
+            guard let label = arguments["label"]?.string?.trimmingCharacters(in: .whitespacesAndNewlines), !label.isEmpty else {
+                return MCPServer.ToolResult(content: [.text("record_window needs label to mark: what's happening now, such as \"tapped Login\".")], isError: true)
+            }
+            // Lenient like the other arguments: a long label is cut short rather than refused.
+            request = AgentRequest(.mark, id: id, label: String(label.prefix(RecordingMark.maximumLabel)))
         case "start", "":
             var target = Self.target(arguments)
             // Only a screenshot waits for the picture to settle; a recording shows it settling anyway.
@@ -528,7 +536,7 @@ public struct AgentTools: Sendable {
             }
             request = AgentRequest(.record, target: target, duration: duration)
         default:
-            return MCPServer.ToolResult(content: [.text("record_window's action is start or stop, not \"\(action)\".")], isError: true)
+            return MCPServer.ToolResult(content: [.text("record_window's action is start, stop or mark, not \"\(action)\".")], isError: true)
         }
         let fields: [String: JSONValue]
         do {
@@ -537,6 +545,9 @@ public struct AgentTools: Sendable {
             return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
         }
         var content: [MCPServer.Content] = [.text(Self.json(.object(fields)))] + notes.map(MCPServer.Content.text)
+        if request.op == .mark {
+            return MCPServer.ToolResult(content: content)
+        }
         guard let path = fields["path"]?.string else {
             content.append(.text("Recording. Call record_window with action stop and id \(fields["id"]?.string ?? "") to end it; it stops itself after \(Int(AgentRequest.maximumDuration / 60)) minutes."))
             return MCPServer.ToolResult(content: content)
