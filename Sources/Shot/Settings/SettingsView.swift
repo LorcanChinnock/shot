@@ -577,28 +577,110 @@ private struct AgentSettings: View {
         SettingsCard(title: "Hand-off", symbol: "arrow.right.doc.on.clipboard") {
             ToggleRow(
                 title: "Hand captures to agents",
-                subtitle: "Records inside each capture which app and window it came from and what you marked, so an agent can read it. The record travels with the file and its copies. Copied captures are kept as files, so an agent can fetch them.",
+                subtitle: "Saves the source app, the window and your marks inside each screenshot, so an agent can tell where it came from and what you pointed at. Screenshots you only copy are also saved as files, so an agent can open them.",
                 isOn: $handoff, color: color, divider: false
             )
         }
         SettingsCard(title: "Capture", symbol: "macwindow") {
             ToggleRow(
                 title: "Let agents capture and record",
-                subtitle: "Lets an agent ask Shot, through the shot command or the MCP server, to screenshot or record an open window, such as the Simulator. Shot shows a notice each time and never takes focus. An agent's recording shows the region border and stop controls, leaves out the microphone and camera, and stops after \(Int(AgentRequest.maximumDuration / 60)) minutes.",
+                subtitle: "Lets an agent screenshot or record a window it names, through the shot command or the MCP server. Shot shows a notice each time and never brings the window forward. An agent's recordings leave out the microphone and camera, show the stop controls, and end after \(Int(AgentRequest.maximumDuration / 60)) minutes.",
                 isOn: $capture, color: color, divider: false
             )
         }
         SettingsCard(title: "MCP server", symbol: "terminal.fill") {
-            Text("Lets an agent read your latest captures and what you marked on them, and save new files beside them, such as annotated copies, GIFs and trims. Your originals never change. Nothing is uploaded, but the agent you connect sees whatever it reads, so redact first.")
+            Text("Lets an agent read your recent captures and your marks on them, and save new files beside them, such as annotated copies, GIFs and trims. Your originals never change. Shot never uploads your captures, but whatever the agent reads goes to its model provider, so blur anything private first.")
                 .font(Brutal.caption)
                 .foregroundStyle(Brutal.ink.opacity(0.65))
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 9)
-            CommandRow(title: "Claude Code", command: "claude mcp add shot -- \"\(Self.server)\" mcp")
-            CommandRow(title: "Claude Code, after a Homebrew install", command: "claude mcp add shot -- shot mcp")
-            CommandRow(title: "Cursor and other JSON configs", command: #"{"mcpServers": {"shot": {"command": "\#(Self.server)", "args": ["mcp"]}}}"#)
+            CommandRow(title: "Claude Code, for every project", command: "claude mcp add -s user shot -- \"\(Self.server)\" mcp")
+            CommandRow(title: "Cursor, or any app with a JSON config", command: #"{"mcpServers": {"shot": {"command": "\#(Self.server)", "args": ["mcp"]}}}"#)
             CommandRow(title: "Codex, in ~/.codex/config.toml", command: "[mcp_servers.shot]\ncommand = \"\(Self.server)\"\nargs = [\"mcp\"]", divider: false)
+        }
+        SettingsCard(title: "Command line", symbol: "apple.terminal") {
+            CommandLinkRow(cli: Self.server)
+        }
+    }
+}
+
+/// Installs or removes the `shot` command, a link in `/usr/local/bin` to this app's `shot-cli`, with an administrator's
+/// password.
+private struct CommandLinkRow: View {
+    let cli: String
+    @State private var status = CommandLink.Status.missing
+    @State private var working = false
+    private let name = CommandLink.name(bundleID: Bundle.main.bundleIdentifier)
+    private var link: String { (CommandLink.folder as NSString).appendingPathComponent(name) }
+
+    var body: some View {
+        SettingRow(title: "\(name) command", subtitle: subtitle, divider: false) {
+            switch status {
+            case .missing:
+                button("Install", CommandLink.installScript(name: name, cli: cli))
+            case .linked:
+                button("Uninstall", CommandLink.uninstallScript(name: name))
+            case .stale:
+                button("Reinstall", CommandLink.installScript(name: name, cli: cli))
+            case .homebrew:
+                BrutalChip(text: "INSTALLED", color: Brutal.mint)
+            case .taken:
+                EmptyView()
+            }
+        }
+        .onAppear(perform: refresh)
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in refresh() }
+    }
+
+    private var subtitle: String {
+        switch status {
+        case .missing: "Run \(name) from any terminal, for you and your agents. macOS asks for your password once."
+        case .linked: "Installed at \(link). It updates with Shot."
+        case .homebrew: "Installed by Homebrew. It updates with Shot."
+        case .stale: "\(link) points to a copy of Shot that has moved. Reinstall to point it at this one."
+        case .taken: "Something else is already at \(link), so Shot leaves it alone. Run \(cli) instead."
+        }
+    }
+
+    private func button(_ title: String, _ script: String) -> some View {
+        Button(title) { run(script) }
+            .buttonStyle(BrutalButtonStyle(compact: true))
+            .disabled(working)
+    }
+
+    private func refresh() {
+        status = CommandLink.status(name: name, cli: cli)
+    }
+
+    /// Runs `script` through `osascript`, whose password prompt would stall the main thread if run in process.
+    private func run(_ script: String) {
+        working = true
+        Task {
+            let failure = await Task.detached { () -> String? in
+                let process = Process()
+                let errors = Pipe()
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+                process.arguments = ["-e", script]
+                process.standardError = errors
+                do {
+                    try process.run()
+                } catch {
+                    return error.localizedDescription
+                }
+                let message = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+                process.waitUntilExit()
+                // -128 is the user cancelling the password prompt, which needs no message.
+                guard process.terminationStatus != 0, !message.contains("(-128)") else {
+                    return nil
+                }
+                return message.trimmingCharacters(in: .whitespacesAndNewlines)
+            }.value
+            working = false
+            refresh()
+            if let failure {
+                Toast.error("Couldn't change the \(name) command: \(failure)")
+            }
         }
     }
 }
