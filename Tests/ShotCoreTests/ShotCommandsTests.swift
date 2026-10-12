@@ -205,6 +205,94 @@ func redactHidesOnlyTheRectAndLeavesTheInputAlone(style: ShotCommand.RedactStyle
     #expect(output.lastPathComponent == "scan.png")
 }
 
+/// A white image with a black box at `box`, given top-left as `[x, y, width, height]`.
+private func whiteWithBox(width: Int, height: Int, box: [Int]?) -> CGImage {
+    let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+    ctx.setFillColor(CGColor(gray: 1, alpha: 1))
+    ctx.fill(CGRect(x: 0, y: 0, width: width, height: height))
+    if let box {
+        ctx.setFillColor(CGColor(gray: 0, alpha: 1))
+        ctx.fill(CGRect(x: box[0], y: height - box[1] - box[3], width: box[2], height: box[3]))
+    }
+    return ctx.makeImage()!
+}
+
+private func numbers(_ value: JSONValue?) -> [[Double]] {
+    guard case let .array(items)? = value else { return [] }
+    return items.map { item in
+        guard case let .array(values) = item else { return [] }
+        return values.compactMap(\.number)
+    }
+}
+
+@Test func diffBoxesWhatChangedAndSavesANewFileBesideB() async throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let a = try writeImage("before.png", in: folder)
+    // b is the checkerboard with one red box on it.
+    let ctx = try #require(CGContext(data: nil, width: 200, height: 120, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+    ctx.draw(checkerboard(), in: CGRect(x: 0, y: 0, width: 200, height: 120))
+    ctx.setFillColor(CGColor(srgbRed: 1, green: 0, blue: 0, alpha: 1))
+    ctx.fill(CGRect(x: 40, y: 120 - 40 - 20, width: 30, height: 20))
+    let b = try writeImage("after.png", in: folder, image: try #require(ctx.makeImage()))
+    let (aBytes, bBytes) = (try Data(contentsOf: a), try Data(contentsOf: b))
+
+    let result = try await ShotCommands.run(.diff(.init(a: a.path, b: b.path)))
+    let output = try path(result)
+    #expect(output.lastPathComponent == "after diff.png")
+    #expect(numbers(result["regions"]) == [[40, 40, 30, 20]])
+    #expect(result["changedPixels"] == .number(600))
+    #expect(result["changed"] == .number(0.025))
+    #expect(result["note"] == nil)
+    #expect(result["size"] == .object(["width": .number(200), "height": .number(120)]))
+    #expect(try Data(contentsOf: a) == aBytes && Data(contentsOf: b) == bBytes)
+
+    // Outside the change, b is dimmed; inside, it shows through with a red tint.
+    let image = try #require(ImageCodec.image(at: output))
+    let pixels = try #require(ShotCommands.pixels(of: image, width: 200, height: 120))
+    func rgb(_ x: Int, _ y: Int) -> [UInt8] { Array(pixels[(y * 200 + x) * 4 ..< (y * 200 + x) * 4 + 3]) }
+    #expect(rgb(0, 0).allSatisfy { (60 ... 140).contains($0) }, "a white square dimmed: \(rgb(0, 0))")
+    #expect(rgb(55, 50)[0] > 200 && rgb(55, 50)[1] < 120, "the change: \(rgb(55, 50))")
+
+    #expect(try path(await ShotCommands.run(.diff(.init(a: a.path, b: b.path)))).lastPathComponent == "after diff (2).png")
+}
+
+@Test func imagesOfDifferentSizesAreComparedAtBsSize() async throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let a = try writeImage("small.png", in: folder, image: whiteWithBox(width: 100, height: 60, box: nil))
+    let b = try writeImage("large.png", in: folder, image: whiteWithBox(width: 200, height: 120, box: [150, 10, 20, 30]))
+
+    let result = try await ShotCommands.run(.diff(.init(a: a.path, b: b.path, threshold: 0)))
+    #expect(numbers(result["regions"]) == [[150, 10, 20, 30]])
+    #expect(result["aSize"] == .object(["width": .number(100), "height": .number(60)]))
+    #expect(result["note"] == .string("a is 100×60 and b is 200×120, so a was scaled to b's size to compare them"))
+    #expect(result["size"] == .object(["width": .number(200), "height": .number(120)]))
+}
+
+@Test func identicalImagesDifferNowhere() async throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let a = try writeImage("shot.png", in: folder)
+    let result = try await ShotCommands.run(.diff(.init(a: a.path, b: a.path, threshold: 0)))
+    #expect(result["changed"] == .number(0))
+    #expect(numbers(result["regions"]).isEmpty)
+    #expect(try path(result).lastPathComponent == "shot diff.png")
+}
+
+@Test func diffNeverOverwritesAndRefusesWhatItCantRead() async throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let a = try writeImage("a.png", in: folder)
+    let text = folder.appendingPathComponent("notes.txt")
+    try Data("hello".utf8).write(to: text)
+    #expect(await failure(.diff(.init(a: a.path, b: a.path, output: a.path))) == .cantCreate("\(a.path) already exists, and shot never overwrites"))
+    #expect(await failure(.diff(.init(a: a.path, b: a.path, output: folder.appendingPathComponent("d.jpg").path)))?.exitCode == 64)
+    #expect(await failure(.diff(.init(a: text.path, b: a.path))) == .data("notes.txt isn't an image Shot can read"))
+    #expect(await failure(.diff(.init(a: a.path, b: folder.appendingPathComponent("gone.png").path)))?.exitCode == 66)
+    #expect(Set(try FileManager.default.contentsOfDirectory(atPath: folder.path)) == ["a.png", "notes.txt"])
+}
+
 /// What the command line and the MCP tools rely on: drawing needs no window and no main thread.
 @Test func renderingWorksOffTheMainThreadWithTextBlurAndSpotlight() async throws {
     let image = checkerboard()
