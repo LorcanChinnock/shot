@@ -82,7 +82,8 @@ public struct AgentTools: Sendable {
                     "enum": .array([.string("image"), .string("video"), .string("any")]),
                     "description": .string("image (the default), video or any."),
                 ]),
-            ])
+            ]),
+            readOnly: true
         ),
         MCPServer.Tool(
             name: listCaptures,
@@ -96,7 +97,8 @@ public struct AgentTools: Sendable {
                     "type": .string("string"),
                     "description": .string("Only captures from then on: an ISO 8601 date or date and time, or a span back from now such as 10m, 2h or 3d."),
                 ]),
-            ])
+            ]),
+            readOnly: true
         ),
         MCPServer.Tool(
             name: getCapture,
@@ -104,14 +106,16 @@ public struct AgentTools: Sendable {
             inputSchema: schema([
                 "path": .object(["type": .string("string"), "description": .string("The capture's full path. Only captures in Shot's capture folder can be named.")]),
                 "name": .object(["type": .string("string"), "description": .string("Its file name, or words from it.")]),
-            ])
+            ]),
+            readOnly: true
         ),
         MCPServer.Tool(
             name: getFrames,
             description: "Still frames of a Shot recording, since a model can't watch video: the first and last, and the frame after each change on screen once it settles, each with its time in seconds. Use this to see what happened in a recording, such as the steps of a bug. Reads only; writes nothing.",
             inputSchema: schema(capture.merging([
                 "count": .object(["type": .string("integer"), "description": .string("How many frames, 1 to \(ShotCommand.FramesOptions.maximumCount). Default 8.")]),
-            ]) { $1 })
+            ]) { $1 }),
+            readOnly: true
         ),
         MCPServer.Tool(
             name: annotate,
