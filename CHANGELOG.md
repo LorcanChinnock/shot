@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.7.0-beta.46](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.45...v0.7.0-beta.46) (2026-10-12)
+
+
+### Features
+
+* add the layered project store and provenance ([#484](https://github.com/LorcanChinnock/shot/issues/484)) ([8b6863c](https://github.com/LorcanChinnock/shot/commit/8b6863ca437cd131367a5ce2b4fdb8ac3ec40189))
+* **agents:** add shot latest, list, get and doctor ([#489](https://github.com/LorcanChinnock/shot/issues/489)) ([0b51908](https://github.com/LorcanChinnock/shot/commit/0b51908c15f8ad6a724abdeb082a6031909ea537))
+* **agents:** compare two screenshots ([#485](https://github.com/LorcanChinnock/shot/issues/485)) ([734b743](https://github.com/LorcanChinnock/shot/commit/734b743f49ae0c4f7057d75dc366bd42a78d3b4b))
+* **agents:** list windows and capture more precisely ([#486](https://github.com/LorcanChinnock/shot/issues/486)) ([ce46e3c](https://github.com/LorcanChinnock/shot/commit/ce46e3cc0b4abd2692f89f17b09008cb872ce816))
+* **agents:** read text in captures ([#499](https://github.com/LorcanChinnock/shot/issues/499)) ([0cb5402](https://github.com/LorcanChinnock/shot/commit/0cb5402d3ad969be912a3b92099f9448556d1c97))
+* **agents:** record while a command runs, with marks ([#487](https://github.com/LorcanChinnock/shot/issues/487)) ([4d4ff1f](https://github.com/LorcanChinnock/shot/commit/4d4ff1ffec272e5a8ed8cf35ceb01f2accdc8d56))
+* **agents:** wait for your next capture ([#483](https://github.com/LorcanChinnock/shot/issues/483)) ([59ad6b7](https://github.com/LorcanChinnock/shot/commit/59ad6b79e8a87f77d28f0706360ed38b9f78b694))
+* **i18n:** translate Shot into eight languages ([#490](https://github.com/LorcanChinnock/shot/issues/490)) ([ad06d72](https://github.com/LorcanChinnock/shot/commit/ad06d729f38f035efde8ccdea31f6648fd994939))
+* recognise text in captures ([#482](https://github.com/LorcanChinnock/shot/issues/482)) ([2115218](https://github.com/LorcanChinnock/shot/commit/21152184be185e1096c887fd7b29dc777effa9c7))
+* **settings:** show MCP setup only for the agents installed ([#495](https://github.com/LorcanChinnock/shot/issues/495)) ([8f97044](https://github.com/LorcanChinnock/shot/commit/8f97044944f3de162f717d46aa188cbb48b33102))
+
 ## [0.7.0-beta.45](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.44...v0.7.0-beta.45) (2026-10-12)
 
 
