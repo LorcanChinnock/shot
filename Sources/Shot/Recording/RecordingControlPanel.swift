@@ -126,7 +126,7 @@ struct RecordingControls: View {
             }
 
             if model.cameraAvailable {
-                IconButton(symbol: model.cameraOn ? "video.fill" : "video.slash.fill", color: model.cameraOn ? Brutal.mint : .white, help: model.cameraOn ? "Hide camera" : "Show camera") {
+                IconButton(symbol: model.cameraOn ? "video.fill" : "video.slash.fill", color: model.cameraOn ? Brutal.mint : .white, help: model.cameraOn ? "Hide camera bubble" : "Show camera bubble") {
                     actions.toggleCamera()
                 }
                 IconButton(symbol: "circle.circle", color: .white, help: "Camera bubble size") {

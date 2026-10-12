@@ -42,9 +42,9 @@ enum CaptureError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .displayNotFound: "Display not found"
-        case .windowNotFound: "Window not found"
-        case .encodingFailed: "Could not encode image"
+        case .displayNotFound: "Couldn't find that display. Try again."
+        case .windowNotFound: "Couldn't capture that window: it's no longer on screen."
+        case .encodingFailed: "Couldn't create the screenshot. Try again."
         }
     }
 }

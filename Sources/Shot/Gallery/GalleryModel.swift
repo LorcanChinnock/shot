@@ -194,7 +194,7 @@ final class GalleryModel {
         }
         if items.count == 1, first.kind == .image {
             guard Clipboard.copy(imageAt: first.url) else {
-                Toast.error("Could not read \(first.name)")
+                Toast.error("Couldn't read \(first.name)")
                 return
             }
         } else {
@@ -242,7 +242,7 @@ final class GalleryModel {
             anchor = destination
             reload()
         } catch {
-            Toast.error("Rename failed: \(error.localizedDescription)")
+            Toast.error("Couldn't rename: \(error.localizedDescription)")
         }
     }
 
@@ -269,7 +269,8 @@ final class GalleryModel {
         self.items.removeAll { trashed.contains($0.url) }
         selection.subtract(trashed)
         if trashed.count < items.count {
-            Toast.error("Could not move \(items.count - trashed.count) to the Trash")
+            let failed = items.count - trashed.count
+            Toast.error(failed == 1 ? "Couldn't move 1 file to the Trash" : "Couldn't move \(failed) files to the Trash")
         } else {
             Toast.show(items.count == 1 ? "Moved to the Trash (⌘Z to undo)" : "Moved \(items.count) files to the Trash (⌘Z to undo)")
         }
@@ -289,12 +290,12 @@ final class GalleryModel {
         }
         let restored = Gallery.restore(moves)
         guard !restored.isEmpty else {
-            Toast.error("Could not put the files back")
+            Toast.error("Couldn't restore the files from the Trash")
             return
         }
         selection = Set(restored)
         reload()
-        Toast.show(restored.count == 1 ? "Put back" : "Put back \(restored.count) files")
+        Toast.show(restored.count == 1 ? "Restored from the Trash" : "Restored \(restored.count) files from the Trash")
     }
 
     func zoom(by step: Double) {

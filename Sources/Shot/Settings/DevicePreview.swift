@@ -33,7 +33,7 @@ final class DevicePreview {
         stop()
         let current = generation
         guard await AVCaptureDevice.requestAccess(for: mediaType) else {
-            Toast.error(mediaType == .video ? "Camera access denied" : "Microphone access denied")
+            Toast.error(mediaType == .video ? "Shot can't use the camera. Turn it on in System Settings › Privacy & Security › Camera." : "Shot can't use the microphone. Turn it on in System Settings › Privacy & Security › Microphone.")
             return
         }
         guard current == generation else {

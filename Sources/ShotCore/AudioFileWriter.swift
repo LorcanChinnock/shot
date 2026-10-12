@@ -11,8 +11,8 @@ public final class AudioFileWriter: @unchecked Sendable {
         public var errorDescription: String? {
             switch self {
             case .unsupportedFormat: "The audio's format can't be written"
-            case .cannotAddInput: "Could not add the audio to its file"
-            case .cannotStart: "Could not start writing the audio file"
+            case .cannotAddInput: "Couldn't add the audio to its file"
+            case .cannotStart: "Couldn't start writing the audio file"
             }
         }
     }

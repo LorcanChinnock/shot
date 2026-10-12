@@ -207,7 +207,7 @@ private struct PermissionStep: View {
                 Header(symbol: "lock.open.fill", color: Brutal.yellow, title: "One permission to go", subtitle: "macOS requires Screen Recording access for every capture.")
             }
             VStack(alignment: .leading, spacing: 10) {
-                Instruction(number: 1, text: model.requestedAccess ? "Open System Settings." : "Select Grant, or open System Settings.")
+                Instruction(number: 1, text: model.requestedAccess ? "Open System Settings." : "Click Grant, or open System Settings.")
                 Instruction(number: 2, text: "Turn on Shot under Screen & System Audio Recording.")
                 Instruction(number: 3, text: "Relaunch Shot.")
             }
@@ -226,7 +226,7 @@ private struct PermissionStep: View {
                     }
                         .buttonStyle(BrutalButtonStyle(color: Brutal.mint))
                 }
-                Button("Open Settings") {
+                Button("Open System Settings") {
                     Permissions.openSettings()
                     model.visitedSettings = true
                 }
@@ -293,7 +293,7 @@ private struct TryItStep: View {
                     Tip(symbol: "record.circle", text: "\(record.displayString) records an area of the screen.")
                 }
                 if prefs.quickAccessAfterCapture {
-                    Tip(symbol: "rectangle.on.rectangle", text: "Drag the card in the corner into any app, or select the pencil to annotate.")
+                    Tip(symbol: "rectangle.on.rectangle", text: "Drag the card in the corner into any app, or click the pencil to annotate.")
                 }
                 Tip(symbol: "menubar.rectangle", text: "Everything else is in the Shot icon in the menu bar.")
             }
@@ -313,7 +313,7 @@ private struct TryItStep: View {
                 if let area = prefs.hotkey(for: .captureArea) {
                     Text("Press \(Text(area.displayString).font(Brutal.title(17))), then drag out any area.")
                 } else {
-                    Text("Select the Shot icon in the menu bar, then Capture Area, and drag out any area.")
+                    Text("Click the Shot icon in the menu bar, then Capture Area, and drag out any area.")
                 }
             }
             .font(.system(size: 15, weight: .semibold))

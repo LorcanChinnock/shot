@@ -25,7 +25,7 @@ struct ClipInspector: View {
                             if model.project.supports(preset, forClip: id) {
                                 Button(preset.title) { model.applyPreset(preset) }
                                     .buttonStyle(BrutalButtonStyle(color: Brutal.violet.opacity(0.7), compact: true))
-                                    .brutalTip("\(preset.title) animation at the start of the \(isNote ? "annotation" : "clip")")
+                                    .brutalTip("\(preset.title) animation at the \(preset.playsAtEnd ? "end" : "start") of the \(isNote ? "annotation" : "clip")")
                             }
                         }
                     }
@@ -119,7 +119,7 @@ struct ClipInspector: View {
             caption("POSITION")
             field(values.position.width, label: "Horizontal position") { var changed = values; changed.position.width = $0; return changed }
             field(values.position.height, label: "Vertical position") { var changed = values; changed.position.height = $0; return changed }
-            diamond(.position, animation)
+            diamond(.position, animation, name: "position")
         }
     }
 
@@ -138,7 +138,7 @@ struct ClipInspector: View {
             .accessibilityLabel(Text(title.capitalized))
             .accessibilityValue(Text(format(value)))
             Text(format(value)).font(Brutal.mono).foregroundStyle(Brutal.ink.opacity(0.75)).frame(width: 48, alignment: .leading)
-            diamond(property, animation)
+            diamond(property, animation, name: title.lowercased())
         }
     }
 
@@ -154,7 +154,7 @@ struct ClipInspector: View {
     }
 
     /// Filled when there's a keyframe of the property at the playhead, a dot when it has others, and empty when it has none.
-    private func diamond(_ property: AnimatedProperty, _ animation: ClipAnimation) -> some View {
+    private func diamond(_ property: AnimatedProperty, _ animation: ClipAnimation, name: String) -> some View {
         let start = model.selectedClipID.flatMap { model.project.clipStart($0) } ?? 0
         let here = animation.hasKeyframe(property, at: model.playhead - start)
         return Button { model.toggleKeyframe(property) } label: {
@@ -171,8 +171,8 @@ struct ClipInspector: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .brutalTip(here ? "Remove this keyframe" : "Keyframe \(property.rawValue) here")
-        .accessibilityLabel(Text(here ? "Remove \(property.rawValue) keyframe" : "Add \(property.rawValue) keyframe"))
+        .brutalTip(here ? "Remove this keyframe" : "Keyframe \(name) here")
+        .accessibilityLabel(Text(here ? "Remove \(name) keyframe" : "Add \(name) keyframe"))
     }
 
     private func caption(_ text: String) -> some View {

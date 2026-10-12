@@ -39,7 +39,7 @@ public struct AfterCapture: Equatable, Sendable {
         } else if quickAccess {
             .quickAccess
         } else if copy {
-            .toast("Copied to clipboard")
+            .toast("Copied")
         } else if save {
             .toast("Saved")
         } else {

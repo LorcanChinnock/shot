@@ -7,7 +7,7 @@ public enum MediaProbe {
 
         public var errorDescription: String? {
             switch self {
-            case .unreadable(let name): "Cannot open \(name)"
+            case .unreadable(let name): "Can't open \(name)"
             case .empty(let name): "\(name) has no video or sound"
             }
         }

@@ -835,7 +835,7 @@ final class EditorModel {
         do {
             annotation = try Clipboard.annotation()
         } catch {
-            Toast.error("Could not paste: \(error.localizedDescription)")
+            Toast.error("Couldn't paste: \(error.localizedDescription)")
             return true
         }
         guard let annotation else {
@@ -855,7 +855,7 @@ final class EditorModel {
     func addImages(_ images: [Data], at point: CGPoint?) {
         let decoded = images.compactMap { data in ImageCodec.image(from: data).map { ($0, ImageCodec.scale(of: data)) } }
         guard !decoded.isEmpty else {
-            Toast.error("Could not read the image")
+            Toast.error("Couldn't read the image")
             return
         }
         tool = .select
@@ -915,7 +915,7 @@ final class EditorModel {
                 try await Clipboard.copy(annotation: selection)
                 Toast.show("Copied annotation")
             } catch {
-                Toast.error("Could not copy: \(error.localizedDescription)")
+                Toast.error("Couldn't copy: \(error.localizedDescription)")
             }
         }
         return true
@@ -925,7 +925,7 @@ final class EditorModel {
     func copy() async {
         commitPendingText?()
         guard let result = await rendered() else {
-            Toast.error("Could not render image")
+            Toast.error("Couldn't copy the image")
             return
         }
         Clipboard.copy(png: result.png)
@@ -962,7 +962,7 @@ final class EditorModel {
         commitPendingText?()
         let snapshot = document.snapshot
         guard let result = await rendered(as: ImageFormat(fileExtension: fileURL.pathExtension), record: savedRecord()) else {
-            Toast.error("Could not render image")
+            Toast.error("Couldn't save the image")
             return false
         }
         let destination = FileNaming.nextVersionURL(of: fileURL)
@@ -974,7 +974,7 @@ final class EditorModel {
             Toast.show("Saved as \(destination.lastPathComponent) and copied", duration: .seconds(3))
             return true
         } catch {
-            Toast.error("Save failed: \(error.localizedDescription)")
+            Toast.error("Couldn't save: \(error.localizedDescription)")
             return false
         }
     }

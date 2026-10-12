@@ -127,7 +127,7 @@ struct WidthOptions: View {
     var body: some View {
         ToolGroup {
             ForEach(EditorStyle.widths.indices, id: \.self) { index in
-                Tile(selected: selected == index, color: Brutal.sky, help: sizesText ? "Text size: \(Self.sizeNames[index])" : "Line width \(Int(EditorStyle.widths[index]))") {
+                Tile(selected: selected == index, color: Brutal.sky, help: sizesText ? "Text size: \(Self.sizeNames[index])" : "Line width: \(Int(EditorStyle.widths[index]))") {
                     choose(index)
                 } label: {
                     if sizesText {

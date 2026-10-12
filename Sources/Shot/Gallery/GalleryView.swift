@@ -173,6 +173,9 @@ struct GalleryRootView: View {
                 Text("Nothing matches")
                     .font(Brutal.title(17))
                     .foregroundStyle(Brutal.ink)
+                Text("Try another search, or show All.")
+                    .font(Brutal.caption)
+                    .foregroundStyle(Brutal.ink.opacity(0.7))
             }
         }
         .multilineTextAlignment(.center)
@@ -191,7 +194,7 @@ struct GalleryRootView: View {
             if model.allSelected {
                 Button("Deselect All") { model.clearSelection() }
                     .buttonStyle(BrutalButtonStyle(compact: true))
-                    .brutalTip("Deselect all (⌘⇧A)")
+                    .brutalTip("Deselect all (⇧⌘A)")
             } else {
                 Button("Select All") { model.selectAll() }
                     .buttonStyle(BrutalButtonStyle(compact: true))

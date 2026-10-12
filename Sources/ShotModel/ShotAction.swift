@@ -81,8 +81,8 @@ public enum ShotAction: String, CaseIterable, Sendable {
 
         public func message(for combo: KeyCombo) -> String {
             switch self {
-            case .reserved: "\(combo.displayString) is used by macOS and every app"
-            case let .taken(action): "\(combo.displayString) is already \(action.title)"
+            case .reserved: "\(combo.displayString) is reserved by macOS"
+            case let .taken(action): "\(combo.displayString) is already used by \(action.title)"
             }
         }
     }
