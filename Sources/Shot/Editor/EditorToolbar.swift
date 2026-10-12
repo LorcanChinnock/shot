@@ -38,7 +38,7 @@ struct EditorToolbar: View {
                     ) {
                         model.showsStylePopover.toggle()
                     } label: {
-                        Image(systemName: "shadow").font(Brutal.toolIcon)
+                        Image(systemName: "paintpalette").font(Brutal.toolIcon)
                     }
                     .popover(isPresented: $model.showsStylePopover, arrowEdge: .bottom) {
                         StylePopover(model: model)
