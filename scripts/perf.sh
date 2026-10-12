@@ -91,7 +91,7 @@ for i in $(seq 20); do
   sleep 1.5
   # Stop after the first capture if it wasn't copied, usually a missing Screen Recording permission, rather than fail 20 times.
   if [ "$i" = 1 ] && ! signposts "Capture to clipboard" | grep -q '"eventMessage":"copied"'; then
-    echo "The first capture wasn't copied. Check Shot's Screen Recording permission and that Copy after capture is on." >&2
+    echo "The first capture wasn't copied. Check Shot's Screen Recording permission and that Copy to clipboard is on in Settings › Capture." >&2
     exit 1
   fi
 done

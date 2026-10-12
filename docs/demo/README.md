@@ -7,7 +7,7 @@ cd docs/demo
 swift run ShotDemo --scene ticket,chat --appearance light
 ```
 
-- `--scene` opens one window per scene, left to right, with the group centred on the main screen:
+- `--scene` opens one window per scene, `ticket` if you leave it out, left to right, with the group centred on the main screen:
   - `ticket`: a support ticket with an order to point at and a customer email to redact. Assign opens a picker, and Reply shows a toast.
   - `dashboard`: a revenue report. The chart grows in and the order list fills in.
   - `chat`: a `#checkout` channel to paste a screenshot into. Click the message box, press ⌘V, then Return.
