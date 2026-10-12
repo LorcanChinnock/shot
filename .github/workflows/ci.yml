@@ -52,18 +52,20 @@ jobs:
           code=$(echo "$files" | grep -vE '\.md$|^docs/|^site/|^\.github/ISSUE_TEMPLATE/' | grep -q . && echo true || echo false)
           # Anything but ShotModel and its tests, which the linux job covers.
           apple=$(echo "$files" | grep -vE '\.md$|^docs/|^site/|^\.github/ISSUE_TEMPLATE/|^Sources/ShotModel/|^Tests/ShotModelTests/' | grep -q . && echo true || echo false)
+          # PerfTests times ShotCore's rendering, encoding, GIF and gallery paths.
+          perf_paths='^Sources/ShotCore/|^Tests/ShotCoreTests/PerfTests\.swift$|^Package\.|^Makefile$|^\.github/workflows/ci\.yml$'
           if [ "$EVENT" = pull_request ]; then
             # A ShotModel-only PR still builds the app, which catches a signature change that breaks it.
             [ "$code" = true ] && [ "$DRAFT" != true ] && macos=true || macos=false
             core_tests=$apple
-            # PerfTests times ShotCore's rendering, encoding, GIF and gallery paths.
-            perf=$(echo "$files" | grep -qE '^Sources/ShotCore/|^Tests/ShotCoreTests/PerfTests\.swift$|^Package\.|^Makefile$|^\.github/workflows/ci\.yml$' && echo true || echo false)
+            perf=$(echo "$files" | grep -qE "$perf_paths" && echo true || echo false)
           else
             macos=$code
             # The PR ran ShotCoreTests on its merge commit, unless it changed only ShotModel. Then they run here, so a
             # ShotModel change that breaks ShotCore's behaviour is caught right after the merge.
             [ "$code" = true ] && [ "$apple" = false ] && core_tests=true || core_tests=false
-            perf=$code
+            # ShotCore runs on ShotModel, whose PRs skip Perf, so a ShotModel change that slows ShotCore is caught here.
+            perf=$(echo "$files" | grep -qE "$perf_paths|^Sources/ShotModel/" && echo true || echo false)
           fi
           printf 'macos=%s\ncore-tests=%s\nperf=%s\n' "$macos" "$core_tests" "$perf" | tee -a "$GITHUB_OUTPUT"
 
