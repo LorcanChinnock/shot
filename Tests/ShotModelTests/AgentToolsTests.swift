@@ -52,6 +52,20 @@ private let captures = tools(in: folder, [
     #expect(AgentTools.definitions.filter(\.readOnly).map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames"])
 }
 
+@Test func annotateNamesExactlyThePaletteColours() throws {
+    let tool = try #require(AgentTools.definitions.first { $0.name == "annotate" })
+    guard case let .string(description) = tool.inputSchema["properties"]?["annotations"]?["description"] else {
+        Issue.record("annotate has no annotations description")
+        return
+    }
+    let list = try #require(description.firstRange(of: "color (").flatMap { start in
+        description[start.upperBound...].firstIndex(of: ")").map { description[start.upperBound..<$0] }
+    })
+    let named = list.replacingOccurrences(of: " or ", with: ", ").components(separatedBy: ", ")
+    #expect(named == CaptureMark.paletteNames)
+    #expect(Set(named) == CaptureMark.colorNames)
+}
+
 @Test func latestCaptureDefaultsToTheNewestImage() async {
     let result = await captures.call("latest_capture", .object([:]))
     #expect(result.isError == false)
