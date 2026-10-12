@@ -60,9 +60,14 @@ public struct AgentTools: Sendable {
     static let recordingFrames = 6
 
     private static let capture: [String: JSONValue] = [
-        "path": .object(["type": .string("string"), "description": .string("The capture's full path. Without path or name, the newest one.")]),
+        "path": .object(["type": .string("string"), "description": .string("The capture's full path. Only captures in Shot's capture folder can be named. Without path or name, the newest one.")]),
         "name": .object(["type": .string("string"), "description": .string("Its file name, or words from it.")]),
     ]
+    /// The types `annotate` can draw, for its description: every type but a placed image, whose pixels a mark can't hold.
+    private static let markTypes: String = {
+        let types = CaptureMark.types.subtracting(["image"]).sorted()
+        return types.dropLast().joined(separator: ", ") + " or " + (types.last ?? "")
+    }()
     private static func seconds(_ what: String) -> JSONValue {
         .object(["type": .string("number"), "description": .string(what)])
     }
@@ -95,9 +100,9 @@ public struct AgentTools: Sendable {
         ),
         MCPServer.Tool(
             name: getCapture,
-            description: "One Shot capture by path or by name, matched loosely (\"shot 14.03\" finds \"Shot 2026-10-10 at 14.03.12.png\"). Returns what latest_capture does.",
+            description: "One Shot capture by path or by name, matched loosely (\"shot 14.03\" finds \"Shot 2026-10-10 at 14.03.12.png\"). With neither, the newest capture, screenshot or recording. Returns what latest_capture does.",
             inputSchema: schema([
-                "path": .object(["type": .string("string"), "description": .string("The capture's full path.")]),
+                "path": .object(["type": .string("string"), "description": .string("The capture's full path. Only captures in Shot's capture folder can be named.")]),
                 "name": .object(["type": .string("string"), "description": .string("Its file name, or words from it.")]),
             ])
         ),
@@ -114,7 +119,7 @@ public struct AgentTools: Sendable {
             inputSchema: schema(capture.merging([
                 "annotations": .object([
                     "type": .string("array"),
-                    "description": .string("The marks, each with a type (arrow, line, rectangle, rounded, ellipse, highlight, blur, pixelate, text, note, counter, pen or marker) and its geometry: from and to as [x, y] for arrow and line; rect as [x, y, width, height] for shapes, text and notes; center as [x, y] for counter; points as [[x, y], …] for pen and marker. Optional: color (red, orange, yellow, green, blue, black or white), text for text and note, number for counter."),
+                    "description": .string("The marks, each with a type (\(markTypes)) and its geometry: from and to as [x, y] for arrow and line; center as [x, y] for counter; points as [[x, y], …] for pen and marker; rect as [x, y, width, height] for every other type. Optional: color (red, orange, yellow, green, blue, black or white), or hex (#RRGGBB) for any other colour; text for text and note; number for counter."),
                     "items": .object(["type": .string("object")]),
                 ]),
             ]) { $1 }, required: ["annotations"])
@@ -139,14 +144,14 @@ public struct AgentTools: Sendable {
         ),
         MCPServer.Tool(
             name: captureWindow,
-            description: "Takes a screenshot of an open window, such as the iOS Simulator or the app you're building, through the running Shot app, without bringing it forward or taking focus, even when other windows cover it. Saved to the capture folder; returns a preview, its path and which window it was. Needs Shot running with Settings › Agents › Let agents capture and record turned on, and Shot shows a notice each time. If no window matches, the error lists the open ones.",
+            description: "Takes a screenshot of an open window, such as the iOS Simulator or the app you're building, through the running Shot app, without bringing it forward or taking focus, even when other windows cover it. Saved to the capture folder; returns a preview, its path and which window it was. Shot opens in the background if it isn't running. Needs Settings › Agents › Let agents capture and record turned on, and Shot shows a notice each time. If no window matches, the error lists the open ones.",
             inputSchema: schema([
                 "window": .object(["type": .string("string"), "description": .string("Words from the window's title or its app's name, such as \"Simulator\" or \"Calculator\". Case and accents don't matter.")]),
             ], required: ["window"])
         ),
         MCPServer.Tool(
             name: recordWindow,
-            description: "Records an open window through the running Shot app, such as the Simulator while a UI test runs, then shows what happened. With a duration of up to \(Int(maximumWait)) seconds it waits, then returns the recording's path and about \(recordingFrames) key frames, each with its time. Without one it starts and returns an id; call again with action stop to end it and get the frames. Never records the microphone or camera, stops itself after \(Int(AgentRequest.maximumDuration / 60)) minutes, and Shot shows a red border, its stop controls and a notice, so the user can stop it. Needs Shot running with Settings › Agents › Let agents capture and record turned on.",
+            description: "Records an open window through the running Shot app, such as the Simulator while a UI test runs, then shows what happened. Saved to the capture folder. With a duration of up to \(Int(maximumWait)) seconds it waits, then returns the recording's path and about \(recordingFrames) key frames, each with its time. Without one it starts and returns an id; call again with action stop to end it and get the frames. Never records the microphone or camera, stops itself after \(Int(AgentRequest.maximumDuration / 60)) minutes, and Shot shows a red border, its stop controls and a notice, so the user can stop it. Shot opens in the background if it isn't running. Needs Settings › Agents › Let agents capture and record turned on.",
             inputSchema: schema([
                 "action": .object([
                     "type": .string("string"),
@@ -384,7 +389,7 @@ public struct AgentTools: Sendable {
     func notFound(_ query: String, in entries: [AgentCaptures.Entry]) -> MCPServer.ToolResult {
         let ranked = AgentCaptures.ranked(entries)
         guard !ranked.isEmpty else {
-            return MCPServer.ToolResult(content: [.text("No capture matches \"\(query)\": \(empty(entries, kind: .any))")], isError: true)
+            return MCPServer.ToolResult(content: [.text("No capture matches \"\(query)\": \(empty(entries, kind: .any))\(outside(query))")], isError: true)
         }
         let wanted = Self.words(in: query)
         func shared(_ entry: AgentCaptures.Entry) -> Int {
@@ -396,7 +401,17 @@ public struct AgentTools: Sendable {
             .prefix(5)
         let names = nearest.map { "\"\($0.name)\"" }.joined(separator: ", ")
         let which = nearest.contains { $0.shared > 0 } ? "nearest" : "newest"
-        return MCPServer.ToolResult(content: [.text("No capture matches \"\(query)\". The \(which) are \(names).")], isError: true)
+        return MCPServer.ToolResult(content: [.text("No capture matches \"\(query)\".\(outside(query)) The \(which) are \(names).")], isError: true)
+    }
+
+    /// Why a full path outside `folder` names nothing, after a space, or nothing for a name or a path inside it.
+    func outside(_ query: String) -> String {
+        let path = (query.trimmingCharacters(in: .whitespacesAndNewlines) as NSString).expandingTildeInPath
+        let inside = folder.standardizedFileURL.path.hasSuffix("/") ? folder.standardizedFileURL.path : folder.standardizedFileURL.path + "/"
+        guard path.hasPrefix("/"), !URL(fileURLWithPath: path).standardizedFileURL.path.hasPrefix(inside) else {
+            return ""
+        }
+        return " Only captures in Shot's capture folder, \(folder.path), can be named, and that path is outside it."
     }
 
     func metadata(_ entry: AgentCaptures.Entry) -> JSONValue {

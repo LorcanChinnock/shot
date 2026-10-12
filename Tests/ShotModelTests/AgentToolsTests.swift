@@ -156,6 +156,13 @@ func listCapturesClampsTheLimit(_ limit: JSONValue, _ count: Int) async throws {
     #expect(texts(nothingShared) == [#"No capture matches "zebra". The newest are "Recording C.mp4", "Shot B.png", "Shot A (2).png"."#])
 }
 
+@Test func aPathOutsideTheCaptureFolderSaysWhyItMatchesNothing() async {
+    let outside = await captures.call("get_capture", .object(["path": .string("/shotsmore/Shot Z.png")]))
+    #expect(texts(outside) == [#"No capture matches "/shotsmore/Shot Z.png". Only captures in Shot's capture folder, /shots, can be named, and that path is outside it. The nearest are "Shot B.png", "Shot A (2).png", "Recording C.mp4"."#])
+    let inside = await captures.call("get_capture", .object(["path": .string("/shots/Shot Z.png")]))
+    #expect(texts(inside).first?.contains("outside") == false)
+}
+
 @Test func theServerRunsTheToolsOverJSONRPC() async {
     let server = captures.server(version: "1.2.3")
     let list = await server.respond(to: #"{"jsonrpc":"2.0","id":1,"method":"tools/list"}"#)

@@ -589,7 +589,7 @@ private struct AgentSettings: View {
             )
         }
         SettingsCard(title: "MCP server", symbol: "terminal.fill") {
-            Text("Lets an agent read your latest captures and what you marked on them. Nothing is uploaded, but the agent you connect sees whatever it reads, so redact first.")
+            Text("Lets an agent read your latest captures and what you marked on them, and save new files beside them, such as annotated copies, GIFs and trims. Your originals never change. Nothing is uploaded, but the agent you connect sees whatever it reads, so redact first.")
                 .font(Brutal.caption)
                 .foregroundStyle(Brutal.ink.opacity(0.65))
                 .fixedSize(horizontal: false, vertical: true)

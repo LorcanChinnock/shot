@@ -174,7 +174,7 @@ public enum AgentSocket {
             return try AgentResponse.decode(data)
         case .timedOut:
             let seconds = Double(timeout.components.seconds) + Double(timeout.components.attoseconds) / 1e18
-            throw .unavailable("Shot didn't answer within \(String(format: "%g", seconds)) seconds")
+            throw .unavailable("Shot didn't answer within \(String(format: "%g", seconds)) seconds. Check that it isn't waiting on a dialog, such as a permission prompt, then try again.")
         case .closed, .tooLong, .failed:
             throw .io("Shot closed the connection without a usable answer")
         }
