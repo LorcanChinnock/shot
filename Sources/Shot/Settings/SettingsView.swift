@@ -584,6 +584,7 @@ private struct DevicePicker: View {
 private struct AgentSettings: View {
     @Setting(PreferenceKey.agentHandoff) private var handoff: Bool
     @Setting(PreferenceKey.agentCapture) private var capture: Bool
+    @State private var agents = AgentClient.shown(installed: AgentClient.installed(home: NSHomeDirectory()))
     private let color = SettingsSection.agents.color
 
     /// The MCP server inside this app's bundle, so a dev build names its own.
@@ -610,10 +611,25 @@ private struct AgentSettings: View {
         }
         SettingsCard(title: "MCP server", symbol: "terminal.fill") {
             CardNote(text: "Lets agents read your captures and save edited copies beside them. Your originals never change. What an agent reads goes to its model provider, so blur private details first.")
-            CommandRow(title: "Claude Code, for every project", command: "claude mcp add -s user shot -- \"\(Self.server)\" mcp")
-            CommandRow(title: "Cursor, or any app with a JSON config", command: #"{"mcpServers": {"shot": {"command": "\#(Self.server)", "args": ["mcp"]}}}"#)
-            CommandRow(title: "Codex, in ~/.codex/config.toml", command: "[mcp_servers.shot]\ncommand = \"\(Self.server)\"\nargs = [\"mcp\"]", divider: false)
+            ForEach(agents, id: \.self) { agent in
+                CommandRow(title: title(agent), command: agent.setup(server: Self.server), divider: agent != agents.last)
+            }
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in findAgents() }
+    }
+
+    private func title(_ agent: AgentClient) -> LocalizedStringResource {
+        switch agent {
+        case .claudeCode: "Claude Code, for every project"
+        case .cursor: "Cursor, or any app with a JSON config"
+        case .codex: "Codex, in ~/.codex/config.toml"
+        case .json: "Any app with a JSON config"
+        }
+    }
+
+    /// Checks again each time Shot comes forward, so an agent installed while Settings is open shows up.
+    private func findAgents() {
+        agents = AgentClient.shown(installed: AgentClient.installed(home: NSHomeDirectory()))
     }
 }
 
