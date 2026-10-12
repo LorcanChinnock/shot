@@ -68,6 +68,8 @@ public struct AgentTools: Sendable {
         let types = CaptureMark.types.subtracting(["image"]).sorted()
         return types.dropLast().joined(separator: ", ") + " or " + (types.last ?? "")
     }()
+    /// The palette names `annotate` takes as `color`, for its description.
+    private static let colorNames = CaptureMark.paletteNames.dropLast().joined(separator: ", ") + " or " + (CaptureMark.paletteNames.last ?? "")
     private static func seconds(_ what: String) -> JSONValue {
         .object(["type": .string("number"), "description": .string(what)])
     }
@@ -123,7 +125,7 @@ public struct AgentTools: Sendable {
             inputSchema: schema(capture.merging([
                 "annotations": .object([
                     "type": .string("array"),
-                    "description": .string("The marks, each with a type (\(markTypes)) and its geometry: from and to as [x, y] for arrow and line; center as [x, y] for counter; points as [[x, y], …] for pen and marker; rect as [x, y, width, height] for every other type. Optional: color (red, orange, yellow, green, blue, black or white), or hex (#RRGGBB) for any other colour; text for text and note; number for counter."),
+                    "description": .string("The marks, each with a type (\(markTypes)) and its geometry: from and to as [x, y] for arrow and line; center as [x, y] for counter; points as [[x, y], …] for pen and marker; rect as [x, y, width, height] for every other type. Optional: color (\(colorNames)), or hex (#RRGGBB) for any other colour; text for text and note; number for counter."),
                     "items": .object(["type": .string("object")]),
                 ]),
             ]) { $1 }, required: ["annotations"])

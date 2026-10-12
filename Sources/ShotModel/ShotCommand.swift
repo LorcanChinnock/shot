@@ -528,8 +528,10 @@ extension CaptureMark {
         "spotlight", "text", "counter", "note", "pen", "marker", "image",
     ]
 
+    /// The palette names `color` can be, in the palette's order.
+    public static let paletteNames = ["red", "orange", "yellow", "green", "blue", "black", "white"]
     /// The palette names `color` can be.
-    public static let colorNames: Set<String> = ["red", "orange", "yellow", "green", "blue", "black", "white"]
+    public static let colorNames = Set(paletteNames)
 
     /// What's wrong with this mark for drawing it, or `nil` when it can be drawn.
     public var problem: String? {
