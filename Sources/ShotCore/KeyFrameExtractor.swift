@@ -62,7 +62,7 @@ public enum KeyFrameExtractor {
     }
 
     /// `image` drawn into a small grayscale bitmap, as bytes.
-    static func gray(_ image: CGImage) -> [UInt8] {
+    public static func gray(_ image: CGImage) -> [UInt8] {
         let (width, height) = thumbnailSize
         var bytes = [UInt8](repeating: 0, count: width * height)
         bytes.withUnsafeMutableBytes { buffer in

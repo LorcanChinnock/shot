@@ -461,17 +461,41 @@ final class CaptureCoordinator {
 
     // MARK: Agents
 
-    /// A screenshot of the open window `query` names, for an agent. It's saved and nothing else, as `saveCapture` does,
-    /// and a notice says so, since the user didn't ask for it themselves. Never shows the permission onboarding, which
-    /// would take focus from whatever the agent is working on.
-    func agentCapture(window query: String) async throws(ShotCommandError) -> [String: JSONValue] {
+    private static let noPermission = ShotCommandError.noPermission("Shot doesn't have the Screen Recording permission. Grant it in System Settings › Privacy & Security › Screen & System Audio Recording.")
+
+    /// The open windows, front to back, and the displays, numbered as `display` targets them, for an agent to pick from.
+    func agentWindows() throws(ShotCommandError) -> [String: JSONValue] {
+        // Without the permission the window list has no titles, so an agent couldn't tell the windows apart.
         guard Permissions.hasScreenCapture else {
-            throw .noPermission("Shot doesn't have the Screen Recording permission. Grant it in System Settings › Privacy & Security › Screen & System Audio Recording.")
+            throw Self.noPermission
+        }
+        let displays: [JSONValue] = NSScreen.screens.enumerated().map { index, screen in
+            .object([
+                "display": .number(Double(index + 1)),
+                "name": .string(screen.localizedName),
+                "size": .object(["width": .number(screen.frame.width), "height": .number(screen.frame.height)]),
+                "scale": .number(screen.backingScaleFactor),
+                "main": .bool(index == 0),
+            ])
+        }
+        let frontmost = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        return ["windows": WindowMatch.json(Self.candidates(WindowCapturer.onScreenWindows()), frontmostBundleID: frontmost), "displays": .array(displays)]
+    }
+
+    /// A screenshot of the window or display `target` names, for an agent. It's saved and nothing else, as
+    /// `saveCapture` does, and a notice says so, since the user didn't ask for it themselves. Never shows the permission
+    /// onboarding, which would take focus from whatever the agent is working on.
+    func agentCapture(_ target: AgentTarget) async throws(ShotCommandError) -> [String: JSONValue] {
+        guard Permissions.hasScreenCapture else {
+            throw Self.noPermission
         }
         guard !busy, setup == nil else {
             throw .busy("Shot is in the middle of a capture or the recording setup; try again once it's done.")
         }
-        let (info, match) = try matchWindow(query)
+        if let display = target.display {
+            return try await agentCapture(display: display, target)
+        }
+        let (info, match) = try matchWindow(target)
         busy = true
         defer { busy = false }
         let owner = NSRunningApplication(processIdentifier: info.ownerPID)
@@ -479,10 +503,21 @@ final class CaptureCoordinator {
         let source = CaptureRecord.Source(mode: "window", app: app, bundleID: owner?.bundleIdentifier, windowTitle: info.title)
         let saved: (url: URL, width: Int, height: Int)
         do {
-            let shadow = Preferences().windowShadow
-            let captured = try await WindowCapturer.capture(windowID: info.windowID, includeShadow: shadow)
-            let frame = Geometry.flip(info.frame, primaryHeight: NSScreen.screens.first?.frame.height ?? 0)
-            saved = try await saveCapture(image: captured.image, scale: captured.scale, from: frame, windowShadow: shadow, source: source)
+            // Part of a window is cut from the window itself, so the shadow, which would offset it, stays out.
+            let shadow = !target.noShadow && target.rect == nil && Preferences().windowShadow
+            let captured = try await Self.settled(within: target.waitStable) {
+                try await WindowCapturer.capture(windowID: info.windowID, includeShadow: shadow)
+            } image: { $0.image }
+            guard let area = target.area(in: info.frame),
+                  let pixels = target.pixels(width: captured.image.width, height: captured.image.height, scale: captured.scale),
+                  let image = captured.image.cropping(to: pixels)
+            else {
+                throw ShotCommandError.data("The \(target.rectText) is off \(match.label), which is \(Int(info.frame.width))×\(Int(info.frame.height)) points.")
+            }
+            let frame = Geometry.flip(area, primaryHeight: NSScreen.screens.first?.frame.height ?? 0)
+            saved = try await saveCapture(image: image, scale: captured.scale, from: frame, windowShadow: shadow, source: source)
+        } catch let error as ShotCommandError {
+            throw error
         } catch CaptureError.windowNotFound {
             throw .noInput("\(match.label) closed before Shot could capture it.")
         } catch {
@@ -490,46 +525,155 @@ final class CaptureCoordinator {
         }
         log.notice("Agent captured window \(info.windowID) of \(app, privacy: .public)")
         Toast.show("An agent took a screenshot of \(app)", duration: .seconds(3))
+        return Self.captured(saved, window: .object(["app": .string(app), "title": .string(info.title ?? "")]))
+    }
+
+    /// A screenshot of display `number`, counted from 1, or the part of it `target.rect` covers.
+    private func agentCapture(display number: Int, _ target: AgentTarget) async throws(ShotCommandError) -> [String: JSONValue] {
+        let screen = try Self.screen(number)
+        busy = true
+        defer { busy = false }
+        let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
+        let source = CaptureRecord.Source(mode: "fullscreen", app: nil, bundleID: nil)
+        let saved: (url: URL, width: Int, height: Int)
+        do {
+            let frozen = try await Self.settled(within: target.waitStable) {
+                guard let frozen = try await DisplayCapturer.captureAll(screens: [screen]).first else {
+                    throw CaptureError.displayNotFound
+                }
+                return frozen
+            } image: { $0.image }
+            guard let area = target.area(in: Geometry.flip(screen.frame, primaryHeight: primaryHeight)),
+                  let pixels = target.pixels(width: frozen.image.width, height: frozen.image.height, scale: frozen.scale),
+                  let image = frozen.image.cropping(to: pixels)
+            else {
+                throw ShotCommandError.data("The \(target.rectText) is off display \(number), which is \(Int(screen.frame.width))×\(Int(screen.frame.height)) points.")
+            }
+            saved = try await saveCapture(image: image, scale: frozen.scale, from: Geometry.flip(area, primaryHeight: primaryHeight), windowShadow: false, source: source)
+        } catch let error as ShotCommandError {
+            throw error
+        } catch {
+            throw .io("Couldn't capture display \(number): \(error.localizedDescription)")
+        }
+        log.notice("Agent captured display \(number)")
+        Toast.show("An agent took a screenshot of \(screen.localizedName)", duration: .seconds(3))
+        return Self.captured(saved, window: .object(["display": .number(Double(number)), "name": .string(screen.localizedName)]))
+    }
+
+    /// What an agent's screenshot answers with: where it was saved, its size and what it shows.
+    private static func captured(_ saved: (url: URL, width: Int, height: Int), window: JSONValue) -> [String: JSONValue] {
         let bytes = (try? saved.url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         return [
             "path": .string(saved.url.path),
             "size": .object(["width": .number(Double(saved.width)), "height": .number(Double(saved.height))]),
             "bytes": .number(Double(bytes)),
-            "window": .object(["app": .string(app), "title": .string(info.title ?? "")]),
+            "window": window,
         ]
     }
 
-    /// The open window `query` names best, or a `.noInput` error listing the open ones.
-    private func matchWindow(_ query: String) throws(ShotCommandError) -> (info: WindowInfo, match: WindowMatch.Candidate) {
+    /// What `capture` gives back once the picture stops changing, taking it a few times a second for up to `timeout`
+    /// seconds, or at once without one. A picture that never settles is taken anyway at the timeout.
+    private static func settled<Picture>(within timeout: Double?, _ capture: () async throws -> Picture, image: (Picture) -> CGImage) async throws -> Picture {
+        var shot = try await capture()
+        guard let timeout else {
+            return shot
+        }
+        var wait = StableWait(timeout: timeout)
+        let start = ContinuousClock.now
+        func elapsed() -> Double {
+            let time = (ContinuousClock.now - start).components
+            return Double(time.seconds) + Double(time.attoseconds) / 1e18
+        }
+        while wait.add(KeyFrameExtractor.gray(image(shot)), elapsed: elapsed()) == .wait {
+            try await Task.sleep(for: .seconds(StableWait.interval))
+            shot = try await capture()
+        }
+        return shot
+    }
+
+    /// The screen numbered `number` from 1, as `agentWindows` lists them.
+    private static func screen(_ number: Int) throws(ShotCommandError) -> NSScreen {
+        let screens = NSScreen.screens
+        guard (1...screens.count).contains(number) else {
+            throw .noInput("There's no display \(number); this Mac has \(screens.count). shot windows lists them.")
+        }
+        return screens[number - 1]
+    }
+
+    /// The windows as `WindowMatch` sees them, each with its app's bundle ID.
+    private static func candidates(_ windows: [WindowInfo]) -> [WindowMatch.Candidate] {
+        var bundleIDs: [pid_t: String] = [:]
+        return windows.map { info in
+            if bundleIDs[info.ownerPID] == nil {
+                bundleIDs[info.ownerPID] = NSRunningApplication(processIdentifier: info.ownerPID)?.bundleIdentifier ?? ""
+            }
+            return WindowMatch.Candidate(id: info.windowID, app: info.ownerName ?? "", title: info.title ?? "", bundleID: bundleIDs[info.ownerPID] ?? "", width: info.frame.width, height: info.frame.height)
+        }
+    }
+
+    /// The open window `target` names best, or a `.noInput` error listing the open ones.
+    private func matchWindow(_ target: AgentTarget) throws(ShotCommandError) -> (info: WindowInfo, match: WindowMatch.Candidate) {
         let windows = WindowCapturer.onScreenWindows()
-        let candidates = windows.map { WindowMatch.Candidate(id: $0.windowID, app: $0.ownerName ?? "", title: $0.title ?? "") }
-        guard let match = WindowMatch.best(query, in: candidates), let info = windows.first(where: { $0.windowID == match.id }) else {
-            throw .noInput("No open window matches \"\(query)\". \(WindowMatch.listing(candidates))")
+        let candidates = Self.candidates(windows)
+        let query = target.window ?? ""
+        guard let match = WindowMatch.best(query, bundleID: target.bundleID, in: candidates), let info = windows.first(where: { $0.windowID == match.id }) else {
+            let named = [target.bundleID.map { "of \($0)" }, target.window.map { "matches \"\($0)\"" }].compactMap { $0 }.joined(separator: " ")
+            throw .noInput("No open window \(named). \(WindowMatch.listing(candidates))")
         }
         return (info, match)
     }
 
-    /// Starts recording the open window `query` names, for an agent: never the microphone or camera, always with the
-    /// red border and the stop controls, and for at most `AgentRequest.maximumDuration`. Answers with the recording's
-    /// ID at once, or with `duration`, with the saved recording once it ends.
-    func agentRecord(window query: String, duration: Double?) async throws(ShotCommandError) -> [String: JSONValue] {
+    /// Starts recording the window or display `target` names, for an agent: never the microphone or camera, always
+    /// with the red border and the stop controls, and for at most `AgentRequest.maximumDuration`. Answers with the
+    /// recording's ID at once, or with `duration`, with the saved recording once it ends. Part of a window is recorded
+    /// as that part of the screen, so whatever covers it shows too.
+    func agentRecord(_ target: AgentTarget, duration: Double?) async throws(ShotCommandError) -> [String: JSONValue] {
         guard Permissions.hasScreenCapture else {
-            throw .noPermission("Shot doesn't have the Screen Recording permission. Grant it in System Settings › Privacy & Security › Screen & System Audio Recording.")
+            throw Self.noPermission
         }
         guard !busy, setup == nil, !recorder.isRecording, agentSession == nil else {
             throw .busy("Shot is already recording, or in the middle of a capture or the recording setup; try again once it's done.")
         }
-        let (info, match) = try matchWindow(query)
-        let app = info.ownerName ?? match.label
-        let (screen, region) = RecordingSetupController.region(of: info)
-        let options = Recorder.Options(camera: false, microphone: false, showsCursor: Preferences().recordShowsCursor, windowID: info.windowID, alwaysShowsBorder: true)
+        let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
+        let app: String
+        let screen: NSScreen
+        let region: CGRect
+        let windowID: CGWindowID?
+        let description: JSONValue
+        if let number = target.display {
+            screen = try Self.screen(number)
+            guard let area = target.area(in: Geometry.flip(screen.frame, primaryHeight: primaryHeight)) else {
+                throw .data("The \(target.rectText) is off display \(number), which is \(Int(screen.frame.width))×\(Int(screen.frame.height)) points.")
+            }
+            app = screen.localizedName
+            region = Geometry.flip(area, primaryHeight: primaryHeight)
+            windowID = nil
+            description = .object(["display": .number(Double(number)), "name": .string(app)])
+        } else {
+            let (info, match) = try matchWindow(target)
+            app = info.ownerName ?? match.label
+            description = .object(["app": .string(app), "title": .string(info.title ?? "")])
+            if target.rect == nil {
+                (screen, region) = RecordingSetupController.region(of: info)
+                windowID = info.windowID
+            } else {
+                guard let area = target.area(in: info.frame) else {
+                    throw .data("The \(target.rectText) is off \(match.label), which is \(Int(info.frame.width))×\(Int(info.frame.height)) points.")
+                }
+                let part = Geometry.flip(area, primaryHeight: primaryHeight)
+                screen = NSScreen.screens.first { $0.frame.contains(CGPoint(x: part.midX, y: part.midY)) } ?? NSScreen.screens[0]
+                region = part.intersection(screen.frame)
+                windowID = nil
+            }
+        }
+        let options = Recorder.Options(camera: false, microphone: false, showsCursor: Preferences().recordShowsCursor, windowID: windowID, alwaysShowsBorder: true, ignoresShadow: target.noShadow)
         busy = true
         do {
             recordingRegion = region
             try await recorder.start(screen: screen, region: region, options: options)
         } catch {
             busy = false
-            throw .io("Couldn't record \(match.label): \(error.localizedDescription)")
+            throw .io("Couldn't record \(app): \(error.localizedDescription)")
         }
         busy = false
         guard let url = recorder.outputURL else {
@@ -537,7 +681,7 @@ final class CaptureCoordinator {
         }
         let id = String(UUID().uuidString.prefix(8)).lowercased()
         let started = Date()
-        var session = AgentSession(id: id, app: app, window: .object(["app": .string(app), "title": .string(info.title ?? "")]), started: started)
+        var session = AgentSession(id: id, app: app, window: description, started: started)
         let seconds = min(duration ?? AgentRequest.maximumDuration, AgentRequest.maximumDuration)
         session.limit = Task { [weak self] in
             try? await Task.sleep(for: .seconds(seconds))
@@ -549,7 +693,7 @@ final class CaptureCoordinator {
         }
         agentSession = session
         agentRecordings[url] = id
-        log.notice("Agent started recording window \(info.windowID) of \(app, privacy: .public) as \(id, privacy: .public)")
+        log.notice("Agent started recording \(app, privacy: .public) as \(id, privacy: .public)")
         Toast.show("An agent is recording \(app)", duration: .seconds(3))
         guard duration != nil else {
             return ["id": .string(id), "window": session.window, "started": .string(ISO8601DateFormatter().string(from: started))]

@@ -29,10 +29,11 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(try parse("text a.png") == .text(path: "a.png"))
     #expect(try parse("diff a.png b.png") == .diff(ShotCommand.DiffOptions(a: "a.png", b: "b.png")))
     #expect(try parse("diff --threshold 0 a.png b.png -o d.png") == .diff(ShotCommand.DiffOptions(a: "a.png", b: "b.png", output: "d.png", threshold: 0)))
-    #expect(try parse("capture --window Simulator") == .capture(window: "Simulator"))
-    #expect(try parse("capture --window=Calculator") == .capture(window: "Calculator"))
-    #expect(try parse("record --window Simulator") == .record(.start(window: "Simulator", duration: nil)))
-    #expect(try parse("record --duration 1:30 --window Simulator") == .record(.start(window: "Simulator", duration: 90)))
+    #expect(try parse("capture --window Simulator") == .capture(AgentTarget(window: "Simulator")))
+    #expect(try parse("capture --window=Calculator") == .capture(AgentTarget(window: "Calculator")))
+    #expect(try parse("record --window Simulator") == .record(.start(AgentTarget(window: "Simulator"), duration: nil)))
+    #expect(try parse("record --duration 1:30 --window Simulator") == .record(.start(AgentTarget(window: "Simulator"), duration: 90)))
+    #expect(try parse("windows") == .windows)
     #expect(try parse("record --stop") == .record(.stop(id: nil)))
     #expect(try parse("record --stop ab12cd34") == .record(.stop(id: "ab12cd34")))
     #expect(try parse("record --status") == .record(.status))
@@ -53,6 +54,15 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(try parse("annotate a.png --json -") == .annotate(ShotCommand.AnnotateOptions(input: "a.png", marks: .standardInput)))
 }
 
+@Test func captureAndRecordTakeABundleIDADisplayARectAndSwitches() throws {
+    #expect(try parse("capture --bundle-id com.apple.iphonesimulator --no-shadow") == .capture(AgentTarget(bundleID: "com.apple.iphonesimulator", noShadow: true)))
+    #expect(try parse("capture --bundle-id com.apple.Safari --window Apple --rect 0,0,800,120") == .capture(AgentTarget(window: "Apple", bundleID: "com.apple.Safari", rect: [0, 0, 800, 120])))
+    #expect(try parse("capture --display 2 --wait-stable") == .capture(AgentTarget(display: 2, waitStable: 5)))
+    #expect(try parse("capture --wait-stable=12 --window Simulator") == .capture(AgentTarget(window: "Simulator", waitStable: 12)))
+    #expect(try parse("record --display 1 --rect 0,0,640,480 --duration 5") == .record(.start(AgentTarget(display: 1, rect: [0, 0, 640, 480]), duration: 5)))
+    #expect(try parse("record --no-shadow --window Simulator") == .record(.start(AgentTarget(window: "Simulator", noShadow: true), duration: nil)))
+}
+
 @Test func helpComesFromAnyCommand() throws {
     #expect(try parse("help") == .help(nil))
     #expect(try parse("--help") == .help(nil))
@@ -69,6 +79,8 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(ShotCommand.usage(nil).contains("shot text <image>"))
     #expect(try parse("watch --follow -h") == .help("watch"))
     #expect(ShotCommand.usage("watch").hasPrefix("Usage: shot watch [--kind image|video|any] [--timeout 60] [--follow]"))
+    #expect(try parse("windows --help") == .help("windows"))
+    #expect(ShotCommand.usage(nil).contains("shot windows\n"))
 }
 
 @Test(arguments: [
@@ -101,19 +113,31 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     ("diff a.png b.png c.png", "diff", "needs two images, the one before and the one after; got 3"),
     ("diff a.png b.png --threshold 2", "diff", "--threshold 2 must be a number from 0 to 1: how much of a colour's range a pixel may change by and still count as the same"),
     ("diff a.png b.png --fps 2", "diff", "unknown option --fps; it takes --threshold, -o"),
-    ("capture", "capture", "needs --window with words from the window's title or app, such as --window Simulator"),
+    ("capture", "capture", "needs --window with words from the window's title or app, such as --window Simulator, --bundle-id or --display"),
     ("capture --window", "capture", "--window needs a value"),
     ("capture a.png --window Simulator", "capture", "takes no file; name the window with --window"),
     ("capture --window a --window b", "capture", "--window is given twice"),
-    ("capture --window a -o b.png", "capture", "unknown option -o; it takes --window"),
-    ("record", "record", "needs --window with words from the window's title or app, such as --window Simulator, or --stop or --status"),
+    ("capture --window a -o b.png", "capture", "unknown option -o; it takes --bundle-id, --display, --no-shadow, --rect, --wait-stable, --window"),
+    ("capture --no-shadow", "capture", "needs --window with words from the window's title or app, such as --window Simulator, --bundle-id or --display"),
+    ("capture --window a --no-shadow=yes", "capture", "--no-shadow takes no value"),
+    ("capture --display 0", "capture", "--display 0 must be a display's number, from 1, as shot windows lists them"),
+    ("capture --display main", "capture", "--display main must be a display's number, from 1, as shot windows lists them"),
+    ("capture --display 1 --window a", "capture", "takes a window or a display, not both"),
+    ("capture --display 1 --no-shadow", "capture", "can leave out only a window's shadow; a display has none"),
+    ("capture --window a --rect 1,2,0,4", "capture", "--rect 1,2,0,4 must be x,y,width,height in points from the top-left corner, with a width and height above 0"),
+    ("capture --window a --rect -1,2,3,4", "capture", "--rect -1,2,3,4 must be x,y,width,height in points from the top-left corner, with a width and height above 0"),
+    ("capture --window a --wait-stable=0", "capture", "--wait-stable=0 must be a time above 0 and at most 30 seconds, such as --wait-stable=10"),
+    ("capture --window a --wait-stable=31", "capture", "--wait-stable=31 must be a time above 0 and at most 30 seconds, such as --wait-stable=10"),
+    ("windows now", "windows", "takes no arguments"),
+    ("record --window a --wait-stable", "record", "unknown option --wait-stable; it takes --bundle-id, --display, --duration, --no-shadow, --rect, --window"),
+    ("record", "record", "needs --window with words from the window's title or app, such as --window Simulator, --bundle-id or --display, or --stop or --status"),
     ("record --window a --duration 0", "record", "--duration 0 must be a time above 0 and at most 10 minutes, such as 10 or 1:30"),
     ("record --window a --duration 10:01", "record", "--duration 10:01 must be a time above 0 and at most 10 minutes, such as 10 or 1:30"),
     ("record --window a --stop", "record", "use --window, --stop or --status, one at a time"),
     ("record --stop a b", "record", "--stop takes at most a recording's id"),
     ("record --stop --status", "record", "--stop takes at most a recording's id"),
     ("record --status now", "record", "--status takes nothing else"),
-    ("record --window a --fps 30", "record", "unknown option --fps; it takes --duration, --window"),
+    ("record --window a --fps 30", "record", "unknown option --fps; it takes --bundle-id, --display, --duration, --no-shadow, --rect, --window"),
     ("watch a.png", "watch", "takes no file; it watches Shot's capture folder"),
     ("watch --kind gif", "watch", "--kind gif must be image, video or any"),
     ("watch --timeout 0", "watch", "--timeout 0 must be a time above 0, such as 30 or 5:00"),

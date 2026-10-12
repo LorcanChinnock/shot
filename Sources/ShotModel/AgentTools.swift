@@ -1,7 +1,7 @@
 import Foundation
 
 /// The MCP server's tools: six that read captures, one by waiting for the next, four that make new files from them, never changing, moving or
-/// deleting anything, and two that ask the running app to capture or record a window. What they're called, what they
+/// deleting anything, and three that ask the running app to list, capture or record windows. What they're called, what they
 /// take, and what they say back are here. Finding files, drawing
 /// previews and running the commands need Apple frameworks, so they come in as closures; ShotCore's `live(folder:)`
 /// supplies them.
@@ -63,6 +63,7 @@ public struct AgentTools: Sendable {
     public static let captureWindow = "capture_window"
     public static let recordWindow = "record_window"
     public static let compare = "compare"
+    public static let listWindows = "list_windows"
     /// The longest `record_window` and `wait_for_capture` wait for, so their answer comes within what clients wait for a tool.
     public static let maximumWait: Double = 120
     /// How long `wait_for_capture` waits without a timeout.
@@ -84,6 +85,17 @@ public struct AgentTools: Sendable {
     private static func seconds(_ what: String) -> JSONValue {
         .object(["type": .string("number"), "description": .string(what)])
     }
+    /// What `capture_window` and `record_window` can point at besides words from the window.
+    private static let target: [String: JSONValue] = [
+        "bundleID": .object(["type": .string("string"), "description": .string("The app's bundle ID, such as \"com.apple.iphonesimulator\", for its front window, or with window, the one of its windows that names. list_windows gives them.")]),
+        "display": .object(["type": .string("integer"), "description": .string("A whole display instead of a window, numbered from 1 as list_windows gives them.")]),
+        "rect": .object([
+            "type": .string("array"),
+            "items": .object(["type": .string("number")]),
+            "description": .string("Only this part, as [x, y, width, height] in points from the window's or display's top-left corner. list_windows gives each window's size in points."),
+        ]),
+        "noShadow": .object(["type": .string("boolean"), "description": .string("Leaves out the window's shadow, whatever the user's setting.")]),
+    ]
 
     public static let definitions: [MCPServer.Tool] = [
         MCPServer.Tool(
@@ -181,16 +193,26 @@ public struct AgentTools: Sendable {
             ]) { $1 }, required: ["start", "end"])
         ),
         MCPServer.Tool(
+            name: listWindows,
+            description: "The open windows, front to back, through the running Shot app: each one's app, bundle ID, title, size in points and whether it's the frontmost, and the displays. Use it to pick what capture_window or record_window should point at. Shot opens in the background if it isn't running. Needs Settings › Agents › Let agents capture and record turned on.",
+            inputSchema: schema([:]),
+            readOnly: true
+        ),
+        MCPServer.Tool(
             name: captureWindow,
-            description: "Takes a screenshot of an open window, such as the iOS Simulator or the app you're building, through the running Shot app, without bringing it forward or taking focus, even when other windows cover it. Saved to the capture folder; returns a preview, its path and which window it was. Shot opens in the background if it isn't running. Needs Settings › Agents › Let agents capture and record turned on, and Shot shows a notice each time. If no window matches, the error lists the open ones.",
-            inputSchema: schema([
+            description: "Takes a screenshot of an open window, such as the iOS Simulator or the app you're building, or of a whole display, through the running Shot app, without bringing it forward or taking focus, even when other windows cover it. Saved to the capture folder; returns a preview, its path and which window it was. Shot opens in the background if it isn't running. Needs Settings › Agents › Let agents capture and record turned on, and Shot shows a notice each time. If no window matches, the error lists the open ones.",
+            inputSchema: schema(target.merging([
                 "window": .object(["type": .string("string"), "description": .string("Words from the window's title or its app's name, such as \"Simulator\" or \"Calculator\". Case and accents don't matter.")]),
-            ], required: ["window"])
+                "waitStable": .object([
+                    "type": .string("number"),
+                    "description": .string("Waits up to this many seconds, at most \(Int(AgentTarget.maximumWaitStable)), for the picture to stop changing first, such as after a tap starts an animation. If it never settles, the screenshot is taken anyway. \(Int(AgentTarget.defaultWaitStable)) suits most animations."),
+                ]),
+            ]) { $1 })
         ),
         MCPServer.Tool(
             name: recordWindow,
             description: "Records an open window through the running Shot app, such as the Simulator while a UI test runs, then shows what happened. Saved to the capture folder. With a duration of up to \(Int(maximumWait)) seconds it waits, then returns the recording's path and about \(recordingFrames) key frames, each with its time. Without one it starts and returns an id; call again with action stop to end it and get the frames. Never records the microphone or camera, stops itself after \(Int(AgentRequest.maximumDuration / 60)) minutes, and Shot shows a red border, its stop controls and a notice, so the user can stop it. Shot opens in the background if it isn't running. Needs Settings › Agents › Let agents capture and record turned on.",
-            inputSchema: schema([
+            inputSchema: schema(target.merging([
                 "action": .object([
                     "type": .string("string"),
                     "enum": .array([.string("start"), .string("stop")]),
@@ -199,7 +221,7 @@ public struct AgentTools: Sendable {
                 "window": .object(["type": .string("string"), "description": .string("For start: words from the window's title or its app's name, such as \"Simulator\".")]),
                 "duration": seconds("For start: how long to record, up to \(Int(maximumWait)) seconds, waiting for it to end. Without it, the recording runs until stopped."),
                 "id": .object(["type": .string("string"), "description": .string("For stop: the id start gave. Without it, stops the agent's recording in progress.")]),
-            ])
+            ]) { $1 })
         ),
         MCPServer.Tool(
             name: compare,
@@ -269,6 +291,12 @@ public struct AgentTools: Sendable {
             return await recordWindow(arguments)
         case Self.compare:
             return await compare(arguments, entries)
+        case Self.listWindows:
+            do {
+                return MCPServer.ToolResult(content: [.text(Self.json(.object(try await agent(AgentRequest(.windows)))))])
+            } catch {
+                return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
+            }
         default:
             return MCPServer.ToolResult(content: [.text("Unknown tool: \(name)")], isError: true)
         }
@@ -421,14 +449,43 @@ public struct AgentTools: Sendable {
         return MCPServer.ToolResult(content: content)
     }
 
+    /// What `capture_window` or `record_window` is pointed at, from `arguments`. Lenient like the other tools: a
+    /// `waitStable` past the most is brought down to it.
+    static func target(_ arguments: JSONValue) -> AgentTarget {
+        func text(_ key: String) -> String? {
+            arguments[key]?.string.flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 }
+        }
+        var target = AgentTarget(window: text("window"), bundleID: text("bundleID"), noShadow: arguments["noShadow"] == .bool(true))
+        if let display = arguments["display"]?.number {
+            target.display = display.isFinite ? Int(exactly: display) ?? 0 : 0
+        }
+        if let rect = arguments["rect"] {
+            if case let .array(items) = rect {
+                target.rect = items.map { $0.number ?? .nan }
+            } else {
+                target.rect = []
+            }
+        }
+        switch arguments["waitStable"] {
+        case .bool(true)?:
+            target.waitStable = AgentTarget.defaultWaitStable
+        case let value? where value.number?.isFinite == true:
+            target.waitStable = min(value.number ?? 0, AgentTarget.maximumWaitStable)
+        default:
+            break
+        }
+        return target
+    }
+
     /// Asks the app for a screenshot of the window `arguments` names, then shows it as `describe` does a capture.
     func captureWindow(_ arguments: JSONValue) async -> MCPServer.ToolResult {
-        guard let window = arguments["window"]?.string, !window.trimmingCharacters(in: .whitespaces).isEmpty else {
-            return MCPServer.ToolResult(content: [.text("capture_window needs window: words from the window's title or its app's name.")], isError: true)
+        let target = Self.target(arguments)
+        if let problem = target.problem {
+            return MCPServer.ToolResult(content: [.text("capture_window \(problem).")], isError: true)
         }
         let fields: [String: JSONValue]
         do {
-            fields = try await agent(AgentRequest(.capture, window: window))
+            fields = try await agent(AgentRequest(.capture, target: target))
         } catch {
             return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
         }
@@ -456,8 +513,11 @@ public struct AgentTools: Sendable {
             let id = arguments["id"]?.string.flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 }
             request = AgentRequest(.stop, id: id)
         case "start", "":
-            guard let window = arguments["window"]?.string, !window.trimmingCharacters(in: .whitespaces).isEmpty else {
-                return MCPServer.ToolResult(content: [.text("record_window needs window to start: words from the window's title or its app's name.")], isError: true)
+            var target = Self.target(arguments)
+            // Only a screenshot waits for the picture to settle; a recording shows it settling anyway.
+            target.waitStable = nil
+            if let problem = target.problem {
+                return MCPServer.ToolResult(content: [.text("record_window \(problem).")], isError: true)
             }
             var duration = arguments["duration"]?.number.flatMap { $0.isFinite ? $0 : nil }
             if let asked = duration, asked > Self.maximumWait {
@@ -466,7 +526,7 @@ public struct AgentTools: Sendable {
             } else if let asked = duration, asked < 1 {
                 duration = 1
             }
-            request = AgentRequest(.record, window: window, duration: duration)
+            request = AgentRequest(.record, target: target, duration: duration)
         default:
             return MCPServer.ToolResult(content: [.text("record_window's action is start or stop, not \"\(action)\".")], isError: true)
         }

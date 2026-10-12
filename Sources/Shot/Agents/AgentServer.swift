@@ -56,13 +56,13 @@ final class AgentServer {
         switch request.op {
         case .capture:
             do {
-                return .success(try await coordinator.agentCapture(window: request.window ?? ""))
+                return .success(try await coordinator.agentCapture(request.target))
             } catch {
                 return .failure(error)
             }
         case .record:
             do {
-                return .success(try await coordinator.agentRecord(window: request.window ?? "", duration: request.duration))
+                return .success(try await coordinator.agentRecord(request.target, duration: request.duration))
             } catch {
                 return .failure(error)
             }
@@ -74,6 +74,12 @@ final class AgentServer {
             }
         case .status:
             return .success(coordinator.agentStatus())
+        case .windows:
+            do {
+                return .success(try coordinator.agentWindows())
+            } catch {
+                return .failure(error)
+            }
         }
     }
 }

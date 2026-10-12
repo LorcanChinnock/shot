@@ -22,6 +22,19 @@ private func decodeRequest(_ json: String) -> ShotCommandError? {
     #expect(try AgentRequest.decode(record.line) == record)
     #expect(try AgentRequest.decode(AgentRequest(.stop, id: "ab12cd34").line) == AgentRequest(.stop, id: "ab12cd34"))
     #expect(try AgentRequest.decode(AgentRequest(.stop).line) == AgentRequest(.stop))
+    #expect(try AgentRequest.decode(AgentRequest(.windows).line) == AgentRequest(.windows))
+    let target = AgentTarget(window: "Apple", bundleID: "com.apple.Safari", rect: [0, 0, 800, 120], noShadow: true, waitStable: 5)
+    #expect(try AgentRequest.decode(AgentRequest(.capture, target: target).line).target == target)
+    let display = AgentRequest(.record, target: AgentTarget(display: 2), duration: 10)
+    #expect(try AgentRequest.decode(display.line) == display)
+}
+
+@Test func aPlainRequestSendsNoTargetFieldsItDoesntUse() {
+    let line = String(decoding: AgentRequest(.capture, window: "Simulator").line, as: UTF8.self)
+    for key in ["bundleID", "display", "rect", "noShadow", "waitStable"] {
+        #expect(!line.contains(key), "\(key)")
+    }
+    #expect(AgentRequest(.capture, target: AgentTarget(window: "Simulator")) == AgentRequest(.capture, window: "Simulator"))
 }
 
 @Test(arguments: [
@@ -34,6 +47,14 @@ private func decodeRequest(_ json: String) -> ShotCommandError? {
     (#"{"v":1,"op":"capture"}"#, "capture needs a window"),
     (#"{"v":1,"op":"capture","window":" "}"#, "capture needs a window"),
     (#"{"v":1,"op":"record"}"#, "record needs a window"),
+    (#"{"v":1,"op":"capture","bundleID":" "}"#, "capture needs a window"),
+    (#"{"v":1,"op":"capture","display":0}"#, "capture needs a display numbered from 1"),
+    (#"{"v":1,"op":"capture","display":1.5}"#, "capture needs a display numbered from 1"),
+    (#"{"v":1,"op":"capture","display":1,"window":"a"}"#, "capture takes a window or a display, not both"),
+    (#"{"v":1,"op":"capture","window":"a","rect":[0,0,10]}"#, "capture needs a rect of x, y, width and height"),
+    (#"{"v":1,"op":"capture","window":"a","rect":"0,0,10,10"}"#, "capture needs a rect of x, y, width and height"),
+    (#"{"v":1,"op":"capture","window":"a","waitStable":60}"#, "capture can wait for the window to settle for above 0 and at most 30 seconds"),
+    (#"{"v":1,"op":"record","window":"a","waitStable":5}"#, "record can't wait for the window to settle"),
     (#"{"v":1,"op":"record","window":"a","duration":0}"#, "duration must be above 0 and at most 600 seconds"),
     (#"{"v":1,"op":"record","window":"a","duration":601}"#, "duration must be above 0 and at most 600 seconds"),
 ])

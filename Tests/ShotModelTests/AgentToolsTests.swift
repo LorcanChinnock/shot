@@ -38,10 +38,10 @@ private let captures = tools(in: folder, [
     ("Recording C.mp4", 5, true),
 ])
 
-@Test func thereAreTwelveToolsEachWithAnObjectSchema() {
-    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "wait_for_capture", "annotate", "make_gif", "trim_video", "capture_window", "record_window", "compare"])
+@Test func thereAreThirteenToolsEachWithAnObjectSchema() {
+    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "wait_for_capture", "annotate", "make_gif", "trim_video", "list_windows", "capture_window", "record_window", "compare"])
     let required = AgentTools.definitions.map { $0.inputSchema["required"] }
-    #expect(required == [nil, nil, nil, nil, nil, nil, .array([.string("annotations")]), nil, .array([.string("start"), .string("end")]), .array([.string("window")]), nil, .array([.string("a"), .string("b")])])
+    #expect(required == [nil, nil, nil, nil, nil, nil, .array([.string("annotations")]), nil, .array([.string("start"), .string("end")]), nil, nil, nil, .array([.string("a"), .string("b")])])
     for tool in AgentTools.definitions {
         #expect(tool.inputSchema["type"] == .string("object"))
         #expect(!tool.description.isEmpty)
@@ -50,7 +50,7 @@ private let captures = tools(in: folder, [
 
 @Test func onlyTheToolsThatChangeNothingAreMarkedReadOnly() {
     // annotate, make_gif, trim_video and compare add files, and capture_window and record_window take new captures.
-    #expect(AgentTools.definitions.filter(\.readOnly).map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "wait_for_capture"])
+    #expect(AgentTools.definitions.filter(\.readOnly).map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "wait_for_capture", "list_windows"])
 }
 
 @Test func annotateNamesExactlyThePaletteColours() throws {
@@ -499,4 +499,48 @@ private func box(_ x: Double, _ y: Double, _ width: Double, _ height: Double) ->
     let result = await tools.call("wait_for_capture", .object(["kind": .string("image"), "timeout": .string("0")]))
     #expect(result.isError == false)
     #expect(texts(result) == ["No new screenshot in /shots after 1 second. Call wait_for_capture again to keep waiting."])
+}
+
+@Test func listWindowsAsksTheAppAndGivesItsAnswerAsJSON() async {
+    let asked = Asked()
+    let windows: [String: JSONValue] = ["windows": .array([.object(["app": .string("Simulator"), "frontmost": .bool(true)])]), "displays": .array([])]
+    let result = await capturing(asked, answer: .success(windows)).call("list_windows", .object([:]))
+    #expect(result.isError == false)
+    #expect(asked.requests == [AgentRequest(.windows)])
+    #expect(texts(result).first?.contains(#""app" : "Simulator""#) == true)
+    let off = await capturing(Asked(), answer: .failure(.unavailable("Turn on Let agents capture and record"))).call("list_windows", .object([:]))
+    #expect(off.isError)
+    #expect(texts(off) == ["Turn on Let agents capture and record"])
+}
+
+@Test func captureWindowTakesABundleIDADisplayARectAndNoShadow() async {
+    let asked = Asked()
+    let tools = capturing(asked, answer: .success(["path": .string("/shots/Shot C.png")]))
+    _ = await tools.call("capture_window", .object(["bundleID": .string("com.apple.iphonesimulator"), "rect": .array([.number(0), .number(40), .number(390), .string("200")]), "noShadow": .bool(true)]))
+    _ = await tools.call("capture_window", .object(["display": .number(2), "waitStable": .number(90)]))
+    _ = await tools.call("capture_window", .object(["window": .string("Simulator"), "waitStable": .bool(true)]))
+    #expect(asked.requests == [
+        AgentRequest(.capture, target: AgentTarget(bundleID: "com.apple.iphonesimulator", rect: [0, 40, 390, 200], noShadow: true)),
+        AgentRequest(.capture, target: AgentTarget(display: 2, waitStable: 30)),
+        AgentRequest(.capture, target: AgentTarget(window: "Simulator", waitStable: 5)),
+    ])
+}
+
+@Test func captureWindowRefusesATargetThatDoesntMakeSense() async {
+    let asked = Asked()
+    let tools = capturing(asked, answer: .success(["path": .string("/shots/Shot C.png")]))
+    let both = await tools.call("capture_window", .object(["window": .string("Simulator"), "display": .number(1)]))
+    #expect(texts(both) == ["capture_window takes a window or a display, not both."])
+    let rect = await tools.call("capture_window", .object(["window": .string("Simulator"), "rect": .array([.number(0), .number(0), .number(10)])]))
+    #expect(rect.isError)
+    let display = await tools.call("capture_window", .object(["display": .number(1.5)]))
+    #expect(display.isError)
+    #expect(asked.requests.isEmpty)
+}
+
+@Test func recordWindowTakesTheSameTargetsButNeverWaitsToSettle() async {
+    let asked = Asked()
+    let tools = recording(asked, answer: ["id": .string("ab12cd34")])
+    _ = await tools.call("record_window", .object(["display": .number(1), "rect": .array([.number(0), .number(0), .number(800), .number(600)]), "waitStable": .number(3)]))
+    #expect(asked.requests == [AgentRequest(.record, target: AgentTarget(display: 1, rect: [0, 0, 800, 600]))])
 }
