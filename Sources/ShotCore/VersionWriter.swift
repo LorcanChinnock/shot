@@ -44,30 +44,35 @@ public enum VersionWriter {
     /// What a version records for agents: the marks, in the saved file's pixels, the file they're drawn on, which may
     /// itself be a version, and that file's source, so the version still says which app and window it showed. It's
     /// editable when reopening `original` with the marks gives `document` back. The size is filled in once rendered.
-    public static func record(of document: EditorDocument, drawnOn original: URL, savedAs format: ImageFormat, scale: CGFloat) -> CaptureRecord {
+    /// `atOneX` is for a file scaled to one pixel per point, whose marks are scaled with it and which can't reopen live.
+    public static func record(of document: EditorDocument, drawnOn original: URL, savedAs format: ImageFormat, scale: CGFloat, atOneX: Bool = false) -> CaptureRecord {
         let canvas = document.canvasRect
-        // The file is the canvas at 1:1, so the marks need no scaling beyond the canvas offset.
+        // The file is the canvas at 1:1, or scaled to 1×, so the marks need no other change than the canvas offset.
         return CaptureRecord(
-            original: original.lastPathComponent, kind: "image", created: Date(), size: CaptureRecord.Size(width: 0, height: 0), scale: scale,
+            original: original.lastPathComponent, kind: "image", created: Date(), size: CaptureRecord.Size(width: 0, height: 0), scale: atOneX ? 1 : scale,
             source: ImageCodec.record(ofFileAt: original)?.source,
             canvas: [canvas.minX, canvas.minY, canvas.width, canvas.height].map { (Double($0) * 10).rounded() / 10 },
             crop: document.visibleCrop.map { [$0.minX, $0.minY, $0.width, $0.height].map { (Double($0) * 10).rounded() / 10 } },
-            editable: CaptureMark.rebuildExactly(document.annotations, canvas: canvas) && document.captureStyle.isEmpty && document.captureCornerRadius == 0
+            editable: !atOneX && CaptureMark.rebuildExactly(document.annotations, canvas: canvas) && document.captureStyle.isEmpty && document.captureCornerRadius == 0
                 && document.background == EditorDocument.defaultBackground(for: format),
-            annotations: CaptureMark.mapping(document.annotations, canvas: canvas)
+            annotations: CaptureMark.mapping(document.annotations, canvas: canvas, scale: atOneX ? 1 / scale : 1)
         )
     }
 
     /// Flattens `document` and encodes it as `format`, with `record` inside it once it has the drawn size, and
-    /// `projectID` stamped in it when it has a project.
-    public static func render(_ document: EditorDocument, scale: CGFloat, as format: ImageFormat, record: CaptureRecord?, projectID: String? = nil) throws(Failure) -> RenderedImage {
-        guard let image = AnnotationRenderer.flatten(document) else {
+    /// `projectID` stamped in it when it has a project. `atOneX` scales it to one pixel per point, as Settings › Scale
+    /// Retina captures to 1× does a capture.
+    public static func render(_ document: EditorDocument, scale: CGFloat, as format: ImageFormat, record: CaptureRecord?, projectID: String? = nil, atOneX: Bool = false) throws(Failure) -> RenderedImage {
+        guard var image = AnnotationRenderer.flatten(document) else {
             throw .draw
+        }
+        if atOneX {
+            image = ImageCodec.downscaled(image, scale: scale)
         }
         var record = record
         record?.size = CaptureRecord.Size(width: image.width, height: image.height)
         // A window with the macOS shadow still has it once saved, so the file keeps saying so.
-        guard let file = ImageCodec.data(from: image, scale: scale, format: format, windowShadow: document.hasWindowShadow, record: record, projectID: projectID) else {
+        guard let file = ImageCodec.data(from: image, scale: atOneX ? 1 : scale, format: format, windowShadow: document.hasWindowShadow, record: record, projectID: projectID) else {
             throw .encode
         }
         return RenderedImage(image: image, file: file, record: record)
