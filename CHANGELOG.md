@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.7.0-beta.47](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.46...v0.7.0-beta.47) (2026-10-13)
+
+
+### Features
+
+* **capture:** capture the previous area again ([#508](https://github.com/LorcanChinnock/shot/issues/508)) ([aa62d40](https://github.com/LorcanChinnock/shot/commit/aa62d4039ce498147b2a04c8fb45f8459b8e4197))
+* **capture:** take a full-screen screenshot after a countdown ([#509](https://github.com/LorcanChinnock/shot/issues/509)) ([925ebf7](https://github.com/LorcanChinnock/shot/commit/925ebf70e79cc7030a85328eb7ce2bd35153e3bb))
+* **editor:** Shift and Option while resizing an annotation ([#506](https://github.com/LorcanChinnock/shot/issues/506)) ([8a4c428](https://github.com/LorcanChinnock/shot/commit/8a4c428e4ce9b622eff2d0502a44e892be345297))
+* **settings:** give every sidebar section its own colour, refresh permissions on appear ([#503](https://github.com/LorcanChinnock/shot/issues/503)) ([0b142ef](https://github.com/LorcanChinnock/shot/commit/0b142effce8b728862f9cb93c560e4c898af1e1c))
+
+
+### Bug Fixes
+
+* **overlay:** don't activate Shot when a capture overlay or recording setup opens ([#504](https://github.com/LorcanChinnock/shot/issues/504)) ([eb8ede3](https://github.com/LorcanChinnock/shot/commit/eb8ede32a690cad9ffef27edc56d1a7cc223e5a3))
+* **quick-access:** don't delete the capture on Save As, write captures atomically ([#502](https://github.com/LorcanChinnock/shot/issues/502)) ([ce953fd](https://github.com/LorcanChinnock/shot/commit/ce953fd13b0b1e3c572fe42da5f3a24e430c123c))
+
+
+### Performance Improvements
+
+* **gallery:** select on the first click and re-evaluate only the tiles that changed ([#505](https://github.com/LorcanChinnock/shot/issues/505)) ([4323166](https://github.com/LorcanChinnock/shot/commit/4323166760c0672b2f97cd8c647c75f8071a2884))
+
 ## [0.7.0-beta.46](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.45...v0.7.0-beta.46) (2026-10-12)
 
 
