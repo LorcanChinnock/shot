@@ -531,13 +531,8 @@ final class CaptureCoordinator {
         let fileExtension = prefs.imageFormat.fileExtension, prefix = prefs.filePrefix
         let (url, thumbnail) = try await Task.detached { () throws -> (URL, SendableImage?) in
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            var url = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: fileExtension, prefix: prefix)
-            do {
-                try data.write(to: url, options: [.atomic, .withoutOverwriting])
-            } catch let error as CocoaError where error.code == .fileWriteFileExists {
-                // Another save took the name between picking it and writing; pick again once rather than overwrite it.
-                url = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: fileExtension, prefix: prefix)
-                try data.write(to: url, options: [.atomic, .withoutOverwriting])
+            let url = try FileNaming.writeNew(data, in: folder) {
+                FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: fileExtension, prefix: prefix)
             }
             return (url, showsCard ? ImageCodec.thumbnail(from: data, maxPixelSize: 480).map(SendableImage.init) : nil)
         }.value
