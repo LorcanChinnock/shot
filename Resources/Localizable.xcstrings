@@ -12088,6 +12088,7 @@
         }
       }
     },
+    "Draws a circle where you click." : {},
     "Duplicate" : {
       "localizations" : {
         "de" : {
@@ -28259,6 +28260,7 @@
         }
       }
     },
+    "Show clicks" : {},
     "Show cursor" : {
       "localizations" : {
         "de" : {

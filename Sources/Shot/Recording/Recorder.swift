@@ -88,6 +88,7 @@ final class Recorder: NSObject {
         let windowID: CGWindowID?
         let microphone: Bool
         let showsCursor: Bool
+        let showsClicks: Bool
         /// The microphone picked in Settings, or the default at start; `nil` only with no microphone at all.
         let microphoneID: String?
         /// Read once at start, so every segment of one recording has the same frame rate, audio tracks and microphone.
@@ -143,7 +144,7 @@ final class Recorder: NSObject {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let finalURL = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "mp4", prefix: prefs.filePrefix)
         let microphoneID = CaptureDevices.device(id: prefs.microphoneDeviceID, for: .audio)?.uniqueID
-        session = Session(screen: screen, region: region, windowID: options.windowID, microphone: microphone, showsCursor: options.showsCursor, microphoneID: microphoneID, fps: RecordingFrameRate.effective(setting: prefs.recordingFPS, displayRate: screen.maximumFramesPerSecond), systemAudio: prefs.recordSystemAudio, finalURL: finalURL, ignoresShadow: options.ignoresShadow)
+        session = Session(screen: screen, region: region, windowID: options.windowID, microphone: microphone, showsCursor: options.showsCursor, showsClicks: prefs.recordShowsClicks, microphoneID: microphoneID, fps: RecordingFrameRate.effective(setting: prefs.recordingFPS, displayRate: screen.maximumFramesPerSecond), systemAudio: prefs.recordSystemAudio, finalURL: finalURL, ignoresShadow: options.ignoresShadow)
         segments = []
         segmentAudio = []
         mutes = CutList()
@@ -414,6 +415,7 @@ final class Recorder: NSObject {
         }
         config.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(session.fps))
         config.showsCursor = session.showsCursor
+        config.showMouseClicks = session.showsClicks
         config.captureMicrophone = session.microphone
         config.microphoneCaptureDeviceID = session.microphoneID
         config.capturesAudio = session.systemAudio
