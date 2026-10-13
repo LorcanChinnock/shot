@@ -23,6 +23,7 @@ public enum PreferenceKey {
     public static let quickAccessDuration = "quickAccessDuration"
     public static let recordingFPS = "recordingFPS"
     public static let recordShowsCursor = "recordShowsCursor"
+    public static let recordShowsClicks = "recordShowsClicks"
     public static let recordMicrophone = "recordMicrophone"
     public static let microphoneDeviceID = "microphoneDeviceID"
     public static let recordSystemAudio = "recordSystemAudio"
@@ -120,6 +121,7 @@ public struct Preferences {
             PreferenceKey.quickAccessDuration: 8.0,
             PreferenceKey.recordingFPS: RecordingFrameRate.default,
             PreferenceKey.recordShowsCursor: true,
+            PreferenceKey.recordShowsClicks: false,
             PreferenceKey.recordMicrophone: false,
             PreferenceKey.microphoneDeviceID: "",
             PreferenceKey.recordSystemAudio: false,
@@ -313,6 +315,7 @@ public struct Preferences {
     public var quickAccessDuration: Double { store.double(forKey: PreferenceKey.quickAccessDuration) }
     public var recordingFPS: Int { store.integer(forKey: PreferenceKey.recordingFPS) }
     public var recordShowsCursor: Bool { store.bool(forKey: PreferenceKey.recordShowsCursor) }
+    public var recordShowsClicks: Bool { store.bool(forKey: PreferenceKey.recordShowsClicks) }
     public var recordMicrophone: Bool { store.bool(forKey: PreferenceKey.recordMicrophone) }
 
     /// Empty means the system default microphone.

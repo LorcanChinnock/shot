@@ -405,6 +405,7 @@ private struct ScreenPreview: View {
 private struct RecordingSettings: View {
     @Setting(PreferenceKey.recordingFPS) private var fps: Int
     @Setting(PreferenceKey.recordShowsCursor) private var showsCursor: Bool
+    @Setting(PreferenceKey.recordShowsClicks) private var showsClicks: Bool
     @Setting(PreferenceKey.showRecordingBorder) private var border: Bool
     @Setting(PreferenceKey.copyAfterRecording) private var copy: Bool
     @Setting(PreferenceKey.adjustBeforeRecording) private var adjust: Bool
@@ -435,6 +436,7 @@ private struct RecordingSettings: View {
                 BrutalSegmented(selection: $fps, options: frameRates.map { ($0, "\($0) fps") }, color: color)
             }
             ToggleRow(title: "Show cursor", isOn: $showsCursor, color: color)
+            ToggleRow(title: "Show clicks", subtitle: "Draws a circle where you click.", isOn: $showsClicks, color: color)
             ToggleRow(title: "Region border", subtitle: "A red border around the recorded area. It never appears in the video.", isOn: $border, color: color)
             ToggleRow(title: "Copy to clipboard", subtitle: "Copies the finished recording, ready to paste as a file.", isOn: $copy, color: color, divider: false)
         }

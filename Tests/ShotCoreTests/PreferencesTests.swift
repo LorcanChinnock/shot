@@ -60,6 +60,7 @@ import Testing
         #expect(prefs.recordingFPS == 60)
         #expect(!prefs.recordMicrophone)
         #expect(prefs.recordShowsCursor)
+        #expect(!prefs.recordShowsClicks)
         #expect(prefs.replacesSystemScreenshots)
         #expect(prefs.videoExportOptions == VideoExportOptions())
         #expect(prefs.hotkey(for: .captureArea)?.displayString == "⇧⌘4")
