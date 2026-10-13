@@ -1,0 +1,22 @@
+version: 2
+updates:
+  # Pinned actions are bumped as a reviewed change to the commit SHA.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+  - package-ecosystem: npm
+    directory: /site
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+  # Sparkle. A bump changes Package.resolved, which release builds require (--force-resolved-versions).
+  - package-ecosystem: swift
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"

@@ -532,7 +532,7 @@ Open Settings from the menu bar icon, or with ⌘, while a Shot window is in fro
 | Recording | Adjust before recording, the countdown, frame rate, cursor, region outline, copying to the clipboard, the microphone and its input (with a **Test**), system audio, and the camera bubble's camera (with a **Preview**) and size. It also sums up the GIF settings the video editor last used. |
 | Agents | [Handing captures to AI agents](#using-shot-with-ai-agents): a record inside each capture of where it came from and what you marked, [letting agents capture and record a window](#letting-an-agent-capture-and-record), and the setup commands for the MCP server |
 | Shortcuts | The macOS screenshot keys and every global shortcut |
-| About | The version, updates, permissions, the welcome window, the save folder, links to the code, to report a bug and to sponsor Shot, and resetting all settings |
+| About | The version, updates, permissions, the welcome window, the save folder, links to the code and its licence, the acknowledgements, to report a bug and to sponsor Shot, and resetting all settings |
 
 ## Languages
 

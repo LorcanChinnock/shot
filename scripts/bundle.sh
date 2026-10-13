@@ -5,8 +5,14 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# A release builds exactly the versions in Package.resolved, so a dependency only changes through a reviewed bump.
+resolved=()
+if [ "${SHOT_RELEASE:-}" = 1 ]; then
+    resolved=(--force-resolved-versions)
+fi
+
 # Shot runs on Apple Silicon only.
-swift build -c release --arch arm64
+swift build -c release --arch arm64 ${resolved[@]+"${resolved[@]}"}
 bin_path="$(swift build -c release --arch arm64 --show-bin-path)"
 binary="$bin_path/Shot"
 
@@ -24,6 +30,8 @@ cp "$bin_path/ShotCLI" "$app/Contents/MacOS/shot-cli"
 ditto "$bin_path/Sparkle.framework" "$app/Contents/Frameworks/Sparkle.framework"
 cp Resources/Info.plist "$app/Contents/Info.plist"
 cp Resources/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
+# Sparkle's MIT licence requires its notice in copies of the app. Settings › About opens this file.
+cp Resources/Acknowledgements.txt "$app/Contents/Resources/Acknowledgements.txt"
 # One .lproj folder per language, where Bundle.main finds the app's strings and the permission prompts' text.
 for catalog in Resources/*.xcstrings; do
     xcrun xcstringstool compile "$catalog" --output-directory "$app/Contents/Resources"
@@ -44,6 +52,11 @@ if [ "$name" = ShotDev ]; then
 fi
 
 identity="${SHOT_SIGN_IDENTITY:-Shot Dev}"
+# A release signed ad hoc would reset every user's Screen Recording permission on update, so it fails instead.
+if [ "${SHOT_RELEASE:-}" = 1 ] && { [ "$identity" = "-" ] || ! security find-identity -p codesigning | grep -q "\"$identity\""; }; then
+    echo "error: signing identity '$identity' not found; a release must not be signed ad hoc." >&2
+    exit 1
+fi
 if [ "$identity" != "-" ] && ! security find-identity -p codesigning | grep -q "\"$identity\""; then
     echo "warning: signing identity '$identity' not found; signing ad-hoc. Screen Recording permission resets on every build." >&2
     identity="-"

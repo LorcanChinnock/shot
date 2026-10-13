@@ -2063,6 +2063,9 @@
         }
       }
     },
+    "Acknowledgements" : {
+
+    },
     "Actual Size" : {
       "localizations" : {
         "de" : {
@@ -28122,6 +28125,9 @@
         }
       }
     },
+    "Shot comes with no warranty. It updates itself with Sparkle, under the MIT license." : {
+
+    },
     "Shot is free, with no ads or account. Sponsoring keeps it that way." : {
       "localizations" : {
         "de" : {
@@ -34055,6 +34061,9 @@
           }
         }
       }
+    },
+    "View" : {
+
     },
     "WIDTH" : {
       "localizations" : {

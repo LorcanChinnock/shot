@@ -30,16 +30,16 @@ jobs:
     # container runs the gate on the runner itself.
     container: ${{ !inputs.gate && 'swift:6.3' || '' }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       # The image has no make, so this calls what `make lint` runs. A cold Linux build takes about 10 s.
       - name: Lint
         run: scripts/lint.sh
       - name: Test
         if: ${{ !inputs.gate }}
-        run: swift test
+        run: swift test --force-resolved-versions
       - name: Build
         if: inputs.gate
-        run: swift build --build-tests
+        run: swift build --build-tests --force-resolved-versions
       # Every build extracts the app's strings, so this needs the build above. See scripts/strings.sh.
       - name: Check strings
         if: inputs.gate

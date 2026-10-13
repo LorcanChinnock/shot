@@ -99,3 +99,5 @@ Shot takes these keys over from macOS. To keep the macOS screenshot tool, and fo
 - **[Contributing](CONTRIBUTING.md):** build from source, run the tests, and send a change.
 - **[Sponsor](https://github.com/sponsors/LorcanChinnock):** Shot is free; sponsoring helps pay to notarize it.
 - **[License](LICENSE):** free software under the GNU General Public License v3.0.
+- **[Acknowledgements](Resources/Acknowledgements.txt):** Shot updates itself with [Sparkle](https://sparkle-project.org), under the MIT license.
+- **[Security](SECURITY.md):** how to report a vulnerability.
