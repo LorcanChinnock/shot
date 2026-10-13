@@ -156,6 +156,30 @@ func theProjectIDGoesInTheImagesXMPBesideTheRecord(format: ImageFormat) throws {
     #expect(store.prune(now: later) == 0)
 }
 
+@Test func theGalleryFindsWhatAgentsMadeEvenAfterARename() throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
+    let mine = folder.appendingPathComponent("Mine.png"), plain = folder.appendingPathComponent("Plain.png")
+    let cli = folder.appendingPathComponent("Shot.png"), gif = folder.appendingPathComponent("Shot.gif")
+    let mineID = ProjectKey.newID(), cliID = ProjectKey.newID()
+    try writePNG(to: mine, id: mineID)
+    try writePNG(to: plain, id: nil)
+    try writePNG(to: cli, id: cliID)
+    try Data("GIF89a".utf8).write(to: gif)
+    try store.save(origin: ProjectOrigin(via: .app), for: mine, id: mineID)
+    try store.save(origin: ProjectOrigin(via: .cli, action: "capture"), for: cli, id: cliID)
+    let made = ProjectOrigin(via: .mcp, client: "claude-code", action: "make_gif")
+    try store.save(origin: made, for: gif, id: nil)
+    let renamed = folder.appendingPathComponent("Renamed.png")
+    try FileManager.default.moveItem(at: cli, to: renamed)
+
+    let origins = Gallery.agentOrigins(of: Gallery.items(in: folder), in: folder, store: store)
+    #expect(origins.keys.map(\.lastPathComponent).sorted() == ["Renamed.png", "Shot.gif"])
+    #expect(origins.first { $0.key.lastPathComponent == "Renamed.png" }?.value.action == "capture")
+    #expect(origins.first { $0.key.lastPathComponent == "Shot.gif" }?.value == made)
+}
+
 extension MediaTests {
     @Test(arguments: ["mp4", "mov"])
     func aMoviesProjectIDIsStampedWithoutReencoding(_ fileExtension: String) async throws {

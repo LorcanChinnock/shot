@@ -41,7 +41,7 @@ public struct GalleryItem: Identifiable, Hashable, Sendable {
 }
 
 public enum GalleryFilter: String, CaseIterable, Sendable {
-    case all, screenshots, videos, gifs
+    case all, screenshots, videos, gifs, agents
 
     public var title: String {
         switch self {
@@ -49,15 +49,17 @@ public enum GalleryFilter: String, CaseIterable, Sendable {
         case .screenshots: String(localized: "Screenshots")
         case .videos: String(localized: "Videos")
         case .gifs: String(localized: "GIFs")
+        case .agents: String(localized: "Made by agents")
         }
     }
 
-    func includes(_ kind: GalleryKind) -> Bool {
+    func includes(_ kind: GalleryKind, madeByAgent: Bool) -> Bool {
         switch self {
         case .all: true
         case .screenshots: kind == .image
         case .videos: kind == .video
         case .gifs: kind == .gif
+        case .agents: madeByAgent
         }
     }
 }
@@ -103,16 +105,35 @@ public enum Gallery {
         }
     }
 
+    /// Who made each of `items` an agent or the command line made, from `store`. `items` are directly inside `folder`,
+    /// so only the folder's symlinks need resolving to match the store's paths. Run off the main actor.
+    public static func agentOrigins(of items: [GalleryItem], in folder: URL, store: ProjectStore) -> [URL: ProjectOrigin] {
+        let origins = store.agentOrigins()
+        guard !origins.isEmpty else {
+            return [:]
+        }
+        let resolved = folder.resolvingSymlinksInPath()
+        var found: [URL: ProjectOrigin] = [:]
+        for item in items {
+            if let origin = origins[resolved.appendingPathComponent(item.name).path] {
+                found[item.url] = origin
+            }
+        }
+        return found
+    }
+
     /// The newest screenshots in `items`, at most `limit`, leaving out `excluding`: what the editor offers to place on the canvas.
     public static func recentImages(_ items: [GalleryItem], excluding url: URL?, limit: Int) -> [GalleryItem] {
         let excluded = url?.standardizedFileURL
         return Array(items.filter { $0.kind == .image && $0.url.standardizedFileURL != excluded }.sorted { $0.date > $1.date }.prefix(limit))
     }
 
-    public static func visible(_ items: [GalleryItem], filter: GalleryFilter, sort: GallerySort, query: String) -> [GalleryItem] {
+    /// `items` that pass `filter` and `query`, in `sort` order. `origins` holds who made the items an agent or the
+    /// command line made, for the Made by agents filter.
+    public static func visible(_ items: [GalleryItem], filter: GalleryFilter, sort: GallerySort, query: String, origins: [URL: ProjectOrigin] = [:]) -> [GalleryItem] {
         let query = query.trimmingCharacters(in: .whitespaces)
         let matching = items.filter { item in
-            filter.includes(item.kind) && (query.isEmpty || item.name.localizedStandardContains(query))
+            filter.includes(item.kind, madeByAgent: origins[item.url] != nil) && (query.isEmpty || item.name.localizedStandardContains(query))
         }
         return matching.sorted { a, b in
             switch sort {

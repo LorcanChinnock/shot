@@ -23,6 +23,24 @@ public struct ProjectOrigin: Codable, Equatable, Sendable {
     }
 }
 
+extension ProjectOrigin {
+    /// Whether an agent or the command line made it, which the gallery marks.
+    public var isAgent: Bool { via != .app }
+
+    /// `client` as people know it: the product for the MCP clients Shot knows, or the name as the client sent it.
+    public var clientName: String? {
+        client.map { Self.knownClients[$0.lowercased()] ?? $0 }
+    }
+
+    /// The `clientInfo` names some MCP clients send, and the product each one is.
+    private static let knownClients = [
+        "claude-code": "Claude Code",
+        "claude-ai": "Claude",
+        "cursor-vscode": "Cursor",
+        "codex-mcp-client": "Codex",
+    ]
+}
+
 /// A file a project points at: where it was, a bookmark that follows it when it moves, and enough of its identity to
 /// tell it from another file put at the same path.
 public struct ProjectFile: Codable, Equatable, Sendable {
@@ -166,5 +184,25 @@ public enum ProjectPruning {
     /// was on is mounted. A file on an unmounted disk isn't gone, so its project stays.
     public static func keeps(_ entry: ProjectEntry, sightings: [ProjectSighting], volumeMounted: Bool, now: Date = Date()) -> Bool {
         sightings.contains(where: entry.isFile) || !volumeMounted || now.timeIntervalSince(entry.origin.date) < grace
+    }
+}
+
+/// Which files an agent or the command line made, for the gallery's mark and its Made by agents filter.
+public enum ProjectProvenance {
+    /// The origin of each file an agent or the command line made, keyed by the path it's at now. Each entry comes with
+    /// the files found where it points (`ProjectStore` looks only for these, so the cost follows the number of agent
+    /// entries, not the size of the folder). App entries are left out. Where two entries claim one file, the newer wins.
+    public static func agentOrigins(_ located: [(entry: ProjectEntry, sightings: [ProjectSighting])]) -> [String: ProjectOrigin] {
+        var origins: [String: ProjectOrigin] = [:]
+        for (entry, sightings) in located where entry.origin.isAgent {
+            guard let sighting = sightings.first(where: entry.isFile) else {
+                continue
+            }
+            if let claimed = origins[sighting.file.path], claimed.date > entry.origin.date {
+                continue
+            }
+            origins[sighting.file.path] = entry.origin
+        }
+        return origins
     }
 }

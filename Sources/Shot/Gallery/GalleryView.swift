@@ -21,7 +21,7 @@ struct GalleryRootView: View {
 
     private var header: some View {
         HStack(spacing: 12) {
-            BrutalSegmented(selection: Bindable(model).filter, options: GalleryFilter.allCases.map { ($0, $0.title) }, color: Brutal.violet)
+            BrutalSegmented(selection: Bindable(model).filter, options: filters.map { ($0, $0.title) }, color: Brutal.violet)
             Spacer(minLength: 8)
             searchField
             sortMenu
@@ -39,6 +39,11 @@ struct GalleryRootView: View {
         }
         .padding(.horizontal, 3)
         .frame(height: 36)
+    }
+
+    /// Made by agents shows only once an agent or the command line has made something here.
+    private var filters: [GalleryFilter] {
+        GalleryFilter.allCases.filter { $0 != .agents || !model.origins.isEmpty || model.filter == .agents }
     }
 
     private var searchField: some View {
@@ -150,7 +155,8 @@ private struct GalleryGrid: View {
                             Section {
                                 ForEach(section.items) { item in
                                     GalleryTile(item: item, model: model, slot: model.thumbnails.slot(for: item), width: cell,
-                                                selected: model.selection.contains(item.url), selectionActive: !model.selection.isEmpty)
+                                                selected: model.selection.contains(item.url), selectionActive: !model.selection.isEmpty,
+                                                origin: model.origins[item.url])
                                         .equatable()
                                         .id(item.url)
                                 }
@@ -268,11 +274,13 @@ private struct GalleryTile: View, Equatable {
     let selected: Bool
     /// Whether anything is selected, which shows every tile's checkbox.
     let selectionActive: Bool
+    /// Who made it, when an agent or the command line did.
+    let origin: ProjectOrigin?
     @State private var hovering = false
 
     nonisolated static func == (lhs: GalleryTile, rhs: GalleryTile) -> Bool {
         lhs.item == rhs.item && lhs.model === rhs.model && lhs.slot === rhs.slot && lhs.width == rhs.width
-            && lhs.selected == rhs.selected && lhs.selectionActive == rhs.selectionActive
+            && lhs.selected == rhs.selected && lhs.selectionActive == rhs.selectionActive && lhs.origin == rhs.origin
     }
 
     private var thumbnail: Thumbnail? { slot.thumbnail }
@@ -359,6 +367,7 @@ private struct GalleryTile: View, Equatable {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(item.name))
+        .accessibilityValue(Text(origin?.summary() ?? ""))
         .accessibilityAddTraits(selected ? .isSelected : [])
         // The checkbox shows only on hover and sits inside this one element, so its ⌘-click toggle is an action here.
         .accessibilityAction(named: Text(selected ? "Deselect" : "Select")) {
@@ -386,11 +395,28 @@ private struct GalleryTile: View, Equatable {
                     BrutalChip(text: "GIF", color: Brutal.mint)
                     Spacer()
                 case .image:
-                    EmptyView()
+                    Spacer()
+                }
+                if let origin {
+                    AgentMark(origin: origin)
                 }
             }
         }
         .padding(8)
+    }
+}
+
+/// Marks an item an agent or the command line made, and says who and how on hover.
+private struct AgentMark: View {
+    let origin: ProjectOrigin
+
+    var body: some View {
+        Image(systemName: origin.via == .cli ? "terminal" : "sparkles")
+            .font(.system(size: 10, weight: .black))
+            .foregroundStyle(Brutal.ink)
+            .frame(width: 22, height: 22)
+            .brutalCircle(Color.white, shadow: 2)
+            .brutalTip(origin.summary())
     }
 }
 

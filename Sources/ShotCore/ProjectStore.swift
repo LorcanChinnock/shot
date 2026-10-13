@@ -69,6 +69,17 @@ public struct ProjectStore: Sendable {
         return entry(id)
     }
 
+    /// Who made each file an agent or the command line made, keyed by its path now with symlinks resolved. Run off the
+    /// main actor: it reads every entry, then looks only for the agent entries' files.
+    public func agentOrigins() -> [String: ProjectOrigin] {
+        let located = ids().compactMap(entry).filter(\.origin.isAgent).map { ($0, sightings(of: $0)) }
+        var origins: [String: ProjectOrigin] = [:]
+        for (path, origin) in ProjectProvenance.agentOrigins(located) {
+            origins[URL(fileURLWithPath: path).resolvingSymlinksInPath().path] = origin
+        }
+        return origins
+    }
+
     /// Removes the projects whose files are gone, and returns how many. Run at launch, off the main actor: it reads
     /// every entry and looks for its file. An entry it can't read, perhaps from a newer Shot, is left alone.
     @discardableResult
