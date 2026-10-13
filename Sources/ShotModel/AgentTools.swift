@@ -1,6 +1,6 @@
 import Foundation
 
-/// The MCP server's tools: six that read captures, one by waiting for the next, four that make new files from them, never changing, moving or
+/// The MCP server's tools: seven that read captures, one by waiting for the next, four that make new files from them, never changing, moving or
 /// deleting anything, and three that ask the running app to list, capture or record windows. What they're called, what they
 /// take, and what they say back are here. Finding files, drawing
 /// previews and running the commands need Apple frameworks, so they come in as closures; ShotCore's `live(folder:)`
@@ -20,6 +20,8 @@ public struct AgentTools: Sendable {
     public var frames: @Sendable (AgentCaptures.Entry, Int) async throws(ShotCommandError) -> [MCPServer.Content]
     /// The text in a screenshot, read on the device.
     public var text: @Sendable (AgentCaptures.Entry) async throws(ShotCommandError) -> CaptureText
+    /// A part of a screenshot, `[x, y, width, height]` in its pixels, at full resolution where it fits.
+    public var zoom: @Sendable (AgentCaptures.Entry, [Double]) async throws(ShotCommandError) -> Zoomed
     /// Sends a request to the running app over its agent socket, and gives back its answer's fields.
     public var agent: @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue]
     public var now: @Sendable () -> Date
@@ -35,6 +37,7 @@ public struct AgentTools: Sendable {
         run: @escaping @Sendable (ShotCommand) async throws(ShotCommandError) -> JSONValue = { _ throws(ShotCommandError) in throw .internal("can't run commands here") },
         frames: @escaping @Sendable (AgentCaptures.Entry, Int) async throws(ShotCommandError) -> [MCPServer.Content] = { _, _ throws(ShotCommandError) in throw .internal("can't read frames here") },
         text: @escaping @Sendable (AgentCaptures.Entry) async throws(ShotCommandError) -> CaptureText = { _ throws(ShotCommandError) in throw .internal("can't read text here") },
+        zoom: @escaping @Sendable (AgentCaptures.Entry, [Double]) async throws(ShotCommandError) -> Zoomed = { _, _ throws(ShotCommandError) in throw .internal("can't zoom here") },
         agent: @escaping @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue] = { _ throws(ShotCommandError) in throw .unavailable("can't reach Shot from here") },
         now: @escaping @Sendable () -> Date = Date.init,
         timeZone: TimeZone = .current
@@ -46,6 +49,7 @@ public struct AgentTools: Sendable {
         self.run = run
         self.frames = frames
         self.text = text
+        self.zoom = zoom
         self.agent = agent
         self.now = now
         self.timeZone = timeZone
@@ -59,11 +63,30 @@ public struct AgentTools: Sendable {
     public static let trimVideo = "trim_video"
     public static let getFrames = "get_frames"
     public static let findText = "find_text"
+    public static let zoom = "zoom"
     public static let waitForCapture = "wait_for_capture"
     public static let captureWindow = "capture_window"
     public static let recordWindow = "record_window"
     public static let compare = "compare"
     public static let listWindows = "list_windows"
+    /// What `zoom` shows: the image, the part of the file it is, and the sizes of both.
+    public struct Zoomed: Equatable, Sendable {
+        public var image: MCPServer.Content
+        /// `[x, y, width, height]` in the file's pixels: the part asked for, on whole pixels and within the file.
+        public var region: [Int]
+        /// The image's size, which is the region's unless that was too big to show whole.
+        public var shown: CaptureRecord.Size
+        /// The file's size.
+        public var file: CaptureRecord.Size
+
+        public init(image: MCPServer.Content, region: [Int], shown: CaptureRecord.Size, file: CaptureRecord.Size) {
+            self.image = image
+            self.region = region
+            self.shown = shown
+            self.file = file
+        }
+    }
+
     /// The longest `record_window` and `wait_for_capture` wait for, so their answer comes within what clients wait for a tool.
     public static let maximumWait: Double = 120
     /// How long `wait_for_capture` waits without a timeout.
@@ -148,6 +171,18 @@ public struct AgentTools: Sendable {
             inputSchema: schema(capture.merging([
                 "query": .object(["type": .string("string"), "description": .string("Words to find, ignoring case and accents, such as \"Save\". Without it, all the text.")]),
             ]) { $1 }),
+            readOnly: true
+        ),
+        MCPServer.Tool(
+            name: zoom,
+            description: "Shows part of a Shot screenshot at full resolution, to read small text or check detail that the preview, at most 1568 pixels, scales away. rect is [x, y, width, height] in the full-size file's pixels, top-left origin, the space find_text gives and annotate takes. A part over 1568 pixels on its longer side is scaled down to fit, and the result says so. Without path or name, the newest screenshot. Reads only; writes nothing.",
+            inputSchema: schema(capture.merging([
+                "rect": .object([
+                    "type": .string("array"),
+                    "items": .object(["type": .string("number")]),
+                    "description": .string("The part to show, as [x, y, width, height] in the file's pixels from the top-left corner. latest_capture and get_capture give the file's size."),
+                ]),
+            ]) { $1 }, required: ["rect"]),
             readOnly: true
         ),
         MCPServer.Tool(
@@ -286,6 +321,8 @@ public struct AgentTools: Sendable {
             }
         case Self.findText:
             return await findText(arguments, entries)
+        case Self.zoom:
+            return await zoom(arguments, entries)
         case Self.captureWindow:
             return await captureWindow(arguments)
         case Self.recordWindow:
@@ -413,6 +450,41 @@ public struct AgentTools: Sendable {
             "match is the box of the words that matched, inside the line's box. Both are [x, y, width, height] in the file's pixels, from the top left."
         }
         return MCPServer.ToolResult(content: [.text(Self.json(.object(object))), .text(note)])
+    }
+
+    /// Part of the screenshot `arguments` names, or the newest one, at full resolution, with where it is in the file so
+    /// the agent can map what it sees back to the file's pixels. Lenient like the other tools: a rect reaching past the
+    /// image is cut to it.
+    func zoom(_ arguments: JSONValue, _ entries: [AgentCaptures.Entry]) async -> MCPServer.ToolResult {
+        guard let rect = CropRegion.rect(arguments["rect"]) else {
+            return MCPServer.ToolResult(content: [.text("zoom needs rect: [x, y, width, height] in the file's pixels from the top left, with a width and height above 0.")], isError: true)
+        }
+        let name = [arguments["path"]?.string, arguments["name"]?.string].compactMap { $0 }.first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        guard let entry = name.map({ AgentCaptures.named($0, in: entries) }) ?? AgentCaptures.latest(entries, kind: .image) else {
+            return name.map { notFound($0, in: entries) } ?? MCPServer.ToolResult(content: [.text(empty(entries, kind: .image))], isError: true)
+        }
+        guard !entry.isVideo else {
+            return MCPServer.ToolResult(content: [.text("\(entry.name) is a recording; zoom shows part of a screenshot. get_frames shows a recording's frames.")], isError: true)
+        }
+        let zoomed: Zoomed
+        do {
+            zoomed = try await zoom(entry, rect)
+        } catch {
+            return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
+        }
+        let region = zoomed.region
+        let at = "[\(region.map(String.init).joined(separator: ", "))]"
+        var note = "This is \(at) of \(entry.name), which is \(zoomed.file.width)×\(zoomed.file.height) pixels"
+        if zoomed.shown.width == region[2], zoomed.shown.height == region[3] {
+            note += ", at full resolution: add \(region[0]) to x and \(region[1]) to y for the file's pixels."
+        } else {
+            let scale = Double(zoomed.shown.width) / Double(region[2])
+            note += ", scaled to \(zoomed.shown.width)×\(zoomed.shown.height) to fit: divide by \(String(format: "%.3g", scale)), then add \(region[0]) to x and \(region[1]) to y for the file's pixels. Zoom into a smaller part to see it at full resolution."
+        }
+        if rect != region.map(Double.init) {
+            note += " The rect asked for was \(CropRegion.text(rect)), cut to whole pixels within the image."
+        }
+        return MCPServer.ToolResult(content: [zoomed.image, .text(note)])
     }
 
     /// Compares the screenshots `a` and `b` name, which must both be in the folder, and shows the diff it saved beside `b`.

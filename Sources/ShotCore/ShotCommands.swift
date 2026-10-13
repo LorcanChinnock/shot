@@ -61,6 +61,8 @@ public enum ShotCommands {
             return try await text(url(path))
         case let .diff(options):
             return try diff(options)
+        case let .crop(options):
+            return try draw(input: options.input, output: options.output, crop: options.rect) { (_: CGImage) in [] }
         case .capture, .record, .watch, .windows, .latest, .list, .get, .doctor, .mcp, .version, .help:
             throw .internal("\(command.name) isn't a media command")
         }
@@ -221,8 +223,9 @@ public enum ShotCommands {
 
     /// Draws the annotations `make` gives for the input image, and the image's scale, onto a copy of it, recording them
     /// inside the new file so a person can open it in Shot and change them. The record and the drawing are the editor's,
-    /// from `VersionWriter`; unlike the editor, a command records whether or not agents are handed captures.
-    static func draw(input path: String, output: String?, _ make: (CGImage, CGFloat) throws(ShotCommandError) -> [Annotation]) throws(ShotCommandError) -> JSONValue {
+    /// from `VersionWriter`; unlike the editor, a command records whether or not agents are handed captures. `crop`, in
+    /// the image's pixels, keeps that part, as the editor's crop does, so the version opens with it still adjustable.
+    static func draw(input path: String, output: String?, crop: [Double]? = nil, _ make: (CGImage, CGFloat) throws(ShotCommandError) -> [Annotation]) throws(ShotCommandError) -> JSONValue {
         let input = url(path)
         try requireInput(input)
         guard let image = ImageCodec.image(at: input) else {
@@ -234,6 +237,12 @@ public enum ShotCommands {
         let scale = ImageCodec.scale(ofFileAt: input)
         var document = EditorDocument(base: image, annotations: try make(image, scale), background: EditorDocument.defaultBackground(for: format))
         document.hasWindowShadow = ImageCodec.hasWindowShadow(ofFileAt: input)
+        if let crop {
+            guard let region = CropRegion.clamped(crop, width: image.width, height: image.height) else {
+                throw .data("rect (\(CropRegion.text(crop))) is off the \(image.width)×\(image.height) image")
+            }
+            document.crop(to: CGRect(x: region[0], y: region[1], width: region[2], height: region[3]))
+        }
         defer { AnnotationRenderer.releaseCaches() }
         let data: Data
         do throws(VersionWriter.Failure) {
@@ -254,9 +263,9 @@ public enum ShotCommands {
         return .object(try written(place(temporary, at: target)))
     }
 
-    /// The same for `redact`, which needs only the image.
-    static func draw(input path: String, output: String?, _ make: (CGImage) throws(ShotCommandError) -> [Annotation]) throws(ShotCommandError) -> JSONValue {
-        try draw(input: path, output: output) { (image: CGImage, _: CGFloat) throws(ShotCommandError) in try make(image) }
+    /// The same for `redact` and `crop`, which need only the image.
+    static func draw(input path: String, output: String?, crop: [Double]? = nil, _ make: (CGImage) throws(ShotCommandError) -> [Annotation]) throws(ShotCommandError) -> JSONValue {
+        try draw(input: path, output: output, crop: crop) { (image: CGImage, _: CGFloat) throws(ShotCommandError) in try make(image) }
     }
 
     // MARK: Output

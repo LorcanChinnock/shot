@@ -40,6 +40,9 @@ extension AgentTools {
                 }
                 return read
             },
+            zoom: { entry, rect throws(ShotCommandError) in
+                try zoomed(entry.url, rect: rect)
+            },
             agent: agent
         )
     }
@@ -56,6 +59,27 @@ extension AgentTools {
             content.append(.text("The preview is \(shown.width)×\(shown.height) pixels. The file is \(file.width)×\(file.height), which is what the marks' coordinates are in."))
         }
         return content
+    }
+
+    /// The part of the image at `url` that `rect` covers, in its pixels, as a JPEG at full resolution unless it's too
+    /// big for a model, when it's scaled down as a preview is.
+    static func zoomed(_ url: URL, rect: [Double]) throws(ShotCommandError) -> Zoomed {
+        try ShotCommands.requireInput(url)
+        guard let image = ImageCodec.image(at: url) else {
+            throw .data("Couldn't read \(url.lastPathComponent) as an image.")
+        }
+        guard let region = CropRegion.clamped(rect, width: image.width, height: image.height) else {
+            throw .data("rect [\(CropRegion.text(rect).replacingOccurrences(of: ",", with: ", "))] is off \(url.lastPathComponent), which is \(image.width)×\(image.height) pixels.")
+        }
+        guard let part = image.cropping(to: CGRect(x: region[0], y: region[1], width: region[2], height: region[3])),
+              let jpeg = ImageCodec.previewJPEG(of: part), let shown = pixelSize(of: CGImageSourceCreateWithData(jpeg as CFData, nil))
+        else {
+            throw .internal("Couldn't draw that part of \(url.lastPathComponent).")
+        }
+        return Zoomed(
+            image: .image(data: jpeg.base64EncodedString(), mimeType: "image/jpeg"), region: region, shown: shown,
+            file: CaptureRecord.Size(width: image.width, height: image.height)
+        )
     }
 
     /// The key frames of the recording at `url`, each a line with its time and then a JPEG small enough that a dozen fit
