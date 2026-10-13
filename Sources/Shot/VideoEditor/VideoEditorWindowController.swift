@@ -35,12 +35,41 @@ private final class VideoEditorWindow: NSWindow {
 final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValidation {
     private static var open: [VideoEditorWindowController] = []
     static var isAnyOpen: Bool { !open.isEmpty }
+    static var hasUnsavedChanges: Bool { open.contains { $0.model.isDirty } }
 
     private let model: VideoEditorModel
     private let window: NSWindow
     /// How much of the window's height is the tracks panel.
     private var appliedExtraHeight: CGFloat = 0
     private var discarding = false
+    /// Set while a quit waits on this window's Save / Discard / Cancel sheet; answers true once the window may go.
+    private var quitReply: ((Bool) -> Void)?
+
+    /// Asks about each window with unsaved changes in turn, bringing it forward. False if the user cancelled.
+    static func confirmQuit() async -> Bool {
+        for controller in open where controller.model.isDirty {
+            guard await controller.askBeforeQuit() else {
+                return false
+            }
+        }
+        return true
+    }
+
+    private func askBeforeQuit() async -> Bool {
+        GlassWindow.present(window)
+        return await withCheckedContinuation { continuation in
+            quitReply = { continuation.resume(returning: $0) }
+            if windowShouldClose(window) {
+                resolveQuit(true)
+            }
+        }
+    }
+
+    private func resolveQuit(_ proceed: Bool) {
+        let reply = quitReply
+        quitReply = nil
+        reply?(proceed)
+    }
 
     static func open(_ url: URL) {
         if let existing = open.first(where: { $0.model.fileURL == url }) {
@@ -223,6 +252,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             return true
         }
         guard sender.attachedSheet == nil else {
+            resolveQuit(false)
             return false
         }
         let alert = NSAlert()
@@ -238,19 +268,22 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
                 Task {
                     if await model.save() {
                         sender.close()
+                    } else {
+                        resolveQuit(false)
                     }
                 }
             case .alertSecondButtonReturn:
                 discarding = true
                 sender.close()
             default:
-                break
+                resolveQuit(false)
             }
         }
         return false
     }
 
     func windowWillClose(_ notification: Notification) {
+        resolveQuit(true)
         model.teardown()
         Self.open.removeAll { $0 === self }
         EditorWindowController.releaseCachesIfNoEditorIsOpen()

@@ -63,13 +63,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// A recording in progress is stopped and saved first, so quitting, or logging out, doesn't lose it.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard coordinator.isRecording else {
+        // Editors are asked too when the session ends or Sparkle relaunches to update: Cancel stops either, and nothing
+        // is lost silently. A recording is saved first so it isn't lost while the sheets wait.
+        let recording = coordinator.isRecording
+        guard recording || EditorWindowController.hasUnsavedChanges || VideoEditorWindowController.hasUnsavedChanges else {
             return .terminateNow
         }
-        log.notice("Quitting while recording; saving the recording first")
         Task {
-            await coordinator.finishRecording(within: .seconds(10))
-            NSApp.reply(toApplicationShouldTerminate: true)
+            if recording {
+                log.notice("Quitting while recording; saving the recording first")
+                await coordinator.finishRecording(within: .seconds(10))
+            }
+            var proceed = await EditorWindowController.confirmQuit()
+            if proceed {
+                proceed = await VideoEditorWindowController.confirmQuit()
+            }
+            if !proceed {
+                log.notice("Quit cancelled from an editor's unsaved changes")
+            }
+            NSApp.reply(toApplicationShouldTerminate: proceed)
         }
         return .terminateLater
     }
