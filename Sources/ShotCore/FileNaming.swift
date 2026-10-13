@@ -18,4 +18,17 @@ public enum FileNaming {
         }
         return url
     }
+
+    /// A name for a recording rescued from its leftover segments: the usual name plus "(recovered)", and "part N" when
+    /// the segments couldn't be joined and each is kept as its own file.
+    public static func recoveredURL(in folder: URL, date: Date, part: Int? = nil, prefix: String = Preferences.defaultFilePrefix, exists: (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }) -> URL {
+        let base = baseName(for: date, prefix: prefix) + (part.map { " (recovered, part \($0))" } ?? " (recovered)")
+        var url = folder.appendingPathComponent("\(base).mp4")
+        var counter = 2
+        while exists(url) {
+            url = folder.appendingPathComponent("\(base) (\(counter)).mp4")
+            counter += 1
+        }
+        return url
+    }
 }
