@@ -22,6 +22,8 @@ public enum ShotCommand: Equatable, Sendable {
     case record(RecordAction)
     /// Waits for the user's next capture, or with `follow`, reports each one as it comes.
     case watch(WatchOptions)
+    /// Asks the person to pick an area, window or display on the running app's overlay, and saves what they pick.
+    case pick(PickOptions)
     /// The open windows and displays, as the running app sees them.
     case windows
     /// The newest capture of a kind, as `latest_capture` gives it.
@@ -155,6 +157,21 @@ public enum ShotCommand: Equatable, Sendable {
         }
     }
 
+    public struct PickOptions: Equatable, Sendable {
+        /// How long `pick` waits for the person without `--timeout`.
+        public static let defaultTimeout: Double = 60
+
+        /// What the overlay asks the person to select.
+        public var prompt: String?
+        /// Seconds to wait for the person before the overlay closes.
+        public var timeout: Double
+
+        public init(prompt: String? = nil, timeout: Double = defaultTimeout) {
+            self.prompt = prompt
+            self.timeout = timeout
+        }
+    }
+
     public struct DiffOptions: Equatable, Sendable {
         /// The image before.
         public var a: String
@@ -220,7 +237,7 @@ public enum ShotCommand: Equatable, Sendable {
     }
 
     /// The commands `help` knows, in the order it lists them.
-    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "text", "diff", "crop", "edit", "latest", "list", "get", "windows", "capture", "record", "watch", "doctor", "mcp"]
+    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "text", "diff", "crop", "edit", "latest", "list", "get", "windows", "capture", "record", "watch", "pick", "doctor", "mcp"]
 
     /// The command's name, for error messages such as `shot gif: …`.
     public var name: String {
@@ -238,6 +255,7 @@ public enum ShotCommand: Equatable, Sendable {
         case .capture: "capture"
         case .record: "record"
         case .watch: "watch"
+        case .pick: "pick"
         case .windows: "windows"
         case .latest: "latest"
         case .list: "list"
@@ -296,6 +314,9 @@ public enum ShotCommand: Equatable, Sendable {
         case "watch":
             if rest.contains(where: isHelp) { return .help(first) }
             return try parseWatch(rest)
+        case "pick":
+            if rest.contains(where: isHelp) { return .help(first) }
+            return try parsePick(rest)
         case "windows":
             if rest.contains(where: isHelp) { return .help(first) }
             guard rest.isEmpty else { throw .usage(first, "takes no arguments") }
@@ -324,6 +345,7 @@ public enum ShotCommand: Equatable, Sendable {
         "capture": ["window": false, "bundle-id": false, "display": false, "rect": false, "no-shadow": false, "wait-stable": false],
         "record": ["window": false, "bundle-id": false, "display": false, "rect": false, "no-shadow": false, "duration": false],
         "watch": ["kind": false, "timeout": false],
+        "pick": ["prompt": false, "timeout": false],
         "latest": ["kind": false],
         "list": ["limit": false, "since": false, "query": false],
         "get": [:],
@@ -392,6 +414,26 @@ public enum ShotCommand: Equatable, Sendable {
             options.timeout = seconds
         }
         return .watch(options)
+    }
+
+    /// `pick [--prompt "Select the broken toolbar"] [--timeout 60]`.
+    private static func parsePick(_ arguments: [String]) throws(ShotCommandError) -> ShotCommand {
+        let (positional, values) = try options("pick", arguments)
+        guard positional.isEmpty else { throw .usage("pick", "takes no file; put what to select in --prompt") }
+        var options = PickOptions()
+        if let text = values["prompt"]?.first {
+            guard text.count <= AgentRequest.maximumPrompt else {
+                throw .usage("pick", "--prompt can be at most \(AgentRequest.maximumPrompt) characters")
+            }
+            options.prompt = AgentRequest.cleanPrompt(text)
+        }
+        if let text = values["timeout"]?.first {
+            guard let seconds = Self.seconds(text), seconds > 0, seconds <= AgentRequest.maximumDuration else {
+                throw .usage("pick", "--timeout \(text) must be a time above 0 and at most \(Int(AgentRequest.maximumDuration / 60)) minutes, such as 30 or 2:00")
+            }
+            options.timeout = seconds
+        }
+        return .pick(options)
     }
 
     /// `latest [--kind image|video|any]`, `list [--limit n] [--since when] [--query words]` or `get [<name or path>]`, which read the
@@ -697,6 +739,7 @@ public enum ShotCommand: Equatable, Sendable {
             "capture": "\(program) capture --window <title or app> | --bundle-id <id> | --display <n> [--rect x,y,w,h] [--no-shadow] [--wait-stable[=5]]\n    A screenshot of that open window or whole display, taken by Shot without taking focus, saved to the capture folder. --bundle-id picks the app's front window, or with --window one of its windows. --rect keeps that part, in points from the top-left corner. --wait-stable waits, up to 5 seconds or the time given, for the picture to stop changing. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
             "record": "\(program) record --window <title or app> | --bundle-id <id> | --display <n> [--rect x,y,w,h] [--no-shadow] [--duration 10 | -- <command> [args…]] | --mark <label> [<id>] | --stop [<id>] | --status\n    Records that open window or display through Shot, without its microphone or camera, for at most \(Int(AgentRequest.maximumDuration / 60)) minutes, saved to the capture folder. --rect records that part of the screen, so anything in front of it shows. Without --duration it prints an id and returns at once; --stop ends it. With -- and a command, it records while the command runs, passes its output through, stops when it exits, and exits with its code. --mark labels this moment of the recording, and its key frames show it. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",
             "watch": "\(program) watch [--kind image|video|any] [--timeout 60] [--follow]\n    Waits for your next capture and prints its name, path, kind and when it was taken. Exits with 66 if none comes before the timeout. --follow prints one line per capture as each comes, until interrupted or the timeout. Reads the capture folder only, so Shot needn't be running.",
+            "pick": "\(program) pick [--prompt <what to select>] [--timeout 60]\n    Asks you to select an area, window or display on Shot's capture overlay, showing the prompt and that the command line is asking, then saves the screenshot to the capture folder and prints its path, size and bytes. Esc cancels, which exits with 66, as does running out of time. Opens Shot in the background if it isn't running; works with Let agents capture and record off, since you make the selection.",
             "doctor": "\(program) doctor\n    Checks which copy of Shot answers and its version, Let agents capture and record, the socket, the Screen Recording permission and the capture folder, and says how to fix each problem. Exits 1 if a check fails.",
             "mcp": "\(program) mcp\n    Serves Shot's captures to an AI agent over MCP, on standard input and output.",
         ]
@@ -712,8 +755,8 @@ public enum ShotCommand: Equatable, Sendable {
 
         Without -o, the output goes beside the input as the next version, such as "name (2).png". Nothing is ever
         overwritten. Results are JSON on standard output; errors go to standard error with an exit code for each kind:
-        64 a wrong option, 65 a file or marks Shot can't use, 66 no such file, capture, window or recording, or no new
-        capture, 69 Shot isn't answering agents, 70 an internal error, 73 the output can't be made, 74 reading or writing
+        64 a wrong option, 65 a file or marks Shot can't use, 66 no such file, capture, window or recording, no new
+        capture, or a pick cancelled, 69 Shot isn't answering agents, 70 an internal error, 73 the output can't be made, 74 reading or writing
         failed, 75 Shot is busy, 77 no Screen Recording permission. More: \(docs)#the-shot-command-line
         """
     }

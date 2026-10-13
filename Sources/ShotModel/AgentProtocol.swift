@@ -21,7 +21,19 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         case windows
         /// Stamps `label` on the agent's recording `id`, or the agent's recording in progress, at the time it's at.
         case mark
+        /// Shows the person the area and window selection with `prompt` and who's asking, and saves the screenshot
+        /// they pick. Waits up to `duration` seconds for them.
+        case pick
+
+        /// Whether the app answers only while Let agents capture and record is on. A pick doesn't need it, since the
+        /// person makes the capture themselves.
+        public var needsAgentCapture: Bool {
+            self != .pick
+        }
     }
+
+    /// The longest `prompt` a pick shows, in characters.
+    public static let maximumPrompt = 100
 
     public var v: Int
     public var op: Operation
@@ -39,6 +51,8 @@ public struct AgentRequest: Codable, Equatable, Sendable {
     public var waitStable: Double?
     /// What a mark says, at most `RecordingMark.maximumLabel` characters.
     public var label: String?
+    /// What a pick asks the person to select, at most `maximumPrompt` characters.
+    public var prompt: String?
     /// Who asked for a capture or recording, kept in the project store beside it. The app dates it when it saves the file.
     public var origin: ProjectOrigin?
 
@@ -58,6 +72,12 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         rect = target.rect
         noShadow = target.noShadow ? true : nil
         waitStable = target.waitStable
+    }
+
+    /// `text` on one line without the spaces around it, or nil when that leaves nothing, so the overlay shows one tidy line.
+    public static func cleanPrompt(_ text: String) -> String? {
+        let line = text.split(whereSeparator: \.isNewline).joined(separator: " ").trimmingCharacters(in: .whitespaces)
+        return line.isEmpty ? nil : line
     }
 
     /// What `capture` or `record` is pointed at.
@@ -104,6 +124,10 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         if let duration, !(duration > 0 && duration <= maximumDuration) {
             throw .usage(nil, "duration must be above 0 and at most \(Int(maximumDuration)) seconds")
         }
+        let prompt = object["prompt"]?.string
+        if let prompt, prompt.count > maximumPrompt {
+            throw .usage(nil, "a pick's prompt can be at most \(maximumPrompt) characters")
+        }
         let label = object["label"]?.string
         if op == .mark {
             guard let label, !label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -116,6 +140,7 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         var request = AgentRequest(op, target: target, duration: duration)
         request.id = object["id"]?.string
         request.label = label
+        request.prompt = prompt.flatMap(Self.cleanPrompt)
         // An origin that doesn't read as one is left out rather than refused, since the capture doesn't depend on it.
         if let origin = object["origin"], let via = origin["via"]?.string.flatMap(ProjectOrigin.Via.init(rawValue:)) {
             request.origin = ProjectOrigin(via: via, client: origin["client"]?.string, action: origin["action"]?.string)

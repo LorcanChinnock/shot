@@ -1,7 +1,8 @@
 import Foundation
 
 /// The MCP server's tools: seven that read captures, one by waiting for the next, seven that make new files from them, never changing, moving or
-/// deleting anything, and three that ask the running app to list, capture or record windows. What they're called, what they
+/// deleting anything, three that ask the running app to list, capture or record windows, and one that asks the person to
+/// pick what to capture. What they're called, what they
 /// take, and what they say back are here. Finding files, drawing
 /// previews and running the commands need Apple frameworks, so they come in as closures; ShotCore's `live(folder:)`
 /// supplies them.
@@ -72,6 +73,7 @@ public struct AgentTools: Sendable {
     public static let findText = "find_text"
     public static let zoom = "zoom"
     public static let waitForCapture = "wait_for_capture"
+    public static let askForCapture = "ask_for_capture"
     public static let captureWindow = "capture_window"
     public static let recordWindow = "record_window"
     public static let compare = "compare"
@@ -94,9 +96,9 @@ public struct AgentTools: Sendable {
         }
     }
 
-    /// The longest `record_window` and `wait_for_capture` wait for, so their answer comes within what clients wait for a tool.
+    /// The longest `record_window`, `wait_for_capture` and `ask_for_capture` wait for, so their answer comes within what clients wait for a tool.
     public static let maximumWait: Double = 120
-    /// How long `wait_for_capture` waits without a timeout.
+    /// How long `wait_for_capture` and `ask_for_capture` wait without a timeout.
     public static let defaultWait: Double = 60
     /// How many key frames a finished `record_window` shows.
     static let recordingFrames = 6
@@ -208,6 +210,14 @@ public struct AgentTools: Sendable {
                 "timeout": seconds("How long to wait, up to \(Int(maximumWait)) seconds. Default \(Int(defaultWait))."),
             ]),
             readOnly: true
+        ),
+        MCPServer.Tool(
+            name: askForCapture,
+            description: "Asks the user to select something on screen for you, such as \"the broken toolbar\": Shot shows its usual area and window selection with your prompt and your name, and returns the screenshot they pick as capture_window does, saved to the capture folder. Use this when you need to see something only the user can point at. If they press Esc or don't pick in time, it says so. Shot opens in the background if it isn't running. Works with Let agents capture and record off, since the user makes the selection.",
+            inputSchema: schema([
+                "prompt": .object(["type": .string("string"), "description": .string("What to select, in a few words the user reads on the overlay, such as \"Select the broken toolbar\". At most \(AgentRequest.maximumPrompt) characters.")]),
+                "timeout": seconds("How long to wait for the user, up to \(Int(maximumWait)) seconds. Default \(Int(defaultWait))."),
+            ])
         ),
         MCPServer.Tool(
             name: annotate,
@@ -399,6 +409,8 @@ public struct AgentTools: Sendable {
             return await describe(entry)
         case Self.waitForCapture:
             return await waitForCapture(arguments)
+        case Self.askForCapture:
+            return await askForCapture(arguments, origin: origin)
         case Self.annotate, Self.redact, Self.editImage, Self.editVideo, Self.makeGIF, Self.trimVideo:
             return await make(name, arguments, entries, origin: origin)
         case Self.getFrames:
@@ -726,10 +738,29 @@ public struct AgentTools: Sendable {
         if let problem = target.problem {
             return MCPServer.ToolResult(content: [.text("capture_window \(problem).")], isError: true)
         }
+        var request = AgentRequest(.capture, target: target)
+        request.origin = origin
+        return await showCapture(request)
+    }
+
+    /// Asks the person to pick what to capture, with the prompt `arguments` gives, then shows it as `capture_window`
+    /// does. A cancel or running out of time comes back as an error, so the agent doesn't take it for a capture.
+    func askForCapture(_ arguments: JSONValue, origin: ProjectOrigin) async -> MCPServer.ToolResult {
+        let prompt = arguments["prompt"]?.string
+        if let prompt, prompt.count > AgentRequest.maximumPrompt {
+            return MCPServer.ToolResult(content: [.text("ask_for_capture's prompt can be at most \(AgentRequest.maximumPrompt) characters.")], isError: true)
+        }
+        let timeout = arguments["timeout"]?.number.flatMap { $0.isFinite ? min(max($0, 1), Self.maximumWait) : nil } ?? Self.defaultWait
+        var request = AgentRequest(.pick, duration: timeout)
+        request.prompt = prompt.flatMap(AgentRequest.cleanPrompt)
+        request.origin = origin
+        return await showCapture(request)
+    }
+
+    /// Sends `request`, which saves a screenshot, to the app, then shows what it saved with its record.
+    private func showCapture(_ request: AgentRequest) async -> MCPServer.ToolResult {
         let fields: [String: JSONValue]
         do {
-            var request = AgentRequest(.capture, target: target)
-            request.origin = origin
             fields = try await agent(request)
         } catch {
             return MCPServer.ToolResult(content: [.text(error.message)], isError: true)

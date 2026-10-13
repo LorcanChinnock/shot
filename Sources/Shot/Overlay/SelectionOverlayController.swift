@@ -29,6 +29,8 @@ final class SelectionOverlayController {
     /// CoreGraphics global space, front to back.
     let windows: [WindowInfo]
     let isLive: Bool
+    /// What an agent asked the person to select, and who's asking, shown above the hint.
+    let prompt: String?
     private(set) var hoveredWindow: WindowInfo?
     var aspectRatio = AspectRatio.free {
         didSet {
@@ -46,19 +48,30 @@ final class SelectionOverlayController {
     /// The modifier keys held by the event that ended the selection.
     private var endModifiers: NSEvent.ModifierFlags = []
 
-    private init(windowMode: Bool, windows: [WindowInfo], isLive: Bool) {
+    private init(windowMode: Bool, windows: [WindowInfo], isLive: Bool, prompt: String?) {
         self.windowMode = windowMode
         self.windows = windows
         self.isLive = isLive
+        self.prompt = prompt
     }
 
-    static func select(displays: [OverlayDisplay], windowMode: Bool, windows: [WindowInfo], isLive: Bool = false) async -> OverlaySelection? {
-        await selectWithModifiers(displays: displays, windowMode: windowMode, windows: windows, isLive: isLive).selection
+    /// The area, window or display the person picks, or nil when they cancel. With `timeout`, the overlay closes by
+    /// itself after that long, as a cancel does.
+    static func select(displays: [OverlayDisplay], windowMode: Bool, windows: [WindowInfo], isLive: Bool = false, prompt: String? = nil, timeout: Duration? = nil) async -> OverlaySelection? {
+        await selectWithModifiers(displays: displays, windowMode: windowMode, windows: windows, isLive: isLive, prompt: prompt, timeout: timeout).selection
     }
 
     /// Like `select`, also returning the modifier keys held as the selection ended, read from that event rather than later.
-    static func selectWithModifiers(displays: [OverlayDisplay], windowMode: Bool, windows: [WindowInfo], isLive: Bool = false) async -> (selection: OverlaySelection?, modifiers: NSEvent.ModifierFlags) {
-        let controller = SelectionOverlayController(windowMode: windowMode, windows: windows, isLive: isLive)
+    static func selectWithModifiers(displays: [OverlayDisplay], windowMode: Bool, windows: [WindowInfo], isLive: Bool = false, prompt: String? = nil, timeout: Duration? = nil) async -> (selection: OverlaySelection?, modifiers: NSEvent.ModifierFlags) {
+        let controller = SelectionOverlayController(windowMode: windowMode, windows: windows, isLive: isLive, prompt: prompt)
+        let expiry = timeout.map { timeout in
+            Task { [weak controller] in
+                try? await Task.sleep(for: timeout)
+                if !Task.isCancelled {
+                    controller?.finish(nil)
+                }
+            }
+        }
         // The overlay views hold the controller unowned; keep it alive until the user finishes.
         let selection = await withCheckedContinuation { continuation in
             controller.continuation = continuation
@@ -67,6 +80,7 @@ final class SelectionOverlayController {
                 controller.loadMagnifierImages()
             }
         }
+        expiry?.cancel()
         controller.magnifierTask?.cancel()
         withExtendedLifetime(controller) {}
         return (selection, controller.endModifiers)

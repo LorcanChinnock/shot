@@ -219,10 +219,23 @@ final class CaptureCoordinator {
         guard let selection = await SelectionOverlayController.select(displays: displays, windowMode: windowMode, windows: windows) else {
             return
         }
-        let image: CGImage
-        let scale: CGFloat
-        let frame: CGRect
-        var windowShadow = false
+        let picked = try await picture(of: selection, frozen: frozen)
+        switch selection {
+        case .area:
+            previousArea = picked.frame
+        case let .window(info):
+            if source != nil {
+                source = Self.windowSource(info)
+            }
+        case .fullDisplay:
+            source?.mode = "fullscreen"
+        }
+        try await finish(image: picked.image, scale: picked.scale, from: picked.frame, windowShadow: picked.windowShadow, source: source)
+    }
+
+    /// What `selection` shows: cut from the frozen displays, or for a window, captured afresh, with the shadow if
+    /// Settings ask for it. `frame` is in AppKit global points.
+    private func picture(of selection: OverlaySelection, frozen: [FrozenDisplay]) async throws -> (image: CGImage, scale: CGFloat, frame: CGRect, windowShadow: Bool) {
         switch selection {
         case let .area(index, rect, _):
             let display = frozen[index]
@@ -230,27 +243,20 @@ final class CaptureCoordinator {
             guard let cropped = display.image.cropping(to: pixels) else {
                 throw CaptureError.encodingFailed
             }
-            image = cropped
-            scale = display.scale
-            frame = rect.offsetBy(dx: display.frame.minX, dy: display.frame.minY)
-            previousArea = frame
+            return (cropped, display.scale, rect.offsetBy(dx: display.frame.minX, dy: display.frame.minY), false)
         case let .window(info):
-            windowShadow = Preferences().windowShadow
+            let windowShadow = Preferences().windowShadow
             let result = try await WindowCapturer.capture(windowID: info.windowID, includeShadow: windowShadow)
-            image = result.image
-            scale = result.scale
-            frame = Geometry.flip(info.frame, primaryHeight: NSScreen.screens.first?.frame.height ?? 0)
-            if source != nil {
-                let owner = NSRunningApplication(processIdentifier: info.ownerPID)
-                source = CaptureRecord.Source(mode: "window", app: info.ownerName ?? owner?.localizedName, bundleID: owner?.bundleIdentifier, windowTitle: info.title)
-            }
+            return (result.image, result.scale, Geometry.flip(info.frame, primaryHeight: NSScreen.screens.first?.frame.height ?? 0), windowShadow)
         case let .fullDisplay(index):
-            image = frozen[index].image
-            scale = frozen[index].scale
-            frame = frozen[index].frame
-            source?.mode = "fullscreen"
+            return (frozen[index].image, frozen[index].scale, frozen[index].frame, false)
         }
-        try await finish(image: image, scale: scale, from: frame, windowShadow: windowShadow, source: source)
+    }
+
+    /// Where a picked window came from, for the capture's record.
+    private static func windowSource(_ info: WindowInfo) -> CaptureRecord.Source {
+        let owner = NSRunningApplication(processIdentifier: info.ownerPID)
+        return CaptureRecord.Source(mode: "window", app: info.ownerName ?? owner?.localizedName, bundleID: owner?.bundleIdentifier, windowTitle: info.title)
     }
 
     /// Reads the text in the area, window or display picked on the overlay and copies it. Nothing is saved, and the
@@ -621,6 +627,61 @@ final class CaptureCoordinator {
         log.notice("Agent captured window \(info.windowID) of \(app, privacy: .public)")
         Toast.show("An agent took a screenshot of \(app)", duration: .seconds(3))
         return Self.captured(saved, window: .object(["app": .string(app), "title": .string(info.title ?? "")]))
+    }
+
+    /// Asks the person to pick an area, window or display on the overlay, with `prompt` and who's asking shown above the
+    /// hint, then saves the screenshot as `saveCapture` does. Esc, or no pick within `timeout` seconds, ends it with an
+    /// error saying which. The person makes the selection, so this doesn't need Let agents capture and record.
+    func agentPick(prompt: String?, timeout: Double, origin: ProjectOrigin?) async throws(ShotCommandError) -> [String: JSONValue] {
+        guard Permissions.hasScreenCapture else {
+            throw Self.noPermission
+        }
+        guard !busy, setup == nil else {
+            throw .busy("Shot is in the middle of a capture or the recording setup; try again once it's done.")
+        }
+        busy = true
+        defer { busy = false }
+        let asker = origin?.clientName ?? (origin?.via == .cli ? String(localized: "The shot command") : String(localized: "An agent"))
+        let message = prompt.map { String(localized: "\(asker) asks: \($0)") } ?? String(localized: "\(asker) asks you to pick something to capture")
+        // Read before the overlay shows, which makes Shot the frontmost app.
+        let app = NSWorkspace.shared.frontmostApplication
+        let saved: (url: URL, width: Int, height: Int)
+        let shows: JSONValue
+        do {
+            let windows = WindowCapturer.onScreenWindows()
+            let frozen = try await DisplayCapturer.captureAll()
+            let displays = frozen.map { OverlayDisplay(frame: $0.frame, scale: $0.scale, image: $0.image) }
+            let deadline = ContinuousClock.now + .milliseconds(Int64(timeout * 1000))
+            guard let selection = await SelectionOverlayController.select(displays: displays, windowMode: false, windows: windows, prompt: message, timeout: deadline - .now) else {
+                if ContinuousClock.now >= deadline {
+                    throw ShotCommandError.noInput("The user didn't pick anything within \(String(format: "%g", timeout)) seconds, so the selection closed.")
+                }
+                throw ShotCommandError.noInput("The user cancelled the selection.")
+            }
+            let picked = try await picture(of: selection, frozen: frozen)
+            let source: CaptureRecord.Source
+            switch selection {
+            case .area:
+                source = CaptureRecord.Source(mode: "area", app: app?.localizedName, bundleID: app?.bundleIdentifier)
+                shows = .object(["area": .bool(true)])
+            case let .window(info):
+                source = Self.windowSource(info)
+                shows = .object(["app": .string(source.app ?? ""), "title": .string(info.title ?? "")])
+            case let .fullDisplay(index):
+                source = CaptureRecord.Source(mode: "fullscreen", app: nil, bundleID: nil)
+                shows = .object(["display": .number(Double(index + 1))])
+            }
+            saved = try await saveCapture(image: picked.image, scale: picked.scale, from: picked.frame, windowShadow: picked.windowShadow, source: source, origin: origin)
+        } catch let error as ShotCommandError {
+            throw error
+        } catch CaptureError.windowNotFound {
+            throw .noInput("The window closed before Shot could capture it.")
+        } catch {
+            throw .io("Couldn't capture what the user picked: \(error.localizedDescription)")
+        }
+        log.notice("Agent pick saved \(saved.url.lastPathComponent, privacy: .public)")
+        Toast.show("Sent to \(asker)", duration: .seconds(3))
+        return Self.captured(saved, window: shows)
     }
 
     /// A screenshot of display `number`, counted from 1, or the part of it `target.rect` covers.

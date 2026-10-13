@@ -182,6 +182,10 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     ("watch --timeout 0", "watch", "--timeout 0 must be a time above 0, such as 30 or 5:00"),
     ("watch --follow --follow", "watch", "--follow is given twice"),
     ("watch --window a", "watch", "unknown option --window; it takes --kind, --timeout"),
+    ("pick a.png", "pick", "takes no file; put what to select in --prompt"),
+    ("pick --timeout 0", "pick", "--timeout 0 must be a time above 0 and at most 10 minutes, such as 30 or 2:00"),
+    ("pick --timeout 10:01", "pick", "--timeout 10:01 must be a time above 0 and at most 10 minutes, such as 30 or 2:00"),
+    ("pick --window a", "pick", "unknown option --window; it takes --prompt, --timeout"),
     ("record --window a --", "record", "-- needs a command after it, such as -- xcodebuild test"),
     ("record --window a --duration 5 -- make test", "record", "use --duration or a command, not both; with a command, the recording stops when it exits"),
     ("record -- make test", "record", "needs --window with words from the window's title or app, such as --window Simulator, --bundle-id or --display, or --mark, --stop or --status"),
@@ -300,4 +304,17 @@ func badMarksAreDataErrorsThatNameTheMark(_ json: String, _ message: String) thr
 
 @Test func outputIsPrettyJSONWithSortedKeys() {
     #expect(ShotCommand.json(.object(["path": .string("/a/b.png"), "bytes": .number(10)])) == "{\n  \"bytes\" : 10,\n  \"path\" : \"/a/b.png\"\n}")
+}
+
+@Test func pickTakesAPromptOnOneLineAndATimeout() throws {
+    #expect(try parse("pick") == .pick(ShotCommand.PickOptions()))
+    #expect(try parse("pick --timeout 2:00") == .pick(ShotCommand.PickOptions(timeout: 120)))
+    #expect(try ShotCommand.parse(["pick", "--prompt", "  Select the\nbroken toolbar "]) == .pick(ShotCommand.PickOptions(prompt: "Select the broken toolbar")))
+    #expect(try ShotCommand.parse(["pick", "--prompt", "   "]) == .pick(ShotCommand.PickOptions()))
+    #expect(try parse("pick -h") == .help("pick"))
+    #expect(ShotCommand.usage(nil).contains("shot pick [--prompt <what to select>] [--timeout 60]"))
+    let long = String(repeating: "a", count: AgentRequest.maximumPrompt + 1)
+    #expect(throws: ShotCommandError.usage("pick", "--prompt can be at most 100 characters")) {
+        try ShotCommand.parse(["pick", "--prompt", long])
+    }
 }

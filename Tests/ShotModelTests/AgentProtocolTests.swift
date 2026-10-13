@@ -103,3 +103,18 @@ func aBadRequestIsAUsageError(_ json: String, _ message: String) throws {
     }
     #expect(try AgentResponse.decode(Data(#"{"ok":false}"#.utf8)) == .failure(.internal("Shot gave no reason")))
 }
+
+@Test func aPickCarriesItsPromptOnOneLineAndNeedsNoSetting() throws {
+    var request = AgentRequest(.pick, duration: 60)
+    request.prompt = "Select the broken toolbar"
+    #expect(try AgentRequest.decode(request.line) == request)
+    let messy = try AgentRequest.decode(Data(#"{"v":1,"op":"pick","prompt":"  Select\nit  "}"#.utf8))
+    #expect(messy.prompt == "Select it")
+    #expect(try AgentRequest.decode(Data(#"{"v":1,"op":"pick","prompt":" "}"#.utf8)).prompt == nil)
+    let long = String(repeating: "a", count: AgentRequest.maximumPrompt + 1)
+    #expect(decodeRequest(#"{"v":1,"op":"pick","prompt":"\#(long)"}"#) == .usage(nil, "a pick's prompt can be at most 100 characters"))
+    #expect(decodeRequest(#"{"v":1,"op":"pick","duration":601}"#) == .usage(nil, "duration must be above 0 and at most 600 seconds"))
+    #expect(AgentRequest.Operation.pick.needsAgentCapture == false)
+    let others: [AgentRequest.Operation] = [.capture, .record, .stop, .status, .windows, .mark]
+    #expect(others.filter { !$0.needsAgentCapture }.isEmpty)
+}

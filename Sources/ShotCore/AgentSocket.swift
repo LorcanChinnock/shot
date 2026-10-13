@@ -285,9 +285,9 @@ extension AgentSocket {
 
     /// Sends `request` to the app with `bundleID`, first opening it in the background, without taking focus, when
     /// nothing answers. `enabled` is Let agents capture and record as the app's settings have it, so a setting that's off
-    /// fails at once rather than after a launch.
+    /// fails at once rather than after a launch, for a request that needs it.
     public static func ask(_ request: AgentRequest, bundleID: String, enabled: Bool, timeout: Duration) async throws(ShotCommandError) -> [String: JSONValue] {
-        guard enabled else {
+        guard enabled || !request.op.needsAgentCapture else {
             throw .unavailable(turnedOff)
         }
         let url = url(bundleID: bundleID)

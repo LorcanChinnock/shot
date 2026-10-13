@@ -38,10 +38,10 @@ private let captures = tools(in: folder, [
     ("Recording C.mp4", 5, true),
 ])
 
-@Test func thereAreSeventeenToolsEachWithAnObjectSchema() {
-    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "zoom", "wait_for_capture", "annotate", "redact", "edit_image", "edit_video", "make_gif", "trim_video", "list_windows", "capture_window", "record_window", "compare"])
+@Test func thereAreEighteenToolsEachWithAnObjectSchema() {
+    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "zoom", "wait_for_capture", "ask_for_capture", "annotate", "redact", "edit_image", "edit_video", "make_gif", "trim_video", "list_windows", "capture_window", "record_window", "compare"])
     let required = AgentTools.definitions.map { $0.inputSchema["required"] }
-    #expect(required == [nil, nil, nil, nil, nil, .array([.string("rect")]), nil, .array([.string("annotations")]), nil, nil, nil, nil, .array([.string("start"), .string("end")]), nil, nil, nil, .array([.string("a"), .string("b")])])
+    #expect(required == [nil, nil, nil, nil, nil, .array([.string("rect")]), nil, nil, .array([.string("annotations")]), nil, nil, nil, nil, .array([.string("start"), .string("end")]), nil, nil, nil, .array([.string("a"), .string("b")])])
     for tool in AgentTools.definitions {
         #expect(tool.inputSchema["type"] == .string("object"))
         #expect(!tool.description.isEmpty)
@@ -853,4 +853,31 @@ private func rect(_ values: Double...) -> JSONValue {
     let failed = await zooming(zooms, fail: .data("off the image")).call("zoom", .object(["rect": rect(1, 2, 3, 4)]))
     #expect(failed.isError)
     #expect(texts(failed) == ["off the image"])
+}
+
+@Test func askForCaptureAsksThePersonWithThePromptAndShowsWhatTheyPicked() async {
+    let asked = Asked()
+    let saved: [String: JSONValue] = ["path": .string("/shots/Shot C.png"), "window": .object(["area": .bool(true)])]
+    let tools = capturing(asked, answer: .success(saved))
+    let result = await tools.call("ask_for_capture", .object(["prompt": .string("Select the\nbroken toolbar"), "timeout": .number(900)]), client: MCPServer.Client(name: "claude-code", version: "1"))
+    #expect(result.isError == false)
+    var expected = AgentRequest(.pick, duration: 120)
+    expected.prompt = "Select the broken toolbar"
+    #expect(asked.requests == [expected])
+    #expect(asked.origins.first??.client == "claude-code")
+    #expect(asked.origins.first??.action == "ask_for_capture")
+    #expect(result.content.first == .image(data: "PREVIEW:Shot C.png", mimeType: "image/jpeg"))
+    _ = await tools.call("ask_for_capture", .object([:]))
+    #expect(asked.requests.last == AgentRequest(.pick, duration: 60))
+}
+
+@Test func askForCaptureSaysWhenThePersonCancelsAndRefusesALongPrompt() async {
+    let asked = Asked()
+    let tools = capturing(asked, answer: .failure(.noInput("The user cancelled the selection.")))
+    let cancelled = await tools.call("ask_for_capture", .object(["prompt": .string("Select it")]))
+    #expect(cancelled.isError)
+    #expect(texts(cancelled) == ["The user cancelled the selection."])
+    let long = await tools.call("ask_for_capture", .object(["prompt": .string(String(repeating: "a", count: 101))]))
+    #expect(long.isError)
+    #expect(asked.requests.count == 1)
 }
