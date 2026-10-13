@@ -1,6 +1,7 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    " It's temporary: Shot deletes it after a day." : {},
     "%@ already exists" : {
       "localizations" : {
         "de" : {
@@ -1381,9 +1382,7 @@
         }
       }
     },
-    "%lld seconds" : {
-
-    },
+    "%lld seconds" : {},
     "%lld × %lld" : {
       "localizations" : {
         "de" : {
@@ -2066,9 +2065,7 @@
         }
       }
     },
-    "Acknowledgements" : {
-
-    },
+    "Acknowledgements" : {},
     "Actual Size" : {
       "localizations" : {
         "de" : {
@@ -3323,9 +3320,7 @@
         }
       }
     },
-    "Any app with a JSON config" : {
-
-    },
+    "Any app with a JSON config" : {},
     "Applies to every spotlight in the image." : {
       "localizations" : {
         "de" : {
@@ -5360,12 +5355,8 @@
         }
       }
     },
-    "Capture Full Screen After Delay" : {
-
-    },
-    "Capture Previous Area" : {
-
-    },
+    "Capture Full Screen After Delay" : {},
+    "Capture Previous Area" : {},
     "Capture Window" : {
       "localizations" : {
         "de" : {
@@ -19920,9 +19911,7 @@
         }
       }
     },
-    "No previous area yet. Capture an area first." : {
-
-    },
+    "No previous area yet. Capture an area first." : {},
     "No screenshots in your save folder yet" : {
       "localizations" : {
         "de" : {
@@ -26259,216 +26248,43 @@
         }
       }
     },
-    "Saved %@ (first %lld s only)" : {
+    "Saved %@ (first %lld s only).%@" : {
       "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ gesichert (nur erste %2$lld s)"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Saved %1$@ (first %2$lld s only)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guardado: %1$@ (solo los primeros %2$lld s)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ enregistré (%2$lld premières secondes seulement)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Salvato: %1$@ (solo i primi %2$lld s)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@を保存しました（最初の%2$lld秒のみ）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ 저장됨 (처음 %2$lld초만)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Salvo: %1$@ (só os primeiros %2$lld s)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已存储 %1$@（仅前 %2$lld 秒）"
+            "value" : "Saved %1$@ (first %2$lld s only).%3$@"
           }
         }
       }
     },
-    "Saved a copy and copied %@" : {
+    "Saved %@.%@" : {
       "localizations" : {
-        "de" : {
+        "en" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kopie gesichert und %@ kopiert"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Copia guardada y copiada: %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Copie enregistrée et copiée : %@"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Copia salvata e copiata: %@"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "複製を保存し、%@をコピーしました"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "사본을 저장하고 복사함: %@"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cópia salva e copiada: %@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已存储副本并拷贝 %@"
+            "state" : "new",
+            "value" : "Saved %1$@.%2$@"
           }
         }
       }
     },
-    "Saved and copied" : {
+    "Saved a copy and copied %@.%@" : {
       "localizations" : {
-        "de" : {
+        "en" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gesichert und kopiert"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guardado y copiado"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enregistré et copié"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Salvato e copiato"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "保存してコピーしました"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "저장 및 복사됨"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Salvo e copiado"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已存储并拷贝"
+            "state" : "new",
+            "value" : "Saved a copy and copied %1$@.%2$@"
           }
         }
       }
     },
-    "Saved as %@ and copied" : {
+    "Saved and copied.%@" : {},
+    "Saved as %@ and copied.%@" : {
       "localizations" : {
-        "de" : {
+        "en" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Als %@ gesichert und kopiert"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guardado como %@ y copiado"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enregistré sous %@ et copié"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Salvato come «%@» e copiato"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@として保存してコピーしました"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "다른 이름으로 저장하고 복사함: %@"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Salvo como %@ e copiado"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已存储为 %@ 并拷贝"
+            "state" : "new",
+            "value" : "Saved as %1$@ and copied.%2$@"
           }
         }
       }
@@ -28137,9 +27953,7 @@
         }
       }
     },
-    "Shot comes with no warranty. It updates itself with Sparkle, under the MIT license." : {
-
-    },
+    "Shot comes with no warranty. It updates itself with Sparkle, under the MIT license." : {},
     "Shot is free, with no ads or account. Sponsoring keeps it that way." : {
       "localizations" : {
         "de" : {
@@ -31890,9 +31704,7 @@
         }
       }
     },
-    "The previous area isn't on a display now" : {
-
-    },
+    "The previous area isn't on a display now" : {},
     "The recording has no video track" : {
       "localizations" : {
         "de" : {
@@ -34077,9 +33889,7 @@
         }
       }
     },
-    "View" : {
-
-    },
+    "View" : {},
     "WIDTH" : {
       "localizations" : {
         "de" : {

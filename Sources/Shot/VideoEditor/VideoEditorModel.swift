@@ -788,7 +788,7 @@ final class VideoEditorModel {
         }
         log.notice("Saved edited video: \(self.fileURL.path)")
         Clipboard.copy(fileURL: fileURL)
-        Toast.show("Saved and copied")
+        Toast.show("Saved and copied.\(TemporaryCaptures.toastNote(for: fileURL))")
         do {
             try await load()
         } catch {
@@ -809,7 +809,7 @@ final class VideoEditorModel {
         }
         log.notice("Saved a copy of the edited video: \(output.path)")
         Clipboard.copy(fileURL: output)
-        Toast.show("Saved a copy and copied \(output.lastPathComponent)", duration: .seconds(3))
+        Toast.show("Saved a copy and copied \(output.lastPathComponent).\(TemporaryCaptures.toastNote(for: output))", duration: .seconds(3))
         return true
     }
 
