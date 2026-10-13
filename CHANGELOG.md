@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.7.0-beta.49](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.48...v0.7.0-beta.49) (2026-10-13)
+
+
+### Features
+
+* **agents:** MCP zoom and shot crop ([#542](https://github.com/LorcanChinnock/shot/issues/542)) ([42ae59a](https://github.com/LorcanChinnock/shot/commit/42ae59aa2ef0ec477f6da2304c2020b05434cea5))
+* **agents:** redact --detect and an MCP redact tool ([#543](https://github.com/LorcanChinnock/shot/issues/543)) ([5865499](https://github.com/LorcanChinnock/shot/commit/5865499528bfed108e60290a97961ec506636317))
+* **build:** ship a universal build again so Shot runs on Intel Macs ([#526](https://github.com/LorcanChinnock/shot/issues/526)) ([296b40e](https://github.com/LorcanChinnock/shot/commit/296b40ee21a7cf6e5a760162f4070e39eeb51ac2))
+* **capture:** Copy Text reads the text in an area and copies it ([#540](https://github.com/LorcanChinnock/shot/issues/540)) ([59b4552](https://github.com/LorcanChinnock/shot/commit/59b4552e1ed9c08097ffba587956e2d52bc14225))
+* **editor:** crop mode with handles, uncrop, aspect presets and a Frame row ([#528](https://github.com/LorcanChinnock/shot/issues/528)) ([12fd8e2](https://github.com/LorcanChinnock/shot/commit/12fd8e2f5ebd2e60363686317155bd992d986d05))
+* **editor:** drop Rounded Rectangle and round the corners of any shape ([#527](https://github.com/LorcanChinnock/shot/issues/527)) ([090b7a2](https://github.com/LorcanChinnock/shot/commit/090b7a20b16d7133ada54279ce207eab1584049d))
+* **editor:** rename layers by double-clicking their label in the image and video editors ([#541](https://github.com/LorcanChinnock/shot/issues/541)) ([484486d](https://github.com/LorcanChinnock/shot/commit/484486d184db620463c2213f4a29c442e3e86cbe)), closes [#530](https://github.com/LorcanChinnock/shot/issues/530)
+* **quick-access:** pin a screenshot above other windows ([#537](https://github.com/LorcanChinnock/shot/issues/537)) ([d445afd](https://github.com/LorcanChinnock/shot/commit/d445afda07363563d5cae83ba1fe768b5b50bbb9))
+* **recording:** show clicks in recordings ([#535](https://github.com/LorcanChinnock/shot/issues/535)) ([1d839b3](https://github.com/LorcanChinnock/shot/commit/1d839b343540aa1a4f045de71ac4fa165439253c))
+
+
+### Bug Fixes
+
+* **a11y:** arrow keys for BrutalSlider and the colour field ([#539](https://github.com/LorcanChinnock/shot/issues/539)) ([2dd02c3](https://github.com/LorcanChinnock/shot/commit/2dd02c3ca55008242773f9a0be42d21078fee0f6))
+* **a11y:** keyboard-only area and window capture in the overlay ([#525](https://github.com/LorcanChinnock/shot/issues/525)) ([060c04e](https://github.com/LorcanChinnock/shot/commit/060c04e4b4cedf344c250d50e16e8b71c5fc5e47))
+* **a11y:** reopen opens Settings, label the gallery checkbox and tips ([#538](https://github.com/LorcanChinnock/shot/issues/538)) ([61d96d3](https://github.com/LorcanChinnock/shot/commit/61d96d3a7d433049b097e9a99fde1f76139ef01a))
+* **agents:** cover the whole word when redact --detect hides text ([#546](https://github.com/LorcanChinnock/shot/issues/546)) ([29e8dd9](https://github.com/LorcanChinnock/shot/commit/29e8dd9a0aa31cd23cd035455c73c30c4391edb2))
+* **capture:** stop crashing on every saved screenshot ([#545](https://github.com/LorcanChinnock/shot/issues/545)) ([2282f8b](https://github.com/LorcanChinnock/shot/commit/2282f8b9d7fc71ca86c80db2be9fc8068e568c30))
+* **editor:** focus the canvas from the Frame row and align it with the layers ([#531](https://github.com/LorcanChinnock/shot/issues/531)) ([7ad7637](https://github.com/LorcanChinnock/shot/commit/7ad7637cca31285bb74f67ef3affcf42922a25d9))
+* pin a styled Quick Access capture, name the style switch and colour sliders ([#552](https://github.com/LorcanChinnock/shot/issues/552)) ([9c0d663](https://github.com/LorcanChinnock/shot/commit/9c0d663c847482e2f17561f1efb94be8af34eaf6))
+* **recording:** wait for a failed stream to stop; trash the original on video save ([#523](https://github.com/LorcanChinnock/shot/issues/523)) ([f361c8c](https://github.com/LorcanChinnock/shot/commit/f361c8cb05364a84c1d67386faad7a7d8d8bfa8e))
+
+
+### Performance Improvements
+
+* **gallery:** add a Gallery selection signpost interval ([#534](https://github.com/LorcanChinnock/shot/issues/534)) ([960aceb](https://github.com/LorcanChinnock/shot/commit/960acebe4fb5c6fc90da2cf5635ca23d38d1100d))
+
 ## [0.7.0-beta.48](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.47...v0.7.0-beta.48) (2026-10-13)
 
 
