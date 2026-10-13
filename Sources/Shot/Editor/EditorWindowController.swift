@@ -20,6 +20,7 @@ private final class EditorWindow: NSWindow {
 final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValidation {
     private static var open: [EditorWindowController] = []
     static var isAnyOpen: Bool { !open.isEmpty }
+    static var hasUnsavedChanges: Bool { open.contains { $0.model.isDirty } }
 
     /// Lets go of the renderer's images once no image or video editor is left to use them. Editors share the cache, so
     /// releasing it while one is open would only make that one draw its blurs and shadows again.
@@ -33,6 +34,34 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
     private let window: NSWindow
     private let canvas: EditorCanvasView
     private var discarding = false
+    /// Set while a quit waits on this window's Save / Discard / Cancel sheet; answers true once the window may go.
+    private var quitReply: ((Bool) -> Void)?
+
+    /// Asks about each window with unsaved changes in turn, bringing it forward. False if the user cancelled.
+    static func confirmQuit() async -> Bool {
+        for controller in open where controller.model.isDirty {
+            guard await controller.askBeforeQuit() else {
+                return false
+            }
+        }
+        return true
+    }
+
+    private func askBeforeQuit() async -> Bool {
+        GlassWindow.present(window)
+        return await withCheckedContinuation { continuation in
+            quitReply = { continuation.resume(returning: $0) }
+            if windowShouldClose(window) {
+                resolveQuit(true)
+            }
+        }
+    }
+
+    private func resolveQuit(_ proceed: Bool) {
+        let reply = quitReply
+        quitReply = nil
+        reply?(proceed)
+    }
 
     /// `newCaptureStyle` styles a new capture's screenshot as the editor opens, as Use this style for new captures asks.
     /// A version saved with marks Shot can rebuild opens as its original with those marks live, so they can be changed.
@@ -164,6 +193,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
             return true
         }
         guard sender.attachedSheet == nil else {
+            resolveQuit(false)
             return false
         }
         let alert = NSAlert()
@@ -178,13 +208,15 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
                 Task {
                     if await model.save() {
                         sender.close()
+                    } else {
+                        resolveQuit(false)
                     }
                 }
             case .alertSecondButtonReturn:
                 discarding = true
                 sender.close()
             default:
-                break
+                resolveQuit(false)
             }
         }
         return false
@@ -203,6 +235,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
     }
 
     func windowWillClose(_ notification: Notification) {
+        resolveQuit(true)
         Self.open.removeAll { $0 === self }
         Self.releaseCachesIfNoEditorIsOpen()
     }
