@@ -1381,6 +1381,9 @@
         }
       }
     },
+    "%lld seconds" : {
+
+    },
     "%lld × %lld" : {
       "localizations" : {
         "de" : {
@@ -5356,6 +5359,9 @@
           }
         }
       }
+    },
+    "Capture Full Screen After Delay" : {
+
     },
     "Capture Previous Area" : {
 
