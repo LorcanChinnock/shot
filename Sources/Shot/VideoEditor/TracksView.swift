@@ -131,7 +131,7 @@ struct TracksView: View {
             let leadX = CGFloat(lead) * pointsPerSecond
             let reach = model.project.tracks.indices.flatMap(model.project.trimmedEnds).map(\.end).max() ?? 0
             ScrollView([.horizontal, .vertical], showsIndicators: false) {
-                lanes(timeline, layout: layout)
+                lanes(timeline, layout: layout, leadX: leadX)
                     .offset(x: leadX)
                     .frame(width: max(width, leadX + CGFloat(reach) * pointsPerSecond), height: layout.height, alignment: .topLeading)
                     .overlay(alignment: .topLeading) { laneControls(layout).offset(x: scrollX) }
@@ -202,14 +202,18 @@ struct TracksView: View {
 
     // MARK: Lanes
 
-    private func lanes(_ timeline: TrimTimeline, layout: LaneLayout) -> some View {
+    /// `leadX` is where time 0 sits in the lanes.
+    private func lanes(_ timeline: TrimTimeline, layout: LaneLayout, leadX: CGFloat) -> some View {
         let pointsPerSecond = timeline.width / CGFloat(max(model.fitDuration, .leastNonzeroMagnitude))
         let project = model.project
         return ZStack(alignment: .topLeading) {
             ruler(timeline, pointsPerSecond: pointsPerSecond)
             ForEach(layout.lanes, id: \.track) { lane in
+                // The lane switches are pinned to the view's left edge, over the clips; this is where they end in lane time's points.
+                let controlsEnd = LaneLayout.controlsWidth(count: shownControls(onTrack: lane.track).count) + scrollX - leadX
                 ForEach(project.tracks[lane.track].annotations) { clip in
-                    annotationClip(clip, height: lane.height, pointsPerSecond: pointsPerSecond)
+                    annotationClip(clip, height: lane.height, pointsPerSecond: pointsPerSecond,
+                                   labelInset: LaneLayout.labelInset(clipX: CGFloat(clip.start) * pointsPerSecond, controlsEnd: controlsEnd))
                         // Faded while it's dragged to another lane, where the marker shows it'll land.
                         .opacity(model.laneDrop?.clip == clip.id ? 0.4 : 1)
                         .offset(x: CGFloat(clip.start) * pointsPerSecond, y: lane.y)
@@ -313,16 +317,21 @@ struct TracksView: View {
         ZStack(alignment: .topLeading) {
             ForEach(layout.lanes, id: \.track) { lane in
                 let track = model.project.tracks[lane.track]
-                HStack(spacing: 3) {
-                    ForEach(LaneControl.allCases.filter { $0.applies(to: track.kind) && (hoveredTrack == lane.track || track[keyPath: $0.flag]) }, id: \.self) { control in
+                HStack(spacing: LaneLayout.controlSpacing) {
+                    ForEach(shownControls(onTrack: lane.track), id: \.self) { control in
                         laneButton(control, track: lane.track, isOn: track[keyPath: control.flag])
                     }
                 }
-                .padding(.leading, 4)
+                .padding(.leading, LaneLayout.controlInset)
                 .frame(height: lane.height)
                 .offset(y: lane.y)
             }
         }
+    }
+
+    private func shownControls(onTrack index: Int) -> [LaneControl] {
+        let track = model.project.tracks[index]
+        return LaneControl.allCases.filter { $0.applies(to: track.kind) && (hoveredTrack == index || track[keyPath: $0.flag]) }
     }
 
     private func laneButton(_ control: LaneControl, track: Int, isOn: Bool) -> some View {
@@ -330,7 +339,7 @@ struct TracksView: View {
             Image(systemName: control.symbol(isOn: isOn))
                 .font(.system(size: 10, weight: .bold))
                 .foregroundStyle(Brutal.ink)
-                .frame(width: 20, height: 20)
+                .frame(width: LaneLayout.controlSize, height: LaneLayout.controlSize)
                 .background(isOn ? Brutal.yellow : Color.white)
                 .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: 2)
         }
@@ -428,7 +437,8 @@ struct TracksView: View {
         .task(id: clip.source) { await model.loadWaveform(for: clip.source) }
     }
 
-    private func annotationClip(_ clip: AnnotationClip, height: CGFloat, pointsPerSecond: CGFloat) -> some View {
+    /// `labelInset` moves the name and its rename field clear of the lane switches when they're over the clip's start.
+    private func annotationClip(_ clip: AnnotationClip, height: CGFloat, pointsPerSecond: CGFloat, labelInset: CGFloat) -> some View {
         let width = CGFloat(clip.duration) * pointsPerSecond
         let selected = model.selectedClipID == clip.id
         let color = clip.annotation.color
@@ -440,6 +450,7 @@ struct TracksView: View {
         }
         .foregroundStyle(Brutal.ink)
         .padding(.horizontal, 6)
+        .padding(.leading, labelInset)
         .frame(width: width, height: height, alignment: .leading)
         .background(color.swiftUIColor.opacity(0.55))
         .background(Color.white)
@@ -453,8 +464,8 @@ struct TracksView: View {
                     renaming = nil
                     model.renameAnnotation(clip.id, to: name)
                 }, onCancel: { renaming = nil })
-                .frame(width: max(width - 24, 140))
-                .padding(.leading, 22)
+                .frame(width: max(width - 24 - labelInset, 140))
+                .padding(.leading, 22 + labelInset)
             }
         }
     }

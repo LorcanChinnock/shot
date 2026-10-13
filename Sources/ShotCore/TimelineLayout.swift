@@ -109,6 +109,25 @@ public struct LaneLayout: Equatable, Sendable {
         lanes.first { $0.track == track }
     }
 
+    /// The lane switches (lock, hide, mute): square buttons in a row, `controlInset` in from the view's left edge.
+    public static let controlSize: CGFloat = 20
+    public static let controlSpacing: CGFloat = 3
+    public static let controlInset: CGFloat = 4
+
+    /// How far from the view's left edge `count` lane switches reach; 0 when none show.
+    public static func controlsWidth(count: Int) -> CGFloat {
+        guard count > 0 else {
+            return 0
+        }
+        return controlInset + CGFloat(count) * controlSize + CGFloat(count - 1) * controlSpacing
+    }
+
+    /// How much further in a clip's name starts so the lane switches don't cover it: the switches reach `controlsEnd` and the
+    /// clip starts at `clipX`, both from the same origin. 0 when the clip starts past them.
+    public static func labelInset(clipX: CGFloat, controlsEnd: CGFloat) -> CGFloat {
+        max(0, controlsEnd - clipX)
+    }
+
     /// How close to a lane's edge a clip dragged up or down drops between lanes, onto a new track of its own.
     public static let insertReach: CGFloat = 7
 
