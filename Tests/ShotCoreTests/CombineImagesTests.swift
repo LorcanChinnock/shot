@@ -267,3 +267,89 @@ func redactingOverAPlacedImageHidesItsDetail(kind: Annotation.Kind) throws {
     #expect(near(try pixelBytes(flat, 130, 20), 255, 255, 255))
     #expect(near(try pixelBytes(flat, 180, 80), 128, 128, 128, tolerance: 8))
 }
+
+// MARK: Picture crop
+
+/// Blue on the left half, green on the right.
+private func halves(width: Int, height: Int) -> CGImage {
+    let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+    ctx.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 1, alpha: 1))
+    ctx.fill(CGRect(x: 0, y: 0, width: width / 2, height: height))
+    ctx.setFillColor(CGColor(srgbRed: 0, green: 1, blue: 0, alpha: 1))
+    ctx.fill(CGRect(x: width / 2, y: 0, width: width - width / 2, height: height))
+    return ctx.makeImage()!
+}
+
+@Test func aCroppedImageExportsOnlyThePartLeftWhereItIs() throws {
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100))
+    let id = doc.addImage(halves(width: 40, height: 20), scale: 1, documentScale: 1, centeredAt: CGPoint(x: 100, y: 50), margin: 16)
+    // The image sits at (80, 40); keep its right half.
+    doc.cropImage(id, to: CGRect(x: 100, y: 40, width: 20, height: 20), margin: 16)
+    let cropped = try #require(doc.annotations.first { $0.id == id })
+    #expect(cropped.bounds == CGRect(x: 100, y: 40, width: 20, height: 20))
+    #expect(cropped.imageCrop == ImageCrop(left: 0.5, top: 0, right: 0, bottom: 0))
+    #expect(cropped.imageFullRect == CGRect(x: 80, y: 40, width: 40, height: 20))
+    let flat = try #require(AnnotationRenderer.flatten(doc))
+    // Green from its left edge, and the screenshot where the blue half was.
+    #expect(near(try pixelBytes(flat, 101, 50), 0, 255, 0))
+    #expect(near(try pixelBytes(flat, 118, 50), 0, 255, 0))
+    #expect(near(try pixelBytes(flat, 90, 50), 255, 0, 0))
+}
+
+@Test func aCropIsKeptWithinTheWholeImageAndAWholeCropIsNone() throws {
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100))
+    let id = doc.addImage(halves(width: 40, height: 20), scale: 1, documentScale: 1, centeredAt: CGPoint(x: 100, y: 50), margin: 16)
+    doc.cropImage(id, to: CGRect(x: 60, y: 45, width: 200, height: 200), margin: 16)
+    #expect(doc.annotations[0].bounds == CGRect(x: 80, y: 45, width: 40, height: 15))
+    doc.cropImage(id, to: CGRect(x: 0, y: 0, width: 300, height: 300), margin: 16)
+    #expect(doc.annotations[0].imageCrop == nil)
+    #expect(doc.annotations[0].bounds == CGRect(x: 80, y: 40, width: 40, height: 20))
+}
+
+@Test func resizingACroppedImageScalesWhatsLeftAndKeepsTheCrop() throws {
+    var doc = EditorDocument(base: solidImage(width: 400, height: 300))
+    let id = doc.addImage(halves(width: 40, height: 20), scale: 1, documentScale: 1, centeredAt: CGPoint(x: 100, y: 50), margin: 16)
+    doc.cropImage(id, to: CGRect(x: 100, y: 40, width: 20, height: 20), margin: 16)
+    var resized = doc.annotations[0]
+    resized.resize(.bottomRight, to: CGPoint(x: 140, y: 80), tolerance: 0, constrain: false, fromCenter: false)
+    #expect(resized.bounds == CGRect(x: 100, y: 40, width: 40, height: 40))
+    #expect(resized.imageCrop == ImageCrop(left: 0.5, top: 0, right: 0, bottom: 0))
+    #expect(resized.imageFullRect == CGRect(x: 60, y: 40, width: 80, height: 40))
+}
+
+@Test func resettingACropShowsTheWholeImageAtTheSameScale() throws {
+    var doc = EditorDocument(base: solidImage(width: 400, height: 300))
+    let id = doc.addImage(halves(width: 40, height: 20), scale: 1, documentScale: 1, centeredAt: CGPoint(x: 100, y: 50), margin: 16)
+    doc.cropImage(id, to: CGRect(x: 100, y: 40, width: 20, height: 10), margin: 16)
+    doc.resetImageCrop(id, margin: 16)
+    #expect(doc.annotations[0].imageCrop == nil)
+    #expect(doc.annotations[0].bounds == CGRect(x: 80, y: 40, width: 40, height: 20))
+}
+
+@Test func copiesAndSavedProjectsKeepAnImagesCrop() throws {
+    var doc = EditorDocument(base: solidImage(width: 400, height: 300))
+    let id = doc.addImage(halves(width: 40, height: 20), scale: 1, documentScale: 1, centeredAt: CGPoint(x: 100, y: 50), margin: 16)
+    doc.cropImage(id, to: CGRect(x: 100, y: 40, width: 20, height: 20), margin: 16)
+    let copyID = doc.paste(doc.annotations[0], step: 10, margin: 16)
+    let copy = try #require(doc.annotations.first { $0.id == copyID })
+    #expect(copy.imageCrop == ImageCrop(left: 0.5, top: 0, right: 0, bottom: 0))
+
+    let decoded = try JSONDecoder().decode(Annotation.self, from: JSONEncoder().encode(doc.annotations[0]))
+    #expect(decoded.imageCrop == doc.annotations[0].imageCrop)
+    #expect(decoded.bounds == doc.annotations[0].bounds)
+}
+
+@Test func onlyAPlacedImageTakesACrop() {
+    var box = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 0, y: 0, width: 10, height: 10)), color: black, lineWidth: 2)
+    box.imageCrop = ImageCrop(left: 0.5, top: 0, right: 0, bottom: 0)
+    #expect(box.imageCrop == nil)
+}
+
+@Test func aCroppedImageIsCutOnceAndReused() {
+    let stored = AnnotationImage(halves(width: 40, height: 20))
+    let crop = ImageCrop(left: 0.5, top: 0, right: 0, bottom: 0)
+    let first = stored.cropped(crop)
+    #expect(first.width == 20 && first.height == 20)
+    #expect(stored.cropped(crop) === first)
+    #expect(stored.cropped(nil) === stored.image)
+}

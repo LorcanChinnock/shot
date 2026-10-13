@@ -426,6 +426,37 @@ public extension EditorDocument {
 }
 
 extension EditorDocument {
+    /// Crops the placed image with `id` to `visible`, which is kept within where the whole image is drawn, and fits the
+    /// canvas to it. A crop that leaves all of it is none. Anything but a placed image is left alone.
+    public mutating func cropImage(_ id: UUID, to visible: CGRect, margin: CGFloat) {
+        guard let index = annotations.firstIndex(where: { $0.id == id }), case let .image(image, _) = annotations[index].kind,
+              let full = annotations[index].imageFullRect else {
+            return
+        }
+        let kept = visible.intersection(full)
+        guard !kept.isNull, kept.width >= 1, kept.height >= 1 else {
+            return
+        }
+        annotations[index].kind = .image(image, rect: kept)
+        annotations[index].imageCrop = ImageCrop(visible: kept, within: full)
+        grow(toFit: annotations[index], margin: margin)
+        shrinkPadding(margin: margin)
+    }
+
+    /// Shows all of the placed image with `id` again, at the size its crop had it.
+    public mutating func resetImageCrop(_ id: UUID, margin: CGFloat) {
+        guard let index = annotations.firstIndex(where: { $0.id == id }), case let .image(image, _) = annotations[index].kind,
+              let full = annotations[index].imageFullRect, annotations[index].imageCrop != nil else {
+            return
+        }
+        annotations[index].kind = .image(image, rect: full)
+        annotations[index].imageCrop = nil
+        grow(toFit: annotations[index], margin: margin)
+        shrinkPadding(margin: margin)
+    }
+}
+
+extension EditorDocument {
     /// Removes the annotations in `ids` that aren't locked, and the padding only they needed. Returns the ids removed.
     @discardableResult
     public mutating func deleteLayers(_ ids: Set<UUID>, margin: CGFloat) -> Set<UUID> {

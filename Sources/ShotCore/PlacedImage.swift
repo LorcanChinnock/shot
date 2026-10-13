@@ -12,6 +12,9 @@ public final class AnnotationImage: Equatable, Codable, @unchecked Sendable {
     public let id: UUID
     public let image: CGImage
     private let transparency = OSAllocatedUnfairLock<Bool?>(initialState: nil)
+    /// The last crop asked for and its pixels, so redrawing a cropped image gives back the same `CGImage` and the
+    /// renderer's caches, which compare images by identity, keep hitting.
+    private let lastCrop = OSAllocatedUnfairLock<(crop: ImageCrop, image: CGImage)?>(initialState: nil)
 
     public init(_ image: CGImage, id: UUID = UUID()) {
         self.id = id
@@ -27,6 +30,21 @@ public final class AnnotationImage: Equatable, Codable, @unchecked Sendable {
             let transparent = image.hasTransparentPixels
             known = transparent
             return transparent
+        }
+    }
+
+    /// The part of the image `crop` leaves; the whole image when there's no crop.
+    public func cropped(_ crop: ImageCrop?) -> CGImage {
+        guard let crop, !crop.isEmpty else {
+            return image
+        }
+        return lastCrop.withLock { last in
+            if let last, last.crop == crop {
+                return last.image
+            }
+            let cropped = image.cropping(to: crop.sourceRect(width: image.width, height: image.height)) ?? image
+            last = (crop, cropped)
+            return cropped
         }
     }
 

@@ -36,7 +36,7 @@ extension EditorTool {
         case .spotlight: String(localized: "Drag to dim or blur everything outside an area.")
         case .redact: String(localized: "Drag over private details to blur or pixelate them.")
         case .counter: String(localized: "Click to add numbered steps: 1, 2, 3…")
-        case .crop: String(localized: "Drag the handles to choose the area to keep. Return applies it, Esc cancels.")
+        case .crop: String(localized: "Drag the handles to choose the area to keep, of the whole picture or the placed image selected. Return applies it, Esc cancels.")
         }
     }
 }
@@ -58,13 +58,16 @@ final class EditorModel {
         // The toolbar restyles the selection, so drop it when changing tool: it's either picked with the
         // select tool or the annotation just drawn with another.
         didSet {
+            // A placed image picked as the crop tool is taken up gets a crop of its own.
+            let imageToCrop = tool == .crop && oldValue != .crop ? (pendingCropImage ?? croppableSelection) : nil
+            pendingCropImage = nil
             if tool != .select {
                 selectedID = nil
             } else {
                 commitPendingText?()
             }
             if tool == .crop, oldValue != .crop {
-                beginCrop(from: oldValue)
+                beginCrop(from: oldValue, image: imageToCrop)
             } else if oldValue == .crop, tool != .crop {
                 finishCrop()
             }
@@ -122,6 +125,10 @@ final class EditorModel {
     }
     /// The tool to go back to when the crop tool is put down.
     @ObservationIgnored private var toolBeforeCrop = EditorTool.select
+    /// The placed image whose own crop the crop tool is adjusting; `nil` while it adjusts the frame crop.
+    private(set) var cropImageID: UUID?
+    /// The placed image to crop when the crop tool is next taken up, set by Crop Image.
+    @ObservationIgnored private var pendingCropImage: UUID?
     /// The layers picked, from the canvas or the layers panel. The toolbar styles an annotation only while it's the only one.
     var selectedIDs: Set<UUID> = []
     var selectedID: UUID? {
@@ -205,12 +212,14 @@ final class EditorModel {
     var layers: [Annotation] { document.annotations.reversed() }
 
     var layerRows: [LayerRow] {
-        layers.map { LayerRow(id: $0.id, name: $0.layerName, symbol: $0.layerSymbol, isHidden: $0.isHidden, isLocked: $0.isLocked) }
+        layers.map {
+            LayerRow(id: $0.id, name: $0.layerName, symbol: $0.layerSymbol, isHidden: $0.isHidden, isLocked: $0.isLocked, isImage: $0.imageFullRect != nil, isCropped: $0.imageCrop != nil)
+        }
     }
 
     /// The Frame row of the layers panel: there while the image has a crop.
     var frameRow: FrameRow? {
-        document.frameCrop.map { _ in FrameRow(isHidden: document.isFrameCropHidden, isSelected: tool == .crop) }
+        document.frameCrop.map { _ in FrameRow(isHidden: document.isFrameCropHidden, isSelected: tool == .crop && cropImageID == nil) }
     }
 
     func toggleLayers() {
@@ -451,7 +460,7 @@ final class EditorModel {
                 return nil
             }
             if case let .image(image, _) = annotation.kind {
-                return .image(image.image)
+                return .image(image.cropped(annotation.imageCrop))
             }
             return .annotation(annotation)
         case nil:
@@ -711,21 +720,74 @@ final class EditorModel {
 
     // MARK: Crop
 
-    private func beginCrop(from previous: EditorTool) {
+    private func beginCrop(from previous: EditorTool, image: UUID?) {
         toolBeforeCrop = previous == .crop ? .select : previous
-        cropDraft = document.frameCrop ?? document.contentRect
+        if let image, let annotation = document.annotations.first(where: { $0.id == image }) {
+            cropImageID = image
+            cropDraft = annotation.bounds
+        } else {
+            cropImageID = nil
+            cropDraft = document.frameCrop ?? document.contentRect
+        }
+    }
+
+    /// The selection, when it's a placed image that can be cropped.
+    private var croppableSelection: UUID? {
+        selection.flatMap { $0.imageFullRect != nil && !$0.isLocked ? $0.id : nil }
+    }
+
+    /// Where the image being cropped would be drawn whole, which its crop is kept within; `nil` while cropping the frame.
+    var cropImageFullRect: CGRect? {
+        cropImageID.flatMap { id in document.annotations.first { $0.id == id }?.imageFullRect }
+    }
+
+    /// Takes up the crop tool on the placed image with `id`, as double-clicking it, Crop Image or its Layers badge does.
+    func cropImage(_ id: UUID) {
+        guard let annotation = document.annotations.first(where: { $0.id == id }), annotation.imageFullRect != nil, !annotation.isLocked else {
+            return
+        }
+        if tool == .crop {
+            cancelCrop()
+        }
+        pendingCropImage = id
+        tool = .crop
+    }
+
+    /// Shows all of the placed image with `id` again, as one undoable step.
+    func resetImageCrop(_ id: UUID) {
+        if cropImageID == id {
+            cancelCrop()
+        }
+        edit { $0.resetImageCrop(id, margin: canvasMargin) }
     }
 
     /// Applies the crop being adjusted as one undoable step; it's none if the crop is as it was.
     private func finishCrop() {
+        let image = cropImageID
+        cropImageID = nil
         guard let draft = cropDraft else {
+            reselect(image)
             return
         }
         cropDraft = nil
+        if let image {
+            if let current = document.annotations.first(where: { $0.id == image })?.bounds, draft != current {
+                edit { $0.cropImage(image, to: draft, margin: canvasMargin) }
+            }
+            reselect(image)
+            return
+        }
         guard draft.integral != (document.frameCrop ?? document.contentRect) || document.isFrameCropHidden else {
             return
         }
         edit { $0.crop(to: draft) }
+    }
+
+    /// Picks the image just cropped again once the select tool is back, so its handles show.
+    private func reselect(_ image: UUID?) {
+        if let image, tool == .select {
+            selectedID = image
+        }
     }
 
     /// Puts the crop tool down, applying the crop, as Return does.
@@ -756,7 +818,9 @@ final class EditorModel {
 
     /// Makes the crop all of the content again; while the crop tool is active that applies when it's put down.
     func resetCrop() {
-        if cropDraft != nil {
+        if let full = cropImageFullRect, cropDraft != nil {
+            cropDraft = full
+        } else if cropDraft != nil {
             cropDraft = document.contentRect
         } else {
             edit { $0.resetCrop() }
@@ -765,7 +829,10 @@ final class EditorModel {
 
     /// Whether there's a crop to take off, which Reset offers.
     var canResetCrop: Bool {
-        cropDraft.map { $0 != document.contentRect } ?? (document.frameCrop != nil)
+        if let full = cropImageFullRect {
+            return cropDraft.map { $0 != full } ?? false
+        }
+        return cropDraft.map { $0 != document.contentRect } ?? (document.frameCrop != nil)
     }
 
     /// Shows the uncropped image, and leaves the crop out of Copy and Save, or puts it back.

@@ -93,9 +93,16 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     /// A shape's or spotlight's radius. It has its own key because older versions saved a radius, 12 by default, on every
     /// shape, rectangles that were square included.
     private var boxRadius: CGFloat?
+    /// What a placed image's own crop trims off it; `nil` for a whole image and for anything else. Its rect is the size of
+    /// the part left. Stored only when set, so annotations saved before it still decode.
+    public var imageCrop: ImageCrop? {
+        get { crop }
+        set { crop = kind.isImage && newValue?.isEmpty == false ? newValue : nil }
+    }
+    private var crop: ImageCrop?
 
     private enum CodingKeys: String, CodingKey {
-        case id, kind, color, fill, lineWidth, bend, textAlign, hidden, locked, objectStyle, boxRadius
+        case id, kind, color, fill, lineWidth, bend, textAlign, hidden, locked, objectStyle, boxRadius, crop
         case imageRadius = "cornerRadius"
         case customName = "name"
     }
@@ -115,6 +122,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         boxRadius = try container.decodeIfPresent(CGFloat.self, forKey: .boxRadius)
         imageRadius = try container.decodeIfPresent(CGFloat.self, forKey: .imageRadius)
         name = try container.decodeIfPresent(String.self, forKey: .customName)
+        crop = kind.isImage ? try container.decodeIfPresent(ImageCrop.self, forKey: .crop) : nil
         // A rounded rectangle from before every shape could be rounded keeps its radius, or the fifth of its shorter side
         // that it had when it had none.
         if !kind.isImage {
