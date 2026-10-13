@@ -28,15 +28,20 @@ public struct GalleryItem: Identifiable, Hashable, Sendable {
     public let kind: GalleryKind
     public let date: Date
     public let bytes: Int
+    /// When the file last changed, which the text index checks its entry against.
+    public let modified: Date
 
     public var id: URL { url }
     public var name: String { url.lastPathComponent }
+    /// What the text index keys the file's text by.
+    public var textFile: TextIndex.File { TextIndex.File(path: url.path, bytes: bytes, modified: modified) }
 
-    public init(url: URL, kind: GalleryKind, date: Date, bytes: Int) {
+    public init(url: URL, kind: GalleryKind, date: Date, bytes: Int, modified: Date? = nil) {
         self.url = url
         self.kind = kind
         self.date = date
         self.bytes = bytes
+        self.modified = modified ?? date
     }
 }
 
@@ -101,7 +106,8 @@ public enum Gallery {
                   values.isRegularFile == true else {
                 return nil
             }
-            return GalleryItem(url: url, kind: kind, date: values.creationDate ?? values.contentModificationDate ?? .distantPast, bytes: values.fileSize ?? 0)
+            let date = values.creationDate ?? values.contentModificationDate ?? .distantPast
+            return GalleryItem(url: url, kind: kind, date: date, bytes: values.fileSize ?? 0, modified: values.contentModificationDate ?? date)
         }
     }
 
@@ -129,11 +135,16 @@ public enum Gallery {
     }
 
     /// `items` that pass `filter` and `query`, in `sort` order. `origins` holds who made the items an agent or the
-    /// command line made, for the Made by agents filter.
-    public static func visible(_ items: [GalleryItem], filter: GalleryFilter, sort: GallerySort, query: String, origins: [URL: ProjectOrigin] = [:]) -> [GalleryItem] {
+    /// command line made, for the Made by agents filter. `texts` holds the text read from screenshots, folded as
+    /// `TextSearch` folds it, so the query finds a screenshot by what's in it as well as by its name.
+    public static func visible(_ items: [GalleryItem], filter: GalleryFilter, sort: GallerySort, query: String, origins: [URL: ProjectOrigin] = [:], texts: [URL: String] = [:]) -> [GalleryItem] {
         let query = query.trimmingCharacters(in: .whitespaces)
+        let folded = texts.isEmpty ? nil : TextSearch.query(query)
         let matching = items.filter { item in
-            filter.includes(item.kind, madeByAgent: origins[item.url] != nil) && (query.isEmpty || item.name.localizedStandardContains(query))
+            guard filter.includes(item.kind, madeByAgent: origins[item.url] != nil) else {
+                return false
+            }
+            return query.isEmpty || item.name.localizedStandardContains(query) || folded.map { query in texts[item.url].map { TextSearch.contains($0, query) } == true } == true
         }
         return matching.sorted { a, b in
             switch sort {

@@ -5,17 +5,19 @@ import ImageIO
 extension AgentTools {
     /// The tools reading the captures in `folder`, as the gallery lists them. GIFs count as images: an agent sees their
     /// first frame. `marks` is the app's `RecordingMarks` store, whose marks the key frames show, and `projects` its
-    /// project store, which keeps what the tools make. `agent` sends a request to the running app, for the tools that capture.
+    /// project store, which keeps what the tools make, and `texts` the text the app has read from screenshots, which
+    /// `list_captures` searches. `agent` sends a request to the running app, for the tools that capture.
     public static func live(
         folder: URL,
         marks: URL? = nil,
         projects: ProjectStore? = nil,
+        texts: TextIndexStore? = nil,
         agent: @escaping @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue] = { _ throws(ShotCommandError) in throw .unavailable("can't reach Shot from here") }
     ) -> AgentTools {
         AgentTools(
             folder: folder,
             entries: {
-                Gallery.items(in: folder).map { AgentCaptures.Entry(url: $0.url, isVideo: $0.kind == .video, date: $0.date, bytes: $0.bytes) }
+                Gallery.items(in: folder).map { AgentCaptures.Entry(url: $0.url, isVideo: $0.kind == .video, date: $0.date, bytes: $0.bytes, modified: $0.modified) }
             },
             preview: { entry in
                 entry.isVideo ? await videoPreview(of: entry.url) : imagePreview(of: entry.url)
@@ -40,6 +42,9 @@ extension AgentTools {
                     throw .data("Couldn't read \(entry.name) as an image.")
                 }
                 return read
+            },
+            textIndex: {
+                texts?.load() ?? TextIndex()
             },
             zoom: { entry, rect throws(ShotCommandError) in
                 try zoomed(entry.url, rect: rect)

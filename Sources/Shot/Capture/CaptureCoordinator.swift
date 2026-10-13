@@ -55,6 +55,7 @@ final class CaptureCoordinator {
         }
         recorder.onPhaseChange = { [weak self] phase in
             self?.state.isRecording = phase == .recording || phase == .paused
+            TextIndexer.shared.isRecording = phase == .recording || phase == .paused
             self?.state.isPaused = phase == .paused
         }
         recorder.onStopRequested = { [weak self] discard in

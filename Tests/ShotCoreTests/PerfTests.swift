@@ -75,6 +75,27 @@ import Testing
         }
         try check(time, budget: .milliseconds(Budget.galleryGrouping), "Gallery grouping")
     }
+
+    /// A keystroke in the search with every screenshot's text read: 1,500 items with about 1.5 KB of text each, a
+    /// screenful of a settings window or a document, and a query only a few of them contain.
+    @Test func searchingTheGallerysTextStaysInBudget() throws {
+        let now = Date()
+        let words = ["Settings", "General", "Appearance", "Notifications", "Privacy", "Security", "Battery", "Display", "Sound", "Network"]
+        let items = (0..<1500).map { index in
+            GalleryItem(url: URL(fileURLWithPath: "/shots/Shot \(index).png"), kind: index % 5 == 0 ? .video : .image, date: now.addingTimeInterval(Double(-index) * 3 * 3600), bytes: 1000 + index)
+        }
+        var texts: [URL: String] = [:]
+        for (index, item) in items.enumerated() where item.kind == .image {
+            let lines = (0..<60).map { line in "\(words[(index + line) % words.count]) option \(line) is on" }
+            texts[item.url] = TextSearch.searchable(lines.joined(separator: "\n") + (index % 100 == 1 ? "\nInvoice #\(index)" : ""))
+        }
+        let time = try fastest {
+            let visible = Gallery.visible(items, filter: .all, sort: .newest, query: "invoice", texts: texts)
+            #expect(visible.count == 15)
+            _ = Gallery.sections(visible, sort: .newest, now: now)
+        }
+        try check(time, budget: .milliseconds(Budget.gallerySearch), "Gallery text search")
+    }
 }
 
 /// Twice the CI runner's baselines in `docs/performance.md`; change both together.
@@ -84,6 +105,7 @@ private enum Budget {
     static let markerFrame = 29_000
     static let gifExportMegabytes = 452
     static let galleryGrouping = 5.8
+    static let gallerySearch = 14.0
 }
 
 /// The fastest run of `body`, after one untimed run that warms caches. It runs at least fifteen times and for at least

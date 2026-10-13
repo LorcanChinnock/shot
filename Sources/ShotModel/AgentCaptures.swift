@@ -9,12 +9,15 @@ public enum AgentCaptures {
         public var date: Date
         /// The file's size, when it's known, so a capture still being written can be told apart.
         public var bytes: Int?
+        /// When the file last changed, when it's known, which the text index checks its entry against.
+        public var modified: Date?
 
-        public init(url: URL, isVideo: Bool, date: Date, bytes: Int? = nil) {
+        public init(url: URL, isVideo: Bool, date: Date, bytes: Int? = nil, modified: Date? = nil) {
             self.url = url
             self.isVideo = isVideo
             self.date = date
             self.bytes = bytes
+            self.modified = modified
         }
 
         public var name: String { url.lastPathComponent }

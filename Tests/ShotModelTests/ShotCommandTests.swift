@@ -48,6 +48,7 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(try parse("latest --kind VIDEO") == .latest(.video))
     #expect(try parse("list") == .list(limit: nil, since: nil))
     #expect(try parse("list --limit 50 --since 2h") == .list(limit: 50, since: "2h"))
+    #expect(try parse("list --query=Saved") == .list(limit: nil, since: nil, query: "Saved"))
     #expect(try parse("get") == .get(nil))
     #expect(try parse("get /shots/a.png") == .get("/shots/a.png"))
     #expect(try parse("doctor") == .doctor)

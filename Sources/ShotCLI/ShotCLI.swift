@@ -33,7 +33,9 @@ enum ShotCLI {
             print(ShotCommand.usage(name, program: program))
         case .latest, .list, .get:
             do {
-                print(ShotCommand.json(try readCaptures(command, tools: AgentTools.live(folder: captureFolder(app: appBundle())))))
+                let app = appBundle()
+                let texts = TextIndexStore(bundleID: app?.bundleIdentifier ?? fallbackSuite)
+                print(ShotCommand.json(try readCaptures(command, tools: AgentTools.live(folder: captureFolder(app: app), texts: texts))))
             } catch {
                 printError("\(program) \(command.name): \(error.message)")
                 exit(error.exitCode)
@@ -81,6 +83,17 @@ enum ShotCLI {
             }
         case let .watch(options):
             await watch(options, folder: captureFolder(app: appBundle()), program: program)
+        case let .indexText(folder):
+            // One line each time the index is saved, for the app to show what's been read.
+            let store = TextIndexStore(bundleID: appBundle()?.bundleIdentifier ?? fallbackSuite)
+            do {
+                try await store.update(folder: URL(fileURLWithPath: folder, isDirectory: true)) {
+                    FileHandle.standardOutput.write(Data("saved\n".utf8))
+                }
+            } catch {
+                printError("\(program) index-text: \(error.localizedDescription)")
+                exit(1)
+            }
         default:
             do {
                 let projects = ProjectStore(bundleID: appBundle()?.bundleIdentifier ?? fallbackSuite)
@@ -108,7 +121,9 @@ enum ShotCLI {
     /// line there breaks the protocol; `FileHandle` writes straight through, so each reply is flushed as it's written.
     static func serve(folder: URL, version: String, app: Bundle?) async {
         let bundleID = app?.bundleIdentifier ?? fallbackSuite
-        let server = AgentTools.live(folder: folder, marks: RecordingMarks.url(bundleID: bundleID), projects: ProjectStore(bundleID: bundleID)) { request throws(ShotCommandError) in
+        let server = AgentTools.live(
+            folder: folder, marks: RecordingMarks.url(bundleID: bundleID), projects: ProjectStore(bundleID: bundleID), texts: TextIndexStore(bundleID: bundleID)
+        ) { request throws(ShotCommandError) in
             try await ask(request, app: app)
         }.server(version: version)
         printError("Shot MCP server \(version), reading \(folder.path)")
@@ -150,7 +165,7 @@ enum ShotCLI {
     static func readCaptures(_ command: ShotCommand, tools: AgentTools) throws(ShotCommandError) -> JSONValue {
         switch command {
         case let .latest(kind): try tools.latestJSON(kind: kind)
-        case let .list(limit, since): try tools.listJSON(limit: limit, since: since)
+        case let .list(limit, since, query): try tools.listJSON(limit: limit, since: since, query: query, note: printError)
         case let .get(query): try tools.getJSON(query)
         default: throw .internal("\(command.name) doesn't read captures")
         }

@@ -26866,57 +26866,8 @@
         }
       }
     },
-    "Search by file name (⌘F)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nach Dateiname suchen (⌘F)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Buscar por nombre de archivo (⌘F)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rechercher par nom de fichier (⌘F)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cerca per nome file (⌘F)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ファイル名で検索（⌘F）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "파일 이름으로 검색 (⌘F)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Buscar por nome de arquivo (⌘F)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "按文件名搜索（⌘F）"
-          }
-        }
-      }
+    "Search by file name or by text in screenshots (⌘F)" : {
+
     },
     "Select" : {
       "localizations" : {

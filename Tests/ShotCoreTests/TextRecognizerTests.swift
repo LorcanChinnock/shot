@@ -1,6 +1,7 @@
 import CoreGraphics
 import CoreText
 import Foundation
+import Synchronization
 import Testing
 @testable import ShotCore
 
@@ -69,4 +70,31 @@ func textImage(width: Int, height: Int, _ lines: [(text: String, x: CGFloat, top
     let file = folder.appendingPathComponent("notes.txt")
     try Data("not an image".utf8).write(to: file)
     #expect(try await TextRecognizer.recognize(fileAt: file) == nil)
+}
+
+@Test func theIndexReadsEachScreenshotOnceAndFollowsARename() async throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let store = TextIndexStore(url: folder.appendingPathComponent("index/text-index.json"))
+    let captures = folder.appendingPathComponent("captures", isDirectory: true)
+    try FileManager.default.createDirectory(at: captures, withIntermediateDirectories: true)
+    let shot = captures.appendingPathComponent("Shot 1.png")
+    try #require(ImageCodec.data(from: textImage(width: 800, height: 200, [("Quarterly invoice", 40, 60)]), scale: 1)).write(to: shot)
+    try Data("not an image".utf8).write(to: captures.appendingPathComponent("Broken.png"))
+    try Data().write(to: captures.appendingPathComponent("Clip.mov"))
+
+    let saves = Mutex(0)
+    #expect(try await store.update(folder: captures) { saves.withLock { $0 += 1 } } == 2)
+    #expect(saves.withLock { $0 } >= 1)
+    let item = try #require(Gallery.items(in: captures).first { $0.name == "Shot 1.png" })
+    #expect(store.load().text(of: item.textFile) == "Quarterly invoice")
+    #expect(store.load().entries.count == 2)
+    #expect(try await store.update(folder: captures) == 0)
+
+    let renamed = captures.appendingPathComponent("Report.png")
+    try FileManager.default.moveItem(at: shot, to: renamed)
+    #expect(try await store.update(folder: captures) == 0)
+    let moved = try #require(Gallery.items(in: captures).first { $0.name == "Report.png" })
+    #expect(store.load().text(of: moved.textFile) == "Quarterly invoice")
+    #expect(store.load().entries[shot.path] == nil)
 }

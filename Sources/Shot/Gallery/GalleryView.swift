@@ -69,7 +69,7 @@ struct GalleryRootView: View {
         .padding(.horizontal, 10)
         .frame(width: 170, height: 30)
         .brutalSurface(Color.white.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
-        .brutalTip("Search by file name (⌘F)")
+        .brutalTip("Search by file name or by text in screenshots (⌘F)")
     }
 
     private var sortMenu: some View {
