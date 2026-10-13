@@ -49,7 +49,11 @@ struct EditorRootView: View {
                         onLock: { model.setLocked($1, $0) },
                         onDuplicate: model.duplicateLayers,
                         onDelete: model.deleteLayers,
-                        onSelectFrame: { model.tool = .crop },
+                        onSelectFrame: {
+                            model.tool = .crop
+                            // Return and Esc go to the canvas, not the panel that was clicked.
+                            canvas.window?.makeFirstResponder(canvas)
+                        },
                         onHideFrame: model.setFrameCropHidden,
                         onDeleteFrame: model.deleteFrame
                     )

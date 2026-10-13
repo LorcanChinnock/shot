@@ -55,8 +55,9 @@ struct LayersPanel: View {
                 .padding(.vertical, 10)
             Divider().overlay(Brutal.ink.opacity(0.25))
             if let frame {
-                FrameRowView(row: frame, isFocused: isFocused, onSelect: { isFocused = true; onSelectFrame() }, onHide: { onHideFrame(!frame.isHidden) }, onDelete: onDeleteFrame)
-                    .padding(.horizontal, 6)
+                FrameRowView(row: frame, isFocused: isFocused, onSelect: onSelectFrame, onHide: { onHideFrame(!frame.isHidden) }, onDelete: onDeleteFrame)
+                    .padding(.leading, 6)
+                    .padding(.trailing, 6 + BrutalScrollBar.width)
                     .padding(.top, 4)
                 Divider().overlay(Brutal.ink.opacity(0.25)).padding(.top, 4)
             }
@@ -273,17 +274,20 @@ private struct FrameRowView: View {
 
     var body: some View {
         HStack(spacing: 6) {
+            // Empty slots where a layer has its drag handle and lock button, so the columns line up.
+            Color.clear.frame(width: 16, height: 1)
             Image(systemName: "crop")
                 .font(.system(size: 12, weight: .bold))
                 .frame(width: 18)
-                .padding(.leading, 18)
             Text("Frame")
                 .font(.system(size: 12, weight: .semibold))
                 .lineLimit(1)
             Spacer(minLength: 4)
+            Color.clear.frame(width: 20, height: 1)
             RowButton(symbol: row.isHidden ? "eye.slash" : "eye", isOn: row.isHidden, label: row.isHidden ? "Show" : "Hide", action: onHide)
             RowButton(symbol: "trash", isOn: false, label: "Delete", action: onDelete)
         }
+        .padding(.leading, 2)
         .padding(.trailing, 4)
         .frame(height: LayersPanel.rowHeight - 2)
         .foregroundStyle(Brutal.ink)
