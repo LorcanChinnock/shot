@@ -1,0 +1,26 @@
+---
+import Prose from '../../layouts/Prose.astro';
+import { pages } from '../../lib/guide';
+
+export function getStaticPaths() {
+  return pages.map((page, i) => ({
+    params: { page: page.slug },
+    props: { page, previous: pages[i - 1], next: pages[i + 1] },
+  }));
+}
+const { page, previous, next } = Astro.props;
+---
+
+<Prose title={page.title} description={`Shot user guide: ${page.title}.`} headings={page.headings}>
+  <p class="crumb"><a href="/docs/">User guide</a></p>
+  <Fragment set:html={page.html} />
+  <nav class="pager" aria-label="More of the guide">
+    {previous ? <a class="prev" href={`/docs/${previous.slug}/`}>← {previous.title}</a> : <span />}
+    {next ? <a class="next" href={`/docs/${next.slug}/`}>{next.title} →</a> : <span />}
+  </nav>
+</Prose>
+
+<style is:global>
+  .prose .crumb { margin: 0 0 4px; font-weight: 700; }
+  .prose .pager { display: flex; justify-content: space-between; gap: 16px; margin-top: 32px; font-weight: 800; }
+</style>

@@ -1,13 +1,22 @@
 ---
 import Prose from '../../layouts/Prose.astro';
-import { Content, getHeadings } from '../../../../docs/usage.md';
+import { anchors, pages } from '../../lib/guide';
 ---
 
-<Prose title="User guide" description="Every Shot feature, shortcut and setting, plus the shot:// URL scheme." headings={getHeadings()}>
-  <Content />
+<Prose title="User guide" description="Every Shot feature, shortcut and setting, plus the shot:// URL scheme.">
+  <h1>Using Shot</h1>
+  <p>The full guide to Shot, one page for each part. For a quick introduction, see the <a href="/">overview</a>.</p>
+  <ul>
+    {pages.map((page) => <li><a href={`/docs/${page.slug}/`}>{page.title}</a></li>)}
+  </ul>
 </Prose>
 
-<style is:global>
-  /* usage.md opens with its own table of contents; the sidebar replaces it. */
-  .with-toc .prose h1 + p + ul { display: none; }
-</style>
+<script id="anchors" type="application/json" set:html={JSON.stringify(anchors)} />
+
+<script>
+  // The guide used to be one page, and links such as /docs/#first-launch are in the wild (the `shot` command prints one).
+  // Browsers don't send the part after "#" to the server, so the redirect has to happen here.
+  const id = decodeURIComponent(location.hash.slice(1));
+  const anchors: Record<string, string> = JSON.parse(document.getElementById('anchors')?.textContent ?? '{}');
+  if (id && Object.hasOwn(anchors, id)) location.replace(anchors[id]);
+</script>
