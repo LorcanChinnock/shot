@@ -66,6 +66,9 @@ private struct ShotMenu: View {
         UpdateButton(updater: Updater.shared)
         Button("Settings…") { MainWindowController.showSettings() }
         .keyboardShortcut(",")
+        Button("User Guide") {
+            if let url = URL(string: "https://shot.lorcanchinnock.com/docs/") { NSWorkspace.shared.open(url) }
+        }
         Divider()
         Button("Quit Shot") { NSApp.terminate(nil) }
             .keyboardShortcut("q")

@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
+import { pages as guide } from '../lib/guide';
 
-const pages = ['/', '/docs/', '/changelog/', '/privacy/'];
+const pages = ['/', '/docs/', ...guide.map((page) => `/docs/${page.slug}/`), '/changelog/', '/privacy/'];
 
 export const GET: APIRoute = ({ site }) => {
   const urls = pages.map((path) => `  <url><loc>${new URL(path, site)}</loc></url>`).join('\n');

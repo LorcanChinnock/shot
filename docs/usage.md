@@ -31,7 +31,7 @@ If you used Shot before the welcome window existed, you won't see it. To open it
 
 ## Screenshots
 
-Shot lives in the menu bar. Its menu lists every capture and recording action with its shortcut, plus **Open Gallery** and **Open Save Folder**. While you record, it also has **Pause Recording** (**Resume Recording** while paused) and **Stop Recording**.
+Shot lives in the menu bar. Its menu lists every capture and recording action with its shortcut, plus **Open Gallery**, **Open Save Folder** and **User Guide**, which opens this guide online. While you record, it also has **Pause Recording** (**Resume Recording** while paused) and **Stop Recording**.
 
 - **Area (⌘⇧4):** the screen freezes, and you drag out an area. A magnifier next to the pointer helps you find exact edges. Hold Shift for a square, or press Tab to step through 1:1, 4:3, 3:2, 16:9 and back to free (Shift-Tab steps back); the direction you start dragging picks landscape or portrait, and X rotates it mid-drag. Hold Space while dragging to move the area. A label by the pointer shows the size in pixels, and the ratio when one is set. Press Esc to cancel.
 - **Previous area:** **Capture Previous Area** in the menu bar menu, or [`shot://capture-previous`](#url-scheme), takes the area your last area screenshot took, without the overlay, so a before and after shot lines up exactly. It has no shortcut until you give it one in **Settings › Shortcuts**. Shot forgets the area when it quits, and says so if none was taken yet or that part of the screen is gone.

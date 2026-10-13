@@ -51,7 +51,7 @@ Trim a recording, cut sections out, draw over it, add music or other clips, and 
 
 ### Works with AI agents
 
-Circle the bug, copy, and paste it into Claude Code, Codex or Cursor: your arrows and notes show the agent exactly where to look. Through Shot's MCP server and `shot` command, an agent can also read your captures, the text in them and what you marked, wait for your next one, screenshot or record a window such as the Simulator, and compare two screenshots to see what changed; see [Using Shot with AI agents](docs/usage.md#using-shot-with-ai-agents).
+Circle the bug, copy, and paste it into Claude Code, Codex or Cursor: your arrows and notes show the agent exactly where to look. Through Shot's MCP server and `shot` command, an agent can also read your captures, the text in them and what you marked, wait for your next one, screenshot or record a window such as the Simulator, and compare two screenshots to see what changed; see [Using Shot with AI agents](https://shot.lorcanchinnock.com/docs/using-shot-with-ai-agents/).
 
 <img src="docs/media/agents-settings.png" width="720" alt="Settings › Agents with Hand captures to agents and Let agents capture and record turned on, the shot command installed, and the MCP setup commands for Claude Code, Cursor and Codex, each with a Copy button">
 
@@ -78,9 +78,9 @@ brew install lorcanchinnock/tap/shot
 
 3. In Shot's welcome window, click **Grant**, then **Open System Settings** in the macOS prompt, and turn on Shot. Back in Shot's window, click **Relaunch**: macOS applies the permission only after a relaunch.
 4. Choose whether Shot takes over ⌘⇧3 to ⌘⇧5 (macOS gets them back when Shot quits) and opens at login, then click **Continue**.
-5. Shot now lives in the menu bar. Press ⌘⇧4 and drag out an area to take your first screenshot; the window shows a few tips once it's done. See [First launch](docs/usage.md#first-launch) for more.
+5. Shot now lives in the menu bar. Press ⌘⇧4 and drag out an area to take your first screenshot; the window shows a few tips once it's done. See [First launch](https://shot.lorcanchinnock.com/docs/first-launch/) for more.
 
-Shot updates itself once you allow it to; see [Updates](docs/usage.md#updates). To uninstall, see [Removing Shot](docs/usage.md#removing-shot), or quit Shot and run `brew uninstall --zap shot` if you used Homebrew.
+Shot updates itself once you allow it to; see [Updates](https://shot.lorcanchinnock.com/docs/updates/). To uninstall, see [Removing Shot](https://shot.lorcanchinnock.com/docs/removing-shot/), or quit Shot and run `brew uninstall --zap shot` if you used Homebrew.
 
 ## Shortcuts
 
@@ -90,12 +90,12 @@ Shot updates itself once you allow it to; see [Updates](docs/usage.md#updates). 
 | ⌘⇧4 | Capture an area. Press Space to pick a window instead. |
 | ⌘⇧5 | Record an area. Press Space to pick a window, or Return for the full screen. |
 
-Shot takes these keys over from macOS. To keep the macOS screenshot tool, and for every other shortcut, see [Keyboard shortcuts](docs/usage.md#keyboard-shortcuts).
+Shot takes these keys over from macOS. To keep the macOS screenshot tool, and for every other shortcut, see [Keyboard shortcuts](https://shot.lorcanchinnock.com/docs/keyboard-shortcuts/).
 
 ## More
 
-- **[User guide](docs/usage.md):** every feature, shortcut and setting, plus the `shot://` URL scheme.
-- **[Privacy](docs/usage.md#privacy):** no analytics; the network is used only to check for updates, after you agree.
+- **[User guide](https://shot.lorcanchinnock.com/docs/):** every feature, shortcut and setting, plus the `shot://` URL scheme.
+- **[Privacy](https://shot.lorcanchinnock.com/docs/privacy/):** no analytics; the network is used only to check for updates, after you agree.
 - **[Contributing](CONTRIBUTING.md):** build from source, run the tests, and send a change.
 - **[Sponsor](https://github.com/sponsors/LorcanChinnock):** Shot is free; sponsoring helps pay to notarize it.
 - **[License](LICENSE):** free software under the GNU General Public License v3.0.

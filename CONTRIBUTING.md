@@ -88,7 +88,7 @@ Shot logs to the unified log under its bundle identifier. File paths are redacte
 log stream --predicate 'subsystem == "dev.lorcan.Shot.dev"'   # ShotDev; a release logs under dev.lorcan.Shot
 ```
 
-The `shot://` [URL scheme](docs/usage.md#url-scheme) drives every action without a keyboard, which helps when you reproduce a bug.
+The `shot://` [URL scheme](https://shot.lorcanchinnock.com/docs/url-scheme/) drives every action without a keyboard, which helps when you reproduce a bug.
 
 ## Sending a change
 
