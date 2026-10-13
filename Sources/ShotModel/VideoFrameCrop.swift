@@ -33,9 +33,11 @@ public enum VideoFrameCrop {
         guard !kept.isNull, kept.width >= minimumSize, kept.height >= minimumSize else {
             return nil
         }
-        let whole = outputRect(crop: nil, canvas: canvas)
         let output = outputRect(crop: kept, canvas: canvas)
-        return output == whole ? nil : output
+        // A crop rounds its sides down while the whole canvas rounds to the nearest even size, so on an odd-sized canvas
+        // a crop of everything matches only the crop path's own rounding of the whole canvas.
+        let everything = outputRect(crop: CGRect(origin: .zero, size: canvas), canvas: canvas)
+        return output == everything || output == outputRect(crop: nil, canvas: canvas) ? nil : output
     }
 
     private static func evenFloor(_ value: CGFloat) -> CGFloat {

@@ -549,7 +549,7 @@ final class VideoEditorModel {
     /// Undo and redo wait for an export, since Save reloads the file and would drop the change.
     func undo() {
         coalescingKey = nil
-        endCropSilently()
+        endCropForUndo()
         if !isExporting, let previous = undoStack.undo(from: edit) {
             restore(previous)
         }
@@ -557,7 +557,7 @@ final class VideoEditorModel {
 
     func redo() {
         coalescingKey = nil
-        endCropSilently()
+        endCropForUndo()
         if !isExporting, let next = undoStack.redo(from: edit) {
             restore(next)
         }
@@ -1297,8 +1297,9 @@ extension VideoEditorModel {
         guard !isExporting, !isAnnotating, cropTarget == nil else {
             return false
         }
-        if let id = selectedClipID, project.annotationClip(id) == nil {
-            return beginClipCrop(id)
+        // A sound clip has no picture to crop, so C crops the frame then too.
+        if let id = selectedClipID, project.annotationClip(id) == nil, beginClipCrop(id) {
+            return true
         }
         beginFrameCrop()
         return true
@@ -1373,6 +1374,16 @@ extension VideoEditorModel {
     private func endCropSilently() {
         cropTarget = nil
         cropDraft = nil
+    }
+
+    /// Undo and redo leave crop mode. The player was showing the project without the crop being adjusted, and only a
+    /// restored project rebuilds it, so with nothing to undo it needs a rebuild of its own.
+    private func endCropForUndo() {
+        guard cropTarget != nil else {
+            return
+        }
+        endCropSilently()
+        refreshPlayer()
     }
 
     /// Reset in crop mode: the crop shows everything again, until it's applied.

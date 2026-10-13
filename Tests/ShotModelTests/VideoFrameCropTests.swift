@@ -33,6 +33,12 @@ import Testing
     #expect(VideoFrameCrop.normalized(CGRect(x: 0, y: 25, width: 1280, height: 695), canvas: canvas) == CGRect(x: 0, y: 25, width: 1280, height: 694))
 }
 
+@Test func aFrameCropShowingAllOfAnOddSizedCanvasIsNone() {
+    let canvas = CGSize(width: 1001, height: 701)
+    #expect(VideoFrameCrop.normalized(CGRect(origin: .zero, size: canvas), canvas: canvas) == nil)
+    #expect(VideoFrameCrop.normalized(CGRect(x: 0, y: 0, width: 1001, height: 600), canvas: canvas) == CGRect(x: 0, y: 0, width: 1000, height: 600))
+}
+
 @Test func aClipCropLeavesThePartOfThePictureNotTrimmed() {
     let crop = ImageCrop(left: 0.25, top: 0.1, right: 0.25, bottom: 0.4)
     #expect(crop.keptRect(in: CGSize(width: 400, height: 200)) == CGRect(x: 100, y: 20, width: 200, height: 100))
