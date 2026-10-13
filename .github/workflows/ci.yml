@@ -1,9 +1,11 @@
 name: CI
 
 # Pull requests get lint and ShotModel's tests on Linux, and nothing else. macOS runs only at the release gate:
-# `make release-gate` dispatches this with gate=true on release-please's PR branch, whose pushes come from
-# GITHUB_TOKEN and so never trigger runs. Without the gate's `test` check the release PR can't merge, and any later
-# push to it drops the check again, so only a commit that passed the gate can be released.
+# `make release-gate` dispatches this with gate=true on release-please's PR branch. A pull request counts only checks
+# from pull_request runs, so the gate's own check never reaches it: when the gate passes, it sets a `test` commit
+# status on the commit it tested, which does. On release-please's branch the pull_request job takes another name, so
+# its Linux run can't stand in for the gate. A later push to the release PR has no status, so only a commit that
+# passed the gate can be released.
 # There's no run on push to main: PRs are squash-merged, and their merge commit was already tested.
 on:
   pull_request:
@@ -24,6 +26,12 @@ concurrency:
 jobs:
   # The required check, so main's ruleset needs it by name. One job, because each job's Linux minutes round up.
   test:
+    # Not `test` on the release PR, where only the gate's status may satisfy the required check.
+    name: ${{ startsWith(github.head_ref, 'release-please--') && 'test (Linux; the release needs make release-gate)' || 'test' }}
+    # The gate sets a commit status; everything else only reads.
+    permissions:
+      contents: read
+      statuses: write
     # macOS: the gate builds the app and runs ShotCore's tests, which need AppKit, AVFoundation, CoreImage and ImageIO.
     runs-on: ${{ inputs.gate && 'macos-26' || 'ubuntu-latest' }}
     # The Swift release of the macos-26 runner's default Xcode. `make test-linux` uses the same image. An empty
@@ -55,3 +63,12 @@ jobs:
       - name: Perf
         if: inputs.gate
         run: make perf ARGS=--skip-build
+      # Last, so it's set only when every step above passed. See the note at the top.
+      - name: Mark the commit as gated
+        if: inputs.gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}"
+          -f state=success -f context=test -f description="Release gate passed on macOS"
+          -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
