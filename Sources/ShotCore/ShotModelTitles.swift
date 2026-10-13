@@ -15,6 +15,7 @@ extension ShotAction {
         case .pickColor: String(localized: "Pick Colour")
         case .copyPath: String(localized: "Copy Latest Capture's Path")
         case .capturePrevious: String(localized: "Capture Previous Area")
+        case .copyText: String(localized: "Copy Text")
         }
     }
 }

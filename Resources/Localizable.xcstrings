@@ -7555,6 +7555,7 @@
         }
       }
     },
+    "Copied text" : {},
     "Copied the path of %@" : {
       "localizations" : {
         "de" : {
@@ -7919,6 +7920,7 @@
         }
       }
     },
+    "Copy Text" : {},
     "Copy image (⌘C)" : {
       "localizations" : {
         "de" : {
@@ -9382,6 +9384,7 @@
         }
       }
     },
+    "Couldn't read the text: %@" : {},
     "Couldn't relaunch Shot. Quit and open it again." : {
       "localizations" : {
         "de" : {
@@ -19950,6 +19953,7 @@
         }
       }
     },
+    "No text found" : {},
     "None" : {
       "localizations" : {
         "de" : {
