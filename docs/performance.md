@@ -28,6 +28,7 @@ The app emits `OSSignposter` signposts under its bundle identifier, in category 
 
 - **Ready** marks when hotkeys are registered at launch. Its message gives the time since the process started.
 - **Capture to clipboard** runs from a full-screen capture action to the clipboard write. Area and window captures have no interval, since they wait for your selection. It ends with `copied`, or `not copied` when nothing was copied.
+- **Gallery selection** runs from a click on a gallery tile, or an arrow key, to the Core Animation commit that shows the new selection. Its end message gives the number of items in view, as `items=1500`. The script doesn't drive the gallery yet, so record it in Instruments with a library of about 1,500 items.
 
 The script:
 
@@ -45,8 +46,9 @@ It needs Screen Recording for Shot, **Copy to clipboard** turned on in **Setting
 | Capture → clipboard (full screen, 3840×2486 px: the 15″ panel at a scaled resolution) | 189 ms | 285 ms |
 | Memory after 20 captures | 20 MB | 30 MB |
 | Idle CPU, no windows open | 0.0% | at most 1% |
+| Gallery selection (1,500 items; Instruments, not the script) | not measured | 16 ms, one frame at 60 Hz |
 
-Idle CPU has an absolute budget. The others are about 1.5× the baseline, set in `scripts/perf.sh`; change both together.
+Idle CPU and gallery selection have absolute budgets. The others are about 1.5× the baseline, set in `scripts/perf.sh`; change both together.
 
 Memory after 20 captures was 577 MB before #276: macOS kept each capture's freed screen-sized buffers resident for minutes. Shot now turns off malloc's large-block cache and copies PNG only (#278).
 
