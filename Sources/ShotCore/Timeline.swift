@@ -229,6 +229,19 @@ public struct Project: Equatable, Codable, Sendable {
         return result
     }
 
+    /// Without the clips of `sources`, such as files that are gone, and the clips linked to them, closing the gaps
+    /// they leave on the main track. Nil when that would leave the main track with too little.
+    public func removingClips(from sources: Set<URL>) -> Project? {
+        var result = self
+        while let clip = result.tracks.lazy.flatMap(\.clips).first(where: { sources.contains($0.source) }) {
+            guard let removed = result.deleting(clip: clip.id) else {
+                return nil
+            }
+            result = removed
+        }
+        return result
+    }
+
     /// The main-track clip playing at `time`, or the last one at the very end.
     public func mainClip(at time: Double) -> Clip? {
         main.clips.first { time >= $0.start && time < $0.end } ?? main.clips.last { abs(time - $0.end) <= Self.shortestClip }

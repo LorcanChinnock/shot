@@ -225,7 +225,7 @@ Open a recording from its Quick Access card (the scissors button, **Edit Video**
 - **Layers:** the annotation and picture lanes above the main track are the layers, topmost first. A blur, pixelate or spotlight affects the lanes under it, video included, not those over it.
   - Drag an annotation or an imported clip up or down to put it on another lane. Drop it between lanes, or on a lane that's locked, taken at that time or holds the other kind, and it gets a new lane of its own.
   - ⌘] and ⌘[ move the selected annotation or clip a lane up or down, and ⌥⌘] and ⌥⌘[ to the top or bottom.
-  - Double-click an annotation's label, or right-click it and choose **Rename**, to name it as in the [annotation editor's Layers](#layers). Return or clicking elsewhere keeps the name, Esc cancels, and an empty name goes back to the automatic one. The name lasts while the video is open, since the video editor doesn't save projects yet, and it's never drawn in the video.
+  - Double-click an annotation's label, or right-click it and choose **Rename**, to name it as in the [annotation editor's Layers](#layers). Return or clicking elsewhere keeps the name, Esc cancels, and an empty name goes back to the automatic one. The name is kept with the [project](#video-editor) when you save, and it's never drawn in the video.
   - Right-click a lane to lock it (Split and new annotations then leave it alone), hide it, mute a sound lane, or delete an annotation lane. The same buttons show at the lane's left edge when you point at it.
 - **Style:** select a clip or an annotation and click **Style** in the **Inspector** for the same shadows, borders and corners as the [annotation editor's Style](#style).
   - A clip can have rounded corners, a shadow, and a Hairline or Solid border. The recording itself can too, which makes the video drawn rather than only trimmed.
@@ -246,7 +246,14 @@ Then:
   - for an MP4, **Mute** to leave the sound out. An MP4 that's re-encoded is H.264, or HEVC when H.264 would drop frames: a 120 fps recording, or one above 30 fps that is larger than 2560 × 1600, such as a full Retina screen.
   - 1×, 1.5× or 2× speed. Speed is unavailable for an MP4 whenever Save reads **Save Copy**.
 
-The estimated size of the exported file is shown before you export. **Cancel**, or Esc, stops an export under way. Closing the window with unsaved edits asks whether to save them, or to save a copy.
+The estimated size of the exported file is shown before you export. **Cancel**, or Esc, stops an export under way. Closing the window asks whether to save, or to save a copy, when you've changed anything since you last saved, saved a copy or exported.
+
+Save Copy and Export keep the edit as a project: every lane, clip, annotation, keyframe and style. Open the copy or the export later, from the gallery, Quick Access or a `shot://edit-video` link, and it opens as the recording with the edit still live, so you can change it and save again. A GIF works the same way: **Edit** on it in the gallery, or a `shot://annotate` link, opens its project in the video editor. Shot keeps projects in its own Application Support folder, not in the files, so a video you share never carries them.
+
+- The project follows the recording when you move or rename it. If the recording is gone, or Save has since trimmed it, the copy opens as itself.
+- An imported file that has moved is found again if it was beside the recording, or in a folder inside the recording's folder, and moved with it. One that can't be found is left out, with a message naming it, and the rest of the edit opens.
+- **Save** on an edit that's only trims and cuts replaces the recording itself, so nothing is kept over it.
+- To edit a copy or export as itself instead, choose **Edit › Flatten**, or open the recording. A flattened GIF opens in the annotation editor.
 
 ## Gallery
 
@@ -256,7 +263,7 @@ The estimated size of the exported file is shown before you export. **Cancel**, 
 
 - **Filter** by All, Screenshots, Videos or GIFs, **search** by file name (⌘F), and **sort** by **Newest first**, **Oldest first**, **Name** or **Largest first**. Sorted by date, the gallery groups captures into Today, Yesterday, This Week, This Month and then each older month. The slider (or ⌘+ and ⌘−) sets the thumbnail size.
 - **Select** with a click, ⌘-click, ⇧-click, ⌘A or the arrow keys, or tick the checkbox on a thumbnail to add it to the selection. **Select All** and **Deselect All** sit next to the count at the bottom.
-- **Edit** (or Return) opens the selection, when none of it is a GIF, in the [annotation editor](#annotation-editor) or [video editor](#video-editor), and asks first if that's more than 8 items. Double-click a screenshot or recording, or use the pencil or scissors button on a hovered one, to open just that one.
+- **Edit** (or Return) opens the selection in the [annotation editor](#annotation-editor) or [video editor](#video-editor), and asks first if that's more than 8 items. A GIF opens only if the video editor exported it, and then opens its [project](#video-editor). Double-click a screenshot, recording or GIF, or use the pencil or scissors button on a hovered screenshot or recording, to open just that one.
 - **Quick Look** with Space.
 - The buttons at the bottom **Edit**, **Copy**, **Show in Finder** or **Move to Trash** the selection. Right-click for the same, plus **Quick Look**. Right-click a single item and **Edit** reads **Annotate** or **Edit Video**, with **Rename…** too, **Export GIF** for a video, and **Copy Text** and [**Pin**](#quick-access) for a screenshot. Trashed files go to the Trash; ⌘Z puts them back, and so can Finder.
 - Drag a thumbnail into another app.

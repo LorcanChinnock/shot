@@ -199,9 +199,10 @@ public enum Gallery {
         !visible.isEmpty && visible.allSatisfy { selection.contains($0.url) }
     }
 
-    /// Edit applies only when it can open every item: none are GIFs.
-    public static func canEdit(_ items: [GalleryItem]) -> Bool {
-        !items.isEmpty && items.allSatisfy(\.kind.isEditable)
+    /// Edit applies only when it can open every item: none are GIFs, except ones `hasProject` says the video editor
+    /// can reopen. The gallery asks that only once you act, since it reads the project store.
+    public static func canEdit(_ items: [GalleryItem], hasProject: (URL) -> Bool = { _ in false }) -> Bool {
+        !items.isEmpty && items.allSatisfy { $0.kind.isEditable || $0.kind == .gif && hasProject($0.url) }
     }
 
     /// The next item to select after an arrow key, clamped to the ends.

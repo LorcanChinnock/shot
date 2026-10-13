@@ -175,6 +175,10 @@ final class CaptureCoordinator {
 
     func edit(_ route: EditorRoute) {
         switch route {
+        // A GIF the video editor exported reopens there, with its project.
+        case let .image(url) where url.pathExtension.lowercased() == "gif" && VersionWriter.project(of: url, in: .app) != nil:
+            log.notice("Video edit requested for a GIF with a project: \(url.path)")
+            VideoEditorWindowController.open(url)
         case let .image(url):
             log.notice("Annotate requested: \(url.path)")
             EditorWindowController.open(url, newCaptureStyle: newCaptureStyle(opening: url))

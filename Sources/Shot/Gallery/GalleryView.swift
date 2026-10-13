@@ -212,7 +212,8 @@ private struct GalleryFooter: View {
             Group {
                 Button("Edit") { model.edit(selected) }
                     .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
-                    .disabled(!Gallery.canEdit(selected))
+                    // Whether a GIF has a project is read from the store only on a click, so one never greys it out.
+                    .disabled(!Gallery.canEdit(selected) { _ in true })
                     .brutalTip("Open in the editor (Return)")
                 Button("Copy") { model.copy(selected) }
                     .buttonStyle(BrutalButtonStyle(compact: true))
@@ -400,8 +401,8 @@ private struct GalleryTileMenu: View {
 
     var body: some View {
         let targets = model.targets(for: item)
-        if Gallery.canEdit(targets) {
-            Button(targets.count == 1 ? (item.kind == .video ? "Edit Video" : "Annotate") : "Edit") { model.edit(targets) }
+        if Gallery.canEdit(targets, hasProject: GalleryModel.hasProject) {
+            Button(targets.count == 1 ? (item.kind == .image ? "Annotate" : "Edit Video") : "Edit") { model.edit(targets) }
         }
         if targets.count == 1, item.kind == .video {
             Button("Export GIF") { model.exportGIF(item) }

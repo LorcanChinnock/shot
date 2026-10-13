@@ -35,9 +35,13 @@ private final class VideoEditorWindow: NSWindow {
 final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValidation {
     private static var open: [VideoEditorWindowController] = []
     static var isAnyOpen: Bool { !open.isEmpty }
-    static var hasUnsavedChanges: Bool { open.contains { $0.model.isDirty } }
+    static var hasUnsavedChanges: Bool { open.contains { $0.model.hasUnsavedChanges } }
 
     private let model: VideoEditorModel
+    /// The file this window was opened on: a video or GIF opened with its project, or the video itself.
+    private let opened: URL
+    /// Run once the window has closed, so Flatten opens the file after any Save or Discard sheet.
+    private var afterClose: (() -> Void)?
     private let window: NSWindow
     /// How much of the window's height is the tracks panel.
     private var appliedExtraHeight: CGFloat = 0
@@ -47,7 +51,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
 
     /// Asks about each window with unsaved changes in turn, bringing it forward. False if the user cancelled.
     static func confirmQuit() async -> Bool {
-        for controller in open where controller.model.isDirty {
+        for controller in open where controller.model.hasUnsavedChanges {
             guard await controller.askBeforeQuit() else {
                 return false
             }
@@ -71,13 +75,18 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
         reply?(proceed)
     }
 
-    static func open(_ url: URL) {
-        if let existing = open.first(where: { $0.model.fileURL == url }) {
+    /// A video or GIF saved from the editor with its project opens as its recording with that project live, so the
+    /// edit can be changed. `flat` opens the file itself, as Flatten does. An import that's gone is left out, with a
+    /// toast saying so.
+    static func open(_ url: URL, flat: Bool = false) {
+        if let existing = existing(url) {
             GlassWindow.present(existing.window)
             return
         }
+        let saved = flat ? nil : VersionWriter.project(of: url, in: .app)
+        let file = saved?.original ?? url
         Task {
-            let model = VideoEditorModel(fileURL: url)
+            let model = VideoEditorModel(fileURL: file, restoring: saved?.project, version: url)
             do {
                 try await model.load()
             } catch {
@@ -86,20 +95,28 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
                 return
             }
             // A second request for the same file may have finished loading first.
-            if let existing = open.first(where: { $0.model.fileURL == url }) {
+            if let existing = existing(url) {
                 model.teardown()
                 GlassWindow.present(existing.window)
                 return
             }
-            let controller = VideoEditorWindowController(model: model)
+            let controller = VideoEditorWindowController(model: model, opened: url)
             open.append(controller)
             GlassWindow.present(controller.window)
-            log.notice("Video editor opened: \(url.path)")
+            if let missing = saved?.missing, !missing.isEmpty {
+                Toast.error("Opened without \(missing.map(\.lastPathComponent).formatted(.list(type: .and))), which can't be found")
+            }
+            log.notice("Video editor opened: \(url.path)\(saved == nil ? "" : " with its project")")
         }
     }
 
-    private init(model: VideoEditorModel) {
+    private static func existing(_ url: URL) -> VideoEditorWindowController? {
+        open.first { $0.opened == url || $0.model.version == url }
+    }
+
+    private init(model: VideoEditorModel, opened: URL) {
         self.model = model
+        self.opened = opened
         let visible = (NSScreen.underPointer ?? NSScreen.screens[0]).visibleFrame
         let width = min(max(880, visible.width * 0.6), visible.width * 0.85)
         let playerHeight = min((width - Brutal.windowInset * 2) / model.aspectRatio, visible.height * 0.55)
@@ -219,8 +236,8 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
         return true
     }
 
-    // The Edit menu's style items, which reach the editor through the key window's delegate. Apply Style to All Images
-    // is the photo editor's alone.
+    // The Edit menu's style items and Flatten, which reach the editor through the key window's delegate. Apply Style
+    // to All Images is the photo editor's alone.
 
     @objc func copyStyle(_ sender: Any?) {
         model.copyStyle()
@@ -230,10 +247,26 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
         model.pasteStyle()
     }
 
+    /// Closes the project and opens the file it was saved as by itself: a video here, a GIF in the image editor.
+    /// Unsaved changes are asked about first, and a Save Copy makes the new copy the one opened.
+    @objc func flatten(_ sender: Any?) {
+        afterClose = { [model] in
+            guard let version = model.version else {
+                return
+            }
+            switch EditorRoute(fileURL: version) {
+            case .video: Self.open(version, flat: true)
+            case .image: EditorWindowController.open(version, flat: true)
+            }
+        }
+        window.performClose(nil)
+    }
+
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         switch menuItem.action {
         case #selector(copyStyle(_:)): model.targetStyleKind != nil
         case #selector(pasteStyle(_:)): model.canPasteStyle
+        case #selector(flatten(_:)): model.version != nil
         default: true
         }
     }
@@ -248,11 +281,11 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             }
             return false
         }
-        guard model.isDirty, !discarding else {
+        guard model.hasUnsavedChanges, !discarding else {
             return true
         }
         guard sender.attachedSheet == nil else {
-            resolveQuit(false)
+            cancelClose()
             return false
         }
         let alert = NSAlert()
@@ -269,23 +302,31 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
                     if await model.save() {
                         sender.close()
                     } else {
-                        resolveQuit(false)
+                        cancelClose()
                     }
                 }
             case .alertSecondButtonReturn:
                 discarding = true
                 sender.close()
             default:
-                resolveQuit(false)
+                cancelClose()
             }
         }
         return false
+    }
+
+    /// The window stays open: a quit waiting on it stops, and a Flatten waiting on it is dropped.
+    private func cancelClose() {
+        afterClose = nil
+        resolveQuit(false)
     }
 
     func windowWillClose(_ notification: Notification) {
         resolveQuit(true)
         model.teardown()
         Self.open.removeAll { $0 === self }
+        afterClose?()
+        afterClose = nil
         EditorWindowController.releaseCachesIfNoEditorIsOpen()
     }
 }

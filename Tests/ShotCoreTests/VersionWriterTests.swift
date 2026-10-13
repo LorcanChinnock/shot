@@ -135,3 +135,132 @@ private let arrow = Annotation(kind: .arrow(from: CGPoint(x: 10, y: 10), to: CGP
     let saved = try VersionWriter.saveImage(EditorDocument(base: plainImage(), annotations: [arrow]), of: original, scale: 1, recordForAgents: false)
     #expect(ImageCodec.projectID(ofFileAt: saved.url) == nil)
 }
+
+// MARK: Video projects
+
+/// A recording with an import beside it, the import on its own track with a keyframe, its border and corners styled,
+/// and an arrow over both: more than a trim, so it's drawn and re-encoded.
+private func editedProject(recording: URL, overlay: URL) throws -> Project {
+    var project = Project(source: recording, duration: 2, canvasSize: CGSize(width: 160, height: 90), hasAudio: false)
+    let imported = try #require(project.importing(ImportedMedia(source: overlay, duration: 1, size: CGSize(width: 80, height: 45), hasAudio: false), at: 0.5))
+    project = imported.project
+    let track = try #require(project.tracks.firstIndex { $0.clips.contains { $0.id == imported.clip } })
+    project.tracks[track].clips[0].animation.opacity = [Keyframe(time: 0, value: 0), Keyframe(time: 0.5, value: 1)]
+    project.tracks[track].clips[0].style = ObjectStyle(shadow: Shadow(elevation: 8, opacity: 0.3))
+    project.tracks[track].clips[0].cornerRadius = 6
+    project.tracks.append(Track(kind: .overlay, annotations: [AnnotationClip(annotation: arrow, start: 0.25, duration: 1)]))
+    return project
+}
+
+/// `project` with its sources' symlinks resolved, since the bookmark that finds the recording gives /private/var for /var.
+private func resolved(_ project: Project) -> Project {
+    var project = project
+    for track in project.tracks.indices {
+        for clip in project.tracks[track].clips.indices {
+            project.tracks[track].clips[clip].source.resolveSymlinksInPath()
+        }
+    }
+    return project
+}
+
+@Test func removingTheClipsOfAMissingFileTakesTheirPartnersAndKeepsTheRecording() throws {
+    let recording = URL(fileURLWithPath: "/tmp/recording.mov"), gone = URL(fileURLWithPath: "/tmp/gone.mov")
+    let base = Project(source: recording, duration: 10, canvasSize: CGSize(width: 1920, height: 1080), hasAudio: true)
+    let media = ImportedMedia(source: gone, duration: 4, size: CGSize(width: 640, height: 360), hasAudio: true)
+    let overlaid = try #require(base.importing(media, at: 3)).project
+    #expect(overlaid.removingClips(from: [gone]) == base)
+    // On the main track, its gap closes.
+    let appended = try #require(base.appending(media)).project
+    #expect(appended.removingClips(from: [gone]) == base)
+    // The recording itself gone leaves nothing to play.
+    #expect(base.removingClips(from: [recording]) == nil)
+}
+
+extension MediaTests {
+    @Test func anExportedVideoAndGIFReopenWithTheirProjectLive() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
+        let recording = folder.appendingPathComponent("Recording.mp4"), overlay = folder.appendingPathComponent("Overlay.mp4")
+        try await writeSyntheticVideo(to: recording, seconds: 2, fps: 10, width: 160, height: 90)
+        try await writeSyntheticVideo(to: overlay, seconds: 1, fps: 10, width: 80, height: 45)
+        let project = try editedProject(recording: recording, overlay: overlay)
+
+        let copy = VersionWriter.videoCopyURL(of: recording, prefix: "Shot")
+        try await VersionWriter.writeVideo(VersionWriter.videoPlan(for: project, of: recording), of: project, original: recording, to: copy, projects: store)
+        #expect(ProjectStamp.id(ofFileAt: copy) != nil)
+        #expect(store.entry(for: copy)?.origin.via == .app)
+        let reopened = try #require(VersionWriter.project(of: copy, in: store))
+        #expect(reopened.original.resolvingSymlinksInPath() == recording.resolvingSymlinksInPath())
+        #expect(resolved(reopened.project) == resolved(project))
+        #expect(reopened.missing.isEmpty)
+
+        // A GIF can't hold a stamp, so its project is found by the file's identity.
+        let gif = folder.appendingPathComponent("Shot.gif")
+        let options = VideoExportOptions(format: .gif)
+        try await VersionWriter.writeVideo(VideoExportPlan(project: project, options: options), of: project, original: recording, to: gif, projects: store)
+        #expect(resolved(try #require(VersionWriter.project(of: gif, in: store)).project) == resolved(project))
+
+        // The recording itself has no project, so it opens as itself.
+        #expect(VersionWriter.project(of: recording, in: store) == nil)
+    }
+
+    @Test func aVideoProjectFollowsItsFolderAndLeavesOutAnImportThatsGone() async throws {
+        let root = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = ProjectStore(folder: root.appendingPathComponent("Projects"))
+        let folder = root.appendingPathComponent("Captures")
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("Clips"), withIntermediateDirectories: true)
+        let recording = folder.appendingPathComponent("Recording.mp4"), overlay = folder.appendingPathComponent("Clips/Overlay.mp4")
+        try await writeSyntheticVideo(to: recording, seconds: 2, fps: 10, width: 160, height: 90)
+        try await writeSyntheticVideo(to: overlay, seconds: 1, fps: 10, width: 80, height: 45)
+        let project = try editedProject(recording: recording, overlay: overlay)
+        let copy = folder.appendingPathComponent("Copy.mp4")
+        try await VersionWriter.writeVideo(VersionWriter.videoPlan(for: project, of: recording), of: project, original: recording, to: copy, projects: store)
+
+        // The whole folder moved: the recording by its bookmark, the import by where it was beside the recording.
+        let moved = root.appendingPathComponent("Moved")
+        try FileManager.default.moveItem(at: folder, to: moved)
+        let followed = try #require(VersionWriter.project(of: moved.appendingPathComponent("Copy.mp4"), in: store))
+        let sources = Set(followed.project.tracks.flatMap(\.clips).map { $0.source.resolvingSymlinksInPath().path })
+        #expect(sources == Set(["Recording.mp4", "Clips/Overlay.mp4"].map { moved.appendingPathComponent($0).resolvingSymlinksInPath().path }))
+        #expect(followed.missing.isEmpty)
+
+        // With the import gone, its clip is left out and the rest, the arrow included, is kept.
+        try FileManager.default.removeItem(at: moved.appendingPathComponent("Clips"))
+        let partial = try #require(VersionWriter.project(of: moved.appendingPathComponent("Copy.mp4"), in: store))
+        #expect(partial.missing.map(\.lastPathComponent) == ["Overlay.mp4"])
+        #expect(partial.project.tracks.flatMap(\.clips).count == 1)
+        #expect(partial.project.tracks.flatMap(\.annotations).count == 1)
+
+        // Another recording where the original was isn't what the edit was made over, so the copy opens as itself.
+        try FileManager.default.removeItem(at: moved.appendingPathComponent("Recording.mp4"))
+        try await writeSyntheticVideo(to: moved.appendingPathComponent("Recording.mp4"), seconds: 3, fps: 10, width: 160, height: 90)
+        #expect(VersionWriter.project(of: moved.appendingPathComponent("Copy.mp4"), in: store) == nil)
+    }
+
+    @Test func aRecordingTrimmedInPlaceKeepsItsIDAndOriginButNotItsLayers() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
+        let recording = folder.appendingPathComponent("Recording.mp4")
+        try await writeSyntheticVideo(to: recording, seconds: 2, fps: 10, width: 160, height: 90)
+        let id = ProjectKey.newID()
+        try ProjectStamp.stamp(movieAt: recording, id: id)
+        let origin = ProjectOrigin(via: .cli, action: "record")
+        try store.save(Project(source: recording, duration: 2, canvasSize: CGSize(width: 160, height: 90), hasAudio: false), for: recording, id: id, origin: origin)
+        let before = try #require(store.entry(for: recording))
+
+        // Save writes the trim as a new file, which has no stamp, and swaps it in.
+        let trimmed = folder.appendingPathComponent("Trimmed.mp4")
+        try await VideoExportPlan.copy(of: try #require(Project(source: recording, duration: 2, canvasSize: CGSize(width: 160, height: 90), hasAudio: false).deleting(range: 0..<0.5)), as: .mp4).run(to: trimmed)
+        _ = try FileManager.default.replaceItemAt(recording, withItemAt: trimmed)
+        #expect(ProjectStamp.id(ofFileAt: recording) == nil)
+
+        VersionWriter.restamp(trimmed: recording, as: before, in: store)
+        #expect(ProjectStamp.id(ofFileAt: recording) == id)
+        let after = try #require(store.project(for: recording, as: Project.self))
+        #expect(after.entry.origin == origin)
+        #expect(after.document == nil)
+    }
+}

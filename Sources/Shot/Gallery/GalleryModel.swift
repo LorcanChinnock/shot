@@ -196,9 +196,14 @@ final class GalleryModel {
 
     // MARK: Actions
 
+    /// Whether the GIF at `url` was exported by the video editor with a project it can reopen.
+    static func hasProject(_ url: URL) -> Bool {
+        VersionWriter.project(of: url, in: .app) != nil
+    }
+
     func edit(_ items: [GalleryItem]) {
-        guard Gallery.canEdit(items) else {
-            Toast.error("GIFs can't be edited")
+        guard Gallery.canEdit(items, hasProject: Self.hasProject) else {
+            Toast.error("Only GIFs exported from the video editor can be edited")
             return
         }
         guard items.count > Self.editConfirmationThreshold, let window = NSApp.keyWindow else {
