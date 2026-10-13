@@ -247,6 +247,9 @@ struct BrutalSlider: View {
     @State private var isDragging = false
     /// Whether an arrow key is down, so its repeats join one edit.
     @State private var isStepping = false
+    /// The value the arrow key held down set last. Its repeats reach the handler its press began with, whose `value` may
+    /// be a copy from before the press, so each repeat steps from this instead.
+    @State private var steppedValue: Double?
     @FocusState private var isFocused: Bool
 
     private var fraction: Double { (min(max(value, range.lowerBound), range.upperBound) - range.lowerBound) / (range.upperBound - range.lowerBound) }
@@ -300,7 +303,10 @@ struct BrutalSlider: View {
                 onEditingChanged(true)
             }
             let up = press.key == .rightArrow || press.key == .upArrow
-            value = SliderStep.value(value, up: up, fraction: press.modifiers.contains(.shift) ? 0.1 : 0.01, in: range)
+            let from = press.phase == .repeat ? steppedValue ?? value : value
+            let stepped = SliderStep.value(from, up: up, fraction: press.modifiers.contains(.shift) ? 0.1 : 0.01, in: range)
+            steppedValue = stepped
+            value = stepped
             return .handled
         }
         .onChange(of: isFocused) {
@@ -321,6 +327,7 @@ struct BrutalSlider: View {
             return
         }
         isStepping = false
+        steppedValue = nil
         onEditingChanged(false)
     }
 }
