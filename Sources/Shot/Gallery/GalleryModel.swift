@@ -10,9 +10,9 @@ private let log = Logger.shot("gallery")
 @Observable
 final class GalleryModel {
     private(set) var items: [GalleryItem] = [] { didSet { refilter() } }
-    var filter = GalleryFilter.all { didSet { refilter() } }
-    var sort = GallerySort.newest { didSet { refilter() } }
-    var query = "" { didSet { refilter() } }
+    var filter = GalleryFilter.all { didSet { measure("Gallery filter"); refilter() } }
+    var sort = GallerySort.newest { didSet { measure("Gallery filter"); refilter() } }
+    var query = "" { didSet { measure("Gallery filter"); refilter() } }
     private(set) var visible: [GalleryItem] = []
     private(set) var sections: [GallerySection] = []
     private(set) var hasLoaded = false
@@ -122,7 +122,7 @@ final class GalleryModel {
     // MARK: Selection
 
     func click(_ item: GalleryItem, command: Bool, shift: Bool) {
-        measureSelection()
+        measure("Gallery selection")
         lead = item.url
         if shift, let anchor, let from = visible.firstIndex(where: { $0.url == anchor }), let to = visible.firstIndex(of: item) {
             selection = Set(visible[min(from, to)...max(from, to)].map(\.url))
@@ -136,17 +136,17 @@ final class GalleryModel {
         }
     }
 
-    /// Times a click or arrow key until Core Animation commits the frame that shows it, as the "Gallery selection"
-    /// interval in `docs/performance.md`. Does nothing unless something is recording signposts.
-    private func measureSelection() {
+    /// Times a click or arrow key ("Gallery selection"), or a change to the search, filter or sort ("Gallery filter"),
+    /// until Core Animation commits the frame that shows it, as the intervals in `docs/performance.md`. Does nothing
+    /// unless something is recording signposts.
+    private func measure(_ name: StaticString) {
         guard Perf.signposter.isEnabled else {
             return
         }
-        let interval = Perf.signposter.beginInterval("Gallery selection", id: Perf.signposter.makeSignpostID())
-        let count = visible.count
+        let interval = Perf.signposter.beginInterval(name, id: Perf.signposter.makeSignpostID())
         // Runs when this run loop pass's implicit transaction, which carries SwiftUI's update, commits.
-        CATransaction.setCompletionBlock {
-            Perf.signposter.endInterval("Gallery selection", interval, "items=\(count)")
+        CATransaction.setCompletionBlock { [weak self] in
+            Perf.signposter.endInterval(name, interval, "items=\(self?.visible.count ?? 0)")
         }
     }
 
