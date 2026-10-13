@@ -31,7 +31,7 @@ import Testing
 
 @Test func replacementHotkeysTakeTheMacOSKeys() {
     let replaced = ShotAction.allCases.map { $0.defaultCombo(replacingSystemScreenshots: true)?.displayString }
-    #expect(replaced == ["⇧⌘4", "⇧⌘3", nil, "⇧⌘5", nil, nil, nil, nil, nil])
+    #expect(replaced == ["⇧⌘4", "⇧⌘3", nil, "⇧⌘5", nil, nil, nil, nil, nil, nil])
     #expect(ShotAction.allCases.allSatisfy { $0.defaultCombo(replacingSystemScreenshots: false) == $0.defaultCombo })
 }
 
@@ -55,11 +55,21 @@ import Testing
     #expect(ShotAction.allCases.firstIndex(of: .copyPath) == 7)
 }
 
-@Test func capturePreviousAreaIsACaptureWithNoShortcutAndComesLast() {
+@Test func capturePreviousAreaIsACaptureWithNoShortcut() {
     #expect(ShotAction.capturePrevious.defaultCombo == nil)
     #expect(ShotAction.capturePrevious.defaultCombo(replacingSystemScreenshots: true) == nil)
     #expect(ShotAction.capturePrevious.isCapture)
     #expect(!ShotAction.capturePrevious.isRecording)
     #expect(ShotAction.capturePrevious.rawValue == "capture-previous")
-    #expect(ShotAction.allCases.last == .capturePrevious)
+    #expect(ShotAction.allCases.firstIndex(of: .capturePrevious) == 8)
+}
+
+@Test func copyTextHasNoShortcutAndComesLast() {
+    #expect(ShotAction.copyText.defaultCombo == nil)
+    #expect(ShotAction.copyText.defaultCombo(replacingSystemScreenshots: true) == nil)
+    // It saves no capture, so it stays out of the menu's Capture section and the capture path.
+    #expect(!ShotAction.copyText.isCapture)
+    #expect(!ShotAction.copyText.isRecording)
+    #expect(ShotAction.copyText.rawValue == "copy-text")
+    #expect(ShotAction.allCases.last == .copyText)
 }

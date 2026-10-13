@@ -106,6 +106,8 @@ final class CaptureCoordinator {
                     try await captureWithOverlay(windowMode: true)
                 case .capturePrevious:
                     try await capturePreviousArea()
+                case .copyText:
+                    try await copyTextFromArea()
                 case .record:
                     try await startRecording(mode: .area)
                 case .recordFullscreen:
@@ -243,6 +245,32 @@ final class CaptureCoordinator {
             source?.mode = "fullscreen"
         }
         try await finish(image: image, scale: scale, from: frame, windowShadow: windowShadow, source: source)
+    }
+
+    /// Reads the text in the area, window or display picked on the overlay and copies it. Nothing is saved, and the
+    /// area isn't remembered for Capture Previous Area.
+    private func copyTextFromArea() async throws {
+        let windows = WindowCapturer.onScreenWindows()
+        let frozen = try await DisplayCapturer.captureAll()
+        let displays = frozen.map { OverlayDisplay(frame: $0.frame, scale: $0.scale, image: $0.image) }
+        guard let selection = await SelectionOverlayController.select(displays: displays, windowMode: false, windows: windows) else {
+            return
+        }
+        let image: CGImage
+        switch selection {
+        case let .area(index, rect, _):
+            let display = frozen[index]
+            let pixels = Geometry.pixelRect(forViewRect: rect, viewHeight: display.frame.height, scale: display.scale)
+            guard let cropped = display.image.cropping(to: pixels) else {
+                throw CaptureError.encodingFailed
+            }
+            image = cropped
+        case let .window(info):
+            image = try await WindowCapturer.capture(windowID: info.windowID, includeShadow: false).image
+        case let .fullDisplay(index):
+            image = frozen[index].image
+        }
+        await Clipboard.copyText(in: image)
     }
 
     /// Takes the area the last area screenshot took, without the overlay.

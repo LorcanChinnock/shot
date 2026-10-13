@@ -37,6 +37,7 @@ Shot lives in the menu bar. Its menu lists every capture and recording action wi
   - **Without a mouse:** press an arrow key to start an area at the pointer (or the screen centre), then arrows move it by 10 points (hold Shift for 1), ⌥ with arrows resizes it, Tab still sets the ratio, and Return captures it. In window mode, Tab and Shift-Tab step through the windows and Return captures the highlighted one. VoiceOver announces the size and the window name as you go.
 - **Previous area:** **Capture Previous Area** in the menu bar menu, or [`shot://capture-previous`](#url-scheme), takes the area your last area screenshot took, without the overlay, so a before and after shot lines up exactly. It has no shortcut until you give it one in **Settings › Shortcuts**. Shot forgets the area when it quits, and says so if none was taken yet or that part of the screen is gone.
 - **Window:** press Space after ⌘⇧4, then click a window. Shot keeps the macOS window shadow unless you turn it off in Settings › Capture.
+- **Copy Text:** give **Copy Text** a shortcut in **Settings › Shortcuts**, or open [`shot://copy-text`](#url-scheme), then drag out an area (or press Space and click a window). Shot reads the text in it on your Mac and copies it, without saving a screenshot. To copy the text in a screenshot you already took, right-click its [Quick Access](#quick-access) card or its tile in the [gallery](#gallery) and choose **Copy Text**.
 - **Full screen (⌘⇧3):** captures the screen under the pointer.
 - **After a delay:** **Capture Full Screen After Delay** in the menu bar menu (3 or 5 seconds, as the recording countdown), or [`shot://capture-timer?seconds=5`](#url-scheme), counts down on screen, then captures the screen under the pointer. That gives you time to open a menu or hover over something first. Shot isn't activated while it counts, so the menu stays open. Press Esc or click **Cancel** to take nothing.
 
@@ -54,7 +55,7 @@ A floating card appears in a bottom corner of the screen under the pointer after
 - **Show in Finder**, or **Close** the card
 - Drag the card into another app, or onto an open editor to [combine images](#combine-images)
 
-Right-click a card for the same actions, plus **Copy Path**, and **Pin** for a screenshot.
+Right-click a card for the same actions, plus **Copy Path**, and **Copy Text** and **Pin** for a screenshot.
 
 **Pin** floats a screenshot above your other windows, so you can keep it in view as a reference while you work. It opens in the middle of the screen at its own size, or at half the screen if it's bigger, and the card closes. Drag a pin to move it, or drag its edges to resize it. Hover it and click the close button to remove it, or click it and press Esc. You can have several pins open at once.
 
@@ -257,7 +258,7 @@ The estimated size of the exported file is shown before you export. **Cancel**, 
 - **Select** with a click, ⌘-click, ⇧-click, ⌘A or the arrow keys, or tick the checkbox on a thumbnail to add it to the selection. **Select All** and **Deselect All** sit next to the count at the bottom.
 - **Edit** (or Return) opens the selection, when none of it is a GIF, in the [annotation editor](#annotation-editor) or [video editor](#video-editor), and asks first if that's more than 8 items. Double-click a screenshot or recording, or use the pencil or scissors button on a hovered one, to open just that one.
 - **Quick Look** with Space.
-- The buttons at the bottom **Edit**, **Copy**, **Show in Finder** or **Move to Trash** the selection. Right-click for the same, plus **Quick Look**. Right-click a single item and **Edit** reads **Annotate** or **Edit Video**, with **Rename…** too, **Export GIF** for a video, and [**Pin**](#quick-access) for a screenshot. Trashed files go to the Trash; ⌘Z puts them back, and so can Finder.
+- The buttons at the bottom **Edit**, **Copy**, **Show in Finder** or **Move to Trash** the selection. Right-click for the same, plus **Quick Look**. Right-click a single item and **Edit** reads **Annotate** or **Edit Video**, with **Rename…** too, **Export GIF** for a video, and **Copy Text** and [**Pin**](#quick-access) for a screenshot. Trashed files go to the Trash; ⌘Z puts them back, and so can Finder.
 - Drag a thumbnail into another app.
 
 ## Using Shot with AI agents
@@ -418,7 +419,7 @@ Shot still sends nothing anywhere. Whatever an agent reads, though, goes to that
 
 ### Global
 
-Every capture and recording action, **Pick Colour**, **Copy Latest Capture's Path** and **Capture Previous Area** can have a global shortcut and a [`shot://` URL](#url-scheme). Unless you turned it off in the [welcome window](#first-launch), Shot takes over the macOS screenshot keys and turns off the matching macOS shortcuts while it runs, once it has Screen Recording access. When Shot quits, macOS gets its keys back. If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧3 to ⌘⇧5** on again.
+Every capture and recording action, **Pick Colour**, **Copy Latest Capture's Path**, **Capture Previous Area** and **Copy Text** can have a global shortcut and a [`shot://` URL](#url-scheme). Unless you turned it off in the [welcome window](#first-launch), Shot takes over the macOS screenshot keys and turns off the matching macOS shortcuts while it runs, once it has Screen Recording access. When Shot quits, macOS gets its keys back. If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧3 to ⌘⇧5** on again.
 
 | Shortcut | Action |
 |---|---|
@@ -430,7 +431,7 @@ While you set up a recording, the record shortcut starts it. While you record, i
 
 To keep the macOS screenshot tool, turn off **Use Shot for ⌘⇧3 to ⌘⇧5** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with ⌃ in place of ⌘: ⌃⇧3, ⌃⇧4, ⌃⇧5, plus ⌃⇧W for a window.
 
-Record Full Screen, Record Window, Pick Colour, Copy Latest Capture's Path and Capture Previous Area have no shortcut until you set one. Pick Colour shows a loupe; click any pixel on screen to copy its hex, such as `#1E90FF`. Capture Window has none while Shot uses ⌘⇧3 to ⌘⇧5; press Space after ⌘⇧4 instead.
+Record Full Screen, Record Window, Pick Colour, Copy Latest Capture's Path, Capture Previous Area and Copy Text have no shortcut until you set one. Pick Colour shows a loupe; click any pixel on screen to copy its hex, such as `#1E90FF`. Capture Window has none while Shot uses ⌘⇧3 to ⌘⇧5; press Space after ⌘⇧4 instead.
 
 ### While selecting
 
@@ -535,6 +536,7 @@ Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a scr
 | `shot://pause` | Pause or resume the recording |
 | `shot://pick-color` | Pick a colour on screen and copy its hex |
 | `shot://copy-path` | Copy the newest capture's path |
+| `shot://copy-text` | Drag out an area and copy the text in it |
 | `shot://capture-timer?seconds=<n>` | Count down `n` seconds (1 to 60, default 5), then capture the full screen |
 | `shot://annotate?path=<file>` | Open an image in the editor, or a video in the video editor |
 | `shot://edit-video?path=<file>` | Open a video in the video editor to trim it |

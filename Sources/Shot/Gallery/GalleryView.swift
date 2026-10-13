@@ -408,6 +408,9 @@ private struct GalleryTileMenu: View {
         }
         Divider()
         Button("Copy") { model.copy(targets) }
+        if targets.count == 1, item.kind == .image {
+            Button("Copy Text") { Task { await Clipboard.copyText(inImageAt: item.url) } }
+        }
         Button("Quick Look") { GalleryPreview.shared.show(targets.map(\.url)) }
         if targets.count == 1, item.kind == .image {
             Button("Pin") { PinController.shared.pin(item.url) }

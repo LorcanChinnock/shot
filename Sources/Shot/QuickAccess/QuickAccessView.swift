@@ -80,11 +80,15 @@ private struct QuickAccessCardView: View {
         .contextMenu { menu }
     }
 
-    /// The hover buttons' actions again, plus Copy Path and Pin, which have no button: the card stays as plain as it is.
+    /// The hover buttons' actions again, plus Copy Path, Copy Text and Pin, which have no button: the card stays as plain
+    /// as it is.
     @ViewBuilder
     private var menu: some View {
         Button("Copy") { controller.copy(card) }
         Button("Copy Path") { controller.copyPath(card) }
+        if !card.isVideo {
+            Button("Copy Text") { Task { await Clipboard.copyText(inImageAt: card.styledURL ?? card.fileURL) } }
+        }
         Button("Save As…") { controller.saveAs(card) }
         Divider()
         Button(card.isVideo ? "Edit Video" : "Annotate") { controller.annotate(card) }
