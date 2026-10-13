@@ -47,6 +47,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Each section has its own colour. A new section needs a new `Brutal` token, not a repeat.
     var color: Color {
         switch self {
         case .gallery: Brutal.violet
@@ -55,8 +56,8 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .quickAccess: Brutal.sky
         case .recording: Brutal.red
         case .agents: Brutal.mint
-        case .shortcuts: Brutal.violet
-        case .about: Brutal.mint
+        case .shortcuts: Brutal.orange
+        case .about: Brutal.lime
         }
     }
 }
@@ -825,6 +826,12 @@ private struct AboutSettings: View {
     @Bindable private var updater = Updater.shared
     private let color = SettingsSection.about.color
 
+    private func refreshPermissions() {
+        screenGranted = Permissions.hasScreenCapture
+        microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+        cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
+    }
+
     private var version: String {
         let info = Bundle.main.infoDictionary
         return "\(info?["CFBundleShortVersionString"] as? String ?? "?") (\(info?["CFBundleVersion"] as? String ?? "?"))"
@@ -883,11 +890,11 @@ private struct AboutSettings: View {
                     .buttonStyle(BrutalButtonStyle(compact: true))
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            screenGranted = Permissions.hasScreenCapture
-            microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
-            cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
-        }
+        // A menu bar app may not become active when Settings opens or regains focus, so also re-read when the window
+        // appears and when it becomes key.
+        .onAppear(perform: refreshPermissions)
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in refreshPermissions() }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in refreshPermissions() }
 
         SettingsCard(title: "Data", symbol: "externaldrive.fill") {
             SettingRow(title: String(localized: "Save folder"), subtitle: (Preferences().saveFolder.path as NSString).abbreviatingWithTildeInPath) {
