@@ -146,7 +146,9 @@ Once the crop is applied, what's outside it is hidden but kept, annotations incl
 
 ### Layers
 
-Click **Layers** (⌘L) to list the annotations, frontmost first, with the image locked at the bottom. A cropped image also has a **Frame** row pinned at the top: click it to adjust the crop, use its eye to show the uncropped image and leave the crop out of Copy and Save, and press Delete or click its bin to remove the crop. It can't be moved, locked or duplicated. Click a row to select it on the canvas, ⌘-click or ⇧-click to select several, drag a row by its handle to reorder (Escape or dropping outside the list cancels), and press Delete or click the bin to delete. The eye hides a layer, which also leaves it out of Copy and Save, and the lock stops it being picked on the canvas, moved or deleted. You can still select a locked layer in the list and drag it to another place. Right-click a row to duplicate, delete, lock or hide. ⌘] and ⌘[ move the selection forward and back, and ⌥⌘] and ⌥⌘[ bring it to the front or send it to the back.
+Click **Layers** (⌘L) to list the annotations, frontmost first, with the image locked at the bottom. A cropped image also has a **Frame** row pinned at the top: click it to adjust the crop, use its eye to show the uncropped image and leave the crop out of Copy and Save, and press Delete or click its bin to remove the crop. It can't be moved, locked or duplicated. Click a row to select it on the canvas, ⌘-click or ⇧-click to select several, drag a row by its handle to reorder (Escape or dropping outside the list cancels), and press Delete or click the bin to delete. The eye hides a layer, which also leaves it out of Copy and Save, and the lock stops it being picked on the canvas, moved or deleted. You can still select a locked layer in the list and drag it to another place. Right-click a row to rename, duplicate, delete, lock or hide.
+
+A layer is named after its kind, or the first words of a text or note. To give it your own name, double-click the name, or select the row and press Return. Return or clicking elsewhere keeps the new name, and Esc cancels. Clear the name to go back to the automatic one. The name shows only in the list, never in the image. Renaming is one undo step, and a duplicate keeps the name. ⌘] and ⌘[ move the selection forward and back, and ⌥⌘] and ⌥⌘[ bring it to the front or send it to the back.
 
 Each layer acts on everything under it and nothing over it: a blur, pixelate or spotlight covers the layers below it, and layers above it are drawn over it. All spotlights share one dim, at the lowest spotlight's place in the list.
 
@@ -220,6 +222,7 @@ Open a recording from its Quick Access card (the scissors button, **Edit Video**
 - **Layers:** the annotation and picture lanes above the main track are the layers, topmost first. A blur, pixelate or spotlight affects the lanes under it, video included, not those over it.
   - Drag an annotation or an imported clip up or down to put it on another lane. Drop it between lanes, or on a lane that's locked, taken at that time or holds the other kind, and it gets a new lane of its own.
   - ⌘] and ⌘[ move the selected annotation or clip a lane up or down, and ⌥⌘] and ⌥⌘[ to the top or bottom.
+  - Double-click an annotation's label, or right-click it and choose **Rename**, to name it as in the [annotation editor's Layers](#layers). Return or clicking elsewhere keeps the name, Esc cancels, and an empty name goes back to the automatic one. The name is saved with the project and never drawn in the video.
   - Right-click a lane to lock it (Split and new annotations then leave it alone), hide it, mute a sound lane, or delete an annotation lane. The same buttons show at the lane's left edge when you point at it.
 - **Style:** select a clip or an annotation and click **Style** in the **Inspector** for the same shadows, borders and corners as the [annotation editor's Style](#style).
   - A clip can have rounded corners, a shadow, and a Hairline or Solid border. The recording itself can too, which makes the video drawn rather than only trimmed.
@@ -456,6 +459,7 @@ Record Full Screen, Record Window, Pick Colour, Copy Latest Capture's Path and C
 | ⌥⌘C / ⌥⌘V | Copy / paste a style |
 | ⇧⌘I | Add an image: a recent capture or a file |
 | ⌘L | Show or hide the layers |
+| Return in the layers | Rename the selected layer |
 | ⌘] / ⌘[ | Move the selection forward / back |
 | ⌥⌘] / ⌥⌘[ | Bring the selection to the front / send it to the back |
 | ⌘Z / ⇧⌘Z | Undo / redo |

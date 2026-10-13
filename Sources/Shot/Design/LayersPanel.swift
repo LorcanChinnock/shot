@@ -31,6 +31,8 @@ struct LayersPanel: View {
     let onMove: (IndexSet, Int) -> Void
     let onHide: (Set<UUID>, Bool) -> Void
     let onLock: (Set<UUID>, Bool) -> Void
+    /// Layer `id` was given a name; an empty one goes back to the automatic name.
+    let onRename: (UUID, String) -> Void
     let onDuplicate: (Set<UUID>) -> Void
     let onDelete: (Set<UUID>) -> Void
     let onSelectFrame: () -> Void
@@ -45,6 +47,8 @@ struct LayersPanel: View {
     @State private var listSize: CGSize = .zero
     /// Where a ⇧-click range starts.
     @State private var anchor: UUID?
+    /// The layer whose name is being edited in place.
+    @State private var renaming: UUID?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -88,6 +92,13 @@ struct LayersPanel: View {
                 }
             }
             .onMoveCommand(perform: moveSelection)
+            .onKeyPress(.return) {
+                guard renaming == nil, selection.count == 1, let id = selection.first, rows.contains(where: { $0.id == id }) else {
+                    return .ignored
+                }
+                renaming = id
+                return .handled
+            }
             .overlay {
                 if rows.isEmpty {
                     EmptyLayers().allowsHitTesting(false)
@@ -119,14 +130,33 @@ struct LayersPanel: View {
             isSelected: selection.contains(row.id),
             isFocused: isFocused,
             isLifted: lifted,
+            isRenaming: renaming == row.id,
             grip: grip(for: row),
             onHide: { onHide([row.id], !row.isHidden) },
             onLock: { onLock([row.id], !row.isLocked) },
-            onDelete: { onDelete([row.id]) }
+            onDelete: { onDelete([row.id]) },
+            onRename: { name in
+                renaming = nil
+                if let name {
+                    onRename(row.id, name)
+                }
+            }
         )
         .frame(height: Self.rowHeight)
         .contentShape(Rectangle())
-        .onTapGesture { click(row.id) }
+        // One gesture, so a click selects at once instead of waiting out the double-click interval; the second click renames.
+        .onTapGesture {
+            guard renaming != row.id else {
+                return
+            }
+            if NSApp.currentEvent?.clickCount == 2, NSEvent.modifierFlags.isDisjoint(with: [.command, .shift]) {
+                selection = [row.id]
+                anchor = row.id
+                renaming = row.id
+            } else {
+                click(row.id)
+            }
+        }
         .contextMenu { menu(for: selection.contains(row.id) ? selection : [row.id]) }
         // Carried rows ride under the lifted one, which fades while a drop would cancel.
         .opacity(carried ? 0 : lifted && drag?.isOutside == true ? 0.5 : 1)
@@ -140,6 +170,13 @@ struct LayersPanel: View {
     private func menu(for ids: Set<UUID>) -> some View {
         let chosen = rows.filter { ids.contains($0.id) }
         if !chosen.isEmpty {
+            if chosen.count == 1 {
+                Button("Rename") {
+                    selection = ids
+                    renaming = chosen[0].id
+                }
+                .keyboardShortcut(.return, modifiers: [])
+            }
             Button("Duplicate") { onDuplicate(ids) }
             Button("Delete") { onDelete(ids) }
             Divider()
@@ -366,10 +403,13 @@ private struct LayerRowView<Grip: Gesture>: View {
     let isSelected: Bool
     let isFocused: Bool
     let isLifted: Bool
+    let isRenaming: Bool
     let grip: Grip
     let onHide: () -> Void
     let onLock: () -> Void
     let onDelete: () -> Void
+    /// The name typed into the field, or `nil` when Escape cancelled it.
+    let onRename: (String?) -> Void
 
     var body: some View {
         HStack(spacing: 6) {
@@ -384,10 +424,14 @@ private struct LayerRowView<Grip: Gesture>: View {
             Image(systemName: row.symbol)
                 .font(.system(size: 12, weight: .bold))
                 .frame(width: 18)
-            Text(row.name)
-                .font(.system(size: 12, weight: .semibold))
-                .lineLimit(1)
-                .truncationMode(.tail)
+            if isRenaming {
+                LayerNameField(name: row.name, fontSize: 12, onCommit: { onRename($0) }, onCancel: { onRename(nil) })
+            } else {
+                Text(row.name)
+                    .font(.system(size: 12, weight: .semibold))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
             Spacer(minLength: 4)
             RowButton(symbol: row.isLocked ? "lock.fill" : "lock.open", isOn: row.isLocked, label: row.isLocked ? "Unlock" : "Lock", action: onLock)
             RowButton(symbol: row.isHidden ? "eye.slash" : "eye", isOn: row.isHidden, label: row.isHidden ? "Show" : "Hide", action: onHide)
@@ -412,6 +456,59 @@ private struct LayerRowView<Grip: Gesture>: View {
             Color.clear.brutalSurface(isSelected ? Brutal.yellow : Color.white, radius: Brutal.Radius.inset, shadow: 2, border: 2)
         } else if isSelected {
             RoundedRectangle(cornerRadius: Brutal.Radius.inset, style: .circular).fill(Brutal.yellow.opacity(isFocused ? 1 : 0.5))
+        }
+    }
+}
+
+/// A layer's name edited in place, pre-filled and selected: Return or clicking away commits it, and Escape cancels.
+struct LayerNameField: View {
+    let name: String
+    let fontSize: CGFloat
+    let onCommit: (String) -> Void
+    let onCancel: () -> Void
+    @State private var text: String
+    /// Set once it has committed or cancelled, so losing focus as it goes doesn't commit again.
+    @State private var isDone = false
+    @FocusState private var isFocused: Bool
+
+    init(name: String, fontSize: CGFloat, onCommit: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
+        self.name = name
+        self.fontSize = fontSize
+        self.onCommit = onCommit
+        self.onCancel = onCancel
+        _text = State(initialValue: name)
+    }
+
+    var body: some View {
+        TextField("Name", text: $text)
+            .textFieldStyle(.plain)
+            .font(.system(size: fontSize, weight: .semibold))
+            .lineLimit(1)
+            .padding(.horizontal, 3)
+            .padding(.vertical, 1)
+            .background(Color.white)
+            .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: 1)
+            .focused($isFocused)
+            .onSubmit { finish(commit: true) }
+            .onExitCommand { finish(commit: false) }
+            .onChange(of: isFocused) { _, focused in
+                if !focused {
+                    finish(commit: true)
+                }
+            }
+            // Focus once it's in the window; AppKit selects a field's text as it takes focus.
+            .task { isFocused = true }
+    }
+
+    private func finish(commit: Bool) {
+        guard !isDone else {
+            return
+        }
+        isDone = true
+        if commit {
+            onCommit(text)
+        } else {
+            onCancel()
         }
     }
 }

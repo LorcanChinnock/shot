@@ -69,6 +69,18 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         set { locked = newValue ? true : nil }
     }
     private var locked: Bool?
+    /// What the user renamed it to in the layers panel or the timeline, which `layerName` shows in place of the one it
+    /// makes up; `nil` until renamed. Set trimmed and cut to `maxNameLength`, and an empty name clears it. Stored only when
+    /// set, so annotations saved before it still decode.
+    public var name: String? {
+        get { customName }
+        set {
+            let trimmed = newValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            customName = trimmed.isEmpty ? nil : String(trimmed.prefix(Self.maxNameLength))
+        }
+    }
+    private var customName: String?
+    public static let maxNameLength = 64
     /// The corner radius of a shape, spotlight or placed image; `nil` is square.
     public var cornerRadius: CGFloat? {
         get { kind.isImage ? imageRadius : boxRadius }
@@ -85,6 +97,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     private enum CodingKeys: String, CodingKey {
         case id, kind, color, fill, lineWidth, bend, textAlign, hidden, locked, objectStyle, boxRadius
         case imageRadius = "cornerRadius"
+        case customName = "name"
     }
 
     public init(from decoder: Decoder) throws {
@@ -101,6 +114,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         objectStyle = try container.decodeIfPresent(ObjectStyle.self, forKey: .objectStyle)
         boxRadius = try container.decodeIfPresent(CGFloat.self, forKey: .boxRadius)
         imageRadius = try container.decodeIfPresent(CGFloat.self, forKey: .imageRadius)
+        name = try container.decodeIfPresent(String.self, forKey: .customName)
         // A rounded rectangle from before every shape could be rounded keeps its radius, or the fifth of its shorter side
         // that it had when it had none.
         if !kind.isImage {

@@ -59,8 +59,23 @@ public enum LayerList {
 }
 
 extension Annotation {
-    /// What the layers panel calls it: the first words of a text or note, else its kind.
+    /// What the layers panel and the timeline call it: the name it was given, else the first words of a text or note,
+    /// else its kind.
     public var layerName: String {
+        name ?? automaticName
+    }
+
+    /// Renames it as the layers panel's name field does: an empty name goes back to the automatic one, and the name it
+    /// already shows leaves it as it is, so committing an untouched field doesn't fix an automatic name in place.
+    public mutating func rename(to newName: String) {
+        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed != layerName else {
+            return
+        }
+        name = trimmed
+    }
+
+    private var automaticName: String {
         switch kind {
         case .arrow: String(localized: "Arrow")
         case .line: String(localized: "Line")

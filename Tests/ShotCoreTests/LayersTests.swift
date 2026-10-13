@@ -56,6 +56,62 @@ private func ids(_ items: [Item]) -> [Int] { items.map(\.id) }
     #expect(annotation(.spotlight(.zero, style: SpotlightStyle())).layerName == "Spotlight")
 }
 
+@Test func aNameReplacesTheAutomaticOneAndClearingItGoesBack() {
+    var arrow = annotation(.arrow(from: .zero, to: CGPoint(x: 1, y: 1)))
+    #expect(arrow.name == nil)
+    arrow.name = "  Points at Save \n"
+    #expect(arrow.name == "Points at Save")
+    #expect(arrow.layerName == "Points at Save")
+    arrow.name = "   "
+    #expect(arrow.name == nil)
+    #expect(arrow.layerName == "Arrow")
+    arrow.name = String(repeating: "a", count: Annotation.maxNameLength + 10)
+    #expect(arrow.name?.count == Annotation.maxNameLength)
+}
+
+@Test func renamingToTheNameItShowsLeavesItAutomatic() {
+    var text = annotation(.text("Click here", origin: .zero, fontSize: 12))
+    text.rename(to: " Click here ")
+    #expect(text.name == nil)
+    text.setText("Then here")
+    #expect(text.layerName == "Then here")
+    text.rename(to: "Second step")
+    #expect(text.name == "Second step")
+    text.rename(to: "")
+    #expect(text.name == nil)
+    #expect(text.layerName == "Then here")
+}
+
+@Test func aNameSurvivesEncodingAndCopying() throws {
+    var arrow = annotation(.arrow(from: .zero, to: CGPoint(x: 1, y: 1)))
+    arrow.name = "Points at Save"
+    let decoded = try JSONDecoder().decode(Annotation.self, from: JSONEncoder().encode(arrow))
+    #expect(decoded == arrow)
+    #expect(decoded.layerName == "Points at Save")
+    #expect(arrow.withNewID().name == "Points at Save")
+    var doc = EditorDocument(base: solid(width: 60, height: 60), annotations: [arrow])
+    let pasted = doc.paste(arrow, step: 10, margin: 0)
+    #expect(doc.annotations.first { $0.id == pasted }?.name == "Points at Save")
+}
+
+@Test func anAnnotationSavedBeforeNamesDecodesUnnamed() throws {
+    let plain = annotation(.arrow(from: .zero, to: CGPoint(x: 1, y: 1)))
+    let json = try #require(String(data: JSONEncoder().encode(plain), encoding: .utf8))
+    #expect(!json.contains("\"name\""))
+    let decoded = try JSONDecoder().decode(Annotation.self, from: Data(json.utf8))
+    #expect(decoded.name == nil)
+    #expect(decoded.layerName == "Arrow")
+}
+
+@Test func aNameDoesNotChangeWhatIsDrawn() throws {
+    let base = solid(width: 60, height: 60)
+    var named = square()
+    named.name = "Box"
+    let plain = try #require(AnnotationRenderer.flatten(EditorDocument(base: base, annotations: [square()])))
+    let flat = try #require(AnnotationRenderer.flatten(EditorDocument(base: base, annotations: [named])))
+    #expect(try square(of: flat) == square(of: plain))
+}
+
 @Test func hiddenAndLockedLayersCantBePickedOnTheCanvas() {
     var below = annotation(.shape(.rectangle, rect: CGRect(x: 0, y: 0, width: 100, height: 100)))
     below.fill = red

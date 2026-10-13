@@ -1191,6 +1191,15 @@ extension VideoEditorModel {
         commitAnnotation(annotation, id: id)
     }
 
+    /// Renames the annotation clip `id` as one undo step; an empty name goes back to the automatic one.
+    func renameAnnotation(_ id: UUID, to name: String) {
+        guard var annotation = project.annotationClip(id)?.annotation else {
+            return
+        }
+        annotation.rename(to: name)
+        commitAnnotation(annotation, id: id)
+    }
+
     /// Puts an image from `url` on the video, centred and fitted inside half the canvas.
     func addImage(from url: URL) {
         guard let data = try? Data(contentsOf: url), let image = ImageCodec.image(from: data) else {

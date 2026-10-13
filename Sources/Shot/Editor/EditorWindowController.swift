@@ -127,7 +127,8 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
     }
 
     private func handleCommand(_ key: String, shift: Bool, option: Bool) -> Bool {
-        if canvas.isEditingText && key != "s" && key != "w" {
+        // Typing in the canvas's text or a layer's name field keeps the editing shortcuts for the text.
+        if canvas.isEditingText || window.firstResponder is NSText, key != "s", key != "w" {
             return false
         }
         switch key {
