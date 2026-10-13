@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.7.0-beta.48](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.47...v0.7.0-beta.48) (2026-10-13)
+
+
+### Features
+
+* **design:** a Brutal scroll bar for scrolling panels and menus ([#519](https://github.com/LorcanChinnock/shot/issues/519)) ([6a7238f](https://github.com/LorcanChinnock/shot/commit/6a7238f51aa1d1a5e5e4fd954ee5101fc8de59b5))
+
+
+### Bug Fixes
+
+* **capture:** handle capture name collisions, flag temporary saves ([#517](https://github.com/LorcanChinnock/shot/issues/517)) ([2c00b5a](https://github.com/LorcanChinnock/shot/commit/2c00b5aaa8e59ed70f693caef20b05b25d7ea9f4))
+* **editor:** ask about unsaved changes before quitting ([#516](https://github.com/LorcanChinnock/shot/issues/516)) ([fe1d0c5](https://github.com/LorcanChinnock/shot/commit/fe1d0c5807a35ed656b30569ee12dd3b3cb7df2d))
+* **gallery:** lint the double-tap pattern and document views in lazy collections ([#515](https://github.com/LorcanChinnock/shot/issues/515)) ([1a621e6](https://github.com/LorcanChinnock/shot/commit/1a621e620667915fc20ccb53b4a64de31215dc4d))
+* **recording:** recover leftover recording segments instead of deleting them ([#518](https://github.com/LorcanChinnock/shot/issues/518)) ([830a47f](https://github.com/LorcanChinnock/shot/commit/830a47ff613301d307f512ad15111fcb005a9f2c))
+* sync the strings catalog after the screenshot timer ([#513](https://github.com/LorcanChinnock/shot/issues/513)) ([d03565c](https://github.com/LorcanChinnock/shot/commit/d03565ca69b69239142ad0dc3eef0c7b22d09861)), closes [#512](https://github.com/LorcanChinnock/shot/issues/512)
+
 ## [0.7.0-beta.47](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.46...v0.7.0-beta.47) (2026-10-13)
 
 
