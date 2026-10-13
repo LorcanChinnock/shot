@@ -359,6 +359,10 @@ private struct GalleryTile: View, Equatable {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(item.name))
         .accessibilityAddTraits(selected ? .isSelected : [])
+        // The checkbox shows only on hover and sits inside this one element, so its ⌘-click toggle is an action here.
+        .accessibilityAction(named: Text(selected ? "Deselect" : "Select")) {
+            model.click(item, command: true, shift: false)
+        }
     }
 
     @ViewBuilder
@@ -435,5 +439,7 @@ private struct SelectionCheckbox: View {
         // Focus stays on the grid, so the keyboard shortcuts keep working after a click.
         .focusable(false)
         .brutalTip(checked ? "Deselect (⌘-click)" : "Select (⌘-click)")
+        .accessibilityLabel(Text("Select"))
+        .accessibilityAddTraits(checked ? .isSelected : [])
     }
 }

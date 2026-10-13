@@ -17,6 +17,8 @@ extension EnvironmentValues {
 
 extension View {
     /// Explains the view in a tip after a hover: `title`, with `detail` below it when there is one.
+    /// VoiceOver reads the tip as a hint, not a label, since most titles add a shortcut to a button's own text, so a
+    /// control without readable text, such as an icon, needs its own `accessibilityLabel`.
     func brutalTip(_ title: LocalizedStringResource, detail: LocalizedStringResource? = nil) -> some View {
         modifier(TipTrigger(title: String(localized: title), detail: detail.map { String(localized: $0) }))
     }
