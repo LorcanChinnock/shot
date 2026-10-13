@@ -120,6 +120,7 @@ The editor remembers the options you last used and the last drawing tool. A new 
 ### Editing annotations
 
 - Click an annotation with the select tool to select it, then drag it, or drag its handles to resize it. Text and counters have no handles, and a placed image has handles at its corners only. Drag the middle handle of a line or arrow to bend it. Drag one of the round handles inside a rounded rectangle's corners to set how round all four are, up to a pill; they hide on a box too small to grab them. Choosing a colour, width or option restyles the selection.
+- While you drag a handle, Shift keeps a box in the proportions it had, or snaps an arrow or line end to 45° steps, and Option resizes from the centre, so the opposite side mirrors your drag. On a placed image, which keeps its proportions as you resize, Shift lets you stretch it freely. Hold Space to move the whole shape instead, and let go to carry on resizing. Pressing or releasing Shift or Option mid-drag updates the shape straight away. Sticky notes keep their own text-fitting rules and ignore both.
 - What you've just drawn stays selected until you draw the next thing, click elsewhere or press Esc, so you can fix its shape, colour, width or fill from the toolbar, or drag its handles, without switching to the select tool. The change also applies to what you draw next.
 - With the select tool, double-click text or a sticky note to edit it. Clicking a note with the note tool edits it too.
 - Press Delete to remove the selection, and Esc to deselect. While you type in a text box or sticky note, Esc finishes it; ⌘Z removes it again.
@@ -429,6 +430,7 @@ Record Full Screen, Record Window, Pick Colour and Copy Latest Capture's Path ha
 |---|---|
 | V H A L R D T S M F B N C | Choose a tool (see [Tools](#tools)) |
 | Shift / Option while drawing | Keep it square or at 45° / draw from the centre |
+| Shift / Option / Space while dragging a handle | Keep proportions or 45° (free on an image) / resize from the centre / move the shape |
 | Delete | Delete the selection |
 | Esc | Deselect, cancel what you're drawing, or finish typing |
 | Arrow keys | Nudge the selection 1 pixel (10 with Shift) |
