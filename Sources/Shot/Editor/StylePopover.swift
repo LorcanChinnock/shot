@@ -468,9 +468,11 @@ private struct NewCaptureStyleSwitch: View {
                 Toggle("Use this style for new captures", isOn: isOn)
                     .toggleStyle(BrutalToggleStyle(color: Brutal.mint))
                     .labelsHidden()
+                    .accessibilityLabel(Text("Use this style for new captures"))
                 Text("Use this style for new captures")
                     .font(Brutal.caption)
                     .foregroundStyle(Brutal.ink)
+                    .accessibilityHidden(true)
             }
             if otherStyleSaved {
                 Text("New captures keep a different saved style.")
