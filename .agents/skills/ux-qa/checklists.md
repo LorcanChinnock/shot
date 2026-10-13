@@ -194,6 +194,10 @@ Judge against the app's own design system first; it has a deliberate style (see 
 - [ ] Scrubbing, dragging and zooming keep up with the pointer on a long clip; playback doesn't stutter; thumbnails and
       waveforms load without blocking the UI.
 - [ ] Idle CPU is near zero when nothing plays; memory doesn't climb over repeated open/close and repeated exports.
+- [ ] **Lists and grids**: when the change touches a view in a lazy collection (`LazyVGrid`, `List`, `LazyVStack`), one
+      interaction (a click, an arrow key, a hover) re-evaluates O(1) views, not O(n). Check once with `Self._printChanges()`
+      in a debug build (remove it afterwards) or the SwiftUI Instruments template, on a library of about 1,500 items, and
+      report how many tiles re-evaluated. See the lazy-collection rule in CLAUDE.md.
 - [ ] Long operations are cancellable or at least don't hang the app; the app recovers from a failed export.
 - [ ] **Logs and crashes**: `log show --last 10m --predicate 'process == "Shot"' --style compact | grep -iE "error|fault"`, and
       look for new files in `~/Library/Logs/DiagnosticReports/` after the session. Any new crash report is an S1.
