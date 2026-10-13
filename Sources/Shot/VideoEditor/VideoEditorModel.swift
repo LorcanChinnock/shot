@@ -156,8 +156,9 @@ final class VideoEditorModel {
 
     var isDirty: Bool { isComposite || !range.isFull(duration: duration) || !cuts.isEmpty }
 
-    /// Whether closing would lose an edit: one made since the editor opened or last wrote its project.
-    var hasUnsavedChanges: Bool { project != savedProject }
+    /// Whether closing would lose an edit: one made since the editor opened or last wrote its project, which Save can
+    /// write. An edit taken back to the plain recording loses nothing.
+    var hasUnsavedChanges: Bool { isDirty && project != savedProject }
 
     /// What the panel adds to the window's height over the collapsed layout.
     var tracksExtraHeight: CGFloat {
@@ -210,7 +211,8 @@ final class VideoEditorModel {
         thumbnailSets = [:]
         thumbnailSources = [:]
         waveforms = [:]
-        applyRange()
+        // Once the player has the recording, so a restored project that needs drawing is built over it.
+        refreshPlayer()
     }
 
     struct LoadFailure: LocalizedError {
