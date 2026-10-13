@@ -139,7 +139,7 @@ private struct GalleryGrid: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let available = geometry.size.width - Brutal.groupInset * 2
+            let available = geometry.size.width - Brutal.groupInset * 2 - BrutalScrollBar.width
             let columns = max(1, Int((available + Self.spacing) / (model.tileSize + Self.spacing)))
             let cell = (available - Self.spacing * CGFloat(columns - 1)) / CGFloat(columns)
             ScrollViewReader { proxy in
@@ -167,7 +167,8 @@ private struct GalleryGrid: View {
                             }
                         }
                     }
-                    .padding(.horizontal, Brutal.groupInset)
+                    .padding(.leading, Brutal.groupInset)
+                    .padding(.trailing, Brutal.groupInset + BrutalScrollBar.width)
                     .padding(.vertical, 8)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background {
@@ -176,6 +177,7 @@ private struct GalleryGrid: View {
                             .onTapGesture { model.clearSelection() }
                     }
                 }
+                .brutalScrollBar()
                 .background { LeadScroller(model: model, proxy: proxy) }
                 .onChange(of: columns, initial: true) {
                     model.columns = columns

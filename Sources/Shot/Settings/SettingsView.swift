@@ -90,11 +90,11 @@ struct SettingsView: View {
                         VStack(spacing: 18) {
                             content
                         }
-                        .padding(.trailing, Brutal.groupInset)
+                        .padding(.trailing, Brutal.groupInset + BrutalScrollBar.width)
                         .padding(.bottom, Brutal.sectionGap)
                         .padding([.leading, .top], 3)
                     }
-                    .scrollIndicators(.never)
+                    .brutalScrollBar()
                     .onScrollGeometryChange(for: ScrollFade.Edges.self) { geometry in
                         ScrollFade.Edges(
                             top: geometry.contentOffset.y > -geometry.contentInsets.top,
@@ -156,10 +156,14 @@ private struct ScrollFade: View {
     let edges: Edges
 
     var body: some View {
-        VStack(spacing: 0) {
-            LinearGradient(colors: [edges.top ? .clear : .black, .black], startPoint: .top, endPoint: .bottom).frame(height: 8)
-            Color.black
-            LinearGradient(colors: [.black, edges.bottom ? .clear : .black], startPoint: .top, endPoint: .bottom).frame(height: 18)
+        HStack(spacing: 0) {
+            VStack(spacing: 0) {
+                LinearGradient(colors: [edges.top ? .clear : .black, .black], startPoint: .top, endPoint: .bottom).frame(height: 8)
+                Color.black
+                LinearGradient(colors: [.black, edges.bottom ? .clear : .black], startPoint: .top, endPoint: .bottom).frame(height: 18)
+            }
+            // The scroll bar stays sharp.
+            Color.black.frame(width: BrutalScrollBar.width)
         }
     }
 }

@@ -50,9 +50,11 @@ struct LayersPanel: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: CGFloat(drag.map { $0.rest.count + 1 } ?? rows.count) * Self.rowHeight, alignment: .top)
-                .padding(.horizontal, 6)
+                .padding(.leading, 6)
+                .padding(.trailing, 6 + BrutalScrollBar.width)
                 .padding(.vertical, 4)
             }
+            .brutalScrollBar()
             .scrollDisabled(drag != nil)
             .coordinateSpace(.named(Self.space))
             .onGeometryChange(for: CGSize.self, of: \.size) { listSize = $0 }
