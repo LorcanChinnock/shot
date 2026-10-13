@@ -129,6 +129,36 @@ func redactHidesOnlyTheRectAndLeavesTheInputAlone(style: ShotCommand.RedactStyle
     #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path) == ["shot.png"])
 }
 
+@Test func cropKeepsThePartAtFullResolutionAsAnAdjustableVersion() async throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let input = try writeImage("shot.png", in: folder)
+    let before = try Data(contentsOf: input)
+
+    let result = try await ShotCommands.run(.crop(.init(input: input.path, rect: [4, 8, 40, 20])))
+    let output = try path(result)
+    #expect(output.lastPathComponent == "shot (2).png")
+    #expect(try Data(contentsOf: input) == before)
+    #expect(result["size"] == .object(["width": .number(40), "height": .number(20)]))
+    let image = try #require(ImageCodec.image(at: output))
+    let original = checkerboard()
+    for (x, y) in [(0, 0), (4, 0), (0, 4), (39, 19)] {
+        #expect(try pixel(image, CGFloat(x), CGFloat(y)) == pixel(original, CGFloat(x + 4), CGFloat(y + 8)))
+    }
+    let record = try #require(ImageCodec.record(ofFileAt: output))
+    #expect(record.original == "shot.png")
+    #expect(record.crop == [4, 8, 40, 20])
+    #expect(record.editable == true)
+    #expect(record.annotations.isEmpty)
+    #expect(try #require(record.editableLayers).crop == CGRect(x: 4, y: 8, width: 40, height: 20))
+
+    // A rect reaching past the image keeps what's on it; one wholly off it writes nothing.
+    let edge = try await ShotCommands.run(.crop(.init(input: input.path, rect: [190.5, 100, 50, 50])))
+    #expect(edge["size"] == .object(["width": .number(10), "height": .number(20)]))
+    #expect(await failure(.crop(.init(input: input.path, rect: [200, 0, 10, 10]))) == .data("rect (200,0,10,10) is off the 200×120 image"))
+    #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted() == ["shot (2).png", "shot (3).png", "shot.png"])
+}
+
 @Test func annotateDrawsTheMarksAndRecordsThemToReopen() async throws {
     let folder = try temporaryFolder()
     defer { try? FileManager.default.removeItem(at: folder) }

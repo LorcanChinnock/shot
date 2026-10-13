@@ -82,3 +82,26 @@ extension MediaTests {
     #expect(ImageCodec.record(ofFileAt: written)?.annotations.first?.type == "ellipse")
     #expect(texts(result).last == "Saved as a new file beside Shot Y.png; the original is unchanged.")
 }
+
+@Test func theLiveZoomToolShowsAPartAtFullResolutionAndWritesNothing() async throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    try writeCapture("Shot Z.png", in: folder, width: 3136, height: 1000, minutesAgo: 1)
+    let tools = AgentTools.live(folder: folder)
+
+    let part = await tools.call("zoom", .object(["rect": .array([100, 50, 300, 200].map(JSONValue.number))]))
+    #expect(part.isError == false)
+    let image = try #require(images(part).first.flatMap(ImageCodec.image(from:)))
+    #expect(image.width == 300 && image.height == 200)
+    #expect(texts(part) == ["This is [100, 50, 300, 200] of Shot Z.png, which is 3136×1000 pixels, at full resolution: add 100 to x and 50 to y for the file's pixels."])
+
+    let whole = await tools.call("zoom", .object(["rect": .array([0, 0, 3136, 1000].map(JSONValue.number))]))
+    let scaled = try #require(images(whole).first.flatMap(ImageCodec.image(from:)))
+    #expect(scaled.width == 1568 && scaled.height == 500)
+    #expect(texts(whole).first?.contains("scaled to 1568×500 to fit: divide by 0.5,") == true)
+
+    let off = await tools.call("zoom", .object(["rect": .array([4000, 0, 10, 10].map(JSONValue.number))]))
+    #expect(off.isError)
+    #expect(texts(off) == ["rect [4000, 0, 10, 10] is off Shot Z.png, which is 3136×1000 pixels."])
+    #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path) == ["Shot Z.png"])
+}

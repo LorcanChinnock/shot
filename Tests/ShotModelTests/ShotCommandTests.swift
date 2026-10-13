@@ -29,6 +29,8 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(try parse("text a.png") == .text(path: "a.png"))
     #expect(try parse("diff a.png b.png") == .diff(ShotCommand.DiffOptions(a: "a.png", b: "b.png")))
     #expect(try parse("diff --threshold 0 a.png b.png -o d.png") == .diff(ShotCommand.DiffOptions(a: "a.png", b: "b.png", output: "d.png", threshold: 0)))
+    #expect(try parse("crop a.png --rect 10,20.5,300,40") == .crop(ShotCommand.CropOptions(input: "a.png", rect: [10, 20.5, 300, 40])))
+    #expect(try parse("crop --rect=0,0,8,8 a.jpg -o b.jpg") == .crop(ShotCommand.CropOptions(input: "a.jpg", output: "b.jpg", rect: [0, 0, 8, 8])))
     #expect(try parse("capture --window Simulator") == .capture(AgentTarget(window: "Simulator")))
     #expect(try parse("capture --window=Calculator") == .capture(AgentTarget(window: "Calculator")))
     #expect(try parse("record --window Simulator") == .record(.start(AgentTarget(window: "Simulator"), duration: nil)))
@@ -81,6 +83,9 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(try parse("capture --help") == .help("capture"))
     #expect(try parse("diff a.png -h") == .help("diff"))
     #expect(ShotCommand.usage("diff").hasPrefix("Usage: shot diff <a> <b> [-o out.png]"))
+    #expect(try parse("crop a.png --help") == .help("crop"))
+    #expect(ShotCommand.usage("crop").hasPrefix("Usage: shot crop <image> --rect x,y,w,h [-o out.png]"))
+    #expect(ShotCommand.usage(nil).contains("shot crop <image>"))
     #expect(ShotCommand.usage("capture").hasPrefix("Usage: shot capture --window <title or app>"))
     #expect(try parse("text --help") == .help("text"))
     #expect(ShotCommand.usage(nil).contains("shot text <image>"))
@@ -128,6 +133,11 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     ("diff a.png b.png c.png", "diff", "needs two images, the one before and the one after; got 3"),
     ("diff a.png b.png --threshold 2", "diff", "--threshold 2 must be a number from 0 to 1: how much of a colour's range a pixel may change by and still count as the same"),
     ("diff a.png b.png --fps 2", "diff", "unknown option --fps; it takes --threshold, -o"),
+    ("crop a.png", "crop", "needs --rect x,y,width,height, the part to keep in the image's pixels"),
+    ("crop --rect 1,2,3,4", "crop", "missing the file to work on"),
+    ("crop a.png --rect 1,2,-3,4", "crop", "--rect 1,2,-3,4 must be x,y,width,height in pixels, with a width and height above 0"),
+    ("crop a.png --rect 1,2,3,4 --rect 5,6,7,8", "crop", "--rect is given twice"),
+    ("crop a.png --rect 1,2,3,4 --style blur", "crop", "unknown option --style; it takes --rect, -o"),
     ("capture", "capture", "needs --window with words from the window's title or app, such as --window Simulator, --bundle-id or --display"),
     ("capture --window", "capture", "--window needs a value"),
     ("capture a.png --window Simulator", "capture", "takes no file; name the window with --window"),

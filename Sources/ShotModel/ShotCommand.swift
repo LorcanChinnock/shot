@@ -12,6 +12,8 @@ public enum ShotCommand: Equatable, Sendable {
     /// The text in an image, read on the device, with each line's and word's box.
     case text(path: String)
     case diff(DiffOptions)
+    /// A part of an image at full resolution, written as its next version.
+    case crop(CropOptions)
     /// A screenshot of an open window or a display, taken by the running app.
     case capture(AgentTarget)
     /// Starts, stops or asks about a recording of a window, made by the running app.
@@ -162,6 +164,19 @@ public enum ShotCommand: Equatable, Sendable {
         }
     }
 
+    public struct CropOptions: Equatable, Sendable {
+        public var input: String
+        public var output: String?
+        /// `[x, y, width, height]`, in the image's pixels from the top left.
+        public var rect: [Double]
+
+        public init(input: String, output: String? = nil, rect: [Double]) {
+            self.input = input
+            self.output = output
+            self.rect = rect
+        }
+    }
+
     public enum RecordAction: Equatable, Sendable {
         /// Records the target; with `duration`, waits for the recording to end.
         case start(AgentTarget, duration: Double?)
@@ -175,7 +190,7 @@ public enum ShotCommand: Equatable, Sendable {
     }
 
     /// The commands `help` knows, in the order it lists them.
-    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "text", "diff", "latest", "list", "get", "windows", "capture", "record", "watch", "doctor", "mcp"]
+    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "text", "diff", "crop", "latest", "list", "get", "windows", "capture", "record", "watch", "doctor", "mcp"]
 
     /// The command's name, for error messages such as `shot gif: …`.
     public var name: String {
@@ -188,6 +203,7 @@ public enum ShotCommand: Equatable, Sendable {
         case .frames: "frames"
         case .text: "text"
         case .diff: "diff"
+        case .crop: "crop"
         case .capture: "capture"
         case .record: "record"
         case .watch: "watch"
@@ -227,7 +243,7 @@ public enum ShotCommand: Equatable, Sendable {
         case "latest", "list", "get":
             if rest.contains(where: isHelp) { return .help(first) }
             return try parseCaptures(first, rest)
-        case "info", "gif", "trim", "redact", "annotate", "frames", "text":
+        case "info", "gif", "trim", "redact", "annotate", "frames", "text", "crop":
             if rest.contains(where: isHelp) { return .help(first) }
             return try parseMedia(first, rest)
         case "diff":
@@ -268,6 +284,7 @@ public enum ShotCommand: Equatable, Sendable {
         "frames": ["output": false, "count": false, "every": false, "width": false],
         "text": [:],
         "diff": ["output": false, "threshold": false],
+        "crop": ["output": false, "rect": false],
         "capture": ["window": false, "bundle-id": false, "display": false, "rect": false, "no-shadow": false, "wait-stable": false],
         "record": ["window": false, "bundle-id": false, "display": false, "rect": false, "no-shadow": false, "duration": false],
         "watch": ["kind": false, "timeout": false],
@@ -563,6 +580,14 @@ public enum ShotCommand: Equatable, Sendable {
                 options.width = width
             }
             return .frames(options)
+        case "crop":
+            guard let text = values["rect"]?.first else {
+                throw .usage(command, "needs --rect x,y,width,height, the part to keep in the image's pixels")
+            }
+            guard let rect = Self.rect(text) else {
+                throw .usage(command, "--rect \(text) must be x,y,width,height in pixels, with a width and height above 0")
+            }
+            return .crop(CropOptions(input: input, output: output, rect: rect))
         default:
             guard let json = values["json"]?.first else {
                 throw .usage(command, "needs --json with a file of marks, or - to read them from standard input")
@@ -608,6 +633,7 @@ public enum ShotCommand: Equatable, Sendable {
             "frames": "\(program) frames <video> [--count 8 | --every 2] [--width 1568] [-o folder]\n    Still frames of the video, for an agent that can't watch it: where the picture changes, or evenly every few seconds.",
             "text": "\(program) text <image>\n    The text in the image, read on this Mac: each line and word with its box, [x, y, width, height] in the image's pixels from the top left.",
             "diff": "\(program) diff <a> <b> [-o out.png] [--threshold 0.1]\n    Where image b differs from a: a dimmed copy of b with the changes highlighted and boxed, and the boxes in b's pixels.\n    Images of different sizes are compared at b's size. --threshold 0 counts any difference; 0.1, the default, ignores anti-aliasing.",
+            "crop": "\(program) crop <image> --rect x,y,w,h [-o out.png]\n    Keeps that part of the image at full resolution, in the image's pixels from the top left, as a new version that opens in Shot with the crop still adjustable.",
             "latest": "\(program) latest [--kind image|video|any]\n    The newest capture, a screenshot unless --kind says otherwise: its name, path, kind, when it was taken, and what Shot recorded in it, as latest_capture gives it.",
             "list": "\(program) list [--limit 10] [--since 2h]\n    Recent captures, newest first, as list_captures gives them. --since takes a date such as 2026-10-10 or a span back from now such as 10m, 2h or 3d.",
             "get": "\(program) get [<name or path>]\n    The capture a file name, words from it or its path names, or the newest of any kind, as get_capture gives it.",

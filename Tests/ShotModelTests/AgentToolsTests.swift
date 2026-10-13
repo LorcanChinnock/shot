@@ -38,10 +38,10 @@ private let captures = tools(in: folder, [
     ("Recording C.mp4", 5, true),
 ])
 
-@Test func thereAreThirteenToolsEachWithAnObjectSchema() {
-    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "wait_for_capture", "annotate", "make_gif", "trim_video", "list_windows", "capture_window", "record_window", "compare"])
+@Test func thereAreFourteenToolsEachWithAnObjectSchema() {
+    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "zoom", "wait_for_capture", "annotate", "make_gif", "trim_video", "list_windows", "capture_window", "record_window", "compare"])
     let required = AgentTools.definitions.map { $0.inputSchema["required"] }
-    #expect(required == [nil, nil, nil, nil, nil, nil, .array([.string("annotations")]), nil, .array([.string("start"), .string("end")]), nil, nil, nil, .array([.string("a"), .string("b")])])
+    #expect(required == [nil, nil, nil, nil, nil, .array([.string("rect")]), nil, .array([.string("annotations")]), nil, .array([.string("start"), .string("end")]), nil, nil, nil, .array([.string("a"), .string("b")])])
     for tool in AgentTools.definitions {
         #expect(tool.inputSchema["type"] == .string("object"))
         #expect(!tool.description.isEmpty)
@@ -50,7 +50,7 @@ private let captures = tools(in: folder, [
 
 @Test func onlyTheToolsThatChangeNothingAreMarkedReadOnly() {
     // annotate, make_gif, trim_video and compare add files, and capture_window and record_window take new captures.
-    #expect(AgentTools.definitions.filter(\.readOnly).map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "wait_for_capture", "list_windows"])
+    #expect(AgentTools.definitions.filter(\.readOnly).map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "zoom", "wait_for_capture", "list_windows"])
 }
 
 @Test func annotateNamesExactlyThePaletteColours() throws {
@@ -593,4 +593,62 @@ private func box(_ x: Double, _ y: Double, _ width: Double, _ height: Double) ->
     let tools = recording(asked, answer: ["id": .string("ab12cd34")])
     _ = await tools.call("record_window", .object(["display": .number(1), "rect": .array([.number(0), .number(0), .number(800), .number(600)]), "waitStable": .number(3)]))
     #expect(asked.requests == [AgentRequest(.record, target: AgentTarget(display: 1, rect: [0, 0, 800, 600]))])
+}
+
+private final class Zooms: @unchecked Sendable {
+    var asked: [(name: String, rect: [Double])] = []
+}
+
+/// Tools over `captures` whose `zoom` records what it was asked and shows `shown` of a 5120×2880 file.
+private func zooming(_ zooms: Zooms, shown: CaptureRecord.Size? = nil, fail: ShotCommandError? = nil) -> AgentTools {
+    var tools = captures
+    tools.zoom = { entry, rect throws(ShotCommandError) in
+        zooms.asked.append((entry.name, rect))
+        if let fail { throw fail }
+        let region = CropRegion.clamped(rect, width: 5120, height: 2880) ?? []
+        return AgentTools.Zoomed(
+            image: .image(data: "ZOOM", mimeType: "image/jpeg"), region: region,
+            shown: shown ?? CaptureRecord.Size(width: region[2], height: region[3]), file: CaptureRecord.Size(width: 5120, height: 2880)
+        )
+    }
+    return tools
+}
+
+private func rect(_ values: Double...) -> JSONValue {
+    .array(values.map(JSONValue.number))
+}
+
+@Test func zoomShowsPartOfTheNewestScreenshotAtFullResolution() async {
+    let zooms = Zooms()
+    let result = await zooming(zooms).call("zoom", .object(["rect": rect(100, 200, 300, 40)]))
+    #expect(result.isError == false)
+    #expect(zooms.asked.map(\.name) == ["Shot B.png"])
+    #expect(zooms.asked.map(\.rect) == [[100, 200, 300, 40]])
+    #expect(result.content.first == .image(data: "ZOOM", mimeType: "image/jpeg"))
+    #expect(texts(result) == ["This is [100, 200, 300, 40] of Shot B.png, which is 5120×2880 pixels, at full resolution: add 100 to x and 200 to y for the file's pixels."])
+}
+
+@Test func zoomSaysWhenItScaledOrCutTheRect() async {
+    let zooms = Zooms()
+    let result = await zooming(zooms, shown: CaptureRecord.Size(width: 1568, height: 882)).call("zoom", .object(["name": .string("shot a"), "rect": rect(-10.5, 0, 5200, 2880)]))
+    #expect(zooms.asked.map(\.name) == ["Shot A (2).png"])
+    #expect(texts(result) == [
+        "This is [0, 0, 5120, 2880] of Shot A (2).png, which is 5120×2880 pixels, scaled to 1568×882 to fit: divide by 0.306, then add 0 to x and 0 to y for the file's pixels. Zoom into a smaller part to see it at full resolution. The rect asked for was -10.5,0,5200,2880, cut to whole pixels within the image.",
+    ])
+}
+
+@Test func zoomNeedsARectAndAScreenshotInTheFolder() async {
+    let zooms = Zooms()
+    let tools = zooming(zooms)
+    let missing = await tools.call("zoom", .object([:]))
+    #expect(missing.isError)
+    #expect(texts(missing) == ["zoom needs rect: [x, y, width, height] in the file's pixels from the top left, with a width and height above 0."])
+    #expect(await tools.call("zoom", .object(["rect": rect(1, 2, 0, 4)])).isError)
+    let video = await tools.call("zoom", .object(["name": .string("Recording C"), "rect": rect(1, 2, 3, 4)]))
+    #expect(texts(video) == ["Recording C.mp4 is a recording; zoom shows part of a screenshot. get_frames shows a recording's frames."])
+    #expect(await tools.call("zoom", .object(["path": .string("/tmp/elsewhere.png"), "rect": rect(1, 2, 3, 4)])).isError)
+    #expect(zooms.asked.isEmpty)
+    let failed = await zooming(zooms, fail: .data("off the image")).call("zoom", .object(["rect": rect(1, 2, 3, 4)]))
+    #expect(failed.isError)
+    #expect(texts(failed) == ["off the image"])
 }
