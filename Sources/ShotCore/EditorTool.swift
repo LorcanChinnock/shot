@@ -23,6 +23,14 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// The tool whose key `characters` types, in either case.
+    public init?(key characters: String) {
+        guard let tool = Self.allCases.first(where: { String($0.key) == characters.lowercased() }) else {
+            return nil
+        }
+        self = tool
+    }
+
     public var title: String {
         switch self {
         case .select: String(localized: "Select")

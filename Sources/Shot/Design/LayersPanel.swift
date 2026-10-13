@@ -38,6 +38,8 @@ struct LayersPanel: View {
     let onSelectFrame: () -> Void
     let onHideFrame: (Bool) -> Void
     let onDeleteFrame: () -> Void
+    /// A tool's key was pressed while the list had focus and no name was being edited.
+    let onTool: (EditorTool) -> Void
 
     @FocusState private var isFocused: Bool
     @State private var drag: RowDrag?
@@ -97,6 +99,14 @@ struct LayersPanel: View {
                     return .ignored
                 }
                 renaming = id
+                return .handled
+            }
+            // Tool keys work here too, as they do on the canvas.
+            .onKeyPress(phases: .down) { press in
+                guard renaming == nil, press.modifiers.isDisjoint(with: [.command, .control, .option]), let tool = EditorTool(key: press.characters) else {
+                    return .ignored
+                }
+                onTool(tool)
                 return .handled
             }
             .overlay {
