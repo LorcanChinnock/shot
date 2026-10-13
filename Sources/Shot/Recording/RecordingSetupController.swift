@@ -153,8 +153,6 @@ final class RecordingSetupController {
             return
         }
         model.countdown = model.countdownSeconds
-        // Without the setup panel Shot may not be active yet, and the countdown needs key focus for Esc.
-        NSApp.activate()
         let panel = CountdownPanel(center: CGPoint(x: region.midX, y: region.midY), model: model) { [weak self] in
             self?.cancelCountdown()
         }
@@ -261,7 +259,6 @@ final class RecordingSetupController {
         ))
         self.bar = bar
         updateGeometry()
-        NSApp.activate()
         bar.orderFrontRegardless()
         bar.makeKey()
         if placeCamera, model.cameraOn {

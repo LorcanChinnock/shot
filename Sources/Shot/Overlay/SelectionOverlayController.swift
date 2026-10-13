@@ -99,7 +99,6 @@ final class SelectionOverlayController {
             panels.append(panel)
             views.append(view)
         }
-        NSApp.activate()
         for panel in panels {
             panel.orderFrontRegardless()
         }
