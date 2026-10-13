@@ -283,7 +283,7 @@ extension EditorDocument {
         guard let kind = styleKind(of: target) else {
             return nil
         }
-        return CopiedStyle(style: style(of: target).scaled(by: 1 / scale), cornerRadius: cornerRadius(of: target) / scale, source: kind)
+        return CopiedStyle(style: style(of: target).scaled(by: 1 / scale), cornerRadius: cornerRadius(of: target) / scale, source: kind, fromShape: isShapeWithCorners(target))
     }
 
     /// Pastes `copied` on each of `targets`, on a document of `scale` pixels per point: the fields both it and the target
@@ -296,10 +296,18 @@ extension EditorDocument {
             }
             let transparent = copied.style.border?.kind == .outline && hasTransparency(of: target)
             setStyle(copied.pasted(on: style(of: target), of: kind, transparent: transparent, scale: scale), of: target, margin: margin)
-            if let radius = copied.pastedCornerRadius(on: kind, scale: scale) {
-                setCornerRadius(radius, of: target)
+            if let radius = copied.pastedCornerRadius(on: kind, ontoShape: isShapeWithCorners(target), scale: scale) {
+                if case let .annotation(id) = target, let index = annotations.firstIndex(where: { $0.id == id }), annotations[index].roundsShape, !annotations[index].isLocked {
+                    annotations[index].cornerRadius = radius == 0 ? nil : radius
+                } else {
+                    setCornerRadius(radius, of: target)
+                }
             }
         }
+    }
+
+    private func isShapeWithCorners(_ target: StyleTarget) -> Bool {
+        if case let .annotation(id) = target { annotations.first { $0.id == id }?.roundsShape == true } else { false }
     }
 
     /// What Apply Style to All Images restyles: the screenshot and every placed image.

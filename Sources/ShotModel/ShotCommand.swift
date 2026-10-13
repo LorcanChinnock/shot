@@ -754,7 +754,7 @@ extension CaptureMark {
         keys.map { $0.intValue.map { "[\($0)]" } ?? ".\($0.stringValue)" }.joined().drop { $0 == "." }.description
     }
 
-    /// The types a mark can have.
+    /// The types a mark can have. `rounded` is an alias of `rectangle` that takes a default corner radius.
     public static let types: Set<String> = [
         "arrow", "line", "rectangle", "rounded", "ellipse", "triangle", "diamond", "star", "highlight", "blur", "pixelate",
         "spotlight", "text", "counter", "note", "pen", "marker", "image",

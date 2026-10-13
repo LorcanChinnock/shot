@@ -77,7 +77,7 @@ func pastingAddsAnOffsetCopyWithANewID(annotation: Annotation) throws {
 }
 
 @Test func pastingKeepsFillBendAlignmentAndCornerRadius() throws {
-    var shape = Annotation(kind: .shape(.rounded, rect: CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, fill: RGBA.presets[2], lineWidth: 4)
+    var shape = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 100, y: 100, width: 80, height: 40)), color: red, fill: RGBA.presets[2], lineWidth: 4)
     shape.cornerRadius = 20
     var arrow = Annotation(kind: .arrow(from: CGPoint(x: 10, y: 20), to: CGPoint(x: 110, y: 70)), color: red, lineWidth: 4)
     arrow.bend = CGVector(dx: 15, dy: -25)

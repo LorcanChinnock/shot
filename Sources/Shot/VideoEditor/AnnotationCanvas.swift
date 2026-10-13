@@ -117,7 +117,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         for (_, point) in radiusHandles {
             SelectionStyle.handle(at: viewport.viewPoint(point), round: true)
         }
-        if editing != nil, let dragged = radiusHandles.first(where: { $0.handle == resizeHandle }), let radius = annotation.roundedBox?.radius {
+        if editing != nil, let dragged = radiusHandles.first(where: { $0.handle == resizeHandle }), let radius = annotation.cornerBox?.radius {
             drawRadiusLabel(radius / model.styleScale, near: viewport.viewPoint(dragged.point))
         }
     }

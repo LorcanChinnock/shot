@@ -188,7 +188,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
                 for handle in radiusHandles {
                     SelectionStyle.handle(at: viewRect(CGRect(origin: handle.point, size: .zero)).origin, round: true)
                 }
-                if movedSinceMouseDown, let dragged = radiusHandles.first(where: { $0.handle == resizeHandle }), let radius = selected.roundedBox?.radius {
+                if movedSinceMouseDown, let dragged = radiusHandles.first(where: { $0.handle == resizeHandle }), let radius = selected.cornerBox?.radius {
                     drawRadiusLabel(radius / model.scale, near: viewRect(CGRect(origin: dragged.point, size: .zero)).origin)
                 }
             }

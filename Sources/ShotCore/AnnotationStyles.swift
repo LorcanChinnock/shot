@@ -4,15 +4,24 @@ import Foundation
 
 /// The outline a shape annotation, or a spotlight's lit area, takes within its rect.
 public enum BoxShape: String, CaseIterable, Codable, Sendable {
-    case rectangle, rounded, ellipse, triangle, diamond, star
+    case rectangle, ellipse, triangle, diamond, star
 
     /// The shapes a spotlight can light.
-    public static let spotlightShapes: [BoxShape] = [.rectangle, .rounded, .ellipse]
+    public static let spotlightShapes: [BoxShape] = [.rectangle, .ellipse]
+
+    /// Reads `rounded`, which an older version saved for a rounded rectangle, as a rectangle; `Annotation` gives it the
+    /// radius it had.
+    public init(from decoder: Decoder) throws {
+        let name = try decoder.singleValueContainer().decode(String.self)
+        guard let shape = name == "rounded" ? .rectangle : BoxShape(rawValue: name) else {
+            throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "Unknown shape \(name)"))
+        }
+        self = shape
+    }
 
     public var title: String {
         switch self {
         case .rectangle: String(localized: "Rectangle")
-        case .rounded: String(localized: "Rounded Rectangle")
         case .ellipse: String(localized: "Ellipse")
         case .triangle: String(localized: "Triangle")
         case .diamond: String(localized: "Diamond")
@@ -24,7 +33,6 @@ public enum BoxShape: String, CaseIterable, Codable, Sendable {
     public var symbol: String {
         switch self {
         case .rectangle: "rectangle"
-        case .rounded: "app"
         case .ellipse: "circle"
         case .triangle: "triangle"
         case .diamond: "diamond"
@@ -32,20 +40,36 @@ public enum BoxShape: String, CaseIterable, Codable, Sendable {
         }
     }
 
-    /// The outline stretched to fill `rect`, a rounded rectangle's corners rounded by `cornerRadius`.
+    /// Whether it has corners to round: every shape but the ellipse.
+    public var hasCorners: Bool { self != .ellipse }
+
+    /// The outline stretched to fill `rect`, its corners rounded by `cornerRadius` (square for `nil`). A star rounds only
+    /// its points.
     public func path(in rect: CGRect, cornerRadius: CGFloat? = nil) -> CGPath {
         switch self {
         case .rectangle:
-            return CGPath(rect: rect, transform: nil)
-        case .rounded:
-            let radius = Self.cornerRadius(cornerRadius, in: rect)
-            return CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
+            let radius = clampedRadius(cornerRadius, in: rect)
+            return radius > 0 ? CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil) : CGPath(rect: rect, transform: nil)
         case .ellipse:
             return CGPath(ellipseIn: rect, transform: nil)
+        case .triangle, .diamond, .star:
+            let corners = vertices(in: rect)
+            return Self.polygon(corners.points, rounding: clampedRadius(cornerRadius, in: rect), roundedIndices: corners.rounded)
+        }
+    }
+
+    /// The corners of the outline within `rect`, clockwise from the top left or top, and which of them a radius rounds;
+    /// none for an ellipse.
+    public func vertices(in rect: CGRect) -> (points: [CGPoint], rounded: Set<Int>) {
+        switch self {
+        case .rectangle:
+            return ([CGPoint(x: rect.minX, y: rect.minY), CGPoint(x: rect.maxX, y: rect.minY), CGPoint(x: rect.maxX, y: rect.maxY), CGPoint(x: rect.minX, y: rect.maxY)], [0, 1, 2, 3])
+        case .ellipse:
+            return ([], [])
         case .triangle:
-            return Self.polygon([CGPoint(x: rect.midX, y: rect.minY), CGPoint(x: rect.maxX, y: rect.maxY), CGPoint(x: rect.minX, y: rect.maxY)])
+            return ([CGPoint(x: rect.midX, y: rect.minY), CGPoint(x: rect.maxX, y: rect.maxY), CGPoint(x: rect.minX, y: rect.maxY)], [0, 1, 2])
         case .diamond:
-            return Self.polygon([CGPoint(x: rect.midX, y: rect.minY), CGPoint(x: rect.maxX, y: rect.midY), CGPoint(x: rect.midX, y: rect.maxY), CGPoint(x: rect.minX, y: rect.midY)])
+            return ([CGPoint(x: rect.midX, y: rect.minY), CGPoint(x: rect.maxX, y: rect.midY), CGPoint(x: rect.midX, y: rect.maxY), CGPoint(x: rect.minX, y: rect.midY)], [0, 1, 2, 3])
         case .star:
             // Five points, scaled so the star's tips touch every side of the rect.
             let angles = (0..<10).map { -CGFloat.pi / 2 + CGFloat($0) * .pi / 5 }
@@ -55,22 +79,90 @@ public enum BoxShape: String, CaseIterable, Codable, Sendable {
             }
             let minX = unit.map(\.x).min()!, maxX = unit.map(\.x).max()!
             let minY = unit.map(\.y).min()!, maxY = unit.map(\.y).max()!
-            return Self.polygon(unit.map {
+            let points = unit.map {
                 CGPoint(x: rect.minX + ($0.x - minX) / (maxX - minX) * rect.width, y: rect.minY + ($0.y - minY) / (maxY - minY) * rect.height)
-            })
+            }
+            // The inner corners between the points stay sharp.
+            return (points, Set(stride(from: 0, to: 10, by: 2)))
         }
     }
 
-    /// `radius` within what `rect` can take: half its shorter side makes a pill. `nil` is the radius from before it could
-    /// be set, a fifth of the shorter side, so older annotations keep their look.
-    public static func cornerRadius(_ radius: CGFloat?, in rect: CGRect) -> CGFloat {
-        let shorter = max(0, min(rect.width, rect.height))
-        return min(max(radius ?? shorter / 5, 0), shorter / 2)
+    /// `radius` within what this shape can take in `rect`, 0 for `nil`: half the shorter side makes a rectangle a pill,
+    /// and a triangle, diamond or star stops where the arcs of neighbouring corners would meet.
+    public func clampedRadius(_ radius: CGFloat?, in rect: CGRect) -> CGFloat {
+        guard hasCorners else {
+            return 0
+        }
+        return min(max(radius ?? 0, 0), maxRadius(in: rect))
     }
 
-    private static func polygon(_ points: [CGPoint]) -> CGPath {
+    /// The largest radius that rounds every rounded corner of the shape in `rect` without two arcs overlapping. An arc of
+    /// radius `r` in a corner of angle `a` takes `r / tan(a / 2)` of each edge it meets.
+    public func maxRadius(in rect: CGRect) -> CGFloat {
+        if self == .rectangle {
+            return max(0, min(rect.width, rect.height) / 2)
+        }
+        let (points, rounded) = vertices(in: rect)
+        let count = points.count
+        // Per edge, from a point to the next, how much of it each unit of radius uses up, summed over its rounded ends.
+        var use = [CGFloat](repeating: 0, count: count)
+        for index in rounded {
+            let before = (index + count - 1) % count
+            let tangent = Self.tangentPerRadius(at: points[index], from: points[before], to: points[(index + 1) % count])
+            use[before] += tangent
+            use[index] += tangent
+        }
+        let limits = points.indices.compactMap { edge -> CGFloat? in
+            let next = points[(edge + 1) % count]
+            return use[edge] > 0 ? hypot(next.x - points[edge].x, next.y - points[edge].y) / use[edge] : nil
+        }
+        return limits.min() ?? 0
+    }
+
+    /// How far along each of its two edges an arc of radius 1 in the corner at `point` runs, `1 / tan(a / 2)`; 0 when the
+    /// corner is flat or degenerate.
+    private static func tangentPerRadius(at point: CGPoint, from previous: CGPoint, to next: CGPoint) -> CGFloat {
+        let a = CGPoint(x: previous.x - point.x, y: previous.y - point.y), b = CGPoint(x: next.x - point.x, y: next.y - point.y)
+        let lengths = hypot(a.x, a.y) * hypot(b.x, b.y)
+        guard lengths > 0 else {
+            return 0
+        }
+        let half = acos(min(max((a.x * b.x + a.y * b.y) / lengths, -1), 1)) / 2
+        return half > 0 && half < .pi / 2 ? 1 / tan(half) : 0
+    }
+
+    /// `radius` within what `rect` can take as a rounded rectangle, which half its shorter side makes a pill; `nil` is
+    /// square. Also the limit on a placed image's and the screenshot's corners.
+    public static func cornerRadius(_ radius: CGFloat?, in rect: CGRect) -> CGFloat {
+        BoxShape.rectangle.clampedRadius(radius, in: rect)
+    }
+
+    /// The closed outline through `points`, with an arc of `radius` tangent to both edges at each of `roundedIndices`.
+    private static func polygon(_ points: [CGPoint], rounding radius: CGFloat, roundedIndices: Set<Int>) -> CGPath {
         let path = CGMutablePath()
-        path.addLines(between: points)
+        let count = points.count
+        guard radius > 0, !roundedIndices.isEmpty else {
+            path.addLines(between: points)
+            path.closeSubpath()
+            return path
+        }
+        for index in 0..<count {
+            let next = points[(index + 1) % count]
+            if roundedIndices.contains(index) {
+                if index == 0 {
+                    // Starts where the arc at the first corner does, on the edge into it.
+                    let corner = points[0], before = points[count - 1]
+                    let distance = hypot(before.x - corner.x, before.y - corner.y)
+                    let along = radius * tangentPerRadius(at: corner, from: before, to: next)
+                    path.move(to: CGPoint(x: corner.x + (before.x - corner.x) / distance * along, y: corner.y + (before.y - corner.y) / distance * along))
+                }
+                path.addArc(tangent1End: points[index], tangent2End: next, radius: radius)
+            } else if index == 0 {
+                path.move(to: points[0])
+            } else {
+                path.addLine(to: points[index])
+            }
+        }
         path.closeSubpath()
         return path
     }

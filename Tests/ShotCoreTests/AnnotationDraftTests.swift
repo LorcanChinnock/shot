@@ -4,7 +4,7 @@ import Testing
 @testable import ShotCore
 
 private let style = AnnotationDraft.Style(
-    color: RGBA(1, 0, 0), fill: RGBA(0, 0, 1), noteColor: RGBA(1, 1, 0), lineWidth: 4, cornerRadius: 12, shape: .rounded,
+    color: RGBA(1, 0, 0), fill: RGBA(0, 0, 1), noteColor: RGBA(1, 1, 0), lineWidth: 4, shape: .rectangle,
     redaction: .pixelate, redactionAmount: 0.02, spotlight: SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.7), alignment: .center
 )
 
@@ -35,16 +35,16 @@ private func isClose(_ a: CGPoint, _ b: CGPoint) -> Bool { hypot(a.x - b.x, a.y 
 
 @Test func shiftSquaresBoxes() throws {
     let square = try #require(draft(.shape, to: CGPoint(x: 100, y: -40), constrain: true))
-    #expect(square.kind == .shape(.rounded, rect: CGRect(x: 0, y: -40, width: 40, height: 40)))
+    #expect(square.kind == .shape(.rectangle, rect: CGRect(x: 0, y: -40, width: 40, height: 40)))
     let redaction = try #require(draft(.redact, to: CGPoint(x: -30, y: 80), constrain: true))
     #expect(redaction.kind == .pixelate(CGRect(x: -30, y: 0, width: 30, height: 30), amount: 0.02))
 }
 
 @Test func optionDrawsBoxesFromTheCentre() throws {
     let centred = try #require(draft(.shape, from: CGPoint(x: 50, y: 50), to: CGPoint(x: 80, y: 60), fromCenter: true))
-    #expect(centred.kind == .shape(.rounded, rect: CGRect(x: 20, y: 40, width: 60, height: 20)))
+    #expect(centred.kind == .shape(.rectangle, rect: CGRect(x: 20, y: 40, width: 60, height: 20)))
     let both = try #require(draft(.shape, from: CGPoint(x: 50, y: 50), to: CGPoint(x: 80, y: 60), constrain: true, fromCenter: true))
-    #expect(both.kind == .shape(.rounded, rect: CGRect(x: 40, y: 40, width: 20, height: 20)))
+    #expect(both.kind == .shape(.rectangle, rect: CGRect(x: 40, y: 40, width: 20, height: 20)))
 }
 
 @Test func highlighterIsStraightWithShift() throws {
@@ -79,16 +79,16 @@ private func isClose(_ a: CGPoint, _ b: CGPoint) -> Bool { hypot(a.x - b.x, a.y 
 @Test func spotlightAndRedactionDraftsTakeTheNextStyle() throws {
     let spotlight = try #require(draft(.spotlight, to: CGPoint(x: 40, y: 30)))
     #expect(spotlight.kind == .spotlight(CGRect(x: 0, y: 0, width: 40, height: 30), style: style.spotlight))
-    #expect(spotlight.cornerRadius == style.cornerRadius)
+    #expect(spotlight.cornerRadius == nil)
     let redaction = try #require(draft(.redact, to: CGPoint(x: 40, y: 30)))
     #expect(redaction.redaction == .pixelate)
     #expect(redaction.kind == .pixelate(CGRect(x: 0, y: 0, width: 40, height: 30), amount: 0.02))
 }
 
-@Test func shapesTakeTheFillAndCornersButLinesDoNot() throws {
+@Test func shapesTakeTheFillAndStartSquareButLinesTakeNeither() throws {
     let shape = try #require(draft(.shape, to: CGPoint(x: 40, y: 30)))
     #expect(shape.fill == style.fill)
-    #expect(shape.cornerRadius == style.cornerRadius)
+    #expect(shape.cornerRadius == nil)
     #expect(shape.color == style.color)
     #expect(shape.lineWidth == style.lineWidth)
     let line = try #require(draft(.line, to: CGPoint(x: 40, y: 30)))
