@@ -14,6 +14,8 @@ public enum ShotCommand: Equatable, Sendable {
     case diff(DiffOptions)
     /// A part of an image at full resolution, written as its next version.
     case crop(CropOptions)
+    /// The image editor's changes, from one JSON edit, written as the image's next version.
+    case edit(EditOptions)
     /// A screenshot of an open window or a display, taken by the running app.
     case capture(AgentTarget)
     /// Starts, stops or asks about a recording of a window, made by the running app.
@@ -183,6 +185,26 @@ public enum ShotCommand: Equatable, Sendable {
         }
     }
 
+    /// Where `edit`'s spec comes from: a JSON file, standard input, the JSON itself, or already read, as the MCP tool gives it.
+    public enum Spec: Equatable, Sendable {
+        case file(String)
+        case standardInput
+        case json(String)
+        case edit(ImageEdit)
+    }
+
+    public struct EditOptions: Equatable, Sendable {
+        public var input: String
+        public var output: String?
+        public var spec: Spec
+
+        public init(input: String, output: String? = nil, spec: Spec) {
+            self.input = input
+            self.output = output
+            self.spec = spec
+        }
+    }
+
     public enum RecordAction: Equatable, Sendable {
         /// Records the target; with `duration`, waits for the recording to end.
         case start(AgentTarget, duration: Double?)
@@ -196,7 +218,7 @@ public enum ShotCommand: Equatable, Sendable {
     }
 
     /// The commands `help` knows, in the order it lists them.
-    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "text", "diff", "crop", "latest", "list", "get", "windows", "capture", "record", "watch", "doctor", "mcp"]
+    public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "text", "diff", "crop", "edit", "latest", "list", "get", "windows", "capture", "record", "watch", "doctor", "mcp"]
 
     /// The command's name, for error messages such as `shot gif: …`.
     public var name: String {
@@ -210,6 +232,7 @@ public enum ShotCommand: Equatable, Sendable {
         case .text: "text"
         case .diff: "diff"
         case .crop: "crop"
+        case .edit: "edit"
         case .capture: "capture"
         case .record: "record"
         case .watch: "watch"
@@ -253,7 +276,7 @@ public enum ShotCommand: Equatable, Sendable {
         case "index-text":
             guard rest.count == 1, let folder = rest.first else { throw .usage(first, "expected one folder") }
             return .indexText(folder: folder)
-        case "info", "gif", "trim", "redact", "annotate", "frames", "text", "crop":
+        case "info", "gif", "trim", "redact", "annotate", "frames", "text", "crop", "edit":
             if rest.contains(where: isHelp) { return .help(first) }
             return try parseMedia(first, rest)
         case "diff":
@@ -295,6 +318,7 @@ public enum ShotCommand: Equatable, Sendable {
         "text": [:],
         "diff": ["output": false, "threshold": false],
         "crop": ["output": false, "rect": false],
+        "edit": ["output": false, "json": false],
         "capture": ["window": false, "bundle-id": false, "display": false, "rect": false, "no-shadow": false, "wait-stable": false],
         "record": ["window": false, "bundle-id": false, "display": false, "rect": false, "no-shadow": false, "duration": false],
         "watch": ["kind": false, "timeout": false],
@@ -605,6 +629,18 @@ public enum ShotCommand: Equatable, Sendable {
                 throw .usage(command, "--rect \(text) must be x,y,width,height in pixels, with a width and height above 0")
             }
             return .crop(CropOptions(input: input, output: output, rect: rect))
+        case "edit":
+            guard let json = values["json"]?.first else {
+                throw .usage(command, "needs --json with a file holding the edit, - to read it from standard input, or the edit itself, such as --json '{\"crop\": [0, 0, 800, 600]}'")
+            }
+            let spec: Spec = if json == "-" {
+                .standardInput
+            } else if json.trimmingCharacters(in: .whitespaces).hasPrefix("{") {
+                .json(json)
+            } else {
+                .file(json)
+            }
+            return .edit(EditOptions(input: input, output: output, spec: spec))
         default:
             guard let json = values["json"]?.first else {
                 throw .usage(command, "needs --json with a file of marks, or - to read them from standard input")
@@ -651,6 +687,7 @@ public enum ShotCommand: Equatable, Sendable {
             "text": "\(program) text <image>\n    The text in the image, read on this Mac: each line and word with its box, [x, y, width, height] in the image's pixels from the top left.",
             "diff": "\(program) diff <a> <b> [-o out.png] [--threshold 0.1]\n    Where image b differs from a: a dimmed copy of b with the changes highlighted and boxed, and the boxes in b's pixels.\n    Images of different sizes are compared at b's size. --threshold 0 counts any difference; 0.1, the default, ignores anti-aliasing.",
             "crop": "\(program) crop <image> --rect x,y,w,h [-o out.png]\n    Keeps that part of the image at full resolution, in the image's pixels from the top left, as a new version that opens in Shot with the crop still adjustable.",
+            "edit": "\(program) edit <image> --json edit.json [-o out.png]\n    Makes the image editor's changes as a new version that opens in Shot with its layers live: crop, pad and background, style (shadow, border, corners), marks to add, layers to remove by id, other images to place, scale to 1x, and format. --json - reads the edit from standard input, and --json '{…}' takes it as it is.\n    An edit: {\"pad\": 40, \"background\": \"white\", \"style\": {\"shadow\": \"soft\", \"corners\": 12}, \"marks\": [{\"type\": \"arrow\", \"from\": [410, 220], \"to\": [612, 388]}]}\n    Every field: \(docs)#editing-images",
             "latest": "\(program) latest [--kind image|video|any]\n    The newest capture, a screenshot unless --kind says otherwise: its name, path, kind, when it was taken, and what Shot recorded in it, as latest_capture gives it.",
             "list": "\(program) list [--limit 10] [--since 2h] [--query words]\n    Recent captures, newest first, as list_captures gives them. --since takes a date such as 2026-10-10 or a span back from now such as 10m, 2h or 3d. --query keeps those whose name or screenshot text contains the words, ignoring case and accents, with the lines that match; Shot reads screenshots' text in the background while it runs.",
             "get": "\(program) get [<name or path>]\n    The capture a file name, words from it or its path names, or the newest of any kind, as get_capture gives it.",

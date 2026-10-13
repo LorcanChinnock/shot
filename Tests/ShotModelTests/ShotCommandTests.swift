@@ -31,6 +31,9 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(try parse("diff --threshold 0 a.png b.png -o d.png") == .diff(ShotCommand.DiffOptions(a: "a.png", b: "b.png", output: "d.png", threshold: 0)))
     #expect(try parse("crop a.png --rect 10,20.5,300,40") == .crop(ShotCommand.CropOptions(input: "a.png", rect: [10, 20.5, 300, 40])))
     #expect(try parse("crop --rect=0,0,8,8 a.jpg -o b.jpg") == .crop(ShotCommand.CropOptions(input: "a.jpg", output: "b.jpg", rect: [0, 0, 8, 8])))
+    #expect(try parse("edit a.png --json e.json") == .edit(ShotCommand.EditOptions(input: "a.png", spec: .file("e.json"))))
+    #expect(try parse("edit a.png --json - -o b.jpg") == .edit(ShotCommand.EditOptions(input: "a.png", output: "b.jpg", spec: .standardInput)))
+    #expect(try parse(#"edit a.png --json={"pad":40}"#) == .edit(ShotCommand.EditOptions(input: "a.png", spec: .json(#"{"pad":40}"#))))
     #expect(try parse("capture --window Simulator") == .capture(AgentTarget(window: "Simulator")))
     #expect(try parse("capture --window=Calculator") == .capture(AgentTarget(window: "Calculator")))
     #expect(try parse("record --window Simulator") == .record(.start(AgentTarget(window: "Simulator"), duration: nil)))
@@ -89,6 +92,9 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(try parse("crop a.png --help") == .help("crop"))
     #expect(ShotCommand.usage("crop").hasPrefix("Usage: shot crop <image> --rect x,y,w,h [-o out.png]"))
     #expect(ShotCommand.usage(nil).contains("shot crop <image>"))
+    #expect(try parse("edit a.png --help") == .help("edit"))
+    #expect(ShotCommand.usage("edit").hasPrefix("Usage: shot edit <image> --json edit.json [-o out.png]"))
+    #expect(ShotCommand.usage(nil).contains("shot edit <image>"))
     #expect(ShotCommand.usage("capture").hasPrefix("Usage: shot capture --window <title or app>"))
     #expect(try parse("text --help") == .help("text"))
     #expect(ShotCommand.usage(nil).contains("shot text <image>"))
@@ -143,6 +149,9 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     ("crop a.png --rect 1,2,-3,4", "crop", "--rect 1,2,-3,4 must be x,y,width,height in pixels, with a width and height above 0"),
     ("crop a.png --rect 1,2,3,4 --rect 5,6,7,8", "crop", "--rect is given twice"),
     ("crop a.png --rect 1,2,3,4 --style blur", "crop", "unknown option --style; it takes --rect, -o"),
+    ("edit a.png", "edit", #"needs --json with a file holding the edit, - to read it from standard input, or the edit itself, such as --json '{"crop": [0, 0, 800, 600]}'"#),
+    ("edit --json e.json", "edit", "missing the file to work on"),
+    ("edit a.png --json e.json --rect 1,2,3,4", "edit", "unknown option --rect; it takes --json, -o"),
     ("capture", "capture", "needs --window with words from the window's title or app, such as --window Simulator, --bundle-id or --display"),
     ("capture --window", "capture", "--window needs a value"),
     ("capture a.png --window Simulator", "capture", "takes no file; name the window with --window"),

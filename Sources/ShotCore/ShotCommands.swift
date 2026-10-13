@@ -37,17 +37,7 @@ public enum ShotCommands {
             case .standardInput:
                 marks = try CaptureMark.list(from: FileHandle.standardInput.readDataToEndOfFile())
             }
-            return try draw(input: options.input, output: options.output, projects: projects, origin: origin) { (_: CGImage, scale: CGFloat) throws(ShotCommandError) in
-                var annotations: [Annotation] = []
-                for (index, mark) in marks.enumerated() {
-                    // Widths an agent leaves out look as they would drawn in the editor at the capture's scale.
-                    guard let annotation = Annotation(mark: mark, lineWidth: EditorStyle.widths[1] * scale) else {
-                        throw .data("mark \(index) (\(mark.type)) can't be drawn")
-                    }
-                    annotations.append(annotation)
-                }
-                return annotations
-            }
+            return try draw(input: options.input, output: options.output, edit: ImageEdit(marks: marks), projects: projects, origin: origin) { (_: CGImage) in [] }
         case let .frames(options):
             return try await frames(options)
         case let .text(path):
@@ -55,7 +45,9 @@ public enum ShotCommands {
         case let .diff(options):
             return try diff(options)
         case let .crop(options):
-            return try draw(input: options.input, output: options.output, crop: options.rect, projects: projects, origin: origin) { (_: CGImage) in [] }
+            return try draw(input: options.input, output: options.output, edit: ImageEdit(crop: options.rect), cropField: "rect", projects: projects, origin: origin) { (_: CGImage) in [] }
+        case let .edit(options):
+            return try edit(options, projects: projects, origin: origin)
         case .capture, .record, .watch, .windows, .latest, .list, .get, .doctor, .mcp, .indexText, .version, .help:
             throw .internal("\(command.name) isn't a media command")
         }
@@ -275,15 +267,16 @@ public enum ShotCommands {
         throw .cantCreate("couldn't find a free name beside \(input.path)")
     }
 
-    /// Draws the annotations `make` gives for the input image, in its pixels, and the image's scale, onto a copy of it, as
-    /// the image editor's Save does. A version is drawn on again from its original with its layers, which stay live with
-    /// the new marks on top, rather than having them baked in. The new file records the marks for agents and keeps them
-    /// in `projects`, so a person can open it in Shot and change them; unlike the editor, a command records whether or
-    /// not agents are handed captures. `crop`, in the image's pixels, keeps that part, as the editor's crop does, so the
-    /// version opens with it still adjustable.
+    /// Draws the annotations `make` gives for the input image, in its pixels, and the image's scale, onto a copy of it,
+    /// with `edit`'s changes, as the image editor's Save does. A version is drawn on again from its original with its
+    /// layers, which stay live with the new marks on top, rather than having them baked in. The new file records the marks
+    /// for agents and keeps them in `projects`, so a person can open it in Shot and change them; unlike the editor, a
+    /// command records whether or not agents are handed captures. `edit`'s crop, called `cropField` in messages, keeps that
+    /// part, as the editor's crop does, so the version opens with it still adjustable. One scaled to 1× keeps no layers,
+    /// since its pixels are no longer theirs. `layers` adds the new version's layers, each with its id and type.
     static func draw(
-        input path: String, output: String?, crop: [Double]? = nil, projects: ProjectStore?, origin: ProjectOrigin,
-        _ make: (CGImage, CGFloat) throws(ShotCommandError) -> [Annotation]
+        input path: String, output: String?, edit: ImageEdit = ImageEdit(), cropField: String = "crop", layers: Bool = false,
+        projects: ProjectStore?, origin: ProjectOrigin, _ make: (CGImage, CGFloat) throws(ShotCommandError) -> [Annotation]
     ) throws(ShotCommandError) -> JSONValue {
         let input = url(path)
         try requireInput(input)
@@ -291,8 +284,26 @@ public enum ShotCommands {
             throw .data("\(input.lastPathComponent) isn't an image Shot can read")
         }
         let own = input.pathExtension.lowercased()
-        let target = try destination(for: input, output: output, extensions: ["png", "jpg", "jpeg"], default: ["png", "jpg", "jpeg"].contains(own) ? own : "png", command: "draw")
+        let asked = edit.format.map { $0 == .png ? "png" : "jpg" }
+        let target = try destination(for: input, output: output, extensions: ["png", "jpg", "jpeg"], default: asked ?? (["png", "jpg", "jpeg"].contains(own) ? own : "png"), command: "draw")
         let format = ImageFormat(fileExtension: target.url.pathExtension)
+        if let asked, ImageFormat(fileExtension: asked) != format, let output {
+            throw .usage(nil, "-o \(output) isn't a \(asked == "png" ? "PNG" : "JPEG"), the format the edit asks for")
+        }
+        if format == .jpeg, edit.background?.lowercased() == "none" {
+            throw .data("background none needs a PNG: a JPEG has no transparency")
+        }
+        var placed: [PlacedImageFile] = []
+        for (index, placement) in edit.place.enumerated() {
+            let file = url(placement.path)
+            guard FileManager.default.fileExists(atPath: file.path) else {
+                throw .noInput("place[\(index)]: \(file.path) doesn't exist")
+            }
+            guard let picture = ImageCodec.image(at: file) else {
+                throw .data("place[\(index)]: \(file.lastPathComponent) isn't an image Shot can read")
+            }
+            placed.append(PlacedImageFile(image: picture, scale: ImageCodec.scale(ofFileAt: file)))
+        }
         let scale = ImageCodec.scale(ofFileAt: input)
         let drawn = try make(image, scale)
         var document = EditorDocument(base: image, background: EditorDocument.defaultBackground(for: format))
@@ -306,29 +317,22 @@ public enum ShotCommands {
                 original = saved.original
             }
         }
-        // The input's pixels start at the canvas's corner, which is the original's for a version that was padded or cropped.
-        let shift = CGVector(dx: document.canvasRect.minX, dy: document.canvasRect.minY)
-        document.annotations += drawn.map { annotation in
-            var moved = annotation
-            moved.offset(by: shift)
-            return moved
-        }
         document.hasWindowShadow = ImageCodec.hasWindowShadow(ofFileAt: original)
-        if format == .jpeg, document.background == nil {
-            document.background = EditorDocument.defaultBackground(for: format)
-        }
-        if let crop {
-            guard let region = CropRegion.clamped(crop, width: image.width, height: image.height) else {
-                throw .data("rect (\(CropRegion.text(crop))) is off the \(image.width)×\(image.height) image")
+        try document.apply(edit, drawn: drawn, placed: placed, scale: scale, name: input.lastPathComponent, cropField: cropField)
+        if format == .jpeg {
+            // JPEG has no alpha, as the editor's background picker knows.
+            if document.background == nil {
+                document.background = EditorDocument.defaultBackground(for: format)
             }
-            document.crop(to: CGRect(x: region[0], y: region[1], width: region[2], height: region[3]).offsetBy(dx: shift.dx, dy: shift.dy))
+            document.background?.a = 1
         }
+        let oneX = edit.isOneX && scale > 1
         defer { AnnotationRenderer.releaseCaches() }
         let projectID = projects == nil ? nil : ProjectKey.newID()
-        let data: Data
+        let rendered: VersionWriter.RenderedImage
         do throws(VersionWriter.Failure) {
-            let record = VersionWriter.record(of: document, drawnOn: original, savedAs: format, scale: scale)
-            data = try VersionWriter.render(document, scale: scale, as: format, record: record, projectID: projectID).file
+            let record = VersionWriter.record(of: document, drawnOn: original, savedAs: format, scale: scale, atOneX: oneX)
+            rendered = try VersionWriter.render(document, scale: scale, as: format, record: record, projectID: projectID, atOneX: oneX)
         } catch .draw {
             throw .internal("couldn't draw the image")
         } catch {
@@ -337,21 +341,54 @@ public enum ShotCommands {
         let temporary = temporaryURL(beside: target.url, pathExtension: target.url.pathExtension)
         defer { try? FileManager.default.removeItem(at: temporary) }
         do {
-            try data.write(to: temporary, options: .withoutOverwriting)
+            try rendered.file.write(to: temporary, options: .withoutOverwriting)
         } catch {
             throw .cantCreate("couldn't write in \(temporary.deletingLastPathComponent().path): \(error.localizedDescription)")
         }
-        let placed = try place(temporary, at: target)
-        VersionWriter.keep(document.snapshot, of: placed, id: projectID, original: original, in: projects, origin: origin)
-        return .object(try written(placed))
+        let placedAt = try place(temporary, at: target)
+        if oneX {
+            if let projects {
+                VersionWriter.keep(origin: origin, of: placedAt, id: projectID, in: projects)
+            }
+        } else {
+            VersionWriter.keep(document.snapshot, of: placedAt, id: projectID, original: original, in: projects, origin: origin)
+        }
+        var object = try written(placedAt)
+        if layers {
+            object["layers"] = .array((rendered.record?.annotations ?? []).map { mark in
+                .object(["id": .string(mark.id ?? ""), "type": .string(mark.type)])
+            })
+        }
+        return .object(object)
     }
 
-    /// The same for `redact` and `crop`, which need only the image.
+    /// The same for `redact`, which needs only the image.
     static func draw(
-        input path: String, output: String?, crop: [Double]? = nil, projects: ProjectStore?, origin: ProjectOrigin,
+        input path: String, output: String?, edit: ImageEdit = ImageEdit(), cropField: String = "crop", projects: ProjectStore?, origin: ProjectOrigin,
         _ make: (CGImage) throws(ShotCommandError) -> [Annotation]
     ) throws(ShotCommandError) -> JSONValue {
-        try draw(input: path, output: output, crop: crop, projects: projects, origin: origin) { (image: CGImage, _: CGFloat) throws(ShotCommandError) in try make(image) }
+        try draw(input: path, output: output, edit: edit, cropField: cropField, projects: projects, origin: origin) { (image: CGImage, _: CGFloat) throws(ShotCommandError) in try make(image) }
+    }
+
+    /// Makes the edit's changes to the image, as `draw` does, and lists the new version's layers, so an agent can
+    /// remove one later by its id.
+    static func edit(_ options: ShotCommand.EditOptions, projects: ProjectStore?, origin: ProjectOrigin) throws(ShotCommandError) -> JSONValue {
+        let edit: ImageEdit
+        switch options.spec {
+        case let .edit(given):
+            edit = given
+        case let .json(text):
+            edit = try ImageEdit.parse(Data(text.utf8))
+        case let .file(path):
+            let file = url(path)
+            guard let data = try? Data(contentsOf: file) else {
+                throw FileManager.default.fileExists(atPath: file.path) ? .io("couldn't read \(path)") : .noInput("\(path) doesn't exist")
+            }
+            edit = try ImageEdit.parse(data)
+        case .standardInput:
+            edit = try ImageEdit.parse(FileHandle.standardInput.readDataToEndOfFile())
+        }
+        return try draw(input: options.input, output: options.output, edit: edit, layers: true, projects: projects, origin: origin) { (_: CGImage, _: CGFloat) in [] }
     }
 
     // MARK: Output

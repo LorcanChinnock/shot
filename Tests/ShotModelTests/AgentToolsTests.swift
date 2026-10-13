@@ -38,10 +38,10 @@ private let captures = tools(in: folder, [
     ("Recording C.mp4", 5, true),
 ])
 
-@Test func thereAreFifteenToolsEachWithAnObjectSchema() {
-    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "zoom", "wait_for_capture", "annotate", "redact", "make_gif", "trim_video", "list_windows", "capture_window", "record_window", "compare"])
+@Test func thereAreSixteenToolsEachWithAnObjectSchema() {
+    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "zoom", "wait_for_capture", "annotate", "redact", "edit_image", "make_gif", "trim_video", "list_windows", "capture_window", "record_window", "compare"])
     let required = AgentTools.definitions.map { $0.inputSchema["required"] }
-    #expect(required == [nil, nil, nil, nil, nil, .array([.string("rect")]), nil, .array([.string("annotations")]), nil, nil, .array([.string("start"), .string("end")]), nil, nil, nil, .array([.string("a"), .string("b")])])
+    #expect(required == [nil, nil, nil, nil, nil, .array([.string("rect")]), nil, .array([.string("annotations")]), nil, nil, nil, .array([.string("start"), .string("end")]), nil, nil, nil, .array([.string("a"), .string("b")])])
     for tool in AgentTools.definitions {
         #expect(tool.inputSchema["type"] == .string("object"))
         #expect(!tool.description.isEmpty)
@@ -49,7 +49,7 @@ private let captures = tools(in: folder, [
 }
 
 @Test func onlyTheToolsThatChangeNothingAreMarkedReadOnly() {
-    // annotate, redact, make_gif, trim_video and compare add files, and capture_window and record_window take new captures.
+    // annotate, redact, edit_image, make_gif, trim_video and compare add files, and capture_window and record_window take new captures.
     #expect(AgentTools.definitions.filter(\.readOnly).map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "zoom", "wait_for_capture", "list_windows"])
 }
 
@@ -390,6 +390,30 @@ private final class Ran: @unchecked Sendable {
     #expect(result.isError == false)
     #expect(result.content.count == 2)
     #expect(texts(result).last == "Found nothing to hide in Shot B.png, so no file was written.")
+}
+
+@Test func editImageEditsTheNewestScreenshotAndPlacesOnlyCaptures() async {
+    let ran = Ran()
+    let tools = making(ran)
+    let result = await tools.call("edit_image", .object([
+        "pad": .number(40), "background": .string("white"), "style": .object(["shadow": .string("soft")]),
+        "place": .array([.object(["path": .string("Shot A (2)"), "at": .array([.number(0), .number(0)])])]),
+    ]))
+    #expect(result.isError == false)
+    let edit = ImageEdit(pad: [40, 40, 40, 40], background: "white", style: ImageEdit.Style(shadow: "soft"), place: [ImageEdit.Placement(path: "/shots/Shot A (2).png", at: [0, 0])])
+    #expect(ran.commands == [.edit(ShotCommand.EditOptions(input: "/shots/Shot B.png", spec: .edit(edit)))])
+    #expect(result.content.first == .image(data: "PREVIEW:new.png", mimeType: "image/jpeg"))
+    #expect(texts(result).last == "Saved as a new file beside Shot B.png; the original is unchanged.")
+
+    // A file that isn't a capture, a recording, or a bad field is refused before anything runs.
+    let outside = await tools.call("edit_image", .object(["place": .array([.object(["path": .string("/etc/passwd")])])]))
+    #expect(texts(outside).first?.hasPrefix("place[0]: no screenshot in /shots matches") == true)
+    #expect(await tools.call("edit_image", .object(["place": .array([.object(["path": .string("Recording C")])])])).isError)
+    let bad = await tools.call("edit_image", .object(["name": .string("Shot A"), "style": .object(["shadow": .string("huge")])]))
+    #expect(texts(bad).first == "style.shadow must be soft, float, contact, glow or none")
+    #expect(await tools.call("edit_image", .object([:])).isError)
+    #expect(await tools.call("edit_image", .object(["name": .string("Recording C"), "pad": .number(4)])).isError)
+    #expect(ran.commands.count == 1)
 }
 
 @Test func whatAToolMakesSaysTheClientAndToolAskedForIt() async {

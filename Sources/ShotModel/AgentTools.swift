@@ -1,6 +1,6 @@
 import Foundation
 
-/// The MCP server's tools: seven that read captures, one by waiting for the next, five that make new files from them, never changing, moving or
+/// The MCP server's tools: seven that read captures, one by waiting for the next, six that make new files from them, never changing, moving or
 /// deleting anything, and three that ask the running app to list, capture or record windows. What they're called, what they
 /// take, and what they say back are here. Finding files, drawing
 /// previews and running the commands need Apple frameworks, so they come in as closures; ShotCore's `live(folder:)`
@@ -64,6 +64,7 @@ public struct AgentTools: Sendable {
     public static let getCapture = "get_capture"
     public static let annotate = "annotate"
     public static let redact = "redact"
+    public static let editImage = "edit_image"
     public static let makeGIF = "make_gif"
     public static let trimVideo = "trim_video"
     public static let getFrames = "get_frames"
@@ -240,6 +241,36 @@ public struct AgentTools: Sendable {
             ]) { $1 })
         ),
         MCPServer.Tool(
+            name: editImage,
+            description: "Makes the changes Shot's image editor makes on a copy of a screenshot, all in one call: crop, pad with a background, a shadow, border and rounded corners, marks to add, layers to remove, other screenshots to place, scale to 1x, and PNG or JPEG. The copy is saved beside the original as its next version, which the user can open in Shot with every layer still live; nothing is overwritten. Coordinates and sizes are in the full-size file's pixels, top-left origin. Returns the new file's path, a preview, and each layer's id and type, which remove takes later.",
+            inputSchema: schema(capture.merging([
+                "crop": .object([
+                    "type": .string("array"), "items": .object(["type": .string("number")]),
+                    "description": .string("The part to keep, [x, y, width, height]. Applied last, so with pad it can reach into the padding."),
+                ]),
+                "pad": .object(["description": .string("Canvas around the image, in pixels: one number for every side, or [top, right, bottom, left].")]),
+                "background": .object(["type": .string("string"), "description": .string("Fills the padding: \(colorNames), a hex such as #F2F2F7, or none for transparent (PNG only).")]),
+                "style": .object([
+                    "type": .string("object"),
+                    "description": .string("The screenshot's look. shadow: \(ImageEdit.list(ImageEdit.shadows)), or none. border: hairline, solid or outline (an outline needs see-through pixels), or none, or an object {type, width in pixels, color}. corners: a radius in pixels. What's left out stays as it is."),
+                ]),
+                "marks": .object([
+                    "type": .string("array"), "items": .object(["type": .string("object")]),
+                    "description": .string("Marks to draw, as annotate takes them: each with a type (\(markTypes)) and its geometry."),
+                ]),
+                "remove": .object([
+                    "type": .string("array"), "items": .object(["type": .string("string")]),
+                    "description": .string("Ids of layers to delete, from an earlier edit_image result or the capture's record."),
+                ]),
+                "place": .object([
+                    "type": .string("array"), "items": .object(["type": .string("object")]),
+                    "description": .string("Other screenshots to place on top, each {path, at, width}: path is one of Shot's captures, by path or a few words of its name; at is its top-left corner as [x, y], else to the right of the image; width keeps its proportions."),
+                ]),
+                "scale": .object(["type": .string("string"), "enum": .array([.string("1x")]), "description": .string("1x halves a Retina screenshot to one pixel per point, for a smaller file. The copy then keeps its marks flat.")]),
+                "format": .object(["type": .string("string"), "enum": .array([.string("png"), .string("jpeg")]), "description": .string("The copy's format; the original's by default.")]),
+            ]) { $1 })
+        ),
+        MCPServer.Tool(
             name: makeGIF,
             description: "Makes a GIF of a Shot recording, or part of it, for a pull request or README. Saved beside the recording; nothing is overwritten. GIFs stop at 60 seconds. Returns the GIF's path, size and frame count.",
             inputSchema: schema(capture.merging([
@@ -335,7 +366,7 @@ public struct AgentTools: Sendable {
             return await describe(entry)
         case Self.waitForCapture:
             return await waitForCapture(arguments)
-        case Self.annotate, Self.redact, Self.makeGIF, Self.trimVideo:
+        case Self.annotate, Self.redact, Self.editImage, Self.makeGIF, Self.trimVideo:
             return await make(name, arguments, entries, origin: origin)
         case Self.getFrames:
             let query = [arguments["path"]?.string, arguments["name"]?.string].compactMap { $0 }.first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
@@ -391,7 +422,7 @@ public struct AgentTools: Sendable {
     /// Runs one of the tools that make a file, on the capture `arguments` name, or the newest one of the right kind.
     /// Only captures in the folder can be named, so nothing outside it is read or written beside.
     func make(_ name: String, _ arguments: JSONValue, _ entries: [AgentCaptures.Entry], origin: ProjectOrigin) async -> MCPServer.ToolResult {
-        let video = name != Self.annotate && name != Self.redact
+        let video = ![Self.annotate, Self.redact, Self.editImage].contains(name)
         let query = [arguments["path"]?.string, arguments["name"]?.string].compactMap { $0 }.first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
         let found = query.map { AgentCaptures.named($0, in: entries) } ?? AgentCaptures.latest(entries, kind: video ? .video : .image)
         guard let entry = found else {
@@ -416,6 +447,21 @@ public struct AgentTools: Sendable {
                 return MCPServer.ToolResult(content: [.text("redact takes detect, a list of email, token and card; rects, each [x, y, width, height] with a width and height above 0; and style, blur or pixelate.")], isError: true)
             }
             command = .redact(options)
+        case Self.editImage:
+            do throws(ShotCommandError) {
+                var edit = try ImageEdit.parse(arguments, ignoring: ["path", "name"])
+                // Only captures in the folder can be placed, as only they can be named.
+                for index in edit.place.indices {
+                    guard let found = AgentCaptures.named(edit.place[index].path, in: entries), !found.isVideo else {
+                        let named = edit.place[index].path
+                        return MCPServer.ToolResult(content: [.text("place[\(index)]: no screenshot in \(folder.path) matches \"\(named)\"; place takes Shot's screenshots, by path or a few words of the name.")], isError: true)
+                    }
+                    edit.place[index].path = found.url.path
+                }
+                command = .edit(ShotCommand.EditOptions(input: entry.url.path, spec: .edit(edit)))
+            } catch {
+                return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
+            }
         case Self.makeGIF:
             var options = ShotCommand.GIFOptions(input: entry.url.path, start: arguments["start"]?.number, end: arguments["end"]?.number)
             // Lenient like the other tools: out-of-range values are brought into range rather than refused.
