@@ -582,11 +582,7 @@ final class Recorder: NSObject {
         endMute()
         hidePanels()
         // A recording output can fail, a full disk say, while its stream goes on capturing the display and microphone.
-        if let stream {
-            Task {
-                try? await stream.stopCapture()
-            }
-        }
+        let stopping = stream
         var truncated: (video: URL, audio: VideoConcatenator.SegmentAudio?)?
         if let output, output == recordingOutput.map(ObjectIdentifier.init), let failed = segments.popLast() {
             truncated = (failed, segmentAudio.count > segments.count ? segmentAudio.popLast() : nil)
@@ -598,6 +594,8 @@ final class Recorder: NSObject {
         onError?(error)
         // Keep whatever was recorded before the failure, and the failed segment too if it can still be played.
         Task {
+            // Wait for the stream to stop, so the failed segment isn't judged or joined while it's still being written.
+            try? await stopping?.stopCapture()
             if let truncated {
                 await keepOrDrop(truncated.video, audio: truncated.audio)
             }

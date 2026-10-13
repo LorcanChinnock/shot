@@ -781,6 +781,11 @@ final class VideoEditorModel {
             return false
         }
         do {
+            // Replacing is atomic but leaves no way back to the cut footage, so a copy of the original goes to the Trash first.
+            let original = replacements.appendingPathComponent("original").appendingPathComponent(fileURL.lastPathComponent)
+            try FileManager.default.createDirectory(at: original.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.copyItem(at: fileURL, to: original)
+            try FileManager.default.trashItem(at: original, resultingItemURL: nil)
             _ = try FileManager.default.replaceItemAt(fileURL, withItemAt: trimmed)
         } catch {
             Toast.error("Couldn't save: \(error.localizedDescription)")
