@@ -3,8 +3,6 @@ import ShotCore
 import SwiftUI
 
 struct GalleryRootView: View {
-    private static let spacing: CGFloat = 20
-
     let model: GalleryModel
     @FocusState private var searchFocused: Bool
 
@@ -12,7 +10,7 @@ struct GalleryRootView: View {
         VStack(spacing: 0) {
             header
             content
-            footer
+            GalleryFooter(model: model)
         }
         .onChange(of: model.searchFocusRequest) {
             searchFocused = true
@@ -96,58 +94,8 @@ struct GalleryRootView: View {
         if model.sections.isEmpty {
             emptyState
         } else {
-            grid
+            GalleryGrid(model: model)
         }
-    }
-
-    private var grid: some View {
-        GeometryReader { geometry in
-            let available = geometry.size.width - Brutal.groupInset * 2
-            let columns = max(1, Int((available + Self.spacing) / (model.tileSize + Self.spacing)))
-            let cell = (available - Self.spacing * CGFloat(columns - 1)) / CGFloat(columns)
-            ScrollViewReader { proxy in
-                ScrollView {
-                    // One lazy grid, so scrolling can reach a tile that hasn't been built yet.
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Self.spacing, alignment: .top), count: columns), alignment: .leading, spacing: Self.spacing) {
-                        ForEach(model.sections) { section in
-                            Section {
-                                ForEach(section.items) { item in
-                                    GalleryTile(item: item, model: model, width: cell)
-                                        .id(item.url)
-                                }
-                            } header: {
-                                if !section.title.isEmpty {
-                                    HStack(spacing: 8) {
-                                        Text(section.title)
-                                            .font(Brutal.title(15))
-                                            .foregroundStyle(Brutal.ink)
-                                        BrutalChip(text: "\(section.items.count)")
-                                        Spacer()
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    .padding(.horizontal, Brutal.groupInset)
-                    .padding(.vertical, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background {
-                        Color.clear
-                            .contentShape(Rectangle())
-                            .onTapGesture { model.clearSelection() }
-                    }
-                }
-                .onChange(of: model.lead) {
-                    if let lead = model.lead {
-                        proxy.scrollTo(lead)
-                    }
-                }
-                .onChange(of: columns, initial: true) {
-                    model.columns = columns
-                }
-            }
-        }
-        .clipped()
     }
 
     private var emptyState: some View {
@@ -181,13 +129,70 @@ struct GalleryRootView: View {
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+}
 
-    // MARK: Footer
+/// The grid is its own view, so a selection change re-evaluates it and the tiles that changed, not the header or footer.
+private struct GalleryGrid: View {
+    private static let spacing: CGFloat = 20
 
-    private var footer: some View {
+    let model: GalleryModel
+
+    var body: some View {
+        GeometryReader { geometry in
+            let available = geometry.size.width - Brutal.groupInset * 2
+            let columns = max(1, Int((available + Self.spacing) / (model.tileSize + Self.spacing)))
+            let cell = (available - Self.spacing * CGFloat(columns - 1)) / CGFloat(columns)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    // One lazy grid, so scrolling can reach a tile that hasn't been built yet.
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Self.spacing, alignment: .top), count: columns), alignment: .leading, spacing: Self.spacing) {
+                        ForEach(model.sections) { section in
+                            Section {
+                                ForEach(section.items) { item in
+                                    GalleryTile(item: item, model: model, slot: model.thumbnails.slot(for: item), width: cell,
+                                                selected: model.selection.contains(item.url), selectionActive: !model.selection.isEmpty)
+                                        .equatable()
+                                        .id(item.url)
+                                }
+                            } header: {
+                                if !section.title.isEmpty {
+                                    HStack(spacing: 8) {
+                                        Text(section.title)
+                                            .font(Brutal.title(15))
+                                            .foregroundStyle(Brutal.ink)
+                                        BrutalChip(text: "\(section.items.count)")
+                                        Spacer()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, Brutal.groupInset)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background {
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .onTapGesture { model.clearSelection() }
+                    }
+                }
+                .background { LeadScroller(model: model, proxy: proxy) }
+                .onChange(of: columns, initial: true) {
+                    model.columns = columns
+                }
+            }
+        }
+        .clipped()
+    }
+}
+
+private struct GalleryFooter: View {
+    let model: GalleryModel
+
+    var body: some View {
         let selected = model.selectedItems
         return HStack(spacing: 10) {
-            Text(status)
+            GalleryStatus(model: model)
                 .font(Brutal.mono)
                 .foregroundStyle(Brutal.ink.opacity(0.7))
                 .lineLimit(1)
@@ -223,23 +228,52 @@ struct GalleryRootView: View {
         .frame(height: 34)
         .padding(.top, 6)
     }
+}
 
-    private var status: String {
+private struct GalleryStatus: View {
+    let model: GalleryModel
+
+    var body: some View {
         let total = model.visible.count
         let count = model.selection.count
-        return count > 0 ? String(localized: "\(count) of \(total) selected") : String(localized: "\(total) items")
+        Text(count > 0 ? String(localized: "\(count) of \(total) selected") : String(localized: "\(total) items"))
     }
 }
 
-private struct GalleryTile: View {
+/// Scrolls the grid to the lead item, unless it is already fully in view. It is a view of its own so the grid doesn't
+/// re-evaluate when the lead changes.
+private struct LeadScroller: View {
+    let model: GalleryModel
+    let proxy: ScrollViewProxy
+
+    var body: some View {
+        Color.clear.onChange(of: model.lead) {
+            if let lead = model.lead, !model.isFullyVisible(lead) {
+                proxy.scrollTo(lead)
+            }
+        }
+    }
+}
+
+/// A tile takes its selection state as plain values and is `Equatable`, so one click re-evaluates only the tiles whose
+/// values changed. Don't read `model.selection` in here.
+private struct GalleryTile: View, Equatable {
     let item: GalleryItem
     let model: GalleryModel
+    let slot: ThumbnailStore.Slot
     let width: CGFloat
+    let selected: Bool
+    /// Whether anything is selected, which shows every tile's checkbox.
+    let selectionActive: Bool
     @State private var hovering = false
 
-    private var thumbnail: Thumbnail? { model.thumbnails.slot(for: item).thumbnail }
+    nonisolated static func == (lhs: GalleryTile, rhs: GalleryTile) -> Bool {
+        lhs.item == rhs.item && lhs.model === rhs.model && lhs.slot === rhs.slot && lhs.width == rhs.width
+            && lhs.selected == rhs.selected && lhs.selectionActive == rhs.selectionActive
+    }
+
+    private var thumbnail: Thumbnail? { slot.thumbnail }
     private var height: CGFloat { (width * 0.75).rounded() }
-    private var selected: Bool { model.selection.contains(item.url) }
 
     var body: some View {
         VStack(spacing: 7) {
@@ -257,7 +291,7 @@ private struct GalleryTile: View {
                         .foregroundStyle(Brutal.ink.opacity(0.35))
                 }
                 badges
-                if hovering || !model.selection.isEmpty {
+                if hovering || selectionActive {
                     VStack {
                         HStack {
                             SelectionCheckbox(checked: selected) {
@@ -303,13 +337,20 @@ private struct GalleryTile: View {
                 hovering = inside
             }
         }
-        .onTapGesture(count: 2) { model.edit([item]) }
+        // One gesture, so a click selects at once instead of waiting out the double-click interval; the second click opens.
         .onTapGesture {
-            let flags = NSEvent.modifierFlags
+            let event = NSApp.currentEvent
+            if event?.clickCount == 2 {
+                model.edit([item])
+                return
+            }
+            let flags = event?.modifierFlags ?? NSEvent.modifierFlags
             model.click(item, command: flags.contains(.command), shift: flags.contains(.shift))
         }
+        .onScrollVisibilityChange(threshold: 0.99) { model.setFullyVisible(item.url, $0) }
+        .onDisappear { model.setFullyVisible(item.url, false) }
         .onDrag { NSItemProvider(contentsOf: item.url) ?? NSItemProvider() }
-        .contextMenu { menu }
+        .contextMenu { GalleryTileMenu(model: model, item: item) }
         .task(id: item) {
             await model.thumbnails.load(item)
         }
@@ -344,9 +385,14 @@ private struct GalleryTile: View {
         }
         .padding(8)
     }
+}
 
-    @ViewBuilder
-    private var menu: some View {
+/// The context menu is its own view, so reading the selection for its targets happens when it opens, not on every click.
+private struct GalleryTileMenu: View {
+    let model: GalleryModel
+    let item: GalleryItem
+
+    var body: some View {
         let targets = model.targets(for: item)
         if Gallery.canEdit(targets) {
             Button(targets.count == 1 ? (item.kind == .video ? "Edit Video" : "Annotate") : "Edit") { model.edit(targets) }
