@@ -53,6 +53,15 @@ private func item(_ name: String, _ date: Date, bytes: Int = 1) -> GalleryItem {
     #expect(Gallery.visible(items, filter: .all, sort: .name, query: "  MEETING ").map(\.name) == ["Meeting notes.png"])
 }
 
+@Test func searchFindsAScreenshotByItsTextAsWellAsItsName() {
+    let items = [item("a.png", now), item("Invoice.png", now), item("b.png", now), item("c.mp4", now)]
+    let texts = [items[0].url: TextSearch.searchable("Total due\nINVOICE 42"), items[2].url: TextSearch.searchable("Saved")]
+    #expect(Gallery.visible(items, filter: .all, sort: .name, query: "invoice", texts: texts).map(\.name) == ["a.png", "Invoice.png"])
+    #expect(Gallery.visible(items, filter: .all, sort: .name, query: " invoice 42 ", texts: texts).map(\.name) == ["a.png"])
+    #expect(Gallery.visible(items, filter: .videos, sort: .name, query: "invoice", texts: texts).isEmpty)
+    #expect(Gallery.visible(items, filter: .all, sort: .name, query: "", texts: texts).count == 4)
+}
+
 @Test func madeByAgentsShowsOnlyWhatAnAgentOrTheCommandLineMade() {
     let items = [item("a.png", now), item("b.mp4", now), item("c.gif", now)]
     let origins = [items[1].url: ProjectOrigin(via: .mcp, action: "record_window"), items[2].url: ProjectOrigin(via: .cli, action: "gif")]

@@ -13,6 +13,16 @@ final class GalleryModel {
     /// Who made the items an agent or the command line made, read from the project store with the folder, so a tile
     /// takes its mark as a plain value.
     private(set) var origins: [URL: ProjectOrigin] = [:] { didSet { refilter() } }
+    /// The text read from the screenshots so far, folded for search, which `TextIndexer` hands over as it reads more.
+    /// Only a search uses it, and more text usually finds nothing new, so the grid redraws only when the matches change.
+    @ObservationIgnored private var texts: [URL: String] = [:] {
+        didSet {
+            if !query.trimmingCharacters(in: .whitespaces).isEmpty,
+               Gallery.visible(items, filter: filter, sort: sort, query: query, origins: origins, texts: texts) != visible {
+                refilter()
+            }
+        }
+    }
     var filter = GalleryFilter.all { didSet { measure("Gallery filter"); refilter() } }
     var sort = GallerySort.newest { didSet { measure("Gallery filter"); refilter() } }
     var query = "" { didSet { measure("Gallery filter"); refilter() } }
@@ -53,7 +63,7 @@ final class GalleryModel {
     var allSelected: Bool { Gallery.allSelected(selection, in: visible) }
 
     private func refilter() {
-        visible = Gallery.visible(items, filter: filter, sort: sort, query: query, origins: origins)
+        visible = Gallery.visible(items, filter: filter, sort: sort, query: query, origins: origins, texts: texts)
         sections = Gallery.sections(visible, sort: sort)
         selection.formIntersection(visible.map(\.url))
     }
@@ -62,10 +72,18 @@ final class GalleryModel {
 
     /// Lists the folder now and keeps the list current while the gallery is open.
     func start() {
+        TextIndexer.shared.update()
+        TextIndexer.shared.onTexts = { [weak self] texts in
+            if self?.texts != texts {
+                self?.texts = texts
+            }
+        }
         reload()
     }
 
     func stop() {
+        TextIndexer.shared.onTexts = nil
+        texts = [:]
         watcher?.cancel()
         watcher = nil
         watchedFolder = nil

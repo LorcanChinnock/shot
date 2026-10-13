@@ -20,6 +20,8 @@ public struct AgentTools: Sendable {
     public var frames: @Sendable (AgentCaptures.Entry, Int) async throws(ShotCommandError) -> [MCPServer.Content]
     /// The text in a screenshot, read on the device.
     public var text: @Sendable (AgentCaptures.Entry) async throws(ShotCommandError) -> CaptureText
+    /// The text the app has read from the screenshots so far, for `list_captures` to search, read when it's asked to.
+    public var textIndex: @Sendable () -> TextIndex
     /// A part of a screenshot, `[x, y, width, height]` in its pixels, at full resolution where it fits.
     public var zoom: @Sendable (AgentCaptures.Entry, [Double]) async throws(ShotCommandError) -> Zoomed
     /// Sends a request to the running app over its agent socket, and gives back its answer's fields.
@@ -37,6 +39,7 @@ public struct AgentTools: Sendable {
         run: @escaping @Sendable (ShotCommand, ProjectOrigin) async throws(ShotCommandError) -> JSONValue = { _, _ throws(ShotCommandError) in throw .internal("can't run commands here") },
         frames: @escaping @Sendable (AgentCaptures.Entry, Int) async throws(ShotCommandError) -> [MCPServer.Content] = { _, _ throws(ShotCommandError) in throw .internal("can't read frames here") },
         text: @escaping @Sendable (AgentCaptures.Entry) async throws(ShotCommandError) -> CaptureText = { _ throws(ShotCommandError) in throw .internal("can't read text here") },
+        textIndex: @escaping @Sendable () -> TextIndex = { TextIndex() },
         zoom: @escaping @Sendable (AgentCaptures.Entry, [Double]) async throws(ShotCommandError) -> Zoomed = { _, _ throws(ShotCommandError) in throw .internal("can't zoom here") },
         agent: @escaping @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue] = { _ throws(ShotCommandError) in throw .unavailable("can't reach Shot from here") },
         now: @escaping @Sendable () -> Date = Date.init,
@@ -49,6 +52,7 @@ public struct AgentTools: Sendable {
         self.run = run
         self.frames = frames
         self.text = text
+        self.textIndex = textIndex
         self.zoom = zoom
         self.agent = agent
         self.now = now
@@ -136,7 +140,7 @@ public struct AgentTools: Sendable {
         ),
         MCPServer.Tool(
             name: listCaptures,
-            description: "Recent Shot captures, newest first: name, path, kind and when it was taken. No images; pass a name to get_capture to see one.",
+            description: "Recent Shot captures, newest first: name, path, kind and when it was taken. With query, only those whose name or text contains it, as the gallery's search finds them, each with the lines of its text that match. No images; pass a name to get_capture to see one.",
             inputSchema: schema([
                 "limit": .object([
                     "type": .string("integer"),
@@ -145,6 +149,10 @@ public struct AgentTools: Sendable {
                 "since": .object([
                     "type": .string("string"),
                     "description": .string("Only captures from then on: an ISO 8601 date or date and time, or a span back from now such as 10m, 2h or 3d."),
+                ]),
+                "query": .object([
+                    "type": .string("string"),
+                    "description": .string("Words to find in a capture's name or in the text of a screenshot, ignoring case and accents, such as \"invoice\". Shot reads screenshots' text in the background while it runs; recordings' text isn't read."),
                 ]),
             ]),
             readOnly: true
@@ -728,12 +736,72 @@ public struct AgentTools: Sendable {
                 notes.append("Couldn't read since \"\(text)\", so these are from any time.")
             }
         }
-        let listed = AgentCaptures.list(entries, limit: limit, since: since)
+        // A blank query lists everything, as an empty search box does.
+        let query = arguments["query"]?.string.flatMap { TextSearch.query($0) == nil ? nil : $0 }
+        let index = query == nil ? TextIndex() : textIndex()
+        if query != nil, let note = unread(entries, since: since, index: index) {
+            notes.append(note)
+        }
+        let listed = search(entries, limit: limit, since: since, query: query, index: index)
         guard !listed.isEmpty else {
-            let text = entries.isEmpty ? empty(entries, kind: .any) : "No captures in \(folder.path) since \(stamp(since ?? now()))."
+            let text = if entries.isEmpty {
+                empty(entries, kind: .any)
+            } else if let query {
+                "No captures in \(folder.path)\(since.map { " since \(stamp($0))" } ?? "") have \"\(query)\" in their name or text."
+            } else {
+                "No captures in \(folder.path) since \(stamp(since ?? now()))."
+            }
             return MCPServer.ToolResult(content: [.text((notes + [text]).joined(separator: "\n"))])
         }
-        return MCPServer.ToolResult(content: [.text((notes + [Self.json(.array(listed.map(metadata)))]).joined(separator: "\n"))])
+        return MCPServer.ToolResult(content: [.text((notes + [Self.json(.array(listed))]).joined(separator: "\n"))])
+    }
+
+    /// Up to `limit` captures from `since` on, newest first, as `metadata` gives them. With `query`, only those whose
+    /// name or indexed text contains it, each with the lines that match, at most `matchingLines` of them.
+    func search(_ entries: [AgentCaptures.Entry], limit: Int?, since: Date?, query: String?, index: TextIndex) -> [JSONValue] {
+        guard let query, let wanted = TextSearch.query(query) else {
+            return AgentCaptures.list(entries, limit: limit, since: since).map(metadata)
+        }
+        let limit = min(max(limit ?? AgentCaptures.defaultLimit, 1), AgentCaptures.maximumLimit)
+        var found: [JSONValue] = []
+        for entry in AgentCaptures.ranked(entries) where found.count < limit && since.map({ entry.date >= $0 }) ?? true {
+            let lines = Self.file(of: entry).flatMap(index.text).map { TextSearch.lines(in: $0, matching: query) } ?? []
+            guard !lines.isEmpty || TextSearch.folded(entry.name).contains(wanted) else {
+                continue
+            }
+            guard case var .object(object) = metadata(entry) else {
+                continue
+            }
+            if !lines.isEmpty {
+                object["matchingLines"] = .array(lines.prefix(Self.matchingLines).map(JSONValue.string))
+            }
+            found.append(.object(object))
+        }
+        return found
+    }
+
+    /// How many matching lines `list_captures` gives for each capture it found by its text.
+    static let matchingLines = 3
+
+    /// What the index keys `entry`'s text by, when the listing gave its size and modification date.
+    static func file(of entry: AgentCaptures.Entry) -> TextIndex.File? {
+        guard let bytes = entry.bytes, let modified = entry.modified else {
+            return nil
+        }
+        return TextIndex.File(path: entry.url.path, bytes: bytes, modified: modified)
+    }
+
+    /// A note that a search can't yet find some screenshots by their text, since the app hasn't read them; `nil` when
+    /// it has read every one from `since` on.
+    public func unread(_ entries: [AgentCaptures.Entry], since: Date?, index: TextIndex) -> String? {
+        let unread = entries.filter { entry in
+            TextIndex.reads(entry) && since.map { entry.date >= $0 } ?? true && Self.file(of: entry).flatMap(index.text) == nil
+        }.count
+        guard unread > 0 else {
+            return nil
+        }
+        let noun = unread == 1 ? "1 screenshot hasn't" : "\(unread) screenshots haven't"
+        return "\(noun) been read for search yet, so only \(unread == 1 ? "its name is" : "their names are") searched. Shot reads them in the background while it runs."
     }
 
     /// Not an error: an empty folder is a normal state, and saying where it looked lets the agent spot a wrong folder.
@@ -771,8 +839,9 @@ public struct AgentTools: Sendable {
     }
 
     /// What `shot list` prints: what `list_captures` gives, as a JSON array, which is empty when nothing matches.
-    /// Stricter than the tool: a `since` it can't read is a mistake, not ignored.
-    public func listJSON(limit: Int?, since: String?) throws(ShotCommandError) -> JSONValue {
+    /// Stricter than the tool: a `since` it can't read is a mistake, not ignored. `note` is told when a `query` can't
+    /// search some screenshots' text yet.
+    public func listJSON(limit: Int?, since: String?, query: String? = nil, note: (String) -> Void = { _ in }) throws(ShotCommandError) -> JSONValue {
         var date: Date?
         if let since {
             date = AgentCaptures.date(since: since, now: now(), timeZone: timeZone)
@@ -780,7 +849,15 @@ public struct AgentTools: Sendable {
                 throw .usage("list", "--since \(since) isn't a date, such as 2026-10-10 or 2026-10-10T14:00, or a span back from now, such as 10m, 2h or 3d")
             }
         }
-        return .array(AgentCaptures.list(entries(), limit: limit, since: date).map(metadata))
+        let entries = entries()
+        guard query.flatMap(TextSearch.query) != nil else {
+            return .array(search(entries, limit: limit, since: date, query: nil, index: TextIndex()))
+        }
+        let index = textIndex()
+        if let unread = unread(entries, since: date, index: index) {
+            note(unread)
+        }
+        return .array(search(entries, limit: limit, since: date, query: query, index: index))
     }
 
     /// A capture's details and the lines `describe` adds about what Shot recorded in it.

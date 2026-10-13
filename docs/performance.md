@@ -15,8 +15,11 @@ Each budget is 2× the baseline measured on the CI runner, which is slower than 
 | Marker render | `AnnotationFrame.apply` of one marker over a 1920×1080 frame, which draws the whole canvas on the CPU and sends it back, then reading the frame out | not measured | 14.3 ms | 29 ms |
 | GIF export memory | Peak growth of the process footprint while exporting a 20 s 1080p video as a GIF | < 1 MB | 226 MB | 452 MB |
 | Gallery grouping | Filter, sort and group 1,500 items into date sections | 1.2 ms | 2.9 ms | 5.8 ms |
+| Gallery text search | Search 1,500 items whose screenshots have about 1.5 KB of text each for a word 15 of them contain, then group them | 2.9 ms | not measured yet | 14 ms |
 
 GIF export grows memory by under 1 MB on the reference Mac but by about 226 MB on the CI runner, probably because the runner's virtual machine decodes video in software, inside the test process. The budget follows the CI runner. Reverting #230 adds about 500 MB at this size, as measured in its PR, so CI still catches it.
+
+Gallery text search has no CI baseline yet. Its budget assumes the runner is as much slower as it is for grouping (about 2.4×), then doubles that. Measure it at the next release gate.
 
 To change a budget, measure again, then update both this table and `Budget` in `PerfTests.swift`.
 

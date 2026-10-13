@@ -25,12 +25,15 @@ public enum ShotCommand: Equatable, Sendable {
     /// The newest capture of a kind, as `latest_capture` gives it.
     case latest(AgentCaptures.Kind)
     /// Recent captures, as `list_captures` gives them.
-    case list(limit: Int?, since: String?)
+    case list(limit: Int?, since: String?, query: String? = nil)
     /// The capture a name or path names, or the newest, as `get_capture` gives it.
     case get(String?)
     /// Checks what agents need and says how to fix what's wrong.
     case doctor
     case mcp
+    /// Reads the text of the screenshots in a folder into the app's text index. The app runs it in the background, in a
+    /// process of its own, so Vision's memory never stays in the app; it isn't in `help`.
+    case indexText(folder: String)
     case version
     /// Usage, for one command or for all of them.
     case help(String?)
@@ -216,6 +219,7 @@ public enum ShotCommand: Equatable, Sendable {
         case .get: "get"
         case .doctor: "doctor"
         case .mcp: "mcp"
+        case .indexText: "index-text"
         case .version: "version"
         case .help: "help"
         }
@@ -246,6 +250,9 @@ public enum ShotCommand: Equatable, Sendable {
         case "latest", "list", "get":
             if rest.contains(where: isHelp) { return .help(first) }
             return try parseCaptures(first, rest)
+        case "index-text":
+            guard rest.count == 1, let folder = rest.first else { throw .usage(first, "expected one folder") }
+            return .indexText(folder: folder)
         case "info", "gif", "trim", "redact", "annotate", "frames", "text", "crop":
             if rest.contains(where: isHelp) { return .help(first) }
             return try parseMedia(first, rest)
@@ -292,7 +299,7 @@ public enum ShotCommand: Equatable, Sendable {
         "record": ["window": false, "bundle-id": false, "display": false, "rect": false, "no-shadow": false, "duration": false],
         "watch": ["kind": false, "timeout": false],
         "latest": ["kind": false],
-        "list": ["limit": false, "since": false],
+        "list": ["limit": false, "since": false, "query": false],
         "get": [:],
     ]
     /// Flags that take no value, or one only after `=`, such as `--wait-stable=10`.
@@ -361,7 +368,7 @@ public enum ShotCommand: Equatable, Sendable {
         return .watch(options)
     }
 
-    /// `latest [--kind image|video|any]`, `list [--limit n] [--since when]` or `get [<name or path>]`, which read the
+    /// `latest [--kind image|video|any]`, `list [--limit n] [--since when] [--query words]` or `get [<name or path>]`, which read the
     /// capture folder as the MCP tools do.
     private static func parseCaptures(_ command: String, _ arguments: [String]) throws(ShotCommandError) -> ShotCommand {
         let (positional, values) = try options(command, arguments)
@@ -389,7 +396,7 @@ public enum ShotCommand: Equatable, Sendable {
                 }
                 limit = number
             }
-            return .list(limit: limit, since: values["since"]?.first)
+            return .list(limit: limit, since: values["since"]?.first, query: values["query"]?.first)
         }
     }
 
@@ -645,7 +652,7 @@ public enum ShotCommand: Equatable, Sendable {
             "diff": "\(program) diff <a> <b> [-o out.png] [--threshold 0.1]\n    Where image b differs from a: a dimmed copy of b with the changes highlighted and boxed, and the boxes in b's pixels.\n    Images of different sizes are compared at b's size. --threshold 0 counts any difference; 0.1, the default, ignores anti-aliasing.",
             "crop": "\(program) crop <image> --rect x,y,w,h [-o out.png]\n    Keeps that part of the image at full resolution, in the image's pixels from the top left, as a new version that opens in Shot with the crop still adjustable.",
             "latest": "\(program) latest [--kind image|video|any]\n    The newest capture, a screenshot unless --kind says otherwise: its name, path, kind, when it was taken, and what Shot recorded in it, as latest_capture gives it.",
-            "list": "\(program) list [--limit 10] [--since 2h]\n    Recent captures, newest first, as list_captures gives them. --since takes a date such as 2026-10-10 or a span back from now such as 10m, 2h or 3d.",
+            "list": "\(program) list [--limit 10] [--since 2h] [--query words]\n    Recent captures, newest first, as list_captures gives them. --since takes a date such as 2026-10-10 or a span back from now such as 10m, 2h or 3d. --query keeps those whose name or screenshot text contains the words, ignoring case and accents, with the lines that match; Shot reads screenshots' text in the background while it runs.",
             "get": "\(program) get [<name or path>]\n    The capture a file name, words from it or its path names, or the newest of any kind, as get_capture gives it.",
             "windows": "\(program) windows\n    The open windows, front to back, with each one's app, bundle ID, title and size and which is frontmost, and the displays. Needs Settings › Agents › Let agents capture and record on.",
             "capture": "\(program) capture --window <title or app> | --bundle-id <id> | --display <n> [--rect x,y,w,h] [--no-shadow] [--wait-stable[=5]]\n    A screenshot of that open window or whole display, taken by Shot without taking focus, saved to the capture folder. --bundle-id picks the app's front window, or with --window one of its windows. --rect keeps that part, in points from the top-left corner. --wait-stable waits, up to 5 seconds or the time given, for the picture to stop changing. Opens Shot in the background if it isn't running; needs Settings › Agents › Let agents capture and record on.",

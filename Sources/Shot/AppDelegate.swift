@@ -36,10 +36,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         AgentServer.shared.coordinator = coordinator
         AgentServer.shared.update()
+        TextIndexer.shared.update()
         defaultsObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated {
                 HotkeyCenter.shared.reloadFromPreferences()
                 AgentServer.shared.update()
+                TextIndexer.shared.update()
             }
         }
         installEditMenu()
@@ -92,6 +94,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         AgentServer.shared.stop()
+        TextIndexer.shared.stop()
         if ColorSampler.isShowing {
             ColorSampler.endLoupe()
         }

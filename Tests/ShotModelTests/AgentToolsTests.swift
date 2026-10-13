@@ -138,6 +138,83 @@ func listCapturesClampsTheLimit(_ limit: JSONValue, _ count: Int) async throws {
     #expect(list.count == count)
 }
 
+/// Captures with sizes and dates, as the live listing gives them, and an index that has read `texts` from them.
+private func searchable(_ texts: [String: String], unread: [String] = []) -> AgentTools {
+    let names = [("Shot A.png", 30.0), ("Invoice draft.png", 25), ("Shot B.png", 20), ("Recording C.mp4", 10), ("Shot D.png", 5)] + unread.map { ($0, 1.0) }
+    let entries = names.map { name, minutesAgo in
+        AgentCaptures.Entry(
+            url: folder.appendingPathComponent(name), isVideo: name.hasSuffix(".mp4"), date: now.addingTimeInterval(-minutesAgo * 60),
+            bytes: 100, modified: now.addingTimeInterval(-minutesAgo * 60)
+        )
+    }
+    var index = TextIndex()
+    for entry in entries {
+        if let text = texts[entry.name], let bytes = entry.bytes, let modified = entry.modified {
+            index.set(text, for: TextIndex.File(path: entry.url.path, bytes: bytes, modified: modified))
+        }
+    }
+    let read = index
+    return AgentTools(folder: folder, entries: { entries }, preview: { _ in [] }, textIndex: { read }, now: { now }, timeZone: utc)
+}
+
+private let readTexts = ["Invoice draft.png": "", "Shot A.png": "Settings\nINVOICE #42 paid", "Shot B.png": "Saved changes", "Shot D.png": "Café invoices\nTotal\ninvoice 1\ninvoice 2\ninvoice 3"]
+
+@Test func listCapturesFindsCapturesByTheirTextOrName() async throws {
+    let result = await searchable(readTexts).call("list_captures", .object(["query": .string(" invoice ")]))
+    let list = try JSONDecoder().decode([JSONValue].self, from: Data(texts(result)[0].utf8))
+    #expect(list.map { $0["name"]?.string } == ["Shot D.png", "Invoice draft.png", "Shot A.png"])
+    #expect(list[0]["matchingLines"] == .array(["Café invoices", "invoice 1", "invoice 2"].map(JSONValue.string)))
+    #expect(list[1]["matchingLines"] == nil)
+    #expect(list[2]["matchingLines"] == .array([.string("INVOICE #42 paid")]))
+}
+
+@Test func listCapturesSearchesAccentsAndLimitsWhatItFound() async throws {
+    let tools = searchable(readTexts)
+    let cafe = try JSONDecoder().decode([JSONValue].self, from: Data(texts(await tools.call("list_captures", .object(["query": .string("CAFE")])))[0].utf8))
+    #expect(cafe.map { $0["name"]?.string } == ["Shot D.png"])
+    let one = try JSONDecoder().decode([JSONValue].self, from: Data(texts(await tools.call("list_captures", .object(["query": .string("invoice"), "limit": .number(1)])))[0].utf8))
+    #expect(one.map { $0["name"]?.string } == ["Shot D.png"])
+    let blank = try JSONDecoder().decode([JSONValue].self, from: Data(texts(await tools.call("list_captures", .object(["query": .string("  ")])))[0].utf8))
+    #expect(blank.count == 5)
+}
+
+@Test func listCapturesSaysWhenNothingMatchesAndWhatIsntReadYet() async {
+    let none = await searchable(readTexts).call("list_captures", .object(["query": .string("receipt")]))
+    #expect(none.isError == false)
+    #expect(texts(none) == [#"No captures in /shots have "receipt" in their name or text."#])
+    let unread = await searchable(readTexts, unread: ["Shot E.png", "Shot F.gif"]).call("list_captures", .object(["query": .string("receipt")]))
+    #expect(texts(unread).first?.hasPrefix("1 screenshot hasn't been read for search yet, so only its name is searched.") == true)
+}
+
+@Test func aStaleEntryIsntSearched() async throws {
+    let tools = searchable(readTexts)
+    let entries = tools.entries().map { entry in
+        var changed = entry
+        changed.bytes = 200
+        return changed
+    }
+    var changed = tools
+    changed.entries = { entries }
+    let result = await changed.call("list_captures", .object(["query": .string("saved")]))
+    #expect(texts(result).first?.contains("4 screenshots haven't been read") == true)
+    #expect(texts(result).first?.hasSuffix(#"No captures in /shots have "saved" in their name or text."#) == true)
+}
+
+@Test func shotListSearchesAsTheToolDoes() throws {
+    let tools = searchable(readTexts, unread: ["Shot E.png"])
+    let notes = Mutex<[String]>([])
+    let list = try tools.listJSON(limit: nil, since: nil, query: "saved") { note in notes.withLock { $0.append(note) } }
+    guard case let .array(found) = list else {
+        Issue.record("shot list gave \(list), not an array")
+        return
+    }
+    #expect(found.map { $0["name"] } == [.string("Shot B.png")])
+    #expect(found.first?["matchingLines"] == .array([.string("Saved changes")]))
+    #expect(notes.withLock { $0.count } == 1)
+    _ = try tools.listJSON(limit: nil, since: nil) { note in notes.withLock { $0.append(note) } }
+    #expect(notes.withLock { $0.count } == 1)
+}
+
 @Test func listCapturesFiltersBySince() async throws {
     let result = await captures.call("list_captures", .object(["since": .string("15m")]))
     let list = try JSONDecoder().decode([[String: String]].self, from: Data(texts(result)[0].utf8))

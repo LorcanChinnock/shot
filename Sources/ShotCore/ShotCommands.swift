@@ -56,7 +56,7 @@ public enum ShotCommands {
             return try diff(options)
         case let .crop(options):
             return try draw(input: options.input, output: options.output, crop: options.rect, projects: projects, origin: origin) { (_: CGImage) in [] }
-        case .capture, .record, .watch, .windows, .latest, .list, .get, .doctor, .mcp, .version, .help:
+        case .capture, .record, .watch, .windows, .latest, .list, .get, .doctor, .mcp, .indexText, .version, .help:
             throw .internal("\(command.name) isn't a media command")
         }
     }
