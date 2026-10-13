@@ -179,3 +179,29 @@ private func found(_ text: String, _ kinds: Set<SensitiveText.Kind> = Set(Sensit
     #expect(text.sensitive() == [CaptureText.Found(kind: .email, text: "jane@example.com", box: CGRect(x: 50, y: 40, width: 160, height: 20))])
     #expect(text.sensitive([.card]).isEmpty)
 }
+
+@Test func whatToHideHasOneFindForEachBox() {
+    // The email and the card are one word, so they share its box and it's hidden once.
+    let text = CaptureText(width: 700, height: 100, lines: [spaced("Pay jane@example.com,4242424242424242 or sk-abcdefghijklmnopqrstu")])
+    #expect(text.sensitive().count == 3)
+    let hidden = text.toHide(Set(SensitiveText.Kind.allCases))
+    #expect(hidden.map(\.kind) == [.email, .token])
+    #expect(hidden.map(\.box) == [CGRect(x: 40, y: 40, width: 330, height: 20), CGRect(x: 410, y: 40, width: 240, height: 20)])
+    #expect(text.toHide([.card]).map(\.kind) == [.card])
+}
+
+@Test func whatWasHiddenIsReportedWithoutItsText() {
+    let hidden = [CaptureText.Found(kind: .email, text: "jane@example.com", box: CGRect(x: 50, y: 40, width: 160, height: 20))]
+    #expect(CaptureText.json(hidden: hidden) == .array([
+        .object(["kind": .string("email"), "box": .array([50, 40, 160, 20].map(JSONValue.number))]),
+    ]))
+}
+
+@Test func kindsAreNamedInAListSplitByCommas() {
+    #expect(SensitiveText.Kind.list("email") == [.email])
+    #expect(SensitiveText.Kind.list("Email, TOKEN,card") == [.email, .token, .card])
+    #expect(SensitiveText.Kind.list("email,email") == [.email])
+    #expect(SensitiveText.Kind.list("email,phone") == nil)
+    #expect(SensitiveText.Kind.list("") == nil)
+    #expect(SensitiveText.Kind.list(",") == nil)
+}

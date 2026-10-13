@@ -38,10 +38,10 @@ private let captures = tools(in: folder, [
     ("Recording C.mp4", 5, true),
 ])
 
-@Test func thereAreFourteenToolsEachWithAnObjectSchema() {
-    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "zoom", "wait_for_capture", "annotate", "make_gif", "trim_video", "list_windows", "capture_window", "record_window", "compare"])
+@Test func thereAreFifteenToolsEachWithAnObjectSchema() {
+    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "zoom", "wait_for_capture", "annotate", "redact", "make_gif", "trim_video", "list_windows", "capture_window", "record_window", "compare"])
     let required = AgentTools.definitions.map { $0.inputSchema["required"] }
-    #expect(required == [nil, nil, nil, nil, nil, .array([.string("rect")]), nil, .array([.string("annotations")]), nil, .array([.string("start"), .string("end")]), nil, nil, nil, .array([.string("a"), .string("b")])])
+    #expect(required == [nil, nil, nil, nil, nil, .array([.string("rect")]), nil, .array([.string("annotations")]), nil, nil, .array([.string("start"), .string("end")]), nil, nil, nil, .array([.string("a"), .string("b")])])
     for tool in AgentTools.definitions {
         #expect(tool.inputSchema["type"] == .string("object"))
         #expect(!tool.description.isEmpty)
@@ -49,7 +49,7 @@ private let captures = tools(in: folder, [
 }
 
 @Test func onlyTheToolsThatChangeNothingAreMarkedReadOnly() {
-    // annotate, make_gif, trim_video and compare add files, and capture_window and record_window take new captures.
+    // annotate, redact, make_gif, trim_video and compare add files, and capture_window and record_window take new captures.
     #expect(AgentTools.definitions.filter(\.readOnly).map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "zoom", "wait_for_capture", "list_windows"])
 }
 
@@ -260,6 +260,57 @@ private final class Ran: @unchecked Sendable {
     #expect(texts(result).first?.hasPrefix("mark 1 (squiggle): unknown type") == true)
     #expect(ran.commands.isEmpty)
     #expect(await making(ran).call("annotate", .object([:])).isError)
+}
+
+@Test func redactHidesEveryKindOfPrivateTextByDefaultAndShowsTheResult() async {
+    let ran = Ran()
+    let result = await making(ran).call("redact", .object([:]))
+    #expect(result.isError == false)
+    #expect(ran.commands == [.redact(ShotCommand.RedactOptions(input: "/shots/Shot B.png", detect: [.email, .token, .card]))])
+    #expect(result.content.first == .image(data: "PREVIEW:new.png", mimeType: "image/jpeg"))
+    #expect(texts(result).last == "Saved as a new file beside Shot B.png; the original is unchanged.")
+}
+
+@Test func redactTakesItsKindsRectsAndStyle() async {
+    let ran = Ran()
+    let tools = making(ran)
+    let rect: JSONValue = .array([10, 20, 30, 40].map(JSONValue.number))
+    #expect(await tools.call("redact", .object(["name": .string("Shot A"), "rects": .array([rect]), "style": .string("Blur")])).isError == false)
+    #expect(await tools.call("redact", .object(["rects": .array([rect]), "detect": .array([.string("card")])])).isError == false)
+    #expect(await tools.call("redact", .object(["detect": .string("email,token")])).isError == false)
+    #expect(ran.commands == [
+        .redact(ShotCommand.RedactOptions(input: "/shots/Shot A (2).png", rects: [[10, 20, 30, 40]], style: .blur)),
+        .redact(ShotCommand.RedactOptions(input: "/shots/Shot B.png", rects: [[10, 20, 30, 40]], detect: [.card])),
+        .redact(ShotCommand.RedactOptions(input: "/shots/Shot B.png", detect: [.email, .token])),
+    ])
+}
+
+@Test func redactRefusesWhatMakesNoSense() async {
+    let ran = Ran()
+    let tools = making(ran)
+    for arguments: [String: JSONValue] in [
+        ["detect": .array([.string("phone")])],
+        ["detect": .array([])],
+        ["rects": .array([.array([1, 2, 0, 4].map(JSONValue.number))])],
+        ["rects": .array([.array([1, 2, 3].map(JSONValue.number))])],
+        ["rects": .string("1,2,3,4")],
+        ["style": .string("smudge")],
+    ] {
+        #expect(await tools.call("redact", .object(arguments)).isError, "\(arguments)")
+    }
+    #expect(await tools.call("redact", .object(["name": .string("Recording C")])).isError)
+    #expect(ran.commands.isEmpty)
+}
+
+@Test func redactWithNothingToHideSaysNoFileWasWritten() async {
+    var tools = captures
+    tools.run = { _ throws(ShotCommandError) in
+        .object(["path": .string("/shots/Shot B.png"), "found": .array([]), "unchanged": .bool(true)])
+    }
+    let result = await tools.call("redact", .object([:]))
+    #expect(result.isError == false)
+    #expect(result.content.count == 2)
+    #expect(texts(result).last == "Found nothing to hide in Shot B.png, so no file was written.")
 }
 
 @Test func gifAndTrimNeedARecordingAndPassTheirTimes() async {

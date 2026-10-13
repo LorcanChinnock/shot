@@ -152,12 +152,34 @@ public struct CaptureText: Equatable, Sendable {
             }
         }
     }
+
+    /// What `sensitive` finds of `kinds`, one for each box, since two matches in one word share the word's box.
+    public func toHide(_ kinds: Set<SensitiveText.Kind>) -> [Found] {
+        sensitive(kinds).reduce(into: []) { kept, found in
+            if !kept.contains(where: { $0.box == found.box }) {
+                kept.append(found)
+            }
+        }
+    }
+
+    /// Each kind and box `redact` hid, as it reports them: never the text, which would show an agent what was hidden.
+    public static func json(hidden: [Found]) -> JSONValue {
+        .array(hidden.map { .object(["kind": .string($0.kind.rawValue), "box": json($0.box)]) })
+    }
 }
 
 /// Finds text that looks private in a line read from a capture: emails, tokens and API keys, and card numbers.
 public enum SensitiveText {
     public enum Kind: String, CaseIterable, Sendable {
         case email, token, card
+
+        /// The kinds named in `text`, split by commas, such as `email,token`, ignoring case and spaces; `nil` when one
+        /// isn't a kind or none is named.
+        public static func list(_ text: String) -> Set<Kind>? {
+            let names = text.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces).lowercased() }
+            let kinds = names.compactMap(Kind.init(rawValue:))
+            return names.isEmpty || kinds.count != names.count ? nil : Set(kinds)
+        }
     }
 
     public struct Match: Equatable, Sendable {
