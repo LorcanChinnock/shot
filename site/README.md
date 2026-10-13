@@ -11,6 +11,7 @@ npm run preview   # build, then serve dist/ with wrangler, _redirects and _heade
 ```
 
 - `docs/usage.md` renders as one page per `##` section at `/docs/<section>/` (`src/lib/guide.ts`); `/docs/` is the start page, and a small script there sends old `/docs/#anchor` links to the right page. `/changelog/` renders `CHANGELOG.md`, so they never drift from the repo.
+- After the build, [Pagefind](https://pagefind.app) indexes the guide's pages into `dist/pagefind/` (the `search()` hook in `astro.config.mjs`). The search box on `/docs/` and in the guide's sidebar loads that static index in the browser, so it works on the built site (`npm run preview`) but not under `npm run dev`. Pagefind runs WebAssembly, which is why the Content-Security-Policy in `public/_headers` allows `'wasm-unsafe-eval'`.
 - The download button and `/download` redirect use the latest published GitHub release, read at build time (`src/lib/release.ts`). `release.yml` rebuilds the site through a deploy hook after each release.
 - The look follows the app's design system (`Sources/Shot/Design/BrutalStyle.swift`); the tokens are at the top of `src/styles/global.css`.
 - `npm run media` turns the 2× recordings in `docs/media` (`hero.mp4`, `capture.mp4`, `recording.mp4`) into the looping videos and posters in `public/media/` (needs ffmpeg, and `cwebp` if your ffmpeg can't write WebP). `npm run icons` regenerates the favicons and the social card from `docs/icon.png`. Run them after changing those files and commit the output.

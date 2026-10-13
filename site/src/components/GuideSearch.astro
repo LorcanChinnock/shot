@@ -1,0 +1,122 @@
+---
+// Searches the guide with the static Pagefind index that astro.config.mjs builds into /pagefind/.
+---
+
+<div class="guide-search card solid" role="search" hidden>
+  <input type="search" placeholder="Search the guide" aria-label="Search the guide" autocomplete="off" spellcheck="false" />
+  <p class="status" aria-live="polite"></p>
+  <ol class="results"></ol>
+</div>
+
+<style>
+  .guide-search { padding: 12px; }
+  .guide-search[hidden] { display: none; }
+  input {
+    width: 100%; min-height: 40px; padding: 6px 12px;
+    font: 600 16px/1.3 var(--font); color: var(--ink);
+    background: #fff;
+    border: 2px solid var(--ink); border-radius: 10px;
+  }
+  input:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+  .status { margin: 8px 2px 0; font-size: 14px; color: var(--muted); }
+  .status:empty { display: none; }
+  .results { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .results:not(:empty) { margin-top: 10px; }
+  .results :global(li) { margin: 0; }
+  .results :global(a) { display: block; padding: 6px 8px; border-radius: 8px; text-decoration: none; font-size: 15px; line-height: 1.35; }
+  .results :global(a:hover), .results :global(a:focus-visible) { background: rgb(18 18 26 / 0.07); }
+  .results :global(.page) { display: block; font: 800 12px/1.4 var(--font); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .results :global(.title) { display: block; font-weight: 800; }
+  .results :global(.excerpt) { display: block; margin-top: 2px; font-size: 14px; color: var(--muted); }
+  .results :global(mark) { background: var(--yellow); color: var(--ink); border-radius: 3px; padding-inline: 1px; }
+</style>
+
+<script>
+  interface SubResult { title: string; url: string; excerpt: string; locations: number[] }
+  interface Result { url: string; meta: { title: string }; sub_results: SubResult[] }
+  interface Pagefind {
+    options(options: Record<string, unknown>): Promise<void>;
+    debouncedSearch(query: string): Promise<{ results: { data(): Promise<Result> }[] } | null>;
+  }
+
+  const box = document.querySelector<HTMLElement>('.guide-search');
+  const input = box?.querySelector('input');
+  const status = box?.querySelector<HTMLElement>('.status');
+  const list = box?.querySelector<HTMLOListElement>('.results');
+
+  if (box && input && status && list) {
+    // The box needs this script, so it shows only once the script runs.
+    box.hidden = false;
+
+    // Load the index on first use, so pages that nobody searches never fetch it.
+    let pagefind: Promise<Pagefind> | undefined;
+    const load = () => {
+      const url = '/pagefind/pagefind.js';
+      pagefind ??= import(/* @vite-ignore */ url).then(async (module: Pagefind) => {
+        await module.options({ excerptLength: 14 });
+        return module;
+      });
+      return pagefind;
+    };
+
+    const item = (page: string, sub: SubResult) => {
+      const a = document.createElement('a');
+      a.href = sub.url;
+      const span = (name: string, text: string) => {
+        const s = document.createElement('span');
+        s.className = name;
+        s.textContent = text;
+        return s;
+      };
+      // A section is labelled with its page; the page's own intro needs no label.
+      if (sub.title !== page) a.append(span('page', page));
+      const excerpt = span('excerpt', '');
+      // Pagefind escapes the page text in an excerpt and adds only <mark> around the matched words.
+      excerpt.innerHTML = sub.excerpt;
+      a.append(span('title', sub.title), excerpt);
+      const li = document.createElement('li');
+      li.append(a);
+      return li;
+    };
+
+    const search = async () => {
+      const query = input.value.trim();
+      if (!query) {
+        list.replaceChildren();
+        status.textContent = '';
+        return;
+      }
+      let found;
+      try {
+        found = await (await load()).debouncedSearch(query);
+      } catch {
+        // `npm run dev` has no index; it's built with the site.
+        status.textContent = 'Search works on the built site only.';
+        return;
+      }
+      // A newer search replaced this one.
+      if (!found || input.value.trim() !== query) return;
+      const pages = await Promise.all(found.results.slice(0, 6).map((r) => r.data()));
+      // Each page lists its best-matching sections, at most two, so one long page can't fill the list.
+      const items = pages.flatMap((page) =>
+        [...page.sub_results]
+          .sort((a, b) => b.locations.length - a.locations.length)
+          .slice(0, 2)
+          .map((sub) => item(page.meta.title, sub)),
+      );
+      list.replaceChildren(...items);
+      status.textContent = items.length ? '' : `Nothing in the guide matches “${query}”.`;
+    };
+
+    input.addEventListener('focus', load, { once: true });
+    input.addEventListener('input', search);
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        input.value = '';
+        search();
+      } else if (event.key === 'Enter') {
+        list.querySelector('a')?.click();
+      }
+    });
+  }
+</script>

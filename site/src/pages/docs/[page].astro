@@ -1,4 +1,5 @@
 ---
+import GuideSearch from '../../components/GuideSearch.astro';
 import Prose from '../../layouts/Prose.astro';
 import { pages } from '../../lib/guide';
 
@@ -9,11 +10,13 @@ export function getStaticPaths() {
   }));
 }
 const { page, previous, next } = Astro.props;
+const links = pages.map((p) => ({ href: `/docs/${p.slug}/`, title: p.title, current: p === page }));
 ---
 
-<Prose title={page.title} description={`Shot user guide: ${page.title}.`} headings={page.headings}>
+<Prose title={page.title} description={`Shot user guide: ${page.title}.`} headings={page.headings} pages={links}>
+  <GuideSearch slot="side" />
   <p class="crumb"><a href="/docs/">User guide</a></p>
-  <Fragment set:html={page.html} />
+  <div data-pagefind-body><Fragment set:html={page.html} /></div>
   <nav class="pager" aria-label="More of the guide">
     {previous ? <a class="prev" href={`/docs/${previous.slug}/`}>← {previous.title}</a> : <span />}
     {next ? <a class="next" href={`/docs/${next.slug}/`}>{next.title} →</a> : <span />}
