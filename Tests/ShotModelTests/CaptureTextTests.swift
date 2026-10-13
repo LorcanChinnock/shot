@@ -186,8 +186,33 @@ private func found(_ text: String, _ kinds: Set<SensitiveText.Kind> = Set(Sensit
     #expect(text.sensitive().count == 3)
     let hidden = text.toHide(Set(SensitiveText.Kind.allCases))
     #expect(hidden.map(\.kind) == [.email, .token])
-    #expect(hidden.map(\.box) == [CGRect(x: 40, y: 40, width: 330, height: 20), CGRect(x: 410, y: 40, width: 240, height: 20)])
+    // Each word's box, grown by 5 px (a quarter of its 20 px height) at the sides and 4 px top and bottom.
+    #expect(hidden.map(\.box) == [CGRect(x: 35, y: 36, width: 340, height: 28), CGRect(x: 405, y: 36, width: 250, height: 28)])
     #expect(text.toHide([.card]).map(\.kind) == [.card])
+}
+
+@Test func whatToHideStaysOnTheImage() {
+    // The email touches the top and right edges, so the padding stops there and grows only left and down.
+    let box = CGRect(x: 140, y: 0, width: 160, height: 20)
+    let line = CaptureText.Line(text: "jane@example.com", box: box, words: [.init(text: "jane@example.com", box: box)])
+    #expect(CaptureText(width: 300, height: 100, lines: [line]).toHide([.email])[0].box == CGRect(x: 135, y: 0, width: 165, height: 24))
+}
+
+@Test func whatToHideStopsShortOfTheNextWord() {
+    // Word boxes nearly touch, so the email grows only 1 px towards each neighbour, stopping 1 px short of it, but the full 2 px up and down.
+    let words: [CaptureText.Word] = [
+        .init(text: "Contact", box: CGRect(x: 40, y: 62, width: 95, height: 10)),
+        .init(text: "jane@example.com", box: CGRect(x: 137, y: 62, width: 253, height: 10)),
+        .init(text: "today", box: CGRect(x: 392, y: 62, width: 75, height: 10)),
+    ]
+    let line = CaptureText.Line(text: "Contact jane@example.com today", box: CGRect(x: 40, y: 62, width: 427, height: 10), words: words)
+    #expect(CaptureText(width: 700, height: 200, lines: [line]).toHide([.email])[0].box == CGRect(x: 136, y: 60, width: 255, height: 14))
+}
+
+@Test func smallTextIsPaddedByAtLeastTwoPixels() {
+    let line = CaptureText.Line(text: "jane@example.com", box: CGRect(x: 10, y: 10, width: 60, height: 4), words: [.init(text: "jane@example.com", box: CGRect(x: 10, y: 10, width: 60, height: 4))])
+    let box = CaptureText(width: 100, height: 100, lines: [line]).toHide([.email])[0].box
+    #expect(box == CGRect(x: 8, y: 8, width: 64, height: 8))
 }
 
 @Test func whatWasHiddenIsReportedWithoutItsText() {
