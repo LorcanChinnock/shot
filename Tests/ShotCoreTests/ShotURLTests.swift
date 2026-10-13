@@ -8,6 +8,7 @@ private let home = FileManager.default.homeDirectoryForCurrentUser
     ("shot://capture-area", ShotURL.action(.captureArea)),
     ("shot://capture-fullscreen", .action(.captureFullscreen)),
     ("shot://capture-window", .action(.captureWindow)),
+    ("shot://capture-previous", .action(.capturePrevious)),
     ("shot://record", .action(.record)),
     ("shot://record-fullscreen", .action(.recordFullscreen)),
     ("shot://record-window", .action(.recordWindow)),

@@ -31,7 +31,7 @@ import Testing
 
 @Test func replacementHotkeysTakeTheMacOSKeys() {
     let replaced = ShotAction.allCases.map { $0.defaultCombo(replacingSystemScreenshots: true)?.displayString }
-    #expect(replaced == ["⇧⌘4", "⇧⌘3", nil, "⇧⌘5", nil, nil, nil, nil])
+    #expect(replaced == ["⇧⌘4", "⇧⌘3", nil, "⇧⌘5", nil, nil, nil, nil, nil])
     #expect(ShotAction.allCases.allSatisfy { $0.defaultCombo(replacingSystemScreenshots: false) == $0.defaultCombo })
 }
 
@@ -43,7 +43,7 @@ import Testing
     #expect(ShotAction.pickColor.rawValue == "pick-color")
     // HotkeyCenter numbers hotkeys by position, so a new action goes last and existing ones keep their ids.
     #expect(ShotAction.allCases.firstIndex(of: .pickColor) == 6)
-    #expect(ShotAction.allCases.filter(\.isCapture) == [.captureArea, .captureFullscreen, .captureWindow])
+    #expect(ShotAction.allCases.filter(\.isCapture) == [.captureArea, .captureFullscreen, .captureWindow, .capturePrevious])
 }
 
 @Test func copyPathHasNoShortcutAndComesLast() {
@@ -52,5 +52,14 @@ import Testing
     #expect(!ShotAction.copyPath.isCapture)
     #expect(!ShotAction.copyPath.isRecording)
     #expect(ShotAction.copyPath.rawValue == "copy-path")
-    #expect(ShotAction.allCases.last == .copyPath)
+    #expect(ShotAction.allCases.firstIndex(of: .copyPath) == 7)
+}
+
+@Test func capturePreviousAreaIsACaptureWithNoShortcutAndComesLast() {
+    #expect(ShotAction.capturePrevious.defaultCombo == nil)
+    #expect(ShotAction.capturePrevious.defaultCombo(replacingSystemScreenshots: true) == nil)
+    #expect(ShotAction.capturePrevious.isCapture)
+    #expect(!ShotAction.capturePrevious.isRecording)
+    #expect(ShotAction.capturePrevious.rawValue == "capture-previous")
+    #expect(ShotAction.allCases.last == .capturePrevious)
 }

@@ -34,6 +34,7 @@ If you used Shot before the welcome window existed, you won't see it. To open it
 Shot lives in the menu bar. Its menu lists every capture and recording action with its shortcut, plus **Open Gallery** and **Open Save Folder**. While you record, it also has **Pause Recording** (**Resume Recording** while paused) and **Stop Recording**.
 
 - **Area (⌘⇧4):** the screen freezes, and you drag out an area. A magnifier next to the pointer helps you find exact edges. Hold Shift for a square, or press Tab to step through 1:1, 4:3, 3:2, 16:9 and back to free (Shift-Tab steps back); the direction you start dragging picks landscape or portrait, and X rotates it mid-drag. Hold Space while dragging to move the area. A label by the pointer shows the size in pixels, and the ratio when one is set. Press Esc to cancel.
+- **Previous area:** **Capture Previous Area** in the menu bar menu, or [`shot://capture-previous`](#url-scheme), takes the area your last area screenshot took, without the overlay, so a before and after shot lines up exactly. It has no shortcut until you give it one in **Settings › Shortcuts**. Shot forgets the area when it quits, and says so if none was taken yet or that part of the screen is gone.
 - **Window:** press Space after ⌘⇧4, then click a window. Shot keeps the macOS window shadow unless you turn it off in Settings › Capture.
 - **Full screen (⌘⇧3):** captures the screen under the pointer.
 
@@ -395,7 +396,7 @@ Shot still sends nothing anywhere. Whatever an agent reads, though, goes to that
 
 ### Global
 
-Every capture and recording action, **Pick Colour** and **Copy Latest Capture's Path** can have a global shortcut and a [`shot://` URL](#url-scheme). Unless you turned it off in the [welcome window](#first-launch), Shot takes over the macOS screenshot keys and turns off the matching macOS shortcuts while it runs, once it has Screen Recording access. When Shot quits, macOS gets its keys back. If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧3 to ⌘⇧5** on again.
+Every capture and recording action, **Pick Colour**, **Copy Latest Capture's Path** and **Capture Previous Area** can have a global shortcut and a [`shot://` URL](#url-scheme). Unless you turned it off in the [welcome window](#first-launch), Shot takes over the macOS screenshot keys and turns off the matching macOS shortcuts while it runs, once it has Screen Recording access. When Shot quits, macOS gets its keys back. If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧3 to ⌘⇧5** on again.
 
 | Shortcut | Action |
 |---|---|
@@ -407,7 +408,7 @@ While you set up a recording, the record shortcut starts it. While you record, i
 
 To keep the macOS screenshot tool, turn off **Use Shot for ⌘⇧3 to ⌘⇧5** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with ⌃ in place of ⌘: ⌃⇧3, ⌃⇧4, ⌃⇧5, plus ⌃⇧W for a window.
 
-Record Full Screen, Record Window, Pick Colour and Copy Latest Capture's Path have no shortcut until you set one. Pick Colour shows a loupe; click any pixel on screen to copy its hex, such as `#1E90FF`. Capture Window has none while Shot uses ⌘⇧3 to ⌘⇧5; press Space after ⌘⇧4 instead.
+Record Full Screen, Record Window, Pick Colour, Copy Latest Capture's Path and Capture Previous Area have no shortcut until you set one. Pick Colour shows a loupe; click any pixel on screen to copy its hex, such as `#1E90FF`. Capture Window has none while Shot uses ⌘⇧3 to ⌘⇧5; press Space after ⌘⇧4 instead.
 
 ### While selecting
 
@@ -505,6 +506,7 @@ Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a scr
 | URL | Action |
 |---|---|
 | `shot://capture-area`, `capture-fullscreen`, `capture-window` | Take a screenshot |
+| `shot://capture-previous` | Take the last area screenshot's area again |
 | `shot://record`, `record-fullscreen`, `record-window` | Set up, confirm, or stop a recording |
 | `shot://pause` | Pause or resume the recording |
 | `shot://pick-color` | Pick a colour on screen and copy its hex |
