@@ -84,3 +84,54 @@ private let arrow = Annotation(kind: .arrow(from: CGPoint(x: 10, y: 10), to: CGP
     #expect(VersionWriter.videoCopyURL(of: folder.appendingPathComponent("Clip.mov"), prefix: "Shot", date: date).lastPathComponent == "Shot 2026-10-02 at 14.03.11.mov")
     #expect(VersionWriter.videoCopyURL(of: folder.appendingPathComponent("Clip.m4v"), prefix: "Bug", date: date).lastPathComponent == "Bug 2026-10-02 at 14.03.11.mp4")
 }
+
+@Test func aSavedVersionsLayersComeBackLiveWithoutTheAgentSetting() throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
+    let original = folder.appendingPathComponent("Shot.png")
+    try #require(ImageCodec.data(from: plainImage(), scale: 2)).write(to: original)
+    // Everything a record can't hold: a placed image, a spotlight, a hidden and a styled layer, a styled screenshot.
+    var document = EditorDocument(base: plainImage(), annotations: [arrow])
+    document.addImage(plainImage(width: 20, height: 20), scale: 2, documentScale: 2, centeredAt: CGPoint(x: 30, y: 30), margin: 16)
+    document.annotations.append(Annotation(kind: .spotlight(CGRect(x: 5, y: 5, width: 40, height: 30), style: SpotlightStyle()), color: RGBA(0, 0, 0), lineWidth: 0))
+    document.annotations[0].isHidden = true
+    document.annotations[1].style = ObjectStyle(shadow: Shadow(elevation: 8, opacity: 0.3))
+    document.setCornerRadius(12, of: .capture)
+    document.background = RGBA(0.2, 0.4, 0.6)
+
+    let saved = try VersionWriter.saveImage(document, of: original, scale: 2, recordForAgents: false, projects: store)
+    #expect(ImageCodec.record(ofFileAt: saved.url) == nil)
+    let reopened = try #require(VersionWriter.layers(of: saved.url, in: store))
+    #expect(reopened.original.resolvingSymlinksInPath() == original.resolvingSymlinksInPath())
+    #expect(reopened.layers == document.snapshot)
+    #expect(store.entry(for: saved.url)?.origin.via == .app)
+}
+
+@Test func aVersionOpensFlatWhenItsOriginalIsReplacedButFollowsItWhenMoved() throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
+    let original = folder.appendingPathComponent("Shot.png")
+    try #require(ImageCodec.data(from: plainImage(), scale: 1)).write(to: original)
+    let saved = try VersionWriter.saveImage(EditorDocument(base: plainImage(), annotations: [arrow]), of: original, scale: 1, recordForAgents: false, projects: store)
+
+    let moved = folder.appendingPathComponent("Moved.png")
+    try FileManager.default.moveItem(at: original, to: moved)
+    #expect(VersionWriter.layers(of: saved.url, in: store)?.original.resolvingSymlinksInPath() == moved.resolvingSymlinksInPath())
+
+    // Another image put where the original was, and the original gone, isn't what the layers were drawn on.
+    try FileManager.default.removeItem(at: moved)
+    // JPEG bytes, so it can't be the same size as the original, which with the same path and second would pass for it.
+    try #require(ImageCodec.data(from: plainImage(width: 200, height: 50), scale: 1, format: .jpeg)).write(to: original)
+    #expect(VersionWriter.layers(of: saved.url, in: store) == nil)
+}
+
+@Test func aVersionSavedWithoutAStoreHasNoProject() throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let original = folder.appendingPathComponent("Shot.png")
+    try #require(ImageCodec.data(from: plainImage(), scale: 1)).write(to: original)
+    let saved = try VersionWriter.saveImage(EditorDocument(base: plainImage(), annotations: [arrow]), of: original, scale: 1, recordForAgents: false)
+    #expect(ImageCodec.projectID(ofFileAt: saved.url) == nil)
+}

@@ -1965,7 +1965,9 @@
         }
       }
     },
-    "ASPECT" : {},
+    "ASPECT" : {
+
+    },
     "About" : {
       "localizations" : {
         "de" : {
@@ -4220,7 +4222,9 @@
         }
       }
     },
-    "Brightness" : {},
+    "Brightness" : {
+
+    },
     "Bubble size" : {
       "localizations" : {
         "de" : {
@@ -7556,7 +7560,9 @@
         }
       }
     },
-    "Copied text" : {},
+    "Copied text" : {
+
+    },
     "Copied the path of %@" : {
       "localizations" : {
         "de" : {
@@ -7921,7 +7927,9 @@
         }
       }
     },
-    "Copy Text" : {},
+    "Copy Text" : {
+
+    },
     "Copy image (⌘C)" : {
       "localizations" : {
         "de" : {
@@ -9385,7 +9393,9 @@
         }
       }
     },
-    "Couldn't read the text: %@" : {},
+    "Couldn't read the text: %@" : {
+
+    },
     "Couldn't relaunch Shot. Quit and open it again." : {
       "localizations" : {
         "de" : {
@@ -10842,7 +10852,9 @@
         }
       }
     },
-    "Deselect" : {},
+    "Deselect" : {
+
+    },
     "Deselect (⌘-click)" : {
       "localizations" : {
         "de" : {
@@ -11467,8 +11479,12 @@
         }
       }
     },
-    "Drag the crop to any shape." : {},
-    "Drag the handles to choose the area to keep. Return applies it, Esc cancels." : {},
+    "Drag the crop to any shape." : {
+
+    },
+    "Drag the handles to choose the area to keep. Return applies it, Esc cancels." : {
+
+    },
     "Drag the handles to trim. Shift-drag to select a section, then press Delete to cut it." : {
       "localizations" : {
         "de" : {
@@ -12093,7 +12109,9 @@
         }
       }
     },
-    "Draws a circle where you click." : {},
+    "Draws a circle where you click." : {
+
+    },
     "Duplicate" : {
       "localizations" : {
         "de" : {
@@ -14232,6 +14250,9 @@
         }
       }
     },
+    "Flatten" : {
+
+    },
     "Float" : {
       "localizations" : {
         "de" : {
@@ -14336,7 +14357,9 @@
         }
       }
     },
-    "Frame" : {},
+    "Frame" : {
+
+    },
     "Frame rate" : {
       "localizations" : {
         "de" : {
@@ -14493,7 +14516,9 @@
         }
       }
     },
-    "Free crop" : {},
+    "Free crop" : {
+
+    },
     "From the Quick Access card" : {
       "localizations" : {
         "de" : {
@@ -16626,7 +16651,9 @@
         }
       }
     },
-    "Hue" : {},
+    "Hue" : {
+
+    },
     "IMAGE STYLE" : {
       "localizations" : {
         "de" : {
@@ -17355,7 +17382,9 @@
         }
       }
     },
-    "Keeps the crop this shape, wide or tall to match it." : {},
+    "Keeps the crop this shape, wide or tall to match it." : {
+
+    },
     "Keyframe %@ here" : {
       "localizations" : {
         "de" : {
@@ -19951,7 +19980,9 @@
         }
       }
     },
-    "No text found" : {},
+    "No text found" : {
+
+    },
     "None" : {
       "localizations" : {
         "de" : {
@@ -25621,8 +25652,12 @@
         }
       }
     },
-    "Saturation" : {},
-    "Saturation and brightness" : {},
+    "Saturation" : {
+
+    },
+    "Saturation and brightness" : {
+
+    },
     "Save" : {
       "localizations" : {
         "de" : {
@@ -28275,7 +28310,9 @@
         }
       }
     },
-    "Show clicks" : {},
+    "Show clicks" : {
+
+    },
     "Show cursor" : {
       "localizations" : {
         "de" : {
@@ -29836,7 +29873,9 @@
         }
       }
     },
-    "Square, 1:1" : {},
+    "Square, 1:1" : {
+
+    },
     "Star" : {
       "localizations" : {
         "de" : {
@@ -31042,7 +31081,9 @@
         }
       }
     },
-    "Takes the crop off, so the whole image is kept." : {},
+    "Takes the crop off, so the whole image is kept." : {
+
+    },
     "Test" : {
       "localizations" : {
         "de" : {
@@ -33438,6 +33479,9 @@
         }
       }
     },
+    "User Guide" : {
+
+    },
     "Uses macOS window shadow" : {
       "localizations" : {
         "de" : {
@@ -33854,8 +33898,9 @@
         }
       }
     },
-    "User Guide" : {},
-    "View" : {},
+    "View" : {
+
+    },
     "WIDTH" : {
       "localizations" : {
         "de" : {

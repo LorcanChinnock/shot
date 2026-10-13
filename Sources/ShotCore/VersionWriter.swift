@@ -1,6 +1,9 @@
 import AVFoundation
 import CoreGraphics
 import Foundation
+import os
+
+private let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Shot", category: "projects")
 
 /// Writes an edit as a new file, so the image editor, the video editor and the `shot` commands name, draw and record
 /// a version the same way. The naming itself is `VersionNaming`, in ShotModel.
@@ -55,26 +58,33 @@ public enum VersionWriter {
         )
     }
 
-    /// Flattens `document` and encodes it as `format`, with `record` inside it once it has the drawn size.
-    public static func render(_ document: EditorDocument, scale: CGFloat, as format: ImageFormat, record: CaptureRecord?) throws(Failure) -> RenderedImage {
+    /// Flattens `document` and encodes it as `format`, with `record` inside it once it has the drawn size, and
+    /// `projectID` stamped in it when it has a project.
+    public static func render(_ document: EditorDocument, scale: CGFloat, as format: ImageFormat, record: CaptureRecord?, projectID: String? = nil) throws(Failure) -> RenderedImage {
         guard let image = AnnotationRenderer.flatten(document) else {
             throw .draw
         }
         var record = record
         record?.size = CaptureRecord.Size(width: image.width, height: image.height)
         // A window with the macOS shadow still has it once saved, so the file keeps saying so.
-        guard let file = ImageCodec.data(from: image, scale: scale, format: format, windowShadow: document.hasWindowShadow, record: record) else {
+        guard let file = ImageCodec.data(from: image, scale: scale, format: format, windowShadow: document.hasWindowShadow, record: record, projectID: projectID) else {
             throw .encode
         }
         return RenderedImage(image: image, file: file, record: record)
     }
 
     /// Saves `document`, drawn on the file at `original`, as that file's next version in its own format, as the image
-    /// editor's Save does. The version records its marks for agents while `recordForAgents` is on.
-    public static func saveImage(_ document: EditorDocument, of original: URL, scale: CGFloat, recordForAgents: Bool = Preferences().agentHandoff) throws(Failure) -> SavedImage {
+    /// editor's Save does. The version records its marks for agents while `recordForAgents` is on, and keeps its layers
+    /// in `projects`, whatever that setting, so it reopens live. A project that can't be written leaves the version
+    /// saved, flat, as a version saved before projects is.
+    public static func saveImage(
+        _ document: EditorDocument, of original: URL, scale: CGFloat, recordForAgents: Bool = Preferences().agentHandoff,
+        projects: ProjectStore? = nil, origin: ProjectOrigin = ProjectOrigin(via: .app)
+    ) throws(Failure) -> SavedImage {
         let format = ImageFormat(fileExtension: original.pathExtension)
         let record = recordForAgents ? record(of: document, drawnOn: original, savedAs: format, scale: scale) : nil
-        let rendered = try render(document, scale: scale, as: format, record: record)
+        let projectID = projects == nil ? nil : ProjectKey.newID()
+        let rendered = try render(document, scale: scale, as: format, record: record, projectID: projectID)
         let png: Data
         if format == .png {
             png = rendered.file
@@ -90,7 +100,26 @@ public enum VersionWriter {
         } catch {
             throw .write(error)
         }
+        if let projects {
+            do {
+                try projects.save(document.snapshot, for: destination, id: projectID, original: original, origin: origin)
+            } catch {
+                log.error("Couldn't keep the layers of \(destination.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            }
+        }
         return SavedImage(url: destination, png: png)
+    }
+
+    /// The original the image at `url` was saved from and its layers, when `url` is a version with a project in
+    /// `projects` and that original is still the file it was. Opening the original with them gives the version back, live.
+    public static func layers(of url: URL, in projects: ProjectStore) -> (original: URL, layers: EditorSnapshot)? {
+        guard let project = projects.project(for: url, as: EditorSnapshot.self), let layers = project.document,
+              let kept = project.entry.original, let original = kept.locate(),
+              let found = ProjectFile(at: original, bookmark: false), kept.matches(found), original.standardizedFileURL != url.standardizedFileURL
+        else {
+            return nil
+        }
+        return (original, layers)
     }
 
     // MARK: Videos
