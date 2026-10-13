@@ -128,14 +128,15 @@ public struct MCPServer: Sendable {
     public var name: String
     public var version: String
     public var tools: [Tool]
-    /// Runs the tool `name` with `arguments`, which is `.object([:])` when the client sends none.
-    public var call: @Sendable (_ name: String, _ arguments: JSONValue) async -> ToolResult
+    /// Runs the tool `name` with `arguments`, which is `.object([:])` when the client sends none, for `client`, as it
+    /// named itself in `initialize`.
+    public var call: @Sendable (_ name: String, _ arguments: JSONValue, _ client: Client?) async -> ToolResult
     private let clientBox = ClientBox()
 
     /// The client from `clientInfo` in `initialize`, for a project's provenance; `nil` until then, or when it sent none.
     public var client: Client? { clientBox.client.withLock { $0 } }
 
-    public init(name: String, version: String, tools: [Tool], call: @escaping @Sendable (String, JSONValue) async -> ToolResult) {
+    public init(name: String, version: String, tools: [Tool], call: @escaping @Sendable (String, JSONValue, Client?) async -> ToolResult) {
         self.name = name
         self.version = version
         self.tools = tools
@@ -187,7 +188,7 @@ public struct MCPServer: Sendable {
             if case .object = arguments {} else {
                 arguments = .object([:])
             }
-            let result = await call(tool.name, arguments)
+            let result = await call(tool.name, arguments, client)
             return encode(result: .object([
                 "content": .array(result.content.map(\.json)),
                 "isError": .bool(result.isError),

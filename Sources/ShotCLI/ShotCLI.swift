@@ -45,7 +45,11 @@ enum ShotCLI {
                 exit(1)
             }
         case .capture, .windows:
-            let request = if case let .capture(target) = command { AgentRequest(.capture, target: target) } else { AgentRequest(.windows) }
+            var request = AgentRequest(.windows)
+            if case let .capture(target) = command {
+                request = AgentRequest(.capture, target: target)
+                request.origin = ProjectOrigin(via: .cli, action: command.name)
+            }
             do {
                 print(ShotCommand.json(.object(try await ask(request, app: appBundle()))))
             } catch {
@@ -53,9 +57,11 @@ enum ShotCLI {
                 exit(error.exitCode)
             }
         case let .record(action):
-            let request: AgentRequest
+            var request: AgentRequest
             switch action {
-            case let .start(target, duration): request = AgentRequest(.record, target: target, duration: duration)
+            case let .start(target, duration):
+                request = AgentRequest(.record, target: target, duration: duration)
+                request.origin = ProjectOrigin(via: .cli, action: command.name)
             case let .stop(id): request = AgentRequest(.stop, id: id)
             case .status: request = AgentRequest(.status)
             case let .mark(label, id): request = AgentRequest(.mark, id: id, label: label)
@@ -77,7 +83,8 @@ enum ShotCLI {
             await watch(options, folder: captureFolder(app: appBundle()), program: program)
         default:
             do {
-                let result = try await ShotCommands.run(command)
+                let projects = ProjectStore(bundleID: appBundle()?.bundleIdentifier ?? fallbackSuite)
+                let result = try await ShotCommands.run(command, projects: projects)
                 if result["truncated"] == .bool(true) {
                     printError("\(program) \(command.name): GIFs stop at \(Int(GIFExporter.maxDuration)) seconds, so this one ends early")
                 }
@@ -100,7 +107,8 @@ enum ShotCLI {
     /// Reads one JSON-RPC message per line until the client closes stdin. Only replies go to stdout, since any other
     /// line there breaks the protocol; `FileHandle` writes straight through, so each reply is flushed as it's written.
     static func serve(folder: URL, version: String, app: Bundle?) async {
-        let server = AgentTools.live(folder: folder, marks: RecordingMarks.url(bundleID: app?.bundleIdentifier ?? fallbackSuite)) { request throws(ShotCommandError) in
+        let bundleID = app?.bundleIdentifier ?? fallbackSuite
+        let server = AgentTools.live(folder: folder, marks: RecordingMarks.url(bundleID: bundleID), projects: ProjectStore(bundleID: bundleID)) { request throws(ShotCommandError) in
             try await ask(request, app: app)
         }.server(version: version)
         printError("Shot MCP server \(version), reading \(folder.path)")

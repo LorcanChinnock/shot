@@ -100,14 +100,21 @@ public enum VersionWriter {
         } catch {
             throw .write(error)
         }
-        if let projects {
-            do {
-                try projects.save(document.snapshot, for: destination, id: projectID, original: original, origin: origin)
-            } catch {
-                log.error("Couldn't keep the layers of \(destination.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)")
-            }
-        }
+        keep(document.snapshot, of: destination, id: projectID, original: original, in: projects, origin: origin)
         return SavedImage(url: destination, png: png)
+    }
+
+    /// Keeps `layers`, of the version just written at `url` over `original`, in `projects` under `id`, the ID stamped
+    /// in it. A project that can't be written is only logged, so the version stays saved, flat.
+    static func keep(_ layers: EditorSnapshot, of url: URL, id: String?, original: URL, in projects: ProjectStore?, origin: ProjectOrigin) {
+        guard let projects else {
+            return
+        }
+        do {
+            try projects.save(layers, for: url, id: id, original: original, origin: origin)
+        } catch {
+            log.error("Couldn't keep the layers of \(url.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     /// The original the image at `url` was saved from and its layers, when `url` is a version with a project in
@@ -120,6 +127,30 @@ public enum VersionWriter {
             return nil
         }
         return (original, layers)
+    }
+
+    /// The original of the image at `url`, its pixels and the live layers that give `url` back: from `projects`, or
+    /// else from a record that can rebuild them, for a version saved before projects. `nil` when `url` has neither or
+    /// its original is gone, so it opens, or is drawn on, flat.
+    public static func savedLayers(of url: URL, in projects: ProjectStore?) -> (original: URL, image: CGImage, layers: EditorSnapshot)? {
+        if let projects, let project = layers(of: url, in: projects), let image = ImageCodec.image(at: project.original) {
+            return (project.original, image, project.layers)
+        }
+        guard let record = ImageCodec.record(ofFileAt: url), let layers = record.editableLayers, let name = record.original else {
+            return nil
+        }
+        let original = url.deletingLastPathComponent().appendingPathComponent(name)
+        guard original != url, let image = ImageCodec.image(at: original) else {
+            return nil
+        }
+        var document = EditorDocument(
+            base: image, annotations: layers.annotations, canvasRect: layers.canvas,
+            background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: original.pathExtension))
+        )
+        if let crop = layers.crop {
+            document.crop(to: crop)
+        }
+        return (original, image, document.snapshot)
     }
 
     // MARK: Videos
@@ -145,20 +176,44 @@ public enum VersionWriter {
         origin: ProjectOrigin = ProjectOrigin(via: .app), progress: @Sendable (Double) -> Void = { _ in }
     ) async throws -> VideoExportPlan.Outcome {
         let outcome = try await plan.run(to: output, progress: progress)
-        if let projects {
-            do {
-                var id: String?
-                if ProjectKey.stamps(pathExtension: output.pathExtension) {
-                    let minted = ProjectKey.newID()
-                    try ProjectStamp.stamp(movieAt: output, id: minted)
-                    id = minted
-                }
-                try projects.save(project, for: output, id: id, original: original, origin: origin)
-            } catch {
-                log.error("Couldn't keep the project of \(output.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)")
-            }
-        }
+        keep(project, of: output, original: original, in: projects, origin: origin)
         return outcome
+    }
+
+    /// Keeps `project`, the edit written at `url` over the video at `original`, in `projects`: stamped in an MP4 or
+    /// MOV, and keyed by its identity for a GIF. A project that can't be kept is only logged, so the file stays written.
+    static func keep(_ project: Project, of url: URL, original: URL, in projects: ProjectStore?, origin: ProjectOrigin) {
+        guard let projects else {
+            return
+        }
+        do {
+            var id: String?
+            if ProjectKey.stamps(pathExtension: url.pathExtension) {
+                let minted = ProjectKey.newID()
+                try ProjectStamp.stamp(movieAt: url, id: minted)
+                id = minted
+            }
+            try projects.save(project, for: url, id: id, original: original, origin: origin)
+        } catch {
+            log.error("Couldn't keep the project of \(url.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    /// Keeps only who made the capture or recording at `url`, such as an agent's, which has no layers. `id` is the ID
+    /// already stamped in an image; a movie is stamped here, so write it first. A failure is only logged, since the
+    /// capture is saved either way.
+    public static func keep(origin: ProjectOrigin, of url: URL, id: String?, in projects: ProjectStore) {
+        do {
+            var id = id
+            if id == nil, ["mp4", "mov"].contains(url.pathExtension.lowercased()) {
+                let minted = ProjectKey.newID()
+                try ProjectStamp.stamp(movieAt: url, id: minted)
+                id = minted
+            }
+            try projects.save(origin: origin, for: url, id: id)
+        } catch {
+            log.error("Couldn't keep who made \(url.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     /// Stamps the video at `url` again with the ID in `entry`, its entry from before Save trimmed it in place, which

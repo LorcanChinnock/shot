@@ -12,7 +12,9 @@ extension ShotCLI {
         let signals = RecordSignals()
         let id: String?
         do {
-            id = try await ask(AgentRequest(.record, target: target), app: app)["id"]?.string
+            var request = AgentRequest(.record, target: target)
+            request.origin = ProjectOrigin(via: .cli, action: "record")
+            id = try await ask(request, app: app)["id"]?.string
         } catch {
             printError("\(program) record: \(error.message)")
             return error.exitCode

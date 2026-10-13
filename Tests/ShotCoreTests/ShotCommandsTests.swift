@@ -220,6 +220,85 @@ func redactHidesOnlyTheRectAndLeavesTheInputAlone(style: ShotCommand.RedactStyle
     #expect(inline.lastPathComponent == "shot (3).png")
 }
 
+// MARK: Projects
+
+private let arrow = Annotation(kind: .arrow(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 60, y: 40)), color: RGBA.presets[0], lineWidth: 4)
+
+@Test func annotatingAVersionKeepsItsMarksLiveAndAddsTheNewOnesOnTop() async throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
+    let original = try writeImage("shot.png", in: folder)
+    // Padded on the left and top, so the version's pixels start 20 and 10 pixels before the original's.
+    let document = EditorDocument(base: checkerboard(), annotations: [arrow], canvasRect: CGRect(x: -20, y: -10, width: 240, height: 140))
+    let version = try VersionWriter.saveImage(document, of: original, scale: 1, recordForAgents: false, projects: store).url
+
+    let origin = ProjectOrigin(via: .mcp, client: "claude-code", action: "annotate")
+    let marks: [CaptureMark] = [CaptureMark(type: "rectangle", rect: [30, 30, 20, 20])]
+    let annotated = try path(try await ShotCommands.run(.annotate(.init(input: version.path, marks: .marks(marks))), projects: store, origin: origin))
+    #expect(annotated.lastPathComponent == "shot (3).png")
+    let reopened = try #require(VersionWriter.layers(of: annotated, in: store))
+    #expect(reopened.original.resolvingSymlinksInPath() == original.resolvingSymlinksInPath())
+    let added = try #require(reopened.layers.annotations.last)
+    #expect(added.kind == .shape(.rectangle, rect: CGRect(x: 10, y: 20, width: 20, height: 20)))
+    var expected = document
+    expected.annotations.append(added)
+    #expect(reopened.layers == expected.snapshot)
+    #expect(ImageCodec.record(ofFileAt: annotated)?.original == "shot.png")
+    let entry = try #require(store.entry(for: annotated))
+    #expect(entry.origin.via == .mcp)
+    #expect(entry.origin.client == "claude-code")
+    #expect(entry.origin.action == "annotate")
+
+    // A redaction of that goes on top again, still over the original, and says the command line made it.
+    let redacted = try path(try await ShotCommands.run(.redact(.init(input: annotated.path, rects: [[0, 0, 10, 10]], style: .blur)), projects: store))
+    let layers = try #require(VersionWriter.layers(of: redacted, in: store)).layers
+    #expect(Array(layers.annotations.dropLast()) == expected.annotations)
+    #expect(layers.annotations.last?.kind == .blur(CGRect(x: -20, y: -10, width: 10, height: 10)))
+    #expect(store.entry(for: redacted)?.origin.via == .cli)
+    #expect(store.entry(for: redacted)?.origin.action == "redact")
+
+    // A crop is in the version's pixels too.
+    let cropped = try path(try await ShotCommands.run(.crop(.init(input: version.path, rect: [20, 10, 100, 50])), projects: store))
+    let crop = try #require(VersionWriter.layers(of: cropped, in: store)).layers
+    #expect(crop.annotations == document.annotations)
+    #expect(crop.frameCrop == CGRect(x: 0, y: 0, width: 100, height: 50))
+}
+
+@Test func annotatingAFileThatIsntAVersionKeepsAProjectOverIt() async throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
+    let input = try writeImage("shot.png", in: folder)
+    let marks: [CaptureMark] = [CaptureMark(type: "arrow", from: [10, 10], to: [100, 100])]
+
+    let annotated = try path(try await ShotCommands.run(.annotate(.init(input: input.path, marks: .marks(marks))), projects: store))
+    let reopened = try #require(VersionWriter.layers(of: annotated, in: store))
+    #expect(reopened.original.resolvingSymlinksInPath() == input.resolvingSymlinksInPath())
+    #expect(reopened.layers.annotations.map(\.kind) == [.arrow(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 100, y: 100))])
+    #expect(store.entry(for: annotated)?.origin.action == "annotate")
+
+    // Without a store, as the tests run, nothing is stamped.
+    let plain = try path(try await ShotCommands.run(.annotate(.init(input: input.path, marks: .marks(marks)))))
+    #expect(ImageCodec.projectID(ofFileAt: plain) == nil)
+}
+
+@Test func aVersionSavedBeforeProjectsIsDrawnOnFromItsRecord() async throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
+    let input = try writeImage("shot.png", in: folder)
+    let first = try path(try await ShotCommands.run(.annotate(.init(input: input.path, marks: .marks([CaptureMark(type: "arrow", from: [10, 10], to: [100, 100])])))))
+    #expect(store.entry(for: first) == nil)
+
+    let second = try path(try await ShotCommands.run(.annotate(.init(input: first.path, marks: .marks([CaptureMark(type: "rectangle", rect: [20, 20, 30, 30])]))), projects: store))
+    let reopened = try #require(VersionWriter.layers(of: second, in: store))
+    #expect(reopened.original.resolvingSymlinksInPath() == input.resolvingSymlinksInPath())
+    #expect(reopened.layers.annotations.map(\.kind) == [
+        .arrow(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 100, y: 100)), .shape(.rectangle, rect: CGRect(x: 20, y: 20, width: 30, height: 30)),
+    ])
+}
+
 @Test func annotateRefusesMarksItCantDraw() async throws {
     let folder = try temporaryFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
@@ -410,6 +489,67 @@ extension MediaTests {
         #expect(info["kind"] == .string("video"))
         #expect(abs((info["duration"]?.number ?? 0) - 3) < 0.1)
         #expect(info["size"] == .object(["width": .number(640), "height": .number(360)]))
+    }
+
+    @Test func aTrimAndAGIFKeepTheirProjectsToReopenInTheVideoEditor() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
+        let video = folder.appendingPathComponent("rec.mp4")
+        try await writeSyntheticVideo(to: video, seconds: 3, fps: 10, width: 160, height: 90)
+        let media = try await MediaProbe.probe(video)
+        let whole = Project(source: video, duration: media.duration, canvasSize: try #require(media.size), hasAudio: media.hasAudio)
+        let expected = try #require(whole.trimmingMain(.end, toSource: 2)?.trimmingMain(.start, toSource: 0.5))
+        // Clips get new IDs each time a project is made, so it's the edit they make that has to match.
+        func sameEdit(_ project: Project) -> Bool {
+            guard let trim = project.trimEdit, let wanted = expected.trimEdit else {
+                return false
+            }
+            return trim.source.resolvingSymlinksInPath() == video.resolvingSymlinksInPath() && trim.range == wanted.range && trim.cuts == wanted.cuts
+                && project.canvasSize == expected.canvasSize && project.tracks.map(\.kind) == expected.tracks.map(\.kind)
+        }
+        #expect(abs(try #require(expected.trimEdit).range.length - 1.5) < 0.01)
+
+        let trimmed = try path(try await ShotCommands.run(.trim(.init(input: video.path, start: 0.5, end: 2)), projects: store))
+        #expect(ProjectStamp.id(ofFileAt: trimmed) != nil)
+        // Never the input: it has no stamp and no project.
+        #expect(ProjectStamp.id(ofFileAt: video) == nil)
+        #expect(store.entry(for: video) == nil)
+        let reopened = try #require(VersionWriter.project(of: trimmed, in: store))
+        #expect(reopened.original.resolvingSymlinksInPath() == video.resolvingSymlinksInPath())
+        #expect(sameEdit(reopened.project))
+        #expect(store.entry(for: trimmed)?.origin.via == .cli)
+        #expect(store.entry(for: trimmed)?.origin.action == "trim")
+
+        let origin = ProjectOrigin(via: .mcp, client: "cursor", action: "make_gif")
+        let gif = try path(try await ShotCommands.run(.gif(.init(input: video.path, fps: 5, start: 0.5, end: 2)), projects: store, origin: origin))
+        let reopenedGIF = try #require(VersionWriter.project(of: gif, in: store))
+        #expect(sameEdit(reopenedGIF.project))
+        #expect(store.entry(for: gif)?.origin.client == "cursor")
+        #expect(store.entry(for: gif)?.stamped == false)
+    }
+
+    @Test func anAgentsRecordingKeepsOnlyWhoMadeIt() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
+        let video = folder.appendingPathComponent("rec.mp4")
+        try await writeSyntheticVideo(to: video, seconds: 1, fps: 10, width: 160, height: 90)
+        VersionWriter.keep(origin: ProjectOrigin(via: .mcp, client: "claude-code", action: "record_window"), of: video, id: nil, in: store)
+        #expect(ProjectStamp.id(ofFileAt: video) != nil)
+        let kept = try #require(store.project(for: video, as: Project.self))
+        #expect(kept.document == nil)
+        #expect(kept.entry.original == nil)
+        #expect(kept.entry.origin.action == "record_window")
+        #expect(VersionWriter.project(of: video, in: store) == nil)
+
+        // A screenshot is stamped as it's encoded.
+        let id = ProjectKey.newID()
+        let shot = folder.appendingPathComponent("shot.png")
+        try #require(ImageCodec.data(from: checkerboard(), scale: 1, projectID: id)).write(to: shot)
+        VersionWriter.keep(origin: ProjectOrigin(via: .cli, action: "capture"), of: shot, id: id, in: store)
+        #expect(store.entry(for: shot)?.id == id)
+        #expect(store.entry(for: shot)?.origin.via == .cli)
     }
 
     @Test func aStartPastTheEndOrAnImageIsRefused() async throws {

@@ -4,11 +4,12 @@ import ImageIO
 
 extension AgentTools {
     /// The tools reading the captures in `folder`, as the gallery lists them. GIFs count as images: an agent sees their
-    /// first frame. `marks` is the app's `RecordingMarks` store, whose marks the key frames show. `agent` sends a request
-    /// to the running app, for the tools that capture.
+    /// first frame. `marks` is the app's `RecordingMarks` store, whose marks the key frames show, and `projects` its
+    /// project store, which keeps what the tools make. `agent` sends a request to the running app, for the tools that capture.
     public static func live(
         folder: URL,
         marks: URL? = nil,
+        projects: ProjectStore? = nil,
         agent: @escaping @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue] = { _ throws(ShotCommandError) in throw .unavailable("can't reach Shot from here") }
     ) -> AgentTools {
         AgentTools(
@@ -22,8 +23,8 @@ extension AgentTools {
             record: { entry in
                 entry.isVideo ? nil : ImageCodec.record(ofFileAt: entry.url)
             },
-            run: { command throws(ShotCommandError) in
-                try await ShotCommands.run(command)
+            run: { command, origin throws(ShotCommandError) in
+                try await ShotCommands.run(command, projects: projects, origin: origin)
             },
             frames: { entry, count throws(ShotCommandError) in
                 try await keyFrames(of: entry.url, count: count, marks: marks.map { RecordingMarks.marks(for: entry.url, in: $0) } ?? [])

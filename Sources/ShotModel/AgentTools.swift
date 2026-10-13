@@ -14,8 +14,8 @@ public struct AgentTools: Sendable {
     public var preview: @Sendable (AgentCaptures.Entry) async -> [MCPServer.Content]
     /// The record Shot wrote inside a capture, read from the file's metadata.
     public var record: @Sendable (AgentCaptures.Entry) -> CaptureRecord?
-    /// Runs a `shot` command, as the command line does, for the tools that make files.
-    public var run: @Sendable (ShotCommand) async throws(ShotCommandError) -> JSONValue
+    /// Runs a `shot` command, as the command line does, for the tools that make files, saying who asked for it.
+    public var run: @Sendable (ShotCommand, ProjectOrigin) async throws(ShotCommandError) -> JSONValue
     /// Up to the given number of a recording's key frames, each as its time then its image.
     public var frames: @Sendable (AgentCaptures.Entry, Int) async throws(ShotCommandError) -> [MCPServer.Content]
     /// The text in a screenshot, read on the device.
@@ -34,7 +34,7 @@ public struct AgentTools: Sendable {
         entries: @escaping @Sendable () -> [AgentCaptures.Entry],
         preview: @escaping @Sendable (AgentCaptures.Entry) async -> [MCPServer.Content],
         record: @escaping @Sendable (AgentCaptures.Entry) -> CaptureRecord? = { _ in nil },
-        run: @escaping @Sendable (ShotCommand) async throws(ShotCommandError) -> JSONValue = { _ throws(ShotCommandError) in throw .internal("can't run commands here") },
+        run: @escaping @Sendable (ShotCommand, ProjectOrigin) async throws(ShotCommandError) -> JSONValue = { _, _ throws(ShotCommandError) in throw .internal("can't run commands here") },
         frames: @escaping @Sendable (AgentCaptures.Entry, Int) async throws(ShotCommandError) -> [MCPServer.Content] = { _, _ throws(ShotCommandError) in throw .internal("can't read frames here") },
         text: @escaping @Sendable (AgentCaptures.Entry) async throws(ShotCommandError) -> CaptureText = { _ throws(ShotCommandError) in throw .internal("can't read text here") },
         zoom: @escaping @Sendable (AgentCaptures.Entry, [Double]) async throws(ShotCommandError) -> Zoomed = { _, _ throws(ShotCommandError) in throw .internal("can't zoom here") },
@@ -293,14 +293,16 @@ public struct AgentTools: Sendable {
     ]
 
     public func server(version: String) -> MCPServer {
-        MCPServer(name: "shot", version: version, tools: Self.definitions) { name, arguments in
-            await call(name, arguments)
+        MCPServer(name: "shot", version: version, tools: Self.definitions) { name, arguments, client in
+            await call(name, arguments, client: client)
         }
     }
 
-    /// Runs the tool `name`, which `MCPServer` has already matched to one of `definitions`.
-    public func call(_ name: String, _ arguments: JSONValue) async -> MCPServer.ToolResult {
+    /// Runs the tool `name`, which `MCPServer` has already matched to one of `definitions`, for `client`, whose name the
+    /// files a tool makes keep as their origin.
+    public func call(_ name: String, _ arguments: JSONValue, client: MCPServer.Client? = nil) async -> MCPServer.ToolResult {
         let entries = entries()
+        let origin = ProjectOrigin(via: .mcp, client: client?.name, action: name)
         switch name {
         case Self.latestCapture:
             // The issue's default is the newest image, since that's what "my latest screenshot" means.
@@ -326,7 +328,7 @@ public struct AgentTools: Sendable {
         case Self.waitForCapture:
             return await waitForCapture(arguments)
         case Self.annotate, Self.redact, Self.makeGIF, Self.trimVideo:
-            return await make(name, arguments, entries)
+            return await make(name, arguments, entries, origin: origin)
         case Self.getFrames:
             let query = [arguments["path"]?.string, arguments["name"]?.string].compactMap { $0 }.first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
             guard let entry = query.map({ AgentCaptures.named($0, in: entries) }) ?? AgentCaptures.latest(entries, kind: .video) else {
@@ -346,11 +348,11 @@ public struct AgentTools: Sendable {
         case Self.zoom:
             return await zoom(arguments, entries)
         case Self.captureWindow:
-            return await captureWindow(arguments)
+            return await captureWindow(arguments, origin: origin)
         case Self.recordWindow:
-            return await recordWindow(arguments)
+            return await recordWindow(arguments, origin: origin)
         case Self.compare:
-            return await compare(arguments, entries)
+            return await compare(arguments, entries, origin: origin)
         case Self.listWindows:
             do {
                 return MCPServer.ToolResult(content: [.text(Self.json(.object(try await agent(AgentRequest(.windows)))))])
@@ -380,7 +382,7 @@ public struct AgentTools: Sendable {
 
     /// Runs one of the tools that make a file, on the capture `arguments` name, or the newest one of the right kind.
     /// Only captures in the folder can be named, so nothing outside it is read or written beside.
-    func make(_ name: String, _ arguments: JSONValue, _ entries: [AgentCaptures.Entry]) async -> MCPServer.ToolResult {
+    func make(_ name: String, _ arguments: JSONValue, _ entries: [AgentCaptures.Entry], origin: ProjectOrigin) async -> MCPServer.ToolResult {
         let video = name != Self.annotate && name != Self.redact
         let query = [arguments["path"]?.string, arguments["name"]?.string].compactMap { $0 }.first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
         let found = query.map { AgentCaptures.named($0, in: entries) } ?? AgentCaptures.latest(entries, kind: video ? .video : .image)
@@ -424,7 +426,7 @@ public struct AgentTools: Sendable {
         }
         let result: JSONValue
         do {
-            result = try await run(command)
+            result = try await run(command, origin)
         } catch {
             return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
         }
@@ -554,7 +556,7 @@ public struct AgentTools: Sendable {
     }
 
     /// Compares the screenshots `a` and `b` name, which must both be in the folder, and shows the diff it saved beside `b`.
-    func compare(_ arguments: JSONValue, _ entries: [AgentCaptures.Entry]) async -> MCPServer.ToolResult {
+    func compare(_ arguments: JSONValue, _ entries: [AgentCaptures.Entry], origin: ProjectOrigin) async -> MCPServer.ToolResult {
         var found: [AgentCaptures.Entry] = []
         for key in ["a", "b"] {
             guard let query = arguments[key]?.string, !query.trimmingCharacters(in: .whitespaces).isEmpty else {
@@ -575,7 +577,7 @@ public struct AgentTools: Sendable {
         }
         let result: JSONValue
         do {
-            result = try await run(.diff(options))
+            result = try await run(.diff(options), origin)
         } catch {
             return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
         }
@@ -617,14 +619,16 @@ public struct AgentTools: Sendable {
     }
 
     /// Asks the app for a screenshot of the window `arguments` names, then shows it as `describe` does a capture.
-    func captureWindow(_ arguments: JSONValue) async -> MCPServer.ToolResult {
+    func captureWindow(_ arguments: JSONValue, origin: ProjectOrigin) async -> MCPServer.ToolResult {
         let target = Self.target(arguments)
         if let problem = target.problem {
             return MCPServer.ToolResult(content: [.text("capture_window \(problem).")], isError: true)
         }
         let fields: [String: JSONValue]
         do {
-            fields = try await agent(AgentRequest(.capture, target: target))
+            var request = AgentRequest(.capture, target: target)
+            request.origin = origin
+            fields = try await agent(request)
         } catch {
             return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
         }
@@ -643,9 +647,9 @@ public struct AgentTools: Sendable {
 
     /// Starts or stops a recording through the app. A finished one comes back with its key frames, since that's what
     /// an agent can see of it.
-    func recordWindow(_ arguments: JSONValue) async -> MCPServer.ToolResult {
+    func recordWindow(_ arguments: JSONValue, origin: ProjectOrigin) async -> MCPServer.ToolResult {
         let action = arguments["action"]?.string?.trimmingCharacters(in: .whitespaces).lowercased() ?? "start"
-        let request: AgentRequest
+        var request: AgentRequest
         var notes: [String] = []
         switch action {
         case "stop":
@@ -673,6 +677,7 @@ public struct AgentTools: Sendable {
                 duration = 1
             }
             request = AgentRequest(.record, target: target, duration: duration)
+            request.origin = origin
         default:
             return MCPServer.ToolResult(content: [.text("record_window's action is start, stop or mark, not \"\(action)\".")], isError: true)
         }

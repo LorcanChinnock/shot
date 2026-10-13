@@ -31,6 +31,19 @@ private func decodeRequest(_ json: String) -> ShotCommandError? {
     #expect(try AgentRequest.decode(mark.line) == mark)
 }
 
+@Test func aRequestCarriesWhoAskedButNotWhen() throws {
+    var request = AgentRequest(.record, window: "Simulator", duration: 2)
+    request.origin = ProjectOrigin(via: .mcp, client: "claude-code", action: "record_window", date: Date(timeIntervalSince1970: 0))
+    let origin = try #require(try AgentRequest.decode(request.line).origin)
+    #expect(origin.via == .mcp)
+    #expect(origin.client == "claude-code")
+    #expect(origin.action == "record_window")
+    // The app dates it when it saves the file.
+    #expect(origin.date > Date(timeIntervalSince1970: 0))
+    #expect(try AgentRequest.decode(Data(#"{"v":1,"op":"capture","window":"a","origin":{"via":"robot"}}"#.utf8)).origin == nil)
+    #expect(try AgentRequest.decode(AgentRequest(.capture, window: "a").line).origin == nil)
+}
+
 @Test func aPlainRequestSendsNoTargetFieldsItDoesntUse() {
     let line = String(decoding: AgentRequest(.capture, window: "Simulator").line, as: UTF8.self)
     for key in ["bundleID", "display", "rect", "noShadow", "waitStable"] {

@@ -56,13 +56,13 @@ final class AgentServer {
         switch request.op {
         case .capture:
             do {
-                return .success(try await coordinator.agentCapture(request.target))
+                return .success(try await coordinator.agentCapture(request.target, origin: request.origin))
             } catch {
                 return .failure(error)
             }
         case .record:
             do {
-                return .success(try await coordinator.agentRecord(request.target, duration: request.duration))
+                return .success(try await coordinator.agentRecord(request.target, duration: request.duration, origin: request.origin))
             } catch {
                 return .failure(error)
             }

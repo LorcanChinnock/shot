@@ -75,7 +75,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
             existing.show()
             return
         }
-        let saved = flat ? nil : savedLayers(url)
+        let saved = flat ? nil : VersionWriter.savedLayers(of: url, in: .app)
         let file = saved?.original ?? url
         guard let image = saved?.image ?? ImageCodec.image(at: url) else {
             let reason = FileManager.default.fileExists(atPath: url.path) ? String(localized: "it isn't an image Shot can read") : String(localized: "it doesn't exist")
@@ -90,29 +90,6 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         open.append(controller)
         controller.show()
         log.notice("Editor opened: \(url.path)\(saved == nil ? "" : " with its layers")")
-    }
-
-    /// The original of the version at `url` and the live layers to open it with: from the project store, or else from
-    /// a record that can rebuild them. `nil` when `url` has neither or its original is gone, so it opens flat.
-    private static func savedLayers(_ url: URL) -> (original: URL, image: CGImage, layers: EditorSnapshot)? {
-        if let project = VersionWriter.layers(of: url, in: .app), let image = ImageCodec.image(at: project.original) {
-            return (project.original, image, project.layers)
-        }
-        guard let record = ImageCodec.record(ofFileAt: url), let layers = record.editableLayers, let name = record.original else {
-            return nil
-        }
-        let original = url.deletingLastPathComponent().appendingPathComponent(name)
-        guard original != url, let image = ImageCodec.image(at: original) else {
-            return nil
-        }
-        var document = EditorDocument(
-            base: image, annotations: layers.annotations, canvasRect: layers.canvas,
-            background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: original.pathExtension))
-        )
-        if let crop = layers.crop {
-            document.crop(to: crop)
-        }
-        return (original, image, document.snapshot)
     }
 
     private init(model: EditorModel, opened: URL) {
