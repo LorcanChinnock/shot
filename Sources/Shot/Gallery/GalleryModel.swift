@@ -122,6 +122,7 @@ final class GalleryModel {
     // MARK: Selection
 
     func click(_ item: GalleryItem, command: Bool, shift: Bool) {
+        measureSelection()
         lead = item.url
         if shift, let anchor, let from = visible.firstIndex(where: { $0.url == anchor }), let to = visible.firstIndex(of: item) {
             selection = Set(visible[min(from, to)...max(from, to)].map(\.url))
@@ -132,6 +133,20 @@ final class GalleryModel {
             selection = Gallery.toggled(selection, item.url)
         } else {
             selection = [item.url]
+        }
+    }
+
+    /// Times a click or arrow key until Core Animation commits the frame that shows it, as the "Gallery selection"
+    /// interval in `docs/performance.md`. Does nothing unless something is recording signposts.
+    private func measureSelection() {
+        guard Perf.signposter.isEnabled else {
+            return
+        }
+        let interval = Perf.signposter.beginInterval("Gallery selection", id: Perf.signposter.makeSignpostID())
+        let count = visible.count
+        // Runs when this run loop pass's implicit transaction, which carries SwiftUI's update, commits.
+        CATransaction.setCompletionBlock {
+            Perf.signposter.endInterval("Gallery selection", interval, "items=\(count)")
         }
     }
 
