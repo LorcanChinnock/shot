@@ -11,10 +11,22 @@ if [ "${SHOT_RELEASE:-}" = 1 ]; then
     resolved=(--force-resolved-versions)
 fi
 
-# Shot runs on Apple Silicon only.
-swift build -c release --arch arm64 ${resolved[@]+"${resolved[@]}"}
-bin_path="$(swift build -c release --arch arm64 --show-bin-path)"
-binary="$bin_path/Shot"
+# A universal binary: build each architecture alone, then join the slices with lipo.
+# Both builds can write to the same folder, so each slice is copied out before the next build.
+universal="build/universal"
+rm -rf "$universal"
+mkdir -p "$universal"
+for arch in arm64 x86_64; do
+    swift build -c release --arch "$arch" ${resolved[@]+"${resolved[@]}"}
+    bin_path="$(swift build -c release --arch "$arch" --show-bin-path)"
+    mkdir "$universal/$arch"
+    cp "$bin_path/Shot" "$bin_path/ShotCLI" "$universal/$arch/"
+done
+for exe in Shot ShotCLI; do
+    lipo -create "$universal/arm64/$exe" "$universal/x86_64/$exe" -output "$universal/$exe"
+    lipo -info "$universal/$exe"
+done
+binary="$universal/Shot"
 
 if [ "${SHOT_RELEASE:-}" = 1 ]; then
     name=Shot
@@ -26,7 +38,7 @@ rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$app/Contents/Frameworks"
 cp "$binary" "$app/Contents/MacOS/$name"
 # The MCP server. Never "shot": on a case-insensitive volume that is the app's own Shot executable.
-cp "$bin_path/ShotCLI" "$app/Contents/MacOS/shot-cli"
+cp "$universal/ShotCLI" "$app/Contents/MacOS/shot-cli"
 ditto "$bin_path/Sparkle.framework" "$app/Contents/Frameworks/Sparkle.framework"
 cp Resources/Info.plist "$app/Contents/Info.plist"
 cp Resources/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"

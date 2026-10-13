@@ -57,7 +57,7 @@ Circle the bug, copy, and paste it into Claude Code, Codex or Cursor: your arrow
 
 ## Install
 
-Shot needs macOS 15 or later and an Apple Silicon Mac. It doesn't run on Intel Macs.
+Shot needs macOS 15 or later and an Apple Silicon or Intel Mac. Intel support is best effort: the app is built for Intel but not tested on it, so please report anything that breaks.
 
 Shot is in English, German, French, Spanish, Italian, Brazilian Portuguese, Japanese, Korean and Simplified Chinese. It uses your Mac's language, or the one you pick for Shot in **System Settings › General › Language & Region › Applications**.
 

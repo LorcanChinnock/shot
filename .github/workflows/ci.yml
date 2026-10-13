@@ -44,6 +44,10 @@ jobs:
       - name: Check strings
         if: inputs.gate
         run: scripts/strings.sh --check
+      # `make dist` builds a universal app, so the release must compile for Intel too. Compile only; nothing runs it.
+      - name: Build for Intel
+        if: inputs.gate
+        run: swift build --arch x86_64 --force-resolved-versions
       - name: Test on macOS
         if: inputs.gate
         run: make test ARGS=--skip-build
