@@ -36,9 +36,13 @@ jobs:
     if: needs.release-please.outputs.release_created == 'true'
     # macOS: builds and signs the app bundle, which needs Xcode.
     runs-on: macos-26
-    # Uploads and publishes the release's assets with GITHUB_TOKEN.
+    # The `release` environment holds the release secrets and only deploys from main and v* tags. See CONTRIBUTING.md › Release secrets.
+    environment: release
+    # Uploads and publishes the release's assets with GITHUB_TOKEN; the last two sign the build provenance attestation.
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     env:
       TAG: ${{ needs.release-please.outputs.tag_name }}
     steps:
@@ -82,10 +86,18 @@ jobs:
             --embed-release-notes \
             --link "https://github.com/${{ github.repository }}" \
             build/release
+      # For direct downloads: Sparkle's EdDSA check and the cask's sha256 only cover updates and brew installs.
+      - name: Checksum the zip
+        working-directory: build/release
+        run: shasum -a 256 "Shot-${TAG}.zip" > SHA256SUMS
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: build/release/Shot-${{ env.TAG }}.zip
       - name: Attach to the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$TAG" "build/release/Shot-${TAG}.zip" build/release/appcast.xml --clobber
+        run: gh release upload "$TAG" "build/release/Shot-${TAG}.zip" build/release/appcast.xml build/release/SHA256SUMS --clobber
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
