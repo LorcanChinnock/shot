@@ -4220,6 +4220,7 @@
         }
       }
     },
+    "Brightness" : {},
     "Bubble size" : {
       "localizations" : {
         "de" : {
@@ -10685,8 +10686,6 @@
         }
       }
     },
-    "Decrease brightness" : {},
-    "Decrease saturation" : {},
     "Delete" : {
       "localizations" : {
         "de" : {
@@ -16888,8 +16887,6 @@
         }
       }
     },
-    "Increase brightness" : {},
-    "Increase saturation" : {},
     "Inspector" : {
       "localizations" : {
         "de" : {
@@ -25624,16 +25621,7 @@
         }
       }
     },
-    "Saturation %lld percent, brightness %lld percent" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Saturation %1$lld percent, brightness %2$lld percent"
-          }
-        }
-      }
-    },
+    "Saturation" : {},
     "Saturation and brightness" : {},
     "Save" : {
       "localizations" : {
