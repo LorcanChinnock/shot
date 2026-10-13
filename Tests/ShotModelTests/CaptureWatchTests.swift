@@ -64,11 +64,16 @@ private func entry(_ name: String, secondsAgo: Double = 0, bytes: Int? = nil) ->
 }
 
 @Test func nextGivesNothingWhenTheTimeoutPasses() async {
-    let clock = ContinuousClock()
-    let start = clock.now
-    let found = await CaptureWatch.next(timeout: 0.1, interval: .milliseconds(10)) { [entry("Shot A.png")] }
+    // Counts looks at the folder instead of timing the wait, which a busy runner stretches by seconds. A 0.1 s timeout
+    // looked at every 10 ms takes the first look and at most about ten more. If the deadline were ignored, the 50th look
+    // finds a capture, so the test fails instead of hanging.
+    let looks = Mutex(0)
+    let found = await CaptureWatch.next(timeout: 0.1, interval: .milliseconds(10)) {
+        let count = looks.withLock { $0 += 1; return $0 }
+        return count < 50 ? [entry("Shot A.png")] : [entry("Shot A.png"), entry("Shot Z.png")]
+    }
     #expect(found == nil)
-    #expect(clock.now - start < .seconds(2))
+    #expect(looks.withLock { $0 } <= 13)
 }
 
 @Test func watchHandsOverEachCaptureUntilToldToStop() async {
