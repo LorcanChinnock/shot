@@ -52,6 +52,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if swept > 0 {
                 log.notice("Swept \(swept) old captures taken with saving off")
             }
+            let pruned = ProjectStore.app.prune()
+            if pruned > 0 {
+                log.notice("Pruned \(pruned) projects whose files are gone")
+            }
         }
         WelcomeWindow.showIfNeeded()
         // Someone new hasn't been told about the takeover yet; the welcome window's setup step takes the keys.
@@ -169,11 +173,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         edit.addItem(withTitle: String(localized: "Copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
         edit.addItem(withTitle: String(localized: "Paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
         edit.addItem(withTitle: String(localized: "Select All"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
-        // The editors'; elsewhere nothing answers them, so they're greyed out. Apply Style to All Images is the image editor's.
+        // The editors'; elsewhere nothing answers them, so they're greyed out. Apply Style to All Images and Flatten are
+        // the image editor's.
         edit.addItem(.separator())
         edit.addItem(withTitle: String(localized: "Copy Style"), action: Selector(("copyStyle:")), keyEquivalent: "c").keyEquivalentModifierMask = [.command, .option]
         edit.addItem(withTitle: String(localized: "Paste Style"), action: Selector(("pasteStyle:")), keyEquivalent: "v").keyEquivalentModifierMask = [.command, .option]
         edit.addItem(withTitle: String(localized: "Apply Style to All Images"), action: Selector(("applyStyleToAllImages:")), keyEquivalent: "")
+        edit.addItem(withTitle: String(localized: "Flatten"), action: Selector(("flatten:")), keyEquivalent: "")
         let editItem = NSMenuItem(title: String(localized: "Edit"), action: nil, keyEquivalent: "")
         editItem.submenu = edit
         let main = NSMenu()

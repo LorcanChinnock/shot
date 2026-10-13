@@ -31,6 +31,10 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
     }
 
     private let model: EditorModel
+    /// The file this window was opened on: a version opened with its layers, or the image itself.
+    private let opened: URL
+    /// Run once the window has closed, so Flatten opens the version after any Save or Discard sheet.
+    private var afterClose: (() -> Void)?
     private let window: NSWindow
     private let canvas: EditorCanvasView
     private var discarding = false
@@ -64,14 +68,15 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
     }
 
     /// `newCaptureStyle` styles a new capture's screenshot as the editor opens, as Use this style for new captures asks.
-    /// A version saved with marks Shot can rebuild opens as its original with those marks live, so they can be changed.
-    static func open(_ url: URL, newCaptureStyle: CopiedStyle? = nil) {
-        let saved = editableVersion(url)
-        let file = saved?.original ?? url
-        if let existing = open.first(where: { $0.model.fileURL == file }) {
+    /// A version with layers in the project store, or saved with marks Shot can rebuild, opens as its original with
+    /// them live, so they can be changed. `flat` opens the file itself, as Flatten does.
+    static func open(_ url: URL, newCaptureStyle: CopiedStyle? = nil, flat: Bool = false) {
+        if let existing = open.first(where: { $0.opened == url || $0.model.version == url }) {
             existing.show()
             return
         }
+        let saved = flat ? nil : savedLayers(url)
+        let file = saved?.original ?? url
         guard let image = saved?.image ?? ImageCodec.image(at: url) else {
             let reason = FileManager.default.fileExists(atPath: url.path) ? String(localized: "it isn't an image Shot can read") : String(localized: "it doesn't exist")
             Toast.error("Can't open \(url.lastPathComponent): \(reason)")
@@ -79,17 +84,20 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         }
         let model = EditorModel(
             fileURL: file, image: image, scale: ImageCodec.scale(ofFileAt: file), windowShadow: ImageCodec.hasWindowShadow(ofFileAt: file),
-            newCaptureStyle: saved == nil ? newCaptureStyle : nil, layers: saved?.layers
+            newCaptureStyle: saved == nil ? newCaptureStyle : nil, layers: saved?.layers, version: url
         )
-        let controller = EditorWindowController(model: model)
+        let controller = EditorWindowController(model: model, opened: url)
         open.append(controller)
         controller.show()
-        log.notice("Editor opened: \(url.path)")
+        log.notice("Editor opened: \(url.path)\(saved == nil ? "" : " with its layers")")
     }
 
-    /// The original beside `url` and the live layers to open it with, when `url` is a version whose record can rebuild
-    /// them and the original is still there.
-    private static func editableVersion(_ url: URL) -> (original: URL, image: CGImage, layers: (annotations: [Annotation], canvas: CGRect, crop: CGRect?))? {
+    /// The original of the version at `url` and the live layers to open it with: from the project store, or else from
+    /// a record that can rebuild them. `nil` when `url` has neither or its original is gone, so it opens flat.
+    private static func savedLayers(_ url: URL) -> (original: URL, image: CGImage, layers: EditorSnapshot)? {
+        if let project = VersionWriter.layers(of: url, in: .app), let image = ImageCodec.image(at: project.original) {
+            return (project.original, image, project.layers)
+        }
         guard let record = ImageCodec.record(ofFileAt: url), let layers = record.editableLayers, let name = record.original else {
             return nil
         }
@@ -97,11 +105,19 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         guard original != url, let image = ImageCodec.image(at: original) else {
             return nil
         }
-        return (original, image, layers)
+        var document = EditorDocument(
+            base: image, annotations: layers.annotations, canvasRect: layers.canvas,
+            background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: original.pathExtension))
+        )
+        if let crop = layers.crop {
+            document.crop(to: crop)
+        }
+        return (original, image, document.snapshot)
     }
 
-    private init(model: EditorModel) {
+    private init(model: EditorModel, opened: URL) {
         self.model = model
+        self.opened = opened
         canvas = EditorCanvasView(model: model)
         let pointSize = CGSize(width: CGFloat(model.document.base.width) / model.scale, height: CGFloat(model.document.base.height) / model.scale)
         let visible = (NSScreen.underPointer ?? NSScreen.screens[0]).visibleFrame
@@ -189,12 +205,23 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         model.applyStyleToAllImages()
     }
 
+    /// Closes the layers and opens the saved version as a plain image. Unsaved changes are asked about first, and a
+    /// Save makes the new version the one opened.
+    @objc func flatten(_ sender: Any?) {
+        afterClose = { [model] in
+            if let version = model.version {
+                Self.open(version, flat: true)
+            }
+        }
+        window.performClose(nil)
+    }
+
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         guard model.isDirty, !discarding else {
             return true
         }
         guard sender.attachedSheet == nil else {
-            resolveQuit(false)
+            cancelClose()
             return false
         }
         let alert = NSAlert()
@@ -210,23 +237,30 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
                     if await model.save() {
                         sender.close()
                     } else {
-                        resolveQuit(false)
+                        cancelClose()
                     }
                 }
             case .alertSecondButtonReturn:
                 discarding = true
                 sender.close()
             default:
-                resolveQuit(false)
+                cancelClose()
             }
         }
         return false
+    }
+
+    /// The window stays open: a quit waiting on it stops, and a Flatten waiting on it is dropped.
+    private func cancelClose() {
+        afterClose = nil
+        resolveQuit(false)
     }
 
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         switch menuItem.action {
         case #selector(copyStyle(_:)): model.styleTarget != nil
         case #selector(pasteStyle(_:)), #selector(applyStyleToAllImages(_:)): model.canPasteStyle && model.editingText == nil
+        case #selector(flatten(_:)): model.version != nil
         default: true
         }
     }
@@ -238,6 +272,8 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
     func windowWillClose(_ notification: Notification) {
         resolveQuit(true)
         Self.open.removeAll { $0 === self }
+        afterClose?()
+        afterClose = nil
         Self.releaseCachesIfNoEditorIsOpen()
     }
 }

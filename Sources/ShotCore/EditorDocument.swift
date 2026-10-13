@@ -237,7 +237,9 @@ public struct EditorDocument: @unchecked Sendable {
     }
 }
 
-public struct EditorSnapshot: Equatable, Sendable {
+/// The editable part of a document, everything but the image: what undo steps between, and the layers a saved version
+/// keeps in the project store, so it reopens live on its original.
+public struct EditorSnapshot: Equatable, Sendable, Codable {
     public var annotations: [Annotation]
     public var contentRect: CGRect
     public var frameCrop: CGRect?

@@ -48,6 +48,9 @@ final class EditorModel {
 
     let fileURL: URL
     let scale: CGFloat
+    /// The saved version whose layers the editor shows, the one it opened or last saved, which Flatten opens as a
+    /// plain image; `nil` until there is one.
+    private(set) var version: URL?
     private(set) var document: EditorDocument
     // The tool, colours and width are remembered for the next editor window as they change.
     // They're not part of the document, so changing them is never an undo step.
@@ -151,21 +154,19 @@ final class EditorModel {
     private var isDraggingStyle = false
 
     /// `newCaptureStyle` is put on the screenshot as where the document starts, so it's no unsaved change. `windowShadow`
-    /// says the image is a window captured with the macOS shadow. `layers` are the live annotations and canvas of a version
-    /// saved from this file, which the document also starts with.
+    /// says the image is a window captured with the macOS shadow. `layers` are the live layers and canvas of `version`,
+    /// a version saved from this file, which the document starts with instead.
     init(
         fileURL: URL, image: CGImage, scale: CGFloat, windowShadow: Bool = false, style: EditorStyle = Preferences().editorStyle,
-        newCaptureStyle: CopiedStyle? = nil, layers: (annotations: [Annotation], canvas: CGRect, crop: CGRect?)? = nil
+        newCaptureStyle: CopiedStyle? = nil, layers: EditorSnapshot? = nil, version: URL? = nil
     ) {
         self.fileURL = fileURL
         self.scale = scale
-        var document = EditorDocument(
-            base: image, annotations: layers?.annotations ?? [], canvasRect: layers?.canvas,
-            background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension))
-        )
+        self.version = layers == nil ? nil : version
+        var document = EditorDocument(base: image, background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension)))
         document.hasWindowShadow = windowShadow
-        if let crop = layers?.crop {
-            document.crop(to: crop)
+        if let layers {
+            document.restore(layers)
         }
         self.document = document
         savedSnapshot = document.snapshot
@@ -1051,11 +1052,12 @@ final class EditorModel {
         let snapshot = document.snapshot
         let document = document, scale = scale, fileURL = fileURL
         let saved = await Task.detached {
-            Result { () throws(VersionWriter.Failure) in try VersionWriter.saveImage(document, of: fileURL, scale: scale) }
+            Result { () throws(VersionWriter.Failure) in try VersionWriter.saveImage(document, of: fileURL, scale: scale, projects: .app) }
         }.value
         switch saved {
         case let .success(version):
             Clipboard.copy(png: version.png)
+            self.version = version.url
             savedSnapshot = snapshot
             isDirty = self.document.snapshot != snapshot
             Toast.show("Saved as \(version.url.lastPathComponent) and copied.\(TemporaryCaptures.toastNote(for: version.url))", duration: .seconds(3))
