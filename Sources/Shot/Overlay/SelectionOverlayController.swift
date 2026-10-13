@@ -37,6 +37,8 @@ final class SelectionOverlayController {
             }
         }
     }
+    /// A window picked with Tab holds the highlight until the mouse moves.
+    private var isWindowPinned = false
     private var panels: [OverlayPanel] = []
     private var views: [SelectionOverlayView] = []
     private var continuation: CheckedContinuation<OverlaySelection?, Never>?
@@ -132,12 +134,16 @@ final class SelectionOverlayController {
 
     func toggleWindowMode() {
         windowMode.toggle()
+        isWindowPinned = false
         updateHover(redraw: true)
     }
 
     func updateHover(redraw: Bool = false) {
         let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
         let point = Geometry.flip(NSEvent.mouseLocation, primaryHeight: primaryHeight)
+        guard !isWindowPinned else {
+            return
+        }
         let hovered = windowMode ? WindowInfo.topmost(at: point, in: windows) : nil
         guard redraw || hovered != hoveredWindow else {
             return
@@ -146,6 +152,34 @@ final class SelectionOverlayController {
         for view in views {
             view.needsDisplay = true
         }
+    }
+
+    func releaseKeyboardWindow() {
+        isWindowPinned = false
+    }
+
+    /// Steps the window highlight front to back (back to front when `backward`) among the windows on a display, for use without a mouse.
+    func stepWindow(backward: Bool) {
+        let visible = windows.filter { window in
+            panels.contains { $0.frame.intersects(appKitFrame(of: window)) }
+        }
+        guard !visible.isEmpty else {
+            return
+        }
+        let current = hoveredWindow.flatMap { hovered in visible.firstIndex { $0 == hovered } }
+        let next: Int
+        if let current {
+            next = (current + (backward ? visible.count - 1 : 1)) % visible.count
+        } else {
+            next = backward ? visible.count - 1 : 0
+        }
+        hoveredWindow = visible[next]
+        isWindowPinned = true
+        for view in views {
+            view.needsDisplay = true
+        }
+        let name = [visible[next].ownerName, visible[next].title].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
+        views.first?.announceWindow(name)
     }
 
     /// AppKit global frame of a window.

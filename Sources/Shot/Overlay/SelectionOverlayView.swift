@@ -14,6 +14,8 @@ final class SelectionOverlayView: NSView {
     private var isMoving = false
     private var lastDragPoint: CGPoint?
     private var portrait: Bool?
+    /// The selection was made with the arrow keys, so Return takes it and Option-arrows resize it.
+    private var isKeyboardSelection = false
     var magnifierImage: CGImage? {
         didSet { needsDisplay = true }
     }
@@ -28,6 +30,10 @@ final class SelectionOverlayView: NSView {
         self.index = index
         self.controller = controller
         super.init(frame: frame)
+        setAccessibilityElement(true)
+        setAccessibilityRole(.group)
+        setAccessibilityLabel(String(localized: "Capture overlay"))
+        setAccessibilityHelp(hintText)
     }
 
     @available(*, unavailable)
@@ -63,6 +69,7 @@ final class SelectionOverlayView: NSView {
     override func mouseMoved(with event: NSEvent) {
         pointer = convert(event.locationInWindow, from: nil)
         if controller.windowMode {
+            controller.releaseKeyboardWindow()
             controller.updateHover()
         } else {
             needsDisplay = true
@@ -79,6 +86,7 @@ final class SelectionOverlayView: NSView {
         lastDragPoint = point
         portrait = nil
         selection = nil
+        isKeyboardSelection = false
         needsDisplay = true
     }
 
@@ -150,8 +158,16 @@ final class SelectionOverlayView: NSView {
             } else if !event.isARepeat {
                 controller.toggleWindowMode()
             }
+        case 48 where controller.windowMode:
+            controller.stepWindow(backward: event.modifierFlags.contains(.shift))
+        case 123...126 where !controller.windowMode && dragStart == nil:
+            nudgeSelection(keyCode: event.keyCode, event.modifierFlags)
         case 48 where !controller.windowMode:
             controller.aspectRatio = controller.aspectRatio.next(backward: event.modifierFlags.contains(.shift))
+            if isKeyboardSelection, let current = selection {
+                let ratio = controller.aspectRatio.value.map { current.width >= current.height ? $0 : 1 / $0 }
+                selection = KeyboardArea.start(at: CGPoint(x: current.midX, y: current.midY), ratio: ratio, in: bounds)
+            }
             if let start = dragStart, let point = lastDragPoint, !isMoving {
                 portrait = isTall(from: start, to: point)
                 selection = shaped(from: start, to: point, square: false)
@@ -163,6 +179,15 @@ final class SelectionOverlayView: NSView {
                 selection = shaped(from: start, to: point, square: event.modifierFlags.contains(.shift))
                 needsDisplay = true
             }
+        case 36 where isKeyboardSelection, 76 where isKeyboardSelection:
+            if let selection {
+                let ratio = controller.aspectRatio.value.map { selection.width >= selection.height ? $0 : 1 / $0 }
+                controller.finish(.area(display: index, rect: selection, ratio: ratio), modifiers: event.modifierFlags)
+            }
+        case 36 where controller.windowMode && controller.hoveredWindow != nil, 76 where controller.windowMode && controller.hoveredWindow != nil:
+            if let window = controller.hoveredWindow {
+                controller.finish(.window(window), modifiers: event.modifierFlags)
+            }
         case 36, 76:
             if controller.isLive {
                 controller.finish(.fullDisplay(index), modifiers: event.modifierFlags)
@@ -170,6 +195,50 @@ final class SelectionOverlayView: NSView {
         default:
             super.keyDown(with: event)
         }
+    }
+
+    /// Arrow keys draw and nudge an area without a mouse: the first press makes one at the pointer (a held arrow announces only its first press, so speech does not queue), then arrows move it,
+    /// Option-arrows resize it, and Shift takes single points instead of steps.
+    private func nudgeSelection(keyCode: UInt16, _ flags: NSEvent.ModifierFlags) {
+        let amount = flags.contains(.shift) ? KeyboardArea.fineStep : KeyboardArea.step
+        let dx: CGFloat = keyCode == 124 ? amount : keyCode == 123 ? -amount : 0
+        let dy: CGFloat = keyCode == 126 ? amount : keyCode == 125 ? -amount : 0
+        let ratio = controller.aspectRatio.value
+        if isKeyboardSelection, let current = selection {
+            if flags.contains(.option) {
+                selection = KeyboardArea.resized(current, dw: dx, dh: dy, ratio: ratio, in: bounds)
+            } else {
+                selection = KeyboardArea.moved(current, dx: dx, dy: dy, in: bounds)
+            }
+        } else {
+            let centre = pointer ?? CGPoint(x: bounds.midX, y: bounds.midY)
+            selection = KeyboardArea.start(at: centre, ratio: ratio, in: bounds)
+            isKeyboardSelection = true
+            announce(String(localized: "Area started. Arrow keys move it, Option and arrow keys resize it, Return captures it."))
+        }
+        if let selection {
+            let size = sizeText(of: selection)
+            setAccessibilityValue(size)
+            if !(NSApp.currentEvent?.isARepeat ?? false) {
+                announce(size)
+            }
+        }
+        needsDisplay = true
+    }
+
+    func announceWindow(_ name: String) {
+        announce(name.isEmpty ? String(localized: "Window") : name)
+    }
+
+    private func announce(_ text: String) {
+        NSAccessibility.post(element: self, notification: .announcementRequested, userInfo: [
+            .announcement: text,
+            .priority: NSAccessibilityPriorityLevel.high.rawValue,
+        ])
+    }
+
+    private func sizeText(of selection: CGRect) -> String {
+        "\(Int((selection.width * display.scale).rounded())) × \(Int((selection.height * display.scale).rounded()))"
     }
 
     override func keyUp(with event: NSEvent) {
@@ -310,7 +379,7 @@ final class SelectionOverlayView: NSView {
     }
 
     private func drawSizeLabel(for selection: CGRect, near point: CGPoint) {
-        var text = "\(Int((selection.width * display.scale).rounded())) × \(Int((selection.height * display.scale).rounded()))"
+        var text = sizeText(of: selection)
         if controller.aspectRatio != .free {
             text = "\(controller.aspectRatio.label(portrait: selection.height > selection.width)) · \(text)"
         }
@@ -326,12 +395,12 @@ final class SelectionOverlayView: NSView {
         _ = drawChip(text, at: origin, fill: Self.yellow, font: font)
     }
 
-    private func drawHint(in ctx: CGContext) {
+    private var hintText: String {
         var parts: [String]
         if controller.windowMode {
-            parts = [String(localized: "Click a window"), String(localized: "Space: area"), String(localized: "Esc: cancel")]
+            parts = [String(localized: "Click a window"), String(localized: "Tab: next window"), String(localized: "Space: area"), String(localized: "Esc: cancel")]
         } else {
-            parts = [String(localized: "Drag an area"), String(localized: "Tab: ratio (\(controller.aspectRatio.label))")]
+            parts = [String(localized: "Drag an area"), String(localized: "Arrows: move"), String(localized: "Tab: ratio (\(controller.aspectRatio.label))")]
             if controller.aspectRatio != .free {
                 parts.append(String(localized: "X: rotate"))
             }
@@ -341,7 +410,11 @@ final class SelectionOverlayView: NSView {
             }
             parts.append(String(localized: "Esc: cancel"))
         }
-        let text = parts.joined(separator: "   ·   ")
+        return parts.joined(separator: "   ·   ")
+    }
+
+    private func drawHint(in ctx: CGContext) {
+        let text = hintText
         let font = NSFont.systemFont(ofSize: 13, weight: .bold)
         let width = (text as NSString).size(withAttributes: [.font: font]).width + 20
         _ = drawChip(text, at: CGPoint(x: ((bounds.width - width) / 2).rounded(), y: bounds.height - 90), fill: .white, font: font)

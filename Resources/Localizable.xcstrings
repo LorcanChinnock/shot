@@ -1,7 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    " It's temporary: Shot deletes it after a day." : {},
+    " It's temporary: Shot deletes it after a day." : {
+
+    },
     "%@ already exists" : {
       "localizations" : {
         "de" : {
@@ -1382,7 +1384,9 @@
         }
       }
     },
-    "%lld seconds" : {},
+    "%lld seconds" : {
+
+    },
     "%lld × %lld" : {
       "localizations" : {
         "de" : {
@@ -2065,7 +2069,9 @@
         }
       }
     },
-    "Acknowledgements" : {},
+    "Acknowledgements" : {
+
+    },
     "Actual Size" : {
       "localizations" : {
         "de" : {
@@ -3320,7 +3326,9 @@
         }
       }
     },
-    "Any app with a JSON config" : {},
+    "Any app with a JSON config" : {
+
+    },
     "Applies to every spotlight in the image." : {
       "localizations" : {
         "de" : {
@@ -3477,6 +3485,9 @@
         }
       }
     },
+    "Area started. Arrow keys move it, Option and arrow keys resize it, Return captures it." : {
+
+    },
     "Arrow" : {
       "localizations" : {
         "de" : {
@@ -3528,6 +3539,9 @@
           }
         }
       }
+    },
+    "Arrows: move" : {
+
     },
     "Audio" : {
       "localizations" : {
@@ -5355,8 +5369,12 @@
         }
       }
     },
-    "Capture Full Screen After Delay" : {},
-    "Capture Previous Area" : {},
+    "Capture Full Screen After Delay" : {
+
+    },
+    "Capture Previous Area" : {
+
+    },
     "Capture Window" : {
       "localizations" : {
         "de" : {
@@ -5408,6 +5426,9 @@
           }
         }
       }
+    },
+    "Capture overlay" : {
+
     },
     "Change camera bubble size" : {
       "localizations" : {
@@ -19914,7 +19935,9 @@
         }
       }
     },
-    "No previous area yet. Capture an area first." : {},
+    "No previous area yet. Capture an area first." : {
+
+    },
     "No screenshots in your save folder yet" : {
       "localizations" : {
         "de" : {
@@ -26232,7 +26255,9 @@
         }
       }
     },
-    "Saved and copied.%@" : {},
+    "Saved and copied.%@" : {
+
+    },
     "Saved as %@ and copied.%@" : {
       "localizations" : {
         "en" : {
@@ -27913,7 +27938,9 @@
         }
       }
     },
-    "Shot comes with no warranty. It updates itself with Sparkle, under the MIT license." : {},
+    "Shot comes with no warranty. It updates itself with Sparkle, under the MIT license." : {
+
+    },
     "Shot is free, with no ads or account. Sponsoring keeps it that way." : {
       "localizations" : {
         "de" : {
@@ -30936,6 +30963,9 @@
         }
       }
     },
+    "Tab: next window" : {
+
+    },
     "Tab: ratio (%@)" : {
       "localizations" : {
         "de" : {
@@ -31664,7 +31694,9 @@
         }
       }
     },
-    "The previous area isn't on a display now" : {},
+    "The previous area isn't on a display now" : {
+
+    },
     "The recording has no video track" : {
       "localizations" : {
         "de" : {
