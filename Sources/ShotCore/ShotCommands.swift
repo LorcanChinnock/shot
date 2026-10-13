@@ -388,9 +388,13 @@ public enum ShotCommands {
         }
         var base = Project(source: media.source, duration: media.duration, canvasSize: size, hasAudio: media.hasAudio)
         var original = input
+        // A frame crop is the whole of the file, so it's taken into the canvas first: the edit's crop and marks are in
+        // the file's pixels.
         if let projects, let reopened = VersionWriter.project(of: input, in: projects),
-           abs(reopened.project.duration - media.duration) < 0.05, reopened.project.canvasSize == size {
-            base = reopened.project
+           abs(reopened.project.duration - media.duration) < 0.05,
+           let framed = reopened.project.frameCrop == nil ? reopened.project : reopened.project.reframed(to: reopened.project.outputRect),
+           framed.canvasSize == size {
+            base = framed
             original = reopened.original
         }
         var appended: [ImportedMedia] = []
