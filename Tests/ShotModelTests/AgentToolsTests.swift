@@ -230,8 +230,9 @@ func listCapturesClampsTheLimit(_ limit: JSONValue, _ count: Int) async throws {
 /// Tools over `captures` whose `run` records what it was asked and answers with a made-up file beside the input.
 private func making(_ ran: Ran, fail: ShotCommandError? = nil) -> AgentTools {
     var tools = captures
-    tools.run = { command throws(ShotCommandError) in
+    tools.run = { command, origin throws(ShotCommandError) in
         ran.commands.append(command)
+        ran.origins.append(origin)
         if let fail { throw fail }
         return .object(["path": .string("/shots/new.png"), "bytes": .number(10)])
     }
@@ -240,6 +241,7 @@ private func making(_ ran: Ran, fail: ShotCommandError? = nil) -> AgentTools {
 
 private final class Ran: @unchecked Sendable {
     var commands: [ShotCommand] = []
+    var origins: [ProjectOrigin] = []
 }
 
 @Test func annotateDrawsOnTheNewestScreenshotByDefaultAndShowsTheResult() async throws {
@@ -304,13 +306,36 @@ private final class Ran: @unchecked Sendable {
 
 @Test func redactWithNothingToHideSaysNoFileWasWritten() async {
     var tools = captures
-    tools.run = { _ throws(ShotCommandError) in
+    tools.run = { _, _ throws(ShotCommandError) in
         .object(["path": .string("/shots/Shot B.png"), "found": .array([]), "unchanged": .bool(true)])
     }
     let result = await tools.call("redact", .object([:]))
     #expect(result.isError == false)
     #expect(result.content.count == 2)
     #expect(texts(result).last == "Found nothing to hide in Shot B.png, so no file was written.")
+}
+
+@Test func whatAToolMakesSaysTheClientAndToolAskedForIt() async {
+    let ran = Ran()
+    let client = MCPServer.Client(name: "claude-code", version: "2.1.0")
+    _ = await making(ran).call("trim_video", .object(["start": .number(1), "end": .number(2)]), client: client)
+    _ = await making(ran).call("annotate", .object(["annotations": .array([])]))
+    #expect(ran.origins.map(\.via) == [.mcp, .mcp])
+    #expect(ran.origins.map(\.client) == ["claude-code", nil])
+    #expect(ran.origins.map(\.action) == ["trim_video", "annotate"])
+}
+
+@Test func capturesAndRecordingsAskedForCarryTheirOriginButStopsAndMarksDont() async {
+    let asked = Asked()
+    let client = MCPServer.Client(name: "cursor", version: nil)
+    _ = await capturing(asked, answer: .success(["path": .string("/shots/Shot C.png")])).call("capture_window", .object(["window": .string("a")]), client: client)
+    let tools = recording(asked, answer: saved)
+    _ = await tools.call("record_window", .object(["window": .string("a"), "duration": .number(2)]), client: client)
+    _ = await tools.call("record_window", .object(["action": .string("stop")]), client: client)
+    _ = await tools.call("record_window", .object(["action": .string("mark"), "label": .string("here")]), client: client)
+    #expect(asked.origins.map { $0?.action } == ["capture_window", "record_window", nil, nil])
+    #expect(asked.origins.map { $0?.client } == ["cursor", "cursor", nil, nil])
+    #expect(asked.origins.allSatisfy { $0 == nil || $0?.via == .mcp })
 }
 
 @Test func gifAndTrimNeedARecordingAndPassTheirTimes() async {
@@ -380,13 +405,18 @@ private final class Ran: @unchecked Sendable {
     #expect(asked.commands.count == 1)
 }
 
+/// The requests the app was sent, and apart from them, since each is dated, the origins they carried.
 private final class Asked: @unchecked Sendable {
     var requests: [AgentRequest] = []
+    var origins: [ProjectOrigin?] = []
 }
 
 private func capturing(_ asked: Asked, answer: Result<[String: JSONValue], ShotCommandError>) -> AgentTools {
     var tools = captures
     tools.agent = { request throws(ShotCommandError) in
+        var request = request
+        asked.origins.append(request.origin)
+        request.origin = nil
         asked.requests.append(request)
         return try answer.get()
     }

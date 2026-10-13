@@ -39,6 +39,8 @@ public struct AgentRequest: Codable, Equatable, Sendable {
     public var waitStable: Double?
     /// What a mark says, at most `RecordingMark.maximumLabel` characters.
     public var label: String?
+    /// Who asked for a capture or recording, kept in the project store beside it. The app dates it when it saves the file.
+    public var origin: ProjectOrigin?
 
     public init(_ op: Operation, window: String? = nil, duration: Double? = nil, id: String? = nil, label: String? = nil) {
         v = Self.version
@@ -114,6 +116,10 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         var request = AgentRequest(op, target: target, duration: duration)
         request.id = object["id"]?.string
         request.label = label
+        // An origin that doesn't read as one is left out rather than refused, since the capture doesn't depend on it.
+        if let origin = object["origin"], let via = origin["via"]?.string.flatMap(ProjectOrigin.Via.init(rawValue:)) {
+            request.origin = ProjectOrigin(via: via, client: origin["client"]?.string, action: origin["action"]?.string)
+        }
         return request
     }
 }

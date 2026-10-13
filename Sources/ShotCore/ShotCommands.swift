@@ -6,18 +6,23 @@ import UniformTypeIdentifiers
 /// Runs the `shot` media commands with no window, display or permission, for the command line and the MCP tools. Each
 /// writes a new file and never touches its input: the result goes beside the input as its next version unless an output
 /// that doesn't exist yet is named, and it's moved into place in one step that fails rather than replace anything.
+/// What `annotate`, `redact`, `crop`, `trim` and `gif` write keeps its project, as the editors' Save, Save Copy and
+/// Export do, so it reopens live in Shot.
 public enum ShotCommands {
-    /// The JSON a command prints: at least `path`, `size` and `bytes` for what it wrote, or what `info` found.
-    public static func run(_ command: ShotCommand) async throws(ShotCommandError) -> JSONValue {
+    /// The JSON a command prints: at least `path`, `size` and `bytes` for what it wrote, or what `info` found. The files
+    /// it writes keep their projects in `projects`, saying `origin` made them, by default the command line running
+    /// `command`. With no store, they keep none.
+    public static func run(_ command: ShotCommand, projects: ProjectStore? = nil, origin: ProjectOrigin? = nil) async throws(ShotCommandError) -> JSONValue {
+        let origin = origin ?? ProjectOrigin(via: .cli, action: command.name)
         switch command {
         case let .info(path):
             return try await info(url(path))
         case let .gif(options):
-            return try await gif(options)
+            return try await gif(options, projects: projects, origin: origin)
         case let .trim(options):
-            return try await trim(options)
+            return try await trim(options, projects: projects, origin: origin)
         case let .redact(options):
-            return try await redact(options)
+            return try await redact(options, projects: projects, origin: origin)
         case let .annotate(options):
             let marks: [CaptureMark]
             switch options.marks {
@@ -32,7 +37,7 @@ public enum ShotCommands {
             case .standardInput:
                 marks = try CaptureMark.list(from: FileHandle.standardInput.readDataToEndOfFile())
             }
-            return try draw(input: options.input, output: options.output) { (_: CGImage, scale: CGFloat) throws(ShotCommandError) in
+            return try draw(input: options.input, output: options.output, projects: projects, origin: origin) { (_: CGImage, scale: CGFloat) throws(ShotCommandError) in
                 var annotations: [Annotation] = []
                 for (index, mark) in marks.enumerated() {
                     // Widths an agent leaves out look as they would drawn in the editor at the capture's scale.
@@ -50,7 +55,7 @@ public enum ShotCommands {
         case let .diff(options):
             return try diff(options)
         case let .crop(options):
-            return try draw(input: options.input, output: options.output, crop: options.rect) { (_: CGImage) in [] }
+            return try draw(input: options.input, output: options.output, crop: options.rect, projects: projects, origin: origin) { (_: CGImage) in [] }
         case .capture, .record, .watch, .windows, .latest, .list, .get, .doctor, .mcp, .version, .help:
             throw .internal("\(command.name) isn't a media command")
         }
@@ -91,43 +96,60 @@ public enum ShotCommands {
         return .object(object)
     }
 
-    static func gif(_ options: ShotCommand.GIFOptions) async throws(ShotCommandError) -> JSONValue {
+    /// Writes the part of the video in the range as a GIF, as the video editor's Export does: the GIF keeps the trim
+    /// as its project, so Edit on it opens the video trimmed.
+    static func gif(_ options: ShotCommand.GIFOptions, projects: ProjectStore?, origin: ProjectOrigin) async throws(ShotCommandError) -> JSONValue {
         let input = url(options.input)
-        let duration = try await videoDuration(input)
-        let range = try range(start: options.start, end: options.end, duration: duration, command: "gif")
+        let media = try await video(input)
+        let project = try trimmed(media, start: options.start, end: options.end, command: "gif")
+        guard let trim = project.trimEdit else {
+            throw .internal("couldn't trim the video")
+        }
         let target = try destination(for: input, output: options.output, extensions: ["gif"], default: "gif", command: "gif")
         let temporary = temporaryURL(beside: target.url, pathExtension: "gif")
         defer { try? FileManager.default.removeItem(at: temporary) }
-        let result: GIFExporter.Result
+        // What `VideoExportPlan(project:options:)` gives for a trim, at the frame rate asked for, which needn't be one Export offers.
+        let plan = VideoExportPlan.trimmedGIF(
+            source: trim.source, range: trim.range, cuts: trim.cuts, fps: options.fps, maxWidth: options.width == 0 ? nil : CGFloat(options.width), speed: 1
+        )
+        let outcome: VideoExportPlan.Outcome
         do {
-            result = try await GIFExporter.export(
-                videoURL: input, to: temporary, range: range, fps: options.fps, maxWidth: options.width == 0 ? nil : CGFloat(options.width)
-            )
+            outcome = try await plan.run(to: temporary)
         } catch {
             throw .io("couldn't make the GIF: \(error.localizedDescription)")
         }
         let placed = try place(temporary, at: target)
+        // Kept once it's in place, since a GIF's project is found by its path and identity.
+        VersionWriter.keep(project, of: placed, original: input, in: projects, origin: origin)
         var object = try written(placed)
-        object["frames"] = .number(Double(result.frameCount))
-        object["truncated"] = .bool(result.truncated)
+        object["frames"] = .number(Double(outcome.frameCount ?? 0))
+        object["truncated"] = .bool(outcome.truncated)
         return .object(object)
     }
 
-    static func trim(_ options: ShotCommand.TrimOptions) async throws(ShotCommandError) -> JSONValue {
+    /// Writes the part of the video in the range as a new file, as the video editor's Save Copy does: it keeps the
+    /// trim as its project, so it opens in the video editor with the rest of the recording still there to drag back.
+    static func trim(_ options: ShotCommand.TrimOptions, projects: ProjectStore?, origin: ProjectOrigin) async throws(ShotCommandError) -> JSONValue {
         let input = url(options.input)
-        let duration = try await videoDuration(input)
-        let range = try range(start: options.start, end: options.end, duration: duration, command: "trim")
+        let media = try await video(input)
+        let project = try trimmed(media, start: options.start, end: options.end, command: "trim")
+        guard let trim = project.trimEdit else {
+            throw .internal("couldn't trim the video")
+        }
         let own = input.pathExtension.lowercased()
         let target = try destination(for: input, output: options.output, extensions: ["mov", "mp4"], default: ["mov", "mp4"].contains(own) ? own : "mov", command: "trim")
         let fileType: AVFileType = target.url.pathExtension.lowercased() == "mp4" ? .mp4 : .mov
         let temporary = temporaryURL(beside: target.url, pathExtension: target.url.pathExtension)
         defer { try? FileManager.default.removeItem(at: temporary) }
+        // What `VersionWriter.videoPlan` gives for a trim, in the format asked for.
+        let plan = VideoExportPlan.trimmed(source: trim.source, range: trim.range, cuts: trim.cuts, speed: 1, muted: false, fileType: fileType)
         do {
-            try await VideoTrimmer.trim(input, range: range, to: temporary, as: fileType)
+            try await plan.run(to: temporary)
         } catch {
             throw .io("couldn't trim the video: \(error.localizedDescription)")
         }
         let placed = try place(temporary, at: target)
+        VersionWriter.keep(project, of: placed, original: input, in: projects, origin: origin)
         var object = try written(placed)
         if let media = try? await MediaProbe.probe(placed) {
             object["duration"] = .number((media.duration * 1000).rounded() / 1000)
@@ -140,7 +162,7 @@ public enum ShotCommands {
 
     /// Hides the rects, and with `detect` the private text read in the image, as blurs or pixelations the new version
     /// records, so they stay live layers in Shot. With nothing to hide, it writes nothing and gives the input's path.
-    static func redact(_ options: ShotCommand.RedactOptions) async throws(ShotCommandError) -> JSONValue {
+    static func redact(_ options: ShotCommand.RedactOptions, projects: ProjectStore?, origin: ProjectOrigin) async throws(ShotCommandError) -> JSONValue {
         var found: [CaptureText.Found] = []
         if !options.detect.isEmpty {
             let input = url(options.input)
@@ -160,7 +182,7 @@ public enum ShotCommands {
                 return .object(object)
             }
         }
-        let result = try draw(input: options.input, output: options.output) { (image: CGImage) throws(ShotCommandError) in
+        let result = try draw(input: options.input, output: options.output, projects: projects, origin: origin) { (image: CGImage) throws(ShotCommandError) in
             let bounds = CGRect(x: 0, y: 0, width: image.width, height: image.height)
             var rects: [CGRect] = []
             for (index, r) in options.rects.enumerated() {
@@ -184,7 +206,7 @@ public enum ShotCommands {
 
     static func frames(_ options: ShotCommand.FramesOptions) async throws(ShotCommandError) -> JSONValue {
         let input = url(options.input)
-        let duration = try await videoDuration(input)
+        let duration = try await video(input).duration
         let times: [Double]
         if let every = options.every {
             times = Array(stride(from: 0, to: duration, by: every))
@@ -253,11 +275,16 @@ public enum ShotCommands {
         throw .cantCreate("couldn't find a free name beside \(input.path)")
     }
 
-    /// Draws the annotations `make` gives for the input image, and the image's scale, onto a copy of it, recording them
-    /// inside the new file so a person can open it in Shot and change them. The record and the drawing are the editor's,
-    /// from `VersionWriter`; unlike the editor, a command records whether or not agents are handed captures. `crop`, in
-    /// the image's pixels, keeps that part, as the editor's crop does, so the version opens with it still adjustable.
-    static func draw(input path: String, output: String?, crop: [Double]? = nil, _ make: (CGImage, CGFloat) throws(ShotCommandError) -> [Annotation]) throws(ShotCommandError) -> JSONValue {
+    /// Draws the annotations `make` gives for the input image, in its pixels, and the image's scale, onto a copy of it, as
+    /// the image editor's Save does. A version is drawn on again from its original with its layers, which stay live with
+    /// the new marks on top, rather than having them baked in. The new file records the marks for agents and keeps them
+    /// in `projects`, so a person can open it in Shot and change them; unlike the editor, a command records whether or
+    /// not agents are handed captures. `crop`, in the image's pixels, keeps that part, as the editor's crop does, so the
+    /// version opens with it still adjustable.
+    static func draw(
+        input path: String, output: String?, crop: [Double]? = nil, projects: ProjectStore?, origin: ProjectOrigin,
+        _ make: (CGImage, CGFloat) throws(ShotCommandError) -> [Annotation]
+    ) throws(ShotCommandError) -> JSONValue {
         let input = url(path)
         try requireInput(input)
         guard let image = ImageCodec.image(at: input) else {
@@ -267,19 +294,41 @@ public enum ShotCommands {
         let target = try destination(for: input, output: output, extensions: ["png", "jpg", "jpeg"], default: ["png", "jpg", "jpeg"].contains(own) ? own : "png", command: "draw")
         let format = ImageFormat(fileExtension: target.url.pathExtension)
         let scale = ImageCodec.scale(ofFileAt: input)
-        var document = EditorDocument(base: image, annotations: try make(image, scale), background: EditorDocument.defaultBackground(for: format))
-        document.hasWindowShadow = ImageCodec.hasWindowShadow(ofFileAt: input)
+        let drawn = try make(image, scale)
+        var document = EditorDocument(base: image, background: EditorDocument.defaultBackground(for: format))
+        var original = input
+        if let saved = VersionWriter.savedLayers(of: input, in: projects) {
+            var reopened = EditorDocument(base: saved.image)
+            reopened.restore(saved.layers)
+            // Only while the version is still the size its layers draw, so its pixels are theirs.
+            if reopened.canvasRect.size == CGSize(width: image.width, height: image.height) {
+                document = reopened
+                original = saved.original
+            }
+        }
+        // The input's pixels start at the canvas's corner, which is the original's for a version that was padded or cropped.
+        let shift = CGVector(dx: document.canvasRect.minX, dy: document.canvasRect.minY)
+        document.annotations += drawn.map { annotation in
+            var moved = annotation
+            moved.offset(by: shift)
+            return moved
+        }
+        document.hasWindowShadow = ImageCodec.hasWindowShadow(ofFileAt: original)
+        if format == .jpeg, document.background == nil {
+            document.background = EditorDocument.defaultBackground(for: format)
+        }
         if let crop {
             guard let region = CropRegion.clamped(crop, width: image.width, height: image.height) else {
                 throw .data("rect (\(CropRegion.text(crop))) is off the \(image.width)×\(image.height) image")
             }
-            document.crop(to: CGRect(x: region[0], y: region[1], width: region[2], height: region[3]))
+            document.crop(to: CGRect(x: region[0], y: region[1], width: region[2], height: region[3]).offsetBy(dx: shift.dx, dy: shift.dy))
         }
         defer { AnnotationRenderer.releaseCaches() }
+        let projectID = projects == nil ? nil : ProjectKey.newID()
         let data: Data
         do throws(VersionWriter.Failure) {
-            let record = VersionWriter.record(of: document, drawnOn: input, savedAs: format, scale: scale)
-            data = try VersionWriter.render(document, scale: scale, as: format, record: record).file
+            let record = VersionWriter.record(of: document, drawnOn: original, savedAs: format, scale: scale)
+            data = try VersionWriter.render(document, scale: scale, as: format, record: record, projectID: projectID).file
         } catch .draw {
             throw .internal("couldn't draw the image")
         } catch {
@@ -292,12 +341,17 @@ public enum ShotCommands {
         } catch {
             throw .cantCreate("couldn't write in \(temporary.deletingLastPathComponent().path): \(error.localizedDescription)")
         }
-        return .object(try written(place(temporary, at: target)))
+        let placed = try place(temporary, at: target)
+        VersionWriter.keep(document.snapshot, of: placed, id: projectID, original: original, in: projects, origin: origin)
+        return .object(try written(placed))
     }
 
     /// The same for `redact` and `crop`, which need only the image.
-    static func draw(input path: String, output: String?, crop: [Double]? = nil, _ make: (CGImage) throws(ShotCommandError) -> [Annotation]) throws(ShotCommandError) -> JSONValue {
-        try draw(input: path, output: output, crop: crop) { (image: CGImage, _: CGFloat) throws(ShotCommandError) in try make(image) }
+    static func draw(
+        input path: String, output: String?, crop: [Double]? = nil, projects: ProjectStore?, origin: ProjectOrigin,
+        _ make: (CGImage) throws(ShotCommandError) -> [Annotation]
+    ) throws(ShotCommandError) -> JSONValue {
+        try draw(input: path, output: output, crop: crop, projects: projects, origin: origin) { (image: CGImage, _: CGFloat) throws(ShotCommandError) in try make(image) }
     }
 
     // MARK: Output
@@ -374,20 +428,25 @@ public enum ShotCommands {
         }
     }
 
-    static func videoDuration(_ url: URL) async throws(ShotCommandError) -> Double {
+    static func video(_ url: URL) async throws(ShotCommandError) -> ImportedMedia {
         try requireInput(url)
         guard let media = try? await MediaProbe.probe(url), media.size != nil else {
             throw .data("\(url.lastPathComponent) isn't a video Shot can read")
         }
-        return media.duration
+        return media
     }
 
-    static func range(start: Double?, end: Double?, duration: Double, command: String) throws(ShotCommandError) -> TrimRange {
+    /// The video `media` as the video editor opens it, with its trim handles dragged to `start` and `end`.
+    static func trimmed(_ media: ImportedMedia, start: Double?, end: Double?, command: String) throws(ShotCommandError) -> Project {
         let start = start ?? 0
-        guard start < duration else {
-            throw .usage(command, "the start, \(String(format: "%g", start)) s, is past the end of the \(String(format: "%.2f", duration)) s video")
+        guard start < media.duration else {
+            throw .usage(command, "the start, \(String(format: "%g", start)) s, is past the end of the \(String(format: "%.2f", media.duration)) s video")
         }
-        return TrimRange(start: start, end: min(end ?? duration, duration), duration: duration)
+        let whole = Project(source: media.source, duration: media.duration, canvasSize: media.size ?? .zero, hasAudio: media.hasAudio)
+        guard let trimmed = whole.trimmingMain(.end, toSource: min(end ?? media.duration, media.duration))?.trimmingMain(.start, toSource: start) else {
+            throw .usage(command, "that leaves less than \(String(format: "%g", TrimRange.minimumLength)) s of the video")
+        }
+        return trimmed
     }
 
     static func bytes(of url: URL) -> Int {

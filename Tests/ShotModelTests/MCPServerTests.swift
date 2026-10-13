@@ -6,7 +6,7 @@ private let server = MCPServer(
     name: "shot",
     version: "1.0",
     tools: [MCPServer.Tool(name: "latest_capture", description: "The newest capture", inputSchema: .object(["type": .string("object")]))],
-    call: { name, arguments in
+    call: { name, arguments, _ in
         MCPServer.ToolResult(content: [.text("\(name) kind=\(arguments["kind"]?.string ?? "none")")])
     }
 )
@@ -39,7 +39,7 @@ private let server = MCPServer(
 
 @Test func toolsListMarksAReadOnlyToolWithItsHint() async {
     let tool = MCPServer.Tool(name: "list_captures", description: "Recent captures", inputSchema: .object(["type": .string("object")]), readOnly: true)
-    let listing = MCPServer(name: "shot", version: "1.0", tools: [tool]) { _, _ in MCPServer.ToolResult(content: []) }
+    let listing = MCPServer(name: "shot", version: "1.0", tools: [tool]) { _, _, _ in MCPServer.ToolResult(content: []) }
     let reply = await listing.respond(to: #"{"jsonrpc":"2.0","id":3,"method":"tools/list"}"#)
     #expect(reply == #"{"id":3,"jsonrpc":"2.0","result":{"tools":[{"annotations":{"readOnlyHint":true},"description":"Recent captures","inputSchema":{"type":"object"},"name":"list_captures"}]}}"#)
 }
@@ -80,7 +80,7 @@ func aMessageThatIsntARequestIsInvalid(_ line: String) async {
 }
 
 @Test func repliesAreOneLineEvenWithNewlinesInText() async {
-    let multiline = MCPServer(name: "shot", version: "1", tools: server.tools) { _, _ in
+    let multiline = MCPServer(name: "shot", version: "1", tools: server.tools) { _, _, _ in
         MCPServer.ToolResult(content: [.text("line one\nline two"), .image(data: "AAAA", mimeType: "image/jpeg")])
     }
     let reply = await multiline.respond(to: #"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"latest_capture"}}"#)
@@ -97,14 +97,14 @@ func aMessageThatIsntARequestIsInvalid(_ line: String) async {
 }
 
 @Test func initializeKeepsTheClientsNameForProvenance() async {
-    let fresh = MCPServer(name: "shot", version: "1.0", tools: []) { _, _ in MCPServer.ToolResult(content: []) }
+    let fresh = MCPServer(name: "shot", version: "1.0", tools: []) { _, _, _ in MCPServer.ToolResult(content: []) }
     #expect(fresh.client == nil)
     _ = await fresh.respond(to: #"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","clientInfo":{"name":"claude-code","version":"2.1.0"}}}"#)
     #expect(fresh.client == MCPServer.Client(name: "claude-code", version: "2.1.0"))
 }
 
 @Test func aClientWithNoNameIsntKept() async {
-    let fresh = MCPServer(name: "shot", version: "1.0", tools: []) { _, _ in MCPServer.ToolResult(content: []) }
+    let fresh = MCPServer(name: "shot", version: "1.0", tools: []) { _, _, _ in MCPServer.ToolResult(content: []) }
     _ = await fresh.respond(to: #"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"clientInfo":{"name":"","version":"1"}}}"#)
     #expect(fresh.client == nil)
     _ = await fresh.respond(to: #"{"jsonrpc":"2.0","id":2,"method":"initialize","params":{"clientInfo":{"name":"cursor"}}}"#)

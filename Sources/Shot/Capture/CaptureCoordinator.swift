@@ -27,8 +27,9 @@ final class CaptureCoordinator {
     private var agentSession: AgentSession?
     /// How agents' recordings ended, by ID, so a stop that comes after the user stopped one still gets its answer.
     private var agentEndings: [String: (result: Result<[String: JSONValue], ShotCommandError>, at: Date)] = [:]
-    /// The files agents' recordings are saved as, by ID, so one that Undo saves after a discard is still theirs.
-    private var agentRecordings: [URL: String] = [:]
+    /// The files agents' recordings are saved as, with their IDs and who asked for them, so one that Undo saves after a
+    /// discard is still theirs.
+    private var agentRecordings: [URL: (id: String, origin: ProjectOrigin?)] = [:]
 
     private struct AgentSession {
         let id: String
@@ -361,8 +362,8 @@ final class CaptureCoordinator {
 
     private func recordingFinished(_ url: URL) {
         // An agent's recording is only saved: no copy, Quick Access card or confetti.
-        if let id = agentRecordings[url] {
-            Task { await agentRecordingSaved(url, id: id) }
+        if let (id, origin) = agentRecordings[url] {
+            Task { await agentRecordingSaved(url, id: id, origin: origin) }
             return
         }
         let prefs = Preferences()
@@ -482,12 +483,20 @@ final class CaptureCoordinator {
     }
 
     /// Saves a capture to the capture folder and does nothing else: no sound, copy, Quick Access, editor or confetti. For
-    /// a capture an agent asked for, whose record always says which window it came from. Gives back the file and its
-    /// size in pixels.
-    func saveCapture(image: CGImage, scale: CGFloat, from frame: CGRect, windowShadow: Bool, source: CaptureRecord.Source) async throws -> (url: URL, width: Int, height: Int) {
+    /// a capture an agent asked for, whose record always says which window it came from, and whose project keeps
+    /// `origin`, who asked. Gives back the file and its size in pixels.
+    func saveCapture(
+        image: CGImage, scale: CGFloat, from frame: CGRect, windowShadow: Bool, source: CaptureRecord.Source, origin: ProjectOrigin?
+    ) async throws -> (url: URL, width: Int, height: Int) {
         let prefs = Preferences()
-        let encoded = try await encode(image, scale: scale, from: frame, windowShadow: windowShadow, source: source, record: true, clipboard: false, prefs: prefs)
+        let projectID = origin == nil ? nil : ProjectKey.newID()
+        let encoded = try await encode(image, scale: scale, from: frame, windowShadow: windowShadow, source: source, record: true, clipboard: false, prefs: prefs, projectID: projectID)
         let url = try await write(encoded.file, prefs: prefs, thumbnail: false).url
+        if let origin {
+            // Dated now, when it's saved, rather than when it was asked for.
+            let saved = ProjectOrigin(via: origin.via, client: origin.client, action: origin.action)
+            await Task.detached { VersionWriter.keep(origin: saved, of: url, id: projectID, in: .app) }.value
+        }
         return (url, encoded.image.width, encoded.image.height)
     }
 
@@ -500,11 +509,11 @@ final class CaptureCoordinator {
         let scale: CGFloat
     }
 
-    /// Encodes the capture off the main actor as Settings ask, with its record inside the file when `record` is set, and
-    /// a PNG for the clipboard when `clipboard` is.
+    /// Encodes the capture off the main actor as Settings ask, with its record inside the file when `record` is set,
+    /// `projectID` stamped in it when it has a project, and a PNG for the clipboard when `clipboard` is.
     private func encode(
         _ original: CGImage, scale originalScale: CGFloat, from frame: CGRect, windowShadow: Bool, source: CaptureRecord.Source?, record: Bool, clipboard copies: Bool,
-        prefs: Preferences
+        prefs: Preferences, projectID: String? = nil
     ) async throws -> EncodedCapture {
         let downscale = prefs.downscaleRetina && originalScale > 1
         let format = prefs.imageFormat
@@ -517,7 +526,7 @@ final class CaptureCoordinator {
             let scale = downscale ? 1 : originalScale
             // Written in the same encode, so the record costs no second pass. A PNG's goes on the clipboard with it.
             let record = record ? CaptureRecord(kind: "image", created: Date(), size: CaptureRecord.Size(width: image.width, height: image.height), scale: scale, source: recordSource) : nil
-            let file = ImageCodec.data(from: image, scale: scale, format: format, windowShadow: windowShadow, record: record)
+            let file = ImageCodec.data(from: image, scale: scale, format: format, windowShadow: windowShadow, record: record, projectID: projectID)
             // The clipboard takes a PNG, which a PNG capture's file already is.
             let png = format == .png ? file : copies ? ImageCodec.data(from: image, scale: scale) : nil
             return (file, png, SendableImage(image))
@@ -570,7 +579,7 @@ final class CaptureCoordinator {
     /// A screenshot of the window or display `target` names, for an agent. It's saved and nothing else, as
     /// `saveCapture` does, and a notice says so, since the user didn't ask for it themselves. Never shows the permission
     /// onboarding, which would take focus from whatever the agent is working on.
-    func agentCapture(_ target: AgentTarget) async throws(ShotCommandError) -> [String: JSONValue] {
+    func agentCapture(_ target: AgentTarget, origin: ProjectOrigin?) async throws(ShotCommandError) -> [String: JSONValue] {
         guard Permissions.hasScreenCapture else {
             throw Self.noPermission
         }
@@ -578,7 +587,7 @@ final class CaptureCoordinator {
             throw .busy("Shot is in the middle of a capture or the recording setup; try again once it's done.")
         }
         if let display = target.display {
-            return try await agentCapture(display: display, target)
+            return try await agentCapture(display: display, target, origin: origin)
         }
         let (info, match) = try matchWindow(target)
         busy = true
@@ -600,7 +609,7 @@ final class CaptureCoordinator {
                 throw ShotCommandError.data("The \(target.rectText) is off \(match.label), which is \(Int(info.frame.width))×\(Int(info.frame.height)) points.")
             }
             let frame = Geometry.flip(area, primaryHeight: NSScreen.screens.first?.frame.height ?? 0)
-            saved = try await saveCapture(image: image, scale: captured.scale, from: frame, windowShadow: shadow, source: source)
+            saved = try await saveCapture(image: image, scale: captured.scale, from: frame, windowShadow: shadow, source: source, origin: origin)
         } catch let error as ShotCommandError {
             throw error
         } catch CaptureError.windowNotFound {
@@ -614,7 +623,7 @@ final class CaptureCoordinator {
     }
 
     /// A screenshot of display `number`, counted from 1, or the part of it `target.rect` covers.
-    private func agentCapture(display number: Int, _ target: AgentTarget) async throws(ShotCommandError) -> [String: JSONValue] {
+    private func agentCapture(display number: Int, _ target: AgentTarget, origin: ProjectOrigin?) async throws(ShotCommandError) -> [String: JSONValue] {
         let screen = try Self.screen(number)
         busy = true
         defer { busy = false }
@@ -634,7 +643,7 @@ final class CaptureCoordinator {
             else {
                 throw ShotCommandError.data("The \(target.rectText) is off display \(number), which is \(Int(screen.frame.width))×\(Int(screen.frame.height)) points.")
             }
-            saved = try await saveCapture(image: image, scale: frozen.scale, from: Geometry.flip(area, primaryHeight: primaryHeight), windowShadow: false, source: source)
+            saved = try await saveCapture(image: image, scale: frozen.scale, from: Geometry.flip(area, primaryHeight: primaryHeight), windowShadow: false, source: source, origin: origin)
         } catch let error as ShotCommandError {
             throw error
         } catch {
@@ -712,7 +721,7 @@ final class CaptureCoordinator {
     /// with the red border and the stop controls, and for at most `AgentRequest.maximumDuration`. Answers with the
     /// recording's ID at once, or with `duration`, with the saved recording once it ends. Part of a window is recorded
     /// as that part of the screen, so whatever covers it shows too.
-    func agentRecord(_ target: AgentTarget, duration: Double?) async throws(ShotCommandError) -> [String: JSONValue] {
+    func agentRecord(_ target: AgentTarget, duration: Double?, origin: ProjectOrigin?) async throws(ShotCommandError) -> [String: JSONValue] {
         guard Permissions.hasScreenCapture else {
             throw Self.noPermission
         }
@@ -777,7 +786,7 @@ final class CaptureCoordinator {
             stopRecording(discard: false)
         }
         agentSession = session
-        agentRecordings[url] = id
+        agentRecordings[url] = (id, origin)
         log.notice("Agent started recording \(app, privacy: .public) as \(id, privacy: .public)")
         Toast.show("An agent is recording \(app)", duration: .seconds(3))
         guard duration != nil else {
@@ -846,8 +855,14 @@ final class CaptureCoordinator {
         return try result.get()
     }
 
-    /// Answers whoever waits for the agent's recording saved at `url`.
-    private func agentRecordingSaved(_ url: URL, id: String) async {
+    /// Answers whoever waits for the agent's recording saved at `url`, once it's stamped with its project, which keeps
+    /// `origin`, who asked for it.
+    private func agentRecordingSaved(_ url: URL, id: String, origin: ProjectOrigin?) async {
+        if let origin {
+            // Dated now, when it's saved, rather than when it was asked for.
+            let saved = ProjectOrigin(via: origin.via, client: origin.client, action: origin.action)
+            await Task.detached { VersionWriter.keep(origin: saved, of: url, id: nil, in: .app) }.value
+        }
         let media = try? await MediaProbe.probe(url)
         let bytes = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         var fields: [String: JSONValue] = [
@@ -877,7 +892,7 @@ final class CaptureCoordinator {
     }
 
     private func recordingEnded(_ url: URL?, _ ending: Recorder.Ending) {
-        guard let url, let id = agentRecordings[url] else {
+        guard let url, let id = agentRecordings[url]?.id else {
             return
         }
         switch ending {
@@ -910,7 +925,7 @@ final class CaptureCoordinator {
         let cutoff = Date().addingTimeInterval(-AgentRequest.maximumDuration)
         for (id, ending) in agentEndings where ending.at < cutoff {
             agentEndings[id] = nil
-            agentRecordings = agentRecordings.filter { $0.value != id }
+            agentRecordings = agentRecordings.filter { $0.value.id != id }
         }
     }
 
