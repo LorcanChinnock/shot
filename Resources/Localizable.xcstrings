@@ -10838,6 +10838,7 @@
         }
       }
     },
+    "Deselect" : {},
     "Deselect (⌘-click)" : {
       "localizations" : {
         "de" : {

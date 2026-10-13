@@ -94,6 +94,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         SystemShortcuts.giveBackKeys()
     }
 
+    /// Opening Shot again from Finder or Spotlight shows Settings, the way back when the menu bar icon is hidden
+    /// behind the notch or pushed off a crowded bar.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        log.notice("Reopened; showing Settings")
+        MainWindowController.showSettings()
+        return false
+    }
+
     func application(_ application: NSApplication, open urls: [URL]) {
         for url in urls {
             handle(url)
