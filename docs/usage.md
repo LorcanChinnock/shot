@@ -57,7 +57,7 @@ A floating card appears in a bottom corner of the screen under the pointer after
 
 Right-click a card for the same actions, plus **Copy Path**, and **Copy Text** and **Pin** for a screenshot.
 
-**Pin** floats a screenshot above your other windows, so you can keep it in view as a reference while you work. It opens in the middle of the screen at its own size, or at half the screen if it's bigger, and the card closes. Drag a pin to move it, or drag its edges to resize it. Hover it and click the close button to remove it, or click it and press Esc. You can have several pins open at once.
+**Pin** floats a screenshot above your other windows, so you can keep it in view as a reference while you work. It opens in the middle of the screen at its own size, or at half the screen if it's bigger, and the card closes. A screenshot with a style is pinned the way Copy has it, shadow and border included. Drag a pin to move it, or drag its edges to resize it. Hover it and click the close button to remove it, or click it and press Esc. You can have several pins open at once.
 
 New cards stack above older ones, up to five; a sixth closes the oldest. Cards close on their own after 8 seconds, and hovering a card pauses the timer. In **Settings › Quick Access**, pick the bottom-left or bottom-right corner, and 4, 8, 15 or 30 seconds, or **Never**.
 

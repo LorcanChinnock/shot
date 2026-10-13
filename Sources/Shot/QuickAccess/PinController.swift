@@ -11,8 +11,9 @@ final class PinController {
     private var panels: [PinPanel] = []
 
     /// Pins the image at `url`, read off the main actor. `whenRead` runs once the file has been read, or failed to be,
-    /// so a caller can delete a temporary file only after the pin no longer needs it.
-    func pin(_ url: URL, whenRead: (@MainActor () -> Void)? = nil) {
+    /// so a caller can delete a temporary file only after the pin no longer needs it. A `styled` image already has its
+    /// own shadow, border and corners on a transparent margin, so it floats as it is, with no frame of the pin's own.
+    func pin(_ url: URL, styled: Bool = false, whenRead: (@MainActor () -> Void)? = nil) {
         Task { [weak self] in
             // Decoded now, from the file's bytes: an image read lazily from `url` decodes when it's first drawn, after
             // `whenRead` may have deleted the file, and draws black.
@@ -30,16 +31,18 @@ final class PinController {
                 Toast.error("Couldn't read \(url.lastPathComponent)")
                 return
             }
-            self.show(image.image, scale: scale, name: url.lastPathComponent)
+            self.show(image.image, scale: scale, name: url.lastPathComponent, styled: styled)
         }
     }
 
-    private func show(_ image: CGImage, scale: CGFloat, name: String) {
+    private func show(_ image: CGImage, scale: CGFloat, name: String, styled: Bool) {
         let size = CGSize(width: CGFloat(image.width) / max(scale, 1), height: CGFloat(image.height) / max(scale, 1))
         let screen = NSScreen.underPointer ?? NSScreen.screens[0]
         let frame = PinLayout.initialFrame(for: size, in: screen.visibleFrame, index: panels.count)
         let panel = PinPanel(frame: frame, aspect: size)
-        panel.contentView = NSView(hosting: PinView(image: NSImage(cgImage: image, size: size), name: name) { [weak panel] in
+        // The window's shadow would trace the image's own, transparent margin and all.
+        panel.hasShadow = !styled
+        panel.contentView = NSView(hosting: PinView(image: NSImage(cgImage: image, size: size), name: name, styled: styled) { [weak panel] in
             panel?.close()
         })
         // Let go of the panel on the next turn, not while it's still inside its own close().
@@ -89,6 +92,7 @@ private final class PinPanel: NSPanel {
 private struct PinView: View {
     let image: NSImage
     let name: String
+    let styled: Bool
     let close: () -> Void
     @State private var hovering = false
 
@@ -106,15 +110,30 @@ private struct PinView: View {
                     .transition(.opacity)
             }
         }
-        .background(Color.black)
-        .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
-        .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: 2)
+        .modifier(PinFrame(styled: styled))
         .onHover { inside in
             withAnimation(.easeOut(duration: 0.12)) {
                 hovering = inside
             }
         }
         .environment(\.colorScheme, .light)
+    }
+}
+
+/// A plain capture sits on black in an ink frame. A styled one is left clear, so its transparent margin, shadow and
+/// border show as Copy has them.
+private struct PinFrame: ViewModifier {
+    let styled: Bool
+
+    func body(content: Content) -> some View {
+        if styled {
+            content
+        } else {
+            content
+                .background(Color.black)
+                .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
+                .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: 2)
+        }
     }
 }
 

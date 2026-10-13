@@ -262,7 +262,7 @@ final class QuickAccessController {
     /// Floats the capture, styled as Copy has it, above other windows; the card goes, as the pin replaces it. It goes once
     /// the pin has read the image, since removing the card deletes the styled file.
     func pin(_ card: QuickAccessCard) {
-        PinController.shared.pin(card.styledURL ?? card.fileURL) { [weak self] in
+        PinController.shared.pin(card.styledURL ?? card.fileURL, styled: card.styledURL != nil) { [weak self] in
             self?.remove(card.id)
         }
     }
