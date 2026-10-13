@@ -259,6 +259,15 @@ final class EditorModel {
         }
     }
 
+    /// Renames layer `id` as one undo step; an empty name goes back to the automatic one.
+    func renameLayer(_ id: UUID, to name: String) {
+        edit { doc in
+            if let index = doc.annotations.firstIndex(where: { $0.id == id }) {
+                doc.annotations[index].rename(to: name)
+            }
+        }
+    }
+
     func duplicateLayers(_ ids: Set<UUID>) {
         let copies = document.annotations.filter { ids.contains($0.id) }
         guard !copies.isEmpty else {

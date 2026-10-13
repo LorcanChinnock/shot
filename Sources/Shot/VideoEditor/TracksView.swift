@@ -114,6 +114,10 @@ struct TracksView: View {
     @State private var gesture: (kind: Gesture, startX: CGFloat, pointsPerSecond: CGFloat)?
     @State private var pinchStart: Double?
     @State private var hoveredTrack: Int?
+    /// The annotation clip under the pointer, which right-clicking offers to rename.
+    @State private var hoveredAnnotation: UUID?
+    /// The annotation clip whose name is being edited in place.
+    @State private var renaming: UUID?
 
     var body: some View {
         let layout = Self.layout(for: model.project)
@@ -134,9 +138,13 @@ struct TracksView: View {
                     .contentShape(Rectangle())
                     .onContinuousHover { phase in
                         if case .active(let point) = phase {
-                            hoveredTrack = layout.lane(at: point.y)?.track
+                            let track = layout.lane(at: point.y)?.track
+                            hoveredTrack = track
+                            let time = Double((point.x - leadX) / pointsPerSecond)
+                            hoveredAnnotation = track.flatMap { model.project.tracks[$0].annotations.first { time >= $0.start && time <= $0.end }?.id }
                         } else {
                             hoveredTrack = nil
+                            hoveredAnnotation = nil
                         }
                     }
                     .gesture(drag(timeline, layout: layout, leadX: leadX))
@@ -277,9 +285,17 @@ struct TracksView: View {
         }
     }
 
-    /// What right-clicking a lane offers: deleting an annotation track, and the lane's own switches.
+    /// What right-clicking a lane offers: renaming the annotation under the pointer, deleting an annotation track, and the
+    /// lane's own switches.
     @ViewBuilder
     private var laneMenu: some View {
+        if let id = hoveredAnnotation, model.project.annotationClip(id) != nil {
+            Button("Rename") {
+                model.selectClip(id)
+                renaming = id
+            }
+            Divider()
+        }
         if let index = hoveredTrack, model.project.tracks.indices.contains(index) {
             let track = model.project.tracks[index]
             ForEach(LaneControl.allCases.filter { $0.applies(to: track.kind) }, id: \.self) { control in
@@ -416,9 +432,11 @@ struct TracksView: View {
         let width = CGFloat(clip.duration) * pointsPerSecond
         let selected = model.selectedClipID == clip.id
         let color = clip.annotation.color
+        let isRenaming = renaming == clip.id
         return HStack(spacing: 4) {
             Image(systemName: clip.annotation.layerSymbol).font(.system(size: 11, weight: .bold))
             Text(clip.annotation.layerName).font(.system(size: 11, weight: .bold)).lineLimit(1)
+                .opacity(isRenaming ? 0 : 1)
         }
         .foregroundStyle(Brutal.ink)
         .padding(.horizontal, 6)
@@ -428,6 +446,17 @@ struct TracksView: View {
         .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
         .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.ink)
         .allowsHitTesting(false)
+        // Over the clip rather than in it, so a short clip doesn't squeeze the field.
+        .overlay(alignment: .leading) {
+            if isRenaming {
+                LayerNameField(name: clip.annotation.layerName, fontSize: 11, onCommit: { name in
+                    renaming = nil
+                    model.renameAnnotation(clip.id, to: name)
+                }, onCancel: { renaming = nil })
+                .frame(width: max(width - 24, 140))
+                .padding(.leading, 22)
+            }
+        }
     }
 
     private func trackIndex(of id: UUID) -> Int {
@@ -521,6 +550,10 @@ struct TracksView: View {
         let clip = project.tracks[lane.track].clips.first { point.x >= timeline.x(for: $0.start) && point.x <= timeline.x(for: $0.end) }
         let note = project.tracks[lane.track].annotations.first { point.x >= timeline.x(for: $0.start) && point.x <= timeline.x(for: $0.end) }
         if let note {
+            // The second click of a double-click renames it; the first has selected it.
+            if NSApp.currentEvent?.clickCount == 2 {
+                renaming = note.id
+            }
             return startEditing(note.id, start: note.start, end: note.end, point: point, timeline: timeline, time: time)
         }
         let followsMain = clip.map { picked in project.main.clips.contains { $0.linkedID == picked.id } } ?? false

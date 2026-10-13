@@ -47,6 +47,7 @@ struct EditorRootView: View {
                         onMove: model.moveLayers,
                         onHide: { model.setHidden($1, $0) },
                         onLock: { model.setLocked($1, $0) },
+                        onRename: model.renameLayer,
                         onDuplicate: model.duplicateLayers,
                         onDelete: model.deleteLayers,
                         onSelectFrame: {
