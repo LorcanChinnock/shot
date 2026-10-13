@@ -56,7 +56,14 @@ struct EditorRootView: View {
                             canvas.window?.makeFirstResponder(canvas)
                         },
                         onHideFrame: model.setFrameCropHidden,
-                        onDeleteFrame: model.deleteFrame
+                        onDeleteFrame: model.deleteFrame,
+                        onTool: { tool in
+                            model.tool = tool
+                            if tool == .crop {
+                                // As from the Frame row: Return and Esc go to the crop, not the layer list.
+                                canvas.window?.makeFirstResponder(canvas)
+                            }
+                        }
                     )
                 }
             }

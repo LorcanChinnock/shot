@@ -566,7 +566,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             model.nudgeSelection(direction, large: event.modifierFlags.contains(.shift), repeated: event.isARepeat)
             return
         }
-        if modifiers.isEmpty, let character = event.charactersIgnoringModifiers?.lowercased().first, let tool = EditorTool.allCases.first(where: { $0.key == character }) {
+        if modifiers.isEmpty, let tool = event.charactersIgnoringModifiers.flatMap(EditorTool.init(key:)) {
             model.tool = tool
             return
         }

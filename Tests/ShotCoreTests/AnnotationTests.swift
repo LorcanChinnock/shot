@@ -112,6 +112,16 @@ private let shapeFrame = CGRect(x: 20, y: 20, width: 100, height: 60)
     #expect(EditorTool.highlight.key == "m")
 }
 
+@Test func aKeyPicksItsToolInEitherCase() {
+    for tool in EditorTool.allCases {
+        #expect(EditorTool(key: String(tool.key)) == tool)
+        #expect(EditorTool(key: String(tool.key).uppercased()) == tool)
+    }
+    #expect(EditorTool(key: "1") == nil)
+    #expect(EditorTool(key: "aa") == nil)
+    #expect(EditorTool(key: "") == nil)
+}
+
 @Test func onlyDrawnMarksTakeAColourAndWidth() {
     #expect(EditorTool.allCases.filter { !$0.takesColorAndWidth } == [.select, .hand, .spotlight, .redact, .crop])
     #expect(annotation(.freehand([.zero, CGPoint(x: 9, y: 9)])).takesColorAndWidth)
