@@ -53,6 +53,14 @@ private func item(_ name: String, _ date: Date, bytes: Int = 1) -> GalleryItem {
     #expect(Gallery.visible(items, filter: .all, sort: .name, query: "  MEETING ").map(\.name) == ["Meeting notes.png"])
 }
 
+@Test func madeByAgentsShowsOnlyWhatAnAgentOrTheCommandLineMade() {
+    let items = [item("a.png", now), item("b.mp4", now), item("c.gif", now)]
+    let origins = [items[1].url: ProjectOrigin(via: .mcp, action: "record_window"), items[2].url: ProjectOrigin(via: .cli, action: "gif")]
+    #expect(Gallery.visible(items, filter: .agents, sort: .name, query: "", origins: origins).map(\.name) == ["b.mp4", "c.gif"])
+    #expect(Gallery.visible(items, filter: .agents, sort: .name, query: "").isEmpty)
+    #expect(Gallery.visible(items, filter: .all, sort: .name, query: "", origins: origins).count == 3)
+}
+
 @Test func sorting() {
     let items = [item("b.png", day(10, 1), bytes: 5), item("a.png", day(10, 3), bytes: 9), item("c10.png", day(10, 2), bytes: 7), item("c2.png", day(10, 2), bytes: 7)]
     #expect(Gallery.visible(items, filter: .all, sort: .newest, query: "").map(\.name) == ["a.png", "c10.png", "c2.png", "b.png"])

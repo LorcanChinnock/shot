@@ -57,3 +57,17 @@ extension AspectRatio {
         portrait ? label.split(separator: ":").reversed().joined(separator: ":") : label
     }
 }
+
+extension ProjectOrigin {
+    /// Who made a file and how, as the gallery's mark says: "Made by Claude Code · annotate · 14:03", or
+    /// "Command line · trim · 14:03" for a `shot` run, whoever started it. The date shows too when it isn't today.
+    public func summary(now: Date = Date(), calendar: Calendar = .current) -> String {
+        let who: String? = switch via {
+        case .app: nil
+        case .cli: String(localized: "Command line")
+        case .mcp: clientName.map { String(localized: "Made by \($0)") } ?? String(localized: "Made by an agent")
+        }
+        let when = calendar.isDate(date, inSameDayAs: now) ? date.formatted(date: .omitted, time: .shortened) : date.formatted(date: .abbreviated, time: .shortened)
+        return [who, action, when].compactMap { $0 }.joined(separator: " · ")
+    }
+}

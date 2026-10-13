@@ -18477,6 +18477,15 @@
         }
       }
     },
+    "Made by %@" : {
+
+    },
+    "Made by agents" : {
+
+    },
+    "Made by an agent" : {
+
+    },
     "Magnifier" : {
       "localizations" : {
         "de" : {

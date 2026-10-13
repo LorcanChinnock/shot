@@ -274,6 +274,7 @@ Save Copy and Export keep the edit as a project: every lane, clip, annotation, k
 - **Quick Look** with Space.
 - The buttons at the bottom **Edit**, **Copy**, **Show in Finder** or **Move to Trash** the selection. Right-click for the same, plus **Quick Look**. Right-click a single item and **Edit** reads **Annotate** or **Edit Video**, with **Rename…** too, **Export GIF** for a video, and **Copy Text** and [**Pin**](#quick-access) for a screenshot. Trashed files go to the Trash; ⌘Z puts them back, and so can Finder.
 - Drag a thumbnail into another app.
+- Anything an agent or the `shot` command made gets a small mark in its corner: a terminal for the command line, sparkles for an agent over [MCP](#the-mcp-server). Hover it to see who made it, what they did and when, such as **Made by Claude Code · annotate · 14:03**. A `shot` run always reads **Command line**, whoever started it. Once there's at least one, the filter adds **Made by agents**, which lists only those. Your own captures carry no mark.
 
 ## Using Shot with AI agents
 

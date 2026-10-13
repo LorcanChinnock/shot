@@ -10,6 +10,9 @@ private let log = Logger.shot("gallery")
 @Observable
 final class GalleryModel {
     private(set) var items: [GalleryItem] = [] { didSet { refilter() } }
+    /// Who made the items an agent or the command line made, read from the project store with the folder, so a tile
+    /// takes its mark as a plain value.
+    private(set) var origins: [URL: ProjectOrigin] = [:] { didSet { refilter() } }
     var filter = GalleryFilter.all { didSet { measure("Gallery filter"); refilter() } }
     var sort = GallerySort.newest { didSet { measure("Gallery filter"); refilter() } }
     var query = "" { didSet { measure("Gallery filter"); refilter() } }
@@ -50,7 +53,7 @@ final class GalleryModel {
     var allSelected: Bool { Gallery.allSelected(selection, in: visible) }
 
     private func refilter() {
-        visible = Gallery.visible(items, filter: filter, sort: sort, query: query)
+        visible = Gallery.visible(items, filter: filter, sort: sort, query: query, origins: origins)
         sections = Gallery.sections(visible, sort: sort)
         selection.formIntersection(visible.map(\.url))
     }
@@ -79,9 +82,15 @@ final class GalleryModel {
         let folder = folder
         loadTask?.cancel()
         loadTask = Task {
-            let found = await Task.detached { Gallery.items(in: folder) }.value
+            let (found, foundOrigins) = await Task.detached {
+                let found = Gallery.items(in: folder)
+                return (found, Gallery.agentOrigins(of: found, in: folder, store: .app))
+            }.value
             guard !Task.isCancelled else {
                 return
+            }
+            if foundOrigins != origins {
+                origins = foundOrigins
             }
             if found != items {
                 items = found

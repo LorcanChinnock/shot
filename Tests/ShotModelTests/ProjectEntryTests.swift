@@ -103,3 +103,46 @@ func originsDecodeFromWhatTheyEncode(_ via: ProjectOrigin.Via) throws {
     #expect(ProjectPruning.keeps(entry(), sightings: [], volumeMounted: true, now: saved.addingTimeInterval(60)))
     #expect(!ProjectPruning.keeps(entry(), sightings: [], volumeMounted: true, now: saved.addingTimeInterval(ProjectPruning.grace)))
 }
+
+@Test func knownMCPClientsAreNamedAsTheProductAndOthersAsSent() {
+    #expect(ProjectOrigin(via: .mcp, client: "claude-code").clientName == "Claude Code")
+    #expect(ProjectOrigin(via: .mcp, client: "Cursor-VSCode").clientName == "Cursor")
+    #expect(ProjectOrigin(via: .mcp, client: "my-agent").clientName == "my-agent")
+    #expect(ProjectOrigin(via: .mcp).clientName == nil)
+}
+
+@Test func onlyTheCommandLineAndMCPCountAsAgents() {
+    #expect(!ProjectOrigin(via: .app).isAgent)
+    #expect(ProjectOrigin(via: .cli).isAgent)
+    #expect(ProjectOrigin(via: .mcp).isAgent)
+}
+
+private func agentEntry(_ id: String, file: ProjectFile, via: ProjectOrigin.Via = .cli, date: Date = saved) -> ProjectEntry {
+    ProjectEntry(id: id, stamped: true, file: file, origin: ProjectOrigin(via: via, action: "annotate", date: date))
+}
+
+@Test func agentOriginsAreKeyedByWhereTheFileIsNow() {
+    let moved = ProjectFile(path: "/Users/me/Shots/Renamed.png", volume: "VOL-A", number: 42)
+    let origins = ProjectProvenance.agentOrigins([
+        (agentEntry("ID-1", file: capture), [ProjectSighting(file: capture, stampedID: "ID-9"), ProjectSighting(file: moved, stampedID: "ID-1")]),
+    ])
+    #expect(origins == [moved.path: ProjectOrigin(via: .cli, action: "annotate", date: saved)])
+}
+
+@Test func agentOriginsLeaveOutAppEntriesAndFilesThatAreGone() {
+    let origins = ProjectProvenance.agentOrigins([
+        (agentEntry("ID-1", file: capture, via: .app), [ProjectSighting(file: capture, stampedID: "ID-1")]),
+        (agentEntry("ID-2", file: capture), [ProjectSighting(file: capture, stampedID: "ID-3")]),
+        (agentEntry("ID-4", file: capture), []),
+    ])
+    #expect(origins.isEmpty)
+}
+
+@Test func whenTwoAgentEntriesClaimAFileTheNewerWins() {
+    let gif = ProjectFile(path: "/Users/me/Shots/Shot.gif", volume: "VOL-A", number: 7, size: 10, modified: saved)
+    let older = ProjectEntry(id: "file-VOL-A-7", stamped: false, file: gif, origin: ProjectOrigin(via: .cli, action: "gif", date: saved))
+    let newer = ProjectEntry(id: "file-VOL-A-8", stamped: false, file: gif, origin: ProjectOrigin(via: .mcp, action: "make_gif", date: saved.addingTimeInterval(60)))
+    let sightings = [ProjectSighting(file: gif)]
+    #expect(ProjectProvenance.agentOrigins([(newer, sightings), (older, sightings)])[gif.path]?.via == .mcp)
+    #expect(ProjectProvenance.agentOrigins([(older, sightings), (newer, sightings)])[gif.path]?.via == .mcp)
+}
