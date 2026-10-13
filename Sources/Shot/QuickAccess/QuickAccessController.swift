@@ -259,6 +259,12 @@ final class QuickAccessController {
         onAnnotate?(card.fileURL)
     }
 
+    /// Floats the capture, styled as Copy has it, above other windows; the card goes, as the pin replaces it.
+    func pin(_ card: QuickAccessCard) {
+        remove(card.id)
+        PinController.shared.pin(card.styledURL ?? card.fileURL)
+    }
+
     func showInFinder(_ card: QuickAccessCard) {
         NSWorkspace.shared.activateFileViewerSelecting([card.fileURL])
     }

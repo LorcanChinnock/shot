@@ -22337,6 +22337,12 @@
         }
       }
     },
+    "Pin" : {
+
+    },
+    "Pinned %@" : {
+
+    },
     "Pixelate" : {
       "localizations" : {
         "de" : {
