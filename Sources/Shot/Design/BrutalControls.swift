@@ -167,10 +167,12 @@ private struct ColorEditor: View {
     }
 }
 
+/// Dragging sets saturation across and brightness up. Once focused, the arrow keys do too, ⇧ in bigger steps.
 private struct SaturationBrightnessField: View {
     let hue: Double
     @Binding var saturation: Double
     @Binding var brightness: Double
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         GeometryReader { proxy in
@@ -181,7 +183,7 @@ private struct SaturationBrightnessField: View {
                 LinearGradient(colors: [.black.opacity(0), .black], startPoint: .top, endPoint: .bottom)
                 Circle().fill(Color(hue: hue, saturation: saturation, brightness: brightness))
                     .frame(width: 14, height: 14)
-                    .overlay(Circle().strokeBorder(.white, lineWidth: 2))
+                    .inkBorder(Circle(), width: 2, color: isFocused ? Brutal.yellow : .white)
                     .padding(1)
                     .inkBorder(Circle(), width: 1)
                     .position(x: saturation * size.width, y: (1 - brightness) * size.height)
@@ -193,11 +195,34 @@ private struct SaturationBrightnessField: View {
                 brightness = 1 - min(max(drag.location.y / size.height, 0), 1)
             })
         }
+        .focusable(interactions: .activate)
+        .focused($isFocused)
+        .focusEffectDisabled()
+        .onKeyPress(keys: [.leftArrow, .rightArrow, .upArrow, .downArrow], phases: [.down, .repeat]) { press in
+            let fraction = press.modifiers.contains(.shift) ? 0.1 : 0.01
+            switch press.key {
+            case .leftArrow, .rightArrow:
+                saturation = SliderStep.value(saturation, up: press.key == .rightArrow, fraction: fraction, in: 0...1)
+            default:
+                brightness = SliderStep.value(brightness, up: press.key == .upArrow, fraction: fraction, in: 0...1)
+            }
+            return .handled
+        }
+        .accessibilityElement()
+        .accessibilityLabel(Text("Saturation and brightness"))
+        .accessibilityValue(Text("Saturation \(percent(saturation)) percent, brightness \(percent(brightness)) percent"))
+        .accessibilityAction(named: Text("Increase saturation")) { saturation = SliderStep.value(saturation, up: true, fraction: 0.1, in: 0...1) }
+        .accessibilityAction(named: Text("Decrease saturation")) { saturation = SliderStep.value(saturation, up: false, fraction: 0.1, in: 0...1) }
+        .accessibilityAction(named: Text("Increase brightness")) { brightness = SliderStep.value(brightness, up: true, fraction: 0.1, in: 0...1) }
+        .accessibilityAction(named: Text("Decrease brightness")) { brightness = SliderStep.value(brightness, up: false, fraction: 0.1, in: 0...1) }
     }
+
+    private func percent(_ value: Double) -> Int { Int((value * 100).rounded()) }
 }
 
-/// A capsule track with a round knob. `onEditingChanged` reports a drag starting and ending, so a caller
-/// can make each drag one undo step.
+/// A capsule track with a round knob. Once focused, the arrow keys step it by 1% of its range, ⇧ by 10%.
+/// `onEditingChanged` reports a drag, or an arrow key held down, starting and ending, so a caller can make each one
+/// undo step.
 struct BrutalSlider: View {
     @Binding var value: Double
     var range: ClosedRange<Double> = 0...1
@@ -206,6 +231,9 @@ struct BrutalSlider: View {
     var width: CGFloat = 200
     var onEditingChanged: (Bool) -> Void = { _ in }
     @State private var isDragging = false
+    /// Whether an arrow key is down, so its repeats join one edit.
+    @State private var isStepping = false
+    @FocusState private var isFocused: Bool
 
     private var fraction: Double { (min(max(value, range.lowerBound), range.upperBound) - range.lowerBound) / (range.upperBound - range.lowerBound) }
 
@@ -225,7 +253,7 @@ struct BrutalSlider: View {
             }
             Capsule().fill(track)
                 .inkBorder(Capsule(), width: 2)
-            Circle().fill(.white)
+            Circle().fill(isFocused ? Brutal.yellow : .white)
                 .inkBorder(Circle(), width: 2)
                 .frame(width: 16, height: 16)
                 .offset(x: fraction * (width - 16))
@@ -245,12 +273,41 @@ struct BrutalSlider: View {
                 isDragging = false
                 onEditingChanged(false)
             })
+        .focusable(interactions: .activate)
+        .focused($isFocused)
+        .focusEffectDisabled()
+        .onKeyPress(keys: [.leftArrow, .rightArrow, .upArrow, .downArrow], phases: .all) { press in
+            guard press.phase != .up else {
+                endStepping()
+                return .handled
+            }
+            if !isStepping {
+                isStepping = true
+                onEditingChanged(true)
+            }
+            let up = press.key == .rightArrow || press.key == .upArrow
+            value = SliderStep.value(value, up: up, fraction: press.modifiers.contains(.shift) ? 0.1 : 0.01, in: range)
+            return .handled
+        }
+        .onChange(of: isFocused) {
+            if !isFocused {
+                endStepping()
+            }
+        }
         .accessibilityElement()
         .accessibilityValue(Text("\(Int((fraction * 100).rounded())) percent"))
         .accessibilityAdjustableAction { direction in
-            let step = (range.upperBound - range.lowerBound) / 10
-            value = min(max(value + (direction == .increment ? step : -step), range.lowerBound), range.upperBound)
+            value = SliderStep.value(value, up: direction == .increment, fraction: 0.1, in: range)
         }
+    }
+
+    /// Ends the edit a held arrow key started. A key let go after focus moved away never reports its release.
+    private func endStepping() {
+        guard isStepping else {
+            return
+        }
+        isStepping = false
+        onEditingChanged(false)
     }
 }
 

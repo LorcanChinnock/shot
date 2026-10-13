@@ -450,6 +450,7 @@ Record Full Screen, Record Window, Pick Colour, Copy Latest Capture's Path and C
 | Delete | Delete the selection |
 | Esc | Deselect, cancel what you're drawing, or finish typing |
 | Arrow keys | Nudge the selection 1 pixel (10 with Shift) |
+| Arrow keys on a focused slider or colour field | Step it by 1% (10% with Shift). A held key is one undo step. Tab reaches sliders when Keyboard navigation is on in System Settings › Keyboard. |
 | ⌘C | Copy the selected annotation, or the whole image |
 | ⌘V | Paste an annotation or an image |
 | ⌘D | Duplicate the selection |
