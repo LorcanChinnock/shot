@@ -153,12 +153,30 @@ public struct CaptureText: Equatable, Sendable {
         }
     }
 
-    /// What `sensitive` finds of `kinds`, one for each box, since two matches in one word share the word's box.
+    /// What `sensitive` finds of `kinds`, one for each box, since two matches in one word share the word's box. The
+    /// recogniser's box can stop short of a word's first or last character (a token's last digit has been seen 12 px
+    /// outside it), which would leave part of it legible, so each box grows by a quarter of its height at the sides and a
+    /// sixth at the top and bottom (at least 2 px), stays on the image and ends on whole pixels. At a side
+    /// with another word beside it on the line, it stops 1 px short of that word's box: word boxes can nearly touch, and
+    /// hiding part of a neighbour would garble text that isn't private.
     public func toHide(_ kinds: Set<SensitiveText.Kind>) -> [Found] {
-        sensitive(kinds).reduce(into: []) { kept, found in
+        let image = CGRect(x: 0, y: 0, width: width, height: height)
+        let words = lines.flatMap(\.words).map(\.box)
+        let kept: [Found] = sensitive(kinds).reduce(into: []) { kept, found in
             if !kept.contains(where: { $0.box == found.box }) {
                 kept.append(found)
             }
+        }
+        return kept.map { found in
+            let box = found.box
+            let side = max(2, (box.height / 4).rounded(.up)), edge = max(2, (box.height / 6).rounded(.up))
+            let row = words.filter { $0.minY < box.maxY && $0.maxY > box.minY }
+            let left = row.map(\.maxX).filter { $0 <= box.minX }.max().map { min(side, max(0, box.minX - $0 - 1)) } ?? side
+            let right = row.map(\.minX).filter { $0 >= box.maxX }.min().map { min(side, max(0, $0 - box.maxX - 1)) } ?? side
+            var padded = found
+            padded.box = CGRect(x: box.minX - left, y: box.minY - edge, width: box.width + left + right, height: box.height + 2 * edge)
+                .integral.intersection(image)
+            return padded
         }
     }
 
