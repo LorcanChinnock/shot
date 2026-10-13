@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.0-beta.50](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.49...v0.7.0-beta.50) (2026-10-13)
+
+
+### Bug Fixes
+
+* **a11y:** expose BrutalSlider and the colour field as sliders, draw the marker whole ([#560](https://github.com/LorcanChinnock/shot/issues/560)) ([ef1c07a](https://github.com/LorcanChinnock/shot/commit/ef1c07af18e080ee49a40477a20bea0baa40f5dc)), closes [#548](https://github.com/LorcanChinnock/shot/issues/548) [#549](https://github.com/LorcanChinnock/shot/issues/549)
+* **editor:** let tool keys pick a tool while the Layers list has focus ([#558](https://github.com/LorcanChinnock/shot/issues/558)) ([e41da22](https://github.com/LorcanChinnock/shot/commit/e41da22337dfd528b80afe3cc7f7fb9e5a38da42))
+* **quick-access:** float a styled capture's pin without a frame of its own ([#556](https://github.com/LorcanChinnock/shot/issues/556)) ([d143829](https://github.com/LorcanChinnock/shot/commit/d143829d94a16fc1396d9b58756a3cd60d404540))
+* **video-editor:** start a clip's name past the lane switches over it ([#559](https://github.com/LorcanChinnock/shot/issues/559)) ([e7cd5c6](https://github.com/LorcanChinnock/shot/commit/e7cd5c6095995995df8267361f7c046e26f25be3)), closes [#547](https://github.com/LorcanChinnock/shot/issues/547)
+
 ## [0.7.0-beta.49](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.48...v0.7.0-beta.49) (2026-10-13)
 
 
