@@ -357,7 +357,7 @@ Shot also comes with a small [MCP](https://modelcontextprotocol.io) server, so y
   args = ["mcp"]
   ```
 
-It has sixteen tools. Seven read your captures, one of them by waiting for your next, six make a new file from them, one lists the open windows, and two take a screenshot or a recording. Their arguments are optional unless the table says otherwise, and a slightly wrong one is read as best it can be rather than refused.
+It has seventeen tools. Seven read your captures, one of them by waiting for your next, seven make a new file from them, one lists the open windows, and two take a screenshot or a recording. Their arguments are optional unless the table says otherwise, and a slightly wrong one is read as best it can be rather than refused.
 
 | Tool | Arguments | Returns |
 |---|---|---|
@@ -371,6 +371,7 @@ It has sixteen tools. Seven read your captures, one of them by waiting for your 
 | `annotate` | `annotations` (required): marks in the [record's format](#using-shot-with-ai-agents), except `image`; `path` or `name`, else the newest screenshot | A copy with the marks drawn on, saved as the screenshot's next version, and a preview of it. Open it in Shot and the marks are still live, along with any already on a version you [saved](#saving). |
 | `redact` | `detect`: a list of `email`, `token` (tokens and API keys) and `card` (card numbers), all three by default, or none when `rects` are given; `rects`: areas to hide as well, each `[x, y, width, height]` in the file's pixels; `style`: `pixelate` (the default) or `blur`; `path` or `name`, else the newest screenshot | A copy with each email, token and card number it reads hidden, saved as the screenshot's next version, and a preview of it, so an agent can hide private text before it reads a capture. Each find comes with its kind and box, never its text. If there's nothing to hide, no file is written. Open the copy in Shot and the hidden areas are layers you can move or remove. |
 | `edit_image` | Any of the [edit's fields](#editing-images): `crop`, `pad`, `background`, `style`, `marks`, `remove`, `place`, `scale` and `format`; `path` or `name`, else the newest screenshot. `place` takes other screenshots in the capture folder, by path or a few words of the name. | A copy with every change made, as you'd make it in the editor, saved as the screenshot's next version, and a preview of it, with each layer's `id` and `type` in `layers`. Open it in Shot and the marks, placed screenshots, padding, style and crop are all still live. |
+| `edit_video` | Any of the [video edit's fields](#editing-videos): `keep` or `cut`, `speed`, `mute`, `crop`, `marks`, `append`, `format`, `maxBytes`, and a GIF's `fps` and `width`; `path` or `name`, else the newest recording. `append` takes other recordings in the capture folder, by path or a few words of the name. | A new file beside the recording with every change made, as the video editor and its export make them: its `path`, `size`, `bytes` and `duration`, and for a GIF its `frames` and `fps`. **Edit** on it opens the edit in the video editor, still live. |
 | `make_gif` | `path` or `name`, else the newest recording; `start`, `end` in seconds; `fps`, 1 to 30, 12 by default; `width`, 720 by default, or 0 for the recording's own | A GIF of the recording, or part of it, saved beside it. GIFs stop at 60 seconds. **Edit** on it opens the trim in the video editor. |
 | `trim_video` | `start` and `end` in seconds (required); `path` or `name`, else the newest recording | The part between the two times, saved beside the recording, without re-encoding where it can. It opens in the video editor with the trim still adjustable. |
 | `compare` | `a` and `b` (required): the screenshots before and after, each a path or a few words of its name; `threshold`, 0 to 1, 0.1 by default | Where `b` differs from `a`, to check that a fix changed only what it should. The diff image is a dimmed copy of `b` with the changes lit up and boxed, saved beside `b` as `name diff.png`. With it come each changed region as `[x, y, width, height]` in `b`'s pixels and the share of pixels that changed. Screenshots of different sizes are compared at `b`'s size, and the result says so. |
@@ -380,7 +381,7 @@ It has sixteen tools. Seven read your captures, one of them by waiting for your 
 
 Previews are JPEGs at most 1568 pixels on the long edge and about 1 MB, which is what vision models work at anyway. The key frames from `get_frames` and `record_window` are at most 1024 pixels and 400 KB each, so a dozen fit in one result. The path in the result lets an agent that can read files open the full-size original, and the marks' coordinates are always in the full-size file's pixels.
 
-The server reads only the capture folder: your save folder (`~/Pictures/Shot` by default), or the temporary folder when **Save to folder** is off. It captures or records a window only when you've turned on **Let agents capture and record**, and then only through the running Shot app. It never moves or deletes anything, and never changes a file: `annotate`, `redact`, `edit_image`, `make_gif`, `trim_video` and `compare` only add a new file beside the capture they start from. It uploads nothing itself. Because the agent starts it, the first time it reads `~/Pictures` macOS may ask whether your terminal or editor can access that folder; allow it, or the agent sees no captures. To check which copy of Shot and which folder it uses, and whether the agent can read that folder, run `/Applications/Shot.app/Contents/MacOS/shot-cli doctor`.
+The server reads only the capture folder: your save folder (`~/Pictures/Shot` by default), or the temporary folder when **Save to folder** is off. It captures or records a window only when you've turned on **Let agents capture and record**, and then only through the running Shot app. It never moves or deletes anything, and never changes a file: `annotate`, `redact`, `edit_image`, `edit_video`, `make_gif`, `trim_video` and `compare` only add a new file beside the capture they start from. It uploads nothing itself. Because the agent starts it, the first time it reads `~/Pictures` macOS may ask whether your terminal or editor can access that folder; allow it, or the agent sees no captures. To check which copy of Shot and which folder it uses, and whether the agent can read that folder, run `/Applications/Shot.app/Contents/MacOS/shot-cli doctor`.
 
 ### The `shot` command line
 
@@ -397,7 +398,7 @@ The same `shot` command does the media work without Shot open and without any pe
 | `shot annotate <image> --json marks.json [-o out.png]` | Draws marks, in the [record's format](#using-shot-with-ai-agents) except `image`, as an array or inside an `annotations` object. `--json -` reads them from standard input. |
 | `shot diff <a> <b> [-o out.png] [--threshold 0.1]` | Where image `b` differs from `a`. Writes a dimmed copy of `b` with the changes lit up and boxed, `name diff.png` beside `b`, and prints its `path`, the `regions` that changed as `[x, y, width, height]` in `b`'s pixels, `changedPixels`, and `changed`, their share of the image. Images of different sizes are compared at `b`'s size, with a `note` saying so. `--threshold` is how much a colour can change, from 0 to 1, before it counts: 0 counts any difference, and the default, 0.1, ignores anti-aliasing. |
 | `shot crop <image> --rect x,y,w,h [-o out.png]` | Keeps that part of the image, given in its pixels, at full resolution. Like a crop in the editor, the new version opens in Shot with the crop still adjustable. |
-| `shot edit <image> --json edit.json [-o out.png]` | Makes any of the image editor's changes, from one [edit](#editing-images): crop, pad with a background, style, marks to add, layers to remove, other images to place, scale to 1×, and format. `--json -` reads the edit from standard input, and `--json '{"pad": 40}'` takes it as written. |
+| `shot edit <image or video> --json edit.json [-o out]` | Makes any of the image editor's changes to an image, from one [edit](#editing-images): crop, pad with a background, style, marks to add, layers to remove, other images to place, scale to 1×, and format. To a video, it makes the [video editor's](#editing-videos): keep or cut, speed, mute, crop, timed marks, videos to append, MP4, MOV or GIF, and a size to fit. `--json -` reads the edit from standard input, and `--json '{"pad": 40}'` takes it as written. |
 | `shot windows` | The open windows, front to back, with each one's `app`, `bundleID`, `title`, `size` in points and whether it's `frontmost`, and the `displays`, numbered from 1 |
 | `shot latest [--kind image\|video\|any]` | The newest capture, a screenshot unless `--kind` says otherwise: its `name`, `path`, `kind`, when it was `created`, and a `summary` of what Shot recorded in it, as `latest_capture` gives them, without the preview |
 | `shot list [--limit 10] [--since 2h] [--query words]` | Recent captures, newest first, as `list_captures` gives them. `--limit` is 1 to 50, and `--since` takes a date such as `2026-10-10` or a span back from now such as `10m`, `2h` or `3d`. `--query` keeps the captures whose name or screenshot text contains the words, with the lines that match, and notes on standard error how many screenshots Shot hasn't read yet. |
@@ -412,9 +413,9 @@ The same `shot` command does the media work without Shot open and without any pe
 | `shot record --status` | Whether Shot is capturing or recording, and the recording's `id`, `window`, `elapsed` seconds and `byAgent`, plus Shot's `version` and whether it has the `screenRecording` permission |
 | `shot watch [--kind image\|video\|any] [--timeout 60] [--follow]` | Waits for your next capture, 60 seconds by default, and prints its `name`, `path`, `kind` and `created`. `shot info` gives the rest. `--follow` prints a line for each capture as it comes, until you stop it or `--timeout` passes. It reads the capture folder only, so Shot needn't be running. |
 
-Times are seconds, such as `2.5`, or minutes and seconds, such as `1:02.5`. Without `-o`, the result goes beside the input as its next version, such as `name (2).png`, or `name.gif` for a GIF. Nothing is ever overwritten: an `-o` that exists, or that another program takes while `shot` works, is an error. Without `-o`, a name taken meanwhile moves on to the next one. A redacted, annotated, cropped or edited image opens in Shot with its marks and crop live, as a version you [save](#saving) does, and one made from such a version keeps the earlier marks live too. A trim or GIF opens in the [video editor](#video-editor) with its trim live. Shot keeps these layers in the Application Support folder of the copy of Shot the command belongs to.
+Times are seconds, such as `2.5`, or minutes and seconds, such as `1:02.5`. Without `-o`, the result goes beside the input as its next version, such as `name (2).png`, or `name.gif` for a GIF. Nothing is ever overwritten: an `-o` that exists, or that another program takes while `shot` works, is an error. Without `-o`, a name taken meanwhile moves on to the next one. A redacted, annotated, cropped or edited image opens in Shot with its marks and crop live, as a version you [save](#saving) does, and one made from such a version keeps the earlier marks live too. A trim, GIF or edited video opens in the [video editor](#video-editor) with the whole edit still live. Shot keeps these layers in the Application Support folder of the copy of Shot the command belongs to.
 
-Each command prints one JSON object on standard output, and `watch --follow` prints one per line. A command that writes a file gives at least the new file's `path`, its pixel `size` and its `bytes`; `gif` adds `frames` and `truncated`, `trim` adds `duration`, and `edit` adds `layers`, each layer's `id` and `type`. `frames` prints the folder's `path` and a `frames` list with each one's `path`, `time`, `size` and `bytes`. Errors go to standard error, as `shot gif: …`, with an exit code for each kind:
+Each command prints one JSON object on standard output, and `watch --follow` prints one per line. A command that writes a file gives at least the new file's `path`, its pixel `size` and its `bytes`; `gif` adds `frames` and `truncated`, `trim` adds `duration`, and `edit` adds `layers` for an image, each layer's `id` and `type`, and `duration` for a video, with `frames`, `truncated` and `fps` for a GIF and `scale` for a video fitted to `maxBytes`. `frames` prints the folder's `path` and a `frames` list with each one's `path`, `time`, `size` and `bytes`. Errors go to standard error, as `shot gif: …`, with an exit code for each kind:
 
 | Exit code | Meaning |
 |---|---|
@@ -467,6 +468,40 @@ Shot still sends nothing anywhere. Whatever an agent reads, though, goes to that
 | `format` | `png` or `jpeg`, else the input's own. A JPEG's padding is white unless `background` says otherwise. |
 
 The changes are made in the editor's order: `remove`, then `marks`, `place`, `style`, `pad`, `background` and last `crop`. A mistake names its field, such as `style.border.width must be pixels above 0` or `marks[2] (arrow): needs from and to, each [x, y]`, and nothing is written. `shot annotate` is an edit with only `marks`, and `shot crop` one with only `crop`.
+
+### Editing videos
+
+For a video, `shot edit` and the MCP server's `edit_video` tool make the video editor's changes and export it, from one JSON object. It's how an agent turns a test recording into pull-request media: cut the dead time, speed it up, mute it, point at the moment the bug happens, and keep it under GitHub's size limit. The result is a new file beside the recording, and **Edit** on it opens the edit in the video editor, still live. Times are seconds of the input, such as `2.5`, or text such as `"1:02.5"`, as `get_frames` and `shot frames` give them. Positions are its pixels, from its top left. Every field is optional, but an edit needs at least one:
+
+```json
+{
+  "keep": [[2, 9.5], [14, 20]],
+  "speed": 2,
+  "mute": true,
+  "crop": [0, 0, 1600, 1000],
+  "marks": [{ "start": 3, "end": 6, "type": "arrow", "from": [410, 220], "to": [612, 388], "color": "red" }],
+  "append": ["Recording 2026-10-10 at 14.08.02.mp4"],
+  "format": "gif",
+  "maxBytes": 10000000,
+  "fps": 12,
+  "width": 720
+}
+```
+
+| Field | Does |
+|---|---|
+| `keep` | The parts to keep, each `[start, end]`, in order. Everything around and between them is cut. |
+| `cut` | The parts to cut instead, each `[start, end]` |
+| `speed` | How fast it plays, from 0.25 to 4. A GIF can always change speed. An MP4 or MOV can only when it's just kept or cut, as with the editor's export. |
+| `mute` | `true` leaves out the sound |
+| `crop` | Keeps `[x, y, width, height]` of the picture. The video editor has no crop of its own, so the edit opens with the canvas at that size and the recording moved and scaled within it. |
+| `marks` | Marks in the [record's format](#using-shot-with-ai-agents), except `image`, each shown from `start` to `end`, or for 3 seconds without one. They're timed and placed in the input, and move with the cuts. |
+| `append` | Other videos to play after it, in order |
+| `format` | `mp4`, `mov` or `gif`. Without it, an MP4 or MOV keeps its own format, and anything else becomes an MP4. |
+| `maxBytes` | The most the file may be, such as `10000000` for 10 MB. A GIF lowers its frame rate, then its width, until it fits. An MP4 or MOV that has to be drawn again, with marks, a crop or appended videos, is drawn at three quarters, then half, then smaller. |
+| `fps` and `width` | A GIF's frames per second, 12 by default, and width at most, 720 by default, or 0 for the video's own |
+
+A video that's an earlier edit is edited again from its project, so its marks and cuts stay live. A mistake names its field, such as `keep[1] starts before keep[0] ends` or `speed changes only a GIF, or a video that's only kept or cut`, and nothing is written. `shot trim` is an edit with only `keep`, and `shot gif` one that's a GIF.
 
 ## Keyboard shortcuts
 

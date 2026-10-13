@@ -38,10 +38,10 @@ private let captures = tools(in: folder, [
     ("Recording C.mp4", 5, true),
 ])
 
-@Test func thereAreSixteenToolsEachWithAnObjectSchema() {
-    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "zoom", "wait_for_capture", "annotate", "redact", "edit_image", "make_gif", "trim_video", "list_windows", "capture_window", "record_window", "compare"])
+@Test func thereAreSeventeenToolsEachWithAnObjectSchema() {
+    #expect(AgentTools.definitions.map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "zoom", "wait_for_capture", "annotate", "redact", "edit_image", "edit_video", "make_gif", "trim_video", "list_windows", "capture_window", "record_window", "compare"])
     let required = AgentTools.definitions.map { $0.inputSchema["required"] }
-    #expect(required == [nil, nil, nil, nil, nil, .array([.string("rect")]), nil, .array([.string("annotations")]), nil, nil, nil, .array([.string("start"), .string("end")]), nil, nil, nil, .array([.string("a"), .string("b")])])
+    #expect(required == [nil, nil, nil, nil, nil, .array([.string("rect")]), nil, .array([.string("annotations")]), nil, nil, nil, nil, .array([.string("start"), .string("end")]), nil, nil, nil, .array([.string("a"), .string("b")])])
     for tool in AgentTools.definitions {
         #expect(tool.inputSchema["type"] == .string("object"))
         #expect(!tool.description.isEmpty)
@@ -49,7 +49,7 @@ private let captures = tools(in: folder, [
 }
 
 @Test func onlyTheToolsThatChangeNothingAreMarkedReadOnly() {
-    // annotate, redact, edit_image, make_gif, trim_video and compare add files, and capture_window and record_window take new captures.
+    // annotate, redact, edit_image, edit_video, make_gif, trim_video and compare add files, and capture_window and record_window take new captures.
     #expect(AgentTools.definitions.filter(\.readOnly).map(\.name) == ["latest_capture", "list_captures", "get_capture", "get_frames", "find_text", "zoom", "wait_for_capture", "list_windows"])
 }
 
@@ -413,6 +413,26 @@ private final class Ran: @unchecked Sendable {
     #expect(texts(bad).first == "style.shadow must be soft, float, contact, glow or none")
     #expect(await tools.call("edit_image", .object([:])).isError)
     #expect(await tools.call("edit_image", .object(["name": .string("Recording C"), "pad": .number(4)])).isError)
+    #expect(ran.commands.count == 1)
+}
+
+@Test func editVideoEditsTheNewestRecordingAndAppendsOnlyRecordings() async {
+    let ran = Ran()
+    let tools = making(ran)
+    let result = await tools.call("edit_video", .object([
+        "keep": .array([.array([.number(1), .number(4)])]), "speed": .number(2), "mute": .bool(true),
+        "append": .array([.string("Recording C")]), "format": .string("gif"), "maxBytes": .number(10_000_000),
+    ]))
+    #expect(result.isError == false)
+    let edit = VideoEdit(keep: [[1, 4]], speed: 2, mute: true, append: ["/shots/Recording C.mp4"], format: .gif, maxBytes: 10_000_000)
+    #expect(ran.commands == [.edit(ShotCommand.EditOptions(input: "/shots/Recording C.mp4", spec: .video(edit)))])
+    #expect(texts(result).last == "Saved as a new file beside Recording C.mp4; the original is unchanged.")
+
+    let screenshot = await tools.call("edit_video", .object(["append": .array([.string("Shot B")])]))
+    #expect(texts(screenshot).first?.hasPrefix("append[0]: no recording in /shots matches") == true)
+    let bad = await tools.call("edit_video", .object(["speed": .number(9)]))
+    #expect(texts(bad).first == "speed must be a number from 0.25 to 4, such as 2 for twice as fast")
+    #expect(await tools.call("edit_video", .object(["name": .string("Shot B"), "mute": .bool(true)])).isError)
     #expect(ran.commands.count == 1)
 }
 

@@ -14,7 +14,7 @@ public enum ShotCommand: Equatable, Sendable {
     case diff(DiffOptions)
     /// A part of an image at full resolution, written as its next version.
     case crop(CropOptions)
-    /// The image editor's changes, from one JSON edit, written as the image's next version.
+    /// The image or video editor's changes, from one JSON edit, written as a new file beside it.
     case edit(EditOptions)
     /// A screenshot of an open window or a display, taken by the running app.
     case capture(AgentTarget)
@@ -185,12 +185,14 @@ public enum ShotCommand: Equatable, Sendable {
         }
     }
 
-    /// Where `edit`'s spec comes from: a JSON file, standard input, the JSON itself, or already read, as the MCP tool gives it.
+    /// Where `edit`'s spec comes from: a JSON file, standard input, the JSON itself, or already read, as the MCP tools
+    /// give it. Read from JSON, it's an image's or a video's edit by what the input is.
     public enum Spec: Equatable, Sendable {
         case file(String)
         case standardInput
         case json(String)
         case edit(ImageEdit)
+        case video(VideoEdit)
     }
 
     public struct EditOptions: Equatable, Sendable {
@@ -687,7 +689,7 @@ public enum ShotCommand: Equatable, Sendable {
             "text": "\(program) text <image>\n    The text in the image, read on this Mac: each line and word with its box, [x, y, width, height] in the image's pixels from the top left.",
             "diff": "\(program) diff <a> <b> [-o out.png] [--threshold 0.1]\n    Where image b differs from a: a dimmed copy of b with the changes highlighted and boxed, and the boxes in b's pixels.\n    Images of different sizes are compared at b's size. --threshold 0 counts any difference; 0.1, the default, ignores anti-aliasing.",
             "crop": "\(program) crop <image> --rect x,y,w,h [-o out.png]\n    Keeps that part of the image at full resolution, in the image's pixels from the top left, as a new version that opens in Shot with the crop still adjustable.",
-            "edit": "\(program) edit <image> --json edit.json [-o out.png]\n    Makes the image editor's changes as a new version that opens in Shot with its layers live: crop, pad and background, style (shadow, border, corners), marks to add, layers to remove by id, other images to place, scale to 1x, and format. --json - reads the edit from standard input, and --json '{…}' takes it as it is.\n    An edit: {\"pad\": 40, \"background\": \"white\", \"style\": {\"shadow\": \"soft\", \"corners\": 12}, \"marks\": [{\"type\": \"arrow\", \"from\": [410, 220], \"to\": [612, 388]}]}\n    Every field: \(docs)#editing-images",
+            "edit": "\(program) edit <image or video> --json edit.json [-o out]\n    Makes the editors' changes as a new file that opens in Shot with its layers live. An image takes crop, pad and background, style (shadow, border, corners), marks, layers to remove by id, other images to place, scale to 1x, and format. A video takes keep or cut, speed, mute, crop, timed marks, videos to append, format (mp4, mov or gif) and maxBytes. --json - reads the edit from standard input, and --json '{…}' takes it as it is.\n    An image edit: {\"pad\": 40, \"background\": \"white\", \"style\": {\"shadow\": \"soft\", \"corners\": 12}, \"marks\": [{\"type\": \"arrow\", \"from\": [410, 220], \"to\": [612, 388]}]}\n    A video edit: {\"keep\": [[2, 9.5]], \"speed\": 2, \"marks\": [{\"start\": 3, \"end\": 6, \"type\": \"arrow\", \"from\": [410, 220], \"to\": [612, 388]}], \"format\": \"gif\", \"maxBytes\": 10000000}\n    Every field: \(docs)#editing-images and \(docs)#editing-videos",
             "latest": "\(program) latest [--kind image|video|any]\n    The newest capture, a screenshot unless --kind says otherwise: its name, path, kind, when it was taken, and what Shot recorded in it, as latest_capture gives it.",
             "list": "\(program) list [--limit 10] [--since 2h] [--query words]\n    Recent captures, newest first, as list_captures gives them. --since takes a date such as 2026-10-10 or a span back from now such as 10m, 2h or 3d. --query keeps those whose name or screenshot text contains the words, ignoring case and accents, with the lines that match; Shot reads screenshots' text in the background while it runs.",
             "get": "\(program) get [<name or path>]\n    The capture a file name, words from it or its path names, or the newest of any kind, as get_capture gives it.",
