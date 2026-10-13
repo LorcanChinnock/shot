@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.0-beta.51](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.50...v0.7.0-beta.51) (2026-10-13)
+
+
+### Bug Fixes
+
+* **a11y:** let the arrow keys reach the Style popover's colour editor ([#567](https://github.com/LorcanChinnock/shot/issues/567)) ([4c3d1a4](https://github.com/LorcanChinnock/shot/commit/4c3d1a4ffdab60ab7f59ffc09a496bc156a57223))
+* **editor:** keep stepping a slider while its arrow key is held ([#568](https://github.com/LorcanChinnock/shot/issues/568)) ([ad3471a](https://github.com/LorcanChinnock/shot/commit/ad3471a13ffec3d59c7fccf101e96e8699ec460d))
+* **editor:** keep the selection through undo and redo ([#570](https://github.com/LorcanChinnock/shot/issues/570)) ([96c4cad](https://github.com/LorcanChinnock/shot/commit/96c4cad802bc5b538d716803c3c742e5504ff228))
+
 ## [0.7.0-beta.50](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.49...v0.7.0-beta.50) (2026-10-13)
 
 
