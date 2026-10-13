@@ -209,7 +209,7 @@ private let longText = "Sticky notes wrap their text to the width of the note, s
     doc.annotations[0].resize(.bottomRight, to: CGPoint(x: 400, y: 20))
     doc.grow(toFit: doc.annotations[0], margin: 10)
     let resized = doc.snapshot
-    #expect(resized.canvasRect.maxX > 400)
+    #expect(resized.contentRect.maxX > 400)
     stack.record(doc.snapshot)
     doc.annotations.removeAll()
 

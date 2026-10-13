@@ -4,7 +4,13 @@ import ShotCore
 final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private let model: EditorModel
     private var draft: Annotation?
-    private var cropDraft: CGRect?
+    /// What dragging in crop mode does, decided where the press landed, with the crop as it was then.
+    private enum CropDrag {
+        case handle(CropHandle, start: CGRect)
+        case move(start: CGRect, from: CGPoint)
+        case draw(start: CGRect)
+    }
+    private var cropDrag: CropDrag?
     private var dragStart: CGPoint?
     private var lastPoint: CGPoint?
     private var movedSinceMouseDown = false
@@ -51,6 +57,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             _ = model.document.annotations
             _ = model.document.canvasRect
             _ = model.document.background
+            _ = model.cropDraft
             _ = model.stylePreview
             _ = model.selectedIDs
             _ = model.tool
@@ -76,12 +83,19 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     /// The canvas as it will be once the draft or note being typed is committed, so it grows and shrinks as they do,
     /// and as a style previewed in the Style popover would make it.
-    private var canvasRect: CGRect {
+    private var canvasRect: CGRect { displayDocument.canvasRect }
+
+    /// What the canvas draws: the previewed document grown for the pending draft. In crop mode it's uncropped, so
+    /// everything shows, and the crop is drawn over it.
+    private var displayDocument: EditorDocument {
         var doc = model.previewDocument
         for pending in [draft, editingPaper].compactMap({ $0 }) {
             doc.grow(toFit: pending, margin: model.canvasMargin)
         }
-        return doc.canvasRect
+        if model.tool == .crop {
+            doc.isFrameCropHidden = true
+        }
+        return doc
     }
 
     /// The whole canvas, no larger than actual size.
@@ -111,11 +125,6 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         viewport.viewRect(imageRect)
     }
 
-    private func clampedToCanvas(_ point: CGPoint) -> CGPoint {
-        let canvas = canvasRect
-        return CGPoint(x: min(max(point.x, canvas.minX), canvas.maxX), y: min(max(point.y, canvas.minY), canvas.maxY))
-    }
-
     // MARK: Drawing
 
     /// Marks transparent padding, as image editors do.
@@ -132,8 +141,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard let ctx = NSGraphicsContext.current?.cgContext else {
             return
         }
-        var doc = model.previewDocument
-        doc.canvasRect = canvasRect
+        var doc = displayDocument
         // The text being edited is drawn by its text field instead, a note's over blank paper.
         if let editingText {
             doc.annotations.removeAll { $0.id == editingText.id }
@@ -193,15 +201,81 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
                 }
             }
         }
-        if let cropDraft {
-            let crop = viewRect(cropDraft)
-            let dim = NSBezierPath(rect: rect)
-            dim.append(NSBezierPath(rect: crop))
-            dim.windingRule = .evenOdd
-            NSColor.black.withAlphaComponent(0.5).setFill()
-            dim.fill()
-            NSColor.white.setStroke()
-            NSBezierPath(rect: crop).stroke()
+        if model.tool == .crop, let cropDraft = model.cropDraft {
+            drawCrop(viewRect(cropDraft), over: rect, in: ctx)
+        }
+    }
+
+    /// Dims and greys out what `crop` leaves out of the canvas at `canvas`, so it looks switched off, and draws the
+    /// crop's outline and its eight handles.
+    private func drawCrop(_ crop: CGRect, over canvas: CGRect, in ctx: CGContext) {
+        let outside = NSBezierPath(rect: canvas)
+        outside.append(NSBezierPath(rect: crop))
+        outside.windingRule = .evenOdd
+        ctx.saveGState()
+        outside.addClip()
+        ctx.setBlendMode(.saturation)
+        ctx.setFillColor(gray: 0.5, alpha: 1)
+        ctx.fill(canvas)
+        ctx.setBlendMode(.normal)
+        ctx.setFillColor(gray: 0, alpha: 0.45)
+        ctx.fill(canvas)
+        ctx.restoreGState()
+        NSColor.black.withAlphaComponent(0.5).setStroke()
+        let shadow = NSBezierPath(rect: crop)
+        shadow.lineWidth = 3
+        shadow.stroke()
+        NSColor.white.setStroke()
+        let outline = NSBezierPath(rect: crop)
+        outline.lineWidth = 1.5
+        outline.stroke()
+        for handle in CropHandle.allCases {
+            SelectionStyle.handle(at: handle.point(on: crop))
+        }
+    }
+
+    /// Where a press in crop mode lands decides whether dragging resizes, moves or redraws the crop.
+    private func beginCropDrag(at point: CGPoint) {
+        guard let crop = model.cropDraft else {
+            return
+        }
+        if let handle = CropGeometry.handle(at: point, in: crop, tolerance: handleTolerance) {
+            cropDrag = .handle(handle, start: crop)
+        } else if crop.contains(point), crop != canvasRect {
+            // A crop holding all the content has nowhere to move, so a drag inside it draws a new one.
+            cropDrag = .move(start: crop, from: point)
+        } else {
+            cropDrag = .draw(start: crop)
+        }
+    }
+
+    /// Edges stick to the image's edges.
+    private var cropSnap: CropSnap {
+        let image = model.document.fullRect
+        return CropSnap(xs: [image.minX, image.maxX], ys: [image.minY, image.maxY], tolerance: 6 / viewScale)
+    }
+
+    private func dragCrop(to point: CGPoint, from start: CGPoint, shift: Bool) {
+        guard let cropDrag else {
+            return
+        }
+        let bounds = canvasRect
+        // A picked shape holds the crop to it; Shift keeps the shape the crop had, or draws a square.
+        func ratio(_ size: CGSize) -> CGFloat? {
+            model.cropAspect.ratio(for: size) ?? (shift ? size.width / max(size.height, 1) : nil)
+        }
+        switch cropDrag {
+        case let .handle(handle, startCrop):
+            model.cropDraft = CropGeometry.resize(startCrop, handle: handle, to: point, within: bounds, ratio: ratio(startCrop.size), snap: cropSnap)
+        case let .move(startCrop, from):
+            model.cropDraft = CropGeometry.move(startCrop, dx: point.x - from.x, dy: point.y - from.y, within: bounds, snap: cropSnap)
+        case .draw:
+            let dragged = CGSize(width: abs(point.x - start.x), height: abs(point.y - start.y))
+            let shape: CGFloat? = model.cropAspect.ratio(for: dragged) ?? (shift ? 1 : nil)
+            if let drawn = CropGeometry.draw(from: start, to: point, within: bounds, ratio: shape, snap: cropSnap),
+               drawn.width >= CropGeometry.minimumSize, drawn.height >= CropGeometry.minimumSize {
+                model.cropDraft = drawn
+            }
         }
     }
 
@@ -279,6 +353,14 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             } else {
                 model.selectedID = nil
             }
+        case .crop:
+            // A press outside the canvas puts the crop down.
+            guard imageRect.contains(convert(event.locationInWindow, from: nil)) else {
+                dragStart = nil
+                model.applyCrop()
+                return
+            }
+            beginCropDrag(at: point)
         case .note:
             // Clicking a note with the note tool edits it rather than stacking a new one on top.
             if let index = model.document.annotations.topmostIndex(at: point, tolerance: 6 / viewScale), case .note = model.document.annotations[index].kind {
@@ -311,8 +393,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         case .select:
             dragSelection(to: point, from: last, modifiers: event.modifierFlags)
         case .crop:
-            cropDraft = Geometry.normalized(from: clampedToCanvas(start), to: clampedToCanvas(point))
-            needsDisplay = true
+            dragCrop(to: point, from: start, shift: event.modifierFlags.contains(.shift))
         case .arrow, .line, .shape, .pen, .text, .note, .highlight, .spotlight, .redact, .counter, .hand:
             // Shift keeps shapes square and lines and highlights at 45° steps; Option draws a shape out from where it started.
             // Points closer than a view point apart add nothing a stroke's curve can show.
@@ -363,7 +444,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
         defer {
             draft = nil
-            cropDraft = nil
+            cropDrag = nil
             dragStart = nil
             resizeHandle = nil
             resizeStart = nil
@@ -373,9 +454,6 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         if model.tool == .note, resizeHandle == nil, let start = dragStart {
             beginNote(newNote(id: draft?.id ?? UUID(), from: start, to: imagePoint(event)))
             return
-        }
-        if let cropDraft, cropDraft.width >= 4, cropDraft.height >= 4 {
-            model.crop(to: cropDraft)
         }
         // A spotlight with no area would light nothing, so it isn't added.
         if let draft, case .spotlight = draft.kind, draft.bounds.isEmpty {
@@ -450,6 +528,24 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             }
             return
         }
+        if model.tool == .crop {
+            // Return keeps the crop, Escape drops what was changed, and Delete takes the crop off.
+            switch event.keyCode {
+            case 36, 76:
+                model.applyCrop()
+                return
+            case 53:
+                cropDrag = nil
+                dragStart = nil
+                model.cancelCrop()
+                return
+            case 51, 117:
+                model.resetCrop()
+                return
+            default:
+                break
+            }
+        }
         if event.keyCode == 51 || event.keyCode == 117 {
             model.deleteSelection()
             return
@@ -458,7 +554,6 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             // Escape abandons a drag under way before it deselects.
             if dragStart != nil, resizeHandle == nil, !movedSinceMouseDown {
                 draft = nil
-                cropDraft = nil
                 dragStart = nil
                 viewportDidChange()
                 return

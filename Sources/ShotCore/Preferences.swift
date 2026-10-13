@@ -50,6 +50,8 @@ public enum PreferenceKey {
     public static let editorSpotlight = "editorSpotlight"
     public static let editorAlignment = "editorAlignment"
     public static let editorObjectStyles = "editorObjectStyles"
+    /// The shape the editor's crop was last held to.
+    public static let editorCropAspect = "editorCropAspect"
     /// The style Use this style for new captures saved; empty while it's off.
     public static let newCaptureStyle = "newCaptureStyle"
     public static let galleryTileSize = "galleryTileSize"

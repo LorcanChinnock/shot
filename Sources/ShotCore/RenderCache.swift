@@ -96,10 +96,10 @@ struct Backdrop: Equatable, Sendable {
             return (base, .zero)
         }
         ctx.interpolationQuality = .high
-        var doc = EditorDocument(base: base, annotations: below, canvasRect: area)
+        var doc = EditorDocument(base: base, annotations: below)
         doc.captureCornerRadius = look.cornerRadius
         doc.captureStyle = look.style
-        AnnotationRenderer.renderLayers(doc, into: ctx, shadowBackground: look.background)
+        AnnotationRenderer.renderLayers(doc, into: ctx, shadowBackground: look.background, canvas: area)
         guard let image = ctx.makeImage() else {
             return (base, .zero)
         }

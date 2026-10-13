@@ -64,6 +64,8 @@ struct EditorToolbar: View {
             HStack(spacing: 14) {
                 if model.showsStyle {
                     styleOptions
+                } else if model.tool == .crop {
+                    CropOptions(selected: model.cropAspect, canReset: model.canResetCrop, choose: model.chooseCropAspect, reset: model.resetCrop)
                 } else if let redaction = model.paletteRedaction {
                     RedactionOptions(selected: redaction, amount: model.paletteRedactionAmount, choose: model.setRedaction, setAmount: model.setRedactionAmount, dragAmount: model.setDraggingStyle)
                 } else if let spotlight = model.paletteSpotlight {
@@ -167,6 +169,59 @@ struct AlignmentOptions: View {
                     Image(systemName: alignment.symbol).font(Brutal.toolIcon)
                 }
             }
+        }
+    }
+}
+
+/// What the crop tool offers: the shape to hold the crop to, and taking the crop off.
+struct CropOptions: View {
+    let selected: CropAspect
+    let canReset: Bool
+    let choose: (CropAspect) -> Void
+    let reset: () -> Void
+
+    var body: some View {
+        ToolGroup {
+            Text("ASPECT").font(Brutal.mono).foregroundStyle(Brutal.ink).padding(.horizontal, 4)
+            ForEach(CropAspect.allCases, id: \.self) { aspect in
+                Tile(selected: selected == aspect, color: Brutal.sky, help: aspect.title, detail: aspect.detail) {
+                    choose(aspect)
+                } label: {
+                    Text(aspect.label).font(.system(size: 9, weight: .heavy)).minimumScaleFactor(0.7).lineLimit(1)
+                }
+            }
+        }
+        Button("Reset", action: reset)
+            .buttonStyle(BrutalButtonStyle(compact: true))
+            .disabled(!canReset)
+            .brutalTip("Reset", detail: "Takes the crop off, so the whole image is kept.")
+    }
+}
+
+private extension CropAspect {
+    /// What the tile shows. Ratios aren't translated.
+    var label: String {
+        switch self {
+        case .free: String(localized: "Free")
+        case .square: "1:1"
+        case .fourThree: "4:3"
+        case .sixteenNine: "16:9"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .free: String(localized: "Free crop")
+        case .square: String(localized: "Square, 1:1")
+        case .fourThree: "4:3"
+        case .sixteenNine: "16:9"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .free: String(localized: "Drag the crop to any shape.")
+        default: String(localized: "Keeps the crop this shape, wide or tall to match it.")
         }
     }
 }
