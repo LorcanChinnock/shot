@@ -65,7 +65,7 @@ private func isBright(_ p: [CGFloat]) -> Bool { p[0] > 0.97 && p[3] == 1 }
 
 @Test func theDimStaysOnTheImageAndOffThePadding() throws {
     var doc = EditorDocument(base: solidImage(width: 200, height: 100), annotations: [spotlight(CGRect(x: 150, y: 20, width: 100, height: 40))])
-    doc.canvasRect = CGRect(x: -20, y: -20, width: 300, height: 140)
+    doc.contentRect = CGRect(x: -20, y: -20, width: 300, height: 140)
     let dim = try #require(doc.spotlightDimPath)
     #expect(dim.contains(CGPoint(x: 100, y: 50)))
     #expect(!dim.contains(CGPoint(x: -10, y: 50)))
@@ -129,7 +129,7 @@ func spotlightRendersTheSameInTheEditorAndTheExport(scale: CGFloat) throws {
 
 @Test func paddingIsNotDimmed() throws {
     var doc = EditorDocument(base: solidImage(width: 100, height: 100), annotations: [spotlight(CGRect(x: 20, y: 20, width: 30, height: 30))], background: RGBA(1, 1, 1))
-    doc.canvasRect = CGRect(x: 0, y: 0, width: 160, height: 100)
+    doc.contentRect = CGRect(x: 0, y: 0, width: 160, height: 100)
     let image = try #require(AnnotationRenderer.flatten(doc))
     #expect(try pixel(image, 130, 50).allSatisfy { $0 > 0.97 })
     #expect(isDimmed(try pixel(image, 80, 50)))
@@ -168,7 +168,7 @@ func spotlightRendersTheSameInTheEditorAndTheExport(scale: CGFloat) throws {
     var square = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 110, y: 20, width: 40, height: 40)), color: blue, lineWidth: 4)
     square.fill = blue
     var doc = EditorDocument(base: solidImage(width: 100, height: 100), annotations: [square, spotlight(CGRect(x: 10, y: 10, width: 20, height: 20))], background: RGBA(1, 1, 1))
-    doc.canvasRect = CGRect(x: 0, y: 0, width: 160, height: 100)
+    doc.contentRect = CGRect(x: 0, y: 0, width: 160, height: 100)
     let dim = try #require(doc.spotlightDimPath)
     #expect(dim.contains(CGPoint(x: 130, y: 40)))
     #expect(!dim.contains(CGPoint(x: 130, y: 80)))
@@ -181,7 +181,7 @@ func spotlightRendersTheSameInTheEditorAndTheExport(scale: CGFloat) throws {
     var square = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 110, y: 20, width: 40, height: 40)), color: blue, lineWidth: 4)
     square.isHidden = true
     var doc = EditorDocument(base: solidImage(width: 100, height: 100), annotations: [square, spotlight(CGRect(x: 10, y: 10, width: 20, height: 20))])
-    doc.canvasRect = CGRect(x: 0, y: 0, width: 160, height: 100)
+    doc.contentRect = CGRect(x: 0, y: 0, width: 160, height: 100)
     #expect(try #require(doc.spotlightDimPath).boundingBoxOfPath == doc.fullRect)
 }
 

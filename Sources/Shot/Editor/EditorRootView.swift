@@ -42,12 +42,16 @@ struct EditorRootView: View {
                 if model.showsLayers {
                     LayersPanel(
                         rows: model.layerRows,
+                        frame: model.frameRow,
                         selection: Binding(get: { model.selectedIDs }, set: { model.selectLayers($0) }),
                         onMove: model.moveLayers,
                         onHide: { model.setHidden($1, $0) },
                         onLock: { model.setLocked($1, $0) },
                         onDuplicate: model.duplicateLayers,
-                        onDelete: model.deleteLayers
+                        onDelete: model.deleteLayers,
+                        onSelectFrame: { model.tool = .crop },
+                        onHideFrame: model.setFrameCropHidden,
+                        onDeleteFrame: model.deleteFrame
                     )
                 }
             }
@@ -95,7 +99,7 @@ private struct CanvasMenu: View {
     var body: some View {
         BrutalDropdown(title: "Canvas", entries: [
             .item("Fit to Content") { model.fitToContent() },
-            .item("Trim to Image", enabled: !model.document.capturePaintedBounds.contains(model.document.canvasRect)) { model.trimToImage() },
+            .item("Trim to Image", enabled: !model.document.capturePaintedBounds.contains(model.document.contentRect)) { model.trimToImage() },
             .divider,
             .item("Background…") { showsBackground = true },
         ]) {

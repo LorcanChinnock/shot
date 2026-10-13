@@ -24,10 +24,14 @@ public enum AnnotationRenderer {
 
     /// `render` without sweeping the cache, so a backdrop can be drawn with it partway through a render.
     /// `shadowBackground` tints the shadows, which a backdrop drawn without the background still needs.
-    static func renderLayers(_ doc: EditorDocument, into ctx: CGContext, shadowBackground: RGBA?) {
+    /// `canvas` draws that region of the image's own layers instead, ignoring the frame crop, as a backdrop needs.
+    static func renderLayers(_ doc: EditorDocument, into ctx: CGContext, shadowBackground: RGBA?, canvas exact: CGRect? = nil) {
         var doc = doc
         doc.annotations.removeAll(where: \.isHidden)
-        let canvas = doc.canvasRect
+        if exact != nil {
+            doc.resetCrop()
+        }
+        let canvas = exact ?? doc.canvasRect
         ctx.saveGState()
         ctx.translateBy(x: 0, y: canvas.height)
         ctx.scaleBy(x: 1, y: -1)
@@ -43,7 +47,15 @@ public enum AnnotationRenderer {
             ctx.beginTransparencyLayer(auxiliaryInfo: nil)
         }
         let look = CaptureLook(cornerRadius: doc.captureCornerRadius, style: doc.captureStyle, background: shadowBackground)
-        drawImage(doc.base, in: doc.fullRect, cornerRadius: doc.clampedCaptureCornerRadius, style: doc.captureStyle, shadowBackground: shadowBackground, ctx: ctx)
+        // The screenshot's shadow, border and corners go around what the frame crop leaves of it.
+        if !doc.captureRect.isEmpty {
+            drawImage(doc.capturePicture, in: doc.captureRect, cornerRadius: doc.clampedCaptureCornerRadius, style: doc.captureStyle, shadowBackground: shadowBackground, ctx: ctx)
+        }
+        // The frame crop hides the annotations outside it, even where the screenshot's shadow widens the canvas past it.
+        ctx.saveGState()
+        if let crop = doc.visibleCrop {
+            ctx.clip(to: crop)
+        }
         // Each layer acts on everything under it and nothing over it. The spotlights share one dim, at the lowest one's layer.
         let dimIndex = doc.annotations.firstIndex { if case .spotlight = $0.kind { true } else { false } }
         for (index, annotation) in doc.annotations.enumerated() {
@@ -55,6 +67,7 @@ public enum AnnotationRenderer {
             }
             draw(annotation, base: doc.base, over: doc.annotations[..<index], look: look, in: ctx)
         }
+        ctx.restoreGState()
         if dim != nil {
             ctx.endTransparencyLayer()
         }

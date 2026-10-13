@@ -48,6 +48,7 @@ public enum VersionWriter {
             original: original.lastPathComponent, kind: "image", created: Date(), size: CaptureRecord.Size(width: 0, height: 0), scale: scale,
             source: ImageCodec.record(ofFileAt: original)?.source,
             canvas: [canvas.minX, canvas.minY, canvas.width, canvas.height].map { (Double($0) * 10).rounded() / 10 },
+            crop: document.visibleCrop.map { [$0.minX, $0.minY, $0.width, $0.height].map { (Double($0) * 10).rounded() / 10 } },
             editable: CaptureMark.rebuildExactly(document.annotations, canvas: canvas) && document.captureStyle.isEmpty && document.captureCornerRadius == 0
                 && document.background == EditorDocument.defaultBackground(for: format),
             annotations: CaptureMark.mapping(document.annotations, canvas: canvas)

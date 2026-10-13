@@ -1965,6 +1965,7 @@
         }
       }
     },
+    "ASPECT" : {},
     "About" : {
       "localizations" : {
         "de" : {
@@ -11461,6 +11462,8 @@
         }
       }
     },
+    "Drag the crop to any shape." : {},
+    "Drag the handles to choose the area to keep. Return applies it, Esc cancels." : {},
     "Drag the handles to trim. Shift-drag to select a section, then press Delete to cut it." : {
       "localizations" : {
         "de" : {
@@ -11561,58 +11564,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "拖移以添加便签。"
-          }
-        }
-      }
-    },
-    "Drag to choose the area to keep." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zieh, um den Bereich zu wählen, der bleibt."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Arrastra para elegir el área que se conserva."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Faites glisser pour choisir la zone à garder."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trascina per scegliere l'area da tenere."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ドラッグして残す範囲を選びます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "드래그하여 남길 영역을 선택합니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Arraste para escolher a área que fica."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "拖移以选择要保留的区域。"
           }
         }
       }
@@ -14379,6 +14330,7 @@
         }
       }
     },
+    "Frame" : {},
     "Frame rate" : {
       "localizations" : {
         "de" : {
@@ -14535,6 +14487,7 @@
         }
       }
     },
+    "Free crop" : {},
     "From the Quick Access card" : {
       "localizations" : {
         "de" : {
@@ -17395,6 +17348,7 @@
         }
       }
     },
+    "Keeps the crop this shape, wide or tall to match it." : {},
     "Keyframe %@ here" : {
       "localizations" : {
         "de" : {
@@ -29865,6 +29819,7 @@
         }
       }
     },
+    "Square, 1:1" : {},
     "Star" : {
       "localizations" : {
         "de" : {
@@ -31070,6 +31025,7 @@
         }
       }
     },
+    "Takes the crop off, so the whole image is kept." : {},
     "Test" : {
       "localizations" : {
         "de" : {

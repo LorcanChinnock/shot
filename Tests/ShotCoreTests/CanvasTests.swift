@@ -45,7 +45,7 @@ private func isWhite(_ p: [UInt8]) -> Bool { p.allSatisfy { $0 > 245 } }
     #expect(doc.canvasRect.minY <= -70)
 }
 
-@Test func growingNeverReopensACropOrReactsToAStrokeOnTheEdge() {
+@Test func growingGrowsTheContentNotTheCropAndIgnoresAStrokeOnTheEdge() {
     var doc = EditorDocument(base: solidImage(width: 200, height: 100))
     // A rect drawn along the image edge only pokes its stroke past it.
     doc.grow(toFit: Annotation(kind: .shape(.rectangle, rect: CGRect(x: 0, y: 0, width: 200, height: 100)), color: blue, lineWidth: 8), margin: 10)
@@ -55,11 +55,14 @@ private func isWhite(_ p: [UInt8]) -> Bool { p.allSatisfy { $0 > 245 } }
     doc.crop(to: CGRect(x: 50, y: 20, width: 100, height: 60))
     doc.grow(toFit: Annotation(kind: .shape(.rectangle, rect: CGRect(x: 40, y: 10, width: 120, height: 80)), color: blue, lineWidth: 4), margin: 10)
     #expect(doc.canvasRect == CGRect(x: 50, y: 20, width: 100, height: 60))
+    #expect(doc.contentRect == doc.fullRect)
 
-    // Cropped flush with the right edge, the right side still grows into padding; the cropped left stays.
-    doc.canvasRect = CGRect(x: 100, y: 0, width: 100, height: 100)
+    // A line out past the right edge grows the padding, which the crop doesn't show but uncropping does.
     doc.grow(toFit: Annotation(kind: .line(from: CGPoint(x: 90, y: 50), to: CGPoint(x: 250, y: 50)), color: blue, lineWidth: 4), margin: 10)
-    #expect(doc.canvasRect == CGRect(x: 100, y: 0, width: 162, height: 100))
+    #expect(doc.contentRect == CGRect(x: 0, y: 0, width: 262, height: 100))
+    #expect(doc.canvasRect == CGRect(x: 50, y: 20, width: 100, height: 60))
+    doc.resetCrop()
+    #expect(doc.canvasRect == CGRect(x: 0, y: 0, width: 262, height: 100))
 }
 
 @Test func fitToContentHoldsTheImageAndEveryAnnotation() {
@@ -82,35 +85,105 @@ private func isWhite(_ p: [UInt8]) -> Bool { p.allSatisfy { $0 > 245 } }
 
 @Test func trimToImageDropsThePaddingButKeepsACrop() {
     var doc = EditorDocument(base: solidImage(width: 200, height: 100))
-    doc.canvasRect = CGRect(x: -50, y: -20, width: 400, height: 200)
+    doc.contentRect = CGRect(x: -50, y: -20, width: 400, height: 200)
     doc.trimToImage()
     #expect(doc.canvasRect == doc.fullRect)
 
-    doc.canvasRect = CGRect(x: 150, y: 50, width: 150, height: 100)
+    // A crop reaching into the padding is cut back to the image.
+    doc.contentRect = CGRect(x: -50, y: -20, width: 400, height: 200)
+    doc.crop(to: CGRect(x: 150, y: 50, width: 150, height: 100))
     doc.trimToImage()
     #expect(doc.canvasRect == CGRect(x: 150, y: 50, width: 50, height: 50))
 
-    // A crop that lies wholly in the padding has no image left, so trim goes back to the image.
-    doc.canvasRect = CGRect(x: 250, y: 0, width: 50, height: 50)
+    // A crop that lies wholly in the padding has nothing left, so trim takes it off.
+    doc.contentRect = CGRect(x: -50, y: -20, width: 400, height: 200)
+    doc.crop(to: CGRect(x: 250, y: 0, width: 50, height: 50))
     doc.trimToImage()
+    #expect(doc.frameCrop == nil)
     #expect(doc.canvasRect == doc.fullRect)
 }
 
-@Test func cropStaysInsideTheCanvasAndCanReachThePadding() {
+@Test func cropStaysInsideTheContentAndCanReachThePadding() {
     var doc = EditorDocument(base: solidImage(width: 200, height: 100))
     doc.crop(to: CGRect(x: -30, y: 10.4, width: 100, height: 40))
     #expect(doc.canvasRect == CGRect(x: 0, y: 10, width: 70, height: 41))
 
-    doc.canvasRect = CGRect(x: -100, y: -100, width: 400, height: 300)
+    doc.resetCrop()
+    doc.contentRect = CGRect(x: -100, y: -100, width: 400, height: 300)
     doc.crop(to: CGRect(x: -80, y: -60, width: 120, height: 100))
     #expect(doc.canvasRect == CGRect(x: -80, y: -60, width: 120, height: 100))
     #expect(doc.exportSize == CGSize(width: 120, height: 100))
 }
 
+@Test func aCropCanGrowBackOutToTheWholeContent() {
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100))
+    doc.crop(to: CGRect(x: 50, y: 20, width: 100, height: 60))
+    // Widening it past the image is limited to the content, and covering all of it is no crop.
+    doc.crop(to: CGRect(x: -500, y: -500, width: 2000, height: 2000))
+    #expect(doc.frameCrop == nil)
+    #expect(doc.canvasRect == doc.fullRect)
+    // A sliver, or one with nothing in the content, changes nothing.
+    doc.crop(to: CGRect(x: 50, y: 20, width: 100, height: 60))
+    doc.crop(to: CGRect(x: 900, y: 900, width: 50, height: 50))
+    #expect(doc.frameCrop == CGRect(x: 50, y: 20, width: 100, height: 60))
+}
+
+@Test func hidingTheCropExportsTheWholeContentAndPuttingItBackRestoresIt() {
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100))
+    doc.crop(to: CGRect(x: 50, y: 20, width: 100, height: 60))
+    let cropped = doc.snapshot
+    doc.isFrameCropHidden = true
+    #expect(doc.canvasRect == doc.fullRect)
+    #expect(doc.visibleCrop == nil)
+    #expect(doc.frameCrop == CGRect(x: 50, y: 20, width: 100, height: 60))
+    #expect(doc.snapshot != cropped)
+    // Cropping again puts it back in effect.
+    doc.crop(to: CGRect(x: 60, y: 20, width: 100, height: 60))
+    #expect(!doc.isFrameCropHidden)
+    #expect(doc.canvasRect == CGRect(x: 60, y: 20, width: 100, height: 60))
+}
+
+@Test func theCropIsPartOfTheSnapshot() {
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100))
+    let before = doc.snapshot
+    doc.crop(to: CGRect(x: 50, y: 20, width: 100, height: 60))
+    doc.isFrameCropHidden = true
+    let after = doc.snapshot
+    doc.restore(before)
+    #expect(doc.frameCrop == nil && !doc.isFrameCropHidden && doc.canvasRect == doc.fullRect)
+    doc.restore(after)
+    #expect(doc.frameCrop == CGRect(x: 50, y: 20, width: 100, height: 60) && doc.isFrameCropHidden)
+}
+
+@Test func aCanvasInsideTheImageOpensAsACrop() {
+    let cropped = EditorDocument(base: solidImage(width: 200, height: 100), canvasRect: CGRect(x: 20, y: 10, width: 100, height: 50))
+    #expect(cropped.frameCrop == CGRect(x: 20, y: 10, width: 100, height: 50))
+    #expect(cropped.contentRect == cropped.fullRect)
+    #expect(cropped.canvasRect == CGRect(x: 20, y: 10, width: 100, height: 50))
+    let padded = EditorDocument(base: solidImage(width: 200, height: 100), canvasRect: CGRect(x: -20, y: 0, width: 240, height: 100))
+    #expect(padded.frameCrop == nil)
+    #expect(padded.contentRect == CGRect(x: -20, y: 0, width: 240, height: 100))
+}
+
+@Test func theExportOfACropKeepsOnlyTheCropAndHidesAnnotationsOutsideIt() throws {
+    var doc = EditorDocument(base: solidImage(width: 200, height: 100))
+    doc.annotations = [Annotation(kind: .shape(.rectangle, rect: CGRect(x: 0, y: 0, width: 60, height: 100)), color: blue, fill: blue, lineWidth: 1)]
+    doc.crop(to: CGRect(x: 50, y: 20, width: 100, height: 60))
+    let image = try #require(AnnotationRenderer.flatten(doc))
+    #expect(image.width == 100 && image.height == 60)
+    // The box reaches into the crop's first ten columns only.
+    #expect(isBlue(try pixelBytes(image, 5, 30)))
+    #expect(isRed(try pixelBytes(image, 20, 30)))
+    doc.isFrameCropHidden = true
+    let whole = try #require(AnnotationRenderer.flatten(doc))
+    #expect(whole.width == 200 && whole.height == 100)
+    #expect(isBlue(try pixelBytes(whole, 5, 30)))
+}
+
 @Test func snapshotRestoresCanvasAndBackground() {
     var doc = EditorDocument(base: solidImage(width: 200, height: 100))
     let before = doc.snapshot
-    doc.canvasRect = CGRect(x: -20, y: 0, width: 220, height: 100)
+    doc.contentRect = CGRect(x: -20, y: 0, width: 220, height: 100)
     doc.background = RGBA(1, 1, 1)
     let after = doc.snapshot
     #expect(before != after)
@@ -187,7 +260,7 @@ private func isWhite(_ p: [UInt8]) -> Bool { p.allSatisfy { $0 > 245 } }
 
 @Test func exportFillsThePaddingWithTheBackground() throws {
     var doc = EditorDocument(base: solidImage(width: 100, height: 100))
-    doc.canvasRect = CGRect(x: -20, y: -10, width: 140, height: 120)
+    doc.contentRect = CGRect(x: -20, y: -10, width: 140, height: 120)
     doc.background = RGBA(1, 1, 1)
     let image = try #require(AnnotationRenderer.flatten(doc))
     #expect(image.width == 140 && image.height == 120)
@@ -224,7 +297,7 @@ private func isWhite(_ p: [UInt8]) -> Bool { p.allSatisfy { $0 > 245 } }
     doc.shrinkPadding(margin: 10)
     #expect(doc.canvasRect == doc.fullRect)
 
-    doc.canvasRect = CGRect(x: 0, y: 0, width: 400, height: 100)
+    doc.contentRect = CGRect(x: 0, y: 0, width: 400, height: 100)
     doc.shrinkPadding(margin: 10)
     #expect(doc.canvasRect == CGRect(x: 0, y: 0, width: right.paintedBounds.maxX + 10, height: 100).integral)
 }

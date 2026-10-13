@@ -10,13 +10,22 @@ struct LayerRow: Identifiable, Equatable {
     let isLocked: Bool
 }
 
-/// The photo editor's annotations as a stack of layers, frontmost first, with the image locked at the bottom.
+/// The crop of the whole image, listed above the layers while there is one.
+struct FrameRow: Equatable {
+    let isHidden: Bool
+    /// Whether the crop tool is adjusting it.
+    let isSelected: Bool
+}
+
+/// The photo editor's annotations as a stack of layers, frontmost first, with the crop pinned above them and the image
+/// locked at the bottom.
 struct LayersPanel: View {
     static let width: CGFloat = 230
     nonisolated static let rowHeight: CGFloat = 30
     private static let space = "layers"
 
     let rows: [LayerRow]
+    let frame: FrameRow?
     @Binding var selection: Set<UUID>
     /// The rows at the offsets moved to before the row at the destination, as `List`'s `onMove` passes them.
     let onMove: (IndexSet, Int) -> Void
@@ -24,6 +33,9 @@ struct LayersPanel: View {
     let onLock: (Set<UUID>, Bool) -> Void
     let onDuplicate: (Set<UUID>) -> Void
     let onDelete: (Set<UUID>) -> Void
+    let onSelectFrame: () -> Void
+    let onHideFrame: (Bool) -> Void
+    let onDeleteFrame: () -> Void
 
     @FocusState private var isFocused: Bool
     @State private var drag: RowDrag?
@@ -42,6 +54,12 @@ struct LayersPanel: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
             Divider().overlay(Brutal.ink.opacity(0.25))
+            if let frame {
+                FrameRowView(row: frame, isFocused: isFocused, onSelect: { isFocused = true; onSelectFrame() }, onHide: { onHideFrame(!frame.isHidden) }, onDelete: onDeleteFrame)
+                    .padding(.horizontal, 6)
+                    .padding(.top, 4)
+                Divider().overlay(Brutal.ink.opacity(0.25)).padding(.top, 4)
+            }
             ScrollView {
                 ZStack(alignment: .top) {
                     ForEach(rows) { row in
@@ -62,7 +80,11 @@ struct LayersPanel: View {
             .focused($isFocused)
             .focusEffectDisabled()
             .onDeleteCommand {
-                onDelete(selection)
+                if frame?.isSelected == true {
+                    onDeleteFrame()
+                } else {
+                    onDelete(selection)
+                }
             }
             .onMoveCommand(perform: moveSelection)
             .overlay {
@@ -237,6 +259,45 @@ struct LayersPanel: View {
         dragCancelled = true
         withAnimation(.snappy(duration: 0.25)) {
             drag = nil
+        }
+    }
+}
+
+/// The Frame row: click it to adjust the crop. Unlike a layer it can't be moved, locked or duplicated.
+private struct FrameRowView: View {
+    let row: FrameRow
+    let isFocused: Bool
+    let onSelect: () -> Void
+    let onHide: () -> Void
+    let onDelete: () -> Void
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "crop")
+                .font(.system(size: 12, weight: .bold))
+                .frame(width: 18)
+                .padding(.leading, 18)
+            Text("Frame")
+                .font(.system(size: 12, weight: .semibold))
+                .lineLimit(1)
+            Spacer(minLength: 4)
+            RowButton(symbol: row.isHidden ? "eye.slash" : "eye", isOn: row.isHidden, label: row.isHidden ? "Show" : "Hide", action: onHide)
+            RowButton(symbol: "trash", isOn: false, label: "Delete", action: onDelete)
+        }
+        .padding(.trailing, 4)
+        .frame(height: LayersPanel.rowHeight - 2)
+        .foregroundStyle(Brutal.ink)
+        .opacity(row.isHidden ? 0.45 : 1)
+        .background {
+            if row.isSelected {
+                RoundedRectangle(cornerRadius: Brutal.Radius.inset, style: .circular).fill(Brutal.yellow.opacity(isFocused ? 1 : 0.5))
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onSelect)
+        .contextMenu {
+            Button("Delete", action: onDelete)
+            Button(row.isHidden ? "Show" : "Hide", action: onHide)
         }
     }
 }

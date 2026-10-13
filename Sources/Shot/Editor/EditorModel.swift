@@ -36,7 +36,7 @@ extension EditorTool {
         case .spotlight: String(localized: "Drag to dim or blur everything outside an area.")
         case .redact: String(localized: "Drag over private details to blur or pixelate them.")
         case .counter: String(localized: "Click to add numbered steps: 1, 2, 3…")
-        case .crop: String(localized: "Drag to choose the area to keep.")
+        case .crop: String(localized: "Drag the handles to choose the area to keep. Return applies it, Esc cancels.")
         }
     }
 }
@@ -59,6 +59,11 @@ final class EditorModel {
                 selectedID = nil
             } else {
                 commitPendingText?()
+            }
+            if tool == .crop, oldValue != .crop {
+                beginCrop(from: oldValue)
+            } else if oldValue == .crop, tool != .crop {
+                finishCrop()
             }
             rememberStyle { $0.tool = tool }
         }
@@ -105,6 +110,15 @@ final class EditorModel {
     private var objectStyles: [StyleKind: ObjectStyle]
     /// Bumped when this window changes Use this style for new captures, so the popover's switch redraws.
     private var newCaptureSettingChanges = 0
+    /// The crop being adjusted while the crop tool is active, in image pixels: the frame crop, else all of the content.
+    /// It's applied as one undo step when the tool is put down, and dropped by Escape.
+    var cropDraft: CGRect?
+    /// The shape the crop is held to; the last one picked is kept for the next editor.
+    var cropAspect: CropAspect = CropAspect(rawValue: UserDefaults.standard.string(forKey: PreferenceKey.editorCropAspect) ?? "") ?? .free {
+        didSet { UserDefaults.standard.set(cropAspect.rawValue, forKey: PreferenceKey.editorCropAspect) }
+    }
+    /// The tool to go back to when the crop tool is put down.
+    @ObservationIgnored private var toolBeforeCrop = EditorTool.select
     /// The layers picked, from the canvas or the layers panel. The toolbar styles an annotation only while it's the only one.
     var selectedIDs: Set<UUID> = []
     var selectedID: UUID? {
@@ -141,7 +155,7 @@ final class EditorModel {
     /// saved from this file, which the document also starts with.
     init(
         fileURL: URL, image: CGImage, scale: CGFloat, windowShadow: Bool = false, style: EditorStyle = Preferences().editorStyle,
-        newCaptureStyle: CopiedStyle? = nil, layers: (annotations: [Annotation], canvas: CGRect)? = nil
+        newCaptureStyle: CopiedStyle? = nil, layers: (annotations: [Annotation], canvas: CGRect, crop: CGRect?)? = nil
     ) {
         self.fileURL = fileURL
         self.scale = scale
@@ -150,6 +164,9 @@ final class EditorModel {
             background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension))
         )
         document.hasWindowShadow = windowShadow
+        if let crop = layers?.crop {
+            document.crop(to: crop)
+        }
         self.document = document
         savedSnapshot = document.snapshot
         tool = style.tool
@@ -188,6 +205,11 @@ final class EditorModel {
 
     var layerRows: [LayerRow] {
         layers.map { LayerRow(id: $0.id, name: $0.layerName, symbol: $0.layerSymbol, isHidden: $0.isHidden, isLocked: $0.isLocked) }
+    }
+
+    /// The Frame row of the layers panel: there while the image has a crop.
+    var frameRow: FrameRow? {
+        document.frameCrop.map { _ in FrameRow(isHidden: document.isFrameCropHidden, isSelected: tool == .crop) }
     }
 
     func toggleLayers() {
@@ -677,12 +699,84 @@ final class EditorModel {
         }
     }
 
-    /// Crops the canvas to `rect` as one undoable step.
-    func crop(to rect: CGRect) {
-        edit { $0.crop(to: rect) }
+    // MARK: Crop
+
+    private func beginCrop(from previous: EditorTool) {
+        toolBeforeCrop = previous == .crop ? .select : previous
+        cropDraft = document.frameCrop ?? document.contentRect
+    }
+
+    /// Applies the crop being adjusted as one undoable step; it's none if the crop is as it was.
+    private func finishCrop() {
+        guard let draft = cropDraft else {
+            return
+        }
+        cropDraft = nil
+        guard draft.integral != (document.frameCrop ?? document.contentRect) || document.isFrameCropHidden else {
+            return
+        }
+        edit { $0.crop(to: draft) }
+    }
+
+    /// Puts the crop tool down, applying the crop, as Return does.
+    func applyCrop() {
+        tool = toolBeforeCrop
+    }
+
+    /// Copy and Save take the crop as it's drawn, so it's in what they produce.
+    private func applyCropIfCropping() {
+        if tool == .crop {
+            applyCrop()
+        }
+    }
+
+    /// Puts the crop tool down, dropping what was changed, as Escape does.
+    func cancelCrop() {
+        cropDraft = nil
+        tool = toolBeforeCrop
+    }
+
+    /// Picks the shape the crop is held to, and fits the largest crop of that shape inside the current one.
+    func chooseCropAspect(_ aspect: CropAspect) {
+        cropAspect = aspect
+        if let draft = cropDraft, let ratio = aspect.ratio(for: draft.size) {
+            cropDraft = CropGeometry.fit(ratio: ratio, in: draft)
+        }
+    }
+
+    /// Makes the crop all of the content again; while the crop tool is active that applies when it's put down.
+    func resetCrop() {
+        if cropDraft != nil {
+            cropDraft = document.contentRect
+        } else {
+            edit { $0.resetCrop() }
+        }
+    }
+
+    /// Whether there's a crop to take off, which Reset offers.
+    var canResetCrop: Bool {
+        cropDraft.map { $0 != document.contentRect } ?? (document.frameCrop != nil)
+    }
+
+    /// Shows the uncropped image, and leaves the crop out of Copy and Save, or puts it back.
+    func setFrameCropHidden(_ hidden: Bool) {
+        edit { $0.isFrameCropHidden = hidden }
+    }
+
+    /// Removes the frame crop from the Frame row, as one undoable step.
+    func deleteFrame() {
+        cropDraft = nil
+        if tool == .crop {
+            tool = toolBeforeCrop
+        }
+        edit { $0.resetCrop() }
     }
 
     func undo() {
+        guard tool != .crop else {
+            cancelCrop()
+            return
+        }
         endGesture()
         pickedKey = nil
         if let previous = undoStack.undo(from: document.snapshot) {
@@ -693,6 +787,10 @@ final class EditorModel {
     }
 
     func redo() {
+        guard tool != .crop else {
+            cancelCrop()
+            return
+        }
         endGesture()
         pickedKey = nil
         if let next = undoStack.redo(from: document.snapshot) {
@@ -916,6 +1014,7 @@ final class EditorModel {
     /// Copies the flattened image.
     func copy() async {
         commitPendingText?()
+        applyCropIfCropping()
         guard let png = await renderedPNG() else {
             Toast.error("Couldn't copy the image")
             return
@@ -933,6 +1032,7 @@ final class EditorModel {
         isSaving = true
         defer { isSaving = false }
         commitPendingText?()
+        applyCropIfCropping()
         let snapshot = document.snapshot
         let document = document, scale = scale, fileURL = fileURL
         let saved = await Task.detached {

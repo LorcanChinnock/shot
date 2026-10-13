@@ -105,12 +105,16 @@ private func render(_ doc: EditorDocument, scale: CGFloat) throws -> CGImage {
     #expect(doc.canvasRect == doc.fullRect)
 }
 
-@Test func aCaptureShadowKeepsACropAndLeavesRoomForAnnotations() {
+@Test func aCaptureShadowGoesRoundACropAndLeavesRoomForAnnotations() {
     var doc = EditorDocument(base: solidImage(width: 200, height: 100))
     doc.crop(to: CGRect(x: 20, y: 0, width: 180, height: 100))
     doc.setStyle(ObjectStyle(shadow: soft), of: .capture, margin: 16)
-    // The cropped left edge stays; the others grow.
-    #expect(doc.canvasRect == CGRect(x: 20, y: -12, width: 204, height: 148))
+    // The shadow goes round the cropped picture, so the left grows too.
+    #expect(doc.canvasRect == CGRect(x: -4, y: -12, width: 228, height: 148))
+    #expect(doc.frameCrop == CGRect(x: 20, y: 0, width: 180, height: 100))
+    // Taking the style off shrinks it back to the crop.
+    doc.setStyle(ObjectStyle(), of: .capture, margin: 16)
+    #expect(doc.canvasRect == CGRect(x: 20, y: 0, width: 180, height: 100))
 
     var padded = EditorDocument(base: solidImage(width: 200, height: 100))
     padded.paste(placed(CGRect(x: 190, y: 40, width: 100, height: 20)), step: 0, margin: 16)
@@ -125,7 +129,7 @@ private func render(_ doc: EditorDocument, scale: CGFloat) throws -> CGImage {
     doc.setStyle(ObjectStyle(shadow: soft), of: .capture, margin: 16)
     doc.trimToImage()
     #expect(doc.canvasRect == doc.capturePaintedBounds)
-    doc.canvasRect = doc.fullRect
+    doc.contentRect = doc.fullRect
     doc.fitToContent(margin: 16)
     #expect(doc.canvasRect == doc.capturePaintedBounds)
 }

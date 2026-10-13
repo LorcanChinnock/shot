@@ -104,7 +104,7 @@ Press a tool's key when you aren't typing text.
 | F | Spotlight: dims or blurs everything outside the area |
 | B | Redact: blurs or pixelates the area |
 | N | Counter: numbered circles |
-| C | Crop |
+| C | Crop: keep part of the image |
 
 Hover a tool to see what it does. While you draw, Shift keeps a box square, keeps an arrow, line or highlight at 45° steps, and Option draws from the centre. Esc cancels what you're drawing.
 
@@ -114,11 +114,24 @@ Tools that draw a mark show their options below the tools:
 - **Text and sticky notes:** left, centre or right alignment for their lines.
 - **Shape:** the shape and a fill.
 - **Redact:** blur or pixelate, and an amount slider for how far the blur spreads or how big the blocks are.
+- **Crop:** the aspect to hold the crop to (Free, 1:1, 4:3 or 16:9), and **Reset** to take the crop off. They show only while the crop tool is active.
 - **Spotlight:** its shape (rectangle or ellipse), a soft edge that fades it into the dim, whether to darken or blur outside it, and how strongly. The effect and strength apply to every spotlight in the image, since they share one dim.
 
 The highlight and sticky notes keep their own colours, yellow at first, so they don't take the colour of your arrows. The last swatch picks any colour, and each palette remembers the last one you picked. Its eyedropper samples a colour from anywhere on screen, such as a brand colour in the screenshot itself. Esc cancels it. The video editor's palettes work the same way.
 
 The editor remembers the options you last used and the last drawing tool. A new window starts with that tool, or with the arrow.
+
+### Cropping
+
+Press C, or click the **Frame** row in Layers, to crop. The view shows everything, including what's cropped off, dimmed and greyed out, and the crop has eight handles:
+
+- Drag a handle to resize the crop, in or out. An edge can go as far as the content reaches: the image, any padding and your annotations, so dragging outward brings cropped pixels back. Edges snap to the image's edges.
+- Drag inside the crop to move it, or outside it to draw a new one.
+- Hold Shift to keep the crop's current shape.
+- **Aspect** holds the crop to Free, 1:1, 4:3 or 16:9. Picking a ratio fits the largest crop of that ratio inside the current one, centred, and the handles keep it as you drag. It follows the crop's orientation, wide or tall. The editor remembers the last one you picked.
+- Return, picking another tool, ⌘C, ⌘S or clicking outside the canvas applies the crop as one undo step. Esc cancels. **Reset**, or Delete, makes the crop the whole image again.
+
+Once the crop is applied, what's outside it is hidden but kept, annotations included, so press C again to adjust it. A shadow, border or rounded corners on the screenshot go around the cropped picture, so crop first and add the style afterwards.
 
 ### Editing annotations
 
@@ -133,13 +146,13 @@ The editor remembers the options you last used and the last drawing tool. A new 
 
 ### Layers
 
-Click **Layers** (⌘L) to list the annotations, frontmost first, with the image locked at the bottom. Click a row to select it on the canvas, ⌘-click or ⇧-click to select several, drag a row by its handle to reorder (Escape or dropping outside the list cancels), and press Delete or click the bin to delete. The eye hides a layer, which also leaves it out of Copy and Save, and the lock stops it being picked on the canvas, moved or deleted. You can still select a locked layer in the list and drag it to another place. Right-click a row to duplicate, delete, lock or hide. ⌘] and ⌘[ move the selection forward and back, and ⌥⌘] and ⌥⌘[ bring it to the front or send it to the back.
+Click **Layers** (⌘L) to list the annotations, frontmost first, with the image locked at the bottom. A cropped image also has a **Frame** row pinned at the top: click it to adjust the crop, use its eye to show the uncropped image and leave the crop out of Copy and Save, and press Delete or click its bin to remove the crop. It can't be moved, locked or duplicated. Click a row to select it on the canvas, ⌘-click or ⇧-click to select several, drag a row by its handle to reorder (Escape or dropping outside the list cancels), and press Delete or click the bin to delete. The eye hides a layer, which also leaves it out of Copy and Save, and the lock stops it being picked on the canvas, moved or deleted. You can still select a locked layer in the list and drag it to another place. Right-click a row to duplicate, delete, lock or hide. ⌘] and ⌘[ move the selection forward and back, and ⌥⌘] and ⌥⌘[ bring it to the front or send it to the back.
 
 Each layer acts on everything under it and nothing over it: a blur, pixelate or spotlight covers the layers below it, and layers above it are drawn over it. All spotlights share one dim, at the lowest spotlight's place in the list.
 
 ### Canvas
 
-Annotations can reach past the edges of the screenshot: the canvas grows to fit them, except for spotlights. In the **Canvas** menu, **Fit to Content** fits the canvas to everything on it, and **Trim to Image** trims it back to the screenshot. Its **Background…** item sets the colour of the extra space with the same swatches as the toolbar: transparent (PNG only), a palette colour, or any colour from the rainbow swatch, which remembers the last one you picked. It starts transparent for a PNG and white for a JPEG.
+Annotations can reach past the edges of the screenshot: the canvas grows to fit them, except for spotlights. That holds for a cropped image too: the padding grows behind the crop and shows again when you uncrop. In the **Canvas** menu, **Fit to Content** fits the canvas to everything on it, and **Trim to Image** trims it back to the screenshot. Its **Background…** item sets the colour of the extra space with the same swatches as the toolbar: transparent (PNG only), a palette colour, or any colour from the rainbow swatch, which remembers the last one you picked. It starts transparent for a PNG and white for a JPEG.
 
 ### Style
 
@@ -279,7 +292,7 @@ The record is stored in the image's own metadata, as JSON in the XMP property `s
 }
 ```
 
-- `original` is set on a version saved from the editor, and names the file it was saved from, in the same folder. `canvas` is the part of that file the version shows, in its pixels: a crop, or past its edges where you added padding. `editable` is `true` when the marks rebuild every layer exactly, and Shot then reopens the version as `original` with the marks live.
+- `original` is set on a version saved from the editor, and names the file it was saved from, in the same folder. `canvas` is the part of that file the version shows, in its pixels: a crop, or past its edges where you added padding. `crop` is there when the version is a crop of it, in the same pixels, and Shot reopens the version with that crop still adjustable. `editable` is `true` when the marks rebuild every layer exactly, and Shot then reopens the version as `original` with the marks live.
 - `source.mode` is `area`, `window` or `fullscreen`. A window capture names the app and its window; an area or full screen capture names the frontmost app. `screenFrame` is in points, with the origin at the top left of the main display.
 - Coordinates are pixels of the saved file, from its top left, so a crop or padding and **Scale Retina captures to 1×** are already applied. `rect` is `[x, y, width, height]`; `from`, `to` and `center` are `[x, y]`; a pen or marker stroke's `points` are `[[x, y], …]`.
 - `type` is one of `arrow`, `line`, `rectangle`, `ellipse`, `triangle`, `diamond`, `star`, `highlight`, `text`, `note`, `counter`, `pen`, `marker`, `image`, `blur`, `pixelate` or `spotlight`; an agent that writes marks can still give `rounded`, which means a `rectangle` with the default `cornerRadius`. `color` is the nearest palette name, with the exact `hex` beside it. Text and notes give their `text`; a blur, pixelate, spotlight or placed image gives only where it is, never what's under it. Hidden layers are left out.

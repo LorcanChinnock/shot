@@ -191,9 +191,9 @@ extension CaptureMark {
 }
 
 extension CaptureRecord {
-    /// The marks as live annotations on `original`, and the part of it they were saved from, when this version can
-    /// reopen that way: its writer said every layer comes back exactly, and the file is that part at 1:1.
-    public var editableLayers: (annotations: [Annotation], canvas: CGRect)? {
+    /// The marks as live annotations on `original`, the part of it they were saved from and the crop it was saved with,
+    /// when this version can reopen that way: its writer said every layer comes back exactly, and the file is that part at 1:1.
+    public var editableLayers: (annotations: [Annotation], canvas: CGRect, crop: CGRect?)? {
         guard editable == true, original != nil, let canvas, canvas.count == 4, canvas.allSatisfy(\.isFinite),
               abs(Double(size.width) - canvas[2]) <= 1, abs(Double(size.height) - canvas[3]) <= 1
         else {
@@ -201,6 +201,7 @@ extension CaptureRecord {
         }
         let rect = CGRect(x: canvas[0], y: canvas[1], width: canvas[2], height: canvas[3])
         let layers = annotations.compactMap { Annotation(mark: $0, origin: rect.origin) }
-        return layers.count == annotations.count ? (layers, rect) : nil
+        let kept = crop.flatMap { $0.count == 4 && $0.allSatisfy(\.isFinite) ? CGRect(x: $0[0], y: $0[1], width: $0[2], height: $0[3]) : nil }
+        return layers.count == annotations.count ? (layers, rect, kept) : nil
     }
 }

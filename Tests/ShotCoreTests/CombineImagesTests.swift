@@ -105,16 +105,15 @@ private func storage(_ annotation: Annotation) -> AnnotationImage? {
     #expect(doc.rectBesideCanvas(CGSize(width: 100, height: 50), gap: 16) == CGRect(x: 416, y: 0, width: 100, height: 50))
 
     // Padding on the left and top moves the canvas; the next image still lines up with it.
-    doc.canvasRect = CGRect(x: -20, y: -10, width: 500, height: 320)
+    doc.contentRect = CGRect(x: -20, y: -10, width: 500, height: 320)
     #expect(doc.rectBesideCanvas(CGSize(width: 100, height: 50), gap: 16) == CGRect(x: 496, y: -10, width: 100, height: 50))
 }
 
-@Test func aPastedImageAvoidsACroppedEdge() {
+@Test func aPastedImageIsCentredOnACrop() {
     var doc = EditorDocument(base: solidImage(width: 400, height: 300))
-    // The right edge is a crop, which never grows, so the image goes below.
+    // Beside a crop it would be hidden, so it goes in the middle of it.
     doc.crop(to: CGRect(x: 0, y: 0, width: 300, height: 300))
-    #expect(doc.rectBesideCanvas(CGSize(width: 100, height: 50), gap: 16) == CGRect(x: 0, y: 316, width: 100, height: 50))
-    // Cropped on both, it's centred on the canvas.
+    #expect(doc.rectBesideCanvas(CGSize(width: 100, height: 50), gap: 16) == CGRect(x: 100, y: 125, width: 100, height: 50))
     doc.crop(to: CGRect(x: 0, y: 0, width: 300, height: 200))
     #expect(doc.rectBesideCanvas(CGSize(width: 100, height: 50), gap: 16) == CGRect(x: 100, y: 75, width: 100, height: 50))
 }

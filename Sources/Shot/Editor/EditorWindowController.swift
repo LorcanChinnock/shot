@@ -89,7 +89,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
 
     /// The original beside `url` and the live layers to open it with, when `url` is a version whose record can rebuild
     /// them and the original is still there.
-    private static func editableVersion(_ url: URL) -> (original: URL, image: CGImage, layers: (annotations: [Annotation], canvas: CGRect))? {
+    private static func editableVersion(_ url: URL) -> (original: URL, image: CGImage, layers: (annotations: [Annotation], canvas: CGRect, crop: CGRect?))? {
         guard let record = ImageCodec.record(ofFileAt: url), let layers = record.editableLayers, let name = record.original else {
             return nil
         }
