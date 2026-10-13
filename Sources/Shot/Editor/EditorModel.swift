@@ -790,7 +790,7 @@ final class EditorModel {
         pickedKey = nil
         if let previous = undoStack.undo(from: document.snapshot) {
             document.restore(previous)
-            selectedID = nil
+            keepSelectionThatRemains()
             isDirty = document.snapshot != savedSnapshot
         }
     }
@@ -804,9 +804,15 @@ final class EditorModel {
         pickedKey = nil
         if let next = undoStack.redo(from: document.snapshot) {
             document.restore(next)
-            selectedID = nil
+            keepSelectionThatRemains()
             isDirty = document.snapshot != savedSnapshot
         }
+    }
+
+    /// Keeps the layers picked that are still in the document after an undo or redo, so the toolbar shows their style as
+    /// it now is.
+    private func keepSelectionThatRemains() {
+        selectedIDs.formIntersection(document.annotations.map(\.id))
     }
 
     /// Adds `annotation` as one undoable step, growing the canvas if it reaches past the edge, and selects it
