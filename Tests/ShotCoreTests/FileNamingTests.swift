@@ -33,3 +33,35 @@ private let date: Date = {
     let taken: Set<String> = ["Shot 2026-10-02 at 14.03.11 (recovered).mp4"]
     #expect(FileNaming.recoveredURL(in: folder, date: date) { taken.contains($0.lastPathComponent) }.lastPathComponent == "Shot 2026-10-02 at 14.03.11 (recovered) (2).mp4")
 }
+
+@Test func writeNewWritesTheWholeFileAndLeavesNoTemporaryBehind() throws {
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent("naming-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let data = Data(repeating: 7, count: 100_000)
+    let url = try FileNaming.writeNew(data, in: folder) { folder.appendingPathComponent("a.png") }
+    #expect(url.lastPathComponent == "a.png")
+    #expect(try Data(contentsOf: url) == data)
+    #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path) == ["a.png"])
+}
+
+@Test func writeNewNeverReplacesAFileAndAsksForAnotherName() throws {
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent("naming-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let taken = folder.appendingPathComponent("a.png")
+    try Data("first".utf8).write(to: taken)
+    var names = [taken, folder.appendingPathComponent("a (2).png")].makeIterator()
+    let url = try FileNaming.writeNew(Data("second".utf8), in: folder) { names.next()! }
+    #expect(url.lastPathComponent == "a (2).png")
+    #expect(try Data(contentsOf: taken) == Data("first".utf8))
+    #expect(try Data(contentsOf: url) == Data("second".utf8))
+    #expect(Set(try FileManager.default.contentsOfDirectory(atPath: folder.path)) == ["a.png", "a (2).png"])
+}
+
+@Test func writeNewThrowsWhenTheFolderIsMissing() {
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent("missing-\(UUID().uuidString)")
+    #expect(throws: (any Error).self) {
+        try FileNaming.writeNew(Data("x".utf8), in: folder) { folder.appendingPathComponent("a.png") }
+    }
+}
