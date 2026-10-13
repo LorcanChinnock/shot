@@ -116,17 +116,36 @@ private func permissions(_ path: String) throws -> Int {
     #expect(await failure(AgentRequest(.status), at: url, timeout: .milliseconds(100)) == .unavailable("Shot didn't answer within 0.1 seconds. Check that it isn't waiting on a dialog, such as a permission prompt, then try again."))
 }
 
+/// Counts how many requests have reached the handler, so a test can wait for the rest without timing anything.
+private actor Arrivals {
+    private(set) var count = 0
+
+    func arrive() {
+        count += 1
+    }
+}
+
 @Test func severalClientsAreAnsweredAtOnce() async throws {
     let url = try socketURL()
-    // Each waits a second, so answering them one at a time would take eight. The bound leaves room for a loaded CI runner.
-    let server = echoServer(at: url, delay: .seconds(1))
+    let clients = 8
+    let arrivals = Arrivals()
+    // Each handler waits until every client has reached it, so the answers only come back if they're served in parallel.
+    // A serial server leaves the first one waiting out its deadline, and the clients then time out. Nothing here depends
+    // on how fast a loaded runner is, only on whether the clients overlap.
+    let server = AgentSocket.Server(url: url) { request in
+        await arrivals.arrive()
+        let deadline = ContinuousClock.now + .seconds(10)
+        while await arrivals.count < clients, ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        return .success(["op": .string(request.op.rawValue), "window": .string(request.window ?? "")])
+    }
     try server.start()
     defer { server.stop() }
-    let start = ContinuousClock.now
     let windows = await withTaskGroup(of: String?.self) { group in
-        for index in 0..<8 {
+        for index in 0..<clients {
             group.addTask {
-                let answer = try? await AgentSocket.send(AgentRequest(.capture, window: "w\(index)"), to: url, timeout: .seconds(5))
+                let answer = try? await AgentSocket.send(AgentRequest(.capture, window: "w\(index)"), to: url, timeout: .seconds(30))
                 return answer?["window"]?.string
             }
         }
@@ -136,8 +155,8 @@ private func permissions(_ path: String) throws -> Int {
         }
         return windows
     }
-    #expect(Set(windows) == Set((0..<8).map { "w\($0)" }))
-    #expect(ContinuousClock.now - start < .seconds(5))
+    #expect(Set(windows) == Set((0..<clients).map { "w\($0)" }))
+    #expect(await arrivals.count == clients)
 }
 
 @Test func stoppingRemovesTheSocket() async throws {
