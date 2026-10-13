@@ -126,7 +126,8 @@ private final class DropdownMenu {
         panel.hasShadow = false
         panel.isReleasedWhenClosed = false
         panel.appearance = NSAppearance(named: .aqua)
-        let list = DropdownList(title: title, state: state, minWidth: anchor?.bounds.width ?? 0, pick: { [weak self] in self?.pick($0) }, resize: { [weak self] in self?.place($0) })
+        let screenHeight = window.screen?.visibleFrame.height ?? 800
+        let list = DropdownList(title: title, state: state, minWidth: anchor?.bounds.width ?? 0, maxHeight: screenHeight - Self.gap * 2, pick: { [weak self] in self?.pick($0) }, resize: { [weak self] in self?.place($0) })
         panel.contentView = NSView(hosting: list)
         self.panel = panel
         // Lays the list out now, so it reports its size and is placed before it shows.
@@ -229,11 +230,22 @@ private final class DropdownMenu {
 }
 
 private struct DropdownList: View {
+    /// Room for the shadow, which draws outside the surface.
+    private static let shadowRoom: CGFloat = 3
+
     let title: String
     let state: DropdownState
     let minWidth: CGFloat
+    /// The tallest the panel may be, shadow room included; a longer list scrolls.
+    let maxHeight: CGFloat
     let pick: (Int) -> Void
     let resize: (CGSize) -> Void
+    @State private var contentSize = CGSize.zero
+
+    /// What's left for the rows once the surface's padding and the shadow's room are taken off.
+    private var rowsHeight: CGFloat {
+        maxHeight - Brutal.groupInset * 2 - Self.shadowRoom
+    }
 
     var body: some View {
         let hasSymbols = state.entries.contains { entry in
@@ -242,31 +254,51 @@ private struct DropdownList: View {
             }
             return false
         }
-        VStack(alignment: .leading, spacing: 2) {
-            ForEach(state.entries.indices, id: \.self) { index in
-                switch state.entries[index] {
-                case .button(let item):
-                    DropdownRow(item: item, hasSymbols: hasSymbols, highlighted: state.highlighted == index) {
-                        pick(index)
-                    }
-                    .onHover { inside in
-                        if inside, item.isEnabled {
-                            state.highlighted = index
+        let overflows = contentSize.height > rowsHeight
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(state.entries.indices, id: \.self) { index in
+                        switch state.entries[index] {
+                        case .button(let item):
+                            DropdownRow(item: item, hasSymbols: hasSymbols, highlighted: state.highlighted == index) {
+                                pick(index)
+                            }
+                            .onHover { inside in
+                                if inside, item.isEnabled {
+                                    state.highlighted = index
+                                }
+                            }
+                        case .header(let header):
+                            Text(header.uppercased())
+                                .font(.system(size: 10, weight: .black))
+                                .tracking(1.2)
+                                .foregroundStyle(Brutal.ink.opacity(0.6))
+                                .padding(.horizontal, 8)
+                                .padding(.top, 4)
+                                .padding(.bottom, 2)
+                        case .divider:
+                            Rectangle().fill(Brutal.ink.opacity(0.12))
+                                .frame(height: 1.5)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 3)
                         }
                     }
-                case .header(let header):
-                    Text(header.uppercased())
-                        .font(.system(size: 10, weight: .black))
-                        .tracking(1.2)
-                        .foregroundStyle(Brutal.ink.opacity(0.6))
-                        .padding(.horizontal, 8)
-                        .padding(.top, 4)
-                        .padding(.bottom, 2)
-                case .divider:
-                    Rectangle().fill(Brutal.ink.opacity(0.12))
-                        .frame(height: 1.5)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 3)
+                }
+                .onGeometryChange(for: CGSize.self) { $0.size } action: { contentSize = $0 }
+                .padding(.trailing, overflows ? BrutalScrollBar.width + 4 : 0)
+            }
+            .brutalScrollBar()
+            .frame(width: contentSize.width > 0 ? contentSize.width + (overflows ? BrutalScrollBar.width + 4 : 0) : nil,
+                   height: contentSize.height > 0 ? min(contentSize.height, rowsHeight) : nil)
+            .onChange(of: state.highlighted) { _, index in
+                if let index {
+                    proxy.scrollTo(index)
+                }
+            }
+            .onAppear {
+                if let index = state.highlighted {
+                    proxy.scrollTo(index, anchor: .center)
                 }
             }
         }
@@ -274,7 +306,7 @@ private struct DropdownList: View {
         .frame(minWidth: minWidth, alignment: .leading)
         .brutalSurface(Color.white, radius: Brutal.Radius.panel, shadow: 3)
         // Room for the shadow, which draws outside the surface.
-        .padding([.trailing, .bottom], 3)
+        .padding([.trailing, .bottom], Self.shadowRoom)
         .fixedSize()
         .environment(\.colorScheme, .light)
         .accessibilityElement(children: .contain)
