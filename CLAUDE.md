@@ -67,6 +67,8 @@ Flow:
 
 Website: `site/` is the Astro marketing site, built and deployed by Cloudflare Workers Builds (see `site/README.md`). It renders `docs/usage.md` and `CHANGELOG.md` directly, so changes to those show up on the site. release-please ignores `site/`.
 
+Views in lazy collections (`LazyVGrid`, `List`, `LazyVStack`): a row or tile reads only its own state. It takes plain values, not the shared `@Observable` model, for anything that changes often (selection, hover, the playing item), and is `Equatable` with `.equatable()`, so one change re-evaluates the few views whose values changed, not all of them. Put footers and status text that read such state in their own `View` structs, not computed properties of a big body. One interaction must cost the same however big the library is. Use a single `onTapGesture` and read `NSApp.currentEvent?.clickCount`; `onTapGesture(count: 2)` delays every single click (lint rejects it).
+
 Concurrency: UI and model types are `@MainActor`. Heavy work runs in `Task.detached`, and CG types cross actors through `@unchecked Sendable` wrappers (`SendableImage`, `EditorDocument`).
 
 ## Rules enforced by `make lint`
