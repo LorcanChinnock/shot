@@ -60,6 +60,8 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(gif == .gif(ShotCommand.GIFOptions(input: "a.mov", output: "out.gif", fps: 15, width: 0, start: 62.5, end: 70)))
     let redact = try parse("redact a.png --rect 1,2,3,4 --style BLUR --rect=5,6,7,8 --output b.png")
     #expect(redact == .redact(ShotCommand.RedactOptions(input: "a.png", output: "b.png", rects: [[1, 2, 3, 4], [5, 6, 7, 8]], style: .blur)))
+    #expect(try parse("redact a.png --detect email,TOKEN") == .redact(ShotCommand.RedactOptions(input: "a.png", detect: [.email, .token])))
+    #expect(try parse("redact a.png --detect=card --rect 1,2,3,4") == .redact(ShotCommand.RedactOptions(input: "a.png", rects: [[1, 2, 3, 4]], detect: [.card])))
     #expect(try parse("annotate a.png --json -") == .annotate(ShotCommand.AnnotateOptions(input: "a.png", marks: .standardInput)))
 }
 
@@ -110,7 +112,9 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     ("gif a.mov -o a.gif -o b.gif", "gif", "-o is given twice"),
     ("trim a.mov --start 1", "trim", "needs both --start and --end"),
     ("trim a.mov --start soon --end 2", "trim", "--start soon isn't a time; use seconds such as 2.5, or m:ss such as 1:02.5"),
-    ("redact a.png", "redact", "needs at least one --rect x,y,width,height"),
+    ("redact a.png", "redact", "needs at least one --rect x,y,width,height, or --detect email,token,card"),
+    ("redact a.png --detect phone", "redact", "--detect phone must be email, token or card, or several split by commas, such as --detect email,token"),
+    ("redact a.png --detect email --detect card", "redact", "--detect is given twice"),
     ("redact a.png --rect 1,2,0,4", "redact", "--rect 1,2,0,4 must be x,y,width,height in pixels, with a width and height above 0"),
     ("redact a.png --rect 1,2,3", "redact", "--rect 1,2,3 must be x,y,width,height in pixels, with a width and height above 0"),
     ("redact a.png --rect 1,2,3,4 --style smudge", "redact", "--style smudge must be blur or pixelate"),

@@ -77,12 +77,15 @@ public enum ShotCommand: Equatable, Sendable {
         public var output: String?
         /// Each `[x, y, width, height]`, in the image's pixels.
         public var rects: [[Double]]
+        /// The kinds of private text to find in the image and hide as well, from `--detect`.
+        public var detect: Set<SensitiveText.Kind>
         public var style: RedactStyle
 
-        public init(input: String, output: String? = nil, rects: [[Double]], style: RedactStyle = .pixelate) {
+        public init(input: String, output: String? = nil, rects: [[Double]] = [], detect: Set<SensitiveText.Kind> = [], style: RedactStyle = .pixelate) {
             self.input = input
             self.output = output
             self.rects = rects
+            self.detect = detect
             self.style = style
         }
     }
@@ -279,7 +282,7 @@ public enum ShotCommand: Equatable, Sendable {
         "info": [:],
         "gif": ["output": false, "fps": false, "width": false, "start": false, "end": false],
         "trim": ["output": false, "start": false, "end": false],
-        "redact": ["output": false, "rect": true, "style": false],
+        "redact": ["output": false, "rect": true, "detect": false, "style": false],
         "annotate": ["output": false, "json": false],
         "frames": ["output": false, "count": false, "every": false, "width": false],
         "text": [:],
@@ -549,7 +552,14 @@ public enum ShotCommand: Equatable, Sendable {
                 }
                 return rect
             }
-            guard !rects.isEmpty else { throw .usage(command, "needs at least one --rect x,y,width,height") }
+            var detect: Set<SensitiveText.Kind> = []
+            if let text = values["detect"]?.first {
+                guard let kinds = SensitiveText.Kind.list(text) else {
+                    throw .usage(command, "--detect \(text) must be email, token or card, or several split by commas, such as --detect email,token")
+                }
+                detect = kinds
+            }
+            guard !rects.isEmpty || !detect.isEmpty else { throw .usage(command, "needs at least one --rect x,y,width,height, or --detect email,token,card") }
             var style = RedactStyle.pixelate
             if let text = values["style"]?.first {
                 guard let picked = RedactStyle(rawValue: text.lowercased()) else {
@@ -557,7 +567,7 @@ public enum ShotCommand: Equatable, Sendable {
                 }
                 style = picked
             }
-            return .redact(RedactOptions(input: input, output: output, rects: rects, style: style))
+            return .redact(RedactOptions(input: input, output: output, rects: rects, detect: detect, style: style))
         case "frames":
             var options = FramesOptions(input: input, output: output)
             if let text = values["count"]?.first {
@@ -628,7 +638,7 @@ public enum ShotCommand: Equatable, Sendable {
             "info": "\(program) info <file>\n    An image's size and scale or a video's size and length, and the record Shot keeps inside a capture.",
             "gif": "\(program) gif <video> [-o out.gif] [--fps 12] [--width 720] [--start 2.5] [--end 9]\n    A GIF of the video, or of part of it. --width 0 keeps the video's width; GIFs stop at 60 seconds.",
             "trim": "\(program) trim <video> --start 2.5 --end 9 [-o out.mov]\n    The part of the video between two times, without re-encoding where it can.",
-            "redact": "\(program) redact <image> --rect x,y,w,h [--rect …] [--style blur|pixelate] [-o out.png]\n    Hides each rectangle, in the image's pixels. Pixelate is the default.",
+            "redact": "\(program) redact <image> [--rect x,y,w,h …] [--detect email,token,card] [--style blur|pixelate] [-o out.png]\n    Hides each rectangle, in the image's pixels. --detect reads the text on this Mac and hides each email, token or API key, and card number of the kinds named; found lists their kinds and boxes, never their text. If there's nothing to hide, no file is written and path is the input. Pixelate is the default.",
             "annotate": "\(program) annotate <image> --json marks.json [-o out.png]\n    Draws marks on the image, in the format of Shot's capture record. --json - reads them from standard input.\n    A mark: {\"type\": \"arrow\", \"from\": [410, 220], \"to\": [612, 388], \"color\": \"red\"}\n    Every type and field: \(docs)#using-shot-with-ai-agents",
             "frames": "\(program) frames <video> [--count 8 | --every 2] [--width 1568] [-o folder]\n    Still frames of the video, for an agent that can't watch it: where the picture changes, or evenly every few seconds.",
             "text": "\(program) text <image>\n    The text in the image, read on this Mac: each line and word with its box, [x, y, width, height] in the image's pixels from the top left.",

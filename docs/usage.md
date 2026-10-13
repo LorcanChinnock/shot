@@ -338,7 +338,7 @@ Shot also comes with a small [MCP](https://modelcontextprotocol.io) server, so y
   args = ["mcp"]
   ```
 
-It has fourteen tools. Seven read your captures, one of them by waiting for your next, four make a new file from them, one lists the open windows, and two take a screenshot or a recording. Their arguments are optional unless the table says otherwise, and a slightly wrong one is read as best it can be rather than refused.
+It has fifteen tools. Seven read your captures, one of them by waiting for your next, five make a new file from them, one lists the open windows, and two take a screenshot or a recording. Their arguments are optional unless the table says otherwise, and a slightly wrong one is read as best it can be rather than refused.
 
 | Tool | Arguments | Returns |
 |---|---|---|
@@ -350,6 +350,7 @@ It has fourteen tools. Seven read your captures, one of them by waiting for your
 | `zoom` | `rect` (required): `[x, y, width, height]` in the file's pixels from the top left; `path` or `name`, else the newest screenshot | That part of the screenshot at full resolution, so an agent can read small text that the preview shrinks, such as in a 5K capture. A part longer than 1568 pixels on a side is scaled down to fit, and the result says by how much. A `rect` reaching past the edge is cut to the image. Nothing is written. |
 | `wait_for_capture` | `kind`: `image`, `video` or `any` (the default); `timeout`: up to 120 seconds, 60 by default | Waits for your next capture, then returns it as `latest_capture` does, so an agent can ask you to "screenshot the broken toolbar" and carry on once you have. Only a capture taken after the call counts, and a recording counts once Shot has finished writing it. If none comes in time, it says so, and the agent can call again. |
 | `annotate` | `annotations` (required): marks in the [record's format](#using-shot-with-ai-agents), except `image`; `path` or `name`, else the newest screenshot | A copy with the marks drawn on, saved as the screenshot's next version, and a preview of it. Open it in Shot and the marks are still live. |
+| `redact` | `detect`: a list of `email`, `token` (tokens and API keys) and `card` (card numbers), all three by default, or none when `rects` are given; `rects`: areas to hide as well, each `[x, y, width, height]` in the file's pixels; `style`: `pixelate` (the default) or `blur`; `path` or `name`, else the newest screenshot | A copy with each email, token and card number it reads hidden, saved as the screenshot's next version, and a preview of it, so an agent can hide private text before it reads a capture. Each find comes with its kind and box, never its text. If there's nothing to hide, no file is written. Open the copy in Shot and the hidden areas are layers you can move or remove. |
 | `make_gif` | `path` or `name`, else the newest recording; `start`, `end` in seconds; `fps`, 1 to 30, 12 by default; `width`, 720 by default, or 0 for the recording's own | A GIF of the recording, or part of it, saved beside it. GIFs stop at 60 seconds. |
 | `trim_video` | `start` and `end` in seconds (required); `path` or `name`, else the newest recording | The part between the two times, saved beside the recording, without re-encoding where it can. |
 | `compare` | `a` and `b` (required): the screenshots before and after, each a path or a few words of its name; `threshold`, 0 to 1, 0.1 by default | Where `b` differs from `a`, to check that a fix changed only what it should. The diff image is a dimmed copy of `b` with the changes lit up and boxed, saved beside `b` as `name diff.png`. With it come each changed region as `[x, y, width, height]` in `b`'s pixels and the share of pixels that changed. Screenshots of different sizes are compared at `b`'s size, and the result says so. |
@@ -359,7 +360,7 @@ It has fourteen tools. Seven read your captures, one of them by waiting for your
 
 Previews are JPEGs at most 1568 pixels on the long edge and about 1 MB, which is what vision models work at anyway. The key frames from `get_frames` and `record_window` are at most 1024 pixels and 400 KB each, so a dozen fit in one result. The path in the result lets an agent that can read files open the full-size original, and the marks' coordinates are always in the full-size file's pixels.
 
-The server reads only the capture folder: your save folder (`~/Pictures/Shot` by default), or the temporary folder when **Save to folder** is off. It captures or records a window only when you've turned on **Let agents capture and record**, and then only through the running Shot app. It never moves or deletes anything, and never changes a file: `annotate`, `make_gif`, `trim_video` and `compare` only add a new file beside the capture they start from. It uploads nothing itself. Because the agent starts it, the first time it reads `~/Pictures` macOS may ask whether your terminal or editor can access that folder; allow it, or the agent sees no captures. To check which copy of Shot and which folder it uses, and whether the agent can read that folder, run `/Applications/Shot.app/Contents/MacOS/shot-cli doctor`.
+The server reads only the capture folder: your save folder (`~/Pictures/Shot` by default), or the temporary folder when **Save to folder** is off. It captures or records a window only when you've turned on **Let agents capture and record**, and then only through the running Shot app. It never moves or deletes anything, and never changes a file: `annotate`, `redact`, `make_gif`, `trim_video` and `compare` only add a new file beside the capture they start from. It uploads nothing itself. Because the agent starts it, the first time it reads `~/Pictures` macOS may ask whether your terminal or editor can access that folder; allow it, or the agent sees no captures. To check which copy of Shot and which folder it uses, and whether the agent can read that folder, run `/Applications/Shot.app/Contents/MacOS/shot-cli doctor`.
 
 ### The `shot` command line
 
@@ -370,7 +371,7 @@ The same `shot` command does the media work without Shot open and without any pe
 | `shot info <file>` | An image's size and scale, and the record Shot keeps inside a capture, or a video's size, `duration` and `hasAudio` |
 | `shot gif <video> [-o out.gif] [--fps 12] [--width 720] [--start 2.5] [--end 9]` | A GIF of the video, or part of it. `--width 0` keeps the video's width. GIFs stop at 60 seconds. |
 | `shot trim <video> --start 2.5 --end 9 [-o out.mov]` | The part between two times, as `.mov` or `.mp4`, without re-encoding where it can |
-| `shot redact <image> --rect x,y,w,h [--rect …] [--style blur\|pixelate] [-o out.png]` | Hides each rectangle, given in the image's pixels. Pixelate is the default. |
+| `shot redact <image> [--rect x,y,w,h …] [--detect email,token,card] [--style blur\|pixelate] [-o out.png]` | Hides each rectangle, given in the image's pixels. `--detect` reads the text on your Mac and hides each email, token or API key, and card number of the kinds you name, and `found` lists each one's kind and box, never its text. If there's nothing to hide, no file is written, `path` is the input and `unchanged` is `true`. Pixelate is the default. |
 | `shot frames <video> [--count 8 \| --every 2] [--width 1568] [-o folder]` | Still frames of the video in a new folder, `name frames`, as JPEGs named by their time: by default the first and last and the frame after each change on screen, or with `--every`, one every so many seconds, up to 60 frames |
 | `shot text <image>` | The text in the image, read on your Mac: its `size`, all its `text`, and `lines`, each with its `text`, `box`, `confidence` and `words`, each word with its own `box`. Boxes are `[x, y, width, height]` in the image's pixels from the top left. |
 | `shot annotate <image> --json marks.json [-o out.png]` | Draws marks, in the [record's format](#using-shot-with-ai-agents) except `image`, as an array or inside an `annotations` object. `--json -` reads them from standard input. |
@@ -412,7 +413,7 @@ Each command prints one JSON object on standard output, and `watch --follow` pri
 
 `shot help` and `shot <command> --help` show the options.
 
-Shot still sends nothing anywhere. Whatever an agent reads, though, goes to that agent's model provider, so blur or pixelate anything private before you hand a capture over.
+Shot still sends nothing anywhere. Whatever an agent reads, though, goes to that agent's model provider, so blur or pixelate anything private before you hand a capture over. `shot redact --detect` and the `redact` tool find emails, tokens and card numbers for you, but only the ones they can read, so check the result before you share it.
 
 ## Keyboard shortcuts
 

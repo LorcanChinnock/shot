@@ -17,19 +17,7 @@ public enum ShotCommands {
         case let .trim(options):
             return try await trim(options)
         case let .redact(options):
-            return try draw(input: options.input, output: options.output) { (image: CGImage) throws(ShotCommandError) in
-                let bounds = CGRect(x: 0, y: 0, width: image.width, height: image.height)
-                var annotations: [Annotation] = []
-                for (index, r) in options.rects.enumerated() {
-                    let rect = CGRect(x: r[0], y: r[1], width: r[2], height: r[3]).intersection(bounds)
-                    guard !rect.isNull, rect.width >= 1, rect.height >= 1 else {
-                        throw .data("rect \(index + 1) (\(r.map { String(format: "%g", $0) }.joined(separator: ","))) is off the \(image.width)×\(image.height) image")
-                    }
-                    let kind: Annotation.Kind = options.style == .blur ? .blur(rect) : .pixelate(rect)
-                    annotations.append(Annotation(kind: kind, color: RGBA.presets[0], lineWidth: EditorStyle.widths[1]))
-                }
-                return annotations
-            }
+            return try await redact(options)
         case let .annotate(options):
             let marks: [CaptureMark]
             switch options.marks {
@@ -147,6 +135,50 @@ public enum ShotCommands {
                 object["size"] = .object(["width": .number(Double(Int(size.width))), "height": .number(Double(Int(size.height)))])
             }
         }
+        return .object(object)
+    }
+
+    /// Hides the rects, and with `detect` the private text read in the image, as blurs or pixelations the new version
+    /// records, so they stay live layers in Shot. With nothing to hide, it writes nothing and gives the input's path.
+    static func redact(_ options: ShotCommand.RedactOptions) async throws(ShotCommandError) -> JSONValue {
+        var found: [CaptureText.Found] = []
+        if !options.detect.isEmpty {
+            let input = url(options.input)
+            try requireInput(input)
+            guard let image = ImageCodec.image(at: input) else {
+                throw .data("\(input.lastPathComponent) isn't an image Shot can read")
+            }
+            do {
+                found = try await TextRecognizer.recognize(image).toHide(options.detect)
+            } catch {
+                throw .internal("couldn't read the text in \(input.lastPathComponent): \(error.localizedDescription)")
+            }
+            if found.isEmpty, options.rects.isEmpty {
+                var object = try written(input)
+                object["found"] = CaptureText.json(hidden: [])
+                object["unchanged"] = .bool(true)
+                return .object(object)
+            }
+        }
+        let result = try draw(input: options.input, output: options.output) { (image: CGImage) throws(ShotCommandError) in
+            let bounds = CGRect(x: 0, y: 0, width: image.width, height: image.height)
+            var rects: [CGRect] = []
+            for (index, r) in options.rects.enumerated() {
+                let rect = CGRect(x: r[0], y: r[1], width: r[2], height: r[3]).intersection(bounds)
+                guard !rect.isNull, rect.width >= 1, rect.height >= 1 else {
+                    throw .data("rect \(index + 1) (\(r.map { String(format: "%g", $0) }.joined(separator: ","))) is off the \(image.width)×\(image.height) image")
+                }
+                rects.append(rect)
+            }
+            return (rects + found.map(\.box)).map { rect in
+                let kind: Annotation.Kind = options.style == .blur ? .blur(rect) : .pixelate(rect)
+                return Annotation(kind: kind, color: RGBA.presets[0], lineWidth: EditorStyle.widths[1])
+            }
+        }
+        guard !options.detect.isEmpty, case var .object(object) = result else {
+            return result
+        }
+        object["found"] = CaptureText.json(hidden: found)
         return .object(object)
     }
 

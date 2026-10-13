@@ -1,6 +1,6 @@
 import Foundation
 
-/// The MCP server's tools: seven that read captures, one by waiting for the next, four that make new files from them, never changing, moving or
+/// The MCP server's tools: seven that read captures, one by waiting for the next, five that make new files from them, never changing, moving or
 /// deleting anything, and three that ask the running app to list, capture or record windows. What they're called, what they
 /// take, and what they say back are here. Finding files, drawing
 /// previews and running the commands need Apple frameworks, so they come in as closures; ShotCore's `live(folder:)`
@@ -59,6 +59,7 @@ public struct AgentTools: Sendable {
     public static let listCaptures = "list_captures"
     public static let getCapture = "get_capture"
     public static let annotate = "annotate"
+    public static let redact = "redact"
     public static let makeGIF = "make_gif"
     public static let trimVideo = "trim_video"
     public static let getFrames = "get_frames"
@@ -210,6 +211,27 @@ public struct AgentTools: Sendable {
             ]) { $1 }, required: ["annotations"])
         ),
         MCPServer.Tool(
+            name: redact,
+            description: "Hides private text in a copy of a Shot screenshot before you read it or pass it on: reads the text on this Mac and hides each email, token or API key, and card number, and any rects given, pixelated unless style is blur. The copy is saved beside the original as its next version, with the hidden areas as layers the user can change in Shot; nothing is overwritten. Returns the new file's path, a preview, and the kind and box of each find, never its text. If there's nothing to hide, no file is written.",
+            inputSchema: schema(capture.merging([
+                "detect": .object([
+                    "type": .string("array"),
+                    "items": .object(["type": .string("string"), "enum": .array(SensitiveText.Kind.allCases.map { .string($0.rawValue) })]),
+                    "description": .string("What to find and hide: email, token (tokens and API keys) and card (card numbers). Default all three, or none when rects are given."),
+                ]),
+                "rects": .object([
+                    "type": .string("array"),
+                    "items": .object(["type": .string("array"), "items": .object(["type": .string("number")])]),
+                    "description": .string("Areas to hide as well, each [x, y, width, height] in the full-size file's pixels, top-left origin."),
+                ]),
+                "style": .object([
+                    "type": .string("string"),
+                    "enum": .array(ShotCommand.RedactStyle.allCases.map { .string($0.rawValue) }),
+                    "description": .string("pixelate (the default) or blur."),
+                ]),
+            ]) { $1 })
+        ),
+        MCPServer.Tool(
             name: makeGIF,
             description: "Makes a GIF of a Shot recording, or part of it, for a pull request or README. Saved beside the recording; nothing is overwritten. GIFs stop at 60 seconds. Returns the GIF's path, size and frame count.",
             inputSchema: schema(capture.merging([
@@ -303,7 +325,7 @@ public struct AgentTools: Sendable {
             return await describe(entry)
         case Self.waitForCapture:
             return await waitForCapture(arguments)
-        case Self.annotate, Self.makeGIF, Self.trimVideo:
+        case Self.annotate, Self.redact, Self.makeGIF, Self.trimVideo:
             return await make(name, arguments, entries)
         case Self.getFrames:
             let query = [arguments["path"]?.string, arguments["name"]?.string].compactMap { $0 }.first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
@@ -359,7 +381,7 @@ public struct AgentTools: Sendable {
     /// Runs one of the tools that make a file, on the capture `arguments` name, or the newest one of the right kind.
     /// Only captures in the folder can be named, so nothing outside it is read or written beside.
     func make(_ name: String, _ arguments: JSONValue, _ entries: [AgentCaptures.Entry]) async -> MCPServer.ToolResult {
-        let video = name != Self.annotate
+        let video = name != Self.annotate && name != Self.redact
         let query = [arguments["path"]?.string, arguments["name"]?.string].compactMap { $0 }.first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
         let found = query.map { AgentCaptures.named($0, in: entries) } ?? AgentCaptures.latest(entries, kind: video ? .video : .image)
         guard let entry = found else {
@@ -379,6 +401,11 @@ public struct AgentTools: Sendable {
             } catch {
                 return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
             }
+        case Self.redact:
+            guard let options = Self.redactOptions(arguments, input: entry.url.path) else {
+                return MCPServer.ToolResult(content: [.text("redact takes detect, a list of email, token and card; rects, each [x, y, width, height] with a width and height above 0; and style, blur or pixelate.")], isError: true)
+            }
+            command = .redact(options)
         case Self.makeGIF:
             var options = ShotCommand.GIFOptions(input: entry.url.path, start: arguments["start"]?.number, end: arguments["end"]?.number)
             // Lenient like the other tools: out-of-range values are brought into range rather than refused.
@@ -402,11 +429,50 @@ public struct AgentTools: Sendable {
             return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
         }
         var content: [MCPServer.Content] = [.text(Self.json(result))]
-        if name == Self.annotate, let path = result["path"]?.string {
+        if result["unchanged"] == .bool(true) {
+            // Nothing to hide, so the agent can read the original as it is.
+            content.append(.text("Found nothing to hide in \(entry.name), so no file was written."))
+            return MCPServer.ToolResult(content: content)
+        }
+        if !video, let path = result["path"]?.string {
             content = await preview(AgentCaptures.Entry(url: URL(fileURLWithPath: path), isVideo: false, date: now())) + content
         }
         content.append(.text("Saved as a new file beside \(entry.name); the original is unchanged."))
         return MCPServer.ToolResult(content: content)
+    }
+
+    /// `redact`'s options from `arguments`, or `nil` when one makes no sense. Without rects or detect, it looks for
+    /// every kind of private text, since that's what an agent hiding things before it reads a capture wants.
+    static func redactOptions(_ arguments: JSONValue, input: String) -> ShotCommand.RedactOptions? {
+        var options = ShotCommand.RedactOptions(input: input)
+        if let rects = arguments["rects"] {
+            guard case let .array(items) = rects else { return nil }
+            for item in items {
+                guard case let .array(values) = item else { return nil }
+                let rect = values.compactMap { $0.number.flatMap { $0.isFinite ? $0 : nil } }
+                guard rect.count == 4, values.count == 4, rect[2] > 0, rect[3] > 0 else { return nil }
+                options.rects.append(rect)
+            }
+        }
+        switch arguments["detect"] {
+        case nil, .null?:
+            options.detect = options.rects.isEmpty ? Set(SensitiveText.Kind.allCases) : []
+        case let .array(items)?:
+            let names = items.compactMap(\.string)
+            guard names.count == items.count, let kinds = names.isEmpty ? [] : SensitiveText.Kind.list(names.joined(separator: ",")) else { return nil }
+            options.detect = kinds
+        case let .string(text)?:
+            guard let kinds = SensitiveText.Kind.list(text) else { return nil }
+            options.detect = kinds
+        default:
+            return nil
+        }
+        guard !options.rects.isEmpty || !options.detect.isEmpty else { return nil }
+        if let style = arguments["style"]?.string {
+            guard let picked = ShotCommand.RedactStyle(rawValue: style.lowercased()) else { return nil }
+            options.style = picked
+        }
+        return options
     }
 
     /// The text in the screenshot `arguments` names, or the newest one: every line, or with a query only the lines that

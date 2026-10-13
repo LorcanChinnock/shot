@@ -112,6 +112,43 @@ func redactHidesOnlyTheRectAndLeavesTheInputAlone(style: ShotCommand.RedactStyle
     #expect(record.annotations.first?.rect == [40, 40, 80, 40])
 }
 
+@Test func redactDetectHidesTheEmailItReadsAndSaysWhereNotWhat() async throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let input = try writeImage("mail.png", in: folder, image: textImage(width: 700, height: 200, [("Contact jane@example.com today", 40, 60)]))
+    let before = try Data(contentsOf: input)
+
+    let result = try await ShotCommands.run(.redact(.init(input: input.path, detect: [.email, .card])))
+    let output = try path(result)
+    #expect(output.lastPathComponent == "mail (2).png")
+    #expect(try Data(contentsOf: input) == before)
+    guard case let .array(found)? = result["found"], found.count == 1, case let .array(box)? = found[0]["box"] else {
+        Issue.record("not one find with a box: \(result)")
+        return
+    }
+    #expect(found[0]["kind"] == .string("email"))
+    #expect(found[0]["text"] == nil)
+    // The box starts after "Contact " and ends before " today".
+    #expect((box[0].number ?? 0) > 100 && (box[0].number ?? 0) + (box[2].number ?? 0) < 500)
+    let record = try #require(ImageCodec.record(ofFileAt: output))
+    #expect(record.annotations.map(\.type) == ["pixelate"])
+    #expect(record.annotations.first?.rect == box.compactMap(\.number))
+    let read = try await TextRecognizer.recognize(try #require(ImageCodec.image(at: output)))
+    #expect(!read.string.contains("@"))
+    #expect(read.string.contains("Contact"))
+}
+
+@Test func redactDetectWithNothingToHideWritesNothing() async throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let input = try writeImage("plain.png", in: folder, image: textImage(width: 600, height: 200, [("Save changes", 40, 60)]))
+    let result = try await ShotCommands.run(.redact(.init(input: input.path, detect: [.email, .token, .card])))
+    #expect(result["path"] == .string(input.path))
+    #expect(result["unchanged"] == .bool(true))
+    #expect(result["found"] == .array([]))
+    #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path) == ["plain.png"])
+}
+
 @Test func blurAndPixelateLookDifferent() async throws {
     let folder = try temporaryFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
