@@ -232,11 +232,22 @@ final class QuickAccessController {
         guard savePanel.runModal() == .OK, let destination = savePanel.url else {
             return
         }
+        // Saving over the capture's own file has nothing to copy.
+        let source = card.fileURL
+        if destination.resolvingSymlinksInPath().standardizedFileURL == source.resolvingSymlinksInPath().standardizedFileURL {
+            Toast.show("Saved \(destination.lastPathComponent)")
+            return
+        }
         do {
             if FileManager.default.fileExists(atPath: destination.path) {
-                try FileManager.default.removeItem(at: destination)
+                // Copy beside the destination first, so a failed copy leaves the old file in place.
+                let temporary = destination.deletingLastPathComponent().appendingPathComponent(".\(UUID().uuidString)-\(destination.lastPathComponent)")
+                defer { try? FileManager.default.removeItem(at: temporary) }
+                try FileManager.default.copyItem(at: source, to: temporary)
+                _ = try FileManager.default.replaceItemAt(destination, withItemAt: temporary)
+            } else {
+                try FileManager.default.copyItem(at: source, to: destination)
             }
-            try FileManager.default.copyItem(at: card.fileURL, to: destination)
             Toast.show("Saved \(destination.lastPathComponent)")
         } catch {
             Toast.error("Couldn't save: \(error.localizedDescription)")
