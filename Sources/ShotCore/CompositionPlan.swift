@@ -67,9 +67,20 @@ public enum LayerGeometry {
             .concatenating(CGAffineTransform(translationX: canvas.width / 2 + clip.transform.offset.width, y: canvas.height / 2 + clip.transform.offset.height))
     }
 
-    /// Where a clip's picture lands on the canvas.
+    /// Where a clip's picture lands on the canvas: the part its crop leaves.
     public static func frame(of clip: Clip, canvas: CGSize) -> CGRect {
-        CGRect(origin: .zero, size: clip.size).applying(transform(for: clip, canvas: canvas))
+        keptRect(of: clip).applying(transform(for: clip, canvas: canvas))
+    }
+
+    /// The part of a clip's picture its crop leaves, in the picture's pixels with a top-left origin.
+    public static func keptRect(of clip: Clip) -> CGRect {
+        clip.crop?.keptRect(in: clip.size) ?? CGRect(origin: .zero, size: clip.size)
+    }
+
+    /// `transform(for:canvas:)` for the part of the picture its crop leaves, with its origin at that part's top left.
+    public static func keptTransform(for clip: Clip, canvas: CGSize) -> CGAffineTransform {
+        let kept = keptRect(of: clip)
+        return CGAffineTransform(translationX: kept.minX, y: kept.minY).concatenating(transform(for: clip, canvas: canvas))
     }
 
     /// `transform(for:canvas:)` for Core Image's y-up coordinates, applied to a source picture of `sourceHeight`

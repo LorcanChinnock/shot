@@ -1,8 +1,9 @@
 import ShotCore
 import SwiftUI
 
-/// Handles over the player for the selected video clip: drag the box to move it, a corner to scale it, the knob to rotate it.
-/// The picture follows when the drag ends, once the preview has been rebuilt.
+/// Handles over the player for the selected video clip: drag the box to move it, a corner to scale it, the knob to rotate it,
+/// and double-click it to crop it. The picture follows when the drag ends, once the preview has been rebuilt. The box goes
+/// round the part a crop leaves, which turns and scales about the whole picture's centre.
 struct TransformOverlay: View {
     private static let handleSize: CGFloat = 12
     private static let knobDistance: CGFloat = 22
@@ -17,33 +18,43 @@ struct TransformOverlay: View {
 
     var body: some View {
         GeometryReader { geometry in
-            if let clip = model.selectedClip, clip.size.height > 0, (clip.start...clip.end).contains(model.playhead) {
+            if !model.isCropping, let clip = model.selectedClip, clip.size.height > 0, (clip.start...clip.end).contains(model.playhead) {
                 let canvas = model.project.canvasSize
-                let fit = min(geometry.size.width / canvas.width, geometry.size.height / canvas.height)
-                let topLeft = CGPoint(x: (geometry.size.width - canvas.width * fit) / 2, y: (geometry.size.height - canvas.height * fit) / 2)
+                let frame = model.shownFrame
+                let fit = min(geometry.size.width / frame.width, geometry.size.height / frame.height)
+                let topLeft = CGPoint(x: (geometry.size.width - frame.width * fit) / 2 - frame.minX * fit, y: (geometry.size.height - frame.height * fit) / 2 - frame.minY * fit)
                 // Where the clip is now, with its keyframes applied.
                 let transform = clip.transform(atTimeline: model.playhead)
                 let scale = min(canvas.width / clip.size.width, canvas.height / clip.size.height) * transform.scale * fit
-                let size = CGSize(width: clip.size.width * scale, height: clip.size.height * scale)
+                let kept = LayerGeometry.keptRect(of: clip)
+                let size = CGSize(width: kept.width * scale, height: kept.height * scale)
+                // How far the part left's middle is from the whole picture's, before the turn.
+                let shift = CGSize(width: (kept.midX - clip.size.width / 2) * scale, height: (kept.midY - clip.size.height / 2) * scale)
                 let center = CGPoint(x: topLeft.x + (canvas.width / 2 + transform.offset.width) * fit, y: topLeft.y + (canvas.height / 2 + transform.offset.height) * fit)
                 ZStack {
                     Rectangle()
                         .fill(Color.white.opacity(0.001))
                         .inkBorder(Rectangle(), width: 2, color: Brutal.yellow)
                         .frame(width: size.width, height: size.height)
+                        .onTapGesture {
+                            if NSApp.currentEvent?.clickCount == 2 {
+                                model.beginClipCrop(clip.id)
+                            }
+                        }
                         .gesture(move(clip, fit: fit))
+                        .offset(shift)
                     ForEach(Array([(-1.0, -1.0), (1, -1), (1, 1), (-1, 1)].enumerated()), id: \.offset) { _, corner in
                         PartyColor(Brutal.yellow) { Rectangle().fill($0) }
                             .inkBorder(Rectangle(), width: 2)
                             .frame(width: Self.handleSize, height: Self.handleSize)
-                            .offset(x: corner.0 * size.width / 2, y: corner.1 * size.height / 2)
+                            .offset(x: shift.width + corner.0 * size.width / 2, y: shift.height + corner.1 * size.height / 2)
                             .gesture(scaling(clip, center: center))
                     }
                     Circle()
                         .fill(Brutal.pink)
                         .inkBorder(Circle(), width: 2)
                         .frame(width: Self.handleSize, height: Self.handleSize)
-                        .offset(y: -size.height / 2 - Self.knobDistance)
+                        .offset(x: shift.width, y: shift.height - size.height / 2 - Self.knobDistance)
                         .gesture(rotating(clip, center: center))
                 }
                 .rotationEffect(.radians(transform.rotation))

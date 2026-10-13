@@ -414,7 +414,7 @@ public enum ShotCommands {
             throw .usage(command, "-o \(output) isn't a .\(asked), the format the edit asks for")
         }
         let speed = edit.speed ?? 1
-        let canvasWidth = Int(project.canvasSize.width)
+        let canvasWidth = Int(project.outputRect.width)
         let temporary = temporaryURL(beside: target.url, pathExtension: ext)
         defer { try? FileManager.default.removeItem(at: temporary) }
 

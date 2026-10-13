@@ -69,14 +69,15 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
 
     // MARK: Canvas and view
 
-    /// The canvas aspect-fitted and centred in the view, matching the player under it, so no inset.
+    /// The part of the canvas the player shows, aspect-fitted and centred in the view, matching the player under it, so
+    /// no inset.
     private var viewport: Viewport {
-        let canvas = model.project.canvasSize
-        guard canvas.width > 0, canvas.height > 0 else {
+        let frame = model.shownFrame
+        guard frame.width > 0, frame.height > 0 else {
             return Viewport(scale: 1, origin: .zero)
         }
-        let fit = min(bounds.width / canvas.width, bounds.height / canvas.height)
-        return Viewport(scale: fit, origin: CGPoint(x: (bounds.width - canvas.width * fit) / 2, y: (bounds.height - canvas.height * fit) / 2))
+        let fit = min(bounds.width / frame.width, bounds.height / frame.height)
+        return Viewport(scale: fit, origin: CGPoint(x: (bounds.width - frame.width * fit) / 2 - frame.minX * fit, y: (bounds.height - frame.height * fit) / 2 - frame.minY * fit))
     }
 
     private var fit: CGFloat { viewport.scale }

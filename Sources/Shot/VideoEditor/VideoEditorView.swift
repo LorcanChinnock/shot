@@ -61,6 +61,7 @@ struct VideoEditorRootView: View {
                 .background(Color.black)
                 .overlay { TransformOverlay(model: model) }
                 .overlay { AnnotationCanvas(model: model) }
+                .overlay { VideoCropOverlay(model: model) }
                 .inkBorder(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular), width: 2)
             if model.showsTracks {
                 if model.isAnnotating {

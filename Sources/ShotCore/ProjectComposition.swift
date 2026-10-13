@@ -85,6 +85,7 @@ public enum CompositionBuilder {
 
         let duration = composition.duration
         let canvas = evenSize(project.canvasSize)
+        let output = project.outputRect
         let live = LiveAnnotations()
         let notes = Dictionary(uniqueKeysWithValues: project.annotationClips.map { ($0.id, $0) })
         var instructions: [ProjectInstruction] = []
@@ -98,12 +99,12 @@ public enum CompositionBuilder {
                 case let .annotation(id): notes[id].map(ProjectInstruction.Layer.annotation)
                 }
             }
-            instructions.append(ProjectInstruction(timeRange: CMTimeRange(start: start, end: end), layers: stack, live: live, canvas: canvas))
+            instructions.append(ProjectInstruction(timeRange: CMTimeRange(start: start, end: end), layers: stack, live: live, canvas: canvas, output: output))
         }
 
         let video = AVMutableVideoComposition()
         video.customVideoCompositorClass = ProjectCompositor.self
-        video.renderSize = canvas
+        video.renderSize = output.size
         video.frameDuration = CMTime(value: 1, timescale: CMTimeScale(frameRate.rounded()))
         video.instructions = instructions
         let audioMix: AVAudioMix? = parameters.isEmpty ? nil : {
@@ -173,12 +174,15 @@ final class ProjectInstruction: NSObject, AVVideoCompositionInstructionProtocol,
     let layers: [Layer]
     let live: LiveAnnotations
     let canvas: CGSize
+    /// The part of the canvas the frame shows, in canvas pixels with y down: all of it unless the frame is cropped.
+    let output: CGRect
 
-    init(timeRange: CMTimeRange, layers: [Layer], live: LiveAnnotations, canvas: CGSize) {
+    init(timeRange: CMTimeRange, layers: [Layer], live: LiveAnnotations, canvas: CGSize, output: CGRect? = nil) {
         self.timeRange = timeRange
         self.layers = layers
         self.live = live
         self.canvas = canvas
+        self.output = output ?? CGRect(origin: .zero, size: canvas)
         let tracks = layers.compactMap { if case let .picture(layer) = $0 { layer.trackID } else { nil } }
         requiredSourceTrackIDs = Array(Set(tracks)).sorted().map { NSNumber(value: $0) }
         super.init()
@@ -304,11 +308,27 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
                     if let style = clipStyles[placed.id] {
                         placed.style = style
                     }
-                    let geometry = LayerGeometry.transform(for: placed, canvas: layer.canvas)
-                    let matrix = LayerGeometry.imageTransform(orientation: layer.orientation, geometry: geometry, sourceHeight: CGFloat(CVPixelBufferGetHeight(frame)), canvasHeight: canvas.height)
-                    picture = picture.transformed(by: matrix)
+                    // Fitted by the whole picture, so a crop masks it where it is.
+                    let fit = placed.size.width > 0 && placed.size.height > 0 ? min(layer.canvas.width / placed.size.width, layer.canvas.height / placed.size.height) : 0
+                    var geometry = LayerGeometry.transform(for: placed, canvas: layer.canvas)
+                    let sourceHeight = CGFloat(CVPixelBufferGetHeight(frame))
+                    if placed.crop != nil, placed.size.width > 0, placed.size.height > 0 {
+                        // Upright, y up, with its origin at the picture's bottom left, then cut to the part left, which
+                        // is then drawn as a picture of its own at the place it had.
+                        let kept = LayerGeometry.keptRect(of: placed)
+                        let flipSource = CGAffineTransform(scaleX: 1, y: -1).concatenating(CGAffineTransform(translationX: 0, y: sourceHeight))
+                        let flipUpright = CGAffineTransform(scaleX: 1, y: -1).concatenating(CGAffineTransform(translationX: 0, y: placed.size.height))
+                        let cut = CGRect(x: kept.minX, y: placed.size.height - kept.maxY, width: kept.width, height: kept.height)
+                        picture = picture.transformed(by: flipSource.concatenating(layer.orientation).concatenating(flipUpright))
+                            .cropped(to: cut)
+                            .transformed(by: CGAffineTransform(translationX: -cut.minX, y: -cut.minY))
+                        geometry = LayerGeometry.keptTransform(for: placed, canvas: layer.canvas)
+                        placed.size = kept.size
+                        picture = picture.transformed(by: LayerGeometry.imageTransform(orientation: .identity, geometry: geometry, sourceHeight: kept.height, canvasHeight: canvas.height))
+                    } else {
+                        picture = picture.transformed(by: LayerGeometry.imageTransform(orientation: layer.orientation, geometry: geometry, sourceHeight: sourceHeight, canvasHeight: canvas.height))
+                    }
                     if placed.isStyled, placed.size.width > 0, placed.size.height > 0 {
-                        let fit = min(layer.canvas.width / placed.size.width, layer.canvas.height / placed.size.height)
                         let placement = LayerGeometry.imageTransform(orientation: .identity, geometry: geometry, sourceHeight: placed.size.height, canvasHeight: canvas.height)
                         let lift = placed.animation.lift(at: time - placed.start)
                         image = ClipStyler.composite(
@@ -328,7 +348,10 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
             if cancelled() {
                 return
             }
-            self.context.render(image.cropped(to: canvas), to: output, bounds: canvas, colorSpace: nil)
+            // A cropped frame shows only its part of the canvas, moved to the corner of a smaller picture.
+            let shown = CGRect(x: instruction.output.minX, y: canvas.height - instruction.output.maxY, width: instruction.output.width, height: instruction.output.height)
+            let framed = shown.origin == .zero ? image.cropped(to: shown) : image.cropped(to: shown).transformed(by: CGAffineTransform(translationX: -shown.minX, y: -shown.minY))
+            self.context.render(framed, to: output, bounds: CGRect(origin: .zero, size: shown.size), colorSpace: nil)
             if let tags = firstFrame.flatMap({ CVBufferCopyAttachments($0, .shouldPropagate) }) {
                 CVBufferSetAttachments(output, tags, .shouldPropagate)
             }
@@ -370,7 +393,7 @@ public enum ProjectExporter {
     public static func export(_ project: Project, to output: URL, as fileType: AVFileType = .mp4) async throws {
         let built = try await CompositionBuilder.build(project)
         let frameRate = Int((1 / built.videoComposition.frameDuration.seconds).rounded())
-        let preset = usesHEVC(canvas: project.canvasSize, frameRate: frameRate) ? AVAssetExportPresetHEVCHighestQuality : AVAssetExportPresetHighestQuality
+        let preset = usesHEVC(canvas: project.outputRect.size, frameRate: frameRate) ? AVAssetExportPresetHEVCHighestQuality : AVAssetExportPresetHighestQuality
         guard let export = AVAssetExportSession(asset: built.asset, presetName: preset) else {
             throw ExportError.failed
         }
@@ -387,7 +410,7 @@ public enum ProjectExporter {
 
     /// Roughly how many bytes `export` writes: a typical H.264 rate for the canvas, and AAC for any sound.
     public static func estimatedSize(of project: Project) -> Int {
-        let pixels = Double(project.canvasSize.width * project.canvasSize.height)
+        let pixels = Double(project.outputRect.width * project.outputRect.height)
         let hasSound = project.tracks.contains { $0.kind == .audio && !$0.isMuted && !$0.clips.isEmpty }
         let bitRate = pixels * 30 * 0.07 + (hasSound ? 128_000 : 0)
         return Int((bitRate * project.duration / 8).rounded())

@@ -45,7 +45,7 @@ Record an area, a screen or a window to MP4, with your microphone, system audio,
 
 ### Trim and export to GIF
 
-Trim a recording, cut sections out, draw over it, add music or other clips, and export an MP4 or a GIF at the frame rate, width and speed you choose.
+Trim a recording, cut sections out, crop it, draw over it, add music or other clips, and export an MP4 or a GIF at the frame rate, width and speed you choose.
 
 <img src="docs/media/video-editor.png" width="720" alt="The video editor with a trimmed start, a cut where the recording went to another page, a Best day label and an arrow over the video, and the GIF export options">
 

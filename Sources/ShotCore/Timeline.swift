@@ -53,6 +53,14 @@ public struct Clip: Equatable, Codable, Sendable, Identifiable {
         set { radius = newValue > 0 ? newValue : nil }
     }
     private var radius: CGFloat?
+    /// What its own crop trims off its picture; `nil` for the whole picture. It masks the picture where it is, so it
+    /// still moves, scales and turns about the whole picture's centre and cropping never moves what's on screen.
+    /// Stored only when set.
+    public var crop: ImageCrop? {
+        get { pictureCrop }
+        set { pictureCrop = newValue?.isEmpty == false ? newValue : nil }
+    }
+    private var pictureCrop: ImageCrop?
 
     public init(id: UUID = UUID(), source: URL, sourceDuration: Double, sourceStart: Double = 0, sourceEnd: Double? = nil, start: Double = 0, linkedID: UUID? = nil, size: CGSize = .zero, transform: ClipTransform = .identity, volume: Double = 1, animation: ClipAnimation = ClipAnimation()) {
         self.id = id
@@ -156,8 +164,15 @@ public struct Project: Equatable, Codable, Sendable {
     /// Edits closer together than this don't make a clip, since a 600 timescale can't hold it.
     static let shortestClip = CutList.shortestSection
 
+    /// The recording's size, which clip positions and annotations are measured in, whatever the frame crop.
     public var canvasSize: CGSize
     public var tracks: [Track]
+    /// The part of the canvas the video shows, in canvas pixels with y down; `nil` for all of it. Stored only when set,
+    /// so projects saved before it still decode.
+    public var frameCrop: CGRect?
+
+    /// What of the canvas is drawn and exported, at the size the video comes out.
+    public var outputRect: CGRect { VideoFrameCrop.outputRect(crop: frameCrop, canvas: canvasSize) }
 
     /// A recording as one clip on the main track, with its sound as a linked clip on an audio track.
     public init(source: URL, duration: Double, canvasSize: CGSize, hasAudio: Bool) {
@@ -260,7 +275,8 @@ public struct Project: Equatable, Codable, Sendable {
     /// one recording on the main track, in order, with its own sound linked and cut the same, and nothing hidden, muted
     /// or drawn over it.
     public var trimEdit: TrimEdit? {
-        guard let first = main.clips.first, main.clips.allSatisfy({ $0.source == first.source && $0.transform == .identity && $0.animation.isEmpty && !$0.isStyled }),
+        guard frameCrop == nil, let first = main.clips.first,
+              main.clips.allSatisfy({ $0.source == first.source && $0.transform == .identity && $0.animation.isEmpty && !$0.isStyled && $0.crop == nil }),
               tracks.allSatisfy({ !$0.isHidden && !$0.isMuted && $0.annotations.isEmpty }) else {
             return nil
         }

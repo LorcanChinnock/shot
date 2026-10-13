@@ -131,6 +131,22 @@ extension Project {
         clip(id) == nil ? nil : changing([id]) { $0.cornerRadius = max(0, cornerRadius) }
     }
 
+    /// Crops a clip's picture to what `crop` leaves, or shows all of it for `nil`. Sound has no picture to crop.
+    public func setting(crop: ImageCrop?, of id: UUID) -> Project? {
+        guard let clip = clip(id), clip.size.width > 0, clip.size.height > 0 else {
+            return nil
+        }
+        return changing([id]) { $0.crop = crop }
+    }
+
+    /// Shows only `crop` of the canvas, in canvas pixels with y down, or all of it for `nil`. A crop that shows it all,
+    /// or too little of it, is none.
+    public func setting(frameCrop crop: CGRect?) -> Project {
+        var result = self
+        result.frameCrop = VideoFrameCrop.normalized(crop, canvas: canvasSize)
+        return result
+    }
+
     public func clip(_ id: UUID) -> Clip? {
         tracks.lazy.flatMap(\.clips).first { $0.id == id }
     }

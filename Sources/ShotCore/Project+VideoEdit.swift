@@ -22,6 +22,10 @@ extension Project {
         let shift = CGSize(width: old.width / 2 - rect.midX, height: old.height / 2 - rect.midY)
         var result = self
         result.canvasSize = size
+        // A frame crop stays on the same part of the picture, in the new canvas's pixels.
+        result.frameCrop = frameCrop.flatMap { crop in
+            VideoFrameCrop.normalized(CGRect(x: (crop.minX - rect.minX) * k, y: (crop.minY - rect.minY) * k, width: crop.width * k, height: crop.height * k), canvas: size)
+        }
         for track in result.tracks.indices {
             for index in result.tracks[track].clips.indices {
                 var clip = result.tracks[track].clips[index]
