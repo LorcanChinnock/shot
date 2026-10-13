@@ -1,6 +1,6 @@
 import Foundation
 
-/// The MCP server's tools: seven that read captures, one by waiting for the next, six that make new files from them, never changing, moving or
+/// The MCP server's tools: seven that read captures, one by waiting for the next, seven that make new files from them, never changing, moving or
 /// deleting anything, and three that ask the running app to list, capture or record windows. What they're called, what they
 /// take, and what they say back are here. Finding files, drawing
 /// previews and running the commands need Apple frameworks, so they come in as closures; ShotCore's `live(folder:)`
@@ -65,6 +65,7 @@ public struct AgentTools: Sendable {
     public static let annotate = "annotate"
     public static let redact = "redact"
     public static let editImage = "edit_image"
+    public static let editVideo = "edit_video"
     public static let makeGIF = "make_gif"
     public static let trimVideo = "trim_video"
     public static let getFrames = "get_frames"
@@ -271,6 +272,38 @@ public struct AgentTools: Sendable {
             ]) { $1 })
         ),
         MCPServer.Tool(
+            name: editVideo,
+            description: "Edits a Shot recording as the video editor does, all in one call, such as turning a test run into pull-request media: keep or cut parts, speed it up, mute it, crop it, show marks over it for a while (\"an arrow from 3 to 6 s\"), append other recordings, and make an MP4 or a GIF that fits maxBytes, such as GitHub's 10 MB. Times are seconds of the recording, as get_frames gives them, and positions are its pixels, top-left origin. Saved beside the recording; nothing is overwritten. It opens in Shot's video editor with every change still live. Returns the new file's path, size, bytes and duration, and for a GIF its frames and fps.",
+            inputSchema: schema(capture.merging([
+                "keep": .object([
+                    "type": .string("array"), "items": .object(["type": .string("array")]),
+                    "description": .string("The parts to keep, each [start, end] in seconds, in order; everything else is cut. Use keep or cut, not both."),
+                ]),
+                "cut": .object([
+                    "type": .string("array"), "items": .object(["type": .string("array")]),
+                    "description": .string("The parts to cut, each [start, end] in seconds."),
+                ]),
+                "speed": .object(["type": .string("number"), "description": .string("How fast it plays, from 0.25 to 4, such as 2. A drawn MP4, one with marks, a crop or appended recordings, can't change speed; a GIF always can.")]),
+                "mute": .object(["type": .string("boolean"), "description": .string("Leaves out the sound.")]),
+                "crop": .object([
+                    "type": .string("array"), "items": .object(["type": .string("number")]),
+                    "description": .string("The part of the picture to keep, [x, y, width, height] in the recording's pixels."),
+                ]),
+                "marks": .object([
+                    "type": .string("array"), "items": .object(["type": .string("object")]),
+                    "description": .string("Marks shown over the video, each with start and end in seconds of the recording (end defaults to 3 s later), a type (\(markTypes)) and its geometry, as annotate takes them."),
+                ]),
+                "append": .object([
+                    "type": .string("array"), "items": .object(["type": .string("string")]),
+                    "description": .string("Other recordings to play after it, each one of Shot's captures by path or a few words of its name."),
+                ]),
+                "format": .object(["type": .string("string"), "enum": .array([.string("mp4"), .string("mov"), .string("gif")]), "description": .string("mp4 or mov, else the recording's own, or gif.")]),
+                "maxBytes": .object(["type": .string("integer"), "description": .string("The most bytes the file may be. A GIF lowers its frame rate, then its width, to fit; an MP4 is drawn smaller. GitHub takes 10000000 for an image or GIF.")]),
+                "fps": .object(["type": .string("number"), "description": .string("A GIF's frames per second, 1 to 30, 12 by default.")]),
+                "width": .object(["type": .string("integer"), "description": .string("A GIF's width at most, 720 by default, or 0 for the recording's own.")]),
+            ]) { $1 })
+        ),
+        MCPServer.Tool(
             name: makeGIF,
             description: "Makes a GIF of a Shot recording, or part of it, for a pull request or README. Saved beside the recording; nothing is overwritten. GIFs stop at 60 seconds. Returns the GIF's path, size and frame count.",
             inputSchema: schema(capture.merging([
@@ -366,7 +399,7 @@ public struct AgentTools: Sendable {
             return await describe(entry)
         case Self.waitForCapture:
             return await waitForCapture(arguments)
-        case Self.annotate, Self.redact, Self.editImage, Self.makeGIF, Self.trimVideo:
+        case Self.annotate, Self.redact, Self.editImage, Self.editVideo, Self.makeGIF, Self.trimVideo:
             return await make(name, arguments, entries, origin: origin)
         case Self.getFrames:
             let query = [arguments["path"]?.string, arguments["name"]?.string].compactMap { $0 }.first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
@@ -459,6 +492,21 @@ public struct AgentTools: Sendable {
                     edit.place[index].path = found.url.path
                 }
                 command = .edit(ShotCommand.EditOptions(input: entry.url.path, spec: .edit(edit)))
+            } catch {
+                return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
+            }
+        case Self.editVideo:
+            do throws(ShotCommandError) {
+                var edit = try VideoEdit.parse(arguments, ignoring: ["path", "name"])
+                // Only captures in the folder can be appended, as only they can be named.
+                for index in edit.append.indices {
+                    guard let found = AgentCaptures.named(edit.append[index], in: entries), found.isVideo else {
+                        let named = edit.append[index]
+                        return MCPServer.ToolResult(content: [.text("append[\(index)]: no recording in \(folder.path) matches \"\(named)\"; append takes Shot's recordings, by path or a few words of the name.")], isError: true)
+                    }
+                    edit.append[index] = found.url.path
+                }
+                command = .edit(ShotCommand.EditOptions(input: entry.url.path, spec: .video(edit)))
             } catch {
                 return MCPServer.ToolResult(content: [.text(error.message)], isError: true)
             }

@@ -47,7 +47,7 @@ public enum ShotCommands {
         case let .crop(options):
             return try draw(input: options.input, output: options.output, edit: ImageEdit(crop: options.rect), cropField: "rect", projects: projects, origin: origin) { (_: CGImage) in [] }
         case let .edit(options):
-            return try edit(options, projects: projects, origin: origin)
+            return try await edit(options, projects: projects, origin: origin)
         case .capture, .record, .watch, .windows, .latest, .list, .get, .doctor, .mcp, .indexText, .version, .help:
             throw .internal("\(command.name) isn't a media command")
         }
@@ -88,68 +88,31 @@ public enum ShotCommands {
         return .object(object)
     }
 
-    /// Writes the part of the video in the range as a GIF, as the video editor's Export does: the GIF keeps the trim
-    /// as its project, so Edit on it opens the video trimmed.
+    /// Writes the part of the video in the range as a GIF, as the video editor's Export does: an edit with only `keep`,
+    /// as a GIF. It keeps the trim as its project, so Edit on it opens the video trimmed.
     static func gif(_ options: ShotCommand.GIFOptions, projects: ProjectStore?, origin: ProjectOrigin) async throws(ShotCommandError) -> JSONValue {
-        let input = url(options.input)
-        let media = try await video(input)
-        let project = try trimmed(media, start: options.start, end: options.end, command: "gif")
-        guard let trim = project.trimEdit else {
-            throw .internal("couldn't trim the video")
+        let media = try await video(url(options.input))
+        _ = try trimmed(media, start: options.start, end: options.end, command: "gif")
+        let edit = VideoEdit(keep: [[options.start ?? 0, min(options.end ?? media.duration, media.duration)]], format: .gif, fps: options.fps, width: options.width)
+        let result = try await editVideo(edit, input: options.input, output: options.output, extensions: ["gif"], command: "gif", projects: projects, origin: origin)
+        guard case var .object(object) = result else {
+            return result
         }
-        let target = try destination(for: input, output: options.output, extensions: ["gif"], default: "gif", command: "gif")
-        let temporary = temporaryURL(beside: target.url, pathExtension: "gif")
-        defer { try? FileManager.default.removeItem(at: temporary) }
-        // What `VideoExportPlan(project:options:)` gives for a trim, at the frame rate asked for, which needn't be one Export offers.
-        let plan = VideoExportPlan.trimmedGIF(
-            source: trim.source, range: trim.range, cuts: trim.cuts, fps: options.fps, maxWidth: options.width == 0 ? nil : CGFloat(options.width), speed: 1
-        )
-        let outcome: VideoExportPlan.Outcome
-        do {
-            outcome = try await plan.run(to: temporary)
-        } catch {
-            throw .io("couldn't make the GIF: \(error.localizedDescription)")
-        }
-        let placed = try place(temporary, at: target)
-        // Kept once it's in place, since a GIF's project is found by its path and identity.
-        VersionWriter.keep(project, of: placed, original: input, in: projects, origin: origin)
-        var object = try written(placed)
-        object["frames"] = .number(Double(outcome.frameCount ?? 0))
-        object["truncated"] = .bool(outcome.truncated)
+        // gif prints what it always has; the frame rate is its own.
+        object["fps"] = nil
         return .object(object)
     }
 
-    /// Writes the part of the video in the range as a new file, as the video editor's Save Copy does: it keeps the
-    /// trim as its project, so it opens in the video editor with the rest of the recording still there to drag back.
+    /// Writes the part of the video in the range as a new file, as the video editor's Save Copy does: an edit with only
+    /// `keep`. It keeps the trim as its project, so it opens in the video editor with the rest of the recording still
+    /// there to drag back.
     static func trim(_ options: ShotCommand.TrimOptions, projects: ProjectStore?, origin: ProjectOrigin) async throws(ShotCommandError) -> JSONValue {
         let input = url(options.input)
         let media = try await video(input)
-        let project = try trimmed(media, start: options.start, end: options.end, command: "trim")
-        guard let trim = project.trimEdit else {
-            throw .internal("couldn't trim the video")
-        }
+        _ = try trimmed(media, start: options.start, end: options.end, command: "trim")
         let own = input.pathExtension.lowercased()
-        let target = try destination(for: input, output: options.output, extensions: ["mov", "mp4"], default: ["mov", "mp4"].contains(own) ? own : "mov", command: "trim")
-        let fileType: AVFileType = target.url.pathExtension.lowercased() == "mp4" ? .mp4 : .mov
-        let temporary = temporaryURL(beside: target.url, pathExtension: target.url.pathExtension)
-        defer { try? FileManager.default.removeItem(at: temporary) }
-        // What `VersionWriter.videoPlan` gives for a trim, in the format asked for.
-        let plan = VideoExportPlan.trimmed(source: trim.source, range: trim.range, cuts: trim.cuts, speed: 1, muted: false, fileType: fileType)
-        do {
-            try await plan.run(to: temporary)
-        } catch {
-            throw .io("couldn't trim the video: \(error.localizedDescription)")
-        }
-        let placed = try place(temporary, at: target)
-        VersionWriter.keep(project, of: placed, original: input, in: projects, origin: origin)
-        var object = try written(placed)
-        if let media = try? await MediaProbe.probe(placed) {
-            object["duration"] = .number((media.duration * 1000).rounded() / 1000)
-            if let size = media.size {
-                object["size"] = .object(["width": .number(Double(Int(size.width))), "height": .number(Double(Int(size.height)))])
-            }
-        }
-        return .object(object)
+        let edit = VideoEdit(keep: [[options.start, min(options.end, media.duration)]], format: ["mov", "mp4"].contains(own) || options.output != nil ? nil : .mov)
+        return try await editVideo(edit, input: options.input, output: options.output, extensions: ["mov", "mp4"], command: "trim", projects: projects, origin: origin)
     }
 
     /// Hides the rects, and with `detect` the private text read in the image, as blurs or pixelations the new version
@@ -371,24 +334,198 @@ public enum ShotCommands {
     }
 
     /// Makes the edit's changes to the image, as `draw` does, and lists the new version's layers, so an agent can
-    /// remove one later by its id.
-    static func edit(_ options: ShotCommand.EditOptions, projects: ProjectStore?, origin: ProjectOrigin) throws(ShotCommandError) -> JSONValue {
-        let edit: ImageEdit
+    /// remove one later by its id; or to the video, as `editVideo` does. An edit read from JSON is an image's or a
+    /// video's by what the input is.
+    static func edit(_ options: ShotCommand.EditOptions, projects: ProjectStore?, origin: ProjectOrigin) async throws(ShotCommandError) -> JSONValue {
+        let data: Data
         switch options.spec {
-        case let .edit(given):
-            edit = given
+        case let .edit(edit):
+            return try draw(input: options.input, output: options.output, edit: edit, layers: true, projects: projects, origin: origin) { (_: CGImage, _: CGFloat) in [] }
+        case let .video(edit):
+            return try await editVideo(edit, input: options.input, output: options.output, projects: projects, origin: origin)
         case let .json(text):
-            edit = try ImageEdit.parse(Data(text.utf8))
+            data = Data(text.utf8)
         case let .file(path):
             let file = url(path)
-            guard let data = try? Data(contentsOf: file) else {
+            guard let read = try? Data(contentsOf: file) else {
                 throw FileManager.default.fileExists(atPath: file.path) ? .io("couldn't read \(path)") : .noInput("\(path) doesn't exist")
             }
-            edit = try ImageEdit.parse(data)
+            data = read
         case .standardInput:
-            edit = try ImageEdit.parse(FileHandle.standardInput.readDataToEndOfFile())
+            data = FileHandle.standardInput.readDataToEndOfFile()
         }
-        return try draw(input: options.input, output: options.output, edit: edit, layers: true, projects: projects, origin: origin) { (_: CGImage, _: CGFloat) in [] }
+        let input = url(options.input)
+        try requireInput(input)
+        if isImage(input) {
+            return try draw(input: options.input, output: options.output, edit: ImageEdit.parse(data), layers: true, projects: projects, origin: origin) { (_: CGImage, _: CGFloat) in [] }
+        }
+        return try await editVideo(VideoEdit.parse(data), input: options.input, output: options.output, projects: projects, origin: origin)
+    }
+
+    /// Whether the file is an image ImageIO reads, rather than a video.
+    static func isImage(_ url: URL) -> Bool {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil), CGImageSourceGetCount(source) > 0,
+              let type = CGImageSourceGetType(source).flatMap({ UTType($0 as String) })
+        else {
+            return false
+        }
+        return type.conforms(to: .image)
+    }
+
+    /// Makes the edit's changes to the video, as the video editor and its export do, and writes it as a new file beside
+    /// it that keeps the edit as its project, so it opens in the video editor live. A video that's an earlier edit is
+    /// edited again from its project, so its marks stay live, while it still plays as its project does. With `maxBytes`,
+    /// a GIF steps down its frame rate and width, and an MP4 or MOV its size, until the file fits.
+    /// `extensions` are the outputs `command` can write.
+    static func editVideo(
+        _ edit: VideoEdit, input path: String, output: String?, extensions: [String] = ["mp4", "mov", "gif"], command: String = "edit",
+        projects: ProjectStore?, origin: ProjectOrigin
+    ) async throws(ShotCommandError) -> JSONValue {
+        let input = url(path)
+        let media = try await video(input)
+        guard let size = media.size else {
+            throw .internal("couldn't read the video's size")
+        }
+        var base = Project(source: media.source, duration: media.duration, canvasSize: size, hasAudio: media.hasAudio)
+        var original = input
+        if let projects, let reopened = VersionWriter.project(of: input, in: projects),
+           abs(reopened.project.duration - media.duration) < 0.05, reopened.project.canvasSize == size {
+            base = reopened.project
+            original = reopened.original
+        }
+        var appended: [ImportedMedia] = []
+        for (index, name) in edit.append.enumerated() {
+            let file = url(name)
+            guard FileManager.default.fileExists(atPath: file.path) else {
+                throw .noInput("append[\(index)]: \(file.path) doesn't exist")
+            }
+            guard let clip = try? await MediaProbe.probe(file), clip.size != nil else {
+                throw .data("append[\(index)]: \(file.lastPathComponent) isn't a video Shot can read")
+            }
+            appended.append(clip)
+        }
+        let project = try base.applying(edit, appended: appended)
+
+        let own = input.pathExtension.lowercased()
+        let asked = edit.format?.rawValue
+        let target = try destination(for: input, output: output, extensions: extensions, default: asked ?? (["mov", "mp4"].contains(own) ? own : "mp4"), command: command)
+        let ext = target.url.pathExtension.lowercased()
+        if let asked, asked != ext, let output {
+            throw .usage(command, "-o \(output) isn't a .\(asked), the format the edit asks for")
+        }
+        let speed = edit.speed ?? 1
+        let canvasWidth = Int(project.canvasSize.width)
+        let temporary = temporaryURL(beside: target.url, pathExtension: ext)
+        defer { try? FileManager.default.removeItem(at: temporary) }
+
+        var written: (plan: VideoExportPlan, kept: Project, outcome: VideoExportPlan.Outcome, fps: Double?, width: Int?, scale: Double?)
+        if ext == "gif" {
+            let asked = edit.width ?? 720
+            let start = SizeFit.GIFStep(fps: edit.fps ?? 12, width: asked == 0 ? canvasWidth : min(asked, canvasWidth))
+            let steps = edit.maxBytes == nil ? [start] : SizeFit.gifSteps(fps: start.fps, width: start.width)
+            let plans = steps.map { step in (step, gifPlan(project, fps: step.fps, width: step.width, canvasWidth: canvasWidth, speed: speed)) }
+            let result = try await fit(plans, maxBytes: edit.maxBytes, to: temporary, describe: { "\(String(format: "%g", $0.fps)) fps and \($0.width) px wide" })
+            written = (result.plan, project, result.outcome, result.step.fps, result.step.width, nil)
+        } else {
+            let fileType: AVFileType = ext == "mov" ? .mov : .mp4
+            var plans: [((scale: Double, kept: Project), VideoExportPlan)] = []
+            for scale in edit.maxBytes == nil ? [1] : SizeFit.videoScales {
+                let made = try videoPlan(project, scale: scale, speed: speed, muted: edit.mute, fileType: fileType)
+                plans.append(((scale, made.kept), made.plan))
+            }
+            let result = try await fit(plans, maxBytes: edit.maxBytes, to: temporary, describe: { "\(Int(($0.scale * 100).rounded()))% of its size" })
+            written = (result.plan, result.step.kept, result.outcome, nil, nil, edit.maxBytes == nil ? nil : result.step.scale)
+        }
+        let placed = try place(temporary, at: target)
+        VersionWriter.keep(written.kept, of: placed, original: original, in: projects, origin: origin)
+        var object = try Self.written(placed)
+        if let probed = try? await MediaProbe.probe(placed) {
+            object["duration"] = .number((probed.duration * 1000).rounded() / 1000)
+            if let size = probed.size {
+                object["size"] = .object(["width": .number(Double(Int(size.width))), "height": .number(Double(Int(size.height)))])
+            }
+        }
+        if let frames = written.outcome.frameCount {
+            object["frames"] = .number(Double(frames))
+            object["truncated"] = .bool(written.outcome.truncated)
+        }
+        if let fps = written.fps {
+            object["fps"] = .number(fps)
+        }
+        if let scale = written.scale {
+            object["scale"] = .number(scale)
+        }
+        return .object(object)
+    }
+
+    /// A GIF of `project`, as the editor's Export writes one, at most `width` wide.
+    static func gifPlan(_ project: Project, fps: Double, width: Int, canvasWidth: Int, speed: Double) -> VideoExportPlan {
+        let maxWidth: CGFloat? = width >= canvasWidth ? nil : CGFloat(width)
+        guard let trim = project.trimEdit else {
+            return .compositeGIF(project, fps: fps, maxWidth: maxWidth, speed: speed)
+        }
+        return .trimmedGIF(source: trim.source, range: trim.range, cuts: trim.cuts, fps: fps, maxWidth: maxWidth, speed: speed)
+    }
+
+    /// An MP4 or MOV of `project`, as the editor's Export writes one: cut from the recording when it's only kept or cut,
+    /// else drawn, at `scale` of its canvas. A drawn video plays at its own speed, as Export's does. `kept` is the project
+    /// the file keeps, with its sound, as Export keeps it whether or not the file has any.
+    static func videoPlan(_ project: Project, scale: Double, speed: Double, muted: Bool, fileType: AVFileType) throws(ShotCommandError) -> (plan: VideoExportPlan, kept: Project) {
+        if scale == 1, let trim = project.trimEdit {
+            return (.trimmed(source: trim.source, range: trim.range, cuts: trim.cuts, speed: speed, muted: muted, fileType: fileType), project)
+        }
+        guard speed == 1 else {
+            throw .data("speed changes only a GIF, or a video that's only kept or cut, as the video editor's export does; take speed out, or make a GIF")
+        }
+        guard let sized = scale == 1 ? project : project.reframed(to: CGRect(origin: .zero, size: project.canvasSize), scale: CGFloat(scale)) else {
+            throw .data("maxBytes: the video has clips or marks that move or scale over time, so it can't be drawn smaller")
+        }
+        var drawn = sized
+        if muted {
+            for index in drawn.tracks.indices where drawn.tracks[index].kind == .audio {
+                drawn.tracks[index].isMuted = true
+            }
+        }
+        return (.composite(drawn, fileType: fileType), sized)
+    }
+
+    /// Writes the first of `plans` that fits in `maxBytes`, or the first with none. Each is estimated only once the ones
+    /// before it are ruled out, since a GIF's estimate reads frames. One written that's still too big moves on to the
+    /// next whose estimate, corrected by how far off this one's was, fits.
+    static func fit<Step>(
+        _ plans: [(Step, VideoExportPlan)], maxBytes: Int?, to output: URL, describe: (Step) -> String
+    ) async throws(ShotCommandError) -> (step: Step, plan: VideoExportPlan, outcome: VideoExportPlan.Outcome) {
+        guard let maxBytes else {
+            return (plans[0].0, plans[0].1, try await write(plans[0].1, to: output))
+        }
+        var ratio = 1.0
+        for (step, plan) in plans {
+            let estimate: Int
+            do {
+                estimate = try await plan.estimate()
+            } catch {
+                throw .io("couldn't estimate the size: \(error.localizedDescription)")
+            }
+            guard SizeFit.fits(estimate: estimate, ratio: ratio, within: maxBytes) else {
+                continue
+            }
+            let outcome = try await write(plan, to: output)
+            let written = bytes(of: output)
+            if written <= maxBytes {
+                return (step, plan, outcome)
+            }
+            try? FileManager.default.removeItem(at: output)
+            ratio = max(ratio, Double(written) / Double(max(estimate, 1)))
+        }
+        throw .data("maxBytes: even at \(describe(plans[plans.count - 1].0)) it's over \(maxBytes) bytes; cut more of it, or speed it up")
+    }
+
+    static func write(_ plan: VideoExportPlan, to output: URL) async throws(ShotCommandError) -> VideoExportPlan.Outcome {
+        do {
+            return try await plan.run(to: output)
+        } catch {
+            throw .io("couldn't write the video: \(error.localizedDescription)")
+        }
     }
 
     // MARK: Output
@@ -486,8 +623,10 @@ public enum ShotCommands {
         return trimmed
     }
 
+    /// Read afresh each time: `URL.resourceValues` keeps what it read, so a file written again at the same URL would
+    /// still give its old size.
     static func bytes(of url: URL) -> Int {
-        (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        ((try? FileManager.default.attributesOfItem(atPath: url.path))?[.size] as? NSNumber)?.intValue ?? 0
     }
 
     static func pixelSize(_ source: CGImageSource) -> JSONValue? {
