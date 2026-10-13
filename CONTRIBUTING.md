@@ -8,7 +8,7 @@ The default is the simplest state. Extra tools, panels and controls start off, a
 
 ## Set up
 
-You need an Apple Silicon Mac with macOS 15 or later, and either Xcode or the Xcode Command Line Tools. Shot is a SwiftPM package whose only dependency is [Sparkle](https://sparkle-project.org), for updates.
+You need a Mac with macOS 15 or later, and either Xcode or the Xcode Command Line Tools. Shot is a SwiftPM package whose only dependency is [Sparkle](https://sparkle-project.org), for updates.
 
 ```bash
 git clone https://github.com/LorcanChinnock/shot.git
@@ -37,7 +37,7 @@ Only `make dist` builds `Shot.app` with the update feed. Every other build is `S
 | `make perf-app` | Measure launch, capture, memory and idle CPU of the installed app against its budgets |
 | `make app` | Build and install without launching (`INSTALL_DIR=~/Applications make app` to install elsewhere) |
 | `make bundle` | Build and sign `build/ShotDev.app` only |
-| `make dist` | Build `build/Shot.zip`, as the release workflow does |
+| `make dist` | Build a universal (Apple Silicon and Intel) `build/Shot.zip`, as the release workflow does |
 | `make icon` | Regenerate `Resources/AppIcon.icns` from `scripts/make-icon.swift` |
 | `make reset-tcc` | Clear ShotDev's Screen Recording permission |
 | `make clean` | Remove build output |
