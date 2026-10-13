@@ -67,6 +67,9 @@ struct StylePopover<Model: StyleEditing>: View {
     @Bindable var model: Model
     /// The tile the arrow keys are on, which Return applies.
     @State private var highlighted: String?
+    /// Whether the border's colour editor is open. Its sliders take the arrow keys then, which this popover would
+    /// otherwise get first.
+    @State private var isPickingColor = false
     @FocusState private var focused: Bool
     @Environment(\.displayScale) private var displayScale
 
@@ -214,7 +217,7 @@ struct StylePopover<Model: StyleEditing>: View {
 
     /// The arrow keys move between tiles, previewing each, and Return applies the one they're on.
     private func handle(_ key: KeyEquivalent) -> KeyPress.Result {
-        guard let kind = model.targetStyleKind else {
+        guard !isPickingColor, let kind = model.targetStyleKind else {
             return .ignored
         }
         let rows = presetRows(kind, model.targetStyle).map(\.presets)
@@ -301,7 +304,8 @@ struct StylePopover<Model: StyleEditing>: View {
                     customHelp: "Custom border colour",
                     choose: { if let color = $0 { model.setBorderColor(color) } },
                     pickCustom: { model.pickBorderColor($0) },
-                    beginPicking: model.beginColorPick
+                    beginPicking: model.beginColorPick,
+                    editorShown: { isPickingColor = $0 }
                 )
             }
         }
