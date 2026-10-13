@@ -944,7 +944,7 @@ final class EditorModel {
             Clipboard.copy(png: version.png)
             savedSnapshot = snapshot
             isDirty = self.document.snapshot != snapshot
-            Toast.show("Saved as \(version.url.lastPathComponent) and copied", duration: .seconds(3))
+            Toast.show("Saved as \(version.url.lastPathComponent) and copied.\(TemporaryCaptures.toastNote(for: version.url))", duration: .seconds(3))
             return true
         case .failure(.draw), .failure(.encode):
             Toast.error("Couldn't save the image")

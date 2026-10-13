@@ -48,3 +48,10 @@ public struct AfterCapture: Equatable, Sendable {
         return AfterCapture(copies: copy, writesFile: !isVideo && (save || quickAccess || openEditor || agentHandoff && copy), next: next)
     }
 }
+
+extension TemporaryCaptures {
+    /// What a "Saved" toast adds when `file` is in the temporary folder, because saving after capture is off, so it doesn't promise a file that Shot will delete.
+    public static func toastNote(for file: URL) -> String {
+        isTemporary(file) ? String(localized: " It's temporary: Shot deletes it after a day.") : ""
+    }
+}

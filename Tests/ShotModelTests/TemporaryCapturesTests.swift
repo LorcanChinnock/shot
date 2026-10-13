@@ -29,3 +29,10 @@ import Testing
     let missing = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     #expect(TemporaryCaptures.sweep(missing) == 0)
 }
+
+@Test func onlyFilesDirectlyInTheTemporaryFolderAreTemporary() {
+    let folder = URL(fileURLWithPath: "/tmp/shot-temporary-test", isDirectory: true)
+    #expect(TemporaryCaptures.isTemporary(folder.appendingPathComponent("a.png"), in: folder))
+    #expect(!TemporaryCaptures.isTemporary(folder.appendingPathComponent("segments/a.mp4"), in: folder))
+    #expect(!TemporaryCaptures.isTemporary(URL(fileURLWithPath: "/tmp/other/a.png"), in: folder))
+}

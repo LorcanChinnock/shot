@@ -379,9 +379,9 @@ final class CaptureCoordinator {
             do {
                 let result = try await GIFExporter.export(videoURL: videoURL, to: gifURL, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, progress: progress.report)
                 if result.truncated {
-                    Toast.show("Saved \(gifURL.lastPathComponent) (first \(Int(GIFExporter.maxDuration)) s only)", duration: .seconds(3))
+                    Toast.show("Saved \(gifURL.lastPathComponent) (first \(Int(GIFExporter.maxDuration)) s only).\(TemporaryCaptures.toastNote(for: gifURL))", duration: .seconds(3))
                 } else {
-                    Toast.show("Saved \(gifURL.lastPathComponent)", duration: .seconds(3))
+                    Toast.show("Saved \(gifURL.lastPathComponent).\(TemporaryCaptures.toastNote(for: gifURL))", duration: .seconds(3))
                 }
             } catch where Task.isCancelled {
                 try? FileManager.default.removeItem(at: gifURL)
@@ -500,14 +500,21 @@ final class CaptureCoordinator {
     /// `thumbnail` is set.
     private func write(_ data: Data, prefs: Preferences, thumbnail showsCard: Bool) async throws -> (url: URL, thumbnail: CGImage?) {
         let folder = prefs.captureFolder
-        let url = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: prefs.imageFormat.fileExtension, prefix: prefs.filePrefix)
-        let thumbnail = try await Task.detached { () throws -> SendableImage? in
+        let fileExtension = prefs.imageFormat.fileExtension, prefix = prefs.filePrefix
+        let (url, thumbnail) = try await Task.detached { () throws -> (URL, SendableImage?) in
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            try data.write(to: url, options: [.atomic, .withoutOverwriting])
-            return showsCard ? ImageCodec.thumbnail(from: data, maxPixelSize: 480).map(SendableImage.init) : nil
-        }.value?.image
+            var url = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: fileExtension, prefix: prefix)
+            do {
+                try data.write(to: url, options: [.atomic, .withoutOverwriting])
+            } catch let error as CocoaError where error.code == .fileWriteFileExists {
+                // Another save took the name between picking it and writing; pick again once rather than overwrite it.
+                url = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: fileExtension, prefix: prefix)
+                try data.write(to: url, options: [.atomic, .withoutOverwriting])
+            }
+            return (url, showsCard ? ImageCodec.thumbnail(from: data, maxPixelSize: 480).map(SendableImage.init) : nil)
+        }.value
         log.notice("Saved \(url.path)")
-        return (url, thumbnail)
+        return (url, thumbnail?.image)
     }
 
     // MARK: Agents
