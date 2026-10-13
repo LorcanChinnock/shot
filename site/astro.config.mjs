@@ -1,5 +1,7 @@
 import { defineConfig } from 'astro/config';
 import { writeFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import * as pagefind from 'pagefind';
 import { SKIP, visit } from 'unist-util-visit';
 import { latestRelease } from './src/lib/release.ts';
 import { rehypeRepoLinks } from './src/lib/rehype.ts';
@@ -40,10 +42,26 @@ function redirects() {
   };
 }
 
+/** Indexes the guide's pages into dist/pagefind/ for its search box. The index is static files, so search needs no server. */
+function search() {
+  return {
+    name: 'shot-search',
+    hooks: {
+      'astro:build:done': async ({ dir }) => {
+        const { index } = await pagefind.createIndex();
+        const { errors } = await index.addDirectory({ path: fileURLToPath(dir), glob: 'docs/*/index.html' });
+        if (errors.length) throw new Error(`Pagefind: ${errors.join(', ')}`);
+        await index.writeFiles({ outputPath: fileURLToPath(new URL('pagefind', dir)) });
+        await pagefind.close();
+      },
+    },
+  };
+}
+
 export default defineConfig({
   site: 'https://shot.lorcanchinnock.com',
   trailingSlash: 'ignore',
-  integrations: [redirects()],
+  integrations: [redirects(), search()],
   markdown: {
     rehypePlugins: [rehypeRepoLinks, rehypeDropCommitLinks],
     shikiConfig: { theme: 'github-light' },

@@ -1,4 +1,5 @@
 ---
+import GuideSearch from '../../components/GuideSearch.astro';
 import Prose from '../../layouts/Prose.astro';
 import { anchors, pages } from '../../lib/guide';
 ---
@@ -6,6 +7,7 @@ import { anchors, pages } from '../../lib/guide';
 <Prose title="User guide" description="Every Shot feature, shortcut and setting, plus the shot:// URL scheme.">
   <h1>Using Shot</h1>
   <p>The full guide to Shot, one page for each part. For a quick introduction, see the <a href="/">overview</a>.</p>
+  <GuideSearch />
   <ul>
     {pages.map((page) => <li><a href={`/docs/${page.slug}/`}>{page.title}</a></li>)}
   </ul>
