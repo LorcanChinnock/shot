@@ -10,8 +10,9 @@ final class PinController {
 
     private var panels: [PinPanel] = []
 
-    /// Pins the image at `url`, read off the main actor.
-    func pin(_ url: URL) {
+    /// Pins the image at `url`, read off the main actor. `whenRead` runs once the file has been read, or failed to be,
+    /// so a caller can delete a temporary file only after the pin no longer needs it.
+    func pin(_ url: URL, whenRead: (@MainActor () -> Void)? = nil) {
         Task { [weak self] in
             let loaded = await Task.detached { () -> (SendableImage, CGFloat)? in
                 guard let image = ImageCodec.image(at: url) else {
@@ -19,6 +20,7 @@ final class PinController {
                 }
                 return (SendableImage(image), ImageCodec.scale(ofFileAt: url))
             }.value
+            whenRead?()
             guard let self else {
                 return
             }

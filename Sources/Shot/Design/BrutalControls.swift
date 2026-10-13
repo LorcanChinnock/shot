@@ -114,11 +114,13 @@ private struct ColorEditor: View {
                 value: $hue,
                 track: LinearGradient(colors: (0...6).map { Color(hue: Double($0) / 6, saturation: 1, brightness: 1) }, startPoint: .leading, endPoint: .trailing)
             )
+            .accessibilityLabel(Text("Hue"))
             BrutalSlider(
                 value: $opacity,
                 track: LinearGradient(colors: [color.opacity(0), color.opacity(1)], startPoint: .leading, endPoint: .trailing),
                 checkerboard: true
             )
+            .accessibilityLabel(Text("Opacity"))
             HStack {
                 Button(action: sample) {
                     Image(systemName: "eyedropper")
