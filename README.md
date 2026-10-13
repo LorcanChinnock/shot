@@ -27,7 +27,7 @@
 
 ### Capture and Quick Access
 
-Pick an area on a frozen screen with a magnifier, or a window or the full screen. Shot copies and saves it as soon as you let go, and a card in the corner lets you annotate it, save it somewhere else, or drag it straight into another app.
+Pick an area on a frozen screen with a magnifier, or a window or the full screen. Shot copies and saves it as soon as you let go, and a card in the corner lets you annotate it, save it somewhere else, pin it above your other windows, or drag it straight into another app.
 
 <img src="docs/media/capture.gif" width="720" alt="Dragging out an area with the magnifier, then the Quick Access card sliding into the corner and showing its buttons">
 

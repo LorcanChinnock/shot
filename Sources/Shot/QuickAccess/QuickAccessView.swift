@@ -80,7 +80,7 @@ private struct QuickAccessCardView: View {
         .contextMenu { menu }
     }
 
-    /// The hover buttons' actions again, plus Copy Path, which has no button: the card stays as plain as it is.
+    /// The hover buttons' actions again, plus Copy Path and Pin, which have no button: the card stays as plain as it is.
     @ViewBuilder
     private var menu: some View {
         Button("Copy") { controller.copy(card) }
@@ -90,6 +90,8 @@ private struct QuickAccessCardView: View {
         Button(card.isVideo ? "Edit Video" : "Annotate") { controller.annotate(card) }
         if card.isVideo {
             Button("Export GIF") { controller.exportGIF(card) }
+        } else {
+            Button("Pin") { controller.pin(card) }
         }
         Button("Show in Finder") { controller.showInFinder(card) }
     }

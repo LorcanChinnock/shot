@@ -54,7 +54,9 @@ A floating card appears in a bottom corner of the screen under the pointer after
 - **Show in Finder**, or **Close** the card
 - Drag the card into another app, or onto an open editor to [combine images](#combine-images)
 
-Right-click a card for the same actions, plus **Copy Path**.
+Right-click a card for the same actions, plus **Copy Path**, and **Pin** for a screenshot.
+
+**Pin** floats a screenshot above your other windows, so you can keep it in view as a reference while you work. It opens in the middle of the screen at its own size, or at half the screen if it's bigger, and the card closes. Drag a pin to move it, or drag its edges to resize it. Hover it and click the close button to remove it, or click it and press Esc. You can have several pins open at once.
 
 New cards stack above older ones, up to five; a sixth closes the oldest. Cards close on their own after 8 seconds, and hovering a card pauses the timer. In **Settings › Quick Access**, pick the bottom-left or bottom-right corner, and 4, 8, 15 or 30 seconds, or **Never**.
 
@@ -252,7 +254,7 @@ The estimated size of the exported file is shown before you export. **Cancel**, 
 - **Select** with a click, ⌘-click, ⇧-click, ⌘A or the arrow keys, or tick the checkbox on a thumbnail to add it to the selection. **Select All** and **Deselect All** sit next to the count at the bottom.
 - **Edit** (or Return) opens the selection, when none of it is a GIF, in the [annotation editor](#annotation-editor) or [video editor](#video-editor), and asks first if that's more than 8 items. Double-click a screenshot or recording, or use the pencil or scissors button on a hovered one, to open just that one.
 - **Quick Look** with Space.
-- The buttons at the bottom **Edit**, **Copy**, **Show in Finder** or **Move to Trash** the selection. Right-click for the same, plus **Quick Look**. Right-click a single item and **Edit** reads **Annotate** or **Edit Video**, with **Rename…** too, and **Export GIF** for a video. Trashed files go to the Trash; ⌘Z puts them back, and so can Finder.
+- The buttons at the bottom **Edit**, **Copy**, **Show in Finder** or **Move to Trash** the selection. Right-click for the same, plus **Quick Look**. Right-click a single item and **Edit** reads **Annotate** or **Edit Video**, with **Rename…** too, **Export GIF** for a video, and [**Pin**](#quick-access) for a screenshot. Trashed files go to the Trash; ⌘Z puts them back, and so can Finder.
 - Drag a thumbnail into another app.
 
 ## Using Shot with AI agents

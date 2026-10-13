@@ -405,6 +405,9 @@ private struct GalleryTileMenu: View {
         Divider()
         Button("Copy") { model.copy(targets) }
         Button("Quick Look") { GalleryPreview.shared.show(targets.map(\.url)) }
+        if targets.count == 1, item.kind == .image {
+            Button("Pin") { PinController.shared.pin(item.url) }
+        }
         if targets.count == 1 {
             Button("Rename…") { model.rename(item) }
         }
