@@ -93,6 +93,18 @@ private func layoutProject() throws -> Project {
     #expect(layout.visibleHeight(available: 20, minimum: 78) == 78, "the ruler and the main lane stay in view")
 }
 
+@Test func aClipsNameStartsPastTheLaneSwitchesOverIt() {
+    // Lock and hide: 4 in, two 20 pt buttons 3 apart.
+    #expect(LaneLayout.controlsWidth(count: 2) == 47)
+    #expect(LaneLayout.controlsWidth(count: 1) == 24)
+    #expect(LaneLayout.controlsWidth(count: 0) == 0)
+    #expect(LaneLayout.labelInset(clipX: 0, controlsEnd: 47) == 47, "a clip at 0:00")
+    #expect(LaneLayout.labelInset(clipX: 30, controlsEnd: 47) == 17)
+    #expect(LaneLayout.labelInset(clipX: 60, controlsEnd: 47) == 0, "clear of the switches")
+    #expect(LaneLayout.labelInset(clipX: 0, controlsEnd: 0) == 0, "no switches showing")
+    #expect(LaneLayout.labelInset(clipX: -100, controlsEnd: 47) == 147, "scrolled past its start")
+}
+
 @Test func trimmedEndsShowTheWholeRecordingAroundWhatsKept() throws {
     let full = Project(source: URL(fileURLWithPath: "/tmp/recording.mov"), duration: 10, canvasSize: CGSize(width: 1920, height: 1080), hasAudio: true)
     #expect(full.trimmedLead == 0 && full.trimmedEnds(ofTrack: 0).isEmpty)
