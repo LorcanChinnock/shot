@@ -5,8 +5,8 @@ name: Release
 # then attaches Shot-vX.Y.Z.zip and the Sparkle update feed (appcast.xml) to it.
 # Installed copies read the feed from releases/latest/download/appcast.xml, so the release stays a
 # draft (tag created up front) until its assets are attached; otherwise `latest` has no feed mid-build.
-# release-please pushes with GITHUB_TOKEN, which starts no workflows, so the release PR has no `test` check
-# and can't merge until `make release-gate` runs CI's macOS gate on it. See ci.yml.
+# The release PR can't merge until `make release-gate` runs CI's macOS gate on it, which sets the required
+# `test` status on the commit it passed. See ci.yml.
 on:
   push:
     branches: [main]
