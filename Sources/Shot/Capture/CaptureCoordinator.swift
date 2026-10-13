@@ -121,6 +121,27 @@ final class CaptureCoordinator {
         }
     }
 
+    /// Counts down on screen, then takes a full-screen screenshot of the screen under the pointer, so menus and hover states
+    /// set up in the meantime are in it. Esc or Cancel on the countdown takes nothing.
+    func captureAfterCountdown(seconds: Int) {
+        guard !busy else {
+            return
+        }
+        busy = true
+        Task {
+            defer { busy = false }
+            let screen = NSScreen.underPointer ?? NSScreen.screens[0]
+            guard await ScreenshotCountdown().run(seconds: seconds, on: screen) else {
+                return
+            }
+            do {
+                try await captureFullscreen()
+            } catch {
+                report(error)
+            }
+        }
+    }
+
     /// Copies the path of the newest capture, preferring an edited version over its original as the agent tools do, so
     /// it pastes into an agent's prompt as the file itself.
     private func copyLatestPath() async {

@@ -37,6 +37,7 @@ Shot lives in the menu bar. Its menu lists every capture and recording action wi
 - **Previous area:** **Capture Previous Area** in the menu bar menu, or [`shot://capture-previous`](#url-scheme), takes the area your last area screenshot took, without the overlay, so a before and after shot lines up exactly. It has no shortcut until you give it one in **Settings › Shortcuts**. Shot forgets the area when it quits, and says so if none was taken yet or that part of the screen is gone.
 - **Window:** press Space after ⌘⇧4, then click a window. Shot keeps the macOS window shadow unless you turn it off in Settings › Capture.
 - **Full screen (⌘⇧3):** captures the screen under the pointer.
+- **After a delay:** **Capture Full Screen After Delay** in the menu bar menu (3 or 5 seconds, as the recording countdown), or [`shot://capture-timer?seconds=5`](#url-scheme), counts down on screen, then captures the screen under the pointer. That gives you time to open a menu or hover over something first. Shot isn't activated while it counts, so the menu stays open. Press Esc or click **Cancel** to take nothing.
 
 After a capture, Shot saves it, copies it, and shows it in [Quick Access](#quick-access). Choose which of these happen, or open the editor straight away, in **Settings › Capture**. Clipboard copies are always PNG.
 
@@ -511,6 +512,7 @@ Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a scr
 | `shot://pause` | Pause or resume the recording |
 | `shot://pick-color` | Pick a colour on screen and copy its hex |
 | `shot://copy-path` | Copy the newest capture's path |
+| `shot://capture-timer?seconds=<n>` | Count down `n` seconds (1 to 60, default 5), then capture the full screen |
 | `shot://annotate?path=<file>` | Open an image in the editor, or a video in the video editor |
 | `shot://edit-video?path=<file>` | Open a video in the video editor to trim it |
 | `shot://gallery` | Open the gallery |

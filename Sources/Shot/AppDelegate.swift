@@ -116,6 +116,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             MainWindowController.showSettings(section: section)
         case .welcome:
             WelcomeWindow.showAgain()
+        case let .captureTimer(seconds):
+            coordinator.captureAfterCountdown(seconds: seconds)
         case let .edit(route):
             coordinator.edit(route)
         case let .action(action):

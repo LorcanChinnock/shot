@@ -153,7 +153,7 @@ final class RecordingSetupController {
             return
         }
         model.countdown = model.countdownSeconds
-        let panel = CountdownPanel(center: CGPoint(x: region.midX, y: region.midY), model: model) { [weak self] in
+        let panel = CountdownPanel(center: CGPoint(x: region.midX, y: region.midY), remaining: { [model] in model.countdown }) { [weak self] in
             self?.cancelCountdown()
         }
         panel.orderFrontRegardless()
@@ -528,13 +528,15 @@ private struct OptionToggle: View {
 
 // MARK: Countdown
 
-private final class CountdownPanel: NSPanel {
+/// The countdown a recording and a timed screenshot share. `remaining` is read while the view draws, so reading an
+/// observable property in it keeps the number current.
+final class CountdownPanel: NSPanel {
     private static let size = NSSize(width: 220, height: 250)
     private let onCancel: () -> Void
 
     override var canBecomeKey: Bool { true }
 
-    init(center: CGPoint, model: RecordingSetupModel, onCancel: @escaping () -> Void) {
+    init(center: CGPoint, remaining: @escaping () -> Int?, onCancel: @escaping () -> Void) {
         self.onCancel = onCancel
         let origin = CGPoint(x: center.x - Self.size.width / 2, y: center.y - Self.size.height / 2)
         super.init(contentRect: NSRect(origin: origin, size: Self.size), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
@@ -544,7 +546,7 @@ private final class CountdownPanel: NSPanel {
         hasShadow = false
         isReleasedWhenClosed = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
-        contentView = NSView(hosting: CountdownView(model: model, onCancel: onCancel))
+        contentView = NSView(hosting: CountdownView(remaining: remaining, onCancel: onCancel))
     }
 
     override func cancelOperation(_ sender: Any?) {
@@ -553,16 +555,16 @@ private final class CountdownPanel: NSPanel {
 }
 
 private struct CountdownView: View {
-    let model: RecordingSetupModel
+    let remaining: () -> Int?
     let onCancel: () -> Void
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("\(model.countdown ?? 0)")
+            Text("\(remaining() ?? 0)")
                 .font(.system(size: 84, weight: .black, design: .rounded))
                 .foregroundStyle(Brutal.ink)
                 .contentTransition(.numericText(countsDown: true))
-                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: model.countdown)
+                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: remaining())
                 .frame(width: 148, height: 148)
                 .brutalCircle(Brutal.yellow, shadow: 6)
             Button("Cancel") { onCancel() }
@@ -574,5 +576,41 @@ private struct CountdownView: View {
         .padding(.bottom, 6)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .environment(\.colorScheme, .light)
+    }
+}
+
+/// Counts down on screen before a timed screenshot, so menus and hover states can be set up first. Shot isn't activated,
+/// which would close a menu and end a hover; Esc works while the panel is key, and its Cancel button always does.
+@MainActor
+@Observable
+final class ScreenshotCountdown {
+    private var remaining: Int?
+    private var cancelled = false
+    @ObservationIgnored private var panel: CountdownPanel?
+
+    /// Returns `true` once `seconds` have passed and the panel is gone, `false` if the user cancelled.
+    func run(seconds: Int, on screen: NSScreen) async -> Bool {
+        remaining = seconds
+        // Bottom centre, clear of the menu bar and of whatever the user is about to open.
+        let visible = screen.visibleFrame
+        let panel = CountdownPanel(center: CGPoint(x: visible.midX, y: visible.minY + 170), remaining: { [weak self] in self?.remaining }) { [weak self] in
+            self?.cancelled = true
+            self?.panel?.orderOut(nil)
+        }
+        self.panel = panel
+        panel.orderFrontRegardless()
+        panel.makeKey()
+        for second in stride(from: seconds, through: 1, by: -1) {
+            remaining = second
+            try? await Task.sleep(for: .seconds(1))
+            if cancelled || Task.isCancelled {
+                panel.orderOut(nil)
+                return false
+            }
+        }
+        panel.orderOut(nil)
+        // Let the panel leave the screen before it's captured; it isn't hidden from captures when Hide Shot is off.
+        try? await Task.sleep(for: .milliseconds(150))
+        return !cancelled
     }
 }
