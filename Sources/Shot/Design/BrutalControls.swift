@@ -183,6 +183,10 @@ private struct SaturationBrightnessField: View {
                 Color(hue: hue, saturation: 1, brightness: 1)
                 LinearGradient(colors: [.white, .white.opacity(0)], startPoint: .leading, endPoint: .trailing)
                 LinearGradient(colors: [.black.opacity(0), .black], startPoint: .top, endPoint: .bottom)
+            }
+            .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.chip, style: .circular), width: 2)
+            // Outside the border's clip, so at an edge the marker and its focus ring draw whole, over the border.
+            .overlay {
                 Circle().fill(Color(hue: hue, saturation: saturation, brightness: brightness))
                     .frame(width: 14, height: 14)
                     .inkBorder(Circle(), width: 2, color: isFocused ? Brutal.yellow : .white)
@@ -190,7 +194,6 @@ private struct SaturationBrightnessField: View {
                     .inkBorder(Circle(), width: 1)
                     .position(x: saturation * size.width, y: (1 - brightness) * size.height)
             }
-            .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.chip, style: .circular), width: 2)
             .contentShape(Rectangle())
             .gesture(DragGesture(minimumDistance: 0).onChanged { drag in
                 saturation = min(max(drag.location.x / size.width, 0), 1)
@@ -210,13 +213,17 @@ private struct SaturationBrightnessField: View {
             }
             return .handled
         }
-        .accessibilityElement()
-        .accessibilityLabel(Text("Saturation and brightness"))
-        .accessibilityValue(Text("Saturation \(percent(saturation)) percent, brightness \(percent(brightness)) percent"))
-        .accessibilityAction(named: Text("Increase saturation")) { saturation = SliderStep.value(saturation, up: true, fraction: 0.1, in: 0...1) }
-        .accessibilityAction(named: Text("Decrease saturation")) { saturation = SliderStep.value(saturation, up: false, fraction: 0.1, in: 0...1) }
-        .accessibilityAction(named: Text("Increase brightness")) { brightness = SliderStep.value(brightness, up: true, fraction: 0.1, in: 0...1) }
-        .accessibilityAction(named: Text("Decrease brightness")) { brightness = SliderStep.value(brightness, up: false, fraction: 0.1, in: 0...1) }
+        // One slider can't hold two values, so assistive tech sees a group of two sliders, one per axis.
+        .accessibilityRepresentation {
+            VStack {
+                Slider(value: $saturation, in: 0...1, step: 0.1) { Text("Saturation") }
+                    .accessibilityValue(Text("\(percent(saturation)) percent"))
+                Slider(value: $brightness, in: 0...1, step: 0.1) { Text("Brightness") }
+                    .accessibilityValue(Text("\(percent(brightness)) percent"))
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(Text("Saturation and brightness"))
+        }
     }
 
     private func percent(_ value: Double) -> Int { Int((value * 100).rounded()) }
@@ -296,10 +303,10 @@ struct BrutalSlider: View {
                 endStepping()
             }
         }
-        .accessibilityElement()
-        .accessibilityValue(Text("\(Int((fraction * 100).rounded())) percent"))
-        .accessibilityAdjustableAction { direction in
-            value = SliderStep.value(value, up: direction == .increment, fraction: 0.1, in: range)
+        // A real slider to assistive tech, stepping by 10% of the range. A caller's label after this applies to it.
+        .accessibilityRepresentation {
+            Slider(value: $value, in: range, step: (range.upperBound - range.lowerBound) / 10)
+                .accessibilityValue(Text("\(Int((fraction * 100).rounded())) percent"))
         }
     }
 
