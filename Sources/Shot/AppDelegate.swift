@@ -47,7 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Task.detached(priority: .utility) {
             // A loupe left by a run that quit or died mid-pick would otherwise swallow every click.
             ColorSampler.endLoupe()
-            Recorder.sweepLeftoverSegments()
+            await Recorder.recoverLeftoverSegments()
             let swept = TemporaryCaptures.sweep()
             if swept > 0 {
                 log.notice("Swept \(swept) old captures taken with saving off")

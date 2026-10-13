@@ -8900,6 +8900,9 @@
         }
       }
     },
+    "Couldn't join the recording. Its parts are saved in your save folder." : {
+
+    },
     "Couldn't move %lld files to the Trash" : {
       "localizations" : {
         "de" : {
@@ -23823,6 +23826,9 @@
         }
       }
     },
+    "Recovered an interrupted recording" : {
+
+    },
     "Rectangle" : {
       "localizations" : {
         "de" : {
@@ -26524,6 +26530,9 @@
           }
         }
       }
+    },
+    "Saved the parts of an interrupted recording" : {
+
     },
     "Saved, but couldn't reload it: %@" : {
       "localizations" : {

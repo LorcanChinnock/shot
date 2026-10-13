@@ -122,23 +122,6 @@ final class Recorder: NSObject {
         FileManager.default.temporaryDirectory.appendingPathComponent("Shot/segments")
     }
 
-    /// Deletes segments left by a recording that never finished, a quit or crash say. Call at launch, before anything
-    /// records. Files written in the last ten minutes are kept, in case another copy of Shot is recording into the same folder.
-    nonisolated static func sweepLeftoverSegments() {
-        let folder = segmentsFolder
-        let cutoff = Date().addingTimeInterval(-600)
-        let files = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
-        var swept = 0
-        for file in files where ((try? file.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast) < cutoff {
-            if (try? FileManager.default.removeItem(at: file)) != nil {
-                swept += 1
-            }
-        }
-        if swept > 0 {
-            log.notice("Swept \(swept) leftover segment files")
-        }
-    }
-
     // MARK: Session
 
     /// `region` is an AppKit global rect inside `screen`.
@@ -298,8 +281,14 @@ final class Recorder: NSObject {
             onFinish?(finalURL)
             return true
         } catch {
-            log.error("Joining segments failed; parts kept at \(parts.first?.deletingLastPathComponent().path ?? "")")
-            onError?(error)
+            log.error("Joining segments failed: \(error.localizedDescription, privacy: .public)")
+            if let kept = await Self.keepAsIs(parts, date: Date()) {
+                log.notice("Kept the segments as \(kept.count) files in \(kept[0].deletingLastPathComponent().path, privacy: .public)")
+                Toast.show("Couldn't join the recording. Its parts are saved in your save folder.", duration: .seconds(8), reveal: kept[0])
+            } else {
+                log.error("Couldn't keep the segments; they stay in \(parts.first?.deletingLastPathComponent().path ?? "", privacy: .public)")
+                onError?(error)
+            }
             return false
         }
     }
@@ -566,8 +555,24 @@ final class Recorder: NSObject {
         controls = nil
     }
 
+    /// Keeps the segment a failed recording output left, if it can still be played, as the end of the recording; otherwise deletes it.
+    private func keepOrDrop(_ video: URL, audio: VideoConcatenator.SegmentAudio?) async {
+        if await Self.isPlayable(video) {
+            segments.append(video)
+            if let audio {
+                segmentAudio.append(audio)
+            }
+            log.notice("Kept the segment whose recording failed")
+        } else {
+            for url in [video] + (audio?.files ?? []) {
+                try? FileManager.default.removeItem(at: url)
+            }
+            log.notice("Left out the segment whose recording failed")
+        }
+    }
+
     /// Ends the recording after `error`, keeping what was recorded before it. `output` is the recording output that
-    /// failed, if one did: its segment's file can't be trusted, so it's left out.
+    /// failed, if one did: its segment's file is kept only if it can still be played.
     private func failed(_ error: Error, output: ObjectIdentifier? = nil) {
         guard isRecording else {
             return
@@ -582,20 +587,22 @@ final class Recorder: NSObject {
                 try? await stream.stopCapture()
             }
         }
+        var truncated: (video: URL, audio: VideoConcatenator.SegmentAudio?)?
         if let output, output == recordingOutput.map(ObjectIdentifier.init), let failed = segments.popLast() {
-            let audio = segmentAudio.count > segments.count ? segmentAudio.popLast() : nil
-            for url in [failed] + (audio?.files ?? []) {
-                try? FileManager.default.removeItem(at: url)
-            }
-            log.notice("Left out the segment whose recording failed")
+            truncated = (failed, segmentAudio.count > segments.count ? segmentAudio.popLast() : nil)
         }
         stream = nil
         recordingOutput = nil
         resolveSegment()
         CameraBubble.shared.hide()
         onError?(error)
-        // Keep whatever was recorded before the failure.
-        Task { await complete(discard: false) }
+        // Keep whatever was recorded before the failure, and the failed segment too if it can still be played.
+        Task {
+            if let truncated {
+                await keepOrDrop(truncated.video, audio: truncated.audio)
+            }
+            await complete(discard: false)
+        }
     }
 }
 

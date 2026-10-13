@@ -26,14 +26,14 @@ enum Toast {
 
     /// Shows `message`; `duration` nil keeps it visible until the next call. The pointer holds it, and a click dismisses it.
     /// With `undoable`, the toast offers Undo, and the action commits once the toast goes away any other way.
-    /// With `cancel`, it offers Cancel for the work it describes.
-    static func show(_ message: LocalizedStringResource, duration: Duration? = .seconds(1.5), undoable: PendingAction? = nil, cancel: (() -> Void)? = nil) {
-        show(String(localized: message), duration: duration, undoable: undoable, cancel: cancel)
+    /// With `cancel`, it offers Cancel for the work it describes. With `reveal`, it offers Show, which selects that file in Finder.
+    static func show(_ message: LocalizedStringResource, duration: Duration? = .seconds(1.5), undoable: PendingAction? = nil, cancel: (() -> Void)? = nil, reveal: URL? = nil) {
+        show(String(localized: message), duration: duration, undoable: undoable, cancel: cancel, reveal: reveal)
     }
 
     /// A toast whose text is already localized.
     @_disfavoredOverload
-    static func show<S: StringProtocol>(_ message: S, duration: Duration? = .seconds(1.5), undoable: PendingAction? = nil, cancel: (() -> Void)? = nil) {
+    static func show<S: StringProtocol>(_ message: S, duration: Duration? = .seconds(1.5), undoable: PendingAction? = nil, cancel: (() -> Void)? = nil, reveal: URL? = nil) {
         let message = String(message)
         settle()
         self.undoable = undoable
@@ -42,6 +42,8 @@ enum Toast {
             ToastView.Action(title: String(localized: "Undo")) { undoable.undo(); hide() }
         } else if let cancel {
             ToastView.Action(title: String(localized: "Cancel"), perform: cancel)
+        } else if let reveal {
+            ToastView.Action(title: String(localized: "Show")) { NSWorkspace.shared.activateFileViewerSelecting([reveal]); hide() }
         } else {
             nil
         }

@@ -25,3 +25,11 @@ private let date: Date = {
 @Test func customPrefix() {
     #expect(FileNaming.baseName(for: date, prefix: "Bug") == "Bug 2026-10-02 at 14.03.11")
 }
+
+@Test func recoveredNamesSayRecoveredAndAvoidCollisions() {
+    let folder = URL(fileURLWithPath: "/tmp/shots")
+    #expect(FileNaming.recoveredURL(in: folder, date: date) { _ in false }.lastPathComponent == "Shot 2026-10-02 at 14.03.11 (recovered).mp4")
+    #expect(FileNaming.recoveredURL(in: folder, date: date, part: 2) { _ in false }.lastPathComponent == "Shot 2026-10-02 at 14.03.11 (recovered, part 2).mp4")
+    let taken: Set<String> = ["Shot 2026-10-02 at 14.03.11 (recovered).mp4"]
+    #expect(FileNaming.recoveredURL(in: folder, date: date) { taken.contains($0.lastPathComponent) }.lastPathComponent == "Shot 2026-10-02 at 14.03.11 (recovered) (2).mp4")
+}
