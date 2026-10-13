@@ -112,7 +112,7 @@ To force a particular version, add a `Release-As: X.Y.Z` line to the body of a c
 
 ### Release secrets
 
-The release workflow needs five repository secrets. Create them once, and keep a backup of each somewhere safe: if you lose the Sparkle key, installed copies can't verify updates and you have to ship a new key by hand.
+The release workflow needs five secrets, which belong in a GitHub Environment named `release` so no other workflow or branch can read them. Create them once, and keep a backup of each somewhere safe: if you lose the Sparkle key, installed copies can't verify updates and you have to ship a new key by hand.
 
 | Secret | What it is |
 |---|---|
@@ -121,6 +121,10 @@ The release workflow needs five repository secrets. Create them once, and keep a
 | `SHOT_SIGNING_CERT_PASSWORD` | The password for that `.p12`. |
 | `HOMEBREW_TAP_DEPLOY_KEY` | The private half of an SSH deploy key with write access to `LorcanChinnock/homebrew-tap` only. The workflow uses it to update `Casks/shot.rb` there; the tap's `main` ruleset lets deploy keys push. |
 | `SITE_DEPLOY_HOOK` | The URL of the website's Cloudflare deploy hook, which rebuilds the site so its download button moves to the new release. See [site/README.md](site/README.md). |
+
+Set the environment up once under Settings › Environments › `release`: limit deployment branches and tags to `main` and `v*`, and store the five secrets there instead of at repository level (`gh secret set --env release NAME`). Add a ruleset for `v*` tags that blocks deletion, updates and non-fast-forward pushes. The release build fails if the `Shot Release` signing identity is missing, rather than signing ad hoc.
+
+Each release also attaches `SHA256SUMS` and a build provenance attestation. To check a direct download, run `shasum -a 256 -c SHA256SUMS` and `gh attestation verify Shot-vX.Y.Z.zip -R LorcanChinnock/shot`.
 
 ```bash
 make build                                                     # fetches Sparkle's tools
