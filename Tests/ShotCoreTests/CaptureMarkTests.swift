@@ -38,7 +38,7 @@ private let red = RGBA.presets[0]
 @Test func marksCarryWhatTheEditorNeedsToRebuildThem() {
     var arrow = Annotation(kind: .arrow(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 50, y: 10)), color: red, lineWidth: 6)
     arrow.bend = CGVector(dx: 0, dy: -8)
-    var box = Annotation(kind: .shape(.rounded, rect: CGRect(x: 0, y: 0, width: 40, height: 20)), color: red, fill: RGBA.presets[2], lineWidth: 4)
+    var box = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 0, y: 0, width: 40, height: 20)), color: red, fill: RGBA.presets[2], lineWidth: 4)
     box.cornerRadius = 6
     let pen = Annotation(kind: .freehand([CGPoint(x: 20, y: 20), CGPoint(x: 30, y: 25)]), color: red, lineWidth: 4)
     let text = Annotation(kind: .text("Hi", origin: CGPoint(x: 20, y: 30), fontSize: 18), color: red, lineWidth: 4)
@@ -141,7 +141,7 @@ private let red = RGBA.presets[0]
 @Test func everyRebuildableKindRoundTripsThroughItsMark() throws {
     var arrow = Annotation(kind: .arrow(from: CGPoint(x: 10, y: 20), to: CGPoint(x: 90, y: 60)), color: red, lineWidth: 6)
     arrow.bend = CGVector(dx: 3, dy: -8)
-    var rounded = Annotation(kind: .shape(.rounded, rect: CGRect(x: 5, y: 5, width: 40, height: 20)), color: RGBA.presets[4], fill: RGBA.presets[2], lineWidth: 2)
+    var rounded = Annotation(kind: .shape(.rectangle, rect: CGRect(x: 5, y: 5, width: 40, height: 20)), color: RGBA.presets[4], fill: RGBA.presets[2], lineWidth: 2)
     rounded.cornerRadius = 7
     let annotations = [
         arrow,

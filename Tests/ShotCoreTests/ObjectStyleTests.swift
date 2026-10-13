@@ -399,7 +399,7 @@ private func same(_ a: CGRect, _ b: CGRect) -> Bool {
     outlined.style = ObjectStyle(border: Border(kind: .outline, lineWidth: 2, color: RGBA(1, 1, 1)))
     var doc = EditorDocument(base: filled(width: 300, height: 200, grey: 0.5), annotations: [
         source, arrow(from: CGPoint(x: 10, y: 100), to: CGPoint(x: 60, y: 120)), outlined,
-        Annotation(kind: .shape(.rounded, rect: CGRect(x: 100, y: 100, width: 40, height: 40)), color: RGBA(1, 0, 0), lineWidth: 4),
+        Annotation(kind: .shape(.rectangle, rect: CGRect(x: 100, y: 100, width: 40, height: 40)), color: RGBA(1, 0, 0), lineWidth: 4),
         Annotation(kind: .note("Note", rect: CGRect(x: 200, y: 100, width: 80, height: 40)), color: RGBA(1, 0.8, 0), lineWidth: 4),
         Annotation(kind: .blur(CGRect(x: 200, y: 10, width: 40, height: 40)), color: RGBA(0, 0, 0), lineWidth: 4),
     ])

@@ -69,9 +69,76 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         set { locked = newValue ? true : nil }
     }
     private var locked: Bool?
-    /// A rounded rectangle's, rounded spotlight's or placed image's corner radius; `nil` keeps the look from before it
-    /// could be set, which for an image is square.
-    public var cornerRadius: CGFloat?
+    /// The corner radius of a shape, spotlight or placed image; `nil` is square.
+    public var cornerRadius: CGFloat? {
+        get { kind.isImage ? imageRadius : boxRadius }
+        set {
+            if kind.isImage { imageRadius = newValue } else { boxRadius = newValue }
+        }
+    }
+    /// A placed image's radius. Older versions also saved a rounded box's radius under this key.
+    private var imageRadius: CGFloat?
+    /// A shape's or spotlight's radius. It has its own key because older versions saved a radius, 12 by default, on every
+    /// shape, rectangles that were square included.
+    private var boxRadius: CGFloat?
+
+    private enum CodingKeys: String, CodingKey {
+        case id, kind, color, fill, lineWidth, bend, textAlign, hidden, locked, objectStyle, boxRadius
+        case imageRadius = "cornerRadius"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        kind = try container.decode(Kind.self, forKey: .kind)
+        color = try container.decode(RGBA.self, forKey: .color)
+        fill = try container.decodeIfPresent(RGBA.self, forKey: .fill)
+        lineWidth = try container.decode(CGFloat.self, forKey: .lineWidth)
+        bend = try container.decodeIfPresent(CGVector.self, forKey: .bend)
+        textAlign = try container.decodeIfPresent(TextAlign.self, forKey: .textAlign)
+        hidden = try container.decodeIfPresent(Bool.self, forKey: .hidden)
+        locked = try container.decodeIfPresent(Bool.self, forKey: .locked)
+        objectStyle = try container.decodeIfPresent(ObjectStyle.self, forKey: .objectStyle)
+        boxRadius = try container.decodeIfPresent(CGFloat.self, forKey: .boxRadius)
+        imageRadius = try container.decodeIfPresent(CGFloat.self, forKey: .imageRadius)
+        // A rounded rectangle from before every shape could be rounded keeps its radius, or the fifth of its shorter side
+        // that it had when it had none.
+        if !kind.isImage {
+            if boxRadius == nil, let legacy = try? container.decode(LegacyRoundedBox.self, forKey: .kind) {
+                boxRadius = imageRadius ?? min(legacy.rect.width, legacy.rect.height) / 5
+            }
+            imageRadius = nil
+        }
+    }
+
+    /// The box of a shape or spotlight saved as `rounded`, read from the saved form of `Kind`; fails for any other.
+    private struct LegacyRoundedBox: Decodable {
+        let rect: CGRect
+
+        private enum Case: String, CodingKey {
+            case shape, spotlight
+        }
+        private enum Fields: String, CodingKey {
+            case first = "_0", rect, style
+        }
+        private struct Style: Decodable {
+            let shape: String
+        }
+        private struct NotRounded: Error {}
+
+        init(from decoder: Decoder) throws {
+            let outer = try decoder.container(keyedBy: Case.self)
+            if outer.contains(.shape) {
+                let fields = try outer.nestedContainer(keyedBy: Fields.self, forKey: .shape)
+                guard try fields.decode(String.self, forKey: .first) == "rounded" else { throw NotRounded() }
+                rect = try fields.decode(CGRect.self, forKey: .rect)
+            } else {
+                let fields = try outer.nestedContainer(keyedBy: Fields.self, forKey: .spotlight)
+                guard try fields.decode(Style.self, forKey: .style).shape == "rounded" else { throw NotRounded() }
+                rect = try fields.decode(CGRect.self, forKey: .first)
+            }
+        }
+    }
     /// The shadow and border of a placed image, mark or text; see `styleKind`. Stored only when set, so annotations saved
     /// before it still decode.
     public var style: ObjectStyle {
@@ -108,6 +175,10 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         public static func redaction(_ redaction: Redaction, rect: CGRect, amount: CGFloat?) -> Kind {
             redaction == .blur ? .blur(rect, amount: amount) : .pixelate(rect, amount: amount)
         }
+
+        fileprivate var isImage: Bool {
+            if case .image = self { true } else { false }
+        }
     }
 
     public init(id: UUID = UUID(), kind: Kind, color: RGBA, fill: RGBA? = nil, lineWidth: CGFloat) {
@@ -125,26 +196,29 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         return copy
     }
 
-    /// The radius a new rounded rectangle's corners start with, in points, so resizing it doesn't change them.
+    /// The radius an older version's `rounded` rectangle had with none set, which an agent's `rounded` mark takes, in points.
     public static let defaultCornerRadius: CGFloat = 12
 
-    /// True for the kinds that can be rounded rectangles: shapes and spotlights.
-    public var canRound: Bool {
+    /// The outline and box of a shape or spotlight with corners to round, and the radius they're drawn with; `nil` for
+    /// anything else, an ellipse included.
+    public var cornerBox: (shape: BoxShape, rect: CGRect, radius: CGFloat)? {
+        let shape: BoxShape, rect: CGRect
         switch kind {
-        case .shape, .spotlight: true
-        case .arrow, .line, .highlight, .pixelate, .blur, .text, .counter, .note, .freehand, .marker, .image: false
-        }
-    }
-
-    /// The box of a rounded rectangle or rounded spotlight and the radius its corners are drawn with; `nil` for anything else.
-    public var roundedBox: (rect: CGRect, radius: CGFloat)? {
-        let rect: CGRect
-        switch kind {
-        case let .shape(.rounded, box): rect = box
-        case let .spotlight(box, style) where style.shape == .rounded: rect = box
+        case let .shape(boxShape, box): (shape, rect) = (boxShape, box)
+        case let .spotlight(box, style): (shape, rect) = (style.shape, box)
         default: return nil
         }
-        return (rect, BoxShape.cornerRadius(cornerRadius, in: rect))
+        return shape.hasCorners ? (shape, rect, shape.clampedRadius(cornerRadius, in: rect)) : nil
+    }
+
+    /// True for a shape with corners to round, whose radius a copied style carries.
+    public var roundsShape: Bool {
+        if case .shape = kind { cornerBox != nil } else { false }
+    }
+
+    /// True for what the Style popover and a pasted style can set a corner radius on: a placed image or a shape with corners.
+    public var takesCornerRadius: Bool {
+        styleKind?.takesCorners == true || roundsShape
     }
 
     public var supportsFill: Bool {
@@ -406,23 +480,45 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         }
     }
 
-    /// A rounded rectangle's corner-radius handles, one inside each corner on its diagonal. They sit `2 * tolerance` in
-    /// from the corner, clear of its resize handle, and move further in as the radius grows. A box too small to keep
-    /// them clear of the resize handles has none.
+    /// The corner-radius handles of a shape or spotlight with corners, one inside each corner it rounds, on the line from
+    /// the corner to the centre; a star has one in each point. They sit `2 * tolerance` in from the corner, clear of
+    /// its resize handle, and move further in as the radius grows. A box too small to keep them clear of the resize
+    /// handles has none.
     public func radiusHandles(tolerance: CGFloat) -> [(handle: AnnotationHandle, point: CGPoint)] {
-        guard let (rect, radius) = roundedBox, min(rect.width, rect.height) >= tolerance * 10 else {
+        guard let (shape, rect, radius) = cornerBox, min(rect.width, rect.height) >= tolerance * 10 else {
             return []
         }
         let inset = Self.radiusHandleInset(radius: radius, tolerance: tolerance)
-        return AnnotationHandle.corners.map { corner in
-            let point = corner.point(in: rect)
-            return (.radius(corner), CGPoint(x: point.x - CGFloat(corner.dx) * inset, y: point.y - CGFloat(corner.dy) * inset))
+        return shape.vertices(in: rect).rounded.sorted().compactMap { index in
+            Self.radiusAxis(of: index, shape: shape, in: rect).map { corner, inward in
+                (.radius(index), CGPoint(x: corner.x + inward.dx * inset, y: corner.y + inward.dy * inset))
+            }
         }
     }
 
-    /// How far a radius handle sits in from its corner on each axis. Half the radius keeps the four apart even on a circle.
+    /// How far a radius handle sits in from its corner, in steps of its `radiusAxis`. Half the radius keeps the four apart
+    /// even on a circle.
     private static func radiusHandleInset(radius: CGFloat, tolerance: CGFloat) -> CGFloat {
         tolerance * 2 + radius / 2
+    }
+
+    /// Corner `index` of `shape` in `rect` and the step its radius handle takes along its line, which is as long as
+    /// the square root of 2: one point in on each axis for a rectangle, along the line to the centre for anything else.
+    /// `nil` when the corner is the centre.
+    private static func radiusAxis(of index: Int, shape: BoxShape, in rect: CGRect) -> (corner: CGPoint, inward: CGVector)? {
+        let points = shape.vertices(in: rect).points
+        guard points.indices.contains(index) else {
+            return nil
+        }
+        let corner = points[index]
+        if shape == .rectangle {
+            let handle = AnnotationHandle.corners[index]
+            return (corner, CGVector(dx: -CGFloat(handle.dx), dy: -CGFloat(handle.dy)))
+        }
+        let toCentre = CGVector(dx: rect.midX - corner.x, dy: rect.midY - corner.y)
+        let length = hypot(toCentre.dx, toCentre.dy)
+        let step = 2.0.squareRoot() / length
+        return length > 0 ? (corner, CGVector(dx: toCentre.dx * step, dy: toCentre.dy * step)) : nil
     }
 
     /// The handle nearest `point`, if one is within `tolerance` of it on both axes and nearer than the
@@ -441,7 +537,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     /// Drags `handle` to `point`. Call it on the annotation as it was when the drag began: a box dragged
     /// past its opposite side flips, so its handles swap sides. A pen stroke scales its points within its
     /// bounds, and mirrors when flipped. An image keeps its aspect ratio and never flips.
-    /// A radius handle sets one radius for all four corners from how far along its diagonal `point` is; pass the
+    /// A radius handle sets one radius for every corner from how far along its line `point` is; pass the
     /// `tolerance` its handles were placed with. A handle the kind doesn't have changes nothing.
     ///
     /// `constrain` (Shift) and `fromCenter` (Option) work as they do when drawing:
@@ -452,11 +548,10 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     /// - With `fromCenter`, the opposite side mirrors the drag, so the shape grows around its centre (a line or arrow's
     ///   ends move symmetrically around its midpoint, and an edge mirrors only on its own axis).
     public mutating func resize(_ handle: AnnotationHandle, to point: CGPoint, tolerance: CGFloat = 0, constrain: Bool = false, fromCenter: Bool = false) {
-        if case let .radius(corner) = handle {
-            if let (rect, _) = roundedBox {
-                let cornerPoint = corner.point(in: rect)
-                let inset = ((cornerPoint.x - point.x) * CGFloat(corner.dx) + (cornerPoint.y - point.y) * CGFloat(corner.dy)) / 2
-                cornerRadius = BoxShape.cornerRadius(max(0, (inset - tolerance * 2) * 2), in: rect)
+        if case let .radius(index) = handle {
+            if let (shape, rect, _) = cornerBox, let (corner, inward) = Self.radiusAxis(of: index, shape: shape, in: rect) {
+                let inset = ((point.x - corner.x) * inward.dx + (point.y - corner.y) * inward.dy) / 2
+                cornerRadius = shape.clampedRadius(max(0, (inset - tolerance * 2) * 2), in: rect)
             }
             return
         }
@@ -664,8 +759,8 @@ public enum AnnotationHandle: Hashable, Sendable {
     case start, end
     /// A line or arrow's middle, which drags to bend it.
     case mid
-    /// A rounded rectangle's corner radius, from the handle inside `corner`.
-    indirect case radius(AnnotationHandle)
+    /// A shape's corner radius, from the handle inside its corner `index`, counting as `BoxShape.vertices` does.
+    case radius(Int)
 
     /// The handles on a box, corners first.
     public static let box: [AnnotationHandle] = [.topLeft, .topRight, .bottomRight, .bottomLeft, .top, .right, .bottom, .left]

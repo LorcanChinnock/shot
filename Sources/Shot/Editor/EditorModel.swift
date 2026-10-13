@@ -637,11 +637,10 @@ final class EditorModel {
 
     var lineWidth: CGFloat { Self.baseWidths[widthIndex] * scale }
     var fontSize: CGFloat { lineWidth * 6 }
-    var cornerRadius: CGFloat { Annotation.defaultCornerRadius * scale }
     /// What the toolbar gives the annotation the canvas draws next.
     var draftStyle: AnnotationDraft.Style {
         AnnotationDraft.Style(
-            color: nextColor, fill: fill, noteColor: noteColor, lineWidth: lineWidth, cornerRadius: cornerRadius, shape: shape,
+            color: nextColor, fill: fill, noteColor: noteColor, lineWidth: lineWidth, shape: shape,
             redaction: redaction, redactionAmount: redactionAmount, spotlight: nextSpotlightStyle, alignment: alignment
         )
     }

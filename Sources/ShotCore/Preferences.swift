@@ -380,7 +380,8 @@ public struct Preferences {
             fill: decoded(PreferenceKey.editorFill),
             widthIndex: index(PreferenceKey.editorWidth, in: EditorStyle.widths.indices, default: defaults.widthIndex),
             customColors: decoded(PreferenceKey.editorCustomColors) ?? defaults.customColors,
-            shape: BoxShape(rawValue: store.string(forKey: PreferenceKey.editorShape) ?? "") ?? defaults.shape,
+            // `rounded` was a shape of its own before every shape could be rounded.
+            shape: store.string(forKey: PreferenceKey.editorShape).flatMap { BoxShape(rawValue: $0 == "rounded" ? "rectangle" : $0) } ?? defaults.shape,
             redaction: Redaction(rawValue: store.string(forKey: PreferenceKey.editorRedaction) ?? "") ?? defaults.redaction,
             redactionAmount: (store.object(forKey: PreferenceKey.editorRedactionAmount) as? Double)
                 .flatMap { Redaction.amounts.contains(CGFloat($0)) ? CGFloat($0) : nil } ?? defaults.redactionAmount,

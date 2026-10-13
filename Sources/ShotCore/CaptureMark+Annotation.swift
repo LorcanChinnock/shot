@@ -144,7 +144,8 @@ extension Annotation {
             guard !points.isEmpty, points.count == mark.points?.count else { return nil }
             kind = mark.type == "pen" ? .freehand(points) : .marker(points)
         default:
-            guard let shape = BoxShape(rawValue: mark.type), let rect = box(mark.rect) else { return nil }
+            // `rounded` is the old name of a rectangle with rounded corners.
+            guard let shape = BoxShape(rawValue: mark.type == "rounded" ? "rectangle" : mark.type), let rect = box(mark.rect) else { return nil }
             kind = .shape(shape, rect: rect)
         }
         let color = mark.hex.flatMap(RGBA.init(hex:))
@@ -154,7 +155,7 @@ extension Annotation {
         if let bend = mark.bend, bend.count == 2, let dx = length(bend[0]), let dy = length(bend[1]) {
             self.bend = CGVector(dx: dx, dy: dy)
         }
-        cornerRadius = mark.cornerRadius.flatMap(length)
+        cornerRadius = mark.cornerRadius.flatMap(length) ?? (mark.type == "rounded" ? Annotation.defaultCornerRadius : nil)
     }
 }
 

@@ -10,8 +10,6 @@ public enum AnnotationDraft {
         public var fill: RGBA?
         public var noteColor: RGBA
         public var lineWidth: CGFloat
-        /// Canvas pixels, for shapes and spotlights that can be rounded.
-        public var cornerRadius: CGFloat
         public var shape: BoxShape
         public var redaction: Redaction
         public var redactionAmount: CGFloat
@@ -19,14 +17,13 @@ public enum AnnotationDraft {
         public var alignment: TextAlign
 
         public init(
-            color: RGBA, fill: RGBA?, noteColor: RGBA, lineWidth: CGFloat, cornerRadius: CGFloat, shape: BoxShape,
+            color: RGBA, fill: RGBA?, noteColor: RGBA, lineWidth: CGFloat, shape: BoxShape,
             redaction: Redaction, redactionAmount: CGFloat, spotlight: SpotlightStyle, alignment: TextAlign
         ) {
             self.color = color
             self.fill = fill
             self.noteColor = noteColor
             self.lineWidth = lineWidth
-            self.cornerRadius = cornerRadius
             self.shape = shape
             self.redaction = redaction
             self.redactionAmount = redactionAmount
@@ -81,9 +78,6 @@ public enum AnnotationDraft {
         var shape = Annotation(id: id, kind: kind, color: style.color, lineWidth: style.lineWidth)
         if shape.supportsFill {
             shape.fill = style.fill
-        }
-        if shape.canRound {
-            shape.cornerRadius = style.cornerRadius
         }
         return shape
     }

@@ -311,11 +311,16 @@ public struct CopiedStyle: Equatable, Sendable, Codable {
     public var cornerRadius: CGFloat
     /// What it was copied from, which says which of its fields mean anything.
     public var source: StyleKind
+    /// Whether it was copied from a shape with corners, whose radius goes to other such shapes. Stored only when set, so
+    /// styles saved before it still decode.
+    private var fromShape: Bool?
+    public var isFromShape: Bool { fromShape ?? false }
 
-    public init(style: ObjectStyle, cornerRadius: CGFloat = 0, source: StyleKind) {
+    public init(style: ObjectStyle, cornerRadius: CGFloat = 0, source: StyleKind, fromShape: Bool = false) {
         self.style = style
         self.cornerRadius = cornerRadius
         self.source = source
+        self.fromShape = fromShape ? true : nil
     }
 }
 
@@ -346,9 +351,10 @@ public extension CopiedStyle {
     }
 
     /// The corner radius pasted on a `kind` object, in pixels of a document of `scale` pixels per point; `nil` unless both
-    /// it and what this was copied from have corners.
-    func pastedCornerRadius(on kind: StyleKind, scale: CGFloat) -> CGFloat? {
-        source.takesCorners && kind.takesCorners ? cornerRadius * scale : nil
+    /// it and what this was copied from have corners. A screenshot and a placed image share theirs, and shapes with
+    /// corners theirs, `ontoShape` saying the object is one.
+    func pastedCornerRadius(on kind: StyleKind, ontoShape: Bool = false, scale: CGFloat) -> CGFloat? {
+        (source.takesCorners && kind.takesCorners) || (isFromShape && ontoShape) ? cornerRadius * scale : nil
     }
 
     /// `image`, a new capture of `scale` pixels per point, with this style on it over `background`, as Use this style

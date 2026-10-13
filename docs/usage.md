@@ -95,7 +95,7 @@ Press a tool's key when you aren't typing text.
 | H | Hand: drag to move around when zoomed in, without touching annotations |
 | A | Arrow |
 | L | Line |
-| R | Shape: rectangle, rounded rectangle, ellipse, triangle, diamond or star |
+| R | Shape: rectangle, ellipse, triangle, diamond or star |
 | D | Pen: freehand |
 | T | Text |
 | S | Sticky note |
@@ -113,7 +113,7 @@ Tools that draw a mark show their options below the tools:
 - **Text and sticky notes:** left, centre or right alignment for their lines.
 - **Shape:** the shape and a fill.
 - **Redact:** blur or pixelate, and an amount slider for how far the blur spreads or how big the blocks are.
-- **Spotlight:** its shape (rectangle, rounded rectangle or ellipse), a soft edge that fades it into the dim, whether to darken or blur outside it, and how strongly. The effect and strength apply to every spotlight in the image, since they share one dim.
+- **Spotlight:** its shape (rectangle or ellipse), a soft edge that fades it into the dim, whether to darken or blur outside it, and how strongly. The effect and strength apply to every spotlight in the image, since they share one dim.
 
 The highlight and sticky notes keep their own colours, yellow at first, so they don't take the colour of your arrows. The last swatch picks any colour, and each palette remembers the last one you picked. Its eyedropper samples a colour from anywhere on screen, such as a brand colour in the screenshot itself. Esc cancels it. The video editor's palettes work the same way.
 
@@ -121,7 +121,7 @@ The editor remembers the options you last used and the last drawing tool. A new 
 
 ### Editing annotations
 
-- Click an annotation with the select tool to select it, then drag it, or drag its handles to resize it. Text and counters have no handles, and a placed image has handles at its corners only. Drag the middle handle of a line or arrow to bend it. Drag one of the round handles inside a rounded rectangle's corners to set how round all four are, up to a pill; they hide on a box too small to grab them. Choosing a colour, width or option restyles the selection.
+- Click an annotation with the select tool to select it, then drag it, or drag its handles to resize it. Text and counters have no handles, and a placed image has handles at its corners only. Drag the middle handle of a line or arrow to bend it. Drag one of the round handles inside a shape's corners to round them all by the same amount, up to a pill on a rectangle; a triangle or diamond rounds each corner, and a star only its points. An ellipse has no corners, and the handles hide on a box too small to grab them. New shapes start square. Choosing a colour, width or option restyles the selection.
 - While you drag a handle, Shift keeps a box in the proportions it had, or snaps an arrow or line end to 45° steps, and Option resizes from the centre, so the opposite side mirrors your drag. On a placed image, which keeps its proportions as you resize, Shift lets you stretch it freely. Hold Space to move the whole shape instead, and let go to carry on resizing. Pressing or releasing Shift or Option mid-drag updates the shape straight away. Sticky notes keep their own text-fitting rules and ignore both.
 - What you've just drawn stays selected until you draw the next thing, click elsewhere or press Esc, so you can fix its shape, colour, width or fill from the toolbar, or drag its handles, without switching to the select tool. The change also applies to what you draw next.
 - With the select tool, double-click text or a sticky note to edit it. Clicking a note with the note tool edits it too.
@@ -281,8 +281,8 @@ The record is stored in the image's own metadata, as JSON in the XMP property `s
 - `original` is set on a version saved from the editor, and names the file it was saved from, in the same folder. `canvas` is the part of that file the version shows, in its pixels: a crop, or past its edges where you added padding. `editable` is `true` when the marks rebuild every layer exactly, and Shot then reopens the version as `original` with the marks live.
 - `source.mode` is `area`, `window` or `fullscreen`. A window capture names the app and its window; an area or full screen capture names the frontmost app. `screenFrame` is in points, with the origin at the top left of the main display.
 - Coordinates are pixels of the saved file, from its top left, so a crop or padding and **Scale Retina captures to 1×** are already applied. `rect` is `[x, y, width, height]`; `from`, `to` and `center` are `[x, y]`; a pen or marker stroke's `points` are `[[x, y], …]`.
-- `type` is one of `arrow`, `line`, `rectangle`, `rounded`, `ellipse`, `triangle`, `diamond`, `star`, `highlight`, `text`, `note`, `counter`, `pen`, `marker`, `image`, `blur`, `pixelate` or `spotlight`. `color` is the nearest palette name, with the exact `hex` beside it. Text and notes give their `text`; a blur, pixelate, spotlight or placed image gives only where it is, never what's under it. Hidden layers are left out.
-- `lineWidth`, `fill`, `fontSize`, `amount` (a blur's or pixelation's strength), `bend` and `cornerRadius` are there so Shot can rebuild a mark; an agent can ignore them.
+- `type` is one of `arrow`, `line`, `rectangle`, `ellipse`, `triangle`, `diamond`, `star`, `highlight`, `text`, `note`, `counter`, `pen`, `marker`, `image`, `blur`, `pixelate` or `spotlight`; an agent that writes marks can still give `rounded`, which means a `rectangle` with the default `cornerRadius`. `color` is the nearest palette name, with the exact `hex` beside it. Text and notes give their `text`; a blur, pixelate, spotlight or placed image gives only where it is, never what's under it. Hidden layers are left out.
+- `lineWidth`, `fill`, `fontSize`, `amount` (a blur's or pixelation's strength), `bend` and `cornerRadius` (a shape's rounded corners) are there so Shot can rebuild a mark; an agent can ignore them.
 
 Development builds before 0.7.0-beta.40 wrote this as a `.shot.json` file beside each capture instead. Nothing reads those any more, so you can delete them.
 

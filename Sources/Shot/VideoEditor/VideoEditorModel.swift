@@ -924,12 +924,11 @@ extension VideoEditorModel {
     var styleScale: CGFloat { max(1, project.canvasSize.width / 960) }
     var lineWidth: CGFloat { EditorStyle.widths[annotationStyle.widthIndex] * styleScale }
     var fontSize: CGFloat { lineWidth * 6 }
-    var cornerRadius: CGFloat { Annotation.defaultCornerRadius * styleScale }
     /// What the palette gives the annotation the canvas draws next.
     var draftStyle: AnnotationDraft.Style {
         let style = annotationStyle
         return AnnotationDraft.Style(
-            color: nextColor, fill: style.fill, noteColor: style.noteColor, lineWidth: lineWidth, cornerRadius: cornerRadius, shape: style.shape,
+            color: nextColor, fill: style.fill, noteColor: style.noteColor, lineWidth: lineWidth, shape: style.shape,
             redaction: style.redaction, redactionAmount: style.redactionAmount, spotlight: nextSpotlightStyle, alignment: style.alignment
         )
     }
@@ -1444,7 +1443,7 @@ extension VideoEditorModel: StyleEditing {
         if let note = selectedAnnotation {
             var annotation = note.annotation
             annotation.style = style.restricted(to: kind, transparent: annotation.hasTransparency)
-            if let cornerRadius, kind.takesCorners {
+            if let cornerRadius, annotation.takesCornerRadius {
                 annotation.cornerRadius = cornerRadius == 0 ? nil : cornerRadius
             }
             commitAnnotation(annotation, id: note.id, coalescing: key)
@@ -1474,7 +1473,7 @@ extension VideoEditorModel: StyleEditing {
             Toast.error("Select a clip, image, shape, arrow or text to copy its style")
             return
         }
-        StyleClipboard.copied = CopiedStyle(style: targetStyle.scaled(by: 1 / scale), cornerRadius: targetCornerRadius, source: kind)
+        StyleClipboard.copied = CopiedStyle(style: targetStyle.scaled(by: 1 / scale), cornerRadius: targetCornerRadius, source: kind, fromShape: selectedAnnotation?.annotation.roundsShape == true)
         Toast.show("Copied style")
     }
 
@@ -1487,7 +1486,7 @@ extension VideoEditorModel: StyleEditing {
         }
         let transparent = copied.style.border?.kind == .outline && targetHasTransparency
         let style = copied.pasted(on: targetStyle, of: kind, transparent: transparent, scale: scale)
-        restyleTarget(style, cornerRadius: copied.pastedCornerRadius(on: kind, scale: scale))
+        restyleTarget(style, cornerRadius: copied.pastedCornerRadius(on: kind, ontoShape: selectedAnnotation?.annotation.roundsShape == true, scale: scale))
     }
 
     /// Replaces the project as one undo step, or without `recording` as part of the last one; between `beginDrag` and
