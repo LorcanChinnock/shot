@@ -200,6 +200,9 @@ private func item(_ name: String, _ date: Date, bytes: Int = 1) -> GalleryItem {
 @Test func editNeedsEveryItemEditable() {
     #expect(Gallery.canEdit([item("a.png", now), item("b.mp4", now)]))
     #expect(!Gallery.canEdit([item("a.png", now), item("c.gif", now)]))
+    // A GIF the video editor exported with a project reopens there.
+    #expect(Gallery.canEdit([item("a.png", now), item("c.gif", now)]) { $0.lastPathComponent == "c.gif" })
+    #expect(!Gallery.canEdit([item("c.gif", now), item("d.gif", now)]) { $0.lastPathComponent == "c.gif" })
     #expect(!Gallery.canEdit([]))
 }
 

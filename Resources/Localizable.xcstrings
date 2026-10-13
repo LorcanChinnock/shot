@@ -14987,58 +14987,6 @@
         }
       }
     },
-    "GIFs can't be edited" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GIFs können nicht bearbeitet werden"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Los GIF no se pueden editar"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les GIF ne peuvent pas être modifiés"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le GIF non si possono modificare"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GIFは編集できません"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GIF는 편집할 수 없습니다"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GIFs não podem ser editados"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GIF 无法编辑"
-          }
-        }
-      }
-    },
     "GRANTED" : {
       "localizations" : {
         "de" : {
@@ -20607,6 +20555,9 @@
         }
       }
     },
+    "Only GIFs exported from the video editor can be edited" : {
+
+    },
     "Only needed for the camera bubble." : {
       "localizations" : {
         "de" : {
@@ -21334,6 +21285,9 @@
           }
         }
       }
+    },
+    "Opened without %@, which can't be found" : {
+
     },
     "Opens a menu" : {
       "localizations" : {

@@ -16,6 +16,9 @@ struct VideoEdit: Equatable {
 @Observable
 final class VideoEditorModel {
     let fileURL: URL
+    /// The file whose project the editor shows, the one it opened or last wrote with Save Copy or Export, which
+    /// Flatten opens as itself; `nil` until there is one.
+    private(set) var version: URL?
     let player = AVPlayer()
     private(set) var duration: Double = 0
     private(set) var aspectRatio: CGFloat = 16 / 9
@@ -50,6 +53,10 @@ final class VideoEditorModel {
     /// Bytes Export would write, or nil until it's worked out.
     private(set) var estimatedSize: Int?
     private(set) var undoStack = UndoStack<VideoEdit>()
+    /// The project as last opened or written, so closing asks only about changes since.
+    private var savedProject: Project?
+    /// A saved project to open the recording with instead of the plain one, until it's loaded.
+    @ObservationIgnored private var restoring: Project?
 
     // Tracks panel
     private(set) var showsTracks = UserDefaults.standard.bool(forKey: VideoEditorModel.showsTracksKey)
@@ -110,8 +117,11 @@ final class VideoEditorModel {
     @ObservationIgnored private var cutObserver: Any?
     @ObservationIgnored private var statusObservation: NSKeyValueObservation?
 
-    init(fileURL: URL) {
+    /// `restoring` is the project of `version`, a file saved from this recording, which the editor opens with.
+    init(fileURL: URL, restoring: Project? = nil, version: URL? = nil) {
         self.fileURL = fileURL
+        self.restoring = restoring
+        self.version = restoring == nil ? nil : version
         project = Project(source: fileURL, duration: 0, canvasSize: .zero, hasAudio: false)
         timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(value: 1, timescale: 60), queue: .main) { [weak self] time in
             MainActor.assumeIsolated {
@@ -146,6 +156,10 @@ final class VideoEditorModel {
 
     var isDirty: Bool { isComposite || !range.isFull(duration: duration) || !cuts.isEmpty }
 
+    /// Whether closing would lose an edit: one made since the editor opened or last wrote its project, which Save can
+    /// write. An edit taken back to the plain recording loses nothing.
+    var hasUnsavedChanges: Bool { isDirty && project != savedProject }
+
     /// What the panel adds to the window's height over the collapsed layout.
     var tracksExtraHeight: CGFloat {
         guard showsTracks else {
@@ -177,7 +191,9 @@ final class VideoEditorModel {
             let hasAudio = try await !asset.loadTracks(withMediaType: .audio).isEmpty
             self.duration = duration
             aspectRatio = size.height == 0 ? 16 / 9 : abs(size.width / size.height)
-            project = Project(source: fileURL, duration: duration, canvasSize: CGSize(width: abs(size.width), height: abs(size.height)), hasAudio: hasAudio)
+            project = restoring ?? Project(source: fileURL, duration: duration, canvasSize: CGSize(width: abs(size.width), height: abs(size.height)), hasAudio: hasAudio)
+            restoring = nil
+            savedProject = project
         } catch let failure as LoadFailure {
             throw failure
         } catch {
@@ -195,7 +211,8 @@ final class VideoEditorModel {
         thumbnailSets = [:]
         thumbnailSources = [:]
         waveforms = [:]
-        applyRange()
+        // Once the player has the recording, so a restored project that needs drawing is built over it.
+        refreshPlayer()
     }
 
     struct LoadFailure: LocalizedError {
@@ -749,7 +766,7 @@ final class VideoEditorModel {
         }
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("Shot/\(UUID().uuidString)")
         let output = folder.appendingPathComponent(fileURL.lastPathComponent)
-        guard await export(to: output, creating: folder) else {
+        guard await export(to: output, creating: folder, keepingProject: false) else {
             try? FileManager.default.removeItem(at: folder)
             return
         }
@@ -777,9 +794,11 @@ final class VideoEditorModel {
         }
         defer { try? FileManager.default.removeItem(at: replacements) }
         let trimmed = replacements.appendingPathComponent(fileURL.lastPathComponent)
-        guard await export(to: trimmed, creating: nil) else {
+        guard await export(to: trimmed, creating: nil, keepingProject: false) else {
             return false
         }
+        // Read before the trim replaces the file, whose stamp it doesn't carry.
+        let entry = ProjectStore.app.entry(for: fileURL)
         do {
             // Replacing is atomic but leaves no way back to the cut footage, so a copy of the original goes to the Trash first.
             let original = replacements.appendingPathComponent("original").appendingPathComponent(fileURL.lastPathComponent)
@@ -790,6 +809,12 @@ final class VideoEditorModel {
         } catch {
             Toast.error("Couldn't save: \(error.localizedDescription)")
             return false
+        }
+        // The recording is the edit now, with no project over it.
+        version = nil
+        if let entry {
+            let fileURL = fileURL
+            await Task.detached { VersionWriter.restamp(trimmed: fileURL, as: entry, in: .app) }.value
         }
         log.notice("Saved edited video: \(self.fileURL.path)")
         Clipboard.copy(fileURL: fileURL)
@@ -808,7 +833,7 @@ final class VideoEditorModel {
             return false
         }
         let output = VersionWriter.videoCopyURL(of: fileURL, prefix: Preferences().filePrefix)
-        guard await export(to: output, creating: nil) else {
+        guard await export(to: output, creating: nil, keepingProject: true) else {
             try? FileManager.default.removeItem(at: output)
             return false
         }
@@ -824,7 +849,7 @@ final class VideoEditorModel {
         guard !isExporting else {
             return
         }
-        let options = options, plan = VideoExportPlan(project: project, options: options)
+        let options = options, project = project, plan = VideoExportPlan(project: project, options: options), fileURL = fileURL
         let output = FileNaming.uniqueURL(in: fileURL.deletingLastPathComponent(), date: Date(), pathExtension: options.format.fileExtension, prefix: Preferences().filePrefix)
         var truncated = false
         let progress = PercentProgress { percent in
@@ -833,7 +858,7 @@ final class VideoEditorModel {
             }
         }
         let exported = await exporting {
-            let outcome = try await plan.run(to: output, progress: progress.report)
+            let outcome = try await VersionWriter.writeVideo(plan, of: project, original: fileURL, to: output, projects: .app, progress: progress.report)
             truncated = outcome.truncated
             log.notice("Exported \(plan.kind.rawValue, privacy: .public) at \(options.speed, privacy: .public)×, muted \(options.muted, privacy: .public), passthrough \(outcome.passthrough, privacy: .public), \(outcome.frameCount ?? 0, privacy: .public) GIF frames")
         }
@@ -841,6 +866,7 @@ final class VideoEditorModel {
             try? FileManager.default.removeItem(at: output)
             return
         }
+        wrote(project, to: output)
         Clipboard.copy(fileURL: output)
         Toast.show(truncated ? "Exported and copied \(output.lastPathComponent) (first \(Int(GIFExporter.maxDuration)) s only)" : "Exported and copied \(output.lastPathComponent)", duration: .seconds(3))
     }
@@ -868,15 +894,27 @@ final class VideoEditorModel {
         }
     }
 
-    private func export(to output: URL, creating folder: URL?) async -> Bool {
-        let plan = VersionWriter.videoPlan(for: project, of: fileURL)
-        return await exporting {
+    /// Writes the edit as Save, Save Copy and Copy do. `keepingProject` keeps the project for `output` too, so it
+    /// reopens live, which a temporary file for the clipboard or the trim Save swaps in doesn't need.
+    private func export(to output: URL, creating folder: URL?, keepingProject: Bool) async -> Bool {
+        let project = project, fileURL = fileURL, plan = VersionWriter.videoPlan(for: project, of: fileURL)
+        let written = await exporting {
             if let folder {
                 try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             }
-            let outcome = try await plan.run(to: output)
+            let outcome = try await VersionWriter.writeVideo(plan, of: project, original: fileURL, to: output, projects: keepingProject ? .app : nil)
             log.notice("Wrote the edit as \(plan.kind.rawValue, privacy: .public), passthrough \(outcome.passthrough, privacy: .public)")
         }
+        if written, keepingProject {
+            wrote(project, to: output)
+        }
+        return written
+    }
+
+    /// `output` now holds `project`, so it's what Flatten opens and closing has nothing new to ask about.
+    private func wrote(_ project: Project, to output: URL) {
+        version = output
+        savedProject = project
     }
 
     /// Runs `work` with the player paused, one export at a time; false if it couldn't start, failed or was cancelled.

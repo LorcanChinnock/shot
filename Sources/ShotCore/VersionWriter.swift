@@ -134,4 +134,105 @@ public enum VersionWriter {
     public static func videoPlan(for project: Project, of original: URL) -> VideoExportPlan {
         VideoExportPlan.copy(of: project, as: VersionNaming.videoCopyExtension(of: original) == "mov" ? .mov : .mp4)
     }
+
+    /// Writes `plan`, an edit of `project` over the video at `original`, to `output`, as the video editor's Save Copy and
+    /// Export do. `project` is kept in `projects`, stamped in an MP4 or MOV and keyed by its identity for a GIF, so
+    /// the file reopens with it live. A project that can't be kept leaves the file written, as one written before
+    /// projects is.
+    @discardableResult
+    public static func writeVideo(
+        _ plan: VideoExportPlan, of project: Project, original: URL, to output: URL, projects: ProjectStore? = nil,
+        origin: ProjectOrigin = ProjectOrigin(via: .app), progress: @Sendable (Double) -> Void = { _ in }
+    ) async throws -> VideoExportPlan.Outcome {
+        let outcome = try await plan.run(to: output, progress: progress)
+        if let projects {
+            do {
+                var id: String?
+                if ProjectKey.stamps(pathExtension: output.pathExtension) {
+                    let minted = ProjectKey.newID()
+                    try ProjectStamp.stamp(movieAt: output, id: minted)
+                    id = minted
+                }
+                try projects.save(project, for: output, id: id, original: original, origin: origin)
+            } catch {
+                log.error("Couldn't keep the project of \(output.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            }
+        }
+        return outcome
+    }
+
+    /// Stamps the video at `url` again with the ID in `entry`, its entry from before Save trimmed it in place, which
+    /// wrote a new file without it. It's the same capture, so it keeps who made it, but it's its own original now, so
+    /// any layers kept for it, which were over the untrimmed footage, are dropped.
+    public static func restamp(trimmed url: URL, as entry: ProjectEntry, in projects: ProjectStore) {
+        guard entry.stamped else {
+            return
+        }
+        do {
+            try ProjectStamp.stamp(movieAt: url, id: entry.id)
+            try projects.save(origin: entry.origin, for: url, id: entry.id)
+        } catch {
+            log.error("Couldn't stamp the trimmed \(url.lastPathComponent, privacy: .public) again: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    /// A video edit reopened from its project: the recording it was made over, the project with its clips pointed at
+    /// where their files are now, and the imported files it had to leave out because they're gone.
+    public struct ReopenedVideo: Sendable {
+        public let original: URL
+        public let project: Project
+        public let missing: [URL]
+    }
+
+    /// The project of the video or GIF at `url`, when it has one in `projects` and the recording it was made over is
+    /// still the file it was. A recording that moved is followed by its bookmark, and an import that's gone is looked
+    /// for where it was relative to the recording, in case they moved together; one still missing is left out, with its
+    /// clips. `nil` when that would leave too little on the main track, so the file opens as itself.
+    public static func project(of url: URL, in projects: ProjectStore) -> ReopenedVideo? {
+        guard let stored = projects.project(for: url, as: Project.self), let project = stored.document,
+              let kept = stored.entry.original, let original = kept.locate(),
+              let found = ProjectFile(at: original, bookmark: false), kept.matches(found), original.standardizedFileURL != url.standardizedFileURL
+        else {
+            return nil
+        }
+        let was = URL(fileURLWithPath: kept.path)
+        var located: [URL: URL] = [:]
+        var missing: [URL] = []
+        for source in Set(project.tracks.flatMap(\.clips).map(\.source)) {
+            if let now = locate(source, recordingWas: was, isNow: original) {
+                located[source] = now
+            } else {
+                missing.append(source)
+            }
+        }
+        var relocated = project
+        for track in relocated.tracks.indices {
+            for clip in relocated.tracks[track].clips.indices {
+                let source = relocated.tracks[track].clips[clip].source
+                relocated.tracks[track].clips[clip].source = located[source] ?? source
+            }
+        }
+        guard let reopened = relocated.removingClips(from: Set(missing)) else {
+            return nil
+        }
+        return ReopenedVideo(original: original, project: reopened, missing: missing.sorted { $0.path < $1.path })
+    }
+
+    /// Where `source`, a clip's file, is now: the recording wherever it went, an import where it was, or else at the
+    /// same place relative to the recording, for an import kept beside it whose folder moved.
+    private static func locate(_ source: URL, recordingWas was: URL, isNow now: URL) -> URL? {
+        let path = source.standardizedFileURL.path
+        if path == was.standardizedFileURL.path {
+            return now
+        }
+        if FileManager.default.fileExists(atPath: path) {
+            return source
+        }
+        let folder = was.deletingLastPathComponent().standardizedFileURL.path + "/"
+        guard path.hasPrefix(folder) else {
+            return nil
+        }
+        let moved = now.deletingLastPathComponent().appendingPathComponent(String(path.dropFirst(folder.count)))
+        return FileManager.default.fileExists(atPath: moved.path) ? moved : nil
+    }
 }
