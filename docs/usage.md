@@ -145,7 +145,7 @@ Once the crop is applied, what's outside it is hidden but kept, annotations incl
 - Press Delete to remove the selection, and Esc to deselect. While you type in a text box or sticky note, Esc finishes it; ⌘Z removes it again.
 - Arrow keys nudge the selected annotation by 1 pixel, or 10 with Shift.
 - ⌘C copies the selected annotation, ⌘V pastes it, and ⌘D duplicates it. You can paste into another editor window. With nothing or several things selected, ⌘C copies the whole image.
-- ⌘Z undoes and ⇧⌘Z redoes.
+- ⌘Z undoes and ⇧⌘Z redoes. What you had selected stays selected, so the toolbar shows its style as it is after the undo.
 
 ### Layers
 
