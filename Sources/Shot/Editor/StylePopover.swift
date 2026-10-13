@@ -305,7 +305,13 @@ struct StylePopover<Model: StyleEditing>: View {
                     choose: { if let color = $0 { model.setBorderColor(color) } },
                     pickCustom: { model.pickBorderColor($0) },
                     beginPicking: model.beginColorPick,
-                    editorShown: { isPickingColor = $0 }
+                    editorShown: { shown in
+                        isPickingColor = shown
+                        // The editor took focus from the popover, so take it back for the arrow keys.
+                        if !shown {
+                            focused = true
+                        }
+                    }
                 )
             }
         }
