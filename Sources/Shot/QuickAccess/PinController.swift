@@ -14,11 +14,13 @@ final class PinController {
     /// so a caller can delete a temporary file only after the pin no longer needs it.
     func pin(_ url: URL, whenRead: (@MainActor () -> Void)? = nil) {
         Task { [weak self] in
+            // Decoded now, from the file's bytes: an image read lazily from `url` decodes when it's first drawn, after
+            // `whenRead` may have deleted the file, and draws black.
             let loaded = await Task.detached { () -> (SendableImage, CGFloat)? in
-                guard let image = ImageCodec.image(at: url) else {
+                guard let data = try? Data(contentsOf: url), let image = ImageCodec.image(from: data) else {
                     return nil
                 }
-                return (SendableImage(image), ImageCodec.scale(ofFileAt: url))
+                return (SendableImage(image), ImageCodec.scale(of: data))
             }.value
             whenRead?()
             guard let self else {
