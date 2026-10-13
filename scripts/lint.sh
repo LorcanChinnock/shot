@@ -59,3 +59,11 @@ if [ -n "$hits" ]; then
     echo "$hits"
     exit 1
 fi
+
+# SwiftUI holds a single tap until the double-click interval passes, so every click lags by up to half a second.
+hits=$(grep -rnE 'onTapGesture\(count: *[2-9]' Sources || true)
+if [ -n "$hits" ]; then
+    echo "Don't pair onTapGesture(count: 2) with a single-tap gesture; every single click waits out the double-click interval (#452). Use one onTapGesture and read NSApp.currentEvent?.clickCount:"
+    echo "$hits"
+    exit 1
+fi
