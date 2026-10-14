@@ -6,12 +6,10 @@ name: CI
 # status on the commit it tested, which does. On release-please's branch the pull_request job takes another name, so
 # its Linux run can't stand in for the gate. A later push to the release PR has no status, so only a commit that
 # passed the gate can be released.
-# A push to main tests nothing, because PRs are squash-merged and their merge commit was already tested. It only
-# builds, to save the Linux build cache that pull requests restore: a PR can read caches saved on main, not other PRs'.
+# There's no run on push to main: PRs are squash-merged, and their merge commit was already tested. warm-cache.yml
+# builds there instead, to save the Linux build cache the pull request check restores.
 on:
   pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       gate:
@@ -29,7 +27,6 @@ concurrency:
 jobs:
   # The required check, so main's ruleset needs it by name. One job, because each job's Linux minutes round up.
   test:
-    if: github.event_name != 'push'
     # Not `test` on the release PR, where only the gate's status may satisfy the required check.
     name: ${{ startsWith(github.head_ref, 'release-please--') && 'test (Linux; the release needs make release-gate)' || 'test' }}
     # The gate sets a commit status; everything else only reads.
@@ -46,8 +43,8 @@ jobs:
       # The image has no make, so this calls what `make lint` runs.
       - name: Lint
         run: scripts/lint.sh
-      # The newest build main saved. Checkout gives every file a new modification time, so SwiftPM still recompiles
-      # them, but about twice as fast as from nothing. A miss just builds cold.
+      # The newest build warm-cache.yml saved on main. Checkout gives every file a new modification time, so SwiftPM
+      # still recompiles them, but about twice as fast as from nothing. A miss just builds cold.
       - name: Restore the build
         if: ${{ !inputs.gate }}
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -85,24 +82,3 @@ jobs:
           gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}"
           -f state=success -f context=test -f description="Release gate passed on macOS"
           -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-  # Builds what the PR check builds and saves it for the next pull requests. Keep the image and the key in step with it.
-  warm-cache:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    container: swift:6.3
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Restore the build
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .build
-          key: swift-6.3-linux-${{ hashFiles('Package.resolved') }}-${{ github.sha }}
-          restore-keys: swift-6.3-linux-${{ hashFiles('Package.resolved') }}-
-      - name: Build
-        run: swift build --build-tests --force-resolved-versions
-      - name: Save the build
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .build
-          key: swift-6.3-linux-${{ hashFiles('Package.resolved') }}-${{ github.sha }}
