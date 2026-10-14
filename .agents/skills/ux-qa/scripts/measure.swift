@@ -5,6 +5,7 @@ import ImageIO
 // Measures custom-drawn UI that the accessibility tree can't see (timelines, canvases, lanes) from a screenshot.
 //   measure FILE.png X Y W H [bg=#RRGGBB|auto] [tolerance=24]
 //   measure FILE.png sample X Y
+//   measure FILE.png contrast X Y W H [bg=#RRGGBB]
 // FILE is a `uxqa_shot` image (1 px = 1 pt). The rect is the area to scan. Anything that differs from the background
 // (the pixel at the rect's top-left, or the colour given) counts as content. Prints the content's bounding box and its
 // vertical and horizontal runs, so centres and edges can be compared numerically instead of by eye:
@@ -19,6 +20,42 @@ if args.count == 5, args[2] == "sample", let px = Int(args[3]), let py = Int(arg
     let context = CGContext(data: &pixel, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
     context.draw(image, in: CGRect(x: -px, y: -(image.height - 1 - py), width: image.width, height: image.height))
     print(String(format: "#%02X%02X%02X", pixel[0], pixel[1], pixel[2]))
+    exit(0)
+}
+// `measure FILE.png contrast X Y W H [#RRGGBB]` prints the WCAG contrast of the content in the rect against its background
+// (the rect's top-left pixel, or the colour given): the pixel that differs most from the background, read in sRGB. A thin
+// glyph has no flat pixel to sample, and anti-aliasing lightens its edges, so this is the contrast its darkest stroke
+// reaches. Use a full-resolution capture (`uxqa_contrast`), not a `uxqa_shot` image, which is scaled down and blurred.
+if args.count >= 7, args[2] == "contrast", let x = Int(args[3]), let y = Int(args[4]), let w = Int(args[5]), let h = Int(args[6]),
+   let source = CGImageSourceCreateWithURL(URL(fileURLWithPath: args[1]) as CFURL, nil), let image = CGImageSourceCreateImageAtIndex(source, 0, nil) {
+    var pixels = [UInt8](repeating: 0, count: image.width * image.height * 4)
+    let context = CGContext(data: &pixels, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: image.width * 4, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+    context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+    func rgb(_ px: Int, _ py: Int) -> [Int] {
+        let i = (py * image.width + px) * 4
+        return [Int(pixels[i]), Int(pixels[i + 1]), Int(pixels[i + 2])]
+    }
+    func luminance(_ c: [Int]) -> Double {
+        let linear = c.map { Double($0) / 255 }.map { $0 <= 0.04045 ? $0 / 12.92 : pow(($0 + 0.055) / 1.055, 2.4) }
+        return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+    }
+    func ratio(_ a: Double, _ b: Double) -> Double { (max(a, b) + 0.05) / (min(a, b) + 0.05) }
+    let x0 = max(0, min(x, image.width - 1)), y0 = max(0, min(y, image.height - 1))
+    let x1 = min(image.width, x + w), y1 = min(image.height, y + h)
+    var background = rgb(x0, y0)
+    if args.count > 7, args[7].hasPrefix("#"), let value = Int(args[7].dropFirst(), radix: 16) {
+        background = [value >> 16 & 255, value >> 8 & 255, value & 255]
+    }
+    let backgroundLuminance = luminance(background)
+    var best = background, bestRatio = 1.0
+    for py in y0..<y1 {
+        for px in x0..<x1 {
+            let c = rgb(px, py), r = ratio(luminance(c), backgroundLuminance)
+            if r > bestRatio { best = c; bestRatio = r }
+        }
+    }
+    func hex(_ c: [Int]) -> String { String(format: "#%02X%02X%02X", c[0], c[1], c[2]) }
+    print(String(format: "%@ on %@  %.2f:1", hex(best), hex(background), bestRatio))
     exit(0)
 }
 guard args.count >= 6, let x = Int(args[2]), let y = Int(args[3]), let w = Int(args[4]), let h = Int(args[5]),

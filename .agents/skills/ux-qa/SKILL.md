@@ -45,6 +45,14 @@ uxqa_setup                                    # compiles the input, axdump and m
 uxqa_launch "shot-dev://edit-video?path=$UXQA_DIR/clips/a.mp4"
 ```
 
+If each of your shell calls starts a fresh shell, the sourced helpers are gone by the next call. Run them through `qa` instead.
+It works from any directory, drives that worktree's `build/ShotDev.app`, and compiles the tools when they're missing or stale:
+
+```sh
+.agents/skills/ux-qa/scripts/qa 'uxqa_launch "shot-dev://gallery"'
+.agents/skills/ux-qa/scripts/qa 'uxqa_click 640 320; sleep 0.5; uxqa_shot after-click'
+```
+
 Other entry points: `shot-dev://annotate?path=`, `shot-dev://gallery`, `shot-dev://settings?section=`. See `docs/usage.md`. Screen
 capture and recording need real permissions and a person, so test the editors on files and say that capture itself was out of scope.
 
@@ -84,7 +92,10 @@ screenshots. Re-take the screenshot after every layout change (selecting a clip,
   overlaps, and *near-misses*: things a few points off a shared row or edge. A near-miss is almost always a bug.
 - Anything the tree can't see needs `measure`: `measure win.png X Y W H` prints the bounding box, centre, and the runs of
   content inside a rect, so "the play button looks off" becomes "its centre is 36 pt above the main track's centre".
-  `measure win.png sample X Y` reads a colour for contrast maths.
+  `measure win.png sample X Y` reads one pixel's colour.
+- For contrast, use `uxqa_contrast X Y W H [#bg]` with the rect in screen points around one glyph or line. It captures at full
+  resolution and prints the WCAG ratio of the pixel that differs most from the background (the rect's top-left pixel, or
+  `#bg`). Don't measure contrast on a `uxqa_shot` image: it's scaled down, and the blur lightens thin strokes.
 - Compare against the code's intent. If a button is meant to sit on the main track's row, the rule is "centres equal", and
   you can measure it. If you can't state the rule, you can't call it a bug.
 - Always take the screenshot for a claim *after* the final state settles (sleep ~0.5 s for animations).

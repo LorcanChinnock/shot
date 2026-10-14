@@ -120,10 +120,9 @@ Run `uxqa_ax` and work through its problem list first; then these.
       transient UI; shortcuts don't fire while typing in a text field.
 - [ ] **Focus is visible (2.4.7, 2.4.11)** and not hidden behind other content.
 - [ ] **Contrast**: text and icons ≥ **4.5:1** (≥ 3:1 for text ≥ 18 pt or ≥ 14 pt bold), UI component boundaries, focus rings,
-      and state indicators ≥ **3:1** (1.4.3, 1.4.11). Sample the colours (`measure FILE sample X Y`, on a flat pixel of
-      the glyph and of its background) and compute: relative luminance L = 0.2126 R + 0.7152 G + 0.0722 B, with each channel
-      c ← (c/255 ≤ 0.03928 ? c/12.92 : ((c/255+0.055)/1.055)^2.4); ratio = (L₁+0.05)/(L₂+0.05), lighter over darker. Check
-      disabled, hover, selected and over-video states, in light and dark.
+      and state indicators ≥ **3:1** (1.4.3, 1.4.11). Measure with `uxqa_contrast X Y W H [#bg]` around the glyph or line;
+      it prints the ratio of its strongest pixel against the background. Check disabled, hover, selected and over-video
+      states, in light and dark, with Increase Contrast on and off.
 - [ ] **Not colour alone (1.4.1)**: selected, error, dirty and disabled states also differ by shape, text or weight.
 - [ ] **Target size (2.5.8)**: pointer targets ≥ 24×24 pt (aim for 28+ for dense toolbars) with spacing; small handles have a
       larger hit area than their drawing.
