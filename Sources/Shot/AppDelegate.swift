@@ -35,12 +35,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.coordinator.exportGIF(url)
         }
         AgentServer.shared.coordinator = coordinator
-        AgentServer.shared.update()
+        AgentServer.shared.start()
         TextIndexer.shared.update()
         defaultsObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated {
                 HotkeyCenter.shared.reloadFromPreferences()
-                AgentServer.shared.update()
                 TextIndexer.shared.update()
             }
         }

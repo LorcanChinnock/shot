@@ -83,6 +83,16 @@ enum ShotCLI {
             }
         case let .watch(options):
             await watch(options, folder: captureFolder(app: appBundle()), program: program)
+        case let .pick(options):
+            var request = AgentRequest(.pick, duration: options.timeout)
+            request.prompt = options.prompt
+            request.origin = ProjectOrigin(via: .cli, action: command.name)
+            do {
+                print(ShotCommand.json(.object(try await ask(request, app: appBundle()))))
+            } catch {
+                printError("\(program) \(command.name): \(error.message)")
+                exit(error.exitCode)
+            }
         case let .indexText(folder):
             // One line each time the index is saved, for the app to show what's been read.
             let store = TextIndexStore(bundleID: appBundle()?.bundleIdentifier ?? fallbackSuite)
@@ -213,6 +223,7 @@ enum ShotCLI {
         case .status, .windows, .mark: .seconds(30)
         case .record: .seconds((request.duration ?? 0) + 120)
         case .stop: .seconds(120)
+        case .pick: .seconds((request.duration ?? ShotCommand.PickOptions.defaultTimeout) + 30)
         }
     }
 

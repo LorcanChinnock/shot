@@ -264,6 +264,19 @@
         }
       }
     },
+    "%@ asks you to pick something to capture" : {
+
+    },
+    "%@ asks: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ asks: %2$@"
+          }
+        }
+      }
+    },
     "%@ command" : {
       "localizations" : {
         "de" : {
@@ -3065,6 +3078,9 @@
           }
         }
       }
+    },
+    "An agent" : {
+
     },
     "An agent is recording %@" : {
       "localizations" : {
@@ -27376,6 +27392,9 @@
         }
       }
     },
+    "Sent to %@" : {
+
+    },
     "Settings reset" : {
       "localizations" : {
         "de" : {
@@ -31721,6 +31740,9 @@
           }
         }
       }
+    },
+    "The shot command" : {
+
     },
     "This Month" : {
       "localizations" : {

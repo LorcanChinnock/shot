@@ -116,7 +116,7 @@ public enum Doctor {
 
     static func agents(_ facts: Facts) -> Check {
         guard facts.agentCapture else {
-            return Check("letAgentsCaptureAndRecord", .warn, "Let agents capture and record is off, so shot capture, shot record and the MCP tools that capture are refused. Reading captures works without it.",
+            return Check("letAgentsCaptureAndRecord", .warn, "Let agents capture and record is off, so shot capture, shot record and the MCP tools that capture are refused. Reading captures, shot pick and ask_for_capture work without it.",
                          fix: "Turn on Settings › Agents › Let agents capture and record in \(name(facts.bundleID ?? facts.settingsSuite)), if agents should take their own screenshots and recordings.")
         }
         return Check("letAgentsCaptureAndRecord", .pass, "Let agents capture and record is on.")

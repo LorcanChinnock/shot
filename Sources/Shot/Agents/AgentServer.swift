@@ -4,8 +4,10 @@ import ShotCore
 
 private let log = Logger.shot("agents")
 
-/// Answers agents on the app's socket while Let agents capture and record is on, so `shot capture`, `shot record` and the
-/// MCP server can ask for screenshots and recordings that only the app, with its Screen Recording permission, can make.
+/// Answers agents on the app's socket, so `shot capture`, `shot record` and the MCP server can ask for screenshots and
+/// recordings that only the app, with its Screen Recording permission, can make. Those need Let agents capture and record
+/// on, which is read for each request; only a pick, where the person makes the selection, is answered without it.
+/// It listens while the app runs, so turning the setting on needs no restart.
 @MainActor
 final class AgentServer {
     static let shared = AgentServer()
@@ -15,16 +17,9 @@ final class AgentServer {
 
     private init() {}
 
-    /// Starts or stops listening to match the setting. Cheap when nothing changed, so it can run on every defaults change.
-    func update() {
-        let enabled = Preferences().agentCapture
-        guard enabled != (server != nil) else {
-            return
-        }
-        guard enabled else {
-            server?.stop()
-            server = nil
-            log.notice("Stopped answering agents")
+    /// Starts listening, once, as the app launches.
+    func start() {
+        guard server == nil else {
             return
         }
         let url = AgentSocket.url(bundleID: Bundle.main.bundleIdentifier ?? "dev.lorcan.Shot.dev")
@@ -35,7 +30,10 @@ final class AgentServer {
             try server.start()
         } catch {
             log.error("Couldn't answer agents: \(error.message, privacy: .public)")
-            Toast.error("Agents can't reach Shot: \(error.message)")
+            // Only worth interrupting for when the person has asked for agents to capture.
+            if Preferences().agentCapture {
+                Toast.error("Agents can't reach Shot: \(error.message)")
+            }
             return
         }
         self.server = server
@@ -49,8 +47,10 @@ final class AgentServer {
 
     private func handle(_ request: AgentRequest) async -> AgentResponse {
         log.notice("Agent request: \(request.op.rawValue, privacy: .public)")
-        // The setting can go off between the request arriving and here.
         guard server != nil, let coordinator else {
+            return .failure(.unavailable("Shot is quitting."))
+        }
+        guard !request.op.needsAgentCapture || Preferences().agentCapture else {
             return .failure(.unavailable(AgentSocket.turnedOff))
         }
         switch request.op {
@@ -83,6 +83,12 @@ final class AgentServer {
         case .mark:
             do {
                 return .success(try coordinator.agentMark(label: request.label ?? "", id: request.id))
+            } catch {
+                return .failure(error)
+            }
+        case .pick:
+            do {
+                return .success(try await coordinator.agentPick(prompt: request.prompt, timeout: request.duration ?? ShotCommand.PickOptions.defaultTimeout, origin: request.origin))
             } catch {
                 return .failure(error)
             }

@@ -48,7 +48,7 @@ public enum ShotCommands {
             return try draw(input: options.input, output: options.output, edit: ImageEdit(crop: options.rect), cropField: "rect", projects: projects, origin: origin) { (_: CGImage) in [] }
         case let .edit(options):
             return try await edit(options, projects: projects, origin: origin)
-        case .capture, .record, .watch, .windows, .latest, .list, .get, .doctor, .mcp, .indexText, .version, .help:
+        case .capture, .record, .watch, .pick, .windows, .latest, .list, .get, .doctor, .mcp, .indexText, .version, .help:
             throw .internal("\(command.name) isn't a media command")
         }
     }
