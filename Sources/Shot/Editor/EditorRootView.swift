@@ -50,6 +50,12 @@ struct EditorRootView: View {
                         onRename: model.renameLayer,
                         onDuplicate: model.duplicateLayers,
                         onDelete: model.deleteLayers,
+                        onCropImage: { id in
+                            model.cropImage(id)
+                            // As from the Frame row: Return and Esc go to the crop, not the layer list.
+                            canvas.window?.makeFirstResponder(canvas)
+                        },
+                        onResetImageCrop: model.resetImageCrop,
                         onSelectFrame: {
                             model.tool = .crop
                             // Return and Esc go to the canvas, not the panel that was clicked.

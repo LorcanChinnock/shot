@@ -294,6 +294,14 @@ extension Annotation {
         if case let .image(image, _) = kind { image.hasTransparency } else { false }
     }
 
+    /// Where a placed image would be drawn whole, with its crop taken off; `nil` for anything else.
+    public var imageFullRect: CGRect? {
+        guard case let .image(_, rect) = kind else {
+            return nil
+        }
+        return imageCrop?.fullRect(forVisible: rect) ?? rect
+    }
+
     /// A placed image's corner radius, within what its rect can take; 0 for anything else.
     public var imageCornerRadius: CGFloat {
         guard case let .image(_, rect) = kind else {

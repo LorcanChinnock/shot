@@ -107,7 +107,7 @@ Press a tool's key when you aren't typing text.
 | F | Spotlight: dims or blurs everything outside the area |
 | B | Redact: blurs or pixelates the area |
 | N | Counter: numbered circles |
-| C | Crop: keep part of the image |
+| C | Crop: keep part of the image, or of the placed image selected |
 
 Hover a tool to see what it does. While you draw, Shift keeps a box square, keeps an arrow, line or highlight at 45° steps, and Option draws from the centre. Esc cancels what you're drawing.
 
@@ -134,6 +134,8 @@ Press C, or click the **Frame** row in Layers, to crop. The view shows everythin
 - **Aspect** holds the crop to Free, 1:1, 4:3 or 16:9. Picking a ratio fits the largest crop of that ratio inside the current one, centred, and the handles keep it as you drag. It follows the crop's orientation, wide or tall. The editor remembers the last one you picked.
 - Return, picking another tool, ⌘C, ⌘S or clicking outside the canvas applies the crop as one undo step. Esc cancels. **Reset**, or Delete, makes the crop the whole image again.
 
+With a placed image selected, C crops that image instead of the whole picture: see [Combine images](#combine-images).
+
 Once the crop is applied, what's outside it is hidden but kept, annotations included, so press C again to adjust it. A shadow, border or rounded corners on the screenshot go around the cropped picture, so crop first and add the style afterwards.
 
 ### Editing annotations
@@ -149,7 +151,7 @@ Once the crop is applied, what's outside it is hidden but kept, annotations incl
 
 ### Layers
 
-Click **Layers** (⌘L) to list the annotations, frontmost first, with the image locked at the bottom. A cropped image also has a **Frame** row pinned at the top: click it to adjust the crop, use its eye to show the uncropped image and leave the crop out of Copy and Save, and press Delete or click its bin to remove the crop. It can't be moved, locked or duplicated. Click a row to select it on the canvas, ⌘-click or ⇧-click to select several, drag a row by its handle to reorder (Escape or dropping outside the list cancels), and press Delete or click the bin to delete. The eye hides a layer, which also leaves it out of Copy and Save, and the lock stops it being picked on the canvas, moved or deleted. You can still select a locked layer in the list and drag it to another place. Right-click a row to rename, duplicate, delete, lock or hide.
+Click **Layers** (⌘L) to list the annotations, frontmost first, with the image locked at the bottom. A cropped image also has a **Frame** row pinned at the top: click it to adjust the crop, use its eye to show the uncropped image and leave the crop out of Copy and Save, and press Delete or click its bin to remove the crop. It can't be moved, locked or duplicated. Click a row to select it on the canvas, ⌘-click or ⇧-click to select several, drag a row by its handle to reorder (Escape or dropping outside the list cancels), and press Delete or click the bin to delete. The eye hides a layer, which also leaves it out of Copy and Save, and the lock stops it being picked on the canvas, moved or deleted. You can still select a locked layer in the list and drag it to another place. Right-click a row to rename, duplicate, delete, lock or hide, and a placed image's row to crop it. A placed image with its own crop shows a crop badge: click it to adjust the crop, or right-click the row and choose **Reset Crop** to show the whole image again.
 
 A layer is named after its kind, or the first words of a text or note. To give it your own name, double-click the name, or select the row and press Return. Return or clicking elsewhere keeps the new name, and Esc cancels. Clear the name to go back to the automatic one. The name shows only in the list, never in the image. Renaming is one undo step, and a duplicate keeps the name. ⌘] and ⌘[ move the selection forward and back, and ⌥⌘] and ⌥⌘[ bring it to the front or send it to the back.
 
@@ -190,6 +192,8 @@ To reuse a style, select something and choose **Edit › Copy Style** (⌥⌘C),
 ### Combine images
 
 Click **Add an image** (⇧⌘I) to pick one of your recent captures, or **Choose File…** for any image files. You can also drag an image file or a Quick Access card onto the canvas, or press ⌘V with an image on the clipboard, to place another image beside your screenshot. A picked image goes beside the canvas. A dropped image is centred where you drop it; a pasted one goes beside the canvas. Placed images keep their full resolution, keep their aspect ratio when you resize them, and can be moved, nudged, copied and deleted like any other annotation.
+
+To trim a placed image's own edges, such as a pasted screenshot's toolbar, double-click it, select it and press C, or right-click it and choose **Crop Image**. Cropping works as it does for the [whole picture](#cropping): the handles go on the image, the part cropped off shows dimmed, and **Aspect** and **Reset** work the same. Return applies the crop as one undo step and Esc cancels. Double-click it again to drag the edges back out. Its shadow, border and rounded corners go around the cropped edge, and resizing it scales what's left. Copies, duplicates and pastes keep the crop, and Paste Style leaves it alone. The crop of the whole picture still applies on top, so it can cut off part of a placed image too.
 
 ### Zoom
 

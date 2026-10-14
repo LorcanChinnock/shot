@@ -86,7 +86,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private var canvasRect: CGRect { displayDocument.canvasRect }
 
     /// What the canvas draws: the previewed document grown for the pending draft. In crop mode it's uncropped, so
-    /// everything shows, and the crop is drawn over it.
+    /// everything shows, and the crop is drawn over it; cropping a placed image shows all of that image.
     private var displayDocument: EditorDocument {
         var doc = model.previewDocument
         for pending in [draft, editingPaper].compactMap({ $0 }) {
@@ -94,6 +94,12 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
         if model.tool == .crop {
             doc.isFrameCropHidden = true
+            if let id = model.cropImageID, let index = doc.annotations.firstIndex(where: { $0.id == id }),
+               case let .image(image, _) = doc.annotations[index].kind, let full = doc.annotations[index].imageFullRect {
+                doc.annotations[index].kind = .image(image, rect: full)
+                doc.annotations[index].imageCrop = nil
+                doc.grow(toFit: doc.annotations[index], margin: model.canvasMargin)
+            }
         }
         return doc
     }
@@ -202,11 +208,11 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             }
         }
         if model.tool == .crop, let cropDraft = model.cropDraft {
-            drawCrop(viewRect(cropDraft), over: rect, in: ctx)
+            drawCrop(viewRect(cropDraft), over: viewRect(cropBounds), in: ctx)
         }
     }
 
-    /// Dims and greys out what `crop` leaves out of the canvas at `canvas`, so it looks switched off, and draws the
+    /// Dims and greys out what `crop` leaves out of `canvas`, the canvas or the image being cropped, so it looks switched off, and draws the
     /// crop's outline and its eight handles.
     private func drawCrop(_ crop: CGRect, over canvas: CGRect, in ctx: CGContext) {
         let outside = NSBezierPath(rect: canvas)
@@ -241,7 +247,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
         if let handle = CropGeometry.handle(at: point, in: crop, tolerance: handleTolerance) {
             cropDrag = .handle(handle, start: crop)
-        } else if crop.contains(point), crop != canvasRect {
+        } else if crop.contains(point), crop != cropBounds {
             // A crop holding all the content has nowhere to move, so a drag inside it draws a new one.
             cropDrag = .move(start: crop, from: point)
         } else {
@@ -249,9 +255,12 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
     }
 
+    /// How far the crop can reach: the canvas, or all of the placed image being cropped.
+    private var cropBounds: CGRect { model.cropImageFullRect ?? canvasRect }
+
     /// Edges stick to the image's edges.
     private var cropSnap: CropSnap {
-        let image = model.document.fullRect
+        let image = model.cropImageFullRect ?? model.document.fullRect
         return CropSnap(xs: [image.minX, image.maxX], ys: [image.minY, image.maxY], tolerance: 6 / viewScale)
     }
 
@@ -259,7 +268,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard let cropDrag else {
             return
         }
-        let bounds = canvasRect
+        let bounds = cropBounds
         // A picked shape holds the crop to it; Shift keeps the shape the crop had, or draws a square.
         func ratio(_ size: CGSize) -> CGFloat? {
             model.cropAspect.ratio(for: size) ?? (shift ? size.width / max(size.height, 1) : nil)
@@ -345,6 +354,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             } else if event.clickCount == 2, let hit, case let .text(_, origin, _) = hit.kind {
                 model.selectedID = nil
                 beginText(at: origin, editing: hit)
+            } else if event.clickCount == 2, let hit, case .image = hit.kind, !hit.isLocked {
+                dragStart = nil
+                model.cropImage(hit.id)
             } else if let selected = model.selection, !selected.isLocked, let handle = selected.handle(at: point, tolerance: handleTolerance) {
                 resizeHandle = handle
                 resizeStart = selected
@@ -491,6 +503,50 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             return
         }
         endPan()
+    }
+
+    // MARK: Context menu
+
+    /// Right-clicking a placed image offers to crop it, or to show all of it again.
+    override func menu(for event: NSEvent) -> NSMenu? {
+        guard model.tool != .crop, textField == nil else {
+            return nil
+        }
+        let point = imagePoint(event)
+        guard let index = model.document.annotations.topmostIndex(at: point, tolerance: 6 / viewScale) else {
+            return nil
+        }
+        let hit = model.document.annotations[index]
+        guard hit.imageFullRect != nil, !hit.isLocked else {
+            return nil
+        }
+        model.selectedIDs = [hit.id]
+        let menu = NSMenu()
+        let crop = NSMenuItem(title: String(localized: "Crop Image"), action: #selector(cropImageFromMenu(_:)), keyEquivalent: "")
+        crop.target = self
+        crop.representedObject = hit.id
+        menu.addItem(crop)
+        if hit.imageCrop != nil {
+            let reset = NSMenuItem(title: String(localized: "Reset Crop"), action: #selector(resetImageCropFromMenu(_:)), keyEquivalent: "")
+            reset.target = self
+            reset.representedObject = hit.id
+            menu.addItem(reset)
+        }
+        return menu
+    }
+
+    @objc private func cropImageFromMenu(_ item: NSMenuItem) {
+        guard let id = item.representedObject as? UUID else {
+            return
+        }
+        model.cropImage(id)
+        window?.makeFirstResponder(self)
+    }
+
+    @objc private func resetImageCropFromMenu(_ item: NSMenuItem) {
+        if let id = item.representedObject as? UUID {
+            model.resetImageCrop(id)
+        }
     }
 
     // MARK: Dropping images

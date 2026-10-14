@@ -8,6 +8,10 @@ struct LayerRow: Identifiable, Equatable {
     let symbol: String
     let isHidden: Bool
     let isLocked: Bool
+    /// Whether it's a placed image, which can be cropped.
+    let isImage: Bool
+    /// Whether it's a placed image with a crop of its own, which its badge shows.
+    let isCropped: Bool
 }
 
 /// The crop of the whole image, listed above the layers while there is one.
@@ -35,6 +39,9 @@ struct LayersPanel: View {
     let onRename: (UUID, String) -> Void
     let onDuplicate: (Set<UUID>) -> Void
     let onDelete: (Set<UUID>) -> Void
+    /// Crop Image or a crop badge was chosen for the placed image with this id.
+    let onCropImage: (UUID) -> Void
+    let onResetImageCrop: (UUID) -> Void
     let onSelectFrame: () -> Void
     let onHideFrame: (Bool) -> Void
     let onDeleteFrame: () -> Void
@@ -145,6 +152,7 @@ struct LayersPanel: View {
             onHide: { onHide([row.id], !row.isHidden) },
             onLock: { onLock([row.id], !row.isLocked) },
             onDelete: { onDelete([row.id]) },
+            onCrop: { onCropImage(row.id) },
             onRename: { name in
                 renaming = nil
                 if let name {
@@ -186,6 +194,13 @@ struct LayersPanel: View {
                     renaming = chosen[0].id
                 }
                 .keyboardShortcut(.return, modifiers: [])
+            }
+            if chosen.count == 1, chosen[0].isImage, !chosen[0].isLocked {
+                Button("Crop Image") { onCropImage(chosen[0].id) }
+                if chosen[0].isCropped {
+                    Button("Reset Crop") { onResetImageCrop(chosen[0].id) }
+                }
+                Divider()
             }
             Button("Duplicate") { onDuplicate(ids) }
             Button("Delete") { onDelete(ids) }
@@ -418,6 +433,7 @@ private struct LayerRowView<Grip: Gesture>: View {
     let onHide: () -> Void
     let onLock: () -> Void
     let onDelete: () -> Void
+    let onCrop: () -> Void
     /// The name typed into the field, or `nil` when Escape cancelled it.
     let onRename: (String?) -> Void
 
@@ -443,6 +459,10 @@ private struct LayerRowView<Grip: Gesture>: View {
                     .truncationMode(.tail)
             }
             Spacer(minLength: 4)
+            if row.isCropped {
+                RowButton(symbol: "crop", isOn: true, label: "Adjust crop", action: onCrop)
+                    .disabled(row.isLocked)
+            }
             RowButton(symbol: row.isLocked ? "lock.fill" : "lock.open", isOn: row.isLocked, label: row.isLocked ? "Unlock" : "Lock", action: onLock)
             RowButton(symbol: row.isHidden ? "eye.slash" : "eye", isOn: row.isHidden, label: row.isHidden ? "Show" : "Hide", action: onHide)
             RowButton(symbol: "trash", isOn: false, label: "Delete", action: onDelete)

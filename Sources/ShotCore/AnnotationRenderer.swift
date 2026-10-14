@@ -308,7 +308,7 @@ public enum AnnotationRenderer {
                 drawUpright(blurred.image, in: blurred.frame, ctx: ctx)
             }
         case let .image(image, rect):
-            drawImage(image.image, in: pixelAligned(rect), cornerRadius: annotation.imageCornerRadius, style: annotation.style, shadowBackground: look.background, ctx: ctx)
+            drawImage(image.cropped(annotation.imageCrop), in: pixelAligned(rect), cornerRadius: annotation.imageCornerRadius, style: annotation.style, shadowBackground: look.background, ctx: ctx)
         case let .text(string, origin, fontSize):
             let layout = TextLayout(string: string, fontSize: fontSize, color: annotation.color)
             ctx.textMatrix = CGAffineTransform(scaleX: 1, y: -1)

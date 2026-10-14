@@ -2647,6 +2647,9 @@
         }
       }
     },
+    "Adjust crop" : {
+
+    },
     "After capture" : {
       "localizations" : {
         "de" : {
@@ -10020,6 +10023,9 @@
         }
       }
     },
+    "Crop Image" : {
+
+    },
     "Crop the menu bar and notch off screenshots and recordings of the full screen." : {
       "localizations" : {
         "de" : {
@@ -11482,7 +11488,7 @@
     "Drag the crop to any shape." : {
 
     },
-    "Drag the handles to choose the area to keep. Return applies it, Esc cancels." : {
+    "Drag the handles to choose the area to keep, of the whole picture or the placed image selected. Return applies it, Esc cancels." : {
 
     },
     "Drag the handles to trim. Shift-drag to select a section, then press Delete to cut it." : {
@@ -24738,6 +24744,9 @@
           }
         }
       }
+    },
+    "Reset Crop" : {
+
     },
     "Reset all settings" : {
       "localizations" : {

@@ -1395,7 +1395,7 @@ extension VideoEditorModel: StyleEditing {
     var targetThumbnail: StyleThumbnail.Subject? {
         if let annotation = selectedAnnotation?.annotation {
             if case let .image(image, _) = annotation.kind {
-                return .image(image.image)
+                return .image(image.cropped(annotation.imageCrop))
             }
             return .annotation(annotation)
         }
