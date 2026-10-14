@@ -286,6 +286,7 @@ private struct SetupStep: View {
 
 private struct TryItStep: View {
     let model: WelcomeModel
+    @Environment(\.textSize) private var textSize
 
     var body: some View {
         let prefs = Preferences()
@@ -315,7 +316,7 @@ private struct TryItStep: View {
             Header(symbol: "camera.viewfinder", color: Brutal.sky, title: "Try it", subtitle: "Take your first screenshot.")
             Group {
                 if let area = prefs.hotkey(for: .captureArea) {
-                    Text("Press \(Text(area.displayString).font(Brutal.title(17))), then drag out any area.")
+                    Text("Press \(Text(area.displayString).font(Brutal.title(17).resolved(textSize))), then drag out any area.")
                 } else {
                     Text("Click the Shot icon in the menu bar, then Capture Area, and drag out any area.")
                 }
