@@ -27,7 +27,7 @@ struct VideoEditorRootView: View {
                 Spacer()
                 Text(timesLabel)
                     .font(Brutal.mono)
-                    .foregroundStyle(Brutal.ink.opacity(0.7))
+                    .foregroundStyle(Brutal.faded(0.7))
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                     .layoutPriority(1)
@@ -161,7 +161,7 @@ struct ExportOptionsBar: View {
             Spacer(minLength: 8)
             Text(model.estimatedSize.map { "≈ " + ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .file) } ?? "≈ …")
                 .font(Brutal.mono)
-                .foregroundStyle(Brutal.ink.opacity(0.7))
+                .foregroundStyle(Brutal.faded(0.7))
                 .fixedSize()
                 .brutalTip("Estimated size of the exported file")
         }

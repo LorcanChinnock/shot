@@ -273,7 +273,7 @@ private struct DropdownList: View {
                             Text(header.uppercased())
                                 .font(.system(size: 10, weight: .black))
                                 .tracking(1.2)
-                                .foregroundStyle(Brutal.ink.opacity(0.6))
+                                .foregroundStyle(Brutal.faded(0.6))
                                 .padding(.horizontal, 8)
                                 .padding(.top, 4)
                                 .padding(.bottom, 2)
@@ -336,7 +336,7 @@ private struct DropdownRow: View {
                 if let shortcut = item.shortcut {
                     Text(shortcut)
                         .font(Brutal.mono)
-                        .foregroundStyle(Brutal.ink.opacity(0.5))
+                        .foregroundStyle(Brutal.faded(0.5))
                 }
                 Image(systemName: "checkmark")
                     .font(.system(size: 11, weight: .black))

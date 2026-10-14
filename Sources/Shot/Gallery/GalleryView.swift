@@ -27,7 +27,7 @@ struct GalleryRootView: View {
             sortMenu
             Image(systemName: "photo")
                 .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(Brutal.ink.opacity(0.6))
+                .foregroundStyle(Brutal.faded(0.6))
             Slider(value: Bindable(model).tileSize, in: Gallery.tileSizes)
                 .frame(width: 80)
                 .tint(Brutal.ink)
@@ -35,7 +35,7 @@ struct GalleryRootView: View {
                 .accessibilityLabel(Text("Thumbnail size"))
             Image(systemName: "photo")
                 .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(Brutal.ink.opacity(0.6))
+                .foregroundStyle(Brutal.faded(0.6))
         }
         .padding(.horizontal, 3)
         .frame(height: 36)
@@ -50,7 +50,7 @@ struct GalleryRootView: View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(Brutal.ink.opacity(0.6))
+                .foregroundStyle(Brutal.faded(0.6))
             TextField("Search", text: Bindable(model).query)
                 .textFieldStyle(.plain)
                 .font(.system(size: 13, weight: .semibold))
@@ -60,7 +60,7 @@ struct GalleryRootView: View {
                     model.query = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(Brutal.ink.opacity(0.5))
+                        .foregroundStyle(Brutal.faded(0.5))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Clear search"))
@@ -110,25 +110,25 @@ struct GalleryRootView: View {
             } else if model.items.isEmpty {
                 Image(systemName: "photo.on.rectangle.angled")
                     .font(.system(size: 34, weight: .bold))
-                    .foregroundStyle(Brutal.ink.opacity(0.55))
+                    .foregroundStyle(Brutal.faded(0.55))
                 Text("No captures yet")
                     .font(Brutal.title(17))
                     .foregroundStyle(Brutal.ink)
                 Text("Screenshots and recordings saved to \((model.folder.path as NSString).abbreviatingWithTildeInPath) show up here.")
                     .font(Brutal.caption)
-                    .foregroundStyle(Brutal.ink.opacity(0.7))
+                    .foregroundStyle(Brutal.faded(0.7))
                 Button("Open Folder") { NSWorkspace.shared.open(model.folder) }
                     .buttonStyle(BrutalButtonStyle(compact: true))
             } else {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 34, weight: .bold))
-                    .foregroundStyle(Brutal.ink.opacity(0.55))
+                    .foregroundStyle(Brutal.faded(0.55))
                 Text("Nothing matches")
                     .font(Brutal.title(17))
                     .foregroundStyle(Brutal.ink)
                 Text("Try another search, or show All.")
                     .font(Brutal.caption)
-                    .foregroundStyle(Brutal.ink.opacity(0.7))
+                    .foregroundStyle(Brutal.faded(0.7))
             }
         }
         .multilineTextAlignment(.center)
@@ -202,7 +202,7 @@ private struct GalleryFooter: View {
         return HStack(spacing: 10) {
             GalleryStatus(model: model)
                 .font(Brutal.mono)
-                .foregroundStyle(Brutal.ink.opacity(0.7))
+                .foregroundStyle(Brutal.faded(0.7))
                 .lineLimit(1)
             if model.allSelected {
                 Button("Deselect All") { model.clearSelection() }

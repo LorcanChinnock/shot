@@ -55,6 +55,21 @@ enum Brutal {
     /// How far content under an ink line stops short of its outer edge: under the line, so nothing bleeds past it, and a whole
     /// point, because a fractional rounded clip leaves stray pixels at its corner on 1x displays.
     static func underInk(_ width: CGFloat) -> CGFloat { (width / 2).rounded(.up) }
+
+    /// Ink faded for secondary text and icons. It's solid with Increase Contrast on, so the text holds its contrast over glass.
+    static func faded(_ opacity: Double) -> ContrastAware {
+        ContrastAware(standard: ink.opacity(opacity), increased: ink)
+    }
+}
+
+/// A colour that steps up to `increased` while Increase Contrast is on.
+struct ContrastAware: ShapeStyle {
+    let standard: Color
+    let increased: Color
+
+    func resolve(in environment: EnvironmentValues) -> Color {
+        environment.colorSchemeContrast == .increased ? increased : standard
+    }
 }
 
 extension Color {
@@ -91,12 +106,16 @@ struct BrutalSurface<S: InsettableShape, Fill: ShapeStyle>: ViewModifier {
     var glass = false
     var shadow = Brutal.shadow
     var border = Brutal.border
+    @Environment(\.colorSchemeContrast) private var contrast
 
     func body(content: Content) -> some View {
         content
             .background {
                 ZStack {
-                    if glass {
+                    // With Increase Contrast on, glass turns nearly opaque so text over it holds its contrast.
+                    if glass, contrast == .increased {
+                        shape.inset(by: Brutal.underInk(border)).fill(Color.white.opacity(0.9))
+                    } else if glass {
                         shape.inset(by: Brutal.underInk(border)).fill(.ultraThinMaterial)
                     }
                     shape.inset(by: Brutal.underInk(border)).fill(fill)
@@ -122,7 +141,7 @@ extension View {
 
     /// A section's small capitals heading, as the Style popover and the video inspector have.
     func sectionCaption() -> some View {
-        font(Brutal.sectionCaption).tracking(1.2).foregroundStyle(Brutal.ink.opacity(0.75))
+        font(Brutal.sectionCaption).tracking(1.2).foregroundStyle(Brutal.faded(0.75))
     }
 
     /// An ink border with the content stopping under the line, so no colour bleeds through its anti-aliased outer edge.
@@ -168,13 +187,19 @@ struct GlassBackdrop: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.controlActiveState) private var activeState
+    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         ZStack {
             VisualEffectBackground()
-            Color.white.opacity(0.35)
-            TimelineView(.animation(paused: reduceMotion || activeState == .inactive)) { timeline in
-                blobLayer(at: reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate)
+            // With Increase Contrast on, the blobs go and the frost turns nearly opaque, so text keeps a plain white behind it.
+            if contrast == .increased {
+                Color.white.opacity(0.9)
+            } else {
+                Color.white.opacity(0.35)
+                TimelineView(.animation(paused: reduceMotion || activeState == .inactive)) { timeline in
+                    blobLayer(at: reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate)
+                }
             }
             dotGrid
         }
@@ -296,7 +321,7 @@ struct BrutalSegmented<Value: Hashable>: View {
                 } label: {
                     Text(option.label)
                         .font(.system(size: 12, weight: selected ? .heavy : .semibold))
-                        .foregroundStyle(Brutal.ink.opacity(selected ? 1 : 0.65))
+                        .foregroundStyle(Brutal.faded(selected ? 1 : 0.65))
                         .padding(.horizontal, 11)
                         .frame(height: 28)
                         .background(selected ? color : Color.clear)
@@ -354,7 +379,7 @@ struct SettingsCard<Content: View>: View {
                 }
                 Text(String(localized: title).uppercased()).font(Brutal.sectionCaption).tracking(1.2)
             }
-            .foregroundStyle(Brutal.ink.opacity(0.75))
+            .foregroundStyle(Brutal.faded(0.75))
             .padding(.bottom, 6)
             VStack(spacing: 0) {
                 content
@@ -392,7 +417,7 @@ struct SettingRow<Control: View>: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).font(Brutal.label).foregroundStyle(Brutal.ink)
                     if let subtitle {
-                        Text(subtitle).font(Brutal.caption).foregroundStyle(Brutal.ink.opacity(0.6))
+                        Text(subtitle).font(Brutal.caption).foregroundStyle(Brutal.faded(0.6))
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }

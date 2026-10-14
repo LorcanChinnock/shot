@@ -76,7 +76,7 @@ struct EditorToolbar: View {
                 } else {
                     Text(model.tool.summary)
                         .font(Brutal.caption)
-                        .foregroundStyle(Brutal.ink.opacity(0.6))
+                        .foregroundStyle(Brutal.faded(0.6))
                         .padding(.leading, 4)
                 }
                 Spacer(minLength: 0)

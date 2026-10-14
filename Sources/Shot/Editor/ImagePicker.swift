@@ -33,7 +33,7 @@ struct ImagePicker: View {
             } else {
                 Text(recent == nil ? "Loading…" : "No screenshots in your save folder yet")
                     .font(Brutal.caption)
-                    .foregroundStyle(Brutal.ink.opacity(0.55))
+                    .foregroundStyle(Brutal.faded(0.55))
                     .frame(width: Self.tile * 3 + 16, height: Self.tile * 0.7)
             }
             Button("Choose File…", action: chooseFiles)

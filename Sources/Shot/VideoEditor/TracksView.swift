@@ -355,7 +355,7 @@ struct TracksView: View {
             for time in ticks {
                 let x = timeline.x(for: time)
                 context.fill(Path(CGRect(x: x, y: size.height - 5, width: 1, height: 5)), with: .color(Brutal.ink.opacity(0.6)))
-                context.draw(Text(TimelineRuler.label(time, interval: interval)).font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundStyle(Brutal.ink.opacity(0.7)), at: CGPoint(x: x + 3, y: size.height / 2 - 1), anchor: .leading)
+                context.draw(Text(TimelineRuler.label(time, interval: interval)).font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundStyle(Brutal.faded(0.7)), at: CGPoint(x: x + 3, y: size.height / 2 - 1), anchor: .leading)
             }
         }
         .frame(width: timeline.width, height: Self.rulerHeight)
