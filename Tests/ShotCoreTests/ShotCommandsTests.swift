@@ -462,7 +462,7 @@ private func flattenOffMain(_ document: EditorDocument) -> (onMain: Bool, image:
     (Thread.isMainThread, AnnotationRenderer.flatten(document).map(SendableFlat.init))
 }
 
-extension MediaTests {
+extension CompositingMediaTests {
     @Test func gifAndTrimMakeNewFilesBesideTheVideo() async throws {
         let folder = try temporaryFolder()
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -590,7 +590,7 @@ private func writeScenes(to url: URL, levels: [UInt8], fps: Int32 = 10) async th
     #expect(writer.status == .completed)
 }
 
-extension MediaTests {
+extension CompositingMediaTests {
     @Test func framesFindEachSceneAndWriteThemToANewFolder() async throws {
         let folder = try temporaryFolder()
         defer { try? FileManager.default.removeItem(at: folder) }

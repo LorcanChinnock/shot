@@ -38,6 +38,8 @@ jobs:
       statuses: write
     # macOS: the gate builds the app and runs ShotCore's tests, which need AppKit, AVFoundation, CoreImage and ImageIO.
     runs-on: ${{ inputs.gate && 'macos-26' || 'ubuntu-latest' }}
+    # A gate run takes about 5 minutes. A hung test would otherwise hold a macOS runner for GitHub's 6-hour default.
+    timeout-minutes: 20
     # The Swift release of the macos-26 runner's default Xcode. `make test-linux` uses the same image. An empty
     # container runs the gate on the runner itself.
     container: ${{ !inputs.gate && 'swift:6.3' || '' }}
