@@ -271,7 +271,7 @@ private struct DropdownList: View {
                             }
                         case .header(let header):
                             Text(header.uppercased())
-                                .font(.system(size: 10, weight: .black))
+                                .font(.scaled(10, weight: .black))
                                 .tracking(1.2)
                                 .foregroundStyle(Brutal.faded(0.6))
                                 .padding(.horizontal, 8)
@@ -326,7 +326,7 @@ private struct DropdownRow: View {
             HStack(spacing: 8) {
                 if hasSymbols {
                     Image(systemName: item.symbol ?? "")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.scaled(12, weight: .bold))
                         .frame(width: 16)
                 }
                 Text(item.title)
@@ -339,7 +339,7 @@ private struct DropdownRow: View {
                         .foregroundStyle(Brutal.faded(0.5))
                 }
                 Image(systemName: "checkmark")
-                    .font(.system(size: 11, weight: .black))
+                    .font(.scaled(11, weight: .black))
                     .opacity(item.isSelected ? 1 : 0)
             }
             .foregroundStyle(Brutal.ink)

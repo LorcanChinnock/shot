@@ -58,6 +58,8 @@ public enum PreferenceKey {
     public static let galleryTileSize = "galleryTileSize"
     public static let partyModeUnlocked = "partyModeUnlocked"
     public static let partyMode = "partyMode"
+    /// How large Shot draws its own text, a `TextSize`.
+    public static let textSize = "textSize"
     /// True while the macOS screenshot shortcuts are off because Shot turned them off. Not a
     /// setting, so resetting settings keeps it and Shot can still give the keys back.
     public static let disabledSystemScreenshots = "disabledSystemScreenshots"
@@ -132,6 +134,7 @@ public struct Preferences {
             PreferenceKey.recordingCountdown: 0,
             PreferenceKey.cameraDeviceID: "",
             PreferenceKey.cameraSize: CameraBubbleSize.medium.rawValue,
+            PreferenceKey.textSize: TextSize.standard.rawValue,
             PreferenceKey.replacesSystemScreenshots: true,
             PreferenceKey.videoExportFormat: VideoExportOptions().format.rawValue,
             PreferenceKey.gifFrameRate: VideoExportOptions().gifFrameRate,
@@ -425,6 +428,10 @@ public struct Preferences {
 
     public var partyModeUnlocked: Bool { store.bool(forKey: PreferenceKey.partyModeUnlocked) }
     public var partyMode: Bool { store.bool(forKey: PreferenceKey.partyMode) }
+
+    public var textSize: TextSize {
+        TextSize(rawValue: store.string(forKey: PreferenceKey.textSize) ?? "") ?? .standard
+    }
 
     public var cameraSize: CameraBubbleSize {
         CameraBubbleSize(rawValue: store.string(forKey: PreferenceKey.cameraSize) ?? "") ?? .medium

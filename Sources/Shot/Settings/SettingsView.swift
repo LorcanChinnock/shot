@@ -124,7 +124,7 @@ struct SettingsView: View {
                     section.color.frame(height: 12).offset(y: -4)
                 }
             Text(section.subtitle)
-                .font(.system(size: 13, weight: .medium))
+                .font(.scaled(13, weight: .medium))
                 .foregroundStyle(Brutal.faded(0.65))
         }
         .animation(.easeOut(duration: 0.15), value: section)
@@ -215,12 +215,12 @@ private struct SidebarItem: View {
         Button(action: action) {
             HStack(spacing: 10) {
                 Image(systemName: section.symbol)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.scaled(14, weight: .semibold))
                     .foregroundStyle(Brutal.ink)
                     .frame(width: 28, height: 28)
                     .brutalSurface(section.color, radius: Brutal.Radius.button, shadow: 0, border: 2)
                 Text(section.title)
-                    .font(.system(size: 13.5, weight: selected ? .heavy : .semibold))
+                    .font(.scaled(13.5, weight: selected ? .heavy : .semibold))
                     .foregroundStyle(Brutal.ink)
                 Spacer()
             }
@@ -250,6 +250,7 @@ private struct GeneralSettings: View {
     @Setting(PreferenceKey.filePrefix) private var filePrefix: String
     @Setting(PreferenceKey.imageFormat) private var imageFormat: ImageFormat
     @Setting(PreferenceKey.downscaleRetina) private var downscaleRetina: Bool
+    @Setting(PreferenceKey.textSize) private var textSize: TextSize
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     private let color = SettingsSection.general.color
 
@@ -261,7 +262,10 @@ private struct GeneralSettings: View {
                 }
             ToggleRow(title: "Play capture sound", isOn: $playSound, color: color)
             ToggleRow(title: "Hide Shot from captures", subtitle: "Keep Quick Access cards, toasts and other Shot windows out of screenshots and recordings. The camera bubble always shows.", isOn: $hidesShotUI, color: color)
-            ToggleRow(title: "Exclude menu bar", subtitle: "Crop the menu bar and notch off screenshots and recordings of the full screen.", isOn: $excludesMenuBar, color: color, divider: false)
+            ToggleRow(title: "Exclude menu bar", subtitle: "Crop the menu bar and notch off screenshots and recordings of the full screen.", isOn: $excludesMenuBar, color: color)
+            SettingRow(title: "Text size", subtitle: "Text in Shot's windows, panels and toasts. Captures keep their size.", divider: false) {
+                BrutalSegmented(selection: $textSize, options: TextSize.allCases.map { ($0, Self.title(of: $0)) }, color: color)
+            }
         }
         SettingsCard(title: "Files", symbol: "folder.fill") {
             SettingRow(title: String(localized: "Save folder"), subtitle: (saveFolder as NSString).abbreviatingWithTildeInPath) {
@@ -275,7 +279,7 @@ private struct GeneralSettings: View {
             SettingRow(title: "File name", subtitle: "\(previewName).\(imageFormat.fileExtension)") {
                 TextField("Shot", text: $filePrefix)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.scaled(13, weight: .semibold))
                     .padding(.horizontal, 10)
                     .frame(width: 150, height: 30)
                     .brutalSurface(Color.white.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
@@ -289,6 +293,14 @@ private struct GeneralSettings: View {
 
     private var previewName: String {
         FileNaming.baseName(for: Date(), prefix: Preferences.sanitizedPrefix(filePrefix))
+    }
+
+    private static func title(of size: TextSize) -> String {
+        switch size {
+        case .standard: String(localized: "Default")
+        case .large: String(localized: "Large")
+        case .larger: String(localized: "Larger")
+        }
     }
 
     private func chooseFolder() {
@@ -573,7 +585,7 @@ private struct DevicePicker: View {
         }) {
             HStack(spacing: 6) {
                 Text(selectedName).lineLimit(1)
-                Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
+                Image(systemName: "chevron.down").font(.scaled(9, weight: .black))
             }
             .frame(maxWidth: 190)
         }
@@ -858,7 +870,7 @@ private struct AboutSettings: View {
                     BrutalChip(text: "BETA", color: Brutal.yellow)
                 }
                 Text("Screenshots and screen recordings for macOS.")
-                    .font(.system(size: 12.5, weight: .medium)).foregroundStyle(Brutal.faded(0.65))
+                    .font(.scaled(12.5, weight: .medium)).foregroundStyle(Brutal.faded(0.65))
             }
             Spacer()
             BrutalChip(text: "v\(version)", color: color)

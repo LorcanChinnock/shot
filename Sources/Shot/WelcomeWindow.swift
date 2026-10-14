@@ -286,6 +286,7 @@ private struct SetupStep: View {
 
 private struct TryItStep: View {
     let model: WelcomeModel
+    @Environment(\.textSize) private var textSize
 
     var body: some View {
         let prefs = Preferences()
@@ -315,12 +316,12 @@ private struct TryItStep: View {
             Header(symbol: "camera.viewfinder", color: Brutal.sky, title: "Try it", subtitle: "Take your first screenshot.")
             Group {
                 if let area = prefs.hotkey(for: .captureArea) {
-                    Text("Press \(Text(area.displayString).font(Brutal.title(17))), then drag out any area.")
+                    Text("Press \(Text(area.displayString).font(Brutal.title(17).resolved(textSize))), then drag out any area.")
                 } else {
                     Text("Click the Shot icon in the menu bar, then Capture Area, and drag out any area.")
                 }
             }
-            .font(.system(size: 15, weight: .semibold))
+            .font(.scaled(15, weight: .semibold))
             .foregroundStyle(Brutal.ink)
             .fixedSize(horizontal: false, vertical: true)
             .padding(16)
@@ -345,13 +346,13 @@ private struct Header: View {
     var body: some View {
         HStack(spacing: 14) {
             Image(systemName: symbol)
-                .font(.system(size: 20, weight: .black))
+                .font(.scaled(20, weight: .black))
                 .foregroundStyle(Brutal.ink)
                 .frame(width: 46, height: 46)
                 .brutalSurface(color, radius: 11, shadow: 3)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(Brutal.title(22)).foregroundStyle(Brutal.ink)
-                Text(subtitle).font(.system(size: 12.5, weight: .medium)).foregroundStyle(Brutal.faded(0.65))
+                Text(subtitle).font(.scaled(12.5, weight: .medium)).foregroundStyle(Brutal.faded(0.65))
             }
         }
     }
@@ -364,7 +365,7 @@ private struct Instruction: View {
     var body: some View {
         HStack(spacing: 10) {
             Text("\(number)")
-                .font(.system(size: 12, weight: .black))
+                .font(.scaled(12, weight: .black))
                 .foregroundStyle(Brutal.ink)
                 .frame(width: 22, height: 22)
                 .brutalSurface(Brutal.pink, radius: Brutal.Radius.chip, shadow: 2)
@@ -380,7 +381,7 @@ private struct Tip: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             Image(systemName: symbol)
-                .font(.system(size: 12, weight: .bold))
+                .font(.scaled(12, weight: .bold))
                 .frame(width: 18)
             Text(text).font(Brutal.label).fixedSize(horizontal: false, vertical: true)
         }

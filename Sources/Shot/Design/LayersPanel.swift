@@ -126,9 +126,9 @@ struct LayersPanel: View {
                 Image(systemName: "photo").frame(width: 18)
                 Text("Image")
                 Spacer(minLength: 0)
-                Image(systemName: "lock.fill").font(.system(size: 10, weight: .bold)).foregroundStyle(Brutal.faded(0.45))
+                Image(systemName: "lock.fill").font(.scaled(10, weight: .bold)).foregroundStyle(Brutal.faded(0.45))
             }
-            .font(.system(size: 12, weight: .semibold))
+            .font(.scaled(12, weight: .semibold))
             .foregroundStyle(Brutal.ink)
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
@@ -339,10 +339,10 @@ private struct FrameRowView: View {
             // Empty slots where a layer has its drag handle and lock button, so the columns line up.
             Color.clear.frame(width: 16, height: 1)
             Image(systemName: "crop")
-                .font(.system(size: 12, weight: .bold))
+                .font(.scaled(12, weight: .bold))
                 .frame(width: 18)
             Text("Frame")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.scaled(12, weight: .semibold))
                 .lineLimit(1)
             Spacer(minLength: 4)
             Color.clear.frame(width: 20, height: 1)
@@ -373,7 +373,7 @@ private struct EmptyLayers: View {
     var body: some View {
         VStack(spacing: 14) {
             Image(systemName: "scribble.variable")
-                .font(.system(size: 22, weight: .black))
+                .font(.scaled(22, weight: .black))
                 .foregroundStyle(Brutal.ink)
                 .frame(width: 54, height: 54)
                 .brutalCircle(Brutal.yellow, shadow: 3)
@@ -440,7 +440,7 @@ private struct LayerRowView<Grip: Gesture>: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: "line.3.horizontal")
-                .font(.system(size: 11, weight: .bold))
+                .font(.scaled(11, weight: .bold))
                 .foregroundStyle(Brutal.faded(isLifted ? 1 : 0.45))
                 .frame(width: 16, height: Self.height)
                 .contentShape(Rectangle())
@@ -448,13 +448,13 @@ private struct LayerRowView<Grip: Gesture>: View {
                 .gesture(grip)
                 .accessibilityLabel(Text("Drag to reorder"))
             Image(systemName: row.symbol)
-                .font(.system(size: 12, weight: .bold))
+                .font(.scaled(12, weight: .bold))
                 .frame(width: 18)
             if isRenaming {
                 LayerNameField(name: row.name, fontSize: 12, onCommit: { onRename($0) }, onCancel: { onRename(nil) })
             } else {
                 Text(row.name)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.scaled(12, weight: .semibold))
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
@@ -512,7 +512,7 @@ struct LayerNameField: View {
     var body: some View {
         TextField("Name", text: $text)
             .textFieldStyle(.plain)
-            .font(.system(size: fontSize, weight: .semibold))
+            .font(.scaled(fontSize, weight: .semibold))
             .lineLimit(1)
             .padding(.horizontal, 3)
             .padding(.vertical, 1)
@@ -555,7 +555,7 @@ private struct RowButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 11, weight: .bold))
+                .font(.scaled(11, weight: .bold))
                 .frame(width: 20, height: 20)
                 .opacity(isOn || (isHovered && isEnabled) ? 1 : isEnabled ? 0.4 : 0.15)
                 .contentShape(Rectangle())

@@ -292,7 +292,7 @@ struct StylePopover<Model: StyleEditing>: View {
                     Tile(selected: abs(points * model.scale - border.width) < 0.01, color: Brutal.sky, help: WidthOptions.sizeNames[index]) {
                         model.setBorderWidth(points)
                     } label: {
-                        Text(WidthOptions.sizeNames[index].prefix(1)).font(.system(size: 12, weight: .heavy))
+                        Text(WidthOptions.sizeNames[index].prefix(1)).font(.scaled(12, weight: .heavy))
                     }
                 }
             }
@@ -362,7 +362,7 @@ private struct StyleTile: View {
                     }
                 }
                 .frame(width: 48, height: 28)
-                Text(title).font(.system(size: 10, weight: .bold)).lineLimit(1).minimumScaleFactor(0.75)
+                Text(title).font(.scaled(10, weight: .bold)).lineLimit(1).minimumScaleFactor(0.75)
             }
             .foregroundStyle(Brutal.ink)
             .frame(width: 56, height: 52)

@@ -1,4 +1,5 @@
 import AppKit
+import ShotCore
 import SwiftUI
 
 /// Design tokens and components for the glass × neo-brutalist settings UI.
@@ -43,14 +44,14 @@ enum Brutal {
     static let orange = Color(hex: 0xFF9F43)
     static let lime = Color(hex: 0xB6E24B)
 
-    static func title(_ size: CGFloat) -> Font { .system(size: size, weight: .black) }
-    static let label = Font.system(size: 13, weight: .semibold)
-    static let caption = Font.system(size: 11.5, weight: .medium)
-    static let mono = Font.system(size: 12, weight: .bold, design: .monospaced)
+    static func title(_ size: CGFloat) -> ScaledFont { .scaled(size, weight: .black) }
+    static let label = ScaledFont.scaled(13, weight: .semibold)
+    static let caption = ScaledFont.scaled(11.5, weight: .medium)
+    static let mono = ScaledFont.scaled(12, weight: .bold, design: .monospaced)
     /// A toolbar button's symbol.
-    static let toolIcon = Font.system(size: 13, weight: .bold)
+    static let toolIcon = ScaledFont.scaled(13, weight: .bold)
     /// A section's small capitals heading; use `sectionCaption()` for its tracking and colour too.
-    static let sectionCaption = Font.system(size: 11, weight: .black)
+    static let sectionCaption = ScaledFont.scaled(11, weight: .black)
 
     /// How far content under an ink line stops short of its outer edge: under the line, so nothing bleeds past it, and a whole
     /// point, because a fractional rounded clip leaves stray pixels at its corner on 1x displays.
@@ -59,6 +60,45 @@ enum Brutal {
     /// Ink faded for secondary text and icons. It's solid with Increase Contrast on, so the text holds its contrast over glass.
     static func faded(_ opacity: Double) -> ContrastAware {
         ContrastAware(standard: ink.opacity(opacity), increased: ink)
+    }
+}
+
+extension EnvironmentValues {
+    /// Settings › General › Text size, set at the root of every hosted view.
+    @Entry var textSize = TextSize.standard
+}
+
+/// A system font that grows with Settings › General › Text size. Use `.font(.scaled(…))` for Shot's own interface text;
+/// a plain `Font` stays the size it says, for anything that shows content, such as an annotation's text.
+struct ScaledFont {
+    let size: CGFloat
+    var weight: Font.Weight?
+    var design: Font.Design?
+
+    static func scaled(_ size: CGFloat, weight: Font.Weight? = nil, design: Font.Design? = nil) -> ScaledFont {
+        ScaledFont(size: size, weight: weight, design: design)
+    }
+
+    func resolved(_ textSize: TextSize) -> Font {
+        .system(size: textSize.points(size), weight: weight, design: design)
+    }
+
+    /// For AppKit drawing, which can't read the environment.
+    func points(_ textSize: TextSize) -> CGFloat { textSize.points(size) }
+}
+
+private struct ScaledFontModifier: ViewModifier {
+    let font: ScaledFont
+    @Environment(\.textSize) private var textSize
+
+    func body(content: Content) -> some View {
+        content.font(font.resolved(textSize))
+    }
+}
+
+extension View {
+    func font(_ font: ScaledFont) -> some View {
+        modifier(ScaledFontModifier(font: font))
     }
 }
 
@@ -256,7 +296,7 @@ struct BrutalButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         let pressed = configuration.isPressed
         configuration.label
-            .font(.system(size: compact ? 12 : 13, weight: .bold))
+            .font(.scaled(compact ? 12 : 13, weight: .bold))
             .foregroundStyle(Brutal.ink)
             .padding(.horizontal, compact ? 10 : 14)
             .padding(.vertical, compact ? 5 : 7)
@@ -320,7 +360,7 @@ struct BrutalSegmented<Value: Hashable>: View {
                     }
                 } label: {
                     Text(option.label)
-                        .font(.system(size: 12, weight: selected ? .heavy : .semibold))
+                        .font(.scaled(12, weight: selected ? .heavy : .semibold))
                         .foregroundStyle(Brutal.faded(selected ? 1 : 0.65))
                         .padding(.horizontal, 11)
                         .frame(height: 28)
@@ -356,7 +396,7 @@ struct BrutalChip: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 11, weight: .heavy))
+            .font(.scaled(11, weight: .heavy))
             .foregroundStyle(Brutal.ink)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
@@ -375,7 +415,7 @@ struct SettingsCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
                 if let symbol {
-                    Image(systemName: symbol).font(.system(size: 11, weight: .bold))
+                    Image(systemName: symbol).font(.scaled(11, weight: .bold))
                 }
                 Text(String(localized: title).uppercased()).font(Brutal.sectionCaption).tracking(1.2)
             }
