@@ -774,7 +774,7 @@ private struct CommandRow: View {
         }
         .padding(.vertical, 9)
         if divider {
-            Rectangle().fill(Brutal.ink.opacity(0.12)).frame(height: 1.5)
+            Rectangle().fill(Brutal.faint(0.12)).frame(height: 1.5)
         }
     }
 }

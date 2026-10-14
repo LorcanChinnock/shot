@@ -278,7 +278,7 @@ private struct DropdownList: View {
                                 .padding(.top, 4)
                                 .padding(.bottom, 2)
                         case .divider:
-                            Rectangle().fill(Brutal.ink.opacity(0.12))
+                            Rectangle().fill(Brutal.faint(0.12))
                                 .frame(height: 1.5)
                                 .padding(.horizontal, 4)
                                 .padding(.vertical, 3)

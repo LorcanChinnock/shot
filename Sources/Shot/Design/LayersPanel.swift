@@ -66,13 +66,13 @@ struct LayersPanel: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
-            Divider().overlay(Brutal.ink.opacity(0.25))
+            Divider().overlay(Brutal.faint(0.25))
             if let frame {
                 FrameRowView(row: frame, isFocused: isFocused, onSelect: onSelectFrame, onHide: { onHideFrame(!frame.isHidden) }, onDelete: onDeleteFrame)
                     .padding(.leading, 6)
                     .padding(.trailing, 6 + BrutalScrollBar.width)
                     .padding(.top, 4)
-                Divider().overlay(Brutal.ink.opacity(0.25)).padding(.top, 4)
+                Divider().overlay(Brutal.faint(0.25)).padding(.top, 4)
             }
             ScrollView {
                 ZStack(alignment: .top) {
@@ -121,7 +121,7 @@ struct LayersPanel: View {
                     EmptyLayers().allowsHitTesting(false)
                 }
             }
-            Divider().overlay(Brutal.ink.opacity(0.25))
+            Divider().overlay(Brutal.faint(0.25))
             HStack(spacing: 8) {
                 Image(systemName: "photo").frame(width: 18)
                 Text("Image")
