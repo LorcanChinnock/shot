@@ -14,6 +14,9 @@ final class HotkeyCenter {
     private var registered: [ShotAction: KeyCombo] = [:]
     /// True while the shortcut recorder listens, so global hotkeys don't swallow the keystroke.
     private var isSuspended = false
+    private var temporaryRef: EventHotKeyRef?
+    private var onTemporaryPress: (() -> Void)?
+    private static let temporaryID = UInt32.max
 
     func reloadFromPreferences(force: Bool = false) {
         guard !isSuspended else {
@@ -34,6 +37,32 @@ final class HotkeyCenter {
     func resume() {
         isSuspended = false
         reloadFromPreferences(force: true)
+    }
+
+    /// Takes `combo` from every app until `unregisterTemporary()`, for a key that only means something briefly,
+    /// such as ⌘Z while a toast offers Undo. Replaces any earlier temporary key. False when it couldn't be registered.
+    @discardableResult
+    func registerTemporary(_ combo: KeyCombo, onPress: @escaping () -> Void) -> Bool {
+        unregisterTemporary()
+        installHandlerIfNeeded()
+        let id = EventHotKeyID(signature: OSType(0x5348_4F54), id: Self.temporaryID)
+        var ref: EventHotKeyRef?
+        let status = RegisterEventHotKey(combo.keyCode, combo.modifiers, id, GetEventDispatcherTarget(), 0, &ref)
+        guard status == noErr, let ref else {
+            log.error("RegisterEventHotKey failed for temporary \(combo.displayString, privacy: .public): \(status)")
+            return false
+        }
+        temporaryRef = ref
+        onTemporaryPress = onPress
+        return true
+    }
+
+    func unregisterTemporary() {
+        if let temporaryRef {
+            UnregisterEventHotKey(temporaryRef)
+        }
+        temporaryRef = nil
+        onTemporaryPress = nil
     }
 
     private func register(_ bindings: [ShotAction: KeyCombo]) {
@@ -82,7 +111,9 @@ final class HotkeyCenter {
             let index = Int(id.id)
             // Carbon dispatches hotkey events on the main thread.
             MainActor.assumeIsolated {
-                if ShotAction.allCases.indices.contains(index) {
+                if id.id == HotkeyCenter.temporaryID {
+                    HotkeyCenter.shared.onTemporaryPress?()
+                } else if ShotAction.allCases.indices.contains(index) {
                     HotkeyCenter.shared.onPress?(ShotAction.allCases[index])
                 }
             }

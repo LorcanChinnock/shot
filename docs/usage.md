@@ -73,7 +73,7 @@ If you picked the area with a ratio (Tab or Shift), the frame's handles keep it.
 
 A window recording captures just that window: it follows the window when it moves and leaves out anything on top of it. It has no camera bubble, and dragging the frame turns it into an area recording.
 
-While recording, the controls let you pause and resume, stop and save, and discard the recording; for 5 seconds after a discard, **Undo** brings it back. With the microphone on, they also show its level and a button to mute it, which silences only the microphone. With the camera bubble on, they show, hide or resize it. The menu bar menu has **Pause Recording** (or **Resume Recording**) and **Stop Recording** too. On a Mac with a notch, when there's no room for the controls outside the recorded area, they move into the notch: a black pill shows the elapsed time, and hovering it shows the controls. Pressing any record shortcut again, or opening `shot://record`, stops the recording. Quitting Shot while it records stops and saves the recording first. If Shot crashes mid-recording, or the pieces can't be joined, the next launch (or the failed stop) saves what was recorded to your save folder as `… (recovered).mp4`, or as separate `(recovered, part N)` files, and shows a toast with **Show**. A recording that ran out of disk space keeps its last part if that part still plays.
+While recording, the controls let you pause and resume, stop and save, and discard the recording; for 5 seconds after a discard, **Undo** brings it back, and so does ⌘Z, whichever app is in front. With the microphone on, they also show its level and a button to mute it, which silences only the microphone. With the camera bubble on, they show, hide or resize it. The menu bar menu has **Pause Recording** (or **Resume Recording**) and **Stop Recording** too. On a Mac with a notch, when there's no room for the controls outside the recorded area, they move into the notch: a black pill shows the elapsed time, and hovering it shows the controls. Pressing any record shortcut again, or opening `shot://record`, stops the recording. Quitting Shot while it records stops and saves the recording first. If Shot crashes mid-recording, or the pieces can't be joined, the next launch (or the failed stop) saves what was recorded to your save folder as `… (recovered).mp4`, or as separate `(recovered, part N)` files, and shows a toast with **Show**. A recording that ran out of disk space keeps its last part if that part still plays.
 
 Recordings are H.264 MP4 at 30 or 60 fps. Each stretch between pauses is written to a temporary folder as it records, and they're joined into one file in your save folder when you stop. With a display that refreshes at 120 Hz or faster, such as a ProMotion MacBook Pro, **Settings › Recording** also offers 120 fps. A 120 fps recording, and its export from the video editor, is HEVC MP4. On a slower screen, a 120 fps recording drops to 60 fps. When a recording finishes, Shot copies the file to the clipboard unless you turn off **Copy to clipboard** in **Settings › Recording**, and shows it in [Quick Access](#quick-access) unless you turn that off in **Settings › Capture**. A recording never opens in the video editor by itself. In **Settings › Recording** you can also show the cursor, turn on **Show clicks** to draw a circle at each click, outline the recorded area with **Region border** (the border never appears in the video), and record your microphone and system audio. System audio is sound from other apps; Shot's own sounds are left out.
 
@@ -547,6 +547,12 @@ Record Full Screen, Record Window, Pick Colour, Copy Latest Capture's Path, Capt
 |---|---|
 | Return | Start recording, after the countdown if one is set |
 | Esc | Cancel |
+
+### Recording
+
+| Key | Action |
+|---|---|
+| ⌘Z | Undo a discard, for 5 seconds after it, whichever app is in front |
 
 ### Annotation editor
 
