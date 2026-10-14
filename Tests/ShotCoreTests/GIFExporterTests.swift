@@ -4,7 +4,7 @@ import os
 import Testing
 @testable import ShotCore
 
-extension MediaTests {
+extension CompositingMediaTests {
     @Test func exportsTwoSecondVideoAtTwelveFPS() async throws {
         let folder = try temporaryFolder()
         defer { try? FileManager.default.removeItem(at: folder) }
