@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import ShotCore
 import SwiftUI
 
@@ -25,7 +26,8 @@ enum Toast {
     }
 
     /// Shows `message`; `duration` nil keeps it visible until the next call. The pointer holds it, and a click dismisses it.
-    /// With `undoable`, the toast offers Undo, and the action commits once the toast goes away any other way.
+    /// With `undoable`, the toast offers Undo, which ⌘Z also presses from any app while the toast shows, and the action
+    /// commits once the toast goes away any other way.
     /// With `cancel`, it offers Cancel for the work it describes. With `reveal`, it offers Show, which selects that file in Finder.
     static func show(_ message: LocalizedStringResource, duration: Duration? = .seconds(1.5), undoable: PendingAction? = nil, cancel: (() -> Void)? = nil, reveal: URL? = nil) {
         show(String(localized: message), duration: duration, undoable: undoable, cancel: cancel, reveal: reveal)
@@ -38,6 +40,13 @@ enum Toast {
         settle()
         self.undoable = undoable
         let panel = panel ?? makePanel()
+        if let undoable {
+            // The panel never becomes key, so ⌘Z can't reach it through the responder chain.
+            HotkeyCenter.shared.registerTemporary(KeyCombo(keyCode: UInt32(kVK_ANSI_Z), modifiers: KeyCombo.command)) {
+                undoable.undo()
+                hide()
+            }
+        }
         let action: ToastView.Action? = if let undoable {
             ToastView.Action(title: String(localized: "Undo")) { undoable.undo(); hide() }
         } else if let cancel {
@@ -126,6 +135,9 @@ enum Toast {
     private static func settle() {
         let pending = undoable
         undoable = nil
+        if pending != nil {
+            HotkeyCenter.shared.unregisterTemporary()
+        }
         pending?.commit()
     }
 
