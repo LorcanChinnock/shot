@@ -11,6 +11,7 @@
 #   uxqa_key "text" | uxqa_keycode N ["command down, shift down"]
 #   uxqa_window                prints the front window's x y w h; uxqa_resize W H sets its size
 #   uxqa_ax [--json]           accessibility tree plus the problems it spots
+#   uxqa_contrast X Y W H [#bg] WCAG contrast of what's in a rect, captured at full resolution
 
 UXQA_APP="${UXQA_APP:-ShotDev}"
 UXQA_BUNDLE="${UXQA_BUNDLE:-$PWD/build/ShotDev.app}"
@@ -74,6 +75,11 @@ uxqa_window() { osascript -e "tell application \"System Events\" to tell process
 uxqa_resize() { osascript -e "tell application \"System Events\" to tell process \"$UXQA_APP\" to tell window 1 to set size to {$1, $2}"; sleep 1; }
 uxqa_ax() { "$UXQA_DIR/bin/axdump" "$UXQA_APP" "$@"; }
 uxqa_measure() { "$UXQA_DIR/bin/measure" "$@"; }
+# Contrast of what's in a rect given in screen points, against the rect's top-left pixel or the colour given. Captured at full
+# resolution, because uxqa_shot scales Retina captures down and the blur lightens thin glyphs.
+uxqa_contrast() {
+  screencapture -x -R"$1,$2,$3,$4" "$UXQA_DIR/contrast.png" && "$UXQA_DIR/bin/measure" "$UXQA_DIR/contrast.png" contrast 0 0 100000 100000 $5
+}
 
 # Appearance matrix: uxqa_appearance dark|light
 uxqa_appearance() {
