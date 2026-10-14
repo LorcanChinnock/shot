@@ -83,7 +83,7 @@ Concurrency: UI and model types are `@MainActor`. Heavy work runs in `Task.detac
 ## CI minutes
 
 macOS runner minutes cost about 15× Linux ones, so CI runs macOS only at the release gate (`.github/workflows/ci.yml`):
-- Every PR runs one Linux job, the required `test` check: `scripts/lint.sh` and ShotModel's tests. A push to `main` only builds, to save the build cache PRs restore.
+- Every PR runs one Linux job, the required `test` check: `scripts/lint.sh` and ShotModel's tests. On push to `main`, `warm-cache.yml` only builds, to save the build cache PRs restore.
 - The release PR can't merge until `make release-gate` runs the gate on it: on macOS, it builds the app, checks the strings catalog, and runs `ShotCoreTests`, `ShotModelTests` and `PerfTests`. When every step passes, the gate sets a `test` commit status on the commit it tested, and that status is what satisfies the required `test` check. A PR counts only checks from `pull_request` runs, so the gate's own check run never reaches it, and on release-please's branch the Linux job is named `test (Linux; the release needs make release-gate)`, so it can't stand in.
 - A push to the release PR leaves the new commit without the status, so only a commit that passed the gate can be released. If the gate fails, fix it in a normal PR, then gate the updated release PR. release-please updates the release PR only for commits that change the changelog, so after a `test:`, `ci:` or `docs:` fix, run `gh pr update-branch <release PR>` before the gate.
 - CI never builds the app or runs ShotCore's tests on a PR, so local `make lint` and `make test` are the real check for Apple-side code. A break that slips through stays on `main` until the next gate.
