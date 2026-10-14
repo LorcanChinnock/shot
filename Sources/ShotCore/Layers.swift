@@ -77,6 +77,16 @@ extension Annotation {
 
     private var automaticName: String {
         switch kind {
+        case let .text(string, _, _): Self.firstWords(of: string) ?? kindTitle
+        case let .note(string, _): Self.firstWords(of: string) ?? kindTitle
+        case let .counter(number, _): String(localized: "Step \(number)")
+        case .arrow, .line, .shape, .highlight, .pixelate, .blur, .spotlight, .freehand, .marker, .image: kindTitle
+        }
+    }
+
+    /// What kind of annotation it is, whatever it's named.
+    public var kindTitle: String {
+        switch kind {
         case .arrow: String(localized: "Arrow")
         case .line: String(localized: "Line")
         case let .shape(shape, _): shape.title
@@ -84,13 +94,18 @@ extension Annotation {
         case .pixelate: String(localized: "Pixelate")
         case .blur: String(localized: "Blur")
         case .spotlight: String(localized: "Spotlight")
-        case let .text(string, _, _): Self.firstWords(of: string) ?? String(localized: "Text")
-        case let .note(string, _): Self.firstWords(of: string) ?? String(localized: "Note")
-        case let .counter(number, _): String(localized: "Step \(number)")
+        case .text: String(localized: "Text")
+        case .note: String(localized: "Note")
+        case .counter: String(localized: "Step")
         case .freehand: String(localized: "Pen")
         case .marker: String(localized: "Highlighter")
         case .image: String(localized: "Image")
         }
+    }
+
+    /// What VoiceOver says after its name: its kind, unless the name is just that.
+    public var accessibilityKind: String {
+        layerName == kindTitle ? String(localized: "annotation") : kindTitle.localizedLowercase
     }
 
     /// The SF Symbol for it in the layers panel and the video editor's tracks.
