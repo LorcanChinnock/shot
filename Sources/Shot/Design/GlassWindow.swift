@@ -1,4 +1,5 @@
 import AppKit
+import ShotCore
 import SwiftUI
 
 /// Borderless-looking window whose SwiftUI content draws its own glass backdrop and ink border.
@@ -80,10 +81,19 @@ extension NSView {
     /// window and sets its size limits from inside AppKit's layout pass, which throws once content changes under a visible window.
     convenience init(hosting rootView: some View) {
         self.init()
-        let hosting = NSHostingView(rootView: rootView)
+        let hosting = NSHostingView(rootView: rootView.modifier(TextSizeRoot()))
         hosting.sizingOptions = []
         hosting.autoresizingMask = [.width, .height]
         addSubview(hosting)
+    }
+}
+
+/// Hands Settings › General › Text size to everything a hosting view shows.
+private struct TextSizeRoot: ViewModifier {
+    @Setting(PreferenceKey.textSize) private var textSize: TextSize
+
+    func body(content: Content) -> some View {
+        content.environment(\.textSize, textSize)
     }
 }
 

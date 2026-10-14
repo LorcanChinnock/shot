@@ -383,7 +383,7 @@ final class SelectionOverlayView: NSView {
         if controller.aspectRatio != .free {
             text = "\(controller.aspectRatio.label(portrait: selection.height > selection.width)) · \(text)"
         }
-        let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .bold)
+        let font = NSFont.monospacedDigitSystemFont(ofSize: Preferences().textSize.points(12), weight: .bold)
         let width = (text as NSString).size(withAttributes: [.font: font]).width + 20
         var origin = CGPoint(x: point.x + 16, y: point.y - 44)
         if origin.x + width > bounds.width {
@@ -415,11 +415,12 @@ final class SelectionOverlayView: NSView {
 
     private func drawHint(in ctx: CGContext) {
         let text = hintText
-        let font = NSFont.systemFont(ofSize: 13, weight: .bold)
+        let textSize = Preferences().textSize
+        let font = NSFont.systemFont(ofSize: textSize.points(13), weight: .bold)
         let width = (text as NSString).size(withAttributes: [.font: font]).width + 20
         let hint = drawChip(text, at: CGPoint(x: ((bounds.width - width) / 2).rounded(), y: bounds.height - 90), fill: .white, font: font)
         if let prompt = controller.prompt {
-            let promptFont = NSFont.systemFont(ofSize: 15, weight: .heavy)
+            let promptFont = NSFont.systemFont(ofSize: textSize.points(15), weight: .heavy)
             let promptWidth = (prompt as NSString).size(withAttributes: [.font: promptFont]).width + 20
             _ = drawChip(prompt, at: CGPoint(x: ((bounds.width - promptWidth) / 2).rounded(), y: hint.maxY + 12), fill: Self.yellow, font: promptFont)
         }

@@ -26,7 +26,7 @@ struct GalleryRootView: View {
             searchField
             sortMenu
             Image(systemName: "photo")
-                .font(.system(size: 10, weight: .bold))
+                .font(.scaled(10, weight: .bold))
                 .foregroundStyle(Brutal.faded(0.6))
             Slider(value: Bindable(model).tileSize, in: Gallery.tileSizes)
                 .frame(width: 80)
@@ -34,7 +34,7 @@ struct GalleryRootView: View {
                 .brutalTip("Thumbnail size (⌘+ and ⌘−)")
                 .accessibilityLabel(Text("Thumbnail size"))
             Image(systemName: "photo")
-                .font(.system(size: 15, weight: .bold))
+                .font(.scaled(15, weight: .bold))
                 .foregroundStyle(Brutal.faded(0.6))
         }
         .padding(.horizontal, 3)
@@ -49,11 +49,11 @@ struct GalleryRootView: View {
     private var searchField: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 11, weight: .bold))
+                .font(.scaled(11, weight: .bold))
                 .foregroundStyle(Brutal.faded(0.6))
             TextField("Search", text: Bindable(model).query)
                 .textFieldStyle(.plain)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.scaled(13, weight: .semibold))
                 .focused($searchFocused)
             if !model.query.isEmpty {
                 Button {
@@ -79,9 +79,9 @@ struct GalleryRootView: View {
             HStack(spacing: 5) {
                 Text(model.sort.title)
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 9, weight: .black))
+                    .font(.scaled(9, weight: .black))
             }
-            .font(.system(size: 12, weight: .bold))
+            .font(.scaled(12, weight: .bold))
             .foregroundStyle(Brutal.ink)
             .padding(.horizontal, 10)
             .frame(height: 30)
@@ -109,7 +109,7 @@ struct GalleryRootView: View {
                 ProgressView().controlSize(.small)
             } else if model.items.isEmpty {
                 Image(systemName: "photo.on.rectangle.angled")
-                    .font(.system(size: 34, weight: .bold))
+                    .font(.scaled(34, weight: .bold))
                     .foregroundStyle(Brutal.faded(0.55))
                 Text("No captures yet")
                     .font(Brutal.title(17))
@@ -121,7 +121,7 @@ struct GalleryRootView: View {
                     .buttonStyle(BrutalButtonStyle(compact: true))
             } else {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 34, weight: .bold))
+                    .font(.scaled(34, weight: .bold))
                     .foregroundStyle(Brutal.faded(0.55))
                 Text("Nothing matches")
                     .font(Brutal.title(17))
@@ -298,7 +298,7 @@ private struct GalleryTile: View, Equatable {
                         .clipped()
                 } else {
                     Image(systemName: item.kind == .video ? "film" : "photo")
-                        .font(.system(size: 22, weight: .bold))
+                        .font(.scaled(22, weight: .bold))
                         .foregroundStyle(Brutal.ink.opacity(0.35))
                 }
                 badges
@@ -333,7 +333,7 @@ private struct GalleryTile: View, Equatable {
             .background(Color.white.opacity(0.6))
             .inkBorder(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.violet : Brutal.ink)
             Text(item.name)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.scaled(11, weight: .semibold))
                 .foregroundStyle(Brutal.ink)
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -383,7 +383,7 @@ private struct GalleryTile: View, Equatable {
                 switch item.kind {
                 case .video:
                     Image(systemName: "play.fill")
-                        .font(.system(size: 10, weight: .black))
+                        .font(.scaled(10, weight: .black))
                         .foregroundStyle(Brutal.ink)
                         .frame(width: 26, height: 26)
                         .brutalCircle(Brutal.yellow, shadow: 2)
@@ -412,7 +412,7 @@ private struct AgentMark: View {
 
     var body: some View {
         Image(systemName: origin.via == .cli ? "terminal" : "sparkles")
-            .font(.system(size: 10, weight: .black))
+            .font(.scaled(10, weight: .black))
             .foregroundStyle(Brutal.ink)
             .frame(width: 22, height: 22)
             .brutalCircle(Color.white, shadow: 2)
@@ -459,7 +459,7 @@ private struct SelectionCheckbox: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: "checkmark")
-                .font(.system(size: 10, weight: .black))
+                .font(.scaled(10, weight: .black))
                 .foregroundStyle(Brutal.ink)
                 .opacity(checked ? 1 : 0)
                 .frame(width: 22, height: 22)

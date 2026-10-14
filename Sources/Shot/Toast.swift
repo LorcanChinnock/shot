@@ -10,7 +10,7 @@ enum Toast {
     private static var undoable: PendingAction?
     private static var shown: ToastText?
     private static var actionTitle: String?
-    private static let font = NSFont.systemFont(ofSize: 13, weight: .bold)
+    fileprivate static let font = ScaledFont.scaled(13, weight: .bold)
     private static let shadow: CGFloat = 4
 
     /// Shows `message` for something that didn't happen or went wrong, long enough to read.
@@ -89,9 +89,10 @@ enum Toast {
     }
 
     private static func size(of message: String, actionTitle: String?) -> NSSize {
-        var textWidth = (message as NSString).size(withAttributes: [.font: font]).width.rounded(.up)
+        let textSize = Preferences().textSize
+        var textWidth = (message as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: font.points(textSize), weight: .bold)]).width.rounded(.up)
         if let actionTitle {
-            textWidth += (actionTitle as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 12, weight: .bold)]).width.rounded(.up) + 36
+            textWidth += (actionTitle as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: textSize.points(12), weight: .bold)]).width.rounded(.up) + 36
         }
         return NSSize(width: textWidth + 32 + shadow, height: 38 + shadow)
     }
@@ -164,7 +165,7 @@ private struct ToastView: View {
     var body: some View {
         HStack(spacing: 12) {
             Text(text.message)
-                .font(.system(size: 13, weight: .bold))
+                .font(Toast.font)
                 .foregroundStyle(Brutal.ink)
                 .lineLimit(1)
             if let action {

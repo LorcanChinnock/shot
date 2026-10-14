@@ -17,7 +17,7 @@ struct VideoEditorRootView: View {
         VStack(spacing: Brutal.sectionGap) {
             HStack(spacing: 12) {
                 Text(model.fileURL.lastPathComponent)
-                    .font(.system(size: 13, weight: .heavy))
+                    .font(.scaled(13, weight: .heavy))
                     .foregroundStyle(Brutal.ink)
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -77,7 +77,7 @@ struct VideoEditorRootView: View {
                     model.togglePlay()
                 } label: {
                     Image(systemName: model.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 15, weight: .black))
+                        .font(.scaled(15, weight: .black))
                         .foregroundStyle(Brutal.ink)
                         .frame(width: Self.playButtonSize, height: Self.playButtonSize)
                         .brutalCircle(Brutal.yellow, shadow: 3)
@@ -349,7 +349,7 @@ struct TrimTimelineView: View {
 
     private func handle(symbol: String) -> some View {
         Image(systemName: symbol)
-            .font(.system(size: 12, weight: .black))
+            .font(.scaled(12, weight: .black))
             .foregroundStyle(Brutal.ink)
             .frame(width: TrimTimeline.handleWidth, height: Self.height)
             .background(Brutal.yellow)

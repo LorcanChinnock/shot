@@ -10742,6 +10742,9 @@
         }
       }
     },
+    "Default" : {
+
+    },
     "Delete" : {
       "localizations" : {
         "de" : {
@@ -17537,6 +17540,9 @@
           }
         }
       }
+    },
+    "Larger" : {
+
     },
     "Largest first" : {
       "localizations" : {
@@ -31217,6 +31223,12 @@
           }
         }
       }
+    },
+    "Text in Shot's windows, panels and toasts. Captures keep their size." : {
+
+    },
+    "Text size" : {
+
     },
     "Text size: %@" : {
       "localizations" : {

@@ -187,7 +187,7 @@ struct CropOptions: View {
                 Tile(selected: selected == aspect, color: Brutal.sky, help: aspect.title, detail: aspect.detail) {
                     choose(aspect)
                 } label: {
-                    Text(aspect.label).font(.system(size: 9, weight: .heavy)).minimumScaleFactor(0.7).lineLimit(1)
+                    Text(aspect.label).font(.scaled(9, weight: .heavy)).minimumScaleFactor(0.7).lineLimit(1)
                 }
             }
         }
@@ -256,7 +256,7 @@ struct ShapeMenu: View {
             }) {
                 HStack(spacing: 6) {
                     Image(systemName: selected.symbol).font(Brutal.toolIcon)
-                    Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
+                    Image(systemName: "chevron.down").font(.scaled(9, weight: .black))
                 }
                 .foregroundStyle(Brutal.ink)
                 .frame(height: 30)

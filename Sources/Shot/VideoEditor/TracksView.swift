@@ -118,6 +118,7 @@ struct TracksView: View {
     @State private var hoveredAnnotation: UUID?
     /// The annotation clip whose name is being edited in place.
     @State private var renaming: UUID?
+    @Environment(\.textSize) private var textSize
 
     var body: some View {
         let layout = Self.layout(for: model.project)
@@ -337,7 +338,7 @@ struct TracksView: View {
     private func laneButton(_ control: LaneControl, track: Int, isOn: Bool) -> some View {
         Button { model.toggle(control.flag, ofTrack: track) } label: {
             Image(systemName: control.symbol(isOn: isOn))
-                .font(.system(size: 10, weight: .bold))
+                .font(.scaled(10, weight: .bold))
                 .foregroundStyle(Brutal.ink)
                 .frame(width: LaneLayout.controlSize, height: LaneLayout.controlSize)
                 .background(isOn ? Brutal.yellow : Color.white)
@@ -355,7 +356,7 @@ struct TracksView: View {
             for time in ticks {
                 let x = timeline.x(for: time)
                 context.fill(Path(CGRect(x: x, y: size.height - 5, width: 1, height: 5)), with: .color(Brutal.ink.opacity(0.6)))
-                context.draw(Text(TimelineRuler.label(time, interval: interval)).font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundStyle(Brutal.faded(0.7)), at: CGPoint(x: x + 3, y: size.height / 2 - 1), anchor: .leading)
+                context.draw(Text(TimelineRuler.label(time, interval: interval)).font(ScaledFont.scaled(10, weight: .bold, design: .monospaced).resolved(textSize)).foregroundStyle(Brutal.faded(0.7)), at: CGPoint(x: x + 3, y: size.height / 2 - 1), anchor: .leading)
             }
         }
         .frame(width: timeline.width, height: Self.rulerHeight)
@@ -444,8 +445,8 @@ struct TracksView: View {
         let color = clip.annotation.color
         let isRenaming = renaming == clip.id
         return HStack(spacing: 4) {
-            Image(systemName: clip.annotation.layerSymbol).font(.system(size: 11, weight: .bold))
-            Text(clip.annotation.layerName).font(.system(size: 11, weight: .bold)).lineLimit(1)
+            Image(systemName: clip.annotation.layerSymbol).font(.scaled(11, weight: .bold))
+            Text(clip.annotation.layerName).font(.scaled(11, weight: .bold)).lineLimit(1)
                 .opacity(isRenaming ? 0 : 1)
         }
         .foregroundStyle(Brutal.ink)
@@ -486,7 +487,7 @@ struct TracksView: View {
 
     private func handle(_ symbol: String, height: CGFloat) -> some View {
         Image(systemName: symbol)
-            .font(.system(size: 12, weight: .black))
+            .font(.scaled(12, weight: .black))
             .foregroundStyle(Brutal.ink)
             .frame(width: TrimTimeline.handleWidth, height: height)
             .background(Brutal.yellow)

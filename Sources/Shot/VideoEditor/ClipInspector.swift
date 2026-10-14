@@ -177,7 +177,7 @@ struct ClipInspector: View {
         let here = animation.hasKeyframe(property, at: model.playhead - start)
         return Button { model.toggleKeyframe(property) } label: {
             Image(systemName: here ? "diamond.fill" : "diamond")
-                .font(.system(size: 13, weight: .bold))
+                .font(.scaled(13, weight: .bold))
                 .foregroundStyle(here ? Brutal.ink : Brutal.ink.opacity(animation.hasKeyframes(property) ? 0.9 : 0.45))
                 .overlay {
                     if !here, animation.hasKeyframes(property) {

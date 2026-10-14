@@ -9,7 +9,7 @@ struct EditorRootView: View {
         VStack(spacing: Brutal.sectionGap) {
             HStack(spacing: 12) {
                 Text(model.fileURL.lastPathComponent)
-                    .font(.system(size: 13, weight: .heavy))
+                    .font(.scaled(13, weight: .heavy))
                     .foregroundStyle(Brutal.ink)
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -101,7 +101,7 @@ private struct ZoomMenu: View {
             HStack(spacing: 6) {
                 Text("\(Int((model.zoom * 100).rounded()))%")
                     .monospacedDigit()
-                Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
+                Image(systemName: "chevron.down").font(.scaled(9, weight: .black))
             }
         }
         .buttonStyle(BrutalButtonStyle(compact: true))
@@ -123,7 +123,7 @@ private struct CanvasMenu: View {
         ]) {
             HStack(spacing: 6) {
                 Text("Canvas")
-                Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
+                Image(systemName: "chevron.down").font(.scaled(9, weight: .black))
             }
         }
         .buttonStyle(BrutalButtonStyle(compact: true))
