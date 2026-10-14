@@ -32,7 +32,7 @@ struct QuickAccessView: View {
     var body: some View {
         VStack(spacing: QuickAccessLayout.spacing) {
             ForEach(model.cards) { card in
-                QuickAccessCardView(card: card, controller: controller)
+                QuickAccessCardView(card: card, selected: model.selected == card.id, controller: controller)
                     .transition(transition)
             }
         }
@@ -44,6 +44,8 @@ struct QuickAccessView: View {
 
 private struct QuickAccessCardView: View {
     let card: QuickAccessCard
+    /// The keyboard is on this card: it shows its buttons, as when hovered, and a thicker yellow border.
+    let selected: Bool
     let controller: QuickAccessController
     @State private var hovering = false
 
@@ -55,7 +57,7 @@ private struct QuickAccessCardView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: QuickAccessCard.width, height: card.height)
                 .accessibilityLabel(Text(card.isVideo ? "Recording \(card.fileURL.lastPathComponent)" : "Screenshot \(card.fileURL.lastPathComponent)"))
-            if hovering {
+            if hovering || selected {
                 hoverActions
                     .transition(.opacity)
             } else if card.isVideo {
@@ -69,6 +71,15 @@ private struct QuickAccessCardView: View {
         .frame(width: QuickAccessCard.width, height: card.height)
         .background(Color.black)
         .inkBorder(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular), width: 2)
+        .background {
+            // A yellow ring edged in ink, outside the card, so it shows on a light or dark desktop.
+            if selected {
+                Brutal.yellow
+                    .frame(width: QuickAccessCard.width + 16, height: card.height + 16)
+                    .inkBorder(RoundedRectangle(cornerRadius: Brutal.radius + 8, style: .circular), width: 2)
+            }
+        }
+        .accessibilityAddTraits(selected ? .isSelected : [])
         .contentShape(Rectangle())
         .onHover { inside in
             withAnimation(.easeOut(duration: 0.12)) {
@@ -82,22 +93,14 @@ private struct QuickAccessCardView: View {
 
     /// The hover buttons' actions again, plus Copy Path, Copy Text and Pin, which have no button: the card stays as plain
     /// as it is.
-    @ViewBuilder
     private var menu: some View {
-        Button("Copy") { controller.copy(card) }
-        Button("Copy Path") { controller.copyPath(card) }
-        if !card.isVideo {
-            Button("Copy Text") { Task { await Clipboard.copyText(inImageAt: card.styledURL ?? card.fileURL) } }
+        ForEach(Array(controller.actions(for: card).enumerated()), id: \.offset) { _, action in
+            if let action {
+                Button(action.title, action: action.perform)
+            } else {
+                Divider()
+            }
         }
-        Button("Save As…") { controller.saveAs(card) }
-        Divider()
-        Button(card.isVideo ? "Edit Video" : "Annotate") { controller.annotate(card) }
-        if card.isVideo {
-            Button("Export GIF") { controller.exportGIF(card) }
-        } else {
-            Button("Pin") { controller.pin(card) }
-        }
-        Button("Show in Finder") { controller.showInFinder(card) }
     }
 
     private var hoverActions: some View {
