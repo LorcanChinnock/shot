@@ -31,7 +31,7 @@ import Testing
 
 @Test func replacementHotkeysTakeTheMacOSKeys() {
     let replaced = ShotAction.allCases.map { $0.defaultCombo(replacingSystemScreenshots: true)?.displayString }
-    #expect(replaced == ["⇧⌘4", "⇧⌘3", nil, "⇧⌘5", nil, nil, nil, nil, nil, nil])
+    #expect(replaced == ["⇧⌘4", "⇧⌘3", nil, "⇧⌘5", nil, nil, nil, nil, nil, nil, nil])
     #expect(ShotAction.allCases.allSatisfy { $0.defaultCombo(replacingSystemScreenshots: false) == $0.defaultCombo })
 }
 
@@ -64,12 +64,21 @@ import Testing
     #expect(ShotAction.allCases.firstIndex(of: .capturePrevious) == 8)
 }
 
-@Test func copyTextHasNoShortcutAndComesLast() {
+@Test func copyTextHasNoShortcut() {
     #expect(ShotAction.copyText.defaultCombo == nil)
     #expect(ShotAction.copyText.defaultCombo(replacingSystemScreenshots: true) == nil)
     // It saves no capture, so it stays out of the menu's Capture section and the capture path.
     #expect(!ShotAction.copyText.isCapture)
     #expect(!ShotAction.copyText.isRecording)
     #expect(ShotAction.copyText.rawValue == "copy-text")
-    #expect(ShotAction.allCases.last == .copyText)
+    #expect(ShotAction.allCases.firstIndex(of: .copyText) == 9)
+}
+
+@Test func focusQuickAccessHasNoShortcutAndComesLast() {
+    #expect(ShotAction.focusQuickAccess.defaultCombo == nil)
+    #expect(ShotAction.focusQuickAccess.defaultCombo(replacingSystemScreenshots: true) == nil)
+    #expect(!ShotAction.focusQuickAccess.isCapture)
+    #expect(!ShotAction.focusQuickAccess.isRecording)
+    #expect(ShotAction.focusQuickAccess.rawValue == "focus-quick-access")
+    #expect(ShotAction.allCases.last == .focusQuickAccess)
 }

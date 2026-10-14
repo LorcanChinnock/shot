@@ -10,6 +10,7 @@ private let home = FileManager.default.homeDirectoryForCurrentUser
     ("shot://capture-window", .action(.captureWindow)),
     ("shot://capture-previous", .action(.capturePrevious)),
     ("shot://copy-text", .action(.copyText)),
+    ("shot://focus-quick-access", .action(.focusQuickAccess)),
     ("shot://record", .action(.record)),
     ("shot://record-fullscreen", .action(.recordFullscreen)),
     ("shot://record-window", .action(.recordWindow)),

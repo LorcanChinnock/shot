@@ -16,6 +16,7 @@ extension ShotAction {
         case .copyPath: String(localized: "Copy Latest Capture's Path")
         case .capturePrevious: String(localized: "Capture Previous Area")
         case .copyText: String(localized: "Copy Text")
+        case .focusQuickAccess: String(localized: "Focus Quick Access")
         }
     }
 }

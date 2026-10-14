@@ -57,6 +57,14 @@ A floating card appears in a bottom corner of the screen under the pointer after
 
 Right-click a card for the same actions, plus **Copy Path**, and **Copy Text** and **Pin** for a screenshot.
 
+To use the cards from the keyboard, give **Focus Quick Access** a shortcut in **Settings › Shortcuts**, or open [`shot://focus-quick-access`](#url-scheme). The newest card gets a yellow ring and shows its buttons, and the cards stop closing on their own. The app you were using stays in front. Then:
+
+- ↑ and ↓ move between cards.
+- Return or ⌘C copies the card and gives the keyboard back to your app, ready to paste.
+- Space opens the card's menu, the same one as right-clicking.
+- ⌘S is **Save As…**, ⌘E is **Annotate** or **Edit**, and Delete closes the card.
+- Esc, or clicking somewhere else, gives the keyboard back, and the cards' timers start again.
+
 **Pin** floats a screenshot above your other windows, so you can keep it in view as a reference while you work. It opens in the middle of the screen at its own size, or at half the screen if it's bigger, and the card closes. A screenshot with a style is pinned the way Copy has it, shadow and border included. Drag a pin to move it, or drag its edges to resize it. Hover it and click the close button to remove it, or click it and press Esc. You can have several pins open at once.
 
 New cards stack above older ones, up to five; a sixth closes the oldest. Cards close on their own after 8 seconds, and hovering a card pauses the timer. In **Settings › Quick Access**, pick the bottom-left or bottom-right corner, and 4, 8, 15 or 30 seconds, or **Never**.
@@ -519,7 +527,7 @@ A video that's an earlier edit is edited again from its project, so its marks an
 
 ### Global
 
-Every capture and recording action, **Pick Colour**, **Copy Latest Capture's Path**, **Capture Previous Area** and **Copy Text** can have a global shortcut and a [`shot://` URL](#url-scheme). Unless you turned it off in the [welcome window](#first-launch), Shot takes over the macOS screenshot keys and turns off the matching macOS shortcuts while it runs, once it has Screen Recording access. When Shot quits, macOS gets its keys back. If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧3 to ⌘⇧5** on again.
+Every capture and recording action, **Pick Colour**, **Copy Latest Capture's Path**, **Capture Previous Area**, **Copy Text** and **Focus Quick Access** can have a global shortcut and a [`shot://` URL](#url-scheme). Unless you turned it off in the [welcome window](#first-launch), Shot takes over the macOS screenshot keys and turns off the matching macOS shortcuts while it runs, once it has Screen Recording access. When Shot quits, macOS gets its keys back. If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧3 to ⌘⇧5** on again.
 
 | Shortcut | Action |
 |---|---|
@@ -531,7 +539,7 @@ While you set up a recording, the record shortcut starts it. While you record, i
 
 To keep the macOS screenshot tool, turn off **Use Shot for ⌘⇧3 to ⌘⇧5** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with ⌃ in place of ⌘: ⌃⇧3, ⌃⇧4, ⌃⇧5, plus ⌃⇧W for a window.
 
-Record Full Screen, Record Window, Pick Colour, Copy Latest Capture's Path, Capture Previous Area and Copy Text have no shortcut until you set one. Pick Colour shows a loupe; click any pixel on screen to copy its hex, such as `#1E90FF`. Capture Window has none while Shot uses ⌘⇧3 to ⌘⇧5; press Space after ⌘⇧4 instead.
+Record Full Screen, Record Window, Pick Colour, Copy Latest Capture's Path, Capture Previous Area, Copy Text and Focus Quick Access have no shortcut until you set one. Pick Colour shows a loupe; click any pixel on screen to copy its hex, such as `#1E90FF`. Capture Window has none while Shot uses ⌘⇧3 to ⌘⇧5; press Space after ⌘⇧4 instead.
 
 ### While selecting
 
@@ -553,6 +561,17 @@ Record Full Screen, Record Window, Pick Colour, Copy Latest Capture's Path, Capt
 | Key | Action |
 |---|---|
 | ⌘Z | Undo a discard, for 5 seconds after it, whichever app is in front |
+
+### Quick Access, after Focus Quick Access
+
+| Key | Action |
+|---|---|
+| ↑ / ↓ | Choose a card |
+| Return or ⌘C | Copy the card, then go back to your app |
+| Space | Open the card's menu |
+| ⌘S / ⌘E | Save As… / Annotate or Edit |
+| Delete | Close the card |
+| Esc | Go back to your app |
 
 ### Annotation editor
 
@@ -645,6 +664,7 @@ Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a scr
 | `shot://pick-color` | Pick a colour on screen and copy its hex |
 | `shot://copy-path` | Copy the newest capture's path |
 | `shot://copy-text` | Drag out an area and copy the text in it |
+| `shot://focus-quick-access` | Use the newest [Quick Access](#quick-access) card from the keyboard |
 | `shot://capture-timer?seconds=<n>` | Count down `n` seconds (1 to 60, default 5), then capture the full screen |
 | `shot://annotate?path=<file>` | Open an image in the editor, or a video in the video editor |
 | `shot://edit-video?path=<file>` | Open a video in the video editor to trim it |
