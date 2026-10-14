@@ -125,7 +125,7 @@ struct SettingsView: View {
                 }
             Text(section.subtitle)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Brutal.ink.opacity(0.65))
+                .foregroundStyle(Brutal.faded(0.65))
         }
         .animation(.easeOut(duration: 0.15), value: section)
     }
@@ -647,7 +647,7 @@ private struct CardNote: View {
     var body: some View {
         Text(text)
             .font(Brutal.caption)
-            .foregroundStyle(Brutal.ink.opacity(0.65))
+            .foregroundStyle(Brutal.faded(0.65))
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 9)
@@ -805,7 +805,7 @@ private struct ShortcutSettings: View {
         HStack(alignment: .top, spacing: 14) {
             Text("Click a shortcut, then press the new keys. Esc cancels, Delete clears.")
                 .font(Brutal.caption)
-                .foregroundStyle(Brutal.ink.opacity(0.65))
+                .foregroundStyle(Brutal.faded(0.65))
                 .fixedSize(horizontal: false, vertical: true)
             Spacer()
             Button("Restore Defaults") {
@@ -858,7 +858,7 @@ private struct AboutSettings: View {
                     BrutalChip(text: "BETA", color: Brutal.yellow)
                 }
                 Text("Screenshots and screen recordings for macOS.")
-                    .font(.system(size: 12.5, weight: .medium)).foregroundStyle(Brutal.ink.opacity(0.65))
+                    .font(.system(size: 12.5, weight: .medium)).foregroundStyle(Brutal.faded(0.65))
             }
             Spacer()
             BrutalChip(text: "v\(version)", color: color)

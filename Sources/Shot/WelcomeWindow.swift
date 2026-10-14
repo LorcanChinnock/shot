@@ -272,7 +272,7 @@ private struct SetupStep: View {
         HStack(spacing: 12) {
             Text("Using Claude Code, Codex or Cursor? Shot can hand them your captures.")
                 .font(Brutal.caption)
-                .foregroundStyle(Brutal.ink.opacity(0.65))
+                .foregroundStyle(Brutal.faded(0.65))
                 .fixedSize(horizontal: false, vertical: true)
             Button("Agents") { MainWindowController.showSettings(section: .agents) }
                 .buttonStyle(BrutalButtonStyle(color: SettingsSection.agents.color, compact: true))
@@ -351,7 +351,7 @@ private struct Header: View {
                 .brutalSurface(color, radius: 11, shadow: 3)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(Brutal.title(22)).foregroundStyle(Brutal.ink)
-                Text(subtitle).font(.system(size: 12.5, weight: .medium)).foregroundStyle(Brutal.ink.opacity(0.65))
+                Text(subtitle).font(.system(size: 12.5, weight: .medium)).foregroundStyle(Brutal.faded(0.65))
             }
         }
     }

@@ -84,7 +84,7 @@ struct StylePopover<Model: StyleEditing>: View {
                     // Its image includes the shadow's see-through margin, which a border or corners would go round.
                     Text("Uses macOS window shadow")
                         .font(Brutal.caption)
-                        .foregroundStyle(Brutal.ink.opacity(0.6))
+                        .foregroundStyle(Brutal.faded(0.6))
                         .brutalTip("This window was captured with its own shadow, so it takes no other style")
                 } else {
                     ForEach(rows, id: \.title) { presetRow in
@@ -108,7 +108,7 @@ struct StylePopover<Model: StyleEditing>: View {
             } else {
                 Text("Select an image, shape, arrow or text, or nothing to style the screenshot.")
                     .font(Brutal.caption)
-                    .foregroundStyle(Brutal.ink.opacity(0.6))
+                    .foregroundStyle(Brutal.faded(0.6))
             }
         }
         .padding(14)
@@ -320,7 +320,7 @@ struct StylePopover<Model: StyleEditing>: View {
     private func label(_ text: LocalizedStringResource) -> some View {
         Text(text)
             .font(Brutal.caption)
-            .foregroundStyle(Brutal.ink.opacity(0.6))
+            .foregroundStyle(Brutal.faded(0.6))
             .frame(width: 60, alignment: .leading)
     }
 
@@ -487,7 +487,7 @@ private struct NewCaptureStyleSwitch: View {
             if otherStyleSaved {
                 Text("New captures keep a different saved style.")
                     .font(Brutal.caption)
-                    .foregroundStyle(Brutal.ink.opacity(0.65))
+                    .foregroundStyle(Brutal.faded(0.65))
             }
         }
         .brutalTip("New captures open and copy with this screenshot's style")

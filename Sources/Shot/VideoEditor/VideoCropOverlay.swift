@@ -126,7 +126,7 @@ private struct VideoCropBar: View {
                 let output = VideoFrameCrop.outputRect(crop: draft, canvas: model.project.canvasSize)
                 Text(verbatim: "\(Int(output.width)) × \(Int(output.height))")
                     .font(Brutal.mono)
-                    .foregroundStyle(Brutal.ink.opacity(0.75))
+                    .foregroundStyle(Brutal.faded(0.75))
             }
             CropOptions(selected: model.cropAspect, canReset: model.cropDraft != model.cropBounds, choose: model.setCropAspect, reset: model.resetCropDraft)
             Button("Cancel") { model.cancelCrop() }

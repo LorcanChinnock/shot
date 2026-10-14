@@ -69,7 +69,7 @@ struct ClipInspector: View {
                     FrameCropRow(model: model)
                     Text("Select a clip to move, scale, turn or fade it, and to key it over time.")
                         .font(Brutal.caption)
-                        .foregroundStyle(Brutal.ink.opacity(0.7))
+                        .foregroundStyle(Brutal.faded(0.7))
                         .lineLimit(2)
                 }
                 .frame(height: 32)
@@ -155,7 +155,7 @@ struct ClipInspector: View {
             .tint(Brutal.sky)
             .accessibilityLabel(Text(title.capitalized))
             .accessibilityValue(Text(format(value)))
-            Text(format(value)).font(Brutal.mono).foregroundStyle(Brutal.ink.opacity(0.75)).frame(width: 48, alignment: .leading)
+            Text(format(value)).font(Brutal.mono).foregroundStyle(Brutal.faded(0.75)).frame(width: 48, alignment: .leading)
             diamond(property, animation, name: title.localizedCapitalized)
         }
     }
@@ -207,7 +207,7 @@ private struct FrameCropRow: View {
         Text("FRAME").sectionCaption().fixedSize()
         Text(verbatim: "\(Int(output.width)) × \(Int(output.height))")
             .font(Brutal.mono)
-            .foregroundStyle(Brutal.ink.opacity(0.75))
+            .foregroundStyle(Brutal.faded(0.75))
             .fixedSize()
         Button("Crop") { model.beginFrameCrop() }
             .buttonStyle(BrutalButtonStyle(color: Brutal.sky.opacity(0.7), compact: true))

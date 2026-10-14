@@ -126,7 +126,7 @@ struct LayersPanel: View {
                 Image(systemName: "photo").frame(width: 18)
                 Text("Image")
                 Spacer(minLength: 0)
-                Image(systemName: "lock.fill").font(.system(size: 10, weight: .bold)).foregroundStyle(Brutal.ink.opacity(0.45))
+                Image(systemName: "lock.fill").font(.system(size: 10, weight: .bold)).foregroundStyle(Brutal.faded(0.45))
             }
             .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(Brutal.ink)
@@ -382,10 +382,10 @@ private struct EmptyLayers: View {
             VStack(spacing: 4) {
                 Text("Nothing drawn yet")
                     .font(Brutal.label)
-                    .foregroundStyle(Brutal.ink.opacity(0.8))
+                    .foregroundStyle(Brutal.faded(0.8))
                 Text("Pick a tool and draw on the image")
                     .font(Brutal.caption)
-                    .foregroundStyle(Brutal.ink.opacity(0.55))
+                    .foregroundStyle(Brutal.faded(0.55))
             }
             .multilineTextAlignment(.center)
         }
@@ -441,7 +441,7 @@ private struct LayerRowView<Grip: Gesture>: View {
         HStack(spacing: 6) {
             Image(systemName: "line.3.horizontal")
                 .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(Brutal.ink.opacity(isLifted ? 1 : 0.45))
+                .foregroundStyle(Brutal.faded(isLifted ? 1 : 0.45))
                 .frame(width: 16, height: Self.height)
                 .contentShape(Rectangle())
                 .pointerStyle(isLifted ? .grabActive : .grabIdle)
