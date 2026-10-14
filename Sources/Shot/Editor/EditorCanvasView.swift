@@ -668,6 +668,46 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
     }
 
+    // MARK: Accessibility
+
+    /// One element per visible annotation, kept by id so VoiceOver's cursor stays on it as the document changes.
+    private var annotationElements: [UUID: AnnotationAccessibilityElement] = [:]
+
+    override func isAccessibilityElement() -> Bool { true }
+    override func accessibilityRole() -> NSAccessibility.Role? { .group }
+    override func accessibilityLabel() -> String? { String(localized: "Canvas") }
+
+    /// Top layer first, as the layers panel lists them.
+    override func accessibilityChildren() -> [Any]? {
+        let visible = model.layers.filter { !$0.isHidden }
+        annotationElements = visible.reduce(into: [:]) { elements, annotation in
+            let element = annotationElements[annotation.id] ?? AnnotationAccessibilityElement(id: annotation.id) { [weak self] id in
+                self?.model.selectLayers([id])
+            }
+            element.setAccessibilityParent(self)
+            element.setAccessibilityLabel(annotation.layerName)
+            element.setAccessibilityRoleDescription(annotation.accessibilityKind)
+            element.setAccessibilityValue(Self.accessibilityText(of: annotation))
+            element.setAccessibilitySelected(model.selectedIDs.contains(annotation.id))
+            element.setAccessibilityFrame(NSAccessibility.screenRect(fromView: self, rect: viewRect(annotation.bounds)))
+            elements[annotation.id] = element
+        }
+        return visible.compactMap { annotationElements[$0.id] }
+    }
+
+    override func accessibilitySelectedChildren() -> [Any]? {
+        _ = accessibilityChildren()
+        return model.selectedIDs.compactMap { annotationElements[$0] }
+    }
+
+    /// All of a text's or note's words, which its name cuts short.
+    private static func accessibilityText(of annotation: Annotation) -> String? {
+        switch annotation.kind {
+        case let .text(string, _, _), let .note(string, _): string
+        case .arrow, .line, .shape, .highlight, .pixelate, .blur, .spotlight, .counter, .freehand, .marker, .image: nil
+        }
+    }
+
     // MARK: Zoom
 
     func zoomIn() {
@@ -936,5 +976,24 @@ extension NSView {
         Brutal.inkNS.withAlphaComponent(0.9).setFill()
         NSBezierPath(roundedRect: chip, xRadius: 4, yRadius: 4).fill()
         text.draw(at: CGPoint(x: chip.minX + 6, y: chip.minY + 3))
+    }
+}
+
+/// An annotation as VoiceOver sees it on the canvas. Pressing it selects it, as clicking it with the select tool does.
+private final class AnnotationAccessibilityElement: NSAccessibilityElement {
+    let id: UUID
+    private let select: (UUID) -> Void
+
+    init(id: UUID, select: @escaping (UUID) -> Void) {
+        self.id = id
+        self.select = select
+        super.init()
+        setAccessibilityRole(.image)
+        setAccessibilityEnabled(true)
+    }
+
+    override func accessibilityPerformPress() -> Bool {
+        select(id)
+        return true
     }
 }

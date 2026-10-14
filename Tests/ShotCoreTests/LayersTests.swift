@@ -56,6 +56,15 @@ private func ids(_ items: [Item]) -> [Int] { items.map(\.id) }
     #expect(annotation(.spotlight(.zero, style: SpotlightStyle())).layerName == "Spotlight")
 }
 
+@Test func voiceOverHearsTheKindUnlessTheNameIsJustThat() {
+    var arrow = annotation(.arrow(from: .zero, to: CGPoint(x: 1, y: 1)))
+    #expect(arrow.accessibilityKind == "annotation")
+    arrow.name = "Points at Save"
+    #expect(arrow.accessibilityKind == "arrow")
+    #expect(annotation(.text("Click here", origin: .zero, fontSize: 12)).accessibilityKind == "text")
+    #expect(annotation(.counter(3, center: .zero)).accessibilityKind == "step")
+}
+
 @Test func aNameReplacesTheAutomaticOneAndClearingItGoesBack() {
     var arrow = annotation(.arrow(from: .zero, to: CGPoint(x: 1, y: 1)))
     #expect(arrow.name == nil)
