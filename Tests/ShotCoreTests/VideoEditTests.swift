@@ -130,6 +130,30 @@ extension MediaTests {
         #expect(mark.annotation.kind == .shape(.rectangle, rect: CGRect(x: 100, y: 70, width: 40, height: 30)))
     }
 
+    @Test func anExportWithAFrameCropIsEditedAgainFromItsProject() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
+        let video = folder.appendingPathComponent("rec.mp4")
+        // Green, with its top-left quarter, 160 × 120, red.
+        try await writeSolidVideo(to: video, color: .green, corner: .red, size: CGSize(width: 320, height: 240), seconds: 2)
+        let media = try await MediaProbe.probe(video)
+        let cropped = Project(source: video, duration: media.duration, canvasSize: try #require(media.size), hasAudio: false)
+            .setting(frameCrop: CGRect(x: 0, y: 0, width: 160, height: 120))
+        let export = folder.appendingPathComponent("rec (2).mp4")
+        try await VersionWriter.writeVideo(VersionWriter.videoPlan(for: cropped, of: video), of: cropped, original: video, to: export, projects: store)
+
+        // A mark in the export's pixels lands there, and the edit still reopens from the recording, its mark live.
+        let box = CaptureMark(type: "rectangle", rect: [100, 70, 40, 30], fill: "#0000FF")
+        let output = try path(try await edit(export, VideoEdit(marks: [VideoEdit.TimedMark(start: 0, end: 2, mark: box)]), projects: store))
+        #expect(try await pixel(in: output, at: 0.5, x: 0.1, y: 0.1).isNear(.red))
+        #expect(try await pixel(in: output, at: 0.5, x: 0.75, y: 0.71).isNear(.blue))
+        let reopened = try #require(VersionWriter.project(of: output, in: store))
+        #expect(reopened.original.resolvingSymlinksInPath() == video.resolvingSymlinksInPath())
+        #expect(reopened.project.canvasSize == CGSize(width: 160, height: 120))
+        #expect(reopened.project.annotationClips.count == 1)
+    }
+
     @Test func appendedVideosPlayAfterIt() async throws {
         let folder = try temporaryFolder()
         defer { try? FileManager.default.removeItem(at: folder) }

@@ -39,6 +39,16 @@ struct ClipInspector: View {
                                 StylePopover(model: model)
                             }
                     }
+                    if !isSound, !isNote, let clip = model.selectedClip {
+                        Button("Crop") { model.beginClipCrop(id) }
+                            .buttonStyle(BrutalButtonStyle(color: Brutal.sky.opacity(0.7), compact: true))
+                            .brutalTip("Crop the clip's picture (C)")
+                        if clip.crop != nil {
+                            Button("Reset Crop") { model.removeClipCrop() }
+                                .buttonStyle(BrutalButtonStyle(compact: true))
+                                .brutalTip("Show all of the clip's picture again")
+                        }
+                    }
                     Spacer(minLength: 8)
                     if let time = model.selectedKeyframe, let easing = animation.easing(at: time) {
                         Text("EASING").sectionCaption()
@@ -55,10 +65,14 @@ struct ClipInspector: View {
                 properties(PropertyValues(), ClipAnimation(), keyable: [.position, .scale, .rotation, .opacity])
                     .disabled(true)
                     .opacity(0.5)
-                Text("Select a clip to move, scale, turn or fade it, and to key it over time.")
-                    .font(Brutal.caption)
-                    .foregroundStyle(Brutal.ink.opacity(0.7))
-                    .frame(height: 32)
+                HStack(spacing: 8) {
+                    FrameCropRow(model: model)
+                    Text("Select a clip to move, scale, turn or fade it, and to key it over time.")
+                        .font(Brutal.caption)
+                        .foregroundStyle(Brutal.ink.opacity(0.7))
+                        .lineLimit(2)
+                }
+                .frame(height: 32)
             }
         }
         .frame(height: Self.height)
@@ -181,5 +195,27 @@ struct ClipInspector: View {
 
     private func caption(_ text: String) -> some View {
         Text(text).sectionCaption().fixedSize()
+    }
+}
+
+/// The video's frame, with nothing selected: the size it comes out, Crop and Reset.
+private struct FrameCropRow: View {
+    let model: VideoEditorModel
+
+    var body: some View {
+        let output = model.project.outputRect
+        Text("FRAME").sectionCaption().fixedSize()
+        Text(verbatim: "\(Int(output.width)) × \(Int(output.height))")
+            .font(Brutal.mono)
+            .foregroundStyle(Brutal.ink.opacity(0.75))
+            .fixedSize()
+        Button("Crop") { model.beginFrameCrop() }
+            .buttonStyle(BrutalButtonStyle(color: Brutal.sky.opacity(0.7), compact: true))
+            .brutalTip("Crop the video's frame (C)")
+        if model.project.frameCrop != nil {
+            Button("Reset") { model.removeFrameCrop() }
+                .buttonStyle(BrutalButtonStyle(compact: true))
+                .brutalTip("Show the whole frame again")
+        }
     }
 }

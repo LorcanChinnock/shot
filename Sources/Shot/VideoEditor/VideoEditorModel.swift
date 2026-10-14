@@ -12,6 +12,12 @@ struct VideoEdit: Equatable {
     var options: VideoExportOptions
 }
 
+/// What crop mode is adjusting: the video's frame, or one clip's picture.
+enum VideoCropTarget: Equatable {
+    case frame
+    case clip(UUID)
+}
+
 @MainActor
 @Observable
 final class VideoEditorModel {
@@ -77,6 +83,13 @@ final class VideoEditorModel {
     private(set) var waveforms: [URL: Waveform] = [:]
     /// The tool drawing annotations over the video, or nil when none is picked. Never crop.
     private(set) var annotationTool: EditorTool?
+    /// What crop mode is adjusting, or `nil` outside it.
+    private(set) var cropTarget: VideoCropTarget?
+    /// The crop being adjusted: in canvas pixels for the frame, or in the clip's picture's pixels, y down, for a clip.
+    var cropDraft: CGRect?
+    var cropAspect: CropAspect = CropAspect(rawValue: UserDefaults.standard.string(forKey: PreferenceKey.editorCropAspect) ?? "") ?? .free {
+        didSet { UserDefaults.standard.set(cropAspect.rawValue, forKey: PreferenceKey.editorCropAspect) }
+    }
     var annotationStyle = Preferences().editorStyle
     /// The text or note whose text field is open, with the colour and size picked for it so far; it may not be on the timeline yet.
     var editingText: Annotation?
@@ -347,6 +360,9 @@ final class VideoEditorModel {
     }
 
     func selectClip(_ id: UUID?) {
+        if id != selectedClipID, cropTarget != nil {
+            cancelCrop()
+        }
         selectedClipID = id
     }
 
@@ -533,6 +549,7 @@ final class VideoEditorModel {
     /// Undo and redo wait for an export, since Save reloads the file and would drop the change.
     func undo() {
         coalescingKey = nil
+        endCropForUndo()
         if !isExporting, let previous = undoStack.undo(from: edit) {
             restore(previous)
         }
@@ -540,6 +557,7 @@ final class VideoEditorModel {
 
     func redo() {
         coalescingKey = nil
+        endCropForUndo()
         if !isExporting, let next = undoStack.redo(from: edit) {
             restore(next)
         }
@@ -576,7 +594,7 @@ final class VideoEditorModel {
         guard dragOrigin == nil else {
             return
         }
-        if isComposite || isAnnotating {
+        if shownProject.trimEdit == nil || isAnnotating {
             rebuildComposite()
         } else if itemIsComposite {
             reloadRecording()
@@ -588,7 +606,7 @@ final class VideoEditorModel {
     /// Plays the composite of every track in place of the recording, from where the playhead was.
     private func rebuildComposite() {
         rebuildTask?.cancel()
-        let snapshot = project
+        let snapshot = shownProject
         rebuildTask = Task {
             // A run of edits builds once.
             try? await Task.sleep(for: .milliseconds(120))
@@ -982,6 +1000,7 @@ extension VideoEditorModel {
             return
         }
         player.pause()
+        endCropSilently()
         annotationTool = tool
         if tool != nil, tool != .select {
             selectedClipID = selectedAnnotation == nil ? selectedClipID : nil
@@ -1238,17 +1257,157 @@ extension VideoEditorModel {
         commitAnnotation(annotation, id: id)
     }
 
-    /// Puts an image from `url` on the video, centred and fitted inside half the canvas.
+    /// Puts an image from `url` on the video, centred and fitted inside half the frame.
     func addImage(from url: URL) {
         guard let data = try? Data(contentsOf: url), let image = ImageCodec.image(from: data) else {
             Toast.error("Can't open \(url.lastPathComponent): it isn't an image Shot can read")
             return
         }
-        let canvas = project.canvasSize
-        let scale = min(1, canvas.width / 2 / CGFloat(image.width), canvas.height / 2 / CGFloat(image.height))
+        // Within what the frame shows, when it's cropped.
+        let frame = shownFrame
+        let scale = min(1, frame.width / 2 / CGFloat(image.width), frame.height / 2 / CGFloat(image.height))
         let size = CGSize(width: CGFloat(image.width) * scale, height: CGFloat(image.height) * scale)
-        let rect = CGRect(x: (canvas.width - size.width) / 2, y: (canvas.height - size.height) / 2, width: size.width, height: size.height)
+        let rect = CGRect(x: frame.midX - size.width / 2, y: frame.midY - size.height / 2, width: size.width, height: size.height)
         addAnnotation(Annotation(kind: .image(AnnotationImage(image), rect: rect), color: annotationStyle.color, lineWidth: lineWidth))
+    }
+}
+
+// MARK: Crop
+
+extension VideoEditorModel {
+    /// What the player shows: the project, with the crop being adjusted taken off so all of its picture shows.
+    var shownProject: Project {
+        switch cropTarget {
+        case nil: project
+        case .frame: project.setting(frameCrop: nil)
+        case let .clip(id): project.setting(crop: nil, of: id) ?? project
+        }
+    }
+
+    /// The part of the canvas the player shows, in canvas pixels: the frame crop, or all of it.
+    var shownFrame: CGRect {
+        let shown = shownProject
+        return shown.frameCrop == nil ? CGRect(origin: .zero, size: shown.canvasSize) : shown.outputRect
+    }
+
+    var isCropping: Bool { cropTarget != nil }
+
+    /// C: crops the selected clip's picture, or the frame when nothing with a picture is selected. False when it can't.
+    func beginCrop() -> Bool {
+        guard !isExporting, !isAnnotating, cropTarget == nil else {
+            return false
+        }
+        // A sound clip has no picture to crop, so C crops the frame then too.
+        if let id = selectedClipID, project.annotationClip(id) == nil, beginClipCrop(id) {
+            return true
+        }
+        beginFrameCrop()
+        return true
+    }
+
+    func beginFrameCrop() {
+        guard !isExporting, project.canvasSize.width > 0 else {
+            return
+        }
+        player.pause()
+        cropDraft = project.frameCrop ?? CGRect(origin: .zero, size: project.canvasSize)
+        cropTarget = .frame
+        refreshPlayer()
+    }
+
+    /// Crops a clip's picture; false for sound, which has none.
+    @discardableResult
+    func beginClipCrop(_ id: UUID) -> Bool {
+        guard !isExporting, let clip = project.clip(id), clip.size.width > 0, clip.size.height > 0 else {
+            return false
+        }
+        player.pause()
+        selectedClipID = id
+        // The playhead goes to the clip, so its picture shows while it's cropped.
+        if !(clip.start..<clip.end).contains(playhead) {
+            seekTimeline(to: clip.start)
+        }
+        cropDraft = LayerGeometry.keptRect(of: clip)
+        cropTarget = .clip(id)
+        refreshPlayer()
+        return true
+    }
+
+    /// What the crop can reach: the canvas for the frame, or the whole picture for a clip.
+    var cropBounds: CGRect? {
+        switch cropTarget {
+        case nil: nil
+        case .frame: CGRect(origin: .zero, size: project.canvasSize)
+        case let .clip(id): project.clip(id).map { CGRect(origin: .zero, size: $0.size) }
+        }
+    }
+
+    /// Return: applies the crop as one undo step.
+    func applyCrop() {
+        guard let target = cropTarget, let draft = cropDraft, let bounds = cropBounds else {
+            return
+        }
+        let changed: Project?
+        switch target {
+        case .frame:
+            changed = project.setting(frameCrop: draft)
+        case let .clip(id):
+            changed = project.setting(crop: ImageCrop(visible: draft, within: bounds), of: id)
+        }
+        cropTarget = nil
+        cropDraft = nil
+        guard let changed, replaceProject(with: changed) else {
+            refreshPlayer()
+            return
+        }
+    }
+
+    /// Esc: leaves crop mode with the crop as it was.
+    func cancelCrop() {
+        guard cropTarget != nil else {
+            return
+        }
+        endCropSilently()
+        refreshPlayer()
+    }
+
+    private func endCropSilently() {
+        cropTarget = nil
+        cropDraft = nil
+    }
+
+    /// Undo and redo leave crop mode. The player was showing the project without the crop being adjusted, and only a
+    /// restored project rebuilds it, so with nothing to undo it needs a rebuild of its own.
+    private func endCropForUndo() {
+        guard cropTarget != nil else {
+            return
+        }
+        endCropSilently()
+        refreshPlayer()
+    }
+
+    /// Reset in crop mode: the crop shows everything again, until it's applied.
+    func resetCropDraft() {
+        cropDraft = cropBounds
+    }
+
+    func setCropAspect(_ aspect: CropAspect) {
+        cropAspect = aspect
+        if let draft = cropDraft, let ratio = aspect.ratio(for: draft.size) {
+            cropDraft = CropGeometry.fit(ratio: ratio, in: draft)
+        }
+    }
+
+    /// The Inspector's Reset under Frame.
+    func removeFrameCrop() {
+        _ = replaceProject(with: project.setting(frameCrop: nil))
+    }
+
+    /// The Inspector's Reset under Crop, for the selected clip.
+    func removeClipCrop() {
+        if let id = selectedClipID, let changed = project.setting(crop: nil, of: id) {
+            _ = replaceProject(with: changed)
+        }
     }
 }
 
@@ -1402,7 +1561,11 @@ extension VideoEditorModel: StyleEditing {
         guard targetStyleKind != nil, let clip = selectedClip, let frame = thumbnailSets[clip.source]?.lazy.compactMap(\.self).first else {
             return nil
         }
-        return .image(frame)
+        // A thumbnail is the whole picture, so it's cut as the clip is.
+        guard let crop = clip.crop else {
+            return .image(frame)
+        }
+        return .image(frame.cropping(to: crop.sourceRect(width: frame.width, height: frame.height)) ?? frame)
     }
 
     /// In points.

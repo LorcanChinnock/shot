@@ -223,8 +223,13 @@ Open a recording from its Quick Access card (the scissors button, **Edit Video**
 - **Split:** **Split** (S) splits the clips under the playhead, and **Delete** (⌫) cuts out the selected clip and closes the gap. **Snap** (N) snaps the playhead, and clips you drag or trim, to clip edges and the playhead. **Tracks** (T) shows or hides the tracks; once the edit is more than trims and cuts, they stay shown.
 - **Zoom:** pinch, or ⌘+ and ⌘−, to zoom the timeline, and **Fit** or ⌘0 to fit it to the window.
 - **Import:** in the **Import** menu, **Add Video or Audio at Playhead…** puts a file's picture on a new lane above the main track and its sound on a lane of its own, or drop the file on the window. **Add Video to End…** adds a video to the end of the main track. Drag a clip on another lane to move it in time, or drag its edges to trim it. Sound lanes show the sound's waveform, which grows and shrinks with the clip's volume.
-- **Annotate:** click **Annotate** to draw arrows, shapes, text, blur and more over the video, with the annotation editor's tools except crop and hand. To add a picture, use the image button in the same toolbar. Each annotation starts at the playhead and shows for 3 seconds, on the first annotation lane that's free at that time and not locked, or else on a new lane.
+- **Annotate:** click **Annotate** to draw arrows, shapes, text, blur and more over the video, with the annotation editor's tools except crop and hand; to crop the video, see **Crop** below. To add a picture, use the image button in the same toolbar. Each annotation starts at the playhead and shows for 3 seconds, on the first annotation lane that's free at that time and not locked, or else on a new lane.
 - **Move, scale and rotate:** select a clip, the recording included, while the playhead is on it, and a yellow box appears over the video. Drag inside it to move the clip, drag a corner to scale it about its centre, and drag the pink knob above it to rotate it.
+- **Crop:** with nothing selected, press C, or click **Crop** under **Frame** in the Inspector, to crop the video's frame. Select a clip, the recording included, and press C, double-click its yellow box, or click **Crop** in the Inspector, to crop that clip's picture.
+  - Crop mode works as in the [annotation editor](#cropping): what's cropped off shows dimmed, drag a handle to resize the crop or inside it to move it, hold Shift to keep its shape, and pick an **Aspect** (Free, 1:1, 4:3 or 16:9). **Reset** shows everything again. Return or **Apply** applies the crop as one undo step, and Esc or **Cancel** leaves it as it was.
+  - A frame crop changes the size of the video, so cropping off the menu bar of a 1920 × 1080 recording gives a smaller video, not a scaled-up one. Sizes are rounded down to even numbers. MP4 and GIF exports both come out at the cropped size, and nothing moves in the picture. The Inspector shows the size under **Frame**, with **Reset** to take the crop off.
+  - A cropped clip still moves, scales and turns as a whole, about the middle of its whole picture, and its corners, shadow and border follow the cropped edge. **Reset Crop** in the Inspector shows all of it again.
+  - Neither crop is keyframed. For a zoom over time, key the clip's scale and position.
 - **Inspector:** click **Inspector** to see the selected clip's or annotation's properties:
   - Position, scale, rotation (**Turn**) and opacity.
   - The volume of a clip on a sound lane, from 0 to 200%.
@@ -248,7 +253,7 @@ Open a recording from its Quick Access card (the scissors button, **Edit Video**
 
 Then:
 
-- **Save** (⌘S) replaces the recording with the trimmed version, without re-encoding where possible, and copies it. Once the edit is more than trims and cuts, the button reads **Save Copy** and writes a new file next to the recording instead. An import, annotation or keyframe, a moved or styled recording, a changed volume, reordered clips, or a hidden or muted track each switches it to **Save Copy**. The title shows **TRIMMED** while you've only trimmed the ends, and **EDITED** once there's a cut or more.
+- **Save** (⌘S) replaces the recording with the trimmed version, without re-encoding where possible, and copies it. Once the edit is more than trims and cuts, the button reads **Save Copy** and writes a new file next to the recording instead. An import, annotation or keyframe, a crop, a moved or styled recording, a changed volume, reordered clips, or a hidden or muted track each switches it to **Save Copy**. The title shows **TRIMMED** while you've only trimmed the ends, and **EDITED** once there's a cut or more.
 - **Copy** (⌘C) copies the edited video, everything included.
 - **Export** writes a new file next to the recording, with these options, and copies it:
   - **MP4** or **GIF**
@@ -498,7 +503,7 @@ For a video, `shot edit` and the MCP server's `edit_video` tool make the video e
 | `cut` | The parts to cut instead, each `[start, end]` |
 | `speed` | How fast it plays, from 0.25 to 4. A GIF can always change speed. An MP4 or MOV can only when it's just kept or cut, as with the editor's export. |
 | `mute` | `true` leaves out the sound |
-| `crop` | Keeps `[x, y, width, height]` of the picture. The video editor has no crop of its own, so the edit opens with the canvas at that size and the recording moved and scaled within it. |
+| `crop` | Keeps `[x, y, width, height]` of the picture. The edit opens with the canvas at that size and the recording moved and scaled within it, rather than with the video editor's adjustable frame crop. |
 | `marks` | Marks in the [record's format](#using-shot-with-ai-agents), except `image`, each shown from `start` to `end`, or for 3 seconds without one. They're timed and placed in the input, and move with the cuts. |
 | `append` | Other videos to play after it, in order |
 | `format` | `mp4`, `mov` or `gif`. Without it, an MP4 or MOV keeps its own format, and anything else becomes an MP4. |
@@ -581,8 +586,10 @@ Record Full Screen, Record Window, Pick Colour, Copy Latest Capture's Path, Capt
 | K | Key everything the selected clip or annotation can animate at the playhead, or take those keyframes away |
 | N | Turn snapping on or off |
 | T | Show or hide the tracks |
+| C | Crop the selected clip, or the frame with nothing selected |
+| Return | Apply the crop |
 | Delete | Take away the selected keyframe, section, or clip or annotation |
-| Esc | Cancel an export, clear the selected section, deselect, or stop annotating |
+| Esc | Cancel a crop or an export, clear the selected section, deselect, or stop annotating |
 | ⌘] / ⌘[ | Move the selected annotation or clip a lane up / down |
 | ⌥⌘] / ⌥⌘[ | Move the selected annotation or clip to the top / bottom lane |
 | ⌘+ / ⌘− / ⌘0 | Zoom the timeline in / out / to fit |

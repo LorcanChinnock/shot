@@ -3387,6 +3387,9 @@
         }
       }
     },
+    "Apply" : {
+
+    },
     "Apply Style to All Images" : {
       "localizations" : {
         "de" : {
@@ -4435,6 +4438,12 @@
           }
         }
       }
+    },
+    "CROP CLIP" : {
+
+    },
+    "CROP FRAME" : {
+
     },
     "CUSTOM" : {
       "localizations" : {
@@ -10026,6 +10035,15 @@
     "Crop Image" : {
 
     },
+    "Crop the clip" : {
+
+    },
+    "Crop the clip's picture (C)" : {
+
+    },
+    "Crop the frame" : {
+
+    },
     "Crop the menu bar and notch off screenshots and recordings of the full screen." : {
       "localizations" : {
         "de" : {
@@ -10077,6 +10095,12 @@
           }
         }
       }
+    },
+    "Crop the video's frame (C)" : {
+
+    },
+    "Crop to this (Return)" : {
+
     },
     "Crosshair" : {
       "localizations" : {
@@ -13787,6 +13811,9 @@
           }
         }
       }
+    },
+    "FRAME" : {
+
     },
     "Fade In" : {
       "localizations" : {
@@ -17650,6 +17677,9 @@
           }
         }
       }
+    },
+    "Leave the crop as it was (Esc)" : {
+
     },
     "Leave the sound out" : {
       "localizations" : {
@@ -28181,6 +28211,9 @@
         }
       }
     },
+    "Show all of the clip's picture again" : {
+
+    },
     "Show camera bubble" : {
       "localizations" : {
         "de" : {
@@ -28599,6 +28632,9 @@
           }
         }
       }
+    },
+    "Show the whole frame again" : {
+
     },
     "Shows the frame handles and options first. Hold ⌥ as you finish the selection to show them once." : {
       "localizations" : {

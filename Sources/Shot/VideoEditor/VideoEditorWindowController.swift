@@ -207,7 +207,18 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             }
             return true
         }
+        // Crop mode takes Return and Esc, and leaves the playhead where the picture is.
+        if model.isCropping {
+            switch event.keyCode {
+            case 36, 76: model.applyCrop()
+            case 53: model.cancelCrop()
+            default: return false
+            }
+            return true
+        }
         switch event.keyCode {
+        case 8: // C
+            return model.beginCrop()
         case 115: // Home
             model.seek(to: model.range.start)
         case 119: // End
