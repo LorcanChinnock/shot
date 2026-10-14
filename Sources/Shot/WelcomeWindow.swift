@@ -398,7 +398,7 @@ private struct StepDots: View {
         HStack(spacing: 6) {
             ForEach(0..<count, id: \.self) { index in
                 Capsule()
-                    .fill(index == current ? Brutal.ink : Brutal.ink.opacity(0.2))
+                    .fill(Brutal.faint(index == current ? 1 : 0.2))
                     .frame(width: index == current ? 18 : 7, height: 7)
             }
         }

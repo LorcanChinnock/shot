@@ -61,6 +61,12 @@ enum Brutal {
     static func faded(_ opacity: Double) -> ContrastAware {
         ContrastAware(standard: ink.opacity(opacity), increased: ink)
     }
+
+    /// Ink faded for dividers and inactive marks. With Increase Contrast on it's at least 60%, about 4.9:1 on white, so
+    /// it clears the 3:1 that lines and marks need without weighing as much as an ink border.
+    static func faint(_ opacity: Double) -> ContrastAware {
+        ContrastAware(standard: ink.opacity(opacity), increased: ink.opacity(max(opacity, 0.6)))
+    }
 }
 
 extension EnvironmentValues {
@@ -466,7 +472,7 @@ struct SettingRow<Control: View>: View {
             }
             .padding(.vertical, 9)
             if divider {
-                Rectangle().fill(Brutal.ink.opacity(0.12)).frame(height: 1.5)
+                Rectangle().fill(Brutal.faint(0.12)).frame(height: 1.5)
             }
         }
     }
