@@ -170,7 +170,7 @@ public struct AgentTools: Sendable {
         ),
         MCPServer.Tool(
             name: getFrames,
-            description: "Still frames of a Shot recording, since a model can't watch video: the first and last, the frame after each change on screen once it settles, and the frame at each mark an agent made while recording, with its label, each with its time in seconds. Use this to see what happened in a recording, such as the steps of a bug. Reads only; writes nothing.",
+            description: "Still frames of a Shot recording, since a model can't watch video: the first and last, the frame after each change on screen once it settles, and the frame at each mark an agent made while recording, with its label, each with its time in seconds. When the recording has sound, what's said in it comes too, transcribed on the Mac, each phrase with its times after the frame on screen as it starts. Use this to see what happened in a recording, such as the steps of a bug. Reads only; writes nothing.",
             inputSchema: schema(capture.merging([
                 "count": .object(["type": .string("integer"), "description": .string("How many frames, 1 to \(ShotCommand.FramesOptions.maximumCount). Default 8.")]),
             ]) { $1 }),
