@@ -333,6 +333,7 @@ private struct FrameRowView: View {
     let onSelect: () -> Void
     let onHide: () -> Void
     let onDelete: () -> Void
+    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         HStack(spacing: 6) {
@@ -353,7 +354,8 @@ private struct FrameRowView: View {
         .padding(.trailing, 4)
         .frame(height: LayersPanel.rowHeight - 2)
         .foregroundStyle(Brutal.ink)
-        .opacity(row.isHidden ? 0.45 : 1)
+        // Lighter under Increase Contrast too, but enough that an unset button in a hidden row keeps 3:1.
+        .opacity(row.isHidden ? (contrast == .increased ? 0.8 : 0.45) : 1)
         .background {
             if row.isSelected {
                 RoundedRectangle(cornerRadius: Brutal.Radius.inset, style: .circular).fill(Brutal.yellow.opacity(isFocused ? 1 : 0.5))
@@ -436,6 +438,7 @@ private struct LayerRowView<Grip: Gesture>: View {
     let onCrop: () -> Void
     /// The name typed into the field, or `nil` when Escape cancelled it.
     let onRename: (String?) -> Void
+    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         HStack(spacing: 6) {
@@ -472,7 +475,8 @@ private struct LayerRowView<Grip: Gesture>: View {
         .padding(.trailing, 4)
         .frame(height: Self.height)
         .foregroundStyle(Brutal.ink)
-        .opacity(row.isHidden && !isLifted ? 0.45 : 1)
+        // Lighter under Increase Contrast too, but enough that an unset button in a hidden row keeps 3:1.
+        .opacity(row.isHidden && !isLifted ? (contrast == .increased ? 0.8 : 0.45) : 1)
         .background { background }
         .scaleEffect(isLifted ? 1.04 : 1)
         .shadow(color: .black.opacity(isLifted ? 0.25 : 0), radius: 8, y: 4)
@@ -543,7 +547,8 @@ struct LayerNameField: View {
     }
 }
 
-/// Shown dimmed until set or hovered, so an unlocked, visible row isn't cluttered.
+/// Shown dimmed until set or hovered, so an unlocked, visible row isn't cluttered. Under Increase Contrast an unset button
+/// rests at 70%, enough to keep 3:1 inside a hidden row, and still lighter than a set one.
 private struct RowButton: View {
     let symbol: String
     let isOn: Bool
@@ -551,18 +556,25 @@ private struct RowButton: View {
     let action: () -> Void
     @State private var isHovered = false
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.scaled(11, weight: .bold))
                 .frame(width: 20, height: 20)
-                .opacity(isOn || (isHovered && isEnabled) ? 1 : isEnabled ? 0.4 : 0.15)
+                .opacity(opacity)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
         .accessibilityLabel(Text(label))
         .brutalTip(label)
+    }
+
+    private var opacity: Double {
+        if isOn || (isHovered && isEnabled) { return 1 }
+        let increased = contrast == .increased
+        return isEnabled ? (increased ? 0.7 : 0.4) : (increased ? 0.3 : 0.15)
     }
 }
