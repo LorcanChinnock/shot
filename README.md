@@ -94,7 +94,7 @@ To keep the macOS screenshot tool, and for every other shortcut, see [Keyboard s
 The [user guide](https://shot.lorcanchinnock.com/docs/) covers every feature, shortcut and setting:
 
 - [Get started](https://shot.lorcanchinnock.com/docs/get-started/) and [Take a screenshot](https://shot.lorcanchinnock.com/docs/take-a-screenshot/)
-- [Screen recording](https://shot.lorcanchinnock.com/docs/screen-recording/) and the [video editor](https://shot.lorcanchinnock.com/docs/video-editor/)
+- [Recording your screen](https://shot.lorcanchinnock.com/docs/record-your-screen/) and the [video editor](https://shot.lorcanchinnock.com/docs/video-editor/)
 - [Annotation editor](https://shot.lorcanchinnock.com/docs/annotation-editor/)
 - [Using Shot with AI agents](https://shot.lorcanchinnock.com/docs/using-shot-with-ai-agents/), including the MCP server and the `shot` command
 - [The `shot://` URL scheme](https://shot.lorcanchinnock.com/docs/url-scheme/), for scripts and launchers

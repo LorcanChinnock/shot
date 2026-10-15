@@ -58,7 +58,7 @@ Every other shortcut is on the [Keyboard shortcuts](#keyboard-shortcuts) page.
 ## Next steps
 
 - [Take a screenshot](#take-a-screenshot): areas, windows, a timer, and copying text off the screen.
-- [Record your screen](#screen-recording), with your voice and camera if you like.
+- [Record your screen](#record-your-screen), with your voice and camera if you like.
 - [Annotate a screenshot](#annotation-editor) with arrows, text and blur.
 - [Use Shot with AI agents](#using-shot-with-ai-agents) such as Claude Code, Codex or Cursor.
 
