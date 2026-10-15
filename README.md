@@ -36,7 +36,7 @@
 - **Record:** an area, a window or a screen to MP4, with your microphone, the sound from your Mac and a camera bubble.
 - **Edit video and make GIFs:** trim, cut, crop, speed up and draw over a recording, then export an MP4 or a GIF.
 - **Copy text** from any part of the screen, read on your Mac.
-- **Work with AI agents:** paste a marked-up screenshot into Claude Code, Codex or Cursor, or let an agent read, edit and take captures through Shot's MCP server and `shot` command.
+- **Work with AI agents:** paste a marked-up screenshot into Claude, ChatGPT or a coding agent, or let one read, edit and take captures through Shot's MCP server and `shot` command.
 - **Private:** no account, no cloud and no analytics. Shot only goes online to check for updates, once you agree.
 
 ### Capture and Quick Access
@@ -59,7 +59,7 @@
 
 Circle the bug, copy, and paste it into your agent: your arrows and notes show it exactly where to look. An agent can also find your captures, read the text in them and what you said while recording, hide secrets in them, edit them with every layer still live, and screenshot or record a window such as the Simulator. See [Use Shot with AI agents](https://shot.lorcanchinnock.com/docs/use-shot-with-ai-agents/).
 
-<img src="docs/media/agents-settings.png" width="720" alt="Settings › Agents with Hand captures to agents and Let agents capture and record turned on, the shot command installed, and the MCP setup commands for Claude Code, Cursor and Codex, each with a Copy button">
+<img src="docs/media/agents-settings.png" width="720" alt="Settings › Agents with Hand captures to agents and Let agents capture and record turned on, the shot command installed, and and the MCP server setup for each assistant and agent on the Mac, with Install and Copy buttons">
 
 ## Install
 
