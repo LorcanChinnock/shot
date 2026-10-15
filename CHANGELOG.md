@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.0-beta.53](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.52...v0.7.0-beta.53) (2026-10-15)
+
+
+### Features
+
+* **menu:** trim the menu bar menu to capture and record ([#627](https://github.com/LorcanChinnock/shot/issues/627)) ([844ffa3](https://github.com/LorcanChinnock/shot/commit/844ffa39f44e323e99cc892b4fca1d979ce8fcaf))
+
+
+### Bug Fixes
+
+* **design:** give the scroll bar room and a lighter track ([#625](https://github.com/LorcanChinnock/shot/issues/625)) ([d1883e2](https://github.com/LorcanChinnock/shot/commit/d1883e2d5404cc5e592279c118d9d96aba39c909))
+* **editor:** scroll the Layers list while a dragged layer is held at its edge ([#626](https://github.com/LorcanChinnock/shot/issues/626)) ([938e090](https://github.com/LorcanChinnock/shot/commit/938e0904539bd096597025ab43a1b31643bf59ca))
+* **settings:** grant permissions from Settings › About ([#605](https://github.com/LorcanChinnock/shot/issues/605)) ([16260d7](https://github.com/LorcanChinnock/shot/commit/16260d7ac9fffb60f031d747c9f519093209b9d0))
+
 ## [0.7.0-beta.52](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.51...v0.7.0-beta.52) (2026-10-14)
 
 
