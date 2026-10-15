@@ -29,7 +29,7 @@ The first time you open Shot, a welcome window takes about 30 seconds, in three 
 2. **Make it yours.** **Use Shot for ⌘⇧3 to ⌘⇧5** is on: macOS's own screenshot shortcuts turn off while Shot runs, and come back when it quits. Turn it off to keep them, and Shot uses ⌃⇧3, ⌃⇧4 and ⌃⇧5 instead. **Open Shot at login** is ticked, so your shortcuts work after a restart. **Continue** applies both. If you close the window here instead, macOS keeps its shortcuts and Shot isn't added to your login items. The **Agents** button opens [Settings › Agents](#using-shot-with-ai-agents), for Claude Code, Codex or Cursor.
 3. **Try it.** Press your area shortcut and drag out any area. Once the capture is done, the window comes back with a few tips, and **Done** closes it. **Skip** closes it before you capture.
 
-If you used Shot before the welcome window existed, you won't see it. To open it again, use **Welcome window › Show** in **Settings › About**, or [`shot://welcome`](#url-scheme); opened that way, it starts from your current settings and closing it changes nothing. If Shot loses its Screen Recording access later, a capture opens the window at the access step.
+If you used Shot before the welcome window existed, you won't see it. To open it again, use [`shot://welcome`](#url-scheme); opened that way, it starts from your current settings and closing it changes nothing. If Shot loses its Screen Recording access later, a capture opens the window at the access step.
 
 ## Screenshots
 
@@ -696,7 +696,7 @@ Open Settings from the menu bar icon, or with ⌘, while a Shot window is in fro
 | Recording | Adjust before recording, the countdown, frame rate, cursor, clicks, region outline, copying to the clipboard, the microphone and its input (with a **Test**), system audio, and the camera bubble's camera (with a **Preview**) and size. It also sums up the GIF settings the video editor last used. |
 | Agents | [Handing captures to AI agents](#using-shot-with-ai-agents): a record inside each capture of where it came from and what you marked, [letting agents capture and record a window](#letting-an-agent-capture-and-record), and the setup commands for the MCP server |
 | Shortcuts | The macOS screenshot keys and every global shortcut |
-| About | The version, updates, permissions, the welcome window, the save folder, links to the code and its licence, the acknowledgements, to report a bug and to sponsor Shot, and resetting all settings |
+| About | The version, updates, permissions, the save folder, links to the code and its licence, the acknowledgements, to report a bug and to sponsor Shot, and resetting all settings |
 
 ## Languages
 

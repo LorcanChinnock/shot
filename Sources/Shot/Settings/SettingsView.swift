@@ -912,11 +912,7 @@ private struct AboutSettings: View {
                 }
             }
             PermissionRow(title: "Microphone", subtitle: "Only needed to record your voice.", mediaType: .audio, status: $microphoneStatus, pane: "Privacy_Microphone")
-            PermissionRow(title: "Camera", subtitle: "Only needed for the camera bubble.", mediaType: .video, status: $cameraStatus, pane: "Privacy_Camera")
-            SettingRow(title: "Welcome window", subtitle: "Go through setup and a first capture again.", divider: false) {
-                Button("Show") { WelcomeWindow.showAgain() }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
-            }
+            PermissionRow(title: "Camera", subtitle: "Only needed for the camera bubble.", mediaType: .video, status: $cameraStatus, pane: "Privacy_Camera", divider: false)
         }
         // A menu bar app may not become active when Settings opens or regains focus, so also re-read when the window
         // appears and when it becomes key.
