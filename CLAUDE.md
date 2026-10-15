@@ -11,6 +11,21 @@ By default, Shot is fast, convenient and bloat-free for its main use: taking qui
 - Nothing may slow down or clutter the capture → copy/save path.
 - The default is the simplest state. Extra tools, panels and controls start off.
 
+## Who uses Shot
+
+Shot is for anyone on a Mac, not just developers. Design and write for the first person on this list; the later ones opt in to more.
+
+- **The quick sharer.** Takes a screenshot, maybe adds an arrow, and pastes it into a chat or email. Rarely opens Settings. Every default is set for them, and the capture → copy/save path is theirs.
+- **The explainer.** Support staff, teachers, managers and testers showing someone what's wrong or how to do something. Annotates, blurs private details, records short walkthroughs with their voice, and exports GIFs.
+- **The polisher.** Designers, marketers and writers making images for docs, slides and social posts. Uses the editor: combining screenshots, padding, backgrounds, styled markup, trimmed and sped-up recordings.
+- **The AI assistant user.** Asks Claude, ChatGPT or another assistant about what's on their screen. Isn't a developer and won't edit a config file or use a terminal, so agent features need one-click setup and plain words.
+- **The developer.** Uses coding agents (Claude Code, Codex, Cursor), the `shot` command and the MCP server, and lets agents capture windows such as the iOS Simulator to check their own work.
+
+What this means in practice:
+- UI strings, Settings and the user guide speak to everyone. Avoid jargon (MCP, CLI, JSON, stdio) outside the developer-facing parts, and explain it where it can't be avoided.
+- When a feature mentions AI, lead with general assistants as examples, then coding agents.
+- Developer features stay in their own Settings cards and guide pages, off by default, so they never clutter the path the quick sharer uses.
+
 ## Commands
 
 ```bash
