@@ -49,8 +49,8 @@ final class GalleryModel {
 
     @ObservationIgnored let thumbnails = ThumbnailStore()
     @ObservationIgnored private var trashHistory: [[(trashed: URL, original: URL)]] = []
-    /// The items the grid reports as fully in view, so a keyboard move scrolls only when it has to.
-    @ObservationIgnored private var fullyVisible: Set<URL> = []
+    /// The part of the grid in view, which the grid sets as it scrolls, so a keyboard move scrolls only when it has to.
+    @ObservationIgnored var viewport: CGRect = .zero
     @ObservationIgnored var onEdit: ((URL) -> Void)?
     @ObservationIgnored var onExportGIF: ((URL) -> Void)?
 
@@ -175,18 +175,6 @@ final class GalleryModel {
         CATransaction.setCompletionBlock { [weak self] in
             Perf.signposter.endInterval(name, interval, "items=\(self?.visible.count ?? 0)")
         }
-    }
-
-    func setFullyVisible(_ url: URL, _ visible: Bool) {
-        if visible {
-            fullyVisible.insert(url)
-        } else {
-            fullyVisible.remove(url)
-        }
-    }
-
-    func isFullyVisible(_ url: URL) -> Bool {
-        fullyVisible.contains(url)
     }
 
     func selectAll() {
