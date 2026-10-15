@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0-beta.54](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.53...v0.7.0-beta.54) (2026-10-15)
+
+
+### Features
+
+* **design:** use the system scroll bar ([#636](https://github.com/LorcanChinnock/shot/issues/636)) ([66d2f6d](https://github.com/LorcanChinnock/shot/commit/66d2f6d57fd91f047c0286fd42e88108a938ac7b))
+
+
+### Bug Fixes
+
+* **gallery:** place the grid's rows so the scroll bar holds still ([#638](https://github.com/LorcanChinnock/shot/issues/638)) ([01b7b95](https://github.com/LorcanChinnock/shot/commit/01b7b958d4ba452f1699435ffb4c84210323c603))
+
 ## [0.7.0-beta.53](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.52...v0.7.0-beta.53) (2026-10-15)
 
 
