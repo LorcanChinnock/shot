@@ -1,4 +1,8 @@
-# Using Shot with AI agents
+---
+title: Using Shot with AI agents
+summary: "Hand your captures to Claude Code, Codex or Cursor, and let them capture and record for you."
+group: AI agents
+---
 
 Claude Code, Codex and Cursor all take a pasted screenshot, and your arrows and boxes show the agent where to look. Shot can also hand over the file itself, say exactly what you marked, and let the agent fetch your latest capture on its own.
 

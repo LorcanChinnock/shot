@@ -1,7 +1,7 @@
 ---
 import GuideSearch from '../../components/GuideSearch.astro';
 import Prose from '../../layouts/Prose.astro';
-import { pages } from '../../lib/guide';
+import { groups, pages } from '../../lib/guide';
 
 export function getStaticPaths() {
   return pages.map((page, i) => ({
@@ -10,20 +10,38 @@ export function getStaticPaths() {
   }));
 }
 const { page, previous, next } = Astro.props;
-const links = pages.map((p) => ({ href: `/docs/${p.slug}/`, title: p.title, current: p === page }));
+const colorOf = (group: string) => groups.find((g) => g.name === group)?.color;
+const links = pages.map((p) => ({ href: `/docs/${p.slug}/`, title: p.title, current: p === page, group: p.group, color: colorOf(p.group) }));
 ---
 
-<Prose title={page.title} description={`Shot user guide: ${page.title}.`} headings={page.headings} pages={links}>
+<Prose title={page.title} description={page.summary} headings={page.headings} pages={links}>
   <GuideSearch slot="side" />
-  <p class="crumb"><a href="/docs/">User guide</a></p>
-  <div data-pagefind-body><Fragment set:html={page.html} /></div>
+  <div data-pagefind-body style={`--accent: var(--${colorOf(page.group)})`}>
+    <header class="page-head">
+      <p class="crumb"><a href="/docs/">User guide</a> <span aria-hidden="true">›</span> <span class="chip">{page.group}</span></p>
+      <h1>{page.title}</h1>
+      <p class="lede">{page.summary}</p>
+    </header>
+    <Fragment set:html={page.html} />
+  </div>
   <nav class="pager" aria-label="More of the guide">
-    {previous ? <a class="prev" href={`/docs/${previous.slug}/`}>← {previous.title}</a> : <span />}
-    {next ? <a class="next" href={`/docs/${next.slug}/`}>{next.title} →</a> : <span />}
+    {previous ? <a class="card prev" href={`/docs/${previous.slug}/`}><span>Previous</span>{previous.title}</a> : <span />}
+    {next ? <a class="card next" href={`/docs/${next.slug}/`}><span>Next</span>{next.title}</a> : <span />}
   </nav>
 </Prose>
 
 <style is:global>
-  .prose .crumb { margin: 0 0 4px; font-weight: 700; }
-  .prose .pager { display: flex; justify-content: space-between; gap: 16px; margin-top: 32px; font-weight: 800; }
+  .prose .page-head { margin-bottom: 32px; }
+  /* Lighter rules than the changelog's, so a page of short tasks doesn't read as a stack of boxes. */
+  .prose [data-pagefind-body] h2 { margin-top: 44px; padding-top: 20px; border-top: 2px solid rgb(18 18 26 / 0.14); }
+  .prose .crumb { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font-weight: 700; font-size: 15px; }
+  .prose .crumb .chip { --chip: var(--accent); }
+  .prose .page-head h1 { margin-bottom: 12px; }
+  .prose .lede { margin: 0; font-size: 20px; line-height: 1.45; color: var(--muted); max-width: 40em; }
+  .prose .pager { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 48px; }
+  .prose .pager a { display: grid; gap: 2px; padding: 14px 18px; text-decoration: none; font-weight: 900; font-size: 18px; background: #fff; }
+  .prose .pager a:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--ink); }
+  .prose .pager span { font: 800 12px/1.4 var(--font); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .prose .pager .next { text-align: right; }
+  @media (max-width: 560px) { .prose .pager { grid-template-columns: 1fr; } .prose .pager .next { text-align: left; } }
 </style>

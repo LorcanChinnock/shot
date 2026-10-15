@@ -1,4 +1,8 @@
-# Privacy
+---
+title: Privacy
+summary: "What Shot collects (nothing) and the one time it goes online."
+group: Help
+---
 
 Shot collects no analytics, and the only time it connects to the network is to check for updates, after you agree to it (see [Updates](#updates)). The GitHub links in Settings › About, including Sponsor, open in your browser.
 

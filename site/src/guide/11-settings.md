@@ -1,4 +1,8 @@
-# Settings
+---
+title: Settings
+summary: "What each part of Settings controls."
+group: Reference
+---
 
 ![Settings › Capture, with the sidebar listing every section: Save to folder, Copy to clipboard, Show Quick Access, Magnifier, Crosshair and Window shadow are on](../../../docs/media/settings.png)
 

@@ -1,4 +1,8 @@
-# Screen recording
+---
+title: Screen recording
+summary: "Record an area, a window or the whole screen, with your voice, the sound from your Mac and your camera."
+group: Capture
+---
 
 ![The recording controls: elapsed time, Pause, the camera bubble, discard and Stop](../../../docs/media/recording-controls.png)
 

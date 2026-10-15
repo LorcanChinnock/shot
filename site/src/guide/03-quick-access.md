@@ -1,4 +1,8 @@
-# Quick Access
+---
+title: Quick Access
+summary: "The card that pops up after every capture: copy it, annotate it, drag it into another app or pin it."
+group: Capture
+---
 
 ![The Quick Access card, hovered: the screenshot dimmed behind Close, Annotate, Copy, Save As… and Show in Finder](../../../docs/media/quick-access.png)
 

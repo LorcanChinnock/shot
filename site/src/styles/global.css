@@ -172,3 +172,31 @@ section { padding-block: clamp(48px, 8vw, 96px); }
 .prose th { border-bottom: var(--border) solid var(--ink); font-weight: 800; }
 .prose a { font-weight: 600; }
 .prose img { border: 2px solid var(--ink); border-radius: 10px; }
+
+/* Guide pieces: key caps, numbered steps and callouts (written as GitHub alerts, `> [!TIP]`). */
+.prose kbd {
+  display: inline-block; min-width: 1.7em; padding: 0 0.4em;
+  font: 800 0.86em/1.5 var(--font); text-align: center; white-space: nowrap;
+  background: #fff;
+  border: 2px solid var(--ink); border-radius: 6px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.prose ol { list-style: none; counter-reset: step; padding-left: 0; display: grid; gap: 10px; }
+.prose ol > li { counter-increment: step; position: relative; margin: 0; padding-left: 44px; min-height: 30px; }
+.prose ol > li::before {
+  content: counter(step);
+  position: absolute; left: 0; top: -1px;
+  width: 30px; height: 30px; display: grid; place-items: center;
+  font: 900 15px/1 var(--display);
+  background: var(--accent, var(--yellow));
+  border: 2px solid var(--ink); border-radius: 50%;
+}
+.prose .callout { margin: 24px 0; padding: 14px 18px; border: 2px solid var(--ink); border-radius: 10px; background: #fff; box-shadow: 3px 3px 0 var(--ink); }
+.prose .callout > p { margin: 0; }
+.prose .callout > p + p { margin-top: 8px; }
+.prose .callout-label { display: flex; align-items: center; gap: 8px; font: 800 12px/1.6 var(--font); letter-spacing: 0.06em; text-transform: uppercase; }
+.prose .callout-label::before { content: ""; width: 10px; height: 10px; border: 2px solid var(--ink); border-radius: 50%; background: var(--callout); }
+.prose .callout.tip { --callout: var(--mint); background: rgb(79 227 181 / 0.14); }
+.prose .callout.note { --callout: var(--sky); background: rgb(111 195 255 / 0.14); }
+.prose .callout.warning { --callout: var(--red); background: rgb(255 92 92 / 0.12); }
+.prose p > img:only-child { margin-block: 8px; box-shadow: 4px 4px 0 var(--ink); }

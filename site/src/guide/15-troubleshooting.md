@@ -1,4 +1,8 @@
-# Troubleshooting
+---
+title: Troubleshooting
+summary: "Fixes for permissions, shortcuts and agents that don’t work."
+group: Help
+---
 
 - **You turned on Screen Recording access, but captures still fail.** macOS applies the access only after Shot relaunches, so quit Shot and open it again. **Settings › About** shows **GRANTED** or **MISSING** beside **Screen & System Audio Recording**, and **Grant** asks for it, or **Open** goes to that list in System Settings once macOS has asked. If it still says MISSING, run `tccutil reset ScreenCapture dev.lorcan.Shot`, then open Shot and grant access again.
 - **Microphone or Camera says NOT ASKED, but System Settings shows Shot allowed.** The allowed entry belongs to a differently signed copy of Shot, such as one you built yourself. Run `tccutil reset Microphone dev.lorcan.Shot` or `tccutil reset Camera dev.lorcan.Shot`, then click **Grant** in **Settings › About**.

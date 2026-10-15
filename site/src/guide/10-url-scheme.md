@@ -1,4 +1,8 @@
-# URL scheme
+---
+title: URL scheme
+summary: "Run any action from a shot:// link, in a script, a launcher or another app."
+group: Reference
+---
 
 Use `open "shot://…"` to run Shot from a launcher, the Shortcuts app, or a script:
 

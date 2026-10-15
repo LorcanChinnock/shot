@@ -78,7 +78,7 @@ brew install lorcanchinnock/tap/shot
 
 3. In Shot's welcome window, click **Grant**, then **Open System Settings** in the macOS prompt, and turn on Shot. Back in Shot's window, click **Relaunch**: macOS applies the permission only after a relaunch.
 4. Choose whether Shot takes over ⌘⇧3 to ⌘⇧5 (macOS gets them back when Shot quits) and opens at login, then click **Continue**.
-5. Shot now lives in the menu bar. Press ⌘⇧4 and drag out an area to take your first screenshot; the window shows a few tips once it's done. See [First launch](https://shot.lorcanchinnock.com/docs/first-launch/) for more.
+5. Shot now lives in the menu bar. Press ⌘⇧4 and drag out an area to take your first screenshot; the window shows a few tips once it's done. See [Get started](https://shot.lorcanchinnock.com/docs/get-started/) for more.
 
 Shot updates itself once you allow it to; see [Updates](https://shot.lorcanchinnock.com/docs/updates/). To uninstall, see [Removing Shot](https://shot.lorcanchinnock.com/docs/removing-shot/), or quit Shot and run `brew uninstall --zap shot` if you used Homebrew.
 

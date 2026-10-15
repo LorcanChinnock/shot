@@ -1,4 +1,8 @@
-# Video editor
+---
+title: Video editor
+summary: "Trim, cut, speed up and label a recording, or turn it into a GIF."
+group: Edit and share
+---
 
 ![The video editor timeline with a text label and an arrow on their own lanes, the arrow's Pop keyframes, a trimmed start, a cut, the Inspector and the GIF export options](../../../docs/media/video-timeline.png)
 

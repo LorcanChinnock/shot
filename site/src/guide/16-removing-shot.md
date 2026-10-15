@@ -1,4 +1,8 @@
-# Removing Shot
+---
+title: Removing Shot
+summary: "Uninstall Shot and clear everything it keeps."
+group: Help
+---
 
 Quit Shot and move it to the Trash. Quitting gives the screenshot keys back to macOS. If ⌘⇧3 to ⌘⇧5 still do nothing, for example because Shot crashed before you removed it, turn the shortcuts back on in **System Settings › Keyboard › Keyboard Shortcuts › Screenshots**.
 

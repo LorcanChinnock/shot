@@ -1,4 +1,8 @@
-# Keyboard shortcuts
+---
+title: Keyboard shortcuts
+summary: "Every shortcut in Shot, and how to change them."
+group: Reference
+---
 
 ## Global
 

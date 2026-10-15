@@ -1,4 +1,8 @@
-# Gallery
+---
+title: Gallery
+summary: "Find, filter and reopen everything you have captured."
+group: Edit and share
+---
 
 ![The gallery: an annotated screenshot, a GIF, a recording and three screenshots, with filters, sort and the thumbnail size slider](../../../docs/media/gallery.png)
 
