@@ -341,8 +341,8 @@ struct TracksView: View {
                 .font(.scaled(10, weight: .bold))
                 .foregroundStyle(Brutal.ink)
                 .frame(width: LaneLayout.controlSize, height: LaneLayout.controlSize)
-                .background(isOn ? Brutal.yellow : Brutal.paper)
                 .inkOnFill(isOn ? Brutal.yellow : nil)
+                .background(isOn ? Brutal.yellow : Brutal.paper)
                 .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: 2)
         }
         .buttonStyle(.plain)

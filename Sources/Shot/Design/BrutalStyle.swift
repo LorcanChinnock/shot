@@ -425,8 +425,8 @@ struct BrutalSegmented<Value: Hashable>: View {
                         .foregroundStyle(Brutal.faded(selected ? 1 : 0.65))
                         .padding(.horizontal, 11)
                         .frame(height: 28)
-                        .background(selected ? color : Color.clear)
                         .inkOnFill(selected ? color : nil)
+                        .background(selected ? color : Color.clear)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
