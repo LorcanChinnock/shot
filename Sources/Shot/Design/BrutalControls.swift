@@ -62,7 +62,7 @@ private struct CustomColorButton: View {
                 }
             }
             .inkBorder(Circle(), width: 2)
-            .background(Circle().fill(Brutal.ink).offset(x: isSelected ? 2 : 0, y: isSelected ? 2 : 0))
+            .background(Circle().fill(Brutal.line).offset(x: isSelected ? 2 : 0, y: isSelected ? 2 : 0))
             .frame(width: isSelected ? 22 : 18, height: isSelected ? 22 : 18)
             .frame(width: 26, height: 30)
             .contentShape(Rectangle())
@@ -270,7 +270,7 @@ struct BrutalSlider: View {
             }
             Capsule().fill(track)
                 .inkBorder(Capsule(), width: 2)
-            Circle().fill(isFocused ? Brutal.yellow : .white)
+            Circle().fill(isFocused ? Brutal.yellow : Brutal.paper)
                 .inkBorder(Circle(), width: 2)
                 .frame(width: 16, height: 16)
                 .offset(x: fraction * (width - 16))
@@ -341,13 +341,13 @@ private struct Swatch: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                Circle().fill(color?.swiftUIColor ?? .white)
+                Circle().fill(color?.swiftUIColor ?? Brutal.paper)
                 if color == nil {
                     Rectangle().fill(Brutal.red).frame(width: 2, height: 22).rotationEffect(.degrees(45))
                 }
             }
             .inkBorder(Circle(), width: 2)
-            .background(Circle().fill(Brutal.ink).offset(x: isSelected ? 2 : 0, y: isSelected ? 2 : 0))
+            .background(Circle().fill(Brutal.line).offset(x: isSelected ? 2 : 0, y: isSelected ? 2 : 0))
             .frame(width: isSelected ? 22 : 18, height: isSelected ? 22 : 18)
             .frame(width: 26, height: 30)
             .contentShape(Rectangle())
@@ -368,7 +368,7 @@ struct ToolGroup<Content: View>: View {
             content
         }
         .padding(Brutal.groupInset)
-        .brutalSurface(Color.white.opacity(0.5), glass: true, radius: Brutal.Radius.panel, shadow: 3)
+        .brutalSurface(Brutal.paper.opacity(0.5), glass: true, radius: Brutal.Radius.panel, shadow: 3)
     }
 }
 
@@ -405,6 +405,7 @@ struct Tile<Label: View>: View {
             label
                 .foregroundStyle(Brutal.ink)
                 .frame(width: 30, height: 30)
+                .inkOnFill(selected ? color : nil)
                 .background {
                     if selected {
                         PartyColor(color) { Color.clear.brutalSurface($0, radius: Brutal.Radius.inset, shadow: 2) }

@@ -65,7 +65,7 @@ private struct CaptureThumbnail: View {
 
     var body: some View {
         ZStack {
-            Color.white.opacity(0.6)
+            Brutal.paper.opacity(0.6)
             if let thumbnail {
                 Image(nsImage: thumbnail.image).resizable().scaledToFill()
             }

@@ -141,7 +141,7 @@ private struct TipBubble: View {
         let minX = leading
             ? min(max(target.minX, Self.margin), bounds.width - Self.maxWidth - Self.margin)
             : max(min(target.maxX, bounds.width - Self.margin), Self.maxWidth + Self.margin) - Self.maxWidth
-        PartyColor(.white) { color in
+        PartyColor(Brutal.paper) { color in
             VStack(alignment: .leading, spacing: 2) {
                 Text(tip.title).font(Brutal.label)
                 if let detail = tip.detail {

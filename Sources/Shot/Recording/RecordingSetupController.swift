@@ -503,7 +503,7 @@ private struct SetupBarView: View {
         }
         .padding(.horizontal, 14)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .brutalSurface(Color.white.opacity(0.72), glass: true, radius: 14, shadow: 4)
+        .brutalSurface(Brutal.paper.opacity(0.72), glass: true, radius: 14, shadow: 4)
         .padding(.trailing, 4)
         .padding(.bottom, 4)
         .environment(\.colorScheme, .light)
@@ -520,7 +520,7 @@ private struct OptionToggle: View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 11, weight: .bold)).frame(width: 16, height: 16)
         }
-        .buttonStyle(BrutalButtonStyle(color: on ? Brutal.mint : .white, compact: true))
+        .buttonStyle(BrutalButtonStyle(color: on ? Brutal.mint : Brutal.paper, compact: true))
         .brutalTip(help)
         .accessibilityLabel(Text(help))
     }

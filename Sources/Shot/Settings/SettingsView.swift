@@ -74,6 +74,7 @@ struct SettingsView: View {
 
     @Bindable private var navigation = SettingsNavigation.shared
     @State private var scrolledPast = ScrollFade.Edges()
+    @Environment(\.colorScheme) private var colorScheme
     private var section: SettingsSection { navigation.section }
 
     var body: some View {
@@ -125,7 +126,12 @@ struct SettingsView: View {
                 .foregroundStyle(Brutal.ink)
                 .padding(.horizontal, 4)
                 .background(alignment: .bottom) {
-                    section.color.frame(height: 12).offset(y: -4)
+                    // On dark, an underline below the letters: off-white text over the marker would lose its contrast.
+                    if colorScheme == .dark {
+                        section.color.frame(height: 5)
+                    } else {
+                        section.color.frame(height: 12).offset(y: -4)
+                    }
                 }
             Text(section.subtitle)
                 .font(.scaled(13, weight: .medium))
@@ -232,7 +238,7 @@ private struct SidebarItem: View {
             .padding(.vertical, 8)
             .background {
                 if selected {
-                    Color.clear.brutalSurface(Color.white.opacity(0.6), glass: true, radius: Brutal.Radius.panel, shadow: 3)
+                    Color.clear.brutalSurface(Brutal.paper.opacity(0.6), glass: true, radius: Brutal.Radius.panel, shadow: 3)
                 } else if hovering {
                     RoundedRectangle(cornerRadius: Brutal.Radius.panel, style: .circular).fill(Brutal.ink.opacity(0.06))
                 }
@@ -286,7 +292,7 @@ private struct GeneralSettings: View {
                     .font(.scaled(13, weight: .semibold))
                     .padding(.horizontal, 10)
                     .frame(width: 150, height: 30)
-                    .brutalSurface(Color.white.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
+                    .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
             }
             SettingRow(title: "Image format", subtitle: "Clipboard copies always use PNG.") {
                 BrutalSegmented(selection: $imageFormat, options: [(ImageFormat.png, "PNG"), (.jpeg, "JPEG")], color: color)
@@ -390,8 +396,8 @@ private struct ScreenPreview: View {
         ZStack(alignment: position == .left ? .bottomLeading : .bottomTrailing) {
             LinearGradient(colors: [Brutal.violet.opacity(0.55), Brutal.sky.opacity(0.55)], startPoint: .topLeading, endPoint: .bottomTrailing)
             VStack(spacing: 0) {
-                Rectangle().fill(Color.white.opacity(0.7)).frame(height: 14)
-                    .overlay(alignment: .bottom) { Rectangle().fill(Brutal.ink).frame(height: 2) }
+                Rectangle().fill(Brutal.paper.opacity(0.7)).frame(height: 14)
+                    .overlay(alignment: .bottom) { Rectangle().fill(Brutal.line).frame(height: 2) }
                 HStack {
                     BrutalChip(text: "PREVIEW")
                     Spacer()
@@ -402,7 +408,7 @@ private struct ScreenPreview: View {
             VStack(spacing: 6) {
                 ForEach(0..<2) { index in
                     RoundedRectangle(cornerRadius: 5, style: .circular)
-                        .fill(index == 1 ? color : Color.white)
+                        .fill(index == 1 ? color : Brutal.paper)
                         .frame(width: 72, height: 42)
                         .inkBorder(RoundedRectangle(cornerRadius: 5, style: .circular), width: 2)
                 }
@@ -494,7 +500,7 @@ private struct AudioSettings: View {
                             Task { await preview.start(deviceID: deviceID) }
                         }
                     }
-                    .buttonStyle(BrutalButtonStyle(color: preview.isRunning ? color : .white, compact: true))
+                    .buttonStyle(BrutalButtonStyle(color: preview.isRunning ? color : Brutal.paper, compact: true))
                 }
             }
             ToggleRow(title: "System audio", subtitle: "Sound from other apps. Shot's own sounds are excluded.", isOn: $systemAudio, color: color, divider: false)
@@ -541,7 +547,7 @@ private struct CameraSettings: View {
                             Task { await preview.start(deviceID: deviceID) }
                         }
                     }
-                    .buttonStyle(BrutalButtonStyle(color: preview.isRunning ? color : .white, compact: true))
+                    .buttonStyle(BrutalButtonStyle(color: preview.isRunning ? color : Brutal.paper, compact: true))
                 }
             }
             SettingRow(title: "Bubble size", divider: false) {
@@ -822,7 +828,7 @@ private struct CommandRow<Accessory: View>: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .brutalSurface(Color.white.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
+                .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
         }
         .padding(.vertical, 9)
         if divider {
@@ -992,7 +998,7 @@ private struct AboutSettings: View {
                         confirmingReset = true
                     }
                 }
-                .buttonStyle(BrutalButtonStyle(color: confirmingReset ? Brutal.red : .white, compact: true))
+                .buttonStyle(BrutalButtonStyle(color: confirmingReset ? Brutal.red : Brutal.paper, compact: true))
             }
         }
 
@@ -1040,7 +1046,7 @@ private struct PermissionRow: View {
     var body: some View {
         SettingRow(title: title, subtitle: subtitle, divider: divider) {
             HStack(spacing: 10) {
-                BrutalChip(text: label, color: status == .authorized ? Brutal.mint : status == .notDetermined ? Color.white : Brutal.red)
+                BrutalChip(text: label, color: status == .authorized ? Brutal.mint : status == .notDetermined ? Brutal.paper : Brutal.red)
                 // macOS asks only while the status is not determined; after a denial only System Settings can change it.
                 if status == .notDetermined {
                     Button("Grant") {

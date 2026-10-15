@@ -167,7 +167,7 @@ struct ClipInspector: View {
             .multilineTextAlignment(.trailing)
             .padding(.horizontal, 6)
             .frame(width: 56, height: 24)
-            .brutalSurface(Color.white.opacity(0.7), radius: Brutal.Radius.chip, shadow: 0, border: 2)
+            .brutalSurface(Brutal.paper.opacity(0.7), radius: Brutal.Radius.chip, shadow: 0, border: 2)
             .accessibilityLabel(Text(label))
     }
 
@@ -185,6 +185,7 @@ struct ClipInspector: View {
                     }
                 }
                 .frame(width: 26, height: 26)
+                .inkOnFill(here ? Brutal.yellow : nil)
                 .background(here ? Brutal.yellow : Color.clear, in: RoundedRectangle(cornerRadius: Brutal.Radius.chip, style: .circular))
                 .contentShape(Rectangle())
         }

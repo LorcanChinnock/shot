@@ -18,7 +18,7 @@ struct EditorRootView: View {
                 }
                 Spacer()
                 Button { model.toggleLayers() } label: { Label("Layers", systemImage: "square.3.layers.3d").fixedSize() }
-                    .buttonStyle(BrutalButtonStyle(color: model.showsLayers ? Brutal.violet : .white, compact: true))
+                    .buttonStyle(BrutalButtonStyle(color: model.showsLayers ? Brutal.violet : Brutal.paper, compact: true))
                     .brutalTip("Show the layers (⌘L)")
                 ZoomMenu(model: model, canvas: canvas)
                 CanvasMenu(model: model)

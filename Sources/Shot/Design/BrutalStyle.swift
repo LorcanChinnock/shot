@@ -4,8 +4,24 @@ import SwiftUI
 
 /// Design tokens and components for the glass × neo-brutalist settings UI.
 enum Brutal {
-    static let ink = Color(red: 0.07, green: 0.07, blue: 0.10)
-    /// `ink`, `yellow` and `red` for AppKit drawing.
+    // Dark mode keeps black lines and hard shadows, and shows depth by lightness instead: the backdrop is darkest, glass cards
+    // sit a step lighter, and `paper` (buttons, menus, chips) lighter still. Text is the only light element, a soft off-white
+    // rather than white, and the accents lose a little saturation so they don't glare on dark.
+
+    /// Text and marks on `paper` or glass: near-black in light mode, off-white in dark. Text on an accent fill stays near-black
+    /// either way, because a surface with a light fill lays out its content in the light appearance.
+    static let ink = Color(light: Color(red: 0.07, green: 0.07, blue: 0.10), dark: Color(hex: 0xE6E3DC))
+    /// Borders and hard shadows: near-black in both appearances.
+    static let line = Color(light: Color(red: 0.07, green: 0.07, blue: 0.10), dark: Color(hex: 0x050507))
+    /// The neutral fill under ink: buttons, chips, menus and floating panels. White in light mode, a raised grey in dark.
+    static let paper = Color(light: .white, dark: Color(hex: 0x38373E))
+    /// A glass card's tint.
+    static let glass = Color(light: .white.opacity(0.42), dark: Color(hex: 0x2C2B31).opacity(0.9))
+    /// A recessed fill below `paper`: a toggle that's off, a segmented control's track, an unlit meter bar.
+    static let well = Color(light: .white.opacity(0.7), dark: Color(hex: 0x1F1E23))
+    /// A toggle's knob while it's off.
+    static let knob = Color(light: .white, dark: Color(hex: 0x8E8B93))
+    /// `ink`, `yellow` and `red` for AppKit drawing, in their light-mode colours.
     static var inkNS: NSColor { NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1) }
     static var yellowNS: NSColor { NSColor(srgbRed: 1, green: 0xD4 / 255, blue: 0x3B / 255, alpha: 1) }
     static var redNS: NSColor { NSColor(srgbRed: 1, green: 0x5C / 255, blue: 0x5C / 255, alpha: 1) }
@@ -35,14 +51,14 @@ enum Brutal {
     static let groupInset: CGFloat = 7
     static let sectionGap: CGFloat = 16
 
-    static let yellow = Color(hex: 0xFFD43B)
-    static let pink = Color(hex: 0xFF7AB6)
-    static let mint = Color(hex: 0x4FE3B5)
-    static let sky = Color(hex: 0x6FC3FF)
-    static let violet = Color(hex: 0x9B8CFF)
-    static let red = Color(hex: 0xFF5C5C)
-    static let orange = Color(hex: 0xFF9F43)
-    static let lime = Color(hex: 0xB6E24B)
+    static let yellow = Color(light: Color(hex: 0xFFD43B), dark: Color(hex: 0xEDCB55))
+    static let pink = Color(light: Color(hex: 0xFF7AB6), dark: Color(hex: 0xE58BB3))
+    static let mint = Color(light: Color(hex: 0x4FE3B5), dark: Color(hex: 0x62CDAB))
+    static let sky = Color(light: Color(hex: 0x6FC3FF), dark: Color(hex: 0x80BBE6))
+    static let violet = Color(light: Color(hex: 0x9B8CFF), dark: Color(hex: 0x9C92E3))
+    static let red = Color(light: Color(hex: 0xFF5C5C), dark: Color(hex: 0xE26C6C))
+    static let orange = Color(light: Color(hex: 0xFF9F43), dark: Color(hex: 0xE8A060))
+    static let lime = Color(light: Color(hex: 0xB6E24B), dark: Color(hex: 0xB1CF62))
 
     static func title(_ size: CGFloat) -> ScaledFont { .scaled(size, weight: .black) }
     static let label = ScaledFont.scaled(13, weight: .semibold)
@@ -122,6 +138,41 @@ extension Color {
     init(hex: UInt32) {
         self.init(.sRGB, red: Double((hex >> 16) & 0xFF) / 255, green: Double((hex >> 8) & 0xFF) / 255, blue: Double(hex & 0xFF) / 255)
     }
+
+    /// A colour that follows the view's appearance.
+    init(light: Color, dark: Color) {
+        self.init(nsColor: NSColor(name: nil) { appearance in
+            NSColor(appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? dark : light)
+        })
+    }
+}
+
+/// Lays out content over `fill` in the light appearance when the fill is light and mostly opaque, such as an accent colour,
+/// so its `ink` stays dark in dark mode. Over `paper`, glass or a dark fill, content keeps the appearance it has.
+private struct InkOnFill: ViewModifier {
+    let fill: Color?
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        content.environment(\.colorScheme, scheme)
+    }
+
+    private var scheme: ColorScheme {
+        guard colorScheme == .dark, let fill else { return colorScheme }
+        var environment = EnvironmentValues()
+        environment.colorScheme = .dark
+        let color = fill.resolve(in: environment)
+        // Above 0.18, near-black ink has more contrast on the fill than near-white ink does.
+        let luminance = 0.2126 * color.linearRed + 0.7152 * color.linearGreen + 0.0722 * color.linearBlue
+        return color.opacity >= 0.5 && luminance > 0.18 ? .light : .dark
+    }
+}
+
+extension View {
+    /// For content drawn straight over a fill rather than through `brutalSurface`, such as a selected segment.
+    func inkOnFill(_ fill: Color?) -> some View {
+        modifier(InkOnFill(fill: fill))
+    }
 }
 
 // MARK: Surfaces
@@ -156,18 +207,19 @@ struct BrutalSurface<S: InsettableShape, Fill: ShapeStyle>: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            .inkOnFill(fill as? Color)
             .background {
                 ZStack {
                     // With Increase Contrast on, glass turns nearly opaque so text over it holds its contrast.
                     if glass, contrast == .increased {
-                        shape.inset(by: Brutal.underInk(border)).fill(Color.white.opacity(0.9))
+                        shape.inset(by: Brutal.underInk(border)).fill(Color(light: .white.opacity(0.9), dark: Color(hex: 0x2C2B31).opacity(0.97)))
                     } else if glass {
                         shape.inset(by: Brutal.underInk(border)).fill(.ultraThinMaterial)
                     }
                     shape.inset(by: Brutal.underInk(border)).fill(fill)
                 }
             }
-            .overlay(InkOutline(shape: shape, border: border, shadow: shadow).fill(Brutal.ink))
+            .overlay(InkOutline(shape: shape, border: border, shadow: shadow).fill(Brutal.line))
     }
 }
 
@@ -182,7 +234,7 @@ extension View {
     }
 
     func glassCard() -> some View {
-        brutalSurface(Color.white.opacity(0.42), glass: true)
+        brutalSurface(Brutal.glass, glass: true)
     }
 
     /// A section's small capitals heading, as the Style popover and the video inspector have.
@@ -192,7 +244,7 @@ extension View {
 
     /// An ink border with the content stopping under the line, so no colour bleeds through its anti-aliased outer edge.
     /// `dash` draws it as dashes, as `StrokeStyle` takes them.
-    func inkBorder<S: InsettableShape>(_ shape: S, width: CGFloat, color: Color = Brutal.ink, dash: [CGFloat] = []) -> some View {
+    func inkBorder<S: InsettableShape>(_ shape: S, width: CGFloat, color: Color = Brutal.line, dash: [CGFloat] = []) -> some View {
         clipShape(shape.inset(by: Brutal.underInk(width))).overlay(shape.strokeBorder(color, style: StrokeStyle(lineWidth: width, dash: dash)))
     }
 }
@@ -234,15 +286,16 @@ struct GlassBackdrop: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.controlActiveState) private var activeState
     @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         ZStack {
             VisualEffectBackground()
-            // With Increase Contrast on, the blobs go and the frost turns nearly opaque, so text keeps a plain white behind it.
+            // With Increase Contrast on, the blobs go and the frost turns nearly opaque, so text keeps a plain, solid backing.
             if contrast == .increased {
-                Color.white.opacity(0.9)
+                Color(light: .white.opacity(0.9), dark: Color(hex: 0x17161B).opacity(0.97))
             } else {
-                Color.white.opacity(0.35)
+                Color(light: .white.opacity(0.35), dark: Color(hex: 0x17161B).opacity(0.85))
                 TimelineView(.animation(paused: reduceMotion || activeState == .inactive)) { timeline in
                     blobLayer(at: reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate)
                 }
@@ -252,7 +305,9 @@ struct GlassBackdrop: View {
     }
 
     private func blobLayer(at time: Double) -> some View {
-        Canvas { ctx, size in
+        // On dark, full-strength blobs glow; a third of the strength keeps the colour without the glare.
+        let strength = colorScheme == .dark ? 0.36 : 1
+        return Canvas { ctx, size in
             let reach = max(size.width, size.height)
             for blob in Self.blobs {
                 let angle = time / blob.period * 2 * .pi + blob.phase
@@ -264,8 +319,8 @@ struct GlassBackdrop: View {
                 )
                 let rect = CGRect(x: center.x - diameter / 2, y: center.y - diameter / 2, width: diameter, height: diameter)
                 let gradient = Gradient(stops: [
-                    .init(color: blob.color.opacity(blob.opacity), location: 0),
-                    .init(color: blob.color.opacity(blob.opacity * 0.5), location: 0.45),
+                    .init(color: blob.color.opacity(blob.opacity * strength), location: 0),
+                    .init(color: blob.color.opacity(blob.opacity * strength * 0.5), location: 0.45),
                     .init(color: blob.color.opacity(0), location: 1),
                 ])
                 ctx.fill(
@@ -295,7 +350,7 @@ struct GlassBackdrop: View {
 // MARK: Controls
 
 struct BrutalButtonStyle: ButtonStyle {
-    var color: Color = .white
+    var color: Color = Brutal.paper
     var compact = false
     @Environment(\.isEnabled) private var isEnabled
 
@@ -326,12 +381,12 @@ struct BrutalToggleStyle: ToggleStyle {
             ZStack(alignment: configuration.isOn ? .trailing : .leading) {
                 Color.clear
                     .frame(width: 48, height: 28)
-                Color.white
+                Brutal.knob
                     .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: 2)
                     .frame(width: 16, height: 16)
                     .padding(.horizontal, 6)
             }
-            .brutalSurface(configuration.isOn ? color : Color.white.opacity(0.7), radius: Brutal.Radius.inset, shadow: 2)
+            .brutalSurface(configuration.isOn ? color : Brutal.well, radius: Brutal.Radius.inset, shadow: 2)
         }
         .buttonStyle(.plain)
         .accessibilityValue(Text(configuration.isOn ? "On" : "Off"))
@@ -371,31 +426,32 @@ struct BrutalSegmented<Value: Hashable>: View {
                         .padding(.horizontal, 11)
                         .frame(height: 28)
                         .background(selected ? color : Color.clear)
+                        .inkOnFill(selected ? color : nil)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 if index < options.count - 1 {
-                    Rectangle().fill(Brutal.ink).frame(width: 2)
+                    Rectangle().fill(Brutal.line).frame(width: 2)
                 }
             }
         }
         .fixedSize()
         .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.button, style: .circular).inset(by: Brutal.underInk(Brutal.border)))
-        .brutalSurface(Color.white.opacity(0.7), radius: Brutal.Radius.button, shadow: 2)
+        .brutalSurface(Brutal.well, radius: Brutal.Radius.button, shadow: 2)
     }
 }
 
 struct BrutalChip: View {
     let text: String
-    var color: Color = .white
+    var color: Color = Brutal.paper
 
-    init(text: LocalizedStringResource, color: Color = .white) {
+    init(text: LocalizedStringResource, color: Color = Brutal.paper) {
         self.init(text: String(localized: text), color: color)
     }
 
     /// A chip whose text is already localized, or is a number or name.
     @_disfavoredOverload
-    init<S: StringProtocol>(text: S, color: Color = .white) {
+    init<S: StringProtocol>(text: S, color: Color = Brutal.paper) {
         self.text = String(text)
         self.color = color
     }
