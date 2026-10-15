@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createMarkdownProcessor } from '@astrojs/markdown-remark';
 import { rehypeRepoLinks } from './rehype.ts';
@@ -10,26 +10,21 @@ export interface GuidePage {
   headings: { depth: number; slug: string; text: string }[];
 }
 
-// The build runs from the site folder, and the guide's source stays in docs/ so it changes in the same PR as the feature.
-const source = readFileSync(resolve(process.cwd(), '../docs/usage.md'), 'utf8');
+// One file per page, in file name order; each starts with its "# " title.
+const dir = resolve(process.cwd(), 'src/guide');
+const files = readdirSync(dir).filter((name) => name.endsWith('.md')).sort();
 
-// Screenshots sit in docs/media; Astro hashes them into /_astro/ and gives their URLs here.
+// Screenshots sit in docs/media, beside the README's; Astro hashes them into /_astro/ and gives their URLs here.
 const media = import.meta.glob<string>('../../../docs/media/*.{png,jpg,gif}', { query: '?url', import: 'default', eager: true });
 const mediaUrls = new Map(Object.entries(media).map(([path, url]) => [path.split('/').pop()!, url]));
 
-/** Splits the guide at each "## " heading outside a code fence, and moves each heading up a level so it becomes its page's title. */
 function sections() {
-  const out: { title: string; lines: string[] }[] = [];
-  let fenced = false;
-  for (const line of source.split('\n')) {
-    if (/^\s*(```|~~~)/.test(line)) fenced = !fenced;
-    const heading = !fenced && /^(#{1,6}) (.*)$/.exec(line);
-    if (heading && heading[1] === '##') out.push({ title: heading[2], lines: [] });
-    // Lines before the first "## " (the title and the contents list) are replaced by the start page.
-    if (!out.length) continue;
-    out.at(-1)!.lines.push(heading ? line.slice(1) : line);
-  }
-  return out;
+  return files.map((name) => {
+    const text = readFileSync(resolve(dir, name), 'utf8');
+    const title = /^# (.*)$/m.exec(text)?.[1];
+    if (!title) throw new Error(`src/guide/${name} has no "# " title`);
+    return { title, lines: text.split('\n') };
+  });
 }
 
 const processor = await createMarkdownProcessor({
@@ -59,5 +54,5 @@ export const pages: GuidePage[] = rendered.map(({ title, html, headings }) => ({
   headings,
   html: html
     .replace(/href="#([^"]+)"/g, (match, id) => (anchors[id] ? `href="${anchors[id]}"` : match))
-    .replace(/src="media\/([^"]+)"/g, (match, file) => (mediaUrls.has(file) ? `src="${mediaUrls.get(file)}"` : match)),
+    .replace(/src="(?:\.\.\/)+docs\/media\/([^"]+)"/g, (match, file) => (mediaUrls.has(file) ? `src="${mediaUrls.get(file)}"` : match)),
 }));

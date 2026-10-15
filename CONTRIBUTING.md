@@ -61,7 +61,7 @@ Tests/ShotCoreTests/  ShotCore's Swift Testing suite
 Resources/            Info.plist, the app icon and the string catalogs
 scripts/              Bundling, install, signing certificate, icon, lint, performance
                       checks, and the Homebrew cask
-docs/                 The user guide, its screenshots, and the demo app they show
+docs/                 Screenshots for the README and the user guide, and the demo app they show
 site/                 The website (see site/README.md)
 ```
 

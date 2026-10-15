@@ -53,7 +53,7 @@ It works from any directory, drives that worktree's `build/ShotDev.app`, and com
 .agents/skills/ux-qa/scripts/qa 'uxqa_click 640 320; sleep 0.5; uxqa_shot after-click'
 ```
 
-Other entry points: `shot-dev://annotate?path=`, `shot-dev://gallery`, `shot-dev://settings?section=`. See `docs/usage.md`. Screen
+Other entry points: `shot-dev://annotate?path=`, `shot-dev://gallery`, `shot-dev://settings?section=`. See `site/src/guide/10-url-scheme.md`. Screen
 capture and recording need real permissions and a person, so test the editors on files and say that capture itself was out of scope.
 
 **Units.** Everything is in screen *points*. `uxqa_shot` writes images at point size (1 px = 1 pt), `axdump` reports frames in
@@ -70,7 +70,7 @@ screenshots. Re-take the screenshot after every layout change (selecting a clip,
 
 ## 2. The session
 
-1. **Recon.** Read `docs/usage.md` for the intended behaviour and the keyboard shortcuts, skim the view code for the screen
+1. **Recon.** Read the user guide in `site/src/guide/` for the intended behaviour and the keyboard shortcuts, skim the view code for the screen
    under test so you know which things are *supposed* to line up, and take an `axdump` baseline. Write down expectations
    before you look at pixels.
 2. **Golden path as a first-time user.** Open a clip, play it, trim, split, delete, undo, import, annotate, export, close.
@@ -138,7 +138,7 @@ confirming the problem count only went down.
 ## Shot specifics
 
 - Video editor shortcuts: Space play/pause, ←/→ frame, ⇧←/⇧→ one second, S split, K keyframes, T tracks, N snapping,
-  ⌫ delete/cut, Esc clear, ⌘Z/⇧⌘Z, ⌘S save, ⌘C copy, ⌘+/⌘−/⌘0 zoom. Annotation tools use letter keys (see `docs/usage.md`).
+  ⌫ delete/cut, Esc clear, ⌘Z/⇧⌘Z, ⌘S save, ⌘C copy, ⌘+/⌘−/⌘0 zoom. Annotation tools use letter keys (see `site/src/guide/09-keyboard-shortcuts.md`).
 - Exports land next to the source video as `Shot <date> at <time>.<ext>` and a toast reports them at the bottom of the screen.
 - The main track's strip, lanes, ruler and the playhead are one custom view; the play button sits beside it and should be
   centred on the main track's row. The trim handles, lanes and playhead need real mouse drags.

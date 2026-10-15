@@ -761,7 +761,7 @@ public enum ShotCommand: Equatable, Sendable {
         """
     }
 
-    /// The online docs, which render `docs/usage.md`.
+    /// The online docs, from `site/src/guide/`.
     static let docs = "https://shot.lorcanchinnock.com/docs/"
 
     /// `value` on one line, as `shot watch --follow` prints each capture, so each line is a whole JSON object.
