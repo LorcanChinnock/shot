@@ -67,6 +67,8 @@ Marks are kept by Shot, in `~/Library/Application Support/dev.lorcan.Shot/`, not
 
 An agent can also ask **you** to pick what it should see, with `shot pick --prompt "Select the broken toolbar"` or the `ask_for_capture` tool.
 
+![Shot's area selection over a dimmed support ticket, with The shot command asks: Select the broken discount line above the usual hints](../../../docs/media/agent-pick.png)
+
 1. Shot opens its usual area selection, with the agent's prompt and name above the hint, such as **Claude Code asks: Select the broken toolbar**.
 2. Drag across the area, or press <kbd>Space</kbd> and click a window.
 3. Shot saves the screenshot to the capture folder, as it does an agent's own, and hands it back to the agent.

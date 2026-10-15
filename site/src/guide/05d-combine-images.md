@@ -4,6 +4,8 @@ summary: "Place more screenshots or images beside yours, crop them, and arrange 
 group: Edit and share
 ---
 
+![A support ticket with a revenue report placed beside it on one canvas, the report selected with handles at its corners](../../../docs/media/editor-combine.png)
+
 ## Add an image
 
 In the annotation editor, any of these places another image beside your screenshot:

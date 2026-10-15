@@ -4,6 +4,8 @@ summary: "Export an MP4 or a GIF at the size, frame rate and speed you want, and
 group: Edit and share
 ---
 
+![The video editor with a trimmed start, a cut where the recording went to another page, a Best day label and an arrow over the video, and the GIF export options](../../../docs/media/video-editor.png)
+
 ## Export
 
 In the video editor, **Export** writes a new file next to the recording and copies it. Choose:
