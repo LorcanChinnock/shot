@@ -42,6 +42,10 @@ jobs:
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@1d6de8cb0c237e7c15e9e1bdf973826ebae490cc # v1
+        env:
+          # Agents run in the background unless asked otherwise, and the review sometimes ended its
+          # turn while they were still running, which ended the run with nothing posted (#609).
+          CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1"
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Adapted from the code-review plugin's /code-review:code-review (anthropics/claude-code,
@@ -55,7 +59,6 @@ jobs:
             - All tools are functional and will work without error. Do not test tools or make exploratory calls. Make sure this is clear to every subagent that is launched.
             - Only call a tool if it is required to complete the task. Every tool call should have a clear purpose.
             - The PR is checked out with full history. Use `git diff origin/${{ github.base_ref }}...HEAD`, `git log` and `git blame` for history, and Read/Grep/Glob for the code around the change.
-            - Launch every agent in the foreground, never with `run_in_background`. Several agent calls in one message already run in parallel.
             - Do not end your turn until step 7 or step 9 has posted to the PR. This run is headless: ending the turn ends the review, and nothing resumes it.
 
             To do this, follow these steps precisely:
