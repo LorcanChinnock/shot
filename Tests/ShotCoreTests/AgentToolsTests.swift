@@ -55,7 +55,7 @@ private func writeCapture(_ name: String, in folder: URL, width: Int = 64, heigh
     #expect(texts(result).first == "Couldn't read Broken.png as an image.")
 }
 
-extension MediaTests {
+extension CompositingMediaTests {
     @Test func aRecordingGivesAPosterFrameAndItsDuration() async throws {
         let folder = try temporaryFolder()
         defer { try? FileManager.default.removeItem(at: folder) }

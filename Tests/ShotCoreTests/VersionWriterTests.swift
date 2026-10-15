@@ -176,7 +176,7 @@ private func resolved(_ project: Project) -> Project {
     #expect(base.removingClips(from: [recording]) == nil)
 }
 
-extension MediaTests {
+extension CompositingMediaTests {
     @Test func anExportedVideoAndGIFReopenWithTheirProjectLive() async throws {
         let folder = try temporaryFolder()
         defer { try? FileManager.default.removeItem(at: folder) }

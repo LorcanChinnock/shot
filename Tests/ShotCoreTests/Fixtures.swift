@@ -5,9 +5,13 @@ import Testing
 
 // Synthetic videos and the helpers that read them back, shared by the tests that export or composite.
 
-/// Tests that read, write or export video. They run one at a time: several at once each block a
-/// thread in AVFoundation and, on a runner with few cores, can wait on each other forever.
+/// Tests that read, write or export video. They run one at a time within a suite: several at once each block a
+/// thread in AVFoundation and, on a runner with few cores, can wait on each other forever, and they run out of
+/// hardware codec sessions (`Cannot Decode`). Two suites run side by side, so at most two block at once and a
+/// 3-core runner keeps a thread free. Keep their serial times about even; `CompositionTests` alone is about 10 s.
 @Suite(.serialized) struct MediaTests {}
+/// The second half of the media tests: composition, GIF export, and the commands and agent tools that export.
+@Suite(.serialized) struct CompositingMediaTests {}
 
 /// A new, empty folder in the temporary directory; the caller removes it.
 func temporaryFolder() throws -> URL {

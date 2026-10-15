@@ -21,6 +21,8 @@ The full guide to Shot. For a quick introduction, see the [overview](../README.m
 
 ## First launch
 
+![The welcome window's second step, Make it yours: Use Shot for ⌘⇧3 to ⌘⇧5 and Open Shot at login both on, with Agents and Continue buttons](media/welcome.png)
+
 The first time you open Shot, a welcome window takes about 30 seconds, in three steps. Close it at any step to skip the rest.
 
 1. **Screen Recording access.** macOS requires it for every capture. Click **Grant**, or **Open System Settings**, and turn on Shot under **Screen & System Audio Recording**. Once you've been to System Settings, the window asks you to **Relaunch**, since macOS applies access only after a relaunch. Then the window carries on. If Shot already has access, this step is skipped.
@@ -30,6 +32,8 @@ The first time you open Shot, a welcome window takes about 30 seconds, in three 
 If you used Shot before the welcome window existed, you won't see it. To open it again, use **Welcome window › Show** in **Settings › About**, or [`shot://welcome`](#url-scheme); opened that way, it starts from your current settings and closing it changes nothing. If Shot loses its Screen Recording access later, a capture opens the window at the access step.
 
 ## Screenshots
+
+![Dragging out an area with the magnifier, then the Quick Access card sliding into the corner and showing its buttons](media/capture.gif)
 
 Shot lives in the menu bar. Its menu lists every capture and recording action with its shortcut, plus **Open Gallery**, **Open Save Folder** and **User Guide**, which opens this guide online. While you record, it also has **Pause Recording** (**Resume Recording** while paused) and **Stop Recording**.
 
@@ -678,6 +682,8 @@ For AI agents, `shot mcp` is an MCP server for your captures; see [The MCP serve
 `path` can start with `~`. URL-encode spaces and other special characters, for example `open "shot://annotate?path=~/Desktop/My%20Shot.png"`. The older `shot://record?full=1` still works and does the same as `shot://record-fullscreen`. An unknown action or settings section, or `annotate` or `edit-video` without a `path`, shows an error instead.
 
 ## Settings
+
+![Settings › Capture, with the sidebar listing every section: Save to folder, Copy to clipboard, Show Quick Access, Magnifier, Crosshair and Window shadow are on](media/settings.png)
 
 Open Settings from the menu bar icon, or with ⌘, while a Shot window is in front.
 
