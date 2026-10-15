@@ -119,6 +119,17 @@ struct TicketScene: View {
                 }
             }
             Spacer()
+            HStack(spacing: 10) {
+                Image(systemName: "paperclip").foregroundStyle(.secondary)
+                Text("Reply to Jane…").foregroundStyle(.tertiary)
+                Spacer()
+                Image(systemName: "paperplane.fill").foregroundStyle(.secondary)
+            }
+            .font(.system(size: 13))
+            .padding(10)
+            .background(.background, in: RoundedRectangle(cornerRadius: 9))
+            .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(Color.secondary.opacity(0.35)))
+            .padding(.bottom, 16)
         }
         .padding(.horizontal, 20)
         .frame(maxWidth: .infinity)

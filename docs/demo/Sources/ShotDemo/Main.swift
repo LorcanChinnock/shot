@@ -185,6 +185,9 @@ struct SceneRoot: View {
         .id(replay.count)
         .frame(width: scene.size.width, height: scene.size.height)
         .background(.background)
+        // The title bar is transparent and the scenes leave room for its buttons, so they fill the whole window.
+        // Inside the safe area, the fixed height would push the bottom 28 points out of the window.
+        .ignoresSafeArea()
     }
 }
 
