@@ -5,9 +5,13 @@ import CoreGraphics
 enum Permissions {
     static var hasScreenCapture: Bool { CGPreflightScreenCaptureAccess() }
 
+    /// macOS can keep reporting access as missing until the relaunch, so a second request would wipe the new grant.
+    private(set) static var requestedScreenCapture = false
+
     // A grant made for a differently signed build, such as a local dev build, stays switched on in
     // System Settings but no longer matches this app, so macOS denies it. Clearing it lets macOS ask afresh.
     static func requestScreenCapture() {
+        requestedScreenCapture = true
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
         process.arguments = ["reset", "ScreenCapture", Bundle.main.bundleIdentifier ?? "dev.lorcan.Shot"]

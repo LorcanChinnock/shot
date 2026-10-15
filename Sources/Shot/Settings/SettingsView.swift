@@ -835,6 +835,7 @@ private struct ShortcutSettings: View {
 
 private struct AboutSettings: View {
     @State private var screenGranted = Permissions.hasScreenCapture
+    @State private var screenRequested = Permissions.requestedScreenCapture
     @State private var microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
     @State private var cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
     @State private var confirmingReset = false
@@ -846,6 +847,7 @@ private struct AboutSettings: View {
 
     private func refreshPermissions() {
         screenGranted = Permissions.hasScreenCapture
+        screenRequested = Permissions.requestedScreenCapture
         microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
         cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
     }
@@ -897,12 +899,20 @@ private struct AboutSettings: View {
             SettingRow(title: "Screen & System Audio Recording", subtitle: "Required for every capture.") {
                 HStack(spacing: 10) {
                     BrutalChip(text: screenGranted ? "GRANTED" : "MISSING", color: screenGranted ? Brutal.mint : Brutal.red)
-                    Button("Open") { Permissions.openSettings() }
+                    if !screenGranted, !screenRequested {
+                        Button("Grant") {
+                            Permissions.requestScreenCapture()
+                            screenRequested = true
+                        }
                         .buttonStyle(BrutalButtonStyle(compact: true))
+                    } else {
+                        Button("Open") { Permissions.openSettings() }
+                            .buttonStyle(BrutalButtonStyle(compact: true))
+                    }
                 }
             }
-            PermissionRow(title: "Microphone", subtitle: "Only needed to record your voice.", status: microphoneStatus, pane: "Privacy_Microphone")
-            PermissionRow(title: "Camera", subtitle: "Only needed for the camera bubble.", status: cameraStatus, pane: "Privacy_Camera")
+            PermissionRow(title: "Microphone", subtitle: "Only needed to record your voice.", mediaType: .audio, status: $microphoneStatus, pane: "Privacy_Microphone")
+            PermissionRow(title: "Camera", subtitle: "Only needed for the camera bubble.", mediaType: .video, status: $cameraStatus, pane: "Privacy_Camera")
             SettingRow(title: "Welcome window", subtitle: "Go through setup and a first capture again.", divider: false) {
                 Button("Show") { WelcomeWindow.showAgain() }
                     .buttonStyle(BrutalButtonStyle(compact: true))
@@ -969,7 +979,8 @@ private struct AboutSettings: View {
 private struct PermissionRow: View {
     let title: LocalizedStringResource
     let subtitle: LocalizedStringResource
-    let status: AVAuthorizationStatus
+    let mediaType: AVMediaType
+    @Binding var status: AVAuthorizationStatus
     let pane: String
     var divider = true
 
@@ -977,10 +988,21 @@ private struct PermissionRow: View {
         SettingRow(title: title, subtitle: subtitle, divider: divider) {
             HStack(spacing: 10) {
                 BrutalChip(text: label, color: status == .authorized ? Brutal.mint : status == .notDetermined ? Color.white : Brutal.red)
-                Button("Open") {
-                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)")!)
+                // macOS asks only while the status is not determined; after a denial only System Settings can change it.
+                if status == .notDetermined {
+                    Button("Grant") {
+                        Task {
+                            _ = await AVCaptureDevice.requestAccess(for: mediaType)
+                            status = AVCaptureDevice.authorizationStatus(for: mediaType)
+                        }
+                    }
+                    .buttonStyle(BrutalButtonStyle(compact: true))
+                } else {
+                    Button("Open") {
+                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)")!)
+                    }
+                    .buttonStyle(BrutalButtonStyle(compact: true))
                 }
-                .buttonStyle(BrutalButtonStyle(compact: true))
             }
         }
     }
