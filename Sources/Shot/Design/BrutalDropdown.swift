@@ -232,8 +232,6 @@ private final class DropdownMenu {
 private struct DropdownList: View {
     /// Room for the shadow, which draws outside the surface.
     private static let shadowRoom: CGFloat = 3
-    /// The list already sits `groupInset` inside the border, so the bar needs only the rest of `panelInset`.
-    private static let barInset = BrutalScrollBar.panelInset - Brutal.groupInset
 
     let title: String
     let state: DropdownState
@@ -288,10 +286,10 @@ private struct DropdownList: View {
                     }
                 }
                 .onGeometryChange(for: CGSize.self) { $0.size } action: { contentSize = $0 }
-                .padding(.trailing, overflows ? BrutalScrollBar.gutter + Self.barInset : 0)
+                .padding(.trailing, overflows ? SystemScroller.shared.overlayRoom : 0)
+                .tracklessScroller()
             }
-            .brutalScrollBar(inset: Self.barInset)
-            .frame(width: contentSize.width > 0 ? contentSize.width + (overflows ? BrutalScrollBar.gutter + Self.barInset : 0) : nil,
+            .frame(width: contentSize.width > 0 ? contentSize.width + (overflows ? SystemScroller.shared.width : 0) : nil,
                    height: contentSize.height > 0 ? min(contentSize.height, rowsHeight) : nil)
             .onChange(of: state.highlighted) { _, index in
                 if let index {

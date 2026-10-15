@@ -92,11 +92,11 @@ struct SettingsView: View {
                         VStack(spacing: 18) {
                             content
                         }
-                        .padding(.trailing, BrutalScrollBar.gutter)
+                        .padding(.trailing, Brutal.groupInset + SystemScroller.shared.overlayRoom)
                         .padding(.bottom, Brutal.sectionGap)
                         .padding([.leading, .top], 3)
+                        .tracklessScroller()
                     }
-                    .brutalScrollBar()
                     .onScrollGeometryChange(for: ScrollFade.Edges.self) { geometry in
                         ScrollFade.Edges(
                             top: geometry.contentOffset.y > -geometry.contentInsets.top,
@@ -106,9 +106,8 @@ struct SettingsView: View {
                         scrolledPast = edges
                     }
                     .mask(ScrollFade(edges: scrolledPast))
-                    // The bar sits in the window margin, as far from the window border as from the cards.
-                    .padding(.trailing, -BrutalScrollBar.windowOutset)
-                    .padding(.bottom, Brutal.border + BrutalScrollBar.clearance - Self.bottomInset)
+                    // The scroll view reaches into the window margin, so the scroller sits there, beside the cards.
+                    .padding(.trailing, -SystemScroller.shared.width)
                     .id(section)
                 }
             }
@@ -167,8 +166,8 @@ private struct ScrollFade: View {
                 Color.black
                 LinearGradient(colors: [.black, edges.bottom ? .clear : .black], startPoint: .top, endPoint: .bottom).frame(height: 18)
             }
-            // The scroll bar stays sharp.
-            Color.black.frame(width: BrutalScrollBar.width)
+            // The scroller stays sharp.
+            Color.black.frame(width: SystemScroller.shared.width)
         }
     }
 }

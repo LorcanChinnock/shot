@@ -75,8 +75,7 @@ struct LayersPanel: View {
             Divider().overlay(Brutal.faint(0.25))
             if let frame {
                 FrameRowView(row: frame, isFocused: isFocused, onSelect: onSelectFrame, onHide: { onHideFrame(!frame.isHidden) }, onDelete: onDeleteFrame)
-                    .padding(.leading, 6)
-                    .padding(.trailing, BrutalScrollBar.gutter + BrutalScrollBar.panelInset)
+                    .padding(.horizontal, 6)
                     .padding(.top, 4)
                 Divider().overlay(Brutal.faint(0.25)).padding(.top, 4)
             }
@@ -88,11 +87,11 @@ struct LayersPanel: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: CGFloat(drag.map { $0.rest.count + 1 } ?? rows.count) * Self.rowHeight, alignment: .top)
-                .padding(.leading, 6)
-                .padding(.trailing, BrutalScrollBar.gutter + BrutalScrollBar.panelInset)
+                .padding(.horizontal, 6)
                 .padding(.vertical, 4)
+                .tracklessScroller()
             }
-            .brutalScrollBar(inset: BrutalScrollBar.panelInset, position: $position)
+            .scrollPosition($position)
             .onScrollGeometryChange(for: ListScroll.self) { geometry in
                 ListScroll(offset: geometry.contentOffset.y, content: geometry.contentSize.height, viewport: geometry.containerSize.height)
             } action: { _, new in
