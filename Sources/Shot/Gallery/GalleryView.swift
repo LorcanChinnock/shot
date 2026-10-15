@@ -100,7 +100,8 @@ struct GalleryRootView: View {
             emptyState
         } else {
             GalleryGrid(model: model)
-                .padding(.trailing, -BrutalScrollBar.windowOutset)
+                // The scroll view reaches into the window margin, so the scroller sits there, beside the tiles.
+                .padding(.trailing, -SystemScroller.shared.width)
         }
     }
 
@@ -145,7 +146,8 @@ private struct GalleryGrid: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let available = geometry.size.width - Brutal.groupInset - BrutalScrollBar.gutter
+            // An overlay scroller needs the content's room; a legacy one takes the same width from the scroll view.
+            let available = geometry.size.width - Brutal.groupInset * 2 - SystemScroller.shared.width
             let columns = max(1, Int((available + Self.spacing) / (model.tileSize + Self.spacing)))
             let cell = (available - Self.spacing * CGFloat(columns - 1)) / CGFloat(columns)
             ScrollViewReader { proxy in
@@ -175,7 +177,7 @@ private struct GalleryGrid: View {
                         }
                     }
                     .padding(.leading, Brutal.groupInset)
-                    .padding(.trailing, BrutalScrollBar.gutter)
+                    .padding(.trailing, Brutal.groupInset + SystemScroller.shared.overlayRoom)
                     .padding(.vertical, 8)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background {
@@ -183,8 +185,8 @@ private struct GalleryGrid: View {
                             .contentShape(Rectangle())
                             .onTapGesture { model.clearSelection() }
                     }
+                    .tracklessScroller()
                 }
-                .brutalScrollBar()
                 .background { LeadScroller(model: model, proxy: proxy) }
                 .onChange(of: columns, initial: true) {
                     model.columns = columns
