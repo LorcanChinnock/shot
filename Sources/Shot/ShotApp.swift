@@ -50,25 +50,9 @@ private struct ShotMenu: View {
         }
         Divider()
         Button("Open Gallery") { GalleryController.shared.show() }
-        Button("Open Save Folder") {
-            // Where captures land: the save folder, or Shot's temporary folder with saving off.
-            let folder = Preferences().captureFolder
-            do {
-                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            } catch {
-                Toast.error("Couldn't open the save folder: \(error.localizedDescription)")
-                return
-            }
-            if !NSWorkspace.shared.open(folder) {
-                Toast.error("Couldn't open the save folder")
-            }
-        }
         UpdateButton(updater: Updater.shared)
         Button("Settings…") { MainWindowController.showSettings() }
         .keyboardShortcut(",")
-        Button("User Guide") {
-            if let url = URL(string: "https://shot.lorcanchinnock.com/docs/") { NSWorkspace.shared.open(url) }
-        }
         Divider()
         Button("Quit Shot") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
@@ -79,11 +63,9 @@ private struct UpdateButton: View {
     let updater: Updater
 
     var body: some View {
+        // Only while a scheduled check has found an update: Sparkle's alert can open behind other windows.
         if let version = updater.pendingVersion {
             Button("Update to Shot \(version)…") { updater.checkForUpdates() }
-        } else {
-            Button("Check for Updates…") { updater.checkForUpdates() }
-                .disabled(!updater.canCheckForUpdates)
         }
     }
 }

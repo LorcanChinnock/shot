@@ -954,6 +954,10 @@ private struct AboutSettings: View {
                 Button("GitHub") { NSWorkspace.shared.open(Self.repository) }
                     .buttonStyle(BrutalButtonStyle(compact: true))
             }
+            SettingRow(title: "User Guide", subtitle: "How to use every part of Shot.") {
+                Button("Open") { NSWorkspace.shared.open(Self.guide) }
+                    .buttonStyle(BrutalButtonStyle(compact: true))
+            }
             SettingRow(title: "Acknowledgements", subtitle: "Shot comes with no warranty. It updates itself with Sparkle, under the MIT license.") {
                 Button("View") {
                     if let url = Bundle.main.url(forResource: "Acknowledgements", withExtension: "txt") {
@@ -974,6 +978,7 @@ private struct AboutSettings: View {
     }
 
     private static let repository = URL(string: "https://github.com/LorcanChinnock/shot")!
+    private static let guide = URL(string: "https://shot.lorcanchinnock.com/docs/")!
     private static let sponsors = URL(string: "https://github.com/sponsors/LorcanChinnock")!
 }
 
