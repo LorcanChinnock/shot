@@ -5,10 +5,12 @@ interface Props {
   title: string;
   description?: string;
   headings?: { depth: number; slug: string; text: string }[];
-  /** Links to every page of a multi-page document, such as the guide, shown in the sidebar above "On this page". */
-  pages?: { href: string; title: string; current?: boolean }[];
+  /** Links to every page of a multi-page document, such as the guide, shown in the sidebar above "On this page",
+   * under their group's name when they have one. */
+  pages?: { href: string; title: string; current?: boolean; group?: string; color?: string }[];
 }
 const { title, description, headings = [], pages = [] } = Astro.props;
+const pageGroups = [...new Set(pages.map((p) => p.group))].map((group) => ({ group, color: pages.find((p) => p.group === group)?.color, links: pages.filter((p) => p.group === group) }));
 const toc = headings.filter((h) => h.depth === 2);
 const side = toc.length > 0 || pages.length > 0 || Astro.slots.has('side');
 ---
@@ -22,7 +24,12 @@ const side = toc.length > 0 || pages.length > 0 || Astro.slots.has('side');
           <nav class="toc pages card solid" aria-label="Guide pages">
             <details>
               <summary>Guide pages</summary>
-              <ul>{pages.map((p) => <li><a href={p.href} aria-current={p.current ? 'page' : undefined}>{p.title}</a></li>)}</ul>
+              {pageGroups.map(({ group, color, links }) => (
+                <div class="group" style={color ? `--dot: var(--${color})` : undefined}>
+                  {group && <p class="group-name">{group}</p>}
+                  <ul>{links.map((p) => <li><a href={p.href} aria-current={p.current ? 'page' : undefined}>{p.title}</a></li>)}</ul>
+                </div>
+              ))}
             </details>
           </nav>
         )}
@@ -60,7 +67,10 @@ const side = toc.length > 0 || pages.length > 0 || Astro.slots.has('side');
   .toc a { display: block; padding: 3px 8px; margin-inline: -8px; border-radius: 6px; text-decoration: none; font-weight: 600; }
   .toc a:hover { background: rgb(18 18 26 / 0.07); }
   .toc a[aria-current] { background: var(--yellow); font-weight: 800; }
-  .pages a[aria-current] { background: var(--pink); }
+  .pages a[aria-current] { background: var(--dot, var(--pink)); }
+  .group + .group { margin-top: 12px; }
+  .group-name { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; font: 800 12px/1.4 var(--font); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .group-name::before { content: ""; width: 10px; height: 10px; border: 2px solid var(--ink); border-radius: 50%; background: var(--dot, var(--yellow)); }
   .to-top { position: fixed; right: 16px; bottom: 16px; z-index: 10; }
   .to-top[hidden] { display: none; }
   article { min-width: 0; }
