@@ -6,19 +6,39 @@ group: Reference
 
 ## Global
 
-Every capture and recording action, **Pick Colour**, **Copy Latest Capture's Path**, **Capture Previous Area**, **Copy Text** and **Focus Quick Access** can have a global shortcut and a [`shot://` URL](#url-scheme). Unless you turned it off in the [welcome window](#first-launch), Shot takes over the macOS screenshot keys and turns off the matching macOS shortcuts while it runs, once it has Screen Recording access. When Shot quits, macOS gets its keys back. If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧3 to ⌘⇧5** on again.
+These work in any app, while Shot is running:
 
 | Shortcut | Action |
 |---|---|
-| ⌘⇧3 | Capture the full screen |
-| ⌘⇧4 | Capture an area. Press Space to pick a window instead. |
-| ⌘⇧5 | Record an area. Press Space to pick a window, or Return for the full screen. |
+| <kbd>⌘⇧3</kbd> | Capture the full screen |
+| <kbd>⌘⇧4</kbd> | Capture an area. Press <kbd>Space</kbd> to pick a window instead. |
+| <kbd>⌘⇧5</kbd> | Record an area. Press <kbd>Space</kbd> to pick a window, or <kbd>Return</kbd> for the full screen. |
 
-While you set up a recording, the record shortcut starts it. While you record, it stops the recording. You can change any shortcut in **Settings › Shortcuts**: click a shortcut, then press the new keys, which must include ⌘, ⌥ or ⌃. Esc cancels and Delete clears it. Shot won't accept a shortcut that another action already uses, or ⌘Q, ⌘W, ⌘Tab, ⌘Space, ⌘H or ⌘M. **Restore Defaults** puts them all back, and turns **Use Shot for ⌘⇧3 to ⌘⇧5** back on.
+While you set up a recording, the record shortcut starts it. While you record, it stops the recording.
 
-To keep the macOS screenshot tool, turn off **Use Shot for ⌘⇧3 to ⌘⇧5** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with ⌃ in place of ⌘: ⌃⇧3, ⌃⇧4, ⌃⇧5, plus ⌃⇧W for a window.
+Shot takes these keys over from macOS while it runs, once it has Screen Recording access, unless you turned that off in the [welcome window](#follow-the-welcome-window). When Shot quits, macOS gets its keys back.
 
-Record Full Screen, Record Window, Pick Colour, Copy Latest Capture's Path, Capture Previous Area, Copy Text and Focus Quick Access have no shortcut until you set one. Pick Colour shows a loupe; click any pixel on screen to copy its hex, such as `#1E90FF`. Capture Window has none while Shot uses ⌘⇧3 to ⌘⇧5; press Space after ⌘⇧4 instead.
+## Change a shortcut
+
+1. Open **Settings › Shortcuts**.
+2. Click a shortcut, then press the new keys. They must include <kbd>⌘</kbd>, <kbd>⌥</kbd> or <kbd>⌃</kbd>.
+3. <kbd>Esc</kbd> cancels, and <kbd>Delete</kbd> clears the shortcut.
+
+Shot won't take a shortcut that another action already uses, or <kbd>⌘Q</kbd>, <kbd>⌘W</kbd>, <kbd>⌘Tab</kbd>, <kbd>⌘Space</kbd>, <kbd>⌘H</kbd> or <kbd>⌘M</kbd>. **Restore Defaults** puts them all back, and turns **Use Shot for ⌘⇧3 to ⌘⇧5** back on.
+
+## Keep the macOS screenshot tool
+
+Turn off **Use Shot for ⌘⇧3 to ⌘⇧5** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with <kbd>⌃</kbd> in place of <kbd>⌘</kbd>: <kbd>⌃⇧3</kbd>, <kbd>⌃⇧4</kbd> and <kbd>⌃⇧5</kbd>, plus <kbd>⌃⇧W</kbd> for a window.
+
+> [!NOTE]
+> If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧3 to ⌘⇧5** on again.
+
+## Actions you can give a shortcut
+
+**Record Full Screen**, **Record Window**, **Pick Colour**, **Copy Latest Capture's Path**, **Capture Previous Area**, **Copy Text** and **Focus Quick Access** have no shortcut until you set one. Every one of them also has a [`shot://` link](#url-scheme).
+
+- **Pick Colour** shows a loupe. Click any pixel on screen to copy its hex, such as `#1E90FF`.
+- **Capture Window** has no shortcut while Shot uses ⌘⇧3 to ⌘⇧5. Press <kbd>Space</kbd> after <kbd>⌘⇧4</kbd> instead.
 
 ## While selecting
 

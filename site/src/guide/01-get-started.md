@@ -60,7 +60,7 @@ Every other shortcut is on the [Keyboard shortcuts](#keyboard-shortcuts) page.
 - [Take a screenshot](#take-a-screenshot): areas, windows, a timer, and copying text off the screen.
 - [Record your screen](#record-your-screen), with your voice and camera if you like.
 - [Annotate a screenshot](#annotate-a-screenshot) with arrows, text and blur.
-- [Use Shot with AI agents](#using-shot-with-ai-agents) such as Claude Code, Codex or Cursor.
+- [Use Shot with AI agents](#use-shot-with-ai-agents) such as Claude Code, Codex or Cursor.
 
 > [!NOTE]
 > To see the welcome window again, open [`shot://welcome`](#url-scheme). It starts from your current settings, and closing it changes nothing. If Shot ever loses its screen recording permission, your next capture opens the window at that step.
