@@ -27,6 +27,8 @@ struct LayersPanel: View {
     static let width: CGFloat = 230
     nonisolated static let rowHeight: CGFloat = 30
     private static let space = "layers"
+    /// How far a drag scrolls the list each frame with the pointer at its edge.
+    private static let edgeScrollStep: CGFloat = 10
 
     let rows: [LayerRow]
     let frame: FrameRow?
@@ -54,6 +56,10 @@ struct LayersPanel: View {
     @State private var dragCancelled = false
     @State private var escapeMonitor: Any?
     @State private var listSize: CGSize = .zero
+    @State private var position = ScrollPosition()
+    @State private var scroll = ListScroll()
+    /// Scrolls the list while a drag is held near its top or bottom.
+    @State private var edgeScroll: Task<Void, Never>?
     /// Where a ⇧-click range starts.
     @State private var anchor: UUID?
     /// The layer whose name is being edited in place.
@@ -86,8 +92,13 @@ struct LayersPanel: View {
                 .padding(.trailing, BrutalScrollBar.gutter + BrutalScrollBar.panelInset)
                 .padding(.vertical, 4)
             }
-            .brutalScrollBar(inset: BrutalScrollBar.panelInset)
-            .scrollDisabled(drag != nil)
+            .brutalScrollBar(inset: BrutalScrollBar.panelInset, position: $position)
+            .onScrollGeometryChange(for: ListScroll.self) { geometry in
+                ListScroll(offset: geometry.contentOffset.y, content: geometry.contentSize.height, viewport: geometry.containerSize.height)
+            } action: { _, new in
+                scroll = new
+                drag?.scrolled = new.offset - (drag?.startOffset ?? 0)
+            }
             .coordinateSpace(.named(Self.space))
             .onGeometryChange(for: CGSize.self, of: \.size) { listSize = $0 }
             .focusable()
@@ -136,7 +147,7 @@ struct LayersPanel: View {
         .frame(width: Self.width)
         .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
         .glassCard()
-        .onDisappear(perform: stopWatchingEscape)
+        .onDisappear(perform: stopDragging)
     }
 
     private func rowView(_ row: LayerRow) -> some View {
@@ -253,7 +264,7 @@ struct LayersPanel: View {
             return CGFloat(rows.firstIndex { $0.id == id } ?? 0) * Self.rowHeight
         }
         if drag.moving.contains(id) {
-            return (CGFloat(drag.start) * Self.rowHeight + drag.translation)
+            return CGFloat(drag.start) * Self.rowHeight + drag.offset
         }
         let index = drag.rest.firstIndex(of: id) ?? 0
         return CGFloat(index < drag.gap ? index : index + 1) * Self.rowHeight
@@ -267,19 +278,22 @@ struct LayersPanel: View {
                 }
                 if drag == nil {
                     withAnimation(.snappy(duration: 0.2)) {
-                        drag = RowDrag(id: row.id, moving: movingIDs(grabbing: row.id), rows: rows)
+                        drag = RowDrag(id: row.id, moving: movingIDs(grabbing: row.id), rows: rows, startOffset: scroll.offset)
                     }
                     watchEscape()
                 }
-                drag?.isOutside = !CGRect(origin: .zero, size: listSize).contains(value.location)
+                // A row past the top or bottom still drops, so the list can scroll under it.
+                drag?.isOutside = !CGRect(origin: .zero, size: listSize).insetBy(dx: 0, dy: -Self.rowHeight).contains(value.location)
                 drag?.translation = value.translation.height
+                drag?.pointer = value.location.y
+                scrollAtEdges()
             }
             .onEnded { _ in
                 defer { dragCancelled = false }
                 guard !dragCancelled, let drag else {
                     return
                 }
-                stopWatchingEscape()
+                stopDragging()
                 withAnimation(.snappy(duration: 0.25)) {
                     if !drag.isOutside, let destination = drag.destination(in: rows) {
                         onMove(IndexSet(rows.indices.filter { drag.moving.contains(rows[$0].id) }), destination)
@@ -292,6 +306,31 @@ struct LayersPanel: View {
     /// The rows a drag moves: the selection when it includes the grabbed row, else just that row.
     private func movingIDs(grabbing id: UUID) -> Set<UUID> {
         selection.contains(id) ? selection.intersection(rows.map(\.id)) : [id]
+    }
+
+    /// Scrolls towards the edge the pointer is held near, faster the closer it gets, until it moves away or the list ends.
+    private func scrollAtEdges() {
+        guard edgeScroll == nil else {
+            return
+        }
+        edgeScroll = Task {
+            while !Task.isCancelled, let drag, !drag.isOutside {
+                let speed = EdgeScroll.speed(at: drag.pointer, length: listSize.height, zone: Self.rowHeight)
+                let next = EdgeScroll.offset(scroll.offset, by: speed * Self.edgeScrollStep, content: scroll.content, viewport: scroll.viewport)
+                guard next != scroll.offset else {
+                    break
+                }
+                position.scrollTo(y: next)
+                try? await Task.sleep(for: .milliseconds(16))
+            }
+            edgeScroll = nil
+        }
+    }
+
+    private func stopDragging() {
+        stopWatchingEscape()
+        edgeScroll?.cancel()
+        edgeScroll = nil
     }
 
     private func watchEscape() {
@@ -315,7 +354,7 @@ struct LayersPanel: View {
     }
 
     private func cancelDrag() {
-        stopWatchingEscape()
+        stopDragging()
         guard drag != nil else {
             return
         }
@@ -395,6 +434,12 @@ private struct EmptyLayers: View {
     }
 }
 
+private struct ListScroll: Equatable {
+    var offset: CGFloat = 0
+    var content: CGFloat = 0
+    var viewport: CGFloat = 0
+}
+
 /// A drag of one row, carrying the others in `moving` with it.
 private struct RowDrag {
     let id: UUID
@@ -403,20 +448,32 @@ private struct RowDrag {
     let rest: [UUID]
     /// The dragged row's place among `rest`, where it started.
     let start: Int
+    /// How far the list was scrolled when the drag began.
+    let startOffset: CGFloat
     var translation: CGFloat = 0
+    /// How far the list has scrolled since the drag began.
+    var scrolled: CGFloat = 0
+    /// The pointer's height in the visible list.
+    var pointer: CGFloat = 0
     var isOutside = false
 
-    init(id: UUID, moving: Set<UUID>, rows: [LayerRow]) {
+    init(id: UUID, moving: Set<UUID>, rows: [LayerRow], startOffset: CGFloat) {
         self.id = id
         self.moving = moving
+        self.startOffset = startOffset
         rest = rows.map(\.id).filter { !moving.contains($0) }
         let index = rows.firstIndex { $0.id == id } ?? 0
         start = rows[..<index].filter { !moving.contains($0.id) }.count
     }
 
+    /// How far the dragged row has moved through the list.
+    var offset: CGFloat {
+        translation + scrolled
+    }
+
     /// Where among `rest` the dragged rows land; where they started while the pointer is outside the list.
     var gap: Int {
-        isOutside ? start : min(max(start + Int((translation / LayersPanel.rowHeight).rounded()), 0), rest.count)
+        isOutside ? start : min(max(start + Int((offset / LayersPanel.rowHeight).rounded()), 0), rest.count)
     }
 
     /// The row in `rows` the dragged rows go before, or `nil` if they'd land where they are.

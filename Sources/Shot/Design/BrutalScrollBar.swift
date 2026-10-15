@@ -7,7 +7,21 @@ extension View {
     /// `BrutalScrollBar.gutter` of room at the trailing edge, plus `inset`, which moves the bar in from that edge. Apply it
     /// to the `ScrollView` itself, before other modifiers.
     func brutalScrollBar(inset: CGFloat = 0) -> some View {
-        modifier(BrutalScrollBarModifier(inset: inset))
+        modifier(OwnScrollPosition(inset: inset))
+    }
+
+    /// A `brutalScrollBar` that scrolls by `position`, for a view that also scrolls the `ScrollView` itself.
+    func brutalScrollBar(inset: CGFloat = 0, position: Binding<ScrollPosition>) -> some View {
+        modifier(BrutalScrollBarModifier(inset: inset, position: position))
+    }
+}
+
+private struct OwnScrollPosition: ViewModifier {
+    let inset: CGFloat
+    @State private var position = ScrollPosition()
+
+    func body(content: Content) -> some View {
+        content.modifier(BrutalScrollBarModifier(inset: inset, position: $position))
     }
 }
 
@@ -32,7 +46,7 @@ private struct ScrollMetrics: Equatable {
 
 private struct BrutalScrollBarModifier: ViewModifier {
     let inset: CGFloat
-    @State private var position = ScrollPosition()
+    @Binding var position: ScrollPosition
     @State private var metrics = ScrollMetrics()
 
     func body(content: Content) -> some View {
