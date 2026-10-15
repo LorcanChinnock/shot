@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.7.0-beta.52](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.51...v0.7.0-beta.52) (2026-10-14)
+
+
+### Features
+
+* **a11y:** expose editor annotations to VoiceOver ([#590](https://github.com/LorcanChinnock/shot/issues/590)) ([5cd5661](https://github.com/LorcanChinnock/shot/commit/5cd5661d49c04ee9b0572f06b90a4a67dd44d0f7))
+* **agents:** edit images from one JSON spec with shot edit and edit_image ([#579](https://github.com/LorcanChinnock/shot/issues/579)) ([ad98bdb](https://github.com/LorcanChinnock/shot/commit/ad98bdbcd721ca05e49c8ba432ec6e1be1158a8d))
+* **agents:** edit videos from one JSON spec with shot edit and edit_video ([#580](https://github.com/LorcanChinnock/shot/issues/580)) ([331cac4](https://github.com/LorcanChinnock/shot/commit/331cac4aff443fc94e9798991b2bdef787b18e0b))
+* **agents:** get_frames transcribes what's said in a recording, lined up with its frames ([#583](https://github.com/LorcanChinnock/shot/issues/583)) ([bb4a35f](https://github.com/LorcanChinnock/shot/commit/bb4a35f9ef84a17dcd2a42d1cbe78bd0a3b43ff1))
+* **agents:** let an agent ask you to pick what to capture with shot pick and ask_for_capture ([#584](https://github.com/LorcanChinnock/shot/issues/584)) ([c8b0363](https://github.com/LorcanChinnock/shot/commit/c8b03631419cf9a622c7325b5d3617bd8363d79f))
+* **agents:** save CLI and MCP edits as live projects with their origin ([#576](https://github.com/LorcanChinnock/shot/issues/576)) ([d0b4944](https://github.com/LorcanChinnock/shot/commit/d0b4944d3bbac376b4081b44cfad5b92fb24f858))
+* **editor:** crop placed images ([#582](https://github.com/LorcanChinnock/shot/issues/582)) ([08ad439](https://github.com/LorcanChinnock/shot/commit/08ad439a4e5a776dd518eb73a6afd3f43fd6467a))
+* **editor:** reopen every saved version with its layers live ([#574](https://github.com/LorcanChinnock/shot/issues/574)) ([753545e](https://github.com/LorcanChinnock/shot/commit/753545e89173a5ac90b8735417782f4e1900cdbb))
+* **gallery:** mark items an agent or the command line made ([#577](https://github.com/LorcanChinnock/shot/issues/577)) ([8e70482](https://github.com/LorcanChinnock/shot/commit/8e70482c25a9eb80712330595f2d1427432a9f72))
+* **gallery:** search captures by the text in them, and list_captures query ([#578](https://github.com/LorcanChinnock/shot/issues/578)) ([61e993e](https://github.com/LorcanChinnock/shot/commit/61e993e462b7f85c4475578bb159de7722e252f4))
+* **quick-access:** reach Quick Access cards from the keyboard ([#589](https://github.com/LorcanChinnock/shot/issues/589)) ([40c36bb](https://github.com/LorcanChinnock/shot/commit/40c36bb1c68a020564f39fd8625fe5fb16d94057))
+* **settings:** a Text size setting for Shot's own windows ([#587](https://github.com/LorcanChinnock/shot/issues/587)) ([a51bef5](https://github.com/LorcanChinnock/shot/commit/a51bef5aaff11a2ca728f05e797f9ca2016c53f9))
+* **video-editor:** crop the output frame and individual clips ([#585](https://github.com/LorcanChinnock/shot/issues/585)) ([99db1ce](https://github.com/LorcanChinnock/shot/commit/99db1ce0c2ee8729e5a487d74c6111059f128fb9))
+* **video-editor:** keep video edits as projects that reopen live ([#575](https://github.com/LorcanChinnock/shot/issues/575)) ([fa0f4b2](https://github.com/LorcanChinnock/shot/commit/fa0f4b2f531aa9a6ed0457f289a341607ef905af))
+
+
+### Bug Fixes
+
+* **a11y:** darken Layers panel row buttons and hidden rows under Increase Contrast ([#594](https://github.com/LorcanChinnock/shot/issues/594)) ([2c55d2f](https://github.com/LorcanChinnock/shot/commit/2c55d2f84ba2aa47122bc6ce5d22f36cfdde9e0f))
+* **a11y:** honour Increase Contrast in text and glass ([#586](https://github.com/LorcanChinnock/shot/issues/586)) ([0b383ee](https://github.com/LorcanChinnock/shot/commit/0b383ee1173b679237e4192585ad4b698ce23170))
+* **a11y:** strengthen dividers and inactive marks under Increase Contrast ([#591](https://github.com/LorcanChinnock/shot/issues/591)) ([377b01e](https://github.com/LorcanChinnock/shot/commit/377b01e9848c848e6c5ba91ea11089cc964fef5b))
+* **a11y:** undo a discarded recording with ⌘Z from any app ([#588](https://github.com/LorcanChinnock/shot/issues/588)) ([fa0280c](https://github.com/LorcanChinnock/shot/commit/fa0280c4b8e69c4a66da9057b09ed73564b1f816))
+* **editor:** give the Style popover the arrow keys back after the colour editor closes ([#581](https://github.com/LorcanChinnock/shot/issues/581)) ([21a6dd6](https://github.com/LorcanChinnock/shot/commit/21a6dd67ac724756c7ecda3db7e5c2189e6e8d58))
+
+
+### Performance Improvements
+
+* **gallery:** drive the gallery in perf.sh and time search and filter changes ([#572](https://github.com/LorcanChinnock/shot/issues/572)) ([2c81bc6](https://github.com/LorcanChinnock/shot/commit/2c81bc695b6810bc16a0ee46b147e1becaf0d351))
+
 ## [0.7.0-beta.51](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.50...v0.7.0-beta.51) (2026-10-13)
 
 
