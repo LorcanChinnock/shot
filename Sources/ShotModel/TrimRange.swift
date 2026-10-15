@@ -113,6 +113,16 @@ public struct TrimTimeline: Sendable {
         return toStart <= toEnd ? .start : .end
     }
 
+    /// The middle of `handle`, where a keyboard focus ring centres on it.
+    public func centreX(of handle: TrimHandle, range: TrimRange) -> CGFloat {
+        switch handle {
+        case .start:
+            x(for: range.start) + Self.handleWidth / 2
+        case .end:
+            x(for: range.end) + Self.handleWidth / 2
+        }
+    }
+
     private func distance(from x: CGFloat, to span: ClosedRange<CGFloat>) -> CGFloat {
         x < span.lowerBound ? span.lowerBound - x : max(0, x - span.upperBound)
     }
