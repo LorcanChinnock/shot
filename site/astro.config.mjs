@@ -67,7 +67,7 @@ export default defineConfig({
     shikiConfig: { theme: 'github-light' },
   },
   vite: {
-    // The user guide, CHANGELOG.md and docs/media live outside the site folder.
+    // CHANGELOG.md and docs/media live outside the site folder.
     server: { fs: { allow: ['..'] } },
     // Keep scripts in files, so the Content-Security-Policy in public/_headers can stay at script-src 'self'.
     build: { assetsInlineLimit: 0 },

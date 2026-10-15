@@ -164,7 +164,7 @@ Judge against the app's own design system first; it has a deliberate style (see 
 
 ## 7. Functional QA (does it do what it says?)
 
-- [ ] Every control does what its label and tooltip say, in every state it's enabled; every shortcut in `docs/usage.md` works.
+- [ ] Every control does what its label and tooltip say, in every state it's enabled; every shortcut in the user guide (`site/src/guide/`) works.
 - [ ] **Edit operations** (split, delete, move, trim, cut, import, annotate, keyframe, transform) change the preview *and*
       the timeline and the output the same way. After each, undo and redo restore exactly the previous state, repeatedly, and
       to the very start and end of the history.
