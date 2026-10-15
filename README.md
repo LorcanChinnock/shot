@@ -57,7 +57,7 @@
 
 ### Works with AI agents
 
-Circle the bug, copy, and paste it into your agent: your arrows and notes show it exactly where to look. An agent can also find your captures, read the text in them and what you said while recording, hide secrets in them, edit them with every layer still live, and screenshot or record a window such as the Simulator. See [Using Shot with AI agents](https://shot.lorcanchinnock.com/docs/using-shot-with-ai-agents/).
+Circle the bug, copy, and paste it into your agent: your arrows and notes show it exactly where to look. An agent can also find your captures, read the text in them and what you said while recording, hide secrets in them, edit them with every layer still live, and screenshot or record a window such as the Simulator. See [Use Shot with AI agents](https://shot.lorcanchinnock.com/docs/use-shot-with-ai-agents/).
 
 <img src="docs/media/agents-settings.png" width="720" alt="Settings › Agents with Hand captures to agents and Let agents capture and record turned on, the shot command installed, and the MCP setup commands for Claude Code, Cursor and Codex, each with a Copy button">
 
@@ -96,7 +96,7 @@ The [user guide](https://shot.lorcanchinnock.com/docs/) covers every feature, sh
 - [Get started](https://shot.lorcanchinnock.com/docs/get-started/) and [Take a screenshot](https://shot.lorcanchinnock.com/docs/take-a-screenshot/)
 - [Annotate a screenshot](https://shot.lorcanchinnock.com/docs/annotate-a-screenshot/) and [style it](https://shot.lorcanchinnock.com/docs/style-a-screenshot/)
 - [Record your screen](https://shot.lorcanchinnock.com/docs/record-your-screen/), [edit the recording](https://shot.lorcanchinnock.com/docs/edit-a-recording/) and [export a GIF](https://shot.lorcanchinnock.com/docs/export-a-video-or-gif/)
-- [Using Shot with AI agents](https://shot.lorcanchinnock.com/docs/using-shot-with-ai-agents/), including the MCP server and the `shot` command
+- [Use Shot with AI agents](https://shot.lorcanchinnock.com/docs/use-shot-with-ai-agents/), [the MCP server](https://shot.lorcanchinnock.com/docs/the-mcp-server/) and [the `shot` command](https://shot.lorcanchinnock.com/docs/the-shot-command-line/)
 - [The `shot://` URL scheme](https://shot.lorcanchinnock.com/docs/url-scheme/), for scripts and launchers
 - [Troubleshooting](https://shot.lorcanchinnock.com/docs/troubleshooting/)
 
