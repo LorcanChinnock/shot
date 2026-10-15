@@ -16,7 +16,7 @@ Hover the card to show its buttons:
 |---|---|
 | **Copy** | Copies the capture again. |
 | **Save As…** | Saves a copy somewhere else. |
-| **Annotate** | Opens a screenshot in the [annotation editor](#annotation-editor). For a recording, this is **Edit**, which opens the [video editor](#video-editor). |
+| **Annotate** | Opens a screenshot in the [annotation editor](#annotate-a-screenshot). For a recording, this is **Edit**, which opens the [video editor](#edit-a-recording). |
 | **Export GIF** | Turns a recording into a GIF, at the frame rate and width you last chose in the video editor. It keeps the first 60 seconds. |
 | **Show in Finder** | Shows the file in its folder. |
 | **Close** | Closes the card. |

@@ -56,7 +56,7 @@ Record Full Screen, Record Window, Pick Colour, Copy Latest Capture's Path, Capt
 
 | Key | Action |
 |---|---|
-| V H A L R D T S M F B N C | Choose a tool (see [Tools](#tools)) |
+| V H A L R D T S M F B N C | Choose a tool (see [Pick a tool](#pick-a-tool)) |
 | Shift / Option while drawing | Keep it square or at 45° / draw from the centre |
 | Shift / Option / Space while dragging a handle | Keep proportions or 45° (free on an image) / resize from the centre / move the shape |
 | Delete | Delete the selection |

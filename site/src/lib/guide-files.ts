@@ -17,8 +17,10 @@ export interface GuideFile {
   title: string;
   summary: string;
   group: string;
-  /** Old heading ids and page addresses, such as a page's previous title, that should still land here. */
+  /** A renamed page's old slugs, which redirect here and still work as /docs/#… links. */
   aliases: string[];
+  /** Section ids from the old single-page guide whose content now lives here, so /docs/#… links to them still land here. */
+  anchors: string[];
   markdown: string;
 }
 
@@ -32,10 +34,10 @@ export function readGuide(siteDir = process.cwd()): GuideFile[] {
     .sort()
     .map((name) => {
       const { frontmatter, content } = parseFrontmatter(readFileSync(resolve(dir, name), 'utf8'));
-      const { title, summary, group, aliases = [] } = frontmatter as Partial<GuideFile>;
+      const { title, summary, group, aliases = [], anchors = [] } = frontmatter as Partial<GuideFile>;
       if (!title || !summary || !groups.some((g) => g.name === group)) {
         throw new Error(`src/guide/${name} needs a title, a summary and one of these groups: ${groups.map((g) => g.name).join(', ')}`);
       }
-      return { slug: slugOf(title), title, summary, group: group!, aliases, markdown: content };
+      return { slug: slugOf(title), title, summary, group: group!, aliases, anchors, markdown: content };
     });
 }

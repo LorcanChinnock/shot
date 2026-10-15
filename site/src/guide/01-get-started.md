@@ -41,7 +41,7 @@ A short welcome window walks you through three steps. You can close it at any po
 
 ## Where to find Shot
 
-Shot lives in the menu bar, not the Dock. Click its icon for every capture and recording action, your [gallery](#gallery), the save folder and this guide.
+Shot lives in the menu bar, not the Dock. Click its icon for every capture and recording action, your [gallery](#find-your-captures), the save folder and this guide.
 
 After each capture, Shot saves it, copies it, and shows a small [Quick Access](#quick-access) card in the corner of the screen. Paste it anywhere straight away, or hover the card to annotate it.
 
@@ -59,7 +59,7 @@ Every other shortcut is on the [Keyboard shortcuts](#keyboard-shortcuts) page.
 
 - [Take a screenshot](#take-a-screenshot): areas, windows, a timer, and copying text off the screen.
 - [Record your screen](#record-your-screen), with your voice and camera if you like.
-- [Annotate a screenshot](#annotation-editor) with arrows, text and blur.
+- [Annotate a screenshot](#annotate-a-screenshot) with arrows, text and blur.
 - [Use Shot with AI agents](#using-shot-with-ai-agents) such as Claude Code, Codex or Cursor.
 
 > [!NOTE]

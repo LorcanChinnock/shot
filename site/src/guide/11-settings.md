@@ -10,7 +10,7 @@ Open Settings from the menu bar icon, or with ⌘, while a Shot window is in fro
 
 | Section | What you can change |
 |---|---|
-| Gallery | The [gallery](#gallery) |
+| Gallery | The [gallery](#find-your-captures) |
 | General | Open Shot at login, the capture sound, hiding Shot from captures, cropping the menu bar off captures of the full screen, the text size of Shot's own windows (macOS's Accessibility › Text size doesn't reach other apps), the save folder, the file name, PNG or JPEG, and scaling Retina captures to 1× |
 | Capture | What happens after a capture (save, copy, Quick Access, or the editor), the magnifier, the crosshair, the cursor, and window shadows |
 | Quick Access | The screen corner and how long cards stay |

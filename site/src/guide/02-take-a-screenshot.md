@@ -57,7 +57,7 @@ Copy Text reads the text in part of the screen and copies it, without saving a s
 2. Drag across the text, or press <kbd>Space</kbd> and click a window.
 3. Paste the text wherever you like.
 
-To copy the text from a screenshot you already took, right-click its Quick Access card or its tile in the [gallery](#gallery) and choose **Copy Text**.
+To copy the text from a screenshot you already took, right-click its Quick Access card or its tile in the [gallery](#find-your-captures) and choose **Copy Text**.
 
 ## Without a mouse
 
@@ -71,7 +71,7 @@ To pick a window, press <kbd>Space</kbd>, step through the windows with <kbd>Tab
 
 ## Choose what happens after a capture
 
-In **Settings › Capture**, choose whether Shot saves each screenshot, copies it and shows Quick Access, or opens it in the [annotation editor](#annotation-editor) straight away.
+In **Settings › Capture**, choose whether Shot saves each screenshot, copies it and shows Quick Access, or opens it in the [annotation editor](#annotate-a-screenshot) straight away.
 
 > [!NOTE]
 > Every action here also has a [`shot://` link](#url-scheme), such as `shot://capture-timer?seconds=5`, `shot://capture-previous` and `shot://copy-text`, for scripts and launchers.

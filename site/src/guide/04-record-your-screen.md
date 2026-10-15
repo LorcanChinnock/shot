@@ -3,6 +3,7 @@ title: Record your screen
 summary: "Record an area, a window or the whole screen, with your voice, the sound from your Mac and your camera."
 group: Capture
 aliases: [screen-recording]
+anchors: [camera-bubble]
 ---
 
 ![The recording controls: elapsed time, Pause, the camera bubble, discard and Stop](../../../docs/media/recording-controls.png)
@@ -76,7 +77,7 @@ Also in **Settings › Recording**:
 
 ## When you stop
 
-Shot saves the recording to your save folder, copies it to the clipboard, and shows it in [Quick Access](#quick-access), where **Edit** opens it in the [video editor](#video-editor). It never opens the editor by itself.
+Shot saves the recording to your save folder, copies it to the clipboard, and shows it in [Quick Access](#quick-access), where **Edit** opens it in the [video editor](#edit-a-recording). It never opens the editor by itself.
 
 To stop copying recordings, turn off **Copy to clipboard** in **Settings › Recording**. To skip the card, turn off **Show Quick Access** in **Settings › Capture**.
 
