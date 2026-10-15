@@ -1,6 +1,6 @@
 ---
 title: The MCP server
-summary: "Connect Claude Code, Cursor or Codex to Shot, so they can read, edit and take captures themselves."
+summary: "Connect Claude, Claude Code, Cursor or another assistant to Shot, so it can read, edit and take captures itself."
 group: AI agents
 ---
 
@@ -8,24 +8,40 @@ Shot comes with a small [MCP](https://modelcontextprotocol.io) server, so you ca
 
 ## Add it to your agent
 
-The easiest way: open **Settings › Agents** and copy the setup command for your agent. It shows the right path for your copy of Shot, for each agent it finds on your Mac, plus a JSON config any other app can use. If it finds none, it shows them all.
+1. Open **Settings › Agents**. The **MCP server** card lists each assistant and agent it finds on your Mac, plus a setup any other app can use. If it finds none, it lists them all.
+2. Click **Install** beside yours. The row then shows **Installed**. If it shows **Update**, the setup points at a copy of Shot that has moved, so click it to fix that.
+3. Restart the app if Shot asks you to. Claude only reads its setup when it opens.
+
+How Install adds Shot depends on the app:
+
+| App | What Install does |
+|---|---|
+| Claude, Windsurf | Adds Shot to the app's config file, after saving a copy of the file beside it with `.bak` on the end. If the file isn't valid JSON, Shot leaves it alone. |
+| LM Studio, Raycast, Cursor, VS Code | Opens the app, which asks you to confirm. |
+| Claude Code, Codex, Gemini CLI | Runs the agent's own command, such as `claude mcp add`. If Shot can't find the command, copy it and run it in Terminal. |
+| Zed, any other app | Only **Copy**. Paste the setup into the app's settings. |
+
+> [!NOTE]
+> ChatGPT isn't on the list. It only connects to MCP servers on the internet, and Shot's runs on your Mac. You can still paste screenshots into it.
 
 Or set it up by hand:
 
 - **Claude Code:** `claude mcp add -s user shot -- /Applications/Shot.app/Contents/MacOS/shot-cli mcp`. Without `-s user`, Claude Code adds the server only to the folder you run the command in.
-- **Cursor** and other apps that take a JSON config:
+- **Claude, Cursor** and other apps that take a JSON config:
 
   ```json
   { "mcpServers": { "shot": { "command": "/Applications/Shot.app/Contents/MacOS/shot-cli", "args": ["mcp"] } } }
   ```
 
-- **Codex**, in `~/.codex/config.toml`:
+- **Codex:** `codex mcp add shot -- /Applications/Shot.app/Contents/MacOS/shot-cli mcp`, or in `~/.codex/config.toml`:
 
   ```toml
   [mcp_servers.shot]
   command = "/Applications/Shot.app/Contents/MacOS/shot-cli"
   args = ["mcp"]
   ```
+
+- **Gemini CLI:** `gemini mcp add -s user shot /Applications/Shot.app/Contents/MacOS/shot-cli mcp`.
 
 ## What it needs
 

@@ -595,6 +595,9 @@
         }
       }
     },
+    "%@ isn't valid JSON, so Shot left it alone. Copy the setup and add it there instead." : {
+
+    },
     "%@ of %@" : {
       "localizations" : {
         "de" : {
@@ -2608,6 +2611,19 @@
         }
       }
     },
+    "Added Shot to %@." : {
+
+    },
+    "Added Shot to %@. Restart %@ to use it." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Added Shot to %1$@. Restart %2$@ to use it."
+          }
+        }
+      }
+    },
     "Adjust before recording" : {
       "localizations" : {
         "de" : {
@@ -3348,7 +3364,7 @@
         }
       }
     },
-    "Any app with a JSON config" : {
+    "Any other app" : {
 
     },
     "Applies to every spotlight in the image." : {
@@ -6036,57 +6052,11 @@
         }
       }
     },
-    "Claude Code, for every project" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Claude Code, für alle Projekte"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Claude Code, para todos los proyectos"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Claude Code, pour tous les projets"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Claude Code, per tutti i progetti"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Claude Code（すべてのプロジェクト）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Claude Code, 모든 프로젝트용"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Claude Code, para todos os projetos"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Claude Code，用于所有项目"
-          }
-        }
-      }
+    "Claude" : {
+
+    },
+    "Claude Code" : {
+
     },
     "Clear Keyframes" : {
       "localizations" : {
@@ -6816,57 +6786,8 @@
         }
       }
     },
-    "Codex, in ~/.codex/config.toml" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Codex, in ~/.codex/config.toml"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Codex, en ~/.codex/config.toml"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Codex, dans ~/.codex/config.toml"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Codex, in ~/.codex/config.toml"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Codex（~/.codex/config.toml）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Codex, ~/.codex/config.toml에 추가"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Codex, em ~/.codex/config.toml"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Codex，在 ~/.codex/config.toml 中"
-          }
-        }
-      }
+    "Codex" : {
+
     },
     "Colour" : {
       "localizations" : {
@@ -8166,6 +8087,16 @@
         }
       }
     },
+    "Couldn't add Shot to %@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Couldn't add Shot to %1$@: %2$@"
+          }
+        }
+      }
+    },
     "Couldn't add the audio to its file" : {
       "localizations" : {
         "de" : {
@@ -8744,6 +8675,9 @@
         }
       }
     },
+    "Couldn't find the %@ command. Copy the command and run it in Terminal instead." : {
+
+    },
     "Couldn't finish writing the GIF" : {
       "localizations" : {
         "de" : {
@@ -9050,6 +8984,9 @@
           }
         }
       }
+    },
+    "Couldn't open %@. Copy the setup and add it there instead." : {
+
     },
     "Couldn't paste: %@" : {
       "localizations" : {
@@ -10014,57 +9951,8 @@
         }
       }
     },
-    "Cursor, or any app with a JSON config" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cursor oder jede App mit JSON-Konfiguration"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cursor o cualquier app con configuración JSON"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cursor, ou toute app avec une config JSON"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cursor o qualsiasi app con una configurazione JSON"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cursor、またはJSON設定を使うアプリ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cursor 또는 JSON 설정을 쓰는 모든 앱"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cursor, ou qualquer app com configuração JSON"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cursor，或任何使用 JSON 配置的 App"
-          }
-        }
-      }
+    "Cursor" : {
+
     },
     "Custom background colour" : {
       "localizations" : {
@@ -14990,6 +14878,9 @@
         }
       }
     },
+    "Gemini CLI" : {
+
+    },
     "General" : {
       "localizations" : {
         "de" : {
@@ -15614,57 +15505,8 @@
         }
       }
     },
-    "Hand captures to AI coding tools." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aufnahmen an KI-Coding-Tools übergeben."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pasa capturas a herramientas de programación con IA."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Transmettez vos captures aux outils de code IA."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Passa le catture agli strumenti di programmazione IA."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "キャプチャをAIコーディングツールに渡します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "캡처를 AI 코딩 도구에 넘깁니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Envie capturas para ferramentas de IA para código."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "将捕捉内容交给 AI 编程工具。"
-          }
-        }
-      }
+    "Hand captures to AI assistants and coding tools." : {
+
     },
     "Hand captures to agents" : {
       "localizations" : {
@@ -17286,6 +17128,9 @@
           }
         }
       }
+    },
+    "LM Studio" : {
+
     },
     "Large" : {
       "localizations" : {
@@ -23190,6 +23035,9 @@
           }
         }
       }
+    },
+    "Raycast" : {
+
     },
     "Record" : {
       "localizations" : {
@@ -33019,6 +32867,9 @@
         }
       }
     },
+    "Update" : {
+
+    },
     "Update to Shot %@…" : {
       "localizations" : {
         "de" : {
@@ -33437,6 +33288,9 @@
           }
         }
       }
+    },
+    "VS Code" : {
+
     },
     "Version, updates, permissions and reset." : {
       "localizations" : {
@@ -34013,6 +33867,9 @@
         }
       }
     },
+    "Windsurf" : {
+
+    },
     "Write the edit as a new video next to the original and copy it (⌘S)" : {
       "localizations" : {
         "de" : {
@@ -34376,6 +34233,9 @@
           }
         }
       }
+    },
+    "Zed" : {
+
     },
     "Zoom" : {
       "localizations" : {
@@ -35107,6 +34967,9 @@
           }
         }
       }
+    },
+    "it stopped with code %d." : {
+
     },
     "macOS asks for permission on first use. Mute it from the recording controls." : {
       "localizations" : {

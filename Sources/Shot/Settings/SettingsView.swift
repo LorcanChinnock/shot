@@ -28,7 +28,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .capture: String(localized: "What happens when you take a shot.")
         case .quickAccess: String(localized: "The floating card after each capture.")
         case .recording: String(localized: "Screen recording video and audio.")
-        case .agents: String(localized: "Hand captures to AI coding tools.")
+        case .agents: String(localized: "Hand captures to AI assistants and coding tools.")
         case .shortcuts: String(localized: "Global hotkeys for every action.")
         case .about: String(localized: "Version, updates, permissions and reset.")
         }
@@ -608,10 +608,14 @@ private struct AgentSettings: View {
     @Setting(PreferenceKey.agentHandoff) private var handoff: Bool
     @Setting(PreferenceKey.agentCapture) private var capture: Bool
     @State private var agents = AgentClient.shown(installed: AgentClient.installed(home: NSHomeDirectory()))
+    @State private var statuses: [AgentClient: AgentClient.Status] = [:]
+    @State private var installing: AgentClient?
     private let color = SettingsSection.agents.color
 
     /// The MCP server inside this app's bundle, so a dev build names its own.
     private static let server = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/shot-cli").path
+    /// The name agents list the server under: `shot-dev` for a dev build, so installing one never replaces the release.
+    private static let name = CommandLink.name(bundleID: Bundle.main.bundleIdentifier)
 
     var body: some View {
         SettingsCard(title: "Hand-off", symbol: "arrow.right.doc.on.clipboard") {
@@ -635,24 +639,66 @@ private struct AgentSettings: View {
         SettingsCard(title: "MCP server", symbol: "terminal.fill") {
             CardNote(text: "Lets agents read your captures and save edited copies beside them. Your originals never change. What an agent reads goes to its model provider, so blur private details first.")
             ForEach(agents, id: \.self) { agent in
-                CommandRow(title: title(agent), command: agent.setup(server: Self.server), divider: agent != agents.last)
+                CommandRow(title: title(agent), command: agent.setup(server: Self.server, name: Self.name), divider: agent != agents.last) {
+                    installButton(agent)
+                }
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in findAgents() }
+        .task { await findAgents() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            Task { await findAgents() }
+        }
     }
 
     private func title(_ agent: AgentClient) -> LocalizedStringResource {
         switch agent {
-        case .claudeCode: "Claude Code, for every project"
-        case .cursor: "Cursor, or any app with a JSON config"
-        case .codex: "Codex, in ~/.codex/config.toml"
-        case .json: "Any app with a JSON config"
+        case .claude: "Claude"
+        case .lmStudio: "LM Studio"
+        case .raycast: "Raycast"
+        case .claudeCode: "Claude Code"
+        case .codex: "Codex"
+        case .cursor: "Cursor"
+        case .vsCode: "VS Code"
+        case .gemini: "Gemini CLI"
+        case .windsurf: "Windsurf"
+        case .zed: "Zed"
+        case .json: "Any other app"
         }
     }
 
-    /// Checks again each time Shot comes forward, so an agent installed while Settings is open shows up.
-    private func findAgents() {
-        agents = AgentClient.shown(installed: AgentClient.installed(home: NSHomeDirectory()))
+    /// Install, or Update when the server points at another copy of Shot, or a chip once it's set up. Nothing for the
+    /// setups Shot can only copy.
+    @ViewBuilder
+    private func installButton(_ agent: AgentClient) -> some View {
+        if agent.install(server: Self.server, name: Self.name) != nil {
+            switch statuses[agent] ?? .unknown {
+            case .installed:
+                BrutalChip(text: "INSTALLED", color: Brutal.mint)
+            case let status:
+                Button(status == .stale ? "Update" : "Install") {
+                    installing = agent
+                    Task {
+                        await AgentInstaller.install(agent, title: String(localized: title(agent)), server: Self.server, name: Self.name, replacing: status == .stale)
+                        installing = nil
+                        await findAgents()
+                    }
+                }
+                .buttonStyle(BrutalButtonStyle(compact: true))
+                .disabled(installing != nil)
+            }
+        }
+    }
+
+    /// Checks again each time Shot comes forward, so an agent installed, or set up, while Settings is open shows up.
+    /// Reads the configs off the main thread, since Claude Code's can run to megabytes.
+    private func findAgents() async {
+        let (found, statuses) = await Task.detached {
+            let home = NSHomeDirectory()
+            let found = AgentClient.shown(installed: AgentClient.installed(home: home))
+            return (found, Dictionary(uniqueKeysWithValues: found.map { ($0, $0.status(server: Self.server, name: Self.name, home: home)) }))
+        }.value
+        agents = found
+        self.statuses = statuses
     }
 }
 
@@ -750,17 +796,19 @@ private struct CommandLinkRow: View {
     }
 }
 
-/// A command to paste into a terminal or a config file, with a button that copies it.
-private struct CommandRow: View {
+/// A command to paste into a terminal or a config file, with a button that copies it, and `accessory` before that.
+private struct CommandRow<Accessory: View>: View {
     let title: LocalizedStringResource
     let command: String
     var divider = true
+    @ViewBuilder var accessory: Accessory
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 12) {
                 Text(title).font(Brutal.label).foregroundStyle(Brutal.ink)
                 Spacer(minLength: 8)
+                accessory
                 Button("Copy") {
                     Clipboard.copy(string: command)
                     Toast.show("Copied")
