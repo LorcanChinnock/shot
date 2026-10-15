@@ -100,6 +100,7 @@ struct GalleryRootView: View {
             emptyState
         } else {
             GalleryGrid(model: model)
+                .padding(.trailing, -BrutalScrollBar.windowOutset)
         }
     }
 
@@ -144,7 +145,7 @@ private struct GalleryGrid: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let available = geometry.size.width - Brutal.groupInset * 2 - BrutalScrollBar.width
+            let available = geometry.size.width - Brutal.groupInset - BrutalScrollBar.gutter
             let columns = max(1, Int((available + Self.spacing) / (model.tileSize + Self.spacing)))
             let cell = (available - Self.spacing * CGFloat(columns - 1)) / CGFloat(columns)
             ScrollViewReader { proxy in
@@ -174,7 +175,7 @@ private struct GalleryGrid: View {
                         }
                     }
                     .padding(.leading, Brutal.groupInset)
-                    .padding(.trailing, Brutal.groupInset + BrutalScrollBar.width)
+                    .padding(.trailing, BrutalScrollBar.gutter)
                     .padding(.vertical, 8)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background {
