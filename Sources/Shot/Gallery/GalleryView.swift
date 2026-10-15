@@ -139,10 +139,24 @@ struct GalleryRootView: View {
 }
 
 /// The grid is its own view, so a selection change re-evaluates it and the tiles that changed, not the header or footer.
+/// It builds only the headers and tiles near the view, at the places `GalleryGridLayout` gives them. A lazy grid
+/// estimates the height of rows it hasn't built, and as that estimate changes the scroll bar jumps.
 private struct GalleryGrid: View {
-    private static let spacing: CGFloat = 20
+    static let spacing: CGFloat = 20
+    /// Room above the first section and below the last.
+    static let margin: CGFloat = 8
+    /// How far past the view headers and tiles are built. The built range moves in steps this size, so scrolling
+    /// re-evaluates the grid only every so often.
+    private static let overscan: CGFloat = 400
 
     let model: GalleryModel
+    @State private var position = ScrollPosition()
+    /// The part of the layout that's built, in steps of `overscan`.
+    @State private var built: Range<CGFloat> = 0..<(overscan * 3)
+    /// A tile's height below its thumbnail, and a header's height. They start at typical values, and the first tile
+    /// and header built correct them.
+    @State private var captionHeight: CGFloat = 26
+    @State private var headerHeight: CGFloat = 20
 
     var body: some View {
         GeometryReader { geometry in
@@ -150,50 +164,86 @@ private struct GalleryGrid: View {
             let available = geometry.size.width - Brutal.groupInset * 2 - SystemScroller.shared.width
             let columns = max(1, Int((available + Self.spacing) / (model.tileSize + Self.spacing)))
             let cell = (available - Self.spacing * CGFloat(columns - 1)) / CGFloat(columns)
-            ScrollViewReader { proxy in
-                ScrollView {
-                    // One lazy grid, so scrolling can reach a tile that hasn't been built yet.
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Self.spacing, alignment: .top), count: columns), alignment: .leading, spacing: Self.spacing) {
-                        ForEach(model.sections) { section in
-                            Section {
-                                ForEach(section.items) { item in
-                                    GalleryTile(item: item, model: model, slot: model.thumbnails.slot(for: item), width: cell,
-                                                selected: model.selection.contains(item.url), selectionActive: !model.selection.isEmpty,
-                                                origin: model.origins[item.url])
-                                        .equatable()
-                                        .id(item.url)
-                                }
-                            } header: {
-                                if !section.title.isEmpty {
-                                    HStack(spacing: 8) {
-                                        Text(section.title)
-                                            .font(Brutal.title(15))
-                                            .foregroundStyle(Brutal.ink)
-                                        BrutalChip(text: "\(section.items.count)")
-                                        Spacer()
-                                    }
-                                }
+            let layout = GalleryGridLayout(sectionSizes: model.sections.map(\.items.count), titled: model.sections.contains { !$0.title.isEmpty },
+                                           columns: columns, rowHeight: GalleryTile.thumbnailHeight(width: cell) + captionHeight,
+                                           headerHeight: headerHeight, spacing: Self.spacing)
+            ScrollView {
+                ZStack(alignment: .topLeading) {
+                    ForEach(placed(layout.blocks(in: built), cell: cell)) { place in
+                        switch place {
+                        case let .header(section, top):
+                            HStack(spacing: 8) {
+                                Text(section.title)
+                                    .font(Brutal.title(15))
+                                    .foregroundStyle(Brutal.ink)
+                                BrutalChip(text: "\(section.items.count)")
+                                Spacer()
                             }
+                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { headerHeight = $0 }
+                            .offset(y: top)
+                        case let .tile(item, x, y):
+                            GalleryTile(item: item, model: model, slot: model.thumbnails.slot(for: item), width: cell,
+                                        selected: model.selection.contains(item.url), selectionActive: !model.selection.isEmpty,
+                                        origin: model.origins[item.url])
+                                .equatable()
+                                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { captionHeight = $0 - GalleryTile.thumbnailHeight(width: cell) }
+                                .offset(x: x, y: y)
                         }
                     }
-                    .padding(.leading, Brutal.groupInset)
-                    .padding(.trailing, Brutal.groupInset + SystemScroller.shared.overlayRoom)
-                    .padding(.vertical, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background {
-                        Color.clear
-                            .contentShape(Rectangle())
-                            .onTapGesture { model.clearSelection() }
-                    }
-                    .tracklessScroller()
                 }
-                .background { LeadScroller(model: model, proxy: proxy) }
-                .onChange(of: columns, initial: true) {
-                    model.columns = columns
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .frame(height: layout.height, alignment: .top)
+                .padding(.leading, Brutal.groupInset)
+                .padding(.trailing, Brutal.groupInset + SystemScroller.shared.overlayRoom)
+                .padding(.vertical, Self.margin)
+                .background {
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .onTapGesture { model.clearSelection() }
                 }
+                .tracklessScroller()
+            }
+            .scrollPosition($position)
+            .onScrollGeometryChange(for: CGRect.self) { $0.visibleRect } action: { _, visible in
+                model.viewport = visible
+                let lower = ((visible.minY - Self.margin - Self.overscan) / Self.overscan).rounded(.down) * Self.overscan
+                let upper = ((visible.maxY - Self.margin + Self.overscan) / Self.overscan).rounded(.up) * Self.overscan
+                if built != lower..<upper {
+                    built = lower..<upper
+                }
+            }
+            .background { LeadScroller(model: model, layout: layout, position: $position) }
+            .onChange(of: columns, initial: true) {
+                model.columns = columns
             }
         }
         .clipped()
+    }
+
+    /// The headers and tiles of `blocks`, each where it goes in the grid.
+    private func placed(_ blocks: [GalleryGridLayout.Block], cell: CGFloat) -> [Placed] {
+        blocks.flatMap { block -> [Placed] in
+            let section = model.sections[block.section]
+            guard let items = block.items else {
+                return [.header(section, top: block.top)]
+            }
+            return items.map { index in
+                .tile(section.items[index], x: CGFloat(index - items.lowerBound) * (cell + Self.spacing), y: block.top)
+            }
+        }
+    }
+
+    private enum Placed: Identifiable {
+        case header(GallerySection, top: CGFloat)
+        case tile(GalleryItem, x: CGFloat, y: CGFloat)
+
+        /// A tile keeps its identity, and so its hover and loaded thumbnail, when a new capture moves it to another row.
+        var id: String {
+            switch self {
+            case let .header(section, _): "header " + section.title
+            case let .tile(item, _, _): item.url.path
+            }
+        }
     }
 }
 
@@ -256,12 +306,21 @@ private struct GalleryStatus: View {
 /// re-evaluate when the lead changes.
 private struct LeadScroller: View {
     let model: GalleryModel
-    let proxy: ScrollViewProxy
+    let layout: GalleryGridLayout
+    @Binding var position: ScrollPosition
 
     var body: some View {
         Color.clear.onChange(of: model.lead) {
-            if let lead = model.lead, !model.isFullyVisible(lead) {
-                proxy.scrollTo(lead)
+            guard let lead = model.lead, let index = model.visible.firstIndex(where: { $0.url == lead }), let row = layout.rowSpan(ofItem: index) else {
+                return
+            }
+            // The layout starts below the top margin.
+            let top = row.lowerBound + GalleryGrid.margin, bottom = row.upperBound + GalleryGrid.margin
+            let view = model.viewport
+            if top < view.minY {
+                position.scrollTo(y: top)
+            } else if bottom > view.maxY {
+                position.scrollTo(y: bottom - view.height)
             }
         }
     }
@@ -287,7 +346,11 @@ private struct GalleryTile: View, Equatable {
     }
 
     private var thumbnail: Thumbnail? { slot.thumbnail }
-    private var height: CGFloat { (width * 0.75).rounded() }
+    private var height: CGFloat { Self.thumbnailHeight(width: width) }
+
+    static func thumbnailHeight(width: CGFloat) -> CGFloat {
+        (width * 0.75).rounded()
+    }
 
     var body: some View {
         VStack(spacing: 7) {
@@ -361,8 +424,6 @@ private struct GalleryTile: View, Equatable {
             let flags = event?.modifierFlags ?? NSEvent.modifierFlags
             model.click(item, command: flags.contains(.command), shift: flags.contains(.shift))
         }
-        .onScrollVisibilityChange(threshold: 0.99) { model.setFullyVisible(item.url, $0) }
-        .onDisappear { model.setFullyVisible(item.url, false) }
         .onDrag { NSItemProvider(contentsOf: item.url) ?? NSItemProvider() }
         .contextMenu { GalleryTileMenu(model: model, item: item) }
         .task(id: item) {
