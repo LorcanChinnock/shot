@@ -1,0 +1,27 @@
+name: Release gate
+
+# Enabling auto-merge on release-please's PR runs CI's macOS gate on it (ci.yml with gate=true), the same as
+# `make release-gate`. When the gate passes, it sets the `test` status the PR needs, GitHub merges it, and release.yml
+# builds the release. A dispatch from GITHUB_TOKEN still starts the workflow it names.
+# Only auto_merge_enabled, not every push, so other pull requests don't list this as a skipped check. If release-please
+# pushes a new commit while auto-merge is on, that commit has no status: turn auto-merge off and on again, or run
+# `make release-gate`.
+on:
+  pull_request:
+    types: [auto_merge_enabled]
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    if: startsWith(github.head_ref, 'release-please--')
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Run the gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.head_ref }}
+        run: gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH" -f gate=true
