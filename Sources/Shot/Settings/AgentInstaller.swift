@@ -6,21 +6,29 @@ import ShotCore
 @MainActor
 enum AgentInstaller {
     /// Installs the server at `server` under `name` into `agent`, called `title` in messages, and reports how it went.
-    static func install(_ agent: AgentClient, title: String, server: String, name: String) async {
-        switch agent.install(server: server, name: name) {
+    /// `replacing` is for a server already set up under `name` that points elsewhere.
+    static func install(_ agent: AgentClient, title: String, server: String, name: String, replacing: Bool) async {
+        switch agent.install(server: server, name: name, replacing: replacing) {
         case let .link(link):
             guard let url = URL(string: link), NSWorkspace.shared.urlForApplication(toOpen: url) != nil else {
                 Toast.error("Couldn't open \(title). Copy the setup and add it there instead.")
                 return
             }
             NSWorkspace.shared.open(url)
-        case let .command(arguments):
-            let result = await Task.detached { run(arguments) }.value
+        case let .command(commands):
+            let result = await Task.detached { () -> Outcome in
+                for arguments in commands {
+                    if case let outcome = run(arguments), outcome != .success {
+                        return outcome
+                    }
+                }
+                return .success
+            }.value
             switch result {
             case .success:
                 Toast.show("Added Shot to \(title).", duration: .seconds(3))
             case .notFound:
-                Toast.error("Couldn't find the \(arguments[0]) command. Copy the command and run it in Terminal instead.")
+                Toast.error("Couldn't find the \(commands[0][0]) command. Copy the command and run it in Terminal instead.")
             case let .failure(message):
                 Toast.error("Couldn't add Shot to \(title): \(message)")
             }
@@ -36,7 +44,7 @@ enum AgentInstaller {
         }
     }
 
-    private enum Outcome: Sendable {
+    private enum Outcome: Equatable, Sendable {
         case success
         case notFound
         case failure(String)

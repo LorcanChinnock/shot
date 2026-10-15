@@ -22,8 +22,9 @@ public enum AgentClient: CaseIterable, Sendable {
     public enum Install: Equatable, Sendable {
         /// Opens a link the agent handles, which asks you to confirm.
         case link(String)
-        /// Runs the agent's own command line tool: the program's name, then its arguments.
-        case command([String])
+        /// Runs the agent's own command line tool, once per command line in turn: the program's name, then its
+        /// arguments.
+        case command([[String]])
         /// Adds the server to the JSON config file at this path, relative to the home folder, under `key`.
         case config(path: String, key: String)
     }
@@ -44,14 +45,16 @@ public enum AgentClient: CaseIterable, Sendable {
         case .claude, .lmStudio, .raycast, .cursor, .windsurf, .json: Self.json(key: "mcpServers", name: name, server: server)
         case .vsCode: Self.json(key: "servers", name: name, server: server)
         case .zed: Self.json(key: "context_servers", name: name, server: server)
-        case .claudeCode, .codex, .gemini: (install(server: server, name: name).flatMap(\.arguments) ?? []).map(Self.shellQuoted).joined(separator: " ")
+        case .claudeCode, .codex, .gemini: (install(server: server, name: name).flatMap(\.commands)?.last ?? []).map(Self.shellQuoted).joined(separator: " ")
         }
     }
 
     /// How Install adds the server at `server` under `name`: the agent's own link or tool where it has one, so it can
     /// confirm and knows its format, or else an edit of its config. Nil where Shot can only offer Copy: Zed's settings
-    /// keep comments that a JSON round trip would lose, and the generic setup has no app to install into.
-    public func install(server: String, name: String) -> Install? {
+    /// keep comments that a JSON round trip would lose, and the generic setup has no app to install into. `replacing`
+    /// is for a server that's already set up under `name`, which Claude Code won't add over, so it's removed first;
+    /// the other tools replace it themselves.
+    public func install(server: String, name: String, replacing: Bool = false) -> Install? {
         let entry: [String: Any] = ["command": server, "args": ["mcp"]]
         switch self {
         case .claude: return .config(path: Self.claudeConfig, key: "mcpServers")
@@ -60,9 +63,9 @@ public enum AgentClient: CaseIterable, Sendable {
         case .raycast: return .link("raycast://mcp/install?\(Self.queryEncoded(String(decoding: Self.compact(["name": name, "type": "stdio", "command": server, "args": ["mcp"]]), as: UTF8.self)))")
         case .cursor: return .link("cursor://anysphere.cursor-deeplink/mcp/install?name=\(Self.queryEncoded(name))&config=\(Self.queryEncoded(Self.compact(entry).base64EncodedString()))")
         case .vsCode: return .link("vscode:mcp/install?\(Self.queryEncoded(String(decoding: Self.compact(["name": name, "command": server, "args": ["mcp"]]), as: UTF8.self)))")
-        case .claudeCode: return .command(["claude", "mcp", "add", "-s", "user", name, "--", server, "mcp"])
-        case .codex: return .command(["codex", "mcp", "add", name, "--", server, "mcp"])
-        case .gemini: return .command(["gemini", "mcp", "add", "-s", "user", name, server, "mcp"])
+        case .claudeCode: return .command((replacing ? [["claude", "mcp", "remove", "-s", "user", name]] : []) + [["claude", "mcp", "add", "-s", "user", name, "--", server, "mcp"]])
+        case .codex: return .command([["codex", "mcp", "add", name, "--", server, "mcp"]])
+        case .gemini: return .command([["gemini", "mcp", "add", "-s", "user", name, server, "mcp"]])
         case .zed, .json: return nil
         }
     }
@@ -211,8 +214,8 @@ public enum AgentClient: CaseIterable, Sendable {
 }
 
 extension AgentClient.Install {
-    /// The command line, for a tool that installs through one.
-    var arguments: [String]? {
-        if case let .command(arguments) = self { arguments } else { nil }
+    /// The command lines, for a tool that installs through them.
+    var commands: [[String]]? {
+        if case let .command(commands) = self { commands } else { nil }
     }
 }

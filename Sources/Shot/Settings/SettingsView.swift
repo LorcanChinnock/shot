@@ -678,7 +678,7 @@ private struct AgentSettings: View {
                 Button(status == .stale ? "Update" : "Install") {
                     installing = agent
                     Task {
-                        await AgentInstaller.install(agent, title: String(localized: title(agent)), server: Self.server, name: Self.name)
+                        await AgentInstaller.install(agent, title: String(localized: title(agent)), server: Self.server, name: Self.name, replacing: status == .stale)
                         installing = nil
                         await findAgents()
                     }

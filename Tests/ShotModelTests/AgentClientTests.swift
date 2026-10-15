@@ -74,9 +74,19 @@ private func json(_ data: Data) -> [String: Any]? {
 }
 
 @Test func toolsInstallWithTheirOwnCommandLine() {
-    #expect(AgentClient.claudeCode.install(server: server, name: "shot") == .command(["claude", "mcp", "add", "-s", "user", "shot", "--", server, "mcp"]))
-    #expect(AgentClient.codex.install(server: server, name: "shot") == .command(["codex", "mcp", "add", "shot", "--", server, "mcp"]))
-    #expect(AgentClient.gemini.install(server: server, name: "shot") == .command(["gemini", "mcp", "add", "-s", "user", "shot", server, "mcp"]))
+    #expect(AgentClient.claudeCode.install(server: server, name: "shot") == .command([["claude", "mcp", "add", "-s", "user", "shot", "--", server, "mcp"]]))
+    #expect(AgentClient.codex.install(server: server, name: "shot") == .command([["codex", "mcp", "add", "shot", "--", server, "mcp"]]))
+    #expect(AgentClient.gemini.install(server: server, name: "shot") == .command([["gemini", "mcp", "add", "-s", "user", "shot", server, "mcp"]]))
+}
+
+@Test func claudeCodeRemovesAStaleServerBeforeAddingItAgain() {
+    #expect(AgentClient.claudeCode.install(server: server, name: "shot", replacing: true) == .command([
+        ["claude", "mcp", "remove", "-s", "user", "shot"],
+        ["claude", "mcp", "add", "-s", "user", "shot", "--", server, "mcp"],
+    ]))
+    // Codex and Gemini CLI replace a server that's already there.
+    #expect(AgentClient.codex.install(server: server, name: "shot", replacing: true) == AgentClient.codex.install(server: server, name: "shot"))
+    #expect(AgentClient.gemini.install(server: server, name: "shot", replacing: true) == AgentClient.gemini.install(server: server, name: "shot"))
 }
 
 @Test func appsWithoutALinkOrToolInstallByEditingTheirConfig() {
