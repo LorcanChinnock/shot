@@ -29,7 +29,7 @@ The first time you open Shot, a welcome window takes about 30 seconds, in three 
 2. **Make it yours.** **Use Shot for ⌘⇧3 to ⌘⇧5** is on: macOS's own screenshot shortcuts turn off while Shot runs, and come back when it quits. Turn it off to keep them, and Shot uses ⌃⇧3, ⌃⇧4 and ⌃⇧5 instead. **Open Shot at login** is ticked, so your shortcuts work after a restart. **Continue** applies both. If you close the window here instead, macOS keeps its shortcuts and Shot isn't added to your login items. The **Agents** button opens [Settings › Agents](#using-shot-with-ai-agents), for Claude Code, Codex or Cursor.
 3. **Try it.** Press your area shortcut and drag out any area. Once the capture is done, the window comes back with a few tips, and **Done** closes it. **Skip** closes it before you capture.
 
-If you used Shot before the welcome window existed, you won't see it. To open it again, use **Welcome window › Show** in **Settings › About**, or [`shot://welcome`](#url-scheme); opened that way, it starts from your current settings and closing it changes nothing. If Shot loses its Screen Recording access later, a capture opens the window at the access step.
+If you used Shot before the welcome window existed, you won't see it. To open it again, use [`shot://welcome`](#url-scheme); opened that way, it starts from your current settings and closing it changes nothing. If Shot loses its Screen Recording access later, a capture opens the window at the access step.
 
 ## Screenshots
 
@@ -696,7 +696,7 @@ Open Settings from the menu bar icon, or with ⌘, while a Shot window is in fro
 | Recording | Adjust before recording, the countdown, frame rate, cursor, clicks, region outline, copying to the clipboard, the microphone and its input (with a **Test**), system audio, and the camera bubble's camera (with a **Preview**) and size. It also sums up the GIF settings the video editor last used. |
 | Agents | [Handing captures to AI agents](#using-shot-with-ai-agents): a record inside each capture of where it came from and what you marked, [letting agents capture and record a window](#letting-an-agent-capture-and-record), and the setup commands for the MCP server |
 | Shortcuts | The macOS screenshot keys and every global shortcut |
-| About | The version, updates, permissions, the welcome window, the save folder, links to the code and its licence, the acknowledgements, to report a bug and to sponsor Shot, and resetting all settings |
+| About | The version, updates, permissions, the save folder, links to the code and its licence, the acknowledgements, to report a bug and to sponsor Shot, and resetting all settings |
 
 ## Languages
 
@@ -716,11 +716,12 @@ Captures go to the folder you choose in Settings (`~/Pictures/Shot` by default).
 
 An agent can take a screenshot or recording through Shot only while **Let agents capture and record** is on, which it is not by default. Shot shows a notice each time, an agent's recording always shows the region border and the controls to stop it, and it never records the microphone or camera. It records system audio only if **Settings › Recording** has it on.
 
-Shot needs Screen & System Audio Recording access for every capture. macOS asks for Microphone and Camera access only when Shot first uses them: when you record with them, or try them with **Test** or **Preview** in Settings › Recording.
+Shot needs Screen & System Audio Recording access for every capture. macOS asks for Microphone and Camera access only when Shot first uses them: when you record with them, or try them with **Test** or **Preview** in Settings › Recording. To give Shot every permission at once, click **Grant** beside each one in **Settings › About**. Once macOS has asked, the button becomes **Open**, which goes to that list in System Settings.
 
 ## Troubleshooting
 
-- **You turned on Screen Recording access, but captures still fail.** macOS applies the access only after Shot relaunches, so quit Shot and open it again. **Settings › About** shows **GRANTED** or **MISSING** beside **Screen & System Audio Recording**, and **Open** goes to that list in System Settings. If it still says MISSING, run `tccutil reset ScreenCapture dev.lorcan.Shot`, then open Shot and grant access again.
+- **You turned on Screen Recording access, but captures still fail.** macOS applies the access only after Shot relaunches, so quit Shot and open it again. **Settings › About** shows **GRANTED** or **MISSING** beside **Screen & System Audio Recording**, and **Grant** asks for it, or **Open** goes to that list in System Settings once macOS has asked. If it still says MISSING, run `tccutil reset ScreenCapture dev.lorcan.Shot`, then open Shot and grant access again.
+- **Microphone or Camera says NOT ASKED, but System Settings shows Shot allowed.** The allowed entry belongs to a differently signed copy of Shot, such as one you built yourself. Run `tccutil reset Microphone dev.lorcan.Shot` or `tccutil reset Camera dev.lorcan.Shot`, then click **Grant** in **Settings › About**.
 - **⌘⇧4 still opens the macOS screenshot tool.** Shot takes over ⌘⇧3 to ⌘⇧5 only once it has Screen Recording access, and only while **Use Shot for ⌘⇧3 to ⌘⇧5** is on in **Settings › Shortcuts**. If you turned the macOS shortcuts back on in System Settings, turn that setting on again. A **Shortcut unavailable** message means another app already uses that shortcut: pick another in **Settings › Shortcuts**.
 - **An agent can't see your captures, or can't capture or record.** Run `shot doctor`, or `/Applications/Shot.app/Contents/MacOS/shot-cli doctor` without the `shot` command, from the terminal or editor the agent runs in. It checks which copy of Shot answers (Shot or a ShotDev build) and its version, **Let agents capture and record**, the socket agents reach Shot on, Shot's Screen Recording access, and whether macOS lets that terminal or editor read the capture folder. It prints each check as JSON with a `fix` for anything that isn't passing, and exits with 1 if a check fails. It never opens Shot. It only asks a copy that's already running.
 - **Something else is wrong.** Shot writes to the macOS log. Run `log stream --predicate 'subsystem == "dev.lorcan.Shot"'` in Terminal while you try again, and add what it prints to a bug report from **Settings › About**. File paths show as `<private>`.
