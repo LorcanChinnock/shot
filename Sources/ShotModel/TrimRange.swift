@@ -45,6 +45,15 @@ public struct TrimRange: Equatable, Sendable {
         return moved
     }
 
+    /// Moves both handles by `delta`, keeping the length, and stops at either end of the video.
+    public func sliding(by delta: Double, duration: Double) -> TrimRange {
+        let shift = min(max(delta, -start), duration - start)
+        var moved = self
+        moved.start += shift
+        moved.end += shift
+        return moved
+    }
+
     /// Where Play begins: the playhead if it's inside the range, otherwise the in point.
     /// Within `endTolerance` of the out point counts as finished, since playback can stop a hair short of it.
     public func playbackStart(from current: Double, endTolerance: Double = 0.01) -> Double {
