@@ -70,7 +70,7 @@ struct LayersPanel: View {
             if let frame {
                 FrameRowView(row: frame, isFocused: isFocused, onSelect: onSelectFrame, onHide: { onHideFrame(!frame.isHidden) }, onDelete: onDeleteFrame)
                     .padding(.leading, 6)
-                    .padding(.trailing, 6 + BrutalScrollBar.width)
+                    .padding(.trailing, BrutalScrollBar.gutter + BrutalScrollBar.panelInset)
                     .padding(.top, 4)
                 Divider().overlay(Brutal.faint(0.25)).padding(.top, 4)
             }
@@ -83,10 +83,10 @@ struct LayersPanel: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: CGFloat(drag.map { $0.rest.count + 1 } ?? rows.count) * Self.rowHeight, alignment: .top)
                 .padding(.leading, 6)
-                .padding(.trailing, 6 + BrutalScrollBar.width)
+                .padding(.trailing, BrutalScrollBar.gutter + BrutalScrollBar.panelInset)
                 .padding(.vertical, 4)
             }
-            .brutalScrollBar()
+            .brutalScrollBar(inset: BrutalScrollBar.panelInset)
             .scrollDisabled(drag != nil)
             .coordinateSpace(.named(Self.space))
             .onGeometryChange(for: CGSize.self, of: \.size) { listSize = $0 }

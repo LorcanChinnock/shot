@@ -70,6 +70,8 @@ final class SettingsNavigation {
 }
 
 struct SettingsView: View {
+    private static let bottomInset = Brutal.windowInset - 6
+
     @Bindable private var navigation = SettingsNavigation.shared
     @State private var scrolledPast = ScrollFade.Edges()
     private var section: SettingsSection { navigation.section }
@@ -90,7 +92,7 @@ struct SettingsView: View {
                         VStack(spacing: 18) {
                             content
                         }
-                        .padding(.trailing, Brutal.groupInset + BrutalScrollBar.width)
+                        .padding(.trailing, BrutalScrollBar.gutter)
                         .padding(.bottom, Brutal.sectionGap)
                         .padding([.leading, .top], 3)
                     }
@@ -104,13 +106,16 @@ struct SettingsView: View {
                         scrolledPast = edges
                     }
                     .mask(ScrollFade(edges: scrolledPast))
+                    // The bar sits in the window margin, as far from the window border as from the cards.
+                    .padding(.trailing, -BrutalScrollBar.windowOutset)
+                    .padding(.bottom, Brutal.border + BrutalScrollBar.clearance - Self.bottomInset)
                     .id(section)
                 }
             }
         }
         .padding(.top, GlassWindow.titlebarHeight + 8)
         .padding(.horizontal, Brutal.windowInset)
-        .padding(.bottom, Brutal.windowInset - 6)
+        .padding(.bottom, Self.bottomInset)
         .frame(minWidth: MainWindowController.minSize.width, maxWidth: .infinity, maxHeight: .infinity)
     }
 
