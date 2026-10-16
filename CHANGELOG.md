@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.55](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.54...v0.7.0-beta.55) (2026-10-16)
+
+
+### Features
+
+* **agents:** list popular AI assistants and agents by name, with an Install button ([#639](https://github.com/LorcanChinnock/shot/issues/639)) ([413f4f8](https://github.com/LorcanChinnock/shot/commit/413f4f8324a2e942bcb372b87f33fbf17d54a6c8))
+
 ## [0.7.0-beta.54](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.53...v0.7.0-beta.54) (2026-10-15)
 
 
