@@ -6,7 +6,7 @@ import Sparkle
 private let log = Logger.shot("update")
 
 /// Wraps Sparkle. Nothing goes over the network until the user agrees: Sparkle asks once whether to
-/// check automatically (Info.plist leaves SUEnableAutomaticChecks unset), and Settings › About › Check is always manual.
+/// check automatically (Info.plist leaves SUEnableAutomaticChecks unset), and "Check for Updates…" is always manual.
 /// Local builds have no SUFeedURL, so the updater never starts and Sparkle can't replace them with a release.
 /// Homebrew or a drag-and-drop can replace the app while it runs, so before offering an update it checks the
 /// copy on disk and offers a relaunch instead.
