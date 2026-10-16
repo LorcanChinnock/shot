@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.56](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.55...v0.7.0-beta.56) (2026-10-16)
+
+
+### Features
+
+* **design:** follow the system appearance, with Settings › General › Appearance ([#660](https://github.com/LorcanChinnock/shot/issues/660)) ([ccf9345](https://github.com/LorcanChinnock/shot/commit/ccf93458fcea53b50bab53849116d3b398ace61a))
+
 ## [0.7.0-beta.55](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.54...v0.7.0-beta.55) (2026-10-16)
 
 
