@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // First, before anything below saves a setting and makes a new user look like an earlier one.
         WelcomeWindow.loadProgress()
         Preferences.registerDefaults()
+        applyAppearance()
         SystemShortcuts.giveBackTextCaptureKeyIfNeeded()
         HotkeyCenter.shared.onPress = { [weak self] action in
             self?.coordinator.perform(action)
@@ -37,10 +38,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AgentServer.shared.coordinator = coordinator
         AgentServer.shared.start()
         TextIndexer.shared.update()
-        defaultsObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { _ in
+        defaultsObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated {
                 HotkeyCenter.shared.reloadFromPreferences()
                 TextIndexer.shared.update()
+                self?.applyAppearance()
             }
         }
         installEditMenu()
@@ -153,6 +155,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Shown while a glass window puts Shot in the Dock; otherwise only routes ⌘W to the key window,
     /// ⌘X/⌘C/⌘V/⌘A/⌘Z to text fields and ⌥⌘C/⌥⌘V to the image editor.
+    /// Settings › General › Appearance, for every window and panel that doesn't set its own.
+    private func applyAppearance() {
+        let appearance: NSAppearance? = switch Preferences().appearance {
+        case .system: nil
+        case .light: NSAppearance(named: .aqua)
+        case .dark: NSAppearance(named: .darkAqua)
+        }
+        if NSApp.appearance != appearance {
+            NSApp.appearance = appearance
+        }
+    }
+
     private func installEditMenu() {
         let app = NSMenu(title: "Shot")
         app.addItem(withTitle: String(localized: "Settings…"), action: #selector(showSettings), keyEquivalent: ",").target = self

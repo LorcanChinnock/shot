@@ -77,6 +77,7 @@ private struct NotchRecordingView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(.black, in: UnevenRoundedRectangle(bottomLeadingRadius: hover.isExpanded ? 18 : notch.height / 2, bottomTrailingRadius: hover.isExpanded ? 18 : notch.height / 2))
         .onHover(perform: onHover)
+        // The panel is black like the notch it grows from, whatever the appearance, so its controls keep their light look.
         .environment(\.colorScheme, .light)
     }
 }

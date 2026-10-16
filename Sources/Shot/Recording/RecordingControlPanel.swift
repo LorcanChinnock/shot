@@ -60,7 +60,6 @@ private struct RecordingControlView: View {
         .brutalSurface(Brutal.paper.opacity(0.72), glass: true, radius: 14, shadow: 4)
         .padding(.trailing, 4)
         .padding(.bottom, 4)
-        .environment(\.colorScheme, .light)
     }
 }
 

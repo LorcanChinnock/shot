@@ -38,7 +38,6 @@ struct QuickAccessView: View {
         }
         .padding(QuickAccessLayout.padding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-        .environment(\.colorScheme, .light)
     }
 }
 

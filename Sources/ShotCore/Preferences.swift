@@ -60,6 +60,8 @@ public enum PreferenceKey {
     public static let partyMode = "partyMode"
     /// How large Shot draws its own text, a `TextSize`.
     public static let textSize = "textSize"
+    /// Whether Shot follows the system appearance, an `AppearanceMode`.
+    public static let appearance = "appearance"
     /// True while the macOS screenshot shortcuts are off because Shot turned them off. Not a
     /// setting, so resetting settings keeps it and Shot can still give the keys back.
     public static let disabledSystemScreenshots = "disabledSystemScreenshots"
@@ -135,6 +137,7 @@ public struct Preferences {
             PreferenceKey.cameraDeviceID: "",
             PreferenceKey.cameraSize: CameraBubbleSize.medium.rawValue,
             PreferenceKey.textSize: TextSize.standard.rawValue,
+            PreferenceKey.appearance: AppearanceMode.system.rawValue,
             PreferenceKey.replacesSystemScreenshots: true,
             PreferenceKey.videoExportFormat: VideoExportOptions().format.rawValue,
             PreferenceKey.gifFrameRate: VideoExportOptions().gifFrameRate,
@@ -431,6 +434,10 @@ public struct Preferences {
 
     public var textSize: TextSize {
         TextSize(rawValue: store.string(forKey: PreferenceKey.textSize) ?? "") ?? .standard
+    }
+
+    public var appearance: AppearanceMode {
+        AppearanceMode(rawValue: store.string(forKey: PreferenceKey.appearance) ?? "") ?? .system
     }
 
     public var cameraSize: CameraBubbleSize {

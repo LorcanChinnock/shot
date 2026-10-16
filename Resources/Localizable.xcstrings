@@ -3367,6 +3367,9 @@
     "Any other app" : {
 
     },
+    "Appearance" : {
+
+    },
     "Applies to every spotlight in the image." : {
       "localizations" : {
         "de" : {
@@ -10369,6 +10372,9 @@
           }
         }
       }
+    },
+    "Dark" : {
+
     },
     "Darken" : {
       "localizations" : {
@@ -17553,6 +17559,9 @@
           }
         }
       }
+    },
+    "Light" : {
+
     },
     "Line" : {
       "localizations" : {
@@ -27576,6 +27585,9 @@
         }
       }
     },
+    "Shot's windows and panels. Captures look the same either way." : {
+
+    },
     "Shot, recording" : {
       "localizations" : {
         "de" : {
@@ -30300,6 +30312,9 @@
           }
         }
       }
+    },
+    "System" : {
+
     },
     "System audio" : {
       "localizations" : {

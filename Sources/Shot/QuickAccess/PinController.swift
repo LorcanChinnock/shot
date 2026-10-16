@@ -116,7 +116,6 @@ private struct PinView: View {
                 hovering = inside
             }
         }
-        .environment(\.colorScheme, .light)
     }
 }
 
