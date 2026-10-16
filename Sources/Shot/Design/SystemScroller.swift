@@ -34,7 +34,9 @@ extension View {
     }
 }
 
-/// Finds the `NSScrollView` behind a SwiftUI `ScrollView` and swaps its vertical scroller for a `TracklessScroller`.
+/// Finds the `NSScrollView` behind a SwiftUI `ScrollView` and, while scrollers are legacy, swaps its vertical scroller for a
+/// `TracklessScroller`. An overlay scroll view keeps SwiftUI's own scroller, because a swapped-in one falls out of step with
+/// the scroll view's fade: it stays hidden while you scroll, then won't fade once shown.
 private struct TracklessScrollerProbe: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView {
         ProbeView()
@@ -43,15 +45,37 @@ private struct TracklessScrollerProbe: NSViewRepresentable {
     func updateNSView(_ nsView: NSView, context: Context) {}
 
     private final class ProbeView: NSView {
+        private var systemScroller: NSScroller?
+
+        override init(frame: NSRect) {
+            super.init(frame: frame)
+            NotificationCenter.default.addObserver(self, selector: #selector(matchScrollerStyle),
+                                                   name: NSScroller.preferredScrollerStyleDidChangeNotification, object: nil)
+        }
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) is not supported")
+        }
+
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
-            guard let scrollView = enclosingScrollView, !(scrollView.verticalScroller is TracklessScroller) else {
+            matchScrollerStyle()
+        }
+
+        @objc private func matchScrollerStyle() {
+            guard let scrollView = enclosingScrollView else {
                 return
             }
-            // A new scroller starts out legacy; the scroll view updates it from here when the setting changes.
-            let scroller = TracklessScroller()
-            scroller.scrollerStyle = scrollView.scrollerStyle
-            scrollView.verticalScroller = scroller
+            if NSScroller.preferredScrollerStyle == .legacy {
+                guard !(scrollView.verticalScroller is TracklessScroller) else {
+                    return
+                }
+                systemScroller = scrollView.verticalScroller
+                scrollView.verticalScroller = TracklessScroller()
+            } else if let systemScroller, scrollView.verticalScroller is TracklessScroller {
+                scrollView.verticalScroller = systemScroller
+            }
         }
     }
 }
