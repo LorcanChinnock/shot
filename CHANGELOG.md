@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.58](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.57...v0.7.0-beta.58) (2026-10-16)
+
+
+### Bug Fixes
+
+* **menu:** show the update item after Settings ([#666](https://github.com/LorcanChinnock/shot/issues/666)) ([632fba5](https://github.com/LorcanChinnock/shot/commit/632fba5afabeec7652475d48f92590b5999caf6a))
+
 ## [0.7.0-beta.57](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.56...v0.7.0-beta.57) (2026-10-16)
 
 
