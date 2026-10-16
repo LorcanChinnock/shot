@@ -506,7 +506,6 @@ private struct SetupBarView: View {
         .brutalSurface(Brutal.paper.opacity(0.72), glass: true, radius: 14, shadow: 4)
         .padding(.trailing, 4)
         .padding(.bottom, 4)
-        .environment(\.colorScheme, .light)
     }
 }
 
@@ -575,7 +574,6 @@ private struct CountdownView: View {
         .padding(.trailing, 6)
         .padding(.bottom, 6)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .environment(\.colorScheme, .light)
     }
 }
 

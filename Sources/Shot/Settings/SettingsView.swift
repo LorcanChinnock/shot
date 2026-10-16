@@ -261,6 +261,7 @@ private struct GeneralSettings: View {
     @Setting(PreferenceKey.imageFormat) private var imageFormat: ImageFormat
     @Setting(PreferenceKey.downscaleRetina) private var downscaleRetina: Bool
     @Setting(PreferenceKey.textSize) private var textSize: TextSize
+    @Setting(PreferenceKey.appearance) private var appearance: AppearanceMode
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     private let color = SettingsSection.general.color
 
@@ -273,6 +274,9 @@ private struct GeneralSettings: View {
             ToggleRow(title: "Play capture sound", isOn: $playSound, color: color)
             ToggleRow(title: "Hide Shot from captures", subtitle: "Keep Quick Access cards, toasts and other Shot windows out of screenshots and recordings. The camera bubble always shows.", isOn: $hidesShotUI, color: color)
             ToggleRow(title: "Exclude menu bar", subtitle: "Crop the menu bar and notch off screenshots and recordings of the full screen.", isOn: $excludesMenuBar, color: color)
+            SettingRow(title: "Appearance", subtitle: "Shot's windows and panels. Captures look the same either way.") {
+                BrutalSegmented(selection: $appearance, options: AppearanceMode.allCases.map { ($0, Self.title(of: $0)) }, color: color)
+            }
             SettingRow(title: "Text size", subtitle: "Text in Shot's windows, panels and toasts. Captures keep their size.", divider: false) {
                 BrutalSegmented(selection: $textSize, options: TextSize.allCases.map { ($0, Self.title(of: $0)) }, color: color)
             }
@@ -303,6 +307,14 @@ private struct GeneralSettings: View {
 
     private var previewName: String {
         FileNaming.baseName(for: Date(), prefix: Preferences.sanitizedPrefix(filePrefix))
+    }
+
+    private static func title(of mode: AppearanceMode) -> String {
+        switch mode {
+        case .system: String(localized: "System")
+        case .light: String(localized: "Light")
+        case .dark: String(localized: "Dark")
+        }
     }
 
     private static func title(of size: TextSize) -> String {

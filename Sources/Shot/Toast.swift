@@ -189,7 +189,6 @@ private struct ToastView: View {
         .brutalSurface(Brutal.paper.opacity(0.75), glass: true, radius: Brutal.Radius.panel, shadow: 4)
         .padding(.trailing, 4)
         .padding(.bottom, 4)
-        .environment(\.colorScheme, .light)
         .contentShape(Rectangle())
         .onHover(perform: hold)
         .onTapGesture(perform: dismiss)

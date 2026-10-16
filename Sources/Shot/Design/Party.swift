@@ -42,7 +42,7 @@ struct PartyColor<Content: View>: View {
 enum Confetti {
     private static let colors = [Brutal.yellow, Brutal.pink, Brutal.mint, Brutal.sky, Brutal.violet, Brutal.red]
 
-    /// The light accents whatever the system appearance, as in the rest of Shot's windows, which force the light appearance.
+    /// The light accents whatever the appearance, since confetti bursts over the capture, not over Shot's windows.
     private static var cgColors: [CGColor] {
         var resolved: [CGColor] = []
         NSAppearance(named: .aqua)?.performAsCurrentDrawingAppearance {

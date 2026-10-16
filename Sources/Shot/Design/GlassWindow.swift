@@ -29,7 +29,6 @@ enum GlassWindow {
         window.titlebarAppearsTransparent = true
         window.isOpaque = false
         window.backgroundColor = .clear
-        window.appearance = NSAppearance(named: .aqua)
         window.isReleasedWhenClosed = false
         window.toolbar = NSToolbar(identifier: "glass")
         window.toolbarStyle = .unified
@@ -112,7 +111,6 @@ private struct GlassChrome<Content: View>: View {
             }
             .background(GlassBackdrop())
             .inkBorder(RoundedRectangle(cornerRadius: GlassWindow.cornerRadius, style: .circular), width: 3)
-            .environment(\.colorScheme, .light)
             .ignoresSafeArea()
     }
 }

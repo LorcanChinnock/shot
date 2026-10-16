@@ -125,7 +125,6 @@ private final class DropdownMenu {
         panel.backgroundColor = .clear
         panel.hasShadow = false
         panel.isReleasedWhenClosed = false
-        panel.appearance = NSAppearance(named: .aqua)
         let screenHeight = window.screen?.visibleFrame.height ?? 800
         let list = DropdownList(title: title, state: state, minWidth: anchor?.bounds.width ?? 0, maxHeight: screenHeight - Self.gap * 2, pick: { [weak self] in self?.pick($0) }, resize: { [weak self] in self?.place($0) })
         panel.contentView = NSView(hosting: list)
@@ -308,7 +307,6 @@ private struct DropdownList: View {
         // Room for the shadow, which draws outside the surface.
         .padding([.trailing, .bottom], Self.shadowRoom)
         .fixedSize()
-        .environment(\.colorScheme, .light)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(title))
         .onGeometryChange(for: CGSize.self) { $0.size } action: { resize($0) }
