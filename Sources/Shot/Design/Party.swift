@@ -42,6 +42,15 @@ struct PartyColor<Content: View>: View {
 enum Confetti {
     private static let colors = [Brutal.yellow, Brutal.pink, Brutal.mint, Brutal.sky, Brutal.violet, Brutal.red]
 
+    /// The light accents whatever the system appearance, as in the rest of Shot's windows, which force the light appearance.
+    private static var cgColors: [CGColor] {
+        var resolved: [CGColor] = []
+        NSAppearance(named: .aqua)?.performAsCurrentDrawingAppearance {
+            resolved = colors.map { NSColor($0).cgColor }
+        }
+        return resolved
+    }
+
     private static let piece: CGImage? = {
         let size = CGSize(width: 8, height: 5)
         let image = NSImage(size: size, flipped: false) { rect in
@@ -76,10 +85,10 @@ enum Confetti {
         emitter.emitterShape = .rectangle
         emitter.emitterMode = .outline
         emitter.beginTime = CACurrentMediaTime()
-        emitter.emitterCells = colors.map { color in
+        emitter.emitterCells = cgColors.map { color in
             let cell = CAEmitterCell()
             cell.contents = piece
-            cell.color = NSColor(color).cgColor
+            cell.color = color
             cell.birthRate = 60
             cell.lifetime = 3
             cell.velocity = 420

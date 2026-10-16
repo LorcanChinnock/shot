@@ -186,7 +186,7 @@ private struct ToastView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .brutalSurface(Color.white.opacity(0.75), glass: true, radius: Brutal.Radius.panel, shadow: 4)
+        .brutalSurface(Brutal.paper.opacity(0.75), glass: true, radius: Brutal.Radius.panel, shadow: 4)
         .padding(.trailing, 4)
         .padding(.bottom, 4)
         .environment(\.colorScheme, .light)

@@ -33,7 +33,7 @@ struct VideoEditorRootView: View {
                     .layoutPriority(1)
                 Group {
                     Button { model.toggleTracks() } label: { Label("Tracks", systemImage: "rectangle.split.3x1").fixedSize() }
-                        .buttonStyle(BrutalButtonStyle(color: model.showsTracks ? (model.canHideTracks ? Brutal.violet : Brutal.violet.opacity(0.55)) : .white, compact: true))
+                        .buttonStyle(BrutalButtonStyle(color: model.showsTracks ? (model.canHideTracks ? Brutal.violet : Brutal.violet.opacity(0.55)) : Brutal.paper, compact: true))
                         .brutalTip("Show the tracks (T)")
                     Button("Copy") { Task { await model.copy() } }
                         .buttonStyle(BrutalButtonStyle(compact: true))
@@ -352,6 +352,7 @@ struct TrimTimelineView: View {
             .font(.scaled(12, weight: .black))
             .foregroundStyle(Brutal.ink)
             .frame(width: TrimTimeline.handleWidth, height: Self.height)
+            .inkOnFill(Brutal.yellow)
             .background(Brutal.yellow)
             .inkBorder(Rectangle(), width: 2)
     }

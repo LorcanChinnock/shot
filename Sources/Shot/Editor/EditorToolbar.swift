@@ -49,12 +49,12 @@ struct EditorToolbar: View {
                 }
                 Spacer(minLength: 0)
                 ToolGroup {
-                    Tile(selected: false, color: .white, help: "Undo (⌘Z)", isEnabled: model.undoStack.canUndo) {
+                    Tile(selected: false, color: Brutal.paper, help: "Undo (⌘Z)", isEnabled: model.undoStack.canUndo) {
                         model.undo()
                     } label: {
                         Image(systemName: "arrow.uturn.backward").font(Brutal.toolIcon)
                     }
-                    Tile(selected: false, color: .white, help: "Redo (⇧⌘Z)", isEnabled: model.undoStack.canRedo) {
+                    Tile(selected: false, color: Brutal.paper, help: "Redo (⇧⌘Z)", isEnabled: model.undoStack.canRedo) {
                         model.redo()
                     } label: {
                         Image(systemName: "arrow.uturn.forward").font(Brutal.toolIcon)
@@ -299,7 +299,7 @@ struct RedactionOptions: View {
             BrutalSlider(
                 value: Binding(get: { amount }, set: { setAmount($0) }),
                 range: Redaction.amounts.lowerBound...Redaction.amounts.upperBound,
-                track: LinearGradient(colors: [.white, Brutal.sky], startPoint: .leading, endPoint: .trailing),
+                track: LinearGradient(colors: [Brutal.paper, Brutal.sky], startPoint: .leading, endPoint: .trailing),
                 width: 120,
                 onEditingChanged: dragAmount
             )
@@ -347,7 +347,7 @@ struct SpotlightOptions: View {
             Text("EDGE").font(Brutal.mono).foregroundStyle(Brutal.ink).padding(.horizontal, 4)
             BrutalSlider(
                 value: Binding(get: { style.softEdge }, set: { chooseSoftEdge($0) }),
-                track: LinearGradient(colors: [.white, Brutal.sky], startPoint: .leading, endPoint: .trailing),
+                track: LinearGradient(colors: [Brutal.paper, Brutal.sky], startPoint: .leading, endPoint: .trailing),
                 width: 100,
                 onEditingChanged: dragSlider
             )

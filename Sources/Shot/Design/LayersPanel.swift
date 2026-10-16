@@ -533,6 +533,7 @@ private struct LayerRowView<Grip: Gesture>: View {
         .foregroundStyle(Brutal.ink)
         // Lighter under Increase Contrast too, but enough that an unset button in a hidden row keeps 3:1.
         .opacity(row.isHidden && !isLifted ? (contrast == .increased ? 0.8 : 0.45) : 1)
+        .inkOnFill(isSelected ? Brutal.yellow : nil)
         .background { background }
         .scaleEffect(isLifted ? 1.04 : 1)
         .shadow(color: .black.opacity(isLifted ? 0.25 : 0), radius: 8, y: 4)
@@ -543,7 +544,7 @@ private struct LayerRowView<Grip: Gesture>: View {
     @ViewBuilder
     private var background: some View {
         if isLifted {
-            Color.clear.brutalSurface(isSelected ? Brutal.yellow : Color.white, radius: Brutal.Radius.inset, shadow: 2, border: 2)
+            Color.clear.brutalSurface(isSelected ? Brutal.yellow : Brutal.paper, radius: Brutal.Radius.inset, shadow: 2, border: 2)
         } else if isSelected {
             RoundedRectangle(cornerRadius: Brutal.Radius.inset, style: .circular).fill(Brutal.yellow.opacity(isFocused ? 1 : 0.5))
         }
@@ -576,7 +577,7 @@ struct LayerNameField: View {
             .lineLimit(1)
             .padding(.horizontal, 3)
             .padding(.vertical, 1)
-            .background(Color.white)
+            .background(Brutal.paper)
             .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: 1)
             .focused($isFocused)
             .onSubmit { finish(commit: true) }

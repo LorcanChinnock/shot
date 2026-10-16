@@ -328,7 +328,7 @@ struct StylePopover<Model: StyleEditing>: View {
         BrutalSlider(
             value: Binding(get: { Double(value) }, set: { set(CGFloat($0)) }),
             range: Double(range.lowerBound)...Double(range.upperBound),
-            track: LinearGradient(colors: [.white, Brutal.sky], startPoint: .leading, endPoint: .trailing),
+            track: LinearGradient(colors: [Brutal.paper, Brutal.sky], startPoint: .leading, endPoint: .trailing),
             width: 160,
             onEditingChanged: { model.setDraggingStyle($0) }
         )
@@ -366,6 +366,7 @@ private struct StyleTile: View {
             }
             .foregroundStyle(Brutal.ink)
             .frame(width: 56, height: 52)
+            .inkOnFill(selected ? Brutal.sky : nil)
             .background {
                 if selected {
                     PartyColor(Brutal.sky) { Color.clear.brutalSurface($0, radius: Brutal.Radius.inset, shadow: 2) }
@@ -423,13 +424,13 @@ private struct Swatch: View {
             Circle().fill(Brutal.sky)
                 .padding(3)
                 .background(Circle().fill(.white))
-                .overlay(Circle().stroke(Brutal.ink.opacity(0.45), lineWidth: 1))
+                .overlay(Circle().stroke(Brutal.line.opacity(0.45), lineWidth: 1))
                 .frame(width: 16, height: 16)
         } else {
             card.fill(.white)
                 .overlay {
                     switch border {
-                    case .hairline: card.stroke(Brutal.ink.opacity(0.45), lineWidth: 1)
+                    case .hairline: card.stroke(Brutal.line.opacity(0.45), lineWidth: 1)
                     case .solid: card.stroke(Brutal.sky, lineWidth: 3)
                     case .outline, nil: EmptyView()
                     }

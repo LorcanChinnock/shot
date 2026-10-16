@@ -13,20 +13,20 @@ struct TracksToolbar: View {
                 .buttonStyle(BrutalButtonStyle(compact: true))
                 .brutalTip("Split the clip at the playhead (S)")
             Button { _ = model.deleteSelectedClip() } label: { Label("Delete", systemImage: "trash") }
-                .buttonStyle(BrutalButtonStyle(color: model.selectedClipID == nil ? .white.opacity(0.6) : Brutal.pink, compact: true))
+                .buttonStyle(BrutalButtonStyle(color: model.selectedClipID == nil ? Brutal.paper.opacity(0.6) : Brutal.pink, compact: true))
                 .disabled(model.selectedClipID == nil)
                 .brutalTip("Cut out the selected clip and close the gap (⌫)")
             ImportMenu(model: model)
             Button {
                 model.setAnnotationTool(model.isAnnotating ? nil : (model.annotationStyle.tool == .crop ? .arrow : model.annotationStyle.tool))
             } label: { Label("Annotate", systemImage: "pencil.tip.crop.circle") }
-                .buttonStyle(BrutalButtonStyle(color: model.isAnnotating ? Brutal.pink : .white, compact: true))
+                .buttonStyle(BrutalButtonStyle(color: model.isAnnotating ? Brutal.pink : Brutal.paper, compact: true))
                 .brutalTip("Draw arrows, shapes, text, blur and more over the video")
             Button { model.toggleInspector() } label: { Label("Inspector", systemImage: "slider.horizontal.3") }
-                .buttonStyle(BrutalButtonStyle(color: model.showsInspector ? Brutal.violet : .white, compact: true))
+                .buttonStyle(BrutalButtonStyle(color: model.showsInspector ? Brutal.violet : Brutal.paper, compact: true))
                 .brutalTip("Position, scale, rotation, opacity, volume and keyframes of the selected clip")
             Button { model.toggleSnapping() } label: { Label("Snap", systemImage: "magnet") }
-                .buttonStyle(BrutalButtonStyle(color: model.snapping ? Brutal.mint : .white, compact: true))
+                .buttonStyle(BrutalButtonStyle(color: model.snapping ? Brutal.mint : Brutal.paper, compact: true))
                 .brutalTip("Snap the playhead to clip edges (N)")
             Spacer(minLength: 8)
             Button { model.zoom(bySteps: -1) } label: { Image(systemName: "minus.magnifyingglass") }
@@ -341,7 +341,8 @@ struct TracksView: View {
                 .font(.scaled(10, weight: .bold))
                 .foregroundStyle(Brutal.ink)
                 .frame(width: LaneLayout.controlSize, height: LaneLayout.controlSize)
-                .background(isOn ? Brutal.yellow : Color.white)
+                .inkOnFill(isOn ? Brutal.yellow : nil)
+                .background(isOn ? Brutal.yellow : Brutal.paper)
                 .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: 2)
         }
         .buttonStyle(.plain)
@@ -404,7 +405,7 @@ struct TracksView: View {
         }
         .frame(width: width, height: height)
         .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
-        .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.ink)
+        .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.line)
         .allowsHitTesting(false)
     }
 
@@ -431,9 +432,10 @@ struct TracksView: View {
             context.fill(path, with: .color(Brutal.ink.opacity(0.85)))
         }
         .frame(width: width, height: height)
+        .inkOnFill(Brutal.mint)
         .background(Brutal.mint)
         .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
-        .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.ink)
+        .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.line)
         .allowsHitTesting(false)
         .task(id: clip.source) { await model.loadWaveform(for: clip.source) }
     }
@@ -454,9 +456,9 @@ struct TracksView: View {
         .padding(.leading, labelInset)
         .frame(width: width, height: height, alignment: .leading)
         .background(color.swiftUIColor.opacity(0.55))
-        .background(Color.white)
+        .background(Brutal.paper)
         .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
-        .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.ink)
+        .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.line)
         .allowsHitTesting(false)
         // Over the clip rather than in it, so a short clip doesn't squeeze the field.
         .overlay(alignment: .leading) {
@@ -490,6 +492,7 @@ struct TracksView: View {
             .font(.scaled(12, weight: .black))
             .foregroundStyle(Brutal.ink)
             .frame(width: TrimTimeline.handleWidth, height: height)
+            .inkOnFill(Brutal.yellow)
             .background(Brutal.yellow)
             .inkBorder(Rectangle(), width: 2)
             .allowsHitTesting(false)
@@ -617,7 +620,7 @@ struct PlayheadCapsule: View {
     let height: CGFloat
 
     var body: some View {
-        Capsule().fill(Color.white)
+        Capsule().fill(Brutal.paper)
             .inkBorder(Capsule(), width: 1)
             .frame(width: 4, height: height)
             .offset(x: max(0, timeline.x(for: model[keyPath: time]) - 2))

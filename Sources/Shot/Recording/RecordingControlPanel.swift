@@ -57,7 +57,7 @@ private struct RecordingControlView: View {
         }
         .padding(.horizontal, 14)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .brutalSurface(Color.white.opacity(0.72), glass: true, radius: 14, shadow: 4)
+        .brutalSurface(Brutal.paper.opacity(0.72), glass: true, radius: 14, shadow: 4)
         .padding(.trailing, 4)
         .padding(.bottom, 4)
         .environment(\.colorScheme, .light)
@@ -113,7 +113,7 @@ struct RecordingControls: View {
                     .frame(minWidth: 70)
                     .fixedSize()
             }
-            .buttonStyle(BrutalButtonStyle(color: model.isPaused ? Brutal.yellow : .white, compact: true))
+            .buttonStyle(BrutalButtonStyle(color: model.isPaused ? Brutal.yellow : Brutal.paper, compact: true))
             .brutalTip(model.isPaused ? "Resume recording" : "Pause recording")
 
             if model.microphoneOn {
@@ -126,10 +126,10 @@ struct RecordingControls: View {
             }
 
             if model.cameraAvailable {
-                IconButton(symbol: model.cameraOn ? "video.fill" : "video.slash.fill", color: model.cameraOn ? Brutal.mint : .white, help: model.cameraOn ? "Hide camera bubble" : "Show camera bubble") {
+                IconButton(symbol: model.cameraOn ? "video.fill" : "video.slash.fill", color: model.cameraOn ? Brutal.mint : Brutal.paper, help: model.cameraOn ? "Hide camera bubble" : "Show camera bubble") {
                     actions.toggleCamera()
                 }
-                IconButton(symbol: "circle.circle", color: .white, help: "Change camera bubble size") {
+                IconButton(symbol: "circle.circle", color: Brutal.paper, help: "Change camera bubble size") {
                     actions.cycleCameraSize()
                 }
                 .disabled(!model.cameraOn)
@@ -137,7 +137,7 @@ struct RecordingControls: View {
             }
 
             Spacer(minLength: 0)
-            IconButton(symbol: "trash.fill", color: .white, help: "Discard recording") {
+            IconButton(symbol: "trash.fill", color: Brutal.paper, help: "Discard recording") {
                 actions.stop(true)
             }
             Button {

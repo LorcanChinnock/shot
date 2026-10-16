@@ -62,7 +62,7 @@ struct LevelMeter: View {
             HStack(spacing: 2) {
                 ForEach(0..<Self.bars, id: \.self) { index in
                     RoundedRectangle(cornerRadius: 1.5, style: .circular)
-                        .fill(index < lit ? color(index) : Color.white.opacity(0.7))
+                        .fill(index < lit ? color(index) : Brutal.well)
                         .inkBorder(RoundedRectangle(cornerRadius: 1.5, style: .circular), width: 1)
                         .frame(width: 5, height: 16)
                 }
