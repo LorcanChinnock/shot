@@ -14,9 +14,7 @@ To change your mind, turn **Check for updates automatically** on or off in **Set
 
 ## Check now
 
-Click **Check** in **Settings › About**.
-
-When an automatic check finds a new version, Shot's menu bar menu also shows **Update to Shot** and the version, in case the update window opened behind your other windows.
+Click **Check** in **Settings › About**, or choose **Check for Updates…** in Shot's menu bar menu. When a check finds a new version, that menu item becomes **Update to Shot** and the version.
 
 ## Homebrew
 

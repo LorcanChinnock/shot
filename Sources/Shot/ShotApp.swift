@@ -63,9 +63,11 @@ private struct UpdateButton: View {
     let updater: Updater
 
     var body: some View {
-        // Only while a scheduled check has found an update: Sparkle's alert can open behind other windows.
         if let version = updater.pendingVersion {
             Button("Update to Shot \(version)…") { updater.checkForUpdates() }
+        } else {
+            Button("Check for Updates…") { updater.checkForUpdates() }
+                .disabled(!updater.canCheckForUpdates)
         }
     }
 }
