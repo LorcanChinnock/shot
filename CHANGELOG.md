@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.60](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.59...v0.7.0-beta.60) (2026-10-16)
+
+
+### Bug Fixes
+
+* **design:** show the overlay scroll bar when the pointer is over its edge ([#674](https://github.com/LorcanChinnock/shot/issues/674)) ([ae540a0](https://github.com/LorcanChinnock/shot/commit/ae540a06f03f44d2fdf71789c496f04a2a5d7367))
+
 ## [0.7.0-beta.59](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.58...v0.7.0-beta.59) (2026-10-16)
 
 
