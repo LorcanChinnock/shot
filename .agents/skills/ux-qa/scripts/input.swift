@@ -2,7 +2,7 @@ import AppKit
 import CoreGraphics
 import Foundation
 
-// Sends real mouse events in screen points (the same units as `session.sh shot`'s images and `axdump` frames).
+// Sends real mouse events in screen points (`axdump` frames; a `uxqa_shot` pixel plus the window origin it prints).
 //   input click X Y | dclick X Y | drag X1 Y1 X2 Y2 [shift] | scroll X Y DX DY
 // Accessibility clicks don't reach custom-drawn views, so anything canvas-like needs these.
 // It refuses to act unless the app under test is frontmost, so stolen focus can never click into another app.
