@@ -27,8 +27,8 @@ final class SystemScroller {
 }
 
 extension View {
-    /// Draws the scroller without its track, so a legacy ("Always") scroller's bar sits on the glass like an overlay one.
-    /// Apply it to the `ScrollView`'s content.
+    /// Draws the scroller without its track, so a legacy ("Always") scroller's bar sits on the glass like an overlay one, and
+    /// shows an overlay scroller while the pointer is over its strip. Apply it to the `ScrollView`'s content.
     func tracklessScroller() -> some View {
         background(TracklessScrollerProbe())
     }
@@ -46,6 +46,8 @@ private struct TracklessScrollerProbe: NSViewRepresentable {
 
     private final class ProbeView: NSView {
         private var systemScroller: NSScroller?
+        /// An overlay scroller hides until you scroll, so it's shown while the pointer is over its strip, where you'd grab it.
+        private var hoverArea: (view: NSView, area: NSTrackingArea)?
 
         override init(frame: NSRect) {
             super.init(frame: frame)
@@ -61,6 +63,32 @@ private struct TracklessScrollerProbe: NSViewRepresentable {
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             matchScrollerStyle()
+            trackScrollerHover()
+        }
+
+        private func trackScrollerHover() {
+            if let hoverArea {
+                hoverArea.view.removeTrackingArea(hoverArea.area)
+                self.hoverArea = nil
+            }
+            guard window != nil, let scrollView = enclosingScrollView else {
+                return
+            }
+            let area = NSTrackingArea(rect: .zero, options: [.mouseMoved, .activeInActiveApp, .inVisibleRect], owner: self)
+            scrollView.addTrackingArea(area)
+            hoverArea = (scrollView, area)
+        }
+
+        override func mouseMoved(with event: NSEvent) {
+            guard NSScroller.preferredScrollerStyle == .overlay, let scrollView = enclosingScrollView,
+                  let scroller = scrollView.verticalScroller else {
+                return
+            }
+            let point = scrollView.convert(event.locationInWindow, from: nil)
+            let strip = scrollView.bounds.divided(atDistance: SystemScroller.shared.width, from: .maxXEdge).slice
+            if strip.contains(point), !scroller.isHidden, scroller.knobProportion < 1 {
+                scrollView.flashScrollers()
+            }
         }
 
         @objc private func matchScrollerStyle() {
