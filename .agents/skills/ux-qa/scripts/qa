@@ -5,7 +5,7 @@
 # time, or again when their source has changed.
 cd "${0:A:h:h:h:h:h}" || exit 1
 source .agents/skills/ux-qa/scripts/session.sh
-for tool in input axdump measure; do
+for tool in input axdump measure window; do
   [[ "$UXQA_DIR/bin/$tool" -nt "$UXQA_SKILL/$tool.swift" ]] || { uxqa_setup || exit 1; break; }
 done
 eval "$*"

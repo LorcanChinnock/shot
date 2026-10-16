@@ -3,7 +3,7 @@
 One pass per section, each in several states. A check is only done when you can say what you measured or saw. Reference
 standards: Apple Human Interface Guidelines (macOS), WCAG 2.2 level AA, and the app's own design tokens (`Sources/Shot/Design/`).
 
-Baseline for every pass: take a full-screen screenshot and a `uxqa_ax` dump *in that state*, in light and dark appearance
+Baseline for every pass: take a window screenshot (`uxqa_shot`) and a `uxqa_ax` dump *in that state*, in light and dark appearance
 (`uxqa_appearance dark|light`).
 
 States to cover for the video editor: fresh open · playing · clip selected · nothing selected · tracks panel on and off ·
@@ -184,7 +184,7 @@ Judge against the app's own design system first; it has a deliberate style (see 
       originals are untouched unless Save was chosen.
 - [ ] **Messages are true**: what a toast or label claims (saved, copied, size, duration) is what happened.
 - [ ] **Transitions hold still**: record every toggle and picker change in both directions (`screencapture -v -V 3 -R…`,
-      then `ffmpeg` to frames) and track a few card edges and labels frame by frame. Anything that jumps for an update and
+      then `ffmpeg` to frames; this records the screen, so bring the window to the front first with `uxqa_focus`) and track a few card edges and labels frame by frame. Anything that jumps for an update and
       then settles is a glitch a still screenshot misses, usually a view mixing two copies of the same state that update at
       different times.
 

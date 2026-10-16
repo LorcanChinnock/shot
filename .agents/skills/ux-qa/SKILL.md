@@ -17,8 +17,13 @@ Pass scope: the feature the user named, or if none, the whole app. Pretend to be
 
 This runs on a real desktop that the person may be using at the same time.
 
-- **Say so first.** Tell the user the session is about to take over the mouse, keyboard and screen, and that they should not type
-  into other windows while it runs. If you see their terminal or another app taking focus mid-run, stop driving and ask. Never
+- **Stay out of the way.** Drive the app with `shot-dev://` URLs (`uxqa_open`) and accessibility, and capture only its window
+  (`uxqa_shot`), which works while it sits behind other windows, so the user keeps working in their own app. Take focus or the
+  screen only when a check truly needs it: clicks, drags, scrolls and keystrokes (custom-drawn views, shortcuts, sheets),
+  toasts and Quick Access cards (their own windows, at the screen's edge), the capture overlay (full screen by nature), and
+  recording a transition. Batch those steps together.
+- **Say so first.** Before the first step that takes focus, tell the user the session is about to use the mouse, keyboard and
+  screen, and that they should not type into other windows while it runs. If you see their terminal or another app taking focus mid-run, stop driving and ask. Never
   keep clicking: a click or a keystroke into the wrong app is the real hazard here.
 - **Focus guard.** `scripts/input.swift` refuses to click unless the app under test is frontmost, and every helper in
   `session.sh` re-raises the window first. `open`/`activate` do not reliably take focus while someone is typing; setting
@@ -42,7 +47,8 @@ make bundle                                   # build the app under test → bui
 source .agents/skills/ux-qa/scripts/session.sh
 uxqa_setup                                    # compiles the input, axdump and measure tools
 .agents/skills/ux-qa/scripts/make-clips.sh "$UXQA_DIR/clips"     # 10 s 720p, 6 s 1080p, 3 s portrait, all with sound
-uxqa_launch "shot-dev://edit-video?path=$UXQA_DIR/clips/a.mp4"
+uxqa_launch "shot-dev://edit-video?path=$UXQA_DIR/clips/a.mp4"   # starts in the background, without taking focus
+uxqa_shot editor                              # the app's window only, even behind others
 ```
 
 If each of your shell calls starts a fresh shell, the sourced helpers are gone by the next call. Run them through `qa` instead.
@@ -50,15 +56,16 @@ It works from any directory, drives that worktree's `build/ShotDev.app`, and com
 
 ```sh
 .agents/skills/ux-qa/scripts/qa 'uxqa_launch "shot-dev://gallery"'
+.agents/skills/ux-qa/scripts/qa 'uxqa_open "shot-dev://settings?section=general"; uxqa_shot settings'
 .agents/skills/ux-qa/scripts/qa 'uxqa_click 640 320; sleep 0.5; uxqa_shot after-click'
 ```
 
 Other entry points: `shot-dev://annotate?path=`, `shot-dev://gallery`, `shot-dev://settings?section=`. See `site/src/guide/10-url-scheme.md`. Screen
 capture and recording need real permissions and a person, so test the editors on files and say that capture itself was out of scope.
 
-**Units.** Everything is in screen *points*. `uxqa_shot` writes images at point size (1 px = 1 pt), `axdump` reports frames in
-points, and `input` takes points, so a coordinate read off a screenshot can be clicked directly. Don't mix in raw Retina
-screenshots. Re-take the screenshot after every layout change (selecting a clip, opening a panel and resizing all move things).
+**Units.** Everything is in *points*. `uxqa_shot` writes the window at point size (1 px = 1 pt) and prints the window's screen
+origin; `axdump` reports frames and `input` takes screen points, so a point read off a screenshot is clicked at origin + pixel.
+`uxqa_screen` images are in screen points already. Don't mix in raw Retina screenshots. Re-take the screenshot after every layout change (selecting a clip, opening a panel and resizing all move things).
 
 **What can and can't be driven.**
 - Standard controls: buttons, menus, text fields show up in `axdump` with frames. Accessibility presses reach them.
@@ -74,8 +81,10 @@ screenshots. Re-take the screenshot after every layout change (selecting a clip,
    under test so you know which things are *supposed* to line up, and take an `axdump` baseline. Write down expectations
    before you look at pixels.
 2. **Golden path as a first-time user.** Open a clip, play it, trim, split, delete, undo, import, annotate, export, close.
-   Note every moment of hesitation: unlabelled controls, unclear state, silent failures. Take a full-screen screenshot after
-   each step; feedback such as toasts sits at the bottom edge of the screen, outside the window.
+   Note every moment of hesitation: unlabelled controls, unclear state, silent failures. Take a window screenshot after
+   each step. Feedback such as toasts sits at the bottom edge of the screen, outside the window: find it with `uxqa_windows`
+   and capture it with `uxqa_shot NAME -w ID`, or `uxqa_screen` if it's gone too fast. ShotDev's "Hide Shot from captures"
+   setting keeps toasts and Quick Access cards out of every capture, so turn it off in ShotDev's Settings to see them.
 3. **Dimension passes.** Work through each section of [checklists.md](checklists.md) *in its own pass*, in this order:
    Design, Alignment, Layout, Size responsiveness, Accessibility, Aesthetics, Functional, Robustness. Do each in several
    states (nothing selected, a clip selected, panels open, multiple tracks, exporting, disabled), because most defects hide
@@ -104,7 +113,8 @@ screenshots. Re-take the screenshot after every layout change (selecting a clip,
 
 Most false findings come from the test rig. For each candidate:
 1. **Reproduce it** a second time from a clean launch.
-2. **Look at the whole screen**, not a crop: you may have missed the toast, the dialog or the other window that explains it.
+2. **Look at every window**, not a crop: `uxqa_windows` lists the toast, dialog or other window that may explain it
+   (`uxqa_screen` if you need it in context).
 3. **Read the code** that produces the behaviour. Is it a bug, a documented heuristic (like a size *estimate*), or intended?
    A claim you can't tie to code or a measurement is a hypothesis; label it "unconfirmed".
 4. **Rule out the rig**: a window resized through accessibility bypasses `minSize`, so confirm size findings with a real
