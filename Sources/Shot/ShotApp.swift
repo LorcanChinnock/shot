@@ -50,9 +50,9 @@ private struct ShotMenu: View {
         }
         Divider()
         Button("Open Gallery") { GalleryController.shared.show() }
-        UpdateButton(updater: Updater.shared)
         Button("Settings…") { MainWindowController.showSettings() }
         .keyboardShortcut(",")
+        UpdateButton(updater: Updater.shared)
         Divider()
         Button("Quit Shot") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
