@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.57](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.56...v0.7.0-beta.57) (2026-10-16)
+
+
+### Features
+
+* **menu:** bring back Check for Updates… in the menu bar menu ([#663](https://github.com/LorcanChinnock/shot/issues/663)) ([05095d9](https://github.com/LorcanChinnock/shot/commit/05095d9b6bdc6146d484c42228974dcc3e05fcd7))
+
 ## [0.7.0-beta.56](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.55...v0.7.0-beta.56) (2026-10-16)
 
 
