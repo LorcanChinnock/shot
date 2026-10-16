@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.59](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.58...v0.7.0-beta.59) (2026-10-16)
+
+
+### Bug Fixes
+
+* **design:** keep the system scroller for overlay scroll bars ([#671](https://github.com/LorcanChinnock/shot/issues/671)) ([0661e5b](https://github.com/LorcanChinnock/shot/commit/0661e5b82b95c311f94939d0259216ecc5fe712a))
+
 ## [0.7.0-beta.58](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.57...v0.7.0-beta.58) (2026-10-16)
 
 
