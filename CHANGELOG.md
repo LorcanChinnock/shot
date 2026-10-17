@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0-beta.61](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.60...v0.7.0-beta.61) (2026-10-17)
+
+
+### Features
+
+* **design:** dark mode for the overlay's chips and the recording handles ([#679](https://github.com/LorcanChinnock/shot/issues/679)) ([ebfe340](https://github.com/LorcanChinnock/shot/commit/ebfe340d01e85ac535b8572a1d12d50c601082c5))
+* **menu-bar:** show a countdown and an update badge on the menu bar icon ([#682](https://github.com/LorcanChinnock/shot/issues/682)) ([685d3e3](https://github.com/LorcanChinnock/shot/commit/685d3e3cc0a7aa61eccae39be2ab6ec0eff05960))
+
 ## [0.7.0-beta.60](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.59...v0.7.0-beta.60) (2026-10-16)
 
 
