@@ -42,6 +42,18 @@ extension Easing {
     }
 }
 
+extension AnimationPreset {
+    public var title: String {
+        switch self {
+        case .fadeIn: String(localized: "Fade In")
+        case .fadeOut: String(localized: "Fade Out")
+        case .pop: String(localized: "Pop")
+        case .slideIn: String(localized: "Slide In")
+        case .drawOn: String(localized: "Draw On")
+        }
+    }
+}
+
 extension AspectRatio {
     public var label: String {
         switch self {
@@ -70,5 +82,15 @@ extension ProjectOrigin {
         }
         let when = calendar.isDate(date, inSameDayAs: now) ? date.formatted(date: .omitted, time: .shortened) : date.formatted(date: .abbreviated, time: .shortened)
         return [who, action, when].compactMap { $0 }.joined(separator: " · ")
+    }
+}
+
+extension VideoExportOptions {
+    /// Describes a GIF made with these options, for Settings.
+    public var gifSummary: String {
+        let seconds = Int(GIFExporter.maxDuration)
+        return gifWidth == Self.originalWidth
+            ? String(localized: "\(gifFrameRate) fps, full width, first \(seconds) seconds.")
+            : String(localized: "\(gifFrameRate) fps, up to \(gifWidth) px wide, first \(seconds) seconds.")
     }
 }

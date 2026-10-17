@@ -1,5 +1,4 @@
 import Foundation
-import CoreGraphics
 
 public enum Geometry {
     /// Converts between AppKit global space (bottom-left origin) and CoreGraphics global space (top-left origin); the conversion is its own inverse.
@@ -73,7 +72,8 @@ public enum Geometry {
 
 /// An on-screen window in CoreGraphics global space.
 public struct WindowInfo: Equatable, Sendable {
-    public let windowID: CGWindowID
+    /// A `CGWindowID`.
+    public let windowID: UInt32
     public let frame: CGRect
     public let ownerPID: pid_t
     /// The owning app's name, as the window list gives it.
@@ -81,7 +81,7 @@ public struct WindowInfo: Equatable, Sendable {
     /// The window's title, which the window list gives only to a process with Screen Recording access.
     public let title: String?
 
-    public init(windowID: CGWindowID, frame: CGRect, ownerPID: pid_t, ownerName: String? = nil, title: String? = nil) {
+    public init(windowID: UInt32, frame: CGRect, ownerPID: pid_t, ownerName: String? = nil, title: String? = nil) {
         self.windowID = windowID
         self.frame = frame
         self.ownerPID = ownerPID
@@ -92,24 +92,5 @@ public struct WindowInfo: Equatable, Sendable {
     /// `windows` must be ordered front to back, as `CGWindowListCopyWindowInfo` returns them.
     public static func topmost(at point: CGPoint, in windows: [WindowInfo]) -> WindowInfo? {
         windows.first { $0.frame.contains(point) }
-    }
-
-    /// Keeps normal-layer windows of other apps that are at least 40 × 40 pt.
-    public static func parse(_ list: [[String: Any]], excludingPID: pid_t) -> [WindowInfo] {
-        list.compactMap { entry in
-            guard (entry[kCGWindowLayer as String] as? NSNumber)?.intValue == 0,
-                  let pid = (entry[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value, pid != excludingPID,
-                  let number = (entry[kCGWindowNumber as String] as? NSNumber)?.uint32Value,
-                  let boundsDict = entry[kCGWindowBounds as String] as? NSDictionary,
-                  let bounds = CGRect(dictionaryRepresentation: boundsDict as CFDictionary),
-                  bounds.width >= 40, bounds.height >= 40
-            else {
-                return nil
-            }
-            return WindowInfo(
-                windowID: number, frame: bounds, ownerPID: pid,
-                ownerName: entry[kCGWindowOwnerName as String] as? String, title: entry[kCGWindowName as String] as? String
-            )
-        }
     }
 }

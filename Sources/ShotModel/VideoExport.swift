@@ -1,4 +1,4 @@
-import CoreGraphics
+import Foundation
 
 public enum VideoExportFormat: String, CaseIterable, Sendable {
     case mp4, gif
@@ -31,14 +31,6 @@ public struct VideoExportOptions: Equatable, Sendable {
 
     /// `nil` keeps the recording's width.
     public var gifMaxWidth: CGFloat? { gifWidth == Self.originalWidth ? nil : CGFloat(gifWidth) }
-
-    /// Describes a GIF made with these options, for Settings.
-    public var gifSummary: String {
-        let seconds = Int(GIFExporter.maxDuration)
-        return gifWidth == Self.originalWidth
-            ? String(localized: "\(gifFrameRate) fps, full width, first \(seconds) seconds.")
-            : String(localized: "\(gifFrameRate) fps, up to \(gifWidth) px wide, first \(seconds) seconds.")
-    }
 
     /// How long `range`, less `cuts`, plays for at this speed.
     public func outputLength(of range: TrimRange, cuts: CutList = CutList()) -> Double { cuts.keptLength(in: range) / speed }

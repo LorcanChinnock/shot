@@ -161,3 +161,8 @@ private func keys(_ pairs: (Double, Double)...) -> [Keyframe<Double>] {
     #expect(abs(exp2(doublings.upperBound) - PropertyValues.scaleRange.upperBound) < 1e-9)
     #expect(abs(doublings.lowerBound + doublings.upperBound) < 1e-9)
 }
+
+@Test func onlyDrawOnNeedsAStrokeAndOnlyFadeOutPlaysAtTheEnd() {
+    #expect(AnimationPreset.allCases.filter(\.needsStroke) == [.drawOn])
+    #expect(AnimationPreset.allCases.filter(\.playsAtEnd) == [.fadeOut])
+}
