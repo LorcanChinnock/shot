@@ -37,6 +37,7 @@
 - **Edit video and make GIFs:** trim, cut, crop, speed up and draw over a recording, then export an MP4 or a GIF.
 - **Copy text** from any part of the screen, read on your Mac.
 - **Work with AI agents:** paste a marked-up screenshot into Claude, ChatGPT or a coding agent, or let one read, edit and take captures through Shot's MCP server and `shot` command.
+- **Light or dark:** Shot follows your Mac's appearance, or you can pick one in Settings.
 - **Private:** no account, no cloud and no analytics. Shot only goes online to check for updates, once you agree.
 
 ### Capture and Quick Access
