@@ -359,19 +359,21 @@ final class SelectionOverlayView: NSView {
     }
 
     private static let ink = Brutal.inkNS
-    private static let yellow = Brutal.yellowNS
 
-    /// Neo-brutalist chip: flat fill, ink border, hard offset shadow.
-    private func drawChip(_ text: String, at origin: CGPoint, fill: NSColor, font: NSFont) -> CGRect {
-        let string = NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: Self.ink])
+    /// Neo-brutalist chip: flat fill, ink border, hard offset shadow. A paper chip follows the appearance; on the yellow accent
+    /// the text stays near-black, as `inkOnFill` keeps it in SwiftUI.
+    private func drawChip(_ text: String, at origin: CGPoint, yellow: Bool, font: NSFont) -> CGRect {
+        let fill = NSColor(yellow ? Brutal.yellow : Brutal.paper)
+        let textColor = yellow ? Self.ink : NSColor(Brutal.ink)
+        let string = NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: textColor])
         let size = string.size()
         let box = CGRect(x: origin.x, y: origin.y, width: (size.width + 20).rounded(), height: (size.height + 10).rounded())
-        Self.ink.setFill()
+        NSColor(Brutal.line).setFill()
         NSBezierPath(roundedRect: box.offsetBy(dx: 3, dy: -3), xRadius: 7, yRadius: 7).fill()
         fill.setFill()
         let shape = NSBezierPath(roundedRect: box, xRadius: 7, yRadius: 7)
         shape.fill()
-        Self.ink.setStroke()
+        NSColor(Brutal.line).setStroke()
         shape.lineWidth = 2
         shape.stroke()
         string.draw(at: CGPoint(x: box.minX + 10, y: box.minY + 5))
@@ -392,7 +394,7 @@ final class SelectionOverlayView: NSView {
         if origin.y < 0 {
             origin.y = point.y + 16
         }
-        _ = drawChip(text, at: origin, fill: Self.yellow, font: font)
+        _ = drawChip(text, at: origin, yellow: true, font: font)
     }
 
     private var hintText: String {
@@ -418,11 +420,11 @@ final class SelectionOverlayView: NSView {
         let textSize = Preferences().textSize
         let font = NSFont.systemFont(ofSize: textSize.points(13), weight: .bold)
         let width = (text as NSString).size(withAttributes: [.font: font]).width + 20
-        let hint = drawChip(text, at: CGPoint(x: ((bounds.width - width) / 2).rounded(), y: bounds.height - 90), fill: .white, font: font)
+        let hint = drawChip(text, at: CGPoint(x: ((bounds.width - width) / 2).rounded(), y: bounds.height - 90), yellow: false, font: font)
         if let prompt = controller.prompt {
             let promptFont = NSFont.systemFont(ofSize: textSize.points(15), weight: .heavy)
             let promptWidth = (prompt as NSString).size(withAttributes: [.font: promptFont]).width + 20
-            _ = drawChip(prompt, at: CGPoint(x: ((bounds.width - promptWidth) / 2).rounded(), y: hint.maxY + 12), fill: Self.yellow, font: promptFont)
+            _ = drawChip(prompt, at: CGPoint(x: ((bounds.width - promptWidth) / 2).rounded(), y: hint.maxY + 12), yellow: true, font: promptFont)
         }
     }
 }
