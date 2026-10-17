@@ -11,7 +11,7 @@ swift run ShotDemo --scene ticket,chat --appearance light
   - `ticket`: a support ticket with an order to point at and a customer email to redact. Assign opens a picker, and Reply shows a toast.
   - `dashboard`: a revenue report. The chart grows in and the order list fills in. Tickets in the sidebar opens a ticket list and Reports comes back, so a recording has a detour to cut.
   - `chat`: a `#checkout` channel to paste a screenshot into. Click the message box, press ⌘V, then Return.
-- `--appearance light` or `dark` overrides the system appearance. Shot's own windows are always light.
+- `--appearance light` or `dark` overrides the system appearance. Shot's own windows follow Settings › General › Appearance, so set it to match.
 - `--clock HH:MM` moves every time in the scenes so the message you send in the chat is at that time. Pass the current time, such as `--clock $(date +%H:%M)`, so the times match the capture's file name. Without it, the message is at 09:54.
 - ⌘R replays the animations.
 
