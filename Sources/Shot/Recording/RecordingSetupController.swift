@@ -30,13 +30,17 @@ final class RecordingSetupModel {
     /// Set when recording a single window rather than a screen area.
     var windowID: CGWindowID?
     /// Seconds left while counting down.
-    var countdown: Int?
+    var countdown: Int? {
+        didSet { onCountdown(countdown) }
+    }
     /// How long the countdown runs once Record is pressed; 0 starts at once.
     let countdownSeconds: Int
+    @ObservationIgnored private let onCountdown: (Int?) -> Void
 
-    init(mode: RecordingMode, prefs: Preferences, countdownSeconds: Int) {
+    init(mode: RecordingMode, prefs: Preferences, countdownSeconds: Int, onCountdown: @escaping (Int?) -> Void) {
         self.mode = mode
         self.countdownSeconds = countdownSeconds
+        self.onCountdown = onCountdown
         cameraOn = prefs.recordCamera
         microphoneOn = prefs.recordMicrophone
         cursorOn = prefs.recordShowsCursor
@@ -70,8 +74,9 @@ final class RecordingSetupController {
     /// True while the camera starts before an automatic start, so a record press can't start with options it may still change.
     private var preparing = false
 
-    init(mode: RecordingMode, screen: NSScreen, region: CGRect, windowID: CGWindowID?, ratio: CGFloat?, start: RecordingStart) {
-        model = RecordingSetupModel(mode: mode, prefs: Preferences(), countdownSeconds: start.countdown)
+    /// `onCountdown` gets the seconds left as the countdown runs, and `nil` when it ends.
+    init(mode: RecordingMode, screen: NSScreen, region: CGRect, windowID: CGWindowID?, ratio: CGFloat?, start: RecordingStart, onCountdown: @escaping (Int?) -> Void) {
+        model = RecordingSetupModel(mode: mode, prefs: Preferences(), countdownSeconds: start.countdown, onCountdown: onCountdown)
         showsSetup = start.showsSetup
         self.screen = screen
         self.region = region
@@ -582,9 +587,17 @@ private struct CountdownView: View {
 @MainActor
 @Observable
 final class ScreenshotCountdown {
-    private var remaining: Int?
+    private var remaining: Int? {
+        didSet { onTick(remaining) }
+    }
     private var cancelled = false
     @ObservationIgnored private var panel: CountdownPanel?
+    @ObservationIgnored private let onTick: (Int?) -> Void
+
+    /// `onTick` gets the seconds left as the countdown runs, and `nil` when it ends.
+    init(onTick: @escaping (Int?) -> Void) {
+        self.onTick = onTick
+    }
 
     /// Returns `true` once `seconds` have passed and the panel is gone, `false` if the user cancelled.
     func run(seconds: Int, on screen: NSScreen) async -> Bool {
@@ -593,6 +606,7 @@ final class ScreenshotCountdown {
         let visible = screen.visibleFrame
         let panel = CountdownPanel(center: CGPoint(x: visible.midX, y: visible.minY + 170), remaining: { [weak self] in self?.remaining }) { [weak self] in
             self?.cancelled = true
+            self?.remaining = nil
             self?.panel?.orderOut(nil)
         }
         self.panel = panel
@@ -602,10 +616,12 @@ final class ScreenshotCountdown {
             remaining = second
             try? await Task.sleep(for: .seconds(1))
             if cancelled || Task.isCancelled {
+                remaining = nil
                 panel.orderOut(nil)
                 return false
             }
         }
+        remaining = nil
         panel.orderOut(nil)
         // Let the panel leave the screen before it's captured; it isn't hidden from captures when Hide Shot is off.
         try? await Task.sleep(for: .milliseconds(150))

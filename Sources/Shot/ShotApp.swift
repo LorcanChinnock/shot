@@ -9,14 +9,20 @@ struct ShotApp: App {
         if appDelegate.state.isPaused {
             return .paused
         }
-        return appDelegate.state.isRecording ? .recording : .idle
+        if appDelegate.state.isRecording {
+            return .recording
+        }
+        if let seconds = appDelegate.state.countdown {
+            return .countdown(seconds)
+        }
+        return .idle
     }
 
     var body: some Scene {
         MenuBarExtra {
             ShotMenu(state: appDelegate.state, coordinator: appDelegate.coordinator)
         } label: {
-            Image(nsImage: BrandMark.menuBarImage(menuBarState))
+            Image(nsImage: BrandMark.menuBarImage(menuBarState, updateAvailable: Updater.shared.pendingVersion != nil))
         }
     }
 }

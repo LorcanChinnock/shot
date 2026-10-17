@@ -139,7 +139,7 @@ final class CaptureCoordinator {
         Task {
             defer { busy = false }
             let screen = NSScreen.underPointer ?? NSScreen.screens[0]
-            guard await ScreenshotCountdown().run(seconds: seconds, on: screen) else {
+            guard await ScreenshotCountdown(onTick: { [state] in state.countdown = $0 }).run(seconds: seconds, on: screen) else {
                 return
             }
             do {
@@ -360,7 +360,9 @@ final class CaptureCoordinator {
         let prefs = Preferences()
         // Record Fullscreen has no pick to end, so `pickRegion` never reports ⌥ for it; its hotkey may itself hold ⌥.
         let start = RecordingStart.after(adjustBeforeRecording: prefs.adjustBeforeRecording, countdown: prefs.recordingCountdown, optionHeld: pick.optionHeld)
-        let controller = RecordingSetupController(mode: mode, screen: pick.screen, region: pick.region, windowID: pick.windowID, ratio: pick.ratio, start: start)
+        let controller = RecordingSetupController(mode: mode, screen: pick.screen, region: pick.region, windowID: pick.windowID, ratio: pick.ratio, start: start) { [state] in
+            state.countdown = $0
+        }
         setup = controller
         let result = await controller.run()
         setup = nil
