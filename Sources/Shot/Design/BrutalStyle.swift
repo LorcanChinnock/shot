@@ -21,7 +21,8 @@ enum Brutal {
     static let well = Color(light: .white.opacity(0.7), dark: Color(hex: 0x1F1E23))
     /// A toggle's knob while it's off.
     static let knob = Color(light: .white, dark: Color(hex: 0x8E8B93))
-    /// `ink`, `yellow` and `red` for AppKit drawing, in their light-mode colours.
+    /// `ink`, `yellow` and `red` for AppKit drawing, in their light-mode colours, for marks drawn over a capture or the screen.
+    /// `inkNS` is also `line` in either appearance. Chrome that follows the appearance uses `NSColor(Brutal.paper)` and friends.
     static var inkNS: NSColor { NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1) }
     static var yellowNS: NSColor { NSColor(srgbRed: 1, green: 0xD4 / 255, blue: 0x3B / 255, alpha: 1) }
     static var redNS: NSColor { NSColor(srgbRed: 1, green: 0x5C / 255, blue: 0x5C / 255, alpha: 1) }

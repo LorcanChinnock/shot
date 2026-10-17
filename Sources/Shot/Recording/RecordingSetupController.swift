@@ -358,7 +358,7 @@ private final class HandleView: NSView {
     private let handle: RegionHandle
     private let onDrag: (CGVector) -> Void
     private var last: CGPoint?
-    private static let ink = Brutal.inkNS
+    private static let line = NSColor(Brutal.line)
 
     init(handle: RegionHandle, onDrag: @escaping (CGVector) -> Void) {
         self.handle = handle
@@ -415,17 +415,17 @@ private final class HandleView: NSView {
         // Square knob with a hard shadow; leaves 2 pt on the right and bottom for the shadow.
         let body = CGRect(x: 0, y: 2, width: bounds.width - 2, height: bounds.height - 2)
         let radius: CGFloat = handle == .move ? 8 : 4
-        Self.ink.setFill()
+        Self.line.setFill()
         // Starts under the border stroke so no background shows between knob and shadow.
         NSBezierPath(roundedRect: body.insetBy(dx: 1, dy: 1).offsetBy(dx: 2, dy: -2), xRadius: radius, yRadius: radius).fill()
-        NSColor.white.setFill()
+        NSColor(Brutal.paper).setFill()
         let shape = NSBezierPath(roundedRect: body.insetBy(dx: 1, dy: 1), xRadius: radius, yRadius: radius)
         shape.fill()
-        Self.ink.setStroke()
+        Self.line.setStroke()
         shape.lineWidth = 2
         shape.stroke()
         if handle == .move {
-            Self.ink.setFill()
+            NSColor(Brutal.ink).setFill()
             for row in 0..<2 {
                 for column in 0..<4 {
                     let dot = CGRect(x: body.midX - 13 + CGFloat(column) * 8, y: body.midY - 4 + CGFloat(row) * 6, width: 3, height: 3)
