@@ -812,6 +812,9 @@
         }
       }
     },
+    "%@, update available" : {
+
+    },
     "%@.%@" : {
       "localizations" : {
         "de" : {
@@ -27740,6 +27743,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Shot，录制已暂停"
+          }
+        }
+      }
+    },
+    "Shot, starting in %lld seconds" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Shot, starting in %lld second"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Shot, starting in %lld seconds"
+                }
+              }
+            }
           }
         }
       }

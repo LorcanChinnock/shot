@@ -32,7 +32,7 @@ Hold <kbd>⌥</kbd> as you finish picking an area or window. Before recording st
 
 Press <kbd>Return</kbd> or click **Record** to start, or <kbd>Esc</kbd> to cancel. To get this step every time, turn on **Adjust before recording** in **Settings › Recording**.
 
-**Countdown**, in the same settings, waits 3 or 5 seconds before recording starts. <kbd>Esc</kbd> during the countdown goes back to the adjust step if you had it, and cancels otherwise.
+**Countdown**, in the same settings, waits 3 or 5 seconds before recording starts, and Shot's menu bar icon shows the seconds left. <kbd>Esc</kbd> during the countdown goes back to the adjust step if you had it, and cancels otherwise.
 
 ## While you record
 
