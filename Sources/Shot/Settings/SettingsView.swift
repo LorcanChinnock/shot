@@ -678,7 +678,7 @@ private struct AgentSettings: View {
         case .cursor: "Cursor"
         case .vsCode: "VS Code"
         case .gemini: "Gemini CLI"
-        case .windsurf: "Windsurf"
+        case .devin: "Devin"
         case .zed: "Zed"
         case .json: "Any other app"
         }

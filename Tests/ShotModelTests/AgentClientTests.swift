@@ -26,7 +26,8 @@ private func json(_ data: Data) -> [String: Any]? {
     #expect(installed(["/Users/me/.codex"]) == [.codex])
     #expect(installed(["/Users/me/.vscode"]) == [.vsCode])
     #expect(installed(["/Users/me/.gemini"]) == [.gemini])
-    #expect(installed(["/Users/me/.codeium/windsurf"]) == [.windsurf])
+    #expect(installed(["/Users/me/.config/devin"]) == [.devin])
+    #expect(installed(["/Users/me/.codeium/windsurf"]) == [.devin])
     #expect(installed(["/Users/me/.config/zed"]) == [.zed])
     #expect(installed(["/Users/me/.claude", "/Users/me/.codex"]) == [.claudeCode, .codex])
 }
@@ -38,6 +39,8 @@ private func json(_ data: Data) -> [String: Any]? {
     #expect(installed(["/Applications/Raycast.app"]) == [.raycast])
     #expect(installed(["/Applications/LM Studio.app"]) == [.lmStudio])
     #expect(installed(["/Applications/Visual Studio Code.app"]) == [.vsCode])
+    #expect(installed(["/Applications/Devin.app"]) == [.devin])
+    #expect(installed(["/Applications/Windsurf.app"]) == [.devin])
 }
 
 @Test func onlyInstalledAgentsAreShownAssistantsFirstWithTheGenericJSONLast() {
@@ -47,7 +50,7 @@ private func json(_ data: Data) -> [String: Any]? {
 }
 
 @Test func withNoAgentFoundEverySetupIsShown() {
-    #expect(AgentClient.shown(installed: []) == [.claude, .lmStudio, .raycast, .claudeCode, .codex, .cursor, .vsCode, .gemini, .windsurf, .zed, .json])
+    #expect(AgentClient.shown(installed: []) == [.claude, .lmStudio, .raycast, .claudeCode, .codex, .cursor, .vsCode, .gemini, .devin, .zed, .json])
 }
 
 @Test func eachSetupNamesTheServerPath() {
@@ -55,7 +58,7 @@ private func json(_ data: Data) -> [String: Any]? {
     #expect(AgentClient.claudeCode.setup(server: server, name: "shot") == #"claude mcp add -s user shot -- "/Applications/Shot Dev.app/Contents/MacOS/shot-cli" mcp"#)
     #expect(AgentClient.codex.setup(server: server, name: "shot") == #"codex mcp add shot -- "/Applications/Shot Dev.app/Contents/MacOS/shot-cli" mcp"#)
     #expect(AgentClient.gemini.setup(server: server, name: "shot") == #"gemini mcp add -s user shot "/Applications/Shot Dev.app/Contents/MacOS/shot-cli" mcp"#)
-    for client in [AgentClient.claude, .lmStudio, .raycast, .cursor, .windsurf, .json] {
+    for client in [AgentClient.claude, .lmStudio, .raycast, .cursor, .devin, .json] {
         #expect(client.setup(server: server, name: "shot") == mcpServers)
     }
     #expect(AgentClient.vsCode.setup(server: server, name: "shot") == #"{"servers": {"shot": {"command": "/Applications/Shot Dev.app/Contents/MacOS/shot-cli", "args": ["mcp"]}}}"#)
@@ -90,8 +93,8 @@ private func json(_ data: Data) -> [String: Any]? {
 }
 
 @Test func appsWithoutALinkOrToolInstallByEditingTheirConfig() {
-    #expect(AgentClient.claude.install(server: server, name: "shot") == .config(path: "Library/Application Support/Claude/claude_desktop_config.json", key: "mcpServers"))
-    #expect(AgentClient.windsurf.install(server: server, name: "shot") == .config(path: ".codeium/windsurf/mcp_config.json", key: "mcpServers"))
+    #expect(AgentClient.claude.install(server: server, name: "shot") == .config(paths: ["Library/Application Support/Claude/claude_desktop_config.json"], key: "mcpServers"))
+    #expect(AgentClient.devin.install(server: server, name: "shot") == .config(paths: [".config/devin/mcp_config.json", ".codeium/windsurf/mcp_config.json"], key: "mcpServers"))
     #expect(AgentClient.zed.install(server: server, name: "shot") == nil)
     #expect(AgentClient.json.install(server: server, name: "shot") == nil)
 }
@@ -175,6 +178,25 @@ private func query(_ link: String, _ name: String) -> String? {
     #expect(status(.claude, [claude: "not json"]) == .unknown)
     #expect(status(.vsCode, ["/Users/me/Library/Application Support/Code/User/mcp.json": #"{"servers": {"shot": {"command": "\#(server)"}}}"#]) == .installed)
     #expect(status(.claudeCode, ["/Users/me/.claude.json": #"{"mcpServers": {"shot": {"command": "\#(server)"}}}"#]) == .installed)
+}
+
+@Test func aConfigInstallWritesTheFirstFileThatExistsOrElseStartsTheFirst() {
+    let paths = [".config/devin/mcp_config.json", ".codeium/windsurf/mcp_config.json"]
+    let devin = "/Users/me/.config/devin/mcp_config.json", windsurf = "/Users/me/.codeium/windsurf/mcp_config.json"
+    #expect(AgentClient.file(among: paths, home: "/Users/me") { [devin, windsurf].contains($0) } == devin)
+    // Before Devin moves the Windsurf config, the old file is the one it reads.
+    #expect(AgentClient.file(among: paths, home: "/Users/me") { $0 == windsurf } == windsurf)
+    #expect(AgentClient.file(among: paths, home: "/Users/me") { _ in false } == devin)
+}
+
+@Test func devinStatusComesFromItsNewConfigOnceItHasOne() {
+    let devin = "/Users/me/.config/devin/mcp_config.json", windsurf = "/Users/me/.codeium/windsurf/mcp_config.json"
+    let current = #"{"mcpServers": {"shot": {"command": "\#(server)"}}}"#, old = #"{"mcpServers": {"shot": {"command": "/Old/Shot.app/Contents/MacOS/shot-cli"}}}"#
+    #expect(status(.devin, [windsurf: current]) == .installed)
+    #expect(status(.devin, [devin: current]) == .installed)
+    // Devin reads only the new file once it has copied the old one there.
+    #expect(status(.devin, [devin: old, windsurf: current]) == .stale)
+    #expect(status(.devin, [devin: #"{"mcpServers": {}}"#, windsurf: current]) == .missing)
 }
 
 @Test func statusIsUnknownWhereShotCantReadTheConfig() {

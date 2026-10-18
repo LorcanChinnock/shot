@@ -13,7 +13,8 @@ public enum AgentClient: CaseIterable, Sendable {
     case cursor
     case vsCode
     case gemini
-    case windsurf
+    /// Devin Desktop, which was Windsurf until it was renamed.
+    case devin
     case zed
     /// Any other app that reads the common `mcpServers` JSON config. Never found, always shown last.
     case json
@@ -25,8 +26,10 @@ public enum AgentClient: CaseIterable, Sendable {
         /// Runs the agent's own command line tool, once per command line in turn: the program's name, then its
         /// arguments.
         case command([[String]])
-        /// Adds the server to the JSON config file at this path, relative to the home folder, under `key`.
-        case config(path: String, key: String)
+        /// Adds the server under `key` to the first of these JSON config files that exists, or else the first, each
+        /// relative to the home folder. More than one where the app has moved its config and still reads the old one
+        /// until it moves it.
+        case config(paths: [String], key: String)
     }
 
     /// Whether the server is set up in an agent.
@@ -42,7 +45,7 @@ public enum AgentClient: CaseIterable, Sendable {
     /// What to paste to add the MCP server at `server`, under `name`.
     public func setup(server: String, name: String) -> String {
         switch self {
-        case .claude, .lmStudio, .raycast, .cursor, .windsurf, .json: Self.json(key: "mcpServers", name: name, server: server)
+        case .claude, .lmStudio, .raycast, .cursor, .devin, .json: Self.json(key: "mcpServers", name: name, server: server)
         case .vsCode: Self.json(key: "servers", name: name, server: server)
         case .zed: Self.json(key: "context_servers", name: name, server: server)
         case .claudeCode, .codex, .gemini: (install(server: server, name: name).flatMap(\.commands)?.last ?? []).map(Self.shellQuoted).joined(separator: " ")
@@ -57,8 +60,8 @@ public enum AgentClient: CaseIterable, Sendable {
     public func install(server: String, name: String, replacing: Bool = false) -> Install? {
         let entry: [String: Any] = ["command": server, "args": ["mcp"]]
         switch self {
-        case .claude: return .config(path: Self.claudeConfig, key: "mcpServers")
-        case .windsurf: return .config(path: ".codeium/windsurf/mcp_config.json", key: "mcpServers")
+        case .claude: return .config(paths: [Self.claudeConfig], key: "mcpServers")
+        case .devin: return .config(paths: Self.devinConfigs, key: "mcpServers")
         case .lmStudio: return .link("lmstudio://add_mcp?name=\(Self.queryEncoded(name))&config=\(Self.queryEncoded(Self.compact(entry).base64EncodedString()))")
         case .raycast: return .link("raycast://mcp/install?\(Self.queryEncoded(String(decoding: Self.compact(["name": name, "type": "stdio", "command": server, "args": ["mcp"]]), as: UTF8.self)))")
         case .cursor: return .link("cursor://anysphere.cursor-deeplink/mcp/install?name=\(Self.queryEncoded(name))&config=\(Self.queryEncoded(Self.compact(entry).base64EncodedString()))")
@@ -82,24 +85,25 @@ public enum AgentClient: CaseIterable, Sendable {
         case .cursor: [".cursor"] + Self.app("Cursor")
         case .vsCode: [".vscode"] + Self.app("Visual Studio Code")
         case .gemini: [".gemini"]
-        case .windsurf: [".codeium/windsurf"] + Self.app("Windsurf")
+        case .devin: [".config/devin", ".codeium/windsurf"] + Self.app("Devin") + Self.app("Windsurf")
         case .zed: [".config/zed"] + Self.app("Zed")
         case .json: []
         }
     }
 
-    /// The config file that holds the server, relative to the home folder, and the key its servers are under. Nil
-    /// where Shot can't read it: Raycast's isn't documented, and Zed's has comments.
-    var config: (path: String, key: String)? {
+    /// The config files that can hold the server, relative to the home folder, in the order `Install.config` picks
+    /// them, and the key its servers are under. Nil where Shot can't read it: Raycast's isn't documented, and Zed's has
+    /// comments.
+    var config: (paths: [String], key: String)? {
         switch self {
-        case .claude: (Self.claudeConfig, "mcpServers")
-        case .lmStudio: (".lmstudio/mcp.json", "mcpServers")
-        case .claudeCode: (".claude.json", "mcpServers")
-        case .codex: (".codex/config.toml", "mcp_servers")
-        case .cursor: (".cursor/mcp.json", "mcpServers")
-        case .vsCode: ("Library/Application Support/Code/User/mcp.json", "servers")
-        case .gemini: (".gemini/settings.json", "mcpServers")
-        case .windsurf: (".codeium/windsurf/mcp_config.json", "mcpServers")
+        case .claude: ([Self.claudeConfig], "mcpServers")
+        case .lmStudio: ([".lmstudio/mcp.json"], "mcpServers")
+        case .claudeCode: ([".claude.json"], "mcpServers")
+        case .codex: ([".codex/config.toml"], "mcp_servers")
+        case .cursor: ([".cursor/mcp.json"], "mcpServers")
+        case .vsCode: (["Library/Application Support/Code/User/mcp.json"], "servers")
+        case .gemini: ([".gemini/settings.json"], "mcpServers")
+        case .devin: (Self.devinConfigs, "mcpServers")
         case .raycast, .zed, .json: nil
         }
     }
@@ -109,7 +113,7 @@ public enum AgentClient: CaseIterable, Sendable {
         guard let config else {
             return .unknown
         }
-        guard let data = read((home as NSString).appendingPathComponent(config.path)) else {
+        guard let data = config.paths.compactMap({ read((home as NSString).appendingPathComponent($0)) }).first else {
             return .missing
         }
         let command: String?
@@ -161,7 +165,15 @@ public enum AgentClient: CaseIterable, Sendable {
         return try JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
     }
 
+    /// The first of `paths`, relative to `home`, that exists, or else the first: the file `Install.config` writes.
+    public static func file(among paths: [String], home: String, exists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }) -> String {
+        let files = paths.map { (home as NSString).appendingPathComponent($0) }
+        return files.first(where: exists) ?? files[0]
+    }
+
     static let claudeConfig = "Library/Application Support/Claude/claude_desktop_config.json"
+    /// Devin's config, then the one it read as Windsurf, which it offers to move the first time its editor opens.
+    static let devinConfigs = [".config/devin/mcp_config.json", ".codeium/windsurf/mcp_config.json"]
 
     private static func app(_ name: String) -> [String] {
         ["/Applications/\(name).app", "Applications/\(name).app"]
