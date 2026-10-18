@@ -10,7 +10,7 @@ private let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Shot", cate
 public struct TextIndexStore: Sendable {
     public let url: URL
     /// Reads the screenshots for Vision.
-    public let codec: any ImageCoding
+    let codec: any ImageCoding
 
     public init(url: URL, codec: any ImageCoding) {
         self.url = url

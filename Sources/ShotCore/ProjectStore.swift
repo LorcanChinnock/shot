@@ -16,7 +16,7 @@ public struct ProjectStore: Sendable {
 
     public let folder: URL
     /// Reads the project IDs stamped in image files.
-    public let codec: any ImageCoding
+    let codec: any ImageCoding
 
     public init(folder: URL, codec: any ImageCoding) {
         self.folder = folder
