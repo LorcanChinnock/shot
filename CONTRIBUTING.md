@@ -105,9 +105,9 @@ Releases are automated with [release-please](https://github.com/googleapis/relea
 Before a release, run `make app` and then `make perf-app`, which CI can't run because it needs the Screen Recording permission. It exits non-zero if anything is over budget. See [docs/performance.md](docs/performance.md).
 
 1. When `main` gets a `feat:` or `fix:` commit, release-please opens or updates a release pull request. It bumps the version in `Resources/Info.plist` and `.release-please-manifest.json`, and adds the changes to `CHANGELOG.md`. While Shot is in beta, each release only bumps the beta number, for example `0.7.0-beta.35` to `0.7.0-beta.36`, whether it has features or only fixes. Changes under `site/` never trigger one. Other types such as `docs`, `chore`, `ci`, `refactor`, and `build` appear in the history but don't trigger a release.
-2. Enable auto-merge on the release pull request. That runs the release gate, CI on macOS: it builds the app, checks the strings catalog, and runs every test, the performance budgets included. When it passes, it marks the commit it tested with a `test` status, which is the check the pull request needs to merge, and GitHub merges it. The release pull request's own Linux check is named differently and doesn't count. `make release-gate` runs the same gate by hand.
-   - If anything merges to `main` while auto-merge is on, release-please updates the pull request and the release workflow gates the new commit.
-   - If the gate fails, fix it in a normal pull request first. release-please only updates the release pull request for changes that appear in the changelog, so after a `test:`, `ci:` or `docs:` fix, run `gh pr update-branch <number>` on the release pull request, then turn auto-merge off and on again. Your own pushes to the release pull request aren't gated by themselves.
+2. The release pull request's CI is the release gate, which runs on macOS: it builds the app, checks the strings catalog, and runs every test, the performance budgets included. It runs again on every push to the pull request, and the pull request can't merge until it passes.
+   - A repository admin merges the release pull request by hand. The repository has auto-merge turned off.
+   - If the gate fails, fix it in a normal pull request first. release-please only updates the release pull request for changes that appear in the changelog, so after a `test:`, `ci:` or `docs:` fix, run `gh pr update-branch <number>` on the release pull request to run the gate again.
 3. The merge tags the release (`v0.7.0-beta.36`, say) and creates a draft GitHub release. The release workflow then builds `Shot-<tag>.zip`, signs it for Sparkle, attaches it with `appcast.xml`, the update feed, and only then publishes the release, so the latest release always has a feed. Installed copies read the feed from the latest release. Last, the workflow rebuilds the website and updates the Homebrew cask.
 
 To force a particular version, add a `Release-As: X.Y.Z` line to the body of a commit on `main`.
@@ -125,6 +125,13 @@ The release workflow needs five secrets, which belong in a GitHub Environment na
 | `SITE_DEPLOY_HOOK` | The URL of the website's Cloudflare deploy hook, which rebuilds the site so its download button moves to the new release. See [site/README.md](site/README.md). |
 
 Set the environment up once under Settings › Environments › `release`: limit deployment branches and tags to `main` and `v*`, and store the five secrets there instead of at repository level (`gh secret set --env release NAME`). Add a ruleset for `v*` tags that blocks deletion, updates and non-fast-forward pushes. The release build fails if the `Shot Release` signing identity is missing, rather than signing ad hoc.
+
+release-please opens the release pull request as a GitHub App rather than with the workflow's own token, because GitHub holds the workflows on a pull request from `github-actions[bot]` until someone approves them. Create a private GitHub App once (Settings › Developer settings › GitHub Apps) with no webhook and these repository permissions: Contents, Pull requests and Issues set to read and write. Install it on this repository only. Then store its client ID as a repository variable and a private key as a repository secret. The release-please job runs on every push to `main`, outside the `release` environment, so these two can't live there:
+
+```bash
+gh variable set RELEASE_APP_CLIENT_ID                          # paste the app's client ID
+gh secret set RELEASE_APP_PRIVATE_KEY < shot-release.private-key.pem
+```
 
 Each release also attaches `SHA256SUMS` and a build provenance attestation. To check a direct download, run `shasum -a 256 -c SHA256SUMS` and `gh attestation verify Shot-vX.Y.Z.zip -R LorcanChinnock/shot`.
 
