@@ -1,6 +1,5 @@
-#if canImport(CoreGraphics) && canImport(CoreText) && canImport(os)
+#if canImport(CoreGraphics) && canImport(os)
 import CoreGraphics
-import CoreText
 import Foundation
 import os
 
@@ -104,12 +103,12 @@ public struct EditorDocument: @unchecked Sendable {
 
     /// Grows `contentRect` to hold `annotation` plus `margin` on each side its shape reaches past.
     /// A spotlight only dims the image, so it never grows it.
-    public mutating func grow(toFit annotation: Annotation, margin: CGFloat) {
+    public mutating func grow(toFit annotation: Annotation, margin: CGFloat, shaper: any TextShaper) {
         if case .spotlight = annotation.kind {
             return
         }
-        let shape = annotation.bounds
-        let painted = annotation.paintedBounds.insetBy(dx: -margin, dy: -margin)
+        let shape = annotation.bounds(shaper: shaper)
+        let painted = annotation.paintedBounds(shaper: shaper).insetBy(dx: -margin, dy: -margin)
         var minX = contentRect.minX, minY = contentRect.minY, maxX = contentRect.maxX, maxY = contentRect.maxY
         if shape.minX < minX { minX = painted.minX }
         if shape.minY < minY { minY = painted.minY }
@@ -120,7 +119,7 @@ public struct EditorDocument: @unchecked Sendable {
 
     /// Pulls padding back in to what the annotations and the image's shadow and border still need, so moving or removing
     /// one retracts the content. Only edges at or beyond the image shrink, and never past the image.
-    public mutating func shrinkPadding(margin: CGFloat) {
+    public mutating func shrinkPadding(margin: CGFloat, shaper: any TextShaper) {
         let image = fullRect
         guard contentRect.minX < image.minX || contentRect.minY < image.minY || contentRect.maxX > image.maxX || contentRect.maxY > image.maxY else {
             return
@@ -128,14 +127,14 @@ public struct EditorDocument: @unchecked Sendable {
         let shapes = annotations.filter { annotation in
             if case .spotlight = annotation.kind { return false }
             return true
-        }.map { (annotation: $0, bounds: $0.bounds) }
+        }.map { (annotation: $0, bounds: $0.bounds(shaper: shaper)) }
         let capture = capturePaintedBounds
         func edge(_ current: CGFloat, image imageEdge: CGFloat, reaches: ((CGRect) -> Bool), painted paintedEdge: ((CGRect) -> CGFloat), outward: CGFloat) -> CGFloat {
             guard (current - imageEdge) * outward > 0 else {
                 return current
             }
             let needed = shapes.filter { reaches($0.bounds) }
-                .map { paintedEdge($0.annotation.paintedBounds.insetBy(dx: -margin, dy: -margin)) }
+                .map { paintedEdge($0.annotation.paintedBounds(shaper: shaper).insetBy(dx: -margin, dy: -margin)) }
                 .reduce(paintedEdge(capture)) { outward > 0 ? max($0, $1) : min($0, $1) }
             return outward > 0 ? min(current, needed) : max(current, needed)
         }
@@ -149,12 +148,12 @@ public struct EditorDocument: @unchecked Sendable {
 
     /// Sizes the content to the image with its shadow and border, and every annotation but spotlights, with `margin`
     /// around the annotations. A frame crop stays, within it.
-    public mutating func fitToContent(margin: CGFloat) {
+    public mutating func fitToContent(margin: CGFloat, shaper: any TextShaper) {
         contentRect = annotations.reduce(capturePaintedBounds) { canvas, annotation in
             if case .spotlight = annotation.kind {
                 return canvas
             }
-            return canvas.union(annotation.paintedBounds.insetBy(dx: -margin, dy: -margin))
+            return canvas.union(annotation.paintedBounds(shaper: shaper).insetBy(dx: -margin, dy: -margin))
         }.integral
         clampCrop()
     }
@@ -162,15 +161,15 @@ public struct EditorDocument: @unchecked Sendable {
     /// The part of the image, and of what's drawn under the lowest spotlight, that the spotlights dim: all of it
     /// outside every hard-edged spotlight, never the rest of the padding. `softSpotlights` fade it further.
     /// `nil` when there are no spotlights. One with no area, such as a straight drag, dims nothing.
-    public var spotlightDimPath: CGPath? {
+    public func spotlightDimPath(shaper: any TextShaper) -> CGPath? {
         var lit: CGPath?
         var hasSpotlight = false
         var isAboveDim = false
         let below = CGMutablePath()
         for annotation in annotations where !annotation.isHidden {
             guard case let .spotlight(rect, style) = annotation.kind else {
-                if !isAboveDim, !annotation.paintedBounds.isNull {
-                    below.addRect(annotation.paintedBounds)
+                if !isAboveDim, case let painted = annotation.paintedBounds(shaper: shaper), !painted.isNull {
+                    below.addRect(painted)
                 }
                 continue
             }
@@ -337,7 +336,7 @@ extension EditorDocument {
     /// A border the target can't have is dropped. A window captured with the macOS shadow takes no style: its image
     /// includes the shadow's see-through margin, which a border or corners would go round. A locked annotation, or one
     /// that can't be styled, is left alone.
-    public mutating func setStyle(_ style: ObjectStyle, of target: StyleTarget, margin: CGFloat) {
+    public mutating func setStyle(_ style: ObjectStyle, of target: StyleTarget, margin: CGFloat, shaper: any TextShaper) {
         guard let kind = styleKind(of: target) else {
             return
         }
@@ -351,9 +350,9 @@ extension EditorDocument {
                 return
             }
             annotations[index].style = style
-            grow(toFit: annotations[index], margin: margin)
+            grow(toFit: annotations[index], margin: margin, shaper: shaper)
         }
-        shrinkPadding(margin: margin)
+        shrinkPadding(margin: margin, shaper: shaper)
     }
 
     /// Sets the corner radius of `target`. A locked annotation, one without corners to round, and a window captured with
@@ -383,13 +382,13 @@ extension EditorDocument {
     /// Pastes `copied` on each of `targets`, on a document of `scale` pixels per point: the fields both it and the target
     /// have. Every kind has a shadow; the border goes only on a target that can have that border, and S, M and L stay S,
     /// M and L; the corners go only between things with corners. Locked annotations are left alone.
-    public mutating func pasteStyle(_ copied: CopiedStyle, to targets: [StyleTarget], scale: CGFloat, margin: CGFloat) {
+    public mutating func pasteStyle(_ copied: CopiedStyle, to targets: [StyleTarget], scale: CGFloat, margin: CGFloat, shaper: any TextShaper) {
         for target in targets {
             guard let kind = styleKind(of: target) else {
                 continue
             }
             let transparent = copied.style.border?.kind == .outline && hasTransparency(of: target)
-            setStyle(copied.pasted(on: style(of: target), of: kind, transparent: transparent, scale: scale), of: target, margin: margin)
+            setStyle(copied.pasted(on: style(of: target), of: kind, transparent: transparent, scale: scale), of: target, margin: margin, shaper: shaper)
             if let radius = copied.pastedCornerRadius(on: kind, ontoShape: isShapeWithCorners(target), scale: scale) {
                 if case let .annotation(id) = target, let index = annotations.firstIndex(where: { $0.id == id }), annotations[index].roundsShape, !annotations[index].isLocked {
                     annotations[index].cornerRadius = radius == 0 ? nil : radius
@@ -429,7 +428,7 @@ public extension EditorDocument {
 extension EditorDocument {
     /// Crops the placed image with `id` to `visible`, which is kept within where the whole image is drawn, and fits the
     /// canvas to it. A crop that leaves all of it is none. Anything but a placed image is left alone.
-    public mutating func cropImage(_ id: UUID, to visible: CGRect, margin: CGFloat) {
+    public mutating func cropImage(_ id: UUID, to visible: CGRect, margin: CGFloat, shaper: any TextShaper) {
         guard let index = annotations.firstIndex(where: { $0.id == id }), case let .image(image, _) = annotations[index].kind,
               let full = annotations[index].imageFullRect else {
             return
@@ -440,33 +439,33 @@ extension EditorDocument {
         }
         annotations[index].kind = .image(image, rect: kept)
         annotations[index].imageCrop = ImageCrop(visible: kept, within: full)
-        grow(toFit: annotations[index], margin: margin)
-        shrinkPadding(margin: margin)
+        grow(toFit: annotations[index], margin: margin, shaper: shaper)
+        shrinkPadding(margin: margin, shaper: shaper)
     }
 
     /// Shows all of the placed image with `id` again, at the size its crop had it.
-    public mutating func resetImageCrop(_ id: UUID, margin: CGFloat) {
+    public mutating func resetImageCrop(_ id: UUID, margin: CGFloat, shaper: any TextShaper) {
         guard let index = annotations.firstIndex(where: { $0.id == id }), case let .image(image, _) = annotations[index].kind,
               let full = annotations[index].imageFullRect, annotations[index].imageCrop != nil else {
             return
         }
         annotations[index].kind = .image(image, rect: full)
         annotations[index].imageCrop = nil
-        grow(toFit: annotations[index], margin: margin)
-        shrinkPadding(margin: margin)
+        grow(toFit: annotations[index], margin: margin, shaper: shaper)
+        shrinkPadding(margin: margin, shaper: shaper)
     }
 }
 
 extension EditorDocument {
     /// Removes the annotations in `ids` that aren't locked, and the padding only they needed. Returns the ids removed.
     @discardableResult
-    public mutating func deleteLayers(_ ids: Set<UUID>, margin: CGFloat) -> Set<UUID> {
+    public mutating func deleteLayers(_ ids: Set<UUID>, margin: CGFloat, shaper: any TextShaper) -> Set<UUID> {
         let removable = Set(annotations.filter { ids.contains($0.id) && !$0.isLocked }.map(\.id))
         guard !removable.isEmpty else {
             return []
         }
         annotations.removeAll { removable.contains($0.id) }
-        shrinkPadding(margin: margin)
+        shrinkPadding(margin: margin, shaper: shaper)
         return removable
     }
 }
@@ -477,7 +476,7 @@ extension EditorDocument {
     /// steps on again so repeated pastes cascade, and a counter takes the next number.
     /// The canvas grows if the copy reaches past its edge.
     @discardableResult
-    public mutating func paste(_ annotation: Annotation, step: CGFloat, margin: CGFloat) -> UUID {
+    public mutating func paste(_ annotation: Annotation, step: CGFloat, margin: CGFloat, shaper: any TextShaper) -> UUID {
         var copy = annotation.withNewID()
         copy.isHidden = false
         copy.isLocked = false
@@ -486,27 +485,28 @@ extension EditorDocument {
         }
         let offset = CGVector(dx: step, dy: step)
         copy.offset(by: offset)
-        if !copy.bounds.intersects(canvasRect) {
-            copy.offset(by: CGVector(dx: canvasRect.midX - copy.bounds.midX, dy: canvasRect.midY - copy.bounds.midY))
+        let bounds = copy.bounds(shaper: shaper)
+        if !bounds.intersects(canvasRect) {
+            copy.offset(by: CGVector(dx: canvasRect.midX - bounds.midX, dy: canvasRect.midY - bounds.midY))
         }
         if step > 0 {
-            while annotations.contains(where: { $0.bounds == copy.bounds }) {
+            while annotations.contains(where: { $0.bounds(shaper: shaper) == copy.bounds(shaper: shaper) }) {
                 copy.offset(by: offset)
             }
         }
         annotations.append(copy)
-        grow(toFit: copy, margin: margin)
+        grow(toFit: copy, margin: margin, shaper: shaper)
         return copy.id
     }
 
     /// Moves the annotation with `id` by `delta`, growing the canvas if it now reaches past the edge and shrinking it if it no longer does.
-    public mutating func move(_ id: UUID, by delta: CGVector, margin: CGFloat) {
+    public mutating func move(_ id: UUID, by delta: CGVector, margin: CGFloat, shaper: any TextShaper) {
         guard let index = annotations.firstIndex(where: { $0.id == id }) else {
             return
         }
         annotations[index].offset(by: delta)
-        grow(toFit: annotations[index], margin: margin)
-        shrinkPadding(margin: margin)
+        grow(toFit: annotations[index], margin: margin, shaper: shaper)
+        shrinkPadding(margin: margin, shaper: shaper)
     }
 }
 
@@ -536,7 +536,7 @@ extension EditorDocument {
     /// Places `image` on whole pixels, centred on `point` or beside the canvas when there's none, grows the
     /// canvas to hold it, and returns its annotation's id. See `placementSize` for the size it's given.
     @discardableResult
-    public mutating func addImage(_ image: CGImage, scale: CGFloat, documentScale: CGFloat, centeredAt point: CGPoint?, margin: CGFloat) -> UUID {
+    public mutating func addImage(_ image: CGImage, scale: CGFloat, documentScale: CGFloat, centeredAt point: CGPoint?, margin: CGFloat, shaper: any TextShaper) -> UUID {
         let size = Self.placementSize(of: image, scale: scale, documentScale: documentScale)
         let rect: CGRect
         if let point {
@@ -546,7 +546,7 @@ extension EditorDocument {
         }
         let annotation = Annotation(kind: .image(AnnotationImage(image), rect: rect), color: RGBA(0, 0, 0), lineWidth: 0)
         annotations.append(annotation)
-        grow(toFit: annotation, margin: margin)
+        grow(toFit: annotation, margin: margin, shaper: shaper)
         return annotation.id
     }
 }

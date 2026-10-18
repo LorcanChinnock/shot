@@ -47,7 +47,7 @@ public enum StyleThumbnail {
             let radius = BoxShape.cornerRadius(cornerRadius * tileStyle, in: rect)
             AnnotationRenderer.drawImage(fitted, in: rect, cornerRadius: radius, style: style.scaled(by: tileStyle), shadowBackground: background, ctx: ctx)
         case var .annotation(annotation):
-            let bounds = annotation.bounds
+            let bounds = annotation.bounds(shaper: canvasType.shaper)
             guard !bounds.isNull, bounds.width > 0 || bounds.height > 0 else {
                 return nil
             }

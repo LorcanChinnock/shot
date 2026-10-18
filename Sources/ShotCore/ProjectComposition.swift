@@ -282,7 +282,7 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
             var stacked: Set<UUID> = []
             var run: [AnnotationFrame.Item] = []
             func item(_ clip: AnnotationClip) -> AnnotationFrame.Item {
-                let state = clip.rendered(atTimeline: time)
+                let state = clip.rendered(atTimeline: time, shaper: instruction.canvasType.shaper)
                 return AnnotationFrame.Item(annotation: state.annotation, rotation: state.rotation, opacity: state.opacity)
             }
             func flush() {

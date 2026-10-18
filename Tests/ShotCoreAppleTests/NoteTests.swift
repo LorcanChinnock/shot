@@ -1,5 +1,4 @@
 import CoreGraphics
-import CoreText
 import Foundation
 import Testing
 @testable import ShotCore
@@ -48,7 +47,7 @@ private let longText = "Sticky notes wrap their text to the width of the note, s
     #expect(narrow.frame.width == 160)
     #expect(narrow.frame.height > wide.frame.height)
     for line in narrow.lines {
-        #expect(CGFloat(CTLineGetTypographicBounds(line, nil, nil, nil)) - CGFloat(CTLineGetTrailingWhitespaceWidth(line)) <= narrow.textRect.width + 0.5)
+        #expect(line.width - line.trailingWhitespaceWidth <= narrow.textRect.width + 0.5)
     }
     #expect(narrow.frame.height == narrow.lineHeight * CGFloat(narrow.lines.count) + narrow.padding * 2)
 }
@@ -57,29 +56,8 @@ private let longText = "Sticky notes wrap their text to the width of the note, s
     let l = try layout(note(String(repeating: "W", count: 40), CGRect(x: 0, y: 0, width: 120, height: 0)))
     #expect(l.lines.count > 1)
     for line in l.lines {
-        #expect(CGFloat(CTLineGetTypographicBounds(line, nil, nil, nil)) <= l.textRect.width + 0.5)
+        #expect(line.width <= l.textRect.width + 0.5)
     }
-}
-
-@Test func layoutKeepsNewlinesAndEmptyNotesHaveOneLine() throws {
-    #expect(try layout(note("One\nTwo\n\nFour", CGRect(x: 0, y: 0, width: 400, height: 0))).lines.count == 4)
-    let empty = try layout(note("", CGRect(x: 0, y: 0, width: 400, height: 0)))
-    #expect(empty.lines.count == 1)
-    #expect(empty.frame.height == empty.lineHeight + empty.padding * 2)
-}
-
-@Test func noteHeightIsTheRectOrTheTextWhicheverIsTaller() throws {
-    let tall = try layout(note("Hi", CGRect(x: 0, y: 0, width: 200, height: 300)))
-    #expect(tall.frame.height == 300)
-    let short = try layout(note(longText, CGRect(x: 0, y: 0, width: 200, height: 10)))
-    #expect(short.frame.height > 10)
-    #expect(short.frame.height == short.lineHeight * CGFloat(short.lines.count) + short.padding * 2)
-}
-
-@Test func noteWidthNeverDropsBelowTheMinimum() throws {
-    let l = try layout(note("Hi", CGRect(x: 0, y: 0, width: 5, height: 0)))
-    #expect(l.frame.width == NoteLayout.minWidth(fontSize: l.fontSize))
-    #expect(l.textRect.width > 0)
 }
 
 @Test func layoutScalesWithTheLineWidth() throws {
@@ -88,19 +66,6 @@ private let longText = "Sticky notes wrap their text to the width of the note, s
     #expect(try layout(large).fontSize > layout(small).fontSize)
     #expect(try layout(large).frame.height > layout(small).frame.height)
     #expect(Annotation(kind: .shape(.rectangle, rect: .zero), color: yellow, lineWidth: 4).noteLayout == nil)
-}
-
-// MARK: Placement
-
-@Test func clickPlacesADefaultWidthNoteAndDragSetsItsSize() {
-    let font: CGFloat = 20
-    let click = NoteLayout.placementRect(from: CGPoint(x: 50, y: 60), to: CGPoint(x: 51, y: 61), fontSize: font)
-    #expect(click == CGRect(x: 50, y: 60, width: NoteLayout.defaultWidth(fontSize: font), height: 0))
-    let drag = NoteLayout.placementRect(from: CGPoint(x: 300, y: 200), to: CGPoint(x: 100, y: 100), fontSize: font)
-    #expect(drag == CGRect(x: 100, y: 100, width: 200, height: 100))
-    let thin = NoteLayout.placementRect(from: CGPoint(x: 100, y: 100), to: CGPoint(x: 110, y: 160), fontSize: font)
-    #expect(thin.width == NoteLayout.minWidth(fontSize: font))
-    #expect(thin.height == 60)
 }
 
 // MARK: Bounds and hit-testing

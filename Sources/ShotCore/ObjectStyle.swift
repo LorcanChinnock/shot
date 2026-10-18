@@ -372,7 +372,7 @@ public extension CopiedStyle {
     func styledCapture(_ image: CGImage, scale: CGFloat, background: RGBA?, windowShadow: Bool = false, canvasType: any Canvas.Type) -> CGImage? {
         var doc = EditorDocument(base: image, background: background)
         doc.hasWindowShadow = windowShadow
-        doc.pasteStyle(self, to: [.capture], scale: scale, margin: 0)
+        doc.pasteStyle(self, to: [.capture], scale: scale, margin: 0, shaper: canvasType.shaper)
         guard !doc.captureStyle.isEmpty || doc.captureCornerRadius > 0 else {
             return nil
         }
