@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.63](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.62...v0.7.0-beta.63) (2026-10-18)
+
+
+### Bug Fixes
+
+* **video-editor:** make the compositor's cancel wait for the frames it's drawing ([#707](https://github.com/LorcanChinnock/shot/issues/707)) ([d9fbfc1](https://github.com/LorcanChinnock/shot/commit/d9fbfc1c7e89ee863322b3e9d29877a4e3a917e0))
+
 ## [0.7.0-beta.62](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.61...v0.7.0-beta.62) (2026-10-18)
 
 
