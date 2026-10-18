@@ -68,7 +68,7 @@ public enum VersionWriter {
             throw .draw
         }
         if atOneX {
-            image = ImageCodec.downscaled(image, scale: scale)
+            image = ImageCodec.downscaled(image, scale: scale, canvasType: canvasType)
         }
         var record = record
         record?.size = CaptureRecord.Size(width: image.width, height: image.height)

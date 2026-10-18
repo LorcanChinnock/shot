@@ -42,7 +42,7 @@ public enum StyleThumbnail {
         switch subject {
         case let .image(image):
             // Shrunk to the tile first, so a hairline stays a pixel and a large screenshot isn't drawn small each time.
-            let fitted = shrunk(image, toFit: box.size)
+            let fitted = shrunk(image, toFit: box.size, canvasType: canvasType)
             let rect = centred(CGSize(width: fitted.width, height: fitted.height), in: box)
             let radius = BoxShape.cornerRadius(cornerRadius * tileStyle, in: rect)
             AnnotationRenderer.drawImage(fitted, in: rect, cornerRadius: radius, style: style.scaled(by: tileStyle), shadowBackground: background, ctx: ctx)
@@ -58,7 +58,7 @@ public enum StyleThumbnail {
             ctx.translateBy(x: -bounds.minX, y: -bounds.minY)
             // The context scales by `fit`, so the style is drawn that much larger in the annotation's own pixels.
             annotation.style = style.scaled(by: tileStyle / fit)
-            AnnotationRenderer.draw(annotation, base: placeholder, background: background, in: ctx)
+            AnnotationRenderer.draw(annotation, base: canvasType.placeholder, background: background, in: ctx)
         }
         return ctx.makeImage()
     }
@@ -66,11 +66,6 @@ public enum StyleThumbnail {
     private static func centred(_ size: CGSize, in box: CGRect) -> CGRect {
         CGRect(x: box.midX - size.width / 2, y: box.midY - size.height / 2, width: size.width, height: size.height).integral
     }
-
-    private static let placeholder: CGImage = {
-        let context = CGContext(data: nil, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
-        return context.makeImage()!
-    }()
 
     /// The image last shrunk and the copy made, since every tile of a popover draws the same one. It holds on to the
     /// screenshot, so the popover lets go of it with `forgetShrunk` as it closes.
@@ -81,7 +76,7 @@ public enum StyleThumbnail {
     }
 
     /// `image` scaled to fit `box`, in pixels, keeping its shape; as it is when it already fits.
-    static func shrunk(_ image: CGImage, toFit box: CGSize) -> CGImage {
+    static func shrunk(_ image: CGImage, toFit box: CGSize, canvasType: any Canvas.Type) -> CGImage {
         let factor = min(box.width / CGFloat(image.width), box.height / CGFloat(image.height))
         guard factor < 1 else {
             return image
@@ -89,7 +84,7 @@ public enum StyleThumbnail {
         if let known = lastShrunk.withLock({ $0.flatMap { $0.source === image && $0.box == box ? $0.image : nil } }) {
             return known
         }
-        let small = ImageCodec.downscaled(image, scale: 1 / factor)
+        let small = ImageCodec.downscaled(image, scale: 1 / factor, canvasType: canvasType)
         lastShrunk.withLock { $0 = (image, box, small) }
         return small
     }
