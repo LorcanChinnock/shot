@@ -1,14 +1,9 @@
-#if canImport(CoreGraphics) && canImport(CoreImage) && canImport(CoreText)
+#if canImport(CoreGraphics) && canImport(CoreText)
 import CoreGraphics
-import CoreImage
-import CoreImage.CIFilterBuiltins
 import CoreText
 
 public enum AnnotationRenderer {
-    private static let ciContext = CIContext(options: [.cacheIntermediates: false])
-    /// Blurs masks as plain coverage values, without converting them through a colour space.
-    private static let maskContext = CIContext(options: [.cacheIntermediates: false, .workingColorSpace: NSNull(), .outputColorSpace: NSNull()])
-    /// What Core Image made on the last render, so redrawing while editing doesn't filter what hasn't changed again.
+    /// What the canvas's effects made on the last render, so redrawing while editing doesn't filter what hasn't changed again.
     static let cache = RenderCache()
 
     /// Lets go of the images kept for redrawing, so a closed editor's capture doesn't stay in memory.
@@ -102,7 +97,8 @@ public enum AnnotationRenderer {
             let backdrop = Backdrop(base, below: below, around: area, outset: 0, look: look)
             let blurred = cache.value(for: .dimBlur(backdrop, radius: radius)) {
                 let source = backdrop.draw(canvasType: type(of: ctx))
-                return blurredWhole(source.image, radius: radius).map { ($0, CGRect(origin: source.origin, size: CGSize(width: $0.width, height: $0.height))) }
+                // Its edges are kept sharp-cornered rather than fading out.
+                return type(of: ctx).effects.blurred(source.image, radius: radius).map { ($0, CGRect(origin: source.origin, size: CGSize(width: $0.width, height: $0.height))) }
             }
             guard let blurred else {
                 return
@@ -161,27 +157,10 @@ public enum AnnotationRenderer {
         guard let shape = ctx.makeImage() else {
             return nil
         }
-        let filter = CIFilter.gaussianBlur()
-        filter.inputImage = CIImage(cgImage: shape).clampedToExtent()
-        filter.radius = Float(radius * scale)
-        guard let output = filter.outputImage?.cropped(to: extent),
-              let blurred = maskContext.createCGImage(output, from: extent, format: .L8, colorSpace: CGColorSpaceCreateDeviceGray())
-        else {
+        guard let blurred = canvasType.effects.blurredMask(shape, radius: radius * scale) else {
             return nil
         }
         return (blurred, CGRect(x: frame.minX, y: frame.minY, width: extent.width / scale, height: extent.height / scale))
-    }
-
-    /// All of `image` blurred by `radius`, its edges kept sharp-cornered rather than fading out.
-    static func blurredWhole(_ image: CGImage, radius: CGFloat) -> CGImage? {
-        let extent = CGRect(x: 0, y: 0, width: image.width, height: image.height)
-        let filter = CIFilter.gaussianBlur()
-        filter.inputImage = CIImage(cgImage: image).clampedToExtent()
-        filter.radius = Float(radius)
-        guard let output = filter.outputImage?.cropped(to: extent) else {
-            return nil
-        }
-        return ciContext.createCGImage(output, from: extent)
     }
 
     /// The document drawn on a new `canvasType` canvas in the screenshot's colour space.
@@ -281,7 +260,7 @@ public enum AnnotationRenderer {
             let backdrop = Backdrop(base, below: below, around: rect, outset: annotation.backdropReach(base: base) ?? 0, look: look)
             let pixelated = cache.value(for: .pixelate(backdrop, rect: rect, scale: scale)) {
                 let source = backdrop.draw(canvasType: type(of: ctx))
-                return pixelate(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y), scale: scale).map { ($0, rect.integral) }
+                return pixelate(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y), scale: scale, effects: type(of: ctx).effects).map { ($0, rect.integral) }
             }
             if let pixelated {
                 drawUpright(pixelated.image, in: pixelated.frame, ctx: ctx)
@@ -291,7 +270,7 @@ public enum AnnotationRenderer {
             let backdrop = Backdrop(base, below: below, around: rect, outset: annotation.backdropReach(base: base) ?? 0, look: look)
             let blurred = cache.value(for: .blur(backdrop, rect: rect, radius: radius)) {
                 let source = backdrop.draw(canvasType: type(of: ctx))
-                return blur(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y), radius: radius).map { ($0, rect.integral) }
+                return blur(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y), radius: radius, effects: type(of: ctx).effects).map { ($0, rect.integral) }
             }
             if let blurred {
                 drawUpright(blurred.image, in: blurred.frame, ctx: ctx)
@@ -401,7 +380,7 @@ public enum AnnotationRenderer {
             }
             // The mask is made at the image's own size, so the width is grown in its pixels.
             let scale = CGSize(width: rect.width / CGFloat(image.width), height: rect.height / CGFloat(image.height))
-            guard let mask = outlineMask(of: image, radius: width / max(scale.width, scale.height)) else {
+            guard let mask = outlineMask(of: image, radius: width / max(scale.width, scale.height), effects: type(of: ctx).effects) else {
                 return
             }
             let frame = CGRect(
@@ -418,30 +397,14 @@ public enum AnnotationRenderer {
         }
     }
 
-    /// The shape of `image`'s opaque pixels grown by `radius` of its pixels, white on black, made with Core Image and kept
+    /// The shape of `image`'s opaque pixels grown by `radius` of its pixels, white on black, made with `effects` and kept
     /// while the image is drawn. Its frame is where it goes in the image's pixels, reaching `radius` past each edge.
-    private static func outlineMask(of image: CGImage, radius: CGFloat) -> RenderCache.Value? {
+    private static func outlineMask(of image: CGImage, radius: CGFloat, effects: any ImageEffects) -> RenderCache.Value? {
         cache.value(for: .outlineMask(SampledImage(image: image), radius: radius)) {
             let extent = CGRect(x: 0, y: 0, width: image.width, height: image.height)
             let grown = extent.insetBy(dx: -radius.rounded(.up), dy: -radius.rounded(.up))
-            let dilate = CIFilter.morphologyMaximum()
-            dilate.inputImage = CIImage(cgImage: image)
-            dilate.radius = Float(radius)
-            // Grey from the grown alpha, over opaque black.
-            let grey = CIFilter.colorMatrix()
-            grey.inputImage = dilate.outputImage
-            grey.rVector = CIVector(x: 0, y: 0, z: 0, w: 1)
-            grey.gVector = CIVector(x: 0, y: 0, z: 0, w: 1)
-            grey.bVector = CIVector(x: 0, y: 0, z: 0, w: 1)
-            grey.aVector = CIVector(x: 0, y: 0, z: 0, w: 0)
-            grey.biasVector = CIVector(x: 0, y: 0, z: 0, w: 1)
-            guard let output = grey.outputImage?.cropped(to: grown),
-                  let mask = maskContext.createCGImage(output, from: grown, format: .L8, colorSpace: CGColorSpaceCreateDeviceGray())
-            else {
-                return nil
-            }
-            // Core Image counts up from the bottom, but the grown frame is the same distance past every edge.
-            return (mask, grown)
+            // The mask counts up from the bottom, but the grown frame is the same distance past every edge.
+            return effects.grownMask(of: image, radius: radius).map { ($0, grown) }
         }
     }
 
@@ -538,19 +501,12 @@ public enum AnnotationRenderer {
         ctx.restoreState()
     }
 
-    static func pixelate(_ base: CGImage, rect: CGRect, scale: CGFloat) -> CGImage? {
+    static func pixelate(_ base: CGImage, rect: CGRect, scale: CGFloat, effects: any ImageEffects) -> CGImage? {
         let region = CGRect(x: rect.minX, y: CGFloat(base.height) - rect.maxY, width: rect.width, height: rect.height).integral
         guard region.width >= 1, region.height >= 1 else {
             return nil
         }
-        let filter = CIFilter.pixellate()
-        filter.inputImage = CIImage(cgImage: base).clampedToExtent()
-        filter.center = region.origin
-        filter.scale = Float(scale)
-        guard let output = filter.outputImage?.cropped(to: region) else {
-            return nil
-        }
-        return ciContext.createCGImage(output, from: region)
+        return effects.pixelated(base, region: region, blockSize: scale)
     }
 
     static func longerSide(of image: CGImage) -> CGFloat {
@@ -563,23 +519,13 @@ public enum AnnotationRenderer {
         return Redaction.size(amount: annotation.redactionAmount(imageLength: length) ?? Redaction.defaultAmount, imageLength: length)
     }
 
-    static func blur(_ base: CGImage, rect: CGRect, radius: CGFloat) -> CGImage? {
+    static func blur(_ base: CGImage, rect: CGRect, radius: CGFloat, effects: any ImageEffects) -> CGImage? {
         let region = CGRect(x: rect.minX, y: CGFloat(base.height) - rect.maxY, width: rect.width, height: rect.height).integral
         guard region.width >= 1, region.height >= 1 else {
             return nil
         }
         // A blur alone can be partly undone, so average the region into blocks first, which can't, then blur the blocks smooth.
-        let blocks = CIFilter.pixellate()
-        blocks.inputImage = CIImage(cgImage: base).clampedToExtent()
-        blocks.center = region.origin
-        blocks.scale = Float(radius)
-        let filter = CIFilter.gaussianBlur()
-        filter.inputImage = blocks.outputImage
-        filter.radius = Float(radius)
-        guard let output = filter.outputImage?.cropped(to: region) else {
-            return nil
-        }
-        return ciContext.createCGImage(output, from: region)
+        return effects.blurredBlocks(base, region: region, radius: radius)
     }
 }
 #endif

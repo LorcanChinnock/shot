@@ -14,6 +14,8 @@ public protocol Canvas: AnyObject, SendableMetatype {
     /// A blank canvas `width` by `height` pixels, clear where it has alpha and black where it doesn't; `nil` if it can't
     /// be made.
     init?(width: Int, height: Int, format: CanvasFormat)
+    /// The filters for the images this type of canvas makes and draws.
+    static var effects: any ImageEffects { get }
 
     func saveState()
     func restoreState()
