@@ -1,3 +1,4 @@
+#if canImport(AVFoundation) && canImport(CoreGraphics)
 import AVFoundation
 import CoreGraphics
 
@@ -75,3 +76,4 @@ public enum KeyFrameExtractor {
         return bytes
     }
 }
+#endif

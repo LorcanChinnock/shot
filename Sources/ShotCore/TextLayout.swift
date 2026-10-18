@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics) && canImport(CoreText)
 import CoreGraphics
 import CoreText
 import Foundation
@@ -93,3 +94,4 @@ public struct NoteLayout {
         frame = CGRect(x: rect.minX, y: rect.minY, width: width, height: max(rect.height, textHeight))
     }
 }
+#endif

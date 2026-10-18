@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics) && canImport(ImageIO) && canImport(UniformTypeIdentifiers)
 import CoreGraphics
 import Foundation
 import ImageIO
@@ -248,3 +249,4 @@ public enum ImageTrim {
         return image.cropping(to: CGRect(x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1)) ?? image
     }
 }
+#endif

@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics) && canImport(CoreText)
 import CoreGraphics
 import CoreText
 import Foundation
@@ -289,3 +290,4 @@ public struct SpotlightStyle: Equatable, Hashable, Codable, Sendable {
         max(4, length * 0.008 * pow(2, (strength - 0.5) / 0.2))
     }
 }
+#endif

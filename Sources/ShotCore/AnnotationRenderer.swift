@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics) && canImport(CoreImage) && canImport(CoreText)
 import CoreGraphics
 import CoreImage
 import CoreImage.CIFilterBuiltins
@@ -621,3 +622,4 @@ public enum AnnotationRenderer {
         return ciContext.createCGImage(output, from: region)
     }
 }
+#endif

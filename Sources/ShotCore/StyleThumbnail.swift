@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics) && canImport(os)
 import CoreGraphics
 import Foundation
 import os
@@ -94,3 +95,4 @@ public enum StyleThumbnail {
         return small
     }
 }
+#endif

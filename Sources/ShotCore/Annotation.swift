@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics) && canImport(CoreText)
 import CoreGraphics
 import CoreText
 import Foundation
@@ -828,3 +829,4 @@ public enum AnnotationHandle: Hashable, Sendable {
         CGPoint(x: [rect.minX, rect.midX, rect.maxX][dx + 1], y: [rect.minY, rect.midY, rect.maxY][dy + 1])
     }
 }
+#endif

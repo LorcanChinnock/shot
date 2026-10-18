@@ -2,7 +2,7 @@ import AppKit
 import AVFoundation
 import Observation
 import os
-import ShotCore
+import ShotCoreApple
 import SwiftUI
 
 private let log = Logger.shot("recording")

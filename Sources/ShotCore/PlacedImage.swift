@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics) && canImport(os)
 import CoreGraphics
 import Foundation
 import os
@@ -75,3 +76,4 @@ public final class AnnotationImage: Equatable, Codable, @unchecked Sendable {
         self.image = image
     }
 }
+#endif

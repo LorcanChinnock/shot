@@ -1,3 +1,4 @@
+#if canImport(AVFoundation)
 import AVFoundation
 
 public enum MediaProbe {
@@ -37,3 +38,4 @@ public enum MediaProbe {
         return ImportedMedia(source: url, duration: duration, size: size, hasAudio: !audio.isEmpty)
     }
 }
+#endif

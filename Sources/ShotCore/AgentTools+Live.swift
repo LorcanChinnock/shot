@@ -1,3 +1,4 @@
+#if canImport(AVFoundation) && canImport(ImageIO)
 import AVFoundation
 import Foundation
 import ImageIO
@@ -199,3 +200,4 @@ extension AgentTools {
         return CaptureRecord.Size(width: width, height: height)
     }
 }
+#endif

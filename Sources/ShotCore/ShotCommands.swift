@@ -1,3 +1,4 @@
+#if canImport(AVFoundation) && canImport(ImageIO) && canImport(UniformTypeIdentifiers)
 import AVFoundation
 import Foundation
 import ImageIO
@@ -642,3 +643,4 @@ public enum ShotCommands {
         return .object(["width": .number(Double(width)), "height": .number(Double(height))])
     }
 }
+#endif

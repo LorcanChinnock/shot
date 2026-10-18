@@ -1,6 +1,6 @@
 import Darwin
 import Foundation
-import ShotCore
+import ShotCoreApple
 
 extension ShotCLI {
     /// `shot record --window … -- <command>`: records `target` through the app while `arguments` runs, with its input

@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
 import Foundation
 
@@ -205,3 +206,4 @@ extension CaptureRecord {
         return layers.count == annotations.count ? (layers, rect, kept) : nil
     }
 }
+#endif

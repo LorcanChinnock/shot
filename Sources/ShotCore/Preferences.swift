@@ -1,3 +1,4 @@
+#if canImport(os)
 import Foundation
 import os
 
@@ -449,3 +450,4 @@ public struct Preferences {
         KeyCombo(encoded: store.string(forKey: PreferenceKey.hotkey(action)) ?? "")
     }
 }
+#endif

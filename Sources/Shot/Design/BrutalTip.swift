@@ -1,6 +1,6 @@
 import AppKit
 import Combine
-import ShotCore
+import ShotCoreApple
 import SwiftUI
 
 private struct HostsTipsKey: EnvironmentKey {

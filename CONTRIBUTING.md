@@ -29,8 +29,8 @@ Only `make dist` builds `Shot.app` with the update feed. Every other build is `S
 |---|---|
 | `make run` | Build, install to `/Applications/ShotDev.app`, and launch |
 | `make build` | `swift build`, without making an app |
-| `make test` | Run the `ShotModel` and `ShotCore` unit tests |
-| `make test-linux` | Run the `ShotModel` tests on Linux in Docker, as CI does |
+| `make test` | Run the `ShotModel`, `ShotCore` and `ShotCoreApple` unit tests |
+| `make test-linux` | Run the `ShotModel` and `ShotCore` tests on Linux in Docker, as CI does |
 | `make lint` | Check for code patterns that have caused bugs (`scripts/lint.sh`) and, on a Mac, that the string catalog is up to date |
 | `make strings` | Add new strings to `Resources/Localizable.xcstrings` and drop unused ones |
 | `make perf` | Time the `ShotCore` paths that have [performance budgets](docs/performance.md) |
@@ -51,13 +51,16 @@ Sources/ShotModel/    Pure logic that needs only Foundation, tested on Linux: un
                       video trim and cuts, hotkeys, layout math
 Sources/ShotCore/     Pure logic that needs Apple frameworks: geometry, file naming, image
                       encoding, annotations and rendering, redaction, GIF export, segment
-                      joining, preferences
+                      joining, preferences. Builds on Linux, with Apple-only files
+                      inside #if canImport
+Sources/ShotCoreApple/ macOS only: the Apple implementations of ShotCore's protocols
 Sources/Shot/         The app: capture, selection overlay, Quick Access, editor,
                       video editor, recording, gallery, settings, the welcome window,
                       the agent server (Agents/), and the design system
 Sources/ShotCLI/      The `shot` command and MCP server, bundled as shot-cli
 Tests/ShotModelTests/ ShotModel's Swift Testing suite
-Tests/ShotCoreTests/  ShotCore's Swift Testing suite
+Tests/ShotCoreTests/  ShotCore's portable tests, run on Linux too
+Tests/ShotCoreAppleTests/ The tests of ShotCore's Apple-only code
 Resources/            Info.plist, the app icon and the string catalogs
 scripts/              Bundling, install, signing certificate, icon, lint, performance
                       checks, and the Homebrew cask
@@ -65,11 +68,11 @@ docs/                 Screenshots for the README and the user guide, and the dem
 site/                 The website (see site/README.md)
 ```
 
-If logic can be tested without a window, a display, or a permission, put it in `ShotModel` and add a test. If it needs an Apple framework, such as CoreText, AVFoundation or `CGPath`, put it in `ShotCore` instead, keeping the Apple part as thin as you can. CI also runs `ShotModel`'s tests on Linux, which keeps it portable. `Shot` holds the AppKit and SwiftUI code that needs a real session.
+If logic can be tested without a window, a display, or a permission, put it in `ShotModel` and add a test. If it needs an Apple framework, such as CoreText, AVFoundation or `CGPath`, put it in `ShotCore` instead, keeping the Apple part as thin as you can and inside `#if canImport(...)`, with its test in `ShotCoreAppleTests`. CI also runs the `ShotModel` and `ShotCore` tests on Linux, which keeps them portable. Shot is becoming cross-platform ([#646](https://github.com/LorcanChinnock/shot/issues/646)): ShotCore's Apple framework calls are moving behind protocols, with the Apple implementations in `ShotCoreApple`. `Shot` holds the AppKit and SwiftUI code that needs a real session.
 
 ## Strings and translations
 
-Shot's interface is in English, and every string it shows goes through `Resources/Localizable.xcstrings`, so it can be translated. Each build extracts the strings from `Sources/Shot` and `Sources/ShotCore` (see `Package.swift`), and `make strings` adds the new ones to the catalog. `make lint` and CI fail while the catalog is out of date.
+Shot's interface is in English, and every string it shows goes through `Resources/Localizable.xcstrings`, so it can be translated. Each build extracts the strings from `Sources/Shot`, `Sources/ShotCore` and `Sources/ShotCoreApple` (see `Package.swift`), and `make strings` adds the new ones to the catalog. `make lint` and CI fail while the catalog is out of date.
 
 A string reaches the catalog when it's a literal passed to an API that localizes:
 

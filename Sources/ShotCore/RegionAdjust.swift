@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
 
 /// Drag handles around a recording region, in AppKit space (bottom-left origin).
@@ -70,3 +71,4 @@ public enum RegionHandle: CaseIterable, Sendable {
         return CGRect(x: x, y: y, width: width, height: height)
     }
 }
+#endif

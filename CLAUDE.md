@@ -29,8 +29,8 @@ What this means in practice:
 ## Commands
 
 ```bash
-make test                         # ShotModel and ShotCore unit tests (Swift Testing)
-make test-linux                   # ShotModel tests in Docker on Linux, as CI runs them
+make test                         # ShotModel, ShotCore and ShotCoreApple unit tests (Swift Testing)
+make test-linux                   # ShotModel and ShotCore tests in Docker on Linux, as CI runs them
 make perf                         # ShotCore performance budgets (PerfTests; make test skips them)
 make perf-app                     # scripts/perf.sh: launch, capture, memory, idle CPU of the installed app
 make lint                         # scripts/lint.sh: bans patterns that caused bugs (see below); on macOS also scripts/strings.sh --check
@@ -63,12 +63,13 @@ Local builds are `ShotDev.app`. The real installed version is `/Applications/Sho
 
 ## Architecture
 
-Three targets:
+Four targets:
 - `Sources/ShotModel`: logic that needs only Foundation, so CI builds and tests it on Linux. Undo stack, keyframes, cut list and trim range, hotkeys (`ShotAction`, `KeyCombo`), layout math, and small helpers. It may import CoreGraphics only inside `#if canImport(CoreGraphics)`, for the few members that need it. Linux Foundation has `CGFloat`, `CGPoint`, `CGSize` and `CGRect`, but not `CGVector`, `CGAffineTransform`, `CGPath`, `CGColor` or `CGImage`.
-- `Sources/ShotCore`: pure logic that needs Apple frameworks (CoreGraphics paths and images, CoreText, CoreImage, AVFoundation, ImageIO, UniformTypeIdentifiers), but no window, display or permission. Annotation model and renderer, timeline/clip model, composition, GIF export, preferences, file naming, gallery. It re-exports ShotModel, so the app needs only `import ShotCore`.
+- `Sources/ShotCore`: pure logic that needs Apple frameworks (CoreGraphics paths and images, CoreText, CoreImage, AVFoundation, ImageIO, UniformTypeIdentifiers), but no window, display or permission. Annotation model and renderer, timeline/clip model, composition, GIF export, preferences, file naming, gallery. It re-exports ShotModel. CI builds and tests it on Linux too, so every file that imports an Apple framework (or uses Darwin-only Foundation such as `String(localized:)`) sits inside `#if canImport(...)` and Linux compiles it out. #646 moves these framework calls behind protocols, one sub-issue at a time.
+- `Sources/ShotCoreApple`: macOS only. The Apple implementations of ShotCore's protocols move here as each one lands; until then it only re-exports ShotCore, so the app and ShotCLI need only `import ShotCoreApple`.
 - `Sources/Shot`: AppKit and SwiftUI that need a real session, grouped by feature (`Capture`, `Overlay`, `QuickAccess`, `Editor`, `Recording`, `VideoEditor`, `Gallery`, `Settings`, `Design`).
 
-**If logic can be tested without a window, it goes in ShotModel with a test, or in ShotCore if it needs an Apple framework.** Tests are mostly top-level `@Test func` with sentence-style names: `Tests/ShotModelTests` (run on Linux) and `Tests/ShotCoreTests` (macOS). The app target has no tests.
+**If logic can be tested without a window, it goes in ShotModel with a test, or in ShotCore if it needs an Apple framework.** Tests are mostly top-level `@Test func` with sentence-style names: `Tests/ShotModelTests` and `Tests/ShotCoreTests` (run on Linux), and `Tests/ShotCoreAppleTests` (macOS), which holds the tests of everything still under `#if canImport`. The app target has no tests.
 
 Flow:
 - `ShotApp` is a `MenuBarExtra` with an `AppDelegate` adaptor. `AppDelegate` owns `AppState` and the `CaptureCoordinator`, wires hotkeys and controller callbacks to it, and routes `shot://` URLs. Other long-lived controllers are `.shared` singletons.
@@ -93,17 +94,18 @@ Concurrency: UI and model types are `@MainActor`. Heavy work runs in `Task.detac
 - Use `inkBorder(_:width:color:)` rather than `strokeBorder` with any `Brutal` colour (a ternary included), and only whole-point ink widths and line widths. `BrutalStyle.swift`, which defines `inkBorder`, is exempt.
 - Use `style: .circular`, never `.continuous`, for rounded corners; continuous corners leave steps under ink borders.
 - ShotModel and its tests import only Foundation, Synchronization and Testing, plus CoreGraphics inside `#if canImport(CoreGraphics)`.
+- ShotCore and its portable tests import Apple frameworks only inside `#if canImport(...)`.
 - Every `runs-on: macos-*` needs a `# macOS: <reason>` comment on the line above.
 
 ## CI
 
 The repository is public, so GitHub's runners are free, but the free plan runs only 5 macOS jobs at once, so macOS runs can queue (`.github/workflows/ci.yml`):
-- Every PR runs two required checks. `test` is Linux: `scripts/lint.sh` and ShotModel's tests, which keeps ShotModel portable. `macos` builds the app, checks the strings catalog, compiles for Intel, and runs `ShotCoreTests` and `ShotModelTests`. On push to `main`, `warm-cache.yml` only builds, to save the Linux build cache PRs restore.
+- Every PR runs two required checks. `test` is Linux: `scripts/lint.sh` and the ShotModel and ShotCore tests, which keeps both portable (it installs zsh, which `AgentCommand`'s tests run). `macos` builds the app, checks the strings catalog, compiles for Intel, and runs every test target. On push to `main`, `warm-cache.yml` only builds, to save the Linux build cache PRs restore.
 - On release-please's PR, `macos` also runs `PerfTests`: that's the release gate. Every push to that PR runs it again. release-please opens the PR as the repository's GitHub App (`release.yml`), so its runs start without the approval GitHub asks for on `github-actions[bot]` PRs.
 - The repository has auto-merge turned off: an admin merges the release PR by hand once the gate has passed. If the gate fails, fix it in a normal PR. release-please updates the release PR only for commits that change the changelog, so after a `test:`, `ci:` or `docs:` fix, run `gh pr update-branch <release PR>` to gate it again.
 - `release.yml` runs `make test` on the tagged commit before it signs anything, because a `docs:`, `test:` or `ci:` commit merged after the gate passed can change what's released.
 - New logic and tests go in ShotModel unless they need an Apple framework. When they do, keep the Apple part in ShotCore as thin as you can and leave the rest portable.
-- Run `make lint` and `make test` before every push, plus `make test-linux` when you change ShotModel, and push once per PR where you can, so CI is a check rather than a debugger. Every push re-runs CI, and a newer push cancels the run before it.
+- Run `make lint` and `make test` before every push, plus `make test-linux` when you change ShotModel or ShotCore, and push once per PR where you can, so CI is a check rather than a debugger. Every push re-runs CI, and a newer push cancels the run before it.
 - Every release PR update runs the perf budgets, and every release builds and tests again, so let the release-please PR collect several merges rather than releasing after each one.
 
 ## Conventions

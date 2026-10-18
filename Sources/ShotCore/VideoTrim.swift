@@ -1,3 +1,4 @@
+#if canImport(AVFoundation) && canImport(os) && canImport(UniformTypeIdentifiers)
 import AVFoundation
 import os
 import UniformTypeIdentifiers
@@ -254,3 +255,4 @@ public enum VideoTrimmer {
         return copy
     }
 }
+#endif

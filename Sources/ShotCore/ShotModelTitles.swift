@@ -1,3 +1,4 @@
+#if canImport(Darwin)
 import Foundation
 
 // What the app calls ShotModel's types. They live here because String(localized:) doesn't exist on Linux, where
@@ -94,3 +95,4 @@ extension VideoExportOptions {
             : String(localized: "\(gifFrameRate) fps, up to \(gifWidth) px wide, first \(seconds) seconds.")
     }
 }
+#endif

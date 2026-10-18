@@ -1,3 +1,4 @@
+#if canImport(AVFoundation)
 import AVFoundation
 
 /// The loudest and quietest samples in one slice of audio, from -1 to 1.
@@ -115,3 +116,4 @@ private struct PeakReducer {
         return peaks
     }
 }
+#endif

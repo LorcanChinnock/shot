@@ -1,4 +1,4 @@
-import ShotCore
+import ShotCoreApple
 import SwiftUI
 
 /// The preset colours and a rainbow swatch for a custom one. With `allowsNone`,

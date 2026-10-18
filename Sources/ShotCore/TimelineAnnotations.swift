@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
 import Foundation
 
@@ -139,3 +140,4 @@ extension Project {
 extension Track {
     var isEmpty: Bool { clips.isEmpty && annotations.isEmpty }
 }
+#endif

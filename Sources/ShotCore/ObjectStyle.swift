@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics) && canImport(os)
 import CoreGraphics
 import Foundation
 import os
@@ -411,3 +412,4 @@ public extension CopiedStyle {
         }
     }
 }
+#endif

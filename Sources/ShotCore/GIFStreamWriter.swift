@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics) && canImport(ImageIO) && canImport(UniformTypeIdentifiers)
 import CoreGraphics
 import Foundation
 import ImageIO
@@ -184,3 +185,4 @@ final class GIFStreamWriter {
         return Data([UInt8(value & 0xFF), UInt8(value >> 8)])
     }
 }
+#endif

@@ -1,3 +1,4 @@
+#if canImport(UniformTypeIdentifiers)
 import Foundation
 import UniformTypeIdentifiers
 
@@ -294,3 +295,4 @@ public enum Gallery {
         return hours > 0 ? String(format: "%d:%02d:%02d", hours, minutes, secs) : String(format: "%d:%02d", minutes, secs)
     }
 }
+#endif

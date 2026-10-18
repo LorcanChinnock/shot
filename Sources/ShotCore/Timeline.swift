@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
 import Foundation
 
@@ -451,3 +452,4 @@ public struct TrimEdit: Equatable, Sendable {
     public let range: TrimRange
     public let cuts: CutList
 }
+#endif

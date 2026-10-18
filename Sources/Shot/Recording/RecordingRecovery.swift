@@ -1,6 +1,6 @@
 import AVFoundation
 import os
-import ShotCore
+import ShotCoreApple
 
 private let log = Logger.shot("recording")
 

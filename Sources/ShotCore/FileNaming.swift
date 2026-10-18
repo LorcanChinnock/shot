@@ -1,3 +1,4 @@
+#if canImport(Darwin)
 import Foundation
 
 public enum FileNaming {
@@ -53,3 +54,4 @@ public enum FileNaming {
         return url
     }
 }
+#endif

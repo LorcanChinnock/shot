@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
 import Foundation
 
@@ -91,3 +92,4 @@ public enum LayerGeometry {
         return flipSource.concatenating(orientation).concatenating(geometry).concatenating(flipCanvas)
     }
 }
+#endif

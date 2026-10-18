@@ -1,6 +1,6 @@
 import AppKit
 import ScreenCaptureKit
-import ShotCore
+import ShotCoreApple
 
 struct FrozenDisplay: @unchecked Sendable {
     let displayID: CGDirectDisplayID

@@ -1,3 +1,4 @@
+#if canImport(AVFoundation) && canImport(CoreImage) && canImport(os)
 import AVFoundation
 import CoreImage
 import os
@@ -424,3 +425,4 @@ public enum ProjectExporter {
         return Int((bitRate * project.duration / 8).rounded())
     }
 }
+#endif

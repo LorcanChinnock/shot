@@ -1,3 +1,4 @@
+#if canImport(Darwin)
 import Darwin
 import Foundation
 
@@ -322,3 +323,4 @@ extension AgentSocket {
         }
     }
 }
+#endif

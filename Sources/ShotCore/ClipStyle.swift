@@ -1,3 +1,4 @@
+#if canImport(CoreImage) && canImport(os)
 import CoreImage
 import CoreImage.CIFilterBuiltins
 import os
@@ -277,3 +278,4 @@ enum ClipStyler {
         }
     }
 }
+#endif
