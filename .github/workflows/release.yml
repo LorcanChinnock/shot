@@ -7,7 +7,7 @@ name: Release
 # draft (tag created up front) until its assets are attached; otherwise `latest` has no feed mid-build.
 # release-please acts as the repository's GitHub App, not GITHUB_TOKEN: GitHub holds the workflows on a pull request
 # from github-actions[bot] until someone approves them. The release PR's CI runs the macOS release gate (ci.yml), and an
-# admin merges it by hand; release-pr.yml turns auto-merge off on it.
+# admin merges it by hand. The repository has auto-merge turned off.
 on:
   push:
     branches: [main]
