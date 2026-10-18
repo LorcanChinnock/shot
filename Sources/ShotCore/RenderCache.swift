@@ -2,7 +2,7 @@
 import CoreGraphics
 import os
 
-/// Images a render made with Core Image, each with where it's drawn, kept while their inputs stay the same.
+/// Images a render filtered or drew, each with where it's drawn, kept while their inputs stay the same.
 /// Each render sweeps out what wasn't used since the last one, so a 6K blur doesn't outlive its redaction.
 final class RenderCache: Sendable {
     enum Key: Equatable, Sendable {

@@ -27,6 +27,8 @@ public final class CGCanvas: Canvas {
         self.init(context)
     }
 
+    public static var effects: any ImageEffects { CoreImageEffects.shared }
+
     public func saveState() { context.saveGState() }
     public func restoreState() { context.restoreGState() }
     public func translateBy(x: CGFloat, y: CGFloat) { context.translateBy(x: x, y: y) }
