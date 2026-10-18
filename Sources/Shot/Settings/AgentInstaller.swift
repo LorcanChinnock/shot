@@ -34,8 +34,8 @@ enum AgentInstaller {
             case let .failure(message, status):
                 Toast.error("Couldn't add Shot to \(title): \(message ?? String(localized: "it stopped with code \(status)."))")
             }
-        case let .config(path, key):
-            let file = (NSHomeDirectory() as NSString).appendingPathComponent(path)
+        case let .config(paths, key):
+            let file = AgentClient.file(among: paths, home: NSHomeDirectory())
             if let failure = await Task.detached(operation: { write(server: server, name: name, key: key, to: file) }).value {
                 Toast.error("Couldn't add Shot to \(title): \(failure)")
             } else {

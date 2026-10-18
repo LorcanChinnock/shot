@@ -10915,6 +10915,9 @@
         }
       }
     },
+    "Devin" : {
+
+    },
     "Diamond" : {
       "localizations" : {
         "de" : {
@@ -33968,9 +33971,6 @@
           }
         }
       }
-    },
-    "Windsurf" : {
-
     },
     "Write the edit as a new video next to the original and copy it (⌘S)" : {
       "localizations" : {
