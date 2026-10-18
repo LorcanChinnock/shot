@@ -1,3 +1,4 @@
+#if canImport(UniformTypeIdentifiers)
 import Foundation
 import UniformTypeIdentifiers
 
@@ -98,3 +99,4 @@ public enum EditorRoute: Equatable, Sendable {
         self = isVideo ? .video(fileURL) : .image(fileURL)
     }
 }
+#endif

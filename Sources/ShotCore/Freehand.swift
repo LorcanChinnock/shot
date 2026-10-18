@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
 
 /// A freehand pen stroke's geometry. Image pixels, top-left origin.
@@ -62,3 +63,4 @@ public enum Freehand {
         }
     }
 }
+#endif

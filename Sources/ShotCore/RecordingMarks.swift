@@ -1,3 +1,4 @@
+#if canImport(Darwin)
 import Foundation
 
 /// The marks agents stamped on their recordings, kept app-private so the capture folder gets no extra file and a shared
@@ -33,3 +34,4 @@ public enum RecordingMarks {
         return (try? JSONDecoder().decode([String: [RecordingMark]].self, from: data)) ?? [:]
     }
 }
+#endif

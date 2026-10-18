@@ -1,3 +1,4 @@
+#if canImport(AVFoundation)
 import AVFoundation
 
 public enum VideoConcatenator {
@@ -123,3 +124,4 @@ public enum VideoConcatenator {
         return true
     }
 }
+#endif

@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
 
 /// How the editor shows the canvas: a scale, and where image point (0, 0) lands in the top-left-origin view.
@@ -92,3 +93,4 @@ public struct Viewport: Equatable, Sendable {
         min(max(zoom, min(minZoom, fit)), maxZoom)
     }
 }
+#endif

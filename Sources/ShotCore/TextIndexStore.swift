@@ -1,3 +1,4 @@
+#if canImport(os)
 import Foundation
 import os
 
@@ -60,3 +61,4 @@ public struct TextIndexStore: Sendable {
         return unread.count
     }
 }
+#endif

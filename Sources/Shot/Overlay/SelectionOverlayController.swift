@@ -1,6 +1,6 @@
 import AppKit
 import os
-import ShotCore
+import ShotCoreApple
 
 private let log = Logger.shot("overlay")
 

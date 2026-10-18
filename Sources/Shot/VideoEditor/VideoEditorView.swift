@@ -1,5 +1,5 @@
 import AVFoundation
-import ShotCore
+import ShotCoreApple
 import SwiftUI
 
 struct VideoEditorRootView: View {

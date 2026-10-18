@@ -1,3 +1,4 @@
+#if canImport(AVFoundation) && canImport(CoreGraphics) && canImport(os)
 import AVFoundation
 import CoreGraphics
 import Foundation
@@ -296,3 +297,4 @@ public enum VersionWriter {
         return FileManager.default.fileExists(atPath: moved.path) ? moved : nil
     }
 }
+#endif

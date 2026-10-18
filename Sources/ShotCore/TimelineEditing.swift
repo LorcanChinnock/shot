@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
 import Foundation
 
@@ -216,3 +217,4 @@ extension Project {
         return before...after
     }
 }
+#endif

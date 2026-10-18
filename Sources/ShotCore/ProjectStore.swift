@@ -1,3 +1,4 @@
+#if canImport(Darwin)
 import Foundation
 
 /// The layered projects behind captures and versions, kept app-private in
@@ -301,3 +302,4 @@ extension ProjectFile {
         return FileManager.default.fileExists(atPath: path) ? URL(fileURLWithPath: path) : nil
     }
 }
+#endif

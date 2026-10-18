@@ -1,6 +1,6 @@
 import AppKit
 import Observation
-import ShotCore
+import ShotCoreApple
 
 extension EditorTool {
     var symbol: String {

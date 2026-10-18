@@ -1,6 +1,6 @@
 import AppKit
 import Carbon.HIToolbox
-import ShotCore
+import ShotCoreApple
 import SwiftUI
 
 @MainActor

@@ -1,5 +1,5 @@
 import AppKit
-import ShotCore
+import ShotCoreApple
 
 /// Adds Shot's MCP server to an agent when you click Install in Settings › Agents, the way `AgentClient.install` says:
 /// by opening the agent's link, running its command line tool, or editing its config file.

@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
 import Foundation
 
@@ -100,3 +101,4 @@ public enum AnnotationDraft {
         return rect
     }
 }
+#endif

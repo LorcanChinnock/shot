@@ -21,9 +21,11 @@ build:
 test:
 	swift test $(TEST_FLAGS) $(ARGS) --skip PerfTests
 
-# ShotModel's tests on Linux, as CI's linux job runs them. Needs Docker; keep the image in step with ci.yml.
+# ShotModel's and ShotCore's tests on Linux, as CI's linux job runs them. Needs Docker; keep the image and the zsh
+# install in step with ci.yml.
 test-linux:
-	docker run --rm -v "$(CURDIR)":/src -w /src swift:6.3 swift test --scratch-path .build/linux
+	docker run --rm -v "$(CURDIR)":/src -w /src swift:6.3 sh -c \
+		'apt-get update -qq && apt-get install -y -qq --no-install-recommends zsh >/dev/null && swift test --scratch-path .build/linux'
 
 # Budgets and baselines: docs/performance.md.
 perf:

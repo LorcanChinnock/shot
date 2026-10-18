@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
 import Foundation
 
@@ -228,3 +229,4 @@ extension Project {
         return nil
     }
 }
+#endif

@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
 import Foundation
 
@@ -21,3 +22,4 @@ extension WindowInfo {
         }
     }
 }
+#endif

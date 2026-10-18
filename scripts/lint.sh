@@ -52,6 +52,20 @@ if [ -n "$hits" ]; then
     exit 1
 fi
 
+# ShotCore builds and tests on Linux too. Its Apple framework calls move to ShotCoreApple behind protocols (#646), and
+# until then sit under #if canImport, so Linux compiles them out.
+hits=$(find Sources/ShotCore Tests/ShotCoreTests -name '*.swift' -exec awk '
+    FNR == 1 { depth = 0; guarded = 0 }
+    /^#if / { depth++; if (/^#if canImport\(/ && !guarded) guarded = depth }
+    /^#endif/ { if (guarded == depth) guarded = 0; depth-- }
+    /^(@_exported |@testable )?import / && !/^(@_exported |@testable )?import (Foundation|Synchronization|Testing|ShotModel|ShotCore)$/ &&
+        !guarded { print FILENAME ":" FNR ": " $0 }' {} +)
+if [ -n "$hits" ]; then
+    echo "ShotCore runs on Linux: put Apple framework imports, and the code that needs them, inside #if canImport(...), or in ShotCoreApple:"
+    echo "$hits"
+    exit 1
+fi
+
 # macOS jobs queue, since the free plan runs only 5 at once.
 hits=$(awk '/runs-on:.*macos/ && prev !~ /# macOS: / { print FILENAME ":" FNR ": " $0 } { prev = $0 }' .github/workflows/*.yml)
 if [ -n "$hits" ]; then

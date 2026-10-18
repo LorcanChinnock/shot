@@ -1,3 +1,4 @@
+#if canImport(AVFoundation)
 import AVFoundation
 
 /// Which source frames a GIF uses and how big they are.
@@ -179,3 +180,4 @@ public enum GIFExporter {
         return Result(frameCount: plan.frameCount, truncated: plan.truncated)
     }
 }
+#endif

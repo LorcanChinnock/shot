@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics) && canImport(os)
 import CoreGraphics
 import os
 
@@ -159,3 +160,4 @@ struct SoftSpotlight: Equatable, Sendable {
     let style: SpotlightStyle
     let cornerRadius: CGFloat?
 }
+#endif

@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
 import Foundation
 
@@ -30,3 +31,4 @@ public enum NudgeDirection: Sendable {
         }
     }
 }
+#endif

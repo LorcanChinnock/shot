@@ -1,4 +1,4 @@
-import ShotCore
+import ShotCoreApple
 import SwiftUI
 
 /// The selected clip's position, scale, rotation, opacity, volume or how much of a stroke is drawn, as

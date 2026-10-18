@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
 
 public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
@@ -151,3 +152,4 @@ public enum ColorSlot: String, Codable, CodingKeyRepresentable, Sendable {
         }
     }
 }
+#endif

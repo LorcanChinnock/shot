@@ -1,3 +1,4 @@
+#if canImport(AVFoundation) && canImport(CoreGraphics)
 import AVFoundation
 import CoreGraphics
 
@@ -106,3 +107,4 @@ extension VideoExportPlan {
         }
     }
 }
+#endif

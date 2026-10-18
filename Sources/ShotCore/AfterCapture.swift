@@ -1,3 +1,4 @@
+#if canImport(os)
 import Foundation
 
 /// What happens once a screenshot or recording is taken, from the after-capture settings: whether it's copied, whether
@@ -55,3 +56,4 @@ extension TemporaryCaptures {
         isTemporary(file) ? String(localized: " It's temporary: Shot deletes it after a day.") : ""
     }
 }
+#endif

@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
 import Foundation
 
@@ -277,3 +278,4 @@ public struct AnnotationPalette: Equatable, Sendable {
         }
     }
 }
+#endif

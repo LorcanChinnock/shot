@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics) && canImport(CoreText) && canImport(os)
 import CoreGraphics
 import CoreText
 import Foundation
@@ -549,3 +550,4 @@ extension EditorDocument {
         return annotation.id
     }
 }
+#endif

@@ -2,7 +2,7 @@ import AppKit
 import AVFoundation
 import Observation
 import os
-import ShotCore
+import ShotCoreApple
 
 private let log = Logger.shot("video-editor")
 

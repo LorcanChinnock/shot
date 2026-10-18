@@ -1,4 +1,4 @@
-import ShotCore
+import ShotCoreApple
 import SwiftUI
 
 /// The settings every view reads, refreshed in the same update as any write to the defaults. `@AppStorage` catches up an

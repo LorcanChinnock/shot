@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
 import Foundation
 
@@ -118,3 +119,4 @@ extension AnnotationClip {
         return (drawn, values.rotation, values.opacity)
     }
 }
+#endif

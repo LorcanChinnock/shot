@@ -1,7 +1,7 @@
 import AppKit
 import AVFoundation
 import os
-import ShotCore
+import ShotCoreApple
 import UniformTypeIdentifiers
 
 private let log = Logger.shot("capture")

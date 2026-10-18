@@ -1,5 +1,5 @@
 import AppKit
-import ShotCore
+import ShotCoreApple
 import SwiftUI
 
 /// Borderless-looking window whose SwiftUI content draws its own glass backdrop and ink border.

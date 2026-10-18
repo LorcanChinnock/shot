@@ -1,3 +1,4 @@
+#if canImport(CoreImage) && canImport(os)
 import CoreImage
 import os
 
@@ -189,3 +190,4 @@ enum AnnotationFrame {
         return target.makeImage().map { CIImage(cgImage: $0) }
     }
 }
+#endif

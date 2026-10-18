@@ -1,3 +1,4 @@
+#if canImport(CoreGraphics)
 import CoreGraphics
 import Foundation
 
@@ -111,3 +112,4 @@ extension ShotCommands {
         return context.makeImage()
     }
 }
+#endif
