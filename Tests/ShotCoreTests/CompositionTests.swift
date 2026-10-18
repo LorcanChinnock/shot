@@ -495,8 +495,7 @@ extension CompositingMediaTests {
             arrived,
             "The frame for 2 s \(outcome); buffers seen were for \(seen) s; item at \(item.currentTime().seconds) s, status \(item.status.rawValue); new buffer for 2 s: \(output.hasNewPixelBuffer(forItemTime: target)); compositor since the scrub began: \(requests)"
         )
-        // AVFoundation needs every request to end before a cancel returns. In #414's CI failures, some ended after, and
-        // the frame for 2 s was then never asked for.
+        // AVFoundation's header requires every request to end before a cancel returns.
         let events = compositor?.requests.events ?? []
         #expect(endedAfterTheirCancel(events).isEmpty, "Requests ended after the cancel that should have ended them: \(events)")
     }

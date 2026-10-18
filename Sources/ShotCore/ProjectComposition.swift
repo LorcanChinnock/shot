@@ -364,9 +364,8 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
         }
     }
 
-    /// Returns only once every request has ended, as AVFoundation's header requires. In #414's CI failures, requests
-    /// ended after it returned, and the player then never asked for the frame its seek landed on. Each request checks
-    /// for the cancel between layers and before the final render, so the wait is at most one of those steps.
+    /// Returns only once every request has ended, as AVFoundation's header requires. Each request checks for the
+    /// cancel between layers and before the final render, so the wait is at most one of those steps.
     /// AVFoundation starts and cancels requests on one queue, so none starts during the wait.
     func cancelAllPendingVideoCompositionRequests() {
         cancels.withLock { $0 += 1 }
