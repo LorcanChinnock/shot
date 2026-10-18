@@ -29,6 +29,9 @@ This runs on a real desktop that the person may be using at the same time.
   `session.sh` re-raises the window first. `open`/`activate` do not reliably take focus while someone is typing; setting
   `frontmost` and `AXRaise` through System Events does. Keystrokes (`uxqa_key`) have no guard of their own, so always follow
   `uxqa_focus` with a screenshot that proves where the focus is before typing anything.
+- **Hand focus back.** When the last step that takes focus is done, and before you write the report, bring the terminal or app
+  you run in back to the front, so the user knows they can take over again. Find it by walking up your shell's parent processes
+  to the first `*.app`, raise it with `open -a <that app>`, and confirm with `lsappinfo info -only name $(lsappinfo front)`.
 - **Test the build under review, and only that.** Kill every running ShotDev first (another copy, such as one `make app`
   installed, registers the same `shot-dev://` scheme and silently answers URLs meant for your build, which makes you test the
   wrong binary). An installed release answers `shot://` only, so it can keep running. Launch with an absolute path:

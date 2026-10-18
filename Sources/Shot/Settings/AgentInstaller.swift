@@ -16,9 +16,9 @@ enum AgentInstaller {
             }
             NSWorkspace.shared.open(url)
         case let .command(commands):
-            let result = await Task.detached { () -> Outcome in
+            let result = await Task.detached { () -> AgentCommand.Outcome in
                 for arguments in commands {
-                    if case let outcome = run(arguments), outcome != .success {
+                    if case let outcome = AgentCommand.run(arguments), outcome != .success {
                         return outcome
                     }
                 }
@@ -29,11 +29,13 @@ enum AgentInstaller {
                 Toast.show("Added Shot to \(title).", duration: .seconds(3))
             case .notFound:
                 Toast.error("Couldn't find the \(commands[0][0]) command. Copy the command and run it in Terminal instead.")
-            case let .failure(message):
-                Toast.error("Couldn't add Shot to \(title): \(message)")
+            case .timedOut:
+                Toast.error("Couldn't add Shot to \(title): \(commands[0][0]) didn't finish within a minute. Copy the command and run it in Terminal instead.")
+            case let .failure(message, status):
+                Toast.error("Couldn't add Shot to \(title): \(message ?? String(localized: "it stopped with code \(status)."))")
             }
-        case let .config(path, key):
-            let file = (NSHomeDirectory() as NSString).appendingPathComponent(path)
+        case let .config(paths, key):
+            let file = AgentClient.file(among: paths, home: NSHomeDirectory())
             if let failure = await Task.detached(operation: { write(server: server, name: name, key: key, to: file) }).value {
                 Toast.error("Couldn't add Shot to \(title): \(failure)")
             } else {
@@ -41,49 +43,6 @@ enum AgentInstaller {
             }
         case nil:
             break
-        }
-    }
-
-    private enum Outcome: Equatable, Sendable {
-        case success
-        case notFound
-        case failure(String)
-    }
-
-    /// Runs `arguments` through the user's login shell, so it finds tools on the PATH their terminal sets up, which an
-    /// app opened from the Dock doesn't get.
-    private nonisolated static func run(_ arguments: [String]) -> Outcome {
-        let shell = ProcessInfo.processInfo.environment["SHELL"].flatMap { $0.hasSuffix("/zsh") || $0.hasSuffix("/bash") ? $0 : nil } ?? "/bin/zsh"
-        let process = Process()
-        let output = Pipe()
-        process.executableURL = URL(fileURLWithPath: shell)
-        // `-i` reads .zshrc or .bashrc too, where version managers like nvm add their tools. `$0` and `$@` keep each
-        // argument whole, with no quoting.
-        process.arguments = ["-l", "-i", "-c", #"exec "$0" "$@""#] + arguments
-        process.standardInput = FileHandle.nullDevice
-        process.standardOutput = output
-        process.standardError = output
-        do {
-            try process.run()
-        } catch {
-            return .failure(error.localizedDescription)
-        }
-        // A shell setup that waits for input would otherwise hold the Install button forever.
-        DispatchQueue.global().asyncAfter(deadline: .now() + 60) { [process] in
-            if process.isRunning {
-                process.terminate()
-            }
-        }
-        let text = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-        process.waitUntilExit()
-        switch process.terminationStatus {
-        case 0:
-            return .success
-        case 127:
-            return .notFound
-        default:
-            let lines = text.split(whereSeparator: \.isNewline).map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
-            return .failure(lines.last ?? String(localized: "it stopped with code \(process.terminationStatus)."))
         }
     }
 

@@ -1,22 +1,13 @@
 name: CI
 
-# Pull requests get lint and ShotModel's tests on Linux, and nothing else. macOS runs only at the release gate:
-# enabling auto-merge on release-please's PR (release-gate.yml) or `make release-gate` dispatches this with gate=true on
-# its branch. A pull request counts only checks
-# from pull_request runs, so the gate's own check never reaches it: when the gate passes, it sets a `test` commit
-# status on the commit it tested, which does. On release-please's branch the pull_request job takes another name, so
-# its Linux run can't stand in for the gate. A later push to the release PR has no status, so only a commit that
-# passed the gate can be released.
+# Every pull request runs two jobs. `test` lints and runs ShotModel's tests on Linux, which keeps ShotModel portable.
+# `macos` builds the app and runs every macOS test, so an Apple-side break can't reach main. On release-please's PR,
+# `macos` also runs the performance budgets: that's the release gate. release-please opens that PR as the repository's
+# GitHub App (release.yml), so its runs start without approval.
 # There's no run on push to main: PRs are squash-merged, and their merge commit was already tested. warm-cache.yml
 # builds there instead, to save the Linux build cache the pull request check restores.
 on:
   pull_request:
-  workflow_dispatch:
-    inputs:
-      gate:
-        description: Build the app and run every test on macOS, as the release gate. Off runs the pull request check.
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -26,21 +17,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # The required check, so main's ruleset needs it by name. One job, because each job's Linux minutes round up.
+  # A required check, so main's ruleset needs it by name. One job, because each job's Linux minutes round up.
   test:
-    # Not `test` on the release PR, where only the gate's status may satisfy the required check.
-    name: ${{ startsWith(github.head_ref, 'release-please--') && 'test (Linux; enable auto-merge to run the release gate)' || 'test' }}
-    # The gate sets a commit status; everything else only reads.
-    permissions:
-      contents: read
-      statuses: write
-    # macOS: the gate builds the app and runs ShotCore's tests, which need AppKit, AVFoundation, CoreImage and ImageIO.
-    runs-on: ${{ inputs.gate && 'macos-26' || 'ubuntu-latest' }}
-    # A gate run takes about 5 minutes. A hung test would otherwise hold a macOS runner for GitHub's 6-hour default.
+    runs-on: ubuntu-latest
     timeout-minutes: 20
-    # The Swift release of the macos-26 runner's default Xcode. `make test-linux` uses the same image. An empty
-    # container runs the gate on the runner itself.
-    container: ${{ !inputs.gate && 'swift:6.3' || '' }}
+    # The Swift release of the macos-26 runner's default Xcode. `make test-linux` uses the same image. It's the
+    # official image by tag, not digest: Dependabot can't update a workflow's `container:`, so a digest would go stale,
+    # and this job has no secrets and a read-only token.
+    container: swift:6.3
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # The image has no make, so this calls what `make lint` runs.
@@ -49,39 +33,35 @@ jobs:
       # The newest build warm-cache.yml saved on main. Checkout gives every file a new modification time, so SwiftPM
       # still recompiles them, but about twice as fast as from nothing. A miss just builds cold.
       - name: Restore the build
-        if: ${{ !inputs.gate }}
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .build
           key: swift-6.3-linux-${{ hashFiles('Package.resolved') }}-${{ github.sha }}
           restore-keys: swift-6.3-linux-${{ hashFiles('Package.resolved') }}-
       - name: Test
-        if: ${{ !inputs.gate }}
         run: swift test --force-resolved-versions
+
+  # A required check too. The repository is public, so macOS minutes are free; the cost is queue time, since the free
+  # plan runs 5 macOS jobs at once.
+  macos:
+    # macOS: builds the app and runs ShotCore's tests, which need AppKit, AVFoundation, CoreImage and ImageIO.
+    runs-on: macos-26
+    # A run takes about 5 minutes. A hung test would otherwise hold a macOS runner for GitHub's 6-hour default.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Build
-        if: inputs.gate
         run: swift build --build-tests --force-resolved-versions
       # Every build extracts the app's strings, so this needs the build above. See scripts/strings.sh.
       - name: Check strings
-        if: inputs.gate
         run: scripts/strings.sh --check
       # `make dist` builds a universal app, so the release must compile for Intel too. Compile only; nothing runs it.
       - name: Build for Intel
-        if: inputs.gate
         run: swift build --arch x86_64 --force-resolved-versions
       - name: Test on macOS
-        if: inputs.gate
         run: make test ARGS=--skip-build
-      # Alone, so other tests running in parallel don't skew the timings. Budgets: docs/performance.md.
+      # Only at the release gate, to keep ordinary PRs' runs short. Alone, so other tests running in parallel don't skew
+      # the timings. Budgets: docs/performance.md.
       - name: Perf
-        if: inputs.gate
+        if: startsWith(github.head_ref, 'release-please--')
         run: make perf ARGS=--skip-build
-      # Last, so it's set only when every step above passed. See the note at the top.
-      - name: Mark the commit as gated
-        if: inputs.gate
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: >-
-          gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}"
-          -f state=success -f context=test -f description="Release gate passed on macOS"
-          -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

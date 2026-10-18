@@ -16,7 +16,7 @@ How Install adds Shot depends on the app:
 
 | App | What Install does |
 |---|---|
-| Claude, Windsurf | Adds Shot to the app's config file, after saving a copy of the file beside it with `.bak` on the end. If the file isn't valid JSON, Shot leaves it alone. |
+| Claude, Devin (formerly Windsurf) | Adds Shot to the app's config file, after saving a copy of the file beside it with `.bak` on the end. If the file isn't valid JSON, Shot leaves it alone. |
 | LM Studio, Raycast, Cursor, VS Code | Opens the app, which asks you to confirm. |
 | Claude Code, Codex, Gemini CLI | Runs the agent's own command, such as `claude mcp add`. If Shot can't find the command, copy it and run it in Terminal. |
 | Zed, any other app | Only **Copy**. Paste the setup into the app's settings. |
