@@ -61,8 +61,8 @@ dist: bundle
 	ditto -c -k --keepParent build/Shot.app build/Shot.zip
 	@echo "Wrote build/Shot.zip"
 
-# Runs CI's macOS gate on the release PR, which can't merge without it. Enabling auto-merge on the PR runs it too
-# (.github/workflows/release-gate.yml), so this is for re-running it by hand. See .github/workflows/ci.yml.
+# Runs CI's macOS gate on the release PR, which can't merge without it. release.yml runs it each time release-please
+# opens or updates the PR, so this is for re-running it by hand. See .github/workflows/ci.yml.
 release-gate:
 	gh workflow run ci.yml --ref release-please--branches--main--components--Shot -f gate=true
 
