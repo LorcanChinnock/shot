@@ -15,14 +15,17 @@ public struct ProjectStore: Sendable {
     }
 
     public let folder: URL
+    /// Reads the project IDs stamped in image files.
+    let codec: any ImageCoding
 
-    public init(folder: URL) {
+    public init(folder: URL, codec: any ImageCoding) {
         self.folder = folder
+        self.codec = codec
     }
 
     /// The store of the app with `bundleID`, so Shot and ShotDev keep their own, as `AgentSocket` does.
-    public init(bundleID: String) {
-        self.init(folder: URL.applicationSupportDirectory.appendingPathComponent(bundleID, isDirectory: true).appendingPathComponent("Projects", isDirectory: true))
+    public init(bundleID: String, codec: any ImageCoding) {
+        self.init(folder: URL.applicationSupportDirectory.appendingPathComponent(bundleID, isDirectory: true).appendingPathComponent("Projects", isDirectory: true), codec: codec)
     }
 
     /// Keeps `document`, the layers of `file` over `original`, and who made it. `id` is the ID stamped in `file`, or
@@ -107,7 +110,7 @@ public struct ProjectStore: Sendable {
     /// file it is, by inode first and then by path.
     private func id(of file: URL) -> String? {
         if ProjectKey.stamps(pathExtension: file.pathExtension) {
-            return ProjectStamp.id(ofFileAt: file)
+            return ProjectStamp.id(ofFileAt: file, codec: codec)
         }
         guard let located = ProjectFile(at: file) else {
             return nil
@@ -133,7 +136,7 @@ public struct ProjectStore: Sendable {
             guard let file = ProjectFile(at: url, bookmark: false) else {
                 continue
             }
-            sightings.append(ProjectSighting(file: file, stampedID: entry.stamped ? ProjectStamp.id(ofFileAt: url) : nil))
+            sightings.append(ProjectSighting(file: file, stampedID: entry.stamped ? ProjectStamp.id(ofFileAt: url, codec: codec) : nil))
         }
         return sightings
     }
@@ -189,11 +192,11 @@ public struct StoredProject<Document: Codable & Sendable>: Codable, Sendable {
 
 extension StoredProject: Equatable where Document: Equatable {}
 
-/// The project ID in a file's own metadata: XMP for PNG and JPEG, written by `ImageCodec`, and a `uuid` box of Shot's
-/// own for MP4 and MOV (`MovieStampBox`).
+/// The project ID in a file's own metadata: for PNG and JPEG, what `codec` writes as `ImageMetadata`, and a `uuid` box
+/// of Shot's own for MP4 and MOV (`MovieStampBox`).
 public enum ProjectStamp {
     /// The ID stamped in the image or movie at `url`, or `nil` when it has none.
-    public static func id(ofFileAt url: URL) -> String? {
+    public static func id(ofFileAt url: URL, codec: any ImageCoding) -> String? {
         switch url.pathExtension.lowercased() {
         case "mp4", "mov":
             guard let handle = try? FileHandle(forReadingFrom: url) else {
@@ -202,7 +205,7 @@ public enum ProjectStamp {
             defer { try? handle.close() }
             return ownBoxes(in: handle).last?.id
         default:
-            return ImageCodec.projectID(ofFileAt: url)
+            return codec.projectID(ofFileAt: url)
         }
     }
 

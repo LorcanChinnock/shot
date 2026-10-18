@@ -3,6 +3,7 @@ import Darwin
 import Foundation
 import Testing
 @testable import ShotCore
+import ShotCoreApple
 
 /// Times the pure paths that have budgets in `docs/performance.md`. `make test` skips this suite and `make perf` runs it alone,
 /// one test at a time, so other tests don't skew the timings. Budgets are 2× the baseline measured on the CI runner, the

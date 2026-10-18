@@ -2,6 +2,7 @@ import CoreGraphics
 import Foundation
 import Testing
 @testable import ShotCore
+import ShotCoreApple
 
 private func plainImage(width: Int = 120, height: Int = 80) -> CGImage {
     let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!

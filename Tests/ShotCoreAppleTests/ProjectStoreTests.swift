@@ -3,6 +3,7 @@ import CoreGraphics
 import Foundation
 import Testing
 @testable import ShotCore
+import ShotCoreApple
 
 /// Stands in for an editor's layers, which the store keeps without knowing their shape.
 private struct Layers: Codable, Equatable, Sendable {

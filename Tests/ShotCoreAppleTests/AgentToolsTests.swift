@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 @testable import ShotCore
+import ShotCoreApple
 
 private func texts(_ result: MCPServer.ToolResult) -> [String] {
     result.content.compactMap { if case let .text(text) = $0 { text } else { nil } }

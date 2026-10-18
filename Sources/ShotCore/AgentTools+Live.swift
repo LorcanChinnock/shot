@@ -1,18 +1,19 @@
-#if canImport(AVFoundation) && canImport(ImageIO)
+#if canImport(AVFoundation)
 import AVFoundation
 import Foundation
-import ImageIO
 
 extension AgentTools {
     /// The tools reading the captures in `folder`, as the gallery lists them. GIFs count as images: an agent sees their
     /// first frame. `marks` is the app's `RecordingMarks` store, whose marks the key frames show, and `projects` its
     /// project store, which keeps what the tools make, and `texts` the text the app has read from screenshots, which
-    /// `list_captures` searches. `agent` sends a request to the running app, for the tools that capture.
+    /// `list_captures` searches. `agent` sends a request to the running app, for the tools that capture. `codec` reads
+    /// and writes the images.
     public static func live(
         folder: URL,
         marks: URL? = nil,
         projects: ProjectStore? = nil,
         texts: TextIndexStore? = nil,
+        codec: any ImageCoding,
         agent: @escaping @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue] = { _ throws(ShotCommandError) in throw .unavailable("can't reach Shot from here") }
     ) -> AgentTools {
         AgentTools(
@@ -21,21 +22,21 @@ extension AgentTools {
                 Gallery.items(in: folder).map { AgentCaptures.Entry(url: $0.url, isVideo: $0.kind == .video, date: $0.date, bytes: $0.bytes, modified: $0.modified) }
             },
             preview: { entry in
-                entry.isVideo ? await videoPreview(of: entry.url) : imagePreview(of: entry.url)
+                entry.isVideo ? await videoPreview(of: entry.url, codec: codec) : imagePreview(of: entry.url, codec: codec)
             },
             record: { entry in
-                entry.isVideo ? nil : ImageCodec.record(ofFileAt: entry.url)
+                entry.isVideo ? nil : codec.record(ofFileAt: entry.url)
             },
             run: { command, origin throws(ShotCommandError) in
-                try await ShotCommands.run(command, projects: projects, origin: origin)
+                try await ShotCommands.run(command, projects: projects, origin: origin, codec: codec)
             },
             frames: { entry, count throws(ShotCommandError) in
-                try await keyFrames(of: entry.url, count: count, marks: marks.map { RecordingMarks.marks(for: entry.url, in: $0) } ?? [])
+                try await keyFrames(of: entry.url, count: count, marks: marks.map { RecordingMarks.marks(for: entry.url, in: $0) } ?? [], codec: codec)
             },
             text: { entry throws(ShotCommandError) in
                 let read: CaptureText?
                 do {
-                    read = try await TextRecognizer.recognize(fileAt: entry.url)
+                    read = try await TextRecognizer.recognize(fileAt: entry.url, codec: codec)
                 } catch {
                     throw .internal("Couldn't read the text in \(entry.name): \(error.localizedDescription)")
                 }
@@ -48,7 +49,7 @@ extension AgentTools {
                 texts?.load() ?? TextIndex()
             },
             zoom: { entry, rect throws(ShotCommandError) in
-                try zoomed(entry.url, rect: rect)
+                try zoomed(entry.url, rect: rect, codec: codec)
             },
             agent: agent
         )
@@ -56,13 +57,12 @@ extension AgentTools {
 
     /// A JPEG small enough for a model, and its size beside the file's when they differ, since the marks Shot records
     /// are in the file's pixels.
-    static func imagePreview(of url: URL) -> [MCPServer.Content] {
-        guard let jpeg = ImageCodec.previewJPEG(at: url) else {
+    static func imagePreview(of url: URL, codec: any ImageCoding) -> [MCPServer.Content] {
+        guard let jpeg = codec.previewJPEG(at: url) else {
             return [.text("Couldn't read \(url.lastPathComponent) as an image.")]
         }
         var content: [MCPServer.Content] = [.image(data: jpeg.base64EncodedString(), mimeType: "image/jpeg")]
-        if let file = pixelSize(of: CGImageSourceCreateWithURL(url as CFURL, nil)),
-           let shown = pixelSize(of: CGImageSourceCreateWithData(jpeg as CFData, nil)), file != shown {
+        if let file = codec.info(ofFileAt: url)?.size, let shown = codec.info(of: jpeg)?.size, file != shown {
             content.append(.text("The preview is \(shown.width)×\(shown.height) pixels. The file is \(file.width)×\(file.height), which is what the marks' coordinates are in."))
         }
         return content
@@ -70,16 +70,16 @@ extension AgentTools {
 
     /// The part of the image at `url` that `rect` covers, in its pixels, as a JPEG at full resolution unless it's too
     /// big for a model, when it's scaled down as a preview is.
-    static func zoomed(_ url: URL, rect: [Double]) throws(ShotCommandError) -> Zoomed {
+    static func zoomed(_ url: URL, rect: [Double], codec: any ImageCoding) throws(ShotCommandError) -> Zoomed {
         try ShotCommands.requireInput(url)
-        guard let image = ImageCodec.image(at: url) else {
+        guard let image = codec.image(at: url) else {
             throw .data("Couldn't read \(url.lastPathComponent) as an image.")
         }
         guard let region = CropRegion.clamped(rect, width: image.width, height: image.height) else {
             throw .data("rect [\(CropRegion.text(rect).replacingOccurrences(of: ",", with: ", "))] is off \(url.lastPathComponent), which is \(image.width)×\(image.height) pixels.")
         }
         guard let part = image.cropping(to: CGRect(x: region[0], y: region[1], width: region[2], height: region[3])),
-              let jpeg = ImageCodec.previewJPEG(of: part), let shown = pixelSize(of: CGImageSourceCreateWithData(jpeg as CFData, nil))
+              let jpeg = codec.previewJPEG(of: part), let shown = codec.info(of: jpeg)?.size
         else {
             throw .internal("Couldn't draw that part of \(url.lastPathComponent).")
         }
@@ -93,7 +93,7 @@ extension AgentTools {
     /// in what clients accept in one result. The frame at each of `marks` comes too, with its label, beside `count`
     /// where the picture changes, fewer of those when they'd go over a dozen in all. What's said in its sound follows the
     /// frame on screen as each phrase starts.
-    static func keyFrames(of url: URL, count: Int, marks: [RecordingMark] = []) async throws(ShotCommandError) -> [MCPServer.Content] {
+    static func keyFrames(of url: URL, count: Int, marks: [RecordingMark] = [], codec: any ImageCoding) async throws(ShotCommandError) -> [MCPServer.Content] {
         guard let media = try? await MediaProbe.probe(url), media.size != nil else {
             throw .data("Couldn't read \(url.lastPathComponent) as a video.")
         }
@@ -115,7 +115,7 @@ extension AgentTools {
             content.append(.text("Showing the frames of the first \(shown) of its \(marks.count) marks."))
         }
         let pictures = frames.compactMap { frame in
-            ImageCodec.previewJPEG(of: frame.image, maxPixelSize: 1024, maxBytes: 400_000).map { (frame: frame, jpeg: $0) }
+            codec.previewJPEG(of: frame.image, maxPixelSize: 1024, maxBytes: 400_000).map { (frame: frame, jpeg: $0) }
         }
         let (phrases, note) = await heard
         if let note {
@@ -166,7 +166,7 @@ extension AgentTools {
     }
 
     /// A frame from early on, where a recording has usually settled, plus how long it runs.
-    static func videoPreview(of url: URL) async -> [MCPServer.Content] {
+    static func videoPreview(of url: URL, codec: any ImageCoding) async -> [MCPServer.Content] {
         guard let media = try? await MediaProbe.probe(url) else {
             return [.text("Couldn't read \(url.lastPathComponent) as a video.")]
         }
@@ -182,22 +182,13 @@ extension AgentTools {
             generator.appliesPreferredTrackTransform = true
             generator.maximumSize = CGSize(width: 1568, height: 1568)
             if let frame = try? await generator.image(at: CMTime(seconds: seconds, preferredTimescale: 600)).image,
-               let jpeg = ImageCodec.previewJPEG(of: frame) {
+               let jpeg = codec.previewJPEG(of: frame) {
                 content.append(.image(data: jpeg.base64EncodedString(), mimeType: "image/jpeg"))
                 about += " The image is its frame at \(String(format: "%.1f", seconds)) seconds."
             }
         }
         content.append(.text(about))
         return content
-    }
-
-    private static func pixelSize(of source: CGImageSource?) -> CaptureRecord.Size? {
-        guard let source, let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
-              let width = properties[kCGImagePropertyPixelWidth] as? Int, let height = properties[kCGImagePropertyPixelHeight] as? Int
-        else {
-            return nil
-        }
-        return CaptureRecord.Size(width: width, height: height)
     }
 }
 #endif

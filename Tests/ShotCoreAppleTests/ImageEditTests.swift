@@ -2,6 +2,7 @@ import CoreGraphics
 import Foundation
 import Testing
 @testable import ShotCore
+import ShotCoreApple
 
 /// Opaque stripes of four colours, 8 pixels wide, so a crop, scale or shift shows in any pixel.
 private func stripes(width: Int = 200, height: Int = 120, alpha: Bool = false) -> CGImage {

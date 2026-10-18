@@ -3,6 +3,7 @@ import CoreGraphics
 import Foundation
 import Testing
 @testable import ShotCore
+import ShotCoreApple
 
 private func edit(_ input: URL, _ edit: VideoEdit, output: String? = nil, projects: ProjectStore? = nil) async throws(ShotCommandError) -> JSONValue {
     try await ShotCommands.run(.edit(ShotCommand.EditOptions(input: input.path, output: output, spec: .video(edit))), projects: projects)
