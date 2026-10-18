@@ -1,7 +1,6 @@
 name: Release PR
 
-# The release PR doesn't merge itself: an admin merges it by hand once CI's macOS gate has set its `test` status
-# (release.yml runs the gate). GitHub allows auto-merge for the whole repository or not at all, so this turns it off
+# The release PR doesn't merge itself: an admin merges it by hand once its CI, the macOS release gate, has passed. GitHub allows auto-merge for the whole repository or not at all, so this turns it off
 # again whenever someone enables it on the release PR.
 # Only auto_merge_enabled, not every push, so other pull requests don't list this as a skipped check.
 on:

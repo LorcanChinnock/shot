@@ -6,9 +6,8 @@ name: Release
 # Installed copies read the feed from releases/latest/download/appcast.xml, so the release stays a
 # draft (tag created up front) until its assets are attached; otherwise `latest` has no feed mid-build.
 # release-please acts as the repository's GitHub App, not GITHUB_TOKEN: GitHub holds the workflows on a pull request
-# from github-actions[bot] until someone approves them. Each time release-please opens or updates the release PR, this
-# runs CI's macOS gate on it, which sets the required `test` status on the commit it passed. An admin merges the PR by
-# hand; release-pr.yml turns auto-merge off on it. See ci.yml.
+# from github-actions[bot] until someone approves them. The release PR's CI runs the macOS release gate (ci.yml), and an
+# admin merges it by hand; release-pr.yml turns auto-merge off on it.
 on:
   push:
     branches: [main]
@@ -20,9 +19,8 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
-    # release-please writes with the app's token. GITHUB_TOKEN only runs the release gate.
-    permissions:
-      actions: write
+    # release-please writes with the app's token, so GITHUB_TOKEN needs nothing.
+    permissions: {}
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
@@ -42,15 +40,6 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-      # A new commit on the release PR has no `test` status, so gate it. A dispatch from GITHUB_TOKEN still starts the
-      # workflow it names.
-      - name: Gate the release PR
-        if: steps.release.outputs.prs_created == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          # Raw, not fromJSON: a step's env is evaluated even when its `if` skips it, and `pr` is empty then.
-          PR_JSON: ${{ steps.release.outputs.pr }}
-        run: gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$(jq -r .headBranchName <<<"$PR_JSON")" -f gate=true
 
   build:
     needs: release-please

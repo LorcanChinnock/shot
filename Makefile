@@ -13,7 +13,7 @@ INSTALL_DIR ?= /Applications
 # Extra `swift test` flags, e.g. ARGS=--skip-build in CI.
 ARGS ?=
 
-.PHONY: build test test-linux perf perf-app lint strings bundle app run dist release-gate reset-tcc icon clean
+.PHONY: build test test-linux perf perf-app lint strings bundle app run dist reset-tcc icon clean
 
 build:
 	swift build
@@ -60,11 +60,6 @@ dist: export SHOT_RELEASE = 1
 dist: bundle
 	ditto -c -k --keepParent build/Shot.app build/Shot.zip
 	@echo "Wrote build/Shot.zip"
-
-# Runs CI's macOS gate on the release PR, which can't merge without it. release.yml runs it each time release-please
-# opens or updates the PR, so this is for re-running it by hand. See .github/workflows/ci.yml.
-release-gate:
-	gh workflow run ci.yml --ref release-please--branches--main--components--Shot -f gate=true
 
 # Clears ShotDev's permission (scripts/bundle.sh gives dev builds the release ID plus .dev), never the release's.
 reset-tcc:
