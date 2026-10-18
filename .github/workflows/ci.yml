@@ -46,6 +46,11 @@ jobs:
   macos:
     # macOS: builds the app and runs ShotCore's tests, which need AppKit, AVFoundation, CoreImage and ImageIO.
     runs-on: macos-26
+    # Temporary for the #414 experiment: three runners, so 120 attempts.
+    strategy:
+      fail-fast: false
+      matrix:
+        copy: [1, 2, 3]
     # A run takes about 5 minutes. A hung test would otherwise hold a macOS runner for GitHub's 6-hour default.
     timeout-minutes: 20
     steps:
@@ -59,7 +64,10 @@ jobs:
       - name: Build for Intel
         run: swift build --arch x86_64 --force-resolved-versions
       - name: Test on macOS
-        run: make test ARGS=--skip-build
+        run: make test ARGS=--skip-build 2>&1 | tee test.log
+        continue-on-error: true
+      - name: Experiment results
+        run: grep EXPERIMENT test.log | sort -t= -k2,2 -s
       # Only at the release gate, to keep ordinary PRs' runs short. Alone, so other tests running in parallel don't skew
       # the timings. Budgets: docs/performance.md.
       - name: Perf
