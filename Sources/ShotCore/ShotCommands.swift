@@ -43,7 +43,7 @@ public enum ShotCommands {
         case let .text(path):
             return try await text(url(path), codec: codec)
         case let .diff(options):
-            return try diff(options, codec: codec)
+            return try diff(options, codec: codec, canvasType: canvasType)
         case let .crop(options):
             return try draw(input: options.input, output: options.output, edit: ImageEdit(crop: options.rect), cropField: "rect", projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (_: CGImage) in [] }
         case let .edit(options):

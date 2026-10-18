@@ -4,46 +4,33 @@ import Foundation
 
 /// Image helpers that need only CoreGraphics. ShotCoreApple adds the encoding and decoding, with ImageIO.
 public enum ImageCodec {
-    /// Resamples a Retina capture to 1 pixel per point.
-    public static func downscaled(_ image: CGImage, scale: CGFloat) -> CGImage {
+    /// Resamples a Retina capture to 1 pixel per point, on a `canvasType` canvas.
+    public static func downscaled(_ image: CGImage, scale: CGFloat, canvasType: any Canvas.Type) -> CGImage {
         guard scale > 1 else {
             return image
         }
         let width = Int((CGFloat(image.width) / scale).rounded()), height = Int((CGFloat(image.height) / scale).rounded())
-        guard let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: image.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+        guard let canvas = canvasType.init(width: width, height: height, format: .matching(image)) else {
             return image
         }
-        ctx.interpolationQuality = .high
-        ctx.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
-        return ctx.makeImage() ?? image
+        canvas.setInterpolation(.high)
+        canvas.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        return canvas.makeImage() ?? image
     }
 }
 
 public enum ImageTrim {
-    /// Crops away fully transparent rows and columns at the edges.
-    public static func trimTransparentEdges(_ image: CGImage) -> CGImage {
+    /// Crops away fully transparent rows and columns at the edges, reading them from a `canvasType` canvas.
+    public static func trimTransparentEdges(_ image: CGImage, canvasType: any Canvas.Type) -> CGImage {
         let width = image.width, height = image.height
-        guard let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width, space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.alphaOnly.rawValue),
-              let data = ctx.data
-        else {
+        guard let canvas = canvasType.init(width: width, height: height, format: .sRGB) else {
             return image
         }
-        ctx.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
-        let alpha = data.assumingMemoryBound(to: UInt8.self)
-        var minX = width, maxX = -1, minY = height, maxY = -1
-        for y in 0..<height {
-            let row = alpha + y * width
-            for x in 0..<width where row[x] != 0 {
-                minX = min(minX, x)
-                maxX = max(maxX, x)
-                minY = min(minY, y)
-                maxY = max(maxY, y)
-            }
-        }
-        guard maxX >= minX, maxY >= minY else {
+        canvas.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        guard let bounds = canvas.makeBitmap()?.visibleBounds else {
             return image
         }
-        return image.cropping(to: CGRect(x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1)) ?? image
+        return image.cropping(to: bounds) ?? image
     }
 }
 #endif

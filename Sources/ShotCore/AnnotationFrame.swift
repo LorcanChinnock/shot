@@ -81,11 +81,6 @@ final class OverlayCache: @unchecked Sendable {
 }
 
 enum AnnotationFrame {
-    private static let placeholder: CGImage = {
-        let context = CGContext(data: nil, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
-        return context.makeImage()!
-    }()
-
     /// Kinds that depend on what's under them: they blend with it, blur it, or dim all but a part of it.
     private static func needsPicture(_ annotation: Annotation) -> Bool {
         switch annotation.kind {
@@ -180,7 +175,7 @@ enum AnnotationFrame {
         target.translateBy(x: 0, y: CGFloat(Int(canvas.height)))
         target.scaleBy(x: 1, y: -1)
         for annotation in annotations {
-            AnnotationRenderer.draw(annotation, base: placeholder, in: target)
+            AnnotationRenderer.draw(annotation, base: canvasType.placeholder, in: target)
         }
         // A styled annotation's shadow is cached as `render` caches it, so let go of those this frame didn't draw.
         AnnotationRenderer.cache.sweep()

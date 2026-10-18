@@ -4,8 +4,9 @@ import Foundation
 
 extension ShotCommands {
     /// `shot diff`: reads both images into bytes at `b`'s size, finds the changes with ShotModel's `ImageDiff`, and
-    /// writes a dimmed copy of `b` with the changed pixels lit and boxed, as a new file beside `b`.
-    static func diff(_ options: ShotCommand.DiffOptions, codec: any ImageCoding) throws(ShotCommandError) -> JSONValue {
+    /// writes a dimmed copy of `b` with the changed pixels lit and boxed, as a new file beside `b`, drawing on `canvasType`
+    /// canvases.
+    static func diff(_ options: ShotCommand.DiffOptions, codec: any ImageCoding, canvasType: any Canvas.Type) throws(ShotCommandError) -> JSONValue {
         let a = url(options.a), b = url(options.b)
         try requireInput(a)
         try requireInput(b)
@@ -24,14 +25,16 @@ extension ShotCommands {
         }
 
         let width = after.width, height = after.height
-        guard let old = pixels(of: before, width: width, height: height), let new = pixels(of: after, width: width, height: height) else {
+        guard let old = pixels(of: before, width: width, height: height, canvasType: canvasType),
+              let new = pixels(of: after, width: width, height: height, canvasType: canvasType)
+        else {
             throw .internal("couldn't read the images' pixels")
         }
         let mask = ImageDiff.changes(old, new, width: width, height: height, bytesPerRow: width * 4, threshold: options.threshold)
         let changed = mask.reduce(0) { $0 + Int($1) }
         let regions = ImageDiff.regions(in: mask, width: width, height: height)
         let scale = codec.scale(ofFileAt: b)
-        guard let image = highlight(after, mask: mask, regions: regions, lineWidth: 2 * max(scale, 1)),
+        guard let image = highlight(after, mask: mask, regions: regions, lineWidth: 2 * max(scale, 1), canvasType: canvasType),
               let data = codec.data(from: image, scale: scale, format: .png)
         else {
             throw .internal("couldn't draw the diff")
@@ -63,53 +66,46 @@ extension ShotCommands {
         return .object(object)
     }
 
-    /// `image` drawn at `width` by `height` as 8-bit premultiplied sRGB RGBA, top row first, so both images are read
-    /// alike whatever their colour space.
-    static func pixels(of image: CGImage, width: Int, height: Int) -> [UInt8]? {
-        var bytes = [UInt8](repeating: 0, count: width * height * 4)
-        let drawn = bytes.withUnsafeMutableBytes { buffer -> Bool in
-            guard let space = CGColorSpace(name: CGColorSpace.sRGB),
-                  let context = CGContext(data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4, space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
-            else {
-                return false
-            }
-            context.interpolationQuality = .high
-            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
-            return true
+    /// `image` drawn at `width` by `height` on a `canvasType` canvas, read as 8-bit premultiplied sRGB RGBA, top row
+    /// first, so both images are read alike whatever their colour space.
+    package static func pixels(of image: CGImage, width: Int, height: Int, canvasType: any Canvas.Type) -> [UInt8]? {
+        guard let canvas = canvasType.init(width: width, height: height, format: .sRGB) else {
+            return nil
         }
-        return drawn ? bytes : nil
+        canvas.setInterpolation(.high)
+        canvas.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        return canvas.makeBitmap().map { [UInt8]($0.pixels) }
     }
 
     /// `image` dimmed, with the pixels `mask` marks shown undimmed under a red tint, and each region boxed in red.
-    static func highlight(_ image: CGImage, mask: [UInt8], regions: [ImageDiff.Region], lineWidth: CGFloat) -> CGImage? {
+    static func highlight(_ image: CGImage, mask: [UInt8], regions: [ImageDiff.Region], lineWidth: CGFloat, canvasType: any Canvas.Type) -> CGImage? {
         let width = image.width, height = image.height
         let bounds = CGRect(x: 0, y: 0, width: width, height: height)
         let alpha = Data(mask.map { $0 == 0 ? 0 : 255 })
-        guard let space = CGColorSpace(name: CGColorSpace.sRGB),
-              let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),
+        guard let canvas = canvasType.init(width: width, height: height, format: .sRGB),
               let provider = CGDataProvider(data: alpha as CFData),
               let changed = CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 8, bytesPerRow: width, space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.none.rawValue), provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)
         else {
             return nil
         }
         let red = RGBA.presets[0]
-        context.draw(image, in: bounds)
-        context.setFillColor(CGColor(gray: 0, alpha: 0.6))
-        context.fill(bounds)
-        context.saveGState()
-        context.clip(to: bounds, mask: changed)
-        context.draw(image, in: bounds)
-        context.setFillColor(RGBA(red.r, red.g, red.b, 0.45).cgColor)
-        context.fill(bounds)
-        context.restoreGState()
-        context.setStrokeColor(red.cgColor)
-        context.setLineWidth(lineWidth)
+        canvas.draw(image, in: bounds)
+        canvas.setFillColor(RGBA(0, 0, 0, 0.6))
+        canvas.fill(bounds)
+        canvas.saveState()
+        canvas.clip(to: bounds, mask: changed)
+        canvas.draw(image, in: bounds)
+        canvas.setFillColor(RGBA(red.r, red.g, red.b, 0.45))
+        canvas.fill(bounds)
+        canvas.restoreState()
+        canvas.setStrokeColor(red)
+        canvas.setLineWidth(lineWidth)
         for region in regions {
-            // Top-left origin to the context's bottom-left, just outside the changed pixels so the box doesn't cover them.
+            // Top-left origin to the canvas's bottom-left, just outside the changed pixels so the box doesn't cover them.
             let rect = CGRect(x: region.x, y: height - region.y - region.height, width: region.width, height: region.height)
-            context.stroke(rect.insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2))
+            canvas.stroke(CanvasPath(rect: rect.insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2)))
         }
-        return context.makeImage()
+        return canvas.makeImage()
     }
 }
 #endif

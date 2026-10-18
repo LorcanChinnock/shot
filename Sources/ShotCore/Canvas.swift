@@ -5,6 +5,9 @@ import CoreGraphics
 import CoreText
 #endif
 import Foundation
+#if canImport(CoreGraphics)
+import Synchronization
+#endif
 
 /// A surface the annotation renderer draws on, so it can draw with whichever library the platform has. A new canvas has
 /// its origin at the bottom left, one unit to a pixel. Each call works as its namesake on a `CGContext` does: state set
@@ -47,6 +50,8 @@ public protocol Canvas: AnyObject, SendableMetatype {
     /// Fills by the nonzero winding rule.
     func fill(_ path: CanvasPath)
     func stroke(_ path: CanvasPath)
+    /// What's drawn so far, as a `Bitmap` in sRGB; `nil` if it can't be read.
+    func makeBitmap() -> Bitmap?
 
     #if canImport(CoreGraphics)
     // Images stay CGImage until the annotations hold `Bitmap`s, so a capture keeps its own colour space, such as Display P3.
@@ -66,6 +71,25 @@ public protocol Canvas: AnyObject, SendableMetatype {
     func draw(_ line: CTLine, at position: CGPoint, outlined: Bool)
     #endif
 }
+
+#if canImport(CoreGraphics)
+private let placeholders = Mutex<[ObjectIdentifier: CGImage]>([:])
+
+extension Canvas {
+    /// A clear 1×1 image, the base the renderer is given when it draws annotations that don't read what's under them.
+    /// Each canvas type makes one and keeps it, so caches that compare bases by identity keep hitting.
+    static var placeholder: CGImage {
+        placeholders.withLock { made in
+            if let known = made[ObjectIdentifier(self)] {
+                return known
+            }
+            let image = Self(width: 1, height: 1, format: .sRGB)!.makeImage()!
+            made[ObjectIdentifier(self)] = image
+            return image
+        }
+    }
+}
+#endif
 
 /// The pixels a new canvas holds.
 public enum CanvasFormat {

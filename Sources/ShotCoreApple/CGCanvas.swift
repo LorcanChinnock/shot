@@ -110,6 +110,7 @@ public final class CGCanvas: Canvas {
     public func draw(_ image: CGImage, in rect: CGRect) { context.draw(image, in: rect) }
     public func clip(to rect: CGRect, mask: CGImage) { context.clip(to: rect, mask: mask) }
     public func makeImage() -> CGImage? { context.makeImage() }
+    public func makeBitmap() -> Bitmap? { context.makeImage().flatMap { Bitmap($0) } }
 
     public func draw(_ line: CTLine, at position: CGPoint, outlined: Bool) {
         context.textMatrix = CGAffineTransform(scaleX: 1, y: -1)

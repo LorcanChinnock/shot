@@ -22,6 +22,27 @@ extension AnnotationRenderer {
     }
 }
 
+extension ImageCodec {
+    /// Resamples a Retina capture to 1 pixel per point.
+    public static func downscaled(_ image: CGImage, scale: CGFloat) -> CGImage {
+        downscaled(image, scale: scale, canvasType: CGCanvas.self)
+    }
+}
+
+extension ImageTrim {
+    /// Crops away fully transparent rows and columns at the edges.
+    public static func trimTransparentEdges(_ image: CGImage) -> CGImage {
+        trimTransparentEdges(image, canvasType: CGCanvas.self)
+    }
+}
+
+extension ShotCommands {
+    /// `image` drawn at `width` by `height`, read as 8-bit premultiplied sRGB RGBA, top row first.
+    package static func pixels(of image: CGImage, width: Int, height: Int) -> [UInt8]? {
+        pixels(of: image, width: width, height: height, canvasType: CGCanvas.self)
+    }
+}
+
 extension StyleThumbnail {
     public static func render(
         _ subject: Subject, style: ObjectStyle, cornerRadius: CGFloat, size: CGSize, pixelsPerPoint: CGFloat, background: RGBA? = nil
