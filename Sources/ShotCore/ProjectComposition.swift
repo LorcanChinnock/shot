@@ -240,6 +240,8 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
     private let edges = ClipEdgeCache()
     /// Counts cancels, so a frame a seek left behind stops drawing, since AVFoundation throws it away.
     private let cancels = OSAllocatedUnfairLock(initialState: 0)
+    /// Every request from start to end, so a cancel can wait for them.
+    private let drawing = DispatchGroup()
     let requests = RequestLog()
 
     var sourcePixelBufferAttributes: [String: any Sendable]? { Self.pixelFormat }
@@ -251,7 +253,9 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
         let asked = cancels.withLock { $0 }
         let time = request.compositionTime.seconds
         requests.record(.started(time))
+        drawing.enter()
         queue.async {
+            defer { self.drawing.leave() }
             func cancelled() -> Bool {
                 guard self.cancels.withLock({ $0 }) != asked else {
                     return false
@@ -360,8 +364,13 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
         }
     }
 
+    /// Returns only once every request has ended, as AVFoundation's header requires. In #414's CI failures, requests
+    /// ended after it returned, and the player then never asked for the frame its seek landed on. Each request checks
+    /// for the cancel between layers and before the final render, so the wait is at most one of those steps.
+    /// AVFoundation starts and cancels requests on one queue, so none starts during the wait.
     func cancelAllPendingVideoCompositionRequests() {
         cancels.withLock { $0 += 1 }
+        drawing.wait()
         requests.record(.cancelAll)
     }
 }

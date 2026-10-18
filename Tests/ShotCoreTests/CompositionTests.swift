@@ -6,6 +6,30 @@ import Testing
 
 private let canvas = CGSize(width: 640, height: 360)
 
+/// The end of each request that started before a cancel but ended after it. Requests that started before the log
+/// did, and ended before its first cancel, aren't counted.
+private func endedAfterTheirCancel(_ events: [RequestLog.Event]) -> [RequestLog.Event] {
+    var open: [Double] = []
+    var cancelled = false
+    var late: [RequestLog.Event] = []
+    for event in events {
+        switch event {
+        case let .started(time):
+            open.append(time)
+        case .cancelAll:
+            open = []
+            cancelled = true
+        case let .finished(time), let .cancelled(time), let .failed(time):
+            if let index = open.firstIndex(of: time) {
+                open.remove(at: index)
+            } else if cancelled {
+                late.append(event)
+            }
+        }
+    }
+    return late
+}
+
 private func temp(_ name: String) -> URL {
     FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString)-\(name)")
 }
@@ -427,16 +451,16 @@ extension CompositingMediaTests {
         item.add(output)
         let player = await AVPlayer(playerItem: item)
         await player.play()
+        // Records what the compositor does from the scrub on, so a failure can say whether the frame for 2 s was asked
+        // for and how its request ended (#414).
+        let compositor = await MainActor.run { item.customVideoCompositor as? ProjectCompositor }
+        compositor?.requests.start()
         // Each seek cancels the frames the one before it asked for, some of them partway through drawing.
         for step in 0..<30 {
             await player.seek(to: CMTime(seconds: Double(step % 15) * 0.25, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: { _ in })
             try await Task.sleep(for: .milliseconds(16))
         }
         await player.pause()
-        // Records what the compositor does from the last seek on, so a failure can say whether the frame for 2 s was
-        // asked for and how its request ended (#414).
-        let compositor = await MainActor.run { item.customVideoCompositor as? ProjectCompositor }
-        compositor?.requests.start()
         let target = CMTime(seconds: 2, preferredTimescale: 600)
         #expect(await player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero))
         // copyPixelBuffer gives the newest buffer, which can be one drawn for an earlier seek, so only the frame for 2 s counts.
@@ -469,8 +493,12 @@ extension CompositingMediaTests {
         let requests = compositor.map { "\($0.requests.events)" } ?? "unknown, since the item had no ProjectCompositor"
         #expect(
             arrived,
-            "The frame for 2 s \(outcome); buffers seen were for \(seen) s; item at \(item.currentTime().seconds) s, status \(item.status.rawValue); new buffer for 2 s: \(output.hasNewPixelBuffer(forItemTime: target)); compositor since the last seek: \(requests)"
+            "The frame for 2 s \(outcome); buffers seen were for \(seen) s; item at \(item.currentTime().seconds) s, status \(item.status.rawValue); new buffer for 2 s: \(output.hasNewPixelBuffer(forItemTime: target)); compositor since the scrub began: \(requests)"
         )
+        // AVFoundation needs every request to end before a cancel returns. In #414's CI failures, some ended after, and
+        // the frame for 2 s was then never asked for.
+        let events = compositor?.requests.events ?? []
+        #expect(endedAfterTheirCancel(events).isEmpty, "Requests ended after the cancel that should have ended them: \(events)")
     }
 }
 
