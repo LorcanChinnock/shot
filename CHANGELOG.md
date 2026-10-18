@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0-beta.62](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.61...v0.7.0-beta.62) (2026-10-18)
+
+
+### Bug Fixes
+
+* **agents:** install into Devin Desktop's new MCP config, formerly Windsurf ([#702](https://github.com/LorcanChinnock/shot/issues/702)) ([2700b54](https://github.com/LorcanChinnock/shot/commit/2700b54bddd8c16680ad6a4196d147c1c082dc31))
+* **agents:** make Install's 60-second limit stop the shell ([#699](https://github.com/LorcanChinnock/shot/issues/699)) ([220e510](https://github.com/LorcanChinnock/shot/commit/220e5107eff0ba279930632934e11d05725d19de))
+
 ## [0.7.0-beta.61](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.60...v0.7.0-beta.61) (2026-10-17)
 
 
