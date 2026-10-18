@@ -16,6 +16,13 @@ on:
 permissions:
   contents: read
 
+# Two quick merges to main would otherwise run release-please, and maybe two builds, at once. A run that's waiting is
+# replaced by a newer one, which is fine: release-please reads main as it is, and tags any merged release PR it finds
+# untagged.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release-please:
     runs-on: ubuntu-latest
@@ -61,6 +68,10 @@ jobs:
           ref: ${{ needs.release-please.outputs.tag_name }}
           fetch-depth: 0 # The build number counts commits.
           persist-credentials: false # Later steps run scripts with every secret, and none of them pushes to this repo.
+      # The release PR's gate tested its own head, but a docs:, test: or ci: commit merged after it doesn't update that
+      # PR, so the tagged commit may be one the gate never ran. Test it here, before any secret is in reach.
+      - name: Test
+        run: make test
       # Every release signs with the same self-signed certificate, so macOS keeps the
       # Screen Recording permission across updates. See CONTRIBUTING.md › Release secrets.
       - name: Import the signing certificate
@@ -108,6 +119,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$TAG" "build/release/Shot-${TAG}.zip" build/release/appcast.xml build/release/SHA256SUMS --clobber
+      # Tags are -beta.N, but the release is published as stable and latest, because installed copies read the
+      # update feed from releases/latest/download/appcast.xml and `latest` never points at a prerelease.
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}

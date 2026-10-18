@@ -65,7 +65,7 @@ docs/                 Screenshots for the README and the user guide, and the dem
 site/                 The website (see site/README.md)
 ```
 
-If logic can be tested without a window, a display, or a permission, put it in `ShotModel` and add a test. If it needs an Apple framework, such as CoreText, AVFoundation or `CGPath`, put it in `ShotCore` instead, keeping the Apple part as thin as you can. CI runs `ShotModel`'s tests on Linux, where minutes cost a fraction of macOS ones. `Shot` holds the AppKit and SwiftUI code that needs a real session.
+If logic can be tested without a window, a display, or a permission, put it in `ShotModel` and add a test. If it needs an Apple framework, such as CoreText, AVFoundation or `CGPath`, put it in `ShotCore` instead, keeping the Apple part as thin as you can. CI also runs `ShotModel`'s tests on Linux, which keeps it portable. `Shot` holds the AppKit and SwiftUI code that needs a real session.
 
 ## Strings and translations
 
@@ -93,8 +93,10 @@ The `shot://` [URL scheme](https://shot.lorcanchinnock.com/docs/url-scheme/) dri
 ## Sending a change
 
 - Keep each pull request focused on one change, and match the style of the surrounding code.
-- Run `make lint` and `make test`, then run the app and try your change. CI only lints and runs the `ShotModel` tests on Linux. It doesn't build the app or run the `ShotCore` tests until the release gate, so run them yourself.
+- Run `make lint` and `make test`, then run the app and try your change. CI runs the same checks on macOS, and the `ShotModel` tests on Linux too, but running them first saves a round trip.
 - Use a [Conventional Commits](https://www.conventionalcommits.org) title for the pull request, such as `fix(recording): …` or `feat(editor): …`. Pull requests are squash-merged, so the title becomes the commit on `main`, and release notes are generated from it.
+
+Everyone taking part in the project follows the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 By contributing, you agree that your contributions are licensed under the project's [GPL-3.0 license](LICENSE).
 
@@ -105,10 +107,10 @@ Releases are automated with [release-please](https://github.com/googleapis/relea
 Before a release, run `make app` and then `make perf-app`, which CI can't run because it needs the Screen Recording permission. It exits non-zero if anything is over budget. See [docs/performance.md](docs/performance.md).
 
 1. When `main` gets a `feat:` or `fix:` commit, release-please opens or updates a release pull request. It bumps the version in `Resources/Info.plist` and `.release-please-manifest.json`, and adds the changes to `CHANGELOG.md`. While Shot is in beta, each release only bumps the beta number, for example `0.7.0-beta.35` to `0.7.0-beta.36`, whether it has features or only fixes. Changes under `site/` never trigger one. Other types such as `docs`, `chore`, `ci`, `refactor`, and `build` appear in the history but don't trigger a release.
-2. The release pull request's CI is the release gate, which runs on macOS: it builds the app, checks the strings catalog, and runs every test, the performance budgets included. It runs again on every push to the pull request, and the pull request can't merge until it passes.
+2. The release pull request's CI is the release gate: as well as the checks every pull request gets, it runs the performance budgets. It runs again on every push to the pull request, and the pull request can't merge until it passes.
    - A repository admin merges the release pull request by hand. The repository has auto-merge turned off.
    - If the gate fails, fix it in a normal pull request first. release-please only updates the release pull request for changes that appear in the changelog, so after a `test:`, `ci:` or `docs:` fix, run `gh pr update-branch <number>` on the release pull request to run the gate again.
-3. The merge tags the release (`v0.7.0-beta.36`, say) and creates a draft GitHub release. The release workflow then builds `Shot-<tag>.zip`, signs it for Sparkle, attaches it with `appcast.xml`, the update feed, and only then publishes the release, so the latest release always has a feed. Installed copies read the feed from the latest release. Last, the workflow rebuilds the website and updates the Homebrew cask.
+3. The merge tags the release (`v0.7.0-beta.36`, say) and creates a draft GitHub release. The release workflow runs the tests again on the tagged commit, since a commit merged after the gate passed may have changed it. It then builds `Shot-<tag>.zip`, signs it for Sparkle, attaches it with `appcast.xml`, the update feed, and only then publishes the release, so the latest release always has a feed. Installed copies read the feed from the latest release. Last, the workflow rebuilds the website and updates the Homebrew cask.
 
 To force a particular version, add a `Release-As: X.Y.Z` line to the body of a commit on `main`.
 

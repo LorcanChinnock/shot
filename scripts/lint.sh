@@ -52,7 +52,7 @@ if [ -n "$hits" ]; then
     exit 1
 fi
 
-# macOS runner minutes cost about 15× Linux ones.
+# macOS jobs queue, since the free plan runs only 5 at once.
 hits=$(awk '/runs-on:.*macos/ && prev !~ /# macOS: / { print FILENAME ":" FNR ": " $0 } { prev = $0 }' .github/workflows/*.yml)
 if [ -n "$hits" ]; then
     echo "Put a '# macOS: <reason>' comment above each macOS runs-on, saying why the job can't run on Linux:"
