@@ -1,6 +1,7 @@
 import CoreImage
 import Testing
 @testable import ShotCore
+import ShotCoreApple
 
 private let canvas = CGRect(x: 0, y: 0, width: 20, height: 20)
 
@@ -59,7 +60,7 @@ struct OverlayCacheTests {
         let cache = OverlayCache()
         let annotations = [box()]
         _ = cache.overlay(for: annotations, canvas: canvas.size) { solid(.red) }
-        let result = AnnotationFrame.apply(annotations, to: solid(.blue), canvas: canvas, context: CIContext(), cache: cache)
+        let result = AnnotationFrame.apply(annotations, to: solid(.blue), canvas: canvas, context: CIContext(), cache: cache, canvasType: CGCanvas.self)
         #expect(middleRed(of: result) == 255)
     }
 
@@ -67,7 +68,7 @@ struct OverlayCacheTests {
         let cache = OverlayCache()
         let blur = [Annotation(kind: .blur(CGRect(x: 1, y: 1, width: 4, height: 4)), color: RGBA.presets[0], lineWidth: 1)]
         _ = cache.overlay(for: blur, canvas: canvas.size) { solid(.red) }
-        let result = AnnotationFrame.apply(blur, to: solid(.blue), canvas: canvas, context: CIContext(), cache: cache)
+        let result = AnnotationFrame.apply(blur, to: solid(.blue), canvas: canvas, context: CIContext(), cache: cache, canvasType: CGCanvas.self)
         #expect(middleRed(of: result) == 0)
     }
 }

@@ -103,13 +103,13 @@ enum AnnotationFrame {
         var isPlain: Bool { abs(rotation) < 1e-6 && opacity >= 0.999 }
     }
 
-    /// `image` with each item drawn over it, bottom to top. Runs of plain ones are drawn together.
-    static func apply(_ items: [Item], to image: CIImage, canvas: CGRect, context: CIContext, cache: OverlayCache? = nil) -> CIImage {
+    /// `image` with each item drawn over it, bottom to top, on `canvasType` canvases. Runs of plain ones are drawn together.
+    static func apply(_ items: [Item], to image: CIImage, canvas: CGRect, context: CIContext, cache: OverlayCache? = nil, canvasType: any Canvas.Type) -> CIImage {
         var result = image
         var batch: [Annotation] = []
         func flush() {
             if !batch.isEmpty {
-                result = apply(batch, to: result, canvas: canvas, context: context, cache: cache)
+                result = apply(batch, to: result, canvas: canvas, context: context, cache: cache, canvasType: canvasType)
                 batch = []
             }
         }
@@ -122,7 +122,7 @@ enum AnnotationFrame {
             guard item.opacity > 0.001 else {
                 continue
             }
-            result = applySpecial(item, to: result, canvas: canvas, context: context, cache: cache)
+            result = applySpecial(item, to: result, canvas: canvas, context: context, cache: cache, canvasType: canvasType)
         }
         flush()
         return result
@@ -134,12 +134,12 @@ enum AnnotationFrame {
 
     /// One annotation that's turned or faded. What shows through a blur or highlight can't be turned apart from the frame,
     /// so those only fade, as a blend of the frame with and without them.
-    private static func applySpecial(_ item: Item, to image: CIImage, canvas: CGRect, context: CIContext, cache: OverlayCache?) -> CIImage {
+    private static func applySpecial(_ item: Item, to image: CIImage, canvas: CGRect, context: CIContext, cache: OverlayCache?, canvasType: any Canvas.Type) -> CIImage {
         if needsPicture(item.annotation) {
-            let with = apply([item.annotation], to: image, canvas: canvas, context: context)
+            let with = apply([item.annotation], to: image, canvas: canvas, context: context, canvasType: canvasType)
             return fade(with, to: item.opacity).composited(over: image)
         }
-        var overlay = apply([item.annotation], to: CIImage(color: .clear).cropped(to: canvas), canvas: canvas, context: context, cache: cache)
+        var overlay = apply([item.annotation], to: CIImage(color: .clear).cropped(to: canvas), canvas: canvas, context: context, cache: cache, canvasType: canvasType)
         if abs(item.rotation) > 1e-6 {
             let bounds = item.annotation.bounds
             // The canvas is y down and Core Image y up, so the same turn is the other way round.
@@ -154,33 +154,30 @@ enum AnnotationFrame {
 
     /// `image` with `annotations` drawn over it, bottom to top, in the canvas's own pixels with the origin at the top left.
     /// Plain overlays come from `cache` when it has them.
-    static func apply(_ annotations: [Annotation], to image: CIImage, canvas: CGRect, context: CIContext, cache: OverlayCache? = nil) -> CIImage {
+    static func apply(_ annotations: [Annotation], to image: CIImage, canvas: CGRect, context: CIContext, cache: OverlayCache? = nil, canvasType: any Canvas.Type) -> CIImage {
         guard !annotations.isEmpty, let space = CGColorSpace(name: CGColorSpace.sRGB) else {
             return image
         }
-        if annotations.contains(where: needsPicture), let target = bitmap(canvas, space: space), let picture = context.createCGImage(image, from: canvas, format: .RGBA8, colorSpace: space) {
+        if annotations.contains(where: needsPicture), let target = canvasType.init(width: Int(canvas.width), height: Int(canvas.height), format: .sRGB),
+           let picture = context.createCGImage(image, from: canvas, format: .RGBA8, colorSpace: space) {
             // The renderer draws the picture too, then each annotation over it, with the dim of every spotlight at once.
-            target.interpolationQuality = .high
+            target.setInterpolation(.high)
             AnnotationRenderer.render(EditorDocument(base: picture, annotations: annotations), into: target)
             return target.makeImage().map { CIImage(cgImage: $0) } ?? image
         }
-        let draw = { overlay(annotations, canvas: canvas, space: space) }
+        let draw = { overlay(annotations, canvas: canvas, canvasType: canvasType) }
         guard let overlay = cache.map({ $0.overlay(for: annotations, canvas: canvas.size, draw: draw) }) ?? draw() else {
             return image
         }
         return overlay.composited(over: image)
     }
 
-    private static func bitmap(_ canvas: CGRect, space: CGColorSpace) -> CGContext? {
-        CGContext(data: nil, width: Int(canvas.width), height: Int(canvas.height), bitsPerComponent: 8, bytesPerRow: 0, space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
-    }
-
     /// `annotations` drawn on a clear canvas.
-    private static func overlay(_ annotations: [Annotation], canvas: CGRect, space: CGColorSpace) -> CIImage? {
-        guard let target = bitmap(canvas, space: space) else {
+    private static func overlay(_ annotations: [Annotation], canvas: CGRect, canvasType: any Canvas.Type) -> CIImage? {
+        guard let target = canvasType.init(width: Int(canvas.width), height: Int(canvas.height), format: .sRGB) else {
             return nil
         }
-        target.translateBy(x: 0, y: CGFloat(target.height))
+        target.translateBy(x: 0, y: CGFloat(Int(canvas.height)))
         target.scaleBy(x: 1, y: -1)
         for annotation in annotations {
             AnnotationRenderer.draw(annotation, base: placeholder, in: target)

@@ -46,13 +46,13 @@ public enum BoxShape: String, CaseIterable, Codable, Sendable {
 
     /// The outline stretched to fill `rect`, its corners rounded by `cornerRadius` (square for `nil`). A star rounds only
     /// its points.
-    public func path(in rect: CGRect, cornerRadius: CGFloat? = nil) -> CGPath {
+    public func path(in rect: CGRect, cornerRadius: CGFloat? = nil) -> CanvasPath {
         switch self {
         case .rectangle:
             let radius = clampedRadius(cornerRadius, in: rect)
-            return radius > 0 ? CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil) : CGPath(rect: rect, transform: nil)
+            return radius > 0 ? CanvasPath(roundedRect: rect, cornerRadius: radius) : CanvasPath(rect: rect)
         case .ellipse:
-            return CGPath(ellipseIn: rect, transform: nil)
+            return CanvasPath(ellipseIn: rect)
         case .triangle, .diamond, .star:
             let corners = vertices(in: rect)
             return Self.polygon(corners.points, rounding: clampedRadius(cornerRadius, in: rect), roundedIndices: corners.rounded)
@@ -139,8 +139,8 @@ public enum BoxShape: String, CaseIterable, Codable, Sendable {
     }
 
     /// The closed outline through `points`, with an arc of `radius` tangent to both edges at each of `roundedIndices`.
-    private static func polygon(_ points: [CGPoint], rounding radius: CGFloat, roundedIndices: Set<Int>) -> CGPath {
-        let path = CGMutablePath()
+    private static func polygon(_ points: [CGPoint], rounding radius: CGFloat, roundedIndices: Set<Int>) -> CanvasPath {
+        var path = CanvasPath()
         let count = points.count
         guard radius > 0, !roundedIndices.isEmpty else {
             path.addLines(between: points)

@@ -19,20 +19,19 @@ public enum StyleThumbnail {
     static let fill: CGFloat = 0.62
 
     /// `subject` with `style` and `cornerRadius`, both in points, fitted into a tile `size` points big at `pixelsPerPoint`.
-    /// `background` tints a shadow as the canvas's does. `nil` when there's nothing to draw.
+    /// `background` tints a shadow as the canvas's does. It's drawn on a new `canvasType` canvas; `nil` when there's
+    /// nothing to draw.
     public static func render(
-        _ subject: Subject, style: ObjectStyle, cornerRadius: CGFloat, size: CGSize, pixelsPerPoint: CGFloat, background: RGBA? = nil
+        _ subject: Subject, style: ObjectStyle, cornerRadius: CGFloat, size: CGSize, pixelsPerPoint: CGFloat, background: RGBA? = nil,
+        canvasType: any Canvas.Type
     ) -> CGImage? {
         let pixels = CGSize(width: (size.width * pixelsPerPoint).rounded(), height: (size.height * pixelsPerPoint).rounded())
-        guard pixels.width >= 1, pixels.height >= 1, let ctx = CGContext(
-            data: nil, width: Int(pixels.width), height: Int(pixels.height), bitsPerComponent: 8, bytesPerRow: 0,
-            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else {
+        guard pixels.width >= 1, pixels.height >= 1, let ctx = canvasType.init(width: Int(pixels.width), height: Int(pixels.height), format: .sRGB) else {
             return nil
         }
         ctx.translateBy(x: 0, y: pixels.height)
         ctx.scaleBy(x: 1, y: -1)
-        ctx.interpolationQuality = .high
+        ctx.setInterpolation(.high)
         // The picture sits a little high, since a shadow mostly falls below it.
         let box = CGRect(
             x: pixels.width * (1 - fill) / 2, y: pixels.height * (1 - fill) * 0.4,

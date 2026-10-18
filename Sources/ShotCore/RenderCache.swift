@@ -88,15 +88,12 @@ struct Backdrop: Equatable, Sendable {
         return picked.reversed()
     }
 
-    /// The image, and where its top-left pixel sits.
-    func draw() -> (image: CGImage, origin: CGPoint) {
-        guard area != .zero, let ctx = CGContext(
-            data: nil, width: Int(area.width), height: Int(area.height), bitsPerComponent: 8, bytesPerRow: 0,
-            space: base.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else {
+    /// The image, drawn on a new `canvasType` canvas, and where its top-left pixel sits.
+    func draw(canvasType: any Canvas.Type) -> (image: CGImage, origin: CGPoint) {
+        guard area != .zero, let ctx = canvasType.init(width: Int(area.width), height: Int(area.height), format: .matching(base)) else {
             return (base, .zero)
         }
-        ctx.interpolationQuality = .high
+        ctx.setInterpolation(.high)
         var doc = EditorDocument(base: base, annotations: below)
         doc.captureCornerRadius = look.cornerRadius
         doc.captureStyle = look.style

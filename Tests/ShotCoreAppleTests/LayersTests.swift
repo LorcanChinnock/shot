@@ -3,6 +3,7 @@ import CoreImage
 import Foundation
 import Testing
 @testable import ShotCore
+import ShotCoreApple
 
 private let red = RGBA.presets[0]
 
@@ -213,7 +214,7 @@ func aHiddenLayerIsLeftOutOfTheEffectOverIt(_ name: String) throws {
     let context = CIContext()
     func frame(_ annotations: [Annotation]) throws -> CGImage {
         let white = CIImage(color: .white).cropped(to: canvas)
-        let image = AnnotationFrame.apply(annotations.map { AnnotationFrame.Item(annotation: $0) }, to: white, canvas: canvas, context: context)
+        let image = AnnotationFrame.apply(annotations.map { AnnotationFrame.Item(annotation: $0) }, to: white, canvas: canvas, context: context, canvasType: CGCanvas.self)
         return try #require(context.createCGImage(image, from: canvas, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!))
     }
     let plain = try frame([square()])
