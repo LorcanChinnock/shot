@@ -8155,6 +8155,16 @@
         }
       }
     },
+    "Couldn't add Shot to %@: %@ didn't finish within a minute. Copy the command and run it in Terminal instead." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Couldn't add Shot to %1$@: %2$@ didn't finish within a minute. Copy the command and run it in Terminal instead."
+          }
+        }
+      }
+    },
     "Couldn't add the audio to its file" : {
       "localizations" : {
         "de" : {
