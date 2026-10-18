@@ -95,17 +95,16 @@ Concurrency: UI and model types are `@MainActor`. Heavy work runs in `Task.detac
 - ShotModel and its tests import only Foundation, Synchronization and Testing, plus CoreGraphics inside `#if canImport(CoreGraphics)`.
 - Every `runs-on: macos-*` needs a `# macOS: <reason>` comment on the line above.
 
-## CI minutes
+## CI
 
-macOS runner minutes cost about 15× Linux ones, so CI runs macOS only at the release gate (`.github/workflows/ci.yml`):
-- Every PR runs one Linux job, the required `test` check: `scripts/lint.sh` and ShotModel's tests. On push to `main`, `warm-cache.yml` only builds, to save the build cache PRs restore.
-- On release-please's PR, the required `test` job is the gate: it runs on macOS, builds the app, checks the strings catalog, and runs `ShotCoreTests`, `ShotModelTests` and `PerfTests`. Every push to that PR runs it again, so only a commit that passed can be released. release-please opens the PR as the repository's GitHub App (`release.yml`), so its runs start without the approval GitHub asks for on `github-actions[bot]` PRs.
+The repository is public, so GitHub's runners are free, but the free plan runs only 5 macOS jobs at once, so macOS runs can queue (`.github/workflows/ci.yml`):
+- Every PR runs two required checks. `test` is Linux: `scripts/lint.sh` and ShotModel's tests, which keeps ShotModel portable. `macos` builds the app, checks the strings catalog, compiles for Intel, and runs `ShotCoreTests` and `ShotModelTests`. On push to `main`, `warm-cache.yml` only builds, to save the Linux build cache PRs restore.
+- On release-please's PR, `macos` also runs `PerfTests`: that's the release gate. Every push to that PR runs it again. release-please opens the PR as the repository's GitHub App (`release.yml`), so its runs start without the approval GitHub asks for on `github-actions[bot]` PRs.
 - The repository has auto-merge turned off: an admin merges the release PR by hand once the gate has passed. If the gate fails, fix it in a normal PR. release-please updates the release PR only for commits that change the changelog, so after a `test:`, `ci:` or `docs:` fix, run `gh pr update-branch <release PR>` to gate it again.
-- CI never builds the app or runs ShotCore's tests on a PR, so local `make lint` and `make test` are the real check for Apple-side code. A break that slips through stays on `main` until the next gate.
+- `release.yml` runs `make test` on the tagged commit before it signs anything, because a `docs:`, `test:` or `ci:` commit merged after the gate passed can change what's released.
 - New logic and tests go in ShotModel unless they need an Apple framework. When they do, keep the Apple part in ShotCore as thin as you can and leave the rest portable.
-- Never add a gate step that could run on Linux. New workflows and jobs use `ubuntu-latest`.
-- Run `make lint` and `make test` before every push, plus `make test-linux` when you change ShotModel, and push once per PR where you can, so CI is a check rather than a debugger. Every push re-runs CI, and a newer push cancels the run before it, wasting the minutes it used.
-- Every release PR update runs the gate on macOS, and every release builds there too, so let the release-please PR collect several merges rather than releasing after each one.
+- Run `make lint` and `make test` before every push, plus `make test-linux` when you change ShotModel, and push once per PR where you can, so CI is a check rather than a debugger. Every push re-runs CI, and a newer push cancels the run before it.
+- Every release PR update runs the perf budgets, and every release builds and tests again, so let the release-please PR collect several merges rather than releasing after each one.
 
 ## Conventions
 
