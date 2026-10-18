@@ -4,6 +4,7 @@ import Foundation
 import ImageIO
 import Testing
 @testable import ShotCore
+import ShotCoreApple
 
 /// A black and white checkerboard of 4-pixel squares, which any blur or pixelation visibly changes.
 private func checkerboard(width: Int = 200, height: Int = 120) -> CGImage {

@@ -4,6 +4,7 @@ import Foundation
 import Synchronization
 import Testing
 @testable import ShotCore
+import ShotCoreApple
 
 /// A white image, for tests that read text, with each line of text drawn in black at its point from the top left.
 func textImage(width: Int, height: Int, _ lines: [(text: String, x: CGFloat, top: CGFloat)], size: CGFloat = 28) throws -> CGImage {

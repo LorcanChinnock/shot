@@ -1,7 +1,9 @@
-#if canImport(CoreGraphics) && canImport(os)
+#if canImport(CoreGraphics) && canImport(ImageIO) && canImport(os) && canImport(UniformTypeIdentifiers)
 import CoreGraphics
 import Foundation
+import ImageIO
 import os
+import UniformTypeIdentifiers
 
 /// The pixels of an image placed on the canvas, kept at full resolution and stored once: annotations,
 /// undo steps and copies within the editor all share the same instance rather than copying the bitmap.
@@ -57,20 +59,30 @@ public final class AnnotationImage: Equatable, Codable, @unchecked Sendable {
         case id, png
     }
 
-    /// Encoded as PNG, which is lossless, so a copy pasted into another editor keeps every pixel.
+    /// Encoded as PNG, which is lossless, so a copy pasted into another editor keeps every pixel. It calls ImageIO
+    /// itself, as `ImageIOCodec` does, since `Codable` has no way to be handed an `ImageCoding`. That goes once an
+    /// annotation's image is a `Bitmap`.
     public func encode(to encoder: Encoder) throws {
-        guard let png = ImageCodec.data(from: image, scale: 1) else {
+        let data = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(data, UTType.png.identifier as CFString, 1, nil) else {
+            throw EncodingError.invalidValue(image, .init(codingPath: encoder.codingPath, debugDescription: "The image could not be encoded as PNG"))
+        }
+        CGImageDestinationAddImage(destination, image, [kCGImagePropertyDPIWidth: 72, kCGImagePropertyDPIHeight: 72] as CFDictionary)
+        guard CGImageDestinationFinalize(destination) else {
             throw EncodingError.invalidValue(image, .init(codingPath: encoder.codingPath, debugDescription: "The image could not be encoded as PNG"))
         }
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
-        try container.encode(png, forKey: .png)
+        try container.encode(data as Data, forKey: .png)
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
-        guard let image = ImageCodec.image(from: try container.decode(Data.self, forKey: .png)) else {
+        let png = try container.decode(Data.self, forKey: .png)
+        guard let source = CGImageSourceCreateWithData(png as CFData, nil),
+              let image = CGImageSourceCreateImageAtIndex(source, 0, [kCGImageSourceShouldCacheImmediately: true] as CFDictionary)
+        else {
             throw DecodingError.dataCorruptedError(forKey: .png, in: container, debugDescription: "The image data could not be read")
         }
         self.image = image

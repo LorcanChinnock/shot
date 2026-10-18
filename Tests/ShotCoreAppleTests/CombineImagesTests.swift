@@ -2,6 +2,7 @@ import CoreGraphics
 import Foundation
 import Testing
 @testable import ShotCore
+import ShotCoreApple
 
 private let black = RGBA(0, 0, 0)
 

@@ -2,6 +2,7 @@ import CoreGraphics
 import Foundation
 import Testing
 @testable import ShotCore
+import ShotCoreApple
 
 @Test func aCroppedVersionRecordsItsCropAndReopensWithItAdjustable() throws {
     var doc = EditorDocument(base: solidImage(width: 400, height: 300))

@@ -83,16 +83,6 @@ public enum PreferenceKey {
     public static func hotkey(_ action: ShotAction) -> String { "hotkey.\(action.rawValue)" }
 }
 
-public enum ImageFormat: String, CaseIterable, Sendable {
-    case png, jpeg
-
-    public var fileExtension: String { self == .png ? "png" : "jpg" }
-
-    public init(fileExtension: String) {
-        self = ["jpg", "jpeg"].contains(fileExtension.lowercased()) ? .jpeg : .png
-    }
-}
-
 public enum QuickAccessPosition: String, CaseIterable, Sendable {
     case left, right
 }
