@@ -1,8 +1,9 @@
 import CoreGraphics
 import Foundation
 
-// ShotCore's calls that read or write images take an `ImageCoding`. On a Mac it's always ImageIO, so these give the app,
-// ShotCLI and the tests each call as it was, without one.
+// ShotCore's calls that read or write images take an `ImageCoding`, and those that draw a `Canvas` type. On a Mac they're
+// always ImageIO and Core Graphics, so these give the app, ShotCLI and the tests each call as it was, without them.
+// CGCanvas+Defaults.swift has the calls that only draw.
 
 extension ProjectStore {
     public init(folder: URL) {
@@ -42,14 +43,14 @@ extension VersionWriter {
     }
 
     public static func render(_ document: EditorDocument, scale: CGFloat, as format: ImageFormat, record: CaptureRecord?, projectID: String? = nil, atOneX: Bool = false) throws(Failure) -> RenderedImage {
-        try render(document, scale: scale, as: format, record: record, projectID: projectID, atOneX: atOneX, codec: ImageIOCodec())
+        try render(document, scale: scale, as: format, record: record, projectID: projectID, atOneX: atOneX, codec: ImageIOCodec(), canvasType: CGCanvas.self)
     }
 
     public static func saveImage(
         _ document: EditorDocument, of original: URL, scale: CGFloat, recordForAgents: Bool = Preferences().agentHandoff,
         projects: ProjectStore? = nil, origin: ProjectOrigin = ProjectOrigin(via: .app)
     ) throws(Failure) -> SavedImage {
-        try saveImage(document, of: original, scale: scale, recordForAgents: recordForAgents, projects: projects, origin: origin, codec: ImageIOCodec())
+        try saveImage(document, of: original, scale: scale, recordForAgents: recordForAgents, projects: projects, origin: origin, codec: ImageIOCodec(), canvasType: CGCanvas.self)
     }
 
     public static func savedLayers(of url: URL, in projects: ProjectStore?) -> (original: URL, image: CGImage, layers: EditorSnapshot)? {
@@ -59,7 +60,7 @@ extension VersionWriter {
 
 extension ShotCommands {
     public static func run(_ command: ShotCommand, projects: ProjectStore? = nil, origin: ProjectOrigin? = nil) async throws(ShotCommandError) -> JSONValue {
-        try await run(command, projects: projects, origin: origin, codec: ImageIOCodec())
+        try await run(command, projects: projects, origin: origin, codec: ImageIOCodec(), canvasType: CGCanvas.self)
     }
 }
 
@@ -71,6 +72,6 @@ extension AgentTools {
         texts: TextIndexStore? = nil,
         agent: @escaping @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue] = { _ throws(ShotCommandError) in throw .unavailable("can't reach Shot from here") }
     ) -> AgentTools {
-        live(folder: folder, marks: marks, projects: projects, texts: texts, codec: ImageIOCodec(), agent: agent)
+        live(folder: folder, marks: marks, projects: projects, texts: texts, codec: ImageIOCodec(), canvasType: CGCanvas.self, agent: agent)
     }
 }

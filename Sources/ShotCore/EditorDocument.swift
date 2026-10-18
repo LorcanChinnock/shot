@@ -182,7 +182,7 @@ public struct EditorDocument: @unchecked Sendable {
             guard style.softEdge == 0 else {
                 continue
             }
-            let shape = style.shape.path(in: rect, cornerRadius: annotation.cornerRadius)
+            let shape = style.shape.path(in: rect, cornerRadius: annotation.cornerRadius).cgPath
             lit = lit?.union(shape) ?? shape
         }
         guard hasSpotlight else {

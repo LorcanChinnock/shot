@@ -29,7 +29,8 @@ public enum CompositionBuilder {
     /// Frame rates above this aren't kept, since the compositor draws every frame. It matches the fastest recording.
     static let maximumFrameRate: Float = 120
 
-    public static func build(_ project: Project) async throws -> ProjectComposition {
+    /// The project as one composition, its annotations drawn on `canvasType` canvases.
+    public static func build(_ project: Project, canvasType: any Canvas.Type) async throws -> ProjectComposition {
         let composition = AVMutableComposition()
         var assets: [URL: AVURLAsset] = [:]
         func asset(_ url: URL) -> AVURLAsset {
@@ -100,7 +101,7 @@ public enum CompositionBuilder {
                 case let .annotation(id): notes[id].map(ProjectInstruction.Layer.annotation)
                 }
             }
-            instructions.append(ProjectInstruction(timeRange: CMTimeRange(start: start, end: end), layers: stack, live: live, canvas: canvas, output: output))
+            instructions.append(ProjectInstruction(timeRange: CMTimeRange(start: start, end: end), layers: stack, live: live, canvas: canvas, output: output, canvasType: canvasType))
         }
 
         let video = AVMutableVideoComposition()
@@ -177,13 +178,16 @@ final class ProjectInstruction: NSObject, AVVideoCompositionInstructionProtocol,
     let canvas: CGSize
     /// The part of the canvas the frame shows, in canvas pixels with y down: all of it unless the frame is cropped.
     let output: CGRect
+    /// What the annotations are drawn on.
+    let canvasType: any Canvas.Type
 
-    init(timeRange: CMTimeRange, layers: [Layer], live: LiveAnnotations, canvas: CGSize, output: CGRect? = nil) {
+    init(timeRange: CMTimeRange, layers: [Layer], live: LiveAnnotations, canvas: CGSize, output: CGRect? = nil, canvasType: any Canvas.Type) {
         self.timeRange = timeRange
         self.layers = layers
         self.live = live
         self.canvas = canvas
         self.output = output ?? CGRect(origin: .zero, size: canvas)
+        self.canvasType = canvasType
         let tracks = layers.compactMap { if case let .picture(layer) = $0 { layer.trackID } else { nil } }
         requiredSourceTrackIDs = Array(Set(tracks)).sorted().map { NSNumber(value: $0) }
         super.init()
@@ -282,7 +286,7 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
                 return AnnotationFrame.Item(annotation: state.annotation, rotation: state.rotation, opacity: state.opacity)
             }
             func flush() {
-                image = AnnotationFrame.apply(run, to: image, canvas: canvas, context: self.context, cache: self.overlays)
+                image = AnnotationFrame.apply(run, to: image, canvas: canvas, context: self.context, cache: self.overlays, canvasType: instruction.canvasType)
                 run = []
             }
             for layer in instruction.layers {
@@ -398,9 +402,10 @@ public enum ProjectExporter {
             || frameRate > 30 && canvas.width * canvas.height > largestH264Canvas.width * largestH264Canvas.height
     }
 
-    /// Writes the project to `output`, replacing it, drawn at the canvas size and re-encoded as H.264, or HEVC when `usesHEVC`.
-    public static func export(_ project: Project, to output: URL, as fileType: AVFileType = .mp4) async throws {
-        let built = try await CompositionBuilder.build(project)
+    /// Writes the project to `output`, replacing it, drawn at the canvas size on `canvasType` canvases and re-encoded as
+    /// H.264, or HEVC when `usesHEVC`.
+    public static func export(_ project: Project, to output: URL, as fileType: AVFileType = .mp4, canvasType: any Canvas.Type) async throws {
+        let built = try await CompositionBuilder.build(project, canvasType: canvasType)
         let frameRate = Int((1 / built.videoComposition.frameDuration.seconds).rounded())
         let preset = usesHEVC(canvas: project.outputRect.size, frameRate: frameRate) ? AVAssetExportPresetHEVCHighestQuality : AVAssetExportPresetHighestQuality
         guard let export = AVAssetExportSession(asset: built.asset, presetName: preset) else {

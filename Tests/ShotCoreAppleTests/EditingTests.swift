@@ -223,7 +223,7 @@ func draggingAnEdgeChangesOneSide(kind: Annotation.Kind) {
     // The apex is at the top middle, so its handle is straight down from it, inside the shape.
     #expect(abs(apex.point.x - 200) < 0.001 && apex.point.y > 100 && apex.point.y < 150)
     for (_, point) in triangle.radiusHandles(tolerance: 4) {
-        #expect(BoxShape.triangle.path(in: box).contains(point))
+        #expect(BoxShape.triangle.path(in: box).cgPath.contains(point))
     }
 }
 

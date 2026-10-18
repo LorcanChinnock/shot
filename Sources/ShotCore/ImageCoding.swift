@@ -67,8 +67,9 @@ public protocol ImageCoding: Sendable {
     func previewJPEG(at url: URL, maxPixelSize: Int, maxBytes: Int) -> Data?
 
     #if canImport(CoreGraphics)
-    // The same for the code that still draws with CoreGraphics. It keeps the image's own colour space, such as Display
-    // P3, which a `Bitmap` in sRGB would lose. These go once that code draws through a protocol too (#648).
+    // The same for the images a document holds and a canvas makes, which are still CGImages. They keep the image's own
+    // colour space, such as Display P3, which a `Bitmap` in sRGB would lose. These go once those images don't need
+    // CoreGraphics to keep it.
     func data(from image: CGImage, scale: CGFloat, format: ImageFormat, metadata: ImageMetadata) -> Data?
     func image(at url: URL) -> CGImage?
     /// Decoded now, so it doesn't decode again each time it's drawn.

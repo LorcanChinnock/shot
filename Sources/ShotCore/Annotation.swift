@@ -3,43 +3,8 @@ import CoreGraphics
 import CoreText
 import Foundation
 
-public struct RGBA: Equatable, Hashable, Sendable, Codable {
-    public var r, g, b, a: CGFloat
-
-    public init(_ r: CGFloat, _ g: CGFloat, _ b: CGFloat, _ a: CGFloat = 1) {
-        self.r = r
-        self.g = g
-        self.b = b
-        self.a = a
-    }
-
+extension RGBA {
     public var cgColor: CGColor { CGColor(srgbRed: r, green: g, blue: b, alpha: a) }
-
-    /// `#RRGGBB`, plus the alpha when it isn't opaque.
-    public var hex: String { HexColor.string(red: r, green: g, blue: b, alpha: a) }
-
-    public static let presets: [RGBA] = [
-        RGBA(1, 0.23, 0.19), RGBA(1, 0.58, 0), RGBA(1, 0.8, 0),
-        RGBA(0.2, 0.78, 0.35), RGBA(0, 0.48, 1), RGBA(0, 0, 0), RGBA(1, 1, 1),
-    ]
-
-    /// A sticky note's paper: the colour mixed most of the way to white.
-    public var noteFill: RGBA {
-        RGBA(r + (1 - r) * 0.6, g + (1 - g) * 0.6, b + (1 - b) * 0.6, a)
-    }
-
-    /// WCAG relative luminance of the sRGB colour.
-    public var relativeLuminance: CGFloat {
-        func linear(_ c: CGFloat) -> CGFloat { c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4) }
-        return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
-    }
-
-    /// Near-black or white, whichever reads better on this colour.
-    public var contrastingInk: RGBA {
-        let ink = RGBA(0.07, 0.07, 0.10), white = RGBA(1, 1, 1)
-        let l = relativeLuminance
-        return (l + 0.05) / (ink.relativeLuminance + 0.05) >= (white.relativeLuminance + 0.05) / (l + 0.05) ? ink : white
-    }
 }
 
 /// All geometry is in image pixels with a top-left origin.
@@ -390,9 +355,9 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             return layout.frame.union(shadow)
         case let .freehand(points):
             // The smoothed curve can swing a little past the points it runs through.
-            return bounds.union(Freehand.path(through: points).boundingBoxOfPath).insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2)
+            return bounds.union(Freehand.path(through: points).cgPath.boundingBoxOfPath).insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2)
         case let .marker(points):
-            return bounds.union(Freehand.path(through: points).boundingBoxOfPath).insetBy(dx: -markerWidth / 2, dy: -markerWidth / 2)
+            return bounds.union(Freehand.path(through: points).cgPath.boundingBoxOfPath).insetBy(dx: -markerWidth / 2, dy: -markerWidth / 2)
         }
     }
 
@@ -405,7 +370,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let .arrow(from, to), let .line(from, to):
             return Self.distance(from: point, toSegment: from, to) <= slop
         case let .shape(shape, rect):
-            let path = shape.path(in: rect, cornerRadius: cornerRadius)
+            let path = shape.path(in: rect, cornerRadius: cornerRadius).cgPath
             let outline = path.copy(strokingWithWidth: slop * 2, lineCap: .butt, lineJoin: .miter, miterLimit: 10)
             return outline.contains(point) || (fill != nil && path.contains(point))
         case .highlight, .pixelate, .blur, .spotlight, .text, .note, .image:
@@ -413,9 +378,9 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let .counter(_, center):
             return hypot(point.x - center.x, point.y - center.y) <= counterRadius + tolerance
         case let .freehand(points):
-            return Freehand.path(through: points).copy(strokingWithWidth: slop * 2, lineCap: .round, lineJoin: .round, miterLimit: 10).contains(point)
+            return Freehand.path(through: points).cgPath.copy(strokingWithWidth: slop * 2, lineCap: .round, lineJoin: .round, miterLimit: 10).contains(point)
         case let .marker(points):
-            return Freehand.path(through: points).copy(strokingWithWidth: tolerance * 2 + markerWidth, lineCap: .butt, lineJoin: .round, miterLimit: 10).contains(point)
+            return Freehand.path(through: points).cgPath.copy(strokingWithWidth: tolerance * 2 + markerWidth, lineCap: .butt, lineJoin: .round, miterLimit: 10).contains(point)
         }
     }
 

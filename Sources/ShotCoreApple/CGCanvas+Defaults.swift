@@ -1,0 +1,70 @@
+import AVFoundation
+import CoreGraphics
+import Foundation
+
+// ShotCore's calls that draw take a `Canvas`, or the `Canvas` type to make one with. On a Mac it's always Core Graphics,
+// so these give the app, ShotCLI and the tests each call as it was, with a `CGContext` or without a canvas.
+
+extension AnnotationRenderer {
+    /// Draws the document into a bottom-left-origin context of size `doc.exportSize`.
+    public static func render(_ doc: EditorDocument, into ctx: CGContext) {
+        render(doc, into: CGCanvas(ctx))
+    }
+
+    public static func flatten(_ doc: EditorDocument) -> CGImage? {
+        flatten(doc, canvasType: CGCanvas.self)
+    }
+
+    /// Draws in a top-left-origin context. `below` are the annotations drawn before it, which a pixelate or blur
+    /// covers along with the screenshot. `background` is the canvas's, which tints a shadow.
+    public static func draw(_ annotation: Annotation, base: CGImage, over below: ArraySlice<Annotation> = [], background: RGBA? = nil, in ctx: CGContext) {
+        draw(annotation, base: base, over: below, background: background, in: CGCanvas(ctx))
+    }
+}
+
+extension StyleThumbnail {
+    public static func render(
+        _ subject: Subject, style: ObjectStyle, cornerRadius: CGFloat, size: CGSize, pixelsPerPoint: CGFloat, background: RGBA? = nil
+    ) -> CGImage? {
+        render(subject, style: style, cornerRadius: cornerRadius, size: size, pixelsPerPoint: pixelsPerPoint, background: background, canvasType: CGCanvas.self)
+    }
+}
+
+extension CopiedStyle {
+    public func styledCapture(_ image: CGImage, scale: CGFloat, background: RGBA?, windowShadow: Bool = false) -> CGImage? {
+        styledCapture(image, scale: scale, background: background, windowShadow: windowShadow, canvasType: CGCanvas.self)
+    }
+}
+
+extension CompositionBuilder {
+    public static func build(_ project: Project) async throws -> ProjectComposition {
+        try await build(project, canvasType: CGCanvas.self)
+    }
+}
+
+extension ProjectExporter {
+    public static func export(_ project: Project, to output: URL, as fileType: AVFileType = .mp4) async throws {
+        try await export(project, to: output, as: fileType, canvasType: CGCanvas.self)
+    }
+}
+
+extension VideoExportPlan {
+    @discardableResult
+    public func run(to output: URL, progress: @Sendable (Double) -> Void = { _ in }) async throws -> Outcome {
+        try await run(to: output, canvasType: CGCanvas.self, progress: progress)
+    }
+
+    public func estimate() async throws -> Int {
+        try await estimate(canvasType: CGCanvas.self)
+    }
+}
+
+extension VersionWriter {
+    @discardableResult
+    public static func writeVideo(
+        _ plan: VideoExportPlan, of project: Project, original: URL, to output: URL, projects: ProjectStore? = nil,
+        origin: ProjectOrigin = ProjectOrigin(via: .app), progress: @Sendable (Double) -> Void = { _ in }
+    ) async throws -> VideoExportPlan.Outcome {
+        try await writeVideo(plan, of: project, original: original, to: output, projects: projects, origin: origin, canvasType: CGCanvas.self, progress: progress)
+    }
+}

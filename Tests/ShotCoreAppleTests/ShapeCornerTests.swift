@@ -13,24 +13,24 @@ private func isOnOutline(_ point: CGPoint, of path: CGPath) -> Bool {
 
 @Test func noRadiusKeepsEveryShapeSquare() {
     for shape in BoxShape.allCases where shape.hasCorners {
-        let path = shape.path(in: frame)
+        let path = shape.path(in: frame).cgPath
         for corner in shape.vertices(in: frame).points {
             #expect(isOnOutline(corner, of: path), "\(shape)")
         }
         #expect(path.boundingBoxOfPath.integral == frame || shape == .star)
     }
-    #expect(BoxShape.rectangle.path(in: frame, cornerRadius: nil) == CGPath(rect: frame, transform: nil))
+    #expect(BoxShape.rectangle.path(in: frame, cornerRadius: nil).cgPath == CGPath(rect: frame, transform: nil))
 }
 
 @Test func aRectangleWithARadiusIsTheRoundedRectangleItAlwaysWas() {
-    #expect(BoxShape.rectangle.path(in: frame, cornerRadius: 20) == CGPath(roundedRect: frame, cornerWidth: 20, cornerHeight: 20, transform: nil))
+    #expect(BoxShape.rectangle.path(in: frame, cornerRadius: 20).cgPath == CGPath(roundedRect: frame, cornerWidth: 20, cornerHeight: 20, transform: nil))
     #expect(BoxShape.rectangle.maxRadius(in: frame) == 80)
-    #expect(BoxShape.rectangle.path(in: frame, cornerRadius: 500) == CGPath(roundedRect: frame, cornerWidth: 80, cornerHeight: 80, transform: nil))
+    #expect(BoxShape.rectangle.path(in: frame, cornerRadius: 500).cgPath == CGPath(roundedRect: frame, cornerWidth: 80, cornerHeight: 80, transform: nil))
 }
 
 @Test func roundingATriangleOrDiamondCutsEveryVertexAndStaysInsideTheBox() {
     for shape in [BoxShape.triangle, .diamond] {
-        let path = shape.path(in: frame, cornerRadius: 12)
+        let path = shape.path(in: frame, cornerRadius: 12).cgPath
         for corner in shape.vertices(in: frame).points {
             #expect(!isOnOutline(corner, of: path), "\(shape) kept a sharp corner")
         }
@@ -49,9 +49,9 @@ private func isOnOutline(_ point: CGPoint, of path: CGPath) -> Bool {
     #expect(BoxShape.triangle.clampedRadius(1000, in: thin) == thinCap)
     #expect(BoxShape.triangle.clampedRadius(-5, in: thin) == 0 && BoxShape.triangle.clampedRadius(nil, in: thin) == 0)
     // At the cap the arcs at the base meet the arc at the apex without crossing it: the outline stays inside the box.
-    let path = BoxShape.triangle.path(in: thin, cornerRadius: 1000)
+    let path = BoxShape.triangle.path(in: thin, cornerRadius: 1000).cgPath
     #expect(thin.insetBy(dx: -0.001, dy: -0.001).contains(path.boundingBoxOfPath))
-    #expect(path.boundingBoxOfPath == BoxShape.triangle.path(in: thin, cornerRadius: thinCap).boundingBoxOfPath)
+    #expect(path.boundingBoxOfPath == BoxShape.triangle.path(in: thin, cornerRadius: thinCap).cgPath.boundingBoxOfPath)
 }
 
 @Test func theCapOnATriangleIsWhereTwoArcsMeetOnAnEdge() {
@@ -66,19 +66,19 @@ private func isOnOutline(_ point: CGPoint, of path: CGPath) -> Bool {
     #expect(points.count == 10 && rounded == [0, 2, 4, 6, 8])
     let radius = BoxShape.star.maxRadius(in: frame)
     #expect(radius > 0)
-    let path = BoxShape.star.path(in: frame, cornerRadius: radius)
+    let path = BoxShape.star.path(in: frame, cornerRadius: radius).cgPath
     for (index, corner) in points.enumerated() {
         #expect(isOnOutline(corner, of: path) == !rounded.contains(index), "corner \(index)")
     }
     // A rounded point no longer reaches its box edge.
     #expect(path.boundingBoxOfPath.minY > frame.minY)
-    #expect(BoxShape.star.path(in: frame).boundingBoxOfPath.minY == frame.minY)
+    #expect(BoxShape.star.path(in: frame).cgPath.boundingBoxOfPath.minY == frame.minY)
 }
 
 @Test func theStarsCapIsSetByItsPointsNotItsInnerCorners() {
     let cap = BoxShape.star.maxRadius(in: frame)
     // Past the cap the path doesn't change, so the points' arcs never run past the inner corners.
-    #expect(BoxShape.star.path(in: frame, cornerRadius: cap * 5) == BoxShape.star.path(in: frame, cornerRadius: cap))
+    #expect(BoxShape.star.path(in: frame, cornerRadius: cap * 5).cgPath == BoxShape.star.path(in: frame, cornerRadius: cap).cgPath)
     let thin = CGRect(x: 0, y: 0, width: 30, height: 200)
     #expect(BoxShape.star.maxRadius(in: thin) < cap)
 }
@@ -86,7 +86,7 @@ private func isOnOutline(_ point: CGPoint, of path: CGPath) -> Bool {
 @Test func anEllipseHasNoCornersToRound() {
     #expect(!BoxShape.ellipse.hasCorners)
     #expect(BoxShape.ellipse.maxRadius(in: frame) == 0)
-    #expect(BoxShape.ellipse.path(in: frame, cornerRadius: 30) == CGPath(ellipseIn: frame, transform: nil))
+    #expect(BoxShape.ellipse.path(in: frame, cornerRadius: 30).cgPath == CGPath(ellipseIn: frame, transform: nil))
 }
 
 @Test func roundedPolygonsRenderAndHitTestWithTheirRadius() {

@@ -60,11 +60,11 @@ public enum VersionWriter {
         )
     }
 
-    /// Flattens `document` and encodes it as `format`, with `record` inside it once it has the drawn size, and
-    /// `projectID` stamped in it when it has a project. `atOneX` scales it to one pixel per point, as Settings › Scale
-    /// Retina captures to 1× does a capture.
-    public static func render(_ document: EditorDocument, scale: CGFloat, as format: ImageFormat, record: CaptureRecord?, projectID: String? = nil, atOneX: Bool = false, codec: any ImageCoding) throws(Failure) -> RenderedImage {
-        guard var image = AnnotationRenderer.flatten(document) else {
+    /// Flattens `document` on a `canvasType` canvas and encodes it as `format`, with `record` inside it once it has the
+    /// drawn size, and `projectID` stamped in it when it has a project. `atOneX` scales it to one pixel per point, as
+    /// Settings › Scale Retina captures to 1× does a capture.
+    public static func render(_ document: EditorDocument, scale: CGFloat, as format: ImageFormat, record: CaptureRecord?, projectID: String? = nil, atOneX: Bool = false, codec: any ImageCoding, canvasType: any Canvas.Type) throws(Failure) -> RenderedImage {
+        guard var image = AnnotationRenderer.flatten(document, canvasType: canvasType) else {
             throw .draw
         }
         if atOneX {
@@ -86,12 +86,12 @@ public enum VersionWriter {
     /// saved, flat, as a version saved before projects is.
     public static func saveImage(
         _ document: EditorDocument, of original: URL, scale: CGFloat, recordForAgents: Bool = Preferences().agentHandoff,
-        projects: ProjectStore? = nil, origin: ProjectOrigin = ProjectOrigin(via: .app), codec: any ImageCoding
+        projects: ProjectStore? = nil, origin: ProjectOrigin = ProjectOrigin(via: .app), codec: any ImageCoding, canvasType: any Canvas.Type
     ) throws(Failure) -> SavedImage {
         let format = ImageFormat(fileExtension: original.pathExtension)
         let record = recordForAgents ? record(of: document, drawnOn: original, savedAs: format, scale: scale, codec: codec) : nil
         let projectID = projects == nil ? nil : ProjectKey.newID()
-        let rendered = try render(document, scale: scale, as: format, record: record, projectID: projectID, codec: codec)
+        let rendered = try render(document, scale: scale, as: format, record: record, projectID: projectID, codec: codec, canvasType: canvasType)
         let png: Data
         if format == .png {
             png = rendered.file
@@ -173,16 +173,16 @@ public enum VersionWriter {
         VideoExportPlan.copy(of: project, as: VersionNaming.videoCopyExtension(of: original) == "mov" ? .mov : .mp4)
     }
 
-    /// Writes `plan`, an edit of `project` over the video at `original`, to `output`, as the video editor's Save Copy and
-    /// Export do. `project` is kept in `projects`, stamped in an MP4 or MOV and keyed by its identity for a GIF, so
+    /// Writes `plan`, an edit of `project` over the video at `original`, to `output`, its annotations drawn on `canvasType`
+    /// canvases, as the video editor's Save Copy and Export do. `project` is kept in `projects`, stamped in an MP4 or MOV and keyed by its identity for a GIF, so
     /// the file reopens with it live. A project that can't be kept leaves the file written, as one written before
     /// projects is.
     @discardableResult
     public static func writeVideo(
         _ plan: VideoExportPlan, of project: Project, original: URL, to output: URL, projects: ProjectStore? = nil,
-        origin: ProjectOrigin = ProjectOrigin(via: .app), progress: @Sendable (Double) -> Void = { _ in }
+        origin: ProjectOrigin = ProjectOrigin(via: .app), canvasType: any Canvas.Type, progress: @Sendable (Double) -> Void = { _ in }
     ) async throws -> VideoExportPlan.Outcome {
-        let outcome = try await plan.run(to: output, progress: progress)
+        let outcome = try await plan.run(to: output, canvasType: canvasType, progress: progress)
         keep(project, of: output, original: original, in: projects, origin: origin)
         return outcome
     }
