@@ -1,5 +1,3 @@
-#if canImport(CoreGraphics)
-import CoreGraphics
 import Foundation
 
 /// Which source frames a GIF uses and how big they are.
@@ -73,7 +71,7 @@ public enum GIFExporter {
     }
 
     /// Writes `range` (the whole video when nil), less `cuts`, of the video at `videoURL`, read by `reader`, as a looping GIF
-    /// at `fps`, scaled down to `maxWidth`.
+    /// at `fps`, scaled down to `maxWidth`, drawing each frame on a `canvasType` canvas.
     @discardableResult
     public static func export(
         videoURL: URL,
@@ -83,10 +81,14 @@ public enum GIFExporter {
         fps: Double = 12,
         maxWidth: CGFloat? = 720,
         speed: Double = 1,
+        canvasType: any Canvas.Type,
         reader: any VideoReader,
         progress: @Sendable (Double) -> Void = { _ in }
     ) async throws -> Result {
-        try await export(frames(of: videoURL, reader: reader), to: outputURL, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, progress: progress)
+        try await export(
+            frames(of: videoURL, reader: reader), to: outputURL, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, canvasType: canvasType,
+            progress: progress
+        )
     }
 
     /// Writes `range` (all of it when nil), less `cuts`, of `frames`, a file or a drawn project, as `export(videoURL:…)` does.
@@ -99,6 +101,7 @@ public enum GIFExporter {
         fps: Double = 12,
         maxWidth: CGFloat? = 720,
         speed: Double = 1,
+        canvasType: any Canvas.Type,
         progress: @Sendable (Double) -> Void = { _ in }
     ) async throws -> Result {
         let plan = try plan(of: frames, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
@@ -113,7 +116,7 @@ public enum GIFExporter {
                 try? FileManager.default.removeItem(at: outputURL)
             }
         }
-        let writer = GIFStreamWriter { try file.write(contentsOf: $0) }
+        let writer = GIFStreamWriter(canvasType: canvasType) { try file.write(contentsOf: $0) }
         let times = (0..<plan.frameCount).map(plan.sourceTime(ofFrame:))
         var index = 0
         try await frames.readFrames(at: times, maxSize: plan.size, tolerance: tolerance(fps)) { frame in
@@ -132,18 +135,21 @@ public enum GIFExporter {
     /// neighbouring frames spread over the range: one frame alone costs a whole frame, and the pair
     /// costs that plus a typical change.
     public static func estimatedSize(
-        of videoURL: URL, range: TrimRange? = nil, cuts: CutList = CutList(), fps: Double, maxWidth: CGFloat?, speed: Double = 1, reader: any VideoReader
+        of videoURL: URL, range: TrimRange? = nil, cuts: CutList = CutList(), fps: Double, maxWidth: CGFloat?, speed: Double = 1, canvasType: any Canvas.Type,
+        reader: any VideoReader
     ) async throws -> Int {
-        try await estimatedSize(of: frames(of: videoURL, reader: reader), range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
+        try await estimatedSize(of: frames(of: videoURL, reader: reader), range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, canvasType: canvasType)
     }
 
-    public static func estimatedSize(of frames: any VideoFrames, range: TrimRange? = nil, cuts: CutList = CutList(), fps: Double, maxWidth: CGFloat?, speed: Double = 1) async throws -> Int {
+    public static func estimatedSize(
+        of frames: any VideoFrames, range: TrimRange? = nil, cuts: CutList = CutList(), fps: Double, maxWidth: CGFloat?, speed: Double = 1, canvasType: any Canvas.Type
+    ) async throws -> Int {
         let plan = try plan(of: frames, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
         let anchors = plan.sampleFrames(estimateSamples).map { max(0, min($0, plan.frameCount - 2)) }
         var whole = 0, change = 0
         for anchor in anchors {
             try Task.checkCancellation()
-            let writer = GIFStreamWriter { _ in }
+            let writer = GIFStreamWriter(canvasType: canvasType) { _ in }
             let indices = Array(anchor..<min(anchor + 2, plan.frameCount))
             var single = 0, read = 0
             try await frames.readFrames(at: indices.map(plan.sourceTime(ofFrame:)), maxSize: plan.size, tolerance: tolerance(fps)) { frame in
@@ -190,4 +196,3 @@ private struct FileFrames: VideoFrames {
         try await reader.readFrames(of: url, at: times, maxSize: maxSize, tolerance: tolerance, body)
     }
 }
-#endif

@@ -1,5 +1,3 @@
-#if canImport(CoreGraphics)
-import CoreGraphics
 import Foundation
 
 private let log = ShotLog.shot("projects")
@@ -21,7 +19,7 @@ public enum VersionWriter {
 
     /// A drawn version: the image, the file's bytes, and the record inside them.
     public struct RenderedImage: @unchecked Sendable {
-        public let image: CGImage
+        public let image: PlatformImage
         public let file: Data
         public let record: CaptureRecord?
     }
@@ -137,7 +135,7 @@ public enum VersionWriter {
     /// The original of the image at `url`, its pixels and the live layers that give `url` back: from `projects`, or
     /// else from a record that can rebuild them, for a version saved before projects. `nil` when `url` has neither or
     /// its original is gone, so it opens, or is drawn on, flat.
-    public static func savedLayers(of url: URL, in projects: ProjectStore?, codec: any ImageCoding) -> (original: URL, image: CGImage, layers: EditorSnapshot)? {
+    public static func savedLayers(of url: URL, in projects: ProjectStore?, codec: any ImageCoding) -> (original: URL, image: PlatformImage, layers: EditorSnapshot)? {
         if let projects, let project = layers(of: url, in: projects), let image = codec.image(at: project.original) {
             return (project.original, image, project.layers)
         }
@@ -298,4 +296,3 @@ public enum VersionWriter {
         return FileManager.default.fileExists(atPath: moved.path) ? moved : nil
     }
 }
-#endif

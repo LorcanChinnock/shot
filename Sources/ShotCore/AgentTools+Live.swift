@@ -1,18 +1,17 @@
-#if canImport(AVFoundation)
 import Foundation
 
 extension AgentTools {
     /// The tools reading the captures in `folder`, as the gallery lists them. GIFs count as images: an agent sees their
     /// first frame. `marks` is the app's `RecordingMarks` store, whose marks the key frames show, and `projects` its
-    /// project store, which keeps what the tools make, and `texts` the text the app has read from screenshots, which
-    /// `list_captures` searches. `agent` sends a request to the running app, for the tools that capture. `codec` reads
+    /// project store, which keeps what the tools make, and `textIndex` the text the app has read from screenshots, which
+    /// `list_captures` searches. Without text recognition, as on Linux, there's no `find_text`. `agent` sends a request to the running app, for the tools that capture. `codec` reads
     /// and writes the images, and they're drawn on `canvasType` canvases; `reader` reads the videos, `assembler` cuts them
     /// and `writer` encodes those it draws.
     public static func live(
         folder: URL,
         marks: URL? = nil,
         projects: ProjectStore? = nil,
-        texts: TextIndexStore? = nil,
+        textIndex: @escaping @Sendable () -> TextIndex = { TextIndex() },
         codec: any ImageCoding,
         canvasType: any Canvas.Type,
         reader: any VideoReader,
@@ -20,7 +19,7 @@ extension AgentTools {
         writer: any VideoWriter,
         agent: @escaping @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue] = { _ throws(ShotCommandError) in throw .unavailable("can't reach Shot from here") }
     ) -> AgentTools {
-        AgentTools(
+        var tools = AgentTools(
             folder: folder,
             entries: {
                 Gallery.items(in: folder).map { AgentCaptures.Entry(url: $0.url, isVideo: $0.kind == .video, date: $0.date, bytes: $0.bytes, modified: $0.modified) }
@@ -35,28 +34,31 @@ extension AgentTools {
                 try await ShotCommands.run(command, projects: projects, origin: origin, codec: codec, canvasType: canvasType, reader: reader, assembler: assembler, writer: writer)
             },
             frames: { entry, count throws(ShotCommandError) in
-                try await keyFrames(of: entry.url, count: count, marks: marks.map { RecordingMarks.marks(for: entry.url, in: $0) } ?? [], codec: codec, reader: reader)
+                try await keyFrames(of: entry.url, count: count, marks: marks.map { RecordingMarks.marks(for: entry.url, in: $0) } ?? [], codec: codec, canvasType: canvasType, reader: reader)
             },
-            text: { entry throws(ShotCommandError) in
-                let read: CaptureText?
-                do {
-                    read = try await TextRecognizer.recognize(fileAt: entry.url, codec: codec)
-                } catch {
-                    throw .internal("Couldn't read the text in \(entry.name): \(error.localizedDescription)")
-                }
-                guard let read else {
-                    throw .data("Couldn't read \(entry.name) as an image.")
-                }
-                return read
-            },
-            textIndex: {
-                texts?.load() ?? TextIndex()
-            },
+            textIndex: textIndex,
             zoom: { entry, rect throws(ShotCommandError) in
                 try zoomed(entry.url, rect: rect, codec: codec)
             },
             agent: agent
         )
+        #if canImport(CoreGraphics) && canImport(Vision)
+        tools.text = { entry throws(ShotCommandError) in
+            let read: CaptureText?
+            do {
+                read = try await TextRecognizer.recognize(fileAt: entry.url, codec: codec)
+            } catch {
+                throw .internal("Couldn't read the text in \(entry.name): \(error.localizedDescription)")
+            }
+            guard let read else {
+                throw .data("Couldn't read \(entry.name) as an image.")
+            }
+            return read
+        }
+        #else
+        tools.unavailable = [findText]
+        #endif
+        return tools
     }
 
     /// A JPEG small enough for a model, and its size beside the file's when they differ, since the marks Shot records
@@ -96,8 +98,10 @@ extension AgentTools {
     /// The key frames of the recording at `url`, each a line with its time and then a JPEG small enough that a dozen fit
     /// in what clients accept in one result. The frame at each of `marks` comes too, with its label, beside `count`
     /// where the picture changes, fewer of those when they'd go over a dozen in all. What's said in its sound follows the
-    /// frame on screen as each phrase starts.
-    static func keyFrames(of url: URL, count: Int, marks: [RecordingMark] = [], codec: any ImageCoding, reader: any VideoReader) async throws(ShotCommandError) -> [MCPServer.Content] {
+    /// frame on screen as each phrase starts. Frames are compared on `canvasType` canvases.
+    static func keyFrames(
+        of url: URL, count: Int, marks: [RecordingMark] = [], codec: any ImageCoding, canvasType: any Canvas.Type, reader: any VideoReader
+    ) async throws(ShotCommandError) -> [MCPServer.Content] {
         guard let media = try? await MediaProbe.probe(url, reader: reader), media.size != nil else {
             throw .data("Couldn't read \(url.lastPathComponent) as a video.")
         }
@@ -107,7 +111,7 @@ extension AgentTools {
         let keyFrames: [RecordingMark.KeyFrame]
         let frames: [KeyFrameExtractor.Frame]
         do {
-            let changes = try await KeyFrameExtractor.changeTimes(in: url, duration: media.duration, count: RecordingMark.changeCount(count, marked: marked.count, limit: limit), reader: reader)
+            let changes = try await KeyFrameExtractor.changeTimes(in: url, duration: media.duration, count: RecordingMark.changeCount(count, marked: marked.count, limit: limit), canvasType: canvasType, reader: reader)
             keyFrames = RecordingMark.merge(changes: changes, marked: marked)
             frames = try await KeyFrameExtractor.frames(of: url, at: keyFrames.map(\.time), maxWidth: 1024, reader: reader)
         } catch {
@@ -149,11 +153,15 @@ extension AgentTools {
             return ([], nil)
         }
         let words: [Narration.Word]?
+        #if canImport(AVFoundation) && canImport(Speech)
         do {
             words = try await SpeechRecognizer.words(in: url)
         } catch {
             return ([], "Couldn't transcribe its sound: \(error.localizedDescription)")
         }
+        #else
+        words = nil
+        #endif
         guard let words else {
             return ([], "Its sound isn't transcribed: that needs macOS 26 and a language with on-device speech recognition.")
         }
@@ -193,4 +201,3 @@ extension AgentTools {
         return content
     }
 }
-#endif

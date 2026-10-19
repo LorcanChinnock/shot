@@ -304,6 +304,15 @@ private let readTexts = ["Invoice draft.png": "", "Shot A.png": "Settings\nINVOI
     #expect(reply?.contains(#""isError":false"#) == true)
 }
 
+@Test func theServerLeavesOutTheToolsThePlatformCantRun() async {
+    var tools = captures
+    tools.unavailable = [AgentTools.findText]
+    let server = tools.server(version: "1.2.3")
+    #expect(server.tools.map(\.name) == AgentTools.definitions.map(\.name).filter { $0 != "find_text" })
+    let list = await server.respond(to: #"{"jsonrpc":"2.0","id":1,"method":"tools/list"}"#)
+    #expect(list?.contains(#""name":"find_text""#) == false)
+}
+
 /// Tools over `captures` whose `run` records what it was asked and answers with a made-up file beside the input.
 private func making(_ ran: Ran, fail: ShotCommandError? = nil) -> AgentTools {
     var tools = captures

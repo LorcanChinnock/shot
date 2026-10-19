@@ -1,10 +1,9 @@
-#if canImport(CoreGraphics)
-import CoreGraphics
+import Foundation
 
 extension Annotation {
     /// How far past where it draws it reads what's under it, on `base`; `nil` when it only paints over it.
     /// A layer that reads acts on everything drawn under it, so this is all the renderer needs to know to draw it in order.
-    func backdropReach(base: CGImage) -> CGFloat? {
+    func backdropReach(base: PlatformImage) -> CGFloat? {
         switch kind {
         case .pixelate:
             AnnotationRenderer.redactionSize(self, base: base)
@@ -18,4 +17,3 @@ extension Annotation {
         }
     }
 }
-#endif

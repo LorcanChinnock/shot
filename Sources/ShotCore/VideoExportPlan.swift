@@ -1,5 +1,3 @@
-#if canImport(CoreGraphics)
-import CoreGraphics
 import Foundation
 
 /// What the video editor writes and how: picked once from the edit and the options, then run or estimated.
@@ -70,14 +68,14 @@ public enum VideoExportPlan: Equatable, Sendable {
             let passthrough = try await VideoTrimmer.trim(source, range: range, cuts: cuts, speed: speed, muted: muted, to: output, as: fileType?.rawValue, assembler: assembler)
             return Outcome(frameCount: nil, truncated: false, passthrough: passthrough)
         case let .trimmedGIF(source, range, cuts, fps, maxWidth, speed):
-            let result = try await GIFExporter.export(videoURL: source, to: output, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, reader: reader, progress: progress)
+            let result = try await GIFExporter.export(videoURL: source, to: output, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, canvasType: canvasType, reader: reader, progress: progress)
             return Outcome(frameCount: result.frameCount, truncated: result.truncated, passthrough: false)
         case let .composite(project, fileType):
             try await ProjectExporter.export(project, to: output, as: fileType.rawValue, canvasType: canvasType, writer: writer)
             return Outcome(frameCount: nil, truncated: false, passthrough: false)
         case let .compositeGIF(project, fps, maxWidth, speed):
             let frames = try await reader.frames(of: project, canvasType: canvasType)
-            let result = try await GIFExporter.export(frames, to: output, fps: fps, maxWidth: maxWidth, speed: speed, progress: progress)
+            let result = try await GIFExporter.export(frames, to: output, fps: fps, maxWidth: maxWidth, speed: speed, canvasType: canvasType, progress: progress)
             return Outcome(frameCount: result.frameCount, truncated: result.truncated, passthrough: false)
         }
     }
@@ -89,11 +87,11 @@ public enum VideoExportPlan: Equatable, Sendable {
         case let .trimmed(source, range, cuts, speed, muted, _):
             try await VideoTrimmer.estimatedSize(of: source, range: range, cuts: cuts, speed: speed, muted: muted, reader: reader)
         case let .trimmedGIF(source, range, cuts, fps, maxWidth, speed):
-            try await GIFExporter.estimatedSize(of: source, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, reader: reader)
+            try await GIFExporter.estimatedSize(of: source, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, canvasType: canvasType, reader: reader)
         case let .composite(project, _):
             ProjectExporter.estimatedSize(of: project)
         case let .compositeGIF(project, fps, maxWidth, speed):
-            try await GIFExporter.estimatedSize(of: reader.frames(of: project, canvasType: canvasType), fps: fps, maxWidth: maxWidth, speed: speed)
+            try await GIFExporter.estimatedSize(of: reader.frames(of: project, canvasType: canvasType), fps: fps, maxWidth: maxWidth, speed: speed, canvasType: canvasType)
         }
     }
 }
@@ -113,4 +111,3 @@ extension VideoExportPlan {
         }
     }
 }
-#endif

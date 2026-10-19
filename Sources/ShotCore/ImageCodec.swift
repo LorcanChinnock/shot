@@ -1,11 +1,9 @@
-#if canImport(CoreGraphics)
-import CoreGraphics
 import Foundation
 
-/// Image helpers that need only CoreGraphics. ShotCoreApple adds the encoding and decoding, with ImageIO.
+/// Image helpers that draw on a canvas. ShotCoreApple adds the encoding and decoding, with ImageIO.
 public enum ImageCodec {
     /// Resamples a Retina capture to 1 pixel per point, on a `canvasType` canvas.
-    public static func downscaled(_ image: CGImage, scale: CGFloat, canvasType: any Canvas.Type) -> CGImage {
+    public static func downscaled(_ image: PlatformImage, scale: CGFloat, canvasType: any Canvas.Type) -> PlatformImage {
         guard scale > 1 else {
             return image
         }
@@ -21,7 +19,7 @@ public enum ImageCodec {
 
 public enum ImageTrim {
     /// Crops away fully transparent rows and columns at the edges, reading them from a `canvasType` canvas.
-    public static func trimTransparentEdges(_ image: CGImage, canvasType: any Canvas.Type) -> CGImage {
+    public static func trimTransparentEdges(_ image: PlatformImage, canvasType: any Canvas.Type) -> PlatformImage {
         let width = image.width, height = image.height
         guard let canvas = canvasType.init(width: width, height: height, format: .sRGB) else {
             return image
@@ -33,4 +31,3 @@ public enum ImageTrim {
         return image.cropping(to: bounds) ?? image
     }
 }
-#endif

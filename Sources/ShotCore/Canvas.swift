@@ -1,10 +1,5 @@
-#if canImport(CoreGraphics)
-import CoreGraphics
-#endif
 import Foundation
-#if canImport(CoreGraphics)
 import Synchronization
-#endif
 
 /// A surface the annotation renderer draws on, so it can draw with whichever library the platform has. A new canvas has
 /// its origin at the bottom left, one unit to a pixel. Each call works as its namesake on a `CGContext` does: state set
@@ -55,24 +50,21 @@ public protocol Canvas: AnyObject, SendableMetatype {
     /// What's drawn so far, as a `Bitmap` in sRGB; `nil` if it can't be read.
     func makeBitmap() -> Bitmap?
 
-    #if canImport(CoreGraphics)
-    // Images are CGImages, as `PlatformImage` is on a Mac, so a capture keeps its own colour space, such as Display P3.
+    // Images are `PlatformImage`s, so on a Mac a capture keeps its own colour space, such as Display P3.
 
     /// Draws `image` into `rect` with its first row at the rect's max y, as `CGContext.draw` does.
-    func draw(_ image: CGImage, in rect: CGRect)
+    func draw(_ image: PlatformImage, in rect: CGRect)
     /// Clips to `rect`, letting through as much as the greyscale `mask` stretched over it is light.
-    func clip(to rect: CGRect, mask: CGImage)
-    func makeImage() -> CGImage?
-    #endif
+    func clip(to rect: CGRect, mask: PlatformImage)
+    func makeImage() -> PlatformImage?
 }
 
-#if canImport(CoreGraphics)
-private let placeholders = Mutex<[ObjectIdentifier: CGImage]>([:])
+private let placeholders = Mutex<[ObjectIdentifier: PlatformImage]>([:])
 
 extension Canvas {
     /// A clear 1×1 image, the base the renderer is given when it draws annotations that don't read what's under them.
     /// Each canvas type makes one and keeps it, so caches that compare bases by identity keep hitting.
-    static var placeholder: CGImage {
+    static var placeholder: PlatformImage {
         placeholders.withLock { made in
             if let known = made[ObjectIdentifier(self)] {
                 return known
@@ -83,7 +75,6 @@ extension Canvas {
         }
     }
 }
-#endif
 
 /// The pixels a new canvas holds.
 public enum CanvasFormat {
@@ -91,10 +82,8 @@ public enum CanvasFormat {
     case grey
     /// 8-bit premultiplied RGBA in sRGB.
     case sRGB
-    #if canImport(CoreGraphics)
     /// 8-bit premultiplied RGBA in `image`'s colour space, or sRGB if it has none, so drawing it loses nothing.
-    case matching(CGImage)
-    #endif
+    case matching(PlatformImage)
 }
 
 public enum CanvasBlendMode: Sendable {
@@ -103,5 +92,7 @@ public enum CanvasBlendMode: Sendable {
 
 /// How smoothly an image drawn at another size is resampled.
 public enum CanvasInterpolation: Sendable {
+    /// The fastest, for a thumbnail that's only compared.
+    case low
     case medium, high
 }
