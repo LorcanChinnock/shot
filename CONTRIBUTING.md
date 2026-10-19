@@ -78,6 +78,7 @@ A string reaches the catalog when it's a literal passed to an API that localizes
 
 - SwiftUI's `Text`, `Button`, `Toggle` and the like, and Shot's own `brutalTip`, `Tile`, `SettingRow`, `BrutalChip`, `Toast` and other design components. A `String` variable passed to one of these is shown as it is, so a string that needs translating has to be localized where it's defined.
 - `String(localized: "…")`, for AppKit titles, alerts, panel messages and any `String` property that holds text the user reads.
+- `shotLocalized("…")` in `Sources/ShotCore`, which builds on Linux, where there's no `String(localized:)`. On a Mac it calls `String(localized:)`. On Linux it reads the English text from `Sources/ShotCore/LocalizableEnglish.swift`, a table `make strings` writes from the catalog. Commit that file with the catalog: `make lint` fails while either is out of date.
 
 Interpolate values into one string, such as `"Saved \(name)"`, rather than joining fragments, so a translator can reorder the words. Leave text that agents, the `shot` command or scripts read in English, and the same goes for log messages and file names.
 

@@ -1,10 +1,9 @@
-#if canImport(AVFoundation) && canImport(CoreGraphics) && canImport(os)
+#if canImport(AVFoundation) && canImport(CoreGraphics)
 import AVFoundation
 import CoreGraphics
 import Foundation
-import os
 
-private let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Shot", category: "projects")
+private let log = ShotLog.shot("projects")
 
 /// Writes an edit as a new file, so the image editor, the video editor and the `shot` commands name, draw and record
 /// a version the same way. The naming itself is `VersionNaming`, in ShotModel.

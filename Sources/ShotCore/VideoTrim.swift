@@ -17,9 +17,9 @@ public enum VideoTrimmer {
 
         public var errorDescription: String? {
             switch self {
-            case .unsupportedFileType: String(localized: "Can't write this kind of video")
-            case .exportFailed: String(localized: "Couldn't export the trimmed video")
-            case .nothingLeft: String(localized: "The cuts leave nothing to export")
+            case .unsupportedFileType: shotLocalized("Can't write this kind of video")
+            case .exportFailed: shotLocalized("Couldn't export the trimmed video")
+            case .nothingLeft: shotLocalized("The cuts leave nothing to export")
             }
         }
     }

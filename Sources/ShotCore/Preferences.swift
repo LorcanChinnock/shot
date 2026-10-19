@@ -1,8 +1,7 @@
-#if canImport(os)
+#if canImport(UniformTypeIdentifiers)
 import Foundation
-import os
 
-private let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Shot", category: "preferences")
+private let log = ShotLog.shot("preferences")
 
 public enum PreferenceKey {
     public static let playSound = "playSound"

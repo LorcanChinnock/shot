@@ -1,8 +1,7 @@
-#if canImport(os)
+#if canImport(Vision)
 import Foundation
-import os
 
-private let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Shot", category: "text-index")
+private let log = ShotLog.shot("text-index")
 
 /// Where the text index is kept: app-private in `~/Library/Application Support/<bundle ID>/text-index.json`, beside the
 /// recording marks, never in the capture folder or the files. One JSON file, written atomically, so the MCP server can

@@ -1,4 +1,4 @@
-#if canImport(os)
+#if canImport(UniformTypeIdentifiers)
 import Foundation
 
 /// What happens once a screenshot or recording is taken, from the after-capture settings: whether it's copied, whether
@@ -40,9 +40,9 @@ public struct AfterCapture: Equatable, Sendable {
         } else if quickAccess {
             .quickAccess
         } else if copy {
-            .toast(String(localized: "Copied"))
+            .toast(shotLocalized("Copied"))
         } else if save {
-            .toast(String(localized: "Saved"))
+            .toast(shotLocalized("Saved"))
         } else {
             .nothing
         }
@@ -53,7 +53,7 @@ public struct AfterCapture: Equatable, Sendable {
 extension TemporaryCaptures {
     /// What a "Saved" toast adds when `file` is in the temporary folder, because saving after capture is off, so it doesn't promise a file that Shot will delete.
     public static func toastNote(for file: URL) -> String {
-        isTemporary(file) ? String(localized: " It's temporary: Shot deletes it after a day.") : ""
+        isTemporary(file) ? shotLocalized(" It's temporary: Shot deletes it after a day.") : ""
     }
 }
 #endif
