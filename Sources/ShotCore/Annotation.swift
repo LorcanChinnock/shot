@@ -306,10 +306,10 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
 
     public func bounds(shaper: any TextShaper) -> CGRect {
         if let curve {
-            let path = CGMutablePath()
+            var path = CanvasPath()
             path.move(to: curve.from)
             path.addQuadCurve(to: curve.to, control: curve.control)
-            return path.boundingBoxOfPath
+            return path.boundingBox
         }
         switch kind {
         case let .arrow(from, to), let .line(from, to):
@@ -355,9 +355,9 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             return layout.frame.union(shadow)
         case let .freehand(points):
             // The smoothed curve can swing a little past the points it runs through.
-            return bounds.union(Freehand.path(through: points).cgPath.boundingBoxOfPath).insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2)
+            return bounds.union(Freehand.path(through: points).boundingBox).insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2)
         case let .marker(points):
-            return bounds.union(Freehand.path(through: points).cgPath.boundingBoxOfPath).insetBy(dx: -markerWidth / 2, dy: -markerWidth / 2)
+            return bounds.union(Freehand.path(through: points).boundingBox).insetBy(dx: -markerWidth / 2, dy: -markerWidth / 2)
         }
     }
 
@@ -366,21 +366,20 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         switch kind {
         case .arrow where curve != nil, .line where curve != nil:
             let points = Self.flattened(curve!)
-            return zip(points, points.dropFirst()).contains { Self.distance(from: point, toSegment: $0, $1) <= slop }
+            return zip(points, points.dropFirst()).contains { CanvasPath.distance(from: point, toSegment: $0, $1) <= slop }
         case let .arrow(from, to), let .line(from, to):
-            return Self.distance(from: point, toSegment: from, to) <= slop
+            return CanvasPath.distance(from: point, toSegment: from, to) <= slop
         case let .shape(shape, rect):
-            let path = shape.path(in: rect, cornerRadius: cornerRadius).cgPath
-            let outline = path.copy(strokingWithWidth: slop * 2, lineCap: .butt, lineJoin: .miter, miterLimit: 10)
-            return outline.contains(point) || (fill != nil && path.contains(point))
+            let path = shape.path(in: rect, cornerRadius: cornerRadius)
+            return path.strokeContains(point, width: slop * 2, cap: .butt, join: .miter, miterLimit: 10) || (fill != nil && path.contains(point))
         case .highlight, .pixelate, .blur, .spotlight, .text, .note, .image:
             return bounds(shaper: shaper).insetBy(dx: -tolerance, dy: -tolerance).contains(point)
         case let .counter(_, center):
             return hypot(point.x - center.x, point.y - center.y) <= counterRadius + tolerance
         case let .freehand(points):
-            return Freehand.path(through: points).cgPath.copy(strokingWithWidth: slop * 2, lineCap: .round, lineJoin: .round, miterLimit: 10).contains(point)
+            return Freehand.path(through: points).strokeContains(point, width: slop * 2, cap: .round, join: .round, miterLimit: 10)
         case let .marker(points):
-            return Freehand.path(through: points).cgPath.copy(strokingWithWidth: tolerance * 2 + markerWidth, lineCap: .butt, lineJoin: .round, miterLimit: 10).contains(point)
+            return Freehand.path(through: points).strokeContains(point, width: tolerance * 2 + markerWidth, cap: .butt, join: .round, miterLimit: 10)
         }
     }
 
@@ -705,16 +704,6 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
 
     private static func flattened(_ curve: (from: CGPoint, to: CGPoint, control: CGPoint)) -> [CGPoint] {
         (0...24).map { curvePoint(curve, at: CGFloat($0) / 24) }
-    }
-
-    static func distance(from p: CGPoint, toSegment a: CGPoint, _ b: CGPoint) -> CGFloat {
-        let dx = b.x - a.x, dy = b.y - a.y
-        let lengthSquared = dx * dx + dy * dy
-        guard lengthSquared > 0 else {
-            return hypot(p.x - a.x, p.y - a.y)
-        }
-        let t = max(0, min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSquared))
-        return hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy))
     }
 }
 
