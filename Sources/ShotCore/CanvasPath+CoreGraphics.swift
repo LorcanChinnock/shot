@@ -1,7 +1,7 @@
 #if canImport(CoreGraphics)
 import CoreGraphics
 
-// Hit tests, bounds and the spotlights' boolean operations still use CGPath, and a CoreGraphics canvas draws one.
+// The spotlights' boolean operations still use CGPath, and a CoreGraphics canvas draws one.
 
 extension CanvasPath {
     /// `path`'s elements, its curves kept as they are.

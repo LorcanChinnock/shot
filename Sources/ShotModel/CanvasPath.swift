@@ -74,3 +74,11 @@ public struct CanvasPath: Equatable, Sendable {
         elements.append(.close)
     }
 }
+
+public enum CanvasLineCap: Sendable {
+    case butt, round, square
+}
+
+public enum CanvasLineJoin: Sendable {
+    case miter, round, bevel
+}

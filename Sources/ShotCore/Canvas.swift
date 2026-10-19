@@ -97,14 +97,6 @@ public enum CanvasFormat {
     #endif
 }
 
-public enum CanvasLineCap: Sendable {
-    case butt, round, square
-}
-
-public enum CanvasLineJoin: Sendable {
-    case miter, round, bevel
-}
-
 public enum CanvasBlendMode: Sendable {
     case normal, multiply, darken, sourceAtop
 }
