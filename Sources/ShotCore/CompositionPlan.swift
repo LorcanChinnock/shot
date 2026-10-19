@@ -1,5 +1,3 @@
-#if canImport(CoreGraphics)
-import CoreGraphics
 import Foundation
 
 /// A stretch of the timeline over which the same clips are on screen.
@@ -33,7 +31,9 @@ extension Project {
     public func videoSegments() -> [VideoSegment] {
         let total = duration
         let shown = tracks.filter { $0.kind != .audio && !$0.isHidden }
-        let edges = Set(shown.flatMap { $0.clips.flatMap { [$0.start, $0.end] } + $0.annotations.flatMap { [$0.start, $0.end] } } + [0, total]).filter { $0 >= 0 && $0 <= total }.sorted()
+        let clipEdges = shown.flatMap { track in track.clips.flatMap { [$0.start, $0.end] } }
+        let annotationEdges = shown.flatMap { track in track.annotations.flatMap { [$0.start, $0.end] } }
+        let edges = Set(clipEdges + annotationEdges + [0, total]).filter { $0 >= 0 && $0 <= total }.sorted()
         var segments: [VideoSegment] = []
         // A sliver too short to keep goes to the piece after it, so the pieces still meet end to end: rounded to the
         // composition's ticks, its two ends can differ, and a gap between instructions turns the whole preview black.
@@ -92,4 +92,3 @@ public enum LayerGeometry {
         return flipSource.concatenating(orientation).concatenating(geometry).concatenating(flipCanvas)
     }
 }
-#endif
