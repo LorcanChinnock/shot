@@ -4,6 +4,15 @@ import Foundation
 /// `user-dirs.dirs`, but not the quotes and `$HOME` that xdg-user-dirs-update writes, so on most desktops it gives a
 /// folder that doesn't exist; this reads the file as `xdg-user-dir` does.
 public enum XDG {
+    /// `$HOME`, which the XDG folders and Linux Foundation's `UserDefaults` are under, or when it's unset the user's
+    /// home from the password database, which is what `homeDirectoryForCurrentUser` always gives.
+    public static func home(environment: [String: String]) -> URL {
+        if let path = environment["HOME"], path.hasPrefix("/") {
+            return URL(fileURLWithPath: path, isDirectory: true)
+        }
+        return FileManager.default.homeDirectoryForCurrentUser
+    }
+
     /// `$XDG_CONFIG_HOME`, or `~/.config` when it's unset or not an absolute path.
     public static func configHome(environment: [String: String], home: URL) -> URL {
         if let path = environment["XDG_CONFIG_HOME"], path.hasPrefix("/") {

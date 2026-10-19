@@ -28,6 +28,7 @@ import Testing
 }
 
 @Test func capturesAreSavedToShotInThePicturesFolder() {
-    let pictures = XDG.picturesFolder(environment: ProcessInfo.processInfo.environment, home: FileManager.default.homeDirectoryForCurrentUser)
+    let environment = ProcessInfo.processInfo.environment
+    let pictures = XDG.picturesFolder(environment: environment, home: XDG.home(environment: environment))
     #expect(Preferences.defaultSaveFolder == pictures.appendingPathComponent("Shot").path)
 }

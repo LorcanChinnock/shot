@@ -4,6 +4,11 @@ import Testing
 
 private let home = URL(fileURLWithPath: "/home/me", isDirectory: true)
 
+@Test func homeIsHOMEWhenItsSetElseThePasswordDatabases() {
+    #expect(XDG.home(environment: ["HOME": "/github/home"]).path == "/github/home")
+    #expect(XDG.home(environment: [:]) == FileManager.default.homeDirectoryForCurrentUser)
+}
+
 @Test func theConfigHomeIsXDGConfigHomeWhenItsAnAbsolutePath() {
     #expect(XDG.configHome(environment: [:], home: home).path == "/home/me/.config")
     #expect(XDG.configHome(environment: ["XDG_CONFIG_HOME": "/etc/me"], home: home).path == "/etc/me")
