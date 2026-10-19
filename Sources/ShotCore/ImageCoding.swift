@@ -1,21 +1,5 @@
 import Foundation
 
-/// What Shot writes in an image file besides its pixels and scale, so it can read it back later, on any platform.
-public struct ImageMetadata: Equatable, Sendable {
-    /// A window capture that includes the macOS window shadow, so the editor opened on it later doesn't offer a second.
-    public var windowShadow: Bool
-    /// What was captured and marked, for agents.
-    public var record: CaptureRecord?
-    /// The ID of the file's project in `ProjectStore`.
-    public var projectID: String?
-
-    public init(windowShadow: Bool = false, record: CaptureRecord? = nil, projectID: String? = nil) {
-        self.windowShadow = windowShadow
-        self.record = record
-        self.projectID = projectID
-    }
-}
-
 /// What an image file is, read without decoding its pixels.
 public struct ImageFileInfo: Equatable, Sendable {
     public var isGIF: Bool
@@ -33,7 +17,7 @@ public struct ImageFileInfo: Equatable, Sendable {
 /// Reads and writes image files: PNG and JPEG, plus whatever else the platform decodes, such as HEIC and GIF on a Mac.
 /// The scale goes in the file as its DPI, 72 × scale, so a Retina capture opens at point size, and `ImageMetadata` goes
 /// with it. It also codes the images a project or a copied annotation holds (`PNGCoding`). ShotCoreApple's `ImageIOCodec`
-/// is the Mac's; ShotCore code takes one as `codec`.
+/// is the Mac's and ShotCoreLinux's `PNGJPEGCodec` Linux's; ShotCore code takes one as `codec`.
 public protocol ImageCoding: PNGCoding {
     /// PNG, or JPEG at `quality` from 0 to 1.
     func encode(_ bitmap: Bitmap, as format: ImageFormat, quality: Double, metadata: ImageMetadata) -> Data?

@@ -39,9 +39,10 @@ jobs:
           path: .build
           key: swift-6.3-linux-${{ hashFiles('Package.resolved') }}-${{ github.sha }}
           restore-keys: swift-6.3-linux-${{ hashFiles('Package.resolved') }}-
-      # AgentCommand's tests run commands through zsh, which the image doesn't have.
-      - name: Install zsh
-        run: apt-get update -qq && apt-get install -y -qq --no-install-recommends zsh
+      # AgentCommand's tests run commands through zsh, which the image doesn't have, and ShotCoreLinux links libpng and
+      # libjpeg-turbo.
+      - name: Install packages
+        run: apt-get update -qq && apt-get install -y -qq --no-install-recommends zsh libpng-dev libturbojpeg0-dev
       - name: Test
         run: swift test --force-resolved-versions
       # swift test builds only what the tests need, so the command line on Linux is built on its own.
