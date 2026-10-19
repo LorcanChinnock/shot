@@ -93,7 +93,7 @@ extension AgentTools {
         agent: @escaping @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue] = { _ throws(ShotCommandError) in throw .unavailable("can't reach Shot from here") }
     ) -> AgentTools {
         live(
-            folder: folder, marks: marks, projects: projects, texts: texts, codec: ImageIOCodec(), canvasType: CGCanvas.self, reader: AVVideoReader(),
+            folder: folder, marks: marks, projects: projects, textIndex: { texts?.load() ?? TextIndex() }, codec: ImageIOCodec(), canvasType: CGCanvas.self, reader: AVVideoReader(),
             assembler: AVVideoAssembler(), writer: AVVideoWriter(), agent: agent
         )
     }

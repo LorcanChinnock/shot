@@ -85,7 +85,6 @@ extension ProjectOrigin {
     }
 }
 
-#if canImport(CoreGraphics)
 extension VideoExportOptions {
     /// Describes a GIF made with these options, for Settings.
     public var gifSummary: String {
@@ -95,7 +94,6 @@ extension VideoExportOptions {
             : shotLocalized("\(gifFrameRate) fps, up to \(gifWidth) px wide, first \(seconds) seconds.")
     }
 }
-#endif
 
 extension EditorTool {
     public var title: String {

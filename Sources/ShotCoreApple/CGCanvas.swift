@@ -82,6 +82,7 @@ public final class CGCanvas: Canvas {
 
     public func setInterpolation(_ quality: CanvasInterpolation) {
         switch quality {
+        case .low: context.interpolationQuality = .low
         case .medium: context.interpolationQuality = .medium
         case .high: context.interpolationQuality = .high
         }

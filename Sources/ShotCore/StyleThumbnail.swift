@@ -1,5 +1,3 @@
-#if canImport(CoreGraphics)
-import CoreGraphics
 import Foundation
 import Synchronization
 
@@ -8,7 +6,7 @@ import Synchronization
 public enum StyleThumbnail {
     /// What's drawn: a picture, such as the screenshot, a placed image or a video clip's frame, or a mark or text.
     public enum Subject: @unchecked Sendable {
-        case image(CGImage)
+        case image(PlatformImage)
         case annotation(Annotation)
     }
 
@@ -24,7 +22,7 @@ public enum StyleThumbnail {
     public static func render(
         _ subject: Subject, style: ObjectStyle, cornerRadius: CGFloat, size: CGSize, pixelsPerPoint: CGFloat, background: RGBA? = nil,
         canvasType: any Canvas.Type
-    ) -> CGImage? {
+    ) -> PlatformImage? {
         let pixels = CGSize(width: (size.width * pixelsPerPoint).rounded(), height: (size.height * pixelsPerPoint).rounded())
         guard pixels.width >= 1, pixels.height >= 1, let ctx = canvasType.init(width: Int(pixels.width), height: Int(pixels.height), format: .sRGB) else {
             return nil
@@ -69,14 +67,14 @@ public enum StyleThumbnail {
 
     /// The image last shrunk and the copy made, since every tile of a popover draws the same one. It holds on to the
     /// screenshot, so the popover lets go of it with `forgetShrunk` as it closes.
-    private static let lastShrunk = Mutex<(source: CGImage, box: CGSize, image: CGImage)?>(nil)
+    private static let lastShrunk = Mutex<(source: PlatformImage, box: CGSize, image: PlatformImage)?>(nil)
 
     public static func forgetShrunk() {
         lastShrunk.withLock { $0 = nil }
     }
 
     /// `image` scaled to fit `box`, in pixels, keeping its shape; as it is when it already fits.
-    static func shrunk(_ image: CGImage, toFit box: CGSize, canvasType: any Canvas.Type) -> CGImage {
+    static func shrunk(_ image: PlatformImage, toFit box: CGSize, canvasType: any Canvas.Type) -> PlatformImage {
         let factor = min(box.width / CGFloat(image.width), box.height / CGFloat(image.height))
         guard factor < 1 else {
             return image
@@ -89,4 +87,3 @@ public enum StyleThumbnail {
         return small
     }
 }
-#endif

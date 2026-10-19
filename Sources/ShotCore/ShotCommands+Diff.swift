@@ -1,5 +1,3 @@
-#if canImport(CoreGraphics)
-import CoreGraphics
 import Foundation
 
 extension ShotCommands {
@@ -68,7 +66,7 @@ extension ShotCommands {
 
     /// `image` drawn at `width` by `height` on a `canvasType` canvas, read as 8-bit premultiplied sRGB RGBA, top row
     /// first, so both images are read alike whatever their colour space.
-    package static func pixels(of image: CGImage, width: Int, height: Int, canvasType: any Canvas.Type) -> [UInt8]? {
+    package static func pixels(of image: PlatformImage, width: Int, height: Int, canvasType: any Canvas.Type) -> [UInt8]? {
         guard let canvas = canvasType.init(width: width, height: height, format: .sRGB) else {
             return nil
         }
@@ -78,14 +76,10 @@ extension ShotCommands {
     }
 
     /// `image` dimmed, with the pixels `mask` marks shown undimmed under a red tint, and each region boxed in red.
-    static func highlight(_ image: CGImage, mask: [UInt8], regions: [ImageDiff.Region], lineWidth: CGFloat, canvasType: any Canvas.Type) -> CGImage? {
+    static func highlight(_ image: PlatformImage, mask: [UInt8], regions: [ImageDiff.Region], lineWidth: CGFloat, canvasType: any Canvas.Type) -> PlatformImage? {
         let width = image.width, height = image.height
         let bounds = CGRect(x: 0, y: 0, width: width, height: height)
-        let alpha = Data(mask.map { $0 == 0 ? 0 : 255 })
-        guard let canvas = canvasType.init(width: width, height: height, format: .sRGB),
-              let provider = CGDataProvider(data: alpha as CFData),
-              let changed = CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 8, bytesPerRow: width, space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.none.rawValue), provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)
-        else {
+        guard let canvas = canvasType.init(width: width, height: height, format: .sRGB) else {
             return nil
         }
         let red = RGBA.presets[0]
@@ -93,7 +87,7 @@ extension ShotCommands {
         canvas.setFillColor(RGBA(0, 0, 0, 0.6))
         canvas.fill(bounds)
         canvas.saveState()
-        canvas.clip(to: bounds, mask: changed)
+        canvas.clip(to: changedPixels(mask, width: width, height: height))
         canvas.draw(image, in: bounds)
         canvas.setFillColor(RGBA(red.r, red.g, red.b, 0.45))
         canvas.fill(bounds)
@@ -107,5 +101,24 @@ extension ShotCommands {
         }
         return canvas.makeImage()
     }
+
+    /// The pixels `mask` marks, top row first, as whole-pixel rects in a bottom-left-origin canvas, a run of them to a rect.
+    static func changedPixels(_ mask: [UInt8], width: Int, height: Int) -> CanvasPath {
+        var path = CanvasPath()
+        for y in 0..<height {
+            var x = 0
+            while x < width {
+                guard mask[y * width + x] != 0 else {
+                    x += 1
+                    continue
+                }
+                let start = x
+                while x < width, mask[y * width + x] != 0 {
+                    x += 1
+                }
+                path.addRect(CGRect(x: start, y: height - y - 1, width: x - start, height: 1))
+            }
+        }
+        return path
+    }
 }
-#endif

@@ -1,5 +1,3 @@
-#if canImport(CoreGraphics)
-import CoreGraphics
 import Foundation
 
 /// Runs the `shot` media commands with no window, display or permission, for the command line and the MCP tools. Each
@@ -40,15 +38,15 @@ public enum ShotCommands {
             case .standardInput:
                 marks = try CaptureMark.list(from: FileHandle.standardInput.readDataToEndOfFile())
             }
-            return try draw(input: options.input, output: options.output, edit: ImageEdit(marks: marks), projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (_: CGImage) in [] }
+            return try draw(input: options.input, output: options.output, edit: ImageEdit(marks: marks), projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (_: PlatformImage) in [] }
         case let .frames(options):
-            return try await frames(options, codec: codec, reader: reader)
+            return try await frames(options, codec: codec, canvasType: canvasType, reader: reader)
         case let .text(path):
             return try await text(url(path), codec: codec)
         case let .diff(options):
             return try diff(options, codec: codec, canvasType: canvasType)
         case let .crop(options):
-            return try draw(input: options.input, output: options.output, edit: ImageEdit(crop: options.rect), cropField: "rect", projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (_: CGImage) in [] }
+            return try draw(input: options.input, output: options.output, edit: ImageEdit(crop: options.rect), cropField: "rect", projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (_: PlatformImage) in [] }
         case let .edit(options):
             return try await edit(options, projects: projects, origin: origin, codec: codec, canvasType: canvasType, reader: reader, assembler: assembler, writer: writer)
         case .capture, .record, .watch, .pick, .windows, .latest, .list, .get, .doctor, .mcp, .indexText, .version, .help:
@@ -132,11 +130,7 @@ public enum ShotCommands {
             guard let image = codec.image(at: input) else {
                 throw .data("\(input.lastPathComponent) isn't an image Shot can read")
             }
-            do {
-                found = try await TextRecognizer.recognize(image).toHide(options.detect)
-            } catch {
-                throw .internal("couldn't read the text in \(input.lastPathComponent): \(error.localizedDescription)")
-            }
+            found = try await text(in: image, named: input.lastPathComponent, toHide: options.detect)
             if found.isEmpty, options.rects.isEmpty {
                 var object = try written(input, codec: codec)
                 object["found"] = CaptureText.json(hidden: [])
@@ -144,7 +138,7 @@ public enum ShotCommands {
                 return .object(object)
             }
         }
-        let result = try draw(input: options.input, output: options.output, projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (image: CGImage) throws(ShotCommandError) in
+        let result = try draw(input: options.input, output: options.output, projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (image: PlatformImage) throws(ShotCommandError) in
             let bounds = CGRect(x: 0, y: 0, width: image.width, height: image.height)
             var rects: [CGRect] = []
             for (index, r) in options.rects.enumerated() {
@@ -166,7 +160,7 @@ public enum ShotCommands {
         return .object(object)
     }
 
-    static func frames(_ options: ShotCommand.FramesOptions, codec: any ImageCoding, reader: any VideoReader) async throws(ShotCommandError) -> JSONValue {
+    static func frames(_ options: ShotCommand.FramesOptions, codec: any ImageCoding, canvasType: any Canvas.Type, reader: any VideoReader) async throws(ShotCommandError) -> JSONValue {
         let input = url(options.input)
         let duration = try await video(input, reader: reader).duration
         let times: [Double]
@@ -177,7 +171,7 @@ public enum ShotCommands {
             }
         } else {
             do {
-                times = try await KeyFrameExtractor.changeTimes(in: input, duration: duration, count: options.count, reader: reader)
+                times = try await KeyFrameExtractor.changeTimes(in: input, duration: duration, count: options.count, canvasType: canvasType, reader: reader)
             } catch {
                 throw .io("couldn't read the video's frames: \(error.localizedDescription)")
             }
@@ -209,6 +203,7 @@ public enum ShotCommands {
         guard let image = codec.image(at: url) else {
             throw .data("\(url.lastPathComponent) isn't an image Shot can read")
         }
+        #if canImport(CoreGraphics) && canImport(Vision)
         do {
             var object = try await TextRecognizer.recognize(image).json(words: true)
             object["path"] = .string(url.path)
@@ -216,7 +211,27 @@ public enum ShotCommands {
         } catch {
             throw .internal("couldn't read the text in \(url.lastPathComponent): \(error.localizedDescription)")
         }
+        #else
+        throw .unavailable(textUnavailable)
+        #endif
     }
+
+    /// The text in `image`, the file `name`, of the kinds `detect` names.
+    private static func text(in image: PlatformImage, named name: String, toHide detect: Set<SensitiveText.Kind>) async throws(ShotCommandError) -> [CaptureText.Found] {
+        #if canImport(CoreGraphics) && canImport(Vision)
+        do {
+            return try await TextRecognizer.recognize(image).toHide(detect)
+        } catch {
+            throw .internal("couldn't read the text in \(name): \(error.localizedDescription)")
+        }
+        #else
+        throw .unavailable(textUnavailable)
+        #endif
+    }
+
+    #if !(canImport(CoreGraphics) && canImport(Vision))
+    static let textUnavailable = "reading the text in an image needs a Mac"
+    #endif
 
     /// A new folder for `frames`: `output` if given, which must not exist, or `<name> frames` beside the video, as its
     /// next version when that's taken. Creating it fails if it exists, so it's never one already in use.
@@ -246,7 +261,7 @@ public enum ShotCommands {
     /// since its pixels are no longer theirs. `layers` adds the new version's layers, each with its id and type.
     static func draw(
         input path: String, output: String?, edit: ImageEdit = ImageEdit(), cropField: String = "crop", layers: Bool = false,
-        projects: ProjectStore?, origin: ProjectOrigin, codec: any ImageCoding, canvasType: any Canvas.Type, _ make: (CGImage, CGFloat) throws(ShotCommandError) -> [Annotation]
+        projects: ProjectStore?, origin: ProjectOrigin, codec: any ImageCoding, canvasType: any Canvas.Type, _ make: (PlatformImage, CGFloat) throws(ShotCommandError) -> [Annotation]
     ) throws(ShotCommandError) -> JSONValue {
         let input = url(path)
         try requireInput(input)
@@ -335,9 +350,9 @@ public enum ShotCommands {
     /// The same for `redact`, which needs only the image.
     static func draw(
         input path: String, output: String?, edit: ImageEdit = ImageEdit(), cropField: String = "crop", projects: ProjectStore?, origin: ProjectOrigin,
-        codec: any ImageCoding, canvasType: any Canvas.Type, _ make: (CGImage) throws(ShotCommandError) -> [Annotation]
+        codec: any ImageCoding, canvasType: any Canvas.Type, _ make: (PlatformImage) throws(ShotCommandError) -> [Annotation]
     ) throws(ShotCommandError) -> JSONValue {
-        try draw(input: path, output: output, edit: edit, cropField: cropField, projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (image: CGImage, _: CGFloat) throws(ShotCommandError) in try make(image) }
+        try draw(input: path, output: output, edit: edit, cropField: cropField, projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (image: PlatformImage, _: CGFloat) throws(ShotCommandError) in try make(image) }
     }
 
     /// Makes the edit's changes to the image, as `draw` does, and lists the new version's layers, so an agent can
@@ -350,7 +365,7 @@ public enum ShotCommands {
         let data: Data
         switch options.spec {
         case let .edit(edit):
-            return try draw(input: options.input, output: options.output, edit: edit, layers: true, projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (_: CGImage, _: CGFloat) in [] }
+            return try draw(input: options.input, output: options.output, edit: edit, layers: true, projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (_: PlatformImage, _: CGFloat) in [] }
         case let .video(edit):
             return try await editVideo(edit, input: options.input, output: options.output, projects: projects, origin: origin, codec: codec, canvasType: canvasType, reader: reader, assembler: assembler, writer: writer)
         case let .json(text):
@@ -367,7 +382,7 @@ public enum ShotCommands {
         let input = url(options.input)
         try requireInput(input)
         if isImage(input, codec: codec) {
-            return try draw(input: options.input, output: options.output, edit: ImageEdit.parse(data), layers: true, projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (_: CGImage, _: CGFloat) in [] }
+            return try draw(input: options.input, output: options.output, edit: ImageEdit.parse(data), layers: true, projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (_: PlatformImage, _: CGFloat) in [] }
         }
         return try await editVideo(VideoEdit.parse(data), input: options.input, output: options.output, projects: projects, origin: origin, codec: codec, canvasType: canvasType, reader: reader, assembler: assembler, writer: writer)
     }
@@ -645,4 +660,3 @@ public enum ShotCommands {
         .object(["width": .number(Double(size.width)), "height": .number(Double(size.height))])
     }
 }
-#endif

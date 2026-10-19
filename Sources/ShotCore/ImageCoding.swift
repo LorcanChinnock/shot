@@ -1,7 +1,4 @@
 import Foundation
-#if canImport(CoreGraphics)
-import CoreGraphics
-#endif
 
 /// What Shot writes in an image file besides its pixels and scale, so it can read it back later, on any platform.
 public struct ImageMetadata: Equatable, Sendable {
@@ -57,15 +54,13 @@ public protocol ImageCoding: PNGCoding {
     /// at most `maxBytes`. Transparency goes white, since JPEG has none.
     func previewJPEG(at url: URL, maxPixelSize: Int, maxBytes: Int) -> Data?
 
-    #if canImport(CoreGraphics)
     // The same for the images a document holds and a canvas makes, which are `PlatformImage`s, so CGImages on a Mac. They
     // keep the image's own colour space, such as Display P3, which a `Bitmap` in sRGB would lose.
-    func data(from image: CGImage, scale: CGFloat, format: ImageFormat, metadata: ImageMetadata) -> Data?
-    func image(at url: URL) -> CGImage?
+    func data(from image: PlatformImage, scale: CGFloat, format: ImageFormat, metadata: ImageMetadata) -> Data?
+    func image(at url: URL) -> PlatformImage?
     /// Decoded now, so it doesn't decode again each time it's drawn.
-    func image(from data: Data) -> CGImage?
-    func previewJPEG(of image: CGImage, maxPixelSize: Int, maxBytes: Int) -> Data?
-    #endif
+    func image(from data: Data) -> PlatformImage?
+    func previewJPEG(of image: PlatformImage, maxPixelSize: Int, maxBytes: Int) -> Data?
 }
 
 extension ImageCoding {
@@ -74,13 +69,11 @@ extension ImageCoding {
         previewJPEG(at: url, maxPixelSize: 1568, maxBytes: 1_000_000)
     }
 
-    #if canImport(CoreGraphics)
-    public func data(from image: CGImage, scale: CGFloat, format: ImageFormat = .png) -> Data? {
+    public func data(from image: PlatformImage, scale: CGFloat, format: ImageFormat = .png) -> Data? {
         data(from: image, scale: scale, format: format, metadata: ImageMetadata())
     }
 
-    public func previewJPEG(of image: CGImage) -> Data? {
+    public func previewJPEG(of image: PlatformImage) -> Data? {
         previewJPEG(of: image, maxPixelSize: 1568, maxBytes: 1_000_000)
     }
-    #endif
 }
