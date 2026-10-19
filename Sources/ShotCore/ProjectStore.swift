@@ -15,7 +15,7 @@ public struct ProjectStore: Sendable {
     }
 
     public let folder: URL
-    /// Reads the project IDs stamped in image files.
+    /// Reads the project IDs stamped in image files, and writes and reads the images placed in projects.
     let codec: any ImageCoding
 
     public init(folder: URL, codec: any ImageCoding) {
@@ -41,7 +41,7 @@ public struct ProjectStore: Sendable {
         }
         let saved = ProjectEntry(id: key, stamped: id != nil, file: located, original: original.flatMap { ProjectFile(at: $0) }, origin: origin)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try ProjectEntry.encoder().encode(StoredProject(entry: saved, document: document)).write(to: folder.appendingPathComponent(name), options: .atomic)
+        try ProjectEntry.encoder(codec: codec).encode(StoredProject(entry: saved, document: document)).write(to: folder.appendingPathComponent(name), options: .atomic)
         // A GIF saved again at the same path has a new inode, so the entries keyed by its old ones are stale.
         if id == nil {
             for stale in ids().filter(ProjectKey.isIdentity) where stale != key && entry(stale)?.file.path == located.path {
@@ -62,7 +62,7 @@ public struct ProjectStore: Sendable {
         guard let id = id(of: file), let data = read(id) else {
             return nil
         }
-        return try? ProjectEntry.decoder().decode(StoredProject<Document>.self, from: data)
+        return try? ProjectEntry.decoder(codec: codec).decode(StoredProject<Document>.self, from: data)
     }
 
     /// The entry of `file`, without its layers, such as for the provenance the gallery shows.
@@ -153,7 +153,7 @@ public struct ProjectStore: Sendable {
 
     /// Reads only the entry: the decoder skips the layers' key.
     private func entry(_ id: String) -> ProjectEntry? {
-        read(id).flatMap { try? ProjectEntry.decoder().decode(ProjectEntry.self, from: $0) }
+        read(id).flatMap { try? ProjectEntry.decoder(codec: codec).decode(ProjectEntry.self, from: $0) }
     }
 
     private func remove(_ id: String) {

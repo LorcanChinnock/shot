@@ -5,6 +5,26 @@ import Foundation
 // always ImageIO and Core Graphics, so these give the app, ShotCLI and the tests each call as it was, without them.
 // CGCanvas+Defaults.swift has the calls that only draw.
 
+extension ProjectEntry {
+    public static func encoder() -> JSONEncoder {
+        encoder(codec: ImageIOCodec())
+    }
+
+    public static func decoder() -> JSONDecoder {
+        decoder(codec: ImageIOCodec())
+    }
+}
+
+extension AnnotationClipboard {
+    public static func data(for annotation: Annotation) throws -> Data {
+        try data(for: annotation, codec: ImageIOCodec())
+    }
+
+    public static func annotation(from data: Data) throws -> Annotation {
+        try annotation(from: data, codec: ImageIOCodec())
+    }
+}
+
 extension ProjectStore {
     public init(folder: URL) {
         self.init(folder: folder, codec: ImageIOCodec())

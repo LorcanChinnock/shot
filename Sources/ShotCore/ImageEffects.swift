@@ -9,7 +9,7 @@ import Foundation
 /// edge pixel, so a blur doesn't darken toward the edge. Safe to use from any thread.
 public protocol ImageEffects: Sendable {
     #if canImport(CoreGraphics)
-    // Images stay CGImage while the canvas's do, until the annotations hold `Bitmap`s.
+    // Images are CGImages, as the canvas's are and `PlatformImage` is on a Mac.
 
     /// All of `image` given a gaussian blur of `radius` pixels.
     func blurred(_ image: CGImage, radius: CGFloat) -> CGImage?

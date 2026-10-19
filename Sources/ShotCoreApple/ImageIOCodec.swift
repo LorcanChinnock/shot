@@ -62,6 +62,15 @@ public struct ImageIOCodec: ImageCoding {
     public func previewJPEG(of image: CGImage, maxPixelSize: Int, maxBytes: Int) -> Data? {
         ImageCodec.previewJPEG(of: image, maxPixelSize: maxPixelSize, maxBytes: maxBytes)
     }
+
+    /// At 72 DPI, with no metadata, as a placed image has always been saved in a project.
+    public func png(from image: CGImage) -> Data? {
+        ImageCodec.data(from: image, scale: 1)
+    }
+
+    public func image(fromPNG data: Data) -> CGImage? {
+        ImageCodec.image(from: data)
+    }
 }
 
 extension Bitmap {

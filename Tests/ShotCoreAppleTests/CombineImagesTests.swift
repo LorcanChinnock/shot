@@ -335,9 +335,12 @@ private func halves(width: Int, height: Int) -> CGImage {
     let copy = try #require(doc.annotations.first { $0.id == copyID })
     #expect(copy.imageCrop == ImageCrop(left: 0.5, top: 0, right: 0, bottom: 0))
 
-    let decoded = try JSONDecoder().decode(Annotation.self, from: JSONEncoder().encode(doc.annotations[0]))
-    #expect(decoded.imageCrop == doc.annotations[0].imageCrop)
-    #expect(decoded.bounds == doc.annotations[0].bounds)
+    let pasted = try AnnotationClipboard.annotation(from: AnnotationClipboard.data(for: doc.annotations[0]))
+    let saved = try ProjectEntry.decoder().decode([Annotation].self, from: ProjectEntry.encoder().encode(doc.annotations))
+    for decoded in [pasted, saved[0]] {
+        #expect(decoded.imageCrop == doc.annotations[0].imageCrop)
+        #expect(decoded.bounds == doc.annotations[0].bounds)
+    }
 }
 
 @Test func onlyAPlacedImageTakesACrop() {
