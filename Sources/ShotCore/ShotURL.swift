@@ -1,6 +1,7 @@
-#if canImport(UniformTypeIdentifiers)
 import Foundation
+#if canImport(UniformTypeIdentifiers)
 import UniformTypeIdentifiers
+#endif
 
 /// A `shot://` URL, which runs Shot from a launcher, the Shortcuts app or a script, and drives it in `perf.sh` and the
 /// ux-qa skill. Every route is parsed here, so a typo in one fails a test rather than a run.
@@ -95,8 +96,11 @@ public enum EditorRoute: Equatable, Sendable {
     }
 
     public init(fileURL: URL) {
+        #if canImport(UniformTypeIdentifiers)
         let isVideo = UTType(filenameExtension: fileURL.pathExtension)?.conforms(to: .movie) == true
+        #else
+        let isVideo = GalleryKind(listedExtension: fileURL.pathExtension) == .video
+        #endif
         self = isVideo ? .video(fileURL) : .image(fileURL)
     }
 }
-#endif

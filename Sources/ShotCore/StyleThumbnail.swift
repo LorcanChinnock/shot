@@ -1,7 +1,7 @@
-#if canImport(CoreGraphics) && canImport(os)
+#if canImport(CoreGraphics)
 import CoreGraphics
 import Foundation
-import os
+import Synchronization
 
 /// A Style popover tile's picture: what the popover styles, drawn small with a preset on it, so each tile shows how the
 /// selection would look.
@@ -69,7 +69,7 @@ public enum StyleThumbnail {
 
     /// The image last shrunk and the copy made, since every tile of a popover draws the same one. It holds on to the
     /// screenshot, so the popover lets go of it with `forgetShrunk` as it closes.
-    private static let lastShrunk = OSAllocatedUnfairLock<(source: CGImage, box: CGSize, image: CGImage)?>(initialState: nil)
+    private static let lastShrunk = Mutex<(source: CGImage, box: CGSize, image: CGImage)?>(nil)
 
     public static func forgetShrunk() {
         lastShrunk.withLock { $0 = nil }

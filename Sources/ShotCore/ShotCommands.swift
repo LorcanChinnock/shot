@@ -568,12 +568,12 @@ public enum ShotCommands {
         url.deletingLastPathComponent().appendingPathComponent(".shot-\(UUID().uuidString).\(pathExtension)")
     }
 
-    /// Moves `temporary` to `target` without ever replacing a file: `renamex_np` with `RENAME_EXCL` fails if the name is
+    /// Moves `temporary` to `target` without ever replacing a file: `FileNaming.renameExclusively` fails if the name is
     /// taken, which no check made beforehand can promise. A taken name moves on to the next version, unless it was asked for.
     static func place(_ temporary: URL, at target: (url: URL, exact: Bool)) throws(ShotCommandError) -> URL {
         var url = target.url
         for _ in 0 ..< 1000 {
-            if renamex_np(temporary.path, url.path, UInt32(RENAME_EXCL)) == 0 {
+            if FileNaming.renameExclusively(temporary, to: url) == 0 {
                 return url
             }
             let failure = errno

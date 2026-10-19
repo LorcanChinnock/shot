@@ -1,4 +1,3 @@
-#if canImport(Darwin)
 import Foundation
 
 public enum FileNaming {
@@ -21,7 +20,7 @@ public enum FileNaming {
     }
 
     /// Writes `data` as a new file in `folder` under the name `name` gives, asking again while that name is taken, and
-    /// returns where it went. The data goes to a hidden file first and is renamed into place with `RENAME_EXCL`, so a
+    /// returns where it went. The data goes to a hidden file first and is renamed into place with `renameExclusively`, so a
     /// crash or a full disk never leaves a truncated file under the real name and no existing file is ever replaced.
     /// Foundation can't do both at once: `write(to:options:)` traps on `.atomic` with `.withoutOverwriting`.
     public static func writeNew(_ data: Data, in folder: URL, name: () -> URL) throws -> URL {
@@ -30,7 +29,7 @@ public enum FileNaming {
         defer { try? FileManager.default.removeItem(at: temporary) }
         for _ in 0 ..< 100 {
             let url = name()
-            if renamex_np(temporary.path, url.path, UInt32(RENAME_EXCL)) == 0 {
+            if renameExclusively(temporary, to: url) == 0 {
                 return url
             }
             let failure = errno
@@ -39,6 +38,22 @@ public enum FileNaming {
             }
         }
         throw CocoaError(.fileWriteFileExists, userInfo: [NSFilePathErrorKey: folder.path])
+    }
+
+    /// Renames `source` to `target` unless `target` exists, which no check made beforehand can promise: 0, or -1 with
+    /// `errno` set, to `EEXIST` when the name is taken. A Mac renames with `RENAME_EXCL`. Glibc doesn't show Swift
+    /// `renameat2`, so Linux links the new name, which fails when it's taken, and then unlinks the old one. Callers
+    /// remove `source` afterwards anyway, so an unlink that fails leaves nothing behind.
+    static func renameExclusively(_ source: URL, to target: URL) -> Int32 {
+        #if canImport(Darwin)
+        renamex_np(source.path, target.path, UInt32(RENAME_EXCL))
+        #else
+        guard link(source.path, target.path) == 0 else {
+            return -1
+        }
+        unlink(source.path)
+        return 0
+        #endif
     }
 
     /// A name for a recording rescued from its leftover segments: the usual name plus "(recovered)", and "part N" when
@@ -54,4 +69,3 @@ public enum FileNaming {
         return url
     }
 }
-#endif

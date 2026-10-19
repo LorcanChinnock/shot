@@ -1,6 +1,6 @@
-#if canImport(CoreImage) && canImport(os)
+#if canImport(CoreImage)
 import CoreImage
-import os
+import Synchronization
 
 /// Annotation clips being edited, which the compositor draws in place of what the project has for them,
 /// so a drag shows at once without rebuilding the preview, and the styles of pictures being restyled or previewed.
@@ -12,7 +12,7 @@ public final class LiveAnnotations: Sendable {
         var clipStyles: [UUID: ObjectStyle] = [:]
     }
 
-    private let state = OSAllocatedUnfairLock(initialState: State())
+    private let state = Mutex(State())
 
     public init() {}
 

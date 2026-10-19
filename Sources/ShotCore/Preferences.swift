@@ -1,4 +1,3 @@
-#if canImport(UniformTypeIdentifiers)
 import Foundation
 
 private let log = ShotLog.shot("preferences")
@@ -439,4 +438,3 @@ public struct Preferences {
         KeyCombo(encoded: store.string(forKey: PreferenceKey.hotkey(action)) ?? "")
     }
 }
-#endif

@@ -1,4 +1,3 @@
-#if canImport(Darwin)
 import Foundation
 
 /// The marks agents stamped on their recordings, kept app-private so the capture folder gets no extra file and a shared
@@ -8,7 +7,7 @@ import Foundation
 public enum RecordingMarks {
     /// The store for the app with `bundleID`, so Shot and ShotDev keep their own.
     public static func url(bundleID: String) -> URL {
-        URL.applicationSupportDirectory.appendingPathComponent(bundleID, isDirectory: true).appendingPathComponent("recording-marks.json")
+        AppSupport.folder(bundleID: bundleID).appendingPathComponent("recording-marks.json")
     }
 
     /// The marks of the recording at `video`, or none when the store has none for it or can't be read.
@@ -34,4 +33,3 @@ public enum RecordingMarks {
         return (try? JSONDecoder().decode([String: [RecordingMark]].self, from: data)) ?? [:]
     }
 }
-#endif

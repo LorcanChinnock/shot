@@ -1,5 +1,8 @@
 #if canImport(Darwin)
 import Darwin
+#else
+import Glibc
+#endif
 import Foundation
 
 /// The Unix socket the running app answers agents on, so `shot capture` can ask it for a screenshot: Screen Recording
@@ -11,9 +14,9 @@ public enum AgentSocket {
     /// How long the server waits for a client to send its request.
     static let requestTimeout = Duration.seconds(5)
 
-    /// `~/Library/Application Support/<bundle ID>/agent.sock`, so Shot and ShotDev never answer each other's agents.
+    /// `agent.sock` in the app's support folder, so Shot and ShotDev never answer each other's agents.
     public static func url(bundleID: String) -> URL {
-        URL.applicationSupportDirectory.appendingPathComponent(bundleID, isDirectory: true).appendingPathComponent("agent.sock")
+        AppSupport.folder(bundleID: bundleID).appendingPathComponent("agent.sock")
     }
 
     /// Accepts connections on a queue of its own, and hands each request to `handler`.
@@ -53,7 +56,7 @@ public enum AgentSocket {
                 }
                 unlink(url.path)
             }
-            let fd = socket(AF_UNIX, SOCK_STREAM, 0)
+            let fd = socket(AF_UNIX, AgentSocket.stream, 0)
             guard fd >= 0 else {
                 throw .io("couldn't make a socket: \(AgentSocket.reason())")
             }
@@ -101,11 +104,8 @@ public enum AgentSocket {
                 }
                 // Accepted sockets inherit the listener's O_NONBLOCK; this one is read with a timeout instead.
                 _ = fcntl(client, F_SETFL, 0)
-                var on: Int32 = 1
-                setsockopt(client, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
-                var uid = uid_t()
-                var gid = gid_t()
-                guard getpeereid(client, &uid, &gid) == 0, uid == getuid() else {
+                AgentSocket.keepSignalsOff(client)
+                guard AgentSocket.peerUser(of: client) == getuid() else {
                     close(client)
                     continue
                 }
@@ -165,8 +165,7 @@ public enum AgentSocket {
     private static func exchange(_ request: AgentRequest, at url: URL, timeout: Duration) throws(ShotCommandError) -> AgentResponse {
         let fd = try connect(to: url)
         defer { close(fd) }
-        var on: Int32 = 1
-        setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
+        keepSignalsOff(fd)
         setTimeout(fd, SO_SNDTIMEO, requestTimeout)
         // A write the app cut short, because the request was too long, still leaves its answer to read.
         _ = write(request.line, to: fd)
@@ -183,12 +182,18 @@ public enum AgentSocket {
 
     private static func connect(to url: URL) throws(ShotCommandError) -> Int32 {
         var address = try address(of: url)
-        let fd = socket(AF_UNIX, SOCK_STREAM, 0)
+        let fd = socket(AF_UNIX, stream, 0)
         guard fd >= 0 else {
             throw .io("couldn't make a socket: \(reason())")
         }
         let connected = withUnsafePointer(to: &address) {
-            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.connect(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                #if canImport(Darwin)
+                Darwin.connect(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size))
+                #else
+                Glibc.connect(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size))
+                #endif
+            }
         }
         guard connected == 0 else {
             close(fd)
@@ -201,7 +206,9 @@ public enum AgentSocket {
     static func address(of url: URL) throws(ShotCommandError) -> sockaddr_un {
         var address = sockaddr_un()
         address.sun_family = sa_family_t(AF_UNIX)
+        #if canImport(Darwin)
         address.sun_len = UInt8(MemoryLayout<sockaddr_un>.size)
+        #endif
         let path = Array(url.path.utf8)
         let capacity = MemoryLayout.size(ofValue: address.sun_path)
         guard path.count < capacity else {
@@ -221,7 +228,11 @@ public enum AgentSocket {
         data.withUnsafeBytes { buffer in
             var offset = 0
             while offset < buffer.count {
+                #if canImport(Darwin)
                 let written = Darwin.write(fd, buffer.baseAddress! + offset, buffer.count - offset)
+                #else
+                let written = Glibc.send(fd, buffer.baseAddress! + offset, buffer.count - offset, Int32(MSG_NOSIGNAL))
+                #endif
                 if written < 0 {
                     if errno == EINTR { continue }
                     return false
@@ -269,12 +280,41 @@ public enum AgentSocket {
     /// Sets a send or receive timeout of at least a millisecond, since zero would mean none.
     static func setTimeout(_ fd: Int32, _ option: Int32, _ duration: Duration) {
         let (seconds, attoseconds) = max(duration, .milliseconds(1)).components
-        var value = timeval(tv_sec: Int(seconds), tv_usec: Int32(attoseconds / 1_000_000_000_000))
+        var value = timeval(tv_sec: Int(seconds), tv_usec: suseconds_t(attoseconds / 1_000_000_000_000))
         setsockopt(fd, SOL_SOCKET, option, &value, socklen_t(MemoryLayout<timeval>.size))
     }
 
     private static func reason() -> String {
         String(cString: strerror(errno))
+    }
+
+    #if canImport(Darwin)
+    static let stream = SOCK_STREAM
+    #else
+    static let stream = Int32(SOCK_STREAM.rawValue)
+    #endif
+
+    /// Stops writes to `fd` raising `SIGPIPE` when its peer goes away, which would end the process. Linux passes
+    /// `MSG_NOSIGNAL` to each `send` instead.
+    static func keepSignalsOff(_ fd: Int32) {
+        #if canImport(Darwin)
+        var on: Int32 = 1
+        setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
+        #endif
+    }
+
+    /// The user at the other end of the connected socket `fd`, which the server checks is this one; `nil` when it can't tell.
+    static func peerUser(of fd: Int32) -> uid_t? {
+        #if canImport(Darwin)
+        var uid = uid_t()
+        var gid = gid_t()
+        return getpeereid(fd, &uid, &gid) == 0 ? uid : nil
+        #else
+        // Glibc's `struct ucred`, which it shows Swift only with `_GNU_SOURCE`.
+        var credentials: (pid: pid_t, uid: uid_t, gid: gid_t) = (0, 0, 0)
+        var size = socklen_t(MemoryLayout.size(ofValue: credentials))
+        return getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &credentials, &size) == 0 ? credentials.uid : nil
+        #endif
     }
 }
 
@@ -305,8 +345,12 @@ extension AgentSocket {
         return try await send(request, to: url, timeout: timeout)
     }
 
-    /// Opens the app with `bundleID` in the background, as `open -g` does, which does nothing when it's running.
+    /// Opens the app with `bundleID` in the background, as `open -g` does, which does nothing when it's running. Linux
+    /// has no app to open.
     private static func launch(_ bundleID: String) throws(ShotCommandError) {
+        #if os(Linux)
+        throw .unavailable("Shot isn't answering agents: it isn't running at \(url(bundleID: bundleID).path)")
+        #else
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
         process.arguments = ["-g", "-b", bundleID]
@@ -321,6 +365,6 @@ extension AgentSocket {
         guard process.terminationStatus == 0 else {
             throw .unavailable("couldn't open Shot: no app with the bundle ID \(bundleID) is installed")
         }
+        #endif
     }
 }
-#endif
