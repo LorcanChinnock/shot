@@ -13,8 +13,10 @@ func extractingStrings(_ target: String) -> [SwiftSetting] {
 }
 
 // ShotModel needs only Foundation, and ShotCore keeps its Apple framework calls under #if canImport until they move to
-// ShotCoreApple, so CI builds and tests both on Linux. Everything else needs Apple frameworks.
+// ShotCoreApple, so CI builds and tests both on Linux, with the command line on ShotCoreLinux. The app needs Apple
+// frameworks.
 var dependencies: [Package.Dependency] = []
+var products: [Product] = []
 var targets: [Target] = [
     .target(name: "ShotModel"),
     .testTarget(name: "ShotModelTests", dependencies: ["ShotModel"]),
@@ -41,11 +43,22 @@ targets += [
     .executableTarget(name: "ShotCLI", dependencies: ["ShotCoreApple"]),
     .testTarget(name: "ShotCoreAppleTests", dependencies: ["ShotCoreApple"]),
 ]
+#elseif os(Linux)
+targets += [
+    // The Linux implementations of ShotCore's protocols, as they come (#656). It re-exports ShotCore, so ShotCLI
+    // imports only this.
+    .target(name: "ShotCoreLinux", dependencies: ["ShotCore"]),
+    .executableTarget(name: "ShotCLI", dependencies: ["ShotCoreLinux"]),
+    .testTarget(name: "ShotCoreLinuxTests", dependencies: ["ShotCoreLinux"]),
+]
+// Linux has no app to put it in, so it's built as `shot`.
+products += [.executable(name: "shot", targets: ["ShotCLI"])]
 #endif
 
 let package = Package(
     name: "Shot",
     platforms: [.macOS(.v15)],
+    products: products,
     dependencies: dependencies,
     targets: targets
 )
