@@ -1,5 +1,4 @@
-#if canImport(AVFoundation)
-import AVFoundation
+import Foundation
 
 /// The loudest and quietest samples in one slice of audio, from -1 to 1.
 public struct WaveformPeak: Equatable, Sendable {
@@ -46,44 +45,20 @@ public struct Waveform: Equatable, Sendable {
         return reducer.finish()
     }
 
-    /// Reads the first audio track of `url`; nil when there's none. Runs off the main thread.
-    public static func load(_ url: URL) async throws -> Waveform? {
-        let asset = AVURLAsset(url: url)
-        guard let track = try await asset.loadTracks(withMediaType: .audio).first else {
+    /// Reads the first audio track of `url` through `reader`; nil when there's none. Runs off the main thread.
+    public static func load(_ url: URL, reader: any VideoReader) async throws -> Waveform? {
+        let media = try await reader.info(of: url)
+        guard media.hasAudio else {
             return nil
         }
-        let duration = try await asset.load(.duration).seconds
         return try await Task.detached(priority: .utility) {
-            let reader = try AVAssetReader(asset: asset)
             let sampleRate = 8000.0
-            let output = AVAssetReaderTrackOutput(track: track, outputSettings: [
-                AVFormatIDKey: kAudioFormatLinearPCM,
-                AVLinearPCMBitDepthKey: 32,
-                AVLinearPCMIsFloatKey: true,
-                AVLinearPCMIsBigEndianKey: false,
-                AVLinearPCMIsNonInterleaved: false,
-                AVNumberOfChannelsKey: 1,
-                AVSampleRateKey: sampleRate,
-            ])
-            reader.add(output)
-            guard reader.startReading() else {
-                throw reader.error ?? CocoaError(.fileReadUnknown)
-            }
             var reducer = PeakReducer(sampleRate: sampleRate)
-            while let buffer = output.copyNextSampleBuffer() {
+            try await reader.readMonoSamples(of: url, sampleRate: sampleRate) { samples in
                 try Task.checkCancellation()
-                guard let block = CMSampleBufferGetDataBuffer(buffer) else {
-                    continue
-                }
-                let length = CMBlockBufferGetDataLength(block)
-                var data = [Float](repeating: 0, count: length / MemoryLayout<Float>.size)
-                data.withUnsafeMutableBytes { _ = CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: length, destination: $0.baseAddress!) }
-                data.forEach { reducer.add($0) }
+                samples.forEach { reducer.add($0) }
             }
-            if reader.status == .failed {
-                throw reader.error ?? CocoaError(.fileReadUnknown)
-            }
-            return Waveform(peaks: reducer.finish(), duration: duration)
+            return Waveform(peaks: reducer.finish(), duration: media.duration)
         }.value
     }
 }
@@ -116,4 +91,3 @@ private struct PeakReducer {
         return peaks
     }
 }
-#endif

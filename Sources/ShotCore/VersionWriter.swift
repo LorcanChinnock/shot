@@ -173,15 +173,16 @@ public enum VersionWriter {
     }
 
     /// Writes `plan`, an edit of `project` over the video at `original`, to `output`, its annotations drawn on `canvasType`
-    /// canvases, as the video editor's Save Copy and Export do. `project` is kept in `projects`, stamped in an MP4 or MOV and keyed by its identity for a GIF, so
+    /// canvases and a trim cut with `assembler`, as the video editor's Save Copy and Export do. `project` is kept in `projects`, stamped in an MP4 or MOV and keyed by its identity for a GIF, so
     /// the file reopens with it live. A project that can't be kept leaves the file written, as one written before
     /// projects is.
     @discardableResult
     public static func writeVideo(
         _ plan: VideoExportPlan, of project: Project, original: URL, to output: URL, projects: ProjectStore? = nil,
-        origin: ProjectOrigin = ProjectOrigin(via: .app), canvasType: any Canvas.Type, progress: @Sendable (Double) -> Void = { _ in }
+        origin: ProjectOrigin = ProjectOrigin(via: .app), canvasType: any Canvas.Type, assembler: any VideoAssembler,
+        progress: @Sendable (Double) -> Void = { _ in }
     ) async throws -> VideoExportPlan.Outcome {
-        let outcome = try await plan.run(to: output, canvasType: canvasType, progress: progress)
+        let outcome = try await plan.run(to: output, canvasType: canvasType, assembler: assembler, progress: progress)
         keep(project, of: output, original: original, in: projects, origin: origin)
         return outcome
     }

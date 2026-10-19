@@ -72,11 +72,11 @@ extension ProjectExporter {
 extension VideoExportPlan {
     @discardableResult
     public func run(to output: URL, progress: @Sendable (Double) -> Void = { _ in }) async throws -> Outcome {
-        try await run(to: output, canvasType: CGCanvas.self, progress: progress)
+        try await run(to: output, canvasType: CGCanvas.self, assembler: AVVideoAssembler(), progress: progress)
     }
 
     public func estimate() async throws -> Int {
-        try await estimate(canvasType: CGCanvas.self)
+        try await estimate(canvasType: CGCanvas.self, reader: AVVideoReader())
     }
 }
 
@@ -86,6 +86,6 @@ extension VersionWriter {
         _ plan: VideoExportPlan, of project: Project, original: URL, to output: URL, projects: ProjectStore? = nil,
         origin: ProjectOrigin = ProjectOrigin(via: .app), progress: @Sendable (Double) -> Void = { _ in }
     ) async throws -> VideoExportPlan.Outcome {
-        try await writeVideo(plan, of: project, original: original, to: output, projects: projects, origin: origin, canvasType: CGCanvas.self, progress: progress)
+        try await writeVideo(plan, of: project, original: original, to: output, projects: projects, origin: origin, canvasType: CGCanvas.self, assembler: AVVideoAssembler(), progress: progress)
     }
 }

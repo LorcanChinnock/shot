@@ -80,7 +80,7 @@ extension VersionWriter {
 
 extension ShotCommands {
     public static func run(_ command: ShotCommand, projects: ProjectStore? = nil, origin: ProjectOrigin? = nil) async throws(ShotCommandError) -> JSONValue {
-        try await run(command, projects: projects, origin: origin, codec: ImageIOCodec(), canvasType: CGCanvas.self)
+        try await run(command, projects: projects, origin: origin, codec: ImageIOCodec(), canvasType: CGCanvas.self, reader: AVVideoReader(), assembler: AVVideoAssembler())
     }
 }
 
@@ -92,6 +92,9 @@ extension AgentTools {
         texts: TextIndexStore? = nil,
         agent: @escaping @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue] = { _ throws(ShotCommandError) in throw .unavailable("can't reach Shot from here") }
     ) -> AgentTools {
-        live(folder: folder, marks: marks, projects: projects, texts: texts, codec: ImageIOCodec(), canvasType: CGCanvas.self, agent: agent)
+        live(
+            folder: folder, marks: marks, projects: projects, texts: texts, codec: ImageIOCodec(), canvasType: CGCanvas.self, reader: AVVideoReader(),
+            assembler: AVVideoAssembler(), agent: agent
+        )
     }
 }
