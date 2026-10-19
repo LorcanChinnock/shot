@@ -20,8 +20,8 @@ public enum CompositionBuilder {
 
         public var errorDescription: String? {
             switch self {
-            case .noVideo(let name): String(localized: "\(name) has no video to show")
-            case .cannotInsert(let name): String(localized: "Couldn't add \(name) to the video")
+            case .noVideo(let name): shotLocalized("\(name) has no video to show")
+            case .cannotInsert(let name): shotLocalized("Couldn't add \(name) to the video")
             }
         }
     }
@@ -46,7 +46,7 @@ public enum CompositionBuilder {
         var frameRate: Float = 30
         for track in project.videoTracks {
             guard let target = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
-                throw BuildError.cannotInsert(String(localized: "the video"))
+                throw BuildError.cannotInsert(shotLocalized("the video"))
             }
             for clip in track.clips {
                 guard let source = try await asset(clip.source).loadTracks(withMediaType: .video).first else {
@@ -72,7 +72,7 @@ public enum CompositionBuilder {
         var parameters: [AVMutableAudioMixInputParameters] = []
         for track in project.tracks where track.kind == .audio && !track.isMuted {
             guard let target = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else {
-                throw BuildError.cannotInsert(String(localized: "the sound"))
+                throw BuildError.cannotInsert(shotLocalized("the sound"))
             }
             let mix = AVMutableAudioMixInputParameters(track: target)
             for clip in track.clips {
@@ -386,8 +386,8 @@ public enum ProjectExporter {
 
         public var errorDescription: String? {
             switch self {
-            case .failed: String(localized: "Couldn't export the video")
-            case .unsupportedFileType: String(localized: "Can't write this kind of video")
+            case .failed: shotLocalized("Couldn't export the video")
+            case .unsupportedFileType: shotLocalized("Can't write this kind of video")
             }
         }
     }

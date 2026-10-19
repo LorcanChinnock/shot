@@ -51,11 +51,11 @@ public enum GalleryFilter: String, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .all: String(localized: "All")
-        case .screenshots: String(localized: "Screenshots")
-        case .videos: String(localized: "Videos")
-        case .gifs: String(localized: "GIFs")
-        case .agents: String(localized: "Made by agents")
+        case .all: shotLocalized("All")
+        case .screenshots: shotLocalized("Screenshots")
+        case .videos: shotLocalized("Videos")
+        case .gifs: shotLocalized("GIFs")
+        case .agents: shotLocalized("Made by agents")
         }
     }
 
@@ -75,10 +75,10 @@ public enum GallerySort: String, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .newest: String(localized: "Newest first")
-        case .oldest: String(localized: "Oldest first")
-        case .name: String(localized: "Name")
-        case .size: String(localized: "Largest first")
+        case .newest: shotLocalized("Newest first")
+        case .oldest: shotLocalized("Oldest first")
+        case .name: shotLocalized("Name")
+        case .size: shotLocalized("Largest first")
         }
     }
 
@@ -164,10 +164,10 @@ public enum Gallery {
             return items.isEmpty ? [] : [GallerySection(title: "", items: items)]
         }
         let recent = [
-            (String(localized: "Today"), calendar.dateInterval(of: .day, for: now)),
-            (String(localized: "Yesterday"), calendar.date(byAdding: .day, value: -1, to: now).flatMap { calendar.dateInterval(of: .day, for: $0) }),
-            (String(localized: "This Week"), calendar.dateInterval(of: .weekOfYear, for: now)),
-            (String(localized: "This Month"), calendar.dateInterval(of: .month, for: now)),
+            (shotLocalized("Today"), calendar.dateInterval(of: .day, for: now)),
+            (shotLocalized("Yesterday"), calendar.date(byAdding: .day, value: -1, to: now).flatMap { calendar.dateInterval(of: .day, for: $0) }),
+            (shotLocalized("This Week"), calendar.dateInterval(of: .weekOfYear, for: now)),
+            (shotLocalized("This Month"), calendar.dateInterval(of: .month, for: now)),
         ].compactMap { title, interval in interval.map { (title: title, dates: $0.start..<$0.end) } }
         lazy var monthFormatter = {
             let formatter = DateFormatter()
