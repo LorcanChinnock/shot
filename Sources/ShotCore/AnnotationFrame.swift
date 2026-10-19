@@ -80,22 +80,13 @@ final class OverlayCache: @unchecked Sendable {
     }
 }
 
-enum AnnotationFrame {
+extension AnnotationFrame {
     /// Kinds that depend on what's under them: they blend with it, blur it, or dim all but a part of it.
     private static func needsPicture(_ annotation: Annotation) -> Bool {
         switch annotation.kind {
         case .highlight, .marker, .spotlight, .pixelate, .blur: true
         case .arrow, .line, .shape, .text, .counter, .note, .freehand, .image: false
         }
-    }
-
-    /// An annotation to draw, with the turn and fade to give it.
-    struct Item {
-        var annotation: Annotation
-        var rotation: Double = 0
-        var opacity: Double = 1
-
-        var isPlain: Bool { abs(rotation) < 1e-6 && opacity >= 0.999 }
     }
 
     /// `image` with each item drawn over it, bottom to top, on `canvasType` canvases. Runs of plain ones are drawn together.

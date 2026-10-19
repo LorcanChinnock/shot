@@ -278,45 +278,26 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
             var image = CIImage(color: .black).cropped(to: canvas)
             var firstFrame: CVPixelBuffer?
             let (hidden, drawn, clipStyles) = instruction.live.snapshot()
-            let replacements = Dictionary(drawn.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-            var stacked: Set<UUID> = []
-            var run: [AnnotationFrame.Item] = []
-            func item(_ clip: AnnotationClip) -> AnnotationFrame.Item {
-                let state = clip.rendered(atTimeline: time, shaper: instruction.canvasType.shaper)
-                return AnnotationFrame.Item(annotation: state.annotation, rotation: state.rotation, opacity: state.opacity)
+            // A picture whose frame didn't come isn't drawn, so the annotations either side of it draw together.
+            let stack = instruction.layers.compactMap { layer -> FrameLayers.Source<(layer: ClipLayer, frame: CVPixelBuffer)>? in
+                switch layer {
+                case let .annotation(clip): .annotation(clip)
+                case let .picture(layer): request.sourceFrame(byTrackID: layer.trackID).map { .picture((layer, $0), layer.clip) }
+                }
             }
-            func flush() {
-                image = AnnotationFrame.apply(run, to: image, canvas: canvas, context: self.context, cache: self.overlays, canvasType: instruction.canvasType)
-                run = []
-            }
-            for layer in instruction.layers {
+            let layers = FrameLayers.layers(of: stack, at: time, hidden: hidden, drawn: drawn, clipStyles: clipStyles, shaper: instruction.canvasType.shaper)
+            for layer in layers {
                 if cancelled() {
                     return
                 }
                 switch layer {
-                case let .annotation(clip):
-                    // One being edited draws where it is in the stack.
-                    guard hidden.contains(clip.id) else {
-                        run.append(item(clip))
-                        continue
-                    }
-                    if let replacement = replacements[clip.id], replacement.start <= time, time < replacement.end {
-                        stacked.insert(clip.id)
-                        run.append(item(replacement))
-                    }
-                case let .picture(layer):
-                    guard let frame = request.sourceFrame(byTrackID: layer.trackID) else {
-                        continue
-                    }
-                    flush()
+                case let .annotations(items):
+                    image = AnnotationFrame.apply(items, to: image, canvas: canvas, context: self.context, cache: self.overlays, canvasType: instruction.canvasType)
+                case let .picture((layer, frame), clip):
                     firstFrame = firstFrame ?? frame
                     let source = CIImage(cvPixelBuffer: frame)
                     var picture = source
-                    var placed = layer.clip
-                    placed.transform = layer.clip.transform(atTimeline: time)
-                    if let style = clipStyles[placed.id] {
-                        placed.style = style
-                    }
+                    var placed = clip
                     // Fitted by the whole picture, so a crop masks it where it is.
                     let fit = placed.size.width > 0 && placed.size.height > 0 ? min(layer.canvas.width / placed.size.width, layer.canvas.height / placed.size.height) : 0
                     var geometry = LayerGeometry.transform(for: placed, canvas: layer.canvas)
@@ -352,8 +333,6 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
                     image = picture.composited(over: image)
                 }
             }
-            run += drawn.filter { !stacked.contains($0.id) && $0.start <= time && time < $0.end }.map(item)
-            flush()
             if cancelled() {
                 return
             }
@@ -376,58 +355,6 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
         cancels.withLock { $0 += 1 }
         drawing.wait()
         requests.record(.cancelAll)
-    }
-}
-
-public enum ProjectExporter {
-    public enum ExportError: LocalizedError {
-        case failed
-        case unsupportedFileType
-
-        public var errorDescription: String? {
-            switch self {
-            case .failed: shotLocalized("Couldn't export the video")
-            case .unsupportedFileType: shotLocalized("Can't write this kind of video")
-            }
-        }
-    }
-
-    /// The largest canvas H.264 export keeps above 30 fps at; past it the export halves the frame rate.
-    static let largestH264Canvas = CGSize(width: 2560, height: 1600)
-
-    /// Whether the export is HEVC rather than H.264: only when H.264 would drop frames. It caps every canvas at 60 fps,
-    /// and halves the rate of one larger than `largestH264Canvas`, such as a 60 fps Retina recording.
-    static func usesHEVC(canvas: CGSize, frameRate: Int) -> Bool {
-        RecordingFrameRate.usesHEVC(fps: frameRate)
-            || frameRate > 30 && canvas.width * canvas.height > largestH264Canvas.width * largestH264Canvas.height
-    }
-
-    /// Writes the project to `output`, replacing it, drawn at the canvas size on `canvasType` canvases and re-encoded as
-    /// H.264, or HEVC when `usesHEVC`.
-    public static func export(_ project: Project, to output: URL, as fileType: AVFileType = .mp4, canvasType: any Canvas.Type) async throws {
-        let built = try await CompositionBuilder.build(project, canvasType: canvasType)
-        let frameRate = Int((1 / built.videoComposition.frameDuration.seconds).rounded())
-        let preset = usesHEVC(canvas: project.outputRect.size, frameRate: frameRate) ? AVAssetExportPresetHEVCHighestQuality : AVAssetExportPresetHighestQuality
-        guard let export = AVAssetExportSession(asset: built.asset, presetName: preset) else {
-            throw ExportError.failed
-        }
-        guard export.supportedFileTypes.contains(fileType) else {
-            throw ExportError.unsupportedFileType
-        }
-        export.videoComposition = built.videoComposition
-        export.audioMix = built.audioMix
-        if FileManager.default.fileExists(atPath: output.path) {
-            try FileManager.default.removeItem(at: output)
-        }
-        try await export.export(to: output, as: fileType)
-    }
-
-    /// Roughly how many bytes `export` writes: a typical H.264 rate for the canvas, and AAC for any sound.
-    public static func estimatedSize(of project: Project) -> Int {
-        let pixels = Double(project.outputRect.width * project.outputRect.height)
-        let hasSound = project.tracks.contains { $0.kind == .audio && !$0.isMuted && !$0.clips.isEmpty }
-        let bitRate = pixels * 30 * 0.07 + (hasSound ? 128_000 : 0)
-        return Int((bitRate * project.duration / 8).rounded())
     }
 }
 #endif

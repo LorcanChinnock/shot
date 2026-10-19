@@ -65,14 +65,14 @@ extension CompositionBuilder {
 
 extension ProjectExporter {
     public static func export(_ project: Project, to output: URL, as fileType: AVFileType = .mp4) async throws {
-        try await export(project, to: output, as: fileType, canvasType: CGCanvas.self)
+        try await export(project, to: output, as: fileType.rawValue, canvasType: CGCanvas.self, writer: AVVideoWriter())
     }
 }
 
 extension VideoExportPlan {
     @discardableResult
     public func run(to output: URL, progress: @Sendable (Double) -> Void = { _ in }) async throws -> Outcome {
-        try await run(to: output, canvasType: CGCanvas.self, assembler: AVVideoAssembler(), progress: progress)
+        try await run(to: output, canvasType: CGCanvas.self, assembler: AVVideoAssembler(), writer: AVVideoWriter(), progress: progress)
     }
 
     public func estimate() async throws -> Int {
@@ -86,6 +86,9 @@ extension VersionWriter {
         _ plan: VideoExportPlan, of project: Project, original: URL, to output: URL, projects: ProjectStore? = nil,
         origin: ProjectOrigin = ProjectOrigin(via: .app), progress: @Sendable (Double) -> Void = { _ in }
     ) async throws -> VideoExportPlan.Outcome {
-        try await writeVideo(plan, of: project, original: original, to: output, projects: projects, origin: origin, canvasType: CGCanvas.self, assembler: AVVideoAssembler(), progress: progress)
+        try await writeVideo(
+            plan, of: project, original: original, to: output, projects: projects, origin: origin, canvasType: CGCanvas.self, assembler: AVVideoAssembler(),
+            writer: AVVideoWriter(), progress: progress
+        )
     }
 }

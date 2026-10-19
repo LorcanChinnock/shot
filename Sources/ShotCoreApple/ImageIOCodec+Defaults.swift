@@ -80,7 +80,7 @@ extension VersionWriter {
 
 extension ShotCommands {
     public static func run(_ command: ShotCommand, projects: ProjectStore? = nil, origin: ProjectOrigin? = nil) async throws(ShotCommandError) -> JSONValue {
-        try await run(command, projects: projects, origin: origin, codec: ImageIOCodec(), canvasType: CGCanvas.self, reader: AVVideoReader(), assembler: AVVideoAssembler())
+        try await run(command, projects: projects, origin: origin, codec: ImageIOCodec(), canvasType: CGCanvas.self, reader: AVVideoReader(), assembler: AVVideoAssembler(), writer: AVVideoWriter())
     }
 }
 
@@ -94,7 +94,7 @@ extension AgentTools {
     ) -> AgentTools {
         live(
             folder: folder, marks: marks, projects: projects, texts: texts, codec: ImageIOCodec(), canvasType: CGCanvas.self, reader: AVVideoReader(),
-            assembler: AVVideoAssembler(), agent: agent
+            assembler: AVVideoAssembler(), writer: AVVideoWriter(), agent: agent
         )
     }
 }
