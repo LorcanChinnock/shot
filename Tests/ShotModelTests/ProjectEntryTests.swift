@@ -4,6 +4,12 @@ import Testing
 
 private let saved = Date(timeIntervalSince1970: 1_791_640_992)
 
+/// For entries, which hold no images.
+private struct NoImages: PNGCoding {
+    func png(from image: PlatformImage) -> Data? { nil }
+    func image(fromPNG data: Data) -> PlatformImage? { nil }
+}
+
 private let capture = ProjectFile(path: "/Users/me/Shots/Shot 1.png", volume: "VOL-A", number: 42, size: 1000, modified: saved)
 
 private func entry(stamped: Bool = true, file: ProjectFile = capture, date: Date = saved) -> ProjectEntry {
@@ -12,26 +18,26 @@ private func entry(stamped: Bool = true, file: ProjectFile = capture, date: Date
 
 @Test func anMCPOriginEncodesTheClientToolAndSecond() throws {
     let origin = ProjectOrigin(via: .mcp, client: "claude-code", action: "annotate", date: Date(timeIntervalSince1970: 1_791_640_992.8))
-    let text = try #require(String(data: ProjectEntry.encoder().encode(origin), encoding: .utf8))
+    let text = try #require(String(data: ProjectEntry.encoder(codec: NoImages()).encode(origin), encoding: .utf8))
     #expect(text == #"{"action":"annotate","client":"claude-code","date":"2026-10-10T14:03:12Z","via":"mcp"}"#)
 }
 
 @Test func anAppOriginLeavesClientAndActionOut() throws {
-    let text = try #require(String(data: ProjectEntry.encoder().encode(ProjectOrigin(via: .app, date: saved)), encoding: .utf8))
+    let text = try #require(String(data: ProjectEntry.encoder(codec: NoImages()).encode(ProjectOrigin(via: .app, date: saved)), encoding: .utf8))
     #expect(text == #"{"date":"2026-10-10T14:03:12Z","via":"app"}"#)
 }
 
 @Test(arguments: [ProjectOrigin.Via.app, .cli, .mcp])
 func originsDecodeFromWhatTheyEncode(_ via: ProjectOrigin.Via) throws {
     let origin = ProjectOrigin(via: via, client: via == .mcp ? "cursor" : nil, action: via == .app ? nil : "trim", date: saved)
-    #expect(try ProjectEntry.decoder().decode(ProjectOrigin.self, from: ProjectEntry.encoder().encode(origin)) == origin)
+    #expect(try ProjectEntry.decoder(codec: NoImages()).decode(ProjectOrigin.self, from: ProjectEntry.encoder(codec: NoImages()).encode(origin)) == origin)
 }
 
 @Test func anEntryRoundTripsWithItsOriginal() throws {
     var project = entry()
     project.original = ProjectFile(path: "/Users/me/Shots/Shot.png", bookmark: Data([1, 2, 3]), volume: "VOL-A", number: 7)
-    let data = try ProjectEntry.encoder().encode(project)
-    #expect(try ProjectEntry.decoder().decode(ProjectEntry.self, from: data) == project)
+    let data = try ProjectEntry.encoder(codec: NoImages()).encode(project)
+    #expect(try ProjectEntry.decoder(codec: NoImages()).decode(ProjectEntry.self, from: data) == project)
     #expect(String(data: data, encoding: .utf8)?.contains(#""schema":"shot.project/1""#) == true)
 }
 

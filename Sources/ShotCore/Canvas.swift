@@ -56,7 +56,7 @@ public protocol Canvas: AnyObject, SendableMetatype {
     func makeBitmap() -> Bitmap?
 
     #if canImport(CoreGraphics)
-    // Images stay CGImage until the annotations hold `Bitmap`s, so a capture keeps its own colour space, such as Display P3.
+    // Images are CGImages, as `PlatformImage` is on a Mac, so a capture keeps its own colour space, such as Display P3.
 
     /// Draws `image` into `rect` with its first row at the rect's max y, as `CGContext.draw` does.
     func draw(_ image: CGImage, in rect: CGRect)

@@ -2,6 +2,7 @@ import CoreGraphics
 import Foundation
 import Testing
 @testable import ShotCore
+import ShotCoreApple
 
 private let red = RGBA.presets[0]
 private let box = CGRect(x: 100, y: 100, width: 200, height: 100)
@@ -338,9 +339,9 @@ private extension Data {
     let image = Annotation(kind: .image(AnnotationImage(solidImage(width: 60, height: 40)), rect: box), color: red, lineWidth: 4)
     var rounded = image
     rounded.cornerRadius = 11
-    let decoded = try JSONDecoder().decode(Annotation.self, from: JSONEncoder().encode(rounded))
+    let decoded = try AnnotationClipboard.annotation(from: AnnotationClipboard.data(for: rounded))
     #expect(decoded.cornerRadius == 11)
-    let json = try #require(String(data: JSONEncoder().encode(rounded), encoding: .utf8))
+    let json = try #require(String(data: AnnotationClipboard.data(for: rounded), encoding: .utf8))
     #expect(json.contains("\"cornerRadius\":11"))
 }
 

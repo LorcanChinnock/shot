@@ -45,8 +45,9 @@ public struct ImageFileInfo: Equatable, Sendable {
 
 /// Reads and writes image files: PNG and JPEG, plus whatever else the platform decodes, such as HEIC and GIF on a Mac.
 /// The scale goes in the file as its DPI, 72 × scale, so a Retina capture opens at point size, and `ImageMetadata` goes
-/// with it. ShotCoreApple's `ImageIOCodec` is the Mac's; ShotCore code takes one as `codec`.
-public protocol ImageCoding: Sendable {
+/// with it. It also codes the images a project or a copied annotation holds (`PNGCoding`). ShotCoreApple's `ImageIOCodec`
+/// is the Mac's; ShotCore code takes one as `codec`.
+public protocol ImageCoding: PNGCoding {
     /// PNG, or JPEG at `quality` from 0 to 1.
     func encode(_ bitmap: Bitmap, as format: ImageFormat, quality: Double, metadata: ImageMetadata) -> Data?
     /// The first image in `data`, at the scale its DPI gives.
@@ -67,9 +68,8 @@ public protocol ImageCoding: Sendable {
     func previewJPEG(at url: URL, maxPixelSize: Int, maxBytes: Int) -> Data?
 
     #if canImport(CoreGraphics)
-    // The same for the images a document holds and a canvas makes, which are still CGImages. They keep the image's own
-    // colour space, such as Display P3, which a `Bitmap` in sRGB would lose. These go once those images don't need
-    // CoreGraphics to keep it.
+    // The same for the images a document holds and a canvas makes, which are `PlatformImage`s, so CGImages on a Mac. They
+    // keep the image's own colour space, such as Display P3, which a `Bitmap` in sRGB would lose.
     func data(from image: CGImage, scale: CGFloat, format: ImageFormat, metadata: ImageMetadata) -> Data?
     func image(at url: URL) -> CGImage?
     /// Decoded now, so it doesn't decode again each time it's drawn.

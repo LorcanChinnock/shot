@@ -7,12 +7,17 @@ public enum AnnotationClipboard {
     /// The pasteboard type the editor writes a copied annotation as.
     public static let pasteboardType = "dev.lorcan.Shot.annotation"
 
-    public static func data(for annotation: Annotation) throws -> Data {
-        try JSONEncoder().encode(annotation)
+    /// `annotation` as the pasteboard holds it, a placed image's pixels as PNG through `codec`.
+    public static func data(for annotation: Annotation, codec: any PNGCoding) throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.userInfo[.pngCodec] = codec
+        return try encoder.encode(annotation)
     }
 
-    public static func annotation(from data: Data) throws -> Annotation {
-        try JSONDecoder().decode(Annotation.self, from: data)
+    public static func annotation(from data: Data, codec: any PNGCoding) throws -> Annotation {
+        let decoder = JSONDecoder()
+        decoder.userInfo[.pngCodec] = codec
+        return try decoder.decode(Annotation.self, from: data)
     }
 }
 

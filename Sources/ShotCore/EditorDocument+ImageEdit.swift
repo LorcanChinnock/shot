@@ -3,12 +3,12 @@ import CoreGraphics
 import Foundation
 
 /// An image to place with an `ImageEdit`, read from its file.
-public struct PlacedImageFile: @unchecked Sendable {
-    public var image: CGImage
+public struct PlacedImageFile: Sendable {
+    public var image: PlatformImage
     /// Its pixels per point.
     public var scale: CGFloat
 
-    public init(image: CGImage, scale: CGFloat) {
+    public init(image: PlatformImage, scale: CGFloat) {
         self.image = image
         self.scale = scale
     }
