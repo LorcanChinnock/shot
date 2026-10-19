@@ -1,6 +1,6 @@
-#if canImport(AVFoundation) && canImport(CoreGraphics)
-import AVFoundation
+#if canImport(CoreGraphics)
 import CoreGraphics
+import Foundation
 
 /// Pulls still frames out of a video for an agent, which can't watch one: samples it a few times a second as tiny
 /// grayscale thumbnails to find where the picture changes (ShotModel's `FramePicker` does the picking), then decodes
@@ -18,46 +18,35 @@ public enum KeyFrameExtractor {
     /// The thumbnails compared, small enough to ignore noise and fast to decode.
     static let thumbnailSize = (width: 64, height: 36)
 
-    /// The times of the `count` frames that show what happens in the video at `url`, which is `duration` long.
-    public static func changeTimes(in url: URL, duration: Double, count: Int) async throws -> [Double] {
+    /// The times of the `count` frames that show what happens in the video at `url`, which is `duration` long, read by `reader`.
+    public static func changeTimes(in url: URL, duration: Double, count: Int, reader: any VideoReader) async throws -> [Double] {
         let samples = min(maximumSamples, max(2, Int(duration * sampleRate) + 1))
         let last = max(0, duration - 0.05)
         let times = (0 ..< samples).map { last * Double($0) / Double(samples - 1) }
-        let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
-        generator.appliesPreferredTrackTransform = true
-        generator.maximumSize = CGSize(width: 160, height: 160)
-        let tolerance = CMTime(seconds: last / Double(samples - 1) / 2, preferredTimescale: 600)
-        generator.requestedTimeToleranceBefore = tolerance
-        generator.requestedTimeToleranceAfter = tolerance
         var thumbnails: [Double: [UInt8]] = [:]
         var actual: [Double: Double] = [:]
-        for await result in generator.images(for: times.map { CMTime(seconds: $0, preferredTimescale: 600) }) {
+        try await reader.readFrames(of: url, at: times, maxSize: CGSize(width: 160, height: 160), tolerance: last / Double(samples - 1) / 2) { frame in
             try Task.checkCancellation()
             // A frame that won't decode counts as no change rather than failing the whole video.
-            if let image = try? result.image {
-                thumbnails[result.requestedTime.seconds] = gray(image)
-                actual[result.requestedTime.seconds] = (try? result.actualTime.seconds) ?? result.requestedTime.seconds
+            if let (time, image) = try? frame.decoded.get() {
+                thumbnails[frame.requestedTime] = gray(image)
+                actual[frame.requestedTime] = time
             }
         }
-        let keys = times.map { CMTime(seconds: $0, preferredTimescale: 600).seconds }
         var differences = [0.0]
-        for (previous, next) in zip(keys, keys.dropFirst()) {
+        for (previous, next) in zip(times, times.dropFirst()) {
             differences.append(thumbnails[previous].flatMap { a in thumbnails[next].map { FramePicker.difference(a, $0) } } ?? 0)
         }
-        return FramePicker.pick(differences: differences, times: times, count: count).map { actual[keys[$0]] ?? times[$0] }
+        return FramePicker.pick(differences: differences, times: times, count: count).map { actual[times[$0]] ?? times[$0] }
     }
 
-    /// The frames at `times`, at most `maxWidth` wide and never enlarged, decoded exactly there.
-    public static func frames(of url: URL, at times: [Double], maxWidth: Int) async throws -> [Frame] {
-        let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
-        generator.appliesPreferredTrackTransform = true
-        generator.maximumSize = CGSize(width: maxWidth, height: 0)
-        generator.requestedTimeToleranceBefore = .zero
-        generator.requestedTimeToleranceAfter = .zero
+    /// The frames at `times`, read by `reader`, at most `maxWidth` wide and never enlarged, decoded exactly there.
+    public static func frames(of url: URL, at times: [Double], maxWidth: Int, reader: any VideoReader) async throws -> [Frame] {
         var frames: [Frame] = []
-        for await result in generator.images(for: times.map { CMTime(seconds: $0, preferredTimescale: 600) }) {
+        try await reader.readFrames(of: url, at: times, maxSize: CGSize(width: maxWidth, height: 0), tolerance: 0) { frame in
             try Task.checkCancellation()
-            frames.append(Frame(time: (try? result.actualTime.seconds) ?? result.requestedTime.seconds, image: try result.image))
+            let (time, image) = try frame.decoded.get()
+            frames.append(Frame(time: time, image: image))
         }
         return frames.sorted { $0.time < $1.time }
     }

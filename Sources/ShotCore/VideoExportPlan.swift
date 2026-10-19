@@ -57,13 +57,13 @@ public enum VideoExportPlan: Equatable, Sendable {
         public var passthrough: Bool
     }
 
-    /// Writes the export to `output`, drawing annotations on `canvasType` canvases. `progress` hears from 0 to 1 while a GIF
-    /// is written.
+    /// Writes the export to `output`, drawing annotations on `canvasType` canvases and cutting a trimmed video with
+    /// `assembler`. `progress` hears from 0 to 1 while a GIF is written.
     @discardableResult
-    public func run(to output: URL, canvasType: any Canvas.Type, progress: @Sendable (Double) -> Void = { _ in }) async throws -> Outcome {
+    public func run(to output: URL, canvasType: any Canvas.Type, assembler: any VideoAssembler, progress: @Sendable (Double) -> Void = { _ in }) async throws -> Outcome {
         switch self {
         case let .trimmed(source, range, cuts, speed, muted, fileType):
-            let passthrough = try await VideoTrimmer.trim(source, range: range, cuts: cuts, speed: speed, muted: muted, to: output, as: fileType)
+            let passthrough = try await VideoTrimmer.trim(source, range: range, cuts: cuts, speed: speed, muted: muted, to: output, as: fileType?.rawValue, assembler: assembler)
             return Outcome(frameCount: nil, truncated: false, passthrough: passthrough)
         case let .trimmedGIF(source, range, cuts, fps, maxWidth, speed):
             let result = try await GIFExporter.export(videoURL: source, to: output, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, progress: progress)
@@ -78,11 +78,12 @@ public enum VideoExportPlan: Equatable, Sendable {
         }
     }
 
-    /// Roughly how many bytes `run` writes. A GIF of a composite is estimated from frames drawn on `canvasType` canvases.
-    public func estimate(canvasType: any Canvas.Type) async throws -> Int {
+    /// Roughly how many bytes `run` writes, a trimmed video's from what `reader` reads of it. A GIF of a composite is
+    /// estimated from frames drawn on `canvasType` canvases.
+    public func estimate(canvasType: any Canvas.Type, reader: any VideoReader) async throws -> Int {
         switch self {
         case let .trimmed(source, range, cuts, speed, muted, _):
-            try await VideoTrimmer.estimatedSize(of: source, range: range, cuts: cuts, speed: speed, muted: muted)
+            try await VideoTrimmer.estimatedSize(of: source, range: range, cuts: cuts, speed: speed, muted: muted, reader: reader)
         case let .trimmedGIF(source, range, cuts, fps, maxWidth, speed):
             try await GIFExporter.estimatedSize(of: source, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
         case let .composite(project, _):

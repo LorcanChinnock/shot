@@ -1,5 +1,4 @@
-#if canImport(AVFoundation)
-import AVFoundation
+import Foundation
 
 public enum MediaProbe {
     public enum ProbeError: LocalizedError {
@@ -14,28 +13,18 @@ public enum MediaProbe {
         }
     }
 
-    /// What AVFoundation finds in `url`: how long it plays, the size of its picture as it plays, and whether it has sound.
-    public static func probe(_ url: URL) async throws -> ImportedMedia {
-        let asset = AVURLAsset(url: url)
+    /// What `reader` finds in `url`: how long it plays, the size of its picture as it plays, and whether it has sound.
+    public static func probe(_ url: URL, reader: any VideoReader) async throws -> ImportedMedia {
         let name = url.lastPathComponent
-        let duration: Double, video: [AVAssetTrack], audio: [AVAssetTrack]
+        let media: ImportedMedia
         do {
-            duration = try await asset.load(.duration).seconds
-            video = try await asset.loadTracks(withMediaType: .video)
-            audio = try await asset.loadTracks(withMediaType: .audio)
+            media = try await reader.info(of: url)
         } catch {
             throw ProbeError.unreadable(name)
         }
-        guard duration.isFinite, duration > 0, !video.isEmpty || !audio.isEmpty else {
+        guard media.duration.isFinite, media.duration > 0, media.size != nil || media.hasAudio else {
             throw ProbeError.empty(name)
         }
-        var size: CGSize?
-        if let track = video.first {
-            let (natural, transform) = try await track.load(.naturalSize, .preferredTransform)
-            let shown = natural.applying(transform)
-            size = CGSize(width: abs(shown.width), height: abs(shown.height))
-        }
-        return ImportedMedia(source: url, duration: duration, size: size, hasAudio: !audio.isEmpty)
+        return media
     }
 }
-#endif
