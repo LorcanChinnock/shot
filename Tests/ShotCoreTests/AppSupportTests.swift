@@ -24,8 +24,9 @@ import Testing
         }
     }
     unsetenv("XDG_DATA_HOME")
-    let home = FileManager.default.homeDirectoryForCurrentUser
-    #expect(AppSupport.folder(bundleID: "a").path == home.appendingPathComponent(".local/share/a").path)
+    // `$HOME`, as the XDG spec has it, which can differ from the user's home: a CI container sets it to /github/home.
+    let home = ProcessInfo.processInfo.environment["HOME"] ?? FileManager.default.homeDirectoryForCurrentUser.path
+    #expect(AppSupport.folder(bundleID: "a").path == URL(fileURLWithPath: home).appendingPathComponent(".local/share/a").path)
     setenv("XDG_DATA_HOME", "/tmp/xdg-data", 1)
     #expect(AppSupport.folder(bundleID: "a").path == "/tmp/xdg-data/a")
 }
