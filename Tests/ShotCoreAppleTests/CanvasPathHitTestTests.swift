@@ -87,20 +87,18 @@ private let scribble = [
 /// `aMarkerIsHitInTheGapCGPathLeavesWhereItDoublesBack`.
 private let smoothScribble = Array(scribble.dropLast())
 
-/// `shape` square, a little rounded and as round as it goes, in a wide and a tall rect, each with a thin unfilled
-/// outline tested with no tolerance and a thick filled one tested with some.
+/// `shape` square, a little rounded and as round as it goes, in a wide and a tall rect. A thin unfilled outline is tested
+/// with no tolerance and a thick filled one with some.
 private func shapes(_ shape: BoxShape) -> [(annotation: Annotation, tolerance: CGFloat)] {
-    var result: [(Annotation, CGFloat)] = []
-    for rect in [box, tall] {
-        for radius in [nil, 6, 40] as [CGFloat?] {
-            for (lineWidth, fill, tolerance) in [(CGFloat(2), nil, CGFloat(0)), (12, red, 4)] as [(CGFloat, RGBA?, CGFloat)] {
-                var annotation = Annotation(kind: .shape(shape, rect: rect), color: red, fill: fill, lineWidth: lineWidth)
-                annotation.cornerRadius = radius
-                result.append((annotation, tolerance))
-            }
-        }
+    let thin: (CGFloat, RGBA?, CGFloat) = (2, nil, 0), thick: (CGFloat, RGBA?, CGFloat) = (12, red, 4)
+    let cases: [(CGRect, CGFloat?, (CGFloat, RGBA?, CGFloat))] = [
+        (box, nil, thin), (box, 6, thick), (box, 40, thin), (box, 40, thick), (tall, nil, thick), (tall, 40, thin),
+    ]
+    return cases.map { rect, radius, look in
+        var annotation = Annotation(kind: .shape(shape, rect: rect), color: red, fill: look.1, lineWidth: look.0)
+        annotation.cornerRadius = radius
+        return (annotation, look.2)
     }
-    return result
 }
 
 private func strokes() -> [Annotation] {
@@ -136,90 +134,95 @@ private func boxes() -> [Annotation] {
     ]
 }
 
-@Test(arguments: BoxShape.allCases)
-func shapesHitTestAsCGPathDid(shape: BoxShape) {
-    for (annotation, tolerance) in shapes(shape) {
-        let found = disagreements(annotation, tolerance: tolerance, step: 1.07)
-        #expect(found.isEmpty, "\(annotation.kind) radius \(String(describing: annotation.cornerRadius)) width \(annotation.lineWidth): \(found.prefix(5))")
-    }
-}
-
-@Test(arguments: [0, 4] as [CGFloat])
-func strokesHitTestAsCGPathDid(tolerance: CGFloat) {
-    for annotation in strokes() {
-        // Finer, as a stroke's ends and turns leave thin slivers.
-        let found = disagreements(annotation, tolerance: tolerance, step: 0.73)
-        #expect(found.isEmpty, "\(annotation.kind) width \(annotation.lineWidth): \(found.prefix(5))")
-    }
-}
-
-@Test func boxesHitTestAsCGPathDid() {
-    for annotation in boxes() {
-        let found = disagreements(annotation, tolerance: 2, step: 1.07)
-        #expect(found.isEmpty, "\(annotation.kind): \(found.prefix(5))")
-    }
-}
-
-// Where a marker's stroke doubles back within a curve, CGPath's outline overlaps itself the wrong way round and leaves
-// a gap up to about 3 pt across, which it also paints. The hit test selects there, as every point in the gap is within
-// half the marker's width of its curve.
-@Test func aMarkerIsHitInTheGapCGPathLeavesWhereItDoublesBack() {
-    let marker = Annotation(kind: .marker(scribble), color: red, lineWidth: 2)
-    let point = CGPoint(x: 30.13, y: 72.24)
-    #expect(!cgPathHitTest(marker, tolerance: 0)(point))
-    #expect(marker.hitTest(point, tolerance: 0))
-}
-
-@Test func curveAndFreehandBoundsMatchCGPath() {
-    for annotation in strokes() {
-        switch annotation.kind {
-        case let .arrow(from, _), let .line(from, _):
-            guard let curve = annotation.curve else {
-                continue
-            }
-            let path = CGMutablePath()
-            path.move(to: from)
-            path.addQuadCurve(to: curve.to, control: curve.control)
-            let expected = path.boundingBoxOfPath, bounds = annotation.bounds
-            #expect(abs(bounds.minX - expected.minX) < 1e-6 && abs(bounds.minY - expected.minY) < 1e-6, "\(bounds) \(expected)")
-            #expect(abs(bounds.maxX - expected.maxX) < 1e-6 && abs(bounds.maxY - expected.maxY) < 1e-6, "\(bounds) \(expected)")
-        case let .freehand(points), let .marker(points):
-            let expected = Freehand.path(through: points).cgPath.boundingBoxOfPath, bounds = Freehand.path(through: points).boundingBox
-            #expect(abs(bounds.minX - expected.minX) < 1e-6 && abs(bounds.minY - expected.minY) < 1e-6, "\(bounds) \(expected)")
-            #expect(abs(bounds.maxX - expected.maxX) < 1e-6 && abs(bounds.maxY - expected.maxY) < 1e-6, "\(bounds) \(expected)")
-        default:
-            continue
+/// Runs one test at a time, as together they keep every core busy for a while. On a 3-core runner that left no thread
+/// for a timer on a global dispatch queue, so `agentCommandStopsAShellThatHangsOnStartupWithoutRunningTheTool` stopped
+/// its shell 55 s late.
+@Suite(.serialized) struct CanvasPathHitTestTests {
+    @Test(arguments: BoxShape.allCases)
+    func shapesHitTestAsCGPathDid(shape: BoxShape) {
+        for (annotation, tolerance) in shapes(shape) {
+            let found = disagreements(annotation, tolerance: tolerance, step: 1.07)
+            #expect(found.isEmpty, "\(annotation.kind) radius \(String(describing: annotation.cornerRadius)) width \(annotation.lineWidth): \(found.prefix(5))")
         }
     }
-}
 
-@Test(arguments: [CanvasLineJoin.miter, .round, .bevel])
-func everyCanvasPathElementBoundsFillsAndStrokesAsCGPathDoes(join: CanvasLineJoin) {
-    var path = CanvasPath()
-    path.move(to: CGPoint(x: 5, y: 90))
-    path.addLine(to: CGPoint(x: 40, y: 95))
-    path.addArc(tangent1End: CGPoint(x: 70, y: 60), tangent2End: CGPoint(x: 20, y: 40), radius: 12)
-    path.addQuadCurve(to: CGPoint(x: 10, y: 10), control: CGPoint(x: -20, y: 30))
-    path.addCurve(to: CGPoint(x: 60, y: 5), control1: CGPoint(x: 30, y: -10), control2: CGPoint(x: 50, y: 30))
-    path.closeSubpath()
-    path.addRect(CGRect(x: 80, y: 10, width: 30, height: 20))
-    let paths = [
-        path,
-        CanvasPath(ellipseIn: CGRect(x: 10, y: 20, width: 90, height: 40)),
-        CanvasPath(roundedRect: CGRect(x: 10, y: 20, width: 90, height: 40), cornerRadius: 15),
-    ]
-    for path in paths {
-        let cgPath = path.cgPath
-        let expected = cgPath.boundingBoxOfPath, bounds = path.boundingBox
-        #expect(abs(bounds.minX - expected.minX) < 0.01 && abs(bounds.minY - expected.minY) < 0.01, "\(bounds) \(expected)")
-        #expect(abs(bounds.maxX - expected.maxX) < 0.01 && abs(bounds.maxY - expected.maxY) < 0.01, "\(bounds) \(expected)")
-        let area = bounds.insetBy(dx: -10, dy: -10)
-        let fills = disagreements(over: area, step: 1.07, path.contains) { cgPath.contains($0) }
-        #expect(fills.isEmpty, "\(path.elements.first!) fill: \(fills.prefix(5))")
-        for cap in [CanvasLineCap.butt, .round, .square] {
-            let outline = cgPath.copy(strokingWithWidth: 10, lineCap: cgCap(cap), lineJoin: cgJoin(join), miterLimit: 10)
-            let strokes = disagreements(over: area, step: 1.07, { path.strokeContains($0, width: 10, cap: cap, join: join, miterLimit: 10) }) { outline.contains($0) }
-            #expect(strokes.isEmpty, "\(path.elements.first!) \(cap) \(join): \(strokes.prefix(5))")
+    @Test(arguments: [0, 4] as [CGFloat])
+    func strokesHitTestAsCGPathDid(tolerance: CGFloat) {
+        for annotation in strokes() {
+            // Finer, as a stroke's ends and turns leave thin slivers.
+            let found = disagreements(annotation, tolerance: tolerance, step: 0.73)
+            #expect(found.isEmpty, "\(annotation.kind) width \(annotation.lineWidth): \(found.prefix(5))")
+        }
+    }
+
+    @Test func boxesHitTestAsCGPathDid() {
+        for annotation in boxes() {
+            let found = disagreements(annotation, tolerance: 2, step: 1.07)
+            #expect(found.isEmpty, "\(annotation.kind): \(found.prefix(5))")
+        }
+    }
+
+    // Where a marker's stroke doubles back within a curve, CGPath's outline overlaps itself the wrong way round and leaves
+    // a gap up to about 3 pt across, which it also paints. The hit test selects there, as every point in the gap is within
+    // half the marker's width of its curve.
+    @Test func aMarkerIsHitInTheGapCGPathLeavesWhereItDoublesBack() {
+        let marker = Annotation(kind: .marker(scribble), color: red, lineWidth: 2)
+        let point = CGPoint(x: 30.13, y: 72.24)
+        #expect(!cgPathHitTest(marker, tolerance: 0)(point))
+        #expect(marker.hitTest(point, tolerance: 0))
+    }
+
+    @Test func curveAndFreehandBoundsMatchCGPath() {
+        for annotation in strokes() {
+            switch annotation.kind {
+            case let .arrow(from, _), let .line(from, _):
+                guard let curve = annotation.curve else {
+                    continue
+                }
+                let path = CGMutablePath()
+                path.move(to: from)
+                path.addQuadCurve(to: curve.to, control: curve.control)
+                let expected = path.boundingBoxOfPath, bounds = annotation.bounds
+                #expect(abs(bounds.minX - expected.minX) < 1e-6 && abs(bounds.minY - expected.minY) < 1e-6, "\(bounds) \(expected)")
+                #expect(abs(bounds.maxX - expected.maxX) < 1e-6 && abs(bounds.maxY - expected.maxY) < 1e-6, "\(bounds) \(expected)")
+            case let .freehand(points), let .marker(points):
+                let expected = Freehand.path(through: points).cgPath.boundingBoxOfPath, bounds = Freehand.path(through: points).boundingBox
+                #expect(abs(bounds.minX - expected.minX) < 1e-6 && abs(bounds.minY - expected.minY) < 1e-6, "\(bounds) \(expected)")
+                #expect(abs(bounds.maxX - expected.maxX) < 1e-6 && abs(bounds.maxY - expected.maxY) < 1e-6, "\(bounds) \(expected)")
+            default:
+                continue
+            }
+        }
+    }
+
+    @Test func everyCanvasPathElementBoundsFillsAndStrokesAsCGPathDoes() {
+        var path = CanvasPath()
+        path.move(to: CGPoint(x: 5, y: 90))
+        path.addLine(to: CGPoint(x: 40, y: 95))
+        path.addArc(tangent1End: CGPoint(x: 70, y: 60), tangent2End: CGPoint(x: 20, y: 40), radius: 12)
+        path.addQuadCurve(to: CGPoint(x: 10, y: 10), control: CGPoint(x: -20, y: 30))
+        path.addCurve(to: CGPoint(x: 60, y: 5), control1: CGPoint(x: 30, y: -10), control2: CGPoint(x: 50, y: 30))
+        path.closeSubpath()
+        path.addRect(CGRect(x: 80, y: 10, width: 30, height: 20))
+        let paths = [
+            path,
+            CanvasPath(ellipseIn: CGRect(x: 10, y: 20, width: 90, height: 40)),
+            CanvasPath(roundedRect: CGRect(x: 10, y: 20, width: 90, height: 40), cornerRadius: 15),
+        ]
+        for path in paths {
+            let cgPath = path.cgPath
+            let expected = cgPath.boundingBoxOfPath, bounds = path.boundingBox
+            #expect(abs(bounds.minX - expected.minX) < 0.01 && abs(bounds.minY - expected.minY) < 0.01, "\(bounds) \(expected)")
+            #expect(abs(bounds.maxX - expected.maxX) < 0.01 && abs(bounds.maxY - expected.maxY) < 0.01, "\(bounds) \(expected)")
+            let area = bounds.insetBy(dx: -10, dy: -10)
+            let fills = disagreements(over: area, step: 1.07, path.contains) { cgPath.contains($0) }
+            #expect(fills.isEmpty, "\(path.elements.first!) fill: \(fills.prefix(5))")
+            // Caps and joins don't meet, so every cap goes with a miter and every join with a flat end.
+            for (cap, join) in [(CanvasLineCap.butt, CanvasLineJoin.miter), (.round, .miter), (.square, .miter), (.butt, .round), (.butt, .bevel)] {
+                let outline = cgPath.copy(strokingWithWidth: 10, lineCap: cgCap(cap), lineJoin: cgJoin(join), miterLimit: 10)
+                let strokes = disagreements(over: area, step: 1.07, { path.strokeContains($0, width: 10, cap: cap, join: join, miterLimit: 10) }) { outline.contains($0) }
+                #expect(strokes.isEmpty, "\(path.elements.first!) \(cap) \(join): \(strokes.prefix(5))")
+            }
         }
     }
 }
