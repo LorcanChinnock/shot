@@ -32,24 +32,6 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
         self = tool
     }
 
-    public var title: String {
-        switch self {
-        case .select: String(localized: "Select")
-        case .hand: String(localized: "Hand")
-        case .arrow: String(localized: "Arrow")
-        case .line: String(localized: "Line")
-        case .shape: String(localized: "Shape")
-        case .pen: String(localized: "Pen")
-        case .text: String(localized: "Text")
-        case .note: String(localized: "Sticky note")
-        case .highlight: String(localized: "Highlight")
-        case .spotlight: String(localized: "Spotlight")
-        case .redact: String(localized: "Redact")
-        case .counter: String(localized: "Counter")
-        case .crop: String(localized: "Crop")
-        }
-    }
-
     /// False for select, hand and crop, which an editor never starts with.
     public var isDrawing: Bool { self != .select && self != .hand && self != .crop }
 

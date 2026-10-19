@@ -19,16 +19,6 @@ public enum BoxShape: String, CaseIterable, Codable, Sendable {
         self = shape
     }
 
-    public var title: String {
-        switch self {
-        case .rectangle: String(localized: "Rectangle")
-        case .ellipse: String(localized: "Ellipse")
-        case .triangle: String(localized: "Triangle")
-        case .diamond: String(localized: "Diamond")
-        case .star: String(localized: "Star")
-        }
-    }
-
     /// The SF Symbol the toolbar and the layers show for it.
     public var symbol: String {
         switch self {
@@ -172,13 +162,6 @@ public enum BoxShape: String, CaseIterable, Codable, Sendable {
 public enum Redaction: String, CaseIterable, Codable, Sendable {
     case blur, pixelate
 
-    public var title: String {
-        switch self {
-        case .blur: String(localized: "Blur")
-        case .pixelate: String(localized: "Pixelate")
-        }
-    }
-
     /// How strongly a redaction can hide: its block size or blur radius as a fraction of the image's longer side.
     /// The default is about the strength a line of text got before the amount existed.
     public static let amounts: ClosedRange<CGFloat> = 0.004...0.016
@@ -200,14 +183,6 @@ public enum Redaction: String, CaseIterable, Codable, Sendable {
 /// How the lines of a text annotation or note line up within it.
 public enum TextAlign: String, CaseIterable, Codable, Sendable {
     case left, center, right
-
-    public var title: String {
-        switch self {
-        case .left: String(localized: "Align Left")
-        case .center: String(localized: "Align Centre")
-        case .right: String(localized: "Align Right")
-        }
-    }
 
     /// The SF Symbol the toolbar shows for it.
     public var symbol: String {
@@ -240,13 +215,6 @@ public enum TextAlign: String, CaseIterable, Codable, Sendable {
 public struct SpotlightStyle: Equatable, Hashable, Codable, Sendable {
     public enum Effect: String, CaseIterable, Codable, Sendable {
         case darken, blur
-
-        public var title: String {
-            switch self {
-            case .darken: String(localized: "Darken")
-            case .blur: String(localized: "Blur")
-            }
-        }
     }
 
     /// The strengths the slider offers. Each is also the darken effect's alpha.

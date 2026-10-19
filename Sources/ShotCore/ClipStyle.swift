@@ -3,32 +3,6 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 import os
 
-extension Clip {
-    /// Whether its picture has rounded corners, a shadow or a border. A plain one is drawn as it always was.
-    public var isStyled: Bool { cornerRadius > 0 || !style.isEmpty }
-}
-
-extension ClipAnimation {
-    /// How many times its own elevation a shadow rises to at `time`, in seconds from the clip's start: 1 at rest, and up
-    /// to 2 halfway through an entrance, a move or scale keyed at the very start that settles within `presetDuration`, as
-    /// Pop and Slide in make. The object seems to lift as it comes in and settle as it lands.
-    public func lift(at time: Double) -> Double {
-        let ends = [Self.entranceEnd(position), Self.entranceEnd(scale)].compactMap(\.self)
-        let rise = ends.map { end in time > 0 && time < end ? sin(.pi * time / end) : 0 }.max() ?? 0
-        return 1 + rise
-    }
-
-    /// When an entrance in `keyframes` lands: their second keyframe, if the first is at the very start, the value changes
-    /// between them, and it's soon enough to be brief.
-    private static func entranceEnd<Value>(_ keyframes: [Keyframe<Value>]) -> Double? {
-        guard keyframes.count >= 2, keyframes[0].time <= Keyframes.tolerance, keyframes[1].value != keyframes[0].value,
-              keyframes[1].time <= presetDuration + Keyframes.tolerance else {
-            return nil
-        }
-        return keyframes[1].time
-    }
-}
-
 /// Blurred clip shadows, each a grey mask of the shadow's coverage, so a frame only moves, scales and tints one rather
 /// than blurring again. Keeps the few used most recently. Safe to use from any thread.
 final class ClipShadowCache: Sendable {
