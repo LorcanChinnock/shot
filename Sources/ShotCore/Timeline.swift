@@ -54,6 +54,8 @@ public struct Clip: Equatable, Codable, Sendable, Identifiable {
         set { radius = newValue > 0 ? newValue : nil }
     }
     private var radius: CGFloat?
+    /// Whether its picture has rounded corners, a shadow or a border. A plain one is drawn as it always was.
+    public var isStyled: Bool { cornerRadius > 0 || !style.isEmpty }
     /// What its own crop trims off its picture; `nil` for the whole picture. It masks the picture where it is, so it
     /// still moves, scales and turns about the whole picture's centre and cropping never moves what's on screen.
     /// Stored only when set.

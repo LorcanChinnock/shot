@@ -2,10 +2,6 @@
 import CoreGraphics
 import Foundation
 
-extension RGBA {
-    public var cgColor: CGColor { CGColor(srgbRed: r, green: g, blue: b, alpha: a) }
-}
-
 /// All geometry is in image pixels with a top-left origin.
 public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public private(set) var id: UUID

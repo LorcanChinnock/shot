@@ -3,16 +3,6 @@ import Foundation
 import CoreGraphics
 #endif
 
-public enum ImageFormat: String, CaseIterable, Sendable {
-    case png, jpeg
-
-    public var fileExtension: String { self == .png ? "png" : "jpg" }
-
-    public init(fileExtension: String) {
-        self = ["jpg", "jpeg"].contains(fileExtension.lowercased()) ? .jpeg : .png
-    }
-}
-
 /// What Shot writes in an image file besides its pixels and scale, so it can read it back later, on any platform.
 public struct ImageMetadata: Equatable, Sendable {
     /// A window capture that includes the macOS window shadow, so the editor opened on it later doesn't offer a second.

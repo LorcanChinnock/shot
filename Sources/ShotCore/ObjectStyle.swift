@@ -1,7 +1,6 @@
-#if canImport(CoreGraphics) && canImport(os)
+#if canImport(CoreGraphics)
 import CoreGraphics
 import Foundation
-import os
 
 /// The shadow and border drawn around an object: the capture, an image placed on it, a mark or text. The empty style draws neither.
 public struct ObjectStyle: Equatable, Hashable, Sendable, Codable {
@@ -156,15 +155,6 @@ public struct Shadow: Equatable, Hashable, Sendable, Codable {
 /// The named shadows the Style popover offers.
 public enum ShadowPreset: String, CaseIterable, Sendable {
     case soft, float, contact, glow
-
-    public var title: String {
-        switch self {
-        case .soft: String(localized: "Soft")
-        case .float: String(localized: "Float")
-        case .contact: String(localized: "Contact")
-        case .glow: String(localized: "Glow")
-        }
-    }
 
     /// The preset's shadow on a document of `scale` pixels per point.
     public func shadow(scale: CGFloat) -> Shadow {
@@ -340,19 +330,6 @@ public extension CopiedStyle {
     /// corners theirs, `ontoShape` saying the object is one.
     func pastedCornerRadius(on kind: StyleKind, ontoShape: Bool = false, scale: CGFloat) -> CGFloat? {
         (source.takesCorners && kind.takesCorners) || (isFromShape && ontoShape) ? cornerRadius * scale : nil
-    }
-
-    /// `image`, a new capture of `scale` pixels per point, with this style on it over `background`, as Use this style
-    /// for new captures copies it; `nil` when the style changes nothing. A window captured with the macOS shadow,
-    /// `windowShadow`, takes no style, so it's `nil` for one. It's drawn on a new `canvasType` canvas.
-    func styledCapture(_ image: CGImage, scale: CGFloat, background: RGBA?, windowShadow: Bool = false, canvasType: any Canvas.Type) -> CGImage? {
-        var doc = EditorDocument(base: image, background: background)
-        doc.hasWindowShadow = windowShadow
-        doc.pasteStyle(self, to: [.capture], scale: scale, margin: 0, shaper: canvasType.shaper)
-        guard !doc.captureStyle.isEmpty || doc.captureCornerRadius > 0 else {
-            return nil
-        }
-        return AnnotationRenderer.flatten(doc, canvasType: canvasType)
     }
 
     /// Whether `other` is the same style, allowing for the rounding a trip from points to pixels and back leaves.
