@@ -1,4 +1,4 @@
-#if canImport(AVFoundation) && canImport(CoreGraphics)
+#if canImport(CoreGraphics)
 import CoreGraphics
 import Foundation
 
@@ -506,7 +506,7 @@ public enum ShotCommands {
         describe: (Step) -> String
     ) async throws(ShotCommandError) -> (step: Step, plan: VideoExportPlan, outcome: VideoExportPlan.Outcome) {
         guard let maxBytes else {
-            return (plans[0].0, plans[0].1, try await write(plans[0].1, to: output, canvasType: canvasType, assembler: assembler, writer: writer))
+            return (plans[0].0, plans[0].1, try await write(plans[0].1, to: output, canvasType: canvasType, reader: reader, assembler: assembler, writer: writer))
         }
         var ratio = 1.0
         for (step, plan) in plans {
@@ -519,7 +519,7 @@ public enum ShotCommands {
             guard SizeFit.fits(estimate: estimate, ratio: ratio, within: maxBytes) else {
                 continue
             }
-            let outcome = try await write(plan, to: output, canvasType: canvasType, assembler: assembler, writer: writer)
+            let outcome = try await write(plan, to: output, canvasType: canvasType, reader: reader, assembler: assembler, writer: writer)
             let written = bytes(of: output)
             if written <= maxBytes {
                 return (step, plan, outcome)
@@ -530,9 +530,11 @@ public enum ShotCommands {
         throw .data("maxBytes: even at \(describe(plans[plans.count - 1].0)) it's over \(maxBytes) bytes; cut more of it, or speed it up")
     }
 
-    static func write(_ plan: VideoExportPlan, to output: URL, canvasType: any Canvas.Type, assembler: any VideoAssembler, writer: any VideoWriter) async throws(ShotCommandError) -> VideoExportPlan.Outcome {
+    static func write(
+        _ plan: VideoExportPlan, to output: URL, canvasType: any Canvas.Type, reader: any VideoReader, assembler: any VideoAssembler, writer: any VideoWriter
+    ) async throws(ShotCommandError) -> VideoExportPlan.Outcome {
         do {
-            return try await plan.run(to: output, canvasType: canvasType, assembler: assembler, writer: writer)
+            return try await plan.run(to: output, canvasType: canvasType, reader: reader, assembler: assembler, writer: writer)
         } catch {
             throw .io("couldn't write the video: \(error.localizedDescription)")
         }

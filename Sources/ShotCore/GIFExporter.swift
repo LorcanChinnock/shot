@@ -1,5 +1,6 @@
-#if canImport(AVFoundation)
-import AVFoundation
+#if canImport(CoreGraphics)
+import CoreGraphics
+import Foundation
 
 /// Which source frames a GIF uses and how big they are.
 public struct GIFFramePlan: Equatable, Sendable {
@@ -71,7 +72,8 @@ public enum GIFExporter {
         }
     }
 
-    /// Writes `range` (the whole video when nil), less `cuts`, as a looping GIF at `fps`, scaled down to `maxWidth`.
+    /// Writes `range` (the whole video when nil), less `cuts`, of the video at `videoURL`, read by `reader`, as a looping GIF
+    /// at `fps`, scaled down to `maxWidth`.
     @discardableResult
     public static func export(
         videoURL: URL,
@@ -81,81 +83,25 @@ public enum GIFExporter {
         fps: Double = 12,
         maxWidth: CGFloat? = 720,
         speed: Double = 1,
+        reader: any VideoReader,
         progress: @Sendable (Double) -> Void = { _ in }
     ) async throws -> Result {
-        let (generator, plan) = try await prepare(asset: AVURLAsset(url: videoURL), range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
-        return try await write(plan, from: generator, to: outputURL, progress: progress)
+        try await export(frames(of: videoURL, reader: reader), to: outputURL, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, progress: progress)
     }
 
-    /// Writes the whole of `composition` as a looping GIF, as `export(videoURL:…)` does for a file.
+    /// Writes `range` (all of it when nil), less `cuts`, of `frames`, a file or a drawn project, as `export(videoURL:…)` does.
     @discardableResult
     public static func export(
-        composition: ProjectComposition,
+        _ frames: any VideoFrames,
         to outputURL: URL,
+        range: TrimRange? = nil,
+        cuts: CutList = CutList(),
         fps: Double = 12,
         maxWidth: CGFloat? = 720,
         speed: Double = 1,
         progress: @Sendable (Double) -> Void = { _ in }
     ) async throws -> Result {
-        let (generator, plan) = try await prepare(asset: composition.asset, videoComposition: composition.videoComposition, range: nil, cuts: CutList(), fps: fps, maxWidth: maxWidth, speed: speed)
-        return try await write(plan, from: generator, to: outputURL, progress: progress)
-    }
-
-    /// Roughly how many bytes `export` writes with the same arguments.
-    /// Each frame stores only what changed since the previous one, so this encodes a few pairs of
-    /// neighbouring frames spread over the range: one frame alone costs a whole frame, and the pair
-    /// costs that plus a typical change.
-    public static func estimatedSize(of videoURL: URL, range: TrimRange? = nil, cuts: CutList = CutList(), fps: Double, maxWidth: CGFloat?, speed: Double = 1) async throws -> Int {
-        let (generator, plan) = try await prepare(asset: AVURLAsset(url: videoURL), range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
-        return try await estimatedSize(plan, from: generator)
-    }
-
-    public static func estimatedSize(of composition: ProjectComposition, fps: Double, maxWidth: CGFloat?, speed: Double = 1) async throws -> Int {
-        let (generator, plan) = try await prepare(asset: composition.asset, videoComposition: composition.videoComposition, range: nil, cuts: CutList(), fps: fps, maxWidth: maxWidth, speed: speed)
-        return try await estimatedSize(plan, from: generator)
-    }
-
-    private static func estimatedSize(_ plan: GIFFramePlan, from generator: AVAssetImageGenerator) async throws -> Int {
-        let anchors = plan.sampleFrames(estimateSamples).map { max(0, min($0, plan.frameCount - 2)) }
-        var whole = 0, change = 0
-        for anchor in anchors {
-            try Task.checkCancellation()
-            let writer = GIFStreamWriter { _ in }
-            var single = 0
-            for index in anchor..<min(anchor + 2, plan.frameCount) {
-                try writer.add(try await generator.image(at: CMTime(seconds: plan.sourceTime(ofFrame: index), preferredTimescale: 600)).image, delay: plan.delay(ofFrame: index))
-                if index == anchor { single = writer.bytesWritten }
-            }
-            whole += single
-            change += writer.bytesWritten - single
-        }
-        return extrapolate(wholeFrameBytes: whole / anchors.count, changeBytes: change / anchors.count, totalFrames: plan.frameCount)
-    }
-
-    static func extrapolate(wholeFrameBytes: Int, changeBytes: Int, totalFrames: Int) -> Int {
-        wholeFrameBytes + changeBytes * max(0, totalFrames - 1)
-    }
-
-    private static func prepare(asset: AVAsset, videoComposition: AVVideoComposition? = nil, range: TrimRange?, cuts: CutList, fps: Double, maxWidth: CGFloat?, speed: Double) async throws -> (AVAssetImageGenerator, GIFFramePlan) {
-        let duration = try await asset.load(.duration).seconds
-        guard let track = try await asset.loadTracks(withMediaType: .video).first else {
-            throw ExportError.noVideoTrack
-        }
-        let (naturalSize, transform) = try await track.load(.naturalSize, .preferredTransform)
-        let sourceSize = videoComposition?.renderSize ?? naturalSize.applying(transform)
-        let plan = GIFFramePlan(sourceSize: sourceSize, range: range ?? TrimRange(duration: duration), cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
-
-        let generator = AVAssetImageGenerator(asset: asset)
-        generator.videoComposition = videoComposition
-        generator.appliesPreferredTrackTransform = true
-        generator.maximumSize = plan.size
-        let tolerance = CMTime(seconds: 0.5 / fps, preferredTimescale: 600)
-        generator.requestedTimeToleranceBefore = tolerance
-        generator.requestedTimeToleranceAfter = tolerance
-        return (generator, plan)
-    }
-
-    private static func write(_ plan: GIFFramePlan, from generator: AVAssetImageGenerator, to outputURL: URL, progress: @Sendable (Double) -> Void) async throws -> Result {
+        let plan = try plan(of: frames, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
         guard FileManager.default.createFile(atPath: outputURL.path, contents: nil), let file = try? FileHandle(forWritingTo: outputURL) else {
             throw ExportError.cannotCreateDestination
         }
@@ -168,16 +114,80 @@ public enum GIFExporter {
             }
         }
         let writer = GIFStreamWriter { try file.write(contentsOf: $0) }
-        for index in 0..<plan.frameCount {
+        let times = (0..<plan.frameCount).map(plan.sourceTime(ofFrame:))
+        var index = 0
+        try await frames.readFrames(at: times, maxSize: plan.size, tolerance: tolerance(fps)) { frame in
             try Task.checkCancellation()
-            let time = CMTime(seconds: plan.sourceTime(ofFrame: index), preferredTimescale: 600)
-            let (image, _) = try await generator.image(at: time)
-            try writer.add(image, delay: plan.delay(ofFrame: index))
-            progress(Double(index + 1) / Double(plan.frameCount))
+            try writer.add(frame.decoded.get().image, delay: plan.delay(ofFrame: index))
+            index += 1
+            progress(Double(index) / Double(plan.frameCount))
         }
         try writer.finish()
         finished = true
         return Result(frameCount: plan.frameCount, truncated: plan.truncated)
+    }
+
+    /// Roughly how many bytes `export` writes with the same arguments.
+    /// Each frame stores only what changed since the previous one, so this encodes a few pairs of
+    /// neighbouring frames spread over the range: one frame alone costs a whole frame, and the pair
+    /// costs that plus a typical change.
+    public static func estimatedSize(
+        of videoURL: URL, range: TrimRange? = nil, cuts: CutList = CutList(), fps: Double, maxWidth: CGFloat?, speed: Double = 1, reader: any VideoReader
+    ) async throws -> Int {
+        try await estimatedSize(of: frames(of: videoURL, reader: reader), range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
+    }
+
+    public static func estimatedSize(of frames: any VideoFrames, range: TrimRange? = nil, cuts: CutList = CutList(), fps: Double, maxWidth: CGFloat?, speed: Double = 1) async throws -> Int {
+        let plan = try plan(of: frames, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
+        let anchors = plan.sampleFrames(estimateSamples).map { max(0, min($0, plan.frameCount - 2)) }
+        var whole = 0, change = 0
+        for anchor in anchors {
+            try Task.checkCancellation()
+            let writer = GIFStreamWriter { _ in }
+            let indices = Array(anchor..<min(anchor + 2, plan.frameCount))
+            var single = 0, read = 0
+            try await frames.readFrames(at: indices.map(plan.sourceTime(ofFrame:)), maxSize: plan.size, tolerance: tolerance(fps)) { frame in
+                try writer.add(frame.decoded.get().image, delay: plan.delay(ofFrame: indices[read]))
+                if read == 0 { single = writer.bytesWritten }
+                read += 1
+            }
+            whole += single
+            change += writer.bytesWritten - single
+        }
+        return extrapolate(wholeFrameBytes: whole / anchors.count, changeBytes: change / anchors.count, totalFrames: plan.frameCount)
+    }
+
+    static func extrapolate(wholeFrameBytes: Int, changeBytes: Int, totalFrames: Int) -> Int {
+        wholeFrameBytes + changeBytes * max(0, totalFrames - 1)
+    }
+
+    /// The file at `url` as `reader` reads it.
+    private static func frames(of url: URL, reader: any VideoReader) async throws -> any VideoFrames {
+        let media = try await reader.info(of: url)
+        return FileFrames(url: url, reader: reader, duration: media.duration, size: media.size)
+    }
+
+    private static func plan(of frames: any VideoFrames, range: TrimRange?, cuts: CutList, fps: Double, maxWidth: CGFloat?, speed: Double) throws -> GIFFramePlan {
+        guard let size = frames.size else {
+            throw ExportError.noVideoTrack
+        }
+        return GIFFramePlan(sourceSize: size, range: range ?? TrimRange(duration: frames.duration), cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
+    }
+
+    /// A frame may come from up to half a frame either side of its time.
+    private static func tolerance(_ fps: Double) -> Double {
+        0.5 / fps
+    }
+}
+
+private struct FileFrames: VideoFrames {
+    let url: URL
+    let reader: any VideoReader
+    let duration: Double
+    let size: CGSize?
+
+    func readFrames(at times: [Double], maxSize: CGSize, tolerance: Double?, _ body: (VideoFrame) throws -> Void) async throws {
+        try await reader.readFrames(of: url, at: times, maxSize: maxSize, tolerance: tolerance, body)
     }
 }
 #endif
