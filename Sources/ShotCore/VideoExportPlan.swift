@@ -1,6 +1,6 @@
 #if canImport(AVFoundation) && canImport(CoreGraphics)
-import AVFoundation
 import CoreGraphics
+import Foundation
 
 /// What the video editor writes and how: picked once from the edit and the options, then run or estimated.
 ///
@@ -8,10 +8,10 @@ import CoreGraphics
 /// it can; anything more is drawn from the project. A drawn MP4 ignores the speed, which the export bar doesn't offer for one.
 public enum VideoExportPlan: Equatable, Sendable {
     /// The recording's `range` less `cuts`. `fileType` `nil` keeps the recording's own.
-    case trimmed(source: URL, range: TrimRange, cuts: CutList, speed: Double, muted: Bool, fileType: AVFileType?)
+    case trimmed(source: URL, range: TrimRange, cuts: CutList, speed: Double, muted: Bool, fileType: VideoFileType?)
     case trimmedGIF(source: URL, range: TrimRange, cuts: CutList, fps: Double, maxWidth: CGFloat?, speed: Double)
     /// The whole project, drawn at the canvas size and re-encoded.
-    case composite(Project, fileType: AVFileType)
+    case composite(Project, fileType: VideoFileType)
     case compositeGIF(Project, fps: Double, maxWidth: CGFloat?, speed: Double)
 
     /// Export: `project` with `options`' format, speed and sound.
@@ -40,7 +40,7 @@ public enum VideoExportPlan: Equatable, Sendable {
 
     /// Copy and Save: `project` at its own speed and with its sound, in the recording's format, or `fileType` when it has to
     /// be drawn.
-    public static func copy(of project: Project, as fileType: AVFileType) -> VideoExportPlan {
+    public static func copy(of project: Project, as fileType: VideoFileType) -> VideoExportPlan {
         guard let trim = project.trimEdit else {
             return .composite(project, fileType: fileType)
         }
@@ -57,10 +57,12 @@ public enum VideoExportPlan: Equatable, Sendable {
         public var passthrough: Bool
     }
 
-    /// Writes the export to `output`, drawing annotations on `canvasType` canvases and cutting a trimmed video with
-    /// `assembler`. `progress` hears from 0 to 1 while a GIF is written.
+    /// Writes the export to `output`, drawing annotations on `canvasType` canvases, cutting a trimmed video with
+    /// `assembler` and encoding a drawn one with `writer`. `progress` hears from 0 to 1 while a GIF is written.
     @discardableResult
-    public func run(to output: URL, canvasType: any Canvas.Type, assembler: any VideoAssembler, progress: @Sendable (Double) -> Void = { _ in }) async throws -> Outcome {
+    public func run(
+        to output: URL, canvasType: any Canvas.Type, assembler: any VideoAssembler, writer: any VideoWriter, progress: @Sendable (Double) -> Void = { _ in }
+    ) async throws -> Outcome {
         switch self {
         case let .trimmed(source, range, cuts, speed, muted, fileType):
             let passthrough = try await VideoTrimmer.trim(source, range: range, cuts: cuts, speed: speed, muted: muted, to: output, as: fileType?.rawValue, assembler: assembler)
@@ -69,7 +71,7 @@ public enum VideoExportPlan: Equatable, Sendable {
             let result = try await GIFExporter.export(videoURL: source, to: output, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, progress: progress)
             return Outcome(frameCount: result.frameCount, truncated: result.truncated, passthrough: false)
         case let .composite(project, fileType):
-            try await ProjectExporter.export(project, to: output, as: fileType, canvasType: canvasType)
+            try await ProjectExporter.export(project, to: output, as: fileType.rawValue, canvasType: canvasType, writer: writer)
             return Outcome(frameCount: nil, truncated: false, passthrough: false)
         case let .compositeGIF(project, fps, maxWidth, speed):
             let built = try await CompositionBuilder.build(project, canvasType: canvasType)

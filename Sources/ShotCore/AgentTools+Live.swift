@@ -6,7 +6,8 @@ extension AgentTools {
     /// first frame. `marks` is the app's `RecordingMarks` store, whose marks the key frames show, and `projects` its
     /// project store, which keeps what the tools make, and `texts` the text the app has read from screenshots, which
     /// `list_captures` searches. `agent` sends a request to the running app, for the tools that capture. `codec` reads
-    /// and writes the images, and they're drawn on `canvasType` canvases; `reader` reads the videos and `assembler` cuts them.
+    /// and writes the images, and they're drawn on `canvasType` canvases; `reader` reads the videos, `assembler` cuts them
+    /// and `writer` encodes those it draws.
     public static func live(
         folder: URL,
         marks: URL? = nil,
@@ -16,6 +17,7 @@ extension AgentTools {
         canvasType: any Canvas.Type,
         reader: any VideoReader,
         assembler: any VideoAssembler,
+        writer: any VideoWriter,
         agent: @escaping @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue] = { _ throws(ShotCommandError) in throw .unavailable("can't reach Shot from here") }
     ) -> AgentTools {
         AgentTools(
@@ -30,7 +32,7 @@ extension AgentTools {
                 entry.isVideo ? nil : codec.record(ofFileAt: entry.url)
             },
             run: { command, origin throws(ShotCommandError) in
-                try await ShotCommands.run(command, projects: projects, origin: origin, codec: codec, canvasType: canvasType, reader: reader, assembler: assembler)
+                try await ShotCommands.run(command, projects: projects, origin: origin, codec: codec, canvasType: canvasType, reader: reader, assembler: assembler, writer: writer)
             },
             frames: { entry, count throws(ShotCommandError) in
                 try await keyFrames(of: entry.url, count: count, marks: marks.map { RecordingMarks.marks(for: entry.url, in: $0) } ?? [], codec: codec, reader: reader)

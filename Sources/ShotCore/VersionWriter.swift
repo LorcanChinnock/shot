@@ -1,5 +1,4 @@
 #if canImport(AVFoundation) && canImport(CoreGraphics)
-import AVFoundation
 import CoreGraphics
 import Foundation
 
@@ -173,16 +172,17 @@ public enum VersionWriter {
     }
 
     /// Writes `plan`, an edit of `project` over the video at `original`, to `output`, its annotations drawn on `canvasType`
-    /// canvases and a trim cut with `assembler`, as the video editor's Save Copy and Export do. `project` is kept in `projects`, stamped in an MP4 or MOV and keyed by its identity for a GIF, so
-    /// the file reopens with it live. A project that can't be kept leaves the file written, as one written before
+    /// canvases, a trim cut with `assembler` and a drawn video encoded with `writer`, as the video editor's Save Copy and
+    /// Export do. `project` is kept in `projects`, stamped in an MP4 or MOV and keyed by its identity for a GIF, so the
+    /// file reopens with it live. A project that can't be kept leaves the file written, as one written before
     /// projects is.
     @discardableResult
     public static func writeVideo(
         _ plan: VideoExportPlan, of project: Project, original: URL, to output: URL, projects: ProjectStore? = nil,
         origin: ProjectOrigin = ProjectOrigin(via: .app), canvasType: any Canvas.Type, assembler: any VideoAssembler,
-        progress: @Sendable (Double) -> Void = { _ in }
+        writer: any VideoWriter, progress: @Sendable (Double) -> Void = { _ in }
     ) async throws -> VideoExportPlan.Outcome {
-        let outcome = try await plan.run(to: output, canvasType: canvasType, assembler: assembler, progress: progress)
+        let outcome = try await plan.run(to: output, canvasType: canvasType, assembler: assembler, writer: writer, progress: progress)
         keep(project, of: output, original: original, in: projects, origin: origin)
         return outcome
     }
