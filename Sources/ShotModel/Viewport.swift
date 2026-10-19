@@ -1,5 +1,7 @@
 #if canImport(CoreGraphics)
 import CoreGraphics
+#endif
+import Foundation
 
 /// How the editor shows the canvas: a scale, and where image point (0, 0) lands in the top-left-origin view.
 /// Image points are document coordinates, so a canvas that grows or is cropped doesn't move what's on screen.
@@ -93,4 +95,3 @@ public struct Viewport: Equatable, Sendable {
         min(max(zoom, min(minZoom, fit)), maxZoom)
     }
 }
-#endif

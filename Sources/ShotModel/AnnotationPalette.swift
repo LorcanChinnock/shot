@@ -1,5 +1,6 @@
 #if canImport(CoreGraphics)
 import CoreGraphics
+#endif
 import Foundation
 
 /// What the annotation toolbar shows and sets, for the photo and the video editor alike: the text being typed's style,
@@ -278,4 +279,3 @@ public struct AnnotationPalette: Equatable, Sendable {
         }
     }
 }
-#endif

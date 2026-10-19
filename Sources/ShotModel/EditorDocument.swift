@@ -1,5 +1,6 @@
 #if canImport(CoreGraphics)
 import CoreGraphics
+#endif
 import Foundation
 import Synchronization
 
@@ -223,7 +224,7 @@ private let lastCaptureTransparency = Mutex<(image: PlatformImage, transparent: 
 
 extension EditorDocument {
     /// Drops the screenshot `hasTransparency(of: .capture)` kept.
-    static func forgetCaptureTransparency() {
+    public static func forgetCaptureTransparency() {
         lastCaptureTransparency.withLock { $0 = nil }
         lastCapturePicture.withLock { $0 = nil }
     }
@@ -240,7 +241,7 @@ extension EditorDocument {
 
     /// The image as the export draws it: all of it, or the part the frame crop leaves, which the style goes around.
     /// The crop is kept while it's the same screenshot and part, so redrawing doesn't make the shadow's caches start again.
-    var capturePicture: PlatformImage {
+    public var capturePicture: PlatformImage {
         let shown = captureRect
         guard shown != fullRect, !shown.isEmpty else {
             return base
@@ -515,4 +516,3 @@ extension EditorDocument {
         return annotation.id
     }
 }
-#endif

@@ -1,5 +1,6 @@
 #if canImport(CoreGraphics)
 import CoreGraphics
+#endif
 import Foundation
 import Synchronization
 
@@ -84,4 +85,3 @@ public final class AnnotationImage: Equatable, Codable, Sendable {
         self.image = image
     }
 }
-#endif

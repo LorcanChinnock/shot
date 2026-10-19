@@ -1,5 +1,6 @@
 #if canImport(CoreGraphics)
 import CoreGraphics
+#endif
 import Foundation
 
 /// All geometry is in image pixels with a top-left origin.
@@ -384,7 +385,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     }
 
     /// Moves every point, and the origin of every rect, through `move`, which only moves them, never scales.
-    mutating func movePositions(_ move: (CGPoint) -> CGPoint) {
+    public mutating func movePositions(_ move: (CGPoint) -> CGPoint) {
         func moved(_ rect: CGRect) -> CGRect { CGRect(origin: move(rect.origin), size: rect.size) }
         switch kind {
         case let .arrow(from, to): kind = .arrow(from: move(from), to: move(to))
@@ -780,4 +781,3 @@ public enum AnnotationHandle: Hashable, Sendable {
         CGPoint(x: [rect.minX, rect.midX, rect.maxX][dx + 1], y: [rect.minY, rect.midY, rect.maxY][dy + 1])
     }
 }
-#endif

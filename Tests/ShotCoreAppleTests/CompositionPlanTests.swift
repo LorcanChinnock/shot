@@ -14,6 +14,10 @@ private func overlay(duration: Double = 4, size: CGSize = CGSize(width: 640, hei
     ImportedMedia(source: URL(fileURLWithPath: "/tmp/overlay.mov"), duration: duration, size: size, hasAudio: false)
 }
 
+private func rect(_ x: CGFloat = 10) -> Annotation {
+    Annotation(kind: .shape(.rectangle, rect: CGRect(x: x, y: 10, width: 50, height: 30)), color: RGBA.presets[0], lineWidth: 4)
+}
+
 @Test func aLoneRecordingIsOneSegment() {
     let project = project()
     #expect(project.videoSegments() == [VideoSegment(range: 0..<10, layers: [.clip(project.main.clips[0].id)])])
@@ -106,4 +110,28 @@ private func overlay(duration: Double = 4, size: CGSize = CGSize(width: 640, hei
     let bottomRight = CGPoint(x: 100, y: 0).applying(matrix)
     #expect(abs(topLeft.x) < 1e-9 && abs(topLeft.y - 100) < 1e-9)
     #expect(abs(bottomRight.x - 50) < 1e-9 && abs(bottomRight.y - 75) < 1e-9)
+}
+
+@Test func annotationsOnAHiddenTrackDontShowOrDraw() {
+    var (annotated, _) = project().adding(annotation: rect(), at: 2)
+    annotated.tracks[2].isHidden = true
+    #expect(annotated.annotationClips(at: 3).isEmpty)
+    #expect(annotated.videoSegments().allSatisfy { $0.annotations.isEmpty })
+    #expect(annotated.annotationClips.count == 1)
+}
+
+@Test func annotationsMarkSnapPointsAndSegments() throws {
+    let (annotated, id) = project().adding(annotation: rect(), at: 2)
+    #expect(annotated.snapPoints() == [0, 2, 5, 10])
+    #expect(annotated.snapPoints(excluding: [id]) == [0, 10])
+    let segments = annotated.videoSegments()
+    #expect(segments.map(\.range) == [0..<2, 2..<5, 5..<10])
+    #expect(segments.map(\.annotations) == [[], [id], []])
+}
+
+@Test func annotationsAreLongerThanTheVideoExtendTheProject() throws {
+    var (annotated, id) = project().adding(annotation: rect(), at: 8)
+    annotated = try #require(annotated.trimming(clip: id, .end, toTimeline: 14))
+    #expect(annotated.duration == 14)
+    #expect(annotated.videoSegments().last?.clips.isEmpty == true)
 }

@@ -1,6 +1,6 @@
-import AVFoundation
+import Foundation
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 private func layoutProject() throws -> Project {
     let base = Project(source: URL(fileURLWithPath: "/tmp/a.mov"), duration: 10, canvasSize: CGSize(width: 640, height: 360), hasAudio: true)

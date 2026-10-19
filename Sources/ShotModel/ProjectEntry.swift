@@ -121,6 +121,35 @@ public struct ProjectEntry: Codable, Equatable, Sendable {
     }
 }
 
+/// A project as the store keeps it: the entry's fields with the layers beside them under `document`.
+public struct StoredProject<Document: Codable & Sendable>: Codable, Sendable {
+    public var entry: ProjectEntry
+    /// `nil` for a capture with no layers, which keeps only its origin.
+    public var document: Document?
+
+    public init(entry: ProjectEntry, document: Document?) {
+        self.entry = entry
+        self.document = document
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case document
+    }
+
+    public init(from decoder: Decoder) throws {
+        entry = try ProjectEntry(from: decoder)
+        document = try decoder.container(keyedBy: CodingKeys.self).decodeIfPresent(Document.self, forKey: .document)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        try entry.encode(to: encoder)
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(document, forKey: .document)
+    }
+}
+
+extension StoredProject: Equatable where Document: Equatable {}
+
 /// A file found on disk while looking for an entry's file, with the project ID stamped in it if it has one.
 public struct ProjectSighting: Equatable, Sendable {
     public var file: ProjectFile

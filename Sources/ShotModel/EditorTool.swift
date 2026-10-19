@@ -1,5 +1,7 @@
 #if canImport(CoreGraphics)
 import CoreGraphics
+#endif
+import Foundation
 
 public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
     case select, hand, arrow, line, shape, pen, text, note, highlight, spotlight, redact, counter, crop
@@ -134,4 +136,3 @@ public enum ColorSlot: String, Codable, CodingKeyRepresentable, Sendable {
         }
     }
 }
-#endif

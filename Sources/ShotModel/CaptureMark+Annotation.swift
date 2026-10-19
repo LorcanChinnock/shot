@@ -1,5 +1,6 @@
 #if canImport(CoreGraphics)
 import CoreGraphics
+#endif
 import Foundation
 
 extension RGBA {
@@ -206,4 +207,3 @@ extension CaptureRecord {
         return layers.count == annotations.count ? (layers, rect, kept) : nil
     }
 }
-#endif

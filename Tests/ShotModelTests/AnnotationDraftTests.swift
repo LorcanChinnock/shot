@@ -1,7 +1,6 @@
-import CoreGraphics
 import Foundation
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 private let style = AnnotationDraft.Style(
     color: RGBA(1, 0, 0), fill: RGBA(0, 0, 1), noteColor: RGBA(1, 1, 0), lineWidth: 4, shape: .rectangle,

@@ -1,4 +1,3 @@
-#if canImport(CoreGraphics)
 import Foundation
 
 /// Where each track's lane sits in the panel, top to bottom: the annotation and picture tracks above the main one, in the order
@@ -133,4 +132,3 @@ extension Project {
         }
     }
 }
-#endif

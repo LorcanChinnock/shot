@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 private let recording = URL(fileURLWithPath: "/tmp/recording.mov")
 private let overlay = ImportedMedia(source: URL(fileURLWithPath: "/tmp/overlay.mov"), duration: 4, size: CGSize(width: 640, height: 360), hasAudio: true)

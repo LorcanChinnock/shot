@@ -1,5 +1,6 @@
 #if canImport(CoreGraphics)
 import CoreGraphics
+#endif
 import Foundation
 
 public enum LayerMove: Sendable {
@@ -79,7 +80,7 @@ extension Annotation {
     }
 
     /// Where drawing it changes the canvas: what it paints, or for a spotlight, everywhere, since the spotlights share one dim.
-    func drawnArea(shaper: any TextShaper) -> CGRect {
+    public func drawnArea(shaper: any TextShaper) -> CGRect {
         if case .spotlight = kind {
             return .infinite
         }
@@ -219,4 +220,3 @@ extension Project {
         return result
     }
 }
-#endif
