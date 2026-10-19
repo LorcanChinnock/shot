@@ -13,21 +13,19 @@ import Testing
 }
 
 #if os(Linux)
-/// Changes the environment, so it's the only test that reads `XDG_DATA_HOME`.
-@Test func appSupportFolderFollowsXDGDataHome() {
-    let saved = ProcessInfo.processInfo.environment["XDG_DATA_HOME"]
-    defer {
-        if let saved {
-            setenv("XDG_DATA_HOME", saved, 1)
-        } else {
-            unsetenv("XDG_DATA_HOME")
+/// Runs in a process of its own, since changing the environment here would race every other test that reads it.
+@Test func appSupportFolderFollowsXDGDataHome() async {
+    await #expect(processExitsWith: .success) {
+        unsetenv("XDG_DATA_HOME")
+        // `$HOME`, as the XDG spec has it, which can differ from the user's home: a CI container sets it to /github/home.
+        let home = ProcessInfo.processInfo.environment["HOME"] ?? FileManager.default.homeDirectoryForCurrentUser.path
+        guard AppSupport.folder(bundleID: "a").path == URL(fileURLWithPath: home).appendingPathComponent(".local/share/a").path else {
+            exit(1)
+        }
+        setenv("XDG_DATA_HOME", "/tmp/xdg-data", 1)
+        guard AppSupport.folder(bundleID: "a").path == "/tmp/xdg-data/a" else {
+            exit(2)
         }
     }
-    unsetenv("XDG_DATA_HOME")
-    // `$HOME`, as the XDG spec has it, which can differ from the user's home: a CI container sets it to /github/home.
-    let home = ProcessInfo.processInfo.environment["HOME"] ?? FileManager.default.homeDirectoryForCurrentUser.path
-    #expect(AppSupport.folder(bundleID: "a").path == URL(fileURLWithPath: home).appendingPathComponent(".local/share/a").path)
-    setenv("XDG_DATA_HOME", "/tmp/xdg-data", 1)
-    #expect(AppSupport.folder(bundleID: "a").path == "/tmp/xdg-data/a")
 }
 #endif
