@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.64](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.63...v0.7.0-beta.64) (2026-10-19)
+
+
+### Features
+
+* **core:** write GIFs with a pure Swift encoder ([#728](https://github.com/LorcanChinnock/shot/issues/728)) ([98cc2bf](https://github.com/LorcanChinnock/shot/commit/98cc2bfff19438cf927f64be670abddbbd28e4d3))
+
 ## [0.7.0-beta.63](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.62...v0.7.0-beta.63) (2026-10-18)
 
 
