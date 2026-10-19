@@ -88,7 +88,12 @@ public enum QuickAccessPosition: String, CaseIterable, Sendable {
 /// Typed read access to settings; `@Setting` in views uses the same keys and `Preferences.defaults`.
 public struct Preferences {
     public static var defaultSaveFolder: String {
+        #if os(Linux)
+        XDG.picturesFolder(environment: ProcessInfo.processInfo.environment, home: FileManager.default.homeDirectoryForCurrentUser)
+            .appendingPathComponent("Shot").path
+        #else
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Pictures/Shot").path
+        #endif
     }
 
     public static let defaultFilePrefix = "Shot"

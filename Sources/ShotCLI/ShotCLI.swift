@@ -1,10 +1,14 @@
 import Foundation
+#if os(macOS)
 import ShotCoreApple
+#else
+import ShotCoreLinux
+#endif
 
 /// The `shot` command line: `shot mcp`, the MCP server AI agents talk to, the headless media commands, `shot capture`
 /// and `shot record`, which ask the running app, `shot latest`, `list` and `get`, which read captures as the MCP tools
 /// do, `shot watch`, `shot doctor`, and `--version`. It ships inside the app as `Contents/MacOS/shot-cli`, so it reads the
-/// app's settings to find the captures.
+/// app's settings to find the captures. On Linux, where it's `shot`, only `Doctor.linuxCommands` run so far.
 @main
 enum ShotCLI {
     static func main() async {
@@ -31,6 +35,21 @@ enum ShotCLI {
             print("Captures: \(captureFolder(app: app).path)")
         case let .help(name):
             print(ShotCommand.usage(name, program: program))
+        case .doctor:
+            #if os(macOS)
+            let checks = Doctor.checks(await doctorFacts(app: appBundle()))
+            #else
+            let checks = Doctor.checks(linuxDoctorFacts())
+            #endif
+            print(ShotCommand.json(Doctor.json(checks)))
+            if checks.contains(where: { $0.outcome == .fail }) {
+                exit(1)
+            }
+        #if !os(macOS)
+        default:
+            printError("\(program) \(command.name): \(ShotCommandError.notOnLinuxYet.message)")
+            exit(ShotCommandError.notOnLinuxYet.exitCode)
+        #else
         case .latest, .list, .get:
             do {
                 let app = appBundle()
@@ -39,12 +58,6 @@ enum ShotCLI {
             } catch {
                 printError("\(program) \(command.name): \(error.message)")
                 exit(error.exitCode)
-            }
-        case .doctor:
-            let checks = Doctor.checks(await doctorFacts(app: appBundle()))
-            print(ShotCommand.json(Doctor.json(checks)))
-            if checks.contains(where: { $0.outcome == .fail }) {
-                exit(1)
             }
         case .capture, .windows:
             var request = AgentRequest(.windows)
@@ -116,6 +129,7 @@ enum ShotCLI {
                 printError("\(program) \(command.name): \(error.message)")
                 exit(error.exitCode)
             }
+        #endif
         }
     }
 
@@ -130,12 +144,16 @@ enum ShotCLI {
     /// Reads one JSON-RPC message per line until the client closes stdin. Only replies go to stdout, since any other
     /// line there breaks the protocol; `FileHandle` writes straight through, so each reply is flushed as it's written.
     static func serve(folder: URL, version: String, app: Bundle?) async {
+        #if os(macOS)
         let bundleID = app?.bundleIdentifier ?? fallbackSuite
         let server = AgentTools.live(
             folder: folder, marks: RecordingMarks.url(bundleID: bundleID), projects: ProjectStore(bundleID: bundleID), texts: TextIndexStore(bundleID: bundleID)
         ) { request throws(ShotCommandError) in
             try await ask(request, app: app)
         }.server(version: version)
+        #else
+        let server = AgentTools.live(folder: folder).server(version: version)
+        #endif
         printError("Shot MCP server \(version), reading \(folder.path)")
         while let line = readLine(strippingNewline: true) {
             if let reply = await server.respond(to: line) {
@@ -196,24 +214,40 @@ enum ShotCLI {
             }
         }
         let folder = captureFolder(app: app)
-        var isFolder: ObjCBool = false
-        let exists = FileManager.default.fileExists(atPath: folder.path, isDirectory: &isFolder) && isFolder.boolValue
-        var folderError: String?
-        var captures = 0
-        if exists {
-            // macOS's privacy controls let a process see that the folder is there, but can refuse to list it.
-            do {
-                _ = try FileManager.default.contentsOfDirectory(atPath: folder.path)
-                captures = Gallery.items(in: folder).count
-            } catch {
-                folderError = error.localizedDescription
-            }
-        }
+        let (exists, folderError, captures) = folderFacts(folder)
         return Doctor.Facts(
             bundleID: app?.bundleIdentifier, appPath: app?.bundlePath, version: version(of: app), settingsSuite: fallbackSuite,
             agentCapture: Preferences(store: defaultsStore(app: app)).agentCapture, socketPath: socket.path, listening: listening,
             status: status, folder: folder.path, folderExists: exists, folderError: folderError, captures: captures
         )
+    }
+
+    #if !os(macOS)
+    static func linuxDoctorFacts() -> Doctor.LinuxFacts {
+        let folder = captureFolder(app: nil)
+        let (exists, folderError, captures) = folderFacts(folder)
+        return Doctor.LinuxFacts(
+            version: version(of: nil), settingsFile: LinuxSettings.file(suite: fallbackSuite).path,
+            sessionType: ProcessInfo.processInfo.environment["XDG_SESSION_TYPE"], folder: folder.path, folderExists: exists,
+            folderError: folderError, captures: captures
+        )
+    }
+    #endif
+
+    /// Whether `folder` is there, why it couldn't be listed if it couldn't, and how many captures it holds.
+    static func folderFacts(_ folder: URL) -> (exists: Bool, error: String?, captures: Int) {
+        var isFolder: ObjCBool = false
+        let exists = FileManager.default.fileExists(atPath: folder.path, isDirectory: &isFolder) && isFolder.boolValue
+        guard exists else {
+            return (false, nil, 0)
+        }
+        // macOS's privacy controls let a process see that the folder is there, but can refuse to list it.
+        do {
+            _ = try FileManager.default.contentsOfDirectory(atPath: folder.path)
+            return (true, nil, Gallery.items(in: folder).count)
+        } catch {
+            return (true, error.localizedDescription, 0)
+        }
     }
 
     /// How long to wait for the app's answer: a stop or a timed recording waits for the video to be written too.
@@ -245,9 +279,13 @@ enum ShotCLI {
         app?.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
     }
 
-    /// The settings of a dev build, for a bare `.build/debug/ShotCLI` with no bundle around it.
+    /// The settings of a dev build, for a bare `.build/debug/ShotCLI` with no bundle around it, and on Linux the release's.
     static var fallbackSuite: String {
+        #if os(macOS)
         ProcessInfo.processInfo.environment["SHOT_DEFAULTS"] ?? "dev.lorcan.Shot.dev"
+        #else
+        ProcessInfo.processInfo.environment["SHOT_DEFAULTS"] ?? LinuxSettings.suite
+        #endif
     }
 
     /// The app's own settings. Those are `.standard` when `Bundle.main` is the app, where `UserDefaults(suiteName:)`

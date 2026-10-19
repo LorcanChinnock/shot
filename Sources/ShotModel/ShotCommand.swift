@@ -821,6 +821,9 @@ public enum ShotCommandError: Error, Equatable, Sendable {
         }
     }
 
+    /// What a command or MCP tool answers on Linux until its backends get there (#656).
+    public static let notOnLinuxYet = ShotCommandError.unavailable("not on Linux yet")
+
     /// The error with `exitCode`, as the app sends it back to the command line; an unknown code is `.internal`.
     public init(exitCode: Int32, message: String) {
         self = switch exitCode {
