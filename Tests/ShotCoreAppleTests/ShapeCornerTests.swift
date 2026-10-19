@@ -2,6 +2,7 @@ import CoreGraphics
 import Foundation
 import Testing
 @testable import ShotCore
+import ShotCoreApple
 
 private let frame = CGRect(x: 0, y: 0, width: 200, height: 160)
 private let red = RGBA.presets[0]
@@ -148,7 +149,7 @@ private func scene(_ shapes: [Annotation]) -> EditorDocument {
     let annotation = try #require(Annotation(mark: mark))
     #expect(annotation.kind == .shape(.rectangle, rect: CGRect(x: 10, y: 10, width: 80, height: 40)))
     #expect(annotation.cornerRadius == Annotation.defaultCornerRadius)
-    let reported = CaptureMark(annotation, origin: .zero, scale: 1)
+    let reported = CaptureMark(annotation, origin: .zero, scale: 1, shaper: CoreTextShaper())
     #expect(reported.type == "rectangle" && reported.cornerRadius == Double(Annotation.defaultCornerRadius))
     let sized = try #require(Annotation(mark: CaptureMark(id: "b", type: "rounded", rect: [10, 10, 80, 40], cornerRadius: 5)))
     #expect(sized.cornerRadius == 5)

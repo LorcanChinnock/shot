@@ -66,23 +66,23 @@ struct Backdrop: Equatable, Sendable {
     /// Where the drawn image goes; `.zero` with nothing under it there and a plain screenshot, when it's the screenshot itself.
     let area: CGRect
 
-    init(_ base: CGImage, below: ArraySlice<Annotation>, around rect: CGRect, outset: CGFloat, look: CaptureLook = CaptureLook()) {
+    init(_ base: CGImage, below: ArraySlice<Annotation>, around rect: CGRect, outset: CGFloat, look: CaptureLook = CaptureLook(), shaper: any TextShaper) {
         let area = rect.insetBy(dx: -outset, dy: -outset).integral
         self.base = base
-        self.below = Self.annotations(below.filter { !$0.isHidden }, reaching: area, base: base)
+        self.below = Self.annotations(below.filter { !$0.isHidden }, reaching: area, base: base, shaper: shaper)
         self.look = look
         self.area = self.below.isEmpty && look.isPlain ? .zero : area
     }
 
     /// Those of `annotations` that can change what's drawn in `area`: working down from the top, each one drawn in the
     /// region that matters so far, which grows by how far the ones that read what's under them read.
-    private static func annotations(_ annotations: [Annotation], reaching area: CGRect, base: CGImage) -> [Annotation] {
+    private static func annotations(_ annotations: [Annotation], reaching area: CGRect, base: CGImage, shaper: any TextShaper) -> [Annotation] {
         var region = area
         var picked: [Annotation] = []
-        for annotation in annotations.reversed() where annotation.drawnArea.intersects(region) {
+        for annotation in annotations.reversed() where annotation.drawnArea(shaper: shaper).intersects(region) {
             picked.append(annotation)
             if let reach = annotation.backdropReach(base: base) {
-                region = region.union(annotation.drawnArea.intersection(region).insetBy(dx: -reach, dy: -reach))
+                region = region.union(annotation.drawnArea(shaper: shaper).intersection(region).insetBy(dx: -reach, dy: -reach))
             }
         }
         return picked.reversed()

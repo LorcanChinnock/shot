@@ -28,6 +28,7 @@ public final class CGCanvas: Canvas {
     }
 
     public static var effects: any ImageEffects { CoreImageEffects.shared }
+    public static var shaper: any TextShaper { CoreTextShaper() }
 
     public func saveState() { context.saveGState() }
     public func restoreState() { context.restoreGState() }
@@ -112,13 +113,16 @@ public final class CGCanvas: Canvas {
     public func makeImage() -> CGImage? { context.makeImage() }
     public func makeBitmap() -> Bitmap? { context.makeImage().flatMap { Bitmap($0) } }
 
-    public func draw(_ line: CTLine, at position: CGPoint, outlined: Bool) {
+    public func draw(_ line: any ShapedLine, at position: CGPoint, outlined: Bool) {
+        guard let line = line as? CoreTextLine else {
+            preconditionFailure("CGCanvas draws only the lines CoreTextShaper makes")
+        }
         context.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
         context.textPosition = position
         if outlined {
             context.setTextDrawingMode(.stroke)
         }
-        CTLineDraw(line, context)
+        CTLineDraw(line.line, context)
         if outlined {
             context.setTextDrawingMode(.fill)
         }

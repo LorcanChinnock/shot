@@ -128,11 +128,11 @@ extension Annotation {
     }
 
     /// Where drawing it changes the canvas: what it paints, or for a spotlight, everywhere, since the spotlights share one dim.
-    var drawnArea: CGRect {
+    func drawnArea(shaper: any TextShaper) -> CGRect {
         if case .spotlight = kind {
             return .infinite
         }
-        return paintedBounds
+        return paintedBounds(shaper: shaper)
     }
 
     /// How far past where it draws it reads what's under it, on `base`; `nil` when it only paints over it.

@@ -1,6 +1,5 @@
-#if canImport(CoreGraphics) && canImport(CoreText)
+#if canImport(CoreGraphics)
 import CoreGraphics
-import CoreText
 import Foundation
 
 /// The outline a shape annotation, or a spotlight's lit area, takes within its rect.
@@ -221,8 +220,8 @@ public enum TextAlign: String, CaseIterable, Codable, Sendable {
 
     /// How far right of the left edge of a box `width` wide `line` starts. Trailing spaces don't count,
     /// so a wrapped line lines up by its last word.
-    public func offset(of line: CTLine, in width: CGFloat) -> CGFloat {
-        let visible = CGFloat(CTLineGetTypographicBounds(line, nil, nil, nil) - CTLineGetTrailingWhitespaceWidth(line))
+    public func offset(of line: any ShapedLine, in width: CGFloat) -> CGFloat {
+        let visible = line.width - line.trailingWhitespaceWidth
         return (width - visible) * fraction
     }
 

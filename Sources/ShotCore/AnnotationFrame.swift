@@ -136,7 +136,7 @@ enum AnnotationFrame {
         }
         var overlay = apply([item.annotation], to: CIImage(color: .clear).cropped(to: canvas), canvas: canvas, context: context, cache: cache, canvasType: canvasType)
         if abs(item.rotation) > 1e-6 {
-            let bounds = item.annotation.bounds
+            let bounds = item.annotation.bounds(shaper: canvasType.shaper)
             // The canvas is y down and Core Image y up, so the same turn is the other way round.
             let center = CGPoint(x: bounds.midX, y: canvas.height - bounds.midY)
             let turn = CGAffineTransform(translationX: -center.x, y: -center.y)
