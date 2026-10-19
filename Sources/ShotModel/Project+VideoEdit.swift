@@ -1,5 +1,6 @@
 #if canImport(CoreGraphics)
 import CoreGraphics
+#endif
 import Foundation
 
 extension Project {
@@ -123,4 +124,3 @@ extension Annotation {
         return bounds.isNull ? scaled : scaled.moved(by: CGSize(width: bounds.midX * (scale - 1), height: bounds.midY * (scale - 1)))
     }
 }
-#endif

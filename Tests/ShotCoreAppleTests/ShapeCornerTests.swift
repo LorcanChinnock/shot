@@ -2,6 +2,7 @@ import CoreGraphics
 import Foundation
 import Testing
 @testable import ShotCore
+@testable import ShotModel
 import ShotCoreApple
 
 private let frame = CGRect(x: 0, y: 0, width: 200, height: 160)

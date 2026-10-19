@@ -1,7 +1,6 @@
-import CoreGraphics
 import Foundation
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 private let red = RGBA(1, 0, 0)
 private let blue = RGBA(0, 0, 1)

@@ -1,5 +1,6 @@
 #if canImport(CoreGraphics)
 import CoreGraphics
+#endif
 import Foundation
 
 /// An annotation on the pasteboard, so it can be pasted into any editor window.
@@ -36,4 +37,3 @@ public enum NudgeDirection: Sendable {
         }
     }
 }
-#endif

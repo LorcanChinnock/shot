@@ -1,5 +1,6 @@
 #if canImport(CoreGraphics)
 import CoreGraphics
+#endif
 import Foundation
 
 /// A file to put on the timeline, as AVFoundation reads it.
@@ -217,4 +218,3 @@ extension Project {
         return before...after
     }
 }
-#endif

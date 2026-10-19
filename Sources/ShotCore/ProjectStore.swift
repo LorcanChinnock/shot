@@ -163,35 +163,6 @@ public struct ProjectStore: Sendable {
     }
 }
 
-/// A project as the store keeps it: the entry's fields with the layers beside them under `document`.
-public struct StoredProject<Document: Codable & Sendable>: Codable, Sendable {
-    public var entry: ProjectEntry
-    /// `nil` for a capture with no layers, which keeps only its origin.
-    public var document: Document?
-
-    public init(entry: ProjectEntry, document: Document?) {
-        self.entry = entry
-        self.document = document
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case document
-    }
-
-    public init(from decoder: Decoder) throws {
-        entry = try ProjectEntry(from: decoder)
-        document = try decoder.container(keyedBy: CodingKeys.self).decodeIfPresent(Document.self, forKey: .document)
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        try entry.encode(to: encoder)
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encodeIfPresent(document, forKey: .document)
-    }
-}
-
-extension StoredProject: Equatable where Document: Equatable {}
-
 /// The project ID in a file's own metadata: for PNG and JPEG, what `codec` writes as `ImageMetadata`, and a `uuid` box
 /// of Shot's own for MP4 and MOV (`MovieStampBox`).
 public enum ProjectStamp {

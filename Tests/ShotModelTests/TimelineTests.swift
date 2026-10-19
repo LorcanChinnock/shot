@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 private let recording = URL(fileURLWithPath: "/tmp/recording.mov")
 

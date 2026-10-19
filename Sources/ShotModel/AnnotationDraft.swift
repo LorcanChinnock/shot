@@ -1,5 +1,6 @@
 #if canImport(CoreGraphics)
 import CoreGraphics
+#endif
 import Foundation
 
 /// What a drag with a drawing tool has drawn so far. Both editors' canvases build their drafts here, so a tool draws the
@@ -101,4 +102,3 @@ public enum AnnotationDraft {
         return rect
     }
 }
-#endif

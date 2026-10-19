@@ -1,5 +1,6 @@
 #if canImport(CoreGraphics)
 import CoreGraphics
+#endif
 import Foundation
 
 /// How a video clip sits on the canvas. At rest it's scaled to fit the canvas and centred.
@@ -165,7 +166,7 @@ public struct Track: Equatable, Codable, Sendable, Identifiable {
 /// The first track is the main one, which closes gaps as clips are cut or trimmed; the clips linked to it follow.
 public struct Project: Equatable, Codable, Sendable {
     /// Edits closer together than this don't make a clip, since a 600 timescale can't hold it.
-    static let shortestClip = CutList.shortestSection
+    public static let shortestClip = CutList.shortestSection
 
     /// The recording's size, which clip positions and annotations are measured in, whatever the frame crop.
     public var canvasSize: CGSize
@@ -454,4 +455,3 @@ public struct TrimEdit: Equatable, Sendable {
     public let range: TrimRange
     public let cuts: CutList
 }
-#endif

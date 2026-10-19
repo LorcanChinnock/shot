@@ -1,5 +1,6 @@
 #if canImport(CoreGraphics)
 import CoreGraphics
+#endif
 import Foundation
 
 /// The shadow and border drawn around an object: the capture, an image placed on it, a mark or text. The empty style draws neither.
@@ -365,4 +366,3 @@ public extension CopiedStyle {
         }
     }
 }
-#endif

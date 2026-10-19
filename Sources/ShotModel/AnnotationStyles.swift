@@ -1,5 +1,6 @@
 #if canImport(CoreGraphics)
 import CoreGraphics
+#endif
 import Foundation
 
 /// The outline a shape annotation, or a spotlight's lit area, takes within its rect.
@@ -257,4 +258,3 @@ public struct SpotlightStyle: Equatable, Hashable, Codable, Sendable {
         max(4, length * 0.008 * pow(2, (strength - 0.5) / 0.2))
     }
 }
-#endif

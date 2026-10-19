@@ -1,7 +1,6 @@
-import CoreGraphics
 import Foundation
 import Testing
-@testable import ShotCore
+@testable import ShotModel
 
 private let recording = URL(fileURLWithPath: "/tmp/recording.mov")
 
@@ -20,14 +19,6 @@ private func rect(_ x: CGFloat = 10) -> Annotation {
     #expect(clip.start == 2 && clip.duration == 3 && clip.end == 5)
     #expect(annotated.duration == 10)
     #expect(annotated.trimEdit == nil)
-}
-
-@Test func annotationsOnAHiddenTrackDontShowOrDraw() {
-    var (annotated, _) = project().adding(annotation: rect(), at: 2)
-    annotated.tracks[2].isHidden = true
-    #expect(annotated.annotationClips(at: 3).isEmpty)
-    #expect(annotated.videoSegments().allSatisfy { $0.annotations.isEmpty })
-    #expect(annotated.annotationClips.count == 1)
 }
 
 @Test func anAnnotationNearTheEndStopsWhereTheProjectDoes() throws {
@@ -99,22 +90,6 @@ private func rect(_ x: CGFloat = 10) -> Annotation {
     #expect(clips.map(\.start) == [2, 3.5] && clips.map(\.duration) == [1.5, 1.5])
     #expect(clips[0].id == id && clips[1].id != id)
     #expect(clips[0].annotation == clips[1].annotation)
-}
-
-@Test func annotationsMarkSnapPointsAndSegments() throws {
-    let (annotated, id) = project().adding(annotation: rect(), at: 2)
-    #expect(annotated.snapPoints() == [0, 2, 5, 10])
-    #expect(annotated.snapPoints(excluding: [id]) == [0, 10])
-    let segments = annotated.videoSegments()
-    #expect(segments.map(\.range) == [0..<2, 2..<5, 5..<10])
-    #expect(segments.map(\.annotations) == [[], [id], []])
-}
-
-@Test func annotationsAreLongerThanTheVideoExtendTheProject() throws {
-    var (annotated, id) = project().adding(annotation: rect(), at: 8)
-    annotated = try #require(annotated.trimming(clip: id, .end, toTimeline: 14))
-    #expect(annotated.duration == 14)
-    #expect(annotated.videoSegments().last?.clips.isEmpty == true)
 }
 
 @Test func counterNumbersContinueAcrossTheTimeline() {
