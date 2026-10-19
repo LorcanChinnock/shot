@@ -1,4 +1,4 @@
-#if canImport(AVFoundation) && canImport(CoreGraphics)
+#if canImport(CoreGraphics)
 import CoreGraphics
 import Foundation
 
@@ -57,41 +57,43 @@ public enum VideoExportPlan: Equatable, Sendable {
         public var passthrough: Bool
     }
 
-    /// Writes the export to `output`, drawing annotations on `canvasType` canvases, cutting a trimmed video with
-    /// `assembler` and encoding a drawn one with `writer`. `progress` hears from 0 to 1 while a GIF is written.
+    /// Writes the export to `output`, drawing annotations on `canvasType` canvases, reading a GIF's frames with `reader`,
+    /// cutting a trimmed video with `assembler` and encoding a drawn one with `writer`. `progress` hears from 0 to 1 while a
+    /// GIF is written.
     @discardableResult
     public func run(
-        to output: URL, canvasType: any Canvas.Type, assembler: any VideoAssembler, writer: any VideoWriter, progress: @Sendable (Double) -> Void = { _ in }
+        to output: URL, canvasType: any Canvas.Type, reader: any VideoReader, assembler: any VideoAssembler, writer: any VideoWriter,
+        progress: @Sendable (Double) -> Void = { _ in }
     ) async throws -> Outcome {
         switch self {
         case let .trimmed(source, range, cuts, speed, muted, fileType):
             let passthrough = try await VideoTrimmer.trim(source, range: range, cuts: cuts, speed: speed, muted: muted, to: output, as: fileType?.rawValue, assembler: assembler)
             return Outcome(frameCount: nil, truncated: false, passthrough: passthrough)
         case let .trimmedGIF(source, range, cuts, fps, maxWidth, speed):
-            let result = try await GIFExporter.export(videoURL: source, to: output, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, progress: progress)
+            let result = try await GIFExporter.export(videoURL: source, to: output, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, reader: reader, progress: progress)
             return Outcome(frameCount: result.frameCount, truncated: result.truncated, passthrough: false)
         case let .composite(project, fileType):
             try await ProjectExporter.export(project, to: output, as: fileType.rawValue, canvasType: canvasType, writer: writer)
             return Outcome(frameCount: nil, truncated: false, passthrough: false)
         case let .compositeGIF(project, fps, maxWidth, speed):
-            let built = try await CompositionBuilder.build(project, canvasType: canvasType)
-            let result = try await GIFExporter.export(composition: built, to: output, fps: fps, maxWidth: maxWidth, speed: speed, progress: progress)
+            let frames = try await reader.frames(of: project, canvasType: canvasType)
+            let result = try await GIFExporter.export(frames, to: output, fps: fps, maxWidth: maxWidth, speed: speed, progress: progress)
             return Outcome(frameCount: result.frameCount, truncated: result.truncated, passthrough: false)
         }
     }
 
-    /// Roughly how many bytes `run` writes, a trimmed video's from what `reader` reads of it. A GIF of a composite is
-    /// estimated from frames drawn on `canvasType` canvases.
+    /// Roughly how many bytes `run` writes, from what `reader` reads of the video. A GIF of a composite is estimated from
+    /// frames drawn on `canvasType` canvases.
     public func estimate(canvasType: any Canvas.Type, reader: any VideoReader) async throws -> Int {
         switch self {
         case let .trimmed(source, range, cuts, speed, muted, _):
             try await VideoTrimmer.estimatedSize(of: source, range: range, cuts: cuts, speed: speed, muted: muted, reader: reader)
         case let .trimmedGIF(source, range, cuts, fps, maxWidth, speed):
-            try await GIFExporter.estimatedSize(of: source, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
+            try await GIFExporter.estimatedSize(of: source, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, reader: reader)
         case let .composite(project, _):
             ProjectExporter.estimatedSize(of: project)
         case let .compositeGIF(project, fps, maxWidth, speed):
-            try await GIFExporter.estimatedSize(of: CompositionBuilder.build(project, canvasType: canvasType), fps: fps, maxWidth: maxWidth, speed: speed)
+            try await GIFExporter.estimatedSize(of: reader.frames(of: project, canvasType: canvasType), fps: fps, maxWidth: maxWidth, speed: speed)
         }
     }
 }

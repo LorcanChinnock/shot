@@ -48,7 +48,20 @@ public struct AVVideoReader: VideoReader {
     }
 
     public func readFrames(of url: URL, at times: [Double], maxSize: CGSize, tolerance: Double?, _ body: (VideoFrame) throws -> Void) async throws {
-        let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
+        try await Self.readFrames(of: AVURLAsset(url: url), at: times, maxSize: maxSize, tolerance: tolerance, body)
+    }
+
+    public func frames(of project: Project, canvasType: any Canvas.Type) async throws -> any VideoFrames {
+        try await CompositionFrames(CompositionBuilder.build(project, canvasType: canvasType))
+    }
+
+    /// Decodes `asset`'s frames at `times` as `readFrames(of:)` does, drawn by `videoComposition` when there is one.
+    static func readFrames(
+        of asset: AVAsset, drawnBy videoComposition: AVVideoComposition? = nil, at times: [Double], maxSize: CGSize, tolerance: Double?,
+        _ body: (VideoFrame) throws -> Void
+    ) async throws {
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.videoComposition = videoComposition
         generator.appliesPreferredTrackTransform = true
         generator.maximumSize = maxSize
         if let tolerance {
@@ -57,15 +70,34 @@ public struct AVVideoReader: VideoReader {
             generator.requestedTimeToleranceAfter = tolerance
         }
         let requested = times.map { CMTime(seconds: $0, preferredTimescale: 600) }
-        // Each result names its time as a CMTime, rounded to the timescale; hand back the time as it was asked for.
-        let asked = Dictionary(zip(requested, times), uniquingKeysWith: { first, _ in first })
+        // Each result names its time as a CMTime, rounded to the timescale; find which of `times` it answers, the first
+        // still waiting when two round alike.
+        var waiting: [CMTime: [Int]] = [:]
+        for (index, time) in requested.enumerated() {
+            waiting[time, default: []].append(index)
+        }
+        // `images(for:)` doesn't promise order, so a frame that comes early waits for the ones before it.
+        var early: [Int: VideoFrame] = [:]
+        var next = 0
         for await result in generator.images(for: requested) {
-            let time = asked[result.requestedTime] ?? result.requestedTime.seconds
+            guard let index = waiting[result.requestedTime]?.first else {
+                continue
+            }
+            waiting[result.requestedTime]?.removeFirst()
             let decoded = Result { () throws -> (time: Double, image: PlatformImage) in
                 let image = try result.image
-                return ((try? result.actualTime.seconds) ?? time, image)
+                return ((try? result.actualTime.seconds) ?? times[index], image)
             }
-            try body(VideoFrame(requestedTime: time, decoded: decoded))
+            early[index] = VideoFrame(requestedTime: times[index], decoded: decoded)
+            while let frame = early.removeValue(forKey: next) {
+                try body(frame)
+                next += 1
+            }
+        }
+        try Task.checkCancellation()
+        // Any left had a frame before them that never came.
+        for (_, frame) in early.sorted(by: { $0.key < $1.key }) {
+            try body(frame)
         }
     }
 
@@ -100,5 +132,22 @@ public struct AVVideoReader: VideoReader {
         if reader.status == .failed {
             throw reader.error ?? CocoaError(.fileReadUnknown)
         }
+    }
+}
+
+/// A project's composition, read a frame at a time as its compositor draws it.
+struct CompositionFrames: VideoFrames {
+    let composition: ProjectComposition
+    let duration: Double
+    let size: CGSize?
+
+    init(_ composition: ProjectComposition) async throws {
+        self.composition = composition
+        duration = try await composition.asset.load(.duration).seconds
+        size = try await composition.asset.loadTracks(withMediaType: .video).isEmpty ? nil : composition.videoComposition.renderSize
+    }
+
+    func readFrames(at times: [Double], maxSize: CGSize, tolerance: Double?, _ body: (VideoFrame) throws -> Void) async throws {
+        try await AVVideoReader.readFrames(of: composition.asset, drawnBy: composition.videoComposition, at: times, maxSize: maxSize, tolerance: tolerance, body)
     }
 }

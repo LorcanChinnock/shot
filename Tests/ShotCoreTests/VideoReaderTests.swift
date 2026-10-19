@@ -27,6 +27,10 @@ private struct FakeReader: VideoReader {
 
     func readFrames(of url: URL, at times: [Double], maxSize: CGSize, tolerance: Double?, _ body: (VideoFrame) throws -> Void) async throws {}
 
+    func frames(of project: Project, canvasType: any Canvas.Type) async throws -> any VideoFrames {
+        throw CocoaError(.featureUnsupported)
+    }
+
     func readMonoSamples(of url: URL, sampleRate: Double, _ body: ([Float]) throws -> Void) async throws {
         try samples.forEach(body)
     }

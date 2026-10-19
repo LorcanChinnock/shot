@@ -85,7 +85,7 @@ extension ProjectOrigin {
     }
 }
 
-#if canImport(AVFoundation)
+#if canImport(CoreGraphics)
 extension VideoExportOptions {
     /// Describes a GIF made with these options, for Settings.
     public var gifSummary: String {
