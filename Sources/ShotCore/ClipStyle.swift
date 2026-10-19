@@ -1,7 +1,7 @@
-#if canImport(CoreImage) && canImport(os)
+#if canImport(CoreImage)
 import CoreImage
 import CoreImage.CIFilterBuiltins
-import os
+import Synchronization
 
 /// Blurred clip shadows, each a grey mask of the shadow's coverage, so a frame only moves, scales and tints one rather
 /// than blurring again. Keeps the few used most recently. Safe to use from any thread.
@@ -18,7 +18,7 @@ final class ClipShadowCache: Sendable {
 
     private let capacity: Int
     /// Most recently used first.
-    private let entries = OSAllocatedUnfairLock<[(key: Key, value: Value)]>(initialState: [])
+    private let entries = Mutex<[(key: Key, value: Value)]>([])
 
     /// Room for four scales of a three-layer shadow, so a clip that holds still blurs its shadow once.
     init(capacity: Int = 12) {
@@ -54,7 +54,7 @@ final class ClipShadowCache: Sendable {
 /// The colour near the edge of each clip's frame, read once a second of the clip, so a hairline or glow doesn't read the
 /// frame back every frame, nor flicker as the content changes. Safe to use from any thread.
 final class ClipEdgeCache: Sendable {
-    private let entries = OSAllocatedUnfairLock<[UUID: (second: Int, color: RGBA?)]>(initialState: [:])
+    private let entries = Mutex<[UUID: (second: Int, color: RGBA?)]>([:])
 
     /// The colour read for clip `id` in this `second`, or the one `read` returns, kept until the next second.
     func color(of id: UUID, second: Int, read: () -> RGBA?) -> RGBA? {

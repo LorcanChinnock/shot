@@ -1,6 +1,6 @@
 import AVFoundation
 import Foundation
-import os
+import Synchronization
 import UniformTypeIdentifiers
 
 extension TrimRange {
@@ -123,7 +123,7 @@ public struct AVVideoAssembler: VideoAssembler {
             // Reading a sample blocks until it's decoded, so the copy runs on a queue of its own rather than
             // holding one of Swift's few cooperative threads, which the readers' other work may be waiting for.
             nonisolated(unsafe) let (pending, sharedWriter) = (copies, writer)
-            let cancelled = OSAllocatedUnfairLock(initialState: false)
+            let cancelled = Mutex(false)
             try await withTaskCancellationHandler {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                     DispatchQueue(label: "Shot.mux").async {

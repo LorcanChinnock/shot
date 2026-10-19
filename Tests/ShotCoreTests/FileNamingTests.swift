@@ -65,3 +65,21 @@ private let date: Date = {
         try FileNaming.writeNew(Data("x".utf8), in: folder) { folder.appendingPathComponent("a.png") }
     }
 }
+
+@Test func renamingExclusivelyRefusesToReplaceAFile() throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let source = folder.appendingPathComponent("source")
+    let target = folder.appendingPathComponent("target")
+    try Data("new".utf8).write(to: source)
+    try Data("old".utf8).write(to: target)
+    #expect(FileNaming.renameExclusively(source, to: target) == -1)
+    #expect(errno == EEXIST)
+    #expect(try Data(contentsOf: target) == Data("old".utf8))
+    #expect(try Data(contentsOf: source) == Data("new".utf8))
+
+    let free = folder.appendingPathComponent("free")
+    #expect(FileNaming.renameExclusively(source, to: free) == 0)
+    #expect(try Data(contentsOf: free) == Data("new".utf8))
+    #expect(!FileManager.default.fileExists(atPath: source.path))
+}

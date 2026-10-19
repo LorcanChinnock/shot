@@ -1,6 +1,6 @@
-#if canImport(CoreGraphics) && canImport(os)
+#if canImport(CoreGraphics)
 import CoreGraphics
-import os
+import Synchronization
 
 /// Images a render filtered or drew, each with where it's drawn, kept while their inputs stay the same.
 /// Each render sweeps out what wasn't used since the last one, so a 6K blur doesn't outlive its redaction.
@@ -18,7 +18,7 @@ final class RenderCache: Sendable {
 
     typealias Value = (image: CGImage, frame: CGRect)
 
-    private let entries = OSAllocatedUnfairLock<[(key: Key, value: Value, used: Bool)]>(initialState: [])
+    private let entries = Mutex<[(key: Key, value: Value, used: Bool)]>([])
 
     /// The image cached for `key`, or else what `make` returns, cached.
     func value(for key: Key, make: () -> Value?) -> Value? {

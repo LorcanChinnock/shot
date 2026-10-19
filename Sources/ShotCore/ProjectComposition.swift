@@ -1,7 +1,7 @@
-#if canImport(AVFoundation) && canImport(CoreImage) && canImport(os)
+#if canImport(AVFoundation) && canImport(CoreImage)
 import AVFoundation
 import CoreImage
-import os
+import Synchronization
 
 /// A project as AVFoundation plays and exports it: its clips on composition tracks, and a compositor that draws the video layers.
 public struct ProjectComposition: @unchecked Sendable {
@@ -215,7 +215,7 @@ final class RequestLog: Sendable {
         }
     }
 
-    private let state = OSAllocatedUnfairLock<[Event]?>(initialState: nil)
+    private let state = Mutex<[Event]?>(nil)
 
     /// Starts recording, dropping whatever was recorded before.
     func start() {
@@ -244,7 +244,7 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
     private let shadows = ClipShadowCache()
     private let edges = ClipEdgeCache()
     /// Counts cancels, so a frame a seek left behind stops drawing, since AVFoundation throws it away.
-    private let cancels = OSAllocatedUnfairLock(initialState: 0)
+    private let cancels = Mutex(0)
     /// Every request from start to end, so a cancel can wait for them.
     private let drawing = DispatchGroup()
     let requests = RequestLog()

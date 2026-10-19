@@ -1,4 +1,3 @@
-#if canImport(Darwin)
 import Foundation
 
 /// The layered projects behind captures and versions, kept app-private in
@@ -25,7 +24,7 @@ public struct ProjectStore: Sendable {
 
     /// The store of the app with `bundleID`, so Shot and ShotDev keep their own, as `AgentSocket` does.
     public init(bundleID: String, codec: any ImageCoding) {
-        self.init(folder: URL.applicationSupportDirectory.appendingPathComponent(bundleID, isDirectory: true).appendingPathComponent("Projects", isDirectory: true), codec: codec)
+        self.init(folder: AppSupport.folder(bundleID: bundleID).appendingPathComponent("Projects", isDirectory: true), codec: codec)
     }
 
     /// Keeps `document`, the layers of `file` over `original`, and who made it. `id` is the ID stamped in `file`, or
@@ -240,6 +239,7 @@ public enum ProjectStamp {
 
 extension ProjectFile {
     /// The file at `url` as it is now, with a bookmark to it unless `bookmark` is false; `nil` when it isn't there.
+    /// Linux Foundation has no bookmarks, so there a file is found again only where it was.
     public init?(at url: URL, bookmark: Bool = true) {
         let keys: Set<URLResourceKey> = [.isRegularFileKey, .volumeUUIDStringKey, .fileSizeKey, .contentModificationDateKey]
         // A URL caches what it read, so one kept across a rewrite of its file would report the old size and date.
@@ -249,9 +249,14 @@ extension ProjectFile {
             return nil
         }
         let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
+        #if canImport(Darwin)
+        let bookmarkData = bookmark ? try? url.bookmarkData() : nil
+        #else
+        let bookmarkData: Data? = nil
+        #endif
         self.init(
             path: url.standardizedFileURL.path,
-            bookmark: bookmark ? try? url.bookmarkData() : nil,
+            bookmark: bookmarkData,
             volume: values.volumeUUIDString,
             number: (attributes?[.systemFileNumber] as? NSNumber)?.uint64Value,
             size: values.fileSize.map(Int64.init),
@@ -261,11 +266,15 @@ extension ProjectFile {
 
     /// Where the bookmark leads now, without asking to mount a disk; `nil` when it leads nowhere.
     public func resolvedBookmark() -> URL? {
+        #if canImport(Darwin)
         guard let bookmark else {
             return nil
         }
         var stale = false
         return try? URL(resolvingBookmarkData: bookmark, options: [.withoutUI, .withoutMounting], relativeTo: nil, bookmarkDataIsStale: &stale)
+        #else
+        return nil
+        #endif
     }
 
     /// The file now, wherever it went: where its bookmark leads, or else where it was.
@@ -276,4 +285,3 @@ extension ProjectFile {
         return FileManager.default.fileExists(atPath: path) ? URL(fileURLWithPath: path) : nil
     }
 }
-#endif
