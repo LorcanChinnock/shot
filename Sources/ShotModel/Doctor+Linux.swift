@@ -2,7 +2,7 @@ import Foundation
 
 extension Doctor {
     /// What `shot doctor` checks on Linux, where there's no app yet to ask: the session, what runs so far, what's left
-    /// out by design, and the capture folder.
+    /// out by design, the emoji font, and the capture folder.
     public struct LinuxFacts: Equatable, Sendable {
         public var version: String
         /// The settings file the command reads.
@@ -15,8 +15,13 @@ extension Doctor {
         public var folderError: String?
         /// How many captures the folder holds, when it could be listed.
         public var captures: Int
+        /// Whether a font that draws emoji in colour is installed.
+        public var colorEmoji: Bool
 
-        public init(version: String, settingsFile: String, sessionType: String?, folder: String, folderExists: Bool, folderError: String?, captures: Int) {
+        public init(
+            version: String, settingsFile: String, sessionType: String?, folder: String, folderExists: Bool, folderError: String?, captures: Int,
+            colorEmoji: Bool
+        ) {
             self.version = version
             self.settingsFile = settingsFile
             self.sessionType = sessionType
@@ -24,6 +29,7 @@ extension Doctor {
             self.folderExists = folderExists
             self.folderError = folderError
             self.captures = captures
+            self.colorEmoji = colorEmoji
         }
     }
 
@@ -31,7 +37,7 @@ extension Doctor {
     public static let linuxCommands = ["version", "help", "doctor", "mcp"]
 
     public static func checks(_ facts: LinuxFacts) -> [Check] {
-        [platform(facts), notOnLinuxYet, macOnly, linuxFolder(facts)]
+        [platform(facts), notOnLinuxYet, macOnly, emoji(facts), linuxFolder(facts)]
     }
 
     static func platform(_ facts: LinuxFacts) -> Check {
@@ -56,6 +62,14 @@ extension Doctor {
         "macOnly", .pass,
         "Text recognition (find_text and shot text), redaction by text (redact --detect), the text index, narration and system audio need a Mac, so they're left out on Linux by design. Of image files, Linux opens PNG and JPEG; HEIC, TIFF, BMP and WebP need a Mac."
     )
+
+    static func emoji(_ facts: LinuxFacts) -> Check {
+        guard facts.colorEmoji else {
+            return Check("emoji", .warn, "No colour emoji font is installed, so emoji in text and notes draw in black and white, or as empty boxes.",
+                         fix: "Install one, such as Noto Color Emoji (fonts-noto-color-emoji on Debian and Ubuntu).")
+        }
+        return Check("emoji", .pass, "A colour emoji font is installed, so emoji in text and notes draw in colour.")
+    }
 
     static func linuxFolder(_ facts: LinuxFacts) -> Check {
         guard facts.folderExists else {

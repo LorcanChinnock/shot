@@ -2,10 +2,10 @@ import Foundation
 import Testing
 @testable import ShotModel
 
-private func facts(session: String? = "wayland", folderExists: Bool = true, folderError: String? = nil) -> Doctor.LinuxFacts {
+private func facts(session: String? = "wayland", folderExists: Bool = true, folderError: String? = nil, colorEmoji: Bool = true) -> Doctor.LinuxFacts {
     Doctor.LinuxFacts(
         version: "0.7.0", settingsFile: "/home/me/.config/dev.lorcan.Shot.plist", sessionType: session, folder: "/home/me/Pictures/Shot",
-        folderExists: folderExists, folderError: folderError, captures: 1
+        folderExists: folderExists, folderError: folderError, captures: 1, colorEmoji: colorEmoji
     )
 }
 
@@ -28,6 +28,10 @@ private func facts(session: String? = "wayland", folderExists: Bool = true, fold
                 "detail": .string("Text recognition (find_text and shot text), redaction by text (redact --detect), the text index, narration and system audio need a Mac, so they're left out on Linux by design. Of image files, Linux opens PNG and JPEG; HEIC, TIFF, BMP and WebP need a Mac."),
             ]),
             .object([
+                "name": .string("emoji"), "outcome": .string("pass"),
+                "detail": .string("A colour emoji font is installed, so emoji in text and notes draw in colour."),
+            ]),
+            .object([
                 "name": .string("captureFolder"), "outcome": .string("pass"),
                 "detail": .string("/home/me/Pictures/Shot can be read and holds 1 capture."),
             ]),
@@ -41,6 +45,13 @@ private func facts(session: String? = "wayland", folderExists: Bool = true, fold
     #expect(tty.outcome == .warn)
     #expect(tty.detail.hasSuffix("XDG_SESSION_TYPE is tty, so this isn't an X11 or Wayland session, which capturing will need."))
     #expect(Doctor.platform(facts(session: nil)).detail.contains("XDG_SESSION_TYPE isn't set"))
+}
+
+@Test func doctorOnLinuxWarnsWithoutAColourEmojiFont() {
+    let check = Doctor.emoji(facts(colorEmoji: false))
+    #expect(check.outcome == .warn)
+    #expect(check.fix == "Install one, such as Noto Color Emoji (fonts-noto-color-emoji on Debian and Ubuntu).")
+    #expect(Doctor.json(Doctor.checks(facts(colorEmoji: false)))["ok"] == .bool(true))
 }
 
 @Test func doctorOnLinuxFailsOnlyOnAFolderItCantRead() {

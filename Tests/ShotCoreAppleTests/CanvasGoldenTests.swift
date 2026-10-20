@@ -5,8 +5,8 @@ import Testing
 import ShotCoreApple
 
 // The goldens ShotCoreLinuxTests' CairoGoldenTests draws through CairoCanvas and compares: documents of every annotation
-// that draws without text or image effects, which Linux gets with #744 and #745, over `base.png`, drawn through
-// CGCanvas into `<name>.png`. They're all in Tests/Fixtures/canvas, the documents in `goldens.json`.
+// that draws without image effects, which Linux gets with #745, over `base.png`, drawn through CGCanvas into
+// `<name>.png`. They're all in Tests/Fixtures/canvas, the documents in `goldens.json`.
 //
 // Run with SHOT_WRITE_GOLDENS=1 to write them again after a rendering change, and check the new PNGs by eye. Otherwise
 // this checks they're still what CGCanvas draws.
@@ -114,6 +114,41 @@ private func goldens() throws -> [Golden] {
         shadowed(annotation(.shape(.rectangle, rect: CGRect(x: -20, y: 90, width: 50, height: 40)), blue, width: 3, fill: white, id: 52), elevation: 4),
     ]
 
+    func text(_ string: String, at origin: CGPoint, size: CGFloat, _ color: RGBA, align: TextAlign = .left, outline: RGBA? = nil, id: Int) -> Annotation {
+        var text = annotation(.text(string, origin: origin, fontSize: size), color, id: id)
+        text.alignment = align
+        if let outline {
+            text.style = ObjectStyle(border: Border(kind: .outline, lineWidth: 3, color: outline))
+        }
+        return text
+    }
+    let texts = [
+        text("Shot", at: CGPoint(x: 10, y: 8), size: 24, red, id: 61),
+        text("Left\nand more", at: CGPoint(x: 10, y: 44), size: 14, white, id: 62),
+        text("Right\naligned", at: CGPoint(x: 90, y: 44), size: 14, blue, align: .right, id: 63),
+        text("centred", at: CGPoint(x: 40, y: 88), size: 18, RGBA(1, 0.85, 0), align: .center, id: 64),
+    ]
+    let outlined = [
+        text("Look", at: CGPoint(x: 12, y: 10), size: 32, white, outline: RGBA(0, 0, 0), id: 71),
+        text("here!", at: CGPoint(x: 40, y: 64), size: 28, RGBA(1, 0.85, 0), outline: red, id: 72),
+    ]
+
+    var middleNote = annotation(.note("Middle", rect: CGRect(x: 100, y: 8, width: 52, height: 48)), green, width: 1, id: 82)
+    middleNote.verticalAlignment = .middle
+    middleNote.alignment = .center
+    let notes = [
+        annotation(.note("A note that wraps", rect: CGRect(x: 8, y: 8, width: 80, height: 0)), RGBA(1, 0.85, 0), width: 1, id: 81),
+        middleNote,
+        annotation(.note("Supercalifragilistic", rect: CGRect(x: 60, y: 66, width: 64, height: 0)), blue, width: 1, id: 83),
+    ]
+
+    let counters = [
+        annotation(.counter(1, center: CGPoint(x: 22, y: 24)), red, width: 1, id: 91),
+        annotation(.counter(2, center: CGPoint(x: 62, y: 30)), blue, width: 2, id: 92),
+        annotation(.counter(10, center: CGPoint(x: 120, y: 36)), green, width: 4, id: 93),
+        annotation(.counter(42, center: CGPoint(x: 50, y: 88)), RGBA(0.3, 0.3, 0.3), width: 3, id: 94),
+    ]
+
     return [
         Golden(name: "lines", annotations: lines),
         Golden(name: "shapes", annotations: shapes),
@@ -121,8 +156,15 @@ private func goldens() throws -> [Golden] {
         Golden(name: "images", annotations: images),
         Golden(name: "spotlights", annotations: spotlights),
         Golden(name: "padding", annotations: padded, canvasRect: CGRect(x: -30, y: -10, width: 230, height: 150), background: RGBA(0.95, 0.95, 0.9)),
+        Golden(name: "text", annotations: texts),
+        Golden(name: "outlinedText", annotations: outlined),
+        Golden(name: "notes", annotations: notes, canvasRect: CGRect(x: 0, y: 0, width: 160, height: 120), background: white),
+        Golden(name: "counters", annotations: counters),
     ]
 }
+
+/// The goldens with text in them.
+private let textGoldens: Set = ["text", "outlinedText", "notes", "counters"]
 
 /// `golden` drawn over `base` through CGCanvas.
 private func render(_ golden: Golden, base: CGImage) throws -> Bitmap {
@@ -155,6 +197,9 @@ private func render(_ golden: Golden, base: CGImage) throws -> Bitmap {
         let saved = try #require(codec.decode(fileAt: url))
         #expect(saved.width == drawn.width && saved.height == drawn.height, "\(golden.name)")
         let changed = ImageDiff.changes([UInt8](saved.pixels), [UInt8](drawn.pixels), width: drawn.width, height: drawn.height, bytesPerRow: drawn.bytesPerRow, threshold: 1.0 / 255)
-        #expect(!changed.contains(1), "\(golden.name).png is stale: run with SHOT_WRITE_GOLDENS=1")
+        // Core Text antialiases the system font a little differently from one macOS release to the next: CI's macOS 26
+        // changes up to 1.4% of a text golden's pixels drawn on macOS 27.
+        let allowed = textGoldens.contains(golden.name) ? changed.count * 3 / 100 : 0
+        #expect(changed.filter { $0 == 1 }.count <= allowed, "\(golden.name).png is stale: run with SHOT_WRITE_GOLDENS=1")
     }
 }
