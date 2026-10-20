@@ -46,7 +46,7 @@ import Testing
                 _ = try #require(compositor.frame(at: 1, pictures: pictures))
             })
         }
-        let budget = Duration.milliseconds(600)
+        let budget = Duration.milliseconds(650)
         print("Compose 1920×1080: \(fastest), budget \(budget)")
         #expect(fastest <= budget, "Composing a frame took \(fastest), over its \(budget) budget")
     }

@@ -30,9 +30,7 @@ Linux has no Core Image, so blur, pixelate and the masks run in plain Swift (`So
 | Path | What's measured | Docker on the reference Mac (debug) | Release build | CI runner (debug) | Budget |
 |---|---|---|---|---|---|
 | Blur | `PortableEffects.blurred` of an opaque 2560×1600 capture, radius 20 | 650 ms | 100 ms | 1,250 ms | 2,500 ms |
-| Compose | `PortableCompositor.frame` of a 1920×1080 frame: a 1280×720 clip turned, with rounded corners, a border and a shadow, over a recording, under an arrow, a box with a shadow and a highlight. Its shadow masks are cached, as from one frame to the next | 140 ms | not measured | not measured yet | 600 ms |
-
-The compositor's budget assumes the CI runner is about twice as slow as Docker on the reference Mac, as it is for the blur, then doubles that. Measure it on the runner when it next runs.
+| Compose | `PortableCompositor.frame` of a 1920×1080 frame: a 1280×720 clip turned, with rounded corners, a border and a shadow, over a recording, under an arrow, a box with a shadow and a highlight. Its shadow masks are cached, as from one frame to the next | 140 ms | not measured | 311 ms | 650 ms |
 
 ## Locally: `make perf-app`
 
