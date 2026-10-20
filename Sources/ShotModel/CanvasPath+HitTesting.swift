@@ -141,6 +141,28 @@ extension CanvasPath {
         return hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy))
     }
 
+    /// A step of the outline in the few kinds every drawing library has.
+    public enum Primitive: Equatable, Sendable {
+        case move(to: CGPoint)
+        case line(to: CGPoint)
+        case curve(to: CGPoint, control1: CGPoint, control2: CGPoint)
+        case close
+    }
+
+    /// The outline as moves, lines and cubics, built as `CGPath` builds it, so a library without CoreGraphics' shapes
+    /// and arcs draws the same outline, starting at the same points and running the same way.
+    public var primitives: [Primitive] {
+        subpaths.flatMap { subpath -> [Primitive] in
+            let segments = subpath.segments.map { segment -> Primitive in
+                switch segment {
+                case let .line(to): .line(to: to)
+                case let .cubic(to, c1, c2): .curve(to: to, control1: c1, control2: c2)
+                }
+            }
+            return [.move(to: subpath.start)] + segments + (subpath.isClosed ? [.close] : [])
+        }
+    }
+
     // MARK: - Subpaths
 
     private enum Segment {

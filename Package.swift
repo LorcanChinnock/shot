@@ -47,10 +47,12 @@ targets += [
 targets += [
     // The Linux implementations of ShotCore's protocols, as they come (#656). It re-exports ShotCore, so ShotCLI
     // imports only this.
-    .target(name: "ShotCoreLinux", dependencies: ["ShotCore", "CPNG", "CTurboJPEG"]),
+    .target(name: "ShotCoreLinux", dependencies: ["ShotCore", "CPNG", "CTurboJPEG", "CCairo"]),
     // The C libraries it codes images with, through their APIs that report errors rather than jumping out of them.
     .systemLibrary(name: "CPNG", pkgConfig: "libpng", providers: [.apt(["libpng-dev"])]),
     .systemLibrary(name: "CTurboJPEG", pkgConfig: "libturbojpeg", providers: [.apt(["libturbojpeg0-dev"])]),
+    // The library it draws with.
+    .systemLibrary(name: "CCairo", pkgConfig: "cairo", providers: [.apt(["libcairo2-dev"])]),
     .executableTarget(name: "ShotCLI", dependencies: ["ShotCoreLinux"]),
     .testTarget(name: "ShotCoreLinuxTests", dependencies: ["ShotCoreLinux"]),
 ]

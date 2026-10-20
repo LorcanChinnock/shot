@@ -25,7 +25,7 @@ test:
 # Needs Docker; keep the image and the packages in step with ci.yml.
 test-linux:
 	docker run --rm -v "$(CURDIR)":/src -w /src swift:6.3 sh -c \
-		'apt-get update -qq && apt-get install -y -qq --no-install-recommends zsh libpng-dev libturbojpeg0-dev >/dev/null && swift test --scratch-path .build/linux && \
+		'apt-get update -qq && apt-get install -y -qq --no-install-recommends zsh libpng-dev libturbojpeg0-dev libcairo2-dev >/dev/null && swift test --scratch-path .build/linux && \
 		swift build --scratch-path .build/linux --product shot'
 
 # Budgets and baselines: docs/performance.md.

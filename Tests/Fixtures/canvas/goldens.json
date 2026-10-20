@@ -1,0 +1,750 @@
+[
+  {
+    "annotations" : [
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 0.1,
+          "g" : 0.1,
+          "r" : 0.9
+        },
+        "id" : "00000000-0000-0000-0000-000000000001",
+        "kind" : {
+          "arrow" : {
+            "from" : [
+              15,
+              15
+            ],
+            "to" : [
+              145,
+              35
+            ]
+          }
+        },
+        "lineWidth" : 4
+      },
+      {
+        "bend" : [
+          0,
+          -25
+        ],
+        "color" : {
+          "a" : 1,
+          "b" : 0.9,
+          "g" : 0.3,
+          "r" : 0.1
+        },
+        "id" : "00000000-0000-0000-0000-000000000002",
+        "kind" : {
+          "arrow" : {
+            "from" : [
+              20,
+              60
+            ],
+            "to" : [
+              140,
+              60
+            ]
+          }
+        },
+        "lineWidth" : 3
+      },
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 0.2,
+          "g" : 0.7,
+          "r" : 0.1
+        },
+        "id" : "00000000-0000-0000-0000-000000000003",
+        "kind" : {
+          "line" : {
+            "from" : [
+              20,
+              80
+            ],
+            "to" : [
+              140,
+              95
+            ]
+          }
+        },
+        "lineWidth" : 2
+      },
+      {
+        "bend" : [
+          0,
+          12
+        ],
+        "color" : {
+          "a" : 1,
+          "b" : 0.1,
+          "g" : 0.1,
+          "r" : 0.9
+        },
+        "id" : "00000000-0000-0000-0000-000000000004",
+        "kind" : {
+          "line" : {
+            "from" : [
+              20,
+              110
+            ],
+            "to" : [
+              140,
+              110
+            ]
+          }
+        },
+        "lineWidth" : 2
+      },
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 1,
+          "g" : 1,
+          "r" : 1
+        },
+        "id" : "00000000-0000-0000-0000-000000000005",
+        "kind" : {
+          "freehand" : {
+            "_0" : [
+              [
+                30,
+                40
+              ],
+              [
+                50,
+                30
+              ],
+              [
+                70,
+                48
+              ],
+              [
+                90,
+                32
+              ],
+              [
+                110,
+                46
+              ]
+            ]
+          }
+        },
+        "lineWidth" : 3
+      },
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 0,
+          "g" : 0.85,
+          "r" : 1
+        },
+        "id" : "00000000-0000-0000-0000-000000000006",
+        "kind" : {
+          "marker" : {
+            "_0" : [
+              [
+                20,
+                70
+              ],
+              [
+                80,
+                75
+              ],
+              [
+                140,
+                68
+              ]
+            ]
+          }
+        },
+        "lineWidth" : 3
+      }
+    ],
+    "name" : "lines"
+  },
+  {
+    "annotations" : [
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 0.1,
+          "g" : 0.1,
+          "r" : 0.9
+        },
+        "id" : "00000000-0000-0000-0000-000000000011",
+        "kind" : {
+          "shape" : {
+            "_0" : "rectangle",
+            "rect" : [
+              [
+                10,
+                10
+              ],
+              [
+                40,
+                30
+              ]
+            ]
+          }
+        },
+        "lineWidth" : 3
+      },
+      {
+        "boxRadius" : 8,
+        "color" : {
+          "a" : 1,
+          "b" : 0.9,
+          "g" : 0.3,
+          "r" : 0.1
+        },
+        "fill" : {
+          "a" : 0.6,
+          "b" : 1,
+          "g" : 1,
+          "r" : 1
+        },
+        "id" : "00000000-0000-0000-0000-000000000012",
+        "kind" : {
+          "shape" : {
+            "_0" : "rectangle",
+            "rect" : [
+              [
+                62,
+                10
+              ],
+              [
+                40,
+                30
+              ]
+            ]
+          }
+        },
+        "lineWidth" : 3
+      },
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 0.2,
+          "g" : 0.7,
+          "r" : 0.1
+        },
+        "fill" : {
+          "a" : 0.4,
+          "b" : 0.2,
+          "g" : 0.7,
+          "r" : 0.1
+        },
+        "id" : "00000000-0000-0000-0000-000000000013",
+        "kind" : {
+          "shape" : {
+            "_0" : "ellipse",
+            "rect" : [
+              [
+                112,
+                8
+              ],
+              [
+                40,
+                34
+              ]
+            ]
+          }
+        },
+        "lineWidth" : 4
+      },
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 1,
+          "g" : 1,
+          "r" : 1
+        },
+        "id" : "00000000-0000-0000-0000-000000000014",
+        "kind" : {
+          "shape" : {
+            "_0" : "triangle",
+            "rect" : [
+              [
+                10,
+                74
+              ],
+              [
+                40,
+                36
+              ]
+            ]
+          }
+        },
+        "lineWidth" : 2
+      },
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 0.1,
+          "g" : 0.1,
+          "r" : 0.9
+        },
+        "fill" : {
+          "a" : 1,
+          "b" : 0.9,
+          "g" : 0.3,
+          "r" : 0.1
+        },
+        "id" : "00000000-0000-0000-0000-000000000015",
+        "kind" : {
+          "shape" : {
+            "_0" : "diamond",
+            "rect" : [
+              [
+                62,
+                74
+              ],
+              [
+                40,
+                36
+              ]
+            ]
+          }
+        },
+        "lineWidth" : 3
+      },
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 0,
+          "g" : 0.85,
+          "r" : 1
+        },
+        "id" : "00000000-0000-0000-0000-000000000016",
+        "kind" : {
+          "shape" : {
+            "_0" : "star",
+            "rect" : [
+              [
+                112,
+                72
+              ],
+              [
+                40,
+                40
+              ]
+            ]
+          }
+        },
+        "lineWidth" : 2
+      },
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 0.2,
+          "g" : 0.92,
+          "r" : 1
+        },
+        "id" : "00000000-0000-0000-0000-000000000017",
+        "kind" : {
+          "highlight" : {
+            "_0" : [
+              [
+                20,
+                48
+              ],
+              [
+                120,
+                14
+              ]
+            ]
+          }
+        },
+        "lineWidth" : 3
+      }
+    ],
+    "name" : "shapes"
+  },
+  {
+    "annotations" : [
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 1,
+          "g" : 1,
+          "r" : 1
+        },
+        "fill" : {
+          "a" : 1,
+          "b" : 1,
+          "g" : 1,
+          "r" : 1
+        },
+        "id" : "00000000-0000-0000-0000-000000000021",
+        "kind" : {
+          "shape" : {
+            "_0" : "rectangle",
+            "rect" : [
+              [
+                14,
+                14
+              ],
+              [
+                50,
+                36
+              ]
+            ]
+          }
+        },
+        "lineWidth" : 3,
+        "objectStyle" : {
+          "shadow" : {
+            "elevation" : 8,
+            "isOffset" : true,
+            "opacity" : 0.4,
+            "tint" : "ambient"
+          }
+        }
+      },
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 0.1,
+          "g" : 0.1,
+          "r" : 0.9
+        },
+        "id" : "00000000-0000-0000-0000-000000000022",
+        "kind" : {
+          "shape" : {
+            "_0" : "ellipse",
+            "rect" : [
+              [
+                90,
+                12
+              ],
+              [
+                50,
+                40
+              ]
+            ]
+          }
+        },
+        "lineWidth" : 4,
+        "objectStyle" : {
+          "shadow" : {
+            "elevation" : 2,
+            "isOffset" : true,
+            "opacity" : 0.6,
+            "tint" : "ambient"
+          }
+        }
+      },
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 0.9,
+          "g" : 0.3,
+          "r" : 0.1
+        },
+        "id" : "00000000-0000-0000-0000-000000000023",
+        "kind" : {
+          "arrow" : {
+            "from" : [
+              20,
+              95
+            ],
+            "to" : [
+              140,
+              80
+            ]
+          }
+        },
+        "lineWidth" : 5,
+        "objectStyle" : {
+          "shadow" : {
+            "elevation" : 16,
+            "isOffset" : true,
+            "opacity" : 0.4,
+            "tint" : "ambient"
+          }
+        }
+      }
+    ],
+    "background" : {
+      "a" : 1,
+      "b" : 1,
+      "g" : 1,
+      "r" : 1
+    },
+    "canvasRect" : [
+      [
+        0,
+        0
+      ],
+      [
+        160,
+        120
+      ]
+    ],
+    "name" : "shadows"
+  },
+  {
+    "annotations" : [
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 0,
+          "g" : 0,
+          "r" : 0
+        },
+        "cornerRadius" : 6,
+        "id" : "00000000-0000-0000-0000-000000000031",
+        "kind" : {
+          "image" : {
+            "_0" : {
+              "id" : "00000000-0000-0000-0000-000000000030",
+              "png" : "iVBORw0KGgoAAAANSUhEUgAAAAwAAAAICAYAAADN5B7xAAAAAXNSR0IArs4c6QAAAHhlWElmTU0AKgAAAAgABAEaAAUAAAABAAAAPgEbAAUAAAABAAAARgEoAAMAAAABAAIAAIdpAAQAAAABAAAATgAAAAAAAABIAAAAAQAAAEgAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAAAAygAwAEAAAAAQAAAAgAAAAA1QNoqgAAAAlwSFlzAAALEwAACxMBAJqcGAAAADFJREFUGBljfKah8Z8BC3BaIIJFlIGBCasoHkHaa2DUsLmD1Q8RLksasbmM9k4i2QYAorUHOmDxi4kAAAAASUVORK5CYII="
+            },
+            "rect" : [
+              [
+                12,
+                12
+              ],
+              [
+                60,
+                40
+              ]
+            ]
+          }
+        },
+        "lineWidth" : 0,
+        "objectStyle" : {
+          "border" : {
+            "color" : {
+              "a" : 1,
+              "b" : 1,
+              "g" : 1,
+              "r" : 1
+            },
+            "kind" : "solid",
+            "lineWidth" : 4
+          },
+          "shadow" : {
+            "elevation" : 8,
+            "isOffset" : true,
+            "opacity" : 0.5,
+            "tint" : "ambient"
+          }
+        }
+      },
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 0,
+          "g" : 0,
+          "r" : 0
+        },
+        "id" : "00000000-0000-0000-0000-000000000032",
+        "kind" : {
+          "image" : {
+            "_0" : {
+              "id" : "00000000-0000-0000-0000-000000000030",
+              "png" : "iVBORw0KGgoAAAANSUhEUgAAAAwAAAAICAYAAADN5B7xAAAAAXNSR0IArs4c6QAAAHhlWElmTU0AKgAAAAgABAEaAAUAAAABAAAAPgEbAAUAAAABAAAARgEoAAMAAAABAAIAAIdpAAQAAAABAAAATgAAAAAAAABIAAAAAQAAAEgAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAAAAygAwAEAAAAAQAAAAgAAAAA1QNoqgAAAAlwSFlzAAALEwAACxMBAJqcGAAAADFJREFUGBljfKah8Z8BC3BaIIJFlIGBCasoHkHaa2DUsLmD1Q8RLksasbmM9k4i2QYAorUHOmDxi4kAAAAASUVORK5CYII="
+            },
+            "rect" : [
+              [
+                92,
+                14
+              ],
+              [
+                48,
+                32
+              ]
+            ]
+          }
+        },
+        "lineWidth" : 0,
+        "objectStyle" : {
+          "border" : {
+            "kind" : "hairline"
+          }
+        }
+      },
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 0,
+          "g" : 0,
+          "r" : 0
+        },
+        "cornerRadius" : 12,
+        "id" : "00000000-0000-0000-0000-000000000033",
+        "kind" : {
+          "image" : {
+            "_0" : {
+              "id" : "00000000-0000-0000-0000-000000000030",
+              "png" : "iVBORw0KGgoAAAANSUhEUgAAAAwAAAAICAYAAADN5B7xAAAAAXNSR0IArs4c6QAAAHhlWElmTU0AKgAAAAgABAEaAAUAAAABAAAAPgEbAAUAAAABAAAARgEoAAMAAAABAAIAAIdpAAQAAAABAAAATgAAAAAAAABIAAAAAQAAAEgAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAAAAygAwAEAAAAAQAAAAgAAAAA1QNoqgAAAAlwSFlzAAALEwAACxMBAJqcGAAAADFJREFUGBljfKah8Z8BC3BaIIJFlIGBCasoHkHaa2DUsLmD1Q8RLksasbmM9k4i2QYAorUHOmDxi4kAAAAASUVORK5CYII="
+            },
+            "rect" : [
+              [
+                30,
+                70
+              ],
+              [
+                100,
+                40
+              ]
+            ]
+          }
+        },
+        "lineWidth" : 0
+      }
+    ],
+    "name" : "images"
+  },
+  {
+    "annotations" : [
+      {
+        "boxRadius" : 10,
+        "color" : {
+          "a" : 1,
+          "b" : 0,
+          "g" : 0,
+          "r" : 0
+        },
+        "id" : "00000000-0000-0000-0000-000000000041",
+        "kind" : {
+          "spotlight" : {
+            "_0" : [
+              [
+                14,
+                14
+              ],
+              [
+                60,
+                40
+              ]
+            ],
+            "style" : {
+              "effect" : "darken",
+              "shape" : "rectangle",
+              "softEdge" : 0,
+              "strength" : 0.7
+            }
+          }
+        },
+        "lineWidth" : 3
+      },
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 0,
+          "g" : 0,
+          "r" : 0
+        },
+        "id" : "00000000-0000-0000-0000-000000000042",
+        "kind" : {
+          "spotlight" : {
+            "_0" : [
+              [
+                96,
+                60
+              ],
+              [
+                50,
+                40
+              ]
+            ],
+            "style" : {
+              "effect" : "darken",
+              "shape" : "ellipse",
+              "softEdge" : 0,
+              "strength" : 0.7
+            }
+          }
+        },
+        "lineWidth" : 3
+      }
+    ],
+    "name" : "spotlights"
+  },
+  {
+    "annotations" : [
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 0.1,
+          "g" : 0.1,
+          "r" : 0.9
+        },
+        "id" : "00000000-0000-0000-0000-000000000051",
+        "kind" : {
+          "arrow" : {
+            "from" : [
+              80,
+              60
+            ],
+            "to" : [
+              190,
+              20
+            ]
+          }
+        },
+        "lineWidth" : 4
+      },
+      {
+        "color" : {
+          "a" : 1,
+          "b" : 0.9,
+          "g" : 0.3,
+          "r" : 0.1
+        },
+        "fill" : {
+          "a" : 1,
+          "b" : 1,
+          "g" : 1,
+          "r" : 1
+        },
+        "id" : "00000000-0000-0000-0000-000000000052",
+        "kind" : {
+          "shape" : {
+            "_0" : "rectangle",
+            "rect" : [
+              [
+                -20,
+                90
+              ],
+              [
+                50,
+                40
+              ]
+            ]
+          }
+        },
+        "lineWidth" : 3,
+        "objectStyle" : {
+          "shadow" : {
+            "elevation" : 4,
+            "isOffset" : true,
+            "opacity" : 0.4,
+            "tint" : "ambient"
+          }
+        }
+      }
+    ],
+    "background" : {
+      "a" : 1,
+      "b" : 0.9,
+      "g" : 0.95,
+      "r" : 0.95
+    },
+    "canvasRect" : [
+      [
+        -30,
+        -10
+      ],
+      [
+        230,
+        150
+      ]
+    ],
+    "name" : "padding"
+  }
+]

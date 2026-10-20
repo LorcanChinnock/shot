@@ -172,3 +172,18 @@ private let spike: CanvasPath = {
     #expect(CanvasPath.distance(from: CGPoint(x: 13, y: 4), toSegment: a, b) == 5)
     #expect(CanvasPath.distance(from: CGPoint(x: 3, y: 4), toSegment: a, a) == 5)
 }
+
+@Test func thePrimitivesBuildEachShapeFromItsCGPathStartPoint() {
+    let rect = CGRect(x: 0, y: 0, width: 10, height: 6)
+    #expect(CanvasPath(rect: rect).primitives == [
+        .move(to: CGPoint(x: 0, y: 0)), .line(to: CGPoint(x: 10, y: 0)), .line(to: CGPoint(x: 10, y: 6)), .line(to: CGPoint(x: 0, y: 6)), .close,
+    ])
+    let ellipse = CanvasPath(ellipseIn: rect).primitives
+    #expect(ellipse.first == .move(to: CGPoint(x: 10, y: 3)))
+    #expect(ellipse.count == 6 && ellipse.last == .close)
+    var open = CanvasPath()
+    open.move(to: CGPoint(x: 1, y: 1))
+    open.addQuadCurve(to: CGPoint(x: 7, y: 1), control: CGPoint(x: 4, y: 7))
+    // A quadratic curve raised to a cubic, with no close.
+    #expect(open.primitives == [.move(to: CGPoint(x: 1, y: 1)), .curve(to: CGPoint(x: 7, y: 1), control1: CGPoint(x: 3, y: 5), control2: CGPoint(x: 5, y: 5))])
+}
