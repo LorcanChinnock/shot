@@ -1,4 +1,5 @@
 import CCairo
+import CPango
 import Foundation
 
 /// Linux's `Canvas`: a Cairo image surface. Cairo has y down, so the canvas flips once when it's made, and callers see
@@ -53,7 +54,7 @@ public final class CairoCanvas: Canvas {
     }
 
     public static var effects: any ImageEffects { NoEffectsYet() }
-    public static var shaper: any TextShaper { NoShaperYet() }
+    public static var shaper: any TextShaper { PangoShaper() }
 
     // MARK: - State
 
@@ -318,8 +319,32 @@ public final class CairoCanvas: Canvas {
         }
     }
 
+    /// Draws `line` with its baseline starting at `position`, upright on a canvas the renderer has turned to have y down,
+    /// as `CGCanvas` draws a Core Text line: filled in its own colour, or outlined in the stroke colour and line width.
     public func draw(_ line: any ShapedLine, at position: CGPoint, outlined: Bool) {
-        preconditionFailure("CairoCanvas draws text once PangoShaper comes (#744)")
+        guard let line = line as? PangoLine else {
+            preconditionFailure("CairoCanvas draws only the lines PangoShaper makes")
+        }
+        let color = outlined ? state.stroke : line.color
+        paint { context, alpha in
+            // A colour emoji keeps its own colours, so a translucent line is drawn whole and then faded.
+            if alpha < 1 {
+                cairo_push_group(context)
+            }
+            cairo_new_path(context)
+            cairo_move_to(context, position.x, position.y)
+            cairo_set_source_rgba(context, color.r, color.g, color.b, color.a)
+            if outlined {
+                pango_cairo_layout_line_path(context, line.layout.line)
+                cairo_stroke(context)
+            } else {
+                pango_cairo_show_layout_line(context, line.layout.line)
+            }
+            if alpha < 1 {
+                cairo_pop_group_to_source(context)
+                cairo_paint_with_alpha(context, alpha)
+            }
+        }
     }
 
     public func draw(_ image: PlatformImage, in rect: CGRect) {
@@ -504,14 +529,6 @@ private final class Surface {
         }
         return Bitmap(width: width, height: height, pixels: data)
     }
-}
-
-/// Stands in for Pango's shaper until #744 brings it. A canvas type must name one, but measuring or drawing text with
-/// it stops, rather than give an image with its text missing.
-struct NoShaperYet: TextShaper {
-    func metrics(of font: TextFont) -> TextMetrics { preconditionFailure("text on Linux comes with PangoShaper (#744)") }
-    func line(_ string: String, font: TextFont, color: RGBA) -> any ShapedLine { preconditionFailure("text on Linux comes with PangoShaper (#744)") }
-    func paragraph(_ string: String, font: TextFont, color: RGBA) -> any ShapedParagraph { preconditionFailure("text on Linux comes with PangoShaper (#744)") }
 }
 
 /// Stands in for the portable effects until #745 brings them. A canvas type must name some, but filtering with these

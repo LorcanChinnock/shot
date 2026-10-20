@@ -229,7 +229,7 @@ enum ShotCLI {
         return Doctor.LinuxFacts(
             version: version(of: nil), settingsFile: LinuxSettings.file(suite: fallbackSuite).path,
             sessionType: ProcessInfo.processInfo.environment["XDG_SESSION_TYPE"], folder: folder.path, folderExists: exists,
-            folderError: folderError, captures: captures
+            folderError: folderError, captures: captures, colorEmoji: PangoShaper.hasColorEmoji
         )
     }
     #endif

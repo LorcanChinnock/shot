@@ -42,7 +42,7 @@ jobs:
       # AgentCommand's tests run commands through zsh, which the image doesn't have, and ShotCoreLinux links libpng,
       # libjpeg-turbo and Cairo.
       - name: Install packages
-        run: apt-get update -qq && apt-get install -y -qq --no-install-recommends zsh libpng-dev libturbojpeg0-dev libcairo2-dev
+        run: apt-get update -qq && apt-get install -y -qq --no-install-recommends zsh libpng-dev libturbojpeg0-dev libcairo2-dev libpango1.0-dev fonts-dejavu-core
       - name: Test
         run: swift test --force-resolved-versions
       # swift test builds only what the tests need, so the command line on Linux is built on its own.
