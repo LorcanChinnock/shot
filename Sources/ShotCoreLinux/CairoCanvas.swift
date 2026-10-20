@@ -112,6 +112,7 @@ public final class CairoCanvas: Canvas {
 
     public func translateBy(x: CGFloat, y: CGFloat) { cairo_translate(context, x, y) }
     public func scaleBy(x: CGFloat, y: CGFloat) { cairo_scale(context, x, y) }
+    public func rotate(by angle: CGFloat) { cairo_rotate(context, angle) }
 
     public var pixelScale: CGFloat {
         var matrix = cairo_matrix_t()

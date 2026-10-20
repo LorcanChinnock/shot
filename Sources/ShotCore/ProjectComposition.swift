@@ -139,7 +139,7 @@ public enum CompositionBuilder {
 
     /// H.264 wants even sides.
     static func evenSize(_ size: CGSize) -> CGSize {
-        CGSize(width: max(2, (size.width / 2).rounded() * 2), height: max(2, (size.height / 2).rounded() * 2))
+        LayerGeometry.evenSize(size)
     }
 
     private static func time(_ seconds: Double) -> CMTime {

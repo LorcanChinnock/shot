@@ -34,6 +34,7 @@ public final class CGCanvas: Canvas {
     public func restoreState() { context.restoreGState() }
     public func translateBy(x: CGFloat, y: CGFloat) { context.translateBy(x: x, y: y) }
     public func scaleBy(x: CGFloat, y: CGFloat) { context.scaleBy(x: x, y: y) }
+    public func rotate(by angle: CGFloat) { context.rotate(by: angle) }
 
     public var pixelScale: CGFloat {
         let ctm = context.ctm

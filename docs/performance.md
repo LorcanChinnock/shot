@@ -23,13 +23,16 @@ Gallery text search has no CI baseline yet. Its budget assumes the runner is as 
 
 To change a budget, measure again, then update both this table and `Budget` in `PerfTests.swift`.
 
-## On Linux: the image effects
+## On Linux: the image effects and the compositor
 
-Linux has no Core Image, so blur, pixelate and the masks run in plain Swift (`Sources/ShotModel/Bitmap+Effects.swift`). `Tests/ShotCoreLinuxTests/PerfTests.swift` times a blur of a 2560×1600 capture at radius 20, the spotlight blur's default at that size. It runs with the other Linux tests in CI's `test` job on every pull request, in a debug build, so it keeps the fastest of only three runs. Its budget is 2× the CI runner's time, as on the Mac.
+Linux has no Core Image, so blur, pixelate and the masks run in plain Swift (`Sources/ShotModel/Bitmap+Effects.swift`), and a project's frames are drawn through Cairo by `PortableCompositor`. `Tests/ShotCoreLinuxTests/PerfTests.swift` times a blur of a 2560×1600 capture at radius 20, the spotlight blur's default at that size, and one 1920×1080 frame. They run with the other Linux tests in CI's `test` job on every pull request, in a debug build, so each keeps the fastest of only three runs. A budget is 2× the CI runner's time, as on the Mac.
 
 | Path | What's measured | Docker on the reference Mac (debug) | Release build | CI runner (debug) | Budget |
 |---|---|---|---|---|---|
 | Blur | `PortableEffects.blurred` of an opaque 2560×1600 capture, radius 20 | 650 ms | 100 ms | 1,250 ms | 2,500 ms |
+| Compose | `PortableCompositor.frame` of a 1920×1080 frame: a 1280×720 clip turned, with rounded corners, a border and a shadow, over a recording, under an arrow, a box with a shadow and a highlight. Its shadow masks are cached, as from one frame to the next | 140 ms | not measured | not measured yet | 600 ms |
+
+The compositor's budget assumes the CI runner is about twice as slow as Docker on the reference Mac, as it is for the blur, then doubles that. Measure it on the runner when it next runs.
 
 ## Locally: `make perf-app`
 
