@@ -1,0 +1,6 @@
+[
+  {"type": "arrow", "from": [12, 14], "to": [110, 82], "color": "red"},
+  {"type": "rectangle", "rect": [96, 20, 50, 34], "color": "blue"},
+  {"type": "ellipse", "rect": [20, 70, 44, 36], "color": "green", "fill": "#FFCC00"},
+  {"type": "highlight", "rect": [70, 96, 80, 14]}
+]

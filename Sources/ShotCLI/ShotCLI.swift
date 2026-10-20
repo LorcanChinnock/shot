@@ -8,7 +8,8 @@ import ShotCoreLinux
 /// The `shot` command line: `shot mcp`, the MCP server AI agents talk to, the headless media commands, `shot capture`
 /// and `shot record`, which ask the running app, `shot latest`, `list` and `get`, which read captures as the MCP tools
 /// do, `shot watch`, `shot doctor`, and `--version`. It ships inside the app as `Contents/MacOS/shot-cli`, so it reads the
-/// app's settings to find the captures. On Linux, where it's `shot`, only `Doctor.linuxCommands` run so far.
+/// app's settings to find the captures. On Linux, where it's `shot`, only `Doctor.linuxCommands` run so far: the image
+/// commands and those that read captures.
 @main
 enum ShotCLI {
     static func main() async {
@@ -45,20 +46,17 @@ enum ShotCLI {
             if checks.contains(where: { $0.outcome == .fail }) {
                 exit(1)
             }
-        #if !os(macOS)
-        default:
-            printError("\(program) \(command.name): \(ShotCommandError.notOnLinuxYet.message)")
-            exit(ShotCommandError.notOnLinuxYet.exitCode)
-        #else
         case .latest, .list, .get:
             do {
                 let app = appBundle()
-                let texts = TextIndexStore(bundleID: app?.bundleIdentifier ?? fallbackSuite)
-                print(ShotCommand.json(try readCaptures(command, tools: AgentTools.live(folder: captureFolder(app: app), texts: texts))))
+                print(ShotCommand.json(try readCaptures(command, tools: captureTools(folder: captureFolder(app: app), app: app))))
             } catch {
                 printError("\(program) \(command.name): \(error.message)")
                 exit(error.exitCode)
             }
+        case let .watch(options):
+            await watch(options, folder: captureFolder(app: appBundle()), program: program)
+        #if os(macOS)
         case .capture, .windows:
             var request = AgentRequest(.windows)
             if case let .capture(target) = command {
@@ -94,8 +92,6 @@ enum ShotCLI {
                 printError("\(program) \(command.name): \(error.message)")
                 exit(error.exitCode)
             }
-        case let .watch(options):
-            await watch(options, folder: captureFolder(app: appBundle()), program: program)
         case let .pick(options):
             var request = AgentRequest(.pick, duration: options.timeout)
             request.prompt = options.prompt
@@ -117,7 +113,9 @@ enum ShotCLI {
                 printError("\(program) index-text: \(error.localizedDescription)")
                 exit(1)
             }
+        #endif
         default:
+            // On Linux, the commands that capture, record or read video answer that they're not on Linux yet.
             do {
                 let projects = ProjectStore(bundleID: appBundle()?.bundleIdentifier ?? fallbackSuite)
                 let result = try await ShotCommands.run(command, projects: projects)
@@ -129,8 +127,16 @@ enum ShotCLI {
                 printError("\(program) \(command.name): \(error.message)")
                 exit(error.exitCode)
             }
-        #endif
         }
+    }
+
+    /// The tools `shot latest`, `list` and `get` read the captures through, without the app's projects or marks.
+    static func captureTools(folder: URL, app: Bundle?) -> AgentTools {
+        #if os(macOS)
+        AgentTools.live(folder: folder, texts: TextIndexStore(bundleID: app?.bundleIdentifier ?? fallbackSuite))
+        #else
+        AgentTools.live(folder: folder)
+        #endif
     }
 
     /// The folder the app saves captures to, from its settings.
@@ -152,7 +158,7 @@ enum ShotCLI {
             try await ask(request, app: app)
         }.server(version: version)
         #else
-        let server = AgentTools.live(folder: folder).server(version: version)
+        let server = AgentTools.live(folder: folder, projects: ProjectStore(bundleID: fallbackSuite)).server(version: version)
         #endif
         printError("Shot MCP server \(version), reading \(folder.path)")
         while let line = readLine(strippingNewline: true) {

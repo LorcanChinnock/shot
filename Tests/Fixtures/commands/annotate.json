@@ -1,0 +1,89 @@
+{
+  "info" : {
+    "kind" : "image",
+    "path" : "annotate.png",
+    "record" : {
+      "annotations" : [
+        {
+          "color" : "red",
+          "from" : [
+            12,
+            14
+          ],
+          "hex" : "#FF3B30",
+          "lineWidth" : 4,
+          "to" : [
+            110,
+            82
+          ],
+          "type" : "arrow"
+        },
+        {
+          "color" : "blue",
+          "hex" : "#007AFF",
+          "lineWidth" : 4,
+          "rect" : [
+            96,
+            20,
+            50,
+            34
+          ],
+          "type" : "rectangle"
+        },
+        {
+          "color" : "green",
+          "fill" : "#FFCC00",
+          "hex" : "#33C759",
+          "lineWidth" : 4,
+          "rect" : [
+            20,
+            70,
+            44,
+            36
+          ],
+          "type" : "ellipse"
+        },
+        {
+          "color" : "red",
+          "hex" : "#FF3B30",
+          "lineWidth" : 4,
+          "rect" : [
+            70,
+            96,
+            80,
+            14
+          ],
+          "type" : "highlight"
+        }
+      ],
+      "canvas" : [
+        0,
+        0,
+        160,
+        120
+      ],
+      "coordinateSpace" : "image pixels, top-left origin",
+      "editable" : true,
+      "kind" : "image",
+      "original" : "base.png",
+      "scale" : 1,
+      "schema" : "shot.capture/2",
+      "size" : {
+        "height" : 120,
+        "width" : 160
+      }
+    },
+    "scale" : 1,
+    "size" : {
+      "height" : 120,
+      "width" : 160
+    }
+  },
+  "result" : {
+    "path" : "annotate.png",
+    "size" : {
+      "height" : 120,
+      "width" : 160
+    }
+  }
+}

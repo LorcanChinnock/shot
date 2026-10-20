@@ -1,0 +1,70 @@
+{
+  "info" : {
+    "kind" : "image",
+    "path" : "edit.png",
+    "record" : {
+      "annotations" : [
+        {
+          "color" : "red",
+          "from" : [
+            48,
+            116
+          ],
+          "hex" : "#FF3B30",
+          "lineWidth" : 4,
+          "to" : [
+            148,
+            46
+          ],
+          "type" : "arrow"
+        },
+        {
+          "lineWidth" : 0,
+          "rect" : [
+            128,
+            86,
+            48,
+            36
+          ],
+          "type" : "image"
+        }
+      ],
+      "canvas" : [
+        -28,
+        -16,
+        216,
+        176
+      ],
+      "coordinateSpace" : "image pixels, top-left origin",
+      "editable" : false,
+      "kind" : "image",
+      "original" : "base.png",
+      "scale" : 1,
+      "schema" : "shot.capture/2",
+      "size" : {
+        "height" : 176,
+        "width" : 216
+      }
+    },
+    "scale" : 1,
+    "size" : {
+      "height" : 176,
+      "width" : 216
+    }
+  },
+  "result" : {
+    "layers" : [
+      {
+        "type" : "arrow"
+      },
+      {
+        "type" : "image"
+      }
+    ],
+    "path" : "edit.png",
+    "size" : {
+      "height" : 176,
+      "width" : 216
+    }
+  }
+}

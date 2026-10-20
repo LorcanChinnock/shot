@@ -2,16 +2,6 @@ import Foundation
 import Testing
 @testable import ShotCoreLinux
 
-@Test func everyToolButFindTextIsListedAndAnswersThatItsNotOnLinuxYet() async {
-    let tools = AgentTools.live(folder: URL(fileURLWithPath: "/shots"))
-    let names = tools.server(version: "1").tools.map(\.name)
-    #expect(names == AgentTools.definitions.map(\.name).filter { $0 != AgentTools.findText })
-    for name in names {
-        let result = await tools.call(name, .object([:]))
-        #expect(result == MCPServer.ToolResult(content: [.text("\(name): not on Linux yet")], isError: true))
-    }
-}
-
 @Test func theSettingsAreTheReleasesInTheConfigHome() throws {
     #expect(LinuxSettings.suite == "dev.lorcan.Shot")
     #expect(LinuxSettings.file(suite: "dev.lorcan.Shot", environment: ["XDG_CONFIG_HOME": "/etc/me"]).path == "/etc/me/dev.lorcan.Shot.plist")

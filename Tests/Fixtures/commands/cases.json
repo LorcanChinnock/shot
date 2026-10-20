@@ -1,0 +1,9 @@
+[
+  {"name": "annotate", "args": ["annotate", "{base}", "--json", "{fixtures}/marks.json", "-o", "{out}"]},
+  {"name": "annotateText", "args": ["annotate", "{base}", "--json", "{fixtures}/text.json", "-o", "{out}"], "block": 20},
+  {"name": "redactPixelate", "args": ["redact", "{base}", "--rect", "10,10,60,40", "--rect", "100,70,50,40", "-o", "{out}"]},
+  {"name": "redactBlur", "args": ["redact", "{base}", "--rect", "20,30,90,50", "--style", "blur", "-o", "{out}"]},
+  {"name": "crop", "args": ["crop", "{base}", "--rect", "30,20,100,70", "-o", "{out}"]},
+  {"name": "diff", "args": ["diff", "{base}", "{lines}", "-o", "{out}"]},
+  {"name": "edit", "args": ["edit", "{base}", "--json", "{\"pad\": 16, \"background\": \"white\", \"style\": {\"shadow\": \"soft\", \"corners\": 10, \"border\": \"solid\"}, \"marks\": [{\"type\": \"arrow\", \"from\": [20, 100], \"to\": [120, 30]}], \"place\": [{\"path\": \"{lines}\", \"at\": [100, 70], \"width\": 48}]}", "-o", "{out}"]}
+]
