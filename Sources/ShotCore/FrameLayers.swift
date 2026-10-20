@@ -9,6 +9,14 @@ enum AnnotationFrame {
 
         var isPlain: Bool { abs(rotation) < 1e-6 && opacity >= 0.999 }
     }
+
+    /// Kinds that depend on what's under them: they blend with it, blur it, or dim all but a part of it.
+    static func needsPicture(_ annotation: Annotation) -> Bool {
+        switch annotation.kind {
+        case .highlight, .marker, .spotlight, .pixelate, .blur: true
+        case .arrow, .line, .shape, .text, .counter, .note, .freehand, .image: false
+        }
+    }
 }
 
 /// What a frame of a project draws at one time, bottom to top: each picture with its clip as it is then, and between them

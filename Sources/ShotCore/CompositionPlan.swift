@@ -55,6 +55,11 @@ extension Project {
 }
 
 public enum LayerGeometry {
+    /// The size a project's frames are drawn at: its canvas with even sides, which H.264 wants.
+    static func evenSize(_ size: CGSize) -> CGSize {
+        CGSize(width: max(2, (size.width / 2).rounded() * 2), height: max(2, (size.height / 2).rounded() * 2))
+    }
+
     /// Maps a clip's picture, with its origin at its top left and y down, onto a canvas the same way:
     /// scaled to fit, then scaled, rotated and moved by the clip's transform about the canvas centre.
     public static func transform(for clip: Clip, canvas: CGSize) -> CGAffineTransform {

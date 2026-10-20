@@ -18,6 +18,8 @@ public protocol Canvas: AnyObject, SendableMetatype {
     func restoreState()
     func translateBy(x: CGFloat, y: CGFloat)
     func scaleBy(x: CGFloat, y: CGFloat)
+    /// Turns the coordinates by `angle` radians, from the x axis towards the y axis.
+    func rotate(by angle: CGFloat)
     /// Pixels per unit along the current x axis.
     var pixelScale: CGFloat { get }
     /// The smallest rect holding the clip, in the current coordinates; infinite or null when nothing clips.

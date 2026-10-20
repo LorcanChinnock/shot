@@ -81,14 +81,6 @@ final class OverlayCache: @unchecked Sendable {
 }
 
 extension AnnotationFrame {
-    /// Kinds that depend on what's under them: they blend with it, blur it, or dim all but a part of it.
-    private static func needsPicture(_ annotation: Annotation) -> Bool {
-        switch annotation.kind {
-        case .highlight, .marker, .spotlight, .pixelate, .blur: true
-        case .arrow, .line, .shape, .text, .counter, .note, .freehand, .image: false
-        }
-    }
-
     /// `image` with each item drawn over it, bottom to top, on `canvasType` canvases. Runs of plain ones are drawn together.
     static func apply(_ items: [Item], to image: CIImage, canvas: CGRect, context: CIContext, cache: OverlayCache? = nil, canvasType: any Canvas.Type) -> CIImage {
         var result = image

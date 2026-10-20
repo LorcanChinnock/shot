@@ -17,6 +17,7 @@ final class UnusedCanvas: Canvas {
     func restoreState() {}
     func translateBy(x: CGFloat, y: CGFloat) {}
     func scaleBy(x: CGFloat, y: CGFloat) {}
+    func rotate(by angle: CGFloat) {}
     var pixelScale: CGFloat { 1 }
     var clipBounds: CGRect { .infinite }
     func clip(to rect: CGRect) {}

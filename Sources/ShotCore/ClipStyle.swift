@@ -1,6 +1,4 @@
-#if canImport(CoreImage)
-import CoreImage
-import CoreImage.CIFilterBuiltins
+import Foundation
 import Synchronization
 
 /// Blurred clip shadows, each a grey mask of the shadow's coverage, so a frame only moves, scales and tints one rather
@@ -14,7 +12,7 @@ final class ClipShadowCache: Sendable {
     }
 
     /// The mask, and where it goes in the key's pixels.
-    typealias Value = (mask: CGImage, frame: CGRect)
+    typealias Value = (mask: PlatformImage, frame: CGRect)
 
     private let capacity: Int
     /// Most recently used first.
@@ -75,6 +73,52 @@ enum ClipStyler {
     /// How closely the lift a shadow is blurred at follows an entrance's.
     static let liftSteps: CGFloat = 8
 
+    /// The scale and lift a shadow is blurred at for a clip at `scale` and `lift`: the nearest steps.
+    static func steps(scale: CGFloat, lift: CGFloat) -> (scale: CGFloat, lift: CGFloat) {
+        (exp2((log2(scale) * scaleSteps).rounded() / scaleSteps), 1 + ((lift - 1) * liftSteps).rounded() / liftSteps)
+    }
+
+    /// Where a clip's picture and what casts its shadow are at `scale`, in canvas pixels about its upright picture's
+    /// bottom-left corner, y up.
+    struct Look {
+        var rect: CGRect
+        var radius: CGFloat
+        var borderWidth: CGFloat
+        /// The picture, with a solid border round it.
+        var silhouette: CGRect
+        var silhouetteRadius: CGFloat
+
+        init(_ clip: Clip, scale: CGFloat, fit: CGFloat) {
+            rect = CGRect(x: 0, y: 0, width: clip.size.width * fit * scale, height: clip.size.height * fit * scale)
+            radius = BoxShape.cornerRadius(clip.cornerRadius * scale, in: rect)
+            let border = clip.style.border
+            // A hairline stays one pixel at any scale.
+            borderWidth = border.map { $0.kind == .hairline ? 1 : $0.width * scale } ?? 0
+            if let border, border.castsShadow {
+                silhouette = rect.insetBy(dx: -borderWidth, dy: -borderWidth)
+                silhouetteRadius = radius > 0 ? radius + borderWidth : 0
+            } else {
+                silhouette = rect
+                silhouetteRadius = radius
+            }
+        }
+    }
+
+    /// The canvas pixels about the silhouette in `key` that its blurred mask covers, before it's made coarser, and how
+    /// much coarser: the softer the shadow, the coarser, as the photo editor's shadows are, since a blur has no detail to
+    /// lose, and never larger than 4096 pixels for a clip scaled far up.
+    static func maskArea(_ key: ClipShadowCache.Key) -> (frame: CGRect, unit: CGFloat) {
+        let reach = (key.blur * 1.5).rounded(.up)
+        let frame = key.silhouette.insetBy(dx: -reach, dy: -reach)
+        return (frame, min(1, 8 / max(key.blur, 1), 4096 / max(frame.width, frame.height, 1)))
+    }
+}
+
+#if canImport(CoreImage)
+import CoreImage
+import CoreImage.CIFilterBuiltins
+
+extension ClipStyler {
     /// `picture`, the clip's frame already placed on the canvas, with `clip`'s corners, border and shadow and faded by its
     /// opacity, over `image`. `placement` maps the clip's upright picture, y up, onto the canvas in Core Image's
     /// coordinates, and `fit` is how much it's scaled to fit the canvas at a clip scale of 1. `lift` raises the shadow.
@@ -129,8 +173,7 @@ enum ClipStyler {
         _ shadow: Shadow, of clip: Clip, edge: RGBA?, scale: CGFloat, fit: CGFloat, lift: CGFloat, placement: CGAffineTransform, opacity: CGFloat,
         shadows: ClipShadowCache, context: CIContext
     ) -> CIImage? {
-        let stepped = exp2((log2(scale) * scaleSteps).rounded() / scaleSteps)
-        let lifted = 1 + ((lift - 1) * liftSteps).rounded() / liftSteps
+        let (stepped, lifted) = steps(scale: scale, lift: lift)
         let caster = Look(clip, scale: stepped, fit: fit)
         var blurred = shadow, shown = shadow
         blurred.elevation *= stepped * lifted
@@ -163,12 +206,9 @@ enum ClipStyler {
         return result
     }
 
-    /// The silhouette in `key` blurred, as grey coverage over black. It's made coarser the softer it is, as the photo
-    /// editor's shadows are, since a blur has no detail to lose, and never larger than 4096 pixels for a clip scaled far up.
+    /// The silhouette in `key` blurred, as grey coverage over black, over `maskArea`.
     private static func blurredMask(_ key: ClipShadowCache.Key, context: CIContext) -> ClipShadowCache.Value? {
-        let reach = (key.blur * 1.5).rounded(.up)
-        let frame = key.silhouette.insetBy(dx: -reach, dy: -reach)
-        let unit = min(1, 8 / max(key.blur, 1), 4096 / max(frame.width, frame.height, 1))
+        let (frame, unit) = maskArea(key)
         let toPixels = CGAffineTransform(scaleX: unit, y: unit)
         let pixels = frame.applying(toPixels).integral
         let shape = roundedRect(key.silhouette.applying(toPixels), radius: key.radius * unit)
@@ -224,32 +264,6 @@ enum ClipStyler {
         generator.radius = Float(radius)
         generator.color = color
         return generator.outputImage ?? CIImage.empty()
-    }
-
-    /// Where a clip's picture and what casts its shadow are at `scale`, in canvas pixels about its upright picture's
-    /// bottom-left corner, y up.
-    private struct Look {
-        var rect: CGRect
-        var radius: CGFloat
-        var borderWidth: CGFloat
-        /// The picture, with a solid border round it.
-        var silhouette: CGRect
-        var silhouetteRadius: CGFloat
-
-        init(_ clip: Clip, scale: CGFloat, fit: CGFloat) {
-            rect = CGRect(x: 0, y: 0, width: clip.size.width * fit * scale, height: clip.size.height * fit * scale)
-            radius = BoxShape.cornerRadius(clip.cornerRadius * scale, in: rect)
-            let border = clip.style.border
-            // A hairline stays one pixel at any scale.
-            borderWidth = border.map { $0.kind == .hairline ? 1 : $0.width * scale } ?? 0
-            if let border, border.castsShadow {
-                silhouette = rect.insetBy(dx: -borderWidth, dy: -borderWidth)
-                silhouetteRadius = radius > 0 ? radius + borderWidth : 0
-            } else {
-                silhouette = rect
-                silhouetteRadius = radius
-            }
-        }
     }
 }
 #endif

@@ -456,7 +456,7 @@ public enum AnnotationRenderer {
     /// The average colour near `image`'s edge, each pixel weighed by its alpha; `nil` if it's clear all round.
     /// It's read from a small copy, kept while the image is drawn.
     static func edgeColor(of image: PlatformImage, canvasType: any Canvas.Type) -> RGBA? {
-        let side = 16
+        let side = edgeSampleSide
         let sample = cache.value(for: .edgeSample(SampledImage(image: image))) {
             guard let ctx = canvasType.init(width: side, height: side, format: .sRGB) else {
                 return nil
@@ -470,7 +470,17 @@ public enum AnnotationRenderer {
             return nil
         }
         ctx.draw(sample.image, in: CGRect(x: 0, y: 0, width: side, height: side))
-        guard let bitmap = ctx.makeBitmap() else {
+        return ctx.makeBitmap().flatMap(edgeColor(ofSample:))
+    }
+
+    /// The side of the small copy an edge colour is read from.
+    static let edgeSampleSide = 16
+
+    /// The average colour of the two pixels all round `bitmap`, a copy `edgeSampleSide` pixels square of an image, each
+    /// pixel weighed by its alpha; `nil` if they're all clear.
+    static func edgeColor(ofSample bitmap: Bitmap) -> RGBA? {
+        let side = edgeSampleSide
+        guard bitmap.width == side, bitmap.height == side else {
             return nil
         }
         let bytes = bitmap.pixels, bytesPerRow = bitmap.bytesPerRow
