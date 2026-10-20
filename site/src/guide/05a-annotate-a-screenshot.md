@@ -54,7 +54,7 @@ Your marks can reach past the edges of the screenshot. The canvas grows to fit t
 The options for the tool you picked show below the tools:
 
 - **Colour and width:** a colour and one of three widths. For text, sticky notes and counters, the widths are text sizes, and changing the size or colour while you type updates the text as you go.
-- **Text and sticky notes:** left, centre or right alignment.
+- **Text and sticky notes:** left, centre or right alignment. A sticky note can also put its text at the top, middle or bottom, which shows when you drag the note taller than its text.
 - **Shape:** which shape, and a fill.
 - **Redact:** blur or pixelate, and how strong.
 - **Spotlight:** a rectangle or an ellipse, a soft edge, whether to darken or blur outside it, and how much. Every spotlight in the screenshot shares one dim, so the effect and strength apply to all of them.

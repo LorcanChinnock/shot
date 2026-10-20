@@ -939,7 +939,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         field.textColor = NSColor(srgbRed: ink.r, green: ink.g, blue: ink.b, alpha: 1)
         field.alignment = (editedText?.alignment ?? .left).textAlignment
         // A borderless field insets its text 2 pt on each side.
-        field.frame = viewRect(layout.textRect).insetBy(dx: -2, dy: 0)
+        field.frame = viewRect(layout.alignedTextRect).insetBy(dx: -2, dy: 0)
         needsDisplay = true
     }
 

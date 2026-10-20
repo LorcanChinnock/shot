@@ -303,7 +303,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             let ink = layout.ink
             field.textColor = NSColor(srgbRed: ink.r, green: ink.g, blue: ink.b, alpha: 1)
             // A borderless field insets its text 2 pt on each side.
-            field.frame = viewRect(layout.textRect).insetBy(dx: -2, dy: 0)
+            field.frame = viewRect(layout.alignedTextRect).insetBy(dx: -2, dy: 0)
         case let .text(_, origin, fontSize):
             let size = fontSize * fit
             if field.font?.pointSize != size {

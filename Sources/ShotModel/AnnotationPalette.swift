@@ -278,4 +278,30 @@ public struct AnnotationPalette: Equatable, Sendable {
             style.alignment = alignment
         }
     }
+
+    /// Where the note shown puts its text: the one being typed's, else the selection's, else the next note's.
+    /// `nil` when none of them is a note.
+    public var verticalAlignment: VerticalTextAlign? {
+        if let shown {
+            guard case .note = shown.kind else {
+                return nil
+            }
+            return shown.verticalAlignment
+        }
+        return tool == .note ? style.verticalAlignment : nil
+    }
+
+    public mutating func setVerticalAlignment(_ alignment: VerticalTextAlign) {
+        if editingText != nil {
+            editingText?.verticalAlignment = alignment
+            if editingTextIsNew {
+                style.verticalAlignment = alignment
+            }
+            return
+        }
+        selection?.verticalAlignment = alignment
+        if stylesNextAnnotation {
+            style.verticalAlignment = alignment
+        }
+    }
 }

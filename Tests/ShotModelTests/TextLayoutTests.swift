@@ -140,6 +140,21 @@ private func note(_ string: String, width: CGFloat = 72, height: CGFloat = 0) ->
     #expect(short.frame.height == short.lineHeight * CGFloat(short.lines.count) + short.padding * 2)
 }
 
+@Test(arguments: [(VerticalTextAlign.top, 0.0), (.middle, 0.5), (.bottom, 1.0)])
+func noteTextSitsAtTheTopMiddleOrBottomOfATallNote(alignment: VerticalTextAlign, share: CGFloat) {
+    let layout = NoteLayout(string: "Hi", rect: CGRect(x: 5, y: 7, width: 72, height: 100), fontSize: 10, color: yellow, verticalAlignment: alignment, shaper: shaper)
+    let spare = layout.textRect.height - layout.lineHeight
+    #expect(layout.alignedTextRect.minY == layout.textRect.minY + spare * share)
+    #expect(layout.alignedTextRect.maxY == layout.textRect.maxY)
+    #expect(layout.alignedTextRect.minX == layout.textRect.minX && layout.alignedTextRect.width == layout.textRect.width)
+}
+
+@Test(arguments: VerticalTextAlign.allCases)
+func noteTextThatFillsTheNoteDoesntMove(alignment: VerticalTextAlign) {
+    let layout = NoteLayout(string: "one two three four", rect: CGRect(x: 5, y: 7, width: 72, height: 0), fontSize: 10, color: yellow, verticalAlignment: alignment, shaper: shaper)
+    #expect(layout.alignedTextRect == layout.textRect)
+}
+
 @Test func noteWidthNeverDropsBelowTheMinimum() {
     let layout = note("Hi", width: 5)
     #expect(layout.frame.width == NoteLayout.minWidth(fontSize: 10))

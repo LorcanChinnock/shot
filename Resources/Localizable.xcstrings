@@ -2838,6 +2838,9 @@
         }
       }
     },
+    "Align Bottom" : {
+
+    },
     "Align Centre" : {
       "localizations" : {
         "de" : {
@@ -2942,6 +2945,9 @@
         }
       }
     },
+    "Align Middle" : {
+
+    },
     "Align Right" : {
       "localizations" : {
         "de" : {
@@ -2993,6 +2999,9 @@
           }
         }
       }
+    },
+    "Align Top" : {
+
     },
     "All" : {
       "localizations" : {

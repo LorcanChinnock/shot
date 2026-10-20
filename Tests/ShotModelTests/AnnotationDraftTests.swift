@@ -4,7 +4,8 @@ import Testing
 
 private let style = AnnotationDraft.Style(
     color: RGBA(1, 0, 0), fill: RGBA(0, 0, 1), noteColor: RGBA(1, 1, 0), lineWidth: 4, shape: .rectangle,
-    redaction: .pixelate, redactionAmount: 0.02, spotlight: SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.7), alignment: .center
+    redaction: .pixelate, redactionAmount: 0.02, spotlight: SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.7), alignment: .center,
+    verticalAlignment: .bottom
 )
 
 private func draft(
@@ -94,10 +95,11 @@ private func isClose(_ a: CGPoint, _ b: CGPoint) -> Bool { hypot(a.x - b.x, a.y 
     #expect(line.fill == nil)
 }
 
-@Test func notesTakeTheNoteColourAndAlignment() throws {
+@Test func notesTakeTheNoteColourAndBothAlignments() throws {
     let note = try #require(draft(.note, to: CGPoint(x: 200, y: 100)))
     #expect(note.color == style.noteColor)
     #expect(note.alignment == .center)
+    #expect(note.verticalAlignment == .bottom)
     #expect(note.text == "")
 }
 

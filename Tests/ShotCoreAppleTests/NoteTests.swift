@@ -299,6 +299,19 @@ func noteLinesAlignWithinTheNote(alignment: TextAlign) throws {
     }
 }
 
+@Test(arguments: VerticalTextAlign.allCases)
+func noteTextSitsWhereItsVerticalAlignmentPutsIt(alignment: VerticalTextAlign) throws {
+    var n = note("Hi", CGRect(x: 20, y: 20, width: 200, height: 160))
+    n.verticalAlignment = alignment
+    let l = try layout(n)
+    let image = try render(EditorDocument(base: whiteImage(width: 260, height: 220), annotations: [n]), scale: 1)
+    func inked(at top: CGFloat) throws -> Bool {
+        try stride(from: l.frame.minX, to: l.frame.maxX, by: 0.5).contains { try pixel(image, $0, top + l.ascent * 0.6)[1] < 0.5 }
+    }
+    #expect(try inked(at: l.alignedTextRect.minY))
+    #expect(try inked(at: l.textRect.minY) == (alignment == .top))
+}
+
 @Test(arguments: TextAlign.allCases)
 func textLinesAlignWithinTheTextAndKeepItsAnchor(alignment: TextAlign) throws {
     let origin = CGPoint(x: 20, y: 20)
