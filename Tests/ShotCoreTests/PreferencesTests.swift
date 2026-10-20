@@ -288,6 +288,22 @@ import Testing
     }
 }
 
+/// Every test's `remove()` synchronizes, which on Linux writes out every store in the process, so a key one test removes
+/// must stay removed when another test synchronizes in between (#777).
+@Test func aTestStoreKeepsARemovedKeyRemovedWhenAnotherSynchronizes() throws {
+    let suite = try TestDefaults()
+    let other = try TestDefaults()
+    defer {
+        suite.remove()
+        other.remove()
+    }
+    let key = "testDefaultsIsolation"
+    suite.store.set(true, forKey: key)
+    other.store.synchronize()
+    suite.store.removeObject(forKey: key)
+    #expect(suite.store.object(forKey: key) == nil)
+}
+
 @Test func storedCountdownOutsideTheOffersReadsAsOff() throws {
     let suite = try TestDefaults()
     let store = suite.store
