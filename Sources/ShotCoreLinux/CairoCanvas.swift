@@ -53,7 +53,7 @@ public final class CairoCanvas: Canvas {
         }
     }
 
-    public static var effects: any ImageEffects { NoEffectsYet() }
+    public static var effects: any ImageEffects { PortableEffects() }
     public static var shaper: any TextShaper { PangoShaper() }
 
     // MARK: - State
@@ -529,14 +529,4 @@ private final class Surface {
         }
         return Bitmap(width: width, height: height, pixels: data)
     }
-}
-
-/// Stands in for the portable effects until #745 brings them. A canvas type must name some, but filtering with these
-/// stops, rather than give an image with a redaction left unblurred.
-struct NoEffectsYet: ImageEffects {
-    func blurred(_ image: PlatformImage, radius: CGFloat) -> PlatformImage? { preconditionFailure("effects on Linux come with #745") }
-    func blurredMask(_ mask: PlatformImage, radius: CGFloat) -> PlatformImage? { preconditionFailure("effects on Linux come with #745") }
-    func grownMask(of image: PlatformImage, radius: CGFloat) -> PlatformImage? { preconditionFailure("effects on Linux come with #745") }
-    func pixelated(_ image: PlatformImage, region: CGRect, blockSize: CGFloat) -> PlatformImage? { preconditionFailure("effects on Linux come with #745") }
-    func blurredBlocks(_ image: PlatformImage, region: CGRect, radius: CGFloat) -> PlatformImage? { preconditionFailure("effects on Linux come with #745") }
 }

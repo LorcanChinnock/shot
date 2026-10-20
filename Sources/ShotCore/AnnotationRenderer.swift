@@ -528,7 +528,7 @@ public enum AnnotationRenderer {
         guard region.width >= 1, region.height >= 1 else {
             return nil
         }
-        // A blur alone can be partly undone, so average the region into blocks first, which can't, then blur the blocks smooth.
+        // A blur alone can be partly undone, so reduce the region to blocks first, which can't be, then blur the blocks smooth.
         return effects.blurredBlocks(base, region: region, radius: radius)
     }
 }

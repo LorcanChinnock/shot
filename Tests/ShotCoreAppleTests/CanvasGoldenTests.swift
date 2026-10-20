@@ -4,9 +4,8 @@ import Testing
 @testable import ShotCore
 import ShotCoreApple
 
-// The goldens ShotCoreLinuxTests' CairoGoldenTests draws through CairoCanvas and compares: documents of every annotation
-// that draws without image effects, which Linux gets with #745, over `base.png`, drawn through CGCanvas into
-// `<name>.png`. They're all in Tests/Fixtures/canvas, the documents in `goldens.json`.
+// The goldens ShotCoreLinuxTests' CairoGoldenTests draws through CairoCanvas and compares: documents of every kind of
+// annotation over `base.png`, drawn through CGCanvas into `<name>.png`. They're all in Tests/Fixtures/canvas, the documents in `goldens.json`.
 //
 // Run with SHOT_WRITE_GOLDENS=1 to write them again after a rendering change, and check the new PNGs by eye. Otherwise
 // this checks they're still what CGCanvas draws.
@@ -149,6 +148,32 @@ private func goldens() throws -> [Golden] {
         annotation(.counter(42, center: CGPoint(x: 50, y: 88)), RGBA(0.3, 0.3, 0.3), width: 3, id: 94),
     ]
 
+    // Sharp-edged shapes under each redaction, so it has detail to hide.
+    let detail = [
+        annotation(.shape(.rectangle, rect: CGRect(x: 14, y: 14, width: 56, height: 36)), white, width: 2, fill: red, id: 101),
+        annotation(.line(from: CGPoint(x: 10, y: 70), to: CGPoint(x: 150, y: 100)), blue, width: 5, id: 102),
+        annotation(.shape(.ellipse, rect: CGRect(x: 92, y: 12, width: 50, height: 40)), RGBA(0, 0, 0), width: 3, fill: white, id: 103),
+        annotation(.arrow(from: CGPoint(x: 20, y: 110), to: CGPoint(x: 140, y: 64)), green, width: 4, id: 104),
+    ]
+    let pixelated = detail + [
+        annotation(.pixelate(CGRect(x: 8, y: 8, width: 70, height: 50)), red, id: 111),
+        annotation(.pixelate(CGRect(x: 86, y: 6, width: 66, height: 104), amount: 0.06), red, id: 112),
+    ]
+    let blurred = detail + [
+        annotation(.blur(CGRect(x: 8, y: 8, width: 70, height: 50)), red, id: 121),
+        annotation(.blur(CGRect(x: 86, y: 6, width: 66, height: 104), amount: 0.08), red, id: 122),
+    ]
+    var softSpot = annotation(.spotlight(CGRect(x: 18, y: 16, width: 64, height: 44), style: SpotlightStyle(effect: .blur, strength: 0.6, softEdge: 0.5)), RGBA(0, 0, 0), id: 131)
+    softSpot.cornerRadius = 8
+    var softEllipse = annotation(.spotlight(CGRect(x: 96, y: 62, width: 48, height: 40), style: SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.6, softEdge: 1)), RGBA(0, 0, 0), id: 132)
+    softEllipse.cornerRadius = nil
+    let blurredSpotlights = detail + [softSpot, softEllipse]
+    let outlinedImages = [
+        image(CGRect(x: 12, y: 12, width: 60, height: 40), radius: nil, style: ObjectStyle(border: Border(kind: .outline, lineWidth: 4, color: white)), id: 141),
+        image(CGRect(x: 92, y: 20, width: 36, height: 24), radius: nil, style: ObjectStyle(border: Border(kind: .outline, lineWidth: 6, color: red)), id: 142),
+        image(CGRect(x: 30, y: 70, width: 100, height: 40), radius: nil, style: ObjectStyle(border: Border(kind: .outline, lineWidth: 2, color: RGBA(0, 0, 0))), id: 143),
+    ]
+
     return [
         Golden(name: "lines", annotations: lines),
         Golden(name: "shapes", annotations: shapes),
@@ -160,6 +185,10 @@ private func goldens() throws -> [Golden] {
         Golden(name: "outlinedText", annotations: outlined),
         Golden(name: "notes", annotations: notes, canvasRect: CGRect(x: 0, y: 0, width: 160, height: 120), background: white),
         Golden(name: "counters", annotations: counters),
+        Golden(name: "pixelate", annotations: pixelated),
+        Golden(name: "blur", annotations: blurred),
+        Golden(name: "blurredSpotlights", annotations: blurredSpotlights),
+        Golden(name: "outlinedImages", annotations: outlinedImages),
     ]
 }
 
