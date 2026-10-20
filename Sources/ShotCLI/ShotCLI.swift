@@ -9,7 +9,7 @@ import ShotCoreLinux
 /// and `shot record`, which ask the running app, `shot latest`, `list` and `get`, which read captures as the MCP tools
 /// do, `shot watch`, `shot doctor`, and `--version`. It ships inside the app as `Contents/MacOS/shot-cli`, so it reads the
 /// app's settings to find the captures. On Linux, where it's `shot`, only `Doctor.linuxCommands` run so far: the image
-/// commands and those that read captures.
+/// commands, those that read captures, and `shot capture` and `shot windows`, which ask `shot serve` rather than an app.
 @main
 enum ShotCLI {
     static func main() async {
@@ -40,7 +40,7 @@ enum ShotCLI {
             #if os(macOS)
             let checks = Doctor.checks(await doctorFacts(app: appBundle()))
             #else
-            let checks = Doctor.checks(linuxDoctorFacts())
+            let checks = Doctor.checks(await linuxDoctorFacts())
             #endif
             print(ShotCommand.json(Doctor.json(checks)))
             if checks.contains(where: { $0.outcome == .fail }) {
@@ -56,7 +56,6 @@ enum ShotCLI {
             }
         case let .watch(options):
             await watch(options, folder: captureFolder(app: appBundle()), program: program)
-        #if os(macOS)
         case .capture, .windows:
             var request = AgentRequest(.windows)
             if case let .capture(target) = command {
@@ -69,6 +68,23 @@ enum ShotCLI {
                 printError("\(program) \(command.name): \(error.message)")
                 exit(error.exitCode)
             }
+        #if os(Linux)
+        case .serve:
+            await serveAgents(program: program)
+        case let .settings(agentCapture):
+            let store = defaultsStore(app: nil)
+            if let agentCapture {
+                store.set(agentCapture, forKey: PreferenceKey.agentCapture)
+                store.synchronize()
+            }
+            print(ShotCommand.json(.object(["agentCapture": .bool(Preferences(store: store).agentCapture)])))
+        #else
+        case .serve, .settings:
+            let error = ShotCommandError.usage(command.name, "is for Linux; on a Mac, Shot answers agents itself, and Settings › Agents turns that on")
+            printError("\(program) \(command.name): \(error.message)")
+            exit(error.exitCode)
+        #endif
+        #if os(macOS)
         case let .record(action):
             var request: AgentRequest
             switch action {
@@ -158,7 +174,9 @@ enum ShotCLI {
             try await ask(request, app: app)
         }.server(version: version)
         #else
-        let server = AgentTools.live(folder: folder, projects: ProjectStore(bundleID: fallbackSuite)).server(version: version)
+        let server = AgentTools.live(folder: folder, projects: ProjectStore(bundleID: fallbackSuite)) { request throws(ShotCommandError) in
+            try await ask(request, app: nil)
+        }.server(version: version)
         #endif
         printError("Shot MCP server \(version), reading \(folder.path)")
         while let line = readLine(strippingNewline: true) {
@@ -229,14 +247,64 @@ enum ShotCLI {
     }
 
     #if !os(macOS)
-    static func linuxDoctorFacts() -> Doctor.LinuxFacts {
+    /// What `shot doctor` checks on Linux, found without starting `shot serve`: it's only asked for its status if it's
+    /// already answering.
+    static func linuxDoctorFacts() async -> Doctor.LinuxFacts {
+        let socket = AgentSocket.url(bundleID: fallbackSuite)
+        let listening = AgentSocket.isListening(at: socket)
+        var status: Result<[String: JSONValue], ShotCommandError>?
+        if listening {
+            do {
+                status = .success(try await AgentSocket.send(AgentRequest(.status), to: socket, timeout: .seconds(5)))
+            } catch {
+                status = .failure(error)
+            }
+        }
         let folder = captureFolder(app: nil)
         let (exists, folderError, captures) = folderFacts(folder)
         return Doctor.LinuxFacts(
             version: version(of: nil), settingsFile: LinuxSettings.file(suite: fallbackSuite).path,
-            sessionType: ProcessInfo.processInfo.environment["XDG_SESSION_TYPE"], folder: folder.path, folderExists: exists,
-            folderError: folderError, captures: captures, colorEmoji: PangoShaper.hasColorEmoji
+            sessionType: ProcessInfo.processInfo.environment["XDG_SESSION_TYPE"], agentCapture: Preferences(store: defaultsStore(app: nil)).agentCapture,
+            socketPath: socket.path, listening: listening, status: status, folder: folder.path, folderExists: exists, folderError: folderError,
+            captures: captures, colorEmoji: PangoShaper.hasColorEmoji
         )
+    }
+
+    /// Answers agents on the socket the app would answer on, until it's stopped, taking screenshots with the session's
+    /// capturer. Another `shot serve` already answering leaves this one nothing to do.
+    static func serveAgents(program: String) async {
+        let daemon = AgentDaemon(
+            capturer: LinuxScreen.capturer(), codec: PNGJPEGCodec(), projects: ProjectStore(bundleID: fallbackSuite), version: version(of: nil)
+        ) {
+            let store = defaultsStore(app: nil)
+            Preferences.registerDefaults(in: store)
+            return Preferences(store: store)
+        }
+        let server = AgentSocket.Server(url: AgentSocket.url(bundleID: fallbackSuite)) { request in
+            await daemon.handle(request)
+        }
+        do {
+            try server.start()
+        } catch {
+            printError("\(program) serve: \(error.message)")
+            exit(error.exitCode)
+        }
+        printError("Shot \(version(of: nil)) answering agents at \(server.url.path)")
+        // Stopped with ^C or by systemd or pkill, it removes its socket first.
+        let stops = [SIGINT, SIGTERM].map { number in
+            signal(number, SIG_IGN)
+            let source = DispatchSource.makeSignalSource(signal: number, queue: .global())
+            source.setEventHandler {
+                server.stop()
+                exit(0)
+            }
+            source.resume()
+            return source
+        }
+        // Reading `stops` keeps their sources alive.
+        while !stops.isEmpty {
+            try? await Task.sleep(for: .seconds(3600))
+        }
     }
     #endif
 

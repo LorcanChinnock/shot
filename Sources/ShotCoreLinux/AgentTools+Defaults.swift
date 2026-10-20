@@ -1,8 +1,8 @@
 import Foundation
 
 // ShotCore's `AgentTools.live` with Linux's backends: the tools that read captures and make images from them run, on
-// PNGJPEGCodec and CairoCanvas. Those that capture, record or read video are listed, but answer that they're not on
-// Linux yet, and `find_text`, which needs a Mac, isn't.
+// PNGJPEGCodec and CairoCanvas, and those that capture send `agent` to `shot serve`. Those that record, pick or read
+// video are listed, but answer that they're not on Linux yet, and `find_text`, which needs a Mac, isn't.
 
 extension AgentTools {
     /// The tools reading the captures in `folder`, keeping what they make in `projects`. A recording in the folder is

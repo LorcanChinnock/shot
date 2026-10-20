@@ -35,6 +35,11 @@ public enum ShotCommand: Equatable, Sendable {
     /// Checks what agents need and says how to fix what's wrong.
     case doctor
     case mcp
+    /// Answers agents on Linux, as the app does on a Mac: `shot capture`, `shot windows` and the MCP tools that capture
+    /// start it in the background when nothing answers.
+    case serve
+    /// Says whether Let agents capture and record is on, or turns it on or off, on Linux, which has no Settings window.
+    case settings(agentCapture: Bool?)
     /// Reads the text of the screenshots in a folder into the app's text index. The app runs it in the background, in a
     /// process of its own, so Vision's memory never stays in the app; it isn't in `help`.
     case indexText(folder: String)
@@ -238,6 +243,17 @@ public enum ShotCommand: Equatable, Sendable {
 
     /// The commands `help` knows, in the order it lists them.
     public static let names = ["info", "gif", "trim", "redact", "annotate", "frames", "text", "diff", "crop", "edit", "latest", "list", "get", "windows", "capture", "record", "watch", "pick", "doctor", "mcp"]
+    /// The commands only Linux has, which `help` lists there after the rest.
+    public static let linuxNames = ["serve", "settings"]
+
+    /// The commands `help` lists on this platform.
+    static var listed: [String] {
+        #if os(Linux)
+        names + linuxNames
+        #else
+        names
+        #endif
+    }
 
     /// The command's name, for error messages such as `shot gif: …`.
     public var name: String {
@@ -262,6 +278,8 @@ public enum ShotCommand: Equatable, Sendable {
         case .get: "get"
         case .doctor: "doctor"
         case .mcp: "mcp"
+        case .serve: "serve"
+        case .settings: "settings"
         case .indexText: "index-text"
         case .version: "version"
         case .help: "help"
@@ -282,14 +300,25 @@ public enum ShotCommand: Equatable, Sendable {
             return .version
         case "--help", "-h", "help":
             guard rest.count <= 1 else { throw .usage(nil, "help takes at most one command") }
-            if let command = rest.first, !names.contains(command) {
+            if let command = rest.first, !listed.contains(command) {
                 throw .usage(nil, "no command named \"\(command)\"")
             }
             return .help(rest.first)
-        case "mcp", "doctor":
+        case "mcp", "doctor", "serve":
             if rest.contains(where: isHelp) { return .help(first) }
             guard rest.isEmpty else { throw .usage(first, "takes no arguments") }
-            return first == "mcp" ? .mcp : .doctor
+            return first == "mcp" ? .mcp : first == "doctor" ? .doctor : .serve
+        case "settings":
+            if rest.contains(where: isHelp) { return .help(first) }
+            guard rest.first == "agent-capture", rest.count <= 2 else {
+                throw .usage(first, "expected agent-capture, then on or off to change it")
+            }
+            switch rest.dropFirst().first {
+            case nil: return .settings(agentCapture: nil)
+            case "on": return .settings(agentCapture: true)
+            case "off": return .settings(agentCapture: false)
+            case let value?: throw .usage(first, "agent-capture takes on or off, not \(value)")
+            }
         case "latest", "list", "get":
             if rest.contains(where: isHelp) { return .help(first) }
             return try parseCaptures(first, rest)
@@ -742,6 +771,8 @@ public enum ShotCommand: Equatable, Sendable {
             "pick": "\(program) pick [--prompt <what to select>] [--timeout 60]\n    Asks you to select an area, window or display on Shot's capture overlay, showing the prompt and that the command line is asking, then saves the screenshot to the capture folder and prints its path, size and bytes. Esc cancels, which exits with 66, as does running out of time. Opens Shot in the background if it isn't running; works with Let agents capture and record off, since you make the selection.",
             "doctor": "\(program) doctor\n    Checks which copy of Shot answers and its version, Let agents capture and record, the socket, the Screen Recording permission and the capture folder, and says how to fix each problem. Exits 1 if a check fails.",
             "mcp": "\(program) mcp\n    Serves Shot's captures to an AI agent over MCP, on standard input and output.",
+            "serve": "\(program) serve\n    Answers shot capture, shot windows and the MCP tools that capture, saving each screenshot to the capture folder, until it's stopped. They start it in the background when it isn't running, so you rarely need to.",
+            "settings": "\(program) settings agent-capture [on|off]\n    Lets agents capture, or stops them: shot capture, shot windows and the MCP tools that capture need it on. It's off until you turn it on. Without on or off, says whether it's on.",
         ]
         if let command, let line = lines[command] {
             return "Usage: " + line
@@ -749,7 +780,7 @@ public enum ShotCommand: Equatable, Sendable {
         return """
         Usage: \(program) <command> [options]
 
-        \(names.compactMap { lines[$0] }.joined(separator: "\n"))
+        \(listed.compactMap { lines[$0] }.joined(separator: "\n"))
         \(program) --version
             The version, settings and capture folder.
 

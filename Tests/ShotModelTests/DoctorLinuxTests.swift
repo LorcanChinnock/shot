@@ -2,11 +2,20 @@ import Foundation
 import Testing
 @testable import ShotModel
 
-private func facts(session: String? = "wayland", folderExists: Bool = true, folderError: String? = nil, colorEmoji: Bool = true) -> Doctor.LinuxFacts {
+private func facts(
+    session: String? = "wayland", agentCapture: Bool = true, listening: Bool = false, status: Result<[String: JSONValue], ShotCommandError>? = nil,
+    folderExists: Bool = true, folderError: String? = nil, colorEmoji: Bool = true
+) -> Doctor.LinuxFacts {
     Doctor.LinuxFacts(
-        version: "0.7.0", settingsFile: "/home/me/.config/dev.lorcan.Shot.plist", sessionType: session, folder: "/home/me/Pictures/Shot",
+        version: "0.7.0", settingsFile: "/home/me/.config/dev.lorcan.Shot.plist", sessionType: session, agentCapture: agentCapture,
+        socketPath: "/home/me/.local/share/dev.lorcan.Shot/agent.sock", listening: listening, status: status, folder: "/home/me/Pictures/Shot",
         folderExists: folderExists, folderError: folderError, captures: 1, colorEmoji: colorEmoji
     )
+}
+
+/// What `shot serve` answers a status request with, from `capturer`, which can't do what `limits` say.
+private func serving(version: String = "0.7.0", capturer: String = "x11", limits: [String: JSONValue] = [:]) -> Result<[String: JSONValue], ShotCommandError> {
+    .success(["capturing": .bool(false), "recording": .null, "version": .string(version), "capturer": .string(capturer), "limits": .object(limits)])
 }
 
 @Test func doctorOnLinuxSaysWhatRunsSoFarAndWhatNeedsAMac() {
@@ -19,9 +28,17 @@ private func facts(session: String? = "wayland", folderExists: Bool = true, fold
                 "detail": .string("Shot 0.7.0 on Linux, reading its settings from /home/me/.config/dev.lorcan.Shot.plist. The session is Wayland."),
             ]),
             .object([
+                "name": .string("letAgentsCaptureAndRecord"), "outcome": .string("pass"),
+                "detail": .string("Let agents capture and record is on."),
+            ]),
+            .object([
+                "name": .string("serve"), "outcome": .string("pass"),
+                "detail": .string("shot serve isn't running. shot capture, shot windows and the MCP tools that capture start it when they need it."),
+            ]),
+            .object([
                 "name": .string("notOnLinuxYet"), "outcome": .string("warn"),
                 "detail": .string(
-                    "Capturing, recording and video aren't on Linux yet: shot capture, record, windows, pick, gif, trim and frames, info and edit on a video, and the MCP tools capture_window, record_window, list_windows, ask_for_capture, get_frames, make_gif, trim_video and edit_video answer that they're not on Linux yet. The image commands and the tools that read and edit screenshots work."
+                    "Recording, picking and video aren't on Linux yet: shot record, pick, gif, trim and frames, info and edit on a video, and the MCP tools record_window, ask_for_capture, get_frames, make_gif, trim_video and edit_video answer that they're not on Linux yet. The image commands and the tools that read and edit screenshots work, and shot capture, shot windows and the MCP tools that capture ask shot serve."
                 ),
                 "fix": .string("Use Shot on a Mac for those for now."),
             ]),
@@ -70,4 +87,35 @@ private func facts(session: String? = "wayland", folderExists: Bool = true, fold
     let result = await tools.call(AgentTools.annotate, .object([:]))
     #expect(result == MCPServer.ToolResult(content: [.text("annotate: not on Linux yet")], isError: true))
     #expect(ShotCommandError.notOnLinuxYet.exitCode == 69)
+}
+
+@Test func doctorOnLinuxSaysHowToLetAgentsCapture() {
+    let off = Doctor.linuxAgents(facts(agentCapture: false))
+    #expect(off.outcome == .warn)
+    #expect(off.fix == "Run shot settings agent-capture on, if agents should take their own screenshots.")
+    #expect(Doctor.linuxAgents(facts()).outcome == .pass)
+}
+
+@Test func doctorOnLinuxSaysWhetherShotServeAnswersAndWhatItCantCapture() {
+    let running = Doctor.serve(facts(listening: true, status: serving()))
+    #expect(running == Doctor.Check("serve", .pass, "shot serve 0.7.0 answers at /home/me/.local/share/dev.lorcan.Shot/agent.sock."))
+
+    let limited = Doctor.serve(facts(listening: true, status: serving(limits: ["captureWindow": .string("Wayland asks before each window.")])))
+    #expect(limited.outcome == .pass)
+    #expect(limited.detail.hasSuffix("agent.sock. Wayland asks before each window."))
+
+    let reason = JSONValue.string("Shot can't capture a Wayland session yet.")
+    let none = Doctor.serve(facts(listening: true, status: serving(capturer: "none", limits: ["captureArea": reason, "captureDisplay": reason, "listWindows": reason])))
+    #expect(none.outcome == .warn)
+    #expect(none.detail.hasSuffix("agent.sock. Shot can't capture a Wayland session yet."))
+    #expect(none.fix == "Capturing an X11 or Wayland session comes in a later version of Shot.")
+
+    let old = Doctor.serve(facts(listening: true, status: serving(version: "0.6.0")))
+    #expect(old.outcome == .warn)
+    #expect(old.detail.hasSuffix(" This command is 0.7.0."))
+    #expect(old.fix == "Stop it with pkill -f \"shot serve\"; the next capture starts it again.")
+
+    let stuck = Doctor.serve(facts(listening: true, status: .failure(.io("Shot closed the connection without a usable answer"))))
+    #expect(stuck.outcome == .fail)
+    #expect(Doctor.json(Doctor.checks(facts(listening: true, status: .failure(.io("gone")))))["ok"] == .bool(false))
 }
