@@ -25,11 +25,11 @@ To change a budget, measure again, then update both this table and `Budget` in `
 
 ## On Linux: the image effects
 
-Linux has no Core Image, so blur, pixelate and the masks run in plain Swift (`Sources/ShotModel/Bitmap+Effects.swift`). `Tests/ShotCoreLinuxTests/PerfTests.swift` times a blur of a 2560×1600 capture at radius 20, the spotlight blur's default at that size. It runs with the other Linux tests in CI's `test` job on every pull request, in a debug build, so it keeps the fastest of only three runs.
+Linux has no Core Image, so blur, pixelate and the masks run in plain Swift (`Sources/ShotModel/Bitmap+Effects.swift`). `Tests/ShotCoreLinuxTests/PerfTests.swift` times a blur of a 2560×1600 capture at radius 20, the spotlight blur's default at that size. It runs with the other Linux tests in CI's `test` job on every pull request, in a debug build, so it keeps the fastest of only three runs. Its budget is 2× the CI runner's time, as on the Mac.
 
 | Path | What's measured | Docker on the reference Mac (debug) | Release build | CI runner (debug) | Budget |
 |---|---|---|---|---|---|
-| Blur | `PortableEffects.blurred` of an opaque 2560×1600 capture, radius 20 | 650 ms | 100 ms | not measured yet | 3,000 ms |
+| Blur | `PortableEffects.blurred` of an opaque 2560×1600 capture, radius 20 | 650 ms | 100 ms | 1,250 ms | 2,500 ms |
 
 ## Locally: `make perf-app`
 

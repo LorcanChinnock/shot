@@ -14,7 +14,7 @@ import Testing
                 _ = try #require(effects.blurred(capture, radius: 20))
             })
         }
-        let budget = Duration.milliseconds(3000)
+        let budget = Duration.milliseconds(2500)
         print("Blur 2560×1600: \(fastest), budget \(budget)")
         #expect(fastest <= budget, "Blur took \(fastest), over its \(budget) budget")
     }
