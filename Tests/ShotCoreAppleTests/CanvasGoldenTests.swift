@@ -163,6 +163,9 @@ private func goldens() throws -> [Golden] {
     ]
 }
 
+/// The goldens with text in them.
+private let textGoldens: Set = ["text", "outlinedText", "notes", "counters"]
+
 /// `golden` drawn over `base` through CGCanvas.
 private func render(_ golden: Golden, base: CGImage) throws -> Bitmap {
     let doc = EditorDocument(base: base, annotations: golden.annotations, canvasRect: golden.canvasRect, background: golden.background)
@@ -194,6 +197,9 @@ private func render(_ golden: Golden, base: CGImage) throws -> Bitmap {
         let saved = try #require(codec.decode(fileAt: url))
         #expect(saved.width == drawn.width && saved.height == drawn.height, "\(golden.name)")
         let changed = ImageDiff.changes([UInt8](saved.pixels), [UInt8](drawn.pixels), width: drawn.width, height: drawn.height, bytesPerRow: drawn.bytesPerRow, threshold: 1.0 / 255)
-        #expect(!changed.contains(1), "\(golden.name).png is stale: run with SHOT_WRITE_GOLDENS=1")
+        // Core Text antialiases the system font a little differently from one macOS release to the next: CI's macOS 26
+        // changes up to 1.4% of a text golden's pixels drawn on macOS 27.
+        let allowed = textGoldens.contains(golden.name) ? changed.count * 3 / 100 : 0
+        #expect(changed.filter { $0 == 1 }.count <= allowed, "\(golden.name).png is stale: run with SHOT_WRITE_GOLDENS=1")
     }
 }
