@@ -33,8 +33,17 @@ extension Doctor {
         }
     }
 
-    /// The commands that run on Linux so far. Every other command and MCP tool answers `ShotCommandError.notOnLinuxYet`.
-    public static let linuxCommands = ["version", "help", "doctor", "mcp"]
+    /// The commands that run on Linux so far: the image commands and those that read the capture folder. `text`, and
+    /// `redact --detect`, run only to say they need a Mac. The rest capture, record or read video, and answer
+    /// `ShotCommandError.notOnLinuxYet`, as `info` and `edit` do on a video.
+    public static let linuxCommands = ["version", "help", "doctor", "mcp", "info", "annotate", "redact", "crop", "diff", "edit", "latest", "list", "get", "watch"]
+    /// The commands that answer that they're not on Linux yet.
+    public static let notOnLinuxYetCommands = ["capture", "record", "windows", "pick", "gif", "trim", "frames"]
+    /// The MCP tools that capture, record or read video. Linux lists them, but they answer that they're not on Linux yet.
+    public static let notOnLinuxYetTools = [
+        AgentTools.captureWindow, AgentTools.recordWindow, AgentTools.listWindows, AgentTools.askForCapture, AgentTools.getFrames, AgentTools.makeGIF,
+        AgentTools.trimVideo, AgentTools.editVideo,
+    ]
 
     public static func checks(_ facts: LinuxFacts) -> [Check] {
         [platform(facts), notOnLinuxYet, macOnly, emoji(facts), linuxFolder(facts)]
@@ -54,9 +63,13 @@ extension Doctor {
 
     static let notOnLinuxYet = Check(
         "notOnLinuxYet", .warn,
-        "Only shot \(linuxCommands.dropLast().joined(separator: ", ")) and \(linuxCommands.last ?? "")'s tool list work on Linux so far. Every other command and MCP tool answers that it's not on Linux yet.",
+        "Capturing, recording and video aren't on Linux yet: shot \(list(notOnLinuxYetCommands)), info and edit on a video, and the MCP tools \(list(notOnLinuxYetTools)) answer that they're not on Linux yet. The image commands and the tools that read and edit screenshots work.",
         fix: "Use Shot on a Mac for those for now."
     )
+
+    private static func list(_ names: [String]) -> String {
+        names.dropLast().joined(separator: ", ") + " and " + (names.last ?? "")
+    }
 
     static let macOnly = Check(
         "macOnly", .pass,

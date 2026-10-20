@@ -20,7 +20,9 @@ private func facts(session: String? = "wayland", folderExists: Bool = true, fold
             ]),
             .object([
                 "name": .string("notOnLinuxYet"), "outcome": .string("warn"),
-                "detail": .string("Only shot version, help, doctor and mcp's tool list work on Linux so far. Every other command and MCP tool answers that it's not on Linux yet."),
+                "detail": .string(
+                    "Capturing, recording and video aren't on Linux yet: shot capture, record, windows, pick, gif, trim and frames, info and edit on a video, and the MCP tools capture_window, record_window, list_windows, ask_for_capture, get_frames, make_gif, trim_video and edit_video answer that they're not on Linux yet. The image commands and the tools that read and edit screenshots work."
+                ),
                 "fix": .string("Use Shot on a Mac for those for now."),
             ]),
             .object([
