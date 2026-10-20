@@ -26,6 +26,9 @@ jobs:
           path: .build
           key: swift-6.3-linux-${{ hashFiles('Package.resolved') }}-${{ github.sha }}
           restore-keys: swift-6.3-linux-${{ hashFiles('Package.resolved') }}-
+      # ShotCoreLinux links libpng and libjpeg-turbo.
+      - name: Install packages
+        run: apt-get update -qq && apt-get install -y -qq --no-install-recommends libpng-dev libturbojpeg0-dev
       - name: Build
         run: swift build --build-tests --force-resolved-versions
       - name: Save the build

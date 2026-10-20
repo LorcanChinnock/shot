@@ -25,7 +25,7 @@ private func facts(session: String? = "wayland", folderExists: Bool = true, fold
             ]),
             .object([
                 "name": .string("macOnly"), "outcome": .string("pass"),
-                "detail": .string("Text recognition (find_text and shot text), redaction by text (redact --detect), the text index, narration and system audio need a Mac, so they're left out on Linux by design."),
+                "detail": .string("Text recognition (find_text and shot text), redaction by text (redact --detect), the text index, narration and system audio need a Mac, so they're left out on Linux by design. Of image files, Linux opens PNG and JPEG; HEIC, TIFF, BMP and WebP need a Mac."),
             ]),
             .object([
                 "name": .string("captureFolder"), "outcome": .string("pass"),

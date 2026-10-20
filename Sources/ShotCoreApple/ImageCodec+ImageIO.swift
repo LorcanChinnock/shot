@@ -8,10 +8,10 @@ import UniformTypeIdentifiers
 extension ImageCodec {
     /// What a window capture that includes the macOS window shadow says in its Exif comment, so the editor opened on it
     /// later knows not to offer a second shadow.
-    static let windowShadowMarker = "Shot: includes the macOS window shadow"
+    static let windowShadowMarker = ImageMetadata.windowShadowComment
 
     /// The XMP namespace of `record`, and the property it's stored in as JSON text.
-    static let recordNamespace = "https://shot.lorcanchinnock.com/ns/capture/1.0/"
+    static let recordNamespace = ImageMetadata.xmpNamespace
     static let recordPath = "shot:record"
     /// Where the ID of the file's project in Shot's own store goes, in the same namespace.
     static let projectPath = "shot:project"

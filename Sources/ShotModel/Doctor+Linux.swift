@@ -54,7 +54,7 @@ extension Doctor {
 
     static let macOnly = Check(
         "macOnly", .pass,
-        "Text recognition (find_text and shot text), redaction by text (redact --detect), the text index, narration and system audio need a Mac, so they're left out on Linux by design."
+        "Text recognition (find_text and shot text), redaction by text (redact --detect), the text index, narration and system audio need a Mac, so they're left out on Linux by design. Of image files, Linux opens PNG and JPEG; HEIC, TIFF, BMP and WebP need a Mac."
     )
 
     static func linuxFolder(_ facts: LinuxFacts) -> Check {
