@@ -13,9 +13,10 @@ public protocol ImageEffects: Sendable {
     /// The shape of `image`'s opaque pixels grown by `radius` pixels, white on black, as a greyscale mask reaching `radius`
     /// rounded up past each edge of the image.
     func grownMask(of image: PlatformImage, radius: CGFloat) -> PlatformImage?
-    /// `region` of `image` averaged into square blocks `blockSize` pixels wide, lined up with the region's origin.
+    /// `region` of `image` in square blocks `blockSize` pixels wide, lined up with the region's origin, each the colour at
+    /// its middle.
     func pixelated(_ image: PlatformImage, region: CGRect, blockSize: CGFloat) -> PlatformImage?
-    /// `region` of `image` averaged into blocks `radius` pixels wide, lined up with the region's origin, then given a
-    /// gaussian blur of `radius` that reaches across the region's edge into the blocks beyond it.
+    /// `region` of `image` in blocks `radius` pixels wide, as `pixelated` makes them, then given a gaussian blur of
+    /// `radius` that reaches across the region's edge into the blocks beyond it.
     func blurredBlocks(_ image: PlatformImage, region: CGRect, radius: CGFloat) -> PlatformImage?
 }

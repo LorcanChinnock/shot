@@ -23,6 +23,14 @@ Gallery text search has no CI baseline yet. Its budget assumes the runner is as 
 
 To change a budget, measure again, then update both this table and `Budget` in `PerfTests.swift`.
 
+## On Linux: the image effects
+
+Linux has no Core Image, so blur, pixelate and the masks run in plain Swift (`Sources/ShotModel/Bitmap+Effects.swift`). `Tests/ShotCoreLinuxTests/PerfTests.swift` times a blur of a 2560×1600 capture at radius 20, the spotlight blur's default at that size. It runs with the other Linux tests in CI's `test` job on every pull request, in a debug build, so it keeps the fastest of only three runs. Its budget is 2× the CI runner's time, as on the Mac.
+
+| Path | What's measured | Docker on the reference Mac (debug) | Release build | CI runner (debug) | Budget |
+|---|---|---|---|---|---|
+| Blur | `PortableEffects.blurred` of an opaque 2560×1600 capture, radius 20 | 650 ms | 100 ms | 1,250 ms | 2,500 ms |
+
 ## Locally: `make perf-app`
 
 `scripts/perf.sh` drives an installed Shot (`/Applications/ShotDev.app` by default, or a path you pass) through its URL scheme. CI can't run it, because its runners can't grant the Screen Recording permission. Run it before each release, after `make app`.

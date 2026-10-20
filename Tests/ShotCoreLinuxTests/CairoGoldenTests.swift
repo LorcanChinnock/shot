@@ -40,6 +40,12 @@ private let limits: [(name: String, block: Int, share: Double, worst: Int)] = [
     ("outlinedText", 20, 0.2, 100),
     ("notes", 20, 0.15, 100),
     ("counters", 20, 0.05, 32),
+    // Image effects, which match Core Image's within a few levels.
+    ("pixelate", 1, 0.005, 16),
+    ("blur", 1, 0.005, 16),
+    ("blurredSpotlights", 1, 0.005, 24),
+    // As "images", whose pictures these are.
+    ("outlinedImages", 1, 0.04, 40),
 ]
 
 private func goldens() throws -> [Golden] {
@@ -50,16 +56,50 @@ private func goldens() throws -> [Golden] {
 
 @Test(arguments: limits)
 func cairoDrawsTheGoldenAsCoreGraphicsDrewIt(name: String, block: Int, share maxShare: Double, worst maxWorst: Int) throws {
+    let drawn = try draw(name)
+    if let out = ProcessInfo.processInfo.environment["SHOT_CAIRO_GOLDENS"] {
+        try FileManager.default.createDirectory(atPath: out, withIntermediateDirectories: true)
+        try PNGJPEGCodec().encode(drawn, as: .png, quality: 1, metadata: ImageMetadata())?.write(to: URL(fileURLWithPath: out).appendingPathComponent("\(name).png"))
+    }
+    let (share, worst) = try compare(drawn, with: name, block: block)
+    #expect(share <= maxShare, "\(name): \(String(format: "%.2f", share * 100))% differ by more than \(tolerance)")
+    #expect(worst <= maxWorst, "\(name): a channel differs by \(worst)")
+}
+
+// The effect goldens' limits catch an effect that draws nothing: the golden drawn without its effects fails them.
+@Test(arguments: ["pixelate", "blur", "blurredSpotlights", "outlinedImages"])
+func anEffectThatDrewNothingWouldFailItsGolden(name: String) throws {
+    let limit = try #require(limits.first { $0.name == name })
+    let (share, worst) = try compare(try draw(name, withoutEffects: true), with: name, block: limit.block)
+    #expect(share > limit.share * 2 && worst > limit.worst)
+}
+
+/// The golden `name` drawn through CairoCanvas, without its redactions, spotlights and outlines if `withoutEffects`.
+private func draw(_ name: String, withoutEffects: Bool = false) throws -> Bitmap {
     let codec = PNGJPEGCodec()
     let golden = try #require(try goldens().first { $0.name == name })
     let base = try #require(codec.image(at: folder.appendingPathComponent("base.png")))
-    let doc = EditorDocument(base: base, annotations: golden.annotations, canvasRect: golden.canvasRect, background: golden.background)
-    let drawn = try #require(AnnotationRenderer.flatten(doc, canvasType: CairoCanvas.self)).bitmap
-    if let out = ProcessInfo.processInfo.environment["SHOT_CAIRO_GOLDENS"] {
-        try FileManager.default.createDirectory(atPath: out, withIntermediateDirectories: true)
-        try codec.encode(drawn, as: .png, quality: 1, metadata: ImageMetadata())?.write(to: URL(fileURLWithPath: out).appendingPathComponent("\(name).png"))
+    var annotations = golden.annotations
+    if withoutEffects {
+        annotations = annotations.compactMap { annotation in
+            switch annotation.kind {
+            case .pixelate, .blur, .spotlight:
+                return nil
+            default:
+                var plain = annotation
+                plain.style = ObjectStyle()
+                return plain
+            }
+        }
     }
-    let mac = try #require(codec.decode(fileAt: folder.appendingPathComponent("\(name).png")))
+    let doc = EditorDocument(base: base, annotations: annotations, canvasRect: golden.canvasRect, background: golden.background)
+    return try #require(AnnotationRenderer.flatten(doc, canvasType: CairoCanvas.self)).bitmap
+}
+
+/// The share of `block`-pixel blocks of `drawn` that differ from the golden `name` the Mac drew by more than
+/// `tolerance`, and the most any channel differs by.
+private func compare(_ drawn: Bitmap, with name: String, block: Int) throws -> (share: Double, worst: Int) {
+    let mac = try #require(PNGJPEGCodec().decode(fileAt: folder.appendingPathComponent("\(name).png")))
     try #require(mac.width == drawn.width && mac.height == drawn.height)
     let a = blocks(of: mac, size: block), b = blocks(of: drawn, size: block)
     var differing = 0, worst = 0
@@ -73,8 +113,7 @@ func cairoDrawsTheGoldenAsCoreGraphicsDrewIt(name: String, block: Int, share max
     let share = Double(differing) / Double(a.count)
     let unit = block == 1 ? "pixels" : "\(block)-pixel blocks"
     print("\(name): \(differing) \(unit) (\(String(format: "%.2f", share * 100))%) differ by more than \(tolerance), the most by \(worst)")
-    #expect(share <= maxShare, "\(name): \(differing) \(unit) differ by more than \(tolerance)")
-    #expect(worst <= maxWorst, "\(name): a channel differs by \(worst)")
+    return (share, worst)
 }
 
 /// Each `size` × `size` block's channels averaged, left to right and top to bottom; a block at the edge is smaller.
