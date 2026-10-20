@@ -286,7 +286,6 @@ private struct DropdownList: View {
                 }
                 .onGeometryChange(for: CGSize.self) { $0.size } action: { contentSize = $0 }
                 .padding(.trailing, overflows ? SystemScroller.shared.overlayRoom : 0)
-                .tracklessScroller()
             }
             .frame(width: contentSize.width > 0 ? contentSize.width + (overflows ? SystemScroller.shared.width : 0) : nil,
                    height: contentSize.height > 0 ? min(contentSize.height, rowsHeight) : nil)
