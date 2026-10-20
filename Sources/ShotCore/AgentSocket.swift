@@ -24,13 +24,20 @@ public enum AgentSocket {
         public typealias Handler = @Sendable (AgentRequest) async -> AgentResponse
 
         public let url: URL
+        /// The only user whose connections are answered: this one, but for tests of the check.
+        let user: uid_t
         private let handler: Handler
         private let queue = DispatchQueue(label: "dev.lorcan.Shot.agent-socket")
         /// Read and written on `queue` only.
         private var source: DispatchSourceRead?
 
-        public init(url: URL, handler: @escaping Handler) {
+        public convenience init(url: URL, handler: @escaping Handler) {
+            self.init(url: url, user: getuid(), handler: handler)
+        }
+
+        init(url: URL, user: uid_t, handler: @escaping Handler) {
             self.url = url
+            self.user = user
             self.handler = handler
         }
 
@@ -105,7 +112,7 @@ public enum AgentSocket {
                 // Accepted sockets inherit the listener's O_NONBLOCK; this one is read with a timeout instead.
                 _ = fcntl(client, F_SETFL, 0)
                 AgentSocket.keepSignalsOff(client)
-                guard AgentSocket.peerUser(of: client) == getuid() else {
+                guard AgentSocket.peerUser(of: client) == user else {
                     close(client)
                     continue
                 }
@@ -197,7 +204,11 @@ public enum AgentSocket {
         }
         guard connected == 0 else {
             close(fd)
+            #if os(Linux)
+            throw .unavailable("shot serve isn't answering agents at \(url.path)")
+            #else
             throw .unavailable("Shot isn't answering agents: it isn't running, or Settings › Agents › Let agents capture and record is off")
+            #endif
         }
         return fd
     }
@@ -322,7 +333,11 @@ extension AgentSocket {
     /// How long `ask` waits for an app it started to begin answering.
     static let launchTimeout = Duration.seconds(5)
 
+    #if os(Linux)
+    public static let turnedOff = "Shot isn't taking requests from agents. Run shot settings agent-capture on to let them capture, then try again."
+    #else
     public static let turnedOff = "Shot isn't taking requests from agents. Turn on Settings › Agents › Let agents capture and record in Shot, then try again."
+    #endif
 
     /// Sends `request` to the app with `bundleID`, first opening it in the background, without taking focus, when
     /// nothing answers. `enabled` is Let agents capture and record as the app's settings have it, so a setting that's off
@@ -337,7 +352,11 @@ extension AgentSocket {
             let deadline = ContinuousClock.now + launchTimeout
             while !isListening(at: url) {
                 guard ContinuousClock.now < deadline else {
+                    #if os(Linux)
+                    throw .unavailable("shot serve didn't start answering agents within \(launchTimeout.components.seconds) seconds. Run shot serve to see why.")
+                    #else
                     throw .unavailable("Shot didn't start answering agents within \(launchTimeout.components.seconds) seconds. Check that it opens, and that Settings › Agents › Let agents capture and record is on.")
+                    #endif
                 }
                 try? await Task.sleep(for: .milliseconds(100))
             }
@@ -346,10 +365,33 @@ extension AgentSocket {
     }
 
     /// Opens the app with `bundleID` in the background, as `open -g` does, which does nothing when it's running. Linux
-    /// has no app to open.
+    /// has no app, so it starts `shot serve` instead: this executable, which is `shot`, in a session of its own, so it
+    /// outlives the terminal or the agent that started it, with nothing on its standard input and output, which may be
+    /// an MCP client's pipes.
     private static func launch(_ bundleID: String) throws(ShotCommandError) {
         #if os(Linux)
-        throw .unavailable("Shot isn't answering agents: it isn't running at \(url(bundleID: bundleID).path)")
+        var actions = posix_spawn_file_actions_t()
+        var attributes = posix_spawnattr_t()
+        posix_spawn_file_actions_init(&actions)
+        posix_spawnattr_init(&attributes)
+        defer {
+            posix_spawn_file_actions_destroy(&actions)
+            posix_spawnattr_destroy(&attributes)
+        }
+        for fd: Int32 in [0, 1, 2] {
+            posix_spawn_file_actions_addopen(&actions, fd, "/dev/null", fd == 0 ? O_RDONLY : O_WRONLY, 0)
+        }
+        // Glibc's POSIX_SPAWN_SETSID, which it shows Swift only with `_GNU_SOURCE`.
+        posix_spawnattr_setflags(&attributes, 0x80)
+        let executable = (try? FileManager.default.destinationOfSymbolicLink(atPath: "/proc/self/exe")) ?? "/proc/self/exe"
+        let arguments = [executable, "serve"]
+        var argv: [UnsafeMutablePointer<CChar>?] = arguments.map { strdup($0) } + [nil]
+        defer { argv.forEach { free($0) } }
+        var pid = pid_t()
+        let spawned = posix_spawn(&pid, executable, &actions, &attributes, &argv, environ)
+        guard spawned == 0 else {
+            throw .unavailable("couldn't start shot serve: \(String(cString: strerror(spawned)))")
+        }
         #else
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/open")

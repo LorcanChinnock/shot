@@ -120,8 +120,8 @@ private func made(_ result: MCPServer.ToolResult) throws -> JSONValue {
         .gif(ShotCommand.GIFOptions(input: recording)),
         .info(path: recording),
         .edit(ShotCommand.EditOptions(input: recording, spec: .json(#"{"speed": 2}"#))),
-        try ShotCommand.parse(["capture", "--display", "1"]),
-        .windows,
+        try ShotCommand.parse(["record", "--display", "1"]),
+        .pick(ShotCommand.PickOptions()),
     ]
     for command in commands {
         await #expect(throws: ShotCommandError.notOnLinuxYet, "\(command.name)") {
