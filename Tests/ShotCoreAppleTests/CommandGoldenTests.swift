@@ -52,7 +52,13 @@ private func theCommandWritesAndPrintsItsGolden(_ test: Case) async throws {
     let wrote = try #require(codec.decode(fileAt: out))
     let golden = try #require(codec.decode(fileAt: folder.appendingPathComponent("\(test.name).png")))
     #expect(wrote.width == golden.width && wrote.height == golden.height)
-    #expect(zip(wrote.pixels, golden.pixels).allSatisfy { abs(Int($0) - Int($1)) <= 2 })
+    let changed = (0 ..< wrote.width * wrote.height).filter { pixel in
+        (0 ..< 4).contains { abs(Int(wrote.pixels[pixel * 4 + $0]) - Int(golden.pixels[pixel * 4 + $0])) > 2 }
+    }
+    // Core Text antialiases the system font a little differently from one macOS release to the next, as
+    // CanvasGoldenTests allows for.
+    let allowed = test.name == "annotateText" ? wrote.width * wrote.height * 3 / 100 : 0
+    #expect(changed.count <= allowed, "\(test.name).png is stale: run with SHOT_WRITE_GOLDENS=1")
 }
 
 /// `value` without what changes from run to run, or between a Mac and Linux: paths are their file names, and sizes in
