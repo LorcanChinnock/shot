@@ -990,7 +990,8 @@ extension VideoEditorModel {
         let style = annotationStyle
         return AnnotationDraft.Style(
             color: nextColor, fill: style.fill, noteColor: style.noteColor, lineWidth: lineWidth, shape: style.shape,
-            redaction: style.redaction, redactionAmount: style.redactionAmount, spotlight: nextSpotlightStyle, alignment: style.alignment
+            redaction: style.redaction, redactionAmount: style.redactionAmount, spotlight: nextSpotlightStyle, alignment: style.alignment,
+            verticalAlignment: style.verticalAlignment
         )
     }
 
@@ -1117,6 +1118,16 @@ extension VideoEditorModel {
     func setAlignment(_ alignment: TextAlign) {
         var changed = palette
         changed.setAlignment(alignment)
+        adopt(changed)
+    }
+
+    /// Where the palette shows the note's text sitting: the one being typed's, else the selected one's, else the next note's.
+    /// `nil` when none of them is a note.
+    var paletteVerticalAlignment: VerticalTextAlign? { palette.verticalAlignment }
+
+    func setVerticalAlignment(_ alignment: VerticalTextAlign) {
+        var changed = palette
+        changed.setVerticalAlignment(alignment)
         adopt(changed)
     }
 

@@ -76,6 +76,23 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     #expect(new.style.widthIndex == 2)
 }
 
+@Test func verticalAlignmentShowsForNotesAndSetsTheNoteOrTheNext() {
+    #expect(palette(tool: .note).verticalAlignment == .top)
+    #expect(palette(tool: .text).verticalAlignment == nil)
+    #expect(palette(tool: .arrow, selection: note).verticalAlignment == .top)
+    #expect(palette(tool: .note, selection: arrow).verticalAlignment == nil)
+
+    var typing = palette(tool: .note, editing: note, isNew: true)
+    typing.setVerticalAlignment(.middle)
+    #expect(typing.editingText?.verticalAlignment == .middle)
+    #expect(typing.style.verticalAlignment == .middle)
+
+    var picked = palette(tool: .select, selection: note)
+    picked.setVerticalAlignment(.bottom)
+    #expect(picked.selection?.verticalAlignment == .bottom)
+    #expect(picked.style.verticalAlignment == .top)
+}
+
 @Test func eachOptionRowShowsForItsToolOrSelection() {
     #expect(palette(tool: .shape).shape == .rectangle)
     #expect(palette(tool: .arrow).shape == nil)

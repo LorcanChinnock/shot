@@ -87,6 +87,9 @@ struct AnnotationPalette: View {
         if let alignment = model.paletteAlignment {
             AlignmentOptions(selected: alignment, choose: model.setAlignment)
         }
+        if let verticalAlignment = model.paletteVerticalAlignment {
+            VerticalAlignmentOptions(selected: verticalAlignment, choose: model.setVerticalAlignment)
+        }
     }
 
     private func pickImage() {

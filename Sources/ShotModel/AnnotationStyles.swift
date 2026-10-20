@@ -211,6 +211,29 @@ public enum TextAlign: String, CaseIterable, Codable, Sendable {
     }
 }
 
+/// Where a note's text sits between its top and bottom when the note is taller than the text.
+public enum VerticalTextAlign: String, CaseIterable, Codable, Sendable {
+    case top, middle, bottom
+
+    /// The SF Symbol the toolbar shows for it.
+    public var symbol: String {
+        switch self {
+        case .top: "align.vertical.top"
+        case .middle: "align.vertical.center"
+        case .bottom: "align.vertical.bottom"
+        }
+    }
+
+    /// The share of the spare height that goes above the text.
+    public var fraction: CGFloat {
+        switch self {
+        case .top: 0
+        case .middle: 0.5
+        case .bottom: 1
+        }
+    }
+}
+
 /// A spotlight's lit shape and edge, and how it treats the image outside it. Every spotlight in an image
 /// shares one dim, drawn with the lowest spotlight's effect and strength.
 public struct SpotlightStyle: Equatable, Hashable, Codable, Sendable {

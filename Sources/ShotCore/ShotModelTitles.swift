@@ -146,6 +146,16 @@ extension TextAlign {
     }
 }
 
+extension VerticalTextAlign {
+    public var title: String {
+        switch self {
+        case .top: shotLocalized("Align Top")
+        case .middle: shotLocalized("Align Middle")
+        case .bottom: shotLocalized("Align Bottom")
+        }
+    }
+}
+
 extension SpotlightStyle.Effect {
     public var title: String {
         switch self {

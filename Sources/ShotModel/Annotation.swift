@@ -19,6 +19,12 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         set { textAlign = newValue == .left ? nil : newValue }
     }
     private var textAlign: TextAlign?
+    /// Where a note's text sits in it. Stored only when it isn't top, so annotations saved before it still decode.
+    public var verticalAlignment: VerticalTextAlign {
+        get { textVerticalAlign ?? .top }
+        set { textVerticalAlign = newValue == .top ? nil : newValue }
+    }
+    private var textVerticalAlign: VerticalTextAlign?
     /// Whether the layers panel hides it. Stored only when set, so annotations saved before it still decode.
     public var isHidden: Bool {
         get { hidden ?? false }
@@ -64,7 +70,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     private var crop: ImageCrop?
 
     private enum CodingKeys: String, CodingKey {
-        case id, kind, color, fill, lineWidth, bend, textAlign, hidden, locked, objectStyle, boxRadius, crop
+        case id, kind, color, fill, lineWidth, bend, textAlign, textVerticalAlign, hidden, locked, objectStyle, boxRadius, crop
         case imageRadius = "cornerRadius"
         case customName = "name"
     }
@@ -78,6 +84,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         lineWidth = try container.decode(CGFloat.self, forKey: .lineWidth)
         bend = try container.decodeIfPresent(CGVector.self, forKey: .bend)
         textAlign = try container.decodeIfPresent(TextAlign.self, forKey: .textAlign)
+        textVerticalAlign = try container.decodeIfPresent(VerticalTextAlign.self, forKey: .textVerticalAlign)
         hidden = try container.decodeIfPresent(Bool.self, forKey: .hidden)
         locked = try container.decodeIfPresent(Bool.self, forKey: .locked)
         objectStyle = try container.decodeIfPresent(ObjectStyle.self, forKey: .objectStyle)
@@ -284,7 +291,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         guard case let .note(string, rect) = kind else {
             return nil
         }
-        return NoteLayout(string: string, rect: rect, fontSize: noteFontSize, color: color, shaper: shaper)
+        return NoteLayout(string: string, rect: rect, fontSize: noteFontSize, color: color, verticalAlignment: verticalAlignment, shaper: shaper)
     }
 
     /// The quadratic curve an arrow or line follows: its ends and the control point that gives it its bend.

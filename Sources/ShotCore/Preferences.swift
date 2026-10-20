@@ -49,6 +49,7 @@ public enum PreferenceKey {
     public static let editorRedactionAmount = "editorRedactionAmount"
     public static let editorSpotlight = "editorSpotlight"
     public static let editorAlignment = "editorAlignment"
+    public static let editorVerticalAlignment = "editorVerticalAlignment"
     public static let editorObjectStyles = "editorObjectStyles"
     /// The shape the editor's crop was last held to.
     public static let editorCropAspect = "editorCropAspect"
@@ -148,6 +149,7 @@ public struct Preferences {
             PreferenceKey.editorRedactionAmount: Double(EditorStyle().redactionAmount),
             PreferenceKey.editorSpotlight: Data(),
             PreferenceKey.editorAlignment: EditorStyle().alignment.rawValue,
+            PreferenceKey.editorVerticalAlignment: EditorStyle().verticalAlignment.rawValue,
             PreferenceKey.editorObjectStyles: Data(),
             PreferenceKey.newCaptureStyle: Data(),
             PreferenceKey.galleryTileSize: Gallery.defaultTileSize,
@@ -267,6 +269,9 @@ public struct Preferences {
         }
         if changed(\.alignment) {
             store.set(style.alignment.rawValue, forKey: PreferenceKey.editorAlignment)
+        }
+        if changed(\.verticalAlignment) {
+            store.set(style.verticalAlignment.rawValue, forKey: PreferenceKey.editorVerticalAlignment)
         }
         if changed(\.objectStyles) {
             store.set(try? JSONEncoder().encode(style.objectStyles), forKey: PreferenceKey.editorObjectStyles)
@@ -392,6 +397,7 @@ public struct Preferences {
                 .flatMap { Redaction.amounts.contains(CGFloat($0)) ? CGFloat($0) : nil } ?? defaults.redactionAmount,
             spotlight: decoded(PreferenceKey.editorSpotlight) ?? defaults.spotlight,
             alignment: TextAlign(rawValue: store.string(forKey: PreferenceKey.editorAlignment) ?? "") ?? defaults.alignment,
+            verticalAlignment: VerticalTextAlign(rawValue: store.string(forKey: PreferenceKey.editorVerticalAlignment) ?? "") ?? defaults.verticalAlignment,
             objectStyles: decoded(PreferenceKey.editorObjectStyles) ?? defaults.objectStyles
         )
     }

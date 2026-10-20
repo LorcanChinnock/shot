@@ -33,8 +33,17 @@ public struct NoteLayout {
     public let ascent: CGFloat
     /// The paper: the rect's origin and width (at least `minWidth`), and at least tall enough for the text.
     public let frame: CGRect
+    public let verticalAlignment: VerticalTextAlign
 
     public var textRect: CGRect { frame.insetBy(dx: padding, dy: padding) }
+
+    /// The part of `textRect` from the top of the first line down: the spare height `verticalAlignment` puts above the
+    /// text is left off.
+    public var alignedTextRect: CGRect {
+        let text = textRect
+        let spare = max(0, text.height - lineHeight * CGFloat(lines.count))
+        return CGRect(x: text.minX, y: text.minY + spare * verticalAlignment.fraction, width: text.width, height: text.height - spare * verticalAlignment.fraction)
+    }
 
     public static func padding(fontSize: CGFloat) -> CGFloat { fontSize * 0.6 }
     public static func minWidth(fontSize: CGFloat) -> CGFloat { fontSize * 3 + padding(fontSize: fontSize) * 2 }
@@ -49,8 +58,9 @@ public struct NoteLayout {
         return CGRect(x: rect.minX, y: rect.minY, width: max(rect.width, minWidth(fontSize: fontSize)), height: rect.height)
     }
 
-    public init(string: String, rect: CGRect, fontSize: CGFloat, color: RGBA, shaper: any TextShaper) {
+    public init(string: String, rect: CGRect, fontSize: CGFloat, color: RGBA, verticalAlignment: VerticalTextAlign = .top, shaper: any TextShaper) {
         self.fontSize = fontSize
+        self.verticalAlignment = verticalAlignment
         padding = Self.padding(fontSize: fontSize)
         cornerRadius = fontSize * 0.35
         shadowOffset = fontSize * 0.15

@@ -17,10 +17,12 @@ public enum AnnotationDraft {
         public var redactionAmount: CGFloat
         public var spotlight: SpotlightStyle
         public var alignment: TextAlign
+        public var verticalAlignment: VerticalTextAlign
 
         public init(
             color: RGBA, fill: RGBA?, noteColor: RGBA, lineWidth: CGFloat, shape: BoxShape,
-            redaction: Redaction, redactionAmount: CGFloat, spotlight: SpotlightStyle, alignment: TextAlign
+            redaction: Redaction, redactionAmount: CGFloat, spotlight: SpotlightStyle, alignment: TextAlign,
+            verticalAlignment: VerticalTextAlign
         ) {
             self.color = color
             self.fill = fill
@@ -31,6 +33,7 @@ public enum AnnotationDraft {
             self.redactionAmount = redactionAmount
             self.spotlight = spotlight
             self.alignment = alignment
+            self.verticalAlignment = verticalAlignment
         }
     }
 
@@ -88,6 +91,7 @@ public enum AnnotationDraft {
     public static func note(id: UUID, from start: CGPoint, to end: CGPoint, style: Style) -> Annotation {
         var note = Annotation(id: id, kind: .note("", rect: .zero), color: style.noteColor, lineWidth: style.lineWidth)
         note.alignment = style.alignment
+        note.verticalAlignment = style.verticalAlignment
         note.kind = .note("", rect: NoteLayout.placementRect(from: start, to: end, fontSize: note.noteFontSize))
         return note
     }

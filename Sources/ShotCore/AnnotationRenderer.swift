@@ -320,7 +320,7 @@ public enum AnnotationRenderer {
             ctx.setFillColor(layout.fill)
             ctx.fill(CanvasPath(roundedRect: layout.frame, cornerRadius: layout.cornerRadius))
             ctx.restoreState()
-            let text = layout.textRect
+            let text = layout.alignedTextRect
             for (index, line) in layout.lines.enumerated() {
                 let x = text.minX + annotation.alignment.offset(of: line, in: text.width)
                 ctx.draw(line, at: CGPoint(x: x, y: text.minY + layout.ascent + CGFloat(index) * layout.lineHeight), outlined: false)

@@ -77,6 +77,7 @@ public struct EditorStyle: Equatable, Sendable {
     public var redactionAmount: CGFloat
     public var spotlight: SpotlightStyle
     public var alignment: TextAlign
+    public var verticalAlignment: VerticalTextAlign
     /// The last shadow and border given to each kind but the capture, in points, which new ones of that kind start
     /// with. A kind with none starts plain.
     public var objectStyles: [StyleKind: ObjectStyle]
@@ -86,7 +87,7 @@ public struct EditorStyle: Equatable, Sendable {
         highlightColor: RGBA = RGBA.presets[2], fill: RGBA? = nil, widthIndex: Int = 1, customColors: [ColorSlot: RGBA] = [:],
         shape: BoxShape = .rectangle, redaction: Redaction = .blur, redactionAmount: CGFloat = Redaction.defaultAmount,
         spotlight: SpotlightStyle = SpotlightStyle(),
-        alignment: TextAlign = .left, objectStyles: [StyleKind: ObjectStyle] = [:]
+        alignment: TextAlign = .left, verticalAlignment: VerticalTextAlign = .top, objectStyles: [StyleKind: ObjectStyle] = [:]
     ) {
         self.tool = tool
         self.color = color
@@ -100,6 +101,7 @@ public struct EditorStyle: Equatable, Sendable {
         self.redactionAmount = redactionAmount
         self.spotlight = spotlight
         self.alignment = alignment
+        self.verticalAlignment = verticalAlignment
         self.objectStyles = objectStyles
     }
 

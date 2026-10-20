@@ -117,6 +117,9 @@ struct EditorToolbar: View {
         if let alignment = model.paletteAlignment {
             AlignmentOptions(selected: alignment, choose: model.setAlignment)
         }
+        if let verticalAlignment = model.paletteVerticalAlignment {
+            VerticalAlignmentOptions(selected: verticalAlignment, choose: model.setVerticalAlignment)
+        }
     }
 }
 
@@ -163,6 +166,23 @@ struct AlignmentOptions: View {
     var body: some View {
         ToolGroup {
             ForEach(TextAlign.allCases, id: \.self) { alignment in
+                Tile(selected: selected == alignment, color: Brutal.sky, help: alignment.title) {
+                    choose(alignment)
+                } label: {
+                    Image(systemName: alignment.symbol).font(Brutal.toolIcon)
+                }
+            }
+        }
+    }
+}
+
+struct VerticalAlignmentOptions: View {
+    let selected: VerticalTextAlign
+    let choose: (VerticalTextAlign) -> Void
+
+    var body: some View {
+        ToolGroup {
+            ForEach(VerticalTextAlign.allCases, id: \.self) { alignment in
                 Tile(selected: selected == alignment, color: Brutal.sky, help: alignment.title) {
                     choose(alignment)
                 } label: {

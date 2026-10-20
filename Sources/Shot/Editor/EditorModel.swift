@@ -107,6 +107,10 @@ final class EditorModel {
     var alignment: TextAlign {
         didSet { rememberStyle { $0.alignment = alignment } }
     }
+    /// Where the next note's text sits in it.
+    var verticalAlignment: VerticalTextAlign {
+        didSet { rememberStyle { $0.verticalAlignment = verticalAlignment } }
+    }
     /// The last custom colour picked in each palette.
     private(set) var customColors: [ColorSlot: RGBA]
     var widthIndex: Int {
@@ -187,6 +191,7 @@ final class EditorModel {
         redactionAmount = style.redactionAmount
         spotlight = style.spotlight
         alignment = style.alignment
+        verticalAlignment = style.verticalAlignment
         customColors = style.customColors
         widthIndex = style.widthIndex
         objectStyles = style.objectStyles
@@ -310,7 +315,7 @@ final class EditorModel {
         EditorStyle(
             tool: tool, color: color, noteColor: noteColor, highlightColor: highlightColor, fill: fill, widthIndex: widthIndex,
             customColors: customColors, shape: shape, redaction: redaction, redactionAmount: redactionAmount, spotlight: spotlight,
-            alignment: alignment, objectStyles: objectStyles
+            alignment: alignment, verticalAlignment: verticalAlignment, objectStyles: objectStyles
         )
     }
 
@@ -335,6 +340,7 @@ final class EditorModel {
         if next.redactionAmount != redactionAmount { redactionAmount = next.redactionAmount }
         if next.spotlight != spotlight { spotlight = next.spotlight }
         if next.alignment != alignment { alignment = next.alignment }
+        if next.verticalAlignment != verticalAlignment { verticalAlignment = next.verticalAlignment }
         for (slot, colour) in next.customColors where customColors[slot] != colour {
             customColors[slot] = colour
             rememberStyle { $0.customColors[slot] = colour }
@@ -637,6 +643,16 @@ final class EditorModel {
         adopt(changed)
     }
 
+    /// Where the toolbar shows the note's text sitting: the one being typed's, else the selection's, else the next note's.
+    /// `nil` when none of them is a note.
+    var paletteVerticalAlignment: VerticalTextAlign? { palette.verticalAlignment }
+
+    func setVerticalAlignment(_ newAlignment: VerticalTextAlign) {
+        var changed = palette
+        changed.setVerticalAlignment(newAlignment)
+        adopt(changed)
+    }
+
     /// The fill the toolbar shows and sets, `nil` for none: the selection's, else the fill for the next shape.
     var paletteFill: RGBA? {
         get { palette.fill }
@@ -682,7 +698,8 @@ final class EditorModel {
     var draftStyle: AnnotationDraft.Style {
         AnnotationDraft.Style(
             color: nextColor, fill: fill, noteColor: noteColor, lineWidth: lineWidth, shape: shape,
-            redaction: redaction, redactionAmount: redactionAmount, spotlight: nextSpotlightStyle, alignment: alignment
+            redaction: redaction, redactionAmount: redactionAmount, spotlight: nextSpotlightStyle, alignment: alignment,
+            verticalAlignment: verticalAlignment
         )
     }
     /// Space kept between an annotation and a canvas edge that grew to hold it.

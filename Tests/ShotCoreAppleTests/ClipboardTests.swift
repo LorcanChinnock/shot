@@ -45,8 +45,11 @@ func everyKindSurvivesTheClipboard(annotation: Annotation) throws {
     var note = Annotation(kind: .note("Hi", rect: CGRect(x: 0, y: 0, width: 160, height: 0)), color: red, lineWidth: 4)
     let saved = try AnnotationClipboard.data(for: note)
     #expect(!String(decoding: saved, as: UTF8.self).contains("textAlign"))
+    #expect(!String(decoding: saved, as: UTF8.self).contains("textVerticalAlign"))
     #expect(try AnnotationClipboard.annotation(from: saved).alignment == .left)
+    #expect(try AnnotationClipboard.annotation(from: saved).verticalAlignment == .top)
     note.alignment = .right
+    note.verticalAlignment = .bottom
     #expect(try AnnotationClipboard.annotation(from: AnnotationClipboard.data(for: note)) == note)
 }
 

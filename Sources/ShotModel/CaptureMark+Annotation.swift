@@ -173,7 +173,7 @@ extension RGBA {
 
 extension CaptureMark {
     /// Whether every one of `annotations`, saved from `canvas` at 1:1, comes back from its mark as it is, so the saved
-    /// version can reopen with them live. Placed images, spotlights, styled marks, aligned text and hidden or cropped-out
+    /// version can reopen with them live. Placed images, spotlights, styled marks, aligned text and notes and hidden or cropped-out
     /// layers don't: a record doesn't hold all of them.
     public static func rebuildExactly(_ annotations: [Annotation], canvas: CGRect, shaper: any TextShaper) -> Bool {
         annotations.allSatisfy { annotation in
@@ -183,7 +183,8 @@ extension CaptureMark {
             default:
                 break
             }
-            guard !annotation.isHidden, annotation.paintedBounds(shaper: shaper).intersects(canvas), annotation.style.isEmpty, annotation.alignment == .left else {
+            guard !annotation.isHidden, annotation.paintedBounds(shaper: shaper).intersects(canvas), annotation.style.isEmpty, annotation.alignment == .left,
+                  annotation.verticalAlignment == .top else {
                 return false
             }
             let mark = CaptureMark(annotation, origin: canvas.origin, scale: 1, shaper: shaper)
