@@ -299,6 +299,18 @@ private func shadowRow(blur: CGFloat, scale: CGFloat = 1) throws -> [Int] {
     #expect(try pixel(canvas, 10, 5) == clear)
 }
 
+@Test func aFractionalShadowOffsetLeavesTheShapeCrisp() throws {
+    let canvas = try makeCanvas(20, 20)
+    // A note's shadow, 3.6 below it at 24 pt.
+    canvas.setShadow(offset: CGSize(width: 0.4, height: -3.6), blur: 0, color: RGBA(0, 0, 1, 0.5))
+    canvas.setFillColor(red)
+    canvas.fill(CGRect(x: 4, y: 10, width: 4, height: 4))
+    for (x, y) in [(4, 10), (7, 13), (5, 10), (5, 13), (4, 12), (7, 11)] {
+        #expect(try pixel(canvas, x, y) == [255, 0, 0, 255], "(\(x), \(y))")
+    }
+    #expect(try pixel(canvas, 5, 14) == clear && pixel(canvas, 8, 12) == clear)
+}
+
 @Test func aCairoCanvasImageRoundTripsThroughThePNGCodec() throws {
     let canvas = try makeCanvas(5, 3)
     canvas.setFillColor(RGBA(0.2, 0.4, 0.6, 0.8))

@@ -193,9 +193,10 @@ public final class CairoCanvas: Canvas {
         let shown = deviceClipBounds
         var area = shown
         if let shadow = composite.shadow {
-            // What casts the visible shadow lies back along the offset, and its blur reaches in from further.
+            // What casts the visible shadow lies back along the offset, and its blur reaches in from further. Whole pixels, so
+            // the layer lies on the canvas's grid and comes back unresampled, whatever the offset.
             let reach = CGFloat(AlphaBlur.reach(sigma: shadow.blur / 2) + 1)
-            area = shown.union(shown.offsetBy(dx: -shadow.offset.width, dy: -shadow.offset.height)).insetBy(dx: -reach, dy: -reach)
+            area = shown.union(shown.offsetBy(dx: -shadow.offset.width, dy: -shadow.offset.height)).insetBy(dx: -reach, dy: -reach).integral
         }
         let width = max(Int(area.width), 1), height = max(Int(area.height), 1)
         guard let layer = Surface(format: CAIRO_FORMAT_ARGB32, width: width, height: height) else {
