@@ -152,7 +152,7 @@ private let hasDBus = TestBus.executable != nil || ProcessInfo.processInfo.envir
         let portal = try FakePortal(on: bus.address)
         defer { portal.stop() }
         let capturer = try PortalCapturer(address: bus.address)
-        #expect(capturer.name == "portal" && capturer.limits.isEmpty && capturer.version == 1)
+        #expect(capturer.name == "portal" && capturer.limits == [.record: ScreenshotPortal.noRecording] && capturer.version == 1)
         #expect(LinuxScreen.screenshotPortal(environment: ["XDG_SESSION_TYPE": "wayland", "DBUS_SESSION_BUS_ADDRESS": bus.address]) == .success(1))
 
         // The first listing takes a screenshot to learn the size, which the capture after it uses.
@@ -205,7 +205,7 @@ private let hasDBus = TestBus.executable != nil || ProcessInfo.processInfo.envir
         #expect(capturer.name == "portal")
         // Without registering defaults, which the whole process shares on Linux, so RegisteredDefaultsTests keeps them to
         // itself. The keys the daemon reads are set above, or fall back to the defaults.
-        let daemon = AgentDaemon(capturer: capturer, codec: PNGJPEGCodec(), projects: nil, version: "0.7.0") {
+        let daemon = AgentDaemon(capturer: capturer, projects: nil, version: "0.7.0") {
             Preferences(store: UserDefaults(suiteName: suite)!)
         }
 

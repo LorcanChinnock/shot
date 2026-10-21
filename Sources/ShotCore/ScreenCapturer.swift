@@ -25,11 +25,17 @@ public protocol ScreenCapturer: Sendable {
     /// Asks the user to pick a screen, window or area in the desktop's own dialog, and captures it, for a window this
     /// can't find or capture by itself; `nil` when the session has no such dialog.
     func capturePicked() async throws(ShotCommandError) -> Bitmap?
+    /// What records `area`, which lies on one display, at `frameRate`, with the pointer drawn when `showsCursor`. Throws
+    /// `.unavailable`, with the reason `limits` gives for `.record`, where this session can't record.
+    func recordingSource(area: CGRect, frameRate: Int, showsCursor: Bool) throws(ShotCommandError) -> any RecordingSource
 }
 
 extension ScreenCapturer {
     public var windowsNote: String? { nil }
     public func capturePicked() async throws(ShotCommandError) -> Bitmap? { nil }
+    public func recordingSource(area: CGRect, frameRate: Int, showsCursor: Bool) throws(ShotCommandError) -> any RecordingSource {
+        throw .unavailable(limits[.record] ?? "Shot can't record this session.")
+    }
 }
 
 /// What a `ScreenCapturer` may be unable to do in its session.
@@ -38,6 +44,7 @@ public enum ScreenCapability: String, CaseIterable, Sendable {
     case captureDisplay
     case captureWindow
     case captureArea
+    case record
 }
 
 /// A display, as `shot windows` lists it.

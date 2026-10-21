@@ -9,8 +9,8 @@ import ShotCoreLinux
 /// and `shot record`, which ask the running app, `shot latest`, `list` and `get`, which read captures as the MCP tools
 /// do, `shot watch`, `shot doctor`, and `--version`. It ships inside the app as `Contents/MacOS/shot-cli`, so it reads the
 /// app's settings to find the captures. On Linux, where it's `shot`, only `Doctor.linuxCommands` run so far: the image
-/// and video commands, those that read captures, and `shot capture` and `shot windows`, which ask `shot serve` rather
-/// than an app.
+/// and video commands, those that read captures, and `shot capture`, `shot windows` and `shot record`, which ask
+/// `shot serve` rather than an app.
 @main
 enum ShotCLI {
     static func main() async {
@@ -69,23 +69,6 @@ enum ShotCLI {
                 printError("\(program) \(command.name): \(error.message)")
                 exit(error.exitCode)
             }
-        #if os(Linux)
-        case .serve:
-            await serveAgents(program: program)
-        case let .settings(agentCapture):
-            let store = defaultsStore(app: nil)
-            if let agentCapture {
-                store.set(agentCapture, forKey: PreferenceKey.agentCapture)
-                store.synchronize()
-            }
-            print(ShotCommand.json(.object(["agentCapture": .bool(Preferences(store: store).agentCapture)])))
-        #else
-        case .serve, .settings:
-            let error = ShotCommandError.usage(command.name, "is for Linux; on a Mac, Shot answers agents itself, and Settings › Agents turns that on")
-            printError("\(program) \(command.name): \(error.message)")
-            exit(error.exitCode)
-        #endif
-        #if os(macOS)
         case let .record(action):
             var request: AgentRequest
             switch action {
@@ -109,6 +92,23 @@ enum ShotCLI {
                 printError("\(program) \(command.name): \(error.message)")
                 exit(error.exitCode)
             }
+        #if os(Linux)
+        case .serve:
+            await serveAgents(program: program)
+        case let .settings(agentCapture):
+            let store = defaultsStore(app: nil)
+            if let agentCapture {
+                store.set(agentCapture, forKey: PreferenceKey.agentCapture)
+                store.synchronize()
+            }
+            print(ShotCommand.json(.object(["agentCapture": .bool(Preferences(store: store).agentCapture)])))
+        #else
+        case .serve, .settings:
+            let error = ShotCommandError.usage(command.name, "is for Linux; on a Mac, Shot answers agents itself, and Settings › Agents turns that on")
+            printError("\(program) \(command.name): \(error.message)")
+            exit(error.exitCode)
+        #endif
+        #if os(macOS)
         case let .pick(options):
             var request = AgentRequest(.pick, duration: options.timeout)
             request.prompt = options.prompt
@@ -132,7 +132,7 @@ enum ShotCLI {
             }
         #endif
         default:
-            // On Linux, the commands that record or pick answer that they're not on Linux yet.
+            // On Linux, the commands that pick answer that they're not on Linux yet.
             do {
                 let projects = ProjectStore(bundleID: appBundle()?.bundleIdentifier ?? fallbackSuite)
                 let result = try await ShotCommands.run(command, projects: projects)
@@ -274,11 +274,11 @@ enum ShotCLI {
         )
     }
 
-    /// Answers agents on the socket the app would answer on, until it's stopped, taking screenshots with the session's
-    /// capturer. Another `shot serve` already answering leaves this one nothing to do.
+    /// Answers agents on the socket the app would answer on, until it's stopped, taking screenshots and recording with
+    /// the session's capturer. Another `shot serve` already answering leaves this one nothing to do.
     static func serveAgents(program: String) async {
         let daemon = AgentDaemon(
-            capturer: LinuxScreen.capturer(), codec: PNGJPEGCodec(), projects: ProjectStore(bundleID: fallbackSuite), version: version(of: nil)
+            capturer: LinuxScreen.capturer(), projects: ProjectStore(bundleID: fallbackSuite), marks: RecordingMarks.url(bundleID: fallbackSuite), version: version(of: nil)
         ) {
             let store = defaultsStore(app: nil)
             Preferences.registerDefaults(in: store)
@@ -294,13 +294,16 @@ enum ShotCLI {
             exit(error.exitCode)
         }
         printError("Shot \(version(of: nil)) answering agents at \(server.url.path)")
-        // Stopped with ^C or by systemd or pkill, it removes its socket first.
+        // Stopped with ^C or by systemd or pkill, it stops answering and saves the recording in progress, if any, first.
         let stops = [SIGINT, SIGTERM].map { number in
             signal(number, SIG_IGN)
             let source = DispatchSource.makeSignalSource(signal: number, queue: .global())
             source.setEventHandler {
                 server.stop()
-                exit(0)
+                Task {
+                    await daemon.stopRecording()
+                    exit(0)
+                }
             }
             source.resume()
             return source

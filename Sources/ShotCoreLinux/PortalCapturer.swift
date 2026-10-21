@@ -62,7 +62,7 @@ final class PortalCapturer: ScreenCapturer, @unchecked Sendable {
     }
 
     var name: String { "portal" }
-    var limits: [ScreenCapability: String] { [:] }
+    var limits: [ScreenCapability: String] { [.record: ScreenshotPortal.noRecording] }
     var windowsNote: String? { ScreenshotPortal.windowsNote(xwayland: xwayland != nil) }
 
     func displays() async throws(ShotCommandError) -> [ScreenDisplay] {

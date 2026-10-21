@@ -25,7 +25,7 @@ private func made(_ result: MCPServer.ToolResult) throws -> JSONValue {
     return try JSONDecoder().decode(JSONValue.self, from: Data(json.utf8))
 }
 
-@Test func theToolsThatRecordOrPickAnswerThatTheyreNotOnLinuxYet() async {
+@Test func theToolsThatPickAnswerThatTheyreNotOnLinuxYet() async {
     let tools = AgentTools.live(folder: URL(fileURLWithPath: "/shots"))
     #expect(tools.server(version: "1").tools.map(\.name) == AgentTools.definitions.map(\.name).filter { $0 != AgentTools.findText })
     for name in Doctor.notOnLinuxYetTools {
@@ -109,14 +109,11 @@ private func made(_ result: MCPServer.ToolResult) throws -> JSONValue {
     #expect(text(compared).contains("\"regions\""))
 }
 
-@Test func theCommandsThatRecordOrPickAnswerThatTheyreNotOnLinuxYet() async throws {
+@Test func theCommandsThatPickAnswerThatTheyreNotOnLinuxYet() async throws {
     let (folder, _, screenshot) = try captures()
     defer { try? FileManager.default.removeItem(at: folder.deletingLastPathComponent()) }
-    let commands: [ShotCommand] = [try ShotCommand.parse(["record", "--display", "1"]), .pick(ShotCommand.PickOptions())]
-    for command in commands {
-        await #expect(throws: ShotCommandError.notOnLinuxYet, "\(command.name)") {
-            try await ShotCommands.run(command)
-        }
+    await #expect(throws: ShotCommandError.notOnLinuxYet) {
+        try await ShotCommands.run(.pick(ShotCommand.PickOptions()))
     }
     await #expect(throws: ShotCommandError.unavailable("reading the text in an image needs a Mac")) {
         try await ShotCommands.run(.text(path: screenshot.path))
