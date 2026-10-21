@@ -1,5 +1,5 @@
 import AppKit
-import ShotCoreApple
+import ShotCore
 import SwiftUI
 
 enum QuickAccessMotion {

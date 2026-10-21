@@ -1,8 +1,7 @@
+import CoreGraphics
 import Foundation
 import Testing
 @testable import ShotCore
-
-// The tests of ShotCoreAppleTests' CompositionPlanTests.swift that need no Apple framework, so they run on Linux too.
 
 private let recording = URL(fileURLWithPath: "/tmp/recording.mov")
 private let canvas = CGSize(width: 1920, height: 1080)
@@ -100,6 +99,17 @@ private func rect(_ x: CGFloat = 10) -> Annotation {
 
 @Test func aClipWithNoPictureHasNoGeometry() {
     #expect(LayerGeometry.transform(for: Clip(source: recording, sourceDuration: 1), canvas: canvas) == .identity)
+}
+
+@Test func theImageTransformPutsTheTopLeftOfTheSourceAtTheTopLeftOfItsFrame() {
+    // A 100 × 50 source, shown at half scale in the top left of a 200 × 100 canvas: in y-up terms the
+    // source's top-left corner is (0, 50) and should land at (0, 100) of the canvas.
+    let geometry = CGAffineTransform(scaleX: 0.5, y: 0.5)
+    let matrix = LayerGeometry.imageTransform(orientation: .identity, geometry: geometry, sourceHeight: 50, canvasHeight: 100)
+    let topLeft = CGPoint(x: 0, y: 50).applying(matrix)
+    let bottomRight = CGPoint(x: 100, y: 0).applying(matrix)
+    #expect(abs(topLeft.x) < 1e-9 && abs(topLeft.y - 100) < 1e-9)
+    #expect(abs(bottomRight.x - 50) < 1e-9 && abs(bottomRight.y - 75) < 1e-9)
 }
 
 @Test func annotationsOnAHiddenTrackDontShowOrDraw() {

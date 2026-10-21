@@ -1,5 +1,5 @@
 import AppKit
-import ShotCoreApple
+import ShotCore
 import SwiftUI
 
 /// The newest captures in the save folder to place on the canvas with a click, and a way to choose any image file.

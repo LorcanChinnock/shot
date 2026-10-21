@@ -1,5 +1,5 @@
 import AppKit
-import ShotCoreApple
+import ShotCore
 import SwiftUI
 
 /// Sits over the player while a tool is picked: draws new annotations at the playhead, and selects, moves and resizes

@@ -1,5 +1,5 @@
 import AppKit
-import ShotCoreApple
+import ShotCore
 import SwiftUI
 
 /// Tools, colours and widths for drawing over the video, laid out like the image editor's toolbar.

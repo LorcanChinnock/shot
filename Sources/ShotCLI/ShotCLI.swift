@@ -1,5 +1,5 @@
 import Foundation
-import ShotCoreApple
+import ShotCore
 
 /// The `shot` command line: `shot mcp`, the MCP server AI agents talk to, the headless media commands, `shot capture`
 /// and `shot record`, which ask the running app, `shot latest`, `list` and `get`, which read captures as the MCP tools

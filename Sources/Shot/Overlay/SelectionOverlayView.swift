@@ -1,5 +1,5 @@
 import AppKit
-import ShotCoreApple
+import ShotCore
 
 final class SelectionOverlayView: NSView {
     let display: OverlayDisplay

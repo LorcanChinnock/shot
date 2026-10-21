@@ -1,6 +1,6 @@
 import AppKit
 import os
-import ShotCoreApple
+import ShotCore
 
 private let log = Logger.shot("editor")
 

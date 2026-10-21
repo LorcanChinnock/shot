@@ -1,5 +1,5 @@
 import AppKit
-import ShotCoreApple
+import ShotCore
 
 final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private let model: EditorModel

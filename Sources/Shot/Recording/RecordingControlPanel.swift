@@ -1,5 +1,5 @@
 import AppKit
-import ShotCoreApple
+import ShotCore
 import SwiftUI
 
 /// Floating recording controls. Shot's windows are excluded from the capture, so they never appear in the video.

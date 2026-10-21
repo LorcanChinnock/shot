@@ -1,5 +1,5 @@
 import Foundation
-import ShotCoreApple
+import ShotCore
 
 extension ProjectStore {
     /// This app's store, so ShotDev's projects stay apart from the release's.

@@ -1,6 +1,6 @@
 import Carbon.HIToolbox
 import os
-import ShotCoreApple
+import ShotCore
 
 private let log = Logger.shot("hotkeys")
 

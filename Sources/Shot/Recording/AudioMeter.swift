@@ -1,6 +1,6 @@
 import AVFoundation
 import os
-import ShotCoreApple
+import ShotCore
 import SwiftUI
 
 /// The latest microphone level from 0 to 1, written from a capture queue and read by `LevelMeter`.

@@ -1,5 +1,5 @@
 import AppKit
-import ShotCoreApple
+import ShotCore
 import SwiftUI
 
 /// Floats captures above other windows as references. Each pin is its own panel: drag it anywhere, resize it from its

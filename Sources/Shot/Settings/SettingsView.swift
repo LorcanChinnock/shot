@@ -1,6 +1,6 @@
 import AVFoundation
 import ServiceManagement
-import ShotCoreApple
+import ShotCore
 import SwiftUI
 
 enum SettingsSection: String, CaseIterable, Identifiable {

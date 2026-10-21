@@ -1,5 +1,5 @@
 import AppKit
-import ShotCoreApple
+import ShotCore
 import SwiftUI
 
 /// Design tokens and components for the glass × neo-brutalist settings UI.

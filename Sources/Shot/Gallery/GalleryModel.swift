@@ -2,7 +2,7 @@ import AppKit
 import Observation
 import os
 import QuickLookUI
-import ShotCoreApple
+import ShotCore
 
 private let log = Logger.shot("gallery")
 
