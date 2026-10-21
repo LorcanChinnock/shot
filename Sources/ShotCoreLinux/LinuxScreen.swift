@@ -1,21 +1,42 @@
 import Foundation
 
 /// Picks the `ScreenCapturer` `shot serve` takes screenshots with, by the session `XDG_SESSION_TYPE` names: X11's, on
-/// the X server `DISPLAY` names, or the desktop portal's on Wayland once it comes (#749). Without one, it answers why.
+/// the X server `DISPLAY` names, or the desktop portal's on Wayland, over the session bus, with XWayland's X server for
+/// X11 apps' windows. Without one, it answers why.
 public enum LinuxScreen {
     public static func capturer(environment: [String: String] = ProcessInfo.processInfo.environment) -> any ScreenCapturer {
-        guard environment["XDG_SESSION_TYPE"]?.lowercased() == "x11" else {
-            return NoCapturer(session: environment["XDG_SESSION_TYPE"])
-        }
         do {
-            return try X11Capturer(display: environment["DISPLAY"])
+            switch environment["XDG_SESSION_TYPE"]?.lowercased() {
+            case "x11":
+                return try X11Capturer(display: environment["DISPLAY"])
+            case "wayland":
+                guard let address = ScreenshotPortal.busAddress(environment: environment) else {
+                    return NoCapturer(reason: ScreenshotPortal.noBus)
+                }
+                let xwayland = environment["DISPLAY"].flatMap { try? X11Capturer(display: $0) }
+                return try PortalCapturer(address: address, xwayland: xwayland)
+            case let session:
+                return NoCapturer(session: session)
+            }
         } catch {
             return NoCapturer(reason: error.message)
         }
     }
+
+    /// The version of the portal's Screenshot interface, or why there's none, for `shot doctor` in a Wayland session;
+    /// `nil` in any other.
+    public static func screenshotPortal(environment: [String: String] = ProcessInfo.processInfo.environment) -> Result<Int, ShotCommandError>? {
+        guard environment["XDG_SESSION_TYPE"]?.lowercased() == "wayland" else {
+            return nil
+        }
+        guard let address = ScreenshotPortal.busAddress(environment: environment) else {
+            return .failure(.unavailable(ScreenshotPortal.noBus))
+        }
+        return PortalCapturer.probe(address: address).map(Int.init)
+    }
 }
 
-/// What `shot serve` has when nothing captures the session: it can do nothing, and each call answers why.
+/// What `shot serve` has when nothing captures the session, or the session is neither X11 nor Wayland: it can do nothing, and each call answers why.
 struct NoCapturer: ScreenCapturer {
     let reason: String
 
@@ -24,8 +45,7 @@ struct NoCapturer: ScreenCapturer {
     }
 
     init(session: String?) {
-        reason = switch session?.lowercased() {
-        case "wayland": "Shot can't capture a Wayland session yet."
+        reason = switch session {
         case let session?: "XDG_SESSION_TYPE is \(session), and Shot can capture only an X11 or Wayland session."
         case nil: "XDG_SESSION_TYPE isn't set, so Shot can't tell which session to capture."
         }

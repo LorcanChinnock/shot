@@ -4,11 +4,9 @@ import Testing
 @testable import ShotCore
 @testable import ShotCoreLinux
 
-/// An Xvfb of its own, 640×480 with a black root, on a display nothing else uses, stopped when it's released. It's
-/// spawned directly rather than through `Process`, whose `waitUntilExit` spins a thread of the pool the other tests
-/// need, and with no signals blocked, since the test's threads block SIGTERM and Xvfb would keep that.
-private final class XServer: @unchecked Sendable {
-    static let executable = ["/usr/bin/Xvfb", "/usr/local/bin/Xvfb"].first { FileManager.default.isExecutableFile(atPath: $0) }
+/// An Xvfb of its own, 640×480 with a black root, on a display nothing else uses, stopped when it's released.
+final class XServer: @unchecked Sendable {
+    static let executable = TestServer.executable("/usr/bin/Xvfb", "/usr/local/bin/Xvfb")
     let display: String
     private let pid: pid_t
 
@@ -20,10 +18,9 @@ private final class XServer: @unchecked Sendable {
                 continue
             }
             // Without -noreset, the server resets when the check below disconnects, dropping whoever connects next.
-            let pid = try Self.spawn(executable, [":\(number)", "-screen", "0", "640x480x24", "-br", "-nolisten", "tcp", "-noreset"])
+            let pid = try TestServer.spawn(executable, [":\(number)", "-screen", "0", "640x480x24", "-br", "-nolisten", "tcp", "-noreset"])
             // Something else may have taken the display, so Xvfb quits and the next number is tried.
-            var status: Int32 = 0
-            for _ in 0 ..< 200 where waitpid(pid, &status, WNOHANG) == 0 {
+            for _ in 0 ..< 200 where TestServer.isRunning(pid) {
                 if let connection = xcb_connect(":\(number)", nil) {
                     defer { xcb_disconnect(connection) }
                     if xcb_connection_has_error(connection) == 0 {
@@ -34,43 +31,13 @@ private final class XServer: @unchecked Sendable {
                 }
                 try await Task.sleep(for: .milliseconds(50))
             }
-            Self.stop(pid)
+            TestServer.stop(pid)
         }
         throw ShotCommandError.internal("Xvfb didn't start.")
     }
 
     deinit {
-        Self.stop(pid)
-    }
-
-    private static func spawn(_ executable: String, _ arguments: [String]) throws -> pid_t {
-        var attributes = posix_spawnattr_t()
-        posix_spawnattr_init(&attributes)
-        defer { posix_spawnattr_destroy(&attributes) }
-        var none = sigset_t()
-        sigemptyset(&none)
-        posix_spawnattr_setsigmask(&attributes, &none)
-        posix_spawnattr_setflags(&attributes, Int16(POSIX_SPAWN_SETSIGMASK))
-        var actions = posix_spawn_file_actions_t()
-        posix_spawn_file_actions_init(&actions)
-        defer { posix_spawn_file_actions_destroy(&actions) }
-        posix_spawn_file_actions_addopen(&actions, 1, "/dev/null", O_WRONLY, 0)
-        posix_spawn_file_actions_addopen(&actions, 2, "/dev/null", O_WRONLY, 0)
-        let argv = ([executable] + arguments).map { strdup($0) } + [nil]
-        defer { argv.forEach { free($0) } }
-        var pid: pid_t = 0
-        let error = posix_spawn(&pid, executable, &actions, &attributes, argv, environ)
-        guard error == 0 else {
-            throw ShotCommandError.internal("Couldn't start Xvfb: \(String(cString: strerror(error))).")
-        }
-        return pid
-    }
-
-    /// Asks Xvfb to quit, which clears its lock and socket, and waits for it.
-    private static func stop(_ pid: pid_t) {
-        kill(pid, SIGTERM)
-        var status: Int32 = 0
-        waitpid(pid, &status, 0)
+        TestServer.stop(pid)
     }
 }
 
@@ -276,6 +243,21 @@ private let hasXvfb = XServer.executable != nil || ProcessInfo.processInfo.envir
             return
         }
         #expect(status["capturer"] == .string("x11") && status["limits"] == .object([:]))
+    }
+
+    @Test func portalCapturerListsAndCapturesX11AppsThroughXWayland() async throws {
+        let scene = try await Scene()
+        let bus = try await TestBus()
+        let portal = try FakePortal(on: bus.address)
+        defer { portal.stop() }
+        let capturer = LinuxScreen.capturer(environment: ["XDG_SESSION_TYPE": "wayland", "DBUS_SESSION_BUS_ADDRESS": bus.address, "DISPLAY": scene.server.display])
+        #expect(capturer.name == "portal" && capturer.windowsNote == ScreenshotPortal.windowsNote(xwayland: true))
+        let windows = try await capturer.windows()
+        #expect(windows.map(\.id) == [scene.green, scene.blue, scene.red])
+        // Silently, without the portal, and whole behind blue.
+        let red = try await capturer.capture(window: windows[2])
+        #expect(red.width == 200 && red.height == 100 && red[145, 45] == (255, 0, 0, 255))
+        #expect(portal.requests.withLock { $0 }.isEmpty)
     }
 }
 

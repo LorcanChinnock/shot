@@ -4,12 +4,13 @@ import Testing
 
 private func facts(
     session: String? = "wayland", agentCapture: Bool = true, listening: Bool = false, status: Result<[String: JSONValue], ShotCommandError>? = nil,
-    folderExists: Bool = true, folderError: String? = nil, colorEmoji: Bool = true
+    folderExists: Bool = true, folderError: String? = nil, colorEmoji: Bool = true, screenshotPortal: Result<Int, ShotCommandError>? = nil
 ) -> Doctor.LinuxFacts {
     Doctor.LinuxFacts(
         version: "0.7.0", settingsFile: "/home/me/.config/dev.lorcan.Shot.plist", sessionType: session, agentCapture: agentCapture,
         socketPath: "/home/me/.local/share/dev.lorcan.Shot/agent.sock", listening: listening, status: status, folder: "/home/me/Pictures/Shot",
-        folderExists: folderExists, folderError: folderError, captures: 1, colorEmoji: colorEmoji
+        folderExists: folderExists, folderError: folderError, captures: 1, colorEmoji: colorEmoji,
+        screenshotPortal: screenshotPortal
     )
 }
 
@@ -104,11 +105,11 @@ private func serving(version: String = "0.7.0", capturer: String = "x11", limits
     #expect(limited.outcome == .pass)
     #expect(limited.detail.hasSuffix("agent.sock. Wayland asks before each window."))
 
-    let reason = JSONValue.string("Shot can't capture a Wayland session yet.")
+    let reason = JSONValue.string("The desktop portal isn't running.")
     let none = Doctor.serve(facts(listening: true, status: serving(capturer: "none", limits: ["captureArea": reason, "captureDisplay": reason, "listWindows": reason])))
     #expect(none.outcome == .warn)
-    #expect(none.detail.hasSuffix("agent.sock. Shot can't capture a Wayland session yet."))
-    #expect(none.fix == "Capturing a Wayland session comes in a later version of Shot.")
+    #expect(none.detail.hasSuffix("agent.sock. The desktop portal isn't running."))
+    #expect(none.fix == "Fix what the screenshotPortal check says, then stop shot serve with pkill -f \"shot serve\"; the next capture starts it again.")
     let x11 = Doctor.serve(facts(session: "x11", listening: true, status: serving(capturer: "none", limits: ["listWindows": .string("DISPLAY isn't set.")])))
     #expect(x11.outcome == .warn)
     #expect(x11.fix == "Stop shot serve with pkill -f \"shot serve\", then run a capture from a terminal in your X11 desktop session to start it there.")
@@ -121,4 +122,21 @@ private func serving(version: String = "0.7.0", capturer: String = "x11", limits
     let stuck = Doctor.serve(facts(listening: true, status: .failure(.io("Shot closed the connection without a usable answer"))))
     #expect(stuck.outcome == .fail)
     #expect(Doctor.json(Doctor.checks(facts(listening: true, status: .failure(.io("gone")))))["ok"] == .bool(false))
+}
+
+@Test func doctorOnWaylandSaysWhetherTheDesktopPortalTakesScreenshots() {
+    #expect(Doctor.portal(facts()) == nil)
+    #expect(!Doctor.checks(facts()).contains { $0.name == "screenshotPortal" })
+
+    let checks = Doctor.checks(facts(screenshotPortal: .success(1)))
+    #expect(checks.map(\.name).prefix(2) == ["platform", "screenshotPortal"])
+    #expect(checks[1] == Doctor.Check(
+        "screenshotPortal", .pass,
+        "The desktop portal can take screenshots (Screenshot version 1), so shot serve captures screens and areas through it, and windows the user picks in the desktop's screenshot dialog."
+    ))
+
+    let missing = Doctor.portal(facts(screenshotPortal: .failure(.unavailable("The desktop portal isn't running."))))
+    #expect(missing?.outcome == .fail && missing?.detail == "The desktop portal isn't running.")
+    #expect(missing?.fix == "Install xdg-desktop-portal and your desktop's backend (xdg-desktop-portal-gnome, xdg-desktop-portal-kde or xdg-desktop-portal-wlr), and run shot from a terminal in your Wayland desktop session.")
+    #expect(Doctor.json(Doctor.checks(facts(screenshotPortal: .failure(.unavailable("gone")))))["ok"] == .bool(false))
 }

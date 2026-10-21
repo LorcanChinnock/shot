@@ -1,8 +1,8 @@
 import Foundation
 
 extension Doctor {
-    /// What `shot doctor` checks on Linux, where `shot serve` answers agents rather than an app: the session, Let agents
-    /// capture and record, `shot serve`, what runs so far, what's left out by design, the emoji font, and the capture
+    /// What `shot doctor` checks on Linux, where `shot serve` answers agents rather than an app: the session, the desktop
+    /// portal on Wayland, Let agents capture and record, `shot serve`, what runs so far, what's left out by design, the emoji font, and the capture
     /// folder.
     public struct LinuxFacts: Equatable, Sendable {
         public var version: String
@@ -25,11 +25,14 @@ extension Doctor {
         public var captures: Int
         /// Whether a font that draws emoji in colour is installed.
         public var colorEmoji: Bool
+        /// The version of the desktop portal's Screenshot interface, or why there's none, in a Wayland session; `nil` in
+        /// any other.
+        public var screenshotPortal: Result<Int, ShotCommandError>?
 
         public init(
             version: String, settingsFile: String, sessionType: String?, agentCapture: Bool, socketPath: String, listening: Bool,
             status: Result<[String: JSONValue], ShotCommandError>?, folder: String, folderExists: Bool, folderError: String?, captures: Int,
-            colorEmoji: Bool
+            colorEmoji: Bool, screenshotPortal: Result<Int, ShotCommandError>? = nil
         ) {
             self.version = version
             self.settingsFile = settingsFile
@@ -43,6 +46,7 @@ extension Doctor {
             self.folderError = folderError
             self.captures = captures
             self.colorEmoji = colorEmoji
+            self.screenshotPortal = screenshotPortal
         }
     }
 
@@ -61,7 +65,7 @@ extension Doctor {
     ]
 
     public static func checks(_ facts: LinuxFacts) -> [Check] {
-        [platform(facts), linuxAgents(facts), serve(facts), notOnLinuxYet, macOnly, emoji(facts), linuxFolder(facts)]
+        [platform(facts), portal(facts), linuxAgents(facts), serve(facts), notOnLinuxYet, macOnly, emoji(facts), linuxFolder(facts)].compactMap { $0 }
     }
 
     static func platform(_ facts: LinuxFacts) -> Check {
@@ -73,6 +77,19 @@ extension Doctor {
             let session = type.map { "XDG_SESSION_TYPE is \($0)" } ?? "XDG_SESSION_TYPE isn't set"
             return Check("platform", .warn, detail + " \(session), so this isn't an X11 or Wayland session, which capturing will need.",
                          fix: "Run shot from a terminal in your desktop session.")
+        }
+    }
+
+    /// Whether the desktop portal can take screenshots, which a Wayland session captures through; `nil` in any other.
+    static func portal(_ facts: LinuxFacts) -> Check? {
+        switch facts.screenshotPortal {
+        case nil:
+            return nil
+        case let .success(version)?:
+            return Check("screenshotPortal", .pass, "The desktop portal can take screenshots (Screenshot version \(version)), so shot serve captures screens and areas through it, and windows the user picks in the desktop's screenshot dialog.")
+        case let .failure(error)?:
+            return Check("screenshotPortal", .fail, error.message,
+                         fix: "Install xdg-desktop-portal and your desktop's backend (\(ScreenshotPortal.backends)), and run shot from a terminal in your Wayland desktop session.")
         }
     }
 
@@ -113,7 +130,7 @@ extension Doctor {
             check.outcome = .warn
             // It picks its capturer when it starts, from the session it starts in.
             check.fix = facts.sessionType?.lowercased() == "wayland"
-                ? "Capturing a Wayland session comes in a later version of Shot."
+                ? "Fix what the screenshotPortal check says, then stop shot serve with pkill -f \"shot serve\"; the next capture starts it again."
                 : "Stop shot serve with pkill -f \"shot serve\", then run a capture from a terminal in your X11 desktop session to start it there."
         }
         if running != facts.version {

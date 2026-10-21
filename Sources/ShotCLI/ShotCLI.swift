@@ -266,7 +266,7 @@ enum ShotCLI {
             version: version(of: nil), settingsFile: LinuxSettings.file(suite: fallbackSuite).path,
             sessionType: ProcessInfo.processInfo.environment["XDG_SESSION_TYPE"], agentCapture: Preferences(store: defaultsStore(app: nil)).agentCapture,
             socketPath: socket.path, listening: listening, status: status, folder: folder.path, folderExists: exists, folderError: folderError,
-            captures: captures, colorEmoji: PangoShaper.hasColorEmoji
+            captures: captures, colorEmoji: PangoShaper.hasColorEmoji, screenshotPortal: LinuxScreen.screenshotPortal()
         )
     }
 
@@ -327,7 +327,12 @@ enum ShotCLI {
     /// How long to wait for the app's answer: a stop or a timed recording waits for the video to be written too.
     static func timeout(for request: AgentRequest) -> Duration {
         switch request.op {
+        #if os(Linux)
+        // On Wayland, capturing a window opens the desktop's screenshot dialog, which waits for the user.
+        case .capture: .seconds(30 + ShotCommand.PickOptions.defaultTimeout + (request.waitStable ?? 0))
+        #else
         case .capture: .seconds(30 + (request.waitStable ?? 0))
+        #endif
         case .status, .windows, .mark: .seconds(30)
         case .record: .seconds((request.duration ?? 0) + 120)
         case .stop: .seconds(120)

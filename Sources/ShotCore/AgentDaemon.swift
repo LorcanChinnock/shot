@@ -77,7 +77,11 @@ public actor AgentDaemon {
             ])
         }
         // The front window is the one the user is working in.
-        return ["windows": WindowMatch.json(windows, frontmostBundleID: windows.first?.bundleID), "displays": .array(displays)]
+        var answer: [String: JSONValue] = ["windows": WindowMatch.json(windows, frontmostBundleID: windows.first?.bundleID), "displays": .array(displays)]
+        if let note = capturer.windowsNote {
+            answer["note"] = .string(note)
+        }
+        return answer
     }
 
     /// A screenshot of the window or display `target` names, or the part of it `target.rect` covers.
@@ -111,7 +115,12 @@ public actor AgentDaemon {
             try check(.captureWindow)
             let windows = try await capturer.windows()
             let candidates = windows.map(\.candidate)
-            guard let match = WindowMatch.best(target.window ?? "", bundleID: target.bundleID, in: candidates), let window = windows.first(where: { $0.id == match.id }) else {
+            let match = WindowMatch.best(target.window ?? "", bundleID: target.bundleID, in: candidates)
+            // Where windows can't all be found, such as on Wayland, the user picks one in the desktop's dialog instead.
+            if match == nil, let picked = try await capturer.capturePicked() {
+                return try saveFields(picked: picked, target: target, origin: origin, prefs: prefs)
+            }
+            guard let match, let window = windows.first(where: { $0.id == match.id }) else {
                 let named = [target.bundleID.map { "of \($0)" }, target.window.map { "matches \"\($0)\"" }].compactMap { $0 }.joined(separator: " ")
                 throw .noInput("No open window \(named). \(WindowMatch.listing(candidates))")
             }
@@ -130,6 +139,22 @@ public actor AgentDaemon {
             shows = .object(["app": .string(window.app), "title": .string(window.title)])
         }
         source.screenFrame = CaptureRecord.Frame(x: frame.minX, y: frame.minY, width: frame.width, height: frame.height)
+        return try saveFields(image, source: source, shows: shows, origin: origin, prefs: prefs)
+    }
+
+    /// Saves what the user picked in the desktop's dialog, or the part of it `target.rect` covers, saying it was picked,
+    /// since it may not be the window asked for. Where on screen it was isn't known, nor is waiting for it to settle.
+    private func saveFields(picked: Bitmap, target: AgentTarget, origin: ProjectOrigin?, prefs: Preferences) throws(ShotCommandError) -> [String: JSONValue] {
+        guard let pixels = target.pixels(width: picked.width, height: picked.height, scale: picked.scale), let image = picked.cropped(to: pixels) else {
+            let width = Int(Double(picked.width) / picked.scale), height = Int(Double(picked.height) / picked.scale)
+            throw .data("The \(target.rectText) is off what was picked, which is \(width)×\(height) points.")
+        }
+        var fields = try saveFields(image, source: CaptureRecord.Source(mode: "area"), shows: .object(["picked": .bool(true)]), origin: origin, prefs: prefs)
+        fields["note"] = .string(ScreenshotPortal.pickedNote)
+        return fields
+    }
+
+    private func saveFields(_ image: Bitmap, source: CaptureRecord.Source, shows: JSONValue, origin: ProjectOrigin?, prefs: Preferences) throws(ShotCommandError) -> [String: JSONValue] {
         let (url, width, height) = try save(image, source: source, origin: origin, prefs: prefs)
         let bytes = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         return [

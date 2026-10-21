@@ -19,6 +19,17 @@ public protocol ScreenCapturer: Sendable {
     func capture(window: ScreenWindow) async throws(ShotCommandError) -> Bitmap
     /// What's on screen in `area`, which lies on one display.
     func capture(area: CGRect) async throws(ShotCommandError) -> Bitmap
+    /// Why `windows()` leaves some windows out, such as Wayland's own, which it doesn't share; `nil` when it lists them
+    /// all.
+    var windowsNote: String? { get }
+    /// Asks the user to pick a screen, window or area in the desktop's own dialog, and captures it, for a window this
+    /// can't find or capture by itself; `nil` when the session has no such dialog.
+    func capturePicked() async throws(ShotCommandError) -> Bitmap?
+}
+
+extension ScreenCapturer {
+    public var windowsNote: String? { nil }
+    public func capturePicked() async throws(ShotCommandError) -> Bitmap? { nil }
 }
 
 /// What a `ScreenCapturer` may be unable to do in its session.
