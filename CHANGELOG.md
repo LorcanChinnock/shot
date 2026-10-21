@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.7.0-beta.65](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.64...v0.7.0-beta.65) (2026-10-21)
+
+
+### Features
+
+* **agents:** build shot on Linux ([#763](https://github.com/LorcanChinnock/shot/issues/763)) ([367ff11](https://github.com/LorcanChinnock/shot/commit/367ff11e8eb1d74a29df871dddd8b55373585b7a))
+* **editor:** vertical alignment for sticky note text ([#766](https://github.com/LorcanChinnock/shot/issues/766)) ([d0bd018](https://github.com/LorcanChinnock/shot/commit/d0bd01886c94b35175eb0d7f33cbb3eb66162613))
+* **linux:** `shot serve`, the Linux daemon, behind a `ScreenCapturer` protocol ([#780](https://github.com/LorcanChinnock/shot/issues/780)) ([317c663](https://github.com/LorcanChinnock/shot/commit/317c6631e72edb8966f6b21b2082d6e6beca739b))
+* **linux:** a portable frame compositor on `Canvas` ([#778](https://github.com/LorcanChinnock/shot/issues/778)) ([b392203](https://github.com/LorcanChinnock/shot/commit/b39220368ccefa24717b2bd428a0cea83cc083b8))
+* **linux:** draw through Cairo behind `Canvas` ([#768](https://github.com/LorcanChinnock/shot/issues/768)) ([2f2ded7](https://github.com/LorcanChinnock/shot/commit/2f2ded7208672544c6184bd30506bc4938654732))
+* **linux:** image commands and MCP tools on Linux ([#776](https://github.com/LorcanChinnock/shot/issues/776)) ([22c3707](https://github.com/LorcanChinnock/shot/commit/22c3707adb2e66f40dc11f324809f20d4780d311))
+* **linux:** portable blur, pixelate and mask effects behind `ImageEffects` ([#770](https://github.com/LorcanChinnock/shot/issues/770)) ([9ba93e4](https://github.com/LorcanChinnock/shot/commit/9ba93e4d378cb2be94d7ca4dd2253e34575cd21f))
+* **linux:** read and write PNG and JPEG through libpng and libjpeg-turbo ([#765](https://github.com/LorcanChinnock/shot/issues/765)) ([458a5ab](https://github.com/LorcanChinnock/shot/commit/458a5ab097acfd411ba5fe92e1001b1599697b64))
+* **linux:** shape text through Pango behind `TextShaper` ([#769](https://github.com/LorcanChinnock/shot/issues/769)) ([dd991a1](https://github.com/LorcanChinnock/shot/commit/dd991a15e273dc8f3621c231ad8b98a52e935378))
+
+
+### Bug Fixes
+
+* **settings:** scroll smoothly with the native scroller ([#767](https://github.com/LorcanChinnock/shot/issues/767)) ([c01d038](https://github.com/LorcanChinnock/shot/commit/c01d038446cd2be617ffbc0f25d8683389fdd12e))
+
 ## [0.7.0-beta.64](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.63...v0.7.0-beta.64) (2026-10-19)
 
 
