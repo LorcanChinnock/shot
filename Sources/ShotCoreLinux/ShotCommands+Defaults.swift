@@ -16,7 +16,7 @@ extension ProjectStore {
 }
 
 extension ShotCommands {
-    /// Runs the media commands. Those that record or pick answer `ShotCommandError.notOnLinuxYet`.
+    /// Runs the media commands. Those that pick answer `ShotCommandError.notOnLinuxYet`.
     public static func run(_ command: ShotCommand, projects: ProjectStore? = nil, origin: ProjectOrigin? = nil) async throws(ShotCommandError) -> JSONValue {
         guard Doctor.linuxCommands.contains(command.name) || command.name == "text" else {
             throw .notOnLinuxYet
@@ -24,6 +24,19 @@ extension ShotCommands {
         return try await run(
             command, projects: projects, origin: origin, codec: PNGJPEGCodec(), canvasType: CairoCanvas.self, reader: FFmpegReader(), assembler: FFmpegAssembler(),
             writer: FFmpegWriter()
+        )
+    }
+}
+
+extension AgentDaemon {
+    /// `shot serve` on PNGJPEGCodec and ffmpeg, recording through `capturer` and keeping agents' marks in `marks`.
+    public init(
+        capturer: any ScreenCapturer, projects: ProjectStore?, marks: URL? = nil, version: String,
+        scratch: URL = FileManager.default.temporaryDirectory.appendingPathComponent("Shot/segments"), preferences: @escaping @Sendable () -> Preferences
+    ) {
+        self.init(
+            capturer: capturer, codec: PNGJPEGCodec(), assembler: FFmpegAssembler(), reader: FFmpegReader(), projects: projects, marks: marks, version: version,
+            scratch: scratch, preferences: preferences
         )
     }
 }

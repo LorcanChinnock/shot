@@ -148,6 +148,16 @@ final class X11Capturer: ScreenCapturer, @unchecked Sendable {
         return try image(of: root, area: area.offsetBy(dx: origin.x, dy: origin.y), visual: screen.pointee.root_visual)
     }
 
+    /// Records `area` as ffmpeg's `x11grab` sees the root window, with the pointer when `showsCursor`.
+    func recordingSource(area: CGRect, frameRate: Int, showsCursor: Bool) throws(ShotCommandError) -> any RecordingSource {
+        try connected()
+        let root = CGSize(width: Int(screen.pointee.width_in_pixels), height: Int(screen.pointee.height_in_pixels))
+        guard let grabbed = FFmpeg.grabArea(area, origin: outputs()[0].frame.origin, root: root) else {
+            throw .data("The area at \(Self.text(area)) is off the screen.")
+        }
+        return X11Recording(display: display, area: grabbed, frameRate: frameRate, showsCursor: showsCursor)
+    }
+
     // MARK: Windows
 
     /// What `X11Screen.listed` needs to know of the window `id`; `nil` when it's gone.

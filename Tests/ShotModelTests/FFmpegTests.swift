@@ -363,3 +363,44 @@ private func join(sounds: [FFmpeg.SegmentSound] = [], hasAudio: Bool = true, mut
     #expect(FFmpeg.seconds(12.5) == "12.5")
     #expect(FFmpeg.seconds(1.0 / 3) == "0.333333")
 }
+
+// MARK: Recording
+
+@Test func x11grabRecordsTheAreaOnTheRootInEvenWholePixels() {
+    let root = CGSize(width: 1920, height: 1080)
+    #expect(FFmpeg.grabArea(CGRect(x: 10, y: 20, width: 301, height: 201), origin: .zero, root: root) == CGRect(x: 10, y: 20, width: 300, height: 200))
+    // Points start at the primary display, which may not be at the root's corner.
+    #expect(FFmpeg.grabArea(CGRect(x: 0, y: 0, width: 100, height: 100), origin: CGPoint(x: 1280, y: 0), root: root) == CGRect(x: 1280, y: 0, width: 100, height: 100))
+    // Rounded out to whole pixels, then cut to the root.
+    #expect(FFmpeg.grabArea(CGRect(x: 10.5, y: 0.5, width: 20, height: 20), origin: .zero, root: root) == CGRect(x: 10, y: 0, width: 20, height: 20))
+    #expect(FFmpeg.grabArea(CGRect(x: 1800, y: 1000, width: 300, height: 300), origin: .zero, root: root) == CGRect(x: 1800, y: 1000, width: 120, height: 80))
+    #expect(FFmpeg.grabArea(CGRect(x: 2000, y: 0, width: 100, height: 100), origin: .zero, root: root) == nil)
+    #expect(FFmpeg.grabArea(CGRect(x: 1919, y: 0, width: 100, height: 100), origin: .zero, root: root) == nil)
+}
+
+@Test func x11grabsArgumentsRecordH264ThatStopsOnQ() {
+    let arguments = FFmpeg.grabArguments(display: ":1", area: CGRect(x: 10, y: 20, width: 300, height: 200), frameRate: 30, showsCursor: false, limit: 610, output: "/tmp/0.mp4")
+    #expect(arguments == [
+        "-v", "error", "-nostats", "-stats_period", "0.1", "-progress", "pipe:1", "-f", "x11grab", "-framerate", "30", "-video_size", "300x200", "-draw_mouse", "0", "-i", ":1+10,20",
+        "-t", "610", "-r", "30", "-vf", "scale=out_color_matrix=bt709:out_range=tv", "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency", "-crf", "20",
+        "-pix_fmt", "yuv420p", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv", "-movflags", "+faststart", "-f", "mp4",
+        "-y", "/tmp/0.mp4",
+    ])
+    #expect(!arguments.contains("-nostdin"))
+    let cursor = FFmpeg.grabArguments(display: ":0", area: CGRect(x: 0, y: 0, width: 2, height: 2), frameRate: 60, showsCursor: true, limit: 1, output: "o")
+    #expect(cursor.firstIndex(of: "-draw_mouse").map { cursor[$0 + 1] } == "1")
+}
+
+@Test func ffmpegsProgressSaysHowMuchItHasRecordedAtEachWholeReport() {
+    var progress = FFmpeg.Progress()
+    #expect(progress.recorded == nil && !progress.hasStarted)
+    progress.read(Data("frame=0\nout_time_us=N/A\nprogress=continue\nframe=8\nout_time_us=2666".utf8))
+    // A report without a time leaves it unknown, and one cut short isn't read yet.
+    #expect(progress.recorded == nil)
+    progress.read(Data("67\nprogress=cont".utf8))
+    #expect(progress.recorded == nil)
+    progress.read(Data("inue\nframe=9".utf8))
+    #expect(abs((progress.recorded ?? 0) - 0.266667) < 1e-9 && progress.hasStarted)
+    progress.read(Data("\nout_time_us=2300000\nprogress=end\n".utf8))
+    #expect(progress.recorded == 2.3)
+}

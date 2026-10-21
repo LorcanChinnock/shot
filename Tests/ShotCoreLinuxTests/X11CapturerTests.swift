@@ -43,7 +43,7 @@ final class XServer: @unchecked Sendable {
 
 /// A client of the server that puts windows on it, and stands in for a window manager by listing them in
 /// `_NET_CLIENT_LIST`.
-private final class Desktop: @unchecked Sendable {
+final class Desktop: @unchecked Sendable {
     let connection: OpaquePointer
     let root: xcb_window_t
     let visual: xcb_visualid_t
@@ -101,6 +101,12 @@ private final class Desktop: @unchecked Sendable {
         xcb_change_property(connection, UInt8(XCB_PROP_MODE_REPLACE.rawValue), window, atom(name), type, 32, UInt32(values.count), values)
     }
 
+    /// Moves `window` so its top left is at `point`.
+    func move(_ window: xcb_window_t, to point: CGPoint) {
+        let values = [UInt32(bitPattern: Int32(point.x)), UInt32(bitPattern: Int32(point.y))]
+        xcb_configure_window(connection, window, UInt16(XCB_CONFIG_WINDOW_X.rawValue | XCB_CONFIG_WINDOW_Y.rawValue), values)
+    }
+
     func listClients(_ windows: [xcb_window_t]) {
         set(root, "_NET_CLIENT_LIST", type: XCB_ATOM_WINDOW.rawValue, values: windows)
     }
@@ -149,7 +155,7 @@ private struct Scene {
 }
 
 /// CI installs Xvfb, so there a missing one fails rather than skips.
-private let hasXvfb = XServer.executable != nil || ProcessInfo.processInfo.environment["CI"] != nil
+let hasXvfb = XServer.executable != nil || ProcessInfo.processInfo.environment["CI"] != nil
 
 /// One at a time, so a single Xvfb competes with the other tests for CI's few cores.
 @Suite(.serialized, .enabled(if: hasXvfb, "Xvfb isn't installed")) struct X11CapturerTests {
@@ -225,7 +231,7 @@ private let hasXvfb = XServer.executable != nil || ProcessInfo.processInfo.envir
         let capturer = LinuxScreen.capturer(environment: ["XDG_SESSION_TYPE": "x11", "DISPLAY": scene.server.display])
         // Without registering defaults, which the whole process shares on Linux, so RegisteredDefaultsTests keeps them to
         // itself. The keys the daemon reads are set above, or fall back to the defaults.
-        let daemon = AgentDaemon(capturer: capturer, codec: PNGJPEGCodec(), projects: nil, version: "0.7.0") {
+        let daemon = AgentDaemon(capturer: capturer, projects: nil, version: "0.7.0") {
             Preferences(store: UserDefaults(suiteName: suite)!)
         }
 

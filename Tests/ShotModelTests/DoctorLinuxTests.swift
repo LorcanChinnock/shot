@@ -35,12 +35,12 @@ private func serving(version: String = "0.7.0", capturer: String = "x11", limits
             ]),
             .object([
                 "name": .string("serve"), "outcome": .string("pass"),
-                "detail": .string("shot serve isn't running. shot capture, shot windows and the MCP tools that capture start it when they need it."),
+                "detail": .string("shot serve isn't running. shot capture, shot windows, shot record and the MCP tools that capture and record start it when they need it."),
             ]),
             .object([
                 "name": .string("notOnLinuxYet"), "outcome": .string("warn"),
                 "detail": .string(
-                    "Recording and picking aren't on Linux yet: shot record and pick and the MCP tools record_window and ask_for_capture answer that they're not on Linux yet. The image and video commands and the tools that read and edit captures work, and shot capture, shot windows and the MCP tools that capture ask shot serve."
+                    "Picking isn't on Linux yet: shot pick and the MCP tool ask_for_capture answer that they're not on Linux yet. Recording isn't on Wayland yet either: shot record and record_window work only in an X11 session. The image and video commands and the tools that read and edit captures work, and shot capture, shot windows and the MCP tools that capture ask shot serve."
                 ),
                 "fix": .string("Use Shot on a Mac for those for now."),
             ]),
@@ -174,4 +174,9 @@ private func serving(version: String = "0.7.0", capturer: String = "x11", limits
     #expect(noProbe?.detail.hasSuffix("can't find ffprobe.") == true)
     // Only video needs ffmpeg, so doctor still passes without it.
     #expect(Doctor.json(Doctor.checks(facts(ffmpeg: Doctor.FFmpegFacts(ffmpeg: nil, ffprobe: nil))))["ok"] == .bool(true))
+}
+
+@Test func doctorOnLinuxSaysRecordingRunsInAnX11Session() {
+    let check = Doctor.checks(facts(session: "x11")).first { $0.name == "notOnLinuxYet" }
+    #expect(check?.detail.contains("shot record and record_window record through shot serve in an X11 session, but not yet on Wayland.") == true)
 }

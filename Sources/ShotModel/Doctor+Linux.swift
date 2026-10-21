@@ -69,19 +69,19 @@ extension Doctor {
     }
 
     /// The commands that run on Linux so far: the image and video commands, those that read the capture folder, and
-    /// `capture` and `windows`, which ask `shot serve`. `text`, and `redact --detect`, run only to say they need a Mac.
-    /// The rest record or pick, and answer `ShotCommandError.notOnLinuxYet`.
+    /// `capture`, `windows` and `record`, which ask `shot serve`. `text`, and `redact --detect`, run only to say they
+    /// need a Mac. The rest pick, and answer `ShotCommandError.notOnLinuxYet`.
     public static let linuxCommands = [
         "version", "help", "doctor", "mcp", "serve", "settings", "info", "annotate", "redact", "crop", "diff", "edit", "gif", "trim", "frames", "latest", "list",
-        "get", "watch", "capture", "windows",
+        "get", "watch", "capture", "windows", "record",
     ]
     /// The commands that answer that they're not on Linux yet.
-    public static let notOnLinuxYetCommands = ["record", "pick"]
-    /// The MCP tools that record or pick. Linux lists them, but they answer that they're not on Linux yet.
-    public static let notOnLinuxYetTools = [AgentTools.recordWindow, AgentTools.askForCapture]
+    public static let notOnLinuxYetCommands = ["pick"]
+    /// The MCP tools that pick. Linux lists them, but they answer that they're not on Linux yet.
+    public static let notOnLinuxYetTools = [AgentTools.askForCapture]
 
     public static func checks(_ facts: LinuxFacts) -> [Check] {
-        [platform(facts), portal(facts), linuxAgents(facts), serve(facts), ffmpeg(facts), notOnLinuxYet, macOnly, emoji(facts), linuxFolder(facts)].compactMap { $0 }
+        [platform(facts), portal(facts), linuxAgents(facts), serve(facts), ffmpeg(facts), notOnLinuxYet(facts), macOnly, emoji(facts), linuxFolder(facts)].compactMap { $0 }
     }
 
     static func platform(_ facts: LinuxFacts) -> Check {
@@ -111,7 +111,7 @@ extension Doctor {
 
     static func linuxAgents(_ facts: LinuxFacts) -> Check {
         guard facts.agentCapture else {
-            return Check("letAgentsCaptureAndRecord", .warn, "Let agents capture and record is off, so shot capture, shot windows and the MCP tools that capture are refused. Reading captures works without it.",
+            return Check("letAgentsCaptureAndRecord", .warn, "Let agents capture and record is off, so shot capture, shot windows, shot record and the MCP tools that capture and record are refused. Reading captures works without it.",
                          fix: "Run shot settings agent-capture on, if agents should take their own screenshots.")
         }
         return Check("letAgentsCaptureAndRecord", .pass, "Let agents capture and record is on.")
@@ -120,7 +120,7 @@ extension Doctor {
     /// Whether `shot serve` is running, which needn't be, since it starts when it's needed, and whether it can capture.
     static func serve(_ facts: LinuxFacts) -> Check {
         guard facts.listening else {
-            return Check("serve", .pass, "shot serve isn't running. shot capture, shot windows and the MCP tools that capture start it when they need it.")
+            return Check("serve", .pass, "shot serve isn't running. shot capture, shot windows, shot record and the MCP tools that capture and record start it when they need it.")
         }
         let stop = "Stop it with pkill -f \"shot serve\"; the next capture starts it again."
         let fields: [String: JSONValue]
@@ -178,14 +178,17 @@ extension Doctor {
         return Check("ffmpeg", .pass, detail + " It encodes H.264 and HEVC.")
     }
 
-    static let notOnLinuxYet = Check(
-        "notOnLinuxYet", .warn,
-        "Recording and picking aren't on Linux yet: shot \(list(notOnLinuxYetCommands)) and the MCP tools \(list(notOnLinuxYetTools)) answer that they're not on Linux yet. The image and video commands and the tools that read and edit captures work, and shot capture, shot windows and the MCP tools that capture ask shot serve.",
-        fix: "Use Shot on a Mac for those for now."
-    )
-
-    private static func list(_ names: [String]) -> String {
-        names.dropLast().joined(separator: ", ") + " and " + (names.last ?? "")
+    /// What isn't on Linux yet: picking, and on Wayland, recording.
+    static func notOnLinuxYet(_ facts: LinuxFacts) -> Check {
+        let recording = facts.sessionType?.lowercased() == "wayland"
+            ? " Recording isn't on Wayland yet either: shot record and record_window work only in an X11 session."
+            : " shot record and record_window record through shot serve in an X11 session, but not yet on Wayland."
+        return Check(
+            "notOnLinuxYet", .warn,
+            "Picking isn't on Linux yet: shot pick and the MCP tool \(AgentTools.askForCapture) answer that they're not on Linux yet." + recording
+                + " The image and video commands and the tools that read and edit captures work, and shot capture, shot windows and the MCP tools that capture ask shot serve.",
+            fix: "Use Shot on a Mac for those for now."
+        )
     }
 
     static let macOnly = Check(

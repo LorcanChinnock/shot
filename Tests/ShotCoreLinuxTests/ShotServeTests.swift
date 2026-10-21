@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 import Testing
 @testable import ShotCore
 @testable import ShotCoreLinux
@@ -38,8 +39,18 @@ private struct FakeScreen: ScreenCapturer {
     /// `windowsNote`.
     var picked: Bitmap?
     var windowsNote: String?
+    /// What each recording was asked to record.
+    var recordings = Recordings()
 
     var name: String { "fake" }
+
+    func recordingSource(area: CGRect, frameRate: Int, showsCursor: Bool) throws(ShotCommandError) -> any RecordingSource {
+        if let reason = limits[.record] {
+            throw .unavailable(reason)
+        }
+        recordings.asked.withLock { $0.append((area, frameRate, showsCursor)) }
+        return GreyRecording()
+    }
 
     func displays() -> [ScreenDisplay] {
         [ScreenDisplay(name: "Built-in", frame: CGRect(x: 0, y: 0, width: 200, height: 100), scale: 2)]
@@ -75,6 +86,37 @@ private struct FakeScreen: ScreenCapturer {
     }
 }
 
+final class Recordings: Sendable {
+    let asked = Mutex<[(area: CGRect, frameRate: Int, showsCursor: Bool)]>([])
+}
+
+/// Records a second of grey frames for each segment, written by ffmpeg when it finishes, however long it lasted, so the
+/// answers don't depend on how promptly the tests' busy threads wake it.
+private struct GreyRecording: RecordingSource {
+    func start(to url: URL) async throws(ShotCommandError) -> any RecordingSegment {
+        GreySegment(url: url)
+    }
+}
+
+private struct GreySegment: RecordingSegment {
+    let url: URL
+    var offset: Double { 0 }
+
+    func finish() async throws(ShotCommandError) -> Double? {
+        do {
+            _ = try await Subprocess.output(try FFmpegTools.find().ffmpeg, [
+                "-v", "error", "-nostdin", "-f", "lavfi", "-i", "color=c=gray:s=64x48:r=30", "-t", "1", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                "-f", "mp4", "-y", url.path,
+            ])
+        } catch {
+            throw .io("\(error)")
+        }
+        return 1
+    }
+
+    func cancel() {}
+}
+
 /// `shot serve` with `capturer` on a socket of its own, saving to a capture folder of its own, with settings that
 /// `configure` can change, and a project store.
 private final class Serve: @unchecked Sendable {
@@ -82,6 +124,7 @@ private final class Serve: @unchecked Sendable {
     let folder: URL
     let socket: URL
     let projects: ProjectStore
+    let marks: URL
     let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
     let server: AgentSocket.Server
 
@@ -91,6 +134,7 @@ private final class Serve: @unchecked Sendable {
         // A short folder of its own, since a socket's whole path must fit in 107 bytes.
         socket = URL(fileURLWithPath: "/tmp/ss-\(UUID().uuidString.prefix(8))/agent.sock")
         projects = ProjectStore(folder: root.appendingPathComponent("Projects", isDirectory: true))
+        marks = root.appendingPathComponent("recording-marks.json")
         let store = try #require(UserDefaults(suiteName: suite))
         store.set(folder.path, forKey: PreferenceKey.saveFolder)
         store.set(true, forKey: PreferenceKey.saveAfterCapture)
@@ -100,7 +144,7 @@ private final class Serve: @unchecked Sendable {
         let suite = suite
         // Without registering defaults, which the whole process shares on Linux, so RegisteredDefaultsTests keeps them
         // to itself. The keys the daemon reads are set above, or fall back to the defaults.
-        let daemon = AgentDaemon(capturer: capturer, codec: PNGJPEGCodec(), projects: projects, version: "0.7.0") {
+        let daemon = AgentDaemon(capturer: capturer, projects: projects, marks: marks, version: "0.7.0", scratch: root.appendingPathComponent("segments")) {
             Preferences(store: UserDefaults(suiteName: suite)!)
         }
         server = AgentSocket.Server(url: socket, user: user) { request in
@@ -200,7 +244,6 @@ private final class Serve: @unchecked Sendable {
     #expect(try await wayland.send(AgentRequest(.capture, target: AgentTarget(display: 1)))["path"] != nil)
 
     let serve = try Serve()
-    #expect(await serve.failure(AgentRequest(.record, target: AgentTarget(window: "Terminal"))) == .notOnLinuxYet)
     #expect(await serve.failure(AgentRequest(.pick)) == .notOnLinuxYet)
     #expect(await serve.failure(AgentRequest(.capture, target: AgentTarget(display: 2))) == .noInput("There's no display 2; this computer has 1. shot windows lists them."))
     #expect(await serve.failure(AgentRequest(.capture, target: AgentTarget(display: 1, rect: [300, 0, 10, 10]))) == .data("The rect 300,0,10,10 is off display 1, which is 200×100 points."))
@@ -272,4 +315,76 @@ private final class Serve: @unchecked Sendable {
     let captured = await tools.call(AgentTools.captureWindow, .object(["window": .string("Firefox")]))
     #expect(captured.isError != true, "\(captured)")
     #expect(try FileManager.default.contentsOfDirectory(atPath: serve.folder.path).count == 1)
+}
+
+@Test func shotServeRecordsAWindowAndAnswersItsStopWithTheSavedVideoAndItsMarks() async throws {
+    let screen = FakeScreen()
+    let serve = try Serve(screen) { store in
+        store.set(30, forKey: PreferenceKey.recordingFPS)
+        store.set(true, forKey: PreferenceKey.recordShowsCursor)
+    }
+    var request = AgentRequest(.record, target: AgentTarget(window: "terminal"))
+    request.origin = ProjectOrigin(via: .mcp, client: "test", action: AgentTools.recordWindow)
+    let started = try await serve.send(request)
+    let id = try #require(started["id"]?.string)
+    #expect(started["window"] == .object(["app": .string("Terminal"), "title": .string("~")]))
+    #expect(started["started"]?.string != nil)
+    // The window as it is on screen, in points, at the frame rate Settings give, with the pointer as they say.
+    #expect(screen.recordings.asked.withLock { $0.map(\.area) } == [CGRect(x: 10, y: 10, width: 60, height: 40)])
+    #expect(screen.recordings.asked.withLock { $0.map(\.frameRate) } == [30])
+    #expect(screen.recordings.asked.withLock { $0.map(\.showsCursor) } == [true])
+
+    let status = try await serve.send(AgentRequest(.status))
+    #expect(status["recording"]?["byAgent"] == .bool(true) && status["recording"]?["id"] == .string(id))
+    #expect(status["recording"]?["window"] == started["window"])
+    #expect(await serve.failure(AgentRequest(.record, target: AgentTarget(display: 1))) == .busy("Shot is already recording; try again once it's done."))
+    // A capture can still be taken while it records.
+    #expect(try await serve.send(AgentRequest(.capture, target: AgentTarget(display: 1)))["path"] != nil)
+
+    try await Task.sleep(for: .milliseconds(600))
+    let mark = try await serve.send(AgentRequest(.mark, id: id, label: "tapped Login"))
+    #expect(mark["id"] == .string(id) && mark["label"] == .string("tapped Login"))
+    let time = try #require(mark["time"]?.number)
+    #expect(time >= 0.5)
+    try await Task.sleep(for: .milliseconds(600))
+
+    let stopped = try await serve.send(AgentRequest(.stop))
+    #expect(stopped["id"] == .string(id))
+    let path = try #require(stopped["path"]?.string)
+    let video = URL(fileURLWithPath: path)
+    #expect(video.deletingLastPathComponent().path == serve.folder.path)
+    #expect(video.lastPathComponent.hasPrefix("Shot ") && video.pathExtension == "mp4")
+    #expect(stopped["size"] == .object(["width": .number(64), "height": .number(48)]))
+    #expect(stopped["duration"] == .number(1))
+    #expect(stopped["marks"] == .array([.object(["time": .number(time), "label": .string("tapped Login")])]))
+    #expect(RecordingMarks.marks(for: video, in: serve.marks) == [RecordingMark(time: time, label: "tapped Login")])
+    let entry = try #require(serve.projects.entry(for: video))
+    #expect(entry.origin.via == .mcp && entry.origin.client == "test" && entry.origin.action == AgentTools.recordWindow)
+
+    // Once it's over, a stop by its ID answers the same, a mark is refused, and nothing records.
+    #expect(try await serve.send(AgentRequest(.stop, id: id)) == stopped)
+    #expect(await serve.failure(AgentRequest(.mark, id: id, label: "late")) == .noInput("The agent recording \(id) has ended, so it can't be marked."))
+    #expect(await serve.failure(AgentRequest(.mark, label: "late")) == .noInput("No agent recording is in progress to mark."))
+    #expect(await serve.failure(AgentRequest(.stop)) == .noInput("No agent recording is in progress. To get one that has already ended, stop it by the id it started with."))
+    #expect(await serve.failure(AgentRequest(.stop, id: "nope")) == .noInput("No agent recording has the id nope. Finished ones are kept for 10 minutes."))
+    #expect(try await serve.send(AgentRequest(.status))["recording"] == .null)
+}
+
+@Test func shotServeAnswersATimedRecordingOnceItsSaved() async throws {
+    let serve = try Serve()
+    let answer = try await serve.send(AgentRequest(.record, target: AgentTarget(display: 1, rect: [150, 80, 100, 100]), duration: 1))
+    #expect(answer["duration"] == .number(1))
+    #expect(answer["marks"] == nil && answer["path"]?.string?.hasSuffix(".mp4") == true)
+    #expect(try await serve.send(AgentRequest(.status))["recording"] == .null)
+}
+
+@Test func shotServeRefusesARecordingItCantMake() async throws {
+    let wayland = try Serve(FakeScreen(limits: [.record: ScreenshotPortal.noRecording]))
+    #expect(await wayland.failure(AgentRequest(.record, target: AgentTarget(display: 1))) == .unavailable(ScreenshotPortal.noRecording))
+    let serve = try Serve()
+    #expect(await serve.failure(AgentRequest(.record, target: AgentTarget(display: 2))) == .noInput("There's no display 2; this computer has 1. shot windows lists them."))
+    #expect(await serve.failure(AgentRequest(.record, target: AgentTarget(window: "Terminal", rect: [100, 0, 10, 10]))) == .data("The rect 100,0,10,10 is off Terminal — ~, which is 60×40 points."))
+    let missing = try #require(await serve.failure(AgentRequest(.record, target: AgentTarget(window: "Calculator"))))
+    #expect(missing.message.hasPrefix("No open window matches \"Calculator\"."))
+    #expect(!FileManager.default.fileExists(atPath: serve.folder.path))
 }
