@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import ShotCore
 
-// The parts of the agent socket that differ between Darwin and Glibc. AgentSocketTests, on a Mac, covers the rest.
+// The agent socket's peer check, which needs no app. AgentSocketTests covers the rest.
 
 @Test func agentSocketReadsItsPeersUser() {
     var fds: [Int32] = [-1, -1]

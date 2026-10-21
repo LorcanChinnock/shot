@@ -1,16 +1,10 @@
 import Foundation
-#if os(macOS)
 import ShotCoreApple
-#else
-import ShotCoreLinux
-#endif
 
 /// The `shot` command line: `shot mcp`, the MCP server AI agents talk to, the headless media commands, `shot capture`
 /// and `shot record`, which ask the running app, `shot latest`, `list` and `get`, which read captures as the MCP tools
 /// do, `shot watch`, `shot doctor`, and `--version`. It ships inside the app as `Contents/MacOS/shot-cli`, so it reads the
-/// app's settings to find the captures. On Linux, where it's `shot`, only `Doctor.linuxCommands` run so far: the image
-/// and video commands, those that read captures, and `shot capture`, `shot windows` and `shot record`, which ask
-/// `shot serve` rather than an app.
+/// app's settings to find the captures.
 @main
 enum ShotCLI {
     static func main() async {
@@ -38,11 +32,7 @@ enum ShotCLI {
         case let .help(name):
             print(ShotCommand.usage(name, program: program))
         case .doctor:
-            #if os(macOS)
             let checks = Doctor.checks(await doctorFacts(app: appBundle()))
-            #else
-            let checks = Doctor.checks(await linuxDoctorFacts())
-            #endif
             print(ShotCommand.json(Doctor.json(checks)))
             if checks.contains(where: { $0.outcome == .fail }) {
                 exit(1)
@@ -92,23 +82,6 @@ enum ShotCLI {
                 printError("\(program) \(command.name): \(error.message)")
                 exit(error.exitCode)
             }
-        #if os(Linux)
-        case .serve:
-            await serveAgents(program: program)
-        case let .settings(agentCapture):
-            let store = defaultsStore(app: nil)
-            if let agentCapture {
-                store.set(agentCapture, forKey: PreferenceKey.agentCapture)
-                store.synchronize()
-            }
-            print(ShotCommand.json(.object(["agentCapture": .bool(Preferences(store: store).agentCapture)])))
-        #else
-        case .serve, .settings:
-            let error = ShotCommandError.usage(command.name, "is for Linux; on a Mac, Shot answers agents itself, and Settings › Agents turns that on")
-            printError("\(program) \(command.name): \(error.message)")
-            exit(error.exitCode)
-        #endif
-        #if os(macOS)
         case let .pick(options):
             var request = AgentRequest(.pick, duration: options.timeout)
             request.prompt = options.prompt
@@ -130,9 +103,7 @@ enum ShotCLI {
                 printError("\(program) index-text: \(error.localizedDescription)")
                 exit(1)
             }
-        #endif
         default:
-            // On Linux, the commands that pick answer that they're not on Linux yet.
             do {
                 let projects = ProjectStore(bundleID: appBundle()?.bundleIdentifier ?? fallbackSuite)
                 let result = try await ShotCommands.run(command, projects: projects)
@@ -149,11 +120,7 @@ enum ShotCLI {
 
     /// The tools `shot latest`, `list` and `get` read the captures through, without the app's projects or marks.
     static func captureTools(folder: URL, app: Bundle?) -> AgentTools {
-        #if os(macOS)
         AgentTools.live(folder: folder, texts: TextIndexStore(bundleID: app?.bundleIdentifier ?? fallbackSuite))
-        #else
-        AgentTools.live(folder: folder)
-        #endif
     }
 
     /// The folder the app saves captures to, from its settings.
@@ -167,20 +134,12 @@ enum ShotCLI {
     /// Reads one JSON-RPC message per line until the client closes stdin. Only replies go to stdout, since any other
     /// line there breaks the protocol; `FileHandle` writes straight through, so each reply is flushed as it's written.
     static func serve(folder: URL, version: String, app: Bundle?) async {
-        #if os(macOS)
         let bundleID = app?.bundleIdentifier ?? fallbackSuite
         let server = AgentTools.live(
             folder: folder, marks: RecordingMarks.url(bundleID: bundleID), projects: ProjectStore(bundleID: bundleID), texts: TextIndexStore(bundleID: bundleID)
         ) { request throws(ShotCommandError) in
             try await ask(request, app: app)
         }.server(version: version)
-        #else
-        let server = AgentTools.live(
-            folder: folder, marks: RecordingMarks.url(bundleID: fallbackSuite), projects: ProjectStore(bundleID: fallbackSuite)
-        ) { request throws(ShotCommandError) in
-            try await ask(request, app: nil)
-        }.server(version: version)
-        #endif
         printError("Shot MCP server \(version), reading \(folder.path)")
         while let line = readLine(strippingNewline: true) {
             if let reply = await server.respond(to: line) {
@@ -249,72 +208,6 @@ enum ShotCLI {
         )
     }
 
-    #if !os(macOS)
-    /// What `shot doctor` checks on Linux, found without starting `shot serve`: it's only asked for its status if it's
-    /// already answering.
-    static func linuxDoctorFacts() async -> Doctor.LinuxFacts {
-        let socket = AgentSocket.url(bundleID: fallbackSuite)
-        let listening = AgentSocket.isListening(at: socket)
-        var status: Result<[String: JSONValue], ShotCommandError>?
-        if listening {
-            do {
-                status = .success(try await AgentSocket.send(AgentRequest(.status), to: socket, timeout: .seconds(5)))
-            } catch {
-                status = .failure(error)
-            }
-        }
-        let folder = captureFolder(app: nil)
-        let (exists, folderError, captures) = folderFacts(folder)
-        return Doctor.LinuxFacts(
-            version: version(of: nil), settingsFile: LinuxSettings.file(suite: fallbackSuite).path,
-            sessionType: ProcessInfo.processInfo.environment["XDG_SESSION_TYPE"], agentCapture: Preferences(store: defaultsStore(app: nil)).agentCapture,
-            socketPath: socket.path, listening: listening, status: status, folder: folder.path, folderExists: exists, folderError: folderError,
-            captures: captures, colorEmoji: PangoShaper.hasColorEmoji, screenshotPortal: LinuxScreen.screenshotPortal(),
-            ffmpeg: await FFmpegTools.doctorFacts(), screenCast: LinuxScreen.screenCastPortal()
-        )
-    }
-
-    /// Answers agents on the socket the app would answer on, until it's stopped, taking screenshots and recording with
-    /// the session's capturer. Another `shot serve` already answering leaves this one nothing to do.
-    static func serveAgents(program: String) async {
-        let daemon = AgentDaemon(
-            capturer: LinuxScreen.capturer(settings: fallbackSuite), projects: ProjectStore(bundleID: fallbackSuite), marks: RecordingMarks.url(bundleID: fallbackSuite), version: version(of: nil)
-        ) {
-            let store = defaultsStore(app: nil)
-            Preferences.registerDefaults(in: store)
-            return Preferences(store: store)
-        }
-        let server = AgentSocket.Server(url: AgentSocket.url(bundleID: fallbackSuite)) { request in
-            await daemon.handle(request)
-        }
-        do {
-            try server.start()
-        } catch {
-            printError("\(program) serve: \(error.message)")
-            exit(error.exitCode)
-        }
-        printError("Shot \(version(of: nil)) answering agents at \(server.url.path)")
-        // Stopped with ^C or by systemd or pkill, it stops answering and saves the recording in progress, if any, first.
-        let stops = [SIGINT, SIGTERM].map { number in
-            signal(number, SIG_IGN)
-            let source = DispatchSource.makeSignalSource(signal: number, queue: .global())
-            source.setEventHandler {
-                server.stop()
-                Task {
-                    await daemon.stopRecording()
-                    exit(0)
-                }
-            }
-            source.resume()
-            return source
-        }
-        // Reading `stops` keeps their sources alive.
-        while !stops.isEmpty {
-            try? await Task.sleep(for: .seconds(3600))
-        }
-    }
-    #endif
-
     /// Whether `folder` is there, why it couldn't be listed if it couldn't, and how many captures it holds.
     static func folderFacts(_ folder: URL) -> (exists: Bool, error: String?, captures: Int) {
         var isFolder: ObjCBool = false
@@ -334,12 +227,7 @@ enum ShotCLI {
     /// How long to wait for the app's answer: a stop or a timed recording waits for the video to be written too.
     static func timeout(for request: AgentRequest) -> Duration {
         switch request.op {
-        #if os(Linux)
-        // On Wayland, capturing a window opens the desktop's screenshot dialog, which waits for the user.
-        case .capture: .seconds(30 + ShotCommand.PickOptions.defaultTimeout + (request.waitStable ?? 0))
-        #else
         case .capture: .seconds(30 + (request.waitStable ?? 0))
-        #endif
         case .status, .windows, .mark: .seconds(30)
         case .record: .seconds((request.duration ?? 0) + 120)
         case .stop: .seconds(120)
@@ -365,13 +253,9 @@ enum ShotCLI {
         app?.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
     }
 
-    /// The settings of a dev build, for a bare `.build/debug/ShotCLI` with no bundle around it, and on Linux the release's.
+    /// The settings of a dev build, for a bare `.build/debug/ShotCLI` with no bundle around it.
     static var fallbackSuite: String {
-        #if os(macOS)
         ProcessInfo.processInfo.environment["SHOT_DEFAULTS"] ?? "dev.lorcan.Shot.dev"
-        #else
-        ProcessInfo.processInfo.environment["SHOT_DEFAULTS"] ?? LinuxSettings.suite
-        #endif
     }
 
     /// The app's own settings. Those are `.standard` when `Bundle.main` is the app, where `UserDefaults(suiteName:)`

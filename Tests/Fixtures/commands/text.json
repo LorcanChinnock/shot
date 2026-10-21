@@ -1,4 +1,0 @@
-[
-  {"type": "text", "rect": [12, 10, 136, 30], "text": "Shot", "color": "white"},
-  {"type": "counter", "center": [130, 90], "number": 3}
-]

@@ -30,8 +30,7 @@ Only `make dist` builds `Shot.app` with the update feed. Every other build is `S
 | `make run` | Build, install to `/Applications/ShotDev.app`, and launch |
 | `make build` | `swift build`, without making an app |
 | `make test` | Run the `ShotModel`, `ShotCore` and `ShotCoreApple` unit tests |
-| `make test-linux` | Run the `ShotModel` and `ShotCore` tests on Linux in Docker, as CI does |
-| `make lint` | Check for code patterns that have caused bugs (`scripts/lint.sh`) and, on a Mac, that the string catalog is up to date |
+| `make lint` | Check for code patterns that have caused bugs (`scripts/lint.sh`) and that the string catalog is up to date |
 | `make strings` | Add new strings to `Resources/Localizable.xcstrings` and drop unused ones |
 | `make perf` | Time the `ShotCore` paths that have [performance budgets](docs/performance.md) |
 | `make perf-app` | Measure launch, capture, memory and idle CPU of the installed app against its budgets |
@@ -47,19 +46,18 @@ Only `make dist` builds `Shot.app` with the update feed. Every other build is `S
 ## Project layout
 
 ```
-Sources/ShotModel/    Pure logic that needs only Foundation, tested on Linux: undo, keyframes,
+Sources/ShotModel/    Pure logic that needs only Foundation: undo, keyframes,
                       video trim and cuts, hotkeys, layout math
 Sources/ShotCore/     Pure logic that needs Apple frameworks: geometry, file naming, image
                       encoding, annotations and rendering, redaction, GIF export, segment
-                      joining, preferences. Builds on Linux, with Apple-only files
-                      inside #if canImport
+                      joining, preferences
 Sources/ShotCoreApple/ macOS only: the Apple implementations of ShotCore's protocols
 Sources/Shot/         The app: capture, selection overlay, Quick Access, editor,
                       video editor, recording, gallery, settings, the welcome window,
                       the agent server (Agents/), and the design system
 Sources/ShotCLI/      The `shot` command and MCP server, bundled as shot-cli
 Tests/ShotModelTests/ ShotModel's Swift Testing suite
-Tests/ShotCoreTests/  ShotCore's portable tests, run on Linux too
+Tests/ShotCoreTests/  ShotCore's tests that need no Apple framework
 Tests/ShotCoreAppleTests/ The tests of ShotCore's Apple-only code
 Resources/            Info.plist, the app icon and the string catalogs
 scripts/              Bundling, install, signing certificate, icon, lint, performance
@@ -97,7 +95,7 @@ The `shot://` [URL scheme](https://shot.lorcanchinnock.com/docs/url-scheme/) dri
 ## Sending a change
 
 - Keep each pull request focused on one change, and match the style of the surrounding code.
-- Run `make lint` and `make test`, then run the app and try your change. CI runs the same checks on macOS, and the `ShotModel` tests on Linux too, but running them first saves a round trip.
+- Run `make lint` and `make test`, then run the app and try your change. CI runs the same checks on macOS, but running them first saves a round trip.
 - Use a [Conventional Commits](https://www.conventionalcommits.org) title for the pull request, such as `fix(recording): …` or `feat(editor): …`. Pull requests are squash-merged, so the title becomes the commit on `main`, and release notes are generated from it.
 
 Everyone taking part in the project follows the [Code of Conduct](CODE_OF_CONDUCT.md).

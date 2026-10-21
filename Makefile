@@ -13,20 +13,13 @@ INSTALL_DIR ?= /Applications
 # Extra `swift test` flags, e.g. ARGS=--skip-build in CI.
 ARGS ?=
 
-.PHONY: build test test-linux perf perf-app lint strings bundle app run dist reset-tcc icon clean
+.PHONY: build test perf perf-app lint strings bundle app run dist reset-tcc icon clean
 
 build:
 	swift build
 
 test:
 	swift test $(TEST_FLAGS) $(ARGS) --skip PerfTests
-
-# ShotModel's, ShotCore's and ShotCoreLinux's tests on Linux, then the shot command line, as CI's linux job runs them.
-# Needs Docker; keep the image and the packages in step with ci.yml.
-test-linux:
-	docker run --rm -v "$(CURDIR)":/src -w /src swift:6.3 sh -c \
-		'apt-get update -qq && apt-get install -y -qq --no-install-recommends zsh libpng-dev libturbojpeg0-dev libcairo2-dev libpango1.0-dev libxcb1-dev libxcb-composite0-dev libxcb-randr0-dev libdbus-1-dev libpipewire-0.3-dev fonts-dejavu-core xvfb dbus-daemon ffmpeg pipewire pipewire-bin wireplumber gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-pipewire >/dev/null && swift test --scratch-path .build/linux && \
-		swift build --scratch-path .build/linux --product shot'
 
 # Budgets and baselines: docs/performance.md.
 perf:
@@ -35,13 +28,11 @@ perf:
 perf-app:
 	scripts/perf.sh
 
-# On a Mac, also checks Resources/Localizable.xcstrings has every string the app shows; CI's linux job can't.
+# Also checks Resources/Localizable.xcstrings has every string the app shows.
 lint:
 	scripts/lint.sh
-ifeq ($(shell uname),Darwin)
 	swift build
 	scripts/strings.sh --check
-endif
 
 # Adds new strings to Resources/Localizable.xcstrings and drops ones the source no longer uses.
 strings:
