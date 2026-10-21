@@ -4,8 +4,8 @@ extension AgentTools {
     /// The tools reading the captures in `folder`, as the gallery lists them. GIFs count as images: an agent sees their
     /// first frame. `marks` is the app's `RecordingMarks` store, whose marks the key frames show, and `projects` its
     /// project store, which keeps what the tools make, and `textIndex` the text the app has read from screenshots, which
-    /// `list_captures` searches. Without text recognition, as on Linux, there's no `find_text`. `agent` sends a request to the running app, for the tools that capture. `codec` reads
-    /// and writes the images, and they're drawn on `canvasType` canvases; `reader` reads the videos, `assembler` cuts them
+    /// `list_captures` searches. `agent` sends a request to the running app, for the tools that capture. `codec` reads and
+    /// writes the images, and they're drawn on `canvasType` canvases; `reader` reads the videos, `assembler` cuts them
     /// and `writer` encodes those it draws.
     public static func live(
         folder: URL,

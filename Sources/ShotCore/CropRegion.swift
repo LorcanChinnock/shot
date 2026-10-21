@@ -1,7 +1,7 @@
 import Foundation
 
-/// A part of an image in its pixels from the top left, as `shot crop` and the MCP `zoom` tool take it. The maths is here
-/// so it's tested on Linux; ShotCore reads and writes the pixels.
+/// A part of an image in its pixels from the top left, as `shot crop` and the MCP `zoom` tool take it. The maths is here,
+/// apart from the pixels, so it's tested on its own.
 public enum CropRegion {
     /// `[x, y, width, height]` from a tool's `rect`: four finite numbers, with a width and height above 0.
     public static func rect(_ value: JSONValue?) -> [Double]? {

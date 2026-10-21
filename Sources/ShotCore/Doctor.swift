@@ -2,7 +2,7 @@ import Foundation
 
 /// What `shot doctor` checks, from facts the command line gathers: which copy of Shot answers and its version, the
 /// Screen Recording permission, Let agents capture and record, the socket, and the capture folder. Each check that
-/// isn't passing says how to fix it. Here, with no file or socket access, so every outcome is tested on Linux.
+/// isn't passing says how to fix it. Here, with no file or socket access, so every outcome is tested.
 public enum Doctor {
     public struct Facts: Equatable, Sendable {
         /// The app this command line is inside, or `nil` for a bare build reading `settingsSuite`.

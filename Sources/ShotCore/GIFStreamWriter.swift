@@ -1,6 +1,6 @@
 import Foundation
 
-/// Writes a looping GIF a frame at a time through ShotModel's `GIFEncoder`, drawing each image on a `canvasType` canvas
+/// Writes a looping GIF a frame at a time through `GIFEncoder`, drawing each image on a `canvasType` canvas
 /// for the RGBA pixels it takes.
 package final class GIFStreamWriter {
     private let canvasType: any Canvas.Type

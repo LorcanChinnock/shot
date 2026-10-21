@@ -1,7 +1,7 @@
 import Foundation
 
 /// One edit of an image, as `shot edit` and the MCP `edit_image` tool take it: the image editor's own changes, as JSON.
-/// It's checked here, with no file access, so every field is tested on Linux; ShotCore applies it to an
+/// It's checked here, with no file access, so every field is tested; `ShotCommands` applies it to an
 /// `EditorDocument`. Lengths and positions are in the input file's pixels, top-left origin, as the capture record's are.
 public struct ImageEdit: Equatable, Sendable {
     /// The part to keep, `[x, y, width, height]`, applied last, so it can reach into the padding.

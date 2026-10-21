@@ -1,7 +1,7 @@
 import Foundation
 
 /// One edit of a video, as `shot edit` and the MCP `edit_video` tool take it: the video editor's changes and its export,
-/// as JSON. It's checked here, with no file access, so every field is tested on Linux; ShotCore applies it to a
+/// as JSON. It's checked here, with no file access, so every field is tested; `ShotCommands` applies it to a
 /// `Project`. Times are seconds of the input file, or `m:ss` text, and positions are its pixels, top-left origin.
 public struct VideoEdit: Equatable, Sendable {
     /// The parts to keep, each `[start, end]`, in order; what's between and around them is cut.

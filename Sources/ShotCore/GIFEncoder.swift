@@ -2,7 +2,7 @@ import Foundation
 
 /// Writes a looping GIF a frame at a time, so memory stays flat however long it is. Each frame is cropped to what
 /// changed since the previous one, with unchanged pixels transparent, and `ColorQuantizer` gives it its own color
-/// table. It works on RGBA pixels, so it's tested on Linux; ShotCore's `GIFStreamWriter` draws each image into them.
+/// table. It works on RGBA pixels, so it's tested without a file; `GIFStreamWriter` draws each image into them.
 public final class GIFEncoder {
     public let width: Int
     public let height: Int

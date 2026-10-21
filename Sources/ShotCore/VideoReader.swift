@@ -25,7 +25,7 @@ public protocol VideoFrames: Sendable {
 
 /// Reads video and audio files, and projects as they're drawn: what they hold, their frames and their sound. It reports
 /// facts and leaves the decisions to its callers, such as `MediaProbe`, `KeyFrameExtractor`, `Waveform`, `VideoTrimmer`'s
-/// estimate and `GIFExporter`. ShotCoreApple's `AVVideoReader` is the Mac's; ShotCore code takes one as `reader`.
+/// estimate and `GIFExporter`. `AVVideoReader` is the one there is; ShotCore code takes one as `reader`.
 public protocol VideoReader: Sendable {
     /// How long `url` plays, the size of its first video track's picture as it plays (`nil` without one), and whether it
     /// has sound, as the file says, unchecked. Throws when the file can't be read.

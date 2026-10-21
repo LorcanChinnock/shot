@@ -41,9 +41,7 @@ public enum FileNaming {
     }
 
     /// Renames `source` to `target` unless `target` exists, which no check made beforehand can promise: 0, or -1 with
-    /// `errno` set, to `EEXIST` when the name is taken. A Mac renames with `RENAME_EXCL`. Glibc doesn't show Swift
-    /// `renameat2`, so Linux links the new name, which fails when it's taken, and then unlinks the old one. Callers
-    /// remove `source` afterwards anyway, so an unlink that fails leaves nothing behind.
+    /// `errno` set, to `EEXIST` when the name is taken. It renames with `RENAME_EXCL`.
     static func renameExclusively(_ source: URL, to target: URL) -> Int32 {
         renamex_np(source.path, target.path, UInt32(RENAME_EXCL))
     }

@@ -239,7 +239,6 @@ public enum ProjectStamp {
 
 extension ProjectFile {
     /// The file at `url` as it is now, with a bookmark to it unless `bookmark` is false; `nil` when it isn't there.
-    /// Linux Foundation has no bookmarks, so there a file is found again only where it was.
     public init?(at url: URL, bookmark: Bool = true) {
         let keys: Set<URLResourceKey> = [.isRegularFileKey, .volumeUUIDStringKey, .fileSizeKey, .contentModificationDateKey]
         // A URL caches what it read, so one kept across a rewrite of its file would report the old size and date.

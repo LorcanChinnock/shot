@@ -1,8 +1,8 @@
 import Foundation
 
 /// Where two images of the same size differ, for `shot diff` and the MCP `compare` tool: which pixels changed, and those
-/// pixels gathered into a few boxes an agent can read. It works on RGBA bytes, so it's tested on Linux; ShotCore reads
-/// the images into bytes and draws the result.
+/// pixels gathered into a few boxes an agent can read. It works on RGBA bytes, so it's tested without a file;
+/// `ShotCommands` reads the images into bytes and draws the result.
 public enum ImageDiff {
     /// A changed region, in the image's pixels, top-left origin.
     public struct Region: Equatable, Sendable {

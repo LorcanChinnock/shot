@@ -113,7 +113,6 @@ public struct KeyCombo: Equatable, Hashable, Sendable {
 
     public var keyLabel: String { Self.keyLabels[keyCode] ?? "#\(keyCode)" }
 
-    // CGEventFlags is Apple-only; Linux builds the rest for ShotModelTests.
     /// The combo of `keyCode` with the modifiers among `flags`, which `NSEvent.ModifierFlags` shares the bits of.
     public init(keyCode: UInt32, eventFlags flags: CGEventFlags) {
         var modifiers: UInt32 = 0

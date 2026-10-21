@@ -4,8 +4,8 @@ import Synchronization
 import Testing
 @testable import ShotCore
 
-// The saved-file fixtures in Tests/Fixtures, read without ImageIO, so they're checked on Linux too. ShotCoreAppleTests'
-// SavedProjectTests reads the same files through ImageIOCodec and checks the placed image's pixels.
+// The saved-file fixtures in Tests/Fixtures, read without ImageIO. SavedProjectTests reads the same files through
+// ImageIOCodec and checks the placed image's pixels.
 
 private func fixture(_ name: String) throws -> Data {
     try Data(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Fixtures/\(name)"))

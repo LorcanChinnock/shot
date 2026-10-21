@@ -1,7 +1,7 @@
 import Foundation
 
 /// What the `shot` command line and the MCP server ask the running app over its agent socket: one JSON line per
-/// connection, answered by one `AgentResponse` line. Here, with no socket, so every message is tested on Linux.
+/// connection, answered by one `AgentResponse` line. Here, with no socket, so every message is tested.
 public struct AgentRequest: Codable, Equatable, Sendable {
     /// The protocol's version; a request with another is refused, so an old app never half-understands a new one.
     public static let version = 1

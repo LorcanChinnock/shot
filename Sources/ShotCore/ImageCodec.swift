@@ -1,6 +1,6 @@
 import Foundation
 
-/// Image helpers that draw on a canvas. ShotCoreApple adds the encoding and decoding, with ImageIO.
+/// Image helpers that draw on a canvas. `ImageCodec+ImageIO.swift` adds the encoding and decoding.
 public enum ImageCodec {
     /// Resamples a Retina capture to 1 pixel per point, on a `canvasType` canvas.
     public static func downscaled(_ image: PlatformImage, scale: CGFloat, canvasType: any Canvas.Type) -> PlatformImage {

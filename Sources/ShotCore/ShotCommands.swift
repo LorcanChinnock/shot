@@ -451,7 +451,7 @@ public enum ShotCommands {
         let placed = try place(temporary, at: target)
         VersionWriter.keep(written.kept, of: placed, original: original, in: projects, origin: origin)
         var object = try Self.written(placed, codec: codec)
-        // A GIF is an image: its size is the codec's, and only ffmpeg, on Linux, would read it as a video.
+        // A GIF is an image: its size is the codec's.
         if ext != "gif", let probed = try? await MediaProbe.probe(placed, reader: reader) {
             object["duration"] = .number((probed.duration * 1000).rounded() / 1000)
             if let size = probed.size {
@@ -627,7 +627,7 @@ public enum ShotCommands {
     }
 
     /// What `reader` finds in `url`, or `nil` when it can't read it. Only `ShotCommandError.unavailable`, which is about
-    /// the reader, such as ffmpeg missing on Linux, rather than the file, is thrown.
+    /// the reader rather than the file, is thrown.
     static func probe(_ url: URL, reader: any VideoReader) async throws(ShotCommandError) -> ImportedMedia? {
         do {
             return try await MediaProbe.probe(url, reader: reader)

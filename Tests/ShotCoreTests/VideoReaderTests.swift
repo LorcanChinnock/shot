@@ -9,7 +9,7 @@ private struct FakeReader: VideoReader {
     var rates = (video: 0.0, audio: 0.0)
     var syncTimes: [Double]?
     var samples: [[Float]] = []
-    /// What every read throws instead, such as ffmpeg missing on Linux.
+    /// What every read throws instead.
     var failure: ShotCommandError?
 
     func info(of url: URL) async throws -> ImportedMedia {

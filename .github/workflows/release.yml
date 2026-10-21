@@ -51,7 +51,6 @@ jobs:
   build:
     needs: release-please
     if: needs.release-please.outputs.release_created == 'true'
-    # macOS: builds and signs the app bundle, which needs Xcode.
     runs-on: macos-26
     # The `release` environment holds the release secrets and only deploys from main and v* tags. See CONTRIBUTING.md › Release secrets.
     environment: release

@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import ShotCore
 
-// Linux draws the spotlight dim through a mask, since a `CanvasPath` has no booleans; a Mac draws the `CGPath`. Both
+// The spotlight dim drawn through a mask, as a `Canvas` without path booleans would, and through the `CGPath`. Both
 // give the same pixels, except that an edge drawn smooth can be a level apart, since the mask keeps its coverage in 8 bits.
 
 private func spotlight(_ rect: CGRect, _ style: SpotlightStyle = SpotlightStyle(), cornerRadius: CGFloat? = nil) -> Annotation {
