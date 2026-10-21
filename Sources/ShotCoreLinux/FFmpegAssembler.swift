@@ -19,7 +19,7 @@ public struct FFmpegAssembler: VideoAssembler {
             let concatList = scratch.appendingPathComponent("list.txt")
             do {
                 let probe = try await tools.probe(input)
-                let source = FFmpeg.Source(path: input.path, hasAudio: probe.hasAudio)
+                let source = FFmpeg.Source(path: input.path, hasAudio: probe.hasAudio, frameRate: probe.frameRate)
                 func job(copying: Bool) -> FFmpeg.Job {
                     FFmpeg.trim(source, kept: kept, speed: speed, muted: muted, to: output.path, as: muxer, scratch: scratch.path, copying: copying)
                 }

@@ -9,8 +9,13 @@ private struct FakeReader: VideoReader {
     var rates = (video: 0.0, audio: 0.0)
     var syncTimes: [Double]?
     var samples: [[Float]] = []
+    /// What every read throws instead, such as ffmpeg missing on Linux.
+    var failure: ShotCommandError?
 
     func info(of url: URL) async throws -> ImportedMedia {
+        if let failure {
+            throw failure
+        }
         guard let media else {
             throw CocoaError(.fileReadCorruptFile)
         }
@@ -66,6 +71,25 @@ private let clip = URL(fileURLWithPath: "/nowhere/clip.mp4")
         await #expect(throws: MediaProbe.ProbeError.self) { try await MediaProbe.probe(clip, reader: FakeReader(media: media)) }
     }
     await #expect(throws: MediaProbe.ProbeError.self) { try await MediaProbe.probe(clip, reader: FakeReader()) }
+}
+
+@Test func aReaderThatCantRunSaysWhyRatherThanThatTheFileIsUnreadable() async throws {
+    let missing = ShotCommandError.unavailable("Shot can't find ffmpeg")
+    let reader = FakeReader(failure: missing)
+    await #expect(throws: missing) { try await MediaProbe.probe(clip, reader: reader) }
+    let file = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).mp4")
+    try Data([0]).write(to: file)
+    defer { try? FileManager.default.removeItem(at: file) }
+    for command in [ShotCommand.info(path: file.path), .gif(ShotCommand.GIFOptions(input: file.path)), .frames(ShotCommand.FramesOptions(input: file.path))] {
+        await #expect(throws: missing, "\(command.name)") {
+            try await ShotCommands.run(command, codec: StandInCodec(), canvasType: UnusedCanvas.self, reader: reader, assembler: UnusedVideo(), writer: UnusedVideo())
+        }
+    }
+    // Any other failure is the file's.
+    await #expect(throws: ShotCommandError.data("\(file.lastPathComponent) isn't an image or video Shot can read")) {
+        try await ShotCommands.run(.info(path: file.path), codec: StandInCodec(), canvasType: UnusedCanvas.self, reader: FakeReader(), assembler: UnusedVideo(), writer: UnusedVideo())
+    }
+    #expect(ShotCommandError.io("ffmpeg stopped").localizedDescription == "ffmpeg stopped")
 }
 
 @Test func trimmingHandsTheAssemblerOnlyWhatTheCutsKeep() async throws {

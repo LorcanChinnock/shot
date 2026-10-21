@@ -5,7 +5,7 @@ import Foundation
 /// Linux's `ImageCoding`: PNG through libpng and JPEG through libjpeg-turbo, with the scale and `ImageMetadata` where
 /// ImageIO puts them (`ImageHeader`), so a file goes either way between Linux and a Mac. It uses libpng's simplified API
 /// and the TurboJPEG API, which return their errors, since the classic APIs report them with a `longjmp` Swift can't
-/// catch. Other formats, such as HEIC and GIF, don't decode.
+/// catch. Other formats, such as HEIC and GIF, don't decode, though a GIF's size and frames are read.
 public struct PNGJPEGCodec: ImageCoding {
     public init() {}
 
@@ -32,7 +32,9 @@ public struct PNGJPEGCodec: ImageCoding {
     }
 
     public func info(of data: Data) -> ImageFileInfo? {
+        // A GIF's size and frames are read, though its pictures don't decode.
         ImageHeader(data).map { ImageFileInfo(isGIF: false, frames: 1, size: CaptureRecord.Size(width: $0.width, height: $0.height)) }
+            ?? GIFHeader(data).map { ImageFileInfo(isGIF: true, frames: $0.frames, size: CaptureRecord.Size(width: $0.width, height: $0.height)) }
     }
 
     public func scale(ofFileAt url: URL) -> CGFloat {

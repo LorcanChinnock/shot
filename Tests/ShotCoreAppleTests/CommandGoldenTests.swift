@@ -4,19 +4,24 @@ import Testing
 import ShotCoreApple
 
 // The command goldens ShotCoreLinuxTests' CommandParityTests runs on Linux and compares: each case in
-// Tests/Fixtures/commands/cases.json is a `shot` command line run over the canvas goldens' `base.png`, and `<name>.png`
-// and `<name>.json` are what it wrote on a Mac and what it and `info` on its output printed, with paths, sizes in
-// bytes, dates and IDs masked.
+// Tests/Fixtures/commands/cases.json is a `shot` command line run over the canvas goldens' `base.png` or the video
+// fixtures' `timed.mp4`, and `<name>.json` is what it and `info` on its output printed, with paths, sizes in bytes,
+// dates and IDs masked. What it wrote is beside it: `<name>.png`, `.gif` or `.mp4` by the case's `out`, or for
+// `folder`, the folder `<name>`.
 //
-// Run with SHOT_WRITE_GOLDENS=1 to write them again after a change to a command, and check the new PNGs by eye.
-// Otherwise this checks they're still what the Mac writes.
+// Run with SHOT_WRITE_GOLDENS=1 to write them again after a change to a command, and check the new files by eye.
+// Otherwise this checks they're still what the Mac writes: the JSON, and a PNG's pixels. A video's encoding changes from
+// one macOS release to the next, so only Linux compares its frames.
 
 private let folder = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Fixtures/commands")
 private let canvas = folder.deletingLastPathComponent().appendingPathComponent("canvas")
+private let video = folder.deletingLastPathComponent().appendingPathComponent("video")
 
 private struct Case: Codable, Sendable, CustomTestStringConvertible {
     var name: String
     var args: [String]
+    /// What the command writes: `png`, the default, `gif`, `mp4`, `folder`, or `none`.
+    var out: String?
     var testDescription: String { name }
 }
 
@@ -31,23 +36,35 @@ private func theCommandWritesAndPrintsItsGolden(_ test: Case) async throws {
     for name in ["base.png", "lines.png"] {
         try FileManager.default.copyItem(at: canvas.appendingPathComponent(name), to: work.appendingPathComponent(name))
     }
-    let out = work.appendingPathComponent("\(test.name).png")
+    try FileManager.default.copyItem(at: video.appendingPathComponent("timed.mp4"), to: work.appendingPathComponent("timed.mp4"))
+    let kind = test.out ?? "png"
+    let file = kind == "folder" ? test.name : "\(test.name).\(kind)"
+    let out = work.appendingPathComponent(file)
     let args = test.args.map {
         $0.replacingOccurrences(of: "{base}", with: work.appendingPathComponent("base.png").path)
             .replacingOccurrences(of: "{lines}", with: work.appendingPathComponent("lines.png").path)
+            .replacingOccurrences(of: "{timed}", with: work.appendingPathComponent("timed.mp4").path)
             .replacingOccurrences(of: "{fixtures}", with: folder.path)
             .replacingOccurrences(of: "{out}", with: out.path)
     }
     let result = try await ShotCommands.run(try ShotCommand.parse(args))
-    let info = try await ShotCommands.run(.info(path: out.path))
-    let printed = ShotCommand.json(.object(["result": masked(result), "info": masked(info)]))
+    var printed: [String: JSONValue] = ["result": masked(result)]
+    if !["none", "folder"].contains(kind) {
+        printed["info"] = masked(try await ShotCommands.run(.info(path: out.path)))
+    }
+    let text = ShotCommand.json(.object(printed))
     if ProcessInfo.processInfo.environment["SHOT_WRITE_GOLDENS"] == "1" {
-        try printed.write(to: folder.appendingPathComponent("\(test.name).json"), atomically: true, encoding: .utf8)
-        try? FileManager.default.removeItem(at: folder.appendingPathComponent("\(test.name).png"))
-        try FileManager.default.copyItem(at: out, to: folder.appendingPathComponent("\(test.name).png"))
+        try text.write(to: folder.appendingPathComponent("\(test.name).json"), atomically: true, encoding: .utf8)
+        if kind != "none" {
+            try? FileManager.default.removeItem(at: folder.appendingPathComponent(file))
+            try FileManager.default.copyItem(at: out, to: folder.appendingPathComponent(file))
+        }
         return
     }
-    #expect(printed == (try String(contentsOf: folder.appendingPathComponent("\(test.name).json"), encoding: .utf8)))
+    #expect(text == (try String(contentsOf: folder.appendingPathComponent("\(test.name).json"), encoding: .utf8)))
+    guard kind == "png" else {
+        return
+    }
     let codec = ImageIOCodec()
     let wrote = try #require(codec.decode(fileAt: out))
     let golden = try #require(codec.decode(fileAt: folder.appendingPathComponent("\(test.name).png")))

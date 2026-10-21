@@ -21,11 +21,11 @@ private func text(_ result: MCPServer.ToolResult) -> String {
 
 /// The JSON a tool gave about the file it made.
 private func made(_ result: MCPServer.ToolResult) throws -> JSONValue {
-    let json = try #require(result.content.compactMap { if case let .text(text) = $0, text.hasPrefix("{") { text } else { nil } }.first)
+    let json = try #require(result.content.compactMap { if case let .text(text) = $0, text.hasPrefix("{") { text } else { nil } }.first, "\(text(result))")
     return try JSONDecoder().decode(JSONValue.self, from: Data(json.utf8))
 }
 
-@Test func theToolsThatCaptureRecordOrReadVideoAnswerThatTheyreNotOnLinuxYet() async {
+@Test func theToolsThatRecordOrPickAnswerThatTheyreNotOnLinuxYet() async {
     let tools = AgentTools.live(folder: URL(fileURLWithPath: "/shots"))
     #expect(tools.server(version: "1").tools.map(\.name) == AgentTools.definitions.map(\.name).filter { $0 != AgentTools.findText })
     for name in Doctor.notOnLinuxYetTools {
@@ -79,9 +79,6 @@ private func made(_ result: MCPServer.ToolResult) throws -> JSONValue {
     #expect(text(latest).contains(screenshot.lastPathComponent))
     let listed = await tools.call(AgentTools.listCaptures, .object([:]))
     #expect(text(listed).contains("08.00.00.mov") && text(listed).contains("09.00.00.png"))
-    let recording = await tools.call(AgentTools.getCapture, .object(["name": .string("08.00.00")]))
-    #expect(recording.content.first == .text("Previews of recordings are not on Linux yet."))
-
     let zoomed = await tools.call(AgentTools.zoom, .object(["rect": .array([10, 20, 60, 40].map { .number($0) })]))
     #expect(zoomed.isError != true, "\(text(zoomed))")
     #expect(zoomed.content.contains { if case .image = $0 { true } else { false } })
@@ -112,17 +109,10 @@ private func made(_ result: MCPServer.ToolResult) throws -> JSONValue {
     #expect(text(compared).contains("\"regions\""))
 }
 
-@Test func theCommandsThatReadVideoAnswerThatTheyreNotOnLinuxYet() async throws {
+@Test func theCommandsThatRecordOrPickAnswerThatTheyreNotOnLinuxYet() async throws {
     let (folder, _, screenshot) = try captures()
     defer { try? FileManager.default.removeItem(at: folder.deletingLastPathComponent()) }
-    let recording = folder.appendingPathComponent("Shot 2026-10-20 at 08.00.00.mov").path
-    let commands: [ShotCommand] = [
-        .gif(ShotCommand.GIFOptions(input: recording)),
-        .info(path: recording),
-        .edit(ShotCommand.EditOptions(input: recording, spec: .json(#"{"speed": 2}"#))),
-        try ShotCommand.parse(["record", "--display", "1"]),
-        .pick(ShotCommand.PickOptions()),
-    ]
+    let commands: [ShotCommand] = [try ShotCommand.parse(["record", "--display", "1"]), .pick(ShotCommand.PickOptions())]
     for command in commands {
         await #expect(throws: ShotCommandError.notOnLinuxYet, "\(command.name)") {
             try await ShotCommands.run(command)
@@ -134,4 +124,41 @@ private func made(_ result: MCPServer.ToolResult) throws -> JSONValue {
     let info = try await ShotCommands.run(.info(path: screenshot.path))
     #expect(info["kind"] == .string("image"))
     #expect(info["size"] == .object(["width": .number(160), "height": .number(120)]))
+}
+
+@Test(.enabled(if: hasFFmpeg, "ffmpeg isn't installed"))
+func theVideoToolsRunOnLinux() async throws {
+    let (folder, projects, _) = try captures()
+    defer { try? FileManager.default.removeItem(at: folder.deletingLastPathComponent()) }
+    let recording = folder.appendingPathComponent("Shot 2026-10-20 at 10.00.00.mp4")
+    try FileManager.default.copyItem(at: timed, to: recording)
+    let marks = folder.deletingLastPathComponent().appendingPathComponent("recording-marks.json")
+    try RecordingMarks.save([RecordingMark(time: 1.2, label: "Saved")], for: recording, in: marks)
+    let tools = AgentTools.live(folder: folder, marks: marks, projects: projects)
+
+    let preview = await tools.call(AgentTools.getCapture, .object(["name": .string("10.00.00")]))
+    #expect(preview.content.contains { if case .image(_, "image/jpeg") = $0 { true } else { false } })
+    #expect(text(preview).contains("A recording 2.0 seconds long, 160×120, with sound. The image is its frame at 1.0 seconds."), "\(text(preview))")
+
+    // By path, since the empty recording beside it is as new.
+    let frames = await tools.call(AgentTools.getFrames, .object(["path": .string(recording.path), "count": .number(3)]))
+    #expect(frames.isError != true, "\(text(frames))")
+    #expect(frames.content.filter { if case .image = $0 { true } else { false } }.count >= 2)
+    #expect(text(frames).contains(#"marked "Saved""#), "\(text(frames))")
+    #expect(text(frames).contains("Its sound isn't transcribed: that needs a Mac."))
+
+    let gif = try made(await tools.call(AgentTools.makeGIF, .object(["path": .string(recording.path), "start": .number(0.5), "end": .number(1.5), "fps": .number(10), "width": .number(80)])))
+    #expect(gif["frames"] == .number(10) && gif["size"] == .object(["width": .number(80), "height": .number(60)]), "\(gif)")
+    #expect(try #require(gif["path"]?.string).hasSuffix(".gif"))
+
+    let trimmed = try made(await tools.call(AgentTools.trimVideo, .object(["path": .string(recording.path), "start": .number(0.5), "end": .number(1.5)])))
+    #expect(abs((trimmed["duration"]?.number ?? 0) - 1) < 0.1, "\(trimmed)")
+
+    let edited = try made(await tools.call(AgentTools.editVideo, .object([
+        "path": .string(recording.path), "cut": .array([.array([.number(0.5), .number(1)])]),
+        "marks": .array([.object(["start": .number(0), "type": .string("arrow"), "from": .array([.number(10), .number(10)]), "to": .array([.number(90), .number(70)])])]),
+    ])))
+    #expect(abs((edited["duration"]?.number ?? 0) - 1.5) < 0.1, "\(edited)")
+    let path = URL(fileURLWithPath: try #require(edited["path"]?.string))
+    #expect(projects.entry(for: path)?.origin.action == AgentTools.editVideo)
 }

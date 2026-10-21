@@ -2,7 +2,7 @@ import Foundation
 
 extension Doctor {
     /// What `shot doctor` checks on Linux, where `shot serve` answers agents rather than an app: the session, the desktop
-    /// portal on Wayland, Let agents capture and record, `shot serve`, what runs so far, what's left out by design, the emoji font, and the capture
+    /// portal on Wayland, Let agents capture and record, `shot serve`, ffmpeg, what runs so far, what's left out by design, the emoji font, and the capture
     /// folder.
     public struct LinuxFacts: Equatable, Sendable {
         public var version: String
@@ -28,7 +28,7 @@ extension Doctor {
         /// The version of the desktop portal's Screenshot interface, or why there's none, in a Wayland session; `nil` in
         /// any other.
         public var screenshotPortal: Result<Int, ShotCommandError>?
-        /// The ffmpeg and ffprobe that read, trim and join video.
+        /// The ffmpeg and ffprobe that read, trim, join and export video.
         public var ffmpeg: FFmpegFacts?
 
         public init(
@@ -68,19 +68,17 @@ extension Doctor {
         }
     }
 
-    /// The commands that run on Linux so far: the image commands, those that read the capture folder, and `capture` and
-    /// `windows`, which ask `shot serve`. `text`, and `redact --detect`, run only to say they need a Mac. The rest record,
-    /// pick or read video, and answer `ShotCommandError.notOnLinuxYet`, as `info` and `edit` do on a video.
+    /// The commands that run on Linux so far: the image and video commands, those that read the capture folder, and
+    /// `capture` and `windows`, which ask `shot serve`. `text`, and `redact --detect`, run only to say they need a Mac.
+    /// The rest record or pick, and answer `ShotCommandError.notOnLinuxYet`.
     public static let linuxCommands = [
-        "version", "help", "doctor", "mcp", "serve", "settings", "info", "annotate", "redact", "crop", "diff", "edit", "latest", "list", "get", "watch", "capture",
-        "windows",
+        "version", "help", "doctor", "mcp", "serve", "settings", "info", "annotate", "redact", "crop", "diff", "edit", "gif", "trim", "frames", "latest", "list",
+        "get", "watch", "capture", "windows",
     ]
     /// The commands that answer that they're not on Linux yet.
-    public static let notOnLinuxYetCommands = ["record", "pick", "gif", "trim", "frames"]
-    /// The MCP tools that record, pick or read video. Linux lists them, but they answer that they're not on Linux yet.
-    public static let notOnLinuxYetTools = [
-        AgentTools.recordWindow, AgentTools.askForCapture, AgentTools.getFrames, AgentTools.makeGIF, AgentTools.trimVideo, AgentTools.editVideo,
-    ]
+    public static let notOnLinuxYetCommands = ["record", "pick"]
+    /// The MCP tools that record or pick. Linux lists them, but they answer that they're not on Linux yet.
+    public static let notOnLinuxYetTools = [AgentTools.recordWindow, AgentTools.askForCapture]
 
     public static func checks(_ facts: LinuxFacts) -> [Check] {
         [platform(facts), portal(facts), linuxAgents(facts), serve(facts), ffmpeg(facts), notOnLinuxYet, macOnly, emoji(facts), linuxFolder(facts)].compactMap { $0 }
@@ -159,19 +157,19 @@ extension Doctor {
         return check
     }
 
-    /// Whether ffmpeg and ffprobe are installed, which video needs, and whether ffmpeg encodes H.264, which trimming
-    /// needs when it can't copy the video, and HEVC, which only exports that ask for it need.
+    /// Whether ffmpeg and ffprobe are installed, which video needs, and whether ffmpeg encodes H.264, which exporting an
+    /// edited video needs, as trimming does when it can't copy the video, and HEVC, which only exports that ask for it need.
     static func ffmpeg(_ facts: LinuxFacts) -> Check? {
         guard let ffmpeg = facts.ffmpeg else {
             return nil
         }
         guard let program = ffmpeg.ffmpeg, let probe = ffmpeg.ffprobe else {
             let missing = [ffmpeg.ffmpeg == nil ? "ffmpeg" : nil, ffmpeg.ffprobe == nil ? "ffprobe" : nil].compactMap { $0 }.joined(separator: " or ")
-            return Check("ffmpeg", .warn, "Shot reads, trims and joins video with ffmpeg and ffprobe, and can't find \(missing).", fix: FFmpeg.install)
+            return Check("ffmpeg", .warn, "Shot reads, trims, joins and exports video with ffmpeg and ffprobe, and can't find \(missing).", fix: FFmpeg.install)
         }
-        let detail = "\(ffmpeg.version.map { "ffmpeg \($0)" } ?? "ffmpeg") at \(program), with ffprobe at \(probe), reads, trims and joins video."
+        let detail = "\(ffmpeg.version.map { "ffmpeg \($0)" } ?? "ffmpeg") at \(program), with ffprobe at \(probe), reads, trims, joins and exports video."
         guard ffmpeg.encoders.contains(FFmpeg.h264Encoder) else {
-            return Check("ffmpeg", .warn, detail + " It has no \(FFmpeg.h264Encoder), so it can't encode H.264, which trimming does when it can't copy the video.",
+            return Check("ffmpeg", .warn, detail + " It has no \(FFmpeg.h264Encoder), so it can't encode H.264, which exporting an edited video needs, as trimming does when it can't copy the video.",
                          fix: "Install an ffmpeg built with \(FFmpeg.h264Encoder), such as your distribution's ffmpeg package.")
         }
         guard ffmpeg.encoders.contains(FFmpeg.hevcEncoder) else {
@@ -182,7 +180,7 @@ extension Doctor {
 
     static let notOnLinuxYet = Check(
         "notOnLinuxYet", .warn,
-        "Recording, picking and video aren't on Linux yet: shot \(list(notOnLinuxYetCommands)), info and edit on a video, and the MCP tools \(list(notOnLinuxYetTools)) answer that they're not on Linux yet. The image commands and the tools that read and edit screenshots work, and shot capture, shot windows and the MCP tools that capture ask shot serve.",
+        "Recording and picking aren't on Linux yet: shot \(list(notOnLinuxYetCommands)) and the MCP tools \(list(notOnLinuxYetTools)) answer that they're not on Linux yet. The image and video commands and the tools that read and edit captures work, and shot capture, shot windows and the MCP tools that capture ask shot serve.",
         fix: "Use Shot on a Mac for those for now."
     )
 
@@ -192,7 +190,7 @@ extension Doctor {
 
     static let macOnly = Check(
         "macOnly", .pass,
-        "Text recognition (find_text and shot text), redaction by text (redact --detect), the text index, narration and system audio need a Mac, so they're left out on Linux by design. Of image files, Linux opens PNG and JPEG; HEIC, TIFF, BMP and WebP need a Mac."
+        "Text recognition (find_text and shot text), redaction by text (redact --detect), the text index, narration and system audio need a Mac, so they're left out on Linux by design. Of image files, Linux opens PNG and JPEG, and makes GIFs; opening a GIF, HEIC, TIFF, BMP or WebP needs a Mac."
     )
 
     static func emoji(_ facts: LinuxFacts) -> Check {

@@ -40,13 +40,13 @@ private func serving(version: String = "0.7.0", capturer: String = "x11", limits
             .object([
                 "name": .string("notOnLinuxYet"), "outcome": .string("warn"),
                 "detail": .string(
-                    "Recording, picking and video aren't on Linux yet: shot record, pick, gif, trim and frames, info and edit on a video, and the MCP tools record_window, ask_for_capture, get_frames, make_gif, trim_video and edit_video answer that they're not on Linux yet. The image commands and the tools that read and edit screenshots work, and shot capture, shot windows and the MCP tools that capture ask shot serve."
+                    "Recording and picking aren't on Linux yet: shot record and pick and the MCP tools record_window and ask_for_capture answer that they're not on Linux yet. The image and video commands and the tools that read and edit captures work, and shot capture, shot windows and the MCP tools that capture ask shot serve."
                 ),
                 "fix": .string("Use Shot on a Mac for those for now."),
             ]),
             .object([
                 "name": .string("macOnly"), "outcome": .string("pass"),
-                "detail": .string("Text recognition (find_text and shot text), redaction by text (redact --detect), the text index, narration and system audio need a Mac, so they're left out on Linux by design. Of image files, Linux opens PNG and JPEG; HEIC, TIFF, BMP and WebP need a Mac."),
+                "detail": .string("Text recognition (find_text and shot text), redaction by text (redact --detect), the text index, narration and system audio need a Mac, so they're left out on Linux by design. Of image files, Linux opens PNG and JPEG, and makes GIFs; opening a GIF, HEIC, TIFF, BMP or WebP needs a Mac."),
             ]),
             .object([
                 "name": .string("emoji"), "outcome": .string("pass"),
@@ -146,7 +146,7 @@ private func serving(version: String = "0.7.0", capturer: String = "x11", limits
     let both = Doctor.FFmpegFacts(ffmpeg: "/usr/bin/ffmpeg", ffprobe: "/usr/bin/ffprobe", version: "6.1.1-3ubuntu5", encoders: ["libx264", "libx265", "aac"])
     let check = Doctor.ffmpeg(facts(ffmpeg: both))
     #expect(check?.outcome == .pass)
-    #expect(check?.detail == "ffmpeg 6.1.1-3ubuntu5 at /usr/bin/ffmpeg, with ffprobe at /usr/bin/ffprobe, reads, trims and joins video. It encodes H.264 and HEVC.")
+    #expect(check?.detail == "ffmpeg 6.1.1-3ubuntu5 at /usr/bin/ffmpeg, with ffprobe at /usr/bin/ffprobe, reads, trims, joins and exports video. It encodes H.264 and HEVC.")
     // It comes after the serve check.
     #expect(Doctor.checks(facts(ffmpeg: both)).map(\.name).prefix(4) == ["platform", "letAgentsCaptureAndRecord", "serve", "ffmpeg"])
     #expect(Doctor.ffmpeg(facts()) == nil)
@@ -168,10 +168,10 @@ private func serving(version: String = "0.7.0", capturer: String = "x11", limits
 @Test func doctorOnLinuxWarnsWithoutFFmpeg() {
     let missing = Doctor.ffmpeg(facts(ffmpeg: Doctor.FFmpegFacts(ffmpeg: nil, ffprobe: nil)))
     #expect(missing?.outcome == .warn)
-    #expect(missing?.detail == "Shot reads, trims and joins video with ffmpeg and ffprobe, and can't find ffmpeg or ffprobe.")
+    #expect(missing?.detail == "Shot reads, trims, joins and exports video with ffmpeg and ffprobe, and can't find ffmpeg or ffprobe.")
     #expect(missing?.fix == "Install ffmpeg (sudo apt install ffmpeg on Debian and Ubuntu), or set SHOT_FFMPEG and SHOT_FFPROBE to where they are.")
     let noProbe = Doctor.ffmpeg(facts(ffmpeg: Doctor.FFmpegFacts(ffmpeg: "/usr/bin/ffmpeg", ffprobe: nil)))
     #expect(noProbe?.detail.hasSuffix("can't find ffprobe.") == true)
-    // Video isn't on Linux yet, so doctor still passes.
+    // Only video needs ffmpeg, so doctor still passes without it.
     #expect(Doctor.json(Doctor.checks(facts(ffmpeg: Doctor.FFmpegFacts(ffmpeg: nil, ffprobe: nil))))["ok"] == .bool(true))
 }

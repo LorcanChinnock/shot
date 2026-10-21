@@ -8,7 +8,7 @@ public struct FFmpegTools: Sendable {
     public let ffprobe: String
 
     /// Why there are none to run.
-    static let missing = "Shot reads, trims and joins video with ffmpeg and ffprobe, and can't find them. \(FFmpeg.install)"
+    static let missing = "Shot reads, trims, joins and exports video with ffmpeg and ffprobe, and can't find them. \(FFmpeg.install)"
 
     /// The programs `environment` finds, as `FFmpeg.locate` looks for them.
     static func located(environment: [String: String]) -> (ffmpeg: String?, ffprobe: String?) {
