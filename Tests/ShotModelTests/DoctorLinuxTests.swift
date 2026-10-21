@@ -4,13 +4,14 @@ import Testing
 
 private func facts(
     session: String? = "wayland", agentCapture: Bool = true, listening: Bool = false, status: Result<[String: JSONValue], ShotCommandError>? = nil,
-    folderExists: Bool = true, folderError: String? = nil, colorEmoji: Bool = true, screenshotPortal: Result<Int, ShotCommandError>? = nil
+    folderExists: Bool = true, folderError: String? = nil, colorEmoji: Bool = true, screenshotPortal: Result<Int, ShotCommandError>? = nil,
+    ffmpeg: Doctor.FFmpegFacts? = nil
 ) -> Doctor.LinuxFacts {
     Doctor.LinuxFacts(
         version: "0.7.0", settingsFile: "/home/me/.config/dev.lorcan.Shot.plist", sessionType: session, agentCapture: agentCapture,
         socketPath: "/home/me/.local/share/dev.lorcan.Shot/agent.sock", listening: listening, status: status, folder: "/home/me/Pictures/Shot",
         folderExists: folderExists, folderError: folderError, captures: 1, colorEmoji: colorEmoji,
-        screenshotPortal: screenshotPortal
+        screenshotPortal: screenshotPortal, ffmpeg: ffmpeg
     )
 }
 
@@ -139,4 +140,38 @@ private func serving(version: String = "0.7.0", capturer: String = "x11", limits
     #expect(missing?.outcome == .fail && missing?.detail == "The desktop portal isn't running.")
     #expect(missing?.fix == "Install xdg-desktop-portal and your desktop's backend (xdg-desktop-portal-gnome, xdg-desktop-portal-kde or xdg-desktop-portal-wlr), and run shot from a terminal in your Wayland desktop session.")
     #expect(Doctor.json(Doctor.checks(facts(screenshotPortal: .failure(.unavailable("gone")))))["ok"] == .bool(false))
+}
+
+@Test func doctorOnLinuxSaysWhereFFmpegIsAndWhatItEncodes() {
+    let both = Doctor.FFmpegFacts(ffmpeg: "/usr/bin/ffmpeg", ffprobe: "/usr/bin/ffprobe", version: "6.1.1-3ubuntu5", encoders: ["libx264", "libx265", "aac"])
+    let check = Doctor.ffmpeg(facts(ffmpeg: both))
+    #expect(check?.outcome == .pass)
+    #expect(check?.detail == "ffmpeg 6.1.1-3ubuntu5 at /usr/bin/ffmpeg, with ffprobe at /usr/bin/ffprobe, reads, trims and joins video. It encodes H.264 and HEVC.")
+    // It comes after the serve check.
+    #expect(Doctor.checks(facts(ffmpeg: both)).map(\.name).prefix(4) == ["platform", "letAgentsCaptureAndRecord", "serve", "ffmpeg"])
+    #expect(Doctor.ffmpeg(facts()) == nil)
+
+    var noHEVC = both
+    noHEVC.encoders = ["libx264"]
+    #expect(Doctor.ffmpeg(facts(ffmpeg: noHEVC))?.outcome == .pass)
+    #expect(Doctor.ffmpeg(facts(ffmpeg: noHEVC))?.detail.hasSuffix("It encodes H.264, and has no libx265 for HEVC, which only exports that ask for it need.") == true)
+
+    var noH264 = both
+    noH264.encoders = ["libopenh264"]
+    noH264.version = nil
+    let weak = Doctor.ffmpeg(facts(ffmpeg: noH264))
+    #expect(weak?.outcome == .warn)
+    #expect(weak?.detail.hasPrefix("ffmpeg at /usr/bin/ffmpeg") == true)
+    #expect(weak?.fix == "Install an ffmpeg built with libx264, such as your distribution's ffmpeg package.")
+}
+
+@Test func doctorOnLinuxWarnsWithoutFFmpeg() {
+    let missing = Doctor.ffmpeg(facts(ffmpeg: Doctor.FFmpegFacts(ffmpeg: nil, ffprobe: nil)))
+    #expect(missing?.outcome == .warn)
+    #expect(missing?.detail == "Shot reads, trims and joins video with ffmpeg and ffprobe, and can't find ffmpeg or ffprobe.")
+    #expect(missing?.fix == "Install ffmpeg (sudo apt install ffmpeg on Debian and Ubuntu), or set SHOT_FFMPEG and SHOT_FFPROBE to where they are.")
+    let noProbe = Doctor.ffmpeg(facts(ffmpeg: Doctor.FFmpegFacts(ffmpeg: "/usr/bin/ffmpeg", ffprobe: nil)))
+    #expect(noProbe?.detail.hasSuffix("can't find ffprobe.") == true)
+    // Video isn't on Linux yet, so doctor still passes.
+    #expect(Doctor.json(Doctor.checks(facts(ffmpeg: Doctor.FFmpegFacts(ffmpeg: nil, ffprobe: nil))))["ok"] == .bool(true))
 }
