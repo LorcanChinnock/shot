@@ -5,8 +5,7 @@ extension AgentTools {
     /// first frame. `marks` is the app's `RecordingMarks` store, whose marks the key frames show, and `projects` its
     /// project store, which keeps what the tools make, and `textIndex` the text the app has read from screenshots, which
     /// `list_captures` searches. `agent` sends a request to the running app, for the tools that capture. `codec` reads and
-    /// writes the images, and they're drawn on `canvasType` canvases; `reader` reads the videos, `assembler` cuts them
-    /// and `writer` encodes those it draws.
+    /// writes the images, and they're drawn on `canvasType` canvases.
     public static func live(
         folder: URL,
         marks: URL? = nil,
@@ -14,9 +13,6 @@ extension AgentTools {
         textIndex: @escaping @Sendable () -> TextIndex = { TextIndex() },
         codec: any ImageCoding,
         canvasType: any Canvas.Type,
-        reader: any VideoReader,
-        assembler: any VideoAssembler,
-        writer: any VideoWriter,
         agent: @escaping @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue] = { _ throws(ShotCommandError) in throw .unavailable("can't reach Shot from here") }
     ) -> AgentTools {
         var tools = AgentTools(
@@ -25,16 +21,16 @@ extension AgentTools {
                 Gallery.items(in: folder).map { AgentCaptures.Entry(url: $0.url, isVideo: $0.kind == .video, date: $0.date, bytes: $0.bytes, modified: $0.modified) }
             },
             preview: { entry in
-                entry.isVideo ? await videoPreview(of: entry.url, codec: codec, reader: reader) : imagePreview(of: entry.url, codec: codec)
+                entry.isVideo ? await videoPreview(of: entry.url, codec: codec) : imagePreview(of: entry.url, codec: codec)
             },
             record: { entry in
                 entry.isVideo ? nil : codec.record(ofFileAt: entry.url)
             },
             run: { command, origin throws(ShotCommandError) in
-                try await ShotCommands.run(command, projects: projects, origin: origin, codec: codec, canvasType: canvasType, reader: reader, assembler: assembler, writer: writer)
+                try await ShotCommands.run(command, projects: projects, origin: origin, codec: codec, canvasType: canvasType)
             },
             frames: { entry, count throws(ShotCommandError) in
-                try await keyFrames(of: entry.url, count: count, marks: marks.map { RecordingMarks.marks(for: entry.url, in: $0) } ?? [], codec: codec, canvasType: canvasType, reader: reader)
+                try await keyFrames(of: entry.url, count: count, marks: marks.map { RecordingMarks.marks(for: entry.url, in: $0) } ?? [], codec: codec, canvasType: canvasType)
             },
             textIndex: textIndex,
             zoom: { entry, rect throws(ShotCommandError) in
@@ -96,9 +92,9 @@ extension AgentTools {
     /// where the picture changes, fewer of those when they'd go over a dozen in all. What's said in its sound follows the
     /// frame on screen as each phrase starts. Frames are compared on `canvasType` canvases.
     static func keyFrames(
-        of url: URL, count: Int, marks: [RecordingMark] = [], codec: any ImageCoding, canvasType: any Canvas.Type, reader: any VideoReader
+        of url: URL, count: Int, marks: [RecordingMark] = [], codec: any ImageCoding, canvasType: any Canvas.Type
     ) async throws(ShotCommandError) -> [MCPServer.Content] {
-        guard let media = try await ShotCommands.probe(url, reader: reader), media.size != nil else {
+        guard let media = await ShotCommands.probe(url), media.size != nil else {
             throw .data("Couldn't read \(url.lastPathComponent) as a video.")
         }
         async let heard = narration(of: url, hasAudio: media.hasAudio)
@@ -107,11 +103,11 @@ extension AgentTools {
         let keyFrames: [RecordingMark.KeyFrame]
         let frames: [KeyFrameExtractor.Frame]
         do {
-            let changes = try await KeyFrameExtractor.changeTimes(in: url, duration: media.duration, count: RecordingMark.changeCount(count, marked: marked.count, limit: limit), canvasType: canvasType, reader: reader)
+            let changes = try await KeyFrameExtractor.changeTimes(in: url, duration: media.duration, count: RecordingMark.changeCount(count, marked: marked.count, limit: limit), canvasType: canvasType)
             keyFrames = RecordingMark.merge(changes: changes, marked: marked)
-            frames = try await KeyFrameExtractor.frames(of: url, at: keyFrames.map(\.time), maxWidth: 1024, reader: reader)
+            frames = try await KeyFrameExtractor.frames(of: url, at: keyFrames.map(\.time), maxWidth: 1024)
         } catch {
-            throw ShotCommands.failure(error) { .io("Couldn't read the frames of \(url.lastPathComponent): \($0)") }
+            throw .io("Couldn't read the frames of \(url.lastPathComponent): \(error.localizedDescription)")
         }
         var content: [MCPServer.Content] = []
         let shown = marked.reduce(0) { $0 + $1.labels.count }
@@ -170,15 +166,9 @@ extension AgentTools {
     }
 
     /// A frame from early on, where a recording has usually settled, plus how long it runs.
-    static func videoPreview(of url: URL, codec: any ImageCoding, reader: any VideoReader) async -> [MCPServer.Content] {
-        let media: ImportedMedia
-        do {
-            guard let probed = try await ShotCommands.probe(url, reader: reader) else {
-                return [.text("Couldn't read \(url.lastPathComponent) as a video.")]
-            }
-            media = probed
-        } catch {
-            return [.text("Couldn't read \(url.lastPathComponent): \(error.message)")]
+    static func videoPreview(of url: URL, codec: any ImageCoding) async -> [MCPServer.Content] {
+        guard let media = await ShotCommands.probe(url) else {
+            return [.text("Couldn't read \(url.lastPathComponent) as a video.")]
         }
         var content: [MCPServer.Content] = []
         let seconds = min(1, media.duration / 2)
@@ -189,7 +179,7 @@ extension AgentTools {
         about += media.hasAudio ? ", with sound." : ", without sound."
         if media.size != nil {
             var frame: PlatformImage?
-            try? await reader.readFrames(of: url, at: [seconds], maxSize: CGSize(width: 1568, height: 1568), tolerance: nil) { frame = try? $0.decoded.get().image }
+            try? await AVVideoReader.readFrames(of: url, at: [seconds], maxSize: CGSize(width: 1568, height: 1568), tolerance: nil) { frame = try? $0.decoded.get().image }
             if let frame, let jpeg = codec.previewJPEG(of: frame) {
                 content.append(.image(data: jpeg.base64EncodedString(), mimeType: "image/jpeg"))
                 about += " The image is its frame at \(String(format: "%.1f", seconds)) seconds."

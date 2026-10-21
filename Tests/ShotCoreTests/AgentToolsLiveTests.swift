@@ -4,8 +4,7 @@ import Testing
 
 private func live() -> AgentTools {
     AgentTools.live(
-        folder: URL(fileURLWithPath: "/shots"), codec: StandInCodec(), canvasType: UnusedCanvas.self, reader: UnusedVideo(), assembler: UnusedVideo(),
-        writer: UnusedVideo()
+        folder: URL(fileURLWithPath: "/shots"), codec: StandInCodec(), canvasType: UnusedCanvas.self
     )
 }
 
@@ -19,8 +18,7 @@ private func live() -> AgentTools {
     index.set("Invoice total", for: TextIndex.File(path: "/shots/Shot.png", bytes: 100, modified: .distantPast))
     let read = index
     let tools = AgentTools.live(
-        folder: URL(fileURLWithPath: "/shots"), textIndex: { read }, codec: StandInCodec(), canvasType: UnusedCanvas.self, reader: UnusedVideo(),
-        assembler: UnusedVideo(), writer: UnusedVideo()
+        folder: URL(fileURLWithPath: "/shots"), textIndex: { read }, codec: StandInCodec(), canvasType: UnusedCanvas.self
     )
     #expect(tools.textIndex() == read)
     #expect(live().textIndex() == TextIndex())

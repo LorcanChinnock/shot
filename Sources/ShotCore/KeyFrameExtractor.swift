@@ -16,15 +16,15 @@ public enum KeyFrameExtractor {
     /// The thumbnails compared, small enough to ignore noise and fast to decode.
     static let thumbnailSize = (width: 64, height: 36)
 
-    /// The times of the `count` frames that show what happens in the video at `url`, which is `duration` long, read by `reader`
-    /// and compared on `canvasType` canvases.
-    public static func changeTimes(in url: URL, duration: Double, count: Int, canvasType: any Canvas.Type, reader: any VideoReader) async throws -> [Double] {
+    /// The times of the `count` frames that show what happens in the video at `url`, which is `duration` long, compared on
+    /// `canvasType` canvases.
+    public static func changeTimes(in url: URL, duration: Double, count: Int, canvasType: any Canvas.Type) async throws -> [Double] {
         let samples = min(maximumSamples, max(2, Int(duration * sampleRate) + 1))
         let last = max(0, duration - 0.05)
         let times = (0 ..< samples).map { last * Double($0) / Double(samples - 1) }
         var thumbnails: [Double: [UInt8]] = [:]
         var actual: [Double: Double] = [:]
-        try await reader.readFrames(of: url, at: times, maxSize: CGSize(width: 160, height: 160), tolerance: last / Double(samples - 1) / 2) { frame in
+        try await AVVideoReader.readFrames(of: url, at: times, maxSize: CGSize(width: 160, height: 160), tolerance: last / Double(samples - 1) / 2) { frame in
             try Task.checkCancellation()
             // A frame that won't decode counts as no change rather than failing the whole video.
             if let (time, image) = try? frame.decoded.get() {
@@ -39,10 +39,10 @@ public enum KeyFrameExtractor {
         return FramePicker.pick(differences: differences, times: times, count: count).map { actual[times[$0]] ?? times[$0] }
     }
 
-    /// The frames at `times`, read by `reader`, at most `maxWidth` wide and never enlarged, decoded exactly there.
-    public static func frames(of url: URL, at times: [Double], maxWidth: Int, reader: any VideoReader) async throws -> [Frame] {
+    /// The frames at `times`, at most `maxWidth` wide and never enlarged, decoded exactly there.
+    public static func frames(of url: URL, at times: [Double], maxWidth: Int) async throws -> [Frame] {
         var frames: [Frame] = []
-        try await reader.readFrames(of: url, at: times, maxSize: CGSize(width: maxWidth, height: 0), tolerance: 0) { frame in
+        try await AVVideoReader.readFrames(of: url, at: times, maxSize: CGSize(width: maxWidth, height: 0), tolerance: 0) { frame in
             try Task.checkCancellation()
             let (time, image) = try frame.decoded.get()
             frames.append(Frame(time: time, image: image))

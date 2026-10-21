@@ -65,18 +65,18 @@ extension CompositionBuilder {
 
 extension ProjectExporter {
     public static func export(_ project: Project, to output: URL, as fileType: AVFileType = .mp4) async throws {
-        try await export(project, to: output, as: fileType.rawValue, canvasType: CGCanvas.self, writer: AVVideoWriter())
+        try await export(project, to: output, as: fileType, canvasType: CGCanvas.self)
     }
 }
 
 extension VideoExportPlan {
     @discardableResult
     public func run(to output: URL, progress: @Sendable (Double) -> Void = { _ in }) async throws -> Outcome {
-        try await run(to: output, canvasType: CGCanvas.self, reader: AVVideoReader(), assembler: AVVideoAssembler(), writer: AVVideoWriter(), progress: progress)
+        try await run(to: output, canvasType: CGCanvas.self, progress: progress)
     }
 
     public func estimate() async throws -> Int {
-        try await estimate(canvasType: CGCanvas.self, reader: AVVideoReader())
+        try await estimate(canvasType: CGCanvas.self)
     }
 }
 
@@ -87,15 +87,14 @@ extension VersionWriter {
         origin: ProjectOrigin = ProjectOrigin(via: .app), progress: @Sendable (Double) -> Void = { _ in }
     ) async throws -> VideoExportPlan.Outcome {
         try await writeVideo(
-            plan, of: project, original: original, to: output, projects: projects, origin: origin, canvasType: CGCanvas.self, reader: AVVideoReader(),
-            assembler: AVVideoAssembler(), writer: AVVideoWriter(), progress: progress
+            plan, of: project, original: original, to: output, projects: projects, origin: origin, canvasType: CGCanvas.self, progress: progress
         )
     }
 }
 
 extension KeyFrameExtractor {
     public static func changeTimes(in url: URL, duration: Double, count: Int) async throws -> [Double] {
-        try await changeTimes(in: url, duration: duration, count: count, canvasType: CGCanvas.self, reader: AVVideoReader())
+        try await changeTimes(in: url, duration: duration, count: count, canvasType: CGCanvas.self)
     }
 
     /// `image` drawn into a small grayscale bitmap, as bytes.
@@ -122,23 +121,8 @@ extension GIFExporter {
         speed: Double = 1,
         progress: @Sendable (Double) -> Void = { _ in }
     ) async throws -> Result {
-        try await export(videoURL: videoURL, to: outputURL, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, reader: AVVideoReader(), progress: progress)
-    }
-
-    @discardableResult
-    public static func export(
-        videoURL: URL,
-        to outputURL: URL,
-        range: TrimRange? = nil,
-        cuts: CutList = CutList(),
-        fps: Double = 12,
-        maxWidth: CGFloat? = 720,
-        speed: Double = 1,
-        reader: any VideoReader,
-        progress: @Sendable (Double) -> Void = { _ in }
-    ) async throws -> Result {
         try await export(
-            videoURL: videoURL, to: outputURL, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, canvasType: CGCanvas.self, reader: reader,
+            videoURL: videoURL, to: outputURL, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, canvasType: CGCanvas.self,
             progress: progress
         )
     }
@@ -153,20 +137,16 @@ extension GIFExporter {
         speed: Double = 1,
         progress: @Sendable (Double) -> Void = { _ in }
     ) async throws -> Result {
-        try await export(CompositionFrames(composition), to: outputURL, fps: fps, maxWidth: maxWidth, speed: speed, canvasType: CGCanvas.self, progress: progress)
-    }
-
-    public static func estimatedSize(of videoURL: URL, range: TrimRange? = nil, cuts: CutList = CutList(), fps: Double, maxWidth: CGFloat?, speed: Double = 1) async throws -> Int {
-        try await estimatedSize(of: videoURL, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, reader: AVVideoReader())
+        try await export(VideoFrames(composition), to: outputURL, fps: fps, maxWidth: maxWidth, speed: speed, canvasType: CGCanvas.self, progress: progress)
     }
 
     public static func estimatedSize(
-        of videoURL: URL, range: TrimRange? = nil, cuts: CutList = CutList(), fps: Double, maxWidth: CGFloat?, speed: Double = 1, reader: any VideoReader
+        of videoURL: URL, range: TrimRange? = nil, cuts: CutList = CutList(), fps: Double, maxWidth: CGFloat?, speed: Double = 1
     ) async throws -> Int {
-        try await estimatedSize(of: videoURL, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, canvasType: CGCanvas.self, reader: reader)
+        try await estimatedSize(of: videoURL, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, canvasType: CGCanvas.self)
     }
 
     public static func estimatedSize(of composition: ProjectComposition, fps: Double, maxWidth: CGFloat?, speed: Double = 1) async throws -> Int {
-        try await estimatedSize(of: CompositionFrames(composition), fps: fps, maxWidth: maxWidth, speed: speed, canvasType: CGCanvas.self)
+        try await estimatedSize(of: VideoFrames(composition), fps: fps, maxWidth: maxWidth, speed: speed, canvasType: CGCanvas.self)
     }
 }

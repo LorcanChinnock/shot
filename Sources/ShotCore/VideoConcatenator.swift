@@ -26,10 +26,10 @@ public enum VideoConcatenator {
         public var files: [URL] { [system, microphone] }
     }
 
-    /// Joins recording segments end to end through `assembler` without re-encoding the video; one segment with nothing
+    /// Joins recording segments end to end without re-encoding the video; one segment with nothing
     /// muted is moved as is. `muted` holds stretches of the joined recording, in seconds, that become silent.
     /// With `audio`, one per segment, the segments' own audio is replaced by a mix of those files, and only the microphone is muted.
-    public static func concatenate(_ segments: [URL], audio: [SegmentAudio] = [], to output: URL, muting muted: CutList = CutList(), assembler: any VideoAssembler) async throws {
+    public static func concatenate(_ segments: [URL], audio: [SegmentAudio] = [], to output: URL, muting muted: CutList = CutList()) async throws {
         guard let first = segments.first else {
             throw ConcatError.noSegments
         }
@@ -40,7 +40,7 @@ public enum VideoConcatenator {
             try FileManager.default.moveItem(at: first, to: output)
             return
         }
-        try await assembler.concatenate(segments, audio: audio, to: output, muting: muted)
+        try await AVVideoAssembler.concatenate(segments, audio: audio, to: output, muting: muted)
         for url in segments + audio.flatMap(\.files) {
             try? FileManager.default.removeItem(at: url)
         }

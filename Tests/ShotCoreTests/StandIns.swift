@@ -63,23 +63,3 @@ struct StandInCodec: ImageCoding {
     func png(from image: PlatformImage) -> Data? { nil }
     func image(fromPNG data: Data) -> PlatformImage? { image }
 }
-
-struct UnusedVideo: VideoReader, VideoAssembler, VideoWriter {
-    func info(of url: URL) async throws -> ImportedMedia { throw CocoaError(.featureUnsupported) }
-    func bitRates(of url: URL) async throws -> (video: Double, audio: Double) { throw CocoaError(.featureUnsupported) }
-    func syncTimes(atOrBefore times: [Double], in url: URL) async throws -> [Double]? { throw CocoaError(.featureUnsupported) }
-    func readFrames(of url: URL, at times: [Double], maxSize: CGSize, tolerance: Double?, _ body: (VideoFrame) throws -> Void) async throws {
-        throw CocoaError(.featureUnsupported)
-    }
-    func frames(of project: Project, canvasType: any Canvas.Type) async throws -> any VideoFrames { throw CocoaError(.featureUnsupported) }
-    func readMonoSamples(of url: URL, sampleRate: Double, _ body: ([Float]) throws -> Void) async throws { throw CocoaError(.featureUnsupported) }
-    func trim(_ input: URL, kept: [TrimRange], speed: Double, muted: Bool, to output: URL, as fileType: String?) async throws -> Bool {
-        throw CocoaError(.featureUnsupported)
-    }
-    func concatenate(_ segments: [URL], audio: [VideoConcatenator.SegmentAudio], to output: URL, muting muted: CutList) async throws {
-        throw CocoaError(.featureUnsupported)
-    }
-    func write(_ project: Project, to output: URL, as fileType: String, canvasType: any Canvas.Type, codec: (_ frameRate: Int) -> VideoCodec) async throws {
-        throw CocoaError(.featureUnsupported)
-    }
-}
