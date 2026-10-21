@@ -266,7 +266,8 @@ enum ShotCLI {
             version: version(of: nil), settingsFile: LinuxSettings.file(suite: fallbackSuite).path,
             sessionType: ProcessInfo.processInfo.environment["XDG_SESSION_TYPE"], agentCapture: Preferences(store: defaultsStore(app: nil)).agentCapture,
             socketPath: socket.path, listening: listening, status: status, folder: folder.path, folderExists: exists, folderError: folderError,
-            captures: captures, colorEmoji: PangoShaper.hasColorEmoji, screenshotPortal: LinuxScreen.screenshotPortal()
+            captures: captures, colorEmoji: PangoShaper.hasColorEmoji, screenshotPortal: LinuxScreen.screenshotPortal(),
+            ffmpeg: await FFmpegTools.doctorFacts()
         )
     }
 

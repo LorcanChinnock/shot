@@ -1,7 +1,7 @@
 import Foundation
 
 // ShotCore's calls that code images, draw or read video take their backends. On Linux they're PNGJPEGCodec,
-// CairoCanvas and, until ffmpeg's come with #656, NoVideo, so these give ShotCLI and the tests each call without them,
+// CairoCanvas and, until the video commands come with #753, NoVideo, so these give ShotCLI and the tests each call without them,
 // as ShotCoreApple's do on a Mac.
 
 extension ProjectStore {

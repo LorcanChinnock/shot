@@ -173,13 +173,16 @@ func hasTone(atSource time: Double) -> Bool {
     Int(time) % 2 == 0
 }
 
-/// A 320 × 240, 30 fps video whose frame `n` is gray level `n`, with a 440 Hz tone during even seconds.
-func writeTimedRecording(to url: URL, seconds: Int) async throws {
-    let width = 320, height = 240, fps = 30, sampleRate = 44100
+/// A 320 × 240, 30 fps video whose frame `n` is gray level `n` times `grayStep`, with a 440 Hz tone during even seconds,
+/// and a sync frame at least every `keyFrameInterval` frames when that's given.
+func writeTimedRecording(to url: URL, seconds: Int, width: Int = 320, height: Int = 240, grayStep: Int = 1, keyFrameInterval: Int? = nil) async throws {
+    let fps = 30, sampleRate = 44100
     let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
-    let video = AVAssetWriterInput(mediaType: .video, outputSettings: [
-        AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: width, AVVideoHeightKey: height,
-    ])
+    var settings: [String: Any] = [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: width, AVVideoHeightKey: height]
+    if let keyFrameInterval {
+        settings[AVVideoCompressionPropertiesKey] = [AVVideoMaxKeyFrameIntervalKey: keyFrameInterval]
+    }
+    let video = AVAssetWriterInput(mediaType: .video, outputSettings: settings)
     video.expectsMediaDataInRealTime = true
     let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: video, sourcePixelBufferAttributes: [
         kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA, kCVPixelBufferWidthKey as String: width, kCVPixelBufferHeightKey as String: height,
@@ -218,7 +221,7 @@ func writeTimedRecording(to url: URL, seconds: Int) async throws {
         CVPixelBufferPoolCreatePixelBuffer(nil, try #require(adaptor.pixelBufferPool), &buffer)
         let pixels = try #require(buffer)
         CVPixelBufferLockBaseAddress(pixels, [])
-        memset(CVPixelBufferGetBaseAddress(pixels), Int32(frame), CVPixelBufferGetDataSize(pixels))
+        memset(CVPixelBufferGetBaseAddress(pixels), Int32(frame * grayStep), CVPixelBufferGetDataSize(pixels))
         CVPixelBufferUnlockBaseAddress(pixels, [])
         adaptor.append(pixels, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: CMTimeScale(fps)))
     }

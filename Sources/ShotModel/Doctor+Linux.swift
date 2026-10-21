@@ -28,11 +28,13 @@ extension Doctor {
         /// The version of the desktop portal's Screenshot interface, or why there's none, in a Wayland session; `nil` in
         /// any other.
         public var screenshotPortal: Result<Int, ShotCommandError>?
+        /// The ffmpeg and ffprobe that read, trim and join video.
+        public var ffmpeg: FFmpegFacts?
 
         public init(
             version: String, settingsFile: String, sessionType: String?, agentCapture: Bool, socketPath: String, listening: Bool,
             status: Result<[String: JSONValue], ShotCommandError>?, folder: String, folderExists: Bool, folderError: String?, captures: Int,
-            colorEmoji: Bool, screenshotPortal: Result<Int, ShotCommandError>? = nil
+            colorEmoji: Bool, screenshotPortal: Result<Int, ShotCommandError>? = nil, ffmpeg: FFmpegFacts? = nil
         ) {
             self.version = version
             self.settingsFile = settingsFile
@@ -47,6 +49,22 @@ extension Doctor {
             self.captures = captures
             self.colorEmoji = colorEmoji
             self.screenshotPortal = screenshotPortal
+            self.ffmpeg = ffmpeg
+        }
+    }
+
+    /// Where `ffmpeg` and `ffprobe` are, when they're found, ffmpeg's version, and the encoders it has.
+    public struct FFmpegFacts: Equatable, Sendable {
+        public var ffmpeg: String?
+        public var ffprobe: String?
+        public var version: String?
+        public var encoders: Set<String>
+
+        public init(ffmpeg: String?, ffprobe: String?, version: String? = nil, encoders: Set<String> = []) {
+            self.ffmpeg = ffmpeg
+            self.ffprobe = ffprobe
+            self.version = version
+            self.encoders = encoders
         }
     }
 
@@ -65,7 +83,7 @@ extension Doctor {
     ]
 
     public static func checks(_ facts: LinuxFacts) -> [Check] {
-        [platform(facts), portal(facts), linuxAgents(facts), serve(facts), notOnLinuxYet, macOnly, emoji(facts), linuxFolder(facts)].compactMap { $0 }
+        [platform(facts), portal(facts), linuxAgents(facts), serve(facts), ffmpeg(facts), notOnLinuxYet, macOnly, emoji(facts), linuxFolder(facts)].compactMap { $0 }
     }
 
     static func platform(_ facts: LinuxFacts) -> Check {
@@ -139,6 +157,27 @@ extension Doctor {
             check.fix = stop
         }
         return check
+    }
+
+    /// Whether ffmpeg and ffprobe are installed, which video needs, and whether ffmpeg encodes H.264, which trimming
+    /// needs when it can't copy the video, and HEVC, which only exports that ask for it need.
+    static func ffmpeg(_ facts: LinuxFacts) -> Check? {
+        guard let ffmpeg = facts.ffmpeg else {
+            return nil
+        }
+        guard let program = ffmpeg.ffmpeg, let probe = ffmpeg.ffprobe else {
+            let missing = [ffmpeg.ffmpeg == nil ? "ffmpeg" : nil, ffmpeg.ffprobe == nil ? "ffprobe" : nil].compactMap { $0 }.joined(separator: " or ")
+            return Check("ffmpeg", .warn, "Shot reads, trims and joins video with ffmpeg and ffprobe, and can't find \(missing).", fix: FFmpeg.install)
+        }
+        let detail = "\(ffmpeg.version.map { "ffmpeg \($0)" } ?? "ffmpeg") at \(program), with ffprobe at \(probe), reads, trims and joins video."
+        guard ffmpeg.encoders.contains(FFmpeg.h264Encoder) else {
+            return Check("ffmpeg", .warn, detail + " It has no \(FFmpeg.h264Encoder), so it can't encode H.264, which trimming does when it can't copy the video.",
+                         fix: "Install an ffmpeg built with \(FFmpeg.h264Encoder), such as your distribution's ffmpeg package.")
+        }
+        guard ffmpeg.encoders.contains(FFmpeg.hevcEncoder) else {
+            return Check("ffmpeg", .pass, detail + " It encodes H.264, and has no \(FFmpeg.hevcEncoder) for HEVC, which only exports that ask for it need.")
+        }
+        return Check("ffmpeg", .pass, detail + " It encodes H.264 and HEVC.")
     }
 
     static let notOnLinuxYet = Check(
