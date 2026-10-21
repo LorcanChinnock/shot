@@ -1,4 +1,4 @@
-import ShotCoreApple
+import ShotCore
 import SwiftUI
 
 /// What the Style popover edits: the photo editor's selection or screenshot, or the video editor's selected clip. Sizes are

@@ -1,4 +1,3 @@
-#if canImport(CoreGraphics) && canImport(Vision)
 import CoreGraphics
 import Foundation
 import Vision
@@ -39,4 +38,3 @@ public enum TextRecognizer {
         return try await recognize(image)
     }
 }
-#endif

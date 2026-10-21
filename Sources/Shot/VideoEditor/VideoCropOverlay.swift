@@ -1,5 +1,5 @@
 import AppKit
-import ShotCoreApple
+import ShotCore
 import SwiftUI
 
 /// Crop mode over the player: the frame's crop on the canvas, or a clip's on its picture, turned and scaled with it.

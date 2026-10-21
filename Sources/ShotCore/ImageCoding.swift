@@ -16,8 +16,8 @@ public struct ImageFileInfo: Equatable, Sendable {
 
 /// Reads and writes image files: PNG and JPEG, plus whatever else the platform decodes, such as HEIC and GIF on a Mac.
 /// The scale goes in the file as its DPI, 72 × scale, so a Retina capture opens at point size, and `ImageMetadata` goes
-/// with it. It also codes the images a project or a copied annotation holds (`PNGCoding`). ShotCoreApple's `ImageIOCodec`
-/// is the one there is; ShotCore code takes one as `codec`.
+/// with it. It also codes the images a project or a copied annotation holds (`PNGCoding`). `ImageIOCodec` is the
+/// one there is; ShotCore code takes one as `codec`.
 public protocol ImageCoding: PNGCoding {
     /// PNG, or JPEG at `quality` from 0 to 1.
     func encode(_ bitmap: Bitmap, as format: ImageFormat, quality: Double, metadata: ImageMetadata) -> Data?

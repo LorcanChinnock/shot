@@ -1,7 +1,7 @@
 import AppKit
 import os
 import ServiceManagement
-import ShotCoreApple
+import ShotCore
 import SwiftUI
 
 private let log = Logger.shot("welcome")

@@ -2,7 +2,7 @@ import AppKit
 import Carbon.HIToolbox
 import os
 import Observation
-import ShotCoreApple
+import ShotCore
 import SwiftUI
 
 private let log = Logger.shot("quick-access")

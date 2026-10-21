@@ -1,4 +1,3 @@
-#if canImport(AVFoundation)
 import AVFoundation
 
 /// Writes one live audio source to its own AAC file, which starts at the time given to `start(at:)`.
@@ -11,9 +10,9 @@ public final class AudioFileWriter: @unchecked Sendable {
 
         public var errorDescription: String? {
             switch self {
-            case .unsupportedFormat: shotLocalized("The audio's format can't be written")
-            case .cannotAddInput: shotLocalized("Couldn't add the audio to its file")
-            case .cannotStart: shotLocalized("Couldn't start writing the audio file")
+            case .unsupportedFormat: String(localized: "The audio's format can't be written")
+            case .cannotAddInput: String(localized: "Couldn't add the audio to its file")
+            case .cannotStart: String(localized: "Couldn't start writing the audio file")
             }
         }
     }
@@ -131,4 +130,3 @@ public final class AudioFileWriter: @unchecked Sendable {
         self.input = input
     }
 }
-#endif

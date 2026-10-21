@@ -288,8 +288,8 @@ import Testing
     }
 }
 
-/// Every test's `remove()` synchronizes, which on Linux writes out every store in the process, so a key one test removes
-/// must stay removed when another test synchronizes in between (#777).
+/// Every test's `remove()` synchronizes, so a key one test removes must stay removed when another test synchronizes in
+/// between (#777).
 @Test func aTestStoreKeepsARemovedKeyRemovedWhenAnotherSynchronizes() throws {
     let suite = try TestDefaults()
     let other = try TestDefaults()

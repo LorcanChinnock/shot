@@ -1,13 +1,10 @@
 import Foundation
-#if canImport(UniformTypeIdentifiers)
 import UniformTypeIdentifiers
-#endif
 
 public enum GalleryKind: String, Sendable {
     case image, video, gif
 
     public init?(fileExtension: String) {
-        #if canImport(UniformTypeIdentifiers)
         guard let type = UTType(filenameExtension: fileExtension) else {
             return nil
         }
@@ -20,27 +17,7 @@ public enum GalleryKind: String, Sendable {
         } else {
             return nil
         }
-        #else
-        self.init(listedExtension: fileExtension)
-        #endif
     }
-
-    /// The kind by extension alone, for Linux, which has no `UTType`. A Mac knows more types, but agrees on these.
-    init?(listedExtension: String) {
-        let lowercased = listedExtension.lowercased()
-        if lowercased == "gif" {
-            self = .gif
-        } else if Self.videoExtensions.contains(lowercased) {
-            self = .video
-        } else if Self.imageExtensions.contains(lowercased) {
-            self = .image
-        } else {
-            return nil
-        }
-    }
-
-    static let videoExtensions: Set<String> = ["mov", "mp4", "m4v"]
-    static let imageExtensions: Set<String> = ["png", "jpg", "jpeg", "heic", "heif", "tif", "tiff", "bmp", "webp"]
 
     /// GIFs are shown but have no editor.
     public var isEditable: Bool { self != .gif }
@@ -73,11 +50,11 @@ public enum GalleryFilter: String, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .all: shotLocalized("All")
-        case .screenshots: shotLocalized("Screenshots")
-        case .videos: shotLocalized("Videos")
-        case .gifs: shotLocalized("GIFs")
-        case .agents: shotLocalized("Made by agents")
+        case .all: String(localized: "All")
+        case .screenshots: String(localized: "Screenshots")
+        case .videos: String(localized: "Videos")
+        case .gifs: String(localized: "GIFs")
+        case .agents: String(localized: "Made by agents")
         }
     }
 
@@ -97,10 +74,10 @@ public enum GallerySort: String, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .newest: shotLocalized("Newest first")
-        case .oldest: shotLocalized("Oldest first")
-        case .name: shotLocalized("Name")
-        case .size: shotLocalized("Largest first")
+        case .newest: String(localized: "Newest first")
+        case .oldest: String(localized: "Oldest first")
+        case .name: String(localized: "Name")
+        case .size: String(localized: "Largest first")
         }
     }
 
@@ -186,10 +163,10 @@ public enum Gallery {
             return items.isEmpty ? [] : [GallerySection(title: "", items: items)]
         }
         let recent = [
-            (shotLocalized("Today"), calendar.dateInterval(of: .day, for: now)),
-            (shotLocalized("Yesterday"), calendar.date(byAdding: .day, value: -1, to: now).flatMap { calendar.dateInterval(of: .day, for: $0) }),
-            (shotLocalized("This Week"), calendar.dateInterval(of: .weekOfYear, for: now)),
-            (shotLocalized("This Month"), calendar.dateInterval(of: .month, for: now)),
+            (String(localized: "Today"), calendar.dateInterval(of: .day, for: now)),
+            (String(localized: "Yesterday"), calendar.date(byAdding: .day, value: -1, to: now).flatMap { calendar.dateInterval(of: .day, for: $0) }),
+            (String(localized: "This Week"), calendar.dateInterval(of: .weekOfYear, for: now)),
+            (String(localized: "This Month"), calendar.dateInterval(of: .month, for: now)),
         ].compactMap { title, interval in interval.map { (title: title, dates: $0.start..<$0.end) } }
         lazy var monthFormatter = {
             let formatter = DateFormatter()

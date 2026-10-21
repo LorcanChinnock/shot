@@ -1,6 +1,7 @@
 import Foundation
+import os
 
-private let log = ShotLog.shot("preferences")
+private let log = Logger.shot("preferences")
 
 public enum PreferenceKey {
     public static let playSound = "playSound"

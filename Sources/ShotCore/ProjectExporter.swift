@@ -7,8 +7,8 @@ public enum ProjectExporter {
 
         public var errorDescription: String? {
             switch self {
-            case .failed: shotLocalized("Couldn't export the video")
-            case .unsupportedFileType: shotLocalized("Can't write this kind of video")
+            case .failed: String(localized: "Couldn't export the video")
+            case .unsupportedFileType: String(localized: "Can't write this kind of video")
             }
         }
     }

@@ -1,7 +1,7 @@
 import Foundation
 
 extension ShotCommands {
-    /// `shot diff`: reads both images into bytes at `b`'s size, finds the changes with ShotModel's `ImageDiff`, and
+    /// `shot diff`: reads both images into bytes at `b`'s size, finds the changes with `ImageDiff`, and
     /// writes a dimmed copy of `b` with the changed pixels lit and boxed, as a new file beside `b`, drawing on `canvasType`
     /// canvases.
     static func diff(_ options: ShotCommand.DiffOptions, codec: any ImageCoding, canvasType: any Canvas.Type) throws(ShotCommandError) -> JSONValue {

@@ -4,8 +4,8 @@ extension AgentTools {
     /// The tools reading the captures in `folder`, as the gallery lists them. GIFs count as images: an agent sees their
     /// first frame. `marks` is the app's `RecordingMarks` store, whose marks the key frames show, and `projects` its
     /// project store, which keeps what the tools make, and `textIndex` the text the app has read from screenshots, which
-    /// `list_captures` searches. Without text recognition, as on Linux, there's no `find_text`. `agent` sends a request to the running app, for the tools that capture. `codec` reads
-    /// and writes the images, and they're drawn on `canvasType` canvases; `reader` reads the videos, `assembler` cuts them
+    /// `list_captures` searches. `agent` sends a request to the running app, for the tools that capture. `codec` reads and
+    /// writes the images, and they're drawn on `canvasType` canvases; `reader` reads the videos, `assembler` cuts them
     /// and `writer` encodes those it draws.
     public static func live(
         folder: URL,
@@ -42,7 +42,6 @@ extension AgentTools {
             },
             agent: agent
         )
-        #if canImport(CoreGraphics) && canImport(Vision)
         tools.text = { entry throws(ShotCommandError) in
             let read: CaptureText?
             do {
@@ -55,9 +54,6 @@ extension AgentTools {
             }
             return read
         }
-        #else
-        tools.unavailable = [findText]
-        #endif
         return tools
     }
 
@@ -153,21 +149,13 @@ extension AgentTools {
             return ([], nil)
         }
         let words: [Narration.Word]?
-        #if canImport(AVFoundation) && canImport(Speech)
         do {
             words = try await SpeechRecognizer.words(in: url)
         } catch {
             return ([], "Couldn't transcribe its sound: \(error.localizedDescription)")
         }
-        #else
-        words = nil
-        #endif
         guard let words else {
-            #if canImport(AVFoundation) && canImport(Speech)
             return ([], "Its sound isn't transcribed: that needs macOS 26 and a language with on-device speech recognition.")
-            #else
-            return ([], "Its sound isn't transcribed: that needs a Mac.")
-            #endif
         }
         let phrases = Narration.phrases(words)
         guard !phrases.isEmpty else {

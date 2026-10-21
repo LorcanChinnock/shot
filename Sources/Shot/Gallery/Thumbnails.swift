@@ -2,7 +2,7 @@ import AppKit
 import AVFoundation
 import ImageIO
 import Observation
-import ShotCoreApple
+import ShotCore
 
 final class Thumbnail: @unchecked Sendable {
     let image: NSImage

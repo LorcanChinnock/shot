@@ -8,8 +8,8 @@ public enum CompositionBuilder {
 
         public var errorDescription: String? {
             switch self {
-            case .noVideo(let name): shotLocalized("\(name) has no video to show")
-            case .cannotInsert(let name): shotLocalized("Couldn't add \(name) to the video")
+            case .noVideo(let name): String(localized: "\(name) has no video to show")
+            case .cannotInsert(let name): String(localized: "Couldn't add \(name) to the video")
             }
         }
     }

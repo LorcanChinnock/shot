@@ -1,6 +1,4 @@
-#if canImport(CoreGraphics)
 import CoreGraphics
-#endif
 import Foundation
 
 public enum AnnotationRenderer {
@@ -546,33 +544,22 @@ public enum AnnotationRenderer {
 /// What the spotlights dim, as `EditorDocument` gives it: a path on a Mac, where the app reads it too, and elsewhere a mask,
 /// since a `CanvasPath` can't be added to or subtracted from another.
 enum SpotlightDim {
-    #if canImport(CoreGraphics)
     case path(CGPath)
-    #endif
     /// White where it dims, covering `frame`, its top row at the frame's min y.
     case mask(PlatformImage, frame: CGRect)
 
     /// `doc`'s dim, made for drawing on `ctx`; `nil` when there are no spotlights.
     init?(_ doc: EditorDocument, on ctx: any Canvas) {
-        #if canImport(CoreGraphics)
         guard let path = doc.spotlightDimPath(shaper: type(of: ctx).shaper) else {
             return nil
         }
         self = .path(path)
-        #else
-        guard let (mask, frame) = doc.spotlightDimMask(shaper: type(of: ctx).shaper, canvasType: type(of: ctx), scale: ctx.pixelScale) else {
-            return nil
-        }
-        self = .mask(mask, frame: frame)
-        #endif
     }
 
     /// The smallest rect holding it.
     var bounds: CGRect {
         switch self {
-        #if canImport(CoreGraphics)
         case let .path(path): path.boundingBoxOfPath
-        #endif
         case let .mask(_, frame): frame
         }
     }
@@ -580,10 +567,8 @@ enum SpotlightDim {
     /// Fills it in a top-left-origin canvas with the fill colour, alpha and blend mode set.
     func fill(_ ctx: any Canvas) {
         switch self {
-        #if canImport(CoreGraphics)
         case let .path(path):
             ctx.fill(CanvasPath(path))
-        #endif
         case let .mask(_, frame):
             ctx.saveState()
             clip(ctx)
@@ -595,10 +580,8 @@ enum SpotlightDim {
     /// Clips a top-left-origin canvas to it.
     func clip(_ ctx: any Canvas) {
         switch self {
-        #if canImport(CoreGraphics)
         case let .path(path):
             ctx.clip(to: CanvasPath(path))
-        #endif
         case let .mask(mask, frame):
             // Upright, as `drawUpright` draws an image, since a mask is drawn like one.
             ctx.translateBy(x: 0, y: frame.maxY)

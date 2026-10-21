@@ -1,4 +1,4 @@
-import ShotCoreApple
+import ShotCore
 import SwiftUI
 
 /// Split, delete, snapping and zoom for the lanes.

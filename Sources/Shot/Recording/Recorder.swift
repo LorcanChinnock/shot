@@ -3,7 +3,7 @@ import AVFoundation
 import Observation
 import os
 import ScreenCaptureKit
-import ShotCoreApple
+import ShotCore
 
 private let log = Logger.shot("recording")
 

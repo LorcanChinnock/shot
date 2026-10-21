@@ -1,4 +1,3 @@
-#if canImport(AVFoundation) && canImport(CoreImage)
 import AVFoundation
 import CoreImage
 import Synchronization
@@ -34,7 +33,7 @@ extension CompositionBuilder {
         var frameRate: Float = 30
         for track in project.videoTracks {
             guard let target = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
-                throw BuildError.cannotInsert(shotLocalized("the video"))
+                throw BuildError.cannotInsert(String(localized: "the video"))
             }
             for clip in track.clips {
                 guard let source = try await asset(clip.source).loadTracks(withMediaType: .video).first else {
@@ -60,7 +59,7 @@ extension CompositionBuilder {
         var parameters: [AVMutableAudioMixInputParameters] = []
         for track in project.tracks where track.kind == .audio && !track.isMuted {
             guard let target = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else {
-                throw BuildError.cannotInsert(shotLocalized("the sound"))
+                throw BuildError.cannotInsert(String(localized: "the sound"))
             }
             let mix = AVMutableAudioMixInputParameters(track: target)
             for clip in track.clips {
@@ -345,4 +344,3 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
         requests.record(.cancelAll)
     }
 }
-#endif

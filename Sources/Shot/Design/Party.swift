@@ -1,6 +1,6 @@
 import AppKit
 import QuartzCore
-import ShotCoreApple
+import ShotCore
 import SwiftUI
 
 /// The hidden party mode, found on the About page: rainbow accents and confetti. It only touches Shot's own UI, never a

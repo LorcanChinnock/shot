@@ -2,7 +2,7 @@ import Foundation
 
 /// Cuts and joins video files without drawing them: trims, retimes and concatenates, mixing audio tracks where it has to,
 /// and copies the video samples as they are when it can. `VideoTrimmer` and `VideoConcatenator` check what they're asked
-/// and call it for the work. ShotCoreApple's `AVVideoAssembler` is the Mac's; ShotCore code takes one as `assembler`.
+/// and call it for the work. `AVVideoAssembler` is the one there is; ShotCore code takes one as `assembler`.
 public protocol VideoAssembler: Sendable {
     /// Writes the `kept` sections of `input`, of which there's at least one, end to end to `output`, replacing it, as
     /// `fileType`, a uniform type identifier such as `public.mpeg-4`, or else the input's own type. `speed` 2 plays it in

@@ -40,36 +40,10 @@ if [ -n "$hits" ]; then
     exit 1
 fi
 
-# ShotModel builds and tests on Linux, where only Foundation and the standard library exist. The Linux build is the
-# backstop; this names the cause first.
-hits=$(find Sources/ShotModel Tests/ShotModelTests -name '*.swift' -exec awk '
-    /^(@testable )?import / && !/^(@testable )?import (Foundation|Synchronization|Testing|ShotModel)$/ &&
-        !(/^import CoreGraphics$/ && prev == "#if canImport(CoreGraphics)") { print FILENAME ":" FNR ": " $0 }
-    { prev = $0 }' {} +)
+# ShotCore is everything with no window, so its logic is tested without one.
+hits=$(grep -rnE '^(@_exported |@testable )?import (AppKit|SwiftUI|Cocoa)$' Sources/ShotCore || true)
 if [ -n "$hits" ]; then
-    echo "ShotModel runs on Linux: import only Foundation, or CoreGraphics inside #if canImport(CoreGraphics). Apple-only code goes in ShotCore:"
-    echo "$hits"
-    exit 1
-fi
-
-# ShotCore builds and tests on Linux too. Its Apple framework calls move to ShotCoreApple behind protocols (#646), and
-# until then sit under #if canImport, so Linux compiles them out.
-hits=$(find Sources/ShotCore Tests/ShotCoreTests -name '*.swift' -exec awk '
-    FNR == 1 { depth = 0; guarded = 0 }
-    /^#if / { depth++; if (/^#if canImport\(/ && !guarded) guarded = depth }
-    /^#endif/ { if (guarded == depth) guarded = 0; depth-- }
-    /^(@_exported |@testable )?import / && !/^(@_exported |@testable )?import (Foundation|Synchronization|Testing|ShotModel|ShotCore)$/ &&
-        !guarded { print FILENAME ":" FNR ": " $0 }' {} +)
-if [ -n "$hits" ]; then
-    echo "ShotCore runs on Linux: put Apple framework imports, and the code that needs them, inside #if canImport(...), or in ShotCoreApple:"
-    echo "$hits"
-    exit 1
-fi
-
-# macOS jobs queue, since the free plan runs only 5 at once.
-hits=$(awk '/runs-on:.*macos/ && prev !~ /# macOS: / { print FILENAME ":" FNR ": " $0 } { prev = $0 }' .github/workflows/*.yml)
-if [ -n "$hits" ]; then
-    echo "Put a '# macOS: <reason>' comment above each macOS runs-on, saying why the job can't run on Linux:"
+    echo "ShotCore has no UI, so its logic can be tested without a window: AppKit and SwiftUI code goes in Sources/Shot:"
     echo "$hits"
     exit 1
 fi

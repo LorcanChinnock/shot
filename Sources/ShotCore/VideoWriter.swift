@@ -19,8 +19,8 @@ public enum VideoCodec: Sendable {
 }
 
 /// Draws a project and encodes it to a file: its pictures composited frame by frame with its annotations, and its audio
-/// tracks mixed. `ProjectExporter` picks the codec and calls it for the work. ShotCoreApple's `AVVideoWriter` is the
-/// Mac's; ShotCore code takes one as `writer`.
+/// tracks mixed. `ProjectExporter` picks the codec and calls it for the work. `AVVideoWriter` is the one there is;
+/// ShotCore code takes one as `writer`.
 public protocol VideoWriter: Sendable {
     /// Writes `project` to `output`, replacing it, as `fileType`, a uniform type identifier such as `public.mpeg-4`, drawn
     /// at its output size with its annotations on `canvasType` canvases. `codec` picks the encoding from the frame rate

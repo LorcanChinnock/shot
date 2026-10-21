@@ -1,4 +1,4 @@
-import ShotCoreApple
+import ShotCore
 import SwiftUI
 
 struct EditorRootView: View {

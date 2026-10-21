@@ -199,14 +199,7 @@ public enum ProjectStamp {
         try handle.seek(toOffset: fileSize)
         try handle.write(contentsOf: MovieStampBox.box(id: id))
         try handle.synchronize()
-        #if canImport(Darwin)
         _ = try FileManager.default.replaceItemAt(url, withItemAt: copy)
-        #else
-        // Linux Foundation's replaceItemAt moves the movie onto the copy, which the defer then removes.
-        guard rename(copy.path, url.path) == 0 else {
-            throw CocoaError(.fileWriteUnknown, userInfo: [NSFilePathErrorKey: url.path, NSUnderlyingErrorKey: POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)])
-        }
-        #endif
     }
 
     /// The movie's top-level boxes, as far as they're whole.
@@ -246,7 +239,6 @@ public enum ProjectStamp {
 
 extension ProjectFile {
     /// The file at `url` as it is now, with a bookmark to it unless `bookmark` is false; `nil` when it isn't there.
-    /// Linux Foundation has no bookmarks, so there a file is found again only where it was.
     public init?(at url: URL, bookmark: Bool = true) {
         let keys: Set<URLResourceKey> = [.isRegularFileKey, .volumeUUIDStringKey, .fileSizeKey, .contentModificationDateKey]
         // A URL caches what it read, so one kept across a rewrite of its file would report the old size and date.
@@ -256,15 +248,8 @@ extension ProjectFile {
             return nil
         }
         let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
-        #if canImport(Darwin)
         let bookmarkData = bookmark ? try? url.bookmarkData() : nil
         let volume = values.volumeUUIDString
-        #else
-        let bookmarkData: Data? = nil
-        // Linux Foundation reads no volume UUID, so the volume is its device number, without which a file that holds no
-        // ID, such as a GIF, couldn't keep a project.
-        let volume = values.volumeUUIDString ?? (attributes?[.systemNumber] as? NSNumber).map { "device-\($0.uint64Value)" }
-        #endif
         self.init(
             path: url.standardizedFileURL.path,
             bookmark: bookmarkData,
@@ -277,15 +262,11 @@ extension ProjectFile {
 
     /// Where the bookmark leads now, without asking to mount a disk; `nil` when it leads nowhere.
     public func resolvedBookmark() -> URL? {
-        #if canImport(Darwin)
         guard let bookmark else {
             return nil
         }
         var stale = false
         return try? URL(resolvingBookmarkData: bookmark, options: [.withoutUI, .withoutMounting], relativeTo: nil, bookmarkDataIsStale: &stale)
-        #else
-        return nil
-        #endif
     }
 
     /// The file now, wherever it went: where its bookmark leads, or else where it was.

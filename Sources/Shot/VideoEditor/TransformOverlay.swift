@@ -1,4 +1,4 @@
-import ShotCoreApple
+import ShotCore
 import SwiftUI
 
 /// Handles over the player for the selected video clip: drag the box to move it, a corner to scale it, the knob to rotate it,

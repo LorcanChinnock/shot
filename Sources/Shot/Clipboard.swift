@@ -1,5 +1,5 @@
 import AppKit
-import ShotCoreApple
+import ShotCore
 import UniformTypeIdentifiers
 
 struct SendableImage: @unchecked Sendable {

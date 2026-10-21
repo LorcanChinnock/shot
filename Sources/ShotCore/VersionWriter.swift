@@ -1,9 +1,10 @@
 import Foundation
+import os
 
-private let log = ShotLog.shot("projects")
+private let log = Logger.shot("projects")
 
 /// Writes an edit as a new file, so the image editor, the video editor and the `shot` commands name, draw and record
-/// a version the same way. The naming itself is `VersionNaming`, in ShotModel.
+/// a version the same way. The naming itself is `VersionNaming`.
 public enum VersionWriter {
     /// Why an image version couldn't be written.
     public enum Failure: Error {

@@ -29,7 +29,7 @@ Only `make dist` builds `Shot.app` with the update feed. Every other build is `S
 |---|---|
 | `make run` | Build, install to `/Applications/ShotDev.app`, and launch |
 | `make build` | `swift build`, without making an app |
-| `make test` | Run the `ShotModel`, `ShotCore` and `ShotCoreApple` unit tests |
+| `make test` | Run the unit tests in `Tests/ShotCoreTests` |
 | `make lint` | Check for code patterns that have caused bugs (`scripts/lint.sh`) and that the string catalog is up to date |
 | `make strings` | Add new strings to `Resources/Localizable.xcstrings` and drop unused ones |
 | `make perf` | Time the `ShotCore` paths that have [performance budgets](docs/performance.md) |
@@ -46,19 +46,15 @@ Only `make dist` builds `Shot.app` with the update feed. Every other build is `S
 ## Project layout
 
 ```
-Sources/ShotModel/    Pure logic that needs only Foundation: undo, keyframes,
-                      video trim and cuts, hotkeys, layout math
-Sources/ShotCore/     Pure logic that needs Apple frameworks: geometry, file naming, image
-                      encoding, annotations and rendering, redaction, GIF export, segment
-                      joining, preferences
-Sources/ShotCoreApple/ macOS only: the Apple implementations of ShotCore's protocols
+Sources/ShotCore/     Everything with no window: undo, keyframes, video trim and cuts,
+                      hotkeys, layout math, file naming, image encoding, annotations and
+                      rendering, redaction, GIF export, segment joining, agents and MCP,
+                      preferences
 Sources/Shot/         The app: capture, selection overlay, Quick Access, editor,
                       video editor, recording, gallery, settings, the welcome window,
                       the agent server (Agents/), and the design system
 Sources/ShotCLI/      The `shot` command and MCP server, bundled as shot-cli
-Tests/ShotModelTests/ ShotModel's Swift Testing suite
-Tests/ShotCoreTests/  ShotCore's tests that need no Apple framework
-Tests/ShotCoreAppleTests/ The tests of ShotCore's Apple-only code
+Tests/ShotCoreTests/  ShotCore's Swift Testing suite, and its performance budgets
 Resources/            Info.plist, the app icon and the string catalogs
 scripts/              Bundling, install, signing certificate, icon, lint, performance
                       checks, and the Homebrew cask
@@ -66,17 +62,16 @@ docs/                 Screenshots for the README and the user guide, and the dem
 site/                 The website (see site/README.md)
 ```
 
-If logic can be tested without a window, a display, or a permission, put it in `ShotModel` and add a test. If it needs an Apple framework, such as CoreText, AVFoundation or `CGPath`, put it in `ShotCore` instead, keeping the Apple part as thin as you can and inside `#if canImport(...)`, with its test in `ShotCoreAppleTests`. CI also runs the `ShotModel` and `ShotCore` tests on Linux, which keeps them portable. Shot is becoming cross-platform ([#646](https://github.com/LorcanChinnock/shot/issues/646)): ShotCore's Apple framework calls are moving behind protocols, with the Apple implementations in `ShotCoreApple`. `Shot` holds the AppKit and SwiftUI code that needs a real session.
+If logic can be tested without a window, a display, or a permission, put it in `ShotCore` and add a test in `Tests/ShotCoreTests`. ShotCore imports no AppKit or SwiftUI, and `make lint` checks that. `Shot` holds the AppKit and SwiftUI code that needs a real session.
 
 ## Strings and translations
 
-Shot's interface is in English, and every string it shows goes through `Resources/Localizable.xcstrings`, so it can be translated. Each build extracts the strings from `Sources/Shot`, `Sources/ShotCore` and `Sources/ShotCoreApple` (see `Package.swift`), and `make strings` adds the new ones to the catalog. `make lint` and CI fail while the catalog is out of date.
+Shot's interface is in English, and every string it shows goes through `Resources/Localizable.xcstrings`, so it can be translated. Each build extracts the strings from `Sources/Shot` and `Sources/ShotCore` (see `Package.swift`), and `make strings` adds the new ones to the catalog. `make lint` and CI fail while the catalog is out of date.
 
 A string reaches the catalog when it's a literal passed to an API that localizes:
 
 - SwiftUI's `Text`, `Button`, `Toggle` and the like, and Shot's own `brutalTip`, `Tile`, `SettingRow`, `BrutalChip`, `Toast` and other design components. A `String` variable passed to one of these is shown as it is, so a string that needs translating has to be localized where it's defined.
-- `String(localized: "…")`, for AppKit titles, alerts, panel messages and any `String` property that holds text the user reads.
-- `shotLocalized("…")` in `Sources/ShotCore`, which builds on Linux, where there's no `String(localized:)`. On a Mac it calls `String(localized:)`. On Linux it reads the English text from `Sources/ShotCore/LocalizableEnglish.swift`, a table `make strings` writes from the catalog. Commit that file with the catalog: `make lint` fails while either is out of date.
+- `String(localized: "…")`, for AppKit titles, alerts, panel messages, ShotCore's labels and errors, and any `String` property that holds text the user reads.
 
 Interpolate values into one string, such as `"Saved \(name)"`, rather than joining fragments, so a translator can reorder the words. Leave text that agents, the `shot` command or scripts read in English, and the same goes for log messages and file names.
 

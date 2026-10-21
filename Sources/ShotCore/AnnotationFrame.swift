@@ -1,4 +1,3 @@
-#if canImport(CoreImage)
 import CoreImage
 import Synchronization
 
@@ -165,4 +164,3 @@ extension AnnotationFrame {
         return target.makeImage().map { CIImage(cgImage: $0) }
     }
 }
-#endif

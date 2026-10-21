@@ -1,6 +1,6 @@
 import os
 import ScreenCaptureKit
-import ShotCoreApple
+import ShotCore
 
 private let log = Logger.shot("capture")
 

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Pulls still frames out of a video for an agent, which can't watch one: samples it a few times a second as tiny
-/// grayscale thumbnails to find where the picture changes (ShotModel's `FramePicker` does the picking), then decodes
+/// grayscale thumbnails to find where the picture changes (`FramePicker` does the picking), then decodes
 /// only the frames picked at full size.
 public enum KeyFrameExtractor {
     public struct Frame: @unchecked Sendable {

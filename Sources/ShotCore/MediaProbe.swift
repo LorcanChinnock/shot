@@ -7,8 +7,8 @@ public enum MediaProbe {
 
         public var errorDescription: String? {
             switch self {
-            case .unreadable(let name): shotLocalized("Can't open \(name)")
-            case .empty(let name): shotLocalized("\(name) has no video or sound")
+            case .unreadable(let name): String(localized: "Can't open \(name)")
+            case .empty(let name): String(localized: "\(name) has no video or sound")
             }
         }
     }
@@ -20,7 +20,7 @@ public enum MediaProbe {
         do {
             media = try await reader.info(of: url)
         } catch let ShotCommandError.unavailable(reason) {
-            // ffmpeg isn't installed on Linux, which says nothing about the file.
+            // The reader can't run, which says nothing about the file.
             throw ShotCommandError.unavailable(reason)
         } catch {
             throw ProbeError.unreadable(name)
