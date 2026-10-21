@@ -1,10 +1,17 @@
 import Foundation
 
-/// Picks the `ScreenCapturer` `shot serve` takes screenshots with, by the session `XDG_SESSION_TYPE` names: X11's
-/// (#748) or the desktop portal's on Wayland (#749), once they come. Until then there's none, so it answers why.
+/// Picks the `ScreenCapturer` `shot serve` takes screenshots with, by the session `XDG_SESSION_TYPE` names: X11's, on
+/// the X server `DISPLAY` names, or the desktop portal's on Wayland once it comes (#749). Without one, it answers why.
 public enum LinuxScreen {
     public static func capturer(environment: [String: String] = ProcessInfo.processInfo.environment) -> any ScreenCapturer {
-        NoCapturer(session: environment["XDG_SESSION_TYPE"])
+        guard environment["XDG_SESSION_TYPE"]?.lowercased() == "x11" else {
+            return NoCapturer(session: environment["XDG_SESSION_TYPE"])
+        }
+        do {
+            return try X11Capturer(display: environment["DISPLAY"])
+        } catch {
+            return NoCapturer(reason: error.message)
+        }
     }
 }
 
@@ -12,9 +19,12 @@ public enum LinuxScreen {
 struct NoCapturer: ScreenCapturer {
     let reason: String
 
+    init(reason: String) {
+        self.reason = reason
+    }
+
     init(session: String?) {
         reason = switch session?.lowercased() {
-        case "x11": "Shot can't capture an X11 session yet."
         case "wayland": "Shot can't capture a Wayland session yet."
         case let session?: "XDG_SESSION_TYPE is \(session), and Shot can capture only an X11 or Wayland session."
         case nil: "XDG_SESSION_TYPE isn't set, so Shot can't tell which session to capture."

@@ -90,10 +90,10 @@ private final class Serve: @unchecked Sendable {
         configure(store)
         store.synchronize()
         let suite = suite
+        // Without registering defaults, which the whole process shares on Linux, so RegisteredDefaultsTests keeps them
+        // to itself. The keys the daemon reads are set above, or fall back to the defaults.
         let daemon = AgentDaemon(capturer: capturer, codec: PNGJPEGCodec(), projects: projects, version: "0.7.0") {
-            let store = UserDefaults(suiteName: suite)!
-            Preferences.registerDefaults(in: store)
-            return Preferences(store: store)
+            Preferences(store: UserDefaults(suiteName: suite)!)
         }
         server = AgentSocket.Server(url: socket, user: user) { request in
             await daemon.handle(request)
@@ -224,12 +224,12 @@ private final class Serve: @unchecked Sendable {
 @Test func shotServeSaysWhenNothingCapturesTheSession() async throws {
     #expect(LinuxScreen.capturer(environment: [:]).limits[.captureDisplay] == "XDG_SESSION_TYPE isn't set, so Shot can't tell which session to capture.")
     #expect(LinuxScreen.capturer(environment: ["XDG_SESSION_TYPE": "tty"]).limits[.listWindows] == "XDG_SESSION_TYPE is tty, and Shot can capture only an X11 or Wayland session.")
-    let serve = try Serve(LinuxScreen.capturer(environment: ["XDG_SESSION_TYPE": "x11"]))
-    #expect(await serve.failure(AgentRequest(.windows)) == .unavailable("Shot can't capture an X11 session yet."))
-    #expect(await serve.failure(AgentRequest(.capture, target: AgentTarget(display: 1))) == .unavailable("Shot can't capture an X11 session yet."))
+    let serve = try Serve(LinuxScreen.capturer(environment: ["XDG_SESSION_TYPE": "wayland"]))
+    #expect(await serve.failure(AgentRequest(.windows)) == .unavailable("Shot can't capture a Wayland session yet."))
+    #expect(await serve.failure(AgentRequest(.capture, target: AgentTarget(display: 1))) == .unavailable("Shot can't capture a Wayland session yet."))
     let status = try await serve.send(AgentRequest(.status))
     #expect(status["capturer"] == .string("none"))
-    #expect(status["limits"]?["captureWindow"] == .string("Shot can't capture an X11 session yet."))
+    #expect(status["limits"]?["captureWindow"] == .string("Shot can't capture a Wayland session yet."))
 }
 
 @Test func theMCPToolsThatCaptureAskShotServeOnLinux() async throws {
