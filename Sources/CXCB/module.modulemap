@@ -1,0 +1,7 @@
+module CXCB [system] {
+    header "shim.h"
+    link "xcb"
+    link "xcb-composite"
+    link "xcb-randr"
+    export *
+}

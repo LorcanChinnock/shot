@@ -111,7 +111,10 @@ extension Doctor {
         }
         if fields["capturer"]?.string == "none" {
             check.outcome = .warn
-            check.fix = "Capturing an X11 or Wayland session comes in a later version of Shot."
+            // It picks its capturer when it starts, from the session it starts in.
+            check.fix = facts.sessionType?.lowercased() == "wayland"
+                ? "Capturing a Wayland session comes in a later version of Shot."
+                : "Stop shot serve with pkill -f \"shot serve\", then run a capture from a terminal in your X11 desktop session to start it there."
         }
         if running != facts.version {
             check.outcome = .warn

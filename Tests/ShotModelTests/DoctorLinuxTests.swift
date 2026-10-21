@@ -108,7 +108,10 @@ private func serving(version: String = "0.7.0", capturer: String = "x11", limits
     let none = Doctor.serve(facts(listening: true, status: serving(capturer: "none", limits: ["captureArea": reason, "captureDisplay": reason, "listWindows": reason])))
     #expect(none.outcome == .warn)
     #expect(none.detail.hasSuffix("agent.sock. Shot can't capture a Wayland session yet."))
-    #expect(none.fix == "Capturing an X11 or Wayland session comes in a later version of Shot.")
+    #expect(none.fix == "Capturing a Wayland session comes in a later version of Shot.")
+    let x11 = Doctor.serve(facts(session: "x11", listening: true, status: serving(capturer: "none", limits: ["listWindows": .string("DISPLAY isn't set.")])))
+    #expect(x11.outcome == .warn)
+    #expect(x11.fix == "Stop shot serve with pkill -f \"shot serve\", then run a capture from a terminal in your X11 desktop session to start it there.")
 
     let old = Doctor.serve(facts(listening: true, status: serving(version: "0.6.0")))
     #expect(old.outcome == .warn)
