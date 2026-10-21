@@ -47,7 +47,7 @@ targets += [
 targets += [
     // The Linux implementations of ShotCore's protocols, as they come (#656). It re-exports ShotCore, so ShotCLI
     // imports only this.
-    .target(name: "ShotCoreLinux", dependencies: ["ShotCore", "CPNG", "CTurboJPEG", "CCairo", "CPango", "CXCB"]),
+    .target(name: "ShotCoreLinux", dependencies: ["ShotCore", "CPNG", "CTurboJPEG", "CCairo", "CPango", "CXCB", "CDBus"]),
     // The C libraries it codes images with, through their APIs that report errors rather than jumping out of them.
     .systemLibrary(name: "CPNG", pkgConfig: "libpng", providers: [.apt(["libpng-dev"])]),
     .systemLibrary(name: "CTurboJPEG", pkgConfig: "libturbojpeg", providers: [.apt(["libturbojpeg0-dev"])]),
@@ -57,9 +57,12 @@ targets += [
     .systemLibrary(name: "CPango", pkgConfig: "pangocairo", providers: [.apt(["libpango1.0-dev"])]),
     // The X server's client library, and its Composite and RandR extensions, which it captures an X11 session with.
     .systemLibrary(name: "CXCB", pkgConfig: "xcb-composite", providers: [.apt(["libxcb1-dev", "libxcb-composite0-dev", "libxcb-randr0-dev"])]),
+    // The session bus's client library, which it asks the desktop portal for screenshots through on Wayland.
+    .systemLibrary(name: "CDBus", pkgConfig: "dbus-1", providers: [.apt(["libdbus-1-dev"])]),
     .executableTarget(name: "ShotCLI", dependencies: ["ShotCoreLinux"]),
-    // CXCB, so the X11 tests can put windows on the X server they start.
-    .testTarget(name: "ShotCoreLinuxTests", dependencies: ["ShotCoreLinux", "CXCB"]),
+    // CXCB, so the X11 tests can put windows on the X server they start, and CDBus, so the portal's tests can stand in
+    // for it on the bus they start.
+    .testTarget(name: "ShotCoreLinuxTests", dependencies: ["ShotCoreLinux", "CXCB", "CDBus"]),
 ]
 // Linux has no app to put it in, so it's built as `shot`.
 products += [.executable(name: "shot", targets: ["ShotCLI"])]

@@ -34,6 +34,10 @@ private actor Gate {
 private struct FakeScreen: ScreenCapturer {
     var limits: [ScreenCapability: String] = [:]
     var gate: Gate?
+    /// What the user picks in the desktop's dialog, which there's none of without it, as there's no note without
+    /// `windowsNote`.
+    var picked: Bitmap?
+    var windowsNote: String?
 
     var name: String { "fake" }
 
@@ -59,6 +63,10 @@ private struct FakeScreen: ScreenCapturer {
 
     func capture(area: CGRect) -> Bitmap {
         Self.grey(area)
+    }
+
+    func capturePicked() -> Bitmap? {
+        picked
     }
 
     static func grey(_ points: CGRect) -> Bitmap {
@@ -200,6 +208,24 @@ private final class Serve: @unchecked Sendable {
     #expect(missing.message.hasPrefix("No open window matches \"Calculator\". Open windows, front to back:\n  Terminal — ~\n  Firefox — Shot — docs"))
 }
 
+@Test func shotServeHasTheUserPickAWindowItCantFind() async throws {
+    let picked = Bitmap(width: 30, height: 20, scale: 1, pixels: Data(repeating: 200, count: 30 * 20 * 4))!
+    let serve = try Serve(FakeScreen(picked: picked, windowsNote: "Only some windows are listed."))
+    let listed = try await serve.send(AgentRequest(.windows))
+    #expect(listed["note"] == .string("Only some windows are listed."))
+
+    // A window it lists is captured as before.
+    #expect(try await serve.send(AgentRequest(.capture, target: AgentTarget(window: "Terminal")))["window"] == .object(["app": .string("Terminal"), "title": .string("~")]))
+    let answer = try await serve.send(AgentRequest(.capture, target: AgentTarget(window: "Calculator", rect: [0, 0, 10, 50])))
+    #expect(answer["window"] == .object(["picked": .bool(true)]))
+    #expect(answer["note"] == .string(ScreenshotPortal.pickedNote))
+    #expect(answer["size"] == .object(["width": .number(10), "height": .number(20)]))
+    let file = URL(fileURLWithPath: try #require(answer["path"]?.string))
+    #expect(PNGJPEGCodec().record(ofFileAt: file)?.source == CaptureRecord.Source(mode: "area"))
+    #expect(await serve.failure(AgentRequest(.capture, target: AgentTarget(window: "Calculator", rect: [40, 0, 10, 10])))
+        == .data("The rect 40,0,10,10 is off what was picked, which is 30×20 points."))
+}
+
 @Test func shotServeTurnsAwayASecondCaptureWhileOneRuns() async throws {
     let gate = Gate()
     let serve = try Serve(FakeScreen(gate: gate))
@@ -224,12 +250,15 @@ private final class Serve: @unchecked Sendable {
 @Test func shotServeSaysWhenNothingCapturesTheSession() async throws {
     #expect(LinuxScreen.capturer(environment: [:]).limits[.captureDisplay] == "XDG_SESSION_TYPE isn't set, so Shot can't tell which session to capture.")
     #expect(LinuxScreen.capturer(environment: ["XDG_SESSION_TYPE": "tty"]).limits[.listWindows] == "XDG_SESSION_TYPE is tty, and Shot can capture only an X11 or Wayland session.")
+    // Wayland with no session bus to reach the portal on.
     let serve = try Serve(LinuxScreen.capturer(environment: ["XDG_SESSION_TYPE": "wayland"]))
-    #expect(await serve.failure(AgentRequest(.windows)) == .unavailable("Shot can't capture a Wayland session yet."))
-    #expect(await serve.failure(AgentRequest(.capture, target: AgentTarget(display: 1))) == .unavailable("Shot can't capture a Wayland session yet."))
+    #expect(await serve.failure(AgentRequest(.windows)) == .unavailable(ScreenshotPortal.noBus))
+    #expect(await serve.failure(AgentRequest(.capture, target: AgentTarget(display: 1))) == .unavailable(ScreenshotPortal.noBus))
     let status = try await serve.send(AgentRequest(.status))
     #expect(status["capturer"] == .string("none"))
-    #expect(status["limits"]?["captureWindow"] == .string("Shot can't capture a Wayland session yet."))
+    #expect(status["limits"]?["captureWindow"] == .string(ScreenshotPortal.noBus))
+    #expect(LinuxScreen.screenshotPortal(environment: ["XDG_SESSION_TYPE": "wayland"]) == .failure(.unavailable(ScreenshotPortal.noBus)))
+    #expect(LinuxScreen.screenshotPortal(environment: ["XDG_SESSION_TYPE": "x11"]) == nil)
 }
 
 @Test func theMCPToolsThatCaptureAskShotServeOnLinux() async throws {
