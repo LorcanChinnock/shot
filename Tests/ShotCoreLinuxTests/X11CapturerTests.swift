@@ -4,11 +4,13 @@ import Testing
 @testable import ShotCore
 @testable import ShotCoreLinux
 
-/// An Xvfb of its own, 640×480 with a black root, on a display no other test uses, stopped when it's released.
+/// An Xvfb of its own, 640×480 with a black root, on a display nothing else uses, stopped when it's released. It's
+/// spawned directly rather than through `Process`, whose `waitUntilExit` spins a thread of the pool the other tests
+/// need, and with no signals blocked, since the test's threads block SIGTERM and Xvfb would keep that.
 private final class XServer: @unchecked Sendable {
     static let executable = ["/usr/bin/Xvfb", "/usr/local/bin/Xvfb"].first { FileManager.default.isExecutableFile(atPath: $0) }
     let display: String
-    private let process: Process
+    private let pid: pid_t
 
     init() async throws {
         let executable = try #require(Self.executable)
@@ -17,40 +19,58 @@ private final class XServer: @unchecked Sendable {
             guard !FileManager.default.fileExists(atPath: "/tmp/.X\(number)-lock") else {
                 continue
             }
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: executable)
             // Without -noreset, the server resets when the check below disconnects, dropping whoever connects next.
-            process.arguments = [":\(number)", "-screen", "0", "640x480x24", "-br", "-nolisten", "tcp", "-noreset"]
-            process.standardOutput = FileHandle.nullDevice
-            process.standardError = FileHandle.nullDevice
-            try process.run()
-            // Another test may have taken the display, so Xvfb quits and the next number is tried.
-            for _ in 0 ..< 200 where process.isRunning {
+            let pid = try Self.spawn(executable, [":\(number)", "-screen", "0", "640x480x24", "-br", "-nolisten", "tcp", "-noreset"])
+            // Something else may have taken the display, so Xvfb quits and the next number is tried.
+            var status: Int32 = 0
+            for _ in 0 ..< 200 where waitpid(pid, &status, WNOHANG) == 0 {
                 if let connection = xcb_connect(":\(number)", nil) {
                     defer { xcb_disconnect(connection) }
                     if xcb_connection_has_error(connection) == 0 {
                         display = ":\(number)"
-                        self.process = process
+                        self.pid = pid
                         return
                     }
                 }
                 try await Task.sleep(for: .milliseconds(50))
             }
-            Self.stop(process, number: number)
+            Self.stop(pid)
         }
         throw ShotCommandError.internal("Xvfb didn't start.")
     }
 
     deinit {
-        Self.stop(process, number: Int(display.dropFirst())!)
+        Self.stop(pid)
     }
 
-    /// Kills Xvfb and clears what it leaves. It starts with the test's threads' signals blocked, so SIGTERM never comes.
-    private static func stop(_ process: Process, number: Int) {
-        kill(process.processIdentifier, SIGKILL)
-        process.waitUntilExit()
-        try? FileManager.default.removeItem(atPath: "/tmp/.X\(number)-lock")
-        try? FileManager.default.removeItem(atPath: "/tmp/.X11-unix/X\(number)")
+    private static func spawn(_ executable: String, _ arguments: [String]) throws -> pid_t {
+        var attributes = posix_spawnattr_t()
+        posix_spawnattr_init(&attributes)
+        defer { posix_spawnattr_destroy(&attributes) }
+        var none = sigset_t()
+        sigemptyset(&none)
+        posix_spawnattr_setsigmask(&attributes, &none)
+        posix_spawnattr_setflags(&attributes, Int16(POSIX_SPAWN_SETSIGMASK))
+        var actions = posix_spawn_file_actions_t()
+        posix_spawn_file_actions_init(&actions)
+        defer { posix_spawn_file_actions_destroy(&actions) }
+        posix_spawn_file_actions_addopen(&actions, 1, "/dev/null", O_WRONLY, 0)
+        posix_spawn_file_actions_addopen(&actions, 2, "/dev/null", O_WRONLY, 0)
+        let argv = ([executable] + arguments).map { strdup($0) } + [nil]
+        defer { argv.forEach { free($0) } }
+        var pid: pid_t = 0
+        let error = posix_spawn(&pid, executable, &actions, &attributes, argv, environ)
+        guard error == 0 else {
+            throw ShotCommandError.internal("Couldn't start Xvfb: \(String(cString: strerror(error))).")
+        }
+        return pid
+    }
+
+    /// Asks Xvfb to quit, which clears its lock and socket, and waits for it.
+    private static func stop(_ pid: pid_t) {
+        kill(pid, SIGTERM)
+        var status: Int32 = 0
+        waitpid(pid, &status, 0)
     }
 }
 
@@ -164,96 +184,99 @@ private struct Scene {
 /// CI installs Xvfb, so there a missing one fails rather than skips.
 private let hasXvfb = XServer.executable != nil || ProcessInfo.processInfo.environment["CI"] != nil
 
-@Test(.enabled(if: hasXvfb, "Xvfb isn't installed")) func x11CapturerListsTheWindowsAndDisplays() async throws {
-    let scene = try await Scene()
-    let capturer = scene.capturer
-    #expect(capturer.name == "x11" && capturer.limits.isEmpty)
-    #expect(try await capturer.displays() == [ScreenDisplay(name: "screen", frame: CGRect(x: 0, y: 0, width: 640, height: 480))])
+/// One at a time, so a single Xvfb competes with the other tests for CI's few cores.
+@Suite(.serialized, .enabled(if: hasXvfb, "Xvfb isn't installed")) struct X11CapturerTests {
+    @Test func x11CapturerListsTheWindowsAndDisplays() async throws {
+        let scene = try await Scene()
+        let capturer = scene.capturer
+        #expect(capturer.name == "x11" && capturer.limits.isEmpty)
+        #expect(try await capturer.displays() == [ScreenDisplay(name: "screen", frame: CGRect(x: 0, y: 0, width: 640, height: 480))])
 
-    let process = try String(contentsOfFile: "/proc/self/comm", encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
-    #expect(try await capturer.windows() == [
-        // Inside its frame, without its shadow.
-        ScreenWindow(id: scene.green, app: "Green", title: "green", appID: "Green", frame: CGRect(x: 410, y: 330, width: 140, height: 80)),
-        ScreenWindow(id: scene.blue, app: "Blue", title: "blue", appID: "Blue", frame: CGRect(x: 150, y: 60, width: 120, height: 80)),
-        ScreenWindow(id: scene.red, app: process, title: "Shot test — red", appID: "Red", frame: CGRect(x: 10, y: 20, width: 200, height: 100)),
-    ])
+        let process = try String(contentsOfFile: "/proc/self/comm", encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
+        #expect(try await capturer.windows() == [
+            // Inside its frame, without its shadow.
+            ScreenWindow(id: scene.green, app: "Green", title: "green", appID: "Green", frame: CGRect(x: 410, y: 330, width: 140, height: 80)),
+            ScreenWindow(id: scene.blue, app: "Blue", title: "blue", appID: "Blue", frame: CGRect(x: 150, y: 60, width: 120, height: 80)),
+            ScreenWindow(id: scene.red, app: process, title: "Shot test — red", appID: "Red", frame: CGRect(x: 10, y: 20, width: 200, height: 100)),
+        ])
 
-    // Without a window manager, the root's children are the windows, frames included.
-    scene.desktop.forgetClients()
-    scene.desktop.sync()
-    #expect(try await capturer.windows().map(\.frame) == [
-        CGRect(x: 400, y: 300, width: 160, height: 120), CGRect(x: 150, y: 60, width: 120, height: 80), CGRect(x: 10, y: 20, width: 200, height: 100),
-    ])
-}
-
-@Test(.enabled(if: hasXvfb, "Xvfb isn't installed")) func x11CapturerCapturesADisplayAWindowAndAnArea() async throws {
-    let scene = try await Scene()
-    let capturer = scene.capturer
-    let red: (UInt8, UInt8, UInt8, UInt8) = (255, 0, 0, 255), blue: (UInt8, UInt8, UInt8, UInt8) = (0, 0, 255, 255)
-    let green: (UInt8, UInt8, UInt8, UInt8) = (0, 255, 0, 255), black: (UInt8, UInt8, UInt8, UInt8) = (0, 0, 0, 255)
-
-    let display = try await capturer.capture(display: try await capturer.displays()[0])
-    #expect(display.width == 640 && display.height == 480 && display.scale == 1)
-    #expect(display[20, 30] == red && display[160, 70] == blue && display[415, 335] == green && display[5, 5] == black)
-
-    let windows = try await capturer.windows()
-    let behind = try await capturer.capture(window: try #require(windows.first { $0.id == scene.red }))
-    #expect(behind.width == 200 && behind.height == 100)
-    // Where blue covers it, red is still red.
-    #expect(behind[0, 0] == red && behind[145, 45] == red && behind[199, 99] == red)
-
-    let framed = try await capturer.capture(window: try #require(windows.first { $0.id == scene.green }))
-    #expect(framed.width == 140 && framed.height == 80)
-    #expect(framed[0, 0] == green && framed[139, 79] == green)
-
-    let area = try await capturer.capture(area: CGRect(x: 140, y: 50, width: 40, height: 30))
-    #expect(area.width == 40 && area.height == 30)
-    #expect(area[0, 0] == red && area[39, 29] == blue)
-    await #expect(throws: ShotCommandError.data("The area at 700,0, 10×10 points, is off the screen.")) {
-        try await capturer.capture(area: CGRect(x: 700, y: 0, width: 10, height: 10))
+        // Without a window manager, the root's children are the windows, frames included.
+        scene.desktop.forgetClients()
+        scene.desktop.sync()
+        #expect(try await capturer.windows().map(\.frame) == [
+            CGRect(x: 400, y: 300, width: 160, height: 120), CGRect(x: 150, y: 60, width: 120, height: 80), CGRect(x: 10, y: 20, width: 200, height: 100),
+        ])
     }
 
-    var gone = windows[0]
-    gone.id = 0x7FFF_FFFF
-    await #expect(throws: ShotCommandError.noInput("Green — green closed before Shot could capture it.")) {
-        try await capturer.capture(window: gone)
-    }
-}
+    @Test func x11CapturerCapturesADisplayAWindowAndAnArea() async throws {
+        let scene = try await Scene()
+        let capturer = scene.capturer
+        let red: (UInt8, UInt8, UInt8, UInt8) = (255, 0, 0, 255), blue: (UInt8, UInt8, UInt8, UInt8) = (0, 0, 255, 255)
+        let green: (UInt8, UInt8, UInt8, UInt8) = (0, 255, 0, 255), black: (UInt8, UInt8, UInt8, UInt8) = (0, 0, 0, 255)
 
-@Test(.enabled(if: hasXvfb, "Xvfb isn't installed")) func shotServeSavesAnX11WindowCoveredByAnother() async throws {
-    let scene = try await Scene()
-    let root = try temporaryFolder()
-    defer { try? FileManager.default.removeItem(at: root) }
-    let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
-    let store = try #require(UserDefaults(suiteName: suite))
-    store.set(root.path, forKey: PreferenceKey.saveFolder)
-    store.set(true, forKey: PreferenceKey.saveAfterCapture)
-    store.set(true, forKey: PreferenceKey.agentCapture)
-    defer {
-        store.removePersistentDomain(forName: suite)
-        try? FileManager.default.removeItem(at: LinuxSettings.file(suite: suite))
-    }
-    let capturer = LinuxScreen.capturer(environment: ["XDG_SESSION_TYPE": "x11", "DISPLAY": scene.server.display])
-    // Without registering defaults, which the whole process shares on Linux, so RegisteredDefaultsTests keeps them to
-    // itself. The keys the daemon reads are set above, or fall back to the defaults.
-    let daemon = AgentDaemon(capturer: capturer, codec: PNGJPEGCodec(), projects: nil, version: "0.7.0") {
-        Preferences(store: UserDefaults(suiteName: suite)!)
+        let display = try await capturer.capture(display: try await capturer.displays()[0])
+        #expect(display.width == 640 && display.height == 480 && display.scale == 1)
+        #expect(display[20, 30] == red && display[160, 70] == blue && display[415, 335] == green && display[5, 5] == black)
+
+        let windows = try await capturer.windows()
+        let behind = try await capturer.capture(window: try #require(windows.first { $0.id == scene.red }))
+        #expect(behind.width == 200 && behind.height == 100)
+        // Where blue covers it, red is still red.
+        #expect(behind[0, 0] == red && behind[145, 45] == red && behind[199, 99] == red)
+
+        let framed = try await capturer.capture(window: try #require(windows.first { $0.id == scene.green }))
+        #expect(framed.width == 140 && framed.height == 80)
+        #expect(framed[0, 0] == green && framed[139, 79] == green)
+
+        let area = try await capturer.capture(area: CGRect(x: 140, y: 50, width: 40, height: 30))
+        #expect(area.width == 40 && area.height == 30)
+        #expect(area[0, 0] == red && area[39, 29] == blue)
+        await #expect(throws: ShotCommandError.data("The area at 700,0, 10×10 points, is off the screen.")) {
+            try await capturer.capture(area: CGRect(x: 700, y: 0, width: 10, height: 10))
+        }
+
+        var gone = windows[0]
+        gone.id = 0x7FFF_FFFF
+        await #expect(throws: ShotCommandError.noInput("Green — green closed before Shot could capture it.")) {
+            try await capturer.capture(window: gone)
+        }
     }
 
-    let response = await daemon.handle(AgentRequest(.capture, target: AgentTarget(window: "shot test")))
-    guard case let .success(answer) = response else {
-        Issue.record("The capture failed: \(response)")
-        return
+    @Test func shotServeSavesAnX11WindowCoveredByAnother() async throws {
+        let scene = try await Scene()
+        let root = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let suite = "dev.lorcan.Shot.tests.\(UUID().uuidString)"
+        let store = try #require(UserDefaults(suiteName: suite))
+        store.set(root.path, forKey: PreferenceKey.saveFolder)
+        store.set(true, forKey: PreferenceKey.saveAfterCapture)
+        store.set(true, forKey: PreferenceKey.agentCapture)
+        defer {
+            store.removePersistentDomain(forName: suite)
+            try? FileManager.default.removeItem(at: LinuxSettings.file(suite: suite))
+        }
+        let capturer = LinuxScreen.capturer(environment: ["XDG_SESSION_TYPE": "x11", "DISPLAY": scene.server.display])
+        // Without registering defaults, which the whole process shares on Linux, so RegisteredDefaultsTests keeps them to
+        // itself. The keys the daemon reads are set above, or fall back to the defaults.
+        let daemon = AgentDaemon(capturer: capturer, codec: PNGJPEGCodec(), projects: nil, version: "0.7.0") {
+            Preferences(store: UserDefaults(suiteName: suite)!)
+        }
+
+        let response = await daemon.handle(AgentRequest(.capture, target: AgentTarget(window: "shot test")))
+        guard case let .success(answer) = response else {
+            Issue.record("The capture failed: \(response)")
+            return
+        }
+        #expect(answer["size"] == .object(["width": .number(200), "height": .number(100)]))
+        let path = try #require(answer["path"]?.string)
+        let image = try #require(PNGJPEGCodec().decode(fileAt: URL(fileURLWithPath: path)))
+        #expect(image[145, 45] == (255, 0, 0, 255))
+        guard case let .success(status) = await daemon.handle(AgentRequest(.status)) else {
+            Issue.record("No status.")
+            return
+        }
+        #expect(status["capturer"] == .string("x11") && status["limits"] == .object([:]))
     }
-    #expect(answer["size"] == .object(["width": .number(200), "height": .number(100)]))
-    let path = try #require(answer["path"]?.string)
-    let image = try #require(PNGJPEGCodec().decode(fileAt: URL(fileURLWithPath: path)))
-    #expect(image[145, 45] == (255, 0, 0, 255))
-    guard case let .success(status) = await daemon.handle(AgentRequest(.status)) else {
-        Issue.record("No status.")
-        return
-    }
-    #expect(status["capturer"] == .string("x11") && status["limits"] == .object([:]))
 }
 
 @Test func linuxScreenSaysWhyItCantReachTheXServer() {
