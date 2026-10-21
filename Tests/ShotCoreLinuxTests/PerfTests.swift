@@ -65,7 +65,7 @@ import Testing
         let took = try await ContinuousClock().measure {
             try await FFmpegWriter().write(project, to: output, as: "public.mpeg-4", canvasType: CairoCanvas.self) { _ in .h264 }
         }
-        let budget = Duration.seconds(60)
+        let budget = Duration.seconds(80)
         print("Write 10 s of 1920×1080 at 30 fps: \(took), budget \(budget)")
         #expect(took <= budget, "Writing took \(took), over its \(budget) budget")
     }

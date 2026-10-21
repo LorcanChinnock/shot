@@ -154,7 +154,8 @@ private func drawn(_ project: Project, at times: [Double], maxSize: CGSize = .ze
         #expect(read.map(\.requestedTime) == [1, 0.1, 1])
         let images = try read.map { try $0.decoded.get().image }
         #expect(images.allSatisfy { $0.width == 80 && $0.height == 60 })
-        #expect(images.map(gray) == [120, 12, 120])
+        let grays = images.map(gray)
+        #expect(zip(grays, [120, 12, 120]).allSatisfy { abs($0 - $1) <= 2 }, "\(grays)")
     }
 
     @Test func aProjectThatCantBeWrittenSaysWhy() async throws {

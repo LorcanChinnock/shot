@@ -122,10 +122,23 @@ struct ProjectDrawing: Sendable {
             }
             if let failure {
                 try await body(.failure(failure))
-            } else if let frame = compositor.frame(at: time, pictures: pictures) {
+            } else if let frame = await draw(at: time, pictures: pictures) {
                 try await body(.success(frame))
             } else {
                 try await body(.failure(ShotCommandError.io("Couldn't draw the frame at \(String(format: "%.3f", time)) s")))
+            }
+        }
+    }
+}
+
+extension ProjectDrawing {
+    /// The compositor's frame at `time`, drawn on a thread of its own rather than one of the pool's, which a frame takes
+    /// long enough to keep from other tasks, such as `shot serve` answering an agent.
+    private func draw(at time: Double, pictures: [UUID: PlatformImage]) async -> PlatformImage? {
+        let compositor = compositor
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                continuation.resume(returning: compositor.frame(at: time, pictures: pictures))
             }
         }
     }
