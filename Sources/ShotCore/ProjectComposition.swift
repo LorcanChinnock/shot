@@ -13,19 +13,7 @@ public struct ProjectComposition: @unchecked Sendable {
     public let live: LiveAnnotations
 }
 
-public enum CompositionBuilder {
-    public enum BuildError: LocalizedError {
-        case noVideo(String)
-        case cannotInsert(String)
-
-        public var errorDescription: String? {
-            switch self {
-            case .noVideo(let name): shotLocalized("\(name) has no video to show")
-            case .cannotInsert(let name): shotLocalized("Couldn't add \(name) to the video")
-            }
-        }
-    }
-
+extension CompositionBuilder {
     /// Frame rates above this aren't kept, since the compositor draws every frame. It matches the fastest recording.
     static let maximumFrameRate: Float = 120
 

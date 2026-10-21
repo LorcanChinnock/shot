@@ -1,7 +1,7 @@
 import Foundation
 
 /// The `VideoReader`, `VideoAssembler` and `VideoWriter` the commands and MCP tools take on Linux until the video ones
-/// come with #753, on `FFmpegReader`, `FFmpegAssembler` and ffmpeg's writer (#752): each call answers
+/// come with #753, on `FFmpegReader`, `FFmpegAssembler` and `FFmpegWriter`: each call answers
 /// `ShotCommandError.notOnLinuxYet`. ShotCommands+Defaults.swift turns the video commands away before they get here, so
 /// this only stands in for the parameters.
 struct NoVideo: VideoReader, VideoAssembler, VideoWriter {

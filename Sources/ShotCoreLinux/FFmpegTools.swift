@@ -1,7 +1,7 @@
 import Foundation
 import Synchronization
 
-/// The `ffmpeg` and `ffprobe` programs `FFmpegReader` and `FFmpegAssembler` run: those `SHOT_FFMPEG` and `SHOT_FFPROBE`
+/// The `ffmpeg` and `ffprobe` programs `FFmpegReader`, `FFmpegAssembler` and `FFmpegWriter` run: those `SHOT_FFMPEG` and `SHOT_FFPROBE`
 /// name, else the first on the `PATH`.
 public struct FFmpegTools: Sendable {
     public let ffmpeg: String
@@ -41,6 +41,19 @@ public struct FFmpegTools: Sendable {
     /// The version of each ffmpeg asked, or `nil` where it didn't say.
     private static let versions = Mutex<[String: String?]>([:])
 
+    /// The encoders ffmpeg has, which it's asked for once.
+    func encoders() async -> Set<String> {
+        if let known = Self.encoderLists.withLock({ $0[ffmpeg] }) {
+            return known
+        }
+        let encoders = (try? await Subprocess.output(ffmpeg, ["-hide_banner", "-encoders"])).map { FFmpeg.encoders(from: String(decoding: $0, as: UTF8.self)) } ?? []
+        Self.encoderLists.withLock { $0[ffmpeg] = encoders }
+        return encoders
+    }
+
+    /// The encoders of each ffmpeg asked.
+    private static let encoderLists = Mutex<[String: Set<String>]>([:])
+
     /// What `ffprobe` says of `url`'s streams and container.
     func probe(_ url: URL) async throws -> FFmpeg.Probe {
         try FFmpeg.Probe(json: try await Subprocess.output(ffprobe, FFmpeg.probeArguments(url.path)))
@@ -67,7 +80,7 @@ public struct FFmpegTools: Sendable {
         var facts = Doctor.FFmpegFacts(ffmpeg: found.ffmpeg, ffprobe: found.ffprobe)
         if let ffmpeg = found.ffmpeg {
             facts.version = await FFmpegTools(ffmpeg: ffmpeg, ffprobe: found.ffprobe ?? "").version()
-            facts.encoders = (try? await Subprocess.output(ffmpeg, ["-hide_banner", "-encoders"])).map { FFmpeg.encoders(from: String(decoding: $0, as: UTF8.self)) } ?? []
+            facts.encoders = await FFmpegTools(ffmpeg: ffmpeg, ffprobe: found.ffprobe ?? "").encoders()
         }
         return facts
     }

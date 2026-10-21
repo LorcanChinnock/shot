@@ -1,7 +1,7 @@
 import Foundation
 
 /// Linux's `VideoReader`: `ffprobe` for what a file holds, and `ffmpeg` for its frames, decoded to RGBA through a pipe,
-/// and its sound, as mono floats. Drawing a project's frames comes with the compositor and writer (#752).
+/// and its sound, as mono floats. A project's frames are drawn as `FFmpegWriter` draws them.
 public struct FFmpegReader: VideoReader {
     public init() {}
 
@@ -80,7 +80,7 @@ public struct FFmpegReader: VideoReader {
     }
 
     public func frames(of project: Project, canvasType: any Canvas.Type) async throws -> any VideoFrames {
-        throw ShotCommandError.notOnLinuxYet
+        ProjectFrames(drawing: try await ProjectDrawing(project, canvasType: canvasType), canvasType: canvasType)
     }
 
     public func readMonoSamples(of url: URL, sampleRate: Double, _ body: ([Float]) throws -> Void) async throws {
@@ -104,5 +104,53 @@ public struct FFmpegReader: VideoReader {
                 }
             }
         }
+    }
+}
+
+/// A project read a frame at a time as `ProjectDrawing` draws it, the frame at each time asked for exactly, whatever the
+/// tolerance.
+struct ProjectFrames: VideoFrames {
+    let drawing: ProjectDrawing
+    let canvasType: any Canvas.Type
+
+    var duration: Double { drawing.duration }
+    var size: CGSize? { drawing.hasVideo ? drawing.compositor.project.outputRect.size : nil }
+
+    /// Draws the frames in time order, so a frame asked for out of order waits for the ones before it.
+    func readFrames(at times: [Double], maxSize: CGSize, tolerance: Double?, _ body: (VideoFrame) throws -> Void) async throws {
+        let order = times.indices.sorted { times[$0] < times[$1] }
+        let output = drawing.compositor.project.outputRect.size
+        let (width, height) = FFmpeg.fitted(output, within: maxSize)
+        var early: [Int: VideoFrame] = [:]
+        var next = 0
+        var drawn = 0
+        try await drawing.draw(at: order.map { times[$0] }) { result in
+            let index = order[drawn]
+            drawn += 1
+            let decoded = result.flatMap { image -> Result<(time: Double, image: PlatformImage), any Error> in
+                guard let fitted = fit(image, width: width, height: height) else {
+                    return .failure(ShotCommandError.io("Couldn't make the frame at \(String(format: "%.3f", times[index])) s smaller"))
+                }
+                return .success((times[index], fitted))
+            }
+            early[index] = VideoFrame(requestedTime: times[index], decoded: decoded)
+            while let frame = early.removeValue(forKey: next) {
+                try body(frame)
+                next += 1
+            }
+        }
+    }
+
+    /// `image` drawn at `width` × `height`, unless it's that size already.
+    private func fit(_ image: PlatformImage, width: Int, height: Int) -> PlatformImage? {
+        guard image.width != width || image.height != height else {
+            return image
+        }
+        guard let ctx = canvasType.init(width: width, height: height, format: .sRGB) else {
+            return nil
+        }
+        ctx.setInterpolation(.high)
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        return ctx.makeImage()
     }
 }

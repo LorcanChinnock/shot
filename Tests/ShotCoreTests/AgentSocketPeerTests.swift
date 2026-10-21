@@ -28,3 +28,17 @@ import Testing
     let answer = try await AgentSocket.send(AgentRequest(.status), to: url, timeout: .seconds(5))
     #expect(answer["op"] == .string("status"))
 }
+
+@Test func agentSocketAnswersOnAQueueOfItsOwnRatherThanThePool() async throws {
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent("ap-\(UUID().uuidString.prefix(8))")
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let url = folder.appendingPathComponent("agent.sock")
+    // So an answer never waits for work holding every thread of the pool, as tests drawing in parallel do.
+    let server = AgentSocket.Server(url: url) { _ in
+        .success(["answering": .bool(DispatchQueue.getSpecific(key: AgentSocket.answering) == true)])
+    }
+    try server.start()
+    defer { server.stop() }
+    let answer = try await AgentSocket.send(AgentRequest(.status), to: url, timeout: .seconds(5))
+    #expect(answer["answering"] == .bool(true))
+}

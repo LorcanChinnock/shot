@@ -6,11 +6,12 @@ import Testing
 // the frames ShotCoreAppleTests' CompositorGoldenTests drew through ProjectCompositor, the Mac's Core Image compositor,
 // from the same source frames. Cairo antialiases a turned picture's edges where Core Image resamples them, and a
 // shadow's blur is three box blurs rather than a gaussian, so a pixel may differ by a little, and a few edge pixels by
-// more; `limits` says how much for each. Set SHOT_CAIRO_GOLDENS to a folder to write what Cairo drew there, to look at.
+// more; `compositorLimits` says how much for each. Set SHOT_CAIRO_GOLDENS to a folder to write what Cairo drew there,
+// to look at. FFmpegWriterTests compares what FFmpegWriter writes with them too.
 
 private let folder = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Fixtures/compositor")
 
-private struct Golden: Codable {
+struct CompositorGolden: Codable {
     var name: String
     var project: Project
     var time: Double
@@ -20,7 +21,7 @@ private struct Golden: Codable {
 private let tolerance = 16
 
 /// A golden, the share of its pixels that may differ by more than `tolerance`, and how far any channel may differ.
-private let limits: [(name: String, share: Double, worst: Int)] = [
+let compositorLimits: [(name: String, share: Double, worst: Int)] = [
     ("styled", 0.005, 32),
     // A turned clip's edges, as on the Mac, where PortableCompositor on CGCanvas differs from Core Image by as much.
     ("hairlineGlow", 0.005, 80),
@@ -29,30 +30,30 @@ private let limits: [(name: String, share: Double, worst: Int)] = [
     ("annotations", 0.005, 32),
 ]
 
-private func golden(_ name: String) throws -> Golden {
+func compositorGolden(_ name: String) throws -> CompositorGolden {
     let decoder = JSONDecoder()
     decoder.userInfo[.pngCodec] = PNGJPEGCodec()
-    let goldens = try decoder.decode([Golden].self, from: Data(contentsOf: folder.appendingPathComponent("goldens.json")))
+    let goldens = try decoder.decode([CompositorGolden].self, from: Data(contentsOf: folder.appendingPathComponent("goldens.json")))
     return try #require(goldens.first { $0.name == name })
 }
 
-@Test(arguments: limits)
+@Test(arguments: compositorLimits)
 func cairoComposesTheGoldenFrameAsCoreImageDid(name: String, share maxShare: Double, worst maxWorst: Int) throws {
-    let drawn = try draw(try golden(name))
+    let drawn = try draw(try compositorGolden(name))
     if let out = ProcessInfo.processInfo.environment["SHOT_CAIRO_GOLDENS"] {
         try FileManager.default.createDirectory(atPath: out, withIntermediateDirectories: true)
         try PNGJPEGCodec().encode(drawn, as: .png, quality: 1, metadata: ImageMetadata())?.write(to: URL(fileURLWithPath: out).appendingPathComponent("compositor-\(name).png"))
     }
-    let (share, worst) = try compare(drawn, with: name)
+    let (share, worst) = try compareWithCompositorGolden(drawn, with: name)
     #expect(share <= maxShare, "\(name): \(String(format: "%.2f", share * 100))% differ by more than \(tolerance)")
     #expect(worst <= maxWorst, "\(name): a channel differs by \(worst)")
 }
 
 // The limits catch a compositor that leaves out the clip's style or the annotations: each golden drawn without them fails
 // one of them by a clear margin. A hairline and a glow cover few pixels, but change them by far more than the limit.
-@Test(arguments: limits.map(\.name))
+@Test(arguments: compositorLimits.map(\.name))
 func aFrameDrawnWithoutItsStylesOrAnnotationsWouldFailItsGolden(name: String) throws {
-    var plain = try golden(name)
+    var plain = try compositorGolden(name)
     for track in plain.project.tracks.indices {
         plain.project.tracks[track].annotations = []
         for clip in plain.project.tracks[track].clips.indices {
@@ -60,13 +61,13 @@ func aFrameDrawnWithoutItsStylesOrAnnotationsWouldFailItsGolden(name: String) th
             plain.project.tracks[track].clips[clip].cornerRadius = 0
         }
     }
-    let limit = try #require(limits.first { $0.name == name })
-    let (share, worst) = try compare(try draw(plain, pictures: name), with: name)
+    let limit = try #require(compositorLimits.first { $0.name == name })
+    let (share, worst) = try compareWithCompositorGolden(try draw(plain, pictures: name), with: name)
     #expect(share > limit.share * 2 || worst > limit.worst + 32)
 }
 
 @Test func theCompositorDrawsOnlyTheCanvasBackgroundWhereNoClipHasAFrame() throws {
-    let golden = try golden("styled")
+    let golden = try compositorGolden("styled")
     let compositor = PortableCompositor(project: golden.project, canvasType: CairoCanvas.self)
     let frame = try #require(compositor.frame(at: golden.time, pictures: [:])).bitmap
     let corners: [(r: UInt8, g: UInt8, b: UInt8, a: UInt8)] = [frame[0, 0], frame[frame.width - 1, frame.height - 1], frame[frame.width / 2, frame.height / 2]]
@@ -74,7 +75,7 @@ func aFrameDrawnWithoutItsStylesOrAnnotationsWouldFailItsGolden(name: String) th
 }
 
 @Test func theCompositorSaysWhichSourceFrameEachClipShows() throws {
-    let golden = try golden("keyframed")
+    let golden = try compositorGolden("keyframed")
     let shown = PortableCompositor(project: golden.project, canvasType: CairoCanvas.self).pictures(at: 1.25)
     let names: [String] = shown.map(\.clip.source.lastPathComponent)
     #expect(names == ["base.mp4", "clip.mp4"])
@@ -83,7 +84,12 @@ func aFrameDrawnWithoutItsStylesOrAnnotationsWouldFailItsGolden(name: String) th
 }
 
 /// `golden` drawn through CairoCanvas from the source frames saved for the golden named `pictures`, or its own.
-private func draw(_ golden: Golden, pictures: String? = nil) throws -> Bitmap {
+/// The source frame `index` saved for the golden `name`.
+func compositorSourceFrame(_ name: String, _ index: Int) -> URL {
+    folder.appendingPathComponent("\(name)-\(index).png")
+}
+
+private func draw(_ golden: CompositorGolden, pictures: String? = nil) throws -> Bitmap {
     let codec = PNGJPEGCodec()
     let compositor = PortableCompositor(project: golden.project, canvasType: CairoCanvas.self)
     var frames: [UUID: PlatformImage] = [:]
@@ -93,9 +99,10 @@ private func draw(_ golden: Golden, pictures: String? = nil) throws -> Bitmap {
     return try #require(compositor.frame(at: golden.time, pictures: frames)).bitmap
 }
 
-/// The share of `drawn`'s pixels that differ from the frame `name` the Mac drew by more than `tolerance`, and the most
-/// any channel differs by.
-private func compare(_ drawn: Bitmap, with name: String) throws -> (share: Double, worst: Int) {
+/// The share of `drawn`'s pixels that differ from the frame `name` the Mac drew by more than `tolerance`, the file's own
+/// unless it's given, and the most any channel differs by.
+func compareWithCompositorGolden(_ drawn: Bitmap, with name: String, tolerance given: Int? = nil) throws -> (share: Double, worst: Int) {
+    let limit = given ?? tolerance
     let mac = try #require(PNGJPEGCodec().decode(fileAt: folder.appendingPathComponent("\(name).png")))
     try #require(mac.width == drawn.width && mac.height == drawn.height)
     var differing = 0, worst = 0
@@ -104,12 +111,12 @@ private func compare(_ drawn: Bitmap, with name: String) throws -> (share: Doubl
             let a = drawn[x, y], b = mac[x, y]
             let most: Int = [abs(Int(a.r) - Int(b.r)), abs(Int(a.g) - Int(b.g)), abs(Int(a.b) - Int(b.b)), abs(Int(a.a) - Int(b.a))].max() ?? 0
             worst = max(worst, most)
-            if most > tolerance {
+            if most > limit {
                 differing += 1
             }
         }
     }
     let share = Double(differing) / Double(drawn.width * drawn.height)
-    print("\(name): \(differing) pixels (\(String(format: "%.2f", share * 100))%) differ by more than \(tolerance), the most by \(worst)")
+    print("\(name): \(differing) pixels (\(String(format: "%.2f", share * 100))%) differ by more than \(limit), the most by \(worst)")
     return (share, worst)
 }

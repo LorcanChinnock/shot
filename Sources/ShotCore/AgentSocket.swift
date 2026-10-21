@@ -117,7 +117,8 @@ public enum AgentSocket {
                     continue
                 }
                 let handler = handler
-                DispatchQueue.global().async {
+                // A thread of its own, since the global queues' threads can all be busy.
+                Thread.detachNewThread {
                     Self.serve(client, handler: handler)
                 }
             }
@@ -143,8 +144,31 @@ public enum AgentSocket {
                 close(client)
                 return
             }
-            Task {
+            // On a queue of its own: a serial queue, unlike the global ones, gets a thread even when all of theirs are busy.
+            let queue = DispatchQueue(label: "dev.lorcan.Shot.agent-socket.answer")
+            queue.setSpecific(key: answering, value: true)
+            Task(executorPreference: QueueExecutor(queue)) {
                 AgentSocket.reply(await handler(request), to: client)
+            }
+        }
+    }
+
+    /// Marks the queues requests are answered on.
+    static let answering = DispatchSpecificKey<Bool>()
+
+    /// Runs tasks' jobs on a queue rather than the threads of the shared pool, so an agent's answer never waits for work
+    /// that holds every one of those, such as tests drawing pictures in parallel.
+    final class QueueExecutor: TaskExecutor {
+        private let queue: DispatchQueue
+
+        init(_ queue: DispatchQueue) {
+            self.queue = queue
+        }
+
+        func enqueue(_ job: consuming ExecutorJob) {
+            let job = UnownedJob(job)
+            queue.async {
+                job.runSynchronously(on: self.asUnownedTaskExecutor())
             }
         }
     }

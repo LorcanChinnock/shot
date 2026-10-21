@@ -125,6 +125,12 @@ format|start_time=1.000000
     #expect(packets.runs(of: []) == [])
 }
 
+@Test func aRunPicksAtMostSoManyStretchesOfFrames() {
+    #expect(packets.runs(of: [0, 1, 2, 3, 4, 5], limit: 1) == [[0, 1, 2, 3, 4, 5]])
+    #expect(packets.runs(of: [0, 2, 4, 5], limit: 2) == [[0, 2], [4, 5]])
+    #expect(packets.runs(of: [0, 2, 4, 5], limit: 3) == [[0, 2, 4, 5]])
+}
+
 // MARK: Reading
 
 @Test func framesFitTheMaximumKeepingTheirShapeWithoutGrowing() {
@@ -143,6 +149,10 @@ format|start_time=1.000000
         "-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", "rgba", "pipe:1",
     ])
     #expect(FFmpeg.frameArguments("/v/a.mp4", frames: [0], of: packets, width: 8, height: 8, version: "4.4.2-0ubuntu0.22.04.1").contains("-vsync"))
+    // Frames that follow one another are picked together.
+    #expect(FFmpeg.frameArguments("/v/a.mp4", frames: [0, 1, 2, 4, 5], of: packets, width: 8, height: 8).contains(
+        "select='between(t,0.9995,1.2005)+between(t,1.3995,1.5005)',scale=8:8"
+    ))
     // From the first frame there's no seeking.
     #expect(!FFmpeg.frameArguments("/v/a.mp4", frames: [0], of: packets, width: 8, height: 8).contains("-ss"))
 }
@@ -275,6 +285,67 @@ private func join(sounds: [FFmpeg.SegmentSound] = [], hasAudio: Bool = true, mut
     // With no sound files at all, the joined video has no sound.
     let none = join(sounds: [FFmpeg.SegmentSound(system: nil, microphone: nil), FFmpeg.SegmentSound(system: nil, microphone: nil)])
     #expect(none.runs == [["-v", "error", "-nostdin", "-f", "concat", "-safe", "0", "-i", "/s/list.txt", "-map", "0:v", "-c", "copy", "-f", "mp4", "-y", "/r/out.mp4"]])
+}
+
+// MARK: Writing
+
+@Test func aProbeReadsTheFrameRateOfItsPicture() throws {
+    func rate(_ fraction: String) throws -> Double? {
+        let json = #"{"streams": [{"codec_type": "video", "width": 8, "height": 8, "avg_frame_rate": "\#(fraction)"}], "format": {}}"#
+        return try FFmpeg.Probe(json: Data(json.utf8)).frameRate
+    }
+    #expect(try rate("30/1") == 30)
+    let ntsc = try rate("30000/1001")
+    #expect(abs(try #require(ntsc) - 29.97) < 0.01)
+    #expect(try rate("0/0") == nil)
+    #expect(try rate("25") == 25)
+    #expect(try FFmpeg.Probe(json: Data(rotatedProbe.utf8)).frameRate == nil)
+}
+
+@Test func aProjectIsDrawnAtItsFastestPicturesRateWithinLimits() {
+    #expect(FFmpeg.frameRate(of: []) == 30)
+    #expect(FFmpeg.frameRate(of: [24, 15]) == 30)
+    #expect(FFmpeg.frameRate(of: [29.97, 59.94]) == 60)
+    #expect(FFmpeg.frameRate(of: [240]) == 120)
+}
+
+@Test func aClipsVolumeIsPlainOrRunsBetweenItsKeyframes() {
+    var clip = Clip(source: URL(fileURLWithPath: "/v/a.mp4"), sourceDuration: 2, volume: 0.5)
+    #expect(FFmpeg.volume(of: clip) == "0.5")
+    clip.animation.volume = [Keyframe(time: 0.5, value: 0.8)]
+    #expect(FFmpeg.volume(of: clip) == "0.8")
+    // Down from 1 to 0 over 0.2 s, in two steps, holding either side.
+    clip.animation.volume = [Keyframe(time: 0, value: 1), Keyframe(time: 0.2, value: 0)]
+    #expect(FFmpeg.volume(of: clip) == [
+        "lt(t,0)*1", "gte(t,0)*lt(t,0.1)*(1+(t-0)*-5)", "gte(t,0.1)*lt(t,0.2)*(0.5+(t-0.1)*-5)", "gte(t,0.2)*0",
+    ].joined(separator: "+"))
+    // Eased keyframes are followed a step at a time.
+    clip.animation.volume = [Keyframe(time: 0, value: 0, easing: .easeInOut), Keyframe(time: 1, value: 1)]
+    #expect(FFmpeg.volume(of: clip).components(separatedBy: "gte(t,").count - 1 == 11)
+}
+
+@Test func framesAreEncodedFromStandardInputWithTheSoundMixedUnderThem() {
+    let sounds = [
+        FFmpeg.Sound(path: "/v/a.mp4", sourceStart: 0.5, length: 1.5, start: 0, volume: "1"),
+        FFmpeg.Sound(path: "/v/b.m4a", sourceStart: 0, length: 2, start: 1.25, volume: "0.25"),
+    ]
+    let arguments = FFmpeg.writeArguments(width: 640, height: 360, frameRate: 30, hevc: false, sounds: sounds, duration: 3, muxer: "mp4", output: "/v/out.mp4")
+    #expect(arguments == [
+        "-v", "error", "-nostdin", "-f", "rawvideo", "-pix_fmt", "rgba", "-s", "640x360", "-framerate", "30", "-i", "pipe:0",
+        "-ss", "0.5", "-t", "1.5", "-i", "/v/a.mp4", "-ss", "0", "-t", "2", "-i", "/v/b.m4a",
+        "-map", "0:v", "-vf", "scale=out_color_matrix=bt709:out_range=tv",
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p",
+        "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv",
+        "-filter_complex", [
+            "[1:a:0]aformat=sample_rates=48000:channel_layouts=stereo,asetpts=PTS-STARTPTS,volume='1':eval=frame,adelay=delays=0:all=1[s0]",
+            "[2:a:0]aformat=sample_rates=48000:channel_layouts=stereo,asetpts=PTS-STARTPTS,volume='0.25':eval=frame,adelay=delays=1250:all=1[s1]",
+            "[s0][s1]amix=inputs=2:normalize=0:duration=longest,atrim=end=3[a]",
+        ].joined(separator: ";"),
+        "-map", "[a]", "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", "-f", "mp4", "-y", "/v/out.mp4",
+    ])
+    let silent = FFmpeg.writeArguments(width: 8, height: 8, frameRate: 60, hevc: true, sounds: [], duration: 1, muxer: "mov", output: "/v/out.mov")
+    #expect(!silent.contains("-filter_complex") && !silent.contains("-c:a"))
+    #expect(silent.contains("libx265") && silent.contains("hvc1") && silent.suffix(3) == ["mov", "-y", "/v/out.mov"])
 }
 
 @Test func secondsArePrintedPlainly() {

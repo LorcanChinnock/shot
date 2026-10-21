@@ -50,6 +50,25 @@ import Testing
         print("Compose 1920×1080: \(fastest), budget \(budget)")
         #expect(fastest <= budget, "Composing a frame took \(fastest), over its \(budget) budget")
     }
+
+    @Test(.enabled(if: hasFFmpeg, "ffmpeg isn't installed")) func writing10SecondsOf1080pStaysInBudget() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let source = folder.appendingPathComponent("source.mp4")
+        _ = try await Subprocess.output(try FFmpegTools.find().ffmpeg, [
+            "-v", "error", "-nostdin", "-f", "lavfi", "-i", "testsrc2=size=1920x1080:rate=30:duration=10", "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", source.path,
+        ])
+        var project = Project(source: source, duration: 10, canvasSize: CGSize(width: 1920, height: 1080), hasAudio: false)
+        let arrow = Annotation(kind: .arrow(from: CGPoint(x: 200, y: 900), to: CGPoint(x: 900, y: 600)), color: RGBA(0.9, 0.1, 0.1), lineWidth: 16)
+        project = project.adding(annotation: arrow, at: 2, duration: 4).project
+        let output = folder.appendingPathComponent("out.mp4")
+        let took = try await ContinuousClock().measure {
+            try await FFmpegWriter().write(project, to: output, as: "public.mpeg-4", canvasType: CairoCanvas.self) { _ in .h264 }
+        }
+        let budget = Duration.seconds(80)
+        print("Write 10 s of 1920×1080 at 30 fps: \(took), budget \(budget)")
+        #expect(took <= budget, "Writing took \(took), over its \(budget) budget")
+    }
 }
 
 /// Opaque, with detail in every channel.

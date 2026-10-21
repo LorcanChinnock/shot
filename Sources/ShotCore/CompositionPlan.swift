@@ -1,5 +1,20 @@
 import Foundation
 
+/// Builds a project for playing and exporting: on a Mac, `build` makes AVFoundation's composition of it.
+public enum CompositionBuilder {
+    public enum BuildError: LocalizedError {
+        case noVideo(String)
+        case cannotInsert(String)
+
+        public var errorDescription: String? {
+            switch self {
+            case .noVideo(let name): shotLocalized("\(name) has no video to show")
+            case .cannotInsert(let name): shotLocalized("Couldn't add \(name) to the video")
+            }
+        }
+    }
+}
+
 /// A stretch of the timeline over which the same clips are on screen.
 public struct VideoSegment: Equatable, Sendable {
     public enum Layer: Equatable, Sendable {
