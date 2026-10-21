@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.66](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.65...v0.7.0-beta.66) (2026-10-21)
+
+
+### Bug Fixes
+
+* **agents:** stop Install's command on time when the app is busy ([#782](https://github.com/LorcanChinnock/shot/issues/782)) ([002cecc](https://github.com/LorcanChinnock/shot/commit/002cecc7830ca1d9b4e99ee752cc9c88b8db31c2))
+
 ## [0.7.0-beta.65](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.64...v0.7.0-beta.65) (2026-10-21)
 
 
