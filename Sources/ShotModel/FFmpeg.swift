@@ -325,13 +325,10 @@ public enum FFmpeg {
     public struct Source: Sendable {
         public var path: String
         public var hasAudio: Bool
-        /// When the file starts, in seconds of its own times.
-        public var startTime: Double
 
-        public init(path: String, hasAudio: Bool, startTime: Double = 0) {
+        public init(path: String, hasAudio: Bool) {
             self.path = path
             self.hasAudio = hasAudio
-            self.startTime = startTime
         }
     }
 
@@ -364,9 +361,9 @@ public enum FFmpeg {
     }
 
     /// The filter graph and outputs that join `kept` of `source`'s first video stream, and of its first audio stream
-    /// when there's `sound`, at `speed`, encoded again.
+    /// when there's `sound`, at `speed`, encoded again. Without `-copyts`, ffmpeg moves the input's times back by its start
+    /// time, so the sections are cut at times from the start of the file, as Shot gives them.
     static func encoded(_ kept: [TrimRange], of source: Source, speed: Double, sound: Bool) -> [String] {
-        let start = source.startTime
         var graph: [String] = []
         var joined = ""
         let split = kept.count > 1
@@ -375,7 +372,7 @@ public enum FFmpeg {
             graph.append("[0:a:0]" + (split ? "asplit=\(kept.count)" + kept.indices.map { "[as\($0)]" }.joined() : "anull[as0]"))
         }
         for (index, section) in kept.enumerated() {
-            let range = "start=\(seconds(section.start + start)):end=\(seconds(section.end + start))"
+            let range = "start=\(seconds(section.start)):end=\(seconds(section.end))"
             graph.append("[vs\(index)]trim=\(range),setpts=PTS-STARTPTS[v\(index)]")
             joined += "[v\(index)]"
             if sound {

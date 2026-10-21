@@ -203,6 +203,21 @@ private func probe(_ url: URL) async throws -> FFmpeg.Probe {
         #expect(loudness[0] > 0.1 && loudness[1] < 0.02, "\(loudness)")
     }
 
+    @Test func cutsAreTakenFromTheStartOfAFileWhoseTimesStartLater() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let late = folder.appendingPathComponent("late.mkv")
+        _ = try await Subprocess.output(try FFmpegTools.find().ffmpeg, ["-v", "error", "-i", timed.path, "-c", "copy", "-output_ts_offset", "1.5", late.path])
+        // B-frames move it back a little from 1.5 s.
+        #expect(try await probe(late).startTime > 1)
+        let output = folder.appendingPathComponent("out.mp4")
+        #expect(try await !VideoTrimmer.trim(late, range: TrimRange(duration: 2), cuts: CutList([0.2..<1.2]), to: output, as: "public.mpeg-4"))
+        #expect(abs(try await probe(output).duration - 1) < 0.1)
+        // Frame 0 starts it, and frame 36, at 1.2 s, follows the cut.
+        let read = try await frames(of: output, at: [0, 0.25]).map { gray(try $0.decoded.get().image) }
+        #expect(zip(read, [0, 148]).allSatisfy { abs($0 - $1) <= 12 }, "\(read)")
+    }
+
     @Test func aSpedUpTrimKeepsEveryFrameAndItsSound() async throws {
         let folder = try temporaryFolder()
         defer { try? FileManager.default.removeItem(at: folder) }

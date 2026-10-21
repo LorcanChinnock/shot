@@ -178,7 +178,7 @@ format|start_time=1.000000
     #expect(FFmpeg.muxer(for: "com.compuserve.gif") == nil)
 }
 
-private let source = FFmpeg.Source(path: "/v/in.mp4", hasAudio: true, startTime: 1)
+private let source = FFmpeg.Source(path: "/v/in.mp4", hasAudio: true)
 
 private func trim(_ kept: [TrimRange], speed: Double = 1, muted: Bool = false, source: FFmpeg.Source = source) -> FFmpeg.Job {
     FFmpeg.trim(source, kept: kept, speed: speed, muted: muted, to: "/v/out.mov", as: "mov", scratch: "/s")
@@ -199,11 +199,10 @@ private func trim(_ kept: [TrimRange], speed: Double = 1, muted: Bool = false, s
     // Even where each starts on a sync frame.
     let job = trim([TrimRange(start: 0, end: 0.2, duration: 0.6), TrimRange(start: 0.4, end: 0.6, duration: 0.6)], speed: 2)
     #expect(!job.copiesVideo && job.concatList == nil)
-    // Times in the file start at 1 s.
     let graph = [
         "[0:v:0]split=2[vs0][vs1]", "[0:a:0]asplit=2[as0][as1]",
-        "[vs0]trim=start=1:end=1.2,setpts=PTS-STARTPTS[v0]", "[as0]atrim=start=1:end=1.2,asetpts=PTS-STARTPTS[a0]",
-        "[vs1]trim=start=1.4:end=1.6,setpts=PTS-STARTPTS[v1]", "[as1]atrim=start=1.4:end=1.6,asetpts=PTS-STARTPTS[a1]",
+        "[vs0]trim=start=0:end=0.2,setpts=PTS-STARTPTS[v0]", "[as0]atrim=start=0:end=0.2,asetpts=PTS-STARTPTS[a0]",
+        "[vs1]trim=start=0.4:end=0.6,setpts=PTS-STARTPTS[v1]", "[as1]atrim=start=0.4:end=0.6,asetpts=PTS-STARTPTS[a1]",
         "[v0][a0][v1][a1]concat=n=2:v=1:a=1[vc][ac]", "[vc]setpts=PTS/2[v]", "[ac]atempo=2[a]",
     ].joined(separator: ";")
     #expect(job.runs == [[
@@ -214,7 +213,7 @@ private func trim(_ kept: [TrimRange], speed: Double = 1, muted: Bool = false, s
     let silent = trim([TrimRange(start: 0.1, end: 0.2, duration: 0.6)] + [TrimRange(start: 0.4, end: 0.6, duration: 0.6)], muted: true)
     #expect(silent.runs == [[
         "-v", "error", "-nostdin", "-i", "/v/in.mp4", "-filter_complex",
-        "[0:v:0]split=2[vs0][vs1];[vs0]trim=start=1.1:end=1.2,setpts=PTS-STARTPTS[v0];[vs1]trim=start=1.4:end=1.6,setpts=PTS-STARTPTS[v1];[v0][v1]concat=n=2:v=1:a=0[vc];[vc]null[v]",
+        "[0:v:0]split=2[vs0][vs1];[vs0]trim=start=0.1:end=0.2,setpts=PTS-STARTPTS[v0];[vs1]trim=start=0.4:end=0.6,setpts=PTS-STARTPTS[v1];[v0][v1]concat=n=2:v=1:a=0[vc];[vc]null[v]",
         "-map", "[v]", "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", "-f", "mov", "-y", "/v/out.mov",
     ]])
 }
