@@ -1,12 +1,9 @@
 name: CI
 
-# Every pull request runs two jobs. `test` lints, runs ShotModel's, ShotCore's and ShotCoreLinux's tests on Linux, which
-# keeps them portable, and builds the `shot` command line there.
-# `macos` builds the app and runs every macOS test, so an Apple-side break can't reach main. On release-please's PR,
-# `macos` also runs the performance budgets: that's the release gate. release-please opens that PR as the repository's
-# GitHub App (release.yml), so its runs start without approval.
-# There's no run on push to main: PRs are squash-merged, and their merge commit was already tested. warm-cache.yml
-# builds there instead, to save the Linux build cache the pull request check restores.
+# Every pull request runs `macos`, which lints, builds the app and runs every test, so a break can't reach main. On
+# release-please's PR it also runs the performance budgets: that's the release gate. release-please opens that PR as
+# the repository's GitHub App (release.yml), so its runs start without approval.
+# There's no run on push to main: PRs are squash-merged, and their merge commit was already tested.
 on:
   pull_request:
 
@@ -18,48 +15,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # A required check, so main's ruleset needs it by name. One job, because each job's Linux minutes round up.
-  test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    # The Swift release of the macos-26 runner's default Xcode. `make test-linux` uses the same image. It's the
-    # official image by tag, not digest: Dependabot can't update a workflow's `container:`, so a digest would go stale,
-    # and this job has no secrets and a read-only token.
-    container: swift:6.3
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # The image has no make, so this calls what `make lint` runs.
-      - name: Lint
-        run: scripts/lint.sh
-      # The newest build warm-cache.yml saved on main. Checkout gives every file a new modification time, so SwiftPM
-      # still recompiles them, but about twice as fast as from nothing. A miss just builds cold.
-      - name: Restore the build
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .build
-          key: swift-6.3-linux-${{ hashFiles('Package.resolved') }}-${{ github.sha }}
-          restore-keys: swift-6.3-linux-${{ hashFiles('Package.resolved') }}-
-      # AgentCommand's tests run commands through zsh, which the image doesn't have, and ShotCoreLinux links libpng,
-      # libjpeg-turbo, Cairo, Pango, xcb, libdbus and libpipewire. X11Capturer's tests start Xvfb, PortalCapturer's a
-      # session bus, FFmpegTests run ffmpeg and ffprobe, and ScreenCastRecording's start PipeWire and WirePlumber, with
-      # GStreamer's pipewiresink as the screen cast's video.
-      - name: Install packages
-        run: apt-get update -qq && apt-get install -y -qq --no-install-recommends zsh libpng-dev libturbojpeg0-dev libcairo2-dev libpango1.0-dev libxcb1-dev libxcb-composite0-dev libxcb-randr0-dev libdbus-1-dev libpipewire-0.3-dev fonts-dejavu-core xvfb dbus-daemon ffmpeg pipewire pipewire-bin wireplumber gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-pipewire
-      - name: Test
-        run: swift test --force-resolved-versions
-      # swift test builds only what the tests need, so the command line on Linux is built on its own.
-      - name: Build shot
-        run: swift build --product shot --force-resolved-versions
-
-  # A required check too. The repository is public, so macOS minutes are free; the cost is queue time, since the free
-  # plan runs 5 macOS jobs at once.
+  # The required check, so main's ruleset needs it by name. The repository is public, so macOS minutes are free; the
+  # cost is queue time, since the free plan runs 5 macOS jobs at once.
   macos:
-    # macOS: builds the app and runs ShotCoreApple's tests, which need AppKit, AVFoundation, CoreImage and ImageIO.
+    # macOS: Shot is a Mac app, and its tests need AppKit, AVFoundation, CoreImage and ImageIO.
     runs-on: macos-26
     # A run takes about 5 minutes. A hung test would otherwise hold a macOS runner for GitHub's 6-hour default.
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # What `make lint` runs before its build, which the next step does.
+      - name: Lint
+        run: scripts/lint.sh
       - name: Build
         run: swift build --build-tests --force-resolved-versions
       # Every build extracts the app's strings, so this needs the build above. See scripts/strings.sh.

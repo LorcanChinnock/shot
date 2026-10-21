@@ -55,10 +55,6 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     #expect(try parse("get") == .get(nil))
     #expect(try parse("get /shots/a.png") == .get("/shots/a.png"))
     #expect(try parse("doctor") == .doctor)
-    #expect(try parse("serve") == .serve)
-    #expect(try parse("settings agent-capture") == .settings(agentCapture: nil))
-    #expect(try parse("settings agent-capture on") == .settings(agentCapture: true))
-    #expect(try parse("settings agent-capture off") == .settings(agentCapture: false))
     #expect(try parse("--version") == .version)
     #expect(try parse("-v") == .version)
 }
@@ -132,10 +128,6 @@ private func usage(_ line: String) -> (command: String?, message: String)? {
     ("annotate a.png", "annotate", "needs --json with a file of marks, or - to read them from standard input"),
     ("mcp now", "mcp", "takes no arguments"),
     ("doctor --fix", "doctor", "takes no arguments"),
-    ("serve --port 9", "serve", "takes no arguments"),
-    ("settings", "settings", "expected agent-capture, then on or off to change it"),
-    ("settings agent-capture yes", "settings", "agent-capture takes on or off, not yes"),
-    ("settings agent-capture on off", "settings", "expected agent-capture, then on or off to change it"),
     ("latest a.png", "latest", "takes no file; use shot get to name one"),
     ("latest --kind gif", "latest", "--kind gif must be image, video or any"),
     ("list --limit 0", "list", "--limit 0 must be from 1 to 50"),
@@ -325,16 +317,4 @@ func badMarksAreDataErrorsThatNameTheMark(_ json: String, _ message: String) thr
     #expect(throws: ShotCommandError.usage("pick", "--prompt can be at most 100 characters")) {
         try ShotCommand.parse(["pick", "--prompt", long])
     }
-}
-
-@Test func helpListsServeAndSettingsOnlyOnLinux() throws {
-    #expect(ShotCommand.usage("serve").hasPrefix("Usage: shot serve\n"))
-    #expect(ShotCommand.usage("settings").hasPrefix("Usage: shot settings agent-capture [on|off]\n"))
-    #if os(Linux)
-    #expect(ShotCommand.usage(nil).contains("shot serve\n"))
-    #expect(try parse("help settings") == .help("settings"))
-    #else
-    #expect(!ShotCommand.usage(nil).contains("shot serve"))
-    #expect(!ShotCommand.usage(nil).contains("shot settings"))
-    #endif
 }

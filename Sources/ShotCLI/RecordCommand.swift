@@ -1,11 +1,6 @@
 import Foundation
-#if os(macOS)
 import Darwin
 import ShotCoreApple
-#else
-import Glibc
-import ShotCoreLinux
-#endif
 
 extension ShotCLI {
     /// `shot record --window … -- <command>`: records `target` through the app while `arguments` runs, with its input
@@ -66,12 +61,7 @@ extension ShotCLI {
     /// Starts `arguments`, found on the PATH, in this process group, so a Ctrl-C at the terminal reaches it directly.
     /// It gets the signals Shot listens for back at their defaults, and the rest of its environment as Shot's.
     private static func spawn(_ arguments: [String]) -> Result<pid_t, SpawnFailure> {
-        // Darwin's attributes are a pointer it allocates, where Glibc's are a struct.
-        #if os(macOS)
         var attributes: posix_spawnattr_t?
-        #else
-        var attributes = posix_spawnattr_t()
-        #endif
         posix_spawnattr_init(&attributes)
         defer { posix_spawnattr_destroy(&attributes) }
         var defaults = sigset_t()

@@ -1,7 +1,5 @@
 #if canImport(Darwin)
 import Darwin
-#else
-import Glibc
 #endif
 import Foundation
 
@@ -225,20 +223,12 @@ public enum AgentSocket {
         _ = fcntl(fd, F_SETFD, FD_CLOEXEC)
         let connected = withUnsafePointer(to: &address) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-                #if canImport(Darwin)
                 Darwin.connect(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size))
-                #else
-                Glibc.connect(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size))
-                #endif
             }
         }
         guard connected == 0 else {
             close(fd)
-            #if os(Linux)
-            throw .unavailable("shot serve isn't answering agents at \(url.path)")
-            #else
             throw .unavailable("Shot isn't answering agents: it isn't running, or Settings › Agents › Let agents capture and record is off")
-            #endif
         }
         return fd
     }
@@ -247,9 +237,7 @@ public enum AgentSocket {
     static func address(of url: URL) throws(ShotCommandError) -> sockaddr_un {
         var address = sockaddr_un()
         address.sun_family = sa_family_t(AF_UNIX)
-        #if canImport(Darwin)
         address.sun_len = UInt8(MemoryLayout<sockaddr_un>.size)
-        #endif
         let path = Array(url.path.utf8)
         let capacity = MemoryLayout.size(ofValue: address.sun_path)
         guard path.count < capacity else {
@@ -269,11 +257,7 @@ public enum AgentSocket {
         data.withUnsafeBytes { buffer in
             var offset = 0
             while offset < buffer.count {
-                #if canImport(Darwin)
                 let written = Darwin.write(fd, buffer.baseAddress! + offset, buffer.count - offset)
-                #else
-                let written = Glibc.send(fd, buffer.baseAddress! + offset, buffer.count - offset, Int32(MSG_NOSIGNAL))
-                #endif
                 if written < 0 {
                     if errno == EINTR { continue }
                     return false
@@ -329,33 +313,19 @@ public enum AgentSocket {
         String(cString: strerror(errno))
     }
 
-    #if canImport(Darwin)
     static let stream = SOCK_STREAM
-    #else
-    static let stream = Int32(SOCK_STREAM.rawValue)
-    #endif
 
-    /// Stops writes to `fd` raising `SIGPIPE` when its peer goes away, which would end the process. Linux passes
-    /// `MSG_NOSIGNAL` to each `send` instead.
+    /// Stops writes to `fd` raising `SIGPIPE` when its peer goes away, which would end the process.
     static func keepSignalsOff(_ fd: Int32) {
-        #if canImport(Darwin)
         var on: Int32 = 1
         setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
-        #endif
     }
 
     /// The user at the other end of the connected socket `fd`, which the server checks is this one; `nil` when it can't tell.
     static func peerUser(of fd: Int32) -> uid_t? {
-        #if canImport(Darwin)
         var uid = uid_t()
         var gid = gid_t()
         return getpeereid(fd, &uid, &gid) == 0 ? uid : nil
-        #else
-        // Glibc's `struct ucred`, which it shows Swift only with `_GNU_SOURCE`.
-        var credentials: (pid: pid_t, uid: uid_t, gid: gid_t) = (0, 0, 0)
-        var size = socklen_t(MemoryLayout.size(ofValue: credentials))
-        return getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &credentials, &size) == 0 ? credentials.uid : nil
-        #endif
     }
 }
 
@@ -363,11 +333,7 @@ extension AgentSocket {
     /// How long `ask` waits for an app it started to begin answering.
     static let launchTimeout = Duration.seconds(5)
 
-    #if os(Linux)
-    public static let turnedOff = "Shot isn't taking requests from agents. Run shot settings agent-capture on to let them capture, then try again."
-    #else
     public static let turnedOff = "Shot isn't taking requests from agents. Turn on Settings › Agents › Let agents capture and record in Shot, then try again."
-    #endif
 
     /// Sends `request` to the app with `bundleID`, first opening it in the background, without taking focus, when
     /// nothing answers. `enabled` is Let agents capture and record as the app's settings have it, so a setting that's off
@@ -382,11 +348,7 @@ extension AgentSocket {
             let deadline = ContinuousClock.now + launchTimeout
             while !isListening(at: url) {
                 guard ContinuousClock.now < deadline else {
-                    #if os(Linux)
-                    throw .unavailable("shot serve didn't start answering agents within \(launchTimeout.components.seconds) seconds. Run shot serve to see why.")
-                    #else
                     throw .unavailable("Shot didn't start answering agents within \(launchTimeout.components.seconds) seconds. Check that it opens, and that Settings › Agents › Let agents capture and record is on.")
-                    #endif
                 }
                 try? await Task.sleep(for: .milliseconds(100))
             }
@@ -394,35 +356,8 @@ extension AgentSocket {
         return try await send(request, to: url, timeout: timeout)
     }
 
-    /// Opens the app with `bundleID` in the background, as `open -g` does, which does nothing when it's running. Linux
-    /// has no app, so it starts `shot serve` instead: this executable, which is `shot`, in a session of its own, so it
-    /// outlives the terminal or the agent that started it, with nothing on its standard input and output, which may be
-    /// an MCP client's pipes.
+    /// Opens the app with `bundleID` in the background, as `open -g` does, which does nothing when it's running.
     private static func launch(_ bundleID: String) throws(ShotCommandError) {
-        #if os(Linux)
-        var actions = posix_spawn_file_actions_t()
-        var attributes = posix_spawnattr_t()
-        posix_spawn_file_actions_init(&actions)
-        posix_spawnattr_init(&attributes)
-        defer {
-            posix_spawn_file_actions_destroy(&actions)
-            posix_spawnattr_destroy(&attributes)
-        }
-        for fd: Int32 in [0, 1, 2] {
-            posix_spawn_file_actions_addopen(&actions, fd, "/dev/null", fd == 0 ? O_RDONLY : O_WRONLY, 0)
-        }
-        // Glibc's POSIX_SPAWN_SETSID, which it shows Swift only with `_GNU_SOURCE`.
-        posix_spawnattr_setflags(&attributes, 0x80)
-        let executable = (try? FileManager.default.destinationOfSymbolicLink(atPath: "/proc/self/exe")) ?? "/proc/self/exe"
-        let arguments = [executable, "serve"]
-        var argv: [UnsafeMutablePointer<CChar>?] = arguments.map { strdup($0) } + [nil]
-        defer { argv.forEach { free($0) } }
-        var pid = pid_t()
-        let spawned = posix_spawn(&pid, executable, &actions, &attributes, &argv, environ)
-        guard spawned == 0 else {
-            throw .unavailable("couldn't start shot serve: \(String(cString: strerror(spawned)))")
-        }
-        #else
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
         process.arguments = ["-g", "-b", bundleID]
@@ -437,6 +372,5 @@ extension AgentSocket {
         guard process.terminationStatus == 0 else {
             throw .unavailable("couldn't open Shot: no app with the bundle ID \(bundleID) is installed")
         }
-        #endif
     }
 }

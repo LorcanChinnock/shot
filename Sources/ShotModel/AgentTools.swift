@@ -33,8 +33,6 @@ public struct AgentTools: Sendable {
     public var pollInterval: Duration = CaptureWatch.interval
     /// The tools this platform can't run, such as `find_text` without text recognition, left out of the server's list.
     public var unavailable: Set<String> = []
-    /// The tools this platform lists but can't run yet, each answering `ShotCommandError.notOnLinuxYet`.
-    public var notOnLinuxYet: Set<String> = []
 
     public init(
         folder: URL,
@@ -387,9 +385,6 @@ public struct AgentTools: Sendable {
     /// Runs the tool `name`, which `MCPServer` has already matched to one of `definitions`, for `client`, whose name the
     /// files a tool makes keep as their origin.
     public func call(_ name: String, _ arguments: JSONValue, client: MCPServer.Client? = nil) async -> MCPServer.ToolResult {
-        if notOnLinuxYet.contains(name) {
-            return MCPServer.ToolResult(content: [.text("\(name): \(ShotCommandError.notOnLinuxYet.message)")], isError: true)
-        }
         let entries = entries()
         let origin = ProjectOrigin(via: .mcp, client: client?.name, action: name)
         switch name {
