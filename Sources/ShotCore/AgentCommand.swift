@@ -46,7 +46,9 @@ public enum AgentCommand {
                 killpg(pid, SIGKILL)
             }
         }
-        DispatchQueue.global().asyncAfter(deadline: .now() + timeout, execute: limit)
+        // A queue of its own, which gets a thread whatever else is running: on the shared global queue, the limit waits
+        // behind any work blocked there, such as a socket read, and fires seconds late (#781).
+        DispatchQueue(label: "dev.lorcan.Shot.agent-command-limit").asyncAfter(deadline: .now() + timeout, execute: limit)
         let text = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
         process.waitUntilExit()
         limit.cancel()
