@@ -10,3 +10,15 @@ public enum AnimationPreset: String, CaseIterable, Sendable {
     /// Whether it animates the end of the clip rather than the start.
     public var playsAtEnd: Bool { self == .fadeOut }
 }
+
+extension AnimationPreset {
+    public var title: String {
+        switch self {
+        case .fadeIn: String(localized: "Fade In")
+        case .fadeOut: String(localized: "Fade Out")
+        case .pop: String(localized: "Pop")
+        case .slideIn: String(localized: "Slide In")
+        case .drawOn: String(localized: "Draw On")
+        }
+    }
+}

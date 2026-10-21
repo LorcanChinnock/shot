@@ -35,3 +35,13 @@ public struct VideoExportOptions: Equatable, Sendable {
     /// How long `range`, less `cuts`, plays for at this speed.
     public func outputLength(of range: TrimRange, cuts: CutList = CutList()) -> Double { cuts.keptLength(in: range) / speed }
 }
+
+extension VideoExportOptions {
+    /// Describes a GIF made with these options, for Settings.
+    public var gifSummary: String {
+        let seconds = Int(GIFExporter.maxDuration)
+        return gifWidth == Self.originalWidth
+            ? String(localized: "\(gifFrameRate) fps, full width, first \(seconds) seconds.")
+            : String(localized: "\(gifFrameRate) fps, up to \(gifWidth) px wide, first \(seconds) seconds.")
+    }
+}

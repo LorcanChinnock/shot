@@ -442,3 +442,15 @@ public struct ClipAnimation: Codable, Equatable, Sendable {
         return result
     }
 }
+
+extension Easing {
+    public var title: String {
+        switch self {
+        case .linear: String(localized: "Linear")
+        case .easeIn: String(localized: "Ease in")
+        case .easeOut: String(localized: "Ease out")
+        case .easeInOut: String(localized: "Ease in-out")
+        case .spring: String(localized: "Spring")
+        }
+    }
+}

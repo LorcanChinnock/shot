@@ -23,3 +23,20 @@ public enum AspectRatio: CaseIterable, Sendable {
         return all[index % all.count]
     }
 }
+
+extension AspectRatio {
+    public var label: String {
+        switch self {
+        case .free: String(localized: "Free")
+        case .square: "1:1"
+        case .fourThree: "4:3"
+        case .threeTwo: "3:2"
+        case .sixteenNine: "16:9"
+        }
+    }
+
+    /// The label with its sides swapped when `portrait`, e.g. 9:16.
+    public func label(portrait: Bool) -> String {
+        portrait ? label.split(separator: ":").reversed().joined(separator: ":") : label
+    }
+}

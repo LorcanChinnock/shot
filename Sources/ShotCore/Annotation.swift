@@ -786,3 +786,70 @@ public enum AnnotationHandle: Hashable, Sendable {
         CGPoint(x: [rect.minX, rect.midX, rect.maxX][dx + 1], y: [rect.minY, rect.midY, rect.maxY][dy + 1])
     }
 }
+
+extension Annotation {
+    /// What the layers panel and the timeline call it: the name it was given, else the first words of a text or note,
+    /// else its kind.
+    public var layerName: String {
+        name ?? automaticName
+    }
+
+    /// Renames it as the layers panel's name field does: an empty name goes back to the automatic one, and the name it
+    /// already shows leaves it as it is, so committing an untouched field doesn't fix an automatic name in place.
+    public mutating func rename(to newName: String) {
+        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed != layerName else {
+            return
+        }
+        name = trimmed
+    }
+
+    private var automaticName: String {
+        switch kind {
+        case let .text(string, _, _): Self.firstWords(of: string) ?? kindTitle
+        case let .note(string, _): Self.firstWords(of: string) ?? kindTitle
+        case let .counter(number, _): String(localized: "Step \(number)")
+        case .arrow, .line, .shape, .highlight, .pixelate, .blur, .spotlight, .freehand, .marker, .image: kindTitle
+        }
+    }
+
+    /// What kind of annotation it is, whatever it's named.
+    public var kindTitle: String {
+        switch kind {
+        case .arrow: String(localized: "Arrow")
+        case .line: String(localized: "Line")
+        case let .shape(shape, _): shape.title
+        case .highlight: String(localized: "Highlight")
+        case .pixelate: String(localized: "Pixelate")
+        case .blur: String(localized: "Blur")
+        case .spotlight: String(localized: "Spotlight")
+        case .text: String(localized: "Text")
+        case .note: String(localized: "Note")
+        case .counter: String(localized: "Step")
+        case .freehand: String(localized: "Pen")
+        case .marker: String(localized: "Highlighter")
+        case .image: String(localized: "Image")
+        }
+    }
+
+    /// What VoiceOver says after its name: its kind, unless the name is just that.
+    public var accessibilityKind: String {
+        layerName == kindTitle ? String(localized: "annotation") : kindTitle.localizedLowercase
+    }
+
+
+    private static func firstWords(of string: String, limit: Int = 24) -> String? {
+        let words = string.split(whereSeparator: \.isWhitespace)
+        guard let first = words.first else {
+            return nil
+        }
+        var name = String(first.prefix(limit))
+        for word in words.dropFirst() {
+            guard name.count + 1 + word.count <= limit else {
+                return name + "…"
+            }
+            name += " " + word
+        }
+        return name
+    }
+}

@@ -279,3 +279,53 @@ public struct SpotlightStyle: Equatable, Hashable, Codable, Sendable {
         max(4, length * 0.008 * pow(2, (strength - 0.5) / 0.2))
     }
 }
+
+extension BoxShape {
+    public var title: String {
+        switch self {
+        case .rectangle: String(localized: "Rectangle")
+        case .ellipse: String(localized: "Ellipse")
+        case .triangle: String(localized: "Triangle")
+        case .diamond: String(localized: "Diamond")
+        case .star: String(localized: "Star")
+        }
+    }
+}
+
+extension Redaction {
+    public var title: String {
+        switch self {
+        case .blur: String(localized: "Blur")
+        case .pixelate: String(localized: "Pixelate")
+        }
+    }
+}
+
+extension TextAlign {
+    public var title: String {
+        switch self {
+        case .left: String(localized: "Align Left")
+        case .center: String(localized: "Align Centre")
+        case .right: String(localized: "Align Right")
+        }
+    }
+}
+
+extension VerticalTextAlign {
+    public var title: String {
+        switch self {
+        case .top: String(localized: "Align Top")
+        case .middle: String(localized: "Align Middle")
+        case .bottom: String(localized: "Align Bottom")
+        }
+    }
+}
+
+extension SpotlightStyle.Effect {
+    public var title: String {
+        switch self {
+        case .darken: String(localized: "Darken")
+        case .blur: String(localized: "Blur")
+        }
+    }
+}

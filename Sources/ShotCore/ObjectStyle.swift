@@ -364,3 +364,14 @@ public extension CopiedStyle {
         }
     }
 }
+
+extension ShadowPreset {
+    public var title: String {
+        switch self {
+        case .soft: String(localized: "Soft")
+        case .float: String(localized: "Float")
+        case .contact: String(localized: "Contact")
+        case .glow: String(localized: "Glow")
+        }
+    }
+}

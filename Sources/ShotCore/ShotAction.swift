@@ -158,3 +158,30 @@ public struct KeyCombo: Equatable, Hashable, Sendable {
         88: "Keypad 6", 89: "Keypad 7", 91: "Keypad 8", 92: "Keypad 9",
     ]
 }
+
+extension ShotAction {
+    public var title: String {
+        switch self {
+        case .captureArea: String(localized: "Capture Area")
+        case .captureFullscreen: String(localized: "Capture Full Screen")
+        case .captureWindow: String(localized: "Capture Window")
+        case .record: String(localized: "Record Area")
+        case .recordFullscreen: String(localized: "Record Full Screen")
+        case .recordWindow: String(localized: "Record Window")
+        case .pickColor: String(localized: "Pick Colour")
+        case .copyPath: String(localized: "Copy Latest Capture's Path")
+        case .capturePrevious: String(localized: "Capture Previous Area")
+        case .copyText: String(localized: "Copy Text")
+        case .focusQuickAccess: String(localized: "Focus Quick Access")
+        }
+    }
+}
+
+extension ShotAction.Conflict {
+    public func message(for combo: KeyCombo) -> String {
+        switch self {
+        case .reserved: String(localized: "\(combo.displayString) is reserved by macOS")
+        case let .taken(action): String(localized: "\(combo.displayString) is already used by \(action.title)")
+        }
+    }
+}
