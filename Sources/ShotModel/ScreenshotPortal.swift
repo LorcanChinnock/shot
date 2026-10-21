@@ -26,8 +26,6 @@ public enum ScreenshotPortal {
     }
 
     /// Why there's no session bus to ask, when `busAddress` finds none.
-    /// Why `shot serve` doesn't record on Wayland, which needs the desktop's screen-cast portal.
-    public static let noRecording = "Recording isn't available on Wayland yet, only in an X11 session. shot capture and the MCP tools that capture still work."
     public static let noBus = "DBUS_SESSION_BUS_ADDRESS isn't set, so Shot can't find the session bus to ask the desktop portal for screenshots. Run shot from a terminal in your Wayland desktop session."
 
     /// A `handle_token`, which may hold only letters, digits and underscores.

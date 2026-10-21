@@ -2,7 +2,7 @@ import Foundation
 
 extension Doctor {
     /// What `shot doctor` checks on Linux, where `shot serve` answers agents rather than an app: the session, the desktop
-    /// portal on Wayland, Let agents capture and record, `shot serve`, ffmpeg, what runs so far, what's left out by design, the emoji font, and the capture
+    /// portal and what records through it on Wayland, Let agents capture and record, `shot serve`, ffmpeg, what runs so far, what's left out by design, the emoji font, and the capture
     /// folder.
     public struct LinuxFacts: Equatable, Sendable {
         public var version: String
@@ -30,11 +30,13 @@ extension Doctor {
         public var screenshotPortal: Result<Int, ShotCommandError>?
         /// The ffmpeg and ffprobe that read, trim, join and export video.
         public var ffmpeg: FFmpegFacts?
+        /// What records a Wayland session, in one; `nil` in any other.
+        public var screenCast: ScreenCastFacts?
 
         public init(
             version: String, settingsFile: String, sessionType: String?, agentCapture: Bool, socketPath: String, listening: Bool,
             status: Result<[String: JSONValue], ShotCommandError>?, folder: String, folderExists: Bool, folderError: String?, captures: Int,
-            colorEmoji: Bool, screenshotPortal: Result<Int, ShotCommandError>? = nil, ffmpeg: FFmpegFacts? = nil
+            colorEmoji: Bool, screenshotPortal: Result<Int, ShotCommandError>? = nil, ffmpeg: FFmpegFacts? = nil, screenCast: ScreenCastFacts? = nil
         ) {
             self.version = version
             self.settingsFile = settingsFile
@@ -50,6 +52,19 @@ extension Doctor {
             self.colorEmoji = colorEmoji
             self.screenshotPortal = screenshotPortal
             self.ffmpeg = ffmpeg
+            self.screenCast = screenCast
+        }
+    }
+
+    /// What records a Wayland session: the version of the desktop portal's ScreenCast interface, or why there's none,
+    /// and libpipewire's, which reads the frames it sends.
+    public struct ScreenCastFacts: Equatable, Sendable {
+        public var version: Result<Int, ShotCommandError>
+        public var pipewire: String
+
+        public init(version: Result<Int, ShotCommandError>, pipewire: String) {
+            self.version = version
+            self.pipewire = pipewire
         }
     }
 
@@ -81,7 +96,7 @@ extension Doctor {
     public static let notOnLinuxYetTools = [AgentTools.askForCapture]
 
     public static func checks(_ facts: LinuxFacts) -> [Check] {
-        [platform(facts), portal(facts), linuxAgents(facts), serve(facts), ffmpeg(facts), notOnLinuxYet(facts), macOnly, emoji(facts), linuxFolder(facts)].compactMap { $0 }
+        [platform(facts), portal(facts), screenCast(facts), linuxAgents(facts), serve(facts), ffmpeg(facts), notOnLinuxYet, macOnly, emoji(facts), linuxFolder(facts)].compactMap { $0 }
     }
 
     static func platform(_ facts: LinuxFacts) -> Check {
@@ -106,6 +121,21 @@ extension Doctor {
         case let .failure(error)?:
             return Check("screenshotPortal", .fail, error.message,
                          fix: "Install xdg-desktop-portal and your desktop's backend (\(ScreenshotPortal.backends)), and run shot from a terminal in your Wayland desktop session.")
+        }
+    }
+
+    /// Whether the desktop portal can record the screen, which a Wayland session records through, and the libpipewire
+    /// that reads it; `nil` in any other session. Screenshots work without it, so it only warns.
+    static func screenCast(_ facts: LinuxFacts) -> Check? {
+        guard let cast = facts.screenCast else {
+            return nil
+        }
+        switch cast.version {
+        case let .success(version):
+            return Check("screenCastPortal", .pass, "The desktop portal can record the screen (ScreenCast version \(version)), read through libpipewire \(cast.pipewire), so shot serve records a screen, or a window the user picks in the desktop's dialog. The first recording of a screen asks in that dialog too, and later ones record the same screen without asking.")
+        case let .failure(error):
+            return Check("screenCastPortal", .warn, error.message + " So shot record and record_window can't record, though screenshots still work.",
+                         fix: "Install xdg-desktop-portal and your desktop's backend (\(ScreenshotPortal.backends)), then stop shot serve with pkill -f \"shot serve\"; the next recording starts it again.")
         }
     }
 
@@ -178,18 +208,13 @@ extension Doctor {
         return Check("ffmpeg", .pass, detail + " It encodes H.264 and HEVC.")
     }
 
-    /// What isn't on Linux yet: picking, and on Wayland, recording.
-    static func notOnLinuxYet(_ facts: LinuxFacts) -> Check {
-        let recording = facts.sessionType?.lowercased() == "wayland"
-            ? " Recording isn't on Wayland yet either: shot record and record_window work only in an X11 session."
-            : " shot record and record_window record through shot serve in an X11 session, but not yet on Wayland."
-        return Check(
-            "notOnLinuxYet", .warn,
-            "Picking isn't on Linux yet: shot pick and the MCP tool \(AgentTools.askForCapture) answer that they're not on Linux yet." + recording
-                + " The image and video commands and the tools that read and edit captures work, and shot capture, shot windows and the MCP tools that capture ask shot serve.",
-            fix: "Use Shot on a Mac for those for now."
-        )
-    }
+    /// What isn't on Linux yet: picking.
+    static let notOnLinuxYet = Check(
+        "notOnLinuxYet", .warn,
+        "Picking isn't on Linux yet: shot pick and the MCP tool \(AgentTools.askForCapture) answer that they're not on Linux yet."
+            + " The image and video commands and the tools that read and edit captures work, and shot capture, shot windows, shot record and the MCP tools that capture and record ask shot serve.",
+        fix: "Use Shot on a Mac for those for now."
+    )
 
     static let macOnly = Check(
         "macOnly", .pass,

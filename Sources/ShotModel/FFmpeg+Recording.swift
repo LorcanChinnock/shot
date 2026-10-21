@@ -30,6 +30,26 @@ extension FFmpeg {
             + recordingOptions + colors + ["-movflags", "+faststart", "-f", "mp4", "-y", output]
     }
 
+    /// The raw pixel layouts a screen cast's frames come in, as ffmpeg names them, in the order of `CPipeWireStream`'s
+    /// `shot_pw_format`: BGRx, BGRA, RGBx and RGBA.
+    public static let castPixelFormats = ["bgr0", "bgra", "rgb0", "rgba"]
+
+    /// `ffmpeg`'s arguments to record the raw frames written to its standard input, `size` pixels in `pixelFormat`, as
+    /// H.264 MP4 at `output`, keeping only `crop` of them, in pixels, when it's given, and stopping by itself after `limit`
+    /// seconds. Each frame is stamped when it arrives and repeated or dropped to a constant `frameRate`. It reports its
+    /// progress as `grabArguments` has it, and stops, writing a whole file, when its standard input closes. `version` is
+    /// ffmpeg's.
+    public static func castArguments(
+        size: CGSize, pixelFormat: String, crop: CGRect?, frameRate: Int, limit: Double, output: String, version: String? = nil
+    ) -> [String] {
+        let cropping = crop.map { "crop=\(Int($0.width)):\(Int($0.height)):\(Int($0.minX)):\(Int($0.minY))," } ?? ""
+        return ["-v", "error", "-nostdin", "-nostats", "-stats_period", "0.1", "-progress", "pipe:1", "-use_wallclock_as_timestamps", "1",
+                "-f", "rawvideo", "-pix_fmt", pixelFormat, "-video_size", "\(Int(size.width))x\(Int(size.height))", "-framerate", "\(frameRate)",
+                "-i", "pipe:0", "-t", seconds(limit), "-vf", cropping + "scale=out_color_matrix=bt709:out_range=tv"]
+            + frameMode("cfr", version: version) + ["-r", "\(frameRate)"]
+            + recordingOptions + colors + ["-movflags", "+faststart", "-f", "mp4", "-y", output]
+    }
+
     /// How Shot encodes H.264 as it records: quickly enough to keep up with the screen, with no frames held back, so a
     /// stop writes the last of them at once.
     static let recordingOptions = ["-c:v", h264Encoder, "-preset", "veryfast", "-tune", "zerolatency", "-crf", "20", "-pix_fmt", "yuv420p"]

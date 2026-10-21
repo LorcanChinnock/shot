@@ -47,7 +47,7 @@ targets += [
 targets += [
     // The Linux implementations of ShotCore's protocols, as they come (#656). It re-exports ShotCore, so ShotCLI
     // imports only this.
-    .target(name: "ShotCoreLinux", dependencies: ["ShotCore", "CPNG", "CTurboJPEG", "CCairo", "CPango", "CXCB", "CDBus"]),
+    .target(name: "ShotCoreLinux", dependencies: ["ShotCore", "CPNG", "CTurboJPEG", "CCairo", "CPango", "CXCB", "CDBus", "CPipeWireStream"]),
     // The C libraries it codes images with, through their APIs that report errors rather than jumping out of them.
     .systemLibrary(name: "CPNG", pkgConfig: "libpng", providers: [.apt(["libpng-dev"])]),
     .systemLibrary(name: "CTurboJPEG", pkgConfig: "libturbojpeg", providers: [.apt(["libturbojpeg0-dev"])]),
@@ -59,6 +59,10 @@ targets += [
     .systemLibrary(name: "CXCB", pkgConfig: "xcb-composite", providers: [.apt(["libxcb1-dev", "libxcb-composite0-dev", "libxcb-randr0-dev"])]),
     // The session bus's client library, which it asks the desktop portal for screenshots through on Wayland.
     .systemLibrary(name: "CDBus", pkgConfig: "dbus-1", providers: [.apt(["libdbus-1-dev"])]),
+    // The library it reads a screen cast's frames from on Wayland, and the C that reads them, since Swift can't import the
+    // SPA macros that describe a stream.
+    .systemLibrary(name: "CPipeWire", pkgConfig: "libpipewire-0.3", providers: [.apt(["libpipewire-0.3-dev"])]),
+    .target(name: "CPipeWireStream", dependencies: ["CPipeWire"]),
     .executableTarget(name: "ShotCLI", dependencies: ["ShotCoreLinux"]),
     // CXCB, so the X11 tests can put windows on the X server they start, and CDBus, so the portal's tests can stand in
     // for it on the bus they start.

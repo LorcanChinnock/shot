@@ -285,12 +285,18 @@ public enum FFmpeg {
     /// rate: `-fps_mode` from ffmpeg 5.1, the only one ffmpeg 9 takes, and `-vsync` before it. A version that doesn't
     /// start with one, such as a build from git, is taken to be new.
     public static func passthrough(version: String?) -> [String] {
+        frameMode("passthrough", version: version)
+    }
+
+    /// The option that sets how ffmpeg times the frames it writes, such as `passthrough` or `cfr`, as `passthrough`
+    /// spells it for `version`.
+    static func frameMode(_ mode: String, version: String?) -> [String] {
         let numbers = (version ?? "").drop { $0 == "n" }.split(separator: ".").prefix(2).map { Int($0.prefix { $0.isNumber }) }
         guard let major = numbers.first ?? nil else {
-            return ["-fps_mode", "passthrough"]
+            return ["-fps_mode", mode]
         }
         let minor = numbers.count > 1 ? numbers[1] ?? 0 : 0
-        return (major, minor) < (5, 1) ? ["-vsync", "passthrough"] : ["-fps_mode", "passthrough"]
+        return (major, minor) < (5, 1) ? ["-vsync", mode] : ["-fps_mode", mode]
     }
 
     /// `ffmpeg`'s arguments to decode `frames` of `packets`, one run of `VideoPackets.runs`, from `file`, upright, as

@@ -5,8 +5,9 @@ import Foundation
 /// than through `Process`, whose `waitUntilExit` spins a thread of the pool the other tests need, and with no signals
 /// blocked, since the test's threads block SIGTERM and the server would keep that.
 enum TestServer {
-    /// Starts `executable` with `arguments`, its output thrown away.
-    static func spawn(_ executable: String, _ arguments: [String]) throws -> pid_t {
+    /// Starts `executable` with `arguments`, its output thrown away, and this process's environment with `environment`
+    /// added.
+    static func spawn(_ executable: String, _ arguments: [String], environment: [String: String] = [:]) throws -> pid_t {
         var attributes = posix_spawnattr_t()
         posix_spawnattr_init(&attributes)
         defer { posix_spawnattr_destroy(&attributes) }
@@ -21,8 +22,10 @@ enum TestServer {
         posix_spawn_file_actions_addopen(&actions, 2, "/dev/null", O_WRONLY, 0)
         let argv = ([executable] + arguments).map { strdup($0) } + [nil]
         defer { argv.forEach { free($0) } }
+        let variables = ProcessInfo.processInfo.environment.merging(environment) { $1 }.map { strdup("\($0.key)=\($0.value)") } + [nil]
+        defer { variables.forEach { free($0) } }
         var pid: pid_t = 0
-        let error = posix_spawn(&pid, executable, &actions, &attributes, argv, environ)
+        let error = posix_spawn(&pid, executable, &actions, &attributes, argv, variables)
         guard error == 0 else {
             throw ShotCommandError.internal("Couldn't start \(executable): \(String(cString: strerror(error))).")
         }

@@ -5,6 +5,13 @@ import Foundation
 public protocol RecordingSource: Sendable {
     /// Starts writing frames to `url`, as MP4, and returns once they're being written. Throws why it can't.
     func start(to url: URL) async throws(ShotCommandError) -> any RecordingSegment
+    /// Lets go of what it keeps between segments, such as a screen cast, once the recording has stopped or been thrown
+    /// away.
+    func end() async
+}
+
+extension RecordingSource {
+    public func end() async {}
 }
 
 /// One stretch of a recording, from a start or resume to a pause or stop.
@@ -63,6 +70,7 @@ public actor SegmentRecorder {
         do {
             first = try await source.start(to: url)
         } catch {
+            await source.end()
             try? FileManager.default.removeItem(at: folder)
             throw error
         }
@@ -129,6 +137,7 @@ public actor SegmentRecorder {
             failure = failure ?? error
         }
         segment = nil
+        await source.end()
         if let failure {
             throw failure
         }
@@ -149,6 +158,7 @@ public actor SegmentRecorder {
         phase = .ended
         segment?.cancel()
         segment = nil
+        await source.end()
         try? FileManager.default.removeItem(at: folder)
     }
 

@@ -270,7 +270,7 @@ enum ShotCLI {
             sessionType: ProcessInfo.processInfo.environment["XDG_SESSION_TYPE"], agentCapture: Preferences(store: defaultsStore(app: nil)).agentCapture,
             socketPath: socket.path, listening: listening, status: status, folder: folder.path, folderExists: exists, folderError: folderError,
             captures: captures, colorEmoji: PangoShaper.hasColorEmoji, screenshotPortal: LinuxScreen.screenshotPortal(),
-            ffmpeg: await FFmpegTools.doctorFacts()
+            ffmpeg: await FFmpegTools.doctorFacts(), screenCast: LinuxScreen.screenCastPortal()
         )
     }
 
@@ -278,7 +278,7 @@ enum ShotCLI {
     /// the session's capturer. Another `shot serve` already answering leaves this one nothing to do.
     static func serveAgents(program: String) async {
         let daemon = AgentDaemon(
-            capturer: LinuxScreen.capturer(), projects: ProjectStore(bundleID: fallbackSuite), marks: RecordingMarks.url(bundleID: fallbackSuite), version: version(of: nil)
+            capturer: LinuxScreen.capturer(settings: fallbackSuite), projects: ProjectStore(bundleID: fallbackSuite), marks: RecordingMarks.url(bundleID: fallbackSuite), version: version(of: nil)
         ) {
             let store = defaultsStore(app: nil)
             Preferences.registerDefaults(in: store)

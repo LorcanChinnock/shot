@@ -67,6 +67,8 @@ public enum AgentSocket {
             guard fd >= 0 else {
                 throw .io("couldn't make a socket: \(AgentSocket.reason())")
             }
+            // Kept from the programs Shot starts, such as the ffmpeg that records, which would otherwise hold it open.
+            _ = fcntl(fd, F_SETFD, FD_CLOEXEC)
             let bound = withUnsafePointer(to: &address) {
                 $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
             }
@@ -109,8 +111,10 @@ public enum AgentSocket {
                 guard client >= 0 else {
                     return
                 }
-                // Accepted sockets inherit the listener's O_NONBLOCK; this one is read with a timeout instead.
+                // Accepted sockets inherit the listener's O_NONBLOCK, but not its FD_CLOEXEC; this one is read with a
+                // timeout instead.
                 _ = fcntl(client, F_SETFL, 0)
+                _ = fcntl(client, F_SETFD, FD_CLOEXEC)
                 AgentSocket.keepSignalsOff(client)
                 guard AgentSocket.peerUser(of: client) == user else {
                     close(client)
@@ -217,6 +221,8 @@ public enum AgentSocket {
         guard fd >= 0 else {
             throw .io("couldn't make a socket: \(reason())")
         }
+        // Kept from the command `shot record` runs.
+        _ = fcntl(fd, F_SETFD, FD_CLOEXEC)
         let connected = withUnsafePointer(to: &address) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
                 #if canImport(Darwin)
