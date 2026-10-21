@@ -60,32 +60,38 @@ public enum X11Screen {
         return shown.sorted { a, b in a.stack != b.stack ? a.stack > b.stack : a.order < b.order }.map(\.client)
     }
 
-    /// A display, as XRandR gives it: an output and the CRTC that shows it.
+    /// A display, as XRandR gives it: an output and where its CRTC shows it.
     public struct Output: Equatable, Sendable {
         public var name: String
-        public var crtc: UInt32
         /// In the root window's pixels.
         public var frame: CGRect
         public var primary: Bool
 
-        public init(name: String, crtc: UInt32, frame: CGRect, primary: Bool = false) {
+        public init(name: String, frame: CGRect, primary: Bool = false) {
             self.name = name
-            self.crtc = crtc
             self.frame = frame
             self.primary = primary
         }
     }
 
-    /// The outputs that show something, the primary one first, then left to right and top to bottom, one an output a
-    /// mirror shows too.
+    /// The outputs that show something, the primary one first, then left to right, top to bottom and by name, each
+    /// picture once: a mirror, on the same CRTC or a CRTC of its own, shows the same frame, and the first such output
+    /// listed stands for it, so the primary is never dropped for its mirror.
     public static func displays(_ outputs: [Output]) -> [Output] {
-        var seen = Set<UInt32>()
-        let shown = outputs.filter { !$0.frame.isEmpty && seen.insert($0.crtc).inserted }
-        return shown.sorted { a, b in
+        let sorted = outputs.filter { !$0.frame.isEmpty }.sorted { a, b in
             if a.primary != b.primary {
                 return a.primary
             }
-            return (a.frame.minX, a.frame.minY) < (b.frame.minX, b.frame.minY)
+            return (a.frame.minX, a.frame.minY, a.name) < (b.frame.minX, b.frame.minY, b.name)
+        }
+        // CGRect isn't Hashable on Linux.
+        var frames: [CGRect] = []
+        return sorted.filter { output in
+            guard !frames.contains(output.frame) else {
+                return false
+            }
+            frames.append(output.frame)
+            return true
         }
     }
 

@@ -194,7 +194,7 @@ final class X11Capturer: ScreenCapturer, @unchecked Sendable {
 
     /// The displays in the root window's pixels, the primary one first; the whole root as one without XRandR.
     private func outputs() -> [X11Screen.Output] {
-        let whole = X11Screen.Output(name: "screen", crtc: 0, frame: CGRect(x: 0, y: 0, width: Int(screen.pointee.width_in_pixels), height: Int(screen.pointee.height_in_pixels)))
+        let whole = X11Screen.Output(name: "screen", frame: CGRect(x: 0, y: 0, width: Int(screen.pointee.width_in_pixels), height: Int(screen.pointee.height_in_pixels)))
         guard randr else {
             return [whole]
         }
@@ -213,7 +213,7 @@ final class X11Capturer: ScreenCapturer, @unchecked Sendable {
                 else {
                     return nil
                 }
-                return X11Screen.Output(name: name, crtc: crtc, frame: frame, primary: id == primary)
+                return X11Screen.Output(name: name, frame: frame, primary: id == primary)
             }
         } ?? []
         let displays = X11Screen.displays(found)

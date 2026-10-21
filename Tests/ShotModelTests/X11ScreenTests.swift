@@ -28,13 +28,16 @@ import Testing
 }
 
 @Test func x11PutsThePrimaryDisplayFirstAndShowsEachMirrorOnce() {
-    let left = X11Screen.Output(name: "HDMI-1", crtc: 1, frame: CGRect(x: 0, y: 0, width: 1920, height: 1080))
-    let main = X11Screen.Output(name: "eDP-1", crtc: 2, frame: CGRect(x: 1920, y: 0, width: 2560, height: 1600), primary: true)
-    let mirror = X11Screen.Output(name: "DP-2", crtc: 1, frame: CGRect(x: 0, y: 0, width: 1920, height: 1080))
-    let below = X11Screen.Output(name: "DP-1", crtc: 3, frame: CGRect(x: 0, y: 1080, width: 1920, height: 1080))
-    let off = X11Screen.Output(name: "DP-3", crtc: 4, frame: .zero)
-    #expect(X11Screen.displays([below, left, off, main, mirror]).map(\.name) == ["eDP-1", "HDMI-1", "DP-1"])
+    let left = X11Screen.Output(name: "HDMI-1", frame: CGRect(x: 0, y: 0, width: 1920, height: 1080))
+    let main = X11Screen.Output(name: "eDP-1", frame: CGRect(x: 1920, y: 0, width: 2560, height: 1600), primary: true)
+    let mirror = X11Screen.Output(name: "DP-2", frame: CGRect(x: 0, y: 0, width: 1920, height: 1080))
+    let below = X11Screen.Output(name: "DP-1", frame: CGRect(x: 0, y: 1080, width: 1920, height: 1080))
+    let off = X11Screen.Output(name: "DP-3", frame: .zero)
+    #expect(X11Screen.displays([below, mirror, left, off, main]).map(\.name) == ["eDP-1", "DP-2", "DP-1"])
     #expect(X11Screen.displays([below, left]).map(\.name) == ["HDMI-1", "DP-1"])
+    // A mirror listed before the primary leaves the primary first.
+    let mainMirror = X11Screen.Output(name: "DP-4", frame: main.frame)
+    #expect(X11Screen.displays([mainMirror, left, main]).map(\.name) == ["eDP-1", "HDMI-1"])
 }
 
 @Test func x11ReadsTheClassAndAnOldStyleTitle() {
