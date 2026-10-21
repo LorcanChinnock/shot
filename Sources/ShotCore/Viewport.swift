@@ -1,6 +1,4 @@
-#if canImport(CoreGraphics)
 import CoreGraphics
-#endif
 import Foundation
 
 /// How the editor shows the canvas: a scale, and where image point (0, 0) lands in the top-left-origin view.

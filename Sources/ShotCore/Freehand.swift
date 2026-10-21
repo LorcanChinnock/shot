@@ -1,6 +1,4 @@
-#if canImport(CoreGraphics)
 import CoreGraphics
-#endif
 import Foundation
 
 /// A freehand pen stroke's geometry. Image pixels, top-left origin.

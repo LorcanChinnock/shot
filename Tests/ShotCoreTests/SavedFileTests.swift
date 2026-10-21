@@ -1,6 +1,4 @@
-#if canImport(CoreGraphics)
 import CoreGraphics
-#endif
 import Foundation
 import Synchronization
 import Testing
@@ -37,14 +35,10 @@ private final class SizeOnlyPNG: PNGCoding {
     }
 
     private static func clearImage(width: Int, height: Int) -> PlatformImage? {
-        #if canImport(CoreGraphics)
         CGContext(
             data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
             space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         )?.makeImage()
-        #else
-        Bitmap(width: width, height: height, pixels: Data(count: width * height * 4)).map(BitmapImage.init)
-        #endif
     }
 }
 

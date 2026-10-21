@@ -1,6 +1,4 @@
-#if canImport(CoreGraphics)
 import CoreGraphics
-#endif
 import Foundation
 
 /// All geometry is in image pixels with a top-left origin.

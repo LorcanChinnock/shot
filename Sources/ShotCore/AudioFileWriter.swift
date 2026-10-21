@@ -1,4 +1,3 @@
-#if canImport(AVFoundation)
 import AVFoundation
 
 /// Writes one live audio source to its own AAC file, which starts at the time given to `start(at:)`.
@@ -131,4 +130,3 @@ public final class AudioFileWriter: @unchecked Sendable {
         self.input = input
     }
 }
-#endif

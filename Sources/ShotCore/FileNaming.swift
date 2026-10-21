@@ -45,15 +45,7 @@ public enum FileNaming {
     /// `renameat2`, so Linux links the new name, which fails when it's taken, and then unlinks the old one. Callers
     /// remove `source` afterwards anyway, so an unlink that fails leaves nothing behind.
     static func renameExclusively(_ source: URL, to target: URL) -> Int32 {
-        #if canImport(Darwin)
         renamex_np(source.path, target.path, UInt32(RENAME_EXCL))
-        #else
-        guard link(source.path, target.path) == 0 else {
-            return -1
-        }
-        unlink(source.path)
-        return 0
-        #endif
     }
 
     /// A name for a recording rescued from its leftover segments: the usual name plus "(recovered)", and "part N" when

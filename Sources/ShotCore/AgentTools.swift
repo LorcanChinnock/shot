@@ -31,8 +31,6 @@ public struct AgentTools: Sendable {
     public var timeZone: TimeZone
     /// How often `wait_for_capture` looks at the folder.
     public var pollInterval: Duration = CaptureWatch.interval
-    /// The tools this platform can't run, such as `find_text` without text recognition, left out of the server's list.
-    public var unavailable: Set<String> = []
 
     public init(
         folder: URL,
@@ -377,7 +375,7 @@ public struct AgentTools: Sendable {
     ]
 
     public func server(version: String) -> MCPServer {
-        MCPServer(name: "shot", version: version, tools: Self.definitions.filter { !unavailable.contains($0.name) }) { name, arguments, client in
+        MCPServer(name: "shot", version: version, tools: Self.definitions) { name, arguments, client in
             await call(name, arguments, client: client)
         }
     }

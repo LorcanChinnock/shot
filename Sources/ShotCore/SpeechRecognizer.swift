@@ -1,4 +1,3 @@
-#if canImport(AVFoundation) && canImport(Speech)
 import AVFoundation
 import Foundation
 import Speech
@@ -41,4 +40,3 @@ public enum SpeechRecognizer {
         return words
     }
 }
-#endif

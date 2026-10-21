@@ -1,6 +1,4 @@
-#if canImport(CoreGraphics)
 import CoreGraphics
-#endif
 import Foundation
 
 /// Where a pinned capture first appears: at its own size, shrunk to fit `fraction` of the screen with its aspect kept,

@@ -1,4 +1,3 @@
-#if canImport(CoreGraphics)
 import CoreGraphics
 
 // The spotlights' boolean operations still use CGPath, and a CoreGraphics canvas draws one.
@@ -48,4 +47,3 @@ extension CanvasPath {
         return path
     }
 }
-#endif

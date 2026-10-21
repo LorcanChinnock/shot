@@ -1,6 +1,4 @@
-#if canImport(CoreGraphics)
 import CoreGraphics
-#endif
 import Foundation
 
 public enum CameraBubbleSize: String, CaseIterable, Sendable {

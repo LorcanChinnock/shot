@@ -1,7 +1,5 @@
 import Foundation
-#if canImport(CoreGraphics)
 import CoreGraphics
-#endif
 
 /// An image the editor's model holds: a capture, or a picture placed on it. The model only measures, crops and asks
 /// about transparency; drawing and file formats belong to the platform.
@@ -18,7 +16,6 @@ public protocol ModelImage: AnyObject, Sendable {
     var hasTransparentPixels: Bool { get }
 }
 
-#if canImport(CoreGraphics)
 /// The image the model holds: on a Mac, a `CGImage`, so a capture keeps its own colour space, such as Display P3, and
 /// the renderer draws it as it is.
 public typealias PlatformImage = CGImage
@@ -46,10 +43,6 @@ extension CGImage: ModelImage {
         return (0..<side * side).contains { bytes[$0 * 4 + 3] < 255 }
     }
 }
-#else
-/// The image the model holds: where there's no CoreGraphics, a `Bitmap`.
-public typealias PlatformImage = BitmapImage
-#endif
 
 /// A `Bitmap` as a `ModelImage`. It's a class, as `CGImage` is, so caches can compare images by identity.
 public final class BitmapImage: ModelImage {

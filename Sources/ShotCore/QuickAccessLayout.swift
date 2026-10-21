@@ -1,6 +1,4 @@
-#if canImport(CoreGraphics)
 import CoreGraphics
-#endif
 import Foundation
 
 /// Where Quick Access cards sit in their panel: stacked upward from the bottom, the last card lowest, with `padding`

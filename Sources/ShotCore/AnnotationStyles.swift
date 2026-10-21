@@ -1,6 +1,4 @@
-#if canImport(CoreGraphics)
 import CoreGraphics
-#endif
 import Foundation
 
 /// The outline a shape annotation, or a spotlight's lit area, takes within its rect.

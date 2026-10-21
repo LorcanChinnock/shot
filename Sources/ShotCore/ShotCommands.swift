@@ -203,7 +203,6 @@ public enum ShotCommands {
         guard let image = codec.image(at: url) else {
             throw .data("\(url.lastPathComponent) isn't an image Shot can read")
         }
-        #if canImport(CoreGraphics) && canImport(Vision)
         do {
             var object = try await TextRecognizer.recognize(image).json(words: true)
             object["path"] = .string(url.path)
@@ -211,27 +210,16 @@ public enum ShotCommands {
         } catch {
             throw .internal("couldn't read the text in \(url.lastPathComponent): \(error.localizedDescription)")
         }
-        #else
-        throw .unavailable(textUnavailable)
-        #endif
     }
 
     /// The text in `image`, the file `name`, of the kinds `detect` names.
     private static func text(in image: PlatformImage, named name: String, toHide detect: Set<SensitiveText.Kind>) async throws(ShotCommandError) -> [CaptureText.Found] {
-        #if canImport(CoreGraphics) && canImport(Vision)
         do {
             return try await TextRecognizer.recognize(image).toHide(detect)
         } catch {
             throw .internal("couldn't read the text in \(name): \(error.localizedDescription)")
         }
-        #else
-        throw .unavailable(textUnavailable)
-        #endif
     }
-
-    #if !(canImport(CoreGraphics) && canImport(Vision))
-    static let textUnavailable = "reading the text in an image needs a Mac"
-    #endif
 
     /// A new folder for `frames`: `output` if given, which must not exist, or `<name> frames` beside the video, as its
     /// next version when that's taken. Creating it fails if it exists, so it's never one already in use.

@@ -1,6 +1,4 @@
-#if canImport(CoreGraphics)
 import CoreGraphics
-#endif
 import Foundation
 
 /// Drag handles around a recording region, in AppKit space (bottom-left origin).

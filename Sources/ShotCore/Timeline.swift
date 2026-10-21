@@ -1,6 +1,4 @@
-#if canImport(CoreGraphics)
 import CoreGraphics
-#endif
 import Foundation
 
 /// How a video clip sits on the canvas. At rest it's scaled to fit the canvas and centred.

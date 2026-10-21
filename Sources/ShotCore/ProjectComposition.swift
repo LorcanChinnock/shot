@@ -1,4 +1,3 @@
-#if canImport(AVFoundation) && canImport(CoreImage)
 import AVFoundation
 import CoreImage
 import Synchronization
@@ -345,4 +344,3 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
         requests.record(.cancelAll)
     }
 }
-#endif

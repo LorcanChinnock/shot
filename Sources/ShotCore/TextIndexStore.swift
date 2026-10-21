@@ -1,7 +1,7 @@
-#if canImport(Vision)
 import Foundation
+import os
 
-private let log = ShotLog.shot("text-index")
+private let log = Logger.shot("text-index")
 
 /// Where the text index is kept: app-private in `~/Library/Application Support/<bundle ID>/text-index.json`, beside the
 /// recording marks, never in the capture folder or the files. One JSON file, written atomically, so the MCP server can
@@ -63,4 +63,3 @@ public struct TextIndexStore: Sendable {
         return unread.count
     }
 }
-#endif

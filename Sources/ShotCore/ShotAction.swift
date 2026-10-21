@@ -1,6 +1,4 @@
-#if canImport(CoreGraphics)
 import CoreGraphics
-#endif
 import Foundation
 
 public enum ShotAction: String, CaseIterable, Sendable {
@@ -116,7 +114,6 @@ public struct KeyCombo: Equatable, Hashable, Sendable {
     public var keyLabel: String { Self.keyLabels[keyCode] ?? "#\(keyCode)" }
 
     // CGEventFlags is Apple-only; Linux builds the rest for ShotModelTests.
-    #if canImport(CoreGraphics)
     /// The combo of `keyCode` with the modifiers among `flags`, which `NSEvent.ModifierFlags` shares the bits of.
     public init(keyCode: UInt32, eventFlags flags: CGEventFlags) {
         var modifiers: UInt32 = 0
@@ -136,7 +133,6 @@ public struct KeyCombo: Equatable, Hashable, Sendable {
         if modifiers & Self.control != 0 { flags.insert(.maskControl) }
         return flags
     }
-    #endif
 
     public var displayString: String {
         var result = ""

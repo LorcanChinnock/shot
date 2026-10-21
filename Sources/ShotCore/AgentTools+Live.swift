@@ -42,7 +42,6 @@ extension AgentTools {
             },
             agent: agent
         )
-        #if canImport(CoreGraphics) && canImport(Vision)
         tools.text = { entry throws(ShotCommandError) in
             let read: CaptureText?
             do {
@@ -55,9 +54,6 @@ extension AgentTools {
             }
             return read
         }
-        #else
-        tools.unavailable = [findText]
-        #endif
         return tools
     }
 
@@ -153,21 +149,13 @@ extension AgentTools {
             return ([], nil)
         }
         let words: [Narration.Word]?
-        #if canImport(AVFoundation) && canImport(Speech)
         do {
             words = try await SpeechRecognizer.words(in: url)
         } catch {
             return ([], "Couldn't transcribe its sound: \(error.localizedDescription)")
         }
-        #else
-        words = nil
-        #endif
         guard let words else {
-            #if canImport(AVFoundation) && canImport(Speech)
             return ([], "Its sound isn't transcribed: that needs macOS 26 and a language with on-device speech recognition.")
-            #else
-            return ([], "Its sound isn't transcribed: that needs a Mac.")
-            #endif
         }
         let phrases = Narration.phrases(words)
         guard !phrases.isEmpty else {

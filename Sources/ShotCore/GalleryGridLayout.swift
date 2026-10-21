@@ -1,6 +1,4 @@
-#if canImport(CoreGraphics)
 import CoreGraphics
-#endif
 import Foundation
 
 /// Where the gallery grid puts each section header and row of tiles. Each section starts a new row and, when `titled`,

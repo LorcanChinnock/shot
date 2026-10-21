@@ -1,6 +1,4 @@
-#if canImport(Darwin)
 import Darwin
-#endif
 import Foundation
 
 /// The Unix socket the running app answers agents on, so `shot capture` can ask it for a screenshot: Screen Recording

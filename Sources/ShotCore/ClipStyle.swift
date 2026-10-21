@@ -114,7 +114,6 @@ enum ClipStyler {
     }
 }
 
-#if canImport(CoreImage)
 import CoreImage
 import CoreImage.CIFilterBuiltins
 
@@ -266,4 +265,3 @@ extension ClipStyler {
         return generator.outputImage ?? CIImage.empty()
     }
 }
-#endif

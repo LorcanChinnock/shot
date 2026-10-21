@@ -1,6 +1,4 @@
-#if canImport(CoreGraphics)
 import CoreGraphics
-#endif
 import Foundation
 
 extension EditorDocument {
@@ -35,7 +33,6 @@ extension EditorDocument {
         return (below, CanvasPath(roundedRect: captureRect, cornerRadius: clampedCaptureCornerRadius), lit)
     }
 
-    #if canImport(CoreGraphics)
     /// The part of the image, and of what's drawn under the lowest spotlight, that the spotlights dim: all of it
     /// outside every hard-edged spotlight, never the rest of the padding. `softSpotlights` fade it further.
     /// `nil` when there are no spotlights. One with no area, such as a straight drag, dims nothing.
@@ -52,7 +49,6 @@ extension EditorDocument {
         let lit = parts.lit.reduce(nil as CGPath?) { lit, shape in lit?.union(shape.cgPath) ?? shape.cgPath }
         return lit.map { dimmable.subtracting($0) } ?? dimmable
     }
-    #endif
 
     /// The area `spotlightDimPath` dims, for a canvas that can't add or subtract paths: white where it dims and black
     /// where it doesn't, drawn on a grey `canvasType` canvas at `scale` pixels to a unit. `frame` is the smallest rect on

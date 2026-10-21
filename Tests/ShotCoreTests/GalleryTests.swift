@@ -232,19 +232,3 @@ private func item(_ name: String, _ date: Date, bytes: Int = 1) -> GalleryItem {
     #expect(recent.map(\.name) == ["newest.png", "new.jpg"])
     #expect(Gallery.recentImages(items, excluding: nil, limit: 10).map(\.name) == ["newest.png", "editing.png", "new.jpg", "old.png"])
 }
-
-@Test func listedExtensionsGiveEachKind() {
-    #expect(GalleryKind(listedExtension: "gif") == .gif)
-    #expect(GalleryKind(listedExtension: "MP4") == .video)
-    #expect(GalleryKind(listedExtension: "mov") == .video)
-    #expect(GalleryKind(listedExtension: "png") == .image)
-    #expect(GalleryKind(listedExtension: "JPG") == .image)
-    #expect(GalleryKind(listedExtension: "txt") == nil)
-    #expect(GalleryKind(listedExtension: "") == nil)
-}
-
-/// Linux classifies by the lists alone, so on a Mac they must agree with `UTType` for every extension they name.
-@Test(arguments: ["gif"] + GalleryKind.videoExtensions.sorted() + GalleryKind.imageExtensions.sorted())
-func listedExtensionsAgreeWithTheSystem(_ fileExtension: String) {
-    #expect(GalleryKind(listedExtension: fileExtension) == GalleryKind(fileExtension: fileExtension))
-}
