@@ -19,6 +19,9 @@ public enum MediaProbe {
         let media: ImportedMedia
         do {
             media = try await reader.info(of: url)
+        } catch let ShotCommandError.unavailable(reason) {
+            // ffmpeg isn't installed on Linux, which says nothing about the file.
+            throw ShotCommandError.unavailable(reason)
         } catch {
             throw ProbeError.unreadable(name)
         }

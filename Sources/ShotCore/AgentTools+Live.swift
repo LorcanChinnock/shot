@@ -102,7 +102,7 @@ extension AgentTools {
     static func keyFrames(
         of url: URL, count: Int, marks: [RecordingMark] = [], codec: any ImageCoding, canvasType: any Canvas.Type, reader: any VideoReader
     ) async throws(ShotCommandError) -> [MCPServer.Content] {
-        guard let media = try? await MediaProbe.probe(url, reader: reader), media.size != nil else {
+        guard let media = try await ShotCommands.probe(url, reader: reader), media.size != nil else {
             throw .data("Couldn't read \(url.lastPathComponent) as a video.")
         }
         async let heard = narration(of: url, hasAudio: media.hasAudio)
@@ -115,7 +115,7 @@ extension AgentTools {
             keyFrames = RecordingMark.merge(changes: changes, marked: marked)
             frames = try await KeyFrameExtractor.frames(of: url, at: keyFrames.map(\.time), maxWidth: 1024, reader: reader)
         } catch {
-            throw .io("Couldn't read the frames of \(url.lastPathComponent): \(error.localizedDescription)")
+            throw ShotCommands.failure(error) { .io("Couldn't read the frames of \(url.lastPathComponent): \($0)") }
         }
         var content: [MCPServer.Content] = []
         let shown = marked.reduce(0) { $0 + $1.labels.count }
@@ -163,7 +163,11 @@ extension AgentTools {
         words = nil
         #endif
         guard let words else {
+            #if canImport(AVFoundation) && canImport(Speech)
             return ([], "Its sound isn't transcribed: that needs macOS 26 and a language with on-device speech recognition.")
+            #else
+            return ([], "Its sound isn't transcribed: that needs a Mac.")
+            #endif
         }
         let phrases = Narration.phrases(words)
         guard !phrases.isEmpty else {
@@ -179,8 +183,14 @@ extension AgentTools {
 
     /// A frame from early on, where a recording has usually settled, plus how long it runs.
     static func videoPreview(of url: URL, codec: any ImageCoding, reader: any VideoReader) async -> [MCPServer.Content] {
-        guard let media = try? await MediaProbe.probe(url, reader: reader) else {
-            return [.text("Couldn't read \(url.lastPathComponent) as a video.")]
+        let media: ImportedMedia
+        do {
+            guard let probed = try await ShotCommands.probe(url, reader: reader) else {
+                return [.text("Couldn't read \(url.lastPathComponent) as a video.")]
+            }
+            media = probed
+        } catch {
+            return [.text("Couldn't read \(url.lastPathComponent): \(error.message)")]
         }
         var content: [MCPServer.Content] = []
         let seconds = min(1, media.duration / 2)

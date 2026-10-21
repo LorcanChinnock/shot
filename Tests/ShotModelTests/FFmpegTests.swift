@@ -205,7 +205,7 @@ private func trim(_ kept: [TrimRange], speed: Double = 1, muted: Bool = false, s
     #expect(!encoded.copiesVideo && encoded.runs[0].contains("libx264"))
 }
 
-@Test func severalSectionsAreEncodedAgain() {
+@Test func severalSectionsAreEncodedAgain() throws {
     // Even where each starts on a sync frame.
     let job = trim([TrimRange(start: 0, end: 0.2, duration: 0.6), TrimRange(start: 0.4, end: 0.6, duration: 0.6)], speed: 2)
     #expect(!job.copiesVideo && job.concatList == nil)
@@ -219,6 +219,14 @@ private func trim(_ kept: [TrimRange], speed: Double = 1, muted: Bool = false, s
         "-v", "error", "-nostdin", "-i", "/v/in.mp4", "-filter_complex", graph, "-map", "[v]", "-map", "[a]",
         "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k", "-f", "mov", "-y", "/v/out.mov",
     ]])
+    // At its rate times the speed, so every frame is kept.
+    let timed = trim(
+        [TrimRange(start: 0, end: 0.2, duration: 0.6), TrimRange(start: 0.4, end: 0.6, duration: 0.6)], speed: 2,
+        source: FFmpeg.Source(path: "/v/in.mp4", hasAudio: true, frameRate: 29.97)
+    )
+    let maps = try #require(timed.runs[0].firstIndex(of: "[a]"))
+    #expect(Array(timed.runs[0][maps + 1 ... maps + 3]) == ["-r", "59.94", "-c:v"])
+    #expect(!trim([TrimRange(start: 0, end: 0.2, duration: 0.6)], source: FFmpeg.Source(path: "/v/in.mp4", hasAudio: true, frameRate: 30)).runs[0].contains("-r"))
 
     let silent = trim([TrimRange(start: 0.1, end: 0.2, duration: 0.6)] + [TrimRange(start: 0.4, end: 0.6, duration: 0.6)], muted: true)
     #expect(silent.runs == [[

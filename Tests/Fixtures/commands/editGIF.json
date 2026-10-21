@@ -1,0 +1,22 @@
+{
+  "info" : {
+    "frames" : 10,
+    "kind" : "gif",
+    "path" : "editGIF.gif",
+    "scale" : 1,
+    "size" : {
+      "height" : 60,
+      "width" : 80
+    }
+  },
+  "result" : {
+    "fps" : 10,
+    "frames" : 10,
+    "path" : "editGIF.gif",
+    "size" : {
+      "height" : 60,
+      "width" : 80
+    },
+    "truncated" : false
+  }
+}

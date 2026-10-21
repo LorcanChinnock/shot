@@ -9,7 +9,8 @@ import ShotCoreLinux
 /// and `shot record`, which ask the running app, `shot latest`, `list` and `get`, which read captures as the MCP tools
 /// do, `shot watch`, `shot doctor`, and `--version`. It ships inside the app as `Contents/MacOS/shot-cli`, so it reads the
 /// app's settings to find the captures. On Linux, where it's `shot`, only `Doctor.linuxCommands` run so far: the image
-/// commands, those that read captures, and `shot capture` and `shot windows`, which ask `shot serve` rather than an app.
+/// and video commands, those that read captures, and `shot capture` and `shot windows`, which ask `shot serve` rather
+/// than an app.
 @main
 enum ShotCLI {
     static func main() async {
@@ -131,7 +132,7 @@ enum ShotCLI {
             }
         #endif
         default:
-            // On Linux, the commands that capture, record or read video answer that they're not on Linux yet.
+            // On Linux, the commands that record or pick answer that they're not on Linux yet.
             do {
                 let projects = ProjectStore(bundleID: appBundle()?.bundleIdentifier ?? fallbackSuite)
                 let result = try await ShotCommands.run(command, projects: projects)
@@ -174,7 +175,9 @@ enum ShotCLI {
             try await ask(request, app: app)
         }.server(version: version)
         #else
-        let server = AgentTools.live(folder: folder, projects: ProjectStore(bundleID: fallbackSuite)) { request throws(ShotCommandError) in
+        let server = AgentTools.live(
+            folder: folder, marks: RecordingMarks.url(bundleID: fallbackSuite), projects: ProjectStore(bundleID: fallbackSuite)
+        ) { request throws(ShotCommandError) in
             try await ask(request, app: nil)
         }.server(version: version)
         #endif

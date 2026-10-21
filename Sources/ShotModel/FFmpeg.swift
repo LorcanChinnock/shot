@@ -355,10 +355,14 @@ public enum FFmpeg {
     public struct Source: Sendable {
         public var path: String
         public var hasAudio: Bool
+        /// Its video's frames a second on average, which sections encoded again at another speed are written at, times
+        /// the speed, so every frame is kept, as AVFoundation keeps them; `nil` when ffprobe doesn't say.
+        public var frameRate: Double?
 
-        public init(path: String, hasAudio: Bool) {
+        public init(path: String, hasAudio: Bool, frameRate: Double? = nil) {
             self.path = path
             self.hasAudio = hasAudio
+            self.frameRate = frameRate
         }
     }
 
@@ -415,7 +419,9 @@ public enum FFmpeg {
         if sound {
             graph.append("[ac]" + (speed == 1 ? "anull" : tempo(speed)) + "[a]")
         }
-        return ["-filter_complex", graph.joined(separator: ";"), "-map", "[v]"] + (sound ? ["-map", "[a]"] : [])
+        // Otherwise ffmpeg keeps the input's rate, and drops the frames a faster speed puts between its ticks.
+        let rate = speed == 1 ? nil : source.frameRate.map { ["-r", seconds($0 * speed)] }
+        return ["-filter_complex", graph.joined(separator: ";"), "-map", "[v]"] + (sound ? ["-map", "[a]"] : []) + (rate ?? [])
             + h264Options
     }
 

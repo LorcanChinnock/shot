@@ -199,7 +199,14 @@ public enum ProjectStamp {
         try handle.seek(toOffset: fileSize)
         try handle.write(contentsOf: MovieStampBox.box(id: id))
         try handle.synchronize()
+        #if canImport(Darwin)
         _ = try FileManager.default.replaceItemAt(url, withItemAt: copy)
+        #else
+        // Linux Foundation's replaceItemAt moves the movie onto the copy, which the defer then removes.
+        guard rename(copy.path, url.path) == 0 else {
+            throw CocoaError(.fileWriteUnknown, userInfo: [NSFilePathErrorKey: url.path, NSUnderlyingErrorKey: POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)])
+        }
+        #endif
     }
 
     /// The movie's top-level boxes, as far as they're whole.
@@ -251,13 +258,17 @@ extension ProjectFile {
         let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
         #if canImport(Darwin)
         let bookmarkData = bookmark ? try? url.bookmarkData() : nil
+        let volume = values.volumeUUIDString
         #else
         let bookmarkData: Data? = nil
+        // Linux Foundation reads no volume UUID, so the volume is its device number, without which a file that holds no
+        // ID, such as a GIF, couldn't keep a project.
+        let volume = values.volumeUUIDString ?? (attributes?[.systemNumber] as? NSNumber).map { "device-\($0.uint64Value)" }
         #endif
         self.init(
             path: url.standardizedFileURL.path,
             bookmark: bookmarkData,
-            volume: values.volumeUUIDString,
+            volume: volume,
             number: (attributes?[.systemFileNumber] as? NSNumber)?.uint64Value,
             size: values.fileSize.map(Int64.init),
             modified: values.contentModificationDate

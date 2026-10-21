@@ -75,7 +75,7 @@ public enum ShotCommands {
             }
             return .object(object)
         }
-        guard let media = try? await MediaProbe.probe(url, reader: reader) else {
+        guard let media = try await probe(url, reader: reader) else {
             throw .data("\(url.lastPathComponent) isn't an image or video Shot can read")
         }
         object["kind"] = .string(media.size == nil ? "audio" : "video")
@@ -173,7 +173,7 @@ public enum ShotCommands {
             do {
                 times = try await KeyFrameExtractor.changeTimes(in: input, duration: duration, count: options.count, canvasType: canvasType, reader: reader)
             } catch {
-                throw .io("couldn't read the video's frames: \(error.localizedDescription)")
+                throw failure(error) { .io("couldn't read the video's frames: \($0)") }
             }
         }
         let folder = try makeFolder(beside: input, output: options.output)
@@ -423,7 +423,7 @@ public enum ShotCommands {
             guard FileManager.default.fileExists(atPath: file.path) else {
                 throw .noInput("append[\(index)]: \(file.path) doesn't exist")
             }
-            guard let clip = try? await MediaProbe.probe(file, reader: reader), clip.size != nil else {
+            guard let clip = try await probe(file, reader: reader), clip.size != nil else {
                 throw .data("append[\(index)]: \(file.lastPathComponent) isn't a video Shot can read")
             }
             appended.append(clip)
@@ -463,7 +463,8 @@ public enum ShotCommands {
         let placed = try place(temporary, at: target)
         VersionWriter.keep(written.kept, of: placed, original: original, in: projects, origin: origin)
         var object = try Self.written(placed, codec: codec)
-        if let probed = try? await MediaProbe.probe(placed, reader: reader) {
+        // A GIF is an image: its size is the codec's, and only ffmpeg, on Linux, would read it as a video.
+        if ext != "gif", let probed = try? await MediaProbe.probe(placed, reader: reader) {
             object["duration"] = .number((probed.duration * 1000).rounded() / 1000)
             if let size = probed.size {
                 object["size"] = .object(["width": .number(Double(Int(size.width))), "height": .number(Double(Int(size.height)))])
@@ -529,7 +530,7 @@ public enum ShotCommands {
             do {
                 estimate = try await plan.estimate(canvasType: canvasType, reader: reader)
             } catch {
-                throw .io("couldn't estimate the size: \(error.localizedDescription)")
+                throw failure(error) { .io("couldn't estimate the size: \($0)") }
             }
             guard SizeFit.fits(estimate: estimate, ratio: ratio, within: maxBytes) else {
                 continue
@@ -551,7 +552,7 @@ public enum ShotCommands {
         do {
             return try await plan.run(to: output, canvasType: canvasType, reader: reader, assembler: assembler, writer: writer)
         } catch {
-            throw .io("couldn't write the video: \(error.localizedDescription)")
+            throw failure(error) { .io("couldn't write the video: \($0)") }
         }
     }
 
@@ -631,10 +632,31 @@ public enum ShotCommands {
 
     static func video(_ url: URL, reader: any VideoReader) async throws(ShotCommandError) -> ImportedMedia {
         try requireInput(url)
-        guard let media = try? await MediaProbe.probe(url, reader: reader), media.size != nil else {
+        guard let media = try await probe(url, reader: reader), media.size != nil else {
             throw .data("\(url.lastPathComponent) isn't a video Shot can read")
         }
         return media
+    }
+
+    /// What `reader` finds in `url`, or `nil` when it can't read it. Only `ShotCommandError.unavailable`, which is about
+    /// the reader, such as ffmpeg missing on Linux, rather than the file, is thrown.
+    static func probe(_ url: URL, reader: any VideoReader) async throws(ShotCommandError) -> ImportedMedia? {
+        do {
+            return try await MediaProbe.probe(url, reader: reader)
+        } catch let ShotCommandError.unavailable(reason) {
+            throw .unavailable(reason)
+        } catch {
+            return nil
+        }
+    }
+
+    /// `error` as `wrap` says it, unless it's `ShotCommandError.unavailable`, which says what to install, and passes
+    /// through.
+    static func failure(_ error: any Error, _ wrap: (String) -> ShotCommandError) -> ShotCommandError {
+        if let error = error as? ShotCommandError, case .unavailable = error {
+            return error
+        }
+        return wrap(error.localizedDescription)
     }
 
     /// The video `media` as the video editor opens it, with its trim handles dragged to `start` and `end`.

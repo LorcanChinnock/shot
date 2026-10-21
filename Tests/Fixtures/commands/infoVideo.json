@@ -1,0 +1,12 @@
+{
+  "result" : {
+    "duration" : 2,
+    "hasAudio" : true,
+    "kind" : "video",
+    "path" : "timed.mp4",
+    "size" : {
+      "height" : 120,
+      "width" : 160
+    }
+  }
+}

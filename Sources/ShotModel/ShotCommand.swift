@@ -957,3 +957,8 @@ extension CaptureMark {
         }
     }
 }
+
+// So an error wrapped in another's message, as `localizedDescription`, says what went wrong, on Linux too.
+extension ShotCommandError: LocalizedError {
+    public var errorDescription: String? { message }
+}
