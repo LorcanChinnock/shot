@@ -2,9 +2,10 @@ import Foundation
 
 /// Picks the `ScreenCapturer` `shot serve` takes screenshots with, by the session `XDG_SESSION_TYPE` names: X11's, on
 /// the X server `DISPLAY` names, or the desktop portal's on Wayland, over the session bus, with XWayland's X server for
-/// X11 apps' windows. Without one, it answers why.
+/// X11 apps' windows. Without one, it answers why. On Wayland, the screen cast's restore token is kept in the `settings`
+/// suite.
 public enum LinuxScreen {
-    public static func capturer(environment: [String: String] = ProcessInfo.processInfo.environment) -> any ScreenCapturer {
+    public static func capturer(environment: [String: String] = ProcessInfo.processInfo.environment, settings: String? = nil) -> any ScreenCapturer {
         do {
             switch environment["XDG_SESSION_TYPE"]?.lowercased() {
             case "x11":
@@ -14,7 +15,7 @@ public enum LinuxScreen {
                     return NoCapturer(reason: ScreenshotPortal.noBus)
                 }
                 let xwayland = environment["DISPLAY"].flatMap { try? X11Capturer(display: $0) }
-                return try PortalCapturer(address: address, xwayland: xwayland)
+                return try PortalCapturer(address: address, xwayland: xwayland, settings: settings)
             case let session:
                 return NoCapturer(session: session)
             }
@@ -33,6 +34,21 @@ public enum LinuxScreen {
             return .failure(.unavailable(ScreenshotPortal.noBus))
         }
         return PortalCapturer.probe(address: address).map(Int.init)
+    }
+
+    /// The version of the portal's ScreenCast interface, or why there's none, with the version of libpipewire, which
+    /// reads what it records, for `shot doctor` in a Wayland session; `nil` in any other.
+    public static func screenCastPortal(environment: [String: String] = ProcessInfo.processInfo.environment) -> Doctor.ScreenCastFacts? {
+        guard environment["XDG_SESSION_TYPE"]?.lowercased() == "wayland" else {
+            return nil
+        }
+        let version: Result<Int, ShotCommandError>
+        if let address = ScreenshotPortal.busAddress(environment: environment) {
+            version = PortalCapturer.probeScreenCast(address: address).map { Int($0.version) }
+        } else {
+            version = .failure(.unavailable(ScreenshotPortal.noBus))
+        }
+        return Doctor.ScreenCastFacts(version: version, pipewire: PipeWireStream.libraryVersion)
     }
 }
 

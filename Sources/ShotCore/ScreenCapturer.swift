@@ -28,6 +28,9 @@ public protocol ScreenCapturer: Sendable {
     /// What records `area`, which lies on one display, at `frameRate`, with the pointer drawn when `showsCursor`. Throws
     /// `.unavailable`, with the reason `limits` gives for `.record`, where this session can't record.
     func recordingSource(area: CGRect, frameRate: Int, showsCursor: Bool) throws(ShotCommandError) -> any RecordingSource
+    /// What records a window or screen the user picks in the desktop's own dialog, or the part of it `rect` covers, in
+    /// points from its top-left, for a window this can't record by itself; `nil` when the session has no such dialog.
+    func pickedRecordingSource(rect: CGRect?, frameRate: Int, showsCursor: Bool) throws(ShotCommandError) -> (any RecordingSource)?
 }
 
 extension ScreenCapturer {
@@ -36,6 +39,7 @@ extension ScreenCapturer {
     public func recordingSource(area: CGRect, frameRate: Int, showsCursor: Bool) throws(ShotCommandError) -> any RecordingSource {
         throw .unavailable(limits[.record] ?? "Shot can't record this session.")
     }
+    public func pickedRecordingSource(rect: CGRect?, frameRate: Int, showsCursor: Bool) throws(ShotCommandError) -> (any RecordingSource)? { nil }
 }
 
 /// What a `ScreenCapturer` may be unable to do in its session.

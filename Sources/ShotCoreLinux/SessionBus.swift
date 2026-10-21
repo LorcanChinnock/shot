@@ -139,31 +139,12 @@ final class BusMessage: @unchecked Sendable {
     }
 }
 
-/// The D-Bus values the portal takes and gives. A dictionary is `a{sv}`, whose values come out of their variants.
-indirect enum BusValue: Equatable {
-    case string(String)
-    case objectPath(String)
-    case bool(Bool)
-    case uint32(UInt32)
-    case variant(BusValue)
-    case dictionary([String: BusValue])
-    case array([BusValue])
-
+/// How `BusValue`s go into and come out of libdbus's messages.
+extension BusValue {
     private static let stringType = Int32(UInt8(ascii: "s")), objectPathType = Int32(UInt8(ascii: "o")), boolType = Int32(UInt8(ascii: "b"))
     private static let uint32Type = Int32(UInt8(ascii: "u")), variantType = Int32(UInt8(ascii: "v")), arrayType = Int32(UInt8(ascii: "a"))
-    private static let entryType = Int32(UInt8(ascii: "e"))
-
-    var signature: String {
-        switch self {
-        case .string: "s"
-        case .objectPath: "o"
-        case .bool: "b"
-        case .uint32: "u"
-        case .variant: "v"
-        case .dictionary: "a{sv}"
-        case let .array(values): "a" + (values.first?.signature ?? "v")
-        }
-    }
+    private static let entryType = Int32(UInt8(ascii: "e")), int32Type = Int32(UInt8(ascii: "i")), unixFDType = Int32(UInt8(ascii: "h"))
+    private static let structureType = Int32(UInt8(ascii: "r"))
 
     func append(to iterator: inout DBusMessageIter) {
         switch self {
@@ -177,6 +158,13 @@ indirect enum BusValue: Equatable {
         case let .uint32(value):
             var number = value
             dbus_message_iter_append_basic(&iterator, Self.uint32Type, &number)
+        case let .int32(value):
+            var number = value
+            dbus_message_iter_append_basic(&iterator, Self.int32Type, &number)
+        case let .unixFD(fd):
+            // libdbus sends a duplicate of it.
+            var descriptor = fd
+            dbus_message_iter_append_basic(&iterator, Self.unixFDType, &descriptor)
         case let .variant(value):
             Self.open(&iterator, Self.variantType, value.signature) { value.append(to: &$0) }
         case let .dictionary(entries):
@@ -192,6 +180,12 @@ indirect enum BusValue: Equatable {
             Self.open(&iterator, Self.arrayType, String(signature.dropFirst())) { array in
                 for value in values {
                     value.append(to: &array)
+                }
+            }
+        case let .structure(values):
+            Self.open(&iterator, Self.structureType, nil) { structure in
+                for value in values {
+                    value.append(to: &structure)
                 }
             }
         }
@@ -241,6 +235,19 @@ indirect enum BusValue: Equatable {
             var number: UInt32 = 0
             dbus_message_iter_get_basic(&iterator, &number)
             return .uint32(number)
+        case int32Type:
+            var number: Int32 = 0
+            dbus_message_iter_get_basic(&iterator, &number)
+            return .int32(number)
+        case unixFDType:
+            // A duplicate, which the reader owns.
+            var fd: Int32 = -1
+            dbus_message_iter_get_basic(&iterator, &fd)
+            return .unixFD(fd)
+        case structureType:
+            var inner = DBusMessageIter()
+            dbus_message_iter_recurse(&iterator, &inner)
+            return .structure(dbus_message_iter_get_arg_type(&inner) == 0 ? [] : read(&inner))
         case variantType:
             var inner = DBusMessageIter()
             dbus_message_iter_recurse(&iterator, &inner)

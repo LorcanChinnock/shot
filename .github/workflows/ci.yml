@@ -40,10 +40,11 @@ jobs:
           key: swift-6.3-linux-${{ hashFiles('Package.resolved') }}-${{ github.sha }}
           restore-keys: swift-6.3-linux-${{ hashFiles('Package.resolved') }}-
       # AgentCommand's tests run commands through zsh, which the image doesn't have, and ShotCoreLinux links libpng,
-      # libjpeg-turbo, Cairo, Pango, xcb and libdbus. X11Capturer's tests start Xvfb, PortalCapturer's a session bus, and
-      # FFmpegTests run ffmpeg and ffprobe.
+      # libjpeg-turbo, Cairo, Pango, xcb, libdbus and libpipewire. X11Capturer's tests start Xvfb, PortalCapturer's a
+      # session bus, FFmpegTests run ffmpeg and ffprobe, and ScreenCastRecording's start PipeWire and WirePlumber, with
+      # GStreamer's pipewiresink as the screen cast's video.
       - name: Install packages
-        run: apt-get update -qq && apt-get install -y -qq --no-install-recommends zsh libpng-dev libturbojpeg0-dev libcairo2-dev libpango1.0-dev libxcb1-dev libxcb-composite0-dev libxcb-randr0-dev libdbus-1-dev fonts-dejavu-core xvfb dbus-daemon ffmpeg
+        run: apt-get update -qq && apt-get install -y -qq --no-install-recommends zsh libpng-dev libturbojpeg0-dev libcairo2-dev libpango1.0-dev libxcb1-dev libxcb-composite0-dev libxcb-randr0-dev libdbus-1-dev libpipewire-0.3-dev fonts-dejavu-core xvfb dbus-daemon ffmpeg pipewire pipewire-bin wireplumber gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-pipewire
       - name: Test
         run: swift test --force-resolved-versions
       # swift test builds only what the tests need, so the command line on Linux is built on its own.

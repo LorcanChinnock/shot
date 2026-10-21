@@ -34,6 +34,8 @@ public actor AgentDaemon {
         let name: String
         /// What it records, as the answers give it.
         let window: JSONValue
+        /// What the answers say about it, such as that the user picked it.
+        let note: String?
         let started: Date
         let origin: ProjectOrigin?
         /// Where it's saved and the name it's saved under, as Settings said when it started.
@@ -234,9 +236,19 @@ public actor AgentDaemon {
         }
         starting = true
         defer { starting = false }
-        let (area, name, window) = try await recordedArea(target)
         let frameRate = RecordingFrameRate.effective(setting: prefs.recordingFPS, displayRate: RecordingFrameRate.default)
-        let source = try capturer.recordingSource(area: area, frameRate: frameRate, showsCursor: prefs.recordShowsCursor)
+        let source: any RecordingSource, name: String, window: JSONValue
+        var note: String?
+        // Where windows can't be recorded by themselves, such as on Wayland, the user picks one in the desktop's dialog.
+        let rect = target.rect.flatMap { $0.count == 4 ? CGRect(x: $0[0], y: $0[1], width: $0[2], height: $0[3]) : nil }
+        if target.isWindow, let picked = try capturer.pickedRecordingSource(rect: rect, frameRate: frameRate, showsCursor: prefs.recordShowsCursor) {
+            (source, name, window) = (picked, "what was picked", .object(["picked": .bool(true)]))
+            note = ScreenCastPortal.pickedNote
+        } else {
+            let area: CGRect
+            (area, name, window) = try await recordedArea(target)
+            source = try capturer.recordingSource(area: area, frameRate: frameRate, showsCursor: prefs.recordShowsCursor)
+        }
         let recorder: SegmentRecorder
         do {
             recorder = try await SegmentRecorder(source: source, assembler: assembler, scratch: scratch)
@@ -247,7 +259,9 @@ public actor AgentDaemon {
         }
         let id = String(UUID().uuidString.prefix(8)).lowercased()
         let started = Date()
-        recording = Recording(id: id, recorder: recorder, name: name, window: window, started: started, origin: origin, folder: prefs.captureFolder, prefix: prefs.filePrefix)
+        recording = Recording(
+            id: id, recorder: recorder, name: name, window: window, note: note, started: started, origin: origin, folder: prefs.captureFolder, prefix: prefs.filePrefix
+        )
         let seconds = min(duration ?? AgentRequest.maximumDuration, AgentRequest.maximumDuration)
         recording?.limit = Task { [weak self] in
             try? await Task.sleep(for: .seconds(seconds))
@@ -256,7 +270,11 @@ public actor AgentDaemon {
             }
         }
         guard duration != nil else {
-            return ["id": .string(id), "window": window, "started": .string(ISO8601DateFormatter().string(from: started))]
+            var fields: [String: JSONValue] = ["id": .string(id), "window": window, "started": .string(ISO8601DateFormatter().string(from: started))]
+            if let note {
+                fields["note"] = .string(note)
+            }
+            return fields
         }
         return try await result(id)
     }
@@ -395,6 +413,9 @@ public actor AgentDaemon {
             "bytes": .number(Double(bytes)),
             "duration": .number(((media?.duration ?? 0) * 10).rounded() / 10),
         ]
+        if let note = recording.note {
+            fields["note"] = .string(note)
+        }
         if let size = media?.size {
             fields["size"] = .object(["width": .number(Double(Int(size.width))), "height": .number(Double(Int(size.height)))])
         }

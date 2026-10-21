@@ -37,7 +37,10 @@ final class TestBus: @unchecked Sendable {
 
 /// Stands in for xdg-desktop-portal on a test bus: answers the Screenshot interface's version, and each `Screenshot`
 /// with `image`, saved to a file of its own, or with `response` when that isn't 0, as a backend would after the user
-/// picks or cancels. Without `screenshot`, it's a portal with no Screenshot backend.
+/// picks or cancels. Without `screenshot`, it's a portal with no Screenshot backend. With `screenCast`, it answers the
+/// ScreenCast interface too, streaming that PipeWire node, as a monitor `castSize` big in logical points, through a
+/// connection of its own to the PipeWire in that runtime folder, and giving a new restore token each time. It turns
+/// down a restore token of `malformed`, as xdg-desktop-portal does one that isn't a UUID.
 final class FakePortal: @unchecked Sendable {
     struct Options {
         var screenshot = true
@@ -45,6 +48,10 @@ final class FakePortal: @unchecked Sendable {
         /// Answers on a path it makes up, as portals did before handle tokens.
         var ownPath = false
         var image = Bitmap(width: 64, height: 48, scale: 1, pixels: FakePortal.pattern(width: 64, height: 48))!
+        var screenCast: (node: UInt32, runtime: URL)?
+        var castSize = CGSize(width: 160, height: 120)
+        /// What `Start` answers with, as `response` is for `Screenshot`.
+        var castResponse: UInt32 = 0
     }
 
     private let bus: SessionBus
@@ -56,6 +63,12 @@ final class FakePortal: @unchecked Sendable {
     let requests = Mutex<[Bool]>([])
     /// The files it saved screenshots in.
     let files = Mutex<[String]>([])
+    /// The options of each `SelectSources`, in order.
+    let selected = Mutex<[[String: BusValue]]>([])
+    /// The sessions it was asked to close.
+    let closed = Mutex<[String]>([])
+    private var sessions = 0
+    private var starts = 0
 
     init(on address: String, _ options: Options = Options()) throws {
         bus = try SessionBus(address: address)
@@ -95,14 +108,17 @@ final class FakePortal: @unchecked Sendable {
                 return reply(error: "org.freedesktop.DBus.Error.InvalidArgs", "No such interface", to: call)
             }
             reply([.variant(.uint32(1))], to: call)
+        case ("org.freedesktop.DBus.Properties", "GetAll"):
+            guard options.screenCast != nil, call.arguments.first == .string(ScreenCastPortal.interface) else {
+                return reply(error: "org.freedesktop.DBus.Error.InvalidArgs", "No such interface", to: call)
+            }
+            reply([.dictionary(["version": .uint32(5), "AvailableSourceTypes": .uint32(3), "AvailableCursorModes": .uint32(3)])], to: call)
         case (ScreenshotPortal.interface, "Screenshot"):
             guard options.screenshot else {
                 return reply(error: "org.freedesktop.DBus.Error.UnknownMethod", "No such method", to: call)
             }
             let arguments = call.arguments
-            guard arguments.count == 2, case let .dictionary(asked) = arguments[1], case let .string(token)? = asked["handle_token"],
-                  let sender = dbus_message_get_sender(call.pointer)
-            else {
+            guard arguments.count == 2, case let .dictionary(asked) = arguments[1] else {
                 return reply(error: "org.freedesktop.DBus.Error.InvalidArgs", "Bad arguments", to: call)
             }
             let interactive = asked["interactive"] == .bool(true)
@@ -110,11 +126,6 @@ final class FakePortal: @unchecked Sendable {
                 $0.append(interactive)
                 return $0.count
             }
-            // Where the spec says a request with this token is answered: the sender's unique name, such as :1.42,
-            // without its colon and with underscores for dots.
-            let name = String(cString: sender).dropFirst().replacingOccurrences(of: ".", with: "_")
-            let path = "/org/freedesktop/portal/desktop/request/" + (options.ownPath ? "fake/\(count)" : "\(name)/\(token)")
-            reply([.objectPath(path)], to: call)
             var results: [String: BusValue] = [:]
             if options.response == 0 {
                 let file = folder.appendingPathComponent("Screenshot \(count).png")
@@ -123,12 +134,86 @@ final class FakePortal: @unchecked Sendable {
                 files.withLock { $0.append(file.path) }
                 results["uri"] = .string(file.absoluteString)
             }
-            let signal = BusMessage(dbus_message_new_signal(path, ScreenshotPortal.request, "Response"))
-            signal.append([.uint32(options.response), .dictionary(results)])
-            bus.send(signal)
+            respond(to: call, options: asked, count: count, response: options.response, results: results)
+        case (ScreenCastPortal.interface, let member?) where options.screenCast != nil:
+            answerScreenCast(member, call)
+        case (ScreenCastPortal.session, "Close"):
+            closed.withLock { $0.append(call.path ?? "") }
+            reply([], to: call)
         default:
             reply(error: "org.freedesktop.DBus.Error.UnknownMethod", "No such method", to: call)
         }
+    }
+
+    private func answerScreenCast(_ member: String, _ call: BusMessage) {
+        guard let cast = options.screenCast else {
+            return reply(error: "org.freedesktop.DBus.Error.UnknownMethod", "No such method", to: call)
+        }
+        // An empty dictionary reads as an empty array.
+        var asked: [String: BusValue] = [:]
+        if case let .dictionary(options)? = call.arguments.last {
+            asked = options
+        }
+        sessions += 1
+        switch member {
+        case "CreateSession":
+            guard case let .string(token)? = asked["session_handle_token"] else {
+                return reply(error: "org.freedesktop.DBus.Error.InvalidArgs", "No session token", to: call)
+            }
+            respond(to: call, options: asked, count: sessions, response: 0, results: ["session_handle": .string("/org/freedesktop/portal/desktop/session/\(sender(of: call))/\(token)")])
+        case "SelectSources":
+            selected.withLock { $0.append(asked.filter { $0.key != "handle_token" }) }
+            if asked["restore_token"] == .string("malformed") {
+                return reply(error: "org.freedesktop.portal.Error.InvalidArgument", "Restore token is not a valid UUID string", to: call)
+            }
+            respond(to: call, options: asked, count: sessions, response: 0, results: [:])
+        case "Start":
+            starts += 1
+            let stream = BusValue.structure([.uint32(cast.node), .dictionary([
+                "position": .structure([.int32(0), .int32(0)]), "size": .structure([.int32(Int32(options.castSize.width)), .int32(Int32(options.castSize.height))]),
+                "source_type": .uint32(1),
+            ])])
+            respond(to: call, options: asked, count: sessions, response: options.castResponse, results: [
+                "streams": .array([stream]), "restore_token": .string("token-\(starts)"), "persist_mode": .uint32(2),
+            ])
+        case "OpenPipeWireRemote":
+            let fd = socket(AF_UNIX, Int32(SOCK_STREAM.rawValue), 0)
+            var address = sockaddr_un()
+            address.sun_family = sa_family_t(AF_UNIX)
+            let path = Array(cast.runtime.appendingPathComponent("pipewire-0").path.utf8CString)
+            withUnsafeMutableBytes(of: &address.sun_path) { $0.copyBytes(from: path.map { UInt8(bitPattern: $0) }.prefix($0.count)) }
+            let connected = withUnsafePointer(to: &address) {
+                $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { connect(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
+            }
+            guard connected == 0 else {
+                close(fd)
+                return reply(error: "org.freedesktop.portal.Error.Failed", "Couldn't connect to PipeWire", to: call)
+            }
+            // libdbus sends a duplicate.
+            reply([.unixFD(fd)], to: call)
+            close(fd)
+        default:
+            reply(error: "org.freedesktop.DBus.Error.UnknownMethod", "No such method", to: call)
+        }
+    }
+
+    /// The caller's unique name, such as :1.42, without its colon and with underscores for dots, as request and session
+    /// paths have it.
+    private func sender(of call: BusMessage) -> String {
+        dbus_message_get_sender(call.pointer).map { String(cString: $0).dropFirst().replacingOccurrences(of: ".", with: "_") } ?? ""
+    }
+
+    /// Answers a request with its object's path, then that object's `Response`.
+    private func respond(to call: BusMessage, options asked: [String: BusValue], count: Int, response: UInt32, results: [String: BusValue]) {
+        guard case let .string(token)? = asked["handle_token"] else {
+            return reply(error: "org.freedesktop.DBus.Error.InvalidArgs", "No handle token", to: call)
+        }
+        // Where the spec says a request with this token is answered.
+        let path = "/org/freedesktop/portal/desktop/request/" + (options.ownPath ? "fake/\(count)" : "\(sender(of: call))/\(token)")
+        reply([.objectPath(path)], to: call)
+        let signal = BusMessage(dbus_message_new_signal(path, ScreenshotPortal.request, "Response"))
+        signal.append([.uint32(response), .dictionary(results)])
+        bus.send(signal)
     }
 
     private func reply(_ arguments: [BusValue], to call: BusMessage) {
@@ -152,7 +237,7 @@ private let hasDBus = TestBus.executable != nil || ProcessInfo.processInfo.envir
         let portal = try FakePortal(on: bus.address)
         defer { portal.stop() }
         let capturer = try PortalCapturer(address: bus.address)
-        #expect(capturer.name == "portal" && capturer.limits == [.record: ScreenshotPortal.noRecording] && capturer.version == 1)
+        #expect(capturer.name == "portal" && capturer.limits == [.record: ScreenCastPortal.noBackend] && capturer.version == 1)
         #expect(LinuxScreen.screenshotPortal(environment: ["XDG_SESSION_TYPE": "wayland", "DBUS_SESSION_BUS_ADDRESS": bus.address]) == .success(1))
 
         // The first listing takes a screenshot to learn the size, which the capture after it uses.

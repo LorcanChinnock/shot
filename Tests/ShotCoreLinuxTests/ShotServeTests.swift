@@ -41,6 +41,8 @@ private struct FakeScreen: ScreenCapturer {
     var windowsNote: String?
     /// What each recording was asked to record.
     var recordings = Recordings()
+    /// Whether a window to record is picked in the desktop's dialog, as on Wayland.
+    var picksRecordedWindows = false
 
     var name: String { "fake" }
 
@@ -49,6 +51,14 @@ private struct FakeScreen: ScreenCapturer {
             throw .unavailable(reason)
         }
         recordings.asked.withLock { $0.append((area, frameRate, showsCursor)) }
+        return GreyRecording()
+    }
+
+    func pickedRecordingSource(rect: CGRect?, frameRate: Int, showsCursor: Bool) throws(ShotCommandError) -> (any RecordingSource)? {
+        guard picksRecordedWindows else {
+            return nil
+        }
+        recordings.picked.withLock { $0.append(rect) }
         return GreyRecording()
     }
 
@@ -88,6 +98,8 @@ private struct FakeScreen: ScreenCapturer {
 
 final class Recordings: Sendable {
     let asked = Mutex<[(area: CGRect, frameRate: Int, showsCursor: Bool)]>([])
+    /// The rect each recording the user picked was asked for.
+    let picked = Mutex<[CGRect?]>([])
 }
 
 /// Records a second of grey frames for each segment, written by ffmpeg when it finishes, however long it lasted, so the
@@ -378,9 +390,24 @@ private final class Serve: @unchecked Sendable {
     #expect(try await serve.send(AgentRequest(.status))["recording"] == .null)
 }
 
+@Test func shotServeRecordsAWindowTheUserPicksWhereItCantFindOne() async throws {
+    let screen = FakeScreen(picksRecordedWindows: true)
+    let serve = try Serve(screen)
+    let started = try await serve.send(AgentRequest(.record, target: AgentTarget(window: "Calculator", rect: [0, 0, 32, 24])))
+    #expect(started["window"] == .object(["picked": .bool(true)]) && started["note"] == .string(ScreenCastPortal.pickedNote))
+    #expect(screen.recordings.picked.withLock { $0 } == [CGRect(x: 0, y: 0, width: 32, height: 24)])
+    #expect(screen.recordings.asked.withLock { $0 }.isEmpty)
+    let stopped = try await serve.send(AgentRequest(.stop))
+    #expect(stopped["note"] == .string(ScreenCastPortal.pickedNote) && stopped["path"]?.string?.hasSuffix(".mp4") == true)
+
+    // A display is recorded as it is, without asking.
+    _ = try await serve.send(AgentRequest(.record, target: AgentTarget(display: 1), duration: 1))
+    #expect(screen.recordings.asked.withLock { $0.map(\.area) } == [CGRect(x: 0, y: 0, width: 200, height: 100)])
+}
+
 @Test func shotServeRefusesARecordingItCantMake() async throws {
-    let wayland = try Serve(FakeScreen(limits: [.record: ScreenshotPortal.noRecording]))
-    #expect(await wayland.failure(AgentRequest(.record, target: AgentTarget(display: 1))) == .unavailable(ScreenshotPortal.noRecording))
+    let wayland = try Serve(FakeScreen(limits: [.record: ScreenCastPortal.noBackend]))
+    #expect(await wayland.failure(AgentRequest(.record, target: AgentTarget(display: 1))) == .unavailable(ScreenCastPortal.noBackend))
     let serve = try Serve()
     #expect(await serve.failure(AgentRequest(.record, target: AgentTarget(display: 2))) == .noInput("There's no display 2; this computer has 1. shot windows lists them."))
     #expect(await serve.failure(AgentRequest(.record, target: AgentTarget(window: "Terminal", rect: [100, 0, 10, 10]))) == .data("The rect 100,0,10,10 is off Terminal — ~, which is 60×40 points."))
