@@ -73,7 +73,6 @@ struct SettingsView: View {
     private static let bottomInset = Brutal.windowInset - 6
 
     @Bindable private var navigation = SettingsNavigation.shared
-    @State private var scrolledPast = ScrollFade.Edges()
     @Environment(\.colorScheme) private var colorScheme
     private var section: SettingsSection { navigation.section }
 
@@ -96,19 +95,7 @@ struct SettingsView: View {
                         .padding(.trailing, Brutal.groupInset + SystemScroller.shared.overlayRoom)
                         .padding(.bottom, Brutal.sectionGap)
                         .padding([.leading, .top], 3)
-                        .tracklessScroller()
                     }
-                    .onScrollGeometryChange(for: ScrollFade.Edges.self) { geometry in
-                        ScrollFade.Edges(
-                            top: geometry.contentOffset.y > -geometry.contentInsets.top,
-                            bottom: geometry.visibleRect.maxY < geometry.contentSize.height
-                        )
-                    } action: { _, edges in
-                        scrolledPast = edges
-                    }
-                    .mask(ScrollFade(edges: scrolledPast))
-                    // The scroll view reaches into the window margin, so the scroller sits there, beside the cards.
-                    .padding(.trailing, -SystemScroller.shared.width)
                     .id(section)
                 }
             }
@@ -151,29 +138,6 @@ struct SettingsView: View {
         case .agents: AgentSettings()
         case .shortcuts: ShortcutSettings()
         case .about: AboutSettings()
-        }
-    }
-}
-
-/// Fades scrolled content out at an edge it runs past, instead of cutting it against a hard line. An edge with nothing
-/// past it stays sharp, so the first and last cards aren't faded at rest.
-private struct ScrollFade: View {
-    struct Edges: Equatable {
-        var top = false
-        var bottom = false
-    }
-
-    let edges: Edges
-
-    var body: some View {
-        HStack(spacing: 0) {
-            VStack(spacing: 0) {
-                LinearGradient(colors: [edges.top ? .clear : .black, .black], startPoint: .top, endPoint: .bottom).frame(height: 8)
-                Color.black
-                LinearGradient(colors: [.black, edges.bottom ? .clear : .black], startPoint: .top, endPoint: .bottom).frame(height: 18)
-            }
-            // The scroller stays sharp.
-            Color.black.frame(width: SystemScroller.shared.width)
         }
     }
 }

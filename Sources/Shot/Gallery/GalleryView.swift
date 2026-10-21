@@ -100,8 +100,6 @@ struct GalleryRootView: View {
             emptyState
         } else {
             GalleryGrid(model: model)
-                // The scroll view reaches into the window margin, so the scroller sits there, beside the tiles.
-                .padding(.trailing, -SystemScroller.shared.width)
         }
     }
 
@@ -201,7 +199,6 @@ private struct GalleryGrid: View {
                         .contentShape(Rectangle())
                         .onTapGesture { model.clearSelection() }
                 }
-                .tracklessScroller()
             }
             .scrollPosition($position)
             .onScrollGeometryChange(for: CGRect.self) { $0.visibleRect } action: { _, visible in

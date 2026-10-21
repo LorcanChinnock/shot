@@ -89,7 +89,6 @@ struct LayersPanel: View {
                 .frame(height: CGFloat(drag.map { $0.rest.count + 1 } ?? rows.count) * Self.rowHeight, alignment: .top)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 4)
-                .tracklessScroller()
             }
             .scrollPosition($position)
             .onScrollGeometryChange(for: ListScroll.self) { geometry in
