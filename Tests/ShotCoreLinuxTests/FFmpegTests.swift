@@ -6,33 +6,33 @@ import Testing
 // ShotCoreAppleTests' VideoFixtureTests wrote with AVFoundation and reads the same way, and the cases of
 // ShotCoreAppleTests' VideoTrimTests, VideoConcatenatorTests and MediaProbeTests that need no Apple framework.
 
-private let fixtures = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Fixtures/video")
-private let timed = fixtures.appendingPathComponent("timed.mp4")
-private let rotated = fixtures.appendingPathComponent("rotated.mp4")
-private let tone = fixtures.appendingPathComponent("tone.m4a")
+let fixtures = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Fixtures/video")
+let timed = fixtures.appendingPathComponent("timed.mp4")
+let rotated = fixtures.appendingPathComponent("rotated.mp4")
+let tone = fixtures.appendingPathComponent("tone.m4a")
 
-private let hasFFmpeg = (try? FFmpegTools.find()) != nil || ProcessInfo.processInfo.environment["CI"] != nil
+let hasFFmpeg = (try? FFmpegTools.find()) != nil || ProcessInfo.processInfo.environment["CI"] != nil
 
 /// The gray level of `image`'s middle pixel.
-private func gray(_ image: PlatformImage) -> Int {
+func gray(_ image: PlatformImage) -> Int {
     Int(image.bitmap[image.width / 2, image.height / 2].g)
 }
 
 /// The colour of `image` at (`x`, `y`), as fractions of it from the top left.
-private func color(_ image: PlatformImage, x: Double, y: Double) -> (r: Int, g: Int, b: Int) {
+func color(_ image: PlatformImage, x: Double, y: Double) -> (r: Int, g: Int, b: Int) {
     let pixel = image.bitmap[Int(x * Double(image.width)), Int(y * Double(image.height))]
     return (Int(pixel.r), Int(pixel.g), Int(pixel.b))
 }
 
 /// The frames `FFmpegReader` reads from `url` at `times`.
-private func frames(of url: URL, at times: [Double], maxSize: CGSize = .zero, tolerance: Double? = 0) async throws -> [VideoFrame] {
+func frames(of url: URL, at times: [Double], maxSize: CGSize = .zero, tolerance: Double? = 0) async throws -> [VideoFrame] {
     var frames: [VideoFrame] = []
     try await FFmpegReader().readFrames(of: url, at: times, maxSize: maxSize, tolerance: tolerance) { frames.append($0) }
     return frames
 }
 
 /// How loud `url` is over the 0.2 s around each of `times`.
-private func levels(of url: URL, at times: [Double]) async throws -> [Float] {
+func levels(of url: URL, at times: [Double]) async throws -> [Float] {
     var samples: [Float] = []
     try await FFmpegReader().readMonoSamples(of: url, sampleRate: 8000) { samples += $0 }
     return times.map { time in
@@ -41,7 +41,7 @@ private func levels(of url: URL, at times: [Double]) async throws -> [Float] {
     }
 }
 
-private func probe(_ url: URL) async throws -> FFmpeg.Probe {
+func probe(_ url: URL) async throws -> FFmpeg.Probe {
     try await FFmpegTools.find().probe(url)
 }
 

@@ -11,8 +11,8 @@ import Glibc
 private let systemRead = Glibc.read
 #endif
 
-/// A program run with arguments and nothing on its standard input, its standard output read as it comes and its
-/// standard error kept for the error it fails with. ShotCoreLinux runs ffmpeg and ffprobe through it.
+/// A program run with arguments and nothing on its standard input unless it's written there, its standard output read as
+/// it comes and its standard error kept for the error it fails with. ShotCoreLinux runs ffmpeg and ffprobe through it.
 ///
 /// It's spawned directly rather than through `Process`, whose `waitUntilExit` spins a thread of the pool, and with no
 /// signals blocked, which it would otherwise inherit from the thread that starts it. Blocking reads and the wait for
@@ -36,6 +36,9 @@ public final class Subprocess: Sendable {
     private let pid: pid_t
     private let output: Int32
     private let reads: DispatchQueue
+    /// Where what's written to its standard input goes, while it's open.
+    private let input: Mutex<Int32?>
+    private let writes = DispatchQueue(label: "dev.lorcan.Shot.subprocess.input")
     private let shared: Shared
 
     /// What the thread that waits for the program shares with the rest.
@@ -53,8 +56,9 @@ public final class Subprocess: Sendable {
     /// The most of standard error kept, from its end.
     private static let keptErrors = 16 * 1024
 
-    /// Starts `executable`, a path, with `arguments`. Throws `Failure` when it can't.
-    public init(_ executable: String, _ arguments: [String]) throws(Failure) {
+    /// Starts `executable`, a path, with `arguments`, and standard input that `write` feeds when `writable`. Throws
+    /// `Failure` when it can't.
+    public init(_ executable: String, _ arguments: [String], writable: Bool = false) throws(Failure) {
         program = URL(fileURLWithPath: executable).lastPathComponent
         let failure = { (error: Int32) in Failure(program: URL(fileURLWithPath: executable).lastPathComponent, status: -1, message: String(cString: strerror(error))) }
         let outputPipe = try Self.makePipe(failure)
@@ -66,9 +70,27 @@ public final class Subprocess: Sendable {
             close(outputPipe.write)
             throw error
         }
+        // A socket rather than a pipe, so writing after the program's gone fails rather than raising `SIGPIPE`.
+        var inputEnds: (ours: Int32, theirs: Int32)?
+        if writable {
+            var ends: [Int32] = [0, 0]
+            guard socketpair(AF_UNIX, AgentSocket.stream, 0, &ends) == 0 else {
+                let error = errno
+                [outputPipe.read, outputPipe.write, errorPipe.read, errorPipe.write].forEach { close($0) }
+                throw failure(error)
+            }
+            for end in ends {
+                _ = fcntl(end, F_SETFD, FD_CLOEXEC)
+            }
+            AgentSocket.keepSignalsOff(ends[0])
+            inputEnds = (ends[0], ends[1])
+        }
         defer {
             close(outputPipe.write)
             close(errorPipe.write)
+            if let theirs = inputEnds?.theirs {
+                close(theirs)
+            }
         }
         #if canImport(Darwin)
         var actions: posix_spawn_file_actions_t?
@@ -83,7 +105,11 @@ public final class Subprocess: Sendable {
             posix_spawn_file_actions_destroy(&actions)
             posix_spawnattr_destroy(&attributes)
         }
-        posix_spawn_file_actions_addopen(&actions, 0, "/dev/null", O_RDONLY, 0)
+        if let theirs = inputEnds?.theirs {
+            posix_spawn_file_actions_adddup2(&actions, theirs, 0)
+        } else {
+            posix_spawn_file_actions_addopen(&actions, 0, "/dev/null", O_RDONLY, 0)
+        }
         posix_spawn_file_actions_adddup2(&actions, outputPipe.write, 1)
         posix_spawn_file_actions_adddup2(&actions, errorPipe.write, 2)
         var none = sigset_t()
@@ -106,11 +132,15 @@ public final class Subprocess: Sendable {
         guard spawned == 0 else {
             close(outputPipe.read)
             close(errorPipe.read)
+            if let ours = inputEnds?.ours {
+                close(ours)
+            }
             throw failure(spawned)
         }
         let pid = spawnedID
         self.pid = pid
         output = outputPipe.read
+        input = Mutex(inputEnds?.ours)
         reads = DispatchQueue(label: "dev.lorcan.Shot.subprocess.output")
         shared = Shared()
         // Standard error is read to its end, which comes when the program ends, then the program is reaped. It's
@@ -153,6 +183,9 @@ public final class Subprocess: Sendable {
     deinit {
         stop()
         close(output)
+        if let input = input.withLock({ $0 }) {
+            close(input)
+        }
     }
 
     /// A pipe whose ends close in any program spawned, so only the ends dup'd onto a program's standard output and
@@ -193,6 +226,53 @@ public final class Subprocess: Sendable {
         }
     }
 
+    /// Writes `data` to its standard input, waiting while it's busy reading what came before. Returns `false` when it can't:
+    /// the program stopped reading, or the input's closed.
+    public func write(_ data: Data) async -> Bool {
+        await withCheckedContinuation { continuation in
+            writes.async { [self] in
+                guard let fd = input.withLock({ $0 }) else {
+                    continuation.resume(returning: false)
+                    return
+                }
+                var written = 0
+                let complete = data.withUnsafeBytes { bytes in
+                    while written < bytes.count {
+                        #if canImport(Darwin)
+                        let count = Darwin.write(fd, bytes.baseAddress! + written, bytes.count - written)
+                        #else
+                        let count = send(fd, bytes.baseAddress! + written, bytes.count - written, Int32(MSG_NOSIGNAL))
+                        #endif
+                        if count < 0, errno == EINTR {
+                            continue
+                        }
+                        guard count > 0 else {
+                            return false
+                        }
+                        written += count
+                    }
+                    return true
+                }
+                continuation.resume(returning: complete)
+            }
+        }
+    }
+
+    /// Closes its standard input once what's been written has gone, so it reads to the end.
+    public func closeInput() async {
+        await withCheckedContinuation { continuation in
+            writes.async { [self] in
+                input.withLock { fd in
+                    if let open = fd {
+                        close(open)
+                        fd = nil
+                    }
+                }
+                continuation.resume()
+            }
+        }
+    }
+
     /// Kills it and whatever it started, unless it's ended.
     public func stop() {
         shared.state.withLock { state in
@@ -223,16 +303,17 @@ public final class Subprocess: Sendable {
         }
     }
 
-    /// Runs `executable` with `arguments`, handing it to `body` to read what it prints, then reads and drops whatever
-    /// `body` left, so it never waits to write, and waits for it to end. It's killed when the task is cancelled or `body`
-    /// throws. Throws `Failure` when it ends with any status but 0, and `CancellationError` when the task was cancelled.
-    public static func run<T>(_ executable: String, _ arguments: [String], _ body: (Subprocess) async throws -> T) async throws -> T {
+    /// Runs `executable` with `arguments`, handing it to `body` to read what it prints and write to it when `writable`,
+    /// then closes its input, reads and drops whatever `body` left, so it never waits to write, and waits for it to end.
+    /// It's killed when the task is cancelled or `body` throws. Throws `Failure` when it ends with any status but 0, and `CancellationError` when the task was cancelled.
+    public static func run<T>(_ executable: String, _ arguments: [String], writable: Bool = false, _ body: (Subprocess) async throws -> T) async throws -> T {
         try Task.checkCancellation()
-        let process = try Subprocess(executable, arguments)
+        let process = try Subprocess(executable, arguments, writable: writable)
         let result: T
         do {
             result = try await withTaskCancellationHandler {
                 let result = try await body(process)
+                await process.closeInput()
                 while await !process.read(upTo: 64 * 1024).isEmpty {}
                 return result
             } onCancel: {

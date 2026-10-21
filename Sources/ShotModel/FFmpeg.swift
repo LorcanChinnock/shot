@@ -1,7 +1,8 @@
 import Foundation
 
 /// The arguments Shot runs the `ffmpeg` and `ffprobe` programs with, and what it reads from what they print, kept apart
-/// from running them so they're tested anywhere. ShotCoreLinux's `FFmpegReader` and `FFmpegAssembler` run them.
+/// from running them so they're tested anywhere. ShotCoreLinux's `FFmpegReader`, `FFmpegAssembler` and `FFmpegWriter`
+/// run them.
 ///
 /// Times Shot asks for start at 0 when the file starts. Times in the file can start later, so the times ffprobe prints
 /// are moved back by the file's start time, and moved on again where ffmpeg is asked for them.
@@ -78,12 +79,14 @@ public enum FFmpeg {
             public var width: Int?
             public var height: Int?
             public var bitRate: String?
+            /// Its frames a second on average, as a fraction such as `30000/1001`.
+            public var averageFrameRate: String?
             public var sideData: [[String: SideDataValue]]?
             public var tags: [String: String]?
             public var disposition: [String: Int]?
 
             private enum CodingKeys: String, CodingKey {
-                case codecType = "codec_type", codecName = "codec_name", width, height, bitRate = "bit_rate", sideData = "side_data_list", tags, disposition
+                case codecType = "codec_type", codecName = "codec_name", width, height, bitRate = "bit_rate", averageFrameRate = "avg_frame_rate", sideData = "side_data_list", tags, disposition
             }
 
             /// Whether it's a picture, rather than a cover image an audio file carries.
@@ -92,6 +95,16 @@ public enum FFmpeg {
             /// How far it's turned, in degrees, from its display matrix or, from older files, its `rotate` tag.
             var rotation: Double {
                 sideData?.compactMap { $0["rotation"]?.value }.first ?? tags?["rotate"].flatMap(Double.init) ?? 0
+            }
+
+            /// `averageFrameRate` as a number; `nil` when it doesn't say, which ffprobe prints as `0/0`.
+            var framesPerSecond: Double? {
+                let parts = (averageFrameRate ?? "").split(separator: "/").map { Double($0) }
+                guard let numerator = parts.first ?? nil else {
+                    return nil
+                }
+                let rate = parts.count > 1 ? (parts[1].map { $0 > 0 ? numerator / $0 : 0 } ?? 0) : numerator
+                return rate > 0 ? rate : nil
             }
 
             /// Its bit rate, or the one Matroska keeps in a tag.
@@ -142,6 +155,9 @@ public enum FFmpeg {
             let turned = Int(abs(video.rotation.rounded())) % 180 == 90
             return turned ? CGSize(width: height, height: width) : CGSize(width: width, height: height)
         }
+
+        /// Its first video stream's frames a second on average; `nil` without one, or when it doesn't say.
+        public var frameRate: Double? { streams.first(where: \.isVideo)?.framesPerSecond }
 
         /// The bit rates of its video streams and of its audio streams, each summed, in bits a second. A video stream that
         /// doesn't say has whatever of the file's rate the audio leaves.
@@ -228,14 +244,19 @@ public enum FFmpeg {
         }
 
         /// `frames`, sorted, in runs that each decode from one seek: a frame starts a new run when the sync frame it decodes
-        /// from comes more than `gap` seconds after the frame before it, so seeking there skips that much decoding.
-        public func runs(of frames: [Int], gap: Double = 2) -> [[Int]] {
+        /// from comes more than `gap` seconds after the frame before it, so seeking there skips that much decoding, or when
+        /// the run already picks `limit` stretches of frames that follow one another, which keeps `frameArguments`' filter
+        /// within the length one argument may have.
+        public func runs(of frames: [Int], gap: Double = 2, limit: Int = 400) -> [[Int]] {
             var runs: [[Int]] = []
+            var stretches = 0
             for frame in Set(frames).sorted() {
-                if let last = runs.last?.last, syncTime(atOrBefore: times[frame]) - times[last] <= gap {
+                if let last = runs.last?.last, syncTime(atOrBefore: times[frame]) - times[last] <= gap, frame == last + 1 || stretches < limit {
                     runs[runs.count - 1].append(frame)
+                    stretches += frame == last + 1 ? 0 : 1
                 } else {
                     runs.append([frame])
+                    stretches = 1
                 }
             }
             return runs
@@ -274,12 +295,21 @@ public enum FFmpeg {
 
     /// `ffmpeg`'s arguments to decode `frames` of `packets`, one run of `VideoPackets.runs`, from `file`, upright, as
     /// `width` × `height` RGBA, one after another in time order, with nothing between them. It seeks to the sync frame
-    /// before the first and picks the frames by when they're shown, in the file's own times. `version` is ffmpeg's.
+    /// before the first and picks the frames by when they're shown, in the file's own times, each stretch of frames that
+    /// follow one another at once. `version` is ffmpeg's.
     public static func frameArguments(_ file: String, frames: [Int], of packets: VideoPackets, width: Int, height: Int, version: String? = nil) -> [String] {
         let seek = frames.first.map { packets.times[$0] } ?? 0
-        let picked = frames.map { index in
-            let time = packets.times[index] + packets.startTime
-            return "between(t,\(seconds(time - epsilon)),\(seconds(time + epsilon)))"
+        var stretches: [ClosedRange<Int>] = []
+        for frame in frames {
+            if let last = stretches.last, frame == last.upperBound + 1 {
+                stretches[stretches.count - 1] = last.lowerBound...frame
+            } else {
+                stretches.append(frame...frame)
+            }
+        }
+        let picked = stretches.map { stretch in
+            let start = packets.times[stretch.lowerBound] + packets.startTime, end = packets.times[stretch.upperBound] + packets.startTime
+            return "between(t,\(seconds(start - epsilon)),\(seconds(end + epsilon)))"
         }
         return quiet + (seek > 0 ? ["-noaccurate_seek", "-ss", seconds(seek)] : []) + [
             "-copyts", "-i", file, "-map", "0:v:0", "-vf", "select='\(picked.joined(separator: "+"))',scale=\(width):\(height)",
@@ -386,8 +416,11 @@ public enum FFmpeg {
             graph.append("[ac]" + (speed == 1 ? "anull" : tempo(speed)) + "[a]")
         }
         return ["-filter_complex", graph.joined(separator: ";"), "-map", "[v]"] + (sound ? ["-map", "[a]"] : [])
-            + ["-c:v", h264Encoder, "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p"]
+            + h264Options
     }
+
+    /// How Shot encodes H.264.
+    static let h264Options = ["-c:v", h264Encoder, "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p"]
 
     /// `atempo` filters that play sound `speed` times as fast, each within the half to double one filter takes.
     static func tempo(_ speed: Double) -> String {
@@ -461,6 +494,104 @@ public enum FFmpeg {
             runs: [input + inputs + ["-filter_complex", graph.joined(separator: ";"), "-map", "0:v", "-c:v", "copy", "-map", "[a]"] + audioOut + write],
             concatList: list, copiesVideo: true
         )
+    }
+
+    // MARK: Writing
+
+    /// The most frames a second a project is drawn at, since every frame is drawn. It matches the fastest recording, and
+    /// `CompositionBuilder`'s on a Mac.
+    public static let maximumFrameRate = 120.0
+
+    /// The frames a second a project whose pictures play at `rates` is drawn at, as a Mac draws it: its fastest picture's,
+    /// rounded, at least 30 and at most `maximumFrameRate`.
+    public static func frameRate(of rates: [Double]) -> Int {
+        Int(rates.reduce(30) { max($0, min($1, maximumFrameRate)) }.rounded())
+    }
+
+    /// A stretch of a file's sound on a project's timeline, as `writeArguments` mixes it.
+    public struct Sound: Equatable, Sendable {
+        public var path: String
+        /// Where in the file it starts, and how long it plays, in seconds.
+        public var sourceStart: Double
+        public var length: Double
+        /// Where on the timeline it starts.
+        public var start: Double
+        /// How loud it plays, as `volume(of:)` gives it.
+        public var volume: String
+
+        public init(path: String, sourceStart: Double, length: Double, start: Double, volume: String) {
+            self.path = path
+            self.sourceStart = sourceStart
+            self.length = length
+            self.start = start
+            self.volume = volume
+        }
+
+        /// `clip`'s sound, from `path`.
+        public init(_ clip: Clip, path: String) {
+            self.init(path: path, sourceStart: clip.sourceStart, length: clip.length, start: clip.start, volume: FFmpeg.volume(of: clip))
+        }
+    }
+
+    /// How long a volume ramp's steps are at most, in seconds, as a Mac's audio mix ramps it.
+    static let volumeStep = 0.1
+
+    /// How loud `clip` plays, for the `volume` filter: its plain volume, or a sum of `t`, the seconds from its start, that
+    /// runs straight between its keyframes' values a step at most `volumeStep` long, holding the first before them and
+    /// the last after them. It's a sum rather than nested choices, which ffmpeg would parse as deep as there are steps.
+    public static func volume(of clip: Clip) -> String {
+        let keyframes = clip.animation.volume
+        guard let first = keyframes.first, let last = keyframes.last else {
+            return seconds(clip.volume)
+        }
+        var points = [(time: first.time, value: first.value)]
+        for (from, to) in zip(keyframes, keyframes.dropFirst()) {
+            let steps = max(1, Int(((to.time - from.time) / volumeStep).rounded(.up)))
+            for step in 1...steps {
+                let time = from.time + (to.time - from.time) * Double(step) / Double(steps)
+                points.append((time, Keyframes.value(keyframes, at: time, base: clip.volume)))
+            }
+        }
+        guard points.count > 1 else {
+            return seconds(first.value)
+        }
+        var terms = ["lt(t,\(seconds(first.time)))*\(seconds(first.value))"]
+        for (a, b) in zip(points, points.dropFirst()) where b.time > a.time {
+            let slope = (b.value - a.value) / (b.time - a.time)
+            terms.append("gte(t,\(seconds(a.time)))*lt(t,\(seconds(b.time)))*(\(seconds(a.value))+(t-\(seconds(a.time)))*\(seconds(slope)))")
+        }
+        terms.append("gte(t,\(seconds(last.time)))*\(seconds(last.value))")
+        return terms.joined(separator: "+")
+    }
+
+    /// The colours Shot tags what it writes with, and converts its frames to: BT.709's, which players take an untagged
+    /// HD picture to be, and which ffmpeg reads back.
+    static let colors = ["-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv"]
+
+    /// `ffmpeg`'s arguments to encode `width` × `height` RGBA frames, read one after another from its standard input,
+    /// at `frameRate`, as H.264, or HEVC when `hevc`, with `sounds` mixed under them, each at its place and volume,
+    /// for `duration` seconds, to `output` as `muxer`.
+    public static func writeArguments(width: Int, height: Int, frameRate: Int, hevc: Bool, sounds: [Sound], duration: Double, muxer: String, output: String) -> [String] {
+        var inputs = ["-f", "rawvideo", "-pix_fmt", "rgba", "-s", "\(width)x\(height)", "-framerate", "\(frameRate)", "-i", "pipe:0"]
+        var graph: [String] = []
+        var mixed = ""
+        for (index, sound) in sounds.enumerated() {
+            inputs += ["-ss", seconds(sound.sourceStart), "-t", seconds(sound.length), "-i", sound.path]
+            graph.append(
+                "[\(index + 1):a:0]aformat=sample_rates=48000:channel_layouts=stereo,asetpts=PTS-STARTPTS,volume='\(sound.volume)':eval=frame,"
+                    + "adelay=delays=\(Int((sound.start * 1000).rounded())):all=1[s\(index)]"
+            )
+            mixed += "[s\(index)]"
+        }
+        if !sounds.isEmpty {
+            graph.append(mixed + (sounds.count > 1 ? "amix=inputs=\(sounds.count):normalize=0:duration=longest," : "") + "atrim=end=\(seconds(duration))[a]")
+        }
+        let video = hevc
+            ? ["-c:v", hevcEncoder, "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", "-x265-params", "log-level=error", "-tag:v", "hvc1"]
+            : h264Options
+        let audio = sounds.isEmpty ? [] : ["-filter_complex", graph.joined(separator: ";"), "-map", "[a]", "-c:a", "aac", "-b:a", "160k"]
+        return quiet + inputs + ["-map", "0:v", "-vf", "scale=out_color_matrix=bt709:out_range=tv"] + video + colors + audio
+            + ["-movflags", "+faststart", "-f", muxer, "-y", output]
     }
 
     // MARK: Formatting
