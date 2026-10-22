@@ -109,27 +109,30 @@ private enum TranslationPrompt {
             let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 320, height: 90), styleMask: [.titled, .closable], backing: .buffered, defer: false)
             panel.title = String(localized: "Translate Text")
             panel.isReleasedWhenClosed = false
+            var closing: NSObjectProtocol?
             var finished = false
+            // Breaks every reference back to the panel, so it and the translation task go once it's done.
             let finish: @MainActor (Result<[String]?, Error>) -> Void = { result in
                 guard !finished else { return }
                 finished = true
+                if let closing {
+                    NotificationCenter.default.removeObserver(closing)
+                }
+                closing = nil
                 panel.close()
+                panel.contentView = nil
                 continuation.resume(with: result)
             }
             let view = PromptView(paragraphs: paragraphs, configuration: TranslationSession.Configuration(source: source, target: target), finish: finish)
             panel.contentView = NSView(hosting: view)
+            closing = NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: panel, queue: .main) { _ in
+                MainActor.assumeIsolated { finish(.success(nil)) }
+            }
             panel.center()
             NSApp.activate()
             panel.makeKeyAndOrderFront(nil)
-            let closing = NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: panel, queue: .main) { _ in
-                MainActor.assumeIsolated { finish(.success(nil)) }
-            }
-            // Keep the observer for as long as the panel is open.
-            objc_setAssociatedObject(panel, &observerKey, closing, .OBJC_ASSOCIATION_RETAIN)
         }
     }
-
-    nonisolated(unsafe) private static var observerKey: UInt8 = 0
 
     private struct PromptView: View {
         let paragraphs: [String]
