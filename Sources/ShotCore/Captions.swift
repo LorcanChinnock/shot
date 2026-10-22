@@ -103,14 +103,24 @@ public enum Captions {
     /// The share of the frame's height left under the captions.
     static let bottomMargin = 0.075
 
-    /// `caption` as white text in a dark, fully opaque box, centred near the bottom of a `canvas`-sized frame. The box is
-    /// opaque so a GIF, which keeps unchanged pixels from frame to frame, only pays for it when the text changes.
-    public static func annotation(_ caption: Caption, canvas: CGSize) -> Annotation {
+    /// The share of the frame's width a caption's box may take, so it never runs off a tall or square frame.
+    static let widest = 0.9
+
+    /// `caption` as white text in a dark, fully opaque box, centred near the bottom of `frame`, the part of the canvas
+    /// the video shows, in canvas pixels. The box is opaque so a GIF, which keeps unchanged pixels from frame to frame,
+    /// only pays for it when the text changes.
+    public static func annotation(_ caption: Caption, frame: CGRect) -> Annotation {
         // A GIF at the default width is scaled to 720 px wide, so keep the text at least `smallestText` there.
-        let fontSize = max(canvas.height * textHeight, smallestText * canvas.width / Double(VideoExportOptions().gifWidth)).rounded()
-        let size = TextLayout(string: caption.text, fontSize: fontSize, color: RGBA(1, 1, 1)).size
+        var fontSize = max(frame.height * textHeight, smallestText * frame.width / Double(VideoExportOptions().gifWidth)).rounded()
+        var size = TextLayout(string: caption.text, fontSize: fontSize, color: RGBA(1, 1, 1)).size
+        // Text and padding scale together, so one step scales the box to fit.
+        let boxWidth = size.width + 2 * fontSize * Annotation.textBoxPadding.horizontal
+        if boxWidth > frame.width * widest {
+            fontSize = (fontSize * frame.width * widest / boxWidth).rounded(.down)
+            size = TextLayout(string: caption.text, fontSize: fontSize, color: RGBA(1, 1, 1)).size
+        }
         let padding = fontSize * Annotation.textBoxPadding.vertical
-        let origin = CGPoint(x: ((canvas.width - size.width) / 2).rounded(), y: (canvas.height * (1 - bottomMargin) - padding - size.height).rounded())
+        let origin = CGPoint(x: (frame.minX + (frame.width - size.width) / 2).rounded(), y: (frame.minY + frame.height * (1 - bottomMargin) - padding - size.height).rounded())
         var annotation = Annotation(kind: .text(caption.text, origin: origin, fontSize: fontSize), color: RGBA(1, 1, 1), fill: RGBA(0, 0, 0, 1), lineWidth: fontSize / 6)
         annotation.alignment = .center
         return annotation

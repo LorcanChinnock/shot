@@ -72,7 +72,7 @@ private func said(_ text: String, from start: Double, each: Double = 0.3) -> [Na
 
 @Test func aCaptionIsWhiteTextInAnOpaqueBoxNearTheBottom() throws {
     let canvas = CGSize(width: 1920, height: 1080)
-    let annotation = Captions.annotation(Captions.Caption(text: "Click Save", start: 0, end: 1), canvas: canvas)
+    let annotation = Captions.annotation(Captions.Caption(text: "Click Save", start: 0, end: 1), frame: CGRect(origin: .zero, size: canvas))
     #expect(annotation.color == RGBA(1, 1, 1) && annotation.fill?.a == 1)
     #expect(annotation.alignment == .center)
     let box = try #require(annotation.textBox)
@@ -82,8 +82,24 @@ private func said(_ text: String, from start: Double, each: Double = 0.3) -> [Na
         #expect(size == 54)
     }
     // A small frame still gets text big enough to read in a GIF.
-    let small = Captions.annotation(Captions.Caption(text: "Hi", start: 0, end: 1), canvas: CGSize(width: 1440, height: 200))
+    let small = Captions.annotation(Captions.Caption(text: "Hi", start: 0, end: 1), frame: CGRect(x: 0, y: 0, width: 1440, height: 200))
     if case let .text(_, _, size) = small.kind {
         #expect(size == 28)
     }
+}
+
+@Test(arguments: [CGSize(width: 1170, height: 2532), CGSize(width: 1080, height: 1080)])
+func aCaptionFitsATallOrSquareFrame(_ canvas: CGSize) throws {
+    let line = try #require(Captions.lines("Choose General, then turn on Open at login so it starts"))
+    let annotation = Captions.annotation(Captions.Caption(text: line, start: 0, end: 1), frame: CGRect(origin: .zero, size: canvas))
+    let box = try #require(annotation.textBox)
+    #expect(box.minX >= 0 && box.maxX <= canvas.width)
+    #expect(box.width <= canvas.width * Captions.widest + 1)
+}
+
+@Test func aCaptionSitsInTheCroppedFrame() throws {
+    let frame = CGRect(x: 400, y: 100, width: 800, height: 600)
+    let box = try #require(Captions.annotation(Captions.Caption(text: "Click Save", start: 0, end: 1), frame: frame).textBox)
+    #expect(abs(box.midX - frame.midX) <= 1)
+    #expect(box.maxY <= frame.maxY && box.maxY > frame.maxY - frame.height * 0.15)
 }

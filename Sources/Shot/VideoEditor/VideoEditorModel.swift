@@ -637,7 +637,7 @@ final class VideoEditorModel {
         }
         var captioned = project
         for placement in placed {
-            captioned = captioned.adding(annotation: Captions.annotation(placement.caption, canvas: project.canvasSize), at: placement.start, duration: placement.duration).project
+            captioned = captioned.adding(annotation: Captions.annotation(placement.caption, frame: project.outputRect), at: placement.start, duration: placement.duration).project
         }
         guard replaceProject(with: captioned) else {
             return
