@@ -105,7 +105,7 @@ private enum Budget {
     static let markerFrame = 29_000
     static let gifExportMegabytes = 452
     static let galleryGrouping = 5.8
-    static let gallerySearch = 14.0
+    static let gallerySearch = 10.6
 }
 
 /// The fastest run of `body`, after one untimed run that warms caches. It runs at least fifteen times and for at least
