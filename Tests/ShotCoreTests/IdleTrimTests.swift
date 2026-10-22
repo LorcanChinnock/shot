@@ -74,3 +74,22 @@ private func audio(_ duration: Double, loud: [Range<Double>]) -> [WaveformPeak] 
     #expect(abs(range.start - 1.6) < 0.35)
     #expect(abs(range.end - 5.4) < 0.35)
 }
+
+private func recording() -> Project {
+    Project(source: URL(fileURLWithPath: "/tmp/recording.mov"), duration: 10, canvasSize: CGSize(width: 1920, height: 1080), hasAudio: true)
+}
+
+@Test(arguments: [
+    // Already trimmed, then the action found past the old end, before the old start, around it and inside it.
+    ((0.0, 3.0), (5.0, 10.0)),
+    ((7.0, 10.0), (0.0, 5.0)),
+    ((2.0, 8.0), (1.0, 9.0)),
+    ((1.0, 9.0), (2.0, 8.0)),
+])
+func bothHandlesLandWhereverTheTrimWas(_ was: (Double, Double), _ found: (Double, Double)) throws {
+    let trimmed = try #require(recording().trimmingMain(to: TrimRange(start: was.0, end: was.1, duration: 10)))
+    let moved = try #require(trimmed.trimmingMain(to: TrimRange(start: found.0, end: found.1, duration: 10)))
+    let range = try #require(moved.trimEdit?.range)
+    #expect(abs(range.start - found.0) < 0.01 && abs(range.end - found.1) < 0.01)
+    #expect(abs(moved.duration - (found.1 - found.0)) < 0.01)
+}

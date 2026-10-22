@@ -574,13 +574,17 @@ final class VideoEditorModel {
             Toast.show("No idle time to trim")
             return
         }
-        guard let trimmed = project.trimmingMain(.start, toSource: found.start)?.trimmingMain(.end, toSource: found.end) else {
+        guard let trimmed = project.trimmingMain(to: found) else {
             Toast.error("Can't trim the video there")
             return
         }
-        replaceProject(with: trimmed)
+        let before = project.duration
+        // An export started while it looked leaves the project as it is.
+        guard replaceProject(with: trimmed) else {
+            return
+        }
         seekTimeline(to: 0)
-        Toast.show("Trimmed \(Timecode.string(duration - found.length)) of idle time")
+        Toast.show("Trimmed \(Timecode.string(before - trimmed.duration)) of idle time")
     }
 
     func setOptions(_ new: VideoExportOptions) {

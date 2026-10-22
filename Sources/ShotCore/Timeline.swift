@@ -303,6 +303,22 @@ public struct Project: Equatable, Codable, Sendable {
         return TrimEdit(source: first.source, range: range, cuts: cuts)
     }
 
+    /// Moves both trim handles to `range` in the recording, as Trim Idle Time does; nil when they can't both land there.
+    /// Each handle stops short of the other, so the one that clears the way moves first: the end when `range` starts
+    /// past the current end, otherwise the start.
+    public func trimmingMain(to range: TrimRange) -> Project? {
+        guard let current = trimEdit?.range else {
+            return nil
+        }
+        let moved = range.start >= current.end
+            ? trimmingMain(.end, toSource: range.end)?.trimmingMain(.start, toSource: range.start)
+            : trimmingMain(.start, toSource: range.start)?.trimmingMain(.end, toSource: range.end)
+        guard let moved, let landed = moved.trimEdit?.range, abs(landed.start - range.start) < 0.01, abs(landed.end - range.end) < 0.01 else {
+            return nil
+        }
+        return moved
+    }
+
     /// Drags a trim handle to `time` in the recording; nil when the cuts would leave too little to play.
     public func trimmingMain(_ handle: TrimHandle, toSource time: Double) -> Project? {
         guard let first = main.clips.first, let last = main.clips.last else {
