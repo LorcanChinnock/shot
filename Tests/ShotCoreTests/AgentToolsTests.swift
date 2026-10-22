@@ -875,3 +875,45 @@ private func rect(_ values: Double...) -> JSONValue {
     #expect(long.isError)
     #expect(asked.requests.count == 1)
 }
+
+@Test func waitForCaptureGivesWhatTheUserSentWithTheirPrompt() async {
+    let asked = Mutex<AgentRequest?>(nil)
+    let tools = AgentTools(
+        folder: folder,
+        entries: { [AgentCaptures.Entry(url: folder.appendingPathComponent("Shot A.png"), isVideo: false, date: now)] },
+        preview: { entry in [.image(data: "PREVIEW:\(entry.name)", mimeType: "image/jpeg")] },
+        agent: { request throws(ShotCommandError) in
+            asked.withLock { $0 = request }
+            return AgentSent(path: folder.appendingPathComponent("Shot A.png").path, prompt: "Make this bold\nScreenshot from Shot: …").fields
+        },
+        now: { now },
+        timeZone: utc
+    )
+    let result = await tools.call("wait_for_capture", .object(["timeout": .number(30)]), client: MCPServer.Client(name: "claude-code", version: "2.1"))
+    #expect(result.isError == false)
+    #expect(texts(result).first == "The user sent you this capture from Shot. What they want:\n\nMake this bold\nScreenshot from Shot: …")
+    #expect(result.content.contains(.image(data: "PREVIEW:Shot A.png", mimeType: "image/jpeg")))
+    let request = asked.withLock { $0 }
+    #expect(request?.op == .waitForSend && request?.duration == 30 && request?.origin?.client == "claude-code")
+}
+
+@Test func waitForCaptureSaysWhenNothingWasSentAndDoesntWatchTheFolder() async {
+    var tools = captures
+    tools.agent = { _ throws(ShotCommandError) in throw .noInput("The user didn't send a capture within 2 seconds.") }
+    tools.pollInterval = .milliseconds(10)
+    let result = await tools.call("wait_for_capture", .object(["timeout": .number(2)]))
+    #expect(texts(result) == ["The user didn't send a capture from Shot in 2 seconds. Call wait_for_capture again to keep waiting."])
+}
+
+@Test func waitingForARecordingWatchesTheFolderSinceOnlyScreenshotsAreSent() async {
+    let asked = Mutex(false)
+    var tools = captures
+    tools.agent = { _ throws(ShotCommandError) in
+        asked.withLock { $0 = true }
+        throw .noInput("nothing sent")
+    }
+    tools.pollInterval = .milliseconds(10)
+    let result = await tools.call("wait_for_capture", .object(["kind": .string("video"), "timeout": .number(1)]))
+    #expect(!asked.withLock { $0 })
+    #expect(texts(result) == ["No new recording in /shots after 1 second. Call wait_for_capture again to keep waiting."])
+}

@@ -1,5 +1,6 @@
 import Darwin
 import Foundation
+import Synchronization
 import Testing
 @testable import ShotCore
 
@@ -182,4 +183,52 @@ private actor Arrivals {
 @Test func theSocketIsKeyedByBundleID() {
     #expect(AgentSocket.url(bundleID: "dev.lorcan.Shot.dev").path.hasSuffix("Library/Application Support/dev.lorcan.Shot.dev/agent.sock"))
     #expect(AgentSocket.url(bundleID: "dev.lorcan.Shot") != AgentSocket.url(bundleID: "dev.lorcan.Shot.dev"))
+}
+
+@Test func hangingUpCancelsTheAppsAnswer() async throws {
+    let url = try socketURL()
+    let started = Mutex(false), cancelled = Mutex(false)
+    let server = AgentSocket.Server(url: url) { _ in
+        started.withLock { $0 = true }
+        do {
+            try await Task.sleep(for: .seconds(30))
+        } catch {
+            cancelled.withLock { $0 = true }
+        }
+        return .success([:])
+    }
+    try server.start()
+    defer { server.stop() }
+    let waiting = Task { await failure(AgentRequest(.waitForSend, duration: 30), at: url, timeout: .seconds(40)) }
+    // Hang up only once the app is answering, as an agent that stops waiting does.
+    for _ in 0 ..< 500 where !started.withLock({ $0 }) {
+        try await Task.sleep(for: .milliseconds(10))
+    }
+    #expect(started.withLock { $0 })
+    waiting.cancel()
+    _ = await waiting.value
+    for _ in 0 ..< 500 where !cancelled.withLock({ $0 }) {
+        try await Task.sleep(for: .milliseconds(10))
+    }
+    #expect(cancelled.withLock { $0 })
+}
+
+@Test func aWaitForASendNeedsNoCaptureSettingAndRoundTrips() throws {
+    #expect(!AgentRequest.Operation.waitForSend.needsAgentCapture)
+    let decoded = try AgentRequest.decode(AgentRequest(.waitForSend, duration: 60).line.dropLast())
+    #expect(decoded.op == .waitForSend && decoded.duration == 60)
+    let record = CaptureRecord(kind: "image", created: Date(timeIntervalSince1970: 0), size: .init(width: 10, height: 10), scale: 2)
+    let sent = AgentSent(path: "/shots/Shot.png", prompt: "Fix it", record: record)
+    #expect(AgentSent(fields: sent.fields) == sent)
+    #expect(AgentSent(fields: ["path": .string("/a.png")]) == nil)
+}
+
+@Test func waitingForASendDoesntOpenShot() async {
+    // No app has this bundle ID, so opening it would fail with another message.
+    do {
+        _ = try await AgentSocket.ask(AgentRequest(.waitForSend, duration: 1), bundleID: "dev.lorcan.Shot.test-\(UUID().uuidString.prefix(8))", enabled: false, timeout: .seconds(2))
+        Issue.record("it answered")
+    } catch {
+        #expect(error == .unavailable("Shot isn't running"))
+    }
 }

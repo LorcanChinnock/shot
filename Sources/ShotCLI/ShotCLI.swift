@@ -232,6 +232,7 @@ enum ShotCLI {
         case .record: .seconds((request.duration ?? 0) + 120)
         case .stop: .seconds(120)
         case .pick: .seconds((request.duration ?? ShotCommand.PickOptions.defaultTimeout) + 30)
+        case .waitForSend: .seconds((request.duration ?? AgentTools.defaultWait) + 30)
         }
     }
 
