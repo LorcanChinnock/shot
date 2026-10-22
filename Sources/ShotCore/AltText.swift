@@ -1,6 +1,10 @@
 import CoreGraphics
 import Foundation
+// Images reach the on-device model from the macOS 27 SDK (FoundationModels 2.0) on. Built with an older SDK, as CI's
+// macos-26 runners do, alt text is left out and never shows.
+#if canImport(FoundationModels, _version: 2.0)
 import FoundationModels
+#endif
 
 /// What Shot asks a model about an image: its instructions, the prompt, and how large the image is sent. A type of its
 /// own so another model can be asked the same thing later.
@@ -27,16 +31,25 @@ public struct ImageRequest: Equatable, Sendable {
 public enum AltText {
     /// Whether the Mac's model is ready and can see images.
     public static var isAvailable: Bool {
+        #if canImport(FoundationModels, _version: 2.0)
         guard #available(macOS 27, *) else {
             return false
         }
         let model = SystemLanguageModel.default
         return model.availability == .available && model.capabilities.contains(.vision)
+        #else
+        return false
+        #endif
+    }
+
+    public struct Unavailable: LocalizedError {
+        public var errorDescription: String? { "This Mac's model can't describe images" }
     }
 
     /// The alt text for `image`.
     @available(macOS 27, *)
     public static func describe(_ image: CGImage, request: ImageRequest = .altText) async throws -> String {
+        #if canImport(FoundationModels, _version: 2.0)
         let scaled = scaled(image, toLongEdge: request.maxLongEdge)
         let session = LanguageModelSession(instructions: request.instructions)
         let response = try await session.respond {
@@ -44,6 +57,9 @@ public enum AltText {
             Attachment(scaled)
         }
         return cleaned(response.content)
+        #else
+        throw Unavailable()
+        #endif
     }
 
     /// `image` with its longer side at most `longEdge` pixels; as it is when it's already that small.
