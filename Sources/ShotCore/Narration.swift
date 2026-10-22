@@ -103,13 +103,13 @@ public enum Narration {
 
     /// Recognised words carry their own spaces, on either side, so they're joined as they come (a suffix such as "'s"
     /// has none) and the spacing is evened out.
-    private static func joined(_ words: [Word]) -> String {
+    static func joined(_ words: [Word]) -> String {
         words.map(\.text).joined()
             .split(whereSeparator: \.isWhitespace)
             .joined(separator: " ")
     }
 
-    private static func endsSentence(_ text: String) -> Bool {
+    static func endsSentence(_ text: String) -> Bool {
         guard let last = text.trimmingCharacters(in: .whitespacesAndNewlines).last else {
             return false
         }

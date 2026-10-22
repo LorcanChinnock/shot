@@ -278,9 +278,15 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
         Task { await model.trimIdleTime() }
     }
 
+    /// Adds captions from what's said in the recording.
+    @objc func addCaptions(_ sender: Any?) {
+        Task { await model.addCaptions() }
+    }
+
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         switch menuItem.action {
         case #selector(trimIdleTime(_:)): model.canTrimIdleTime
+        case #selector(addCaptions(_:)): model.canAddCaptions
         case #selector(copyStyle(_:)): model.targetStyleKind != nil
         case #selector(pasteStyle(_:)): model.canPasteStyle
         case #selector(flatten(_:)): model.version != nil

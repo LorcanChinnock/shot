@@ -588,6 +588,64 @@ final class VideoEditorModel {
         Toast.show("Trimmed \(Timecode.string(before - trimmed.duration)) of idle time")
     }
 
+    /// The recording Add Captions listens to: the main track's first clip, when it has its own sound on the track below.
+    private var captionSource: Clip? {
+        guard let clip = project.tracks.first?.clips.first, project.tracks.count > 1,
+              project.tracks[1].clips.contains(where: { $0.source == clip.source }) else {
+            return nil
+        }
+        return clip
+    }
+
+    /// Whether Add Captions can run: macOS 26 or later, on a recording with sound, and not while it's already listening.
+    var canAddCaptions: Bool {
+        guard #available(macOS 26, *) else {
+            return false
+        }
+        return captionSource != nil && !isExporting && !isCaptioning
+    }
+
+    private(set) var isCaptioning = false
+
+    /// Transcribes the recording on the Mac and adds a caption clip for each phrase, as one undo step. They're ordinary
+    /// text clips, so each can be edited, moved or deleted like any other.
+    func addCaptions() async {
+        guard let clip = captionSource, canAddCaptions else {
+            return
+        }
+        isCaptioning = true
+        defer { isCaptioning = false }
+        Toast.progress("Listening to the recording…")
+        let source = clip.source
+        let words: [Narration.Word]?
+        do {
+            words = try await Task.detached(priority: .userInitiated) { try await SpeechRecognizer.words(in: source) }.value
+        } catch {
+            log.error("Captions failed: \(error.localizedDescription, privacy: .public)")
+            Toast.error("Couldn't listen to the recording: \(error.localizedDescription)")
+            return
+        }
+        guard let words else {
+            Toast.error("This Mac can't transcribe speech in your language")
+            return
+        }
+        let captions = Captions.captions(words, duration: clip.sourceDuration)
+        let placed = Captions.placements(captions, in: project, source: source)
+        guard !placed.isEmpty else {
+            Toast.show(captions.isEmpty ? "Nothing is said in this recording" : "Nothing is said in the part you kept")
+            return
+        }
+        var captioned = project
+        for placement in placed {
+            captioned = captioned.adding(annotation: Captions.annotation(placement.caption, canvas: project.canvasSize), at: placement.start, duration: placement.duration).project
+        }
+        guard replaceProject(with: captioned) else {
+            return
+        }
+        setShowsTracks(true)
+        Toast.show(placed.count == 1 ? "Added 1 caption" : "Added \(placed.count) captions")
+    }
+
     func setOptions(_ new: VideoExportOptions) {
         guard new != options else {
             return

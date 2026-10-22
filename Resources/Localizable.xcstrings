@@ -2198,6 +2198,9 @@
         }
       }
     },
+    "Add Captions" : {
+
+    },
     "Add Video or Audio at Playhead…" : {
       "localizations" : {
         "de" : {
@@ -2613,6 +2616,12 @@
           }
         }
       }
+    },
+    "Added %lld captions" : {
+
+    },
+    "Added 1 caption" : {
+
     },
     "Added Shot to %@." : {
 
@@ -8918,6 +8927,9 @@
       }
     },
     "Couldn't join the recording. Its parts are saved in your save folder." : {
+
+    },
+    "Couldn't listen to the recording: %@" : {
 
     },
     "Couldn't move %lld files to the Trash" : {
@@ -17814,6 +17826,9 @@
         }
       }
     },
+    "Listening to the recording…" : {
+
+    },
     "Loading…" : {
       "localizations" : {
         "de" : {
@@ -19908,6 +19923,12 @@
       }
     },
     "Nothing happens in this recording to keep" : {
+
+    },
+    "Nothing is said in the part you kept" : {
+
+    },
+    "Nothing is said in this recording" : {
 
     },
     "Nothing matches" : {
@@ -31498,6 +31519,9 @@
 
     },
     "The text is already in %@" : {
+
+    },
+    "This Mac can't transcribe speech in your language" : {
 
     },
     "This Month" : {

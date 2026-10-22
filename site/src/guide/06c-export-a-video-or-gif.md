@@ -15,6 +15,8 @@ In the video editor, **Export** writes a new file next to the recording and copi
 - **For a GIF:** 10, 15 or 24 frames per second, and 480, 720 or 1080 pixels wide, or the recording's own width (**Full**). It's never wider than the recording.
 - **For an MP4:** **Mute** to leave the sound out.
 
+[Captions](#add-captions) and other annotations show in both. A caption's box is solid, so in a GIF it adds to the size only when its words change.
+
 The estimated file size shows before you export. **Cancel**, or <kbd>Esc</kbd>, stops an export that's under way.
 
 > [!NOTE]
