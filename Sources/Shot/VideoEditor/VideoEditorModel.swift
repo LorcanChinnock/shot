@@ -1730,7 +1730,7 @@ extension VideoEditorModel: StyleEditing {
         guard let kind = targetStyleKind else {
             return
         }
-        restyleTarget(kind.defaultStyle.scaled(by: scale), cornerRadius: kind.defaultCornerRadius * scale)
+        restyleTarget(kind.defaultStyle.scaled(by: scale), cornerRadius: kind.takesCorners ? kind.defaultCornerRadius * scale : nil)
         stylePreview = nil
     }
 
