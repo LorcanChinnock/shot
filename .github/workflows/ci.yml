@@ -50,3 +50,7 @@ jobs:
       - name: Perf
         if: startsWith(github.head_ref, 'release-please--')
         run: make perf ARGS=--skip-build
+      # A test process that crashes leaves no stack in the log, so print it. See scripts/crash-reports.sh.
+      - name: Crash reports
+        if: failure()
+        run: scripts/crash-reports.sh
