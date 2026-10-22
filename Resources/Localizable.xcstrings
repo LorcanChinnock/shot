@@ -7371,6 +7371,9 @@
         }
       }
     },
+    "Copied alt text" : {
+
+    },
     "Copied annotation" : {
       "localizations" : {
         "de" : {
@@ -7740,6 +7743,9 @@
           }
         }
       }
+    },
+    "Copy Alt Text" : {
+
     },
     "Copy Latest Capture's Path" : {
       "localizations" : {
@@ -9711,6 +9717,12 @@
       }
     },
     "Couldn't translate the text: %@" : {
+
+    },
+    "Couldn't write alt text for this image" : {
+
+    },
+    "Couldn't write alt text: %@" : {
 
     },
     "Countdown" : {
@@ -34084,6 +34096,9 @@
           }
         }
       }
+    },
+    "Writing alt text…" : {
+
     },
     "X: rotate" : {
       "localizations" : {

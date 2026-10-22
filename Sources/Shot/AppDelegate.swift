@@ -204,6 +204,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             translate.submenu = NSMenu(title: String(localized: "Translate Text"))
             translate.submenu?.delegate = translateMenu
         }
+        if AltTextAction.isAvailable {
+            edit.addItem(withTitle: String(localized: "Copy Alt Text"), action: #selector(EditorWindowController.copyAltText(_:)), keyEquivalent: "")
+        }
         let editItem = NSMenuItem(title: String(localized: "Edit"), action: nil, keyEquivalent: "")
         editItem.submenu = edit
         let main = NSMenu()

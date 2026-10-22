@@ -333,7 +333,7 @@ final class QuickAccessController {
     }
 
     /// The card's actions in menu order, with `nil` for a divider: the hover buttons' actions, plus Copy Path, Copy Text,
-    /// Translate Text and Pin, which have no button.
+    /// Translate Text, Copy Alt Text and Pin, which have no button.
     func actions(for card: QuickAccessCard) -> [QuickAccessCardAction?] {
         var actions: [QuickAccessCardAction?] = [
             QuickAccessCardAction(title: String(localized: "Copy")) { self.copy(card) },
@@ -350,6 +350,11 @@ final class QuickAccessController {
                     }
                 }
                 actions.append(QuickAccessCardAction(title: String(localized: "Translate Text"), children: languages) {})
+            }
+            if AltTextAction.isAvailable {
+                actions.append(QuickAccessCardAction(title: String(localized: "Copy Alt Text")) {
+                    Task { await AltTextAction.copy(imageAt: card.styledURL ?? card.fileURL) }
+                })
             }
         }
         actions.append(QuickAccessCardAction(title: String(localized: "Save As…")) { self.saveAs(card) })
