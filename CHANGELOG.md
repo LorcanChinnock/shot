@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0-beta.67](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.66...v0.7.0-beta.67) (2026-10-22)
+
+
+### Features
+
+* **linux:** capture on Wayland through xdg-desktop-portal ([#786](https://github.com/LorcanChinnock/shot/issues/786)) ([3ae25f8](https://github.com/LorcanChinnock/shot/commit/3ae25f8df1740da35b64fa64df9defc26019fd42))
+* **linux:** capture screens, windows and areas on X11 ([#784](https://github.com/LorcanChinnock/shot/issues/784)) ([5d4f4c1](https://github.com/LorcanChinnock/shot/commit/5d4f4c14a1b32437deae9f857b1b3f305549e75e))
+* **linux:** read, trim and join video through ffprobe and ffmpeg ([#787](https://github.com/LorcanChinnock/shot/issues/787)) ([4a67e35](https://github.com/LorcanChinnock/shot/commit/4a67e35021828469fdd4f845c18743e278636f02))
+* **linux:** record on Wayland through the ScreenCast portal and PipeWire ([#792](https://github.com/LorcanChinnock/shot/issues/792)) ([5a507a4](https://github.com/LorcanChinnock/shot/commit/5a507a4c3db7d937ec443230c2b27f1e77c0eac1))
+* **linux:** record on X11 ([#791](https://github.com/LorcanChinnock/shot/issues/791)) ([56eb040](https://github.com/LorcanChinnock/shot/commit/56eb040cfd642131c58ccb801193960827116543))
+* **linux:** run the video and GIF commands and MCP tools on ffmpeg ([#789](https://github.com/LorcanChinnock/shot/issues/789)) ([569ee0f](https://github.com/LorcanChinnock/shot/commit/569ee0f01de8fc89e3061e8023f1745fc1398ca1))
+* **linux:** write video and read drawn projects through ffmpeg ([#788](https://github.com/LorcanChinnock/shot/issues/788)) ([d83757f](https://github.com/LorcanChinnock/shot/commit/d83757ffbde43c2c3c8224b777466b3a303dac2f))
+
 ## [0.7.0-beta.66](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.65...v0.7.0-beta.66) (2026-10-21)
 
 
