@@ -640,6 +640,7 @@ final class VideoEditorModel {
             captioned = captioned.adding(annotation: Captions.annotation(placement.caption, frame: project.outputRect), at: placement.start, duration: placement.duration).project
         }
         guard replaceProject(with: captioned) else {
+            Toast.error("Captions weren't added because an export started. Choose Add Captions again once it's done.")
             return
         }
         setShowsTracks(true)
@@ -889,6 +890,10 @@ final class VideoEditorModel {
 
     /// Copies the file, or an edited copy of it, to the clipboard.
     func copy() async {
+        guard !isCaptioning else {
+            Toast.show("Wait for the captions first")
+            return
+        }
         guard isDirty else {
             Clipboard.copy(fileURL: fileURL)
             Toast.show("Copied")
@@ -908,6 +913,10 @@ final class VideoEditorModel {
     /// An edit with imports or transforms is written as a copy next to the file, since the recording itself stays as it was.
     @discardableResult
     func save() async -> Bool {
+        guard !isCaptioning else {
+            Toast.show("Wait for the captions first")
+            return false
+        }
         guard isDirty else {
             Toast.error("Nothing to save yet")
             return false
@@ -975,8 +984,8 @@ final class VideoEditorModel {
 
     /// Writes a new file next to the original with the trim, cuts and export options, and copies it.
     func export() async {
-        // Checked before picking a name, so two exports can't pick the same one.
-        guard !isExporting else {
+        // Checked before picking a name, so two exports can't pick the same one. Captions being added would be lost.
+        guard !isExporting, !isCaptioning else {
             return
         }
         let options = options, project = project, plan = VideoExportPlan(project: project, options: options), fileURL = fileURL

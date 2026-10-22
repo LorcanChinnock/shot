@@ -5290,6 +5290,9 @@
         }
       }
     },
+    "Captions weren't added because an export started. Choose Add Captions again once it's done." : {
+
+    },
     "Capture" : {
       "localizations" : {
         "de" : {
@@ -33744,6 +33747,9 @@
           }
         }
       }
+    },
+    "Wait for the captions first" : {
+
     },
     "Welcome to Shot" : {
       "localizations" : {
