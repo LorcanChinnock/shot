@@ -38,12 +38,23 @@ func textImage(width: Int, height: Int, _ lines: [(text: String, x: CGFloat, top
     // Drawn 30 pixels from the top: a bottom-left origin would put it near the bottom.
     #expect(first.box.minY >= 20 && first.box.maxY <= 75)
     #expect(first.box.minX >= 30 && first.box.minX <= 50)
-    #expect(first.confidence > 0.5)
+    // Accurate recognition gives this clean text 1. CI's macOS 27 virtual machine can't run it, so it reads with the fast
+    // model, which always says 0.5.
+    #expect(first.confidence >= 0.5)
     #expect(first.words.map(\.text) == ["Invoice", "settings"])
     let invoice = try #require(first.words.first?.box), settings = try #require(first.words.last?.box)
     #expect(invoice.maxX <= settings.minX + 2)
     #expect(first.box.contains(invoice) && first.box.contains(settings))
     #expect(invoice == invoice.integral)
+}
+
+@Test func theFastModelThatAccurateFallsBackToReadsTheTextAndItsBoxes() async throws {
+    let picture = try textImage(width: 600, height: 200, [("Save changes", 40, 60)])
+    let text = try await TextRecognizer.recognize(picture, level: .fast)
+    #expect(text.lines.map(\.text) == ["Save changes"])
+    let line = try #require(text.lines.first)
+    #expect(line.words.map(\.text) == ["Save", "changes"])
+    #expect(line.box.minY >= 50 && line.box.maxY <= 105)
 }
 
 @Test func sensitiveTextReadFromAnImageIsBoxedWhereItWasDrawn() async throws {
