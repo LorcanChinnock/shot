@@ -51,7 +51,8 @@ jobs:
   build:
     needs: release-please
     if: needs.release-please.outputs.release_created == 'true'
-    runs-on: macos-26
+    # The same image as CI's macos check, so the release is built with the SDK the gate tested. See ci.yml.
+    runs-on: xcode-27
     # The `release` environment holds the release secrets and only deploys from main and v* tags. See CONTRIBUTING.md › Release secrets.
     environment: release
     # Uploads and publishes the release's assets with GITHUB_TOKEN; the last two sign the build provenance attestation.
@@ -93,6 +94,9 @@ jobs:
         run: make dist
         env:
           SHOT_SIGN_IDENTITY: Shot Release
+      # Both slices of the universal app, so Copy Alt Text is in the release and it still launches on macOS 15.
+      - name: Check the SDK
+        run: scripts/check-sdk.sh build/Shot.app/Contents/MacOS/Shot
       - name: Build the update feed
         env:
           GH_TOKEN: ${{ github.token }}
