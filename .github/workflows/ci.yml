@@ -44,13 +44,9 @@ jobs:
       - name: Build for Intel
         run: swift build --arch x86_64 --force-resolved-versions
       - name: Test on macOS
-        run: make test ARGS=--skip-build
+        run: scripts/ci-test.sh test --skip-build
       # Only at the release gate, to keep ordinary PRs' runs short. Alone, so other tests running in parallel don't skew
       # the timings. Budgets: docs/performance.md.
       - name: Perf
         if: startsWith(github.head_ref, 'release-please--')
-        run: make perf ARGS=--skip-build
-      # A test process that crashes leaves no stack in the log, so print it. See scripts/crash-reports.sh.
-      - name: Crash reports
-        if: failure()
-        run: scripts/crash-reports.sh
+        run: scripts/ci-test.sh perf --skip-build

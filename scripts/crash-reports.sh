@@ -1,7 +1,7 @@
 #!/bin/sh
 # Prints the crash reports the test run left: each thread's stack, the crashed one in full. A test process that dies on
-# a signal leaves only "exited with unexpected signal code 11" in the log, so CI runs this when a test step fails, to
-# get the stack for the next time it happens. Reports from other processes are listed by name only.
+# a signal leaves only "exited with unexpected signal code 11" in the log, so scripts/ci-test.sh runs this when the
+# tests fail, to get the stack for the next time it happens. Reports from other processes are listed by name only.
 set -eu
 
 found=0
