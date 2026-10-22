@@ -163,6 +163,32 @@ extension Project {
         animation(ofClip: id).flatMap { replacing(animation: $0.removingKeyframes(at: time), ofClip: id) }
     }
 
+    /// True when the clip has no keyframes and its position, scale, turn, opacity, volume and drawn amount are
+    /// what a new clip starts with. Its crop and style don't count. False for no clip.
+    public func isAtDefaults(clip id: UUID) -> Bool {
+        guard let animation = animation(ofClip: id), let base = clip(id)?.propertyValues ?? annotationClip(id)?.propertyValues else {
+            return false
+        }
+        return animation.isEmpty && base.isDefault
+    }
+
+    /// The clip with its keyframes gone and its properties back to a new clip's. Its crop and style stay.
+    public func resetting(clip id: UUID) -> Project? {
+        if var changed = clip(id) {
+            changed.animation = ClipAnimation()
+            changed.transform = .identity
+            changed.volume = PropertyValues().volume
+            return replacing(clip: changed)
+        }
+        if var changed = annotationClip(id) {
+            changed.animation = ClipAnimation()
+            changed.transform = .identity
+            changed.reveal = PropertyValues().reveal
+            return replacing(annotationClip: changed)
+        }
+        return nil
+    }
+
     public func settingEasing(_ easing: Easing, ofClip id: UUID, at time: Double) -> Project? {
         animation(ofClip: id).flatMap { replacing(animation: $0.settingEasing(easing, at: time), ofClip: id) }
     }

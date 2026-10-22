@@ -30,6 +30,8 @@ Click **Inspector** to see the selected clip's or annotation's properties:
 - **Volume** for a clip on a sound lane, from 0 to 200%.
 - **Drawn**: how much of an arrow, line or pen stroke is drawn.
 
+**Reset** puts all of these back to how a new clip starts and clears its keyframes, in one undo step. It stays greyed out while the clip is untouched, and leaves the crop and style alone.
+
 ## Animate with keyframes
 
 A keyframe pins a property to a value at a moment in time, and the editor moves smoothly between them.

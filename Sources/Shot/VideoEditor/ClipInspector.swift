@@ -59,6 +59,10 @@ struct ClipInspector: View {
                         Button("Clear Keyframes") { model.clearKeyframes() }
                             .buttonStyle(BrutalButtonStyle(compact: true))
                     }
+                    Button("Reset") { model.resetSelectedClip() }
+                        .buttonStyle(BrutalButtonStyle(compact: true))
+                        .disabled(model.selectedClipIsAtDefaults)
+                        .brutalTip(Self.resetTip(isSound: isSound))
                 }
                 .frame(height: 32)
             } else {
@@ -77,6 +81,13 @@ struct ClipInspector: View {
         }
         .frame(height: Self.height)
         .disabled(model.isExporting)
+    }
+
+    private static func resetTip(isSound: Bool) -> LocalizedStringResource {
+        if isSound {
+            return "Puts the volume back and clears its keyframes"
+        }
+        return "Puts the position, scale, turn and opacity back and clears the keyframes. The crop and style stay."
     }
 
     // MARK: Controls

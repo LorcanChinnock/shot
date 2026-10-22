@@ -168,6 +168,12 @@ public struct PropertyValues: Equatable, Sendable {
         self.volume = volume
         self.reveal = reveal
     }
+
+    /// True when every property is what a new clip starts with, within a rounding error.
+    public var isDefault: Bool {
+        let plain = PropertyValues()
+        return AnimatedProperty.allCases.allSatisfy { !self[$0].differs(from: plain[$0]) }
+    }
 }
 
 /// One property's value, typed as the property is: a position is a size, everything else a number.

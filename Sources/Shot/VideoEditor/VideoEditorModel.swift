@@ -1645,6 +1645,21 @@ extension VideoEditorModel {
         replaceProject(with: changed)
     }
 
+    /// Whether the selected clip is already as a new one starts, so the Inspector's Reset has nothing to do.
+    var selectedClipIsAtDefaults: Bool {
+        selectedClipID.map(project.isAtDefaults(clip:)) ?? true
+    }
+
+    /// The Inspector's Reset: the selected clip loses its keyframes and goes back to its starting position, scale, turn,
+    /// opacity, volume and drawn amount. Its crop and style stay. One undo step.
+    func resetSelectedClip() {
+        guard !isExporting, let id = selectedClipID, let changed = project.resetting(clip: id) else {
+            return
+        }
+        selectedKeyframe = nil
+        replaceProject(with: changed)
+    }
+
     /// Drags the keyframes at `time` to timeline `target`; call between `beginDrag` and `endDrag`.
     func moveKeyframe(_ id: UUID, from time: Double, toTimeline target: Double) {
         guard let origin = dragOrigin, let start = origin.clipStart(id), let moved = origin.movingKeyframes(ofClip: id, from: time, to: target - start) else {
