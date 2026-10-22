@@ -1087,6 +1087,11 @@ final class EditorModel {
         deleteLayers(selectedIDs)
     }
 
+    /// The flattened image, as it would be copied, for reading its text.
+    func renderedImage() async -> CGImage? {
+        await renderedPNG().flatMap(ImageCodec.image(from:))
+    }
+
     /// The flattened image as a PNG, for the clipboard.
     private func renderedPNG() async -> Data? {
         let document = document, scale = scale

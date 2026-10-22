@@ -90,11 +90,17 @@ private struct QuickAccessCardView: View {
         .contextMenu { menu }
     }
 
-    /// The hover buttons' actions again, plus Copy Path, Copy Text and Pin, which have no button: the card stays as plain
+    /// The hover buttons' actions again, plus Copy Path, Copy Text, Translate Text and Pin, which have no button: the card stays as plain
     /// as it is.
     private var menu: some View {
         ForEach(Array(controller.actions(for: card).enumerated()), id: \.offset) { _, action in
-            if let action {
+            if let action, !action.children.isEmpty {
+                Menu(action.title) {
+                    ForEach(Array(action.children.enumerated()), id: \.offset) { _, child in
+                        Button(child.title, action: child.perform)
+                    }
+                }
+            } else if let action {
                 Button(action.title, action: action.perform)
             } else {
                 Divider()

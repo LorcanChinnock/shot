@@ -37,9 +37,10 @@ final class QuickAccessModel {
     var selected: UUID?
 }
 
-/// A card's action, for its right-click menu and the menu Space opens.
+/// A card's action, for its right-click menu and the menu Space opens. With `children`, it's a submenu of them instead.
 struct QuickAccessCardAction {
     let title: String
+    var children: [QuickAccessCardAction] = []
     let perform: () -> Void
 }
 
@@ -313,7 +314,14 @@ final class QuickAccessController {
         let menu = NSMenu()
         for action in actions(for: card) {
             if let action {
-                menu.addItem(ClosureMenuItem(title: action.title, perform: action.perform))
+                let item = ClosureMenuItem(title: action.title, perform: action.perform)
+                if !action.children.isEmpty {
+                    item.submenu = NSMenu()
+                    for child in action.children {
+                        item.submenu?.addItem(ClosureMenuItem(title: child.title, perform: child.perform))
+                    }
+                }
+                menu.addItem(item)
             } else {
                 menu.addItem(.separator())
             }
@@ -324,8 +332,8 @@ final class QuickAccessController {
         menu.popUp(positioning: menu.items.first, at: NSPoint(x: frame.minX + 12, y: view.isFlipped ? top + 12 : top - 12), in: view)
     }
 
-    /// The card's actions in menu order, with `nil` for a divider: the hover buttons' actions, plus Copy Path, Copy Text
-    /// and Pin, which have no button.
+    /// The card's actions in menu order, with `nil` for a divider: the hover buttons' actions, plus Copy Path, Copy Text,
+    /// Translate Text and Pin, which have no button.
     func actions(for card: QuickAccessCard) -> [QuickAccessCardAction?] {
         var actions: [QuickAccessCardAction?] = [
             QuickAccessCardAction(title: String(localized: "Copy")) { self.copy(card) },
@@ -335,6 +343,14 @@ final class QuickAccessController {
             actions.append(QuickAccessCardAction(title: String(localized: "Copy Text")) {
                 Task { await Clipboard.copyText(inImageAt: card.styledURL ?? card.fileURL) }
             })
+            if Translator.isAvailable {
+                let languages = Translator.languages.map { language in
+                    QuickAccessCardAction(title: language.title) {
+                        Task { await Translator.translate(imageAt: card.styledURL ?? card.fileURL, to: language.language) }
+                    }
+                }
+                actions.append(QuickAccessCardAction(title: String(localized: "Translate Text"), children: languages) {})
+            }
         }
         actions.append(QuickAccessCardAction(title: String(localized: "Save As…")) { self.saveAs(card) })
         actions.append(nil)
