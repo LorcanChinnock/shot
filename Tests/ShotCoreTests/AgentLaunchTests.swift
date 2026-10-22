@@ -42,17 +42,25 @@ private let capture = "/tmp/Shot 'quoted' folder/Shot 2026-10-22 at 09.14.03.png
 @Test func claudeCodeGetsTheCaptureFolderAndThePromptAsOneArgument() throws {
     let lines = try run { AgentLaunch(preset: .claudeCode, command: $0, folder: "/tmp", path: capture, prompt: awkward) }
     #expect(["/tmp", "/private/tmp"].contains(lines.first))
-    #expect(Array(lines.dropFirst()) == ["--add-dir", "/tmp/Shot 'quoted' folder", awkward])
+    #expect(Array(lines.dropFirst()) == ["--add-dir=/tmp/Shot 'quoted' folder", "--", awkward])
 }
 
 @Test func codexGetsTheImageWithAnEqualsSign() throws {
     let lines = try run { AgentLaunch(preset: .codex, command: $0, folder: "/tmp", path: capture, prompt: "hi") }
-    #expect(Array(lines.dropFirst()) == ["--image=\(capture)", "hi"])
+    #expect(Array(lines.dropFirst()) == ["--image=\(capture)", "--", "hi"])
 }
 
 @Test func cursorGetsOnlyThePrompt() throws {
     let lines = try run { AgentLaunch(preset: .cursor, command: $0, folder: "/tmp", path: capture, prompt: awkward) }
-    #expect(Array(lines.dropFirst()) == [awkward])
+    #expect(Array(lines.dropFirst()) == ["--", awkward])
+}
+
+@Test func aPromptStartingWithADashIsStillThePrompt() {
+    // Claude Code's --add-dir and Codex's --image take several values, so the prompt must never follow them bare.
+    for preset in [AgentPreset.claudeCode, .codex, .cursor] {
+        #expect(preset.arguments.hasSuffix(#"-- "$shot_prompt""#))
+        #expect(!preset.arguments.contains(#"--add-dir ""#) && !preset.arguments.contains(#"--image ""#))
+    }
 }
 
 @Test func aCustomTemplateFillsItsPlaceholdersInOrOutOfQuotes() throws {
