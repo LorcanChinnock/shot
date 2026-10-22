@@ -148,26 +148,48 @@ public enum AgentSocket {
             let queue = DispatchQueue(label: "dev.lorcan.Shot.agent-socket.answer")
             queue.setSpecific(key: answering, value: true)
             // A client that hangs up, such as an agent that stopped waiting, cancels its request, so a long wait
-            // doesn't hold on to someone who's gone.
-            let hangUp = DispatchSource.makeReadSource(fileDescriptor: client, queue: DispatchQueue(label: "dev.lorcan.Shot.agent-socket.hang-up"))
+            // doesn't hold on to someone who's gone. The socket closes only once the watch on it is torn down, as
+            // dispatch needs, and everything that touches the watch runs on its queue.
+            let watching = DispatchQueue(label: "dev.lorcan.Shot.agent-socket.hang-up")
+            let hangUp = DispatchSource.makeReadSource(fileDescriptor: client, queue: watching)
+            let suspended = Flag()
             let task = Task(executorPreference: QueueExecutor(queue)) {
                 let response = await handler(request)
-                hangUp.cancel()
-                AgentSocket.reply(response, to: client)
-            }
-            hangUp.setEventHandler {
-                var byte: UInt8 = 0
-                let count = recv(client, &byte, 1, MSG_PEEK | MSG_DONTWAIT)
-                if count == 0 || count < 0 && errno != EAGAIN && errno != EINTR {
-                    task.cancel()
-                    hangUp.cancel()
-                } else if count > 0 {
-                    // More than the one line: not a hang-up, and not worth watching for one.
+                _ = AgentSocket.write(response.line, to: client)
+                watching.async {
+                    if suspended.isSet {
+                        hangUp.resume()
+                    }
                     hangUp.cancel()
                 }
             }
+            hangUp.setEventHandler {
+                guard !suspended.isSet else {
+                    return
+                }
+                var byte: UInt8 = 0
+                let count = recv(client, &byte, 1, MSG_PEEK | MSG_DONTWAIT)
+                if count < 0, errno == EAGAIN || errno == EINTR {
+                    return
+                }
+                if count <= 0 {
+                    task.cancel()
+                }
+                // Hung up, or more than the one line, which isn't worth watching for one: stop hearing about it until
+                // the answer's written.
+                hangUp.suspend()
+                suspended.isSet = true
+            }
+            hangUp.setCancelHandler {
+                close(client)
+            }
             hangUp.resume()
         }
+    }
+
+    /// Whether a client's hang-up watch is suspended. Read and set only on that watch's own queue.
+    final class Flag: @unchecked Sendable {
+        var isSet = false
     }
 
     /// Marks the queues requests are answered on.
@@ -398,6 +420,10 @@ extension AgentSocket {
             throw .unavailable(turnedOff)
         }
         let url = url(bundleID: bundleID)
+        // Waiting for a send is only worth it while Shot is open; otherwise the caller watches the folder.
+        if request.op == .waitForSend, !isListening(at: url) {
+            throw .unavailable("Shot isn't running")
+        }
         if !isListening(at: url) {
             try launch(bundleID)
             let deadline = ContinuousClock.now + launchTimeout

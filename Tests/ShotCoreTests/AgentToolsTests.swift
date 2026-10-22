@@ -904,3 +904,16 @@ private func rect(_ values: Double...) -> JSONValue {
     let result = await tools.call("wait_for_capture", .object(["timeout": .number(2)]))
     #expect(texts(result) == ["The user didn't send a capture from Shot in 2 seconds. Call wait_for_capture again to keep waiting."])
 }
+
+@Test func waitingForARecordingWatchesTheFolderSinceOnlyScreenshotsAreSent() async {
+    let asked = Mutex(false)
+    var tools = captures
+    tools.agent = { _ throws(ShotCommandError) in
+        asked.withLock { $0 = true }
+        throw .noInput("nothing sent")
+    }
+    tools.pollInterval = .milliseconds(10)
+    let result = await tools.call("wait_for_capture", .object(["kind": .string("video"), "timeout": .number(1)]))
+    #expect(!asked.withLock { $0 })
+    #expect(texts(result) == ["No new recording in /shots after 1 second. Call wait_for_capture again to keep waiting."])
+}

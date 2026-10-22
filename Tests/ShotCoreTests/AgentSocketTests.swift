@@ -222,3 +222,13 @@ private actor Arrivals {
     #expect(AgentSent(fields: sent.fields) == sent)
     #expect(AgentSent(fields: ["path": .string("/a.png")]) == nil)
 }
+
+@Test func waitingForASendDoesntOpenShot() async {
+    // No app has this bundle ID, so opening it would fail with another message.
+    do {
+        _ = try await AgentSocket.ask(AgentRequest(.waitForSend, duration: 1), bundleID: "dev.lorcan.Shot.test-\(UUID().uuidString.prefix(8))", enabled: false, timeout: .seconds(2))
+        Issue.record("it answered")
+    } catch {
+        #expect(error == .unavailable("Shot isn't running"))
+    }
+}
