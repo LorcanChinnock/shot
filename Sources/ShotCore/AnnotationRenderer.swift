@@ -284,6 +284,13 @@ public enum AnnotationRenderer {
                     ctx.draw(line, at: CGPoint(x: x, y: origin.y + layout.ascent + CGFloat(index) * layout.lineHeight), outlined: outlined)
                 }
             }
+            if let box = annotation.textBox, let fill = annotation.fill {
+                let radius = min(annotation.textBoxCornerRadius, box.width / 2, box.height / 2)
+                ctx.saveGState()
+                ctx.setFillColor(fill.cgColor)
+                ctx.fill(CGPath(roundedRect: box, cornerWidth: radius, cornerHeight: radius, transform: nil))
+                ctx.restoreGState()
+            }
             if let outline = annotation.style.border, outline.kind == .outline {
                 // Each letter is stroked twice as wide as the outline in its colour, and the fill covers the inner half.
                 ctx.saveGState()

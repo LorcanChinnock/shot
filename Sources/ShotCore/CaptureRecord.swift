@@ -156,7 +156,7 @@ public struct CaptureMark: Codable, Equatable, Sendable {
     /// A word for the agent, such as that a redaction hides what's under it.
     public var note: String?
     public var lineWidth: Double?
-    /// A shape's fill, as a hex.
+    /// A shape's fill, or the colour of the box behind text, as a hex.
     public var fill: String?
     public var fontSize: Double?
     /// A blur's or pixelation's strength, as a fraction of the image's longer side.
