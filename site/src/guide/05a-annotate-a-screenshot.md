@@ -61,6 +61,8 @@ The options for the tool you picked show below the tools:
 
 The last swatch picks any colour, and its eyedropper takes a colour from anywhere on screen, such as a brand colour in the screenshot itself. Each palette remembers the last colour you picked. The highlight and sticky notes keep their own colours, yellow at first, so they don't take the colour of your arrows. The editor remembers the options you last used.
 
+To go back to the plain look, click **Reset** at the end of the options. It puts that tool's colour, width and other options back to how Shot starts, for the selected mark too, and for the next one you draw, as one undo step. Your saved custom colours stay, and it's greyed out when the options are already the defaults. For a spotlight, **Reset** also sets the effect and strength of every spotlight in the screenshot, since they share them.
+
 ## Change what you've drawn
 
 What you've just drawn stays selected, so you can fix its colour, width or fill from the toolbar, or drag its handles, without switching tools. The change also applies to what you draw next. Otherwise, pick the select tool (<kbd>V</kbd>) and click a mark.

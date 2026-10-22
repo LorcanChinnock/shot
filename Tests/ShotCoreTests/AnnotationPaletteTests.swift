@@ -131,3 +131,79 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     shared.sharedSpotlight = SpotlightStyle(shape: .rectangle, effect: .blur, strength: 0.7)
     #expect(shared.nextSpotlightStyle == SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.7, softEdge: 0.5))
 }
+
+@Test func resetOffersNothingUntilAnOptionIsChanged() {
+    var arrowTool = palette(tool: .arrow)
+    #expect(arrowTool.offersReset)
+    #expect(!arrowTool.canReset)
+    arrowTool.setColor(blue)
+    #expect(arrowTool.canReset)
+    arrowTool.reset()
+    #expect(arrowTool.style.color == EditorStyle().color)
+    #expect(!arrowTool.canReset)
+
+    #expect(!palette(tool: .crop).offersReset)
+    #expect(!palette(tool: .select).offersReset)
+    #expect(!palette(tool: .crop).canReset)
+}
+
+@Test func resetPutsDrawingOptionsAndTheSelectionBackToTheirDefaults() {
+    var drawn = palette(tool: .shape, selection: box)
+    drawn.setColor(blue)
+    drawn.setLineWidthIndex(2)
+    drawn.setFill(blue)
+    drawn.setShape(.ellipse)
+    drawn.style.customColors[.stroke] = blue
+    #expect(drawn.canReset)
+    drawn.reset()
+    let defaults = EditorStyle()
+    #expect(drawn.style.color == defaults.color)
+    #expect(drawn.style.widthIndex == defaults.widthIndex)
+    #expect(drawn.style.fill == nil)
+    #expect(drawn.style.shape == defaults.shape)
+    #expect(drawn.selection?.color == defaults.color)
+    #expect(drawn.selection?.lineWidth == EditorStyle.widths[defaults.widthIndex] * 2)
+    #expect(drawn.selection?.fill == nil)
+    #expect(drawn.shape == .rectangle)
+    #expect(drawn.style.customColors == [.stroke: blue])
+    #expect(!drawn.canReset)
+}
+
+@Test func resetKeepsEachToolsOwnDefaultColour() {
+    var noting = palette(tool: .note)
+    noting.setColor(blue)
+    noting.reset()
+    #expect(noting.style.noteColor == EditorStyle().noteColor)
+    #expect(noting.style.color == EditorStyle().color)
+
+    var highlighting = palette(tool: .highlight)
+    highlighting.setColor(blue)
+    highlighting.reset()
+    #expect(highlighting.style.highlightColor == EditorStyle().highlightColor)
+}
+
+@Test func resetPutsRedactionBackToABlurOfTheDefaultAmount() {
+    var redacting = palette(tool: .redact)
+    #expect(!redacting.canReset)
+    redacting.setRedaction(.pixelate)
+    redacting.setRedactionAmount(0.05)
+    #expect(redacting.canReset)
+    redacting.reset()
+    #expect(redacting.style.redaction == .blur)
+    #expect(redacting.style.redactionAmount == Redaction.defaultAmount)
+    #expect(!redacting.canReset)
+}
+
+@Test func resetPutsEverySpotlightsLookBackToo() {
+    let dimmed = SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.8, softEdge: 0.6)
+    var spotlighting = AnnotationPalette(
+        style: EditorStyle(tool: .spotlight, spotlight: dimmed), editingText: nil, editingTextIsNew: false, selection: nil,
+        tool: .spotlight, scale: 1, imageLength: 1000, sharedSpotlight: dimmed
+    )
+    #expect(spotlighting.canReset)
+    spotlighting.reset()
+    #expect(spotlighting.nextSpotlightStyle == SpotlightStyle())
+    #expect(spotlighting.sharedSpotlight == SpotlightStyle(shape: .ellipse, effect: .darken, strength: 0.5, softEdge: 0.6))
+    #expect(spotlighting.style.spotlight == SpotlightStyle())
+    #expect(!spotlighting.canReset)
+}

@@ -424,6 +424,35 @@ final class EditorModel {
         edit(coalescing: isDraggingStyle ? "spotlight-look" : nil) { $0.setSpotlights(effect: effect, strength: strength) }
     }
 
+    /// True when the toolbar's options row has options that aren't the defaults, so Reset has something to do.
+    var canResetToolOptions: Bool { palette.canReset }
+
+    /// Puts the toolbar's options back to the defaults of a fresh install: the selected object's, the text being typed's, and
+    /// the ones the next object starts with, as one undo step. A spotlight's effect and strength go back for every
+    /// spotlight in the image, since they share them.
+    func resetToolOptions() {
+        let before = palette
+        var changed = before
+        changed.reset()
+        guard changed != before else {
+            return
+        }
+        pickedKey = nil
+        let restyled = changed.selection != selection ? changed.selection : nil
+        let look = changed.sharedSpotlight != before.sharedSpotlight ? changed.sharedSpotlight : nil
+        edit { doc in
+            if let restyled, let index = doc.annotations.firstIndex(where: { $0.id == restyled.id }), !doc.annotations[index].isLocked {
+                doc.annotations[index] = restyled
+                doc.grow(toFit: restyled, margin: canvasMargin)
+                doc.shrinkPadding(margin: canvasMargin)
+            }
+            if let look {
+                doc.setSpotlights(effect: look.effect, strength: look.strength)
+            }
+        }
+        adopt(changed)
+    }
+
     // MARK: Object style
 
     /// What the Style popover changes: the selected image, mark or text, else the capture when nothing is selected. `nil`

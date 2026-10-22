@@ -23017,6 +23017,9 @@
     "Puts the volume back and clears its keyframes" : {
 
     },
+    "Puts this tool's colour, size and other options back to how a new install starts. Your saved custom colours stay." : {
+
+    },
     "Quick Access" : {
       "localizations" : {
         "de" : {

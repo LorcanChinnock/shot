@@ -302,4 +302,64 @@ public struct AnnotationPalette: Equatable, Sendable {
             style.verticalAlignment = alignment
         }
     }
+
+    // MARK: Reset
+
+    /// True when the toolbar has options to reset, which it offers for drawing tools, redaction and spotlight.
+    public var offersReset: Bool {
+        showsStyle || redaction != nil || spotlight != nil
+    }
+
+    /// True when `reset()` would change something: the options shown, or the ones the next annotation starts with, aren't
+    /// the defaults a fresh install starts with.
+    public var canReset: Bool {
+        guard offersReset else {
+            return false
+        }
+        var reset = self
+        reset.reset()
+        return reset != self
+    }
+
+    /// Puts the options the toolbar shows back to the defaults of a fresh install, as picking each would: the text being
+    /// typed's or the selection's, and the next annotation's. Saved custom colours stay. A spotlight's effect and strength
+    /// are shared by every spotlight, so they go back for all of them (`sharedSpotlight` here; the editor sets the rest).
+    public mutating func reset() {
+        let defaults = EditorStyle()
+        if showsStyle {
+            switch ColorSlot(forFill: false, shown: shown, tool: tool) {
+            case .note: setColor(defaults.noteColor)
+            case .highlight: setColor(defaults.highlightColor)
+            case .stroke, .fill: setColor(defaults.color)
+            }
+            setLineWidthIndex(defaults.widthIndex)
+            if showsFill {
+                setFill(defaults.fill)
+            }
+        }
+        if shape != nil {
+            setShape(defaults.shape)
+        }
+        if redaction != nil {
+            setRedaction(defaults.redaction)
+            setRedactionAmount(defaults.redactionAmount)
+        }
+        if spotlight != nil {
+            setSpotlightShape(defaults.spotlight.shape)
+            setSpotlightSoftEdge(defaults.spotlight.softEdge)
+            selection?.restyleSpotlight { $0.effect = defaults.spotlight.effect; $0.strength = defaults.spotlight.strength }
+            style.spotlight.effect = defaults.spotlight.effect
+            style.spotlight.strength = defaults.spotlight.strength
+            if sharedSpotlight != nil {
+                sharedSpotlight?.effect = defaults.spotlight.effect
+                sharedSpotlight?.strength = defaults.spotlight.strength
+            }
+        }
+        if alignment != nil {
+            setAlignment(defaults.alignment)
+        }
+        if verticalAlignment != nil {
+            setVerticalAlignment(defaults.verticalAlignment)
+        }
+    }
 }
