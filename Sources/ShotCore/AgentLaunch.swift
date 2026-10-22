@@ -92,6 +92,8 @@ public struct AgentLaunch: Equatable, Sendable {
     }
 
     public var script: String {
+        // The shell can't hold a NUL, and would cut the prompt short at one.
+        let prompt = prompt.replacingOccurrences(of: "\0", with: "")
         let end = Self.terminator(for: prompt)
         var lines = [
             "#!/bin/zsh -l",
@@ -118,8 +120,10 @@ public struct AgentLaunch: Equatable, Sendable {
     }
 
     /// `SHOT_EOF`, or that with a number when the prompt has a line that would end the heredoc early.
+    /// Lines are split at every `\n` as zsh splits them, which `split(separator:)` doesn't do: to Swift, `\r\n` is one
+    /// character, so a `SHOT_EOF` after one would go unseen and end the heredoc early.
     static func terminator(for prompt: String) -> String {
-        let lines = Set(prompt.split(separator: "\n", omittingEmptySubsequences: false).map(String.init))
+        let lines = Set(prompt.components(separatedBy: "\n"))
         var end = "SHOT_EOF"
         var n = 1
         while lines.contains(end) {

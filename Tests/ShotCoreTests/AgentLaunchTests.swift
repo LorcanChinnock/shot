@@ -75,8 +75,21 @@ private let capture = "/tmp/Shot 'quoted' folder/Shot 2026-10-22 at 09.14.03.png
     #expect(launch.commandLine == "my-agent --file ${shot_path} ${shot_prompt}")
 }
 
+@Test(arguments: [
+    "x\r\nSHOT_EOF\n)\ntouch pwned\n",
+    "x\r\nSHOT_EOF\r\n)\r\ntouch pwned",
+    "unbalanced ) and ( and `` and \\ and ' \" and \0 here",
+    "SHOT_EOF\n)\ntouch pwned",
+])
+func noPromptRunsAsACommand(_ prompt: String) throws {
+    let lines = try run { AgentLaunch(preset: .cursor, command: $0, folder: "/tmp", path: capture, prompt: prompt) }
+    #expect(Array(lines.dropFirst()) == ["--", prompt.replacingOccurrences(of: "\0", with: "").trimmingCharacters(in: .newlines)])
+    #expect(!FileManager.default.fileExists(atPath: "/tmp/pwned"))
+}
+
 @Test func theHeredocEndsOnALineThePromptDoesntHave() {
     #expect(AgentLaunch.terminator(for: "hi") == "SHOT_EOF")
+    #expect(AgentLaunch.terminator(for: "x\r\nSHOT_EOF\n") == "SHOT_EOF_1")
     #expect(AgentLaunch.terminator(for: "a\nSHOT_EOF\nSHOT_EOF_1") == "SHOT_EOF_2")
     #expect(AgentLaunch.terminator(for: "  SHOT_EOF") == "SHOT_EOF")
 }
