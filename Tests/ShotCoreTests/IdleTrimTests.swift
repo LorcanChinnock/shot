@@ -104,3 +104,14 @@ func bothHandlesLandWhereverTheTrimWas(_ was: (Double, Double), _ found: (Double
     // Action wholly outside what's kept leaves too little.
     #expect(IdleTrim.tightening(current, to: TrimRange(start: 6, end: 9, duration: 10)) == nil)
 }
+
+@Test func anEndInsideACutLandsAtTheCutsEdge() throws {
+    // 1–4 s cut: the clips are 0–1 and 4–10 of the recording.
+    let cut = try #require(recording().deleting(range: 1 ..< 4))
+    let start = try #require(cut.trimmingMain(to: TrimRange(start: 2.6, end: 10, duration: 10))?.trimEdit?.range)
+    #expect(abs(start.start - 4) < 0.01 && abs(start.end - 10) < 0.01)
+    // 6–9 s cut: an end found at 7.5 keeps what ends at 6.
+    let late = try #require(recording().deleting(range: 6 ..< 9))
+    let end = try #require(late.trimmingMain(to: TrimRange(start: 0, end: 7.5, duration: 10))?.trimEdit?.range)
+    #expect(abs(end.start) < 0.01 && abs(end.end - 6) < 0.01)
+}

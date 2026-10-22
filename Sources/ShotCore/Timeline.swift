@@ -307,13 +307,24 @@ public struct Project: Equatable, Codable, Sendable {
     /// Each handle stops short of the other, so the one that clears the way moves first: the end when `range` starts
     /// past the current end, otherwise the start.
     public func trimmingMain(to range: TrimRange) -> Project? {
-        guard let current = trimEdit?.range else {
+        guard let current = trimEdit?.range, let first = main.clips.first, let last = main.clips.last else {
             return nil
         }
-        let moved = range.start >= current.end
-            ? trimmingMain(.end, toSource: range.end)?.trimmingMain(.start, toSource: range.start)
-            : trimmingMain(.start, toSource: range.start)?.trimmingMain(.end, toSource: range.end)
-        guard let moved, let landed = moved.trimEdit?.range, abs(landed.start - range.start) < 0.01, abs(landed.end - range.end) < 0.01 else {
+        // An end inside a cut keeps the same footage as the cut's edge, which is where its handle lands.
+        func kept(_ time: Double, startingThere: Bool) -> Double {
+            guard time > first.sourceStart, time < last.sourceEnd, !main.clips.contains(where: { $0.sourceStart <= time && time <= $0.sourceEnd }) else {
+                return time
+            }
+            return startingThere
+                ? main.clips.map(\.sourceStart).filter { $0 > time }.min() ?? time
+                : main.clips.map(\.sourceEnd).filter { $0 < time }.max() ?? time
+        }
+        let start = kept(range.start, startingThere: true), end = kept(range.end, startingThere: false)
+        let moved = start >= current.end
+            ? trimmingMain(.end, toSource: end)?.trimmingMain(.start, toSource: start)
+            : trimmingMain(.start, toSource: start)?.trimmingMain(.end, toSource: end)
+        guard end - start >= TrimRange.minimumLength, let moved, let landed = moved.trimEdit?.range,
+              abs(landed.start - start) < 0.01, abs(landed.end - end) < 0.01 else {
             return nil
         }
         return moved
