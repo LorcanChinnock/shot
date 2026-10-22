@@ -15,15 +15,18 @@ public enum AgentPreset: String, CaseIterable, Sendable {
         }
     }
 
-    /// The arguments after the command, with `$shot_path`, `$shot_dir` and `$shot_prompt` set by the script.
-    /// - Claude Code can't read a file outside its working folder without `--add-dir`.
-    /// - Codex's `-i` takes several values and would read the prompt as a second image, so it's `--image=`.
+    /// The arguments after the command, with `$shot_path`, `$shot_dir` and `$shot_prompt` set by the script. `--` ends
+    /// the options, so a prompt that starts with `-` is still the prompt.
+    /// - Claude Code can't read a file outside its working folder without `--add-dir`, which takes several folders and
+    ///   would read the prompt as another (tested), so it's `--add-dir=`.
+    /// - Codex's `-i` takes several values the same way, so it's `--image=`.
     /// - Cursor's `agent` reads the path from the prompt text.
     var arguments: String {
         switch self {
-        case .claudeCode: #"--add-dir "$shot_dir" "$shot_prompt""#
-        case .codex: #"--image="$shot_path" "$shot_prompt""#
-        case .cursor, .custom: #""$shot_prompt""#
+        case .claudeCode: #"--add-dir="$shot_dir" -- "$shot_prompt""#
+        case .codex: #"--image="$shot_path" -- "$shot_prompt""#
+        case .cursor: #"-- "$shot_prompt""#
+        case .custom: #""$shot_prompt""#
         }
     }
 }
