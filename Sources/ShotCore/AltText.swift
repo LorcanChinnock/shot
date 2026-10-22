@@ -43,6 +43,7 @@ public enum AltText {
     }
 
     public struct Unavailable: LocalizedError {
+        public init() {}
         public var errorDescription: String? { "This Mac's model can't describe images" }
     }
 

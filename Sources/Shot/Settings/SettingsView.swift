@@ -615,6 +615,7 @@ private struct AgentSettings: View {
             )
         }
         SendToAgentCard(color: color)
+        ProviderCard(color: color)
         SettingsCard(title: "Command line", symbol: "apple.terminal") {
             CardNote(text: "For agents and scripts that run in a terminal. The MCP server works without it.")
             CommandLinkRow(cli: Self.server)
@@ -780,6 +781,63 @@ private struct SendToAgentCard: View {
         if panel.runModal() == .OK, let url = panel.url {
             folder = url.path
         }
+    }
+}
+
+/// Your own AI provider: where AI actions like Copy Alt Text send a capture instead of using Apple's on-device model.
+private struct ProviderCard: View {
+    let color: Color
+    @Setting(PreferenceKey.provider) private var isOn: Bool
+    @Setting(PreferenceKey.providerPreset) private var preset: ProviderPreset
+    @Setting(PreferenceKey.providerBaseURL) private var baseURL: String
+    @Setting(PreferenceKey.providerModel) private var model: String
+    @State private var key = ProviderKeychain.load()
+
+    var body: some View {
+        SettingsCard(title: "AI provider", symbol: "sparkles") {
+            ToggleRow(
+                title: "Use my own AI provider",
+                subtitle: "Copy Alt Text sends the capture to the service you choose, instead of Apple's model on this Mac. It only sends when you pick the action. Local services like Ollama keep it on this Mac.",
+                isOn: $isOn, color: color, divider: isOn
+            )
+            if isOn {
+                SettingRow(title: "Service", subtitle: preset.isLocal ? "Runs on this Mac. Nothing leaves it." : "Sends the capture over the internet to \(preset.name).") {
+                    Picker("Service", selection: $preset) {
+                        ForEach(ProviderPreset.allCases, id: \.self) { Text($0.name).tag($0) }
+                    }
+                    .labelsHidden()
+                    .frame(width: 160)
+                }
+                SettingRow(title: "Address") {
+                    field("https://…/v1", text: $baseURL)
+                }
+                SettingRow(title: "Model", subtitle: "Pick one that can read images.") {
+                    field(preset.suggestedModel, text: $model)
+                }
+                SettingRow(title: "Key", subtitle: preset.isLocal ? "Local services don't need one." : "Kept in your Keychain, never in a file.", divider: false) {
+                    SecureField("Paste a key", text: $key)
+                        .textFieldStyle(.plain)
+                        .font(Brutal.mono)
+                        .padding(.horizontal, 10)
+                        .frame(width: 230, height: 30)
+                        .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
+                        .onChange(of: key) { _, new in ProviderKeychain.save(new.trimmingCharacters(in: .whitespacesAndNewlines)) }
+                }
+            }
+        }
+        .onChange(of: preset) { _, new in
+            baseURL = new.baseURL
+            model = new.suggestedModel
+        }
+    }
+
+    private func field(_ placeholder: String, text: Binding<String>) -> some View {
+        TextField(placeholder, text: text)
+            .textFieldStyle(.plain)
+            .font(Brutal.mono)
+            .padding(.horizontal, 10)
+            .frame(width: 230, height: 30)
+            .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
     }
 }
 

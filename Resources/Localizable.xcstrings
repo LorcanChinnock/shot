@@ -1997,6 +1997,9 @@
         }
       }
     },
+    "AI provider" : {
+
+    },
     "ASPECT" : {
 
     },
@@ -2648,6 +2651,9 @@
           }
         }
       }
+    },
+    "Address" : {
+
     },
     "Adds Send to Agent to the Quick Access, editor and gallery menus. It opens your coding agent in a terminal with the screenshot and a summary of what you marked, as a task." : {
 
@@ -7782,6 +7788,9 @@
       }
     },
     "Copy Alt Text" : {
+
+    },
+    "Copy Alt Text sends the capture to the service you choose, instead of Apple's model on this Mac. It only sends when you pick the action. Local services like Ollama keep it on this Mac." : {
 
     },
     "Copy Latest Capture's Path" : {
@@ -17200,6 +17209,9 @@
     "Keeps the crop this shape, wide or tall to match it." : {
 
     },
+    "Key" : {
+
+    },
     "Keyframe %@ here" : {
       "localizations" : {
         "de" : {
@@ -17942,6 +17954,9 @@
           }
         }
       }
+    },
+    "Local services don't need one." : {
+
     },
     "Lock" : {
       "localizations" : {
@@ -18734,6 +18749,9 @@
           }
         }
       }
+    },
+    "Model" : {
+
     },
     "Move to Trash" : {
       "localizations" : {
@@ -21666,6 +21684,9 @@
         }
       }
     },
+    "Paste a key" : {
+
+    },
     "Pause" : {
       "localizations" : {
         "de" : {
@@ -22185,6 +22206,9 @@
           }
         }
       }
+    },
+    "Pick one that can read images." : {
+
     },
     "Pin" : {
 
@@ -25215,6 +25239,9 @@
     "Runs %@." : {
 
     },
+    "Runs on this Mac. Nothing leaves it." : {
+
+    },
     "SCALE" : {
       "localizations" : {
         "de" : {
@@ -27216,6 +27243,9 @@
 
     },
     "Sent to %@" : {
+
+    },
+    "Service" : {
 
     },
     "Set the command for Send to Agent first." : {
@@ -33316,6 +33346,9 @@
           }
         }
       }
+    },
+    "Use my own AI provider" : {
+
     },
     "Use this style for new captures" : {
       "localizations" : {
