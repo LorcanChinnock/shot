@@ -219,9 +219,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             translate.submenu = NSMenu(title: String(localized: "Translate Text"))
             translate.submenu?.delegate = translateMenu
         }
-        if AltTextAction.isAvailable {
-            edit.addItem(withTitle: String(localized: "Copy Alt Text"), action: #selector(EditorWindowController.copyAltText(_:)), keyEquivalent: "")
-        }
+        // Always added; the editor shows or hides it each time the menu opens, since the AI provider setting can change.
+        edit.addItem(withTitle: String(localized: "Copy Alt Text"), action: #selector(EditorWindowController.copyAltText(_:)), keyEquivalent: "").isHidden = !AltTextAction.isAvailable
         let editItem = NSMenuItem(title: String(localized: "Edit"), action: nil, keyEquivalent: "")
         editItem.submenu = edit
         let main = NSMenu()

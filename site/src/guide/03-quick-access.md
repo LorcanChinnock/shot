@@ -23,7 +23,7 @@ Hover the card to show its buttons:
 
 Drag the card straight into another app to drop the file there, or onto an open editor to [combine images](#combine-images).
 
-Right-click the card for the same actions, plus **Copy Path**, and for a screenshot, **Copy Text**, **Translate Text** (macOS 26 or later), **Copy Alt Text** (macOS 27 or later) and **Pin**.
+Right-click the card for the same actions, plus **Copy Path**, and for a screenshot, **Copy Text**, **Translate Text** (macOS 26 or later), **Copy Alt Text** (macOS 27 or later, or any macOS with your own AI provider) and **Pin**.
 
 ## Pin a screenshot
 

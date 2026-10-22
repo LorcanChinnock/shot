@@ -90,6 +90,12 @@ public enum PreferenceKey {
     public static let sendToAgentCommand = "sendToAgentCommand"
     /// The Custom preset's command, with `{path}`, `{dir}` and `{prompt}`.
     public static let sendToAgentTemplate = "sendToAgentTemplate"
+    /// Lets AI actions use a provider you set up (a `ProviderPreset`, with its base URL and model) instead of Apple's
+    /// on-device model. The API key is in the Keychain, not here.
+    public static let provider = "provider"
+    public static let providerPreset = "providerPreset"
+    public static let providerBaseURL = "providerBaseURL"
+    public static let providerModel = "providerModel"
     /// How far the welcome window got, an `OnboardingProgress`. Not a setting, so resetting settings keeps it.
     public static let onboarding = "onboarding"
 
@@ -176,6 +182,10 @@ public struct Preferences {
             PreferenceKey.sendToAgentFolder: FileManager.default.homeDirectoryForCurrentUser.path,
             PreferenceKey.sendToAgentCommand: "",
             PreferenceKey.sendToAgentTemplate: "my-agent {prompt}",
+            PreferenceKey.provider: false,
+            PreferenceKey.providerPreset: ProviderPreset.ollama.rawValue,
+            PreferenceKey.providerBaseURL: ProviderPreset.ollama.baseURL,
+            PreferenceKey.providerModel: ProviderPreset.ollama.suggestedModel,
         ]
         for action in ShotAction.allCases {
             values[PreferenceKey.hotkey(action)] = action.defaultCombo?.encoded ?? ""
@@ -467,6 +477,17 @@ public struct Preferences {
             return store.string(forKey: PreferenceKey.sendToAgentTemplate) ?? ""
         }
         return store.string(forKey: PreferenceKey.sendToAgentCommand).flatMap { $0.isEmpty ? nil : $0 } ?? name
+    }
+
+    /// Whether AI actions use the provider set up in Settings. Off by default; Apple's on-device model is used otherwise.
+    public var provider: Bool { store.bool(forKey: PreferenceKey.provider) }
+
+    /// The provider as set up, with its key from the Keychain; `nil` when it's off or has no model.
+    public var chatProvider: ChatProvider? {
+        guard provider, let model = store.string(forKey: PreferenceKey.providerModel), !model.trimmingCharacters(in: .whitespaces).isEmpty else {
+            return nil
+        }
+        return ChatProvider(baseURL: store.string(forKey: PreferenceKey.providerBaseURL) ?? "", model: model, apiKey: ProviderKeychain.load())
     }
 
     public var partyModeUnlocked: Bool { store.bool(forKey: PreferenceKey.partyModeUnlocked) }
