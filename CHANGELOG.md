@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.7.0-beta.68](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.67...v0.7.0-beta.68) (2026-10-22)
+
+
+### Features
+
+* **agents:** build the Send to Agent prompt from a capture's marks ([#803](https://github.com/LorcanChinnock/shot/issues/803)) ([e4f3881](https://github.com/LorcanChinnock/shot/commit/e4f3881846142bba78205b597ec9b91bb6915b14))
+* **agents:** send a capture to an agent that's already waiting ([#810](https://github.com/LorcanChinnock/shot/issues/810)) ([71f5396](https://github.com/LorcanChinnock/shot/commit/71f5396d3f9d413a4a1c5e06159029e0d037a0b5))
+* **agents:** Send to Agent from Quick Access, the editor and the gallery ([#812](https://github.com/LorcanChinnock/shot/issues/812)) ([fbae023](https://github.com/LorcanChinnock/shot/commit/fbae023f99d2ee30c9cb9e1c943c75299c374a0f))
+* **editor:** alt text on request with Apple's on-device model ([#807](https://github.com/LorcanChinnock/shot/issues/807)) ([e1ee278](https://github.com/LorcanChinnock/shot/commit/e1ee27867c2ccebd03f20c9ad44d8279697681cb))
+* **editor:** draw a box behind text that has a fill ([#808](https://github.com/LorcanChinnock/shot/issues/808)) ([af54125](https://github.com/LorcanChinnock/shot/commit/af541251d1bbac5479e886b569121eee830b7228))
+* **editor:** translate the text in a capture ([#806](https://github.com/LorcanChinnock/shot/issues/806)) ([1791476](https://github.com/LorcanChinnock/shot/commit/179147628e84521b2589f87c1feebed968329bf0))
+* **video-editor:** captions from your narration ([#809](https://github.com/LorcanChinnock/shot/issues/809)) ([8980beb](https://github.com/LorcanChinnock/shot/commit/8980beb423d5b4aea51062200fcc4d83076c9a9a))
+* **video-editor:** suggest trimming idle time at the start and end ([#805](https://github.com/LorcanChinnock/shot/issues/805)) ([fa3f420](https://github.com/LorcanChinnock/shot/commit/fa3f420c60229fc56c21fc3abdb4683ceac30763))
+
+
+### Bug Fixes
+
+* **text:** read text one image at a time so reads can't hang ([#820](https://github.com/LorcanChinnock/shot/issues/820)) ([1b6a260](https://github.com/LorcanChinnock/shot/commit/1b6a260ba23eeae0fd92459e718bd5e23fbadf8c))
+* **text:** read text with the fast model when the accurate one can't run ([#818](https://github.com/LorcanChinnock/shot/issues/818)) ([b58a0bd](https://github.com/LorcanChinnock/shot/commit/b58a0bd8b4518ef4c076a4e4d6eedce3e28a6d4b))
+
 ## [0.7.0-beta.67](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.66...v0.7.0-beta.67) (2026-10-22)
 
 
