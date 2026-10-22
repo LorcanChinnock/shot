@@ -55,13 +55,13 @@ private func reply(_ content: String) -> Data {
 }
 
 @Test func theRequestCarriesTheImageAndAStrictSchema() throws {
-    let provider = ChatProvider(baseURL: "http://localhost:11434/v1/", model: "qwen2.5vl", apiKey: "")
+    let provider = ChatProvider(baseURL: "http://localhost:11434/v1/", model: "gemma3", apiKey: "")
     let image = ProviderImage(data: Data([1, 2, 3]), mimeType: "image/jpeg")
     let request = try provider.urlRequest(for: .altText, images: [image], schema: ChatProvider.textSchema)
     #expect(request.url?.absoluteString == "http://localhost:11434/v1/chat/completions")
     #expect(request.value(forHTTPHeaderField: "Authorization") == nil)
     let body = try JSONDecoder().decode(JSONValue.self, from: request.httpBody!)
-    #expect(body["model"] == .string("qwen2.5vl"))
+    #expect(body["model"] == .string("gemma3"))
     #expect(body["response_format"]?["json_schema"]?["strict"] == .bool(true))
     guard case .array(let messages)? = body["messages"], case .array(let parts)? = messages[1]["content"] else {
         Issue.record("no messages")
