@@ -63,6 +63,11 @@ private func said(_ text: String, from start: Double, each: Double = 0.3) -> [Na
     #expect(placed.map(\.caption.text) == ["kept", "after the cut"])
     #expect(abs(placed[0].start - 0.5) < 0.001 && abs(placed[0].duration - 1) < 0.001)
     #expect(abs(placed[1].start - 3) < 0.001)
+    // A caption across the cut shows on both sides of it.
+    let across = Captions.placements([Captions.Caption(text: "across", start: 3.5, end: 7)], in: project, source: source)
+    #expect(across.count == 2)
+    #expect(abs(across[0].start - 1.5) < 0.001 && abs(across[0].duration - 0.5) < 0.001)
+    #expect(abs(across[1].start - 2) < 0.001 && abs(across[1].duration - 1) < 0.001)
 }
 
 @Test func aCaptionIsWhiteTextInAnOpaqueBoxNearTheBottom() throws {

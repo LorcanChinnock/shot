@@ -89,14 +89,11 @@ public enum Captions {
     /// piece of `source` on the main track, so trims and cuts take their captions with them.
     public static func placements(_ captions: [Caption], in project: Project, source: URL) -> [(caption: Caption, start: Double, duration: Double)] {
         let pieces = project.tracks.first?.clips.filter { $0.source == source } ?? []
-        return captions.compactMap { caption in
-            for clip in pieces {
+        return captions.flatMap { caption in
+            pieces.compactMap { clip -> (caption: Caption, start: Double, duration: Double)? in
                 let from = max(caption.start, clip.sourceStart), to = min(caption.end, clip.sourceEnd)
-                if to - from >= TrimRange.minimumLength {
-                    return (caption, clip.start + from - clip.sourceStart, to - from)
-                }
+                return to - from >= TrimRange.minimumLength ? (caption, clip.start + from - clip.sourceStart, to - from) : nil
             }
-            return nil
         }
     }
 

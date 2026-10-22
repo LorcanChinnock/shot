@@ -643,7 +643,9 @@ final class VideoEditorModel {
             return
         }
         setShowsTracks(true)
-        Toast.show(placed.count == 1 ? "Added 1 caption" : "Added \(placed.count) captions")
+        // A caption across a cut is placed once for each side of it, but counts once.
+        let count = Set(placed.map { "\($0.caption.start)" }).count
+        Toast.show(count == 1 ? "Added 1 caption" : "Added \(count) captions")
     }
 
     func setOptions(_ new: VideoExportOptions) {
