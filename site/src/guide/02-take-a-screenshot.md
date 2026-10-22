@@ -69,6 +69,15 @@ On macOS 26 or later, Shot can copy the text in a screenshot translated into ano
 
 The first time you translate between two languages, macOS asks to download them. Click **Download** beside each one, then **Done**. In the editor, the translation includes text you've added on top of the screenshot.
 
+## Copy alt text for a screenshot
+
+Alt text describes an image for people who use a screen reader. On macOS 27 or later, with Apple Intelligence turned on, Shot can write it for you with Apple's model on your Mac. Nothing is uploaded, and it never runs unless you ask.
+
+1. Right-click the screenshot's Quick Access card or its tile in the gallery and choose **Copy Alt Text**, or in the editor choose **Edit › Copy Alt Text**.
+2. Paste the description where the image's alt text goes, such as a document, a post or an email.
+
+You get one or two plain sentences, usually within a couple of seconds. Read the text before you use it: the model can miss small details or misread tiny text.
+
 ## Without a mouse
 
 After <kbd>⌘⇧4</kbd>, press an arrow key to start an area at the pointer, or in the middle of the screen. Then:

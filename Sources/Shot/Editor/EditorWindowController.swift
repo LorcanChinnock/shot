@@ -207,6 +207,17 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         }
     }
 
+    /// Edit › Copy Alt Text: a description of the image as it looks now, marks and all.
+    @objc func copyAltText(_ sender: Any?) {
+        Task { [model] in
+            guard let image = await model.renderedImage() else {
+                Toast.error("Couldn't write alt text for this image")
+                return
+            }
+            await AltTextAction.copy(image)
+        }
+    }
+
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         guard model.isDirty, !discarding else {
             return true
