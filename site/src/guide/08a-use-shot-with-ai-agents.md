@@ -7,7 +7,7 @@ aliases: [using-shot-with-ai-agents]
 
 AI assistants like Claude and ChatGPT, and coding agents like Claude Code, Codex and Cursor, all take a pasted screenshot, and your arrows and boxes show them where to look. Shot can do more: hand over the file itself, tell the agent exactly what you marked, and let it fetch your captures, edit them, or take its own.
 
-![Settings › Agents with Hand captures to agents, Let agents capture and record, and Send to Agent turned on, and Send to Agent set to open Claude Code in Terminal, with a choice of Codex, Cursor or a command of your own, and a working folder](../../../docs/media/agents-settings.png)
+![Settings › Agents with Hand captures to agents, Let agents capture and record, and Send to Agent turned on, Send to Agent set to open Claude Code in Terminal, the shot command installed, and the MCP server's setup for Claude and Claude Code](../../../docs/media/agents-settings.png)
 
 ## Paste a marked-up screenshot
 
