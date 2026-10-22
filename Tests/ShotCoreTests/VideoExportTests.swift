@@ -11,6 +11,16 @@ import Testing
     #expect(full.gifSummary == "24 fps, full width, first 60 seconds.")
 }
 
+@Test func exportOptionsKnowWhenTheyAreAtTheirDefaults() {
+    #expect(VideoExportOptions.default == VideoExportOptions())
+    #expect(VideoExportOptions().isDefault)
+    #expect(!VideoExportOptions(format: .gif).isDefault)
+    #expect(!VideoExportOptions(gifFrameRate: 24).isDefault)
+    #expect(!VideoExportOptions(gifWidth: VideoExportOptions.originalWidth).isDefault)
+    #expect(!VideoExportOptions(muted: true).isDefault)
+    #expect(!VideoExportOptions(speed: 2).isDefault)
+}
+
 // MARK: GIF frame plan
 
 @Test func gifPlanScalesDownButNeverUp() {

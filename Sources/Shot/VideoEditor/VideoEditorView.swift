@@ -165,6 +165,10 @@ struct ExportOptionsBar: View {
                 .foregroundStyle(Brutal.faded(0.7))
                 .fixedSize()
                 .brutalTip("Estimated size of the exported file")
+            Button("Reset") { model.setOptions(.default) }
+                .buttonStyle(BrutalButtonStyle(compact: true))
+                .disabled(model.options.isDefault)
+                .brutalTip("Puts the format, GIF size, mute and speed back to how new exports start.")
         }
         .frame(height: Self.height)
         .disabled(model.isExporting)
