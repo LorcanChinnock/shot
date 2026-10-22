@@ -791,6 +791,7 @@ private struct ProviderCard: View {
     @Setting(PreferenceKey.providerPreset) private var preset: ProviderPreset
     @Setting(PreferenceKey.providerBaseURL) private var baseURL: String
     @Setting(PreferenceKey.providerModel) private var model: String
+    @Setting(PreferenceKey.providerFormat) private var format: ProviderFormat
     @State private var key = ProviderKeychain.load()
 
     var body: some View {
@@ -807,6 +808,15 @@ private struct ProviderCard: View {
                     }
                     .labelsHidden()
                     .frame(width: 160)
+                }
+                if preset == .custom {
+                    SettingRow(title: "Format", subtitle: "Most services use the OpenAI format. Choose Anthropic only for a service that uses Claude's.") {
+                        Picker("Format", selection: $format) {
+                            ForEach(ProviderFormat.allCases, id: \.self) { Text($0.name).tag($0) }
+                        }
+                        .labelsHidden()
+                        .frame(width: 190)
+                    }
                 }
                 SettingRow(title: "Address") {
                     field("https://…/v1", text: $baseURL)

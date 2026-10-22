@@ -1,6 +1,6 @@
 ---
 title: Use your own AI provider
-summary: "Send a capture to Ollama, LM Studio, OpenAI, Gemini or OpenRouter when you ask for alt text, and see what leaves your Mac."
+summary: "Send a capture to Ollama, LM Studio, OpenAI, Gemini, OpenRouter or Anthropic (Claude) when you ask for alt text, and see what leaves your Mac."
 group: AI agents
 ---
 
@@ -11,7 +11,7 @@ It's off until you turn it on, and Shot never signs in to an AI account for you.
 ## Set it up
 
 1. Open **Settings › Agents** and turn on **Use my own AI provider**.
-2. Choose a **Service**. **Ollama** and **LM Studio** are listed first, since they run on your Mac. **OpenAI**, **Gemini** and **OpenRouter** run on the internet. **Custom** takes any address that follows the OpenAI format.
+2. Choose a **Service**. **Ollama** and **LM Studio** are listed first, since they run on your Mac. **OpenAI**, **Gemini**, **OpenRouter** and **Anthropic** run on the internet. **Anthropic** is for Claude with an API key from the Anthropic Console; a Claude.ai chat subscription can't be used, since Anthropic doesn't allow other apps to sign in with it. **Custom** takes any address, and shows a **Format** choice: **OpenAI-compatible** for most services, or **Anthropic Messages** for one that speaks Claude's format.
 3. Check the **Address** and **Model**. Choose a model that can read images, such as `gemma3` on Ollama.
 4. For an online service, paste your **Key**. Shot keeps it in your Keychain, not in a file. Local services don't need one.
 
@@ -22,7 +22,7 @@ Right-click a screenshot and choose **Copy Alt Text**. Shot sends the image to y
 ## What leaves your Mac
 
 - Only the screenshot you chose, and only when you choose **Copy Alt Text**. Nothing is sent when you take a capture.
-- The image is scaled to 2000 pixels on its longest side and sent as a JPEG under 5 MB, with a short instruction. Anything you've drawn on it is part of the image. Its file name isn't sent.
+- The image is scaled to 2000 pixels on its longest side and sent as a JPEG under 5 MB (an Anthropic request is also kept under 32 MB in all), with a short instruction. Anything you've drawn on it is part of the image. Its file name isn't sent.
 - A local service keeps all of it on your Mac. An online service gets the image under its own terms, so blur private details first.
 
 > [!TIP]

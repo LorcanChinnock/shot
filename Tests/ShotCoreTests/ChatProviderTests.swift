@@ -141,3 +141,62 @@ private func reply(_ content: String) -> Data {
     #expect(ProviderPreset.allCases.prefix(2).allSatisfy { $0.isLocal })
     #expect(ProviderPreset.allCases.dropFirst(2).allSatisfy { !$0.isLocal })
 }
+
+private func anthropicReply(_ text: String, stop: String = "end_turn") -> Data {
+    let body: JSONValue = .object(["stop_reason": .string(stop), "content": .array([.object(["type": .string("text"), "text": .string(text)])])])
+    return try! JSONEncoder().encode(body)
+}
+
+@Test func anAnthropicRequestUsesMessagesWithImagesFirstAndAJSONSchema() throws {
+    let provider = ChatProvider(baseURL: "https://api.anthropic.com/v1", model: "claude-sonnet-4-5", apiKey: "sk-ant-test", format: .anthropic)
+    let image = ProviderImage(data: Data([1, 2, 3]), mimeType: "image/jpeg")
+    let request = try provider.urlRequest(for: .altText, images: [image], schema: ChatProvider.textSchema)
+    #expect(request.url?.absoluteString == "https://api.anthropic.com/v1/messages")
+    #expect(request.value(forHTTPHeaderField: "x-api-key") == "sk-ant-test")
+    #expect(request.value(forHTTPHeaderField: "anthropic-version") == "2023-06-01")
+    #expect(request.value(forHTTPHeaderField: "Authorization") == nil)
+    let body = try JSONDecoder().decode(JSONValue.self, from: request.httpBody!)
+    #expect(body["model"] == .string("claude-sonnet-4-5"))
+    #expect(body["system"] == .string(ImageRequest.altText.instructions))
+    #expect(body["max_tokens"] != nil)
+    #expect(body["output_config"]?["format"]?["type"] == .string("json_schema"))
+    #expect(body["output_config"]?["format"]?["schema"] == ChatProvider.textSchema)
+    guard case .array(let messages)? = body["messages"], case .array(let parts)? = messages[0]["content"] else {
+        Issue.record("no messages")
+        return
+    }
+    #expect(parts[0]["type"] == .string("image"))
+    #expect(parts[0]["source"]?["media_type"] == .string("image/jpeg"))
+    #expect(parts[0]["source"]?["data"] == .string("AQID"))
+    #expect(parts[1]["text"] == .string(ImageRequest.altText.prompt))
+}
+
+@Test func anAnthropicRequestOverTheSizeLimitIsRefused() {
+    let big = ProviderImage(data: Data(count: 4_000_000), mimeType: "image/jpeg")
+    let provider = ChatProvider(baseURL: "https://api.anthropic.com/v1", model: "m", apiKey: "k", format: .anthropic)
+    #expect(throws: ChatProvider.Failure.tooLarge) { try provider.urlRequest(for: .altText, images: Array(repeating: big, count: 9), schema: ChatProvider.textSchema) }
+}
+
+@Test func anAnthropicReplyParsesAndIsChecked() throws {
+    let parsed = try ChatProvider.parse(anthropicReply(#"{"text":"A window."}"#), status: 200, schema: ChatProvider.textSchema, format: .anthropic)
+    #expect(parsed["text"] == .string("A window."))
+    let schema = ChatProvider.textSchema
+    #expect(throws: ChatProvider.Failure.malformed("no content")) { try ChatProvider.parse(Data("{}".utf8), status: 200, schema: schema, format: .anthropic) }
+    #expect(throws: ChatProvider.Failure.malformed("the content isn't JSON")) { try ChatProvider.parse(anthropicReply("A window."), status: 200, schema: schema, format: .anthropic) }
+    #expect(throws: ChatProvider.Failure.malformed("the reply was cut off")) { try ChatProvider.parse(anthropicReply(#"{"text":"A"#, stop: "max_tokens"), status: 200, schema: schema, format: .anthropic) }
+    #expect(throws: (any Error).self) { try ChatProvider.parse(anthropicReply(#"{"caption":"x"}"#), status: 200, schema: schema, format: .anthropic) }
+}
+
+@Test func anAnthropicRefusalAndErrorAreReported() {
+    let schema = ChatProvider.textSchema
+    #expect(throws: ChatProvider.Failure.refused("the model refused this request")) { try ChatProvider.parse(anthropicReply("", stop: "refusal"), status: 200, schema: schema, format: .anthropic) }
+    let error = Data(#"{"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}"#.utf8)
+    #expect(throws: ChatProvider.Failure.server(status: 401, message: "invalid x-api-key")) { try ChatProvider.parse(error, status: 401, schema: schema, format: .anthropic) }
+}
+
+@Test func presetsFixTheFormatExceptCustom() {
+    #expect(ProviderPreset.anthropic.format == .anthropic)
+    #expect(ProviderPreset.openAI.format == .openAI)
+    #expect(ProviderPreset.custom.format == nil)
+    #expect(!ProviderPreset.anthropic.isLocal)
+}
