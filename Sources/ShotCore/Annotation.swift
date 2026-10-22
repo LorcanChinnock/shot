@@ -6,7 +6,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public private(set) var id: UUID
     public var kind: Kind
     public var color: RGBA
-    /// The inside of a shape; `nil` leaves it unfilled.
+    /// The inside of a shape, or the box behind text, as captions have; `nil` leaves it unfilled.
     public var fill: RGBA?
     public var lineWidth: CGFloat
     /// How far an arrow's or line's curve passes from the middle of its chord; `nil` leaves it straight.
@@ -47,7 +47,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     }
     private var customName: String?
     public static let maxNameLength = 64
-    /// The corner radius of a shape, spotlight or placed image; `nil` is square.
+    /// The corner radius of a shape, spotlight, placed image or text box; `nil` is square, or for a text box, the default.
     public var cornerRadius: CGFloat? {
         get { kind.isImage ? imageRadius : boxRadius }
         set {
@@ -337,6 +337,26 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         return style.paintedRect(around: plainPaintedBounds())
     }
 
+    /// Room around text with a fill, as a share of its font size, on each side and above and below.
+    static let textBoxPadding = (horizontal: 0.4, vertical: 0.2)
+
+    /// The box drawn in `fill` behind text that has one, as captions do: the text's frame with room around it, so the
+    /// text reads over any picture. `nil` for text without a fill, and for every other kind.
+    public var textBox: CGRect? {
+        guard case let .text(_, _, fontSize) = kind, fill != nil else {
+            return nil
+        }
+        return bounds.insetBy(dx: -fontSize * Self.textBoxPadding.horizontal, dy: -fontSize * Self.textBoxPadding.vertical)
+    }
+
+    /// The text box's corner radius: the annotation's own, or a fifth of the font size.
+    public var textBoxCornerRadius: CGFloat {
+        guard case let .text(_, _, fontSize) = kind else {
+            return 0
+        }
+        return cornerRadius ?? fontSize * 0.2
+    }
+
     /// `bounds` plus the stroke and arrowhead that the renderer paints past it, without its style.
     private func plainPaintedBounds() -> CGRect {
         let bounds = bounds
@@ -347,7 +367,9 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             return bounds.insetBy(dx: -outset, dy: -outset)
         case .line, .shape:
             return bounds.insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2)
-        case .highlight, .pixelate, .blur, .spotlight, .text, .counter, .image:
+        case .text:
+            return textBox ?? bounds
+        case .highlight, .pixelate, .blur, .spotlight, .counter, .image:
             return bounds
         case .note:
             guard let layout = noteLayout else {
@@ -375,7 +397,9 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             let path = shape.path(in: rect, cornerRadius: cornerRadius)
             let outline = path.copy(strokingWithWidth: slop * 2, lineCap: .butt, lineJoin: .miter, miterLimit: 10)
             return outline.contains(point) || (fill != nil && path.contains(point))
-        case .highlight, .pixelate, .blur, .spotlight, .text, .note, .image:
+        case .text:
+            return (textBox ?? bounds).insetBy(dx: -tolerance, dy: -tolerance).contains(point)
+        case .highlight, .pixelate, .blur, .spotlight, .note, .image:
             return bounds.insetBy(dx: -tolerance, dy: -tolerance).contains(point)
         case let .counter(_, center):
             return hypot(point.x - center.x, point.y - center.y) <= counterRadius + tolerance
