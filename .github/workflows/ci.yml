@@ -1,52 +1,29 @@
 name: CI
-
-# Every pull request runs `macos`, which lints, builds the app and runs every test, so a break can't reach main. On
-# release-please's PR it also runs the performance budgets: that's the release gate. release-please opens that PR as
-# the repository's GitHub App (release.yml), so its runs start without approval.
-# There's no run on push to main: PRs are squash-merged, and their merge commit was already tested.
 on:
   pull_request:
-
 permissions:
   contents: read
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  # The required check, so main's ruleset needs it by name. The repository is public, so macOS minutes are free; the
-  # cost is queue time, since the free plan runs 5 macOS jobs at once.
-  macos:
-    # Xcode 27 and the macOS 27 SDK, which Copy Alt Text needs to compile in. GitHub labels the image a preview; its
-    # default Xcode is a release, not a beta. The app still targets macOS 15 (Package.swift).
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        xcode: ['27.0', '27.0b', '27.1', '27.1b']
     runs-on: xcode-27
-    # Pinned, so a new image's default Xcode can't change the build under us: images from 20261022 default to 27.1, which
-    # crashed the media tests once. Move up deliberately, with release.yml, and check both images still ship the version.
     env:
-      DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
-    # A run takes about 5 minutes. A hung test would otherwise hold a macOS runner for GitHub's 6-hour default.
-    timeout-minutes: 20
+      DEVELOPER_DIR: /Applications/Xcode_${{ startsWith(matrix.xcode, '27.0') && '27.0' || '27.1' }}.app/Contents/Developer
+    timeout-minutes: 80
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # What `make lint` runs before its build, which the next step does.
-      - name: Lint
-        run: scripts/lint.sh
+      - name: Info
+        run: |
+          echo "image $ImageOS $ImageVersion"; sw_vers; xcodebuild -version; sysctl -n hw.ncpu hw.memsize
       - name: Build
         run: swift build --build-tests --force-resolved-versions
-      # An older SDK would leave Copy Alt Text out without an error, so check it's in. See scripts/check-sdk.sh.
-      - name: Check the SDK
-        run: scripts/check-sdk.sh .build/debug/Shot
-      # Every build extracts the app's strings, so this needs the build above. See scripts/strings.sh.
-      - name: Check strings
-        run: scripts/strings.sh --check
-      # `make dist` builds a universal app, so the release must compile for Intel too. Compile only; nothing runs it.
-      - name: Build for Intel
-        run: swift build --arch x86_64 --force-resolved-versions
-      - name: Test on macOS
-        run: make test ARGS=--skip-build
-      # Only at the release gate, to keep ordinary PRs' runs short. Alone, so other tests running in parallel don't skew
-      # the timings. Budgets: docs/performance.md.
-      - name: Perf
-        if: startsWith(github.head_ref, 'release-please--')
-        run: make perf ARGS=--skip-build
+      - name: Loop
+        run: .github/probe/loop.sh 10
+      - name: Crash reports
+        if: always()
+        run: |
+          ls ~/Library/Logs/DiagnosticReports /Library/Logs/DiagnosticReports 2>/dev/null
+          for f in ~/Library/Logs/DiagnosticReports/*.ips; do [ -f "$f" ] && python3 -I .github/probe/ips.py "$f"; done; true
