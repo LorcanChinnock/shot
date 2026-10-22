@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let state = AppState()
     lazy var coordinator = CaptureCoordinator(state: state)
     private var defaultsObserver: NSObjectProtocol?
+    private let translateMenu = TranslateMenu()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // First, before anything below saves a setting and makes a new user look like an earlier one.
@@ -16,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Preferences.registerDefaults()
         applyAppearance()
         SystemShortcuts.giveBackTextCaptureKeyIfNeeded()
+        Translator.prepare()
         HotkeyCenter.shared.onPress = { [weak self] action in
             self?.coordinator.perform(action)
         }
@@ -196,6 +198,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         edit.addItem(withTitle: String(localized: "Paste Style"), action: Selector(("pasteStyle:")), keyEquivalent: "v").keyEquivalentModifierMask = [.command, .option]
         edit.addItem(withTitle: String(localized: "Apply Style to All Images"), action: Selector(("applyStyleToAllImages:")), keyEquivalent: "")
         edit.addItem(withTitle: String(localized: "Flatten"), action: Selector(("flatten:")), keyEquivalent: "")
+        if Translator.isAvailable {
+            let translate = edit.addItem(withTitle: String(localized: "Translate Text"), action: nil, keyEquivalent: "")
+            translate.submenu = NSMenu(title: String(localized: "Translate Text"))
+            translate.submenu?.delegate = translateMenu
+        }
         let editItem = NSMenuItem(title: String(localized: "Edit"), action: nil, keyEquivalent: "")
         editItem.submenu = edit
         let main = NSMenu()
@@ -207,5 +214,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showSettings() {
         MainWindowController.showSettings()
+    }
+}
+
+/// The image editor's Edit › Translate Text submenu, filled with the languages each time it opens, the last used first.
+@MainActor
+private final class TranslateMenu: NSObject, NSMenuDelegate {
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        menu.removeAllItems()
+        for language in Translator.languages {
+            let item = NSMenuItem(title: language.title, action: #selector(EditorWindowController.translateText(_:)), keyEquivalent: "")
+            item.representedObject = language.language.minimalIdentifier
+            menu.addItem(item)
+        }
     }
 }

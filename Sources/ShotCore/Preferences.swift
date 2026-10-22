@@ -77,6 +77,8 @@ public enum PreferenceKey {
     public static let agentHandoff = "agentHandoff"
     /// Lets agents ask the running app, through the `shot` command line or the MCP server, to capture or record a window.
     public static let agentCapture = "agentCapture"
+    /// The language Translate Text last translated into, as a language identifier; empty for the Mac's language.
+    public static let translateTarget = "translateTarget"
     /// How far the welcome window got, an `OnboardingProgress`. Not a setting, so resetting settings keeps it.
     public static let onboarding = "onboarding"
 
@@ -156,6 +158,7 @@ public struct Preferences {
             PreferenceKey.videoEditorShowsInspector: false,
             PreferenceKey.agentHandoff: false,
             PreferenceKey.agentCapture: false,
+            PreferenceKey.translateTarget: "",
         ]
         for action in ShotAction.allCases {
             values[PreferenceKey.hotkey(action)] = action.defaultCombo?.encoded ?? ""
