@@ -62,11 +62,18 @@ Local builds are `ShotDev.app`. The real installed version is `/Applications/Sho
 
 ## Architecture
 
-Three targets:
-- `Sources/ShotCore`: everything with no window, display or permission, calling Apple frameworks (CoreGraphics, CoreText, CoreImage, AVFoundation, ImageIO, Vision) as it needs. Undo stack, keyframes, cut list and trim range, hotkeys (`ShotAction`, `KeyCombo`), layout math and text wrapping (`TextLayout`, `NoteLayout`); the annotation model and renderer, timeline/clip model, composition, GIF export, agents and MCP, preferences, file naming and the gallery. It imports no AppKit or SwiftUI (`make lint` checks). It calls the frameworks directly: images through `ImageCodec` (ImageIO), drawing on a `CGContext` (`CGContext+Drawing.swift` adds the bitmap factory and the CTM-mapped shadow), filters through `CoreImageEffects`, text through `CoreTextShaper`, and video through `AVVideoReader`, `AVVideoAssembler` and `AVVideoWriter`. Images are `CGImage`s, so a capture keeps its own colour space, and annotation outlines are `CGPath`s, hit-tested by Core Graphics.
-- `Sources/Shot`: AppKit and SwiftUI that need a real session, grouped by feature (`Capture`, `Overlay`, `QuickAccess`, `Editor`, `Recording`, `VideoEditor`, `Gallery`, `Settings`, `Design`).
+Three targets, all macOS-only:
+- `Sources/ShotCore` (library): everything that needs no window, display or permission. The undo stack, keyframes, cut list and trim range, hotkeys (`ShotAction`, `KeyCombo`), layout math and text wrapping (`TextLayout`, `NoteLayout`), the annotation model and renderer, the timeline and composition, GIF export, agents and MCP, preferences, file naming and the gallery. It imports no AppKit, SwiftUI or Cocoa (`make lint` checks).
+- `Sources/Shot` (the app): AppKit and SwiftUI that need a real session, grouped by feature (`Capture`, `Overlay`, `QuickAccess`, `Editor`, `Recording`, `VideoEditor`, `Gallery`, `Settings`, `Agents`, `Design`).
+- `Sources/ShotCLI`: the `shot` command and MCP server, on Foundation and ShotCore only. `scripts/bundle.sh` ships it inside the app as `shot-cli`.
 
-**If logic can be tested without a window, it goes in ShotCore with a test.** Tests are mostly top-level `@Test func` with sentence-style names, all in `Tests/ShotCoreTests`. The app target has no tests.
+ShotCore calls Apple's frameworks directly, with no protocol in between:
+- Images are `CGImage`s, so a capture keeps its own colour space. `ImageCodec` reads and writes them with ImageIO.
+- Drawing takes a `CGContext`. `CGContext+Drawing.swift` adds the bitmap factory, the CTM-mapped `setShadow` and drawing of `CoreTextLine`s.
+- Annotation outlines are `CGPath`s, hit-tested by Core Graphics. Filters are `CoreImageEffects`, text is `CoreTextShaper`, OCR is Vision.
+- Video goes through `AVVideoReader`, `AVVideoAssembler` and `AVVideoWriter`.
+
+**If logic can be tested without a window, it goes in ShotCore with a test.** The one test target is `Tests/ShotCoreTests`: mostly top-level `@Test func` with sentence-style names, plus the `PerfTests` budgets. The app and CLI have no tests.
 
 Flow:
 - `ShotApp` is a `MenuBarExtra` with an `AppDelegate` adaptor. `AppDelegate` owns `AppState` and the `CaptureCoordinator`, wires hotkeys and controller callbacks to it, and routes `shot://` URLs. Other long-lived controllers are `.shared` singletons.
@@ -95,7 +102,7 @@ Concurrency: UI and model types are `@MainActor`. Heavy work runs in `Task.detac
 ## CI
 
 The repository is public, so GitHub's runners are free, but the free plan runs only 5 macOS jobs at once, so macOS runs can queue (`.github/workflows/ci.yml`):
-- Every PR runs one required check, `macos`: it runs `scripts/lint.sh`, builds the app, checks the strings catalog, compiles for Intel, and runs every test target.
+- Every PR runs one required check, `macos`: it runs `scripts/lint.sh`, builds the app, checks the strings catalog, compiles for Intel, and runs the tests.
 - On release-please's PR, `macos` also runs `PerfTests`: that's the release gate. Every push to that PR runs it again. release-please opens the PR as the repository's GitHub App (`release.yml`), so its runs start without the approval GitHub asks for on `github-actions[bot]` PRs.
 - The repository has auto-merge turned off: an admin merges the release PR by hand once the gate has passed. If the gate fails, fix it in a normal PR. release-please updates the release PR only for commits that change the changelog, so after a `test:`, `ci:` or `docs:` fix, run `gh pr update-branch <release PR>` to gate it again.
 - `release.yml` runs `make test` on the tagged commit before it signs anything, because a `docs:`, `test:` or `ci:` commit merged after the gate passed can change what's released.
