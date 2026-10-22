@@ -171,10 +171,11 @@ private func anthropicReply(_ text: String, stop: String = "end_turn") -> Data {
     #expect(parts[1]["text"] == .string(ImageRequest.altText.prompt))
 }
 
+/// 7 x 4 MB is 28 MB raw but about 37 MB once base64 encoded.
 @Test func anAnthropicRequestOverTheSizeLimitIsRefused() {
     let big = ProviderImage(data: Data(count: 4_000_000), mimeType: "image/jpeg")
     let provider = ChatProvider(baseURL: "https://api.anthropic.com/v1", model: "m", apiKey: "k", format: .anthropic)
-    #expect(throws: ChatProvider.Failure.tooLarge) { try provider.urlRequest(for: .altText, images: Array(repeating: big, count: 9), schema: ChatProvider.textSchema) }
+    #expect(throws: ChatProvider.Failure.tooLarge) { try provider.urlRequest(for: .altText, images: Array(repeating: big, count: 7), schema: ChatProvider.textSchema) }
 }
 
 @Test func anAnthropicReplyParsesAndIsChecked() throws {

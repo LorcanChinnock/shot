@@ -154,9 +154,6 @@ public struct ChatProvider: Sendable {
         case .openAI:
             body = openAIBody(for: request, images: images, schema: schema, schemaName: schemaName)
         case .anthropic:
-            guard images.reduce(0, { $0 + $1.data.count }) <= ProviderImage.maximumRequestBytes else {
-                throw Failure.tooLarge
-            }
             body = anthropicBody(for: request, images: images, schema: schema)
         }
         var urlRequest = URLRequest(url: try endpoint())
@@ -172,7 +169,11 @@ public struct ChatProvider: Sendable {
             urlRequest.setValue(apiKey, forHTTPHeaderField: "x-api-key")
             urlRequest.setValue(Self.anthropicVersion, forHTTPHeaderField: "anthropic-version")
         }
-        urlRequest.httpBody = try JSONEncoder().encode(body)
+        let encoded = try JSONEncoder().encode(body)
+        if format == .anthropic, encoded.count > ProviderImage.maximumRequestBytes {
+            throw Failure.tooLarge
+        }
+        urlRequest.httpBody = encoded
         return urlRequest
     }
 
