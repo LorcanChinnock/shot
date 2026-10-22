@@ -6,7 +6,7 @@ extension Project {
     /// picture keeps where it is and how big it looks, so it's moved and rescaled within the new canvas, with its style,
     /// and the annotations move and scale with it. `nil` when a clip or annotation is animated in position or scale, whose
     /// keyframes would need the same change, or when that leaves no canvas.
-    public func reframed(to rect: CGRect, scale k: CGFloat = 1, shaper: any TextShaper) -> Project? {
+    public func reframed(to rect: CGRect, scale k: CGFloat = 1) -> Project? {
         let clips = tracks.flatMap(\.clips), notes = tracks.flatMap(\.annotations)
         guard k > 0, clips.allSatisfy({ $0.animation.position.isEmpty && $0.animation.scale.isEmpty }),
               notes.allSatisfy({ $0.animation.position.isEmpty && $0.animation.scale.isEmpty })
@@ -45,7 +45,7 @@ extension Project {
             }
             for index in result.tracks[track].annotations.indices {
                 var note = result.tracks[track].annotations[index]
-                note.annotation = note.annotation.reframed(origin: rect.origin, scale: k, shaper: shaper)
+                note.annotation = note.annotation.reframed(origin: rect.origin, scale: k)
                 note.transform.offset = CGSize(width: note.transform.offset.width * k, height: note.transform.offset.height * k)
                 result.tracks[track].annotations[index] = note
             }
@@ -56,7 +56,7 @@ extension Project {
     /// The project with `edit`'s changes, as the video editor makes them, on an input that plays this project's
     /// timeline: `keep` or `cut`, then `marks`, timed and placed in the input's seconds and pixels, then `appended`, one
     /// for each of `edit.append`, then `crop`. Speed, sound, format and size are the export's.
-    public func applying(_ edit: VideoEdit, appended: [ImportedMedia] = [], shaper: any TextShaper) throws(ShotCommandError) -> Project {
+    public func applying(_ edit: VideoEdit, appended: [ImportedMedia] = []) throws(ShotCommandError) -> Project {
         let length = duration
         var result = self
         let removed = try edit.removed(from: length)
@@ -100,7 +100,7 @@ extension Project {
             guard !rect.isNull, rect.width >= 16, rect.height >= 16 else {
                 throw .data("crop (\(CropRegion.text(crop))) keeps less than 16×16 of the \(Int(canvasSize.width))×\(Int(canvasSize.height)) video")
             }
-            guard let cropped = result.reframed(to: rect, shaper: shaper) else {
+            guard let cropped = result.reframed(to: rect) else {
                 throw .data("crop: the video has clips or marks that move or scale over time; crop it before animating them")
             }
             result = cropped
@@ -111,14 +111,14 @@ extension Project {
 
 extension Annotation {
     /// The annotation in a canvas whose origin was at `origin` and that's drawn `scale` times as big.
-    func reframed(origin: CGPoint, scale: CGFloat, shaper: any TextShaper) -> Annotation {
+    func reframed(origin: CGPoint, scale: CGFloat) -> Annotation {
         let moved = self.moved(by: CGSize(width: -origin.x, height: -origin.y))
         guard scale != 1 else {
             return moved
         }
         // `scaled(by:)` goes about the centre, which then moves out from the canvas origin with everything else.
-        let bounds = moved.bounds(shaper: shaper)
-        let scaled = moved.scaled(by: Double(scale), shaper: shaper)
+        let bounds = moved.bounds
+        let scaled = moved.scaled(by: Double(scale))
         return bounds.isNull ? scaled : scaled.moved(by: CGSize(width: bounds.midX * (scale - 1), height: bounds.midY * (scale - 1)))
     }
 }

@@ -2,16 +2,16 @@ import Foundation
 
 /// A text annotation's lines in the bold system font, one per paragraph.
 public struct TextLayout {
-    public let lines: [any ShapedLine]
+    public let lines: [CoreTextLine]
     public let lineHeight: CGFloat
     public let ascent: CGFloat
     public let size: CGSize
 
-    public init(string: String, fontSize: CGFloat, color: RGBA, shaper: any TextShaper) {
+    public init(string: String, fontSize: CGFloat, color: RGBA) {
         let font = TextFont(size: fontSize, bold: true)
         let parts = string.isEmpty ? [" "] : string.components(separatedBy: "\n")
-        lines = parts.map { shaper.line($0, font: font, color: color) }
-        let metrics = shaper.metrics(of: font)
+        lines = parts.map { CoreTextShaper.line($0, font: font, color: color) }
+        let metrics = CoreTextShaper.metrics(of: font)
         ascent = metrics.ascent
         lineHeight = metrics.lineHeight
         let width = lines.map(\.width).max() ?? 0
@@ -28,7 +28,7 @@ public struct NoteLayout {
     public let shadowBlur: CGFloat
     public let fill: RGBA
     public let ink: RGBA
-    public let lines: [any ShapedLine]
+    public let lines: [CoreTextLine]
     public let lineHeight: CGFloat
     public let ascent: CGFloat
     /// The paper: the rect's origin and width (at least `minWidth`), and at least tall enough for the text.
@@ -58,7 +58,7 @@ public struct NoteLayout {
         return CGRect(x: rect.minX, y: rect.minY, width: max(rect.width, minWidth(fontSize: fontSize)), height: rect.height)
     }
 
-    public init(string: String, rect: CGRect, fontSize: CGFloat, color: RGBA, verticalAlignment: VerticalTextAlign = .top, shaper: any TextShaper) {
+    public init(string: String, rect: CGRect, fontSize: CGFloat, color: RGBA, verticalAlignment: VerticalTextAlign = .top) {
         self.fontSize = fontSize
         self.verticalAlignment = verticalAlignment
         padding = Self.padding(fontSize: fontSize)
@@ -71,11 +71,11 @@ public struct NoteLayout {
         let width = max(rect.width, Self.minWidth(fontSize: fontSize))
         let wrapWidth = width - padding * 2
         let font = TextFont(size: fontSize)
-        var lines: [any ShapedLine] = []
+        var lines: [CoreTextLine] = []
         for paragraph in string.components(separatedBy: "\n") {
-            let text = shaper.paragraph(paragraph, font: font, color: ink)
+            let text = CoreTextShaper.paragraph(paragraph, font: font, color: ink)
             guard text.length > 0 else {
-                lines.append(shaper.line(paragraph, font: font, color: ink))
+                lines.append(CoreTextShaper.line(paragraph, font: font, color: ink))
                 continue
             }
             var start = 0
@@ -92,7 +92,7 @@ public struct NoteLayout {
             }
         }
         self.lines = lines
-        let metrics = shaper.metrics(of: font)
+        let metrics = CoreTextShaper.metrics(of: font)
         ascent = metrics.ascent
         lineHeight = metrics.lineHeight
         let textHeight = lineHeight * CGFloat(lines.count) + padding * 2

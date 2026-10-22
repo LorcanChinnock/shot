@@ -13,15 +13,12 @@ public enum MediaProbe {
         }
     }
 
-    /// What `reader` finds in `url`: how long it plays, the size of its picture as it plays, and whether it has sound.
-    public static func probe(_ url: URL, reader: any VideoReader) async throws -> ImportedMedia {
+    /// What AVFoundation finds in `url`: how long it plays, the size of its picture as it plays, and whether it has sound.
+    public static func probe(_ url: URL) async throws -> ImportedMedia {
         let name = url.lastPathComponent
         let media: ImportedMedia
         do {
-            media = try await reader.info(of: url)
-        } catch let ShotCommandError.unavailable(reason) {
-            // The reader can't run, which says nothing about the file.
-            throw ShotCommandError.unavailable(reason)
+            media = try await AVVideoReader.info(of: url)
         } catch {
             throw ProbeError.unreadable(name)
         }

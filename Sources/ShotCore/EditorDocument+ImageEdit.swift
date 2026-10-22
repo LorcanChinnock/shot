@@ -3,11 +3,11 @@ import Foundation
 
 /// An image to place with an `ImageEdit`, read from its file.
 public struct PlacedImageFile: Sendable {
-    public var image: PlatformImage
+    public var image: CGImage
     /// Its pixels per point.
     public var scale: CGFloat
 
-    public init(image: PlatformImage, scale: CGFloat) {
+    public init(image: CGImage, scale: CGFloat) {
         self.image = image
         self.scale = scale
     }
@@ -20,7 +20,7 @@ extension EditorDocument {
     /// background change, and the crop, given as `cropField` in messages, is applied last, within what the canvas shows.
     /// `name` is the file's, for messages. Scale and format are the saving's, not the document's.
     public mutating func apply(
-        _ edit: ImageEdit, drawn: [Annotation] = [], placed: [PlacedImageFile] = [], scale: CGFloat, name: String, cropField: String = "crop", shaper: any TextShaper
+        _ edit: ImageEdit, drawn: [Annotation] = [], placed: [PlacedImageFile] = [], scale: CGFloat, name: String, cropField: String = "crop"
     ) throws(ShotCommandError) {
         let margin = 16 * scale
         let shift = CGVector(dx: canvasRect.minX, dy: canvasRect.minY)
@@ -35,7 +35,7 @@ extension EditorDocument {
             }
             removing.insert(id)
         }
-        deleteLayers(removing, margin: margin, shaper: shaper)
+        deleteLayers(removing, margin: margin)
 
         var added = drawn
         for (index, mark) in edit.marks.enumerated() {
@@ -63,11 +63,11 @@ extension EditorDocument {
                 ?? rectBesideCanvas(size, gap: margin)
             let annotation = Annotation(kind: .image(AnnotationImage(file.image), rect: rect), color: RGBA(0, 0, 0), lineWidth: 0)
             annotations.append(annotation)
-            grow(toFit: annotation, margin: margin, shaper: shaper)
+            grow(toFit: annotation, margin: margin)
         }
 
         if let style = edit.style {
-            try applyStyle(style, scale: scale, margin: margin, name: name, shaper: shaper)
+            try applyStyle(style, scale: scale, margin: margin, name: name)
         }
 
         if let pad = edit.pad {
@@ -92,7 +92,7 @@ extension EditorDocument {
         }
     }
 
-    private mutating func applyStyle(_ style: ImageEdit.Style, scale: CGFloat, margin: CGFloat, name: String, shaper: any TextShaper) throws(ShotCommandError) {
+    private mutating func applyStyle(_ style: ImageEdit.Style, scale: CGFloat, margin: CGFloat, name: String) throws(ShotCommandError) {
         var next = captureStyle
         if let shadow = style.shadow {
             next.shadow = ShadowPreset(rawValue: shadow)?.shadow(scale: scale)
@@ -115,7 +115,7 @@ extension EditorDocument {
         if hasWindowShadow, !next.isEmpty || (corners ?? 0) > 0 {
             throw .data("style: \(name) is a window captured with the macOS shadow, which takes no shadow, border or corners of its own")
         }
-        setStyle(next, of: .capture, margin: margin, shaper: shaper)
+        setStyle(next, of: .capture, margin: margin)
         if let corners {
             setCornerRadius(corners, of: .capture)
         }

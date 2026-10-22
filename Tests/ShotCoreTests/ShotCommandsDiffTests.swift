@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import Testing
 @testable import ShotCore
@@ -9,7 +10,7 @@ import Testing
         1, 0, 0, 1,
         0, 0, 0, 0,
     ]
-    var expected = CanvasPath()
+    let expected = CGMutablePath()
     expected.addRect(CGRect(x: 1, y: 2, width: 2, height: 1))
     expected.addRect(CGRect(x: 0, y: 1, width: 1, height: 1))
     expected.addRect(CGRect(x: 3, y: 1, width: 1, height: 1))

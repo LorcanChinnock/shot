@@ -45,16 +45,16 @@ public struct Waveform: Equatable, Sendable {
         return reducer.finish()
     }
 
-    /// Reads the first audio track of `url` through `reader`; nil when there's none. Runs off the main thread.
-    public static func load(_ url: URL, reader: any VideoReader) async throws -> Waveform? {
-        let media = try await reader.info(of: url)
+    /// Reads the first audio track of `url`; nil when there's none. Runs off the main thread.
+    public static func load(_ url: URL) async throws -> Waveform? {
+        let media = try await AVVideoReader.info(of: url)
         guard media.hasAudio else {
             return nil
         }
         return try await Task.detached(priority: .utility) {
             let sampleRate = 8000.0
             var reducer = PeakReducer(sampleRate: sampleRate)
-            try await reader.readMonoSamples(of: url, sampleRate: sampleRate) { samples in
+            try await AVVideoReader.readMonoSamples(of: url, sampleRate: sampleRate) { samples in
                 try Task.checkCancellation()
                 samples.forEach { reducer.add($0) }
             }

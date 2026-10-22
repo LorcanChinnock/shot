@@ -285,11 +285,11 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     public var markerWidth: CGFloat { lineWidth * 4.5 }
 
     /// The laid-out note, or `nil` if this isn't one.
-    public func noteLayout(shaper: any TextShaper) -> NoteLayout? {
+    public var noteLayout: NoteLayout? {
         guard case let .note(string, rect) = kind else {
             return nil
         }
-        return NoteLayout(string: string, rect: rect, fontSize: noteFontSize, color: color, verticalAlignment: verticalAlignment, shaper: shaper)
+        return NoteLayout(string: string, rect: rect, fontSize: noteFontSize, color: color, verticalAlignment: verticalAlignment)
     }
 
     /// The quadratic curve an arrow or line follows: its ends and the control point that gives it its bend.
@@ -306,12 +306,12 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         }
     }
 
-    public func bounds(shaper: any TextShaper) -> CGRect {
+    public var bounds: CGRect {
         if let curve {
-            var path = CanvasPath()
+            let path = CGMutablePath()
             path.move(to: curve.from)
             path.addQuadCurve(to: curve.to, control: curve.control)
-            return path.boundingBox
+            return path.boundingBoxOfPath
         }
         switch kind {
         case let .arrow(from, to), let .line(from, to):
@@ -319,27 +319,27 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let .shape(_, rect), let .highlight(rect), let .pixelate(rect, _), let .blur(rect, _), let .spotlight(rect, _), let .image(_, rect):
             return rect
         case let .text(string, origin, fontSize):
-            return CGRect(origin: origin, size: TextLayout(string: string, fontSize: fontSize, color: color, shaper: shaper).size)
+            return CGRect(origin: origin, size: TextLayout(string: string, fontSize: fontSize, color: color).size)
         case let .counter(_, center):
             return CGRect(x: center.x - counterRadius, y: center.y - counterRadius, width: counterRadius * 2, height: counterRadius * 2)
         case .note:
-            return noteLayout(shaper: shaper)?.frame ?? .null
+            return noteLayout?.frame ?? .null
         case let .freehand(points), let .marker(points):
             return Freehand.bounds(of: points)
         }
     }
 
     /// `bounds` plus the stroke and arrowhead that the renderer paints past it, and the shadow and border of its style.
-    public func paintedBounds(shaper: any TextShaper) -> CGRect {
+    public var paintedBounds: CGRect {
         guard styleKind != nil else {
-            return plainPaintedBounds(shaper: shaper)
+            return plainPaintedBounds()
         }
-        return style.paintedRect(around: plainPaintedBounds(shaper: shaper))
+        return style.paintedRect(around: plainPaintedBounds())
     }
 
     /// `bounds` plus the stroke and arrowhead that the renderer paints past it, without its style.
-    private func plainPaintedBounds(shaper: any TextShaper) -> CGRect {
-        let bounds = bounds(shaper: shaper)
+    private func plainPaintedBounds() -> CGRect {
+        let bounds = bounds
         switch kind {
         case .arrow:
             let head = max(12, lineWidth * 4) * 0.45
@@ -350,38 +350,39 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case .highlight, .pixelate, .blur, .spotlight, .text, .counter, .image:
             return bounds
         case .note:
-            guard let layout = noteLayout(shaper: shaper) else {
+            guard let layout = noteLayout else {
                 return bounds
             }
             let shadow = layout.frame.offsetBy(dx: 0, dy: layout.shadowOffset).insetBy(dx: -layout.shadowBlur, dy: -layout.shadowBlur)
             return layout.frame.union(shadow)
         case let .freehand(points):
             // The smoothed curve can swing a little past the points it runs through.
-            return bounds.union(Freehand.path(through: points).boundingBox).insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2)
+            return bounds.union(Freehand.path(through: points).boundingBoxOfPath).insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2)
         case let .marker(points):
-            return bounds.union(Freehand.path(through: points).boundingBox).insetBy(dx: -markerWidth / 2, dy: -markerWidth / 2)
+            return bounds.union(Freehand.path(through: points).boundingBoxOfPath).insetBy(dx: -markerWidth / 2, dy: -markerWidth / 2)
         }
     }
 
-    public func hitTest(_ point: CGPoint, tolerance: CGFloat, shaper: any TextShaper) -> Bool {
+    public func hitTest(_ point: CGPoint, tolerance: CGFloat) -> Bool {
         let slop = tolerance + lineWidth / 2
         switch kind {
         case .arrow where curve != nil, .line where curve != nil:
             let points = Self.flattened(curve!)
-            return zip(points, points.dropFirst()).contains { CanvasPath.distance(from: point, toSegment: $0, $1) <= slop }
+            return zip(points, points.dropFirst()).contains { Self.distance(from: point, toSegment: $0, $1) <= slop }
         case let .arrow(from, to), let .line(from, to):
-            return CanvasPath.distance(from: point, toSegment: from, to) <= slop
+            return Self.distance(from: point, toSegment: from, to) <= slop
         case let .shape(shape, rect):
             let path = shape.path(in: rect, cornerRadius: cornerRadius)
-            return path.strokeContains(point, width: slop * 2, cap: .butt, join: .miter, miterLimit: 10) || (fill != nil && path.contains(point))
+            let outline = path.copy(strokingWithWidth: slop * 2, lineCap: .butt, lineJoin: .miter, miterLimit: 10)
+            return outline.contains(point) || (fill != nil && path.contains(point))
         case .highlight, .pixelate, .blur, .spotlight, .text, .note, .image:
-            return bounds(shaper: shaper).insetBy(dx: -tolerance, dy: -tolerance).contains(point)
+            return bounds.insetBy(dx: -tolerance, dy: -tolerance).contains(point)
         case let .counter(_, center):
             return hypot(point.x - center.x, point.y - center.y) <= counterRadius + tolerance
         case let .freehand(points):
-            return Freehand.path(through: points).strokeContains(point, width: slop * 2, cap: .round, join: .round, miterLimit: 10)
+            return Freehand.path(through: points).copy(strokingWithWidth: slop * 2, lineCap: .round, lineJoin: .round, miterLimit: 10).contains(point)
         case let .marker(points):
-            return Freehand.path(through: points).strokeContains(point, width: tolerance * 2 + markerWidth, cap: .butt, join: .round, miterLimit: 10)
+            return Freehand.path(through: points).copy(strokingWithWidth: tolerance * 2 + markerWidth, lineCap: .butt, lineJoin: .round, miterLimit: 10).contains(point)
         }
     }
 
@@ -454,13 +455,13 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     /// The resize handles and where they sit: a line's two ends, or the corners and edge midpoints of a box
     /// (a pen stroke's is its bounds). An image has only the corners, since it keeps its shape.
     /// Text and counters have none.
-    public func handles(shaper: any TextShaper) -> [(handle: AnnotationHandle, point: CGPoint)] {
+    public var handles: [(handle: AnnotationHandle, point: CGPoint)] {
         switch kind {
         case let .arrow(from, to), let .line(from, to):
             let middle = curve.map { Self.curvePoint($0, at: 0.5) } ?? CGPoint(x: (from.x + to.x) / 2, y: (from.y + to.y) / 2)
             return [(.start, from), (.end, to), (.mid, middle)]
         case .shape, .highlight, .pixelate, .blur, .spotlight, .note, .freehand, .marker:
-            let frame = bounds(shaper: shaper)
+            let frame = bounds
             return AnnotationHandle.box.map { ($0, $0.point(in: frame)) }
         case let .image(_, rect):
             return AnnotationHandle.corners.map { ($0, $0.point(in: rect)) }
@@ -513,12 +514,12 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     /// The handle nearest `point`, if one is within `tolerance` of it on both axes and nearer than the
     /// shape's centre, so a shape smaller than the handles can still be grabbed by its middle and moved.
     /// A line's or arrow's middle handle sits at its centre, so it's offered only on one long enough to move by its stroke.
-    public func handle(at point: CGPoint, tolerance: CGFloat, shaper: any TextShaper) -> AnnotationHandle? {
+    public func handle(at point: CGPoint, tolerance: CGFloat) -> AnnotationHandle? {
         func distance(_ p: CGPoint) -> CGFloat { hypot(point.x - p.x, point.y - p.y) }
-        let bounds = bounds(shaper: shaper)
+        let bounds = bounds
         let centre = distance(CGPoint(x: bounds.midX, y: bounds.midY))
         let bendable = hypot(bounds.width, bounds.height) > tolerance * 4
-        return (handles(shaper: shaper) + radiusHandles(tolerance: tolerance))
+        return (handles + radiusHandles(tolerance: tolerance))
             .filter { abs(point.x - $0.point.x) <= tolerance && abs(point.y - $0.point.y) <= tolerance && ($0.handle == .mid ? bendable : distance($0.point) < centre) }
             .min { distance($0.point) < distance($1.point) }?
             .handle
@@ -537,7 +538,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     /// - An image corner, which keeps its proportions by default, resizes freely with `constrain`.
     /// - With `fromCenter`, the opposite side mirrors the drag, so the shape grows around its centre (a line or arrow's
     ///   ends move symmetrically around its midpoint, and an edge mirrors only on its own axis).
-    public mutating func resize(_ handle: AnnotationHandle, to point: CGPoint, tolerance: CGFloat = 0, constrain: Bool = false, fromCenter: Bool = false, shaper: any TextShaper) {
+    public mutating func resize(_ handle: AnnotationHandle, to point: CGPoint, tolerance: CGFloat = 0, constrain: Bool = false, fromCenter: Bool = false) {
         if case let .radius(index) = handle {
             if let (shape, rect, _) = cornerBox, let (corner, inward) = Self.radiusAxis(of: index, shape: shape, in: rect) {
                 let inset = ((point.x - corner.x) * inward.dx + (point.y - corner.y) * inward.dy) / 2
@@ -578,13 +579,13 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let (.pixelate(rect, amount), _): kind = .pixelate(box(rect), amount: amount)
         case let (.blur(rect, amount), _): kind = .blur(box(rect), amount: amount)
         case let (.spotlight(rect, style), _): kind = .spotlight(box(rect), style: style)
-        case let (.note(string, rect), _): resizeNote(string, rect: rect, handle: handle, to: point, shaper: shaper)
+        case let (.note(string, rect), _): resizeNote(string, rect: rect, handle: handle, to: point)
         case let (.freehand(points), _):
-            let rect = bounds(shaper: shaper)
+            let rect = bounds
             let (min, max) = corners(rect)
             kind = .freehand(Freehand.scaled(points, from: rect, min: min, max: max))
         case let (.marker(points), _):
-            let rect = bounds(shaper: shaper)
+            let rect = bounds
             let (min, max) = corners(rect)
             kind = .marker(Freehand.scaled(points, from: rect, min: min, max: max))
         case let (.image(image, rect), _):
@@ -660,8 +661,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     }
 
     /// The opposite side stays put, and the note never flips, gets narrower than its minimum or shorter than its text.
-    private mutating func resizeNote(_ string: String, rect: CGRect, handle: AnnotationHandle, to point: CGPoint, shaper: any TextShaper) {
-        guard let layout = noteLayout(shaper: shaper) else {
+    private mutating func resizeNote(_ string: String, rect: CGRect, handle: AnnotationHandle, to point: CGPoint) {
+        guard let layout = noteLayout else {
             return
         }
         let frame = layout.frame
@@ -681,7 +682,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         let resized: CGRect
         switch handle.dy {
         case -1:
-            let textHeight = NoteLayout(string: string, rect: CGRect(x: minX, y: 0, width: width, height: 0), fontSize: layout.fontSize, color: color, shaper: shaper).frame.height
+            let textHeight = NoteLayout(string: string, rect: CGRect(x: minX, y: 0, width: width, height: 0), fontSize: layout.fontSize, color: color).frame.height
             let minY = min(point.y, frame.maxY - textHeight)
             resized = CGRect(x: minX, y: minY, width: width, height: frame.maxY - minY)
         case 1:
@@ -707,12 +708,23 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     private static func flattened(_ curve: (from: CGPoint, to: CGPoint, control: CGPoint)) -> [CGPoint] {
         (0...24).map { curvePoint(curve, at: CGFloat($0) / 24) }
     }
+
+    /// The distance from `p` to the nearest point on the segment from `a` to `b`.
+    static func distance(from p: CGPoint, toSegment a: CGPoint, _ b: CGPoint) -> CGFloat {
+        let dx = b.x - a.x, dy = b.y - a.y
+        let lengthSquared = dx * dx + dy * dy
+        guard lengthSquared > 0 else {
+            return hypot(p.x - a.x, p.y - a.y)
+        }
+        let t = max(0, min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSquared))
+        return hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy))
+    }
 }
 
 extension Array where Element == Annotation {
     /// Index of the topmost (last drawn) annotation under `point`.
-    public func topmostIndex(at point: CGPoint, tolerance: CGFloat, shaper: any TextShaper) -> Int? {
-        indices.reversed().first { !self[$0].isHidden && !self[$0].isLocked && self[$0].hitTest(point, tolerance: tolerance, shaper: shaper) }
+    public func topmostIndex(at point: CGPoint, tolerance: CGFloat) -> Int? {
+        indices.reversed().first { !self[$0].isHidden && !self[$0].isLocked && self[$0].hitTest(point, tolerance: tolerance) }
     }
 
     /// The lowest spotlight's style, whose effect and strength they all share. `nil` when there are none.

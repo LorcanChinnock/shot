@@ -19,11 +19,11 @@ extension Annotation {
 
     /// The annotation scaled by `factor` about the centre of its bounds; strokes, text, counters, corners, shadows and
     /// borders grow with it.
-    public func scaled(by factor: Double, shaper: any TextShaper) -> Annotation {
+    public func scaled(by factor: Double) -> Annotation {
         guard abs(factor - 1) > 1e-9, factor > 0 else {
             return self
         }
-        let bounds = bounds(shaper: shaper)
+        let bounds = bounds
         guard !bounds.isNull else {
             return self
         }
@@ -108,9 +108,9 @@ extension Annotation {
 extension AnnotationClip {
     /// What to draw at timeline `time`: the annotation with its keyframes applied, its shadow lifted while it comes in,
     /// and the turn and fade to give the result.
-    public func rendered(atTimeline time: Double, shaper: any TextShaper) -> (annotation: Annotation, rotation: Double, opacity: Double) {
+    public func rendered(atTimeline time: Double) -> (annotation: Annotation, rotation: Double, opacity: Double) {
         let values = values(atTimeline: time)
-        var drawn = annotation.revealed(values.reveal).scaled(by: values.scale, shaper: shaper).moved(by: values.position)
+        var drawn = annotation.revealed(values.reveal).scaled(by: values.scale).moved(by: values.position)
         let lift = animation.lift(at: time - start)
         if lift > 1 {
             drawn.style.shadow?.elevation *= lift

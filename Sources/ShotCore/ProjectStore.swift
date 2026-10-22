@@ -14,17 +14,14 @@ public struct ProjectStore: Sendable {
     }
 
     public let folder: URL
-    /// Reads the project IDs stamped in image files, and writes and reads the images placed in projects.
-    let codec: any ImageCoding
 
-    public init(folder: URL, codec: any ImageCoding) {
+    public init(folder: URL) {
         self.folder = folder
-        self.codec = codec
     }
 
     /// The store of the app with `bundleID`, so Shot and ShotDev keep their own, as `AgentSocket` does.
-    public init(bundleID: String, codec: any ImageCoding) {
-        self.init(folder: AppSupport.folder(bundleID: bundleID).appendingPathComponent("Projects", isDirectory: true), codec: codec)
+    public init(bundleID: String) {
+        self.init(folder: AppSupport.folder(bundleID: bundleID).appendingPathComponent("Projects", isDirectory: true))
     }
 
     /// Keeps `document`, the layers of `file` over `original`, and who made it. `id` is the ID stamped in `file`, or
@@ -40,7 +37,7 @@ public struct ProjectStore: Sendable {
         }
         let saved = ProjectEntry(id: key, stamped: id != nil, file: located, original: original.flatMap { ProjectFile(at: $0) }, origin: origin)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try ProjectEntry.encoder(codec: codec).encode(StoredProject(entry: saved, document: document)).write(to: folder.appendingPathComponent(name), options: .atomic)
+        try ProjectEntry.encoder().encode(StoredProject(entry: saved, document: document)).write(to: folder.appendingPathComponent(name), options: .atomic)
         // A GIF saved again at the same path has a new inode, so the entries keyed by its old ones are stale.
         if id == nil {
             for stale in ids().filter(ProjectKey.isIdentity) where stale != key && entry(stale)?.file.path == located.path {
@@ -61,7 +58,7 @@ public struct ProjectStore: Sendable {
         guard let id = id(of: file), let data = read(id) else {
             return nil
         }
-        return try? ProjectEntry.decoder(codec: codec).decode(StoredProject<Document>.self, from: data)
+        return try? ProjectEntry.decoder().decode(StoredProject<Document>.self, from: data)
     }
 
     /// The entry of `file`, without its layers, such as for the provenance the gallery shows.
@@ -109,7 +106,7 @@ public struct ProjectStore: Sendable {
     /// file it is, by inode first and then by path.
     private func id(of file: URL) -> String? {
         if ProjectKey.stamps(pathExtension: file.pathExtension) {
-            return ProjectStamp.id(ofFileAt: file, codec: codec)
+            return ProjectStamp.id(ofFileAt: file)
         }
         guard let located = ProjectFile(at: file) else {
             return nil
@@ -135,7 +132,7 @@ public struct ProjectStore: Sendable {
             guard let file = ProjectFile(at: url, bookmark: false) else {
                 continue
             }
-            sightings.append(ProjectSighting(file: file, stampedID: entry.stamped ? ProjectStamp.id(ofFileAt: url, codec: codec) : nil))
+            sightings.append(ProjectSighting(file: file, stampedID: entry.stamped ? ProjectStamp.id(ofFileAt: url) : nil))
         }
         return sightings
     }
@@ -152,7 +149,7 @@ public struct ProjectStore: Sendable {
 
     /// Reads only the entry: the decoder skips the layers' key.
     private func entry(_ id: String) -> ProjectEntry? {
-        read(id).flatMap { try? ProjectEntry.decoder(codec: codec).decode(ProjectEntry.self, from: $0) }
+        read(id).flatMap { try? ProjectEntry.decoder().decode(ProjectEntry.self, from: $0) }
     }
 
     private func remove(_ id: String) {
@@ -162,11 +159,11 @@ public struct ProjectStore: Sendable {
     }
 }
 
-/// The project ID in a file's own metadata: for PNG and JPEG, what `codec` writes as `ImageMetadata`, and a `uuid` box
+/// The project ID in a file's own metadata: for PNG and JPEG, what `ImageCodec` writes as `ImageMetadata`, and a `uuid` box
 /// of Shot's own for MP4 and MOV (`MovieStampBox`).
 public enum ProjectStamp {
     /// The ID stamped in the image or movie at `url`, or `nil` when it has none.
-    public static func id(ofFileAt url: URL, codec: any ImageCoding) -> String? {
+    public static func id(ofFileAt url: URL) -> String? {
         switch url.pathExtension.lowercased() {
         case "mp4", "mov":
             guard let handle = try? FileHandle(forReadingFrom: url) else {
@@ -175,7 +172,7 @@ public enum ProjectStamp {
             defer { try? handle.close() }
             return ownBoxes(in: handle).last?.id
         default:
-            return codec.projectID(ofFileAt: url)
+            return ImageCodec.projectID(ofFileAt: url)
         }
     }
 

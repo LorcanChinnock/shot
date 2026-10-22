@@ -2,21 +2,6 @@ import Foundation
 import Testing
 @testable import ShotCore
 
-/// These frames have no text, so nothing is measured.
-private struct NoTextShaper: TextShaper {
-    func metrics(of font: TextFont) -> TextMetrics {
-        preconditionFailure("no text to measure")
-    }
-
-    func line(_ string: String, font: TextFont, color: RGBA) -> any ShapedLine {
-        preconditionFailure("no text to shape")
-    }
-
-    func paragraph(_ string: String, font: TextFont, color: RGBA) -> any ShapedParagraph {
-        preconditionFailure("no text to shape")
-    }
-}
-
 private func mark(at x: CGFloat, start: Double = 0, duration: Double = 10) -> AnnotationClip {
     let box = Annotation(kind: .shape(.rectangle, rect: CGRect(x: x, y: 10, width: 40, height: 20)), color: RGBA.presets[0], lineWidth: 4)
     return AnnotationClip(annotation: box, start: start, duration: duration)
@@ -46,7 +31,7 @@ private func name(_ annotation: Annotation) -> String {
 private func layers(
     _ stack: [FrameLayers.Source<String>], at time: Double = 1, hidden: Set<UUID> = [], drawn: [AnnotationClip] = [], clipStyles: [UUID: ObjectStyle] = [:]
 ) -> [FrameLayers.Layer<String>] {
-    FrameLayers.layers(of: stack, at: time, hidden: hidden, drawn: drawn, clipStyles: clipStyles, shaper: NoTextShaper())
+    FrameLayers.layers(of: stack, at: time, hidden: hidden, drawn: drawn, clipStyles: clipStyles)
 }
 
 @Test func annotationsBetweenPicturesDrawTogetherInRuns() {
@@ -100,7 +85,7 @@ private func layers(
         Issue.record("expected the annotation")
         return
     }
-    let state = turning.rendered(atTimeline: 1, shaper: NoTextShaper())
+    let state = turning.rendered(atTimeline: 1)
     #expect(item == AnnotationFrame.Item(annotation: state.annotation, rotation: state.rotation, opacity: state.opacity))
     #expect(!item.isPlain)
 }

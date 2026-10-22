@@ -34,13 +34,13 @@ public enum BoxShape: String, CaseIterable, Codable, Sendable {
 
     /// The outline stretched to fill `rect`, its corners rounded by `cornerRadius` (square for `nil`). A star rounds only
     /// its points.
-    public func path(in rect: CGRect, cornerRadius: CGFloat? = nil) -> CanvasPath {
+    public func path(in rect: CGRect, cornerRadius: CGFloat? = nil) -> CGPath {
         switch self {
         case .rectangle:
             let radius = clampedRadius(cornerRadius, in: rect)
-            return radius > 0 ? CanvasPath(roundedRect: rect, cornerRadius: radius) : CanvasPath(rect: rect)
+            return radius > 0 ? CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil) : CGPath(rect: rect, transform: nil)
         case .ellipse:
-            return CanvasPath(ellipseIn: rect)
+            return CGPath(ellipseIn: rect, transform: nil)
         case .triangle, .diamond, .star:
             let corners = vertices(in: rect)
             return Self.polygon(corners.points, rounding: clampedRadius(cornerRadius, in: rect), roundedIndices: corners.rounded)
@@ -127,8 +127,8 @@ public enum BoxShape: String, CaseIterable, Codable, Sendable {
     }
 
     /// The closed outline through `points`, with an arc of `radius` tangent to both edges at each of `roundedIndices`.
-    private static func polygon(_ points: [CGPoint], rounding radius: CGFloat, roundedIndices: Set<Int>) -> CanvasPath {
-        var path = CanvasPath()
+    private static func polygon(_ points: [CGPoint], rounding radius: CGFloat, roundedIndices: Set<Int>) -> CGPath {
+        let path = CGMutablePath()
         let count = points.count
         guard radius > 0, !roundedIndices.isEmpty else {
             path.addLines(between: points)
@@ -194,7 +194,7 @@ public enum TextAlign: String, CaseIterable, Codable, Sendable {
 
     /// How far right of the left edge of a box `width` wide `line` starts. Trailing spaces don't count,
     /// so a wrapped line lines up by its last word.
-    public func offset(of line: any ShapedLine, in width: CGFloat) -> CGFloat {
+    public func offset(of line: CoreTextLine, in width: CGFloat) -> CGFloat {
         let visible = line.width - line.trailingWhitespaceWidth
         return (width - visible) * fraction
     }

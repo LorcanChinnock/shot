@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import os
 
@@ -20,7 +21,7 @@ public enum VersionWriter {
 
     /// A drawn version: the image, the file's bytes, and the record inside them.
     public struct RenderedImage: @unchecked Sendable {
-        public let image: PlatformImage
+        public let image: CGImage
         public let file: Data
         public let record: CaptureRecord?
     }
@@ -43,35 +44,34 @@ public enum VersionWriter {
     /// itself be a version, and that file's source, so the version still says which app and window it showed. It's
     /// editable when reopening `original` with the marks gives `document` back. The size is filled in once rendered.
     /// `atOneX` is for a file scaled to one pixel per point, whose marks are scaled with it and which can't reopen live.
-    public static func record(of document: EditorDocument, drawnOn original: URL, savedAs format: ImageFormat, scale: CGFloat, atOneX: Bool = false, codec: any ImageCoding, shaper: any TextShaper) -> CaptureRecord {
+    public static func record(of document: EditorDocument, drawnOn original: URL, savedAs format: ImageFormat, scale: CGFloat, atOneX: Bool = false) -> CaptureRecord {
         let canvas = document.canvasRect
         // The file is the canvas at 1:1, or scaled to 1×, so the marks need no other change than the canvas offset.
         return CaptureRecord(
             original: original.lastPathComponent, kind: "image", created: Date(), size: CaptureRecord.Size(width: 0, height: 0), scale: atOneX ? 1 : scale,
-            source: codec.record(ofFileAt: original)?.source,
+            source: ImageCodec.record(ofFileAt: original)?.source,
             canvas: [canvas.minX, canvas.minY, canvas.width, canvas.height].map { (Double($0) * 10).rounded() / 10 },
             crop: document.visibleCrop.map { [$0.minX, $0.minY, $0.width, $0.height].map { (Double($0) * 10).rounded() / 10 } },
-            editable: !atOneX && CaptureMark.rebuildExactly(document.annotations, canvas: canvas, shaper: shaper) && document.captureStyle.isEmpty && document.captureCornerRadius == 0
+            editable: !atOneX && CaptureMark.rebuildExactly(document.annotations, canvas: canvas) && document.captureStyle.isEmpty && document.captureCornerRadius == 0
                 && document.background == EditorDocument.defaultBackground(for: format),
-            annotations: CaptureMark.mapping(document.annotations, canvas: canvas, scale: atOneX ? 1 / scale : 1, shaper: shaper)
+            annotations: CaptureMark.mapping(document.annotations, canvas: canvas, scale: atOneX ? 1 / scale : 1)
         )
     }
 
-    /// Flattens `document` on a `canvasType` canvas and encodes it as `format`, with `record` inside it once it has the
+    /// Flattens `document` and encodes it as `format`, with `record` inside it once it has the
     /// drawn size, and `projectID` stamped in it when it has a project. `atOneX` scales it to one pixel per point, as
     /// Settings › Scale Retina captures to 1× does a capture.
-    public static func render(_ document: EditorDocument, scale: CGFloat, as format: ImageFormat, record: CaptureRecord?, projectID: String? = nil, atOneX: Bool = false, codec: any ImageCoding, canvasType: any Canvas.Type) throws(Failure) -> RenderedImage {
-        guard var image = AnnotationRenderer.flatten(document, canvasType: canvasType) else {
+    public static func render(_ document: EditorDocument, scale: CGFloat, as format: ImageFormat, record: CaptureRecord?, projectID: String? = nil, atOneX: Bool = false) throws(Failure) -> RenderedImage {
+        guard var image = AnnotationRenderer.flatten(document) else {
             throw .draw
         }
         if atOneX {
-            image = ImageCodec.downscaled(image, scale: scale, canvasType: canvasType)
+            image = ImageCodec.downscaled(image, scale: scale)
         }
         var record = record
         record?.size = CaptureRecord.Size(width: image.width, height: image.height)
         // A window with the macOS shadow still has it once saved, so the file keeps saying so.
-        let metadata = ImageMetadata(windowShadow: document.hasWindowShadow, record: record, projectID: projectID)
-        guard let file = codec.data(from: image, scale: atOneX ? 1 : scale, format: format, metadata: metadata) else {
+        guard let file = ImageCodec.data(from: image, scale: atOneX ? 1 : scale, format: format, windowShadow: document.hasWindowShadow, record: record, projectID: projectID) else {
             throw .encode
         }
         return RenderedImage(image: image, file: file, record: record)
@@ -83,17 +83,17 @@ public enum VersionWriter {
     /// saved, flat, as a version saved before projects is.
     public static func saveImage(
         _ document: EditorDocument, of original: URL, scale: CGFloat, recordForAgents: Bool = Preferences().agentHandoff,
-        projects: ProjectStore? = nil, origin: ProjectOrigin = ProjectOrigin(via: .app), codec: any ImageCoding, canvasType: any Canvas.Type
+        projects: ProjectStore? = nil, origin: ProjectOrigin = ProjectOrigin(via: .app)
     ) throws(Failure) -> SavedImage {
         let format = ImageFormat(fileExtension: original.pathExtension)
-        let record = recordForAgents ? record(of: document, drawnOn: original, savedAs: format, scale: scale, codec: codec, shaper: canvasType.shaper) : nil
+        let record = recordForAgents ? record(of: document, drawnOn: original, savedAs: format, scale: scale) : nil
         let projectID = projects == nil ? nil : ProjectKey.newID()
-        let rendered = try render(document, scale: scale, as: format, record: record, projectID: projectID, codec: codec, canvasType: canvasType)
+        let rendered = try render(document, scale: scale, as: format, record: record, projectID: projectID)
         let png: Data
         if format == .png {
             png = rendered.file
         } else {
-            guard let data = codec.data(from: rendered.image, scale: scale, format: .png, metadata: ImageMetadata(windowShadow: document.hasWindowShadow, record: rendered.record)) else {
+            guard let data = ImageCodec.data(from: rendered.image, scale: scale, format: .png, windowShadow: document.hasWindowShadow, record: rendered.record) else {
                 throw .encode
             }
             png = data
@@ -136,15 +136,15 @@ public enum VersionWriter {
     /// The original of the image at `url`, its pixels and the live layers that give `url` back: from `projects`, or
     /// else from a record that can rebuild them, for a version saved before projects. `nil` when `url` has neither or
     /// its original is gone, so it opens, or is drawn on, flat.
-    public static func savedLayers(of url: URL, in projects: ProjectStore?, codec: any ImageCoding) -> (original: URL, image: PlatformImage, layers: EditorSnapshot)? {
-        if let projects, let project = layers(of: url, in: projects), let image = codec.image(at: project.original) {
+    public static func savedLayers(of url: URL, in projects: ProjectStore?) -> (original: URL, image: CGImage, layers: EditorSnapshot)? {
+        if let projects, let project = layers(of: url, in: projects), let image = ImageCodec.image(at: project.original) {
             return (project.original, image, project.layers)
         }
-        guard let record = codec.record(ofFileAt: url), let layers = record.editableLayers, let name = record.original else {
+        guard let record = ImageCodec.record(ofFileAt: url), let layers = record.editableLayers, let name = record.original else {
             return nil
         }
         let original = url.deletingLastPathComponent().appendingPathComponent(name)
-        guard original != url, let image = codec.image(at: original) else {
+        guard original != url, let image = ImageCodec.image(at: original) else {
             return nil
         }
         var document = EditorDocument(
@@ -170,18 +170,16 @@ public enum VersionWriter {
         VideoExportPlan.copy(of: project, as: VersionNaming.videoCopyExtension(of: original) == "mov" ? .mov : .mp4)
     }
 
-    /// Writes `plan`, an edit of `project` over the video at `original`, to `output`, its annotations drawn on `canvasType`
-    /// canvases, a GIF's frames read by `reader`, a trim cut with `assembler` and a drawn video encoded with `writer`, as
-    /// the video editor's Save Copy and Export do. `project` is kept in `projects`, stamped in an MP4 or MOV and keyed by
-    /// its identity for a GIF, so the file reopens with it live. A project that can't be kept leaves the file written, as
+    /// Writes `plan`, an edit of `project` over the video at `original`, to `output`, as the video editor's Save Copy and
+    /// Export do. `project` is kept in `projects`, stamped in an MP4 or MOV and keyed by its identity for a GIF, so the file
+    /// reopens with it live. A project that can't be kept leaves the file written, as
     /// one written before projects is.
     @discardableResult
     public static func writeVideo(
         _ plan: VideoExportPlan, of project: Project, original: URL, to output: URL, projects: ProjectStore? = nil,
-        origin: ProjectOrigin = ProjectOrigin(via: .app), canvasType: any Canvas.Type, reader: any VideoReader,
-        assembler: any VideoAssembler, writer: any VideoWriter, progress: @Sendable (Double) -> Void = { _ in }
+        origin: ProjectOrigin = ProjectOrigin(via: .app), progress: @Sendable (Double) -> Void = { _ in }
     ) async throws -> VideoExportPlan.Outcome {
-        let outcome = try await plan.run(to: output, canvasType: canvasType, reader: reader, assembler: assembler, writer: writer, progress: progress)
+        let outcome = try await plan.run(to: output, progress: progress)
         keep(project, of: output, original: original, in: projects, origin: origin)
         return outcome
     }

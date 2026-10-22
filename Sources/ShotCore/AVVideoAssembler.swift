@@ -9,13 +9,18 @@ extension TrimRange {
     }
 }
 
-/// The Mac's `VideoAssembler`: AVFoundation compositions and export sessions, and an asset writer where export can't.
-public struct AVVideoAssembler: VideoAssembler {
-    public init() {}
-
-    public func trim(_ input: URL, kept: [TrimRange], speed: Double, muted: Bool, to output: URL, as fileType: String?) async throws -> Bool {
+/// Cuts and joins video files without drawing them: trims, retimes and concatenates, mixing audio tracks where it has to,
+/// and copies the video samples as they are when it can, through AVFoundation compositions and export sessions, and an
+/// asset writer where export can't. `VideoTrimmer` and `VideoConcatenator` check what they're asked and call it for the
+/// work.
+public enum AVVideoAssembler {
+    /// Writes the `kept` sections of `input`, of which there's at least one, end to end to `output`, replacing it, as
+    /// `fileType`, or else the input's own type. `speed` 2 plays it in half the time with every frame kept; `muted` leaves
+    /// the audio out. Returns false when it had to re-encode the video. Throws `VideoTrimmer.TrimError` when it can't
+    /// write that type or the export fails.
+    public static func trim(_ input: URL, kept: [TrimRange], speed: Double, muted: Bool, to output: URL, as fileType: AVFileType?) async throws -> Bool {
         let asset = AVURLAsset(url: input)
-        let fileType = try fileType.map(AVFileType.init(rawValue:)) ?? Self.fileType(of: input)
+        let fileType = try fileType ?? Self.fileType(of: input)
         let audio = muted ? [] : try await asset.loadTracks(withMediaType: .audio)
         if speed != 1, !audio.isEmpty {
             return try await retime(asset, audio: audio, kept: kept, speed: speed, to: output, as: fileType)
@@ -51,7 +56,7 @@ public struct AVVideoAssembler: VideoAssembler {
     }
 
     /// The `kept` sections of the video tracks and of `audio`, end to end and retimed by `speed`.
-    private func composition(of asset: AVURLAsset, kept: [TrimRange], audio: [AVAssetTrack], speed: Double) async throws -> AVMutableComposition {
+    private static func composition(of asset: AVURLAsset, kept: [TrimRange], audio: [AVAssetTrack], speed: Double) async throws -> AVMutableComposition {
         let composition = AVMutableComposition()
         for track in try await asset.loadTracks(withMediaType: .video) {
             try insert(kept, of: track, into: composition, speed: speed)
@@ -66,12 +71,12 @@ public struct AVVideoAssembler: VideoAssembler {
     /// Copying scaled audio only stretches it with an edit list, which most players ignore, so the
     /// audio is rendered at the new rate. Export can't copy retimed video alongside that audio, so
     /// each is written on its own and the samples of both are copied into `output`.
-    private func retime(_ asset: AVURLAsset, audio: [AVAssetTrack], kept: [TrimRange], speed: Double, to output: URL, as fileType: AVFileType) async throws -> Bool {
+    private static func retime(_ asset: AVURLAsset, audio: [AVAssetTrack], kept: [TrimRange], speed: Double, to output: URL, as fileType: AVFileType) async throws -> Bool {
         let scratch = FileManager.default.temporaryDirectory.appendingPathComponent("Shot/\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: scratch, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: scratch) }
         let videoURL = scratch.appendingPathComponent("video.mp4")
-        let passthrough = try await trim(asset.url, kept: kept, speed: speed, muted: true, to: videoURL, as: AVFileType.mp4.rawValue)
+        let passthrough = try await trim(asset.url, kept: kept, speed: speed, muted: true, to: videoURL, as: .mp4)
 
         let retimed = AVMutableComposition()
         for track in audio {
@@ -92,7 +97,7 @@ public struct AVVideoAssembler: VideoAssembler {
     }
 
     /// Copies the samples of `video`'s video track and `audio`'s audio track into one file.
-    private func mux(video: URL, audio: URL, to output: URL, as fileType: AVFileType) async throws {
+    private static func mux(video: URL, audio: URL, to output: URL, as fileType: AVFileType) async throws {
         let writer = try AVAssetWriter(outputURL: output, fileType: fileType)
         let videoAsset = AVURLAsset(url: video)
         let duration = try await videoAsset.load(.duration)
@@ -181,7 +186,7 @@ public struct AVVideoAssembler: VideoAssembler {
 
     /// Inserts the `kept` sections of `track` end to end at the start of `composition`, playing them at `speed`.
     @discardableResult
-    private func insert(_ kept: [TrimRange], of track: AVAssetTrack, into composition: AVMutableComposition, speed: Double) throws -> AVMutableCompositionTrack {
+    private static func insert(_ kept: [TrimRange], of track: AVAssetTrack, into composition: AVMutableComposition, speed: Double) throws -> AVMutableCompositionTrack {
         guard let copy = composition.addMutableTrack(withMediaType: track.mediaType, preferredTrackID: kCMPersistentTrackID_Invalid) else {
             throw VideoTrimmer.TrimError.exportFailed
         }
@@ -197,7 +202,11 @@ public struct AVVideoAssembler: VideoAssembler {
         return copy
     }
 
-    public func concatenate(_ segments: [URL], audio: [VideoConcatenator.SegmentAudio], to output: URL, muting muted: CutList) async throws {
+    /// Joins `segments`, of which there's at least one, end to end at `output`, which doesn't exist, as MP4 without
+    /// re-encoding the video, leaving the segments in place. `muted` holds stretches of the joined recording, in seconds,
+    /// that become silent. With `audio`, one per segment, the segments' own audio is replaced by a mix of those files,
+    /// and only the microphone is muted.
+    public static func concatenate(_ segments: [URL], audio: [VideoConcatenator.SegmentAudio], to output: URL, muting muted: CutList) async throws {
         let composition = AVMutableComposition()
         var cursor = CMTime.zero
         for url in segments {
@@ -230,7 +239,7 @@ public struct AVVideoAssembler: VideoAssembler {
         try await export.export(to: output, as: .mp4)
     }
 
-    private func silence(_ tracks: [AVMutableCompositionTrack], over muted: CutList, before end: CMTime) {
+    private static func silence(_ tracks: [AVMutableCompositionTrack], over muted: CutList, before end: CMTime) {
         for track in tracks {
             for cut in muted.cuts {
                 let range = CMTimeRange(start: CMTime(seconds: cut.lowerBound, preferredTimescale: 600), end: min(CMTime(seconds: cut.upperBound, preferredTimescale: 600), end))
@@ -244,7 +253,7 @@ public struct AVVideoAssembler: VideoAssembler {
     }
 
     /// Lays each segment's audio files at its place in the recording and mixes them to one track; `false` when there was no audio.
-    private func mix(_ audio: [VideoConcatenator.SegmentAudio], of segments: [URL], mutingMicrophone muted: CutList, to output: URL) async throws -> Bool {
+    private static func mix(_ audio: [VideoConcatenator.SegmentAudio], of segments: [URL], mutingMicrophone muted: CutList, to output: URL) async throws -> Bool {
         let composition = AVMutableComposition()
         guard let system = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid),
               let microphone = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else {

@@ -12,11 +12,11 @@ import Testing
     try boxes.write(to: movie)
 
     try ProjectStamp.stamp(movieAt: movie, id: "ID-1")
-    #expect(ProjectStamp.id(ofFileAt: movie, codec: StandInCodec()) == "ID-1")
+    #expect(ProjectStamp.id(ofFileAt: movie) == "ID-1")
     #expect(try Data(contentsOf: movie) == boxes + MovieStampBox.box(id: "ID-1"))
     #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path) == ["Recording.mp4"])
     try ProjectStamp.stamp(movieAt: movie, id: "ID-2")
-    #expect(ProjectStamp.id(ofFileAt: movie, codec: StandInCodec()) == "ID-2")
+    #expect(ProjectStamp.id(ofFileAt: movie) == "ID-2")
 }
 
 @Test func aFileThatHoldsNoIDKeepsItsProjectByItsIdentity() throws {
@@ -25,7 +25,7 @@ import Testing
     defer { try? FileManager.default.removeItem(at: folder) }
     let gif = folder.appendingPathComponent("Clip.gif")
     try Data("GIF89a".utf8).write(to: gif)
-    let store = ProjectStore(folder: folder.appendingPathComponent("Projects"), codec: StandInCodec())
+    let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
     let origin = ProjectOrigin(via: .cli, action: "gif")
     let saved = try store.save(origin: origin, for: gif, id: nil)
     #expect(ProjectKey.isIdentity(saved.id))

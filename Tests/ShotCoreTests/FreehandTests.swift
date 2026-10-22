@@ -42,7 +42,7 @@ private func isBase(_ p: [CGFloat]) -> Bool { p[0] > 0.9 && p[2] < 0.1 }
 @Test func theSmoothedPathIsACurveThroughEveryPoint() {
     var ends: [CGPoint] = []
     var curves = 0, lines = 0
-    Freehand.path(through: tick).cgPath.applyWithBlock { element in
+    Freehand.path(through: tick).applyWithBlock { element in
         switch element.pointee.type {
         case .moveToPoint:
             ends.append(element.pointee.points[0])
@@ -63,7 +63,7 @@ private func isBase(_ p: [CGFloat]) -> Bool { p[0] > 0.9 && p[2] < 0.1 }
 @Test func aSmoothedCornerHasNoKink() {
     // At each inner point the curve leaves in the direction it arrived, which a polyline wouldn't.
     var controls: [(CGPoint, CGPoint)] = []
-    Freehand.path(through: tick).cgPath.applyWithBlock { element in
+    Freehand.path(through: tick).applyWithBlock { element in
         if element.pointee.type == .addCurveToPoint {
             controls.append((element.pointee.points[0], element.pointee.points[1]))
         }
@@ -101,7 +101,7 @@ private func isBase(_ p: [CGFloat]) -> Bool { p[0] > 0.9 && p[2] < 0.1 }
 @Test func paintedBoundsHoldTheStrokeAndTheCurve() {
     let a = pen(tick, lineWidth: 8)
     #expect(a.paintedBounds.contains(a.bounds.insetBy(dx: -4, dy: -4)))
-    #expect(a.paintedBounds.contains(Freehand.path(through: tick).cgPath.boundingBoxOfPath.insetBy(dx: -4, dy: -4)))
+    #expect(a.paintedBounds.contains(Freehand.path(through: tick).boundingBoxOfPath.insetBy(dx: -4, dy: -4)))
 }
 
 // MARK: Hit-testing

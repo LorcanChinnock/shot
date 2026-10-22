@@ -8,17 +8,14 @@ private let log = Logger.shot("text-index")
 /// read it while the indexer writes.
 public struct TextIndexStore: Sendable {
     public let url: URL
-    /// Reads the screenshots for Vision.
-    let codec: any ImageCoding
 
-    public init(url: URL, codec: any ImageCoding) {
+    public init(url: URL) {
         self.url = url
-        self.codec = codec
     }
 
     /// The index of the app with `bundleID`, so Shot and ShotDev keep their own, as `ProjectStore` does.
-    public init(bundleID: String, codec: any ImageCoding) {
-        self.init(url: URL.applicationSupportDirectory.appendingPathComponent(bundleID, isDirectory: true).appendingPathComponent("text-index.json"), codec: codec)
+    public init(bundleID: String) {
+        self.init(url: URL.applicationSupportDirectory.appendingPathComponent(bundleID, isDirectory: true).appendingPathComponent("text-index.json"))
     }
 
     /// The index, or an empty one when there's none yet or it can't be read.
@@ -49,7 +46,7 @@ public struct TextIndexStore: Sendable {
             try Task.checkCancellation()
             let url = URL(fileURLWithPath: file.path)
             do {
-                index.set(try await TextRecognizer.recognize(fileAt: url, codec: codec)?.string ?? "", for: file)
+                index.set(try await TextRecognizer.recognize(fileAt: url)?.string ?? "", for: file)
             } catch {
                 try Task.checkCancellation()
                 log.error("Couldn't read the text in \(url.lastPathComponent): \(error.localizedDescription)")

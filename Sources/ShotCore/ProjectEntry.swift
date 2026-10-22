@@ -104,19 +104,17 @@ public struct ProjectEntry: Codable, Equatable, Sendable {
         stamped ? sighting.stampedID == id : file.matches(sighting.file)
     }
 
-    /// Writes a project, its placed images as PNG through `codec`.
-    public static func encoder(codec: any PNGCoding) -> JSONEncoder {
+    /// Writes a project, its placed images as PNG.
+    public static func encoder() -> JSONEncoder {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         encoder.dateEncodingStrategy = .iso8601
-        encoder.userInfo[.pngCodec] = codec
         return encoder
     }
 
-    public static func decoder(codec: any PNGCoding) -> JSONDecoder {
+    public static func decoder() -> JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        decoder.userInfo[.pngCodec] = codec
         return decoder
     }
 }

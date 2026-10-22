@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import Synchronization
 
@@ -15,7 +16,7 @@ final class RenderCache: Sendable {
         case shadow(ShadowCaster, color: RGBA, unit: CGFloat)
     }
 
-    typealias Value = (image: PlatformImage, frame: CGRect)
+    typealias Value = (image: CGImage, frame: CGRect)
 
     private let entries = Mutex<[(key: Key, value: Value, used: Bool)]>([])
 
@@ -57,7 +58,7 @@ final class RenderCache: Sendable {
 /// as they look by then. It reaches `outset` past `rect`, so the filter's edges sample what's really there. Two are
 /// equal when they'd draw the same image, which tells without drawing it.
 struct Backdrop: Equatable, Sendable {
-    let base: PlatformImage
+    let base: CGImage
     /// The annotations under it that can change what's drawn in `area`, back to front.
     let below: [Annotation]
     /// How the screenshot itself is drawn.
@@ -65,34 +66,34 @@ struct Backdrop: Equatable, Sendable {
     /// Where the drawn image goes; `.zero` with nothing under it there and a plain screenshot, when it's the screenshot itself.
     let area: CGRect
 
-    init(_ base: PlatformImage, below: ArraySlice<Annotation>, around rect: CGRect, outset: CGFloat, look: CaptureLook = CaptureLook(), shaper: any TextShaper) {
+    init(_ base: CGImage, below: ArraySlice<Annotation>, around rect: CGRect, outset: CGFloat, look: CaptureLook = CaptureLook()) {
         let area = rect.insetBy(dx: -outset, dy: -outset).integral
         self.base = base
-        self.below = Self.annotations(below.filter { !$0.isHidden }, reaching: area, base: base, shaper: shaper)
+        self.below = Self.annotations(below.filter { !$0.isHidden }, reaching: area, base: base)
         self.look = look
         self.area = self.below.isEmpty && look.isPlain ? .zero : area
     }
 
     /// Those of `annotations` that can change what's drawn in `area`: working down from the top, each one drawn in the
     /// region that matters so far, which grows by how far the ones that read what's under them read.
-    private static func annotations(_ annotations: [Annotation], reaching area: CGRect, base: PlatformImage, shaper: any TextShaper) -> [Annotation] {
+    private static func annotations(_ annotations: [Annotation], reaching area: CGRect, base: CGImage) -> [Annotation] {
         var region = area
         var picked: [Annotation] = []
-        for annotation in annotations.reversed() where annotation.drawnArea(shaper: shaper).intersects(region) {
+        for annotation in annotations.reversed() where annotation.drawnArea().intersects(region) {
             picked.append(annotation)
             if let reach = annotation.backdropReach(base: base) {
-                region = region.union(annotation.drawnArea(shaper: shaper).intersection(region).insetBy(dx: -reach, dy: -reach))
+                region = region.union(annotation.drawnArea().intersection(region).insetBy(dx: -reach, dy: -reach))
             }
         }
         return picked.reversed()
     }
 
-    /// The image, drawn on a new `canvasType` canvas, and where its top-left pixel sits.
-    func draw(canvasType: any Canvas.Type) -> (image: PlatformImage, origin: CGPoint) {
-        guard area != .zero, let ctx = canvasType.init(width: Int(area.width), height: Int(area.height), format: .matching(base)) else {
+    /// The image, drawn in a new bitmap context, and where its top-left pixel sits.
+    func draw() -> (image: CGImage, origin: CGPoint) {
+        guard area != .zero, let ctx = CGContext.bitmap(width: Int(area.width), height: Int(area.height), format: .matching(base)) else {
             return (base, .zero)
         }
-        ctx.setInterpolation(.high)
+        ctx.interpolationQuality = .high
         var doc = EditorDocument(base: base, annotations: below)
         doc.captureCornerRadius = look.cornerRadius
         doc.captureStyle = look.style
@@ -122,7 +123,7 @@ struct CaptureLook: Equatable, Sendable {
 /// An image whose edge colour is sampled or whose outline is grown, the same while it's the same image, so comparing
 /// never reads the pixels.
 struct SampledImage: Equatable, Sendable {
-    let image: PlatformImage
+    let image: CGImage
 
     static func == (a: Self, b: Self) -> Bool {
         a.image === b.image

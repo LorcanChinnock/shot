@@ -213,7 +213,7 @@ func aHiddenLayerIsLeftOutOfTheEffectOverIt(_ name: String) throws {
     let context = CIContext()
     func frame(_ annotations: [Annotation]) throws -> CGImage {
         let white = CIImage(color: .white).cropped(to: canvas)
-        let image = AnnotationFrame.apply(annotations.map { AnnotationFrame.Item(annotation: $0) }, to: white, canvas: canvas, context: context, canvasType: CGCanvas.self)
+        let image = AnnotationFrame.apply(annotations.map { AnnotationFrame.Item(annotation: $0) }, to: white, canvas: canvas, context: context)
         return try #require(context.createCGImage(image, from: canvas, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!))
     }
     let plain = try frame([square()])

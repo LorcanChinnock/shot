@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 
 public enum VideoTrimmer {
@@ -15,24 +16,23 @@ public enum VideoTrimmer {
         }
     }
 
-    /// Writes `range` of `input`, less `cuts`, to `output`, replacing `output`, through `assembler`, in `fileType`, a
-    /// uniform type identifier, or else the input's own. `speed` 2 plays it in half the time with every frame kept;
+    /// Writes `range` of `input`, less `cuts`, to `output`, replacing `output`, in `fileType`, or else the input's own. `speed` 2 plays it in half the time with every frame kept;
     /// `muted` leaves the audio out. Copies the video samples as they are when it can; returns false when it had to
     /// re-encode.
     @discardableResult
-    public static func trim(_ input: URL, range: TrimRange, cuts: CutList = CutList(), speed: Double = 1, muted: Bool = false, to output: URL, as fileType: String? = nil, assembler: any VideoAssembler) async throws -> Bool {
+    public static func trim(_ input: URL, range: TrimRange, cuts: CutList = CutList(), speed: Double = 1, muted: Bool = false, to output: URL, as fileType: AVFileType? = nil) async throws -> Bool {
         let kept = cuts.kept(in: range)
         guard !kept.isEmpty else {
             throw TrimError.nothingLeft
         }
-        return try await assembler.trim(input, kept: kept, speed: speed, muted: muted, to: output, as: fileType)
+        return try await AVVideoAssembler.trim(input, kept: kept, speed: speed, muted: muted, to: output, as: fileType)
     }
 
-    /// Roughly how many bytes `trim` writes with the same arguments, from the tracks' average bit rates as `reader` reads them.
-    public static func estimatedSize(of input: URL, range: TrimRange, cuts: CutList = CutList(), speed: Double = 1, muted: Bool = false, reader: any VideoReader) async throws -> Int {
-        let rates = try await reader.bitRates(of: input)
+    /// Roughly how many bytes `trim` writes with the same arguments, from the tracks' average bit rates.
+    public static func estimatedSize(of input: URL, range: TrimRange, cuts: CutList = CutList(), speed: Double = 1, muted: Bool = false) async throws -> Int {
+        let rates = try await AVVideoReader.bitRates(of: input)
         let kept = cuts.kept(in: range)
-        let videoLength = try await reader.syncTimes(atOrBefore: kept.map(\.start), in: input).map { copiedLength(of: kept, syncTimes: $0) }
+        let videoLength = try await AVVideoReader.syncTimes(atOrBefore: kept.map(\.start), in: input).map { copiedLength(of: kept, syncTimes: $0) }
         return estimatedBytes(videoBitRate: rates.video, audioBitRate: rates.audio, videoLength: videoLength, length: cuts.keptLength(in: range), speed: speed, muted: muted)
     }
 
