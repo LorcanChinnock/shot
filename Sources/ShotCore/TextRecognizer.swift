@@ -5,6 +5,29 @@ import os
 
 private let log = Logger.shot("text")
 
+/// Vision blocks the thread a read runs on while it waits for work of its own, so reads at once can take every thread
+/// Swift's concurrency has on a Mac with few cores, and never finish: CI's 3-core virtual machine hung that way.
+private let reads = Turns()
+
+private actor Turns {
+    private var busy = false
+    private var waiting: [CheckedContinuation<Void, Never>] = []
+
+    func oneAtATime<T: Sendable>(_ work: @Sendable () async throws -> T) async rethrows -> T {
+        while busy {
+            await withCheckedContinuation { waiting.append($0) }
+        }
+        busy = true
+        defer {
+            busy = false
+            if !waiting.isEmpty {
+                waiting.removeFirst().resume()
+            }
+        }
+        return try await work()
+    }
+}
+
 /// Reads the text in an image with Vision, on the device: nothing leaves the Mac. Boxes come back in the image's
 /// pixels with a top-left origin, rounded out to whole pixels, so they line up with the marks in a capture's record
 /// and hiding one covers all of its text.
@@ -28,9 +51,11 @@ public enum TextRecognizer {
 
     /// The text in `image`, read at `level` alone.
     static func recognize(_ image: CGImage, level: RecognizeTextRequest.RecognitionLevel) async throws -> CaptureText {
-        var request = RecognizeTextRequest()
-        request.recognitionLevel = level
-        let observations = try await request.perform(on: image)
+        let observations = try await reads.oneAtATime {
+            var request = RecognizeTextRequest()
+            request.recognitionLevel = level
+            return try await request.perform(on: image)
+        }
         let size = CGSize(width: image.width, height: image.height)
         let bounds = CGRect(origin: .zero, size: size)
         func pixels(_ rect: NormalizedRect) -> CGRect {
