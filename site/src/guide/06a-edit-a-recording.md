@@ -33,6 +33,7 @@ Drag the yellow handles at either end of the main track. What you trim off stays
 Most recordings start with a few seconds of reaching for the mouse and end with a few of reaching for Stop. Choose **Edit › Trim Idle Time** and Shot moves both handles to where things start and stop changing on screen, with a little time to spare either side. Anything you say stays in, even over a still screen.
 
 - It's one step, so <kbd>⌘Z</kbd> puts the handles back.
+- It only moves the handles in, so anything you've already trimmed off stays off.
 - It compares frames on your Mac. Nothing is uploaded, and a pointer moving over a still screen counts as idle.
 - It works while your edit is only trims and cuts of one recording.
 

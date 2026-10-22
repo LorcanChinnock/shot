@@ -39,6 +39,16 @@ public enum IdleTrim {
         return TrimRange(start: from >= shortestSaving ? from : 0, end: duration - to >= shortestSaving ? to : duration, duration: duration)
     }
 
+    /// `found` kept within `current`, so the handles only ever move in and never bring back what the user trimmed off;
+    /// `nil` when that leaves nothing to trim.
+    public static func tightening(_ current: TrimRange, to found: TrimRange) -> TrimRange? {
+        let start = max(current.start, found.start), end = min(current.end, found.end)
+        guard end - start >= TrimRange.minimumLength, start > current.start || end < current.end else {
+            return nil
+        }
+        return TrimRange(start: start, end: end, duration: current.end)
+    }
+
     /// From the start of the first stretch of speech to the end of the last, in seconds; `nil` when there's none.
     static func speech(in peaks: [WaveformPeak]) -> ClosedRange<Double>? {
         let step = 1 / Double(Waveform.peaksPerSecond)

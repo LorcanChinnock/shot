@@ -93,3 +93,14 @@ func bothHandlesLandWhereverTheTrimWas(_ was: (Double, Double), _ found: (Double
     #expect(abs(range.start - found.0) < 0.01 && abs(range.end - found.1) < 0.01)
     #expect(abs(moved.duration - (found.1 - found.0)) < 0.01)
 }
+
+@Test func theHandlesOnlyEverMoveIn() throws {
+    let current = TrimRange(start: 3, end: 5, duration: 10)
+    // The action spans more than what's kept: nothing to trim, and nothing comes back.
+    #expect(IdleTrim.tightening(current, to: TrimRange(start: 1, end: 9, duration: 10)) == nil)
+    // Idle time at the start of what's kept is trimmed; the end stays where the user put it.
+    let tighter = try #require(IdleTrim.tightening(current, to: TrimRange(start: 3.6, end: 9, duration: 10)))
+    #expect(tighter.start == 3.6 && tighter.end == 5)
+    // Action wholly outside what's kept leaves too little.
+    #expect(IdleTrim.tightening(current, to: TrimRange(start: 6, end: 9, duration: 10)) == nil)
+}

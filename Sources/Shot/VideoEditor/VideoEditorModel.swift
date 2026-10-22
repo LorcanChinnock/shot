@@ -570,11 +570,12 @@ final class VideoEditorModel {
             Toast.show("Nothing happens in this recording to keep")
             return
         }
-        guard found != range else {
+        // Only ever inward: what the user trimmed off stays off.
+        guard let tighter = IdleTrim.tightening(range, to: found) else {
             Toast.show("No idle time to trim")
             return
         }
-        guard let trimmed = project.trimmingMain(to: found) else {
+        guard let trimmed = project.trimmingMain(to: tighter) else {
             Toast.error("Can't trim the video there")
             return
         }
