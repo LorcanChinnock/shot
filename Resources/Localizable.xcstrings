@@ -2627,6 +2627,9 @@
         }
       }
     },
+    "Adds Send to Agent to the Quick Access, editor and gallery menus. It opens your coding agent in a terminal with the screenshot and a summary of what you marked, as a task." : {
+
+    },
     "Adjust before recording" : {
       "localizations" : {
         "de" : {
@@ -2733,6 +2736,9 @@
           }
         }
       }
+    },
+    "Agent" : {
+
     },
     "Agents" : {
       "localizations" : {
@@ -3375,6 +3381,9 @@
           }
         }
       }
+    },
+    "Any command that runs an agent in a terminal." : {
+
     },
     "Any other app" : {
 
@@ -6908,6 +6917,9 @@
         }
       }
     },
+    "Command" : {
+
+    },
     "Command line" : {
       "localizations" : {
         "de" : {
@@ -8752,7 +8764,16 @@
         }
       }
     },
+    "Couldn't find %@. Choose another terminal in Settings › Agents." : {
+
+    },
     "Couldn't find the %@ command. Copy the command and run it in Terminal instead." : {
+
+    },
+    "Couldn't find the %@ command. Install it, or choose another agent in Settings › Agents." : {
+
+    },
+    "Couldn't find the %@ command. Install it, then come back here." : {
 
     },
     "Couldn't finish writing the GIF" : {
@@ -9064,6 +9085,16 @@
     },
     "Couldn't open %@. Copy the setup and add it there instead." : {
 
+    },
+    "Couldn't open %@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Couldn't open %1$@: %2$@"
+          }
+        }
+      }
     },
     "Couldn't paste: %@" : {
       "localizations" : {
@@ -10029,6 +10060,9 @@
       }
     },
     "Cursor" : {
+
+    },
+    "Custom" : {
 
     },
     "Custom background colour" : {
@@ -18004,6 +18038,9 @@
         }
       }
     },
+    "Looking for %@…" : {
+
+    },
     "Looks for a new version once, even when automatic checks are off." : {
       "localizations" : {
         "de" : {
@@ -25102,6 +25139,9 @@
         }
       }
     },
+    "Runs %@." : {
+
+    },
     "SCALE" : {
       "localizations" : {
         "de" : {
@@ -27084,7 +27124,25 @@
         }
       }
     },
+    "Send to Agent" : {
+
+    },
+    "Send to Agent sends screenshots. Couldn't read %@ as an image." : {
+
+    },
+    "Send to Claude Code" : {
+
+    },
+    "Send to Codex" : {
+
+    },
+    "Send to Cursor" : {
+
+    },
     "Sent to %@" : {
+
+    },
+    "Set the command for Send to Agent first." : {
 
     },
     "Settings reset" : {
@@ -27608,6 +27666,9 @@
       }
     },
     "Shot comes with no warranty. It updates itself with Sparkle, under the MIT license." : {
+
+    },
+    "Shot fills in {path}, {dir} and {prompt}, and adds the prompt at the end if you leave it out." : {
 
     },
     "Shot is free, with no ads or account. Sponsoring keeps it that way." : {
@@ -30785,6 +30846,9 @@
     "Takes the crop off, so the whole image is kept." : {
 
     },
+    "Terminal" : {
+
+    },
     "Test" : {
       "localizations" : {
         "de" : {
@@ -31102,6 +31166,9 @@
           }
         }
       }
+    },
+    "The agent starts in %@, and works on what's in it." : {
+
     },
     "The area is too small for the camera bubble" : {
       "localizations" : {
@@ -32252,6 +32319,9 @@
           }
         }
       }
+    },
+    "Turn on Send to Agent in Settings › Agents first." : {
+
     },
     "Turn on Shot under Screen & System Audio Recording." : {
       "localizations" : {
@@ -33981,6 +34051,9 @@
         }
       }
     },
+    "Working folder" : {
+
+    },
     "Write the edit as a new video next to the original and copy it (⌘S)" : {
       "localizations" : {
         "de" : {
@@ -35393,6 +35466,9 @@
           }
         }
       }
+    },
+    "my-agent {prompt}" : {
+
     },
     "the sound" : {
       "localizations" : {

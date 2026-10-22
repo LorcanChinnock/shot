@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let state = AppState()
     lazy var coordinator = CaptureCoordinator(state: state)
     private var defaultsObserver: NSObjectProtocol?
+    private let sendToAgentItem = NSMenuItem(title: "", action: #selector(EditorWindowController.sendToAgent(_:)), keyEquivalent: "")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // First, before anything below saves a setting and makes a new user look like an earlier one.
@@ -148,6 +149,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             coordinator.captureAfterCountdown(seconds: seconds)
         case let .edit(route):
             coordinator.edit(route)
+        case let .sendToAgent(url):
+            Task { await SendToAgent.send(url) }
         case let .action(action):
             coordinator.perform(action)
         }
@@ -177,6 +180,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let file = NSMenu(title: String(localized: "File"))
         file.addItem(withTitle: String(localized: "Close Window"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        // The image editor's; shown only once it's turned on in Settings › Agents.
+        sendToAgentItem.isHidden = true
+        file.addItem(sendToAgentItem)
+        file.delegate = self
         let fileItem = NSMenuItem(title: String(localized: "File"), action: nil, keyEquivalent: "")
         fileItem.submenu = file
 
@@ -207,5 +214,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showSettings() {
         MainWindowController.showSettings()
+    }
+}
+
+extension AppDelegate: NSMenuDelegate {
+    /// Names the agent Send to Agent opens, and hides it while it's off.
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        sendToAgentItem.isHidden = !SendToAgent.isShown
+        sendToAgentItem.title = SendToAgent.title
     }
 }

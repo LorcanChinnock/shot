@@ -614,6 +614,7 @@ private struct AgentSettings: View {
                 isOn: $capture, color: color, divider: false
             )
         }
+        SendToAgentCard(color: color)
         SettingsCard(title: "Command line", symbol: "apple.terminal") {
             CardNote(text: "For agents and scripts that run in a terminal. The MCP server works without it.")
             CommandLinkRow(cli: Self.server)
@@ -681,6 +682,100 @@ private struct AgentSettings: View {
         }.value
         agents = found
         self.statuses = statuses
+    }
+}
+
+/// Send to Agent: which coding agent a capture opens in, in which terminal, and where it starts.
+private struct SendToAgentCard: View {
+    let color: Color
+    @Setting(PreferenceKey.sendToAgent) private var isOn: Bool
+    @Setting(PreferenceKey.sendToAgentPreset) private var preset: AgentPreset
+    @Setting(PreferenceKey.sendToAgentTerminal) private var terminal: AgentTerminal
+    @Setting(PreferenceKey.sendToAgentFolder) private var folder: String
+    @Setting(PreferenceKey.sendToAgentCommand) private var command: String
+    @Setting(PreferenceKey.sendToAgentTemplate) private var template: String
+    @State private var looking = false
+
+    var body: some View {
+        SettingsCard(title: "Send to Agent", symbol: "paperplane.fill") {
+            ToggleRow(
+                title: "Send to Agent",
+                subtitle: "Adds Send to Agent to the Quick Access, editor and gallery menus. It opens your coding agent in a terminal with the screenshot and a summary of what you marked, as a task.",
+                isOn: $isOn, color: color, divider: isOn
+            )
+            if isOn {
+                SettingRow(title: String(localized: "Agent"), subtitle: agentSubtitle) {
+                    BrutalSegmented(selection: $preset, options: AgentPreset.allCases.map { ($0, Self.name(of: $0)) }, color: color)
+                }
+                if preset == .custom {
+                    SettingRow(title: "Command", subtitle: "Shot fills in {path}, {dir} and {prompt}, and adds the prompt at the end if you leave it out.") {
+                        TextField("my-agent {prompt}", text: $template)
+                            .textFieldStyle(.plain)
+                            .font(Brutal.mono)
+                            .padding(.horizontal, 10)
+                            .frame(width: 230, height: 30)
+                            .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
+                    }
+                }
+                SettingRow(title: "Terminal") {
+                    BrutalSegmented(selection: $terminal, options: terminals.map { ($0, $0.name) }, color: color)
+                }
+                SettingRow(title: String(localized: "Working folder"), subtitle: String(localized: "The agent starts in \((folder as NSString).abbreviatingWithTildeInPath), and works on what's in it."), divider: false) {
+                    Button("Choose…", action: chooseFolder)
+                        .buttonStyle(BrutalButtonStyle(color: color, compact: true))
+                }
+            }
+        }
+        .task(id: isOn ? preset : nil) { await locate() }
+    }
+
+    private var agentSubtitle: String {
+        guard let name = preset.command else {
+            return String(localized: "Any command that runs an agent in a terminal.")
+        }
+        if looking {
+            return String(localized: "Looking for \(name)…")
+        }
+        return command.hasPrefix("/")
+            ? String(localized: "Runs \((command as NSString).abbreviatingWithTildeInPath).")
+            : String(localized: "Couldn't find the \(name) command. Install it, then come back here.")
+    }
+
+    /// The terminals installed, and the chosen one even when it isn't.
+    private var terminals: [AgentTerminal] {
+        AgentTerminal.allCases.filter { $0 == terminal || NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0.bundleID) != nil }
+    }
+
+    /// Product names, which stay the same in every language.
+    private static func name(of preset: AgentPreset) -> String {
+        switch preset {
+        case .claudeCode: "Claude Code"
+        case .codex: "Codex"
+        case .cursor: "Cursor"
+        case .custom: String(localized: "Custom")
+        }
+    }
+
+    /// Finds the chosen agent's command through the login shell, which can take a moment, off the main thread.
+    private func locate() async {
+        guard isOn, let name = preset.command else {
+            return
+        }
+        looking = true
+        let found = await Task.detached { AgentLaunch.locate(name) }.value
+        looking = false
+        command = found ?? ""
+    }
+
+    private func chooseFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.directoryURL = URL(fileURLWithPath: folder)
+        if panel.runModal() == .OK, let url = panel.url {
+            folder = url.path
+        }
     }
 }
 

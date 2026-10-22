@@ -19,7 +19,7 @@ Click Shot's menu bar icon and choose **Settings…**, or press <kbd>⌘,</kbd> 
 | Capture | What happens after a capture (save, copy, Quick Access, or the editor), the magnifier, the crosshair, the cursor, and window shadows |
 | Quick Access | The screen corner and how long cards stay |
 | Recording | Adjust before recording, the countdown, frame rate, cursor, clicks, region outline, copying to the clipboard, the microphone and its input (with a **Test**), system audio, and the camera bubble's camera (with a **Preview**) and size. It also sums up the GIF settings the video editor last used. |
-| Agents | [Handing captures to AI agents](#hand-captures-to-agents): a record inside each capture of where it came from and what you marked, [letting agents capture and record a window](#let-an-agent-capture-and-record), and the setup commands for the MCP server |
+| Agents | [Handing captures to AI agents](#hand-captures-to-agents): a record inside each capture of where it came from and what you marked, [letting agents capture and record a window](#let-an-agent-capture-and-record), [Send to Agent](#send-a-capture-to-your-coding-agent), and the setup commands for the MCP server |
 | Shortcuts | The macOS screenshot keys and every global shortcut |
 | About | The version, updates, permissions, the save folder, links to the code and its licence, this guide, the acknowledgements, to report a bug and to sponsor Shot, and resetting all settings |
 
