@@ -1,7 +1,7 @@
 import CoreGraphics
 import Foundation
-// Images reach the on-device model from the macOS 27 SDK (FoundationModels 2.0) on. Built with an older SDK, as CI's
-// macos-26 runners do, alt text is left out and never shows.
+// Images reach the on-device model from the macOS 27 SDK (FoundationModels 2.0) on. Built with an older SDK, alt text
+// is left out and never shows; CI's scripts/check-sdk.sh fails such a build.
 #if canImport(FoundationModels, _version: 2.0)
 import FoundationModels
 #endif

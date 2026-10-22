@@ -102,7 +102,7 @@ Concurrency: UI and model types are `@MainActor`. Heavy work runs in `Task.detac
 ## CI
 
 The repository is public, so GitHub's runners are free, but the free plan runs only 5 macOS jobs at once, so macOS runs can queue (`.github/workflows/ci.yml`):
-- Every PR runs one required check, `macos`: it runs `scripts/lint.sh`, builds the app, checks the strings catalog, compiles for Intel, and runs the tests.
+- Every PR runs one required check, `macos`, on the `xcode-27` image: it runs `scripts/lint.sh`, builds the app, checks it was built with the macOS 27 SDK (`scripts/check-sdk.sh`, since Copy Alt Text compiles in only with it), checks the strings catalog, compiles for Intel, and runs the tests. `release.yml` builds on the same image and runs the same SDK check on the universal app.
 - On release-please's PR, `macos` also runs `PerfTests`: that's the release gate. Every push to that PR runs it again. release-please opens the PR as the repository's GitHub App (`release.yml`), so its runs start without the approval GitHub asks for on `github-actions[bot]` PRs.
 - The repository has auto-merge turned off: an admin merges the release PR by hand once the gate has passed. If the gate fails, fix it in a normal PR. release-please updates the release PR only for commits that change the changelog, so after a `test:`, `ci:` or `docs:` fix, run `gh pr update-branch <release PR>` to gate it again.
 - `release.yml` runs `make test` on the tagged commit before it signs anything, because a `docs:`, `test:` or `ci:` commit merged after the gate passed can change what's released.
