@@ -84,8 +84,8 @@ private func matches(_ a: Bitmap, _ b: Bitmap, within tolerance: Int, differing 
 }
 
 private func dims(of doc: EditorDocument, scale: CGFloat) throws -> (path: SpotlightDim, mask: SpotlightDim) {
-    let path = try #require(doc.spotlightDimPath(shaper: CoreTextShaper()))
-    let (mask, frame) = try #require(doc.spotlightDimMask(shaper: CoreTextShaper(), canvasType: CGCanvas.self, scale: scale))
+    let path = try #require(doc.spotlightDimPath)
+    let (mask, frame) = try #require(doc.spotlightDimMask(canvasType: CGCanvas.self, scale: scale))
     return (.path(path), .mask(mask, frame: frame))
 }
 
@@ -123,6 +123,6 @@ func theMaskedDimClipsToTheSamePixelsAsThePath(scale: CGFloat) throws {
 
 @Test func thereIsNoMaskWithoutASpotlight() throws {
     let doc = EditorDocument(base: try gradient(), annotations: [spotlight(CGRect(x: 50, y: 10, width: 0, height: 50))])
-    #expect(doc.spotlightDimMask(shaper: CoreTextShaper(), canvasType: CGCanvas.self, scale: 1) == nil)
+    #expect(doc.spotlightDimMask(canvasType: CGCanvas.self, scale: 1) == nil)
 }
 

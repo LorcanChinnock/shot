@@ -288,7 +288,7 @@ public enum ShotCommands {
             }
         }
         document.hasWindowShadow = ImageCodec.hasWindowShadow(ofFileAt: original)
-        try document.apply(edit, drawn: drawn, placed: placed, scale: scale, name: input.lastPathComponent, cropField: cropField, shaper: canvasType.shaper)
+        try document.apply(edit, drawn: drawn, placed: placed, scale: scale, name: input.lastPathComponent, cropField: cropField)
         if format == .jpeg {
             // JPEG has no alpha, as the editor's background picker knows.
             if document.background == nil {
@@ -301,7 +301,7 @@ public enum ShotCommands {
         let projectID = projects == nil ? nil : ProjectKey.newID()
         let rendered: VersionWriter.RenderedImage
         do throws(VersionWriter.Failure) {
-            let record = VersionWriter.record(of: document, drawnOn: original, savedAs: format, scale: scale, atOneX: oneX, shaper: canvasType.shaper)
+            let record = VersionWriter.record(of: document, drawnOn: original, savedAs: format, scale: scale, atOneX: oneX)
             rendered = try VersionWriter.render(document, scale: scale, as: format, record: record, projectID: projectID, atOneX: oneX, canvasType: canvasType)
         } catch .draw {
             throw .internal("couldn't draw the image")
@@ -395,7 +395,7 @@ public enum ShotCommands {
         // the file's pixels.
         if let projects, let reopened = VersionWriter.project(of: input, in: projects),
            abs(reopened.project.duration - media.duration) < 0.05,
-           let framed = reopened.project.frameCrop == nil ? reopened.project : reopened.project.reframed(to: reopened.project.outputRect, shaper: canvasType.shaper),
+           let framed = reopened.project.frameCrop == nil ? reopened.project : reopened.project.reframed(to: reopened.project.outputRect),
            framed.canvasSize == size {
             base = framed
             original = reopened.original
@@ -411,7 +411,7 @@ public enum ShotCommands {
             }
             appended.append(clip)
         }
-        let project = try base.applying(edit, appended: appended, shaper: canvasType.shaper)
+        let project = try base.applying(edit, appended: appended)
 
         let own = input.pathExtension.lowercased()
         let asked = edit.format?.rawValue
@@ -437,7 +437,7 @@ public enum ShotCommands {
             let fileType: AVFileType = ext == "mov" ? .mov : .mp4
             var plans: [((scale: Double, kept: Project), VideoExportPlan)] = []
             for scale in edit.maxBytes == nil ? [1] : SizeFit.videoScales {
-                let made = try videoPlan(project, scale: scale, speed: speed, muted: edit.mute, fileType: fileType, shaper: canvasType.shaper)
+                let made = try videoPlan(project, scale: scale, speed: speed, muted: edit.mute, fileType: fileType)
                 plans.append(((scale, made.kept), made.plan))
             }
             let result = try await fit(plans, maxBytes: edit.maxBytes, to: temporary, canvasType: canvasType, describe: { "\(Int(($0.scale * 100).rounded()))% of its size" })
@@ -478,14 +478,14 @@ public enum ShotCommands {
     /// An MP4 or MOV of `project`, as the editor's Export writes one: cut from the recording when it's only kept or cut,
     /// else drawn, at `scale` of its canvas. A drawn video plays at its own speed, as Export's does. `kept` is the project
     /// the file keeps, with its sound, as Export keeps it whether or not the file has any.
-    static func videoPlan(_ project: Project, scale: Double, speed: Double, muted: Bool, fileType: AVFileType, shaper: any TextShaper) throws(ShotCommandError) -> (plan: VideoExportPlan, kept: Project) {
+    static func videoPlan(_ project: Project, scale: Double, speed: Double, muted: Bool, fileType: AVFileType) throws(ShotCommandError) -> (plan: VideoExportPlan, kept: Project) {
         if scale == 1, let trim = project.trimEdit {
             return (.trimmed(source: trim.source, range: trim.range, cuts: trim.cuts, speed: speed, muted: muted, fileType: fileType), project)
         }
         guard speed == 1 else {
             throw .data("speed changes only a GIF, or a video that's only kept or cut, as the video editor's export does; take speed out, or make a GIF")
         }
-        guard let sized = scale == 1 ? project : project.reframed(to: CGRect(origin: .zero, size: project.canvasSize), scale: CGFloat(scale), shaper: shaper) else {
+        guard let sized = scale == 1 ? project : project.reframed(to: CGRect(origin: .zero, size: project.canvasSize), scale: CGFloat(scale)) else {
             throw .data("maxBytes: the video has clips or marks that move or scale over time, so it can't be drawn smaller")
         }
         var drawn = sized

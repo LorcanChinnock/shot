@@ -19,11 +19,11 @@ extension CaptureMark {
     /// `annotations` as an agent reads them, in the pixels of a file saved from `canvas` (in image pixels) and scaled by
     /// `scale`, which is 0.5 for a Retina capture saved at half size. Hidden ones, and ones cropped out of the canvas,
     /// are left out, as they aren't in the file.
-    public static func mapping(_ annotations: [Annotation], canvas: CGRect, scale: CGFloat = 1, shaper: any TextShaper) -> [CaptureMark] {
-        annotations.filter { !$0.isHidden && $0.paintedBounds(shaper: shaper).intersects(canvas) }.map { CaptureMark($0, origin: canvas.origin, scale: scale, shaper: shaper) }
+    public static func mapping(_ annotations: [Annotation], canvas: CGRect, scale: CGFloat = 1) -> [CaptureMark] {
+        annotations.filter { !$0.isHidden && $0.paintedBounds.intersects(canvas) }.map { CaptureMark($0, origin: canvas.origin, scale: scale) }
     }
 
-    init(_ annotation: Annotation, origin: CGPoint, scale: CGFloat, shaper: any TextShaper) {
+    init(_ annotation: Annotation, origin: CGPoint, scale: CGFloat) {
         func value(_ v: CGFloat) -> Double { (Double(v * scale) * 10).rounded() / 10 }
         func point(_ p: CGPoint) -> [Double] { [value(p.x - origin.x), value(p.y - origin.y)] }
         func box(_ r: CGRect) -> [Double] { [value(r.minX - origin.x), value(r.minY - origin.y), value(r.width), value(r.height)] }
@@ -66,7 +66,7 @@ extension CaptureMark {
         case let .text(string, _, size):
             type = "text"
             text = string
-            rect = box(annotation.bounds(shaper: shaper))
+            rect = box(annotation.bounds)
             fontSize = value(size)
         case let .counter(value, middle):
             type = "counter"
@@ -75,14 +75,14 @@ extension CaptureMark {
         case let .note(string, _):
             type = "note"
             text = string
-            rect = box(annotation.bounds(shaper: shaper))
+            rect = box(annotation.bounds)
         case let .freehand(stroke):
             type = "pen"
-            rect = box(annotation.bounds(shaper: shaper))
+            rect = box(annotation.bounds)
             points = stroke.map(point)
         case let .marker(stroke):
             type = "marker"
-            rect = box(annotation.bounds(shaper: shaper))
+            rect = box(annotation.bounds)
             points = stroke.map(point)
         case let .image(_, area):
             type = "image"
@@ -173,7 +173,7 @@ extension CaptureMark {
     /// Whether every one of `annotations`, saved from `canvas` at 1:1, comes back from its mark as it is, so the saved
     /// version can reopen with them live. Placed images, spotlights, styled marks, aligned text and notes and hidden or cropped-out
     /// layers don't: a record doesn't hold all of them.
-    public static func rebuildExactly(_ annotations: [Annotation], canvas: CGRect, shaper: any TextShaper) -> Bool {
+    public static func rebuildExactly(_ annotations: [Annotation], canvas: CGRect) -> Bool {
         annotations.allSatisfy { annotation in
             switch annotation.kind {
             case .image, .spotlight:
@@ -181,12 +181,12 @@ extension CaptureMark {
             default:
                 break
             }
-            guard !annotation.isHidden, annotation.paintedBounds(shaper: shaper).intersects(canvas), annotation.style.isEmpty, annotation.alignment == .left,
+            guard !annotation.isHidden, annotation.paintedBounds.intersects(canvas), annotation.style.isEmpty, annotation.alignment == .left,
                   annotation.verticalAlignment == .top else {
                 return false
             }
-            let mark = CaptureMark(annotation, origin: canvas.origin, scale: 1, shaper: shaper)
-            return Annotation(mark: mark, origin: canvas.origin).map { CaptureMark($0, origin: canvas.origin, scale: 1, shaper: shaper) } == mark
+            let mark = CaptureMark(annotation, origin: canvas.origin, scale: 1)
+            return Annotation(mark: mark, origin: canvas.origin).map { CaptureMark($0, origin: canvas.origin, scale: 1) } == mark
         }
     }
 }

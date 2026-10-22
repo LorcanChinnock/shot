@@ -194,7 +194,7 @@ public enum TextAlign: String, CaseIterable, Codable, Sendable {
 
     /// How far right of the left edge of a box `width` wide `line` starts. Trailing spaces don't count,
     /// so a wrapped line lines up by its last word.
-    public func offset(of line: any ShapedLine, in width: CGFloat) -> CGFloat {
+    public func offset(of line: CoreTextLine, in width: CGFloat) -> CGFloat {
         let visible = line.width - line.trailingWhitespaceWidth
         return (width - visible) * fraction
     }

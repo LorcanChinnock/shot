@@ -272,7 +272,7 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
                 case let .picture(layer): request.sourceFrame(byTrackID: layer.trackID).map { .picture((layer, $0), layer.clip) }
                 }
             }
-            let layers = FrameLayers.layers(of: stack, at: time, hidden: hidden, drawn: drawn, clipStyles: clipStyles, shaper: instruction.canvasType.shaper)
+            let layers = FrameLayers.layers(of: stack, at: time, hidden: hidden, drawn: drawn, clipStyles: clipStyles)
             for layer in layers {
                 if cancelled() {
                     return

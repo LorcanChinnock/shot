@@ -93,7 +93,7 @@ public enum AnnotationRenderer {
             guard !area.isEmpty else {
                 return
             }
-            let backdrop = Backdrop(base, below: below, around: area, outset: 0, look: look, shaper: type(of: ctx).shaper)
+            let backdrop = Backdrop(base, below: below, around: area, outset: 0, look: look)
             let blurred = cache.value(for: .dimBlur(backdrop, radius: radius)) {
                 let source = backdrop.draw(canvasType: type(of: ctx))
                 // Its edges are kept sharp-cornered rather than fading out.
@@ -185,7 +185,7 @@ public enum AnnotationRenderer {
     static func draw(_ annotation: Annotation, base: CGImage, over below: ArraySlice<Annotation>, look: CaptureLook, in ctx: any Canvas) {
         if let shadow = annotation.style.shadow, let kind = annotation.styleKind, kind != .image {
             let color = shadow.color(background: look.background, object: annotation.color)
-            drawCachedShadow(shadow, color: color, of: annotation.bounds(shaper: type(of: ctx).shaper), area: annotation.paintedBounds(shaper: type(of: ctx).shaper), caster: .annotation(annotation), ctx: ctx) {
+            drawCachedShadow(shadow, color: color, of: annotation.bounds, area: annotation.paintedBounds, caster: .annotation(annotation), ctx: ctx) {
                 drawPlain(annotation, base: base, over: below, look: look, in: $0)
             }
         }
@@ -256,7 +256,7 @@ public enum AnnotationRenderer {
             break
         case let .pixelate(rect, _):
             let scale = redactionSize(annotation, base: base)
-            let backdrop = Backdrop(base, below: below, around: rect, outset: annotation.backdropReach(base: base) ?? 0, look: look, shaper: type(of: ctx).shaper)
+            let backdrop = Backdrop(base, below: below, around: rect, outset: annotation.backdropReach(base: base) ?? 0, look: look)
             let pixelated = cache.value(for: .pixelate(backdrop, rect: rect, scale: scale)) {
                 let source = backdrop.draw(canvasType: type(of: ctx))
                 return pixelate(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y), scale: scale, effects: type(of: ctx).effects).map { ($0, rect.integral) }
@@ -266,7 +266,7 @@ public enum AnnotationRenderer {
             }
         case let .blur(rect, _):
             let radius = redactionSize(annotation, base: base)
-            let backdrop = Backdrop(base, below: below, around: rect, outset: annotation.backdropReach(base: base) ?? 0, look: look, shaper: type(of: ctx).shaper)
+            let backdrop = Backdrop(base, below: below, around: rect, outset: annotation.backdropReach(base: base) ?? 0, look: look)
             let blurred = cache.value(for: .blur(backdrop, rect: rect, radius: radius)) {
                 let source = backdrop.draw(canvasType: type(of: ctx))
                 return blur(source.image, rect: rect.offsetBy(dx: -source.origin.x, dy: -source.origin.y), radius: radius, effects: type(of: ctx).effects).map { ($0, rect.integral) }
@@ -277,8 +277,8 @@ public enum AnnotationRenderer {
         case let .image(image, rect):
             drawImage(image.cropped(annotation.imageCrop), in: pixelAligned(rect), cornerRadius: annotation.imageCornerRadius, style: annotation.style, shadowBackground: look.background, ctx: ctx)
         case let .text(string, origin, fontSize):
-            let layout = TextLayout(string: string, fontSize: fontSize, color: annotation.color, shaper: type(of: ctx).shaper)
-            func drawLines(_ lines: [any ShapedLine], outlined: Bool = false) {
+            let layout = TextLayout(string: string, fontSize: fontSize, color: annotation.color)
+            func drawLines(_ lines: [CoreTextLine], outlined: Bool = false) {
                 for (index, line) in lines.enumerated() {
                     let x = origin.x + annotation.alignment.offset(of: line, in: layout.size.width)
                     ctx.draw(line, at: CGPoint(x: x, y: origin.y + layout.ascent + CGFloat(index) * layout.lineHeight), outlined: outlined)
@@ -289,14 +289,14 @@ public enum AnnotationRenderer {
                 ctx.saveState()
                 ctx.setLineWidth(outline.width * 2)
                 ctx.setStrokeColor(outline.paint)
-                drawLines(TextLayout(string: string, fontSize: fontSize, color: outline.paint, shaper: type(of: ctx).shaper).lines, outlined: true)
+                drawLines(TextLayout(string: string, fontSize: fontSize, color: outline.paint).lines, outlined: true)
                 ctx.restoreState()
             }
             drawLines(layout.lines)
         case let .counter(number, center):
             let radius = annotation.counterRadius
             ctx.fill(CanvasPath(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)))
-            let layout = TextLayout(string: "\(number)", fontSize: radius * 1.1, color: RGBA(1, 1, 1), shaper: type(of: ctx).shaper)
+            let layout = TextLayout(string: "\(number)", fontSize: radius * 1.1, color: RGBA(1, 1, 1))
             guard let line = layout.lines.first else {
                 return
             }
@@ -310,7 +310,7 @@ public enum AnnotationRenderer {
             ctx.setLineCap(.butt)
             ctx.stroke(Freehand.path(through: points))
         case .note:
-            guard let layout = annotation.noteLayout(shaper: type(of: ctx).shaper) else {
+            guard let layout = annotation.noteLayout else {
                 return
             }
             ctx.saveState()
@@ -550,7 +550,7 @@ enum SpotlightDim {
 
     /// `doc`'s dim, made for drawing on `ctx`; `nil` when there are no spotlights.
     init?(_ doc: EditorDocument, on ctx: any Canvas) {
-        guard let path = doc.spotlightDimPath(shaper: type(of: ctx).shaper) else {
+        guard let path = doc.spotlightDimPath else {
             return nil
         }
         self = .path(path)

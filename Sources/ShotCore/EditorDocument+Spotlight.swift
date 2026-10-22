@@ -5,14 +5,14 @@ extension EditorDocument {
     /// What the spotlights dim, in parts: the painted bounds of what's drawn under the lowest spotlight, the image as it's
     /// rounded, and the hard-edged spotlights, which cut out what they cover. `nil` when there are no spotlights. One with
     /// no area, such as a straight drag, cuts out nothing.
-    private func spotlightDimParts(shaper: any TextShaper) -> (below: [CGRect], image: CanvasPath, lit: [CanvasPath])? {
+    private func spotlightDimParts() -> (below: [CGRect], image: CanvasPath, lit: [CanvasPath])? {
         var lit: [CanvasPath] = []
         var hasSpotlight = false
         var isAboveDim = false
         var below: [CGRect] = []
         for annotation in annotations where !annotation.isHidden {
             guard case let .spotlight(rect, style) = annotation.kind else {
-                if !isAboveDim, case let painted = annotation.paintedBounds(shaper: shaper), !painted.isNull {
+                if !isAboveDim, case let painted = annotation.paintedBounds, !painted.isNull {
                     below.append(painted)
                 }
                 continue
@@ -36,8 +36,8 @@ extension EditorDocument {
     /// The part of the image, and of what's drawn under the lowest spotlight, that the spotlights dim: all of it
     /// outside every hard-edged spotlight, never the rest of the padding. `softSpotlights` fade it further.
     /// `nil` when there are no spotlights. One with no area, such as a straight drag, dims nothing.
-    public func spotlightDimPath(shaper: any TextShaper) -> CGPath? {
-        guard let parts = spotlightDimParts(shaper: shaper) else {
+    public var spotlightDimPath: CGPath? {
+        guard let parts = spotlightDimParts() else {
             return nil
         }
         let below = CGMutablePath()
@@ -53,8 +53,8 @@ extension EditorDocument {
     /// The area `spotlightDimPath` dims, for a canvas that can't add or subtract paths: white where it dims and black
     /// where it doesn't, drawn on a grey `canvasType` canvas at `scale` pixels to a unit. `frame` is the smallest rect on
     /// whole pixels holding all it dims, which the mask covers, its top row at the frame's min y. `nil` when it dims nothing.
-    func spotlightDimMask(shaper: any TextShaper, canvasType: any Canvas.Type, scale: CGFloat) -> (mask: CGImage, frame: CGRect)? {
-        guard let parts = spotlightDimParts(shaper: shaper) else {
+    func spotlightDimMask(canvasType: any Canvas.Type, scale: CGFloat) -> (mask: CGImage, frame: CGRect)? {
+        guard let parts = spotlightDimParts() else {
             return nil
         }
         let reach = parts.below.reduce(captureRect) { $0.union($1) }

@@ -44,7 +44,7 @@ public enum VersionWriter {
     /// itself be a version, and that file's source, so the version still says which app and window it showed. It's
     /// editable when reopening `original` with the marks gives `document` back. The size is filled in once rendered.
     /// `atOneX` is for a file scaled to one pixel per point, whose marks are scaled with it and which can't reopen live.
-    public static func record(of document: EditorDocument, drawnOn original: URL, savedAs format: ImageFormat, scale: CGFloat, atOneX: Bool = false, shaper: any TextShaper) -> CaptureRecord {
+    public static func record(of document: EditorDocument, drawnOn original: URL, savedAs format: ImageFormat, scale: CGFloat, atOneX: Bool = false) -> CaptureRecord {
         let canvas = document.canvasRect
         // The file is the canvas at 1:1, or scaled to 1×, so the marks need no other change than the canvas offset.
         return CaptureRecord(
@@ -52,9 +52,9 @@ public enum VersionWriter {
             source: ImageCodec.record(ofFileAt: original)?.source,
             canvas: [canvas.minX, canvas.minY, canvas.width, canvas.height].map { (Double($0) * 10).rounded() / 10 },
             crop: document.visibleCrop.map { [$0.minX, $0.minY, $0.width, $0.height].map { (Double($0) * 10).rounded() / 10 } },
-            editable: !atOneX && CaptureMark.rebuildExactly(document.annotations, canvas: canvas, shaper: shaper) && document.captureStyle.isEmpty && document.captureCornerRadius == 0
+            editable: !atOneX && CaptureMark.rebuildExactly(document.annotations, canvas: canvas) && document.captureStyle.isEmpty && document.captureCornerRadius == 0
                 && document.background == EditorDocument.defaultBackground(for: format),
-            annotations: CaptureMark.mapping(document.annotations, canvas: canvas, scale: atOneX ? 1 / scale : 1, shaper: shaper)
+            annotations: CaptureMark.mapping(document.annotations, canvas: canvas, scale: atOneX ? 1 / scale : 1)
         )
     }
 
@@ -86,7 +86,7 @@ public enum VersionWriter {
         projects: ProjectStore? = nil, origin: ProjectOrigin = ProjectOrigin(via: .app), canvasType: any Canvas.Type
     ) throws(Failure) -> SavedImage {
         let format = ImageFormat(fileExtension: original.pathExtension)
-        let record = recordForAgents ? record(of: document, drawnOn: original, savedAs: format, scale: scale, shaper: canvasType.shaper) : nil
+        let record = recordForAgents ? record(of: document, drawnOn: original, savedAs: format, scale: scale) : nil
         let projectID = projects == nil ? nil : ProjectKey.newID()
         let rendered = try render(document, scale: scale, as: format, record: record, projectID: projectID, canvasType: canvasType)
         let png: Data

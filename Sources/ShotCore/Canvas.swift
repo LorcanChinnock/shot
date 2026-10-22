@@ -12,8 +12,6 @@ public protocol Canvas: AnyObject, SendableMetatype {
     init?(width: Int, height: Int, format: CanvasFormat)
     /// The filters for the images this type of canvas makes and draws.
     static var effects: any ImageEffects { get }
-    /// The shaper whose lines this type of canvas draws.
-    static var shaper: any TextShaper { get }
 
     func saveState()
     func restoreState()
@@ -47,9 +45,9 @@ public protocol Canvas: AnyObject, SendableMetatype {
     /// Fills by the nonzero winding rule.
     func fill(_ path: CanvasPath)
     func stroke(_ path: CanvasPath)
-    /// Draws `line`, made by this type's `shaper`, upright in a top-left-origin canvas, its baseline starting at
+    /// Draws `line` upright in a top-left-origin canvas, its baseline starting at
     /// `position`. `outlined` strokes each glyph with the stroke colour and line width instead of filling it.
-    func draw(_ line: any ShapedLine, at position: CGPoint, outlined: Bool)
+    func draw(_ line: CoreTextLine, at position: CGPoint, outlined: Bool)
     /// What's drawn so far, as a `Bitmap` in sRGB; `nil` if it can't be read.
     func makeBitmap() -> Bitmap?
 

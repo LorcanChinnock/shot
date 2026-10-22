@@ -152,10 +152,6 @@ extension GIFExporter {
 }
 
 extension VersionWriter {
-    public static func record(of document: EditorDocument, drawnOn original: URL, savedAs format: ImageFormat, scale: CGFloat, atOneX: Bool = false) -> CaptureRecord {
-        record(of: document, drawnOn: original, savedAs: format, scale: scale, atOneX: atOneX, shaper: CoreTextShaper())
-    }
-
     public static func render(_ document: EditorDocument, scale: CGFloat, as format: ImageFormat, record: CaptureRecord?, projectID: String? = nil, atOneX: Bool = false) throws(Failure) -> RenderedImage {
         try render(document, scale: scale, as: format, record: record, projectID: projectID, atOneX: atOneX, canvasType: CGCanvas.self)
     }

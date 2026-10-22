@@ -38,16 +38,16 @@ enum FrameLayers {
 
     /// The layers of `stack` at timeline `time`. An annotation clip in `hidden` is being edited: it draws its replacement
     /// in `drawn` in its place, while that's showing. The rest of `drawn`, new ones, go on top. A picture in `clipStyles`
-    /// is drawn with that style in place of its own. `shaper` measures text an annotation's keyframes scale.
+    /// is drawn with that style in place of its own.
     static func layers<Picture>(
-        of stack: [Source<Picture>], at time: Double, hidden: Set<UUID>, drawn: [AnnotationClip], clipStyles: [UUID: ObjectStyle], shaper: any TextShaper
+        of stack: [Source<Picture>], at time: Double, hidden: Set<UUID>, drawn: [AnnotationClip], clipStyles: [UUID: ObjectStyle]
     ) -> [Layer<Picture>] {
         let replacements = Dictionary(drawn.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         var stacked: Set<UUID> = []
         var layers: [Layer<Picture>] = []
         var run: [AnnotationFrame.Item] = []
         func item(_ clip: AnnotationClip) -> AnnotationFrame.Item {
-            let state = clip.rendered(atTimeline: time, shaper: shaper)
+            let state = clip.rendered(atTimeline: time)
             return AnnotationFrame.Item(annotation: state.annotation, rotation: state.rotation, opacity: state.opacity)
         }
         func flush() {

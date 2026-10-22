@@ -1,104 +1,56 @@
+import CoreGraphics
+import CoreText
 import Foundation
 import Testing
 @testable import ShotCore
 
-/// A shaper with fixed glyph widths: a space is a quarter of the font size wide, anything else half, or 0.6 in bold.
-/// It breaks lines only at spaces, so a word wider than the line overflows it, as some libraries' word breaks do.
-private struct FakeShaper: TextShaper {
-    func metrics(of font: TextFont) -> TextMetrics {
-        TextMetrics(ascent: font.size * 0.8, descent: font.size * 0.2, leading: font.size * 0.05)
-    }
-
-    func line(_ string: String, font: TextFont, color: RGBA) -> any ShapedLine {
-        FakeLine(text: string, font: font, color: color)
-    }
-
-    func paragraph(_ string: String, font: TextFont, color: RGBA) -> any ShapedParagraph {
-        FakeParagraph(units: Array(string.utf16), font: font, color: color)
-    }
-}
-
-private struct FakeLine: ShapedLine {
-    let text: String
-    let font: TextFont
-    let color: RGBA
-
-    static func width(of unit: UInt16, in font: TextFont) -> CGFloat {
-        unit == 32 ? font.size / 4 : font.size * (font.bold ? 0.6 : 0.5)
-    }
-
-    var width: CGFloat { text.utf16.reduce(0) { $0 + Self.width(of: $1, in: font) } }
-    var trailingWhitespaceWidth: CGFloat { CGFloat(text.utf16.reversed().prefix { $0 == 32 }.count) * font.size / 4 }
-    var ascent: CGFloat { font.size * 0.8 }
-    var descent: CGFloat { font.size * 0.2 }
-}
-
-private struct FakeParagraph: ShapedParagraph {
-    let units: [UInt16]
-    let font: TextFont
-    let color: RGBA
-
-    var length: Int { units.count }
-
-    func lineBreak(from start: Int, width: CGFloat) -> Int {
-        var lastBreak: Int?, index = start
-        while index < units.count {
-            if units[index] == 32 {
-                index += 1
-                lastBreak = index
-                continue
-            }
-            let used = units[start...index].reduce(0) { $0 + FakeLine.width(of: $1, in: font) }
-            if used > width, let lastBreak {
-                return lastBreak - start
-            }
-            index += 1
-        }
-        return units.count - start
-    }
-
-    func clusterBreak(from start: Int, width: CGFloat) -> Int {
-        var used: CGFloat = 0, count = 0
-        for unit in units[start...] {
-            used += FakeLine.width(of: unit, in: font)
-            guard used <= width else {
-                break
-            }
-            count += 1
-        }
-        return count
-    }
-
-    func line(from start: Int, count: Int) -> any ShapedLine {
-        FakeLine(text: String(decoding: units[start..<start + count], as: UTF16.self), font: font, color: color)
-    }
-}
-
-private let shaper = FakeShaper()
 private let yellow = RGBA(1, 0.8, 0)
 
-private func texts(_ lines: [any ShapedLine]) -> [String] {
-    lines.compactMap { ($0 as? FakeLine)?.text }
+/// The text of each of `lines`, laid out from `string`: a line that starts its paragraph begins at 0.
+private func texts(_ lines: [CoreTextLine], of string: String) -> [String] {
+    var paragraphs = string.components(separatedBy: "\n").map { Array($0.utf16) }[...]
+    var paragraph: [UInt16] = []
+    return lines.map { line in
+        let range = CTLineGetStringRange(line.line)
+        if range.location == 0 {
+            paragraph = paragraphs.popFirst() ?? []
+        }
+        let end = min(paragraph.count, range.location + range.length)
+        return String(decoding: paragraph[min(range.location, end)..<end], as: UTF16.self)
+    }
+}
+
+/// The font and colour of `line`'s first glyph run.
+private func style(of line: CoreTextLine) throws -> (font: CTFont, color: CGColor) {
+    let runs = CTLineGetGlyphRuns(line.line) as? [CTRun] ?? []
+    let attributes = try #require(runs.first.map { CTRunGetAttributes($0) as NSDictionary })
+    let font = try #require(attributes[kCTFontAttributeName] as! CTFont?)
+    let color = try #require(attributes[kCTForegroundColorAttributeName] as! CGColor?)
+    return (font, color)
 }
 
 // MARK: Text
 
 @Test func textHasOneBoldLinePerParagraphSizedToTheWidest() throws {
-    let layout = TextLayout(string: "Hi there\nA", fontSize: 10, color: yellow, shaper: shaper)
-    #expect(texts(layout.lines) == ["Hi there", "A"])
-    let first = try #require(layout.lines.first as? FakeLine)
-    #expect(first.font == TextFont(size: 10, bold: true))
-    #expect(first.color == yellow)
-    // Seven letters at 6 and a space at 2.5.
-    #expect(layout.size == CGSize(width: 45, height: 22))
-    #expect(layout.ascent == 8)
-    #expect(layout.lineHeight == 11)
+    let layout = TextLayout(string: "Hi there\nA", fontSize: 10, color: yellow)
+    #expect(texts(layout.lines, of: "Hi there\nA") == ["Hi there", "A"])
+    let (font, color) = try style(of: try #require(layout.lines.first))
+    #expect(CTFontGetSize(font) == 10)
+    #expect(CTFontGetSymbolicTraits(font).contains(.traitBold))
+    #expect(color == yellow.cgColor)
+    let bold = TextFont(size: 10, bold: true)
+    let widest = max(CoreTextShaper.line("Hi there", font: bold, color: yellow).width, CoreTextShaper.line("A", font: bold, color: yellow).width)
+    let metrics = CoreTextShaper.metrics(of: bold)
+    #expect(layout.size == CGSize(width: widest.rounded(.up), height: metrics.lineHeight * 2))
+    #expect(layout.ascent == metrics.ascent)
+    #expect(layout.lineHeight == metrics.lineHeight)
 }
 
 @Test func emptyTextIsOneBlankLine() {
-    let layout = TextLayout(string: "", fontSize: 10, color: yellow, shaper: shaper)
-    #expect(texts(layout.lines) == [" "])
-    #expect(layout.size == CGSize(width: 3, height: 11))
+    let layout = TextLayout(string: "", fontSize: 10, color: yellow)
+    #expect(texts(layout.lines, of: " ") == [" "])
+    let bold = TextFont(size: 10, bold: true)
+    #expect(layout.size == CGSize(width: CoreTextShaper.line(" ", font: bold, color: yellow).width.rounded(.up), height: CoreTextShaper.metrics(of: bold).lineHeight))
 }
 
 @Test func aLineIsAsTallAsTheFontRoundedUpToAWholePoint() {
@@ -108,29 +60,56 @@ private func texts(_ lines: [any ShapedLine]) -> [String] {
 
 // MARK: Notes
 
-/// A note at font size 10: 6 of padding on each side, so a 72 wide note wraps at 60, twelve letters.
+/// A note at font size 10: 6 of padding on each side, so a 72 wide note wraps at 60.
 private func note(_ string: String, width: CGFloat = 72, height: CGFloat = 0) -> NoteLayout {
-    NoteLayout(string: string, rect: CGRect(x: 5, y: 7, width: width, height: height), fontSize: 10, color: yellow, shaper: shaper)
+    NoteLayout(string: string, rect: CGRect(x: 5, y: 7, width: width, height: height), fontSize: 10, color: yellow)
+}
+
+/// Every line fits the note's text width, not counting the spaces it ends with.
+private func expectEachLineFits(_ layout: NoteLayout) {
+    for line in layout.lines {
+        #expect(line.width - line.trailingWhitespaceWidth <= layout.textRect.width)
+    }
 }
 
 @Test func noteWrapsAtSpacesInRegularInk() throws {
-    let layout = note("one two three four")
-    #expect(texts(layout.lines) == ["one two three ", "four"])
-    let first = try #require(layout.lines.first as? FakeLine)
-    #expect(first.font == TextFont(size: 10))
-    #expect(first.color == yellow.noteFill.contrastingInk)
-    #expect(layout.frame == CGRect(x: 5, y: 7, width: 72, height: 11 * 2 + 12))
+    let string = "one two three four five six"
+    let layout = note(string)
+    let lines = texts(layout.lines, of: string)
+    #expect(lines.count > 1)
+    #expect(lines.joined() == string)
+    // Each line but the last ends at a space, so no word is split.
+    #expect(lines.dropLast().allSatisfy { $0.hasSuffix(" ") })
+    expectEachLineFits(layout)
+    let (font, color) = try style(of: try #require(layout.lines.first))
+    #expect(CTFontGetSize(font) == 10)
+    #expect(!CTFontGetSymbolicTraits(font).contains(.traitBold))
+    #expect(color == yellow.noteFill.contrastingInk.cgColor)
+    let lineHeight = CoreTextShaper.metrics(of: TextFont(size: 10)).lineHeight
+    #expect(layout.frame == CGRect(x: 5, y: 7, width: 72, height: lineHeight * CGFloat(lines.count) + 12))
 }
 
 @Test func noteBreaksAWordWiderThanItBetweenCharacters() {
-    #expect(texts(note("abcdefghijklmnopqrstuvwxyz").lines) == ["abcdefghijkl", "mnopqrstuvwx", "yz"])
-    #expect(texts(note("go abcdefghijklmnop").lines) == ["go ", "abcdefghijkl", "mnop"])
+    let alphabet = "abcdefghijklmnopqrstuvwxyz"
+    let long = note(alphabet)
+    let lines = texts(long.lines, of: alphabet)
+    #expect(lines.count > 1)
+    #expect(lines.joined() == alphabet)
+    #expect(!lines.contains(""))
+    expectEachLineFits(long)
+
+    let after = note("go abcdefghijklmnop")
+    let split = texts(after.lines, of: "go abcdefghijklmnop")
+    #expect(split.first == "go ")
+    #expect(split.count > 2)
+    #expect(split.dropFirst().joined() == "abcdefghijklmnop")
+    expectEachLineFits(after)
 }
 
 @Test func noteKeepsNewlinesAndAnEmptyNoteHasOneLine() {
-    #expect(texts(note("One\nTwo\n\nFour").lines) == ["One", "Two", "", "Four"])
+    #expect(texts(note("One\nTwo\n\nFour").lines, of: "One\nTwo\n\nFour") == ["One", "Two", "", "Four"])
     let empty = note("")
-    #expect(texts(empty.lines) == [""])
+    #expect(texts(empty.lines, of: "") == [""])
     #expect(empty.frame.height == empty.lineHeight + empty.padding * 2)
 }
 
@@ -142,7 +121,7 @@ private func note(_ string: String, width: CGFloat = 72, height: CGFloat = 0) ->
 
 @Test(arguments: [(VerticalTextAlign.top, 0.0), (.middle, 0.5), (.bottom, 1.0)])
 func noteTextSitsAtTheTopMiddleOrBottomOfATallNote(alignment: VerticalTextAlign, share: CGFloat) {
-    let layout = NoteLayout(string: "Hi", rect: CGRect(x: 5, y: 7, width: 72, height: 100), fontSize: 10, color: yellow, verticalAlignment: alignment, shaper: shaper)
+    let layout = NoteLayout(string: "Hi", rect: CGRect(x: 5, y: 7, width: 72, height: 100), fontSize: 10, color: yellow, verticalAlignment: alignment)
     let spare = layout.textRect.height - layout.lineHeight
     #expect(layout.alignedTextRect.minY == layout.textRect.minY + spare * share)
     #expect(layout.alignedTextRect.maxY == layout.textRect.maxY)
@@ -151,7 +130,7 @@ func noteTextSitsAtTheTopMiddleOrBottomOfATallNote(alignment: VerticalTextAlign,
 
 @Test(arguments: VerticalTextAlign.allCases)
 func noteTextThatFillsTheNoteDoesntMove(alignment: VerticalTextAlign) {
-    let layout = NoteLayout(string: "one two three four", rect: CGRect(x: 5, y: 7, width: 72, height: 0), fontSize: 10, color: yellow, verticalAlignment: alignment, shaper: shaper)
+    let layout = NoteLayout(string: "one two three four", rect: CGRect(x: 5, y: 7, width: 72, height: 0), fontSize: 10, color: yellow, verticalAlignment: alignment)
     #expect(layout.alignedTextRect == layout.textRect)
 }
 
