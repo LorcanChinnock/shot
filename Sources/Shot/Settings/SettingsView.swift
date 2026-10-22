@@ -763,6 +763,10 @@ private struct SendToAgentCard: View {
         }
         looking = true
         let found = await Task.detached { AgentLaunch.locate(name) }.value
+        // A lookup for a preset since changed would save the wrong agent's path.
+        guard !Task.isCancelled, preset.command == name else {
+            return
+        }
         looking = false
         command = found ?? ""
     }

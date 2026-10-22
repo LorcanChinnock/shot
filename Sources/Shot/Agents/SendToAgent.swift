@@ -41,7 +41,8 @@ enum SendToAgent {
             return
         }
         var command = prefs.sendToAgentCommand
-        if let name = preset.command, !command.hasPrefix("/") {
+        // A path saved for another preset is looked up again, so Send to Codex never runs Claude Code.
+        if let name = preset.command, !command.hasPrefix("/") || (command as NSString).lastPathComponent != name {
             guard let found = await Task.detached(operation: { AgentLaunch.locate(name) }).value else {
                 Toast.error("Couldn't find the \(name) command. Install it, or choose another agent in Settings › Agents.")
                 return
