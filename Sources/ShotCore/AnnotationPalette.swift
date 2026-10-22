@@ -318,6 +318,10 @@ public struct AnnotationPalette: Equatable, Sendable {
         }
         var reset = self
         reset.reset()
+        if selection?.isLocked == true {
+            // The editor never restyles a locked selection, so only the rest can change.
+            reset.selection = selection
+        }
         return reset != self
     }
 

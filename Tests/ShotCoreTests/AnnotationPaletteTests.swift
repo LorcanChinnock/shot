@@ -207,3 +207,13 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     #expect(spotlighting.style.spotlight == SpotlightStyle())
     #expect(!spotlighting.canReset)
 }
+
+@Test func resetIgnoresALockedSelectionTheEditorWontRestyle() {
+    var locked = arrow
+    locked.isLocked = true
+    let picked = palette(tool: .select, selection: locked)
+    #expect(!picked.canReset)
+    var drawing = palette(tool: .arrow, selection: locked)
+    drawing.style.color = blue
+    #expect(drawing.canReset)
+}
