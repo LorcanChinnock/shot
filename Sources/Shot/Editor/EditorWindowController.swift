@@ -269,11 +269,18 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         resolveQuit(false)
     }
 
+    /// Shows Copy Alt Text only while an on-device model or an AI provider can write it.
+    private func showsAltText(in menuItem: NSMenuItem) -> Bool {
+        menuItem.isHidden = !AltTextAction.isAvailable
+        return AltTextAction.isAvailable
+    }
+
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         switch menuItem.action {
         case #selector(copyStyle(_:)): model.styleTarget != nil
         case #selector(pasteStyle(_:)), #selector(applyStyleToAllImages(_:)): model.canPasteStyle && model.editingText == nil
         case #selector(flatten(_:)): model.version != nil
+        case #selector(copyAltText(_:)): showsAltText(in: menuItem)
         default: true
         }
     }

@@ -22,7 +22,7 @@ Right-click a screenshot and choose **Copy Alt Text**. Shot sends the image to y
 ## What leaves your Mac
 
 - Only the screenshot you chose, and only when you choose **Copy Alt Text**. Nothing is sent when you take a capture.
-- The image is scaled to 2000 pixels on its longest side and sent as a JPEG under 5 MB, with a short instruction. Your marks and file names aren't sent.
+- The image is scaled to 2000 pixels on its longest side and sent as a JPEG under 5 MB, with a short instruction. Anything you've drawn on it is part of the image. Its file name isn't sent.
 - A local service keeps all of it on your Mac. An online service gets the image under its own terms, so blur private details first.
 
 > [!NOTE]

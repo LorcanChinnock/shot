@@ -801,7 +801,7 @@ private struct ProviderCard: View {
                 isOn: $isOn, color: color, divider: isOn
             )
             if isOn {
-                SettingRow(title: "Service", subtitle: preset.isLocal ? "Runs on this Mac. Nothing leaves it." : "Sends the capture over the internet to \(preset.name).") {
+                SettingRow(title: "Service", subtitle: serviceNote) {
                     Picker("Service", selection: $preset) {
                         ForEach(ProviderPreset.allCases, id: \.self) { Text($0.name).tag($0) }
                     }
@@ -814,7 +814,7 @@ private struct ProviderCard: View {
                 SettingRow(title: "Model", subtitle: "Pick one that can read images.") {
                     field(preset.suggestedModel, text: $model)
                 }
-                SettingRow(title: "Key", subtitle: preset.isLocal ? "Local services don't need one." : "Kept in your Keychain, never in a file.", divider: false) {
+                SettingRow(title: "Key", subtitle: keyNote, divider: false) {
                     SecureField("Paste a key", text: $key)
                         .textFieldStyle(.plain)
                         .font(Brutal.mono)
@@ -829,6 +829,14 @@ private struct ProviderCard: View {
             baseURL = new.baseURL
             model = new.suggestedModel
         }
+    }
+
+    private var serviceNote: LocalizedStringResource {
+        preset.isLocal ? "Runs on this Mac. Nothing leaves it." : "Sends the capture over the internet to \(preset.name)."
+    }
+
+    private var keyNote: LocalizedStringResource {
+        preset.isLocal ? "Local services don't need one." : "Kept in your Keychain, never in a file."
     }
 
     private func field(_ placeholder: String, text: Binding<String>) -> some View {

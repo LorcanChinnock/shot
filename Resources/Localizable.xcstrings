@@ -17209,6 +17209,9 @@
     "Keeps the crop this shape, wide or tall to match it." : {
 
     },
+    "Kept in your Keychain, never in a file." : {
+
+    },
     "Key" : {
 
     },
@@ -27240,6 +27243,9 @@
 
     },
     "Send to Cursor" : {
+
+    },
+    "Sends the capture over the internet to %@." : {
 
     },
     "Sent to %@" : {
