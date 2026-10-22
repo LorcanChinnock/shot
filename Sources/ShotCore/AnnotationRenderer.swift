@@ -217,7 +217,7 @@ public enum AnnotationRenderer {
             let ux = (to.x - tangentFrom.x) / tangentLength, uy = (to.y - tangentFrom.y) / tangentLength
             let base = CGPoint(x: to.x - ux * head, y: to.y - uy * head)
             let half = head * 0.45
-            var shaft = CanvasPath()
+            let shaft = CGMutablePath()
             shaft.move(to: from)
             if let control {
                 shaft.addQuadCurve(to: base, control: control)
@@ -225,14 +225,14 @@ public enum AnnotationRenderer {
                 shaft.addLine(to: base)
             }
             ctx.stroke(shaft)
-            var tip = CanvasPath()
+            let tip = CGMutablePath()
             tip.move(to: to)
             tip.addLine(to: CGPoint(x: base.x - uy * half, y: base.y + ux * half))
             tip.addLine(to: CGPoint(x: base.x + uy * half, y: base.y - ux * half))
             tip.closeSubpath()
             ctx.fill(tip)
         case let .line(from, to):
-            var line = CanvasPath()
+            let line = CGMutablePath()
             line.move(to: from)
             if let control = annotation.curve?.control {
                 line.addQuadCurve(to: to, control: control)
@@ -295,7 +295,7 @@ public enum AnnotationRenderer {
             drawLines(layout.lines)
         case let .counter(number, center):
             let radius = annotation.counterRadius
-            ctx.fill(CanvasPath(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)))
+            ctx.fill(CGPath(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2), transform: nil))
             let layout = TextLayout(string: "\(number)", fontSize: radius * 1.1, color: RGBA(1, 1, 1))
             guard let line = layout.lines.first else {
                 return
@@ -316,7 +316,7 @@ public enum AnnotationRenderer {
             ctx.saveGState()
             ctx.setShadow(offset: CGSize(width: 0, height: layout.shadowOffset), blur: layout.shadowBlur, color: RGBA(0, 0, 0, 0.3))
             ctx.setFillColor(layout.fill.cgColor)
-            ctx.fill(CanvasPath(roundedRect: layout.frame, cornerRadius: layout.cornerRadius))
+            ctx.fill(CGPath(roundedRect: layout.frame, cornerWidth: layout.cornerRadius, cornerHeight: layout.cornerRadius, transform: nil))
             ctx.restoreGState()
             let text = layout.alignedTextRect
             for (index, line) in layout.lines.enumerated() {
@@ -338,7 +338,7 @@ public enum AnnotationRenderer {
             }
             ctx.saveGState()
             if cornerRadius > 0 {
-                ctx.clip(to: CanvasPath(roundedRect: rect, cornerRadius: cornerRadius))
+                ctx.clip(to: CGPath(roundedRect: rect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil))
             }
             drawUpright(image, in: rect, ctx: ctx)
             ctx.restoreGState()
@@ -370,7 +370,7 @@ public enum AnnotationRenderer {
             let radius = cornerRadius > 0 ? cornerRadius + inset : 0
             ctx.setStrokeColor((border.kind == .hairline ? Border.hairlineColor(edge: edge) : border.paint).cgColor)
             ctx.setLineWidth(stroke)
-            ctx.stroke(CanvasPath(roundedRect: rect.insetBy(dx: -inset, dy: -inset), cornerRadius: radius))
+            ctx.stroke(CGPath(roundedRect: rect.insetBy(dx: -inset, dy: -inset), cornerWidth: radius, cornerHeight: radius, transform: nil))
         case .outline:
             guard width > 0, rect.width > 0, rect.height > 0 else {
                 return

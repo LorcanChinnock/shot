@@ -14,8 +14,8 @@ public enum Freehand {
 
     /// A smooth curve through every point: a Catmull-Rom spline drawn as cubic Béziers.
     /// One point is a zero-length line, which a round cap draws as a dot.
-    public static func path(through points: [CGPoint]) -> CanvasPath {
-        var path = CanvasPath()
+    public static func path(through points: [CGPoint]) -> CGPath {
+        let path = CGMutablePath()
         guard let first = points.first else {
             return path
         }

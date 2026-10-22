@@ -270,3 +270,10 @@ func draggingTheMidpointBendsIt(kind: Annotation.Kind) {
     #expect(RGBA(0, 0.48, 1).hex == "#007AFF")
     #expect(RGBA(1, 1, 1, 0.5).hex == "#FFFFFF80")
 }
+
+@Test func theDistanceToASegmentIsToItsNearestPoint() {
+    let a = CGPoint(x: 0, y: 0), b = CGPoint(x: 10, y: 0)
+    #expect(Annotation.distance(from: CGPoint(x: 5, y: 3), toSegment: a, b) == 3)
+    #expect(Annotation.distance(from: CGPoint(x: 13, y: 4), toSegment: a, b) == 5)
+    #expect(Annotation.distance(from: CGPoint(x: 3, y: 4), toSegment: a, a) == 5)
+}

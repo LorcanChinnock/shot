@@ -5,8 +5,8 @@ extension EditorDocument {
     /// What the spotlights dim, in parts: the painted bounds of what's drawn under the lowest spotlight, the image as it's
     /// rounded, and the hard-edged spotlights, which cut out what they cover. `nil` when there are no spotlights. One with
     /// no area, such as a straight drag, cuts out nothing.
-    private func spotlightDimParts() -> (below: [CGRect], image: CanvasPath, lit: [CanvasPath])? {
-        var lit: [CanvasPath] = []
+    private func spotlightDimParts() -> (below: [CGRect], image: CGPath, lit: [CGPath])? {
+        var lit: [CGPath] = []
         var hasSpotlight = false
         var isAboveDim = false
         var below: [CGRect] = []
@@ -30,7 +30,7 @@ extension EditorDocument {
         guard hasSpotlight else {
             return nil
         }
-        return (below, CanvasPath(roundedRect: captureRect, cornerRadius: clampedCaptureCornerRadius), lit)
+        return (below, CGPath(roundedRect: captureRect, cornerWidth: clampedCaptureCornerRadius, cornerHeight: clampedCaptureCornerRadius, transform: nil), lit)
     }
 
     /// The part of the image, and of what's drawn under the lowest spotlight, that the spotlights dim: all of it
@@ -44,9 +44,9 @@ extension EditorDocument {
         for rect in parts.below {
             below.addRect(rect)
         }
-        let image = parts.image.cgPath
+        let image = parts.image
         let dimmable = below.isEmpty ? image : below.union(image)
-        let lit = parts.lit.reduce(nil as CGPath?) { lit, shape in lit?.union(shape.cgPath) ?? shape.cgPath }
+        let lit = parts.lit.reduce(nil as CGPath?) { lit, shape in lit?.union(shape) ?? shape }
         return lit.map { dimmable.subtracting($0) } ?? dimmable
     }
 }

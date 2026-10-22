@@ -48,24 +48,13 @@ extension CGContext {
         fillPath()
     }
 
-    func clip(to path: CGPath) {
+    func stroke(_ path: CGPath) {
         addPath(path)
-        clip()
-    }
-
-    /// Fills `path` by the nonzero winding rule.
-    func fill(_ path: CanvasPath) {
-        addPath(path.cgPath)
-        fillPath()
-    }
-
-    func stroke(_ path: CanvasPath) {
-        addPath(path.cgPath)
         strokePath()
     }
 
-    func clip(to path: CanvasPath) {
-        addPath(path.cgPath)
+    func clip(to path: CGPath) {
+        addPath(path)
         clip()
     }
 

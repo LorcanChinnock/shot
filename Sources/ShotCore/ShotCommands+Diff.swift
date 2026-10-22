@@ -97,14 +97,14 @@ extension ShotCommands {
         for region in regions {
             // Top-left origin to the canvas's bottom-left, just outside the changed pixels so the box doesn't cover them.
             let rect = CGRect(x: region.x, y: height - region.y - region.height, width: region.width, height: region.height)
-            canvas.stroke(CanvasPath(rect: rect.insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2)))
+            canvas.stroke(CGPath(rect: rect.insetBy(dx: -lineWidth / 2, dy: -lineWidth / 2), transform: nil))
         }
         return canvas.makeImage()
     }
 
     /// The pixels `mask` marks, top row first, as whole-pixel rects in a bottom-left-origin canvas, a run of them to a rect.
-    static func changedPixels(_ mask: [UInt8], width: Int, height: Int) -> CanvasPath {
-        var path = CanvasPath()
+    static func changedPixels(_ mask: [UInt8], width: Int, height: Int) -> CGPath {
+        let path = CGMutablePath()
         for y in 0..<height {
             var x = 0
             while x < width {
