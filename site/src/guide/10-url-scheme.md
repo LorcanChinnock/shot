@@ -31,6 +31,7 @@ Shot starts an area screenshot, just as <kbd>⌘⇧4</kbd> does.
 | `shot://capture-timer?seconds=<n>` | Count down `n` seconds (1 to 60, default 5), then capture the full screen |
 | `shot://annotate?path=<file>` | Open an image in the editor, or a video in the video editor |
 | `shot://edit-video?path=<file>` | Open a video in the video editor to trim it |
+| `shot://send-to-agent?path=<file>` | Open your coding agent with the screenshot, as [Send to Agent](#send-a-capture-to-your-coding-agent) does. Works only while it's on in **Settings › Agents** |
 | `shot://gallery` | Open the gallery |
 | `shot://settings?section=<name>` | Open Settings at `gallery`, `general`, `capture`, `quickAccess`, `recording`, `agents`, `shortcuts`, or `about` |
 | `shot://welcome` | Open the [welcome window](#follow-the-welcome-window) again |
@@ -40,7 +41,7 @@ Shot starts an area screenshot, just as <kbd>⌘⇧4</kbd> does.
 - `path` can start with `~`.
 - URL-encode spaces and other special characters, for example `open "shot://annotate?path=~/Desktop/My%20Shot.png"`.
 - The older `shot://record?full=1` still works, and does the same as `shot://record-fullscreen`.
-- An unknown action or settings section, or `annotate` or `edit-video` without a `path`, shows an error instead.
+- An unknown action or settings section, or `annotate`, `edit-video` or `send-to-agent` without a `path`, shows an error instead.
 
 ## For AI agents and scripts
 

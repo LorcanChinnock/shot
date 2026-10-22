@@ -79,6 +79,17 @@ public enum PreferenceKey {
     public static let agentCapture = "agentCapture"
     /// The language Translate Text last translated into, as a language identifier; empty for the Mac's language.
     public static let translateTarget = "translateTarget"
+    /// Shows Send to Agent in the Quick Access, editor and gallery menus, opening a coding agent with the capture.
+    public static let sendToAgent = "sendToAgent"
+    /// Which agent it opens, an `AgentPreset`, and in which terminal, an `AgentTerminal`.
+    public static let sendToAgentPreset = "sendToAgentPreset"
+    public static let sendToAgentTerminal = "sendToAgentTerminal"
+    /// The folder the agent starts in, since it acts on that folder.
+    public static let sendToAgentFolder = "sendToAgentFolder"
+    /// The agent's absolute path, found when the preset was chosen; empty until then.
+    public static let sendToAgentCommand = "sendToAgentCommand"
+    /// The Custom preset's command, with `{path}`, `{dir}` and `{prompt}`.
+    public static let sendToAgentTemplate = "sendToAgentTemplate"
     /// How far the welcome window got, an `OnboardingProgress`. Not a setting, so resetting settings keeps it.
     public static let onboarding = "onboarding"
 
@@ -159,6 +170,12 @@ public struct Preferences {
             PreferenceKey.agentHandoff: false,
             PreferenceKey.agentCapture: false,
             PreferenceKey.translateTarget: "",
+            PreferenceKey.sendToAgent: false,
+            PreferenceKey.sendToAgentPreset: AgentPreset.claudeCode.rawValue,
+            PreferenceKey.sendToAgentTerminal: AgentTerminal.terminal.rawValue,
+            PreferenceKey.sendToAgentFolder: FileManager.default.homeDirectoryForCurrentUser.path,
+            PreferenceKey.sendToAgentCommand: "",
+            PreferenceKey.sendToAgentTemplate: "my-agent {prompt}",
         ]
         for action in ShotAction.allCases {
             values[PreferenceKey.hotkey(action)] = action.defaultCombo?.encoded ?? ""
@@ -427,6 +444,30 @@ public struct Preferences {
 
     /// Whether the app answers agents' requests to capture or record a window. Off by default; the socket listens only while it's on.
     public var agentCapture: Bool { store.bool(forKey: PreferenceKey.agentCapture) }
+
+    /// Whether Send to Agent shows in the menus. Off by default, as it's for people who use a coding agent.
+    public var sendToAgent: Bool { store.bool(forKey: PreferenceKey.sendToAgent) }
+
+    public var sendToAgentPreset: AgentPreset {
+        AgentPreset(rawValue: store.string(forKey: PreferenceKey.sendToAgentPreset) ?? "") ?? .claudeCode
+    }
+
+    public var sendToAgentTerminal: AgentTerminal {
+        AgentTerminal(rawValue: store.string(forKey: PreferenceKey.sendToAgentTerminal) ?? "") ?? .terminal
+    }
+
+    public var sendToAgentFolder: String {
+        store.string(forKey: PreferenceKey.sendToAgentFolder).flatMap { $0.isEmpty ? nil : $0 } ?? FileManager.default.homeDirectoryForCurrentUser.path
+    }
+
+    /// What the script runs: the Custom template, or the found agent, or its bare name when it wasn't found.
+    public var sendToAgentCommand: String {
+        let preset = sendToAgentPreset
+        guard let name = preset.command else {
+            return store.string(forKey: PreferenceKey.sendToAgentTemplate) ?? ""
+        }
+        return store.string(forKey: PreferenceKey.sendToAgentCommand).flatMap { $0.isEmpty ? nil : $0 } ?? name
+    }
 
     public var partyModeUnlocked: Bool { store.bool(forKey: PreferenceKey.partyModeUnlocked) }
     public var partyMode: Bool { store.bool(forKey: PreferenceKey.partyMode) }

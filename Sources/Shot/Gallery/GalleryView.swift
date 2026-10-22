@@ -511,6 +511,10 @@ private struct GalleryTileMenu: View {
             Button("Rename…") { model.rename(item) }
         }
         Button("Show in Finder") { model.reveal(targets) }
+        if targets.count == 1, item.kind == .image, SendToAgent.isShown {
+            Divider()
+            Button(SendToAgent.title) { Task { await SendToAgent.send(item.url) } }
+        }
         Divider()
         Button("Move to Trash") { model.trash(targets) }
     }
