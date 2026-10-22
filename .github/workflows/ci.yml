@@ -18,7 +18,9 @@ jobs:
   # The required check, so main's ruleset needs it by name. The repository is public, so macOS minutes are free; the
   # cost is queue time, since the free plan runs 5 macOS jobs at once.
   macos:
-    runs-on: macos-26
+    # Xcode 27 and the macOS 27 SDK, which Copy Alt Text needs to compile in. GitHub labels the image a preview; its
+    # default Xcode is a release, not a beta. The app still targets macOS 15 (Package.swift).
+    runs-on: xcode-27
     # A run takes about 5 minutes. A hung test would otherwise hold a macOS runner for GitHub's 6-hour default.
     timeout-minutes: 20
     steps:
@@ -28,6 +30,9 @@ jobs:
         run: scripts/lint.sh
       - name: Build
         run: swift build --build-tests --force-resolved-versions
+      # An older SDK would leave Copy Alt Text out without an error, so check it's in. See scripts/check-sdk.sh.
+      - name: Check the SDK
+        run: scripts/check-sdk.sh .build/debug/Shot
       # Every build extracts the app's strings, so this needs the build above. See scripts/strings.sh.
       - name: Check strings
         run: scripts/strings.sh --check
