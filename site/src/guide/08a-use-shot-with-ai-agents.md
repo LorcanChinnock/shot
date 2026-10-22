@@ -26,7 +26,7 @@ Turn on **Send to Agent** in **Settings › Agents**, and a Quick Access card's 
 
 ## Use your own AI provider
 
-**Copy Alt Text** can use Ollama, LM Studio, OpenAI, Gemini or OpenRouter instead of Apple's model. See [Use your own AI provider](#use-your-own-ai-provider).
+**Copy Alt Text** can use Ollama, LM Studio, OpenAI, Gemini, OpenRouter or Anthropic (Claude) instead of Apple's model. See [Use your own AI provider](#use-your-own-ai-provider).
 
 ## Set it up so the agent can ask Shot
 
