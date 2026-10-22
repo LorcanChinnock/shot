@@ -18,19 +18,17 @@ public enum StyleThumbnail {
     static let fill: CGFloat = 0.62
 
     /// `subject` with `style` and `cornerRadius`, both in points, fitted into a tile `size` points big at `pixelsPerPoint`.
-    /// `background` tints a shadow as the canvas's does. It's drawn on a new `canvasType` canvas; `nil` when there's
-    /// nothing to draw.
+    /// `background` tints a shadow as the canvas's does; `nil` when there's nothing to draw.
     public static func render(
-        _ subject: Subject, style: ObjectStyle, cornerRadius: CGFloat, size: CGSize, pixelsPerPoint: CGFloat, background: RGBA? = nil,
-        canvasType: any Canvas.Type
+        _ subject: Subject, style: ObjectStyle, cornerRadius: CGFloat, size: CGSize, pixelsPerPoint: CGFloat, background: RGBA? = nil
     ) -> CGImage? {
         let pixels = CGSize(width: (size.width * pixelsPerPoint).rounded(), height: (size.height * pixelsPerPoint).rounded())
-        guard pixels.width >= 1, pixels.height >= 1, let ctx = canvasType.init(width: Int(pixels.width), height: Int(pixels.height), format: .sRGB) else {
+        guard pixels.width >= 1, pixels.height >= 1, let ctx = CGContext.bitmap(width: Int(pixels.width), height: Int(pixels.height), format: .sRGB) else {
             return nil
         }
         ctx.translateBy(x: 0, y: pixels.height)
         ctx.scaleBy(x: 1, y: -1)
-        ctx.setInterpolation(.high)
+        ctx.interpolationQuality = .high
         // The picture sits a little high, since a shadow mostly falls below it.
         let box = CGRect(
             x: pixels.width * (1 - fill) / 2, y: pixels.height * (1 - fill) * 0.4,
@@ -41,7 +39,7 @@ public enum StyleThumbnail {
         switch subject {
         case let .image(image):
             // Shrunk to the tile first, so a hairline stays a pixel and a large screenshot isn't drawn small each time.
-            let fitted = shrunk(image, toFit: box.size, canvasType: canvasType)
+            let fitted = shrunk(image, toFit: box.size)
             let rect = centred(CGSize(width: fitted.width, height: fitted.height), in: box)
             let radius = BoxShape.cornerRadius(cornerRadius * tileStyle, in: rect)
             AnnotationRenderer.drawImage(fitted, in: rect, cornerRadius: radius, style: style.scaled(by: tileStyle), shadowBackground: background, ctx: ctx)
@@ -57,7 +55,7 @@ public enum StyleThumbnail {
             ctx.translateBy(x: -bounds.minX, y: -bounds.minY)
             // The context scales by `fit`, so the style is drawn that much larger in the annotation's own pixels.
             annotation.style = style.scaled(by: tileStyle / fit)
-            AnnotationRenderer.draw(annotation, base: canvasType.placeholder, background: background, in: ctx)
+            AnnotationRenderer.draw(annotation, base: placeholderImage, background: background, in: ctx)
         }
         return ctx.makeImage()
     }
@@ -75,7 +73,7 @@ public enum StyleThumbnail {
     }
 
     /// `image` scaled to fit `box`, in pixels, keeping its shape; as it is when it already fits.
-    static func shrunk(_ image: CGImage, toFit box: CGSize, canvasType: any Canvas.Type) -> CGImage {
+    static func shrunk(_ image: CGImage, toFit box: CGSize) -> CGImage {
         let factor = min(box.width / CGFloat(image.width), box.height / CGFloat(image.height))
         guard factor < 1 else {
             return image
@@ -83,7 +81,7 @@ public enum StyleThumbnail {
         if let known = lastShrunk.withLock({ $0.flatMap { $0.source === image && $0.box == box ? $0.image : nil } }) {
             return known
         }
-        let small = ImageCodec.downscaled(image, scale: 1 / factor, canvasType: canvasType)
+        let small = ImageCodec.downscaled(image, scale: 1 / factor)
         lastShrunk.withLock { $0 = (image, box, small) }
         return small
     }

@@ -22,30 +22,6 @@ import Testing
     #expect(two.cgPath.boundingBoxOfPath == CGRect(x: 5, y: 5, width: 110, height: 30))
 }
 
-@Test func aNewCGCanvasHasTheFormatItWasMadeIn() throws {
-    let grey = try #require(CGCanvas(width: 3, height: 2, format: .grey))
-    #expect(grey.context.colorSpace?.model == .monochrome)
-    #expect(grey.context.alphaInfo == .none)
-    let sRGB = try #require(CGCanvas(width: 3, height: 2, format: .sRGB))
-    #expect(sRGB.context.colorSpace?.name == CGColorSpace.sRGB)
-    #expect(sRGB.context.alphaInfo == .premultipliedLast)
-    let p3 = try #require(CGContext(data: nil, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.displayP3)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)?.makeImage())
-    let matching = try #require(CGCanvas(width: 3, height: 2, format: .matching(p3)))
-    #expect(matching.context.colorSpace?.name == CGColorSpace.displayP3)
-    #expect(matching.makeImage()?.width == 3)
-    #expect(CGCanvas(width: 0, height: 2, format: .sRGB) == nil)
-}
-
-@Test func aCGCanvasReportsItsScaleAndClipInItsOwnCoordinates() throws {
-    let canvas = try #require(CGCanvas(width: 20, height: 20, format: .sRGB))
-    #expect(canvas.pixelScale == 1)
-    canvas.scaleBy(x: 2, y: -2)
-    #expect(canvas.pixelScale == 2)
-    #expect(canvas.clipBounds == CGRect(x: 0, y: -10, width: 10, height: 10))
-    canvas.clip(to: CGRect(x: 1, y: -9, width: 4, height: 4))
-    #expect(canvas.clipBounds == CGRect(x: 1, y: -9, width: 4, height: 4))
-}
-
 @Test func aPathsPrimitivesAreTheElementsCoreGraphicsBuildsForIt() {
     func elements(_ path: CGPath) -> [CanvasPath.Primitive] {
         var result: [CanvasPath.Primitive] = []

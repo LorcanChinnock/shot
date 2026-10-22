@@ -2,17 +2,17 @@ import CoreGraphics
 import CoreImage
 import CoreImage.CIFilterBuiltins
 
-/// The Mac's `ImageEffects`: Core Image filters, run on two contexts every render shares.
-public final class CoreImageEffects: ImageEffects {
-    public static let shared = CoreImageEffects()
-
-    private let context = CIContext(options: [.cacheIntermediates: false])
+/// The filters the annotation renderer runs over images: Core Image filters, run on two contexts every render shares.
+/// Regions are in an image's pixels with the origin at the bottom left, as a new bitmap context has it. Edges are
+/// clamped: pixels past an image's edge repeat the nearest edge pixel, so a blur doesn't darken toward the edge. Safe to
+/// use from any thread.
+public enum CoreImageEffects {
+    private static let context = CIContext(options: [.cacheIntermediates: false])
     /// Blurs masks as plain coverage values, without converting them through a colour space.
-    private let maskContext = CIContext(options: [.cacheIntermediates: false, .workingColorSpace: NSNull(), .outputColorSpace: NSNull()])
+    private static let maskContext = CIContext(options: [.cacheIntermediates: false, .workingColorSpace: NSNull(), .outputColorSpace: NSNull()])
 
-    private init() {}
-
-    public func blurred(_ image: CGImage, radius: CGFloat) -> CGImage? {
+    /// All of `image` given a gaussian blur of `radius` pixels.
+    public static func blurred(_ image: CGImage, radius: CGFloat) -> CGImage? {
         let extent = CGRect(x: 0, y: 0, width: image.width, height: image.height)
         let filter = CIFilter.gaussianBlur()
         filter.inputImage = CIImage(cgImage: image).clampedToExtent()
@@ -23,7 +23,9 @@ public final class CoreImageEffects: ImageEffects {
         return context.createCGImage(output, from: extent)
     }
 
-    public func blurredMask(_ mask: CGImage, radius: CGFloat) -> CGImage? {
+    /// A greyscale mask given a gaussian blur of `radius` pixels, its levels blurred as plain coverage values rather than
+    /// through a colour space.
+    public static func blurredMask(_ mask: CGImage, radius: CGFloat) -> CGImage? {
         let extent = CGRect(x: 0, y: 0, width: mask.width, height: mask.height)
         let filter = CIFilter.gaussianBlur()
         filter.inputImage = CIImage(cgImage: mask).clampedToExtent()
@@ -34,7 +36,9 @@ public final class CoreImageEffects: ImageEffects {
         return maskContext.createCGImage(output, from: extent, format: .L8, colorSpace: CGColorSpaceCreateDeviceGray())
     }
 
-    public func grownMask(of image: CGImage, radius: CGFloat) -> CGImage? {
+    /// The shape of `image`'s opaque pixels grown by `radius` pixels, white on black, as a greyscale mask reaching `radius`
+    /// rounded up past each edge of the image.
+    public static func grownMask(of image: CGImage, radius: CGFloat) -> CGImage? {
         let extent = CGRect(x: 0, y: 0, width: image.width, height: image.height)
         let grown = extent.insetBy(dx: -radius.rounded(.up), dy: -radius.rounded(.up))
         let dilate = CIFilter.morphologyMaximum()
@@ -54,7 +58,9 @@ public final class CoreImageEffects: ImageEffects {
         return maskContext.createCGImage(output, from: grown, format: .L8, colorSpace: CGColorSpaceCreateDeviceGray())
     }
 
-    public func pixelated(_ image: CGImage, region: CGRect, blockSize: CGFloat) -> CGImage? {
+    /// `region` of `image` in square blocks `blockSize` pixels wide, lined up with the region's origin, each the colour at
+    /// its middle.
+    public static func pixelated(_ image: CGImage, region: CGRect, blockSize: CGFloat) -> CGImage? {
         let filter = CIFilter.pixellate()
         filter.inputImage = CIImage(cgImage: image).clampedToExtent()
         filter.center = region.origin
@@ -65,7 +71,9 @@ public final class CoreImageEffects: ImageEffects {
         return context.createCGImage(output, from: region)
     }
 
-    public func blurredBlocks(_ image: CGImage, region: CGRect, radius: CGFloat) -> CGImage? {
+    /// `region` of `image` in blocks `radius` pixels wide, as `pixelated` makes them, then given a gaussian blur of
+    /// `radius` that reaches across the region's edge into the blocks beyond it.
+    public static func blurredBlocks(_ image: CGImage, region: CGRect, radius: CGFloat) -> CGImage? {
         let blocks = CIFilter.pixellate()
         blocks.inputImage = CIImage(cgImage: image).clampedToExtent()
         blocks.center = region.origin

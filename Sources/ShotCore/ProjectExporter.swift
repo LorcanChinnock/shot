@@ -24,10 +24,10 @@ public enum ProjectExporter {
             || frameRate > 30 && canvas.width * canvas.height > largestH264Canvas.width * largestH264Canvas.height
     }
 
-    /// Writes the project to `output`, replacing it, as `fileType`, drawn at the canvas size on `canvasType` canvases and
-    /// re-encoded as H.264, or HEVC when `usesHEVC`.
-    public static func export(_ project: Project, to output: URL, as fileType: AVFileType = .mp4, canvasType: any Canvas.Type) async throws {
-        try await AVVideoWriter.write(project, to: output, as: fileType, canvasType: canvasType) { frameRate in
+    /// Writes the project to `output`, replacing it, as `fileType`, drawn at the canvas size and re-encoded as H.264, or
+    /// HEVC when `usesHEVC`.
+    public static func export(_ project: Project, to output: URL, as fileType: AVFileType = .mp4) async throws {
+        try await AVVideoWriter.write(project, to: output, as: fileType) { frameRate in
             usesHEVC(canvas: project.outputRect.size, frameRate: frameRate) ? .hevc : .h264
         }
     }

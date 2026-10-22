@@ -5,14 +5,12 @@ extension AgentTools {
     /// The tools reading the captures in `folder`, as the gallery lists them. GIFs count as images: an agent sees their
     /// first frame. `marks` is the app's `RecordingMarks` store, whose marks the key frames show, and `projects` its
     /// project store, which keeps what the tools make, and `textIndex` the text the app has read from screenshots, which
-    /// `list_captures` searches. `agent` sends a request to the running app, for the tools that capture. Images are drawn
-    /// on `canvasType` canvases.
+    /// `list_captures` searches. `agent` sends a request to the running app, for the tools that capture.
     public static func live(
         folder: URL,
         marks: URL? = nil,
         projects: ProjectStore? = nil,
         textIndex: @escaping @Sendable () -> TextIndex = { TextIndex() },
-        canvasType: any Canvas.Type,
         agent: @escaping @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue] = { _ throws(ShotCommandError) in throw .unavailable("can't reach Shot from here") }
     ) -> AgentTools {
         var tools = AgentTools(
@@ -27,10 +25,10 @@ extension AgentTools {
                 entry.isVideo ? nil : ImageCodec.record(ofFileAt: entry.url)
             },
             run: { command, origin throws(ShotCommandError) in
-                try await ShotCommands.run(command, projects: projects, origin: origin, canvasType: canvasType)
+                try await ShotCommands.run(command, projects: projects, origin: origin)
             },
             frames: { entry, count throws(ShotCommandError) in
-                try await keyFrames(of: entry.url, count: count, marks: marks.map { RecordingMarks.marks(for: entry.url, in: $0) } ?? [], canvasType: canvasType)
+                try await keyFrames(of: entry.url, count: count, marks: marks.map { RecordingMarks.marks(for: entry.url, in: $0) } ?? [])
             },
             textIndex: textIndex,
             zoom: { entry, rect throws(ShotCommandError) in
@@ -51,6 +49,19 @@ extension AgentTools {
             return read
         }
         return tools
+    }
+
+    /// The tools as `live(folder:marks:projects:textIndex:agent:)` makes them, searching the text index in `texts`.
+    public static func live(
+        folder: URL,
+        marks: URL? = nil,
+        projects: ProjectStore? = nil,
+        texts: TextIndexStore?,
+        agent: @escaping @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue] = { _ throws(ShotCommandError) in throw .unavailable("can't reach Shot from here") }
+    ) -> AgentTools {
+        live(
+            folder: folder, marks: marks, projects: projects, textIndex: { texts?.load() ?? TextIndex() }, agent: agent
+        )
     }
 
     /// A JPEG small enough for a model, and its size beside the file's when they differ, since the marks Shot records
@@ -90,9 +101,9 @@ extension AgentTools {
     /// The key frames of the recording at `url`, each a line with its time and then a JPEG small enough that a dozen fit
     /// in what clients accept in one result. The frame at each of `marks` comes too, with its label, beside `count`
     /// where the picture changes, fewer of those when they'd go over a dozen in all. What's said in its sound follows the
-    /// frame on screen as each phrase starts. Frames are compared on `canvasType` canvases.
+    /// frame on screen as each phrase starts.
     static func keyFrames(
-        of url: URL, count: Int, marks: [RecordingMark] = [], canvasType: any Canvas.Type
+        of url: URL, count: Int, marks: [RecordingMark] = []
     ) async throws(ShotCommandError) -> [MCPServer.Content] {
         guard let media = await ShotCommands.probe(url), media.size != nil else {
             throw .data("Couldn't read \(url.lastPathComponent) as a video.")
@@ -103,7 +114,7 @@ extension AgentTools {
         let keyFrames: [RecordingMark.KeyFrame]
         let frames: [KeyFrameExtractor.Frame]
         do {
-            let changes = try await KeyFrameExtractor.changeTimes(in: url, duration: media.duration, count: RecordingMark.changeCount(count, marked: marked.count, limit: limit), canvasType: canvasType)
+            let changes = try await KeyFrameExtractor.changeTimes(in: url, duration: media.duration, count: RecordingMark.changeCount(count, marked: marked.count, limit: limit))
             keyFrames = RecordingMark.merge(changes: changes, marked: marked)
             frames = try await KeyFrameExtractor.frames(of: url, at: keyFrames.map(\.time), maxWidth: 1024)
         } catch {

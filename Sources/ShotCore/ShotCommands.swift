@@ -9,20 +9,20 @@ import Foundation
 public enum ShotCommands {
     /// The JSON a command prints: at least `path`, `size` and `bytes` for what it wrote, or what `info` found. The files
     /// it writes keep their projects in `projects`, saying `origin` made them, by default the command line running
-    /// `command`. With no store, they keep none. Images are drawn on `canvasType` canvases.
+    /// `command`. With no store, they keep none.
     public static func run(
-        _ command: ShotCommand, projects: ProjectStore? = nil, origin: ProjectOrigin? = nil, canvasType: any Canvas.Type
+        _ command: ShotCommand, projects: ProjectStore? = nil, origin: ProjectOrigin? = nil
     ) async throws(ShotCommandError) -> JSONValue {
         let origin = origin ?? ProjectOrigin(via: .cli, action: command.name)
         switch command {
         case let .info(path):
             return try await info(url(path))
         case let .gif(options):
-            return try await gif(options, projects: projects, origin: origin, canvasType: canvasType)
+            return try await gif(options, projects: projects, origin: origin)
         case let .trim(options):
-            return try await trim(options, projects: projects, origin: origin, canvasType: canvasType)
+            return try await trim(options, projects: projects, origin: origin)
         case let .redact(options):
-            return try await redact(options, projects: projects, origin: origin, canvasType: canvasType)
+            return try await redact(options, projects: projects, origin: origin)
         case let .annotate(options):
             let marks: [CaptureMark]
             switch options.marks {
@@ -37,17 +37,17 @@ public enum ShotCommands {
             case .standardInput:
                 marks = try CaptureMark.list(from: FileHandle.standardInput.readDataToEndOfFile())
             }
-            return try draw(input: options.input, output: options.output, edit: ImageEdit(marks: marks), projects: projects, origin: origin, canvasType: canvasType) { (_: CGImage) in [] }
+            return try draw(input: options.input, output: options.output, edit: ImageEdit(marks: marks), projects: projects, origin: origin) { (_: CGImage) in [] }
         case let .frames(options):
-            return try await frames(options, canvasType: canvasType)
+            return try await frames(options)
         case let .text(path):
             return try await text(url(path))
         case let .diff(options):
-            return try diff(options, canvasType: canvasType)
+            return try diff(options)
         case let .crop(options):
-            return try draw(input: options.input, output: options.output, edit: ImageEdit(crop: options.rect), cropField: "rect", projects: projects, origin: origin, canvasType: canvasType) { (_: CGImage) in [] }
+            return try draw(input: options.input, output: options.output, edit: ImageEdit(crop: options.rect), cropField: "rect", projects: projects, origin: origin) { (_: CGImage) in [] }
         case let .edit(options):
-            return try await edit(options, projects: projects, origin: origin, canvasType: canvasType)
+            return try await edit(options, projects: projects, origin: origin)
         case .capture, .record, .watch, .pick, .windows, .latest, .list, .get, .doctor, .mcp, .indexText, .version, .help:
             throw .internal("\(command.name) isn't a media command")
         }
@@ -89,12 +89,12 @@ public enum ShotCommands {
     /// Writes the part of the video in the range as a GIF, as the video editor's Export does: an edit with only `keep`,
     /// as a GIF. It keeps the trim as its project, so Edit on it opens the video trimmed.
     static func gif(
-        _ options: ShotCommand.GIFOptions, projects: ProjectStore?, origin: ProjectOrigin, canvasType: any Canvas.Type
+        _ options: ShotCommand.GIFOptions, projects: ProjectStore?, origin: ProjectOrigin
     ) async throws(ShotCommandError) -> JSONValue {
         let media = try await video(url(options.input))
         _ = try trimmed(media, start: options.start, end: options.end, command: "gif")
         let edit = VideoEdit(keep: [[options.start ?? 0, min(options.end ?? media.duration, media.duration)]], format: .gif, fps: options.fps, width: options.width)
-        let result = try await editVideo(edit, input: options.input, output: options.output, extensions: ["gif"], command: "gif", projects: projects, origin: origin, canvasType: canvasType)
+        let result = try await editVideo(edit, input: options.input, output: options.output, extensions: ["gif"], command: "gif", projects: projects, origin: origin)
         guard case var .object(object) = result else {
             return result
         }
@@ -107,19 +107,19 @@ public enum ShotCommands {
     /// `keep`. It keeps the trim as its project, so it opens in the video editor with the rest of the recording still
     /// there to drag back.
     static func trim(
-        _ options: ShotCommand.TrimOptions, projects: ProjectStore?, origin: ProjectOrigin, canvasType: any Canvas.Type
+        _ options: ShotCommand.TrimOptions, projects: ProjectStore?, origin: ProjectOrigin
     ) async throws(ShotCommandError) -> JSONValue {
         let input = url(options.input)
         let media = try await video(input)
         _ = try trimmed(media, start: options.start, end: options.end, command: "trim")
         let own = input.pathExtension.lowercased()
         let edit = VideoEdit(keep: [[options.start, min(options.end, media.duration)]], format: ["mov", "mp4"].contains(own) || options.output != nil ? nil : .mov)
-        return try await editVideo(edit, input: options.input, output: options.output, extensions: ["mov", "mp4"], command: "trim", projects: projects, origin: origin, canvasType: canvasType)
+        return try await editVideo(edit, input: options.input, output: options.output, extensions: ["mov", "mp4"], command: "trim", projects: projects, origin: origin)
     }
 
     /// Hides the rects, and with `detect` the private text read in the image, as blurs or pixelations the new version
     /// records, so they stay live layers in Shot. With nothing to hide, it writes nothing and gives the input's path.
-    static func redact(_ options: ShotCommand.RedactOptions, projects: ProjectStore?, origin: ProjectOrigin, canvasType: any Canvas.Type) async throws(ShotCommandError) -> JSONValue {
+    static func redact(_ options: ShotCommand.RedactOptions, projects: ProjectStore?, origin: ProjectOrigin) async throws(ShotCommandError) -> JSONValue {
         var found: [CaptureText.Found] = []
         if !options.detect.isEmpty {
             let input = url(options.input)
@@ -135,7 +135,7 @@ public enum ShotCommands {
                 return .object(object)
             }
         }
-        let result = try draw(input: options.input, output: options.output, projects: projects, origin: origin, canvasType: canvasType) { (image: CGImage) throws(ShotCommandError) in
+        let result = try draw(input: options.input, output: options.output, projects: projects, origin: origin) { (image: CGImage) throws(ShotCommandError) in
             let bounds = CGRect(x: 0, y: 0, width: image.width, height: image.height)
             var rects: [CGRect] = []
             for (index, r) in options.rects.enumerated() {
@@ -157,7 +157,7 @@ public enum ShotCommands {
         return .object(object)
     }
 
-    static func frames(_ options: ShotCommand.FramesOptions, canvasType: any Canvas.Type) async throws(ShotCommandError) -> JSONValue {
+    static func frames(_ options: ShotCommand.FramesOptions) async throws(ShotCommandError) -> JSONValue {
         let input = url(options.input)
         let duration = try await video(input).duration
         let times: [Double]
@@ -168,7 +168,7 @@ public enum ShotCommands {
             }
         } else {
             do {
-                times = try await KeyFrameExtractor.changeTimes(in: input, duration: duration, count: options.count, canvasType: canvasType)
+                times = try await KeyFrameExtractor.changeTimes(in: input, duration: duration, count: options.count)
             } catch {
                 throw .io("couldn't read the video's frames: \(error.localizedDescription)")
             }
@@ -246,7 +246,7 @@ public enum ShotCommands {
     /// since its pixels are no longer theirs. `layers` adds the new version's layers, each with its id and type.
     static func draw(
         input path: String, output: String?, edit: ImageEdit = ImageEdit(), cropField: String = "crop", layers: Bool = false,
-        projects: ProjectStore?, origin: ProjectOrigin, canvasType: any Canvas.Type, _ make: (CGImage, CGFloat) throws(ShotCommandError) -> [Annotation]
+        projects: ProjectStore?, origin: ProjectOrigin, _ make: (CGImage, CGFloat) throws(ShotCommandError) -> [Annotation]
     ) throws(ShotCommandError) -> JSONValue {
         let input = url(path)
         try requireInput(input)
@@ -302,7 +302,7 @@ public enum ShotCommands {
         let rendered: VersionWriter.RenderedImage
         do throws(VersionWriter.Failure) {
             let record = VersionWriter.record(of: document, drawnOn: original, savedAs: format, scale: scale, atOneX: oneX)
-            rendered = try VersionWriter.render(document, scale: scale, as: format, record: record, projectID: projectID, atOneX: oneX, canvasType: canvasType)
+            rendered = try VersionWriter.render(document, scale: scale, as: format, record: record, projectID: projectID, atOneX: oneX)
         } catch .draw {
             throw .internal("couldn't draw the image")
         } catch {
@@ -334,23 +334,23 @@ public enum ShotCommands {
 
     /// The same for `redact`, which needs only the image.
     static func draw(
-        input path: String, output: String?, edit: ImageEdit = ImageEdit(), cropField: String = "crop", projects: ProjectStore?, origin: ProjectOrigin, canvasType: any Canvas.Type, _ make: (CGImage) throws(ShotCommandError) -> [Annotation]
+        input path: String, output: String?, edit: ImageEdit = ImageEdit(), cropField: String = "crop", projects: ProjectStore?, origin: ProjectOrigin, _ make: (CGImage) throws(ShotCommandError) -> [Annotation]
     ) throws(ShotCommandError) -> JSONValue {
-        try draw(input: path, output: output, edit: edit, cropField: cropField, projects: projects, origin: origin, canvasType: canvasType) { (image: CGImage, _: CGFloat) throws(ShotCommandError) in try make(image) }
+        try draw(input: path, output: output, edit: edit, cropField: cropField, projects: projects, origin: origin) { (image: CGImage, _: CGFloat) throws(ShotCommandError) in try make(image) }
     }
 
     /// Makes the edit's changes to the image, as `draw` does, and lists the new version's layers, so an agent can
     /// remove one later by its id; or to the video, as `editVideo` does. An edit read from JSON is an image's or a
     /// video's by what the input is.
     static func edit(
-        _ options: ShotCommand.EditOptions, projects: ProjectStore?, origin: ProjectOrigin, canvasType: any Canvas.Type
+        _ options: ShotCommand.EditOptions, projects: ProjectStore?, origin: ProjectOrigin
     ) async throws(ShotCommandError) -> JSONValue {
         let data: Data
         switch options.spec {
         case let .edit(edit):
-            return try draw(input: options.input, output: options.output, edit: edit, layers: true, projects: projects, origin: origin, canvasType: canvasType) { (_: CGImage, _: CGFloat) in [] }
+            return try draw(input: options.input, output: options.output, edit: edit, layers: true, projects: projects, origin: origin) { (_: CGImage, _: CGFloat) in [] }
         case let .video(edit):
-            return try await editVideo(edit, input: options.input, output: options.output, projects: projects, origin: origin, canvasType: canvasType)
+            return try await editVideo(edit, input: options.input, output: options.output, projects: projects, origin: origin)
         case let .json(text):
             data = Data(text.utf8)
         case let .file(path):
@@ -365,9 +365,9 @@ public enum ShotCommands {
         let input = url(options.input)
         try requireInput(input)
         if isImage(input) {
-            return try draw(input: options.input, output: options.output, edit: ImageEdit.parse(data), layers: true, projects: projects, origin: origin, canvasType: canvasType) { (_: CGImage, _: CGFloat) in [] }
+            return try draw(input: options.input, output: options.output, edit: ImageEdit.parse(data), layers: true, projects: projects, origin: origin) { (_: CGImage, _: CGFloat) in [] }
         }
-        return try await editVideo(VideoEdit.parse(data), input: options.input, output: options.output, projects: projects, origin: origin, canvasType: canvasType)
+        return try await editVideo(VideoEdit.parse(data), input: options.input, output: options.output, projects: projects, origin: origin)
     }
 
     /// Whether the file is an image ImageIO reads, rather than a video.
@@ -382,7 +382,7 @@ public enum ShotCommands {
     /// `extensions` are the outputs `command` can write.
     static func editVideo(
         _ edit: VideoEdit, input path: String, output: String?, extensions: [String] = ["mp4", "mov", "gif"], command: String = "edit",
-        projects: ProjectStore?, origin: ProjectOrigin, canvasType: any Canvas.Type
+        projects: ProjectStore?, origin: ProjectOrigin
     ) async throws(ShotCommandError) -> JSONValue {
         let input = url(path)
         let media = try await video(input)
@@ -431,7 +431,7 @@ public enum ShotCommands {
             let start = SizeFit.GIFStep(fps: edit.fps ?? 12, width: asked == 0 ? canvasWidth : min(asked, canvasWidth))
             let steps = edit.maxBytes == nil ? [start] : SizeFit.gifSteps(fps: start.fps, width: start.width)
             let plans = steps.map { step in (step, gifPlan(project, fps: step.fps, width: step.width, canvasWidth: canvasWidth, speed: speed)) }
-            let result = try await fit(plans, maxBytes: edit.maxBytes, to: temporary, canvasType: canvasType, describe: { "\(String(format: "%g", $0.fps)) fps and \($0.width) px wide" })
+            let result = try await fit(plans, maxBytes: edit.maxBytes, to: temporary, describe: { "\(String(format: "%g", $0.fps)) fps and \($0.width) px wide" })
             written = (result.plan, project, result.outcome, result.step.fps, result.step.width, nil)
         } else {
             let fileType: AVFileType = ext == "mov" ? .mov : .mp4
@@ -440,7 +440,7 @@ public enum ShotCommands {
                 let made = try videoPlan(project, scale: scale, speed: speed, muted: edit.mute, fileType: fileType)
                 plans.append(((scale, made.kept), made.plan))
             }
-            let result = try await fit(plans, maxBytes: edit.maxBytes, to: temporary, canvasType: canvasType, describe: { "\(Int(($0.scale * 100).rounded()))% of its size" })
+            let result = try await fit(plans, maxBytes: edit.maxBytes, to: temporary, describe: { "\(Int(($0.scale * 100).rounded()))% of its size" })
             written = (result.plan, result.step.kept, result.outcome, nil, nil, edit.maxBytes == nil ? nil : result.step.scale)
         }
         let placed = try place(temporary, at: target)
@@ -501,24 +501,24 @@ public enum ShotCommands {
     /// before it are ruled out, since a GIF's estimate reads frames. One written that's still too big moves on to the
     /// next whose estimate, corrected by how far off this one's was, fits.
     static func fit<Step>(
-        _ plans: [(Step, VideoExportPlan)], maxBytes: Int?, to output: URL, canvasType: any Canvas.Type,
+        _ plans: [(Step, VideoExportPlan)], maxBytes: Int?, to output: URL,
         describe: (Step) -> String
     ) async throws(ShotCommandError) -> (step: Step, plan: VideoExportPlan, outcome: VideoExportPlan.Outcome) {
         guard let maxBytes else {
-            return (plans[0].0, plans[0].1, try await write(plans[0].1, to: output, canvasType: canvasType))
+            return (plans[0].0, plans[0].1, try await write(plans[0].1, to: output))
         }
         var ratio = 1.0
         for (step, plan) in plans {
             let estimate: Int
             do {
-                estimate = try await plan.estimate(canvasType: canvasType)
+                estimate = try await plan.estimate()
             } catch {
                 throw .io("couldn't estimate the size: \(error.localizedDescription)")
             }
             guard SizeFit.fits(estimate: estimate, ratio: ratio, within: maxBytes) else {
                 continue
             }
-            let outcome = try await write(plan, to: output, canvasType: canvasType)
+            let outcome = try await write(plan, to: output)
             let written = bytes(of: output)
             if written <= maxBytes {
                 return (step, plan, outcome)
@@ -530,10 +530,10 @@ public enum ShotCommands {
     }
 
     static func write(
-        _ plan: VideoExportPlan, to output: URL, canvasType: any Canvas.Type
+        _ plan: VideoExportPlan, to output: URL
     ) async throws(ShotCommandError) -> VideoExportPlan.Outcome {
         do {
-            return try await plan.run(to: output, canvasType: canvasType)
+            return try await plan.run(to: output)
         } catch {
             throw .io("couldn't write the video: \(error.localizedDescription)")
         }

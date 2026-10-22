@@ -1,17 +1,15 @@
 import CoreGraphics
 import Foundation
 
-/// Writes a looping GIF a frame at a time through `GIFEncoder`, drawing each image on a `canvasType` canvas
-/// for the RGBA pixels it takes.
+/// Writes a looping GIF a frame at a time through `GIFEncoder`, drawing each image into a bitmap context for the RGBA
+/// pixels it takes.
 package final class GIFStreamWriter {
-    private let canvasType: any Canvas.Type
     private let output: (Data) throws -> Void
     private var encoder: GIFEncoder?
     private var pixels: [UInt32] = []
     var bytesWritten: Int { encoder?.bytesWritten ?? 0 }
 
-    package init(canvasType: any Canvas.Type, output: @escaping (Data) throws -> Void) {
-        self.canvasType = canvasType
+    package init(output: @escaping (Data) throws -> Void) {
         self.output = output
     }
 
@@ -35,7 +33,7 @@ package final class GIFStreamWriter {
 
     /// Read as a `Bitmap`, sRGB, so frames are compared, cropped and quantised in the colors the GIF stores.
     private func draw(_ image: CGImage, width: Int, height: Int) throws {
-        guard let canvas = canvasType.init(width: width, height: height, format: .sRGB) else {
+        guard let canvas = CGContext.bitmap(width: width, height: height, format: .sRGB) else {
             throw GIFExporter.ExportError.cannotCreateDestination
         }
         canvas.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))

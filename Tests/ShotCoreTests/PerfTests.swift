@@ -28,7 +28,7 @@ import Testing
         let frames = 30
         let time = try fastest {
             for _ in 0..<frames {
-                _ = AnnotationFrame.apply(items, to: frame, canvas: canvas, context: context, cache: cache, canvasType: CGCanvas.self)
+                _ = AnnotationFrame.apply(items, to: frame, canvas: canvas, context: context, cache: cache)
             }
         }
         try check(time / frames, budget: .microseconds(Budget.overlayFrame), "Overlay per frame")
@@ -42,7 +42,7 @@ import Testing
         let context = CIContext()
         // A marker blends with the picture under it, so every frame draws the whole canvas on the CPU and sends it back.
         let time = try fastest {
-            let composite = AnnotationFrame.apply([marker], to: frame, canvas: canvas, context: context, canvasType: CGCanvas.self)
+            let composite = AnnotationFrame.apply([marker], to: frame, canvas: canvas, context: context)
             _ = try #require(context.createCGImage(composite, from: canvas))
         }
         try check(time, budget: .microseconds(Budget.markerFrame), "Marker per frame")

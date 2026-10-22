@@ -17,9 +17,8 @@ public enum KeyFrameExtractor {
     /// The thumbnails compared, small enough to ignore noise and fast to decode.
     static let thumbnailSize = (width: 64, height: 36)
 
-    /// The times of the `count` frames that show what happens in the video at `url`, which is `duration` long, compared on
-    /// `canvasType` canvases.
-    public static func changeTimes(in url: URL, duration: Double, count: Int, canvasType: any Canvas.Type) async throws -> [Double] {
+    /// The times of the `count` frames that show what happens in the video at `url`, which is `duration` long.
+    public static func changeTimes(in url: URL, duration: Double, count: Int) async throws -> [Double] {
         let samples = min(maximumSamples, max(2, Int(duration * sampleRate) + 1))
         let last = max(0, duration - 0.05)
         let times = (0 ..< samples).map { last * Double($0) / Double(samples - 1) }
@@ -29,7 +28,7 @@ public enum KeyFrameExtractor {
             try Task.checkCancellation()
             // A frame that won't decode counts as no change rather than failing the whole video.
             if let (time, image) = try? frame.decoded.get() {
-                thumbnails[frame.requestedTime] = gray(image, canvasType: canvasType)
+                thumbnails[frame.requestedTime] = gray(image)
                 actual[frame.requestedTime] = time
             }
         }
@@ -51,13 +50,13 @@ public enum KeyFrameExtractor {
         return frames.sorted { $0.time < $1.time }
     }
 
-    /// `image` drawn small on a grey `canvasType` canvas, as bytes.
-    public static func gray(_ image: CGImage, canvasType: any Canvas.Type) -> [UInt8] {
+    /// `image` drawn small into a grey bitmap, as bytes.
+    public static func gray(_ image: CGImage) -> [UInt8] {
         let (width, height) = thumbnailSize
-        guard let canvas = canvasType.init(width: width, height: height, format: .grey) else {
+        guard let canvas = CGContext.bitmap(width: width, height: height, format: .grey) else {
             return [UInt8](repeating: 0, count: width * height)
         }
-        canvas.setInterpolation(.low)
+        canvas.interpolationQuality = .low
         canvas.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
         guard let bitmap = canvas.makeBitmap() else {
             return [UInt8](repeating: 0, count: width * height)

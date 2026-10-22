@@ -16,8 +16,8 @@ extension CompositionBuilder {
     /// Frame rates above this aren't kept, since the compositor draws every frame. It matches the fastest recording.
     static let maximumFrameRate: Float = 120
 
-    /// The project as one composition, its annotations drawn on `canvasType` canvases.
-    public static func build(_ project: Project, canvasType: any Canvas.Type) async throws -> ProjectComposition {
+    /// The project as one composition, with its annotations drawn over the video.
+    public static func build(_ project: Project) async throws -> ProjectComposition {
         let composition = AVMutableComposition()
         var assets: [URL: AVURLAsset] = [:]
         func asset(_ url: URL) -> AVURLAsset {
@@ -88,7 +88,7 @@ extension CompositionBuilder {
                 case let .annotation(id): notes[id].map(ProjectInstruction.Layer.annotation)
                 }
             }
-            instructions.append(ProjectInstruction(timeRange: CMTimeRange(start: start, end: end), layers: stack, live: live, canvas: canvas, output: output, canvasType: canvasType))
+            instructions.append(ProjectInstruction(timeRange: CMTimeRange(start: start, end: end), layers: stack, live: live, canvas: canvas, output: output))
         }
 
         let video = AVMutableVideoComposition()
@@ -165,16 +165,13 @@ final class ProjectInstruction: NSObject, AVVideoCompositionInstructionProtocol,
     let canvas: CGSize
     /// The part of the canvas the frame shows, in canvas pixels with y down: all of it unless the frame is cropped.
     let output: CGRect
-    /// What the annotations are drawn on.
-    let canvasType: any Canvas.Type
 
-    init(timeRange: CMTimeRange, layers: [Layer], live: LiveAnnotations, canvas: CGSize, output: CGRect? = nil, canvasType: any Canvas.Type) {
+    init(timeRange: CMTimeRange, layers: [Layer], live: LiveAnnotations, canvas: CGSize, output: CGRect? = nil) {
         self.timeRange = timeRange
         self.layers = layers
         self.live = live
         self.canvas = canvas
         self.output = output ?? CGRect(origin: .zero, size: canvas)
-        self.canvasType = canvasType
         let tracks = layers.compactMap { if case let .picture(layer) = $0 { layer.trackID } else { nil } }
         requiredSourceTrackIDs = Array(Set(tracks)).sorted().map { NSNumber(value: $0) }
         super.init()
@@ -279,7 +276,7 @@ final class ProjectCompositor: NSObject, AVVideoCompositing, @unchecked Sendable
                 }
                 switch layer {
                 case let .annotations(items):
-                    image = AnnotationFrame.apply(items, to: image, canvas: canvas, context: self.context, cache: self.overlays, canvasType: instruction.canvasType)
+                    image = AnnotationFrame.apply(items, to: image, canvas: canvas, context: self.context, cache: self.overlays)
                 case let .picture((layer, frame), clip):
                     firstFrame = firstFrame ?? frame
                     let source = CIImage(cvPixelBuffer: frame)
