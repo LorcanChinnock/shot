@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [full, media]
+        mode: [asan, tsan, full, full2]
     runs-on: xcode-27
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
@@ -19,17 +19,17 @@ jobs:
         run: |
           echo "image $ImageOS $ImageVersion"; sw_vers; xcodebuild -version; sysctl -n hw.ncpu
       - name: Build
-        run: swift build --build-tests --force-resolved-versions
+        run: |
+          case ${{ matrix.mode }} in asan) F=--sanitize=address;; tsan) F=--sanitize=thread;; *) F=;; esac
+          echo "F=$F" >> $GITHUB_ENV
+          swift build --build-tests --force-resolved-versions $F
       - name: Loop
         run: |
           set +e
           fails=0
-          for i in $(seq 1 12); do
-            if [ "${{ matrix.mode }}" = media ]; then
-              swift test --skip-build --filter 'MediaTests|CompositingMediaTests' > run.log 2>&1 &
-            else
-              make test ARGS=--skip-build > run.log 2>&1 &
-            fi
+          N=12; case ${{ matrix.mode }} in asan|tsan) N=4;; esac
+          for i in $(seq 1 $N); do
+            swift test --skip-build $F --skip PerfTests > run.log 2>&1 &
             pid=$!
             for s in $(seq 1 600); do
               kill -0 $pid 2>/dev/null || break
@@ -43,6 +43,7 @@ jobs:
             fi
             wait $pid; rc=$?
             echo "iteration $i exit $rc"
+            grep -n -A60 -E "WARNING: ThreadSanitizer|ERROR: AddressSanitizer" run.log | grep -v "^--$" | head -400
             if [ $rc -ne 0 ]; then
               fails=$((fails+1))
               grep -E "signal|✘|started\.$" run.log | tail -30
