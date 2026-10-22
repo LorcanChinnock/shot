@@ -5018,6 +5018,9 @@
         }
       }
     },
+    "Can't trim the video there" : {
+
+    },
     "Can't write this kind of video" : {
       "localizations" : {
         "de" : {
@@ -9280,6 +9283,9 @@
       }
     },
     "Couldn't read the text: %@" : {
+
+    },
+    "Couldn't read the video" : {
 
     },
     "Couldn't relaunch Shot. Quit and open it again." : {
@@ -19620,6 +19626,9 @@
         }
       }
     },
+    "No idle time to trim" : {
+
+    },
     "No microphone found" : {
       "localizations" : {
         "de" : {
@@ -19885,6 +19894,9 @@
           }
         }
       }
+    },
+    "Nothing happens in this recording to keep" : {
+
     },
     "Nothing matches" : {
       "localizations" : {
@@ -31941,6 +31953,9 @@
         }
       }
     },
+    "Trim Idle Time" : {
+
+    },
     "Trim timeline" : {
       "localizations" : {
         "de" : {
@@ -32044,6 +32059,9 @@
           }
         }
       }
+    },
+    "Trimmed %@ of idle time" : {
+
     },
     "Try another search, or show All." : {
       "localizations" : {

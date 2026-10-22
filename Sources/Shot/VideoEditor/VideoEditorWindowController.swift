@@ -247,7 +247,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
         return true
     }
 
-    // The Edit menu's style items and Flatten, which reach the editor through the key window's delegate. Apply Style
+    // The Edit menu's style items, Trim Idle Time and Flatten, which reach the editor through the key window's delegate. Apply Style
     // to All Images is the photo editor's alone.
 
     @objc func copyStyle(_ sender: Any?) {
@@ -273,8 +273,14 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
         window.performClose(nil)
     }
 
+    /// Trims the still start and end of the recording, keeping any speech.
+    @objc func trimIdleTime(_ sender: Any?) {
+        Task { await model.trimIdleTime() }
+    }
+
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         switch menuItem.action {
+        case #selector(trimIdleTime(_:)): model.canTrimIdleTime
         case #selector(copyStyle(_:)): model.targetStyleKind != nil
         case #selector(pasteStyle(_:)): model.canPasteStyle
         case #selector(flatten(_:)): model.version != nil
