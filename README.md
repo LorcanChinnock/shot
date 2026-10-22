@@ -60,7 +60,7 @@
 
 Circle the bug, copy, and paste it into your agent: your arrows and notes show it exactly where to look. Or turn on Send to Agent, and Shot opens Claude Code, Codex or Cursor in a terminal with the screenshot and your marks as a task. An agent can also find your captures, read the text in them and what you said while recording, hide secrets in them, edit them with every layer still live, and screenshot or record a window such as the Simulator. See [Use Shot with AI agents](https://shot.lorcanchinnock.com/docs/use-shot-with-ai-agents/).
 
-<img src="docs/media/agents-settings.png" width="720" alt="Settings › Agents with Hand captures to agents, Let agents capture and record, and Send to Agent turned on, and Send to Agent set to open Claude Code in Terminal, with a choice of Codex, Cursor or a command of your own, and a working folder">
+<img src="docs/media/agents-settings.png" width="720" alt="Settings › Agents with Hand captures to agents, Let agents capture and record, and Send to Agent turned on, Send to Agent set to open Claude Code in Terminal, the shot command installed, and the MCP server's setup for Claude and Claude Code">
 
 ## Install
 
