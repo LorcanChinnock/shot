@@ -1726,6 +1726,14 @@ extension VideoEditorModel: StyleEditing {
         stylePreview = nil
     }
 
+    func resetTargetStyle() {
+        guard let kind = targetStyleKind else {
+            return
+        }
+        restyleTarget(kind.defaultStyle.scaled(by: scale), cornerRadius: kind.defaultCornerRadius * scale)
+        stylePreview = nil
+    }
+
     func setShadowElevation(_ points: CGFloat) {
         restyleTarget { $0.shadow?.elevation = points * scale }
     }
