@@ -449,18 +449,19 @@ extension CompositingMediaTests {
         await MainActor.run { item.videoComposition = built.videoComposition }
         let output = AVPlayerItemVideoOutput(pixelBufferAttributes: nil)
         item.add(output)
+        // Paused, as the editor is while the playhead is dragged. While playing, AVFoundation asks for frames ahead of
+        // the playhead and lets most seeks through without a cancel. On loaded CI runners, after the final seek's cancel
+        // it asked for one of those frames instead and never asked for the frame for 2 s (#414).
         let player = await AVPlayer(playerItem: item)
-        await player.play()
         // Records what the compositor does from the scrub on, so a failure can say whether the frame for 2 s was asked
         // for and how its request ended (#414).
         let compositor = await MainActor.run { item.customVideoCompositor as? ProjectCompositor }
         compositor?.requests.start()
-        // Each seek cancels the frames the one before it asked for, some of them partway through drawing.
+        // Each seek cancels the frame the one before it asked for, sometimes partway through drawing.
         for step in 0..<30 {
             await player.seek(to: CMTime(seconds: Double(step % 15) * 0.25, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: { _ in })
             try await Task.sleep(for: .milliseconds(16))
         }
-        await player.pause()
         let target = CMTime(seconds: 2, preferredTimescale: 600)
         #expect(await player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero))
         // copyPixelBuffer gives the newest buffer, which can be one drawn for an earlier seek, so only the frame for 2 s counts.
