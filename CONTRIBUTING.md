@@ -62,7 +62,7 @@ docs/                 Screenshots for the README and the user guide, and the dem
 site/                 The website (see site/README.md)
 ```
 
-If logic can be tested without a window, a display, or a permission, put it in `ShotCore` and add a test in `Tests/ShotCoreTests`. ShotCore imports no AppKit or SwiftUI, and `make lint` checks that. `Shot` holds the AppKit and SwiftUI code that needs a real session.
+If logic can be tested without a window, a display, or a permission, put it in `ShotCore` and add a test in `Tests/ShotCoreTests`. ShotCore uses Apple's frameworks that need no window (Core Graphics, Core Image, Core Text, ImageIO, AVFoundation and Vision) directly, but imports no AppKit or SwiftUI, and `make lint` checks that. `Shot` holds the AppKit and SwiftUI code that needs a real session.
 
 ## Strings and translations
 
