@@ -8,12 +8,26 @@ import ShotCore
 enum SendToAgent {
     private static let log = Logger.shot("agents")
 
-    /// Whether the menus show it: only once it's turned on in Settings, as it's for people with a coding agent.
-    static var isShown: Bool { Preferences().sendToAgent }
+    /// Agents waiting, through `wait_for_capture`, for the person to send them a capture, oldest first. A send goes to
+    /// the newest, and to it alone.
+    private struct Waiter {
+        let id: UUID
+        let name: String
+        let continuation: CheckedContinuation<AgentResponse, Never>
+    }
 
-    /// The menu item's title, naming the agent.
+    private static var waiters: [Waiter] = []
+
+    /// Whether the menus show it: once it's turned on in Settings, as it's for people with a coding agent, or while an
+    /// agent is waiting for a capture.
+    static var isShown: Bool { Preferences().sendToAgent || !waiters.isEmpty }
+
+    /// The menu item's title, naming the waiting agent, else the agent set up in Settings.
     static var title: String {
-        switch Preferences().sendToAgentPreset {
+        if let waiting = waiters.last {
+            return String(localized: "Send to \(waiting.name)")
+        }
+        return switch Preferences().sendToAgentPreset {
         case .claudeCode: String(localized: "Send to Claude Code")
         case .codex: String(localized: "Send to Codex")
         case .cursor: String(localized: "Send to Cursor")
@@ -21,17 +35,64 @@ enum SendToAgent {
         }
     }
 
-    /// Writes the script that opens the agent with the image at `url` and opens it in the chosen terminal. `url` is the
-    /// saved, flattened file, never an unmarked original, which would show what the user blurred.
-    static func send(_ url: URL) async {
-        let prefs = Preferences()
-        // Also for `shot://send-to-agent`, so no other app can open a terminal while it's off.
-        guard prefs.sendToAgent else {
-            Toast.error("Turn on Send to Agent in Settings › Agents first.")
+    /// Waits up to `timeout` seconds for the person to send a capture, for an agent asking through the socket. Ends early
+    /// when the agent hangs up, which cancels the task.
+    static func wait(origin: ProjectOrigin?, timeout: Double) async -> AgentResponse {
+        let id = UUID()
+        let name = origin?.clientName ?? String(localized: "your agent")
+        if waiters.isEmpty {
+            Toast.show("\(name) is waiting for a capture. Choose Send to \(name) on one to send it.", duration: .seconds(4))
+        }
+        log.notice("An agent is waiting for a send")
+        return await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                waiters.append(Waiter(id: id, name: name, continuation: continuation))
+                Task {
+                    try? await Task.sleep(for: .milliseconds(Int64(timeout * 1000)))
+                    finish(id, with: .failure(.noInput("The user didn't send a capture within \(String(format: "%g", timeout)) seconds.")))
+                }
+            }
+        } onCancel: {
+            Task { @MainActor in finish(id, with: .failure(.noInput("The agent stopped waiting."))) }
+        }
+    }
+
+    /// Answers the waiter `id`, if it's still waiting.
+    private static func finish(_ id: UUID, with response: AgentResponse) {
+        guard let index = waiters.firstIndex(where: { $0.id == id }) else {
             return
         }
+        waiters.remove(at: index).continuation.resume(returning: response)
+    }
+
+    /// Hands the image at `url` to the agent that's waiting for it, or else opens the agent set up in Settings in a
+    /// terminal. `url` is the saved, flattened file, never an unmarked original, which would show what the user blurred.
+    static func send(_ url: URL) async {
+        let prefs = Preferences()
         guard ImageCodec.image(at: url) != nil else {
             Toast.error("Send to Agent sends screenshots. Couldn't read \(url.lastPathComponent) as an image.")
+            return
+        }
+        if let waiting = waiters.last {
+            let handoff = prefs.agentHandoff
+            let sent = await Task.detached { () -> AgentSent in
+                let record = handoff ? ImageCodec.record(ofFileAt: url) : nil
+                let text = record == nil ? nil : try? await TextRecognizer.recognize(fileAt: url)
+                // The agent asked through the MCP server, so it can call find_text.
+                return AgentSent(path: url.path, prompt: AgentPrompt(path: url.path, record: record, text: text ?? nil, findText: true).string, record: record)
+            }.value
+            guard waiters.contains(where: { $0.id == waiting.id }) else {
+                // It stopped waiting while the prompt was being built.
+                Toast.error("\(waiting.name) stopped waiting. Send it again to open it in a terminal.")
+                return
+            }
+            finish(waiting.id, with: .success(sent.fields))
+            log.notice("Sent \(url.lastPathComponent, privacy: .private) to a waiting agent")
+            Toast.show("Sent to \(waiting.name)")
+            return
+        }
+        guard prefs.sendToAgent else {
+            Toast.error("Turn on Send to Agent in Settings › Agents first.")
             return
         }
         let preset = prefs.sendToAgentPreset

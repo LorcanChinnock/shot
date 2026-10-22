@@ -92,6 +92,8 @@ final class AgentServer {
             } catch {
                 return .failure(error)
             }
+        case .waitForSend:
+            return await SendToAgent.wait(origin: request.origin, timeout: request.duration ?? AgentTools.defaultWait)
         }
     }
 }

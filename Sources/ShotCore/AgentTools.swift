@@ -200,7 +200,7 @@ public struct AgentTools: Sendable {
         ),
         MCPServer.Tool(
             name: waitForCapture,
-            description: "Waits for the user's next Shot capture and returns it as latest_capture does. Use this when you've asked the user to take a screenshot or recording, so you can carry on once they have. Only a capture taken after the call counts. Reads the capture folder only; writes nothing.",
+            description: "Waits for the user to send you a capture from Shot, and returns it as latest_capture does, after what they want done: their notes and a summary of what they marked. Use this when you've asked the user to show you something; tell them to take a screenshot, mark it up and choose Send to Agent on it. While Shot is running, only a capture they send counts; if Shot isn't running, the next capture saved in the folder does. Writes nothing.",
             inputSchema: schema([
                 "kind": .object([
                     "type": .string("string"),
@@ -408,7 +408,7 @@ public struct AgentTools: Sendable {
             }
             return await describe(entry)
         case Self.waitForCapture:
-            return await waitForCapture(arguments)
+            return await waitForCapture(arguments, origin: origin)
         case Self.askForCapture:
             return await askForCapture(arguments, origin: origin)
         case Self.annotate, Self.redact, Self.editImage, Self.editVideo, Self.makeGIF, Self.trimVideo:
@@ -448,11 +448,30 @@ public struct AgentTools: Sendable {
         }
     }
 
-    /// Waits for the next capture of the kind `arguments` asks for, then shows it as `latest_capture` does. Running out
-    /// of time isn't an error, since the user may just not have taken it yet.
-    func waitForCapture(_ arguments: JSONValue) async -> MCPServer.ToolResult {
+    /// Waits for the person to send a capture with Send to Agent, then shows it as `latest_capture` does, after what
+    /// they asked. While Shot is running it waits for the send alone: a capture saved before they've marked it up isn't
+    /// what they want to hand over. Without the app, it waits for the next capture of the kind `arguments` asks for to
+    /// arrive in the folder. Running out of time isn't an error, since the user may just not have taken it yet.
+    func waitForCapture(_ arguments: JSONValue, origin: ProjectOrigin) async -> MCPServer.ToolResult {
         let kind = AgentCaptures.Kind(lenient: arguments["kind"]?.string)
         let timeout = arguments["timeout"]?.number.flatMap { $0.isFinite ? min(max($0, 1), Self.maximumWait) : nil } ?? Self.defaultWait
+        var request = AgentRequest(.waitForSend, duration: timeout)
+        request.origin = origin
+        do {
+            let fields = try await agent(request)
+            guard let sent = AgentSent(fields: fields) else {
+                return MCPServer.ToolResult(content: [.text("Shot sent a capture but didn't say which.")], isError: true)
+            }
+            let url = URL(fileURLWithPath: sent.path)
+            let entry = AgentCaptures.named(sent.path, in: entries()) ?? AgentCaptures.Entry(url: url, isVideo: false, date: now())
+            var result = await describe(entry)
+            result.content.insert(.text("The user sent you this capture from Shot. What they want:\n\n" + sent.prompt), at: 0)
+            return result
+        } catch .noInput {
+            return MCPServer.ToolResult(content: [.text("The user didn't send a capture from Shot in \(String(format: "%g", timeout)) second\(timeout == 1 ? "" : "s"). Call wait_for_capture again to keep waiting.")])
+        } catch {
+            // Shot isn't running or can't be reached, so watch the folder instead.
+        }
         guard let entry = await CaptureWatch.next(kind: kind, timeout: timeout, interval: pollInterval, entries: entries) else {
             let noun = switch kind {
             case .image: "screenshot"

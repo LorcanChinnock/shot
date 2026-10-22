@@ -26,6 +26,15 @@ From the editor, Shot saves your changes first, so the agent gets the version wi
 > [!TIP]
 > Send to Agent has no shortcut until you give it one. It never runs on its own, and it doesn't change what happens when you take a screenshot.
 
+## Send to an agent that's waiting
+
+When an agent you're already talking to asks for a screenshot, through Shot's [MCP server](#the-mcp-server), it waits for you to send one. Shot shows a note saying so, and the menu item names it, such as **Send to Claude Code**.
+
+1. Take the screenshot and mark it up.
+2. Choose **Send to Claude Code** on its Quick Access card, in the editor or in the gallery.
+
+The capture and your notes go straight to that agent, in the conversation you're already having, rather than to a new terminal. This works even with **Send to Agent** off in Settings. If the agent stops waiting, the next send opens your terminal as usual.
+
 ## What the agent gets
 
 Your notes come first, as the task. Then the file's path and a few lines about it:

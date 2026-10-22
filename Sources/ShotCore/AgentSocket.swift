@@ -147,9 +147,26 @@ public enum AgentSocket {
             // On a queue of its own: a serial queue, unlike the global ones, gets a thread even when all of theirs are busy.
             let queue = DispatchQueue(label: "dev.lorcan.Shot.agent-socket.answer")
             queue.setSpecific(key: answering, value: true)
-            Task(executorPreference: QueueExecutor(queue)) {
-                AgentSocket.reply(await handler(request), to: client)
+            // A client that hangs up, such as an agent that stopped waiting, cancels its request, so a long wait
+            // doesn't hold on to someone who's gone.
+            let hangUp = DispatchSource.makeReadSource(fileDescriptor: client, queue: DispatchQueue(label: "dev.lorcan.Shot.agent-socket.hang-up"))
+            let task = Task(executorPreference: QueueExecutor(queue)) {
+                let response = await handler(request)
+                hangUp.cancel()
+                AgentSocket.reply(response, to: client)
             }
+            hangUp.setEventHandler {
+                var byte: UInt8 = 0
+                let count = recv(client, &byte, 1, MSG_PEEK | MSG_DONTWAIT)
+                if count == 0 || count < 0 && errno != EAGAIN && errno != EINTR {
+                    task.cancel()
+                    hangUp.cancel()
+                } else if count > 0 {
+                    // More than the one line: not a hang-up, and not worth watching for one.
+                    hangUp.cancel()
+                }
+            }
+            hangUp.resume()
         }
     }
 
@@ -174,13 +191,47 @@ public enum AgentSocket {
     }
 
     /// Sends `request` to the app listening at `url` and waits up to `timeout` for its answer.
+    /// Cancelling the task hangs up, which cancels the request in the app.
     public static func send(_ request: AgentRequest, to url: URL, timeout: Duration) async throws(ShotCommandError) -> [String: JSONValue] {
-        let result = await withCheckedContinuation { (continuation: CheckedContinuation<Result<AgentResponse, ShotCommandError>, Never>) in
-            DispatchQueue.global().async {
-                continuation.resume(returning: Result { () throws(ShotCommandError) in try exchange(request, at: url, timeout: timeout) })
+        let connection = Connection()
+        let result = await withTaskCancellationHandler {
+            await withCheckedContinuation { (continuation: CheckedContinuation<Result<AgentResponse, ShotCommandError>, Never>) in
+                DispatchQueue.global().async {
+                    continuation.resume(returning: Result { () throws(ShotCommandError) in try exchange(request, at: url, timeout: timeout, connection: connection) })
+                }
             }
+        } onCancel: {
+            connection.hangUp()
         }
         return try result.get().get()
+    }
+
+    /// The socket a `send` is using, so cancelling it can hang up from another thread.
+    final class Connection: @unchecked Sendable {
+        private let lock = NSLock()
+        private var fd: Int32?
+        private var hungUp = false
+
+        /// Uses `fd` for the exchange; false when it was hung up before it began.
+        func begin(_ fd: Int32) -> Bool {
+            lock.withLock {
+                self.fd = fd
+                return !hungUp
+            }
+        }
+
+        func end() {
+            lock.withLock { fd = nil }
+        }
+
+        func hangUp() {
+            lock.withLock {
+                hungUp = true
+                if let fd {
+                    shutdown(fd, SHUT_RDWR)
+                }
+            }
+        }
     }
 
     /// Whether something answers at `url`.
@@ -193,9 +244,15 @@ public enum AgentSocket {
     }
 
     /// The blocking half of `send`.
-    private static func exchange(_ request: AgentRequest, at url: URL, timeout: Duration) throws(ShotCommandError) -> AgentResponse {
+    private static func exchange(_ request: AgentRequest, at url: URL, timeout: Duration, connection: Connection) throws(ShotCommandError) -> AgentResponse {
         let fd = try connect(to: url)
-        defer { close(fd) }
+        defer {
+            connection.end()
+            close(fd)
+        }
+        guard connection.begin(fd) else {
+            throw .io("the request was cancelled")
+        }
         keepSignalsOff(fd)
         setTimeout(fd, SO_SNDTIMEO, requestTimeout)
         // A write the app cut short, because the request was too long, still leaves its answer to read.

@@ -152,6 +152,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case let .edit(route):
             coordinator.edit(route)
         case let .sendToAgent(url):
+            // Only while it's on, so no other app can open a terminal or reach a waiting agent through Shot.
+            guard Preferences().sendToAgent else {
+                Toast.error("Turn on Send to Agent in Settings › Agents first.")
+                return
+            }
             Task { await SendToAgent.send(url) }
         case let .action(action):
             coordinator.perform(action)

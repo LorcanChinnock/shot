@@ -24,11 +24,14 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         /// Shows the person the area and window selection with `prompt` and who's asking, and saves the screenshot
         /// they pick. Waits up to `duration` seconds for them.
         case pick
+        /// Waits up to `duration` seconds for the person to choose Send to Agent on a capture, and answers with it and
+        /// the prompt built from their marks, as an `AgentSent`.
+        case waitForSend
 
-        /// Whether the app answers only while Let agents capture and record is on. A pick doesn't need it, since the
-        /// person makes the capture themselves.
+        /// Whether the app answers only while Let agents capture and record is on. A pick and a wait for a send don't
+        /// need it, since the person makes the capture and chooses to send it themselves.
         public var needsAgentCapture: Bool {
-            self != .pick
+            self != .pick && self != .waitForSend
         }
     }
 
@@ -146,6 +149,38 @@ public struct AgentRequest: Codable, Equatable, Sendable {
             request.origin = ProjectOrigin(via: via, client: origin["client"]?.string, action: origin["action"]?.string)
         }
         return request
+    }
+}
+
+/// What the app answers a `waitForSend` with: the capture the person sent and the prompt built from their marks.
+public struct AgentSent: Equatable, Sendable {
+    public var path: String
+    public var prompt: String
+    /// The capture's record, when it has one.
+    public var record: CaptureRecord?
+
+    public init(path: String, prompt: String, record: CaptureRecord? = nil) {
+        self.path = path
+        self.prompt = prompt
+        self.record = record
+    }
+
+    public var fields: [String: JSONValue] {
+        var fields: [String: JSONValue] = ["path": .string(path), "prompt": .string(prompt)]
+        if let data = try? record?.encoded(), let value = try? JSONDecoder().decode(JSONValue.self, from: data) {
+            fields["record"] = value
+        }
+        return fields
+    }
+
+    /// The send in an answer's `fields`; `nil` without a path and a prompt.
+    public init?(fields: [String: JSONValue]) {
+        guard let path = fields["path"]?.string, let prompt = fields["prompt"]?.string else {
+            return nil
+        }
+        self.path = path
+        self.prompt = prompt
+        record = fields["record"].flatMap { try? JSONEncoder().encode($0) }.flatMap { try? CaptureRecord.decoded(from: $0) }
     }
 }
 
