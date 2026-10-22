@@ -218,6 +218,17 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         }
     }
 
+    /// Sends the saved version, saving first when there are marks it doesn't have yet, so the agent sees them and never
+    /// the original under a blur.
+    @objc func sendToAgent(_ sender: Any?) {
+        Task { [model] in
+            if model.isDirty || model.version == nil && !model.document.annotations.isEmpty {
+                guard await model.save() else { return }
+            }
+            await SendToAgent.send(model.version ?? model.fileURL)
+        }
+    }
+
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         guard model.isDirty, !discarding else {
             return true

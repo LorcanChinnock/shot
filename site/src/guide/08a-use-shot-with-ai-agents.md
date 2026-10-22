@@ -20,9 +20,13 @@ That's all most people need. Your marks show the agent where to look.
 
 Right-click a Quick Access card and choose **Copy Path**, or give **Copy Latest Capture's Path** a shortcut in **Settings › Shortcuts**. An agent can open the file from its path, now or later in the conversation. Copies are always the image alone.
 
+## Send it straight to your coding agent
+
+Turn on **Send to Agent** in **Settings › Agents**, and a Quick Access card's menu gets **Send to Claude Code** (or Codex, Cursor, or a command of your own). It opens the agent in a terminal, in your project, with the screenshot and your marks as a task. See [Send a capture to your coding agent](#send-a-capture-to-your-coding-agent).
+
 ## Set it up so the agent can ask Shot
 
-Everything below is in **Settings › Agents**. Both switches there start off.
+Everything below is in **Settings › Agents**. Every switch there starts off.
 
 1. **Turn on Hand captures to agents.** Shot then records, inside each screenshot, which app and window it came from and what you marked. See [Hand captures to agents](#hand-captures-to-agents).
 2. **Add Shot's MCP server to your assistant or agent.** Settings › Agents lists the ones it finds on your Mac. Click **Install** beside yours. Then you can ask "what did I mark in my latest screenshot?" without pasting anything. See [The MCP server](#the-mcp-server).

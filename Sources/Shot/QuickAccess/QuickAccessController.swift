@@ -333,7 +333,7 @@ final class QuickAccessController {
     }
 
     /// The card's actions in menu order, with `nil` for a divider: the hover buttons' actions, plus Copy Path, Copy Text,
-    /// Translate Text, Copy Alt Text and Pin, which have no button.
+    /// Translate Text, Copy Alt Text, Pin and Send to Agent, which have no button.
     func actions(for card: QuickAccessCard) -> [QuickAccessCardAction?] {
         var actions: [QuickAccessCardAction?] = [
             QuickAccessCardAction(title: String(localized: "Copy")) { self.copy(card) },
@@ -366,6 +366,10 @@ final class QuickAccessController {
             actions.append(QuickAccessCardAction(title: String(localized: "Pin")) { self.pin(card) })
         }
         actions.append(QuickAccessCardAction(title: String(localized: "Show in Finder")) { self.showInFinder(card) })
+        if !card.isVideo, SendToAgent.isShown {
+            actions.append(nil)
+            actions.append(QuickAccessCardAction(title: SendToAgent.title) { Task { await SendToAgent.send(card.fileURL) } })
+        }
         return actions
     }
 
