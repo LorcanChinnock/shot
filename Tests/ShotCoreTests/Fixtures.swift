@@ -74,7 +74,8 @@ func waitUntilReady(_ input: AVAssetWriterInput, of writer: AVAssetWriter) async
     }
 }
 
-func writeSyntheticVideo(to url: URL, seconds: Int, fps: Int32, width: Int, height: Int, codec: AVVideoCodecType = .h264) async throws {
+/// Each frame is one grey, `gray(frame)`, which by default steps on every frame.
+func writeSyntheticVideo(to url: URL, seconds: Int, fps: Int32, width: Int, height: Int, codec: AVVideoCodecType = .h264, gray: (Int) -> Int = { $0 * 4 % 255 }) async throws {
     let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
     let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
         AVVideoCodecKey: codec, AVVideoWidthKey: width, AVVideoHeightKey: height,
@@ -91,7 +92,7 @@ func writeSyntheticVideo(to url: URL, seconds: Int, fps: Int32, width: Int, heig
         CVPixelBufferPoolCreatePixelBuffer(nil, adaptor.pixelBufferPool!, &buffer)
         let pixels = try #require(buffer)
         CVPixelBufferLockBaseAddress(pixels, [])
-        memset(CVPixelBufferGetBaseAddress(pixels), Int32(frame * 4 % 255), CVPixelBufferGetDataSize(pixels))
+        memset(CVPixelBufferGetBaseAddress(pixels), Int32(gray(frame)), CVPixelBufferGetDataSize(pixels))
         CVPixelBufferUnlockBaseAddress(pixels, [])
         adaptor.append(pixels, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: fps))
     }

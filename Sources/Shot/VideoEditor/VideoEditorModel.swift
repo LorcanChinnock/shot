@@ -536,6 +536,53 @@ final class VideoEditorModel {
         return true
     }
 
+    /// Whether Trim Idle Time can run: on a recording that's only trimmed and cut, and not while it's already looking.
+    var canTrimIdleTime: Bool { trim != nil && !isExporting && !isFindingIdleTime }
+    private(set) var isFindingIdleTime = false
+
+    /// Moves the trim handles to where the action starts and ends, keeping any speech, as one undo step. Never runs by
+    /// itself, and never on the capture path.
+    func trimIdleTime() async {
+        guard let trim, canTrimIdleTime else {
+            return
+        }
+        isFindingIdleTime = true
+        defer { isFindingIdleTime = false }
+        let source = trim.source, duration = duration
+        await loadWaveform(for: source)
+        let peaks = waveforms[source]?.peaks ?? []
+        let found: TrimRange?
+        do {
+            found = try await Task.detached(priority: .userInitiated) {
+                let sampled = try await KeyFrameExtractor.differences(in: source, duration: duration)
+                return IdleTrim.range(differences: sampled.differences, times: sampled.actual, audio: peaks, duration: duration)
+            }.value
+        } catch {
+            log.error("Trim Idle Time failed: \(error.localizedDescription, privacy: .public)")
+            Toast.error("Couldn't read the video")
+            return
+        }
+        // The project may have changed while it looked.
+        guard project.trimEdit?.source == source else {
+            return
+        }
+        guard let found else {
+            Toast.show("Nothing happens in this recording to keep")
+            return
+        }
+        guard found != range else {
+            Toast.show("No idle time to trim")
+            return
+        }
+        guard let trimmed = project.trimmingMain(.start, toSource: found.start)?.trimmingMain(.end, toSource: found.end) else {
+            Toast.error("Can't trim the video there")
+            return
+        }
+        replaceProject(with: trimmed)
+        seekTimeline(to: 0)
+        Toast.show("Trimmed \(Timecode.string(duration - found.length)) of idle time")
+    }
+
     func setOptions(_ new: VideoExportOptions) {
         guard new != options else {
             return

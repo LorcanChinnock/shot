@@ -19,6 +19,13 @@ public enum KeyFrameExtractor {
 
     /// The times of the `count` frames that show what happens in the video at `url`, which is `duration` long.
     public static func changeTimes(in url: URL, duration: Double, count: Int) async throws -> [Double] {
+        let sampled = try await differences(in: url, duration: duration)
+        return FramePicker.pick(differences: sampled.differences, times: sampled.times, count: count).map { sampled.actual[$0] }
+    }
+
+    /// The times sampled through the video at `url`, which is `duration` long, how much each differs from the one before
+    /// (0 for the first), and the time of the frame each one actually read.
+    public static func differences(in url: URL, duration: Double) async throws -> (times: [Double], differences: [Double], actual: [Double]) {
         let samples = min(maximumSamples, max(2, Int(duration * sampleRate) + 1))
         let last = max(0, duration - 0.05)
         let times = (0 ..< samples).map { last * Double($0) / Double(samples - 1) }
@@ -36,7 +43,7 @@ public enum KeyFrameExtractor {
         for (previous, next) in zip(times, times.dropFirst()) {
             differences.append(thumbnails[previous].flatMap { a in thumbnails[next].map { FramePicker.difference(a, $0) } } ?? 0)
         }
-        return FramePicker.pick(differences: differences, times: times, count: count).map { actual[times[$0]] ?? times[$0] }
+        return (times, differences, times.map { actual[$0] ?? $0 })
     }
 
     /// The frames at `times`, at most `maxWidth` wide and never enlarged, decoded exactly there.

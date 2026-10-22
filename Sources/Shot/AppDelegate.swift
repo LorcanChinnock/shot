@@ -190,11 +190,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         edit.addItem(withTitle: String(localized: "Paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
         edit.addItem(withTitle: String(localized: "Select All"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         // The editors'; elsewhere nothing answers them, so they're greyed out. Apply Style to All Images is the image
-        // editor's.
+        // editor's, and Trim Idle Time the video editor's.
         edit.addItem(.separator())
         edit.addItem(withTitle: String(localized: "Copy Style"), action: Selector(("copyStyle:")), keyEquivalent: "c").keyEquivalentModifierMask = [.command, .option]
         edit.addItem(withTitle: String(localized: "Paste Style"), action: Selector(("pasteStyle:")), keyEquivalent: "v").keyEquivalentModifierMask = [.command, .option]
         edit.addItem(withTitle: String(localized: "Apply Style to All Images"), action: Selector(("applyStyleToAllImages:")), keyEquivalent: "")
+        edit.addItem(withTitle: String(localized: "Trim Idle Time"), action: Selector(("trimIdleTime:")), keyEquivalent: "")
         edit.addItem(withTitle: String(localized: "Flatten"), action: Selector(("flatten:")), keyEquivalent: "")
         let editItem = NSMenuItem(title: String(localized: "Edit"), action: nil, keyEquivalent: "")
         editItem.submenu = edit
