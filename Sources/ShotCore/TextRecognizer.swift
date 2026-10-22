@@ -1,14 +1,35 @@
 import CoreGraphics
 import Foundation
 import Vision
+import os
+
+private let log = Logger.shot("text")
 
 /// Reads the text in an image with Vision, on the device: nothing leaves the Mac. Boxes come back in the image's
 /// pixels with a top-left origin, rounded out to whole pixels, so they line up with the marks in a capture's record
 /// and hiding one covers all of its text.
 public enum TextRecognizer {
     public static func recognize(_ image: CGImage) async throws -> CaptureText {
+        do {
+            return try await recognize(image, level: .accurate)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let accurateError {
+            // The accurate model can't run everywhere: in a macOS 27 virtual machine, with no Neural Engine, it fails to
+            // compile on every device. The fast one still reads screen text, which is clean.
+            log.error("Accurate text recognition failed, so reading with the fast one: \(accurateError, privacy: .public)")
+            do {
+                return try await recognize(image, level: .fast)
+            } catch {
+                throw accurateError
+            }
+        }
+    }
+
+    /// The text in `image`, read at `level` alone.
+    static func recognize(_ image: CGImage, level: RecognizeTextRequest.RecognitionLevel) async throws -> CaptureText {
         var request = RecognizeTextRequest()
-        request.recognitionLevel = .accurate
+        request.recognitionLevel = level
         let observations = try await request.perform(on: image)
         let size = CGSize(width: image.width, height: image.height)
         let bounds = CGRect(origin: .zero, size: size)
