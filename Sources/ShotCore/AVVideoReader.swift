@@ -89,7 +89,7 @@ public enum AVVideoReader {
                 continue
             }
             waiting[result.requestedTime]?.removeFirst()
-            let decoded = Result { () throws -> (time: Double, image: PlatformImage) in
+            let decoded = Result { () throws -> (time: Double, image: CGImage) in
                 let image = try result.image
                 return ((try? result.actualTime.seconds) ?? times[index], image)
             }

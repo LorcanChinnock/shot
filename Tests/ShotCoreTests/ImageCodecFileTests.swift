@@ -18,13 +18,13 @@ private func gradient(width: Int, height: Int) throws -> CGImage {
 
 @Test(arguments: [CGFloat(1), 2])
 func aDecodedPNGEncodesAndDecodesToTheSamePixels(scale: CGFloat) throws {
-    let codec = ImageIOCodec()
     let file = try #require(ImageCodec.data(from: gradient(width: 33, height: 17), scale: scale))
-    let decoded = try #require(codec.decode(file))
-    #expect(decoded.width == 33 && decoded.height == 17 && decoded.scale == scale)
-    let encoded = try #require(codec.encode(decoded, as: .png, quality: 1, metadata: ImageMetadata()))
-    let again = try #require(codec.decode(encoded))
-    #expect(again == decoded)
+    let decoded = try #require(ImageCodec.image(from: file))
+    #expect(decoded.width == 33 && decoded.height == 17 && ImageCodec.scale(of: file) == scale)
+    let encoded = try #require(ImageCodec.data(from: decoded, scale: scale))
+    let again = try #require(ImageCodec.image(from: encoded))
+    #expect(ImageCodec.scale(of: encoded) == scale)
+    #expect(Bitmap(again) == Bitmap(decoded))
 }
 
 @Test func aBitmapGoesToACGImageAndBackUnchanged() throws {
@@ -46,33 +46,30 @@ func aDecodedPNGEncodesAndDecodesToTheSamePixels(scale: CGFloat) throws {
 }
 
 @Test(arguments: [ImageFormat.png, .jpeg])
-func whatABitmapIsEncodedWithReadsBackFromTheFile(format: ImageFormat) throws {
-    let codec = ImageIOCodec()
+func whatAnImageIsEncodedWithReadsBackFromTheFile(format: ImageFormat) throws {
     let record = CaptureRecord(original: "Shot.png", kind: "image", created: Date(timeIntervalSince1970: 1_791_640_992), size: .init(width: 20, height: 10), scale: 2)
-    let bitmap = try #require(Bitmap(try gradient(width: 20, height: 10), scale: 2))
-    let data = try #require(codec.encode(bitmap, as: format, quality: 0.9, metadata: ImageMetadata(windowShadow: true, record: record, projectID: "ID-1")))
+    let data = try #require(ImageCodec.data(from: gradient(width: 20, height: 10), scale: 2, format: format, windowShadow: true, record: record, projectID: "ID-1"))
     let url = FileManager.default.temporaryDirectory.appendingPathComponent("codec-\(UUID().uuidString).\(format.fileExtension)")
     defer { try? FileManager.default.removeItem(at: url) }
     try data.write(to: url)
-    #expect(codec.info(ofFileAt: url) == ImageFileInfo(isGIF: false, frames: 1, size: CaptureRecord.Size(width: 20, height: 10)))
-    #expect(codec.info(of: data) == codec.info(ofFileAt: url))
-    #expect(codec.scale(ofFileAt: url) == 2)
-    #expect(codec.record(ofFileAt: url) == record)
-    #expect(codec.projectID(ofFileAt: url) == "ID-1")
-    #expect(codec.hasWindowShadow(ofFileAt: url))
-    let read = try #require(codec.decode(fileAt: url))
-    #expect(read.width == 20 && read.height == 10 && read.scale == 2)
+    #expect(ImageCodec.info(ofFileAt: url) == ImageFileInfo(isGIF: false, frames: 1, size: CaptureRecord.Size(width: 20, height: 10)))
+    #expect(ImageCodec.info(of: data) == ImageCodec.info(ofFileAt: url))
+    #expect(ImageCodec.scale(ofFileAt: url) == 2)
+    #expect(ImageCodec.record(ofFileAt: url) == record)
+    #expect(ImageCodec.projectID(ofFileAt: url) == "ID-1")
+    #expect(ImageCodec.hasWindowShadow(ofFileAt: url))
+    let read = try #require(ImageCodec.image(at: url))
+    #expect(read.width == 20 && read.height == 10)
 }
 
 @Test func aFileThatIsntAnImageHasNoInfo() {
-    #expect(ImageIOCodec().info(of: Data("not an image".utf8)) == nil)
-    #expect(ImageIOCodec().decode(Data("not an image".utf8)) == nil)
+    #expect(ImageCodec.info(of: Data("not an image".utf8)) == nil)
+    #expect(ImageCodec.image(from: Data("not an image".utf8)) == nil)
 }
 
 @Test func aLowerJPEGQualityGivesASmallerFile() throws {
-    let codec = ImageIOCodec()
-    let bitmap = try #require(Bitmap(try gradient(width: 64, height: 64)))
-    let high = try #require(codec.encode(bitmap, as: .jpeg, quality: 0.95, metadata: ImageMetadata()))
-    let low = try #require(codec.encode(bitmap, as: .jpeg, quality: 0.2, metadata: ImageMetadata()))
+    let image = try gradient(width: 64, height: 64)
+    let high = try #require(ImageCodec.data(from: image, scale: 1, format: .jpeg, quality: 0.95))
+    let low = try #require(ImageCodec.data(from: image, scale: 1, format: .jpeg, quality: 0.2))
     #expect(low.count < high.count)
 }

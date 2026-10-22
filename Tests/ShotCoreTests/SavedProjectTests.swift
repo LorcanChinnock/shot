@@ -3,10 +3,11 @@ import Foundation
 import Testing
 @testable import ShotCore
 
-// Projects and copied annotations as Shot saved them before placed images were coded through a `PNGCoding`. The files
-// in Tests/Fixtures were written by main at e089aa5: `project.json` by `ProjectStore`, `project-legacy.json` is the same
-// project with its rectangle saved as an older version saved a rounded one, and `annotation.json` by
-// `AnnotationClipboard`. Each holds a bent arrow and a 3×2 placed image with a clear and a half-clear pixel.
+// Projects and copied annotations as an earlier Shot saved them, so a change to how they're coded can't break old
+// files. The files in Tests/Fixtures were written by main at e089aa5: `project.json` by `ProjectStore`,
+// `project-legacy.json` is the same project with its rectangle saved as an older version saved a rounded one, and
+// `annotation.json` by `AnnotationClipboard`. Each holds a bent arrow and a 3×2 placed image with a clear and a
+// half-clear pixel.
 
 private func fixture(_ name: String) throws -> Data {
     try Data(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Fixtures/\(name)"))
@@ -31,14 +32,14 @@ private func expectFixturePicture(_ annotation: Annotation?) throws {
     #expect(placed.hasTransparency)
 }
 
-@Test func aProjectSavedBeforeImageCodingReadsBackAndSavesTheSameBytes() throws {
+@Test func anEarlierSavedProjectReadsBackAndSavesTheSameBytes() throws {
     let saved = try fixture("project.json")
-    let project = try ProjectEntry.decoder(codec: ImageIOCodec()).decode(StoredProject<EditorSnapshot>.self, from: saved)
+    let project = try ProjectEntry.decoder().decode(StoredProject<EditorSnapshot>.self, from: saved)
     let layers = try #require(project.document)
     #expect(layers.annotations.count == 3)
     #expect(layers.annotations.first { $0.id == arrowID }?.bend == CGVector(dx: 1.5, dy: -6))
     try expectFixturePicture(layers.annotations.first { $0.id == imageID })
-    #expect(try ProjectEntry.encoder(codec: ImageIOCodec()).encode(project) == saved)
+    #expect(try ProjectEntry.encoder().encode(project) == saved)
 }
 
 @Test func aLegacyRoundedRectangleInASavedProjectSavesAsMainSavedIt() throws {
@@ -49,23 +50,19 @@ private func expectFixturePicture(_ annotation: Annotation?) throws {
     #expect(try ProjectEntry.encoder().encode(project) == fixture("project.json"))
 }
 
-@Test func aCopiedAnnotationSavedBeforeImageCodingPastesAndCopiesTheSame() throws {
+@Test func anEarlierCopiedAnnotationPastesAndCopiesTheSame() throws {
     let copied = try fixture("annotation.json")
-    let annotation = try AnnotationClipboard.annotation(from: copied, codec: ImageIOCodec())
+    let annotation = try AnnotationClipboard.annotation(from: copied)
     try expectFixturePicture(annotation)
     // The pasteboard's JSON doesn't sort its keys, so the order changes from run to run; what it says doesn't.
-    let again = try AnnotationClipboard.data(for: annotation, codec: ImageIOCodec())
+    let again = try AnnotationClipboard.data(for: annotation)
     #expect(try JSONSerialization.jsonObject(with: again) as? NSDictionary == JSONSerialization.jsonObject(with: copied) as? NSDictionary)
 }
 
-@Test func aPlacedImageWontEncodeOrDecodeWithoutACodec() throws {
-    let image = Annotation(kind: .image(AnnotationImage(solidImage(width: 6, height: 4)), rect: CGRect(x: 0, y: 0, width: 6, height: 4)), color: RGBA(0, 0, 0), lineWidth: 0)
-    #expect(throws: EncodingError.self) { try JSONEncoder().encode(image) }
-    #expect(throws: EncodingError.self) { try JSONEncoder().encode(StoredProject(entry: ProjectEntry(id: "ID", stamped: true, file: ProjectFile(path: "/x.png"), origin: ProjectOrigin(via: .app)), document: [image])) }
-    #expect(throws: DecodingError.self) { try JSONDecoder().decode(Annotation.self, from: fixture("annotation.json")) }
-    // Without an image, there's nothing to need one.
-    let arrow = Annotation(kind: .arrow(from: CGPoint(x: 1, y: 2), to: CGPoint(x: 30, y: 40)), color: RGBA(1, 0, 0), lineWidth: 4)
-    #expect(try JSONDecoder().decode(Annotation.self, from: JSONEncoder().encode(arrow)) == arrow)
+@Test func aPlacedImageEncodesAndDecodesWithAPlainJSONCoder() throws {
+    let picture = try JSONDecoder().decode(Annotation.self, from: fixture("annotation.json"))
+    try expectFixturePicture(picture)
+    #expect(try JSONDecoder().decode(Annotation.self, from: JSONEncoder().encode(picture)) == picture)
 }
 
 @Test func aPlacedImagesPixelsSurviveTheProjectStore() throws {
@@ -75,7 +72,7 @@ private func expectFixturePicture(_ annotation: Annotation?) throws {
     try #require(ImageCodec.data(from: solidImage(width: 20, height: 10), scale: 1, projectID: "ID-1")).write(to: file)
     let picture = try #require(try ProjectEntry.decoder().decode(StoredProject<EditorSnapshot>.self, from: fixture("project.json")).document)
 
-    let store = ProjectStore(folder: folder.appendingPathComponent("Projects"), codec: ImageIOCodec())
+    let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
     try store.save(picture, for: file, id: "ID-1", origin: ProjectOrigin(via: .app))
     let layers = try #require(store.project(for: file, as: EditorSnapshot.self)?.document)
     #expect(layers == picture)
@@ -106,7 +103,7 @@ private enum Clearing: String, CaseIterable {
 }
 
 @Test(arguments: Clearing.allCases)
-private func cgImageAndBitmapAgreeOnTransparency(clearing: Clearing) throws {
+private func anImageSaysWhetherAnyPixelIsSeeThrough(clearing: Clearing) throws {
     var pixels = Data(repeating: 255, count: 80 * 60 * 4)
     for (x, y, alpha) in clearing.pixels {
         let i = (y * 80 + x) * 4
@@ -114,6 +111,5 @@ private func cgImageAndBitmapAgreeOnTransparency(clearing: Clearing) throws {
     }
     let bitmap = try #require(Bitmap(width: 80, height: 60, pixels: pixels))
     let image = try #require(bitmap.cgImage)
-    #expect(image.hasTransparentPixels == BitmapImage(bitmap).hasTransparentPixels)
-    #expect(BitmapImage(bitmap).hasTransparentPixels == (clearing != .none))
+    #expect(image.hasTransparentPixels == (clearing != .none))
 }

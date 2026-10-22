@@ -53,7 +53,7 @@ extension EditorDocument {
     /// The area `spotlightDimPath` dims, for a canvas that can't add or subtract paths: white where it dims and black
     /// where it doesn't, drawn on a grey `canvasType` canvas at `scale` pixels to a unit. `frame` is the smallest rect on
     /// whole pixels holding all it dims, which the mask covers, its top row at the frame's min y. `nil` when it dims nothing.
-    func spotlightDimMask(shaper: any TextShaper, canvasType: any Canvas.Type, scale: CGFloat) -> (mask: PlatformImage, frame: CGRect)? {
+    func spotlightDimMask(shaper: any TextShaper, canvasType: any Canvas.Type, scale: CGFloat) -> (mask: CGImage, frame: CGRect)? {
         guard let parts = spotlightDimParts(shaper: shaper) else {
             return nil
         }

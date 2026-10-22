@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 /// Pulls still frames out of a video for an agent, which can't watch one: samples it a few times a second as tiny
@@ -7,7 +8,7 @@ public enum KeyFrameExtractor {
     public struct Frame: @unchecked Sendable {
         /// Seconds from the start, of the frame actually decoded.
         public let time: Double
-        public let image: PlatformImage
+        public let image: CGImage
     }
 
     /// Samples a second when looking for changes, and the most for a long video, which is then sampled less often.
@@ -51,7 +52,7 @@ public enum KeyFrameExtractor {
     }
 
     /// `image` drawn small on a grey `canvasType` canvas, as bytes.
-    public static func gray(_ image: PlatformImage, canvasType: any Canvas.Type) -> [UInt8] {
+    public static func gray(_ image: CGImage, canvasType: any Canvas.Type) -> [UInt8] {
         let (width, height) = thumbnailSize
         guard let canvas = canvasType.init(width: width, height: height, format: .grey) else {
             return [UInt8](repeating: 0, count: width * height)

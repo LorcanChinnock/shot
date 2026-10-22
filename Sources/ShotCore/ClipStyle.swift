@@ -12,7 +12,7 @@ final class ClipShadowCache: Sendable {
     }
 
     /// The mask, and where it goes in the key's pixels.
-    typealias Value = (mask: PlatformImage, frame: CGRect)
+    typealias Value = (mask: CGImage, frame: CGRect)
 
     private let capacity: Int
     /// Most recently used first.

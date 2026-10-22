@@ -9,20 +9,20 @@ import Foundation
 public enum ShotCommands {
     /// The JSON a command prints: at least `path`, `size` and `bytes` for what it wrote, or what `info` found. The files
     /// it writes keep their projects in `projects`, saying `origin` made them, by default the command line running
-    /// `command`. With no store, they keep none. `codec` reads and writes the images, and they're drawn on `canvasType` canvases.
+    /// `command`. With no store, they keep none. Images are drawn on `canvasType` canvases.
     public static func run(
-        _ command: ShotCommand, projects: ProjectStore? = nil, origin: ProjectOrigin? = nil, codec: any ImageCoding, canvasType: any Canvas.Type
+        _ command: ShotCommand, projects: ProjectStore? = nil, origin: ProjectOrigin? = nil, canvasType: any Canvas.Type
     ) async throws(ShotCommandError) -> JSONValue {
         let origin = origin ?? ProjectOrigin(via: .cli, action: command.name)
         switch command {
         case let .info(path):
-            return try await info(url(path), codec: codec)
+            return try await info(url(path))
         case let .gif(options):
-            return try await gif(options, projects: projects, origin: origin, codec: codec, canvasType: canvasType)
+            return try await gif(options, projects: projects, origin: origin, canvasType: canvasType)
         case let .trim(options):
-            return try await trim(options, projects: projects, origin: origin, codec: codec, canvasType: canvasType)
+            return try await trim(options, projects: projects, origin: origin, canvasType: canvasType)
         case let .redact(options):
-            return try await redact(options, projects: projects, origin: origin, codec: codec, canvasType: canvasType)
+            return try await redact(options, projects: projects, origin: origin, canvasType: canvasType)
         case let .annotate(options):
             let marks: [CaptureMark]
             switch options.marks {
@@ -37,17 +37,17 @@ public enum ShotCommands {
             case .standardInput:
                 marks = try CaptureMark.list(from: FileHandle.standardInput.readDataToEndOfFile())
             }
-            return try draw(input: options.input, output: options.output, edit: ImageEdit(marks: marks), projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (_: PlatformImage) in [] }
+            return try draw(input: options.input, output: options.output, edit: ImageEdit(marks: marks), projects: projects, origin: origin, canvasType: canvasType) { (_: CGImage) in [] }
         case let .frames(options):
-            return try await frames(options, codec: codec, canvasType: canvasType)
+            return try await frames(options, canvasType: canvasType)
         case let .text(path):
-            return try await text(url(path), codec: codec)
+            return try await text(url(path))
         case let .diff(options):
-            return try diff(options, codec: codec, canvasType: canvasType)
+            return try diff(options, canvasType: canvasType)
         case let .crop(options):
-            return try draw(input: options.input, output: options.output, edit: ImageEdit(crop: options.rect), cropField: "rect", projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (_: PlatformImage) in [] }
+            return try draw(input: options.input, output: options.output, edit: ImageEdit(crop: options.rect), cropField: "rect", projects: projects, origin: origin, canvasType: canvasType) { (_: CGImage) in [] }
         case let .edit(options):
-            return try await edit(options, projects: projects, origin: origin, codec: codec, canvasType: canvasType)
+            return try await edit(options, projects: projects, origin: origin, canvasType: canvasType)
         case .capture, .record, .watch, .pick, .windows, .latest, .list, .get, .doctor, .mcp, .indexText, .version, .help:
             throw .internal("\(command.name) isn't a media command")
         }
@@ -55,20 +55,20 @@ public enum ShotCommands {
 
     // MARK: Commands
 
-    static func info(_ url: URL, codec: any ImageCoding) async throws(ShotCommandError) -> JSONValue {
+    static func info(_ url: URL) async throws(ShotCommandError) -> JSONValue {
         try requireInput(url)
         var object: [String: JSONValue] = ["path": .string(url.path), "bytes": .number(Double(bytes(of: url)))]
         if let created = try? url.resourceValues(forKeys: [.creationDateKey]).creationDate {
             object["created"] = .string(ISO8601DateFormatter().string(from: created))
         }
-        if let image = codec.info(ofFileAt: url), let size = image.size {
+        if let image = ImageCodec.info(ofFileAt: url), let size = image.size {
             object["kind"] = .string(image.isGIF ? "gif" : "image")
             object["size"] = json(size)
-            object["scale"] = .number(Double(codec.scale(ofFileAt: url)))
+            object["scale"] = .number(Double(ImageCodec.scale(ofFileAt: url)))
             if image.frames > 1 {
                 object["frames"] = .number(Double(image.frames))
             }
-            if let record = codec.record(ofFileAt: url), let data = try? record.encoded(),
+            if let record = ImageCodec.record(ofFileAt: url), let data = try? record.encoded(),
                let value = try? JSONDecoder().decode(JSONValue.self, from: data) {
                 object["record"] = value
             }
@@ -89,12 +89,12 @@ public enum ShotCommands {
     /// Writes the part of the video in the range as a GIF, as the video editor's Export does: an edit with only `keep`,
     /// as a GIF. It keeps the trim as its project, so Edit on it opens the video trimmed.
     static func gif(
-        _ options: ShotCommand.GIFOptions, projects: ProjectStore?, origin: ProjectOrigin, codec: any ImageCoding, canvasType: any Canvas.Type
+        _ options: ShotCommand.GIFOptions, projects: ProjectStore?, origin: ProjectOrigin, canvasType: any Canvas.Type
     ) async throws(ShotCommandError) -> JSONValue {
         let media = try await video(url(options.input))
         _ = try trimmed(media, start: options.start, end: options.end, command: "gif")
         let edit = VideoEdit(keep: [[options.start ?? 0, min(options.end ?? media.duration, media.duration)]], format: .gif, fps: options.fps, width: options.width)
-        let result = try await editVideo(edit, input: options.input, output: options.output, extensions: ["gif"], command: "gif", projects: projects, origin: origin, codec: codec, canvasType: canvasType)
+        let result = try await editVideo(edit, input: options.input, output: options.output, extensions: ["gif"], command: "gif", projects: projects, origin: origin, canvasType: canvasType)
         guard case var .object(object) = result else {
             return result
         }
@@ -107,35 +107,35 @@ public enum ShotCommands {
     /// `keep`. It keeps the trim as its project, so it opens in the video editor with the rest of the recording still
     /// there to drag back.
     static func trim(
-        _ options: ShotCommand.TrimOptions, projects: ProjectStore?, origin: ProjectOrigin, codec: any ImageCoding, canvasType: any Canvas.Type
+        _ options: ShotCommand.TrimOptions, projects: ProjectStore?, origin: ProjectOrigin, canvasType: any Canvas.Type
     ) async throws(ShotCommandError) -> JSONValue {
         let input = url(options.input)
         let media = try await video(input)
         _ = try trimmed(media, start: options.start, end: options.end, command: "trim")
         let own = input.pathExtension.lowercased()
         let edit = VideoEdit(keep: [[options.start, min(options.end, media.duration)]], format: ["mov", "mp4"].contains(own) || options.output != nil ? nil : .mov)
-        return try await editVideo(edit, input: options.input, output: options.output, extensions: ["mov", "mp4"], command: "trim", projects: projects, origin: origin, codec: codec, canvasType: canvasType)
+        return try await editVideo(edit, input: options.input, output: options.output, extensions: ["mov", "mp4"], command: "trim", projects: projects, origin: origin, canvasType: canvasType)
     }
 
     /// Hides the rects, and with `detect` the private text read in the image, as blurs or pixelations the new version
     /// records, so they stay live layers in Shot. With nothing to hide, it writes nothing and gives the input's path.
-    static func redact(_ options: ShotCommand.RedactOptions, projects: ProjectStore?, origin: ProjectOrigin, codec: any ImageCoding, canvasType: any Canvas.Type) async throws(ShotCommandError) -> JSONValue {
+    static func redact(_ options: ShotCommand.RedactOptions, projects: ProjectStore?, origin: ProjectOrigin, canvasType: any Canvas.Type) async throws(ShotCommandError) -> JSONValue {
         var found: [CaptureText.Found] = []
         if !options.detect.isEmpty {
             let input = url(options.input)
             try requireInput(input)
-            guard let image = codec.image(at: input) else {
+            guard let image = ImageCodec.image(at: input) else {
                 throw .data("\(input.lastPathComponent) isn't an image Shot can read")
             }
             found = try await text(in: image, named: input.lastPathComponent, toHide: options.detect)
             if found.isEmpty, options.rects.isEmpty {
-                var object = try written(input, codec: codec)
+                var object = try written(input)
                 object["found"] = CaptureText.json(hidden: [])
                 object["unchanged"] = .bool(true)
                 return .object(object)
             }
         }
-        let result = try draw(input: options.input, output: options.output, projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (image: PlatformImage) throws(ShotCommandError) in
+        let result = try draw(input: options.input, output: options.output, projects: projects, origin: origin, canvasType: canvasType) { (image: CGImage) throws(ShotCommandError) in
             let bounds = CGRect(x: 0, y: 0, width: image.width, height: image.height)
             var rects: [CGRect] = []
             for (index, r) in options.rects.enumerated() {
@@ -157,7 +157,7 @@ public enum ShotCommands {
         return .object(object)
     }
 
-    static func frames(_ options: ShotCommand.FramesOptions, codec: any ImageCoding, canvasType: any Canvas.Type) async throws(ShotCommandError) -> JSONValue {
+    static func frames(_ options: ShotCommand.FramesOptions, canvasType: any Canvas.Type) async throws(ShotCommandError) -> JSONValue {
         let input = url(options.input)
         let duration = try await video(input).duration
         let times: [Double]
@@ -179,11 +179,11 @@ public enum ShotCommands {
             var written: [JSONValue] = []
             for (index, frame) in frames.enumerated() {
                 let file = folder.appendingPathComponent(String(format: "%02d %.1fs.jpg", index + 1, frame.time))
-                guard let data = codec.data(from: frame.image, scale: 1, format: .jpeg) else {
+                guard let data = ImageCodec.data(from: frame.image, scale: 1, format: .jpeg) else {
                     throw ShotCommandError.internal("couldn't encode the frame at \(String(format: "%.1f", frame.time)) s")
                 }
                 try data.write(to: file, options: .withoutOverwriting)
-                var object = try Self.written(file, codec: codec)
+                var object = try Self.written(file)
                 object["time"] = .number((frame.time * 1000).rounded() / 1000)
                 written.append(.object(object))
             }
@@ -195,9 +195,9 @@ public enum ShotCommands {
         }
     }
 
-    static func text(_ url: URL, codec: any ImageCoding) async throws(ShotCommandError) -> JSONValue {
+    static func text(_ url: URL) async throws(ShotCommandError) -> JSONValue {
         try requireInput(url)
-        guard let image = codec.image(at: url) else {
+        guard let image = ImageCodec.image(at: url) else {
             throw .data("\(url.lastPathComponent) isn't an image Shot can read")
         }
         do {
@@ -210,7 +210,7 @@ public enum ShotCommands {
     }
 
     /// The text in `image`, the file `name`, of the kinds `detect` names.
-    private static func text(in image: PlatformImage, named name: String, toHide detect: Set<SensitiveText.Kind>) async throws(ShotCommandError) -> [CaptureText.Found] {
+    private static func text(in image: CGImage, named name: String, toHide detect: Set<SensitiveText.Kind>) async throws(ShotCommandError) -> [CaptureText.Found] {
         do {
             return try await TextRecognizer.recognize(image).toHide(detect)
         } catch {
@@ -246,11 +246,11 @@ public enum ShotCommands {
     /// since its pixels are no longer theirs. `layers` adds the new version's layers, each with its id and type.
     static func draw(
         input path: String, output: String?, edit: ImageEdit = ImageEdit(), cropField: String = "crop", layers: Bool = false,
-        projects: ProjectStore?, origin: ProjectOrigin, codec: any ImageCoding, canvasType: any Canvas.Type, _ make: (PlatformImage, CGFloat) throws(ShotCommandError) -> [Annotation]
+        projects: ProjectStore?, origin: ProjectOrigin, canvasType: any Canvas.Type, _ make: (CGImage, CGFloat) throws(ShotCommandError) -> [Annotation]
     ) throws(ShotCommandError) -> JSONValue {
         let input = url(path)
         try requireInput(input)
-        guard let image = codec.image(at: input) else {
+        guard let image = ImageCodec.image(at: input) else {
             throw .data("\(input.lastPathComponent) isn't an image Shot can read")
         }
         let own = input.pathExtension.lowercased()
@@ -269,16 +269,16 @@ public enum ShotCommands {
             guard FileManager.default.fileExists(atPath: file.path) else {
                 throw .noInput("place[\(index)]: \(file.path) doesn't exist")
             }
-            guard let picture = codec.image(at: file) else {
+            guard let picture = ImageCodec.image(at: file) else {
                 throw .data("place[\(index)]: \(file.lastPathComponent) isn't an image Shot can read")
             }
-            placed.append(PlacedImageFile(image: picture, scale: codec.scale(ofFileAt: file)))
+            placed.append(PlacedImageFile(image: picture, scale: ImageCodec.scale(ofFileAt: file)))
         }
-        let scale = codec.scale(ofFileAt: input)
+        let scale = ImageCodec.scale(ofFileAt: input)
         let drawn = try make(image, scale)
         var document = EditorDocument(base: image, background: EditorDocument.defaultBackground(for: format))
         var original = input
-        if let saved = VersionWriter.savedLayers(of: input, in: projects, codec: codec) {
+        if let saved = VersionWriter.savedLayers(of: input, in: projects) {
             var reopened = EditorDocument(base: saved.image)
             reopened.restore(saved.layers)
             // Only while the version is still the size its layers draw, so its pixels are theirs.
@@ -287,7 +287,7 @@ public enum ShotCommands {
                 original = saved.original
             }
         }
-        document.hasWindowShadow = codec.hasWindowShadow(ofFileAt: original)
+        document.hasWindowShadow = ImageCodec.hasWindowShadow(ofFileAt: original)
         try document.apply(edit, drawn: drawn, placed: placed, scale: scale, name: input.lastPathComponent, cropField: cropField, shaper: canvasType.shaper)
         if format == .jpeg {
             // JPEG has no alpha, as the editor's background picker knows.
@@ -301,8 +301,8 @@ public enum ShotCommands {
         let projectID = projects == nil ? nil : ProjectKey.newID()
         let rendered: VersionWriter.RenderedImage
         do throws(VersionWriter.Failure) {
-            let record = VersionWriter.record(of: document, drawnOn: original, savedAs: format, scale: scale, atOneX: oneX, codec: codec, shaper: canvasType.shaper)
-            rendered = try VersionWriter.render(document, scale: scale, as: format, record: record, projectID: projectID, atOneX: oneX, codec: codec, canvasType: canvasType)
+            let record = VersionWriter.record(of: document, drawnOn: original, savedAs: format, scale: scale, atOneX: oneX, shaper: canvasType.shaper)
+            rendered = try VersionWriter.render(document, scale: scale, as: format, record: record, projectID: projectID, atOneX: oneX, canvasType: canvasType)
         } catch .draw {
             throw .internal("couldn't draw the image")
         } catch {
@@ -323,7 +323,7 @@ public enum ShotCommands {
         } else {
             VersionWriter.keep(document.snapshot, of: placedAt, id: projectID, original: original, in: projects, origin: origin)
         }
-        var object = try written(placedAt, codec: codec)
+        var object = try written(placedAt)
         if layers {
             object["layers"] = .array((rendered.record?.annotations ?? []).map { mark in
                 .object(["id": .string(mark.id ?? ""), "type": .string(mark.type)])
@@ -334,24 +334,23 @@ public enum ShotCommands {
 
     /// The same for `redact`, which needs only the image.
     static func draw(
-        input path: String, output: String?, edit: ImageEdit = ImageEdit(), cropField: String = "crop", projects: ProjectStore?, origin: ProjectOrigin,
-        codec: any ImageCoding, canvasType: any Canvas.Type, _ make: (PlatformImage) throws(ShotCommandError) -> [Annotation]
+        input path: String, output: String?, edit: ImageEdit = ImageEdit(), cropField: String = "crop", projects: ProjectStore?, origin: ProjectOrigin, canvasType: any Canvas.Type, _ make: (CGImage) throws(ShotCommandError) -> [Annotation]
     ) throws(ShotCommandError) -> JSONValue {
-        try draw(input: path, output: output, edit: edit, cropField: cropField, projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (image: PlatformImage, _: CGFloat) throws(ShotCommandError) in try make(image) }
+        try draw(input: path, output: output, edit: edit, cropField: cropField, projects: projects, origin: origin, canvasType: canvasType) { (image: CGImage, _: CGFloat) throws(ShotCommandError) in try make(image) }
     }
 
     /// Makes the edit's changes to the image, as `draw` does, and lists the new version's layers, so an agent can
     /// remove one later by its id; or to the video, as `editVideo` does. An edit read from JSON is an image's or a
     /// video's by what the input is.
     static func edit(
-        _ options: ShotCommand.EditOptions, projects: ProjectStore?, origin: ProjectOrigin, codec: any ImageCoding, canvasType: any Canvas.Type
+        _ options: ShotCommand.EditOptions, projects: ProjectStore?, origin: ProjectOrigin, canvasType: any Canvas.Type
     ) async throws(ShotCommandError) -> JSONValue {
         let data: Data
         switch options.spec {
         case let .edit(edit):
-            return try draw(input: options.input, output: options.output, edit: edit, layers: true, projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (_: PlatformImage, _: CGFloat) in [] }
+            return try draw(input: options.input, output: options.output, edit: edit, layers: true, projects: projects, origin: origin, canvasType: canvasType) { (_: CGImage, _: CGFloat) in [] }
         case let .video(edit):
-            return try await editVideo(edit, input: options.input, output: options.output, projects: projects, origin: origin, codec: codec, canvasType: canvasType)
+            return try await editVideo(edit, input: options.input, output: options.output, projects: projects, origin: origin, canvasType: canvasType)
         case let .json(text):
             data = Data(text.utf8)
         case let .file(path):
@@ -365,15 +364,15 @@ public enum ShotCommands {
         }
         let input = url(options.input)
         try requireInput(input)
-        if isImage(input, codec: codec) {
-            return try draw(input: options.input, output: options.output, edit: ImageEdit.parse(data), layers: true, projects: projects, origin: origin, codec: codec, canvasType: canvasType) { (_: PlatformImage, _: CGFloat) in [] }
+        if isImage(input) {
+            return try draw(input: options.input, output: options.output, edit: ImageEdit.parse(data), layers: true, projects: projects, origin: origin, canvasType: canvasType) { (_: CGImage, _: CGFloat) in [] }
         }
-        return try await editVideo(VideoEdit.parse(data), input: options.input, output: options.output, projects: projects, origin: origin, codec: codec, canvasType: canvasType)
+        return try await editVideo(VideoEdit.parse(data), input: options.input, output: options.output, projects: projects, origin: origin, canvasType: canvasType)
     }
 
-    /// Whether the file is an image `codec` reads, rather than a video.
-    static func isImage(_ url: URL, codec: any ImageCoding) -> Bool {
-        codec.info(ofFileAt: url) != nil
+    /// Whether the file is an image ImageIO reads, rather than a video.
+    static func isImage(_ url: URL) -> Bool {
+        ImageCodec.info(ofFileAt: url) != nil
     }
 
     /// Makes the edit's changes to the video, as the video editor and its export do, and writes it as a new file beside
@@ -383,7 +382,7 @@ public enum ShotCommands {
     /// `extensions` are the outputs `command` can write.
     static func editVideo(
         _ edit: VideoEdit, input path: String, output: String?, extensions: [String] = ["mp4", "mov", "gif"], command: String = "edit",
-        projects: ProjectStore?, origin: ProjectOrigin, codec: any ImageCoding, canvasType: any Canvas.Type
+        projects: ProjectStore?, origin: ProjectOrigin, canvasType: any Canvas.Type
     ) async throws(ShotCommandError) -> JSONValue {
         let input = url(path)
         let media = try await video(input)
@@ -446,7 +445,7 @@ public enum ShotCommands {
         }
         let placed = try place(temporary, at: target)
         VersionWriter.keep(written.kept, of: placed, original: original, in: projects, origin: origin)
-        var object = try Self.written(placed, codec: codec)
+        var object = try Self.written(placed)
         // A GIF is an image: its size is the codec's.
         if ext != "gif", let probed = try? await MediaProbe.probe(placed) {
             object["duration"] = .number((probed.duration * 1000).rounded() / 1000)
@@ -589,9 +588,9 @@ public enum ShotCommands {
     }
 
     /// `path`, `size` and `bytes` for a file just written.
-    static func written(_ url: URL, codec: any ImageCoding) throws(ShotCommandError) -> [String: JSONValue] {
+    static func written(_ url: URL) throws(ShotCommandError) -> [String: JSONValue] {
         var object: [String: JSONValue] = ["path": .string(url.path), "bytes": .number(Double(bytes(of: url)))]
-        if let size = codec.info(ofFileAt: url)?.size {
+        if let size = ImageCodec.info(ofFileAt: url)?.size {
             object["size"] = json(size)
         }
         return object

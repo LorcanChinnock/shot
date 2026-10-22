@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 /// Writes a looping GIF a frame at a time through `GIFEncoder`, drawing each image on a `canvasType` canvas
@@ -15,7 +16,7 @@ package final class GIFStreamWriter {
     }
 
     /// Adds `image` for `delay` seconds; later frames are drawn at the first frame's size.
-    func add(_ image: PlatformImage, delay: Double) throws {
+    func add(_ image: CGImage, delay: Double) throws {
         let encoder = encoder ?? GIFEncoder(width: image.width, height: image.height, output: output)
         if self.encoder == nil {
             self.encoder = encoder
@@ -33,7 +34,7 @@ package final class GIFStreamWriter {
     }
 
     /// Read as a `Bitmap`, sRGB, so frames are compared, cropped and quantised in the colors the GIF stores.
-    private func draw(_ image: PlatformImage, width: Int, height: Int) throws {
+    private func draw(_ image: CGImage, width: Int, height: Int) throws {
         guard let canvas = canvasType.init(width: width, height: height, format: .sRGB) else {
             throw GIFExporter.ExportError.cannotCreateDestination
         }

@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 /// Builds a project for playing and exporting: on a Mac, `build` makes AVFoundation's composition of it.

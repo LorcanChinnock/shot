@@ -31,8 +31,8 @@ public enum TextRecognizer {
     }
 
     /// The text in the image file at `url`, or `nil` when it isn't an image. A GIF's first frame.
-    public static func recognize(fileAt url: URL, codec: any ImageCoding) async throws -> CaptureText? {
-        guard let image = codec.image(at: url) else {
+    public static func recognize(fileAt url: URL) async throws -> CaptureText? {
+        guard let image = ImageCodec.image(at: url) else {
             return nil
         }
         return try await recognize(image)

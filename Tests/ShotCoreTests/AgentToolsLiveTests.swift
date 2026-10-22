@@ -4,7 +4,7 @@ import Testing
 
 private func live() -> AgentTools {
     AgentTools.live(
-        folder: URL(fileURLWithPath: "/shots"), codec: StandInCodec(), canvasType: UnusedCanvas.self
+        folder: URL(fileURLWithPath: "/shots"), canvasType: CGCanvas.self
     )
 }
 
@@ -18,7 +18,7 @@ private func live() -> AgentTools {
     index.set("Invoice total", for: TextIndex.File(path: "/shots/Shot.png", bytes: 100, modified: .distantPast))
     let read = index
     let tools = AgentTools.live(
-        folder: URL(fileURLWithPath: "/shots"), textIndex: { read }, codec: StandInCodec(), canvasType: UnusedCanvas.self
+        folder: URL(fileURLWithPath: "/shots"), textIndex: { read }, canvasType: CGCanvas.self
     )
     #expect(tools.textIndex() == read)
     #expect(live().textIndex() == TextIndex())

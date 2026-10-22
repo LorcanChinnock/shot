@@ -6,9 +6,9 @@ public struct VideoFrame {
     /// The time asked for, as given.
     public let requestedTime: Double
     /// When the frame decoded is shown, in seconds from the start, and its picture; the error when it didn't decode.
-    public let decoded: Result<(time: Double, image: PlatformImage), any Error>
+    public let decoded: Result<(time: Double, image: CGImage), any Error>
 
-    public init(requestedTime: Double, decoded: Result<(time: Double, image: PlatformImage), any Error>) {
+    public init(requestedTime: Double, decoded: Result<(time: Double, image: CGImage), any Error>) {
         self.requestedTime = requestedTime
         self.decoded = decoded
     }

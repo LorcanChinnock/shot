@@ -150,3 +150,40 @@ extension GIFExporter {
         try await estimatedSize(of: VideoFrames(composition), fps: fps, maxWidth: maxWidth, speed: speed, canvasType: CGCanvas.self)
     }
 }
+
+extension VersionWriter {
+    public static func record(of document: EditorDocument, drawnOn original: URL, savedAs format: ImageFormat, scale: CGFloat, atOneX: Bool = false) -> CaptureRecord {
+        record(of: document, drawnOn: original, savedAs: format, scale: scale, atOneX: atOneX, shaper: CoreTextShaper())
+    }
+
+    public static func render(_ document: EditorDocument, scale: CGFloat, as format: ImageFormat, record: CaptureRecord?, projectID: String? = nil, atOneX: Bool = false) throws(Failure) -> RenderedImage {
+        try render(document, scale: scale, as: format, record: record, projectID: projectID, atOneX: atOneX, canvasType: CGCanvas.self)
+    }
+
+    public static func saveImage(
+        _ document: EditorDocument, of original: URL, scale: CGFloat, recordForAgents: Bool = Preferences().agentHandoff,
+        projects: ProjectStore? = nil, origin: ProjectOrigin = ProjectOrigin(via: .app)
+    ) throws(Failure) -> SavedImage {
+        try saveImage(document, of: original, scale: scale, recordForAgents: recordForAgents, projects: projects, origin: origin, canvasType: CGCanvas.self)
+    }
+}
+
+extension ShotCommands {
+    public static func run(_ command: ShotCommand, projects: ProjectStore? = nil, origin: ProjectOrigin? = nil) async throws(ShotCommandError) -> JSONValue {
+        try await run(command, projects: projects, origin: origin, canvasType: CGCanvas.self)
+    }
+}
+
+extension AgentTools {
+    public static func live(
+        folder: URL,
+        marks: URL? = nil,
+        projects: ProjectStore? = nil,
+        texts: TextIndexStore? = nil,
+        agent: @escaping @Sendable (AgentRequest) async throws(ShotCommandError) -> [String: JSONValue] = { _ throws(ShotCommandError) in throw .unavailable("can't reach Shot from here") }
+    ) -> AgentTools {
+        live(
+            folder: folder, marks: marks, projects: projects, textIndex: { texts?.load() ?? TextIndex() }, canvasType: CGCanvas.self, agent: agent
+        )
+    }
+}

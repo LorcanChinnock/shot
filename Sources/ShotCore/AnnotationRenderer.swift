@@ -72,7 +72,7 @@ public enum AnnotationRenderer {
     /// Darkens or blurs `dim`, everything under the lowest spotlight outside every spotlight, faded where `softSpotlights` light it.
     private static func drawSpotlightDim(
         _ dim: SpotlightDim, style: SpotlightStyle, softSpotlights: [(rect: CGRect, style: SpotlightStyle, cornerRadius: CGFloat?)],
-        base: PlatformImage, below: ArraySlice<Annotation>, look: CaptureLook, reading read: CGRect, in ctx: any Canvas
+        base: CGImage, below: ArraySlice<Annotation>, look: CaptureLook, reading read: CGRect, in ctx: any Canvas
     ) {
         ctx.saveState()
         defer { ctx.restoreState() }
@@ -109,13 +109,13 @@ public enum AnnotationRenderer {
 
     /// A greyscale mask of `area`: white where the dim shows, black inside the spotlights, with each spotlight's edge
     /// blurred by its soft-edge radius. Having only blurry edges, it's drawn at a lower resolution the softer they are.
-    private static func softSpotlightMask(_ spotlights: [SoftSpotlight], in area: CGRect, canvasType: any Canvas.Type) -> PlatformImage? {
+    private static func softSpotlightMask(_ spotlights: [SoftSpotlight], in area: CGRect, canvasType: any Canvas.Type) -> CGImage? {
         cache.value(for: .softSpotlightMask(spotlights, area: area)) {
             drawSoftSpotlightMask(spotlights, in: area, canvasType: canvasType).map { ($0, area) }
         }?.image
     }
 
-    private static func drawSoftSpotlightMask(_ spotlights: [SoftSpotlight], in area: CGRect, canvasType: any Canvas.Type) -> PlatformImage? {
+    private static func drawSoftSpotlightMask(_ spotlights: [SoftSpotlight], in area: CGRect, canvasType: any Canvas.Type) -> CGImage? {
         let sharpest = spotlights.map { $0.style.softEdgeRadius(in: $0.rect) }.min() ?? 0
         let scale = min(1, 8 / sharpest)
         let size = CGSize(width: ceil(area.width * scale), height: ceil(area.height * scale))
@@ -139,7 +139,7 @@ public enum AnnotationRenderer {
 
     /// One spotlight's shape, black on white, blurred by its soft-edge radius and drawn at a resolution to match;
     /// `frame` is where it goes, at full size.
-    private static func softSpotlight(_ rect: CGRect, style: SpotlightStyle, cornerRadius: CGFloat?, canvasType: any Canvas.Type) -> (image: PlatformImage, frame: CGRect)? {
+    private static func softSpotlight(_ rect: CGRect, style: SpotlightStyle, cornerRadius: CGFloat?, canvasType: any Canvas.Type) -> (image: CGImage, frame: CGRect)? {
         let radius = style.softEdgeRadius(in: rect)
         let frame = rect.insetBy(dx: -3 * radius, dy: -3 * radius).integral
         let scale = min(1, 8 / radius)
@@ -163,7 +163,7 @@ public enum AnnotationRenderer {
     }
 
     /// The document drawn on a new `canvasType` canvas in the screenshot's colour space.
-    public static func flatten(_ doc: EditorDocument, canvasType: any Canvas.Type) -> PlatformImage? {
+    public static func flatten(_ doc: EditorDocument, canvasType: any Canvas.Type) -> CGImage? {
         let size = doc.exportSize
         guard let ctx = canvasType.init(width: Int(size.width), height: Int(size.height), format: .matching(doc.base)) else {
             return nil
@@ -176,13 +176,13 @@ public enum AnnotationRenderer {
 
     /// Draws in a top-left-origin canvas. `below` are the annotations drawn before it, which a pixelate or blur
     /// covers along with the screenshot. `background` is the canvas's, which tints a shadow.
-    public static func draw(_ annotation: Annotation, base: PlatformImage, over below: ArraySlice<Annotation> = [], background: RGBA? = nil, in ctx: any Canvas) {
+    public static func draw(_ annotation: Annotation, base: CGImage, over below: ArraySlice<Annotation> = [], background: RGBA? = nil, in ctx: any Canvas) {
         draw(annotation, base: base, over: below, look: CaptureLook(background: background), in: ctx)
     }
 
     /// `look` is how the screenshot under it is drawn, which a pixelate or blur covers too. A mark or text with a shadow
     /// casts it first; a placed image draws its own.
-    static func draw(_ annotation: Annotation, base: PlatformImage, over below: ArraySlice<Annotation>, look: CaptureLook, in ctx: any Canvas) {
+    static func draw(_ annotation: Annotation, base: CGImage, over below: ArraySlice<Annotation>, look: CaptureLook, in ctx: any Canvas) {
         if let shadow = annotation.style.shadow, let kind = annotation.styleKind, kind != .image {
             let color = shadow.color(background: look.background, object: annotation.color)
             drawCachedShadow(shadow, color: color, of: annotation.bounds(shaper: type(of: ctx).shaper), area: annotation.paintedBounds(shaper: type(of: ctx).shaper), caster: .annotation(annotation), ctx: ctx) {
@@ -193,7 +193,7 @@ public enum AnnotationRenderer {
     }
 
     /// Draws `annotation` without its shadow.
-    private static func drawPlain(_ annotation: Annotation, base: PlatformImage, over below: ArraySlice<Annotation>, look: CaptureLook, in ctx: any Canvas) {
+    private static func drawPlain(_ annotation: Annotation, base: CGImage, over below: ArraySlice<Annotation>, look: CaptureLook, in ctx: any Canvas) {
         let color = annotation.color
         let width = annotation.lineWidth
         ctx.saveState()
@@ -328,7 +328,7 @@ public enum AnnotationRenderer {
 
     /// Draws `image` right side up into `rect` of a top-left-origin canvas, its corners rounded by `cornerRadius`,
     /// with `style`'s shadow under it and border around it. A plain image is drawn as it is.
-    static func drawImage(_ image: PlatformImage, in rect: CGRect, cornerRadius: CGFloat, style: ObjectStyle, shadowBackground: RGBA?, ctx: any Canvas) {
+    static func drawImage(_ image: CGImage, in rect: CGRect, cornerRadius: CGFloat, style: ObjectStyle, shadowBackground: RGBA?, ctx: any Canvas) {
         let needsEdge = style.border?.kind == .hairline || style.shadow?.tint == .object
         let edge = needsEdge ? edgeColor(of: image, canvasType: type(of: ctx)) : nil
         // A solid border or outline goes under the image and casts the shadow with it; a hairline goes over its edge.
@@ -356,7 +356,7 @@ public enum AnnotationRenderer {
 
     /// Draws `border` around `image`, drawn in `rect` with its corners rounded by `cornerRadius`. `edge` is the average
     /// colour near the image's edge, which picks a hairline's.
-    private static func drawBorder(_ border: Border, around image: PlatformImage, in rect: CGRect, cornerRadius: CGFloat, edge: RGBA?, ctx: any Canvas) {
+    private static func drawBorder(_ border: Border, around image: CGImage, in rect: CGRect, cornerRadius: CGFloat, edge: RGBA?, ctx: any Canvas) {
         let width = border.width
         ctx.saveState()
         defer { ctx.restoreState() }
@@ -396,7 +396,7 @@ public enum AnnotationRenderer {
 
     /// The shape of `image`'s opaque pixels grown by `radius` of its pixels, white on black, made with `effects` and kept
     /// while the image is drawn. Its frame is where it goes in the image's pixels, reaching `radius` past each edge.
-    private static func outlineMask(of image: PlatformImage, radius: CGFloat, effects: any ImageEffects) -> RenderCache.Value? {
+    private static func outlineMask(of image: CGImage, radius: CGFloat, effects: any ImageEffects) -> RenderCache.Value? {
         cache.value(for: .outlineMask(SampledImage(image: image), radius: radius)) {
             let extent = CGRect(x: 0, y: 0, width: image.width, height: image.height)
             let grown = extent.insetBy(dx: -radius.rounded(.up), dy: -radius.rounded(.up))
@@ -453,7 +453,7 @@ public enum AnnotationRenderer {
 
     /// The average colour near `image`'s edge, each pixel weighed by its alpha; `nil` if it's clear all round.
     /// It's read from a small copy, kept while the image is drawn.
-    static func edgeColor(of image: PlatformImage, canvasType: any Canvas.Type) -> RGBA? {
+    static func edgeColor(of image: CGImage, canvasType: any Canvas.Type) -> RGBA? {
         let side = edgeSampleSide
         let sample = cache.value(for: .edgeSample(SampledImage(image: image))) {
             guard let ctx = canvasType.init(width: side, height: side, format: .sRGB) else {
@@ -505,7 +505,7 @@ public enum AnnotationRenderer {
     }
 
     /// Draws `image` right side up into `rect` of a top-left-origin canvas.
-    static func drawUpright(_ image: PlatformImage, in rect: CGRect, ctx: any Canvas) {
+    static func drawUpright(_ image: CGImage, in rect: CGRect, ctx: any Canvas) {
         ctx.saveState()
         ctx.translateBy(x: 0, y: rect.maxY)
         ctx.scaleBy(x: 1, y: -1)
@@ -513,7 +513,7 @@ public enum AnnotationRenderer {
         ctx.restoreState()
     }
 
-    static func pixelate(_ base: PlatformImage, rect: CGRect, scale: CGFloat, effects: any ImageEffects) -> PlatformImage? {
+    static func pixelate(_ base: CGImage, rect: CGRect, scale: CGFloat, effects: any ImageEffects) -> CGImage? {
         let region = CGRect(x: rect.minX, y: CGFloat(base.height) - rect.maxY, width: rect.width, height: rect.height).integral
         guard region.width >= 1, region.height >= 1 else {
             return nil
@@ -521,17 +521,17 @@ public enum AnnotationRenderer {
         return effects.pixelated(base, region: region, blockSize: scale)
     }
 
-    static func longerSide(of image: PlatformImage) -> CGFloat {
+    static func longerSide(of image: CGImage) -> CGFloat {
         CGFloat(max(image.width, image.height))
     }
 
     /// A pixelate's block size or a blur's radius in pixels of `base`.
-    static func redactionSize(_ annotation: Annotation, base: PlatformImage) -> CGFloat {
+    static func redactionSize(_ annotation: Annotation, base: CGImage) -> CGFloat {
         let length = longerSide(of: base)
         return Redaction.size(amount: annotation.redactionAmount(imageLength: length) ?? Redaction.defaultAmount, imageLength: length)
     }
 
-    static func blur(_ base: PlatformImage, rect: CGRect, radius: CGFloat, effects: any ImageEffects) -> PlatformImage? {
+    static func blur(_ base: CGImage, rect: CGRect, radius: CGFloat, effects: any ImageEffects) -> CGImage? {
         let region = CGRect(x: rect.minX, y: CGFloat(base.height) - rect.maxY, width: rect.width, height: rect.height).integral
         guard region.width >= 1, region.height >= 1 else {
             return nil
@@ -546,7 +546,7 @@ public enum AnnotationRenderer {
 enum SpotlightDim {
     case path(CGPath)
     /// White where it dims, covering `frame`, its top row at the frame's min y.
-    case mask(PlatformImage, frame: CGRect)
+    case mask(CGImage, frame: CGRect)
 
     /// `doc`'s dim, made for drawing on `ctx`; `nil` when there are no spotlights.
     init?(_ doc: EditorDocument, on ctx: any Canvas) {

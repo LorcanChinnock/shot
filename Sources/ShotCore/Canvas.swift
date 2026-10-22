@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import Synchronization
 
@@ -52,21 +53,21 @@ public protocol Canvas: AnyObject, SendableMetatype {
     /// What's drawn so far, as a `Bitmap` in sRGB; `nil` if it can't be read.
     func makeBitmap() -> Bitmap?
 
-    // Images are `PlatformImage`s, so on a Mac a capture keeps its own colour space, such as Display P3.
+    // Images are `CGImage`s, so on a Mac a capture keeps its own colour space, such as Display P3.
 
     /// Draws `image` into `rect` with its first row at the rect's max y, as `CGContext.draw` does.
-    func draw(_ image: PlatformImage, in rect: CGRect)
+    func draw(_ image: CGImage, in rect: CGRect)
     /// Clips to `rect`, letting through as much as the greyscale `mask` stretched over it is light.
-    func clip(to rect: CGRect, mask: PlatformImage)
-    func makeImage() -> PlatformImage?
+    func clip(to rect: CGRect, mask: CGImage)
+    func makeImage() -> CGImage?
 }
 
-private let placeholders = Mutex<[ObjectIdentifier: PlatformImage]>([:])
+private let placeholders = Mutex<[ObjectIdentifier: CGImage]>([:])
 
 extension Canvas {
     /// A clear 1×1 image, the base the renderer is given when it draws annotations that don't read what's under them.
     /// Each canvas type makes one and keeps it, so caches that compare bases by identity keep hitting.
-    static var placeholder: PlatformImage {
+    static var placeholder: CGImage {
         placeholders.withLock { made in
             if let known = made[ObjectIdentifier(self)] {
                 return known
@@ -85,7 +86,7 @@ public enum CanvasFormat {
     /// 8-bit premultiplied RGBA in sRGB.
     case sRGB
     /// 8-bit premultiplied RGBA in `image`'s colour space, or sRGB if it has none, so drawing it loses nothing.
-    case matching(PlatformImage)
+    case matching(CGImage)
 }
 
 public enum CanvasBlendMode: Sendable {

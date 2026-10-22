@@ -3,11 +3,11 @@ import Foundation
 
 /// An image to place with an `ImageEdit`, read from its file.
 public struct PlacedImageFile: Sendable {
-    public var image: PlatformImage
+    public var image: CGImage
     /// Its pixels per point.
     public var scale: CGFloat
 
-    public init(image: PlatformImage, scale: CGFloat) {
+    public init(image: CGImage, scale: CGFloat) {
         self.image = image
         self.scale = scale
     }

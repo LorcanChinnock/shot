@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 /// The filters the annotation renderer runs over images, so it can filter with whichever library the platform has. Each
@@ -6,17 +7,17 @@ import Foundation
 /// edge pixel, so a blur doesn't darken toward the edge. Safe to use from any thread.
 public protocol ImageEffects: Sendable {
     /// All of `image` given a gaussian blur of `radius` pixels.
-    func blurred(_ image: PlatformImage, radius: CGFloat) -> PlatformImage?
+    func blurred(_ image: CGImage, radius: CGFloat) -> CGImage?
     /// A greyscale mask given a gaussian blur of `radius` pixels, its levels blurred as plain coverage values rather than
     /// through a colour space.
-    func blurredMask(_ mask: PlatformImage, radius: CGFloat) -> PlatformImage?
+    func blurredMask(_ mask: CGImage, radius: CGFloat) -> CGImage?
     /// The shape of `image`'s opaque pixels grown by `radius` pixels, white on black, as a greyscale mask reaching `radius`
     /// rounded up past each edge of the image.
-    func grownMask(of image: PlatformImage, radius: CGFloat) -> PlatformImage?
+    func grownMask(of image: CGImage, radius: CGFloat) -> CGImage?
     /// `region` of `image` in square blocks `blockSize` pixels wide, lined up with the region's origin, each the colour at
     /// its middle.
-    func pixelated(_ image: PlatformImage, region: CGRect, blockSize: CGFloat) -> PlatformImage?
+    func pixelated(_ image: CGImage, region: CGRect, blockSize: CGFloat) -> CGImage?
     /// `region` of `image` in blocks `radius` pixels wide, as `pixelated` makes them, then given a gaussian blur of
     /// `radius` that reaches across the region's edge into the blocks beyond it.
-    func blurredBlocks(_ image: PlatformImage, region: CGRect, radius: CGFloat) -> PlatformImage?
+    func blurredBlocks(_ image: CGImage, region: CGRect, radius: CGFloat) -> CGImage?
 }

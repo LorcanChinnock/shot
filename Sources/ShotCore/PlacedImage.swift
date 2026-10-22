@@ -10,13 +10,13 @@ public final class AnnotationImage: Equatable, Codable, Sendable {
     public static let minSide: CGFloat = 8
 
     public let id: UUID
-    public let image: PlatformImage
+    public let image: CGImage
     private let transparency = Mutex<Bool?>(nil)
     /// The last crop asked for and its pixels, so redrawing a cropped image gives back the same image and the
     /// renderer's caches, which compare images by identity, keep hitting.
-    private let lastCrop = Mutex<(crop: ImageCrop, image: PlatformImage)?>(nil)
+    private let lastCrop = Mutex<(crop: ImageCrop, image: CGImage)?>(nil)
 
-    public init(_ image: PlatformImage, id: UUID = UUID()) {
+    public init(_ image: CGImage, id: UUID = UUID()) {
         self.id = id
         self.image = image
     }
@@ -34,7 +34,7 @@ public final class AnnotationImage: Equatable, Codable, Sendable {
     }
 
     /// The part of the image `crop` leaves; the whole image when there's no crop.
-    public func cropped(_ crop: ImageCrop?) -> PlatformImage {
+    public func cropped(_ crop: ImageCrop?) -> CGImage {
         guard let crop, !crop.isEmpty else {
             return image
         }
@@ -56,13 +56,10 @@ public final class AnnotationImage: Equatable, Codable, Sendable {
         case id, png
     }
 
-    /// Encoded as PNG, which is lossless, so a copy pasted into another editor keeps every pixel. The encoder's
-    /// `userInfo` gives the codec, under `pngCodec`; without one it throws, rather than drop the image.
+    /// Encoded as PNG, which is lossless, so a copy pasted into another editor keeps every pixel. It's at 72 DPI, with no
+    /// metadata, as a placed image has always been saved in a project.
     public func encode(to encoder: Encoder) throws {
-        guard let codec = encoder.userInfo[.pngCodec] as? any PNGCoding else {
-            throw EncodingError.invalidValue(image, .init(codingPath: encoder.codingPath, debugDescription: "No PNG codec in the encoder's userInfo"))
-        }
-        guard let png = codec.png(from: image) else {
+        guard let png = ImageCodec.data(from: image, scale: 1) else {
             throw EncodingError.invalidValue(image, .init(codingPath: encoder.codingPath, debugDescription: "The image could not be encoded as PNG"))
         }
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -72,12 +69,9 @@ public final class AnnotationImage: Equatable, Codable, Sendable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        guard let codec = decoder.userInfo[.pngCodec] as? any PNGCoding else {
-            throw DecodingError.dataCorruptedError(forKey: .png, in: container, debugDescription: "No PNG codec in the decoder's userInfo")
-        }
         id = try container.decode(UUID.self, forKey: .id)
         let png = try container.decode(Data.self, forKey: .png)
-        guard let image = codec.image(fromPNG: png) else {
+        guard let image = ImageCodec.image(from: png) else {
             throw DecodingError.dataCorruptedError(forKey: .png, in: container, debugDescription: "The image data could not be read")
         }
         self.image = image

@@ -3,8 +3,22 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
-/// Encodes and decodes captures as PNG or JPEG with ImageIO, preserving the Retina scale as DPI. `ImageIOCodec` gives
-/// ShotCore the same through `ImageCoding`.
+/// What an image file is, read without decoding its pixels.
+public struct ImageFileInfo: Equatable, Sendable {
+    public var isGIF: Bool
+    public var frames: Int
+    /// `nil` when the file doesn't say.
+    public var size: CaptureRecord.Size?
+
+    public init(isGIF: Bool, frames: Int, size: CaptureRecord.Size?) {
+        self.isGIF = isGIF
+        self.frames = frames
+        self.size = size
+    }
+}
+
+/// Encodes and decodes captures as PNG or JPEG with ImageIO, preserving the Retina scale as DPI, with `ImageMetadata`
+/// beside it: whether it has the window shadow, its capture record and its project ID. HEIC and GIF decode too.
 extension ImageCodec {
     /// What a window capture that includes the macOS window shadow says in its Exif comment, so the editor opened on it
     /// later knows not to offer a second shadow.

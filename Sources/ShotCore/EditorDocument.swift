@@ -3,7 +3,7 @@ import Foundation
 import Synchronization
 
 public struct EditorDocument: @unchecked Sendable {
-    public var base: PlatformImage
+    public var base: CGImage
     public var annotations: [Annotation]
     /// Everything the document holds, in image pixels: the image with its shadow and border, and padding that reaches
     /// past it for annotations. It always contains the image, and it's what the frame crop can be adjusted within.
@@ -24,7 +24,7 @@ public struct EditorDocument: @unchecked Sendable {
 
     /// `canvasRect` is the region the document shows: a part of the image becomes the frame crop, and one that holds the
     /// whole image is its padding.
-    public init(base: PlatformImage, annotations: [Annotation] = [], canvasRect: CGRect? = nil, background: RGBA? = nil) {
+    public init(base: CGImage, annotations: [Annotation] = [], canvasRect: CGRect? = nil, background: RGBA? = nil) {
         self.base = base
         self.annotations = annotations
         let full = CGRect(x: 0, y: 0, width: base.width, height: base.height)
@@ -214,11 +214,11 @@ public struct EditorSnapshot: Equatable, Sendable, Codable {
 }
 
 /// The last cropped screenshot, so drawing it again returns the same image.
-private let lastCapturePicture = Mutex<(base: PlatformImage, rect: CGRect, picture: PlatformImage)?>(nil)
+private let lastCapturePicture = Mutex<(base: CGImage, rect: CGRect, picture: CGImage)?>(nil)
 
 /// The last screenshot asked whether it has see-through pixels, and the answer, so asking again on every edit doesn't
 /// read it again.
-private let lastCaptureTransparency = Mutex<(image: PlatformImage, transparent: Bool)?>(nil)
+private let lastCaptureTransparency = Mutex<(image: CGImage, transparent: Bool)?>(nil)
 
 extension EditorDocument {
     /// Drops the screenshot `hasTransparency(of: .capture)` kept.
@@ -239,7 +239,7 @@ extension EditorDocument {
 
     /// The image as the export draws it: all of it, or the part the frame crop leaves, which the style goes around.
     /// The crop is kept while it's the same screenshot and part, so redrawing doesn't make the shadow's caches start again.
-    public var capturePicture: PlatformImage {
+    public var capturePicture: CGImage {
         let shown = captureRect
         guard shown != fullRect, !shown.isEmpty else {
             return base
@@ -479,7 +479,7 @@ extension EditorDocument {
     /// whose are `documentScale` per point. An image of lower density is scaled up to show at the same
     /// size in points; one of the same or higher density keeps one image pixel per canvas pixel, since
     /// shrinking it would throw pixels away.
-    public static func placementSize(of image: PlatformImage, scale: CGFloat, documentScale: CGFloat) -> CGSize {
+    public static func placementSize(of image: CGImage, scale: CGFloat, documentScale: CGFloat) -> CGSize {
         let factor = max(1, documentScale / max(scale, 1))
         return CGSize(width: CGFloat(image.width) * factor, height: CGFloat(image.height) * factor)
     }
@@ -500,7 +500,7 @@ extension EditorDocument {
     /// Places `image` on whole pixels, centred on `point` or beside the canvas when there's none, grows the
     /// canvas to hold it, and returns its annotation's id. See `placementSize` for the size it's given.
     @discardableResult
-    public mutating func addImage(_ image: PlatformImage, scale: CGFloat, documentScale: CGFloat, centeredAt point: CGPoint?, margin: CGFloat, shaper: any TextShaper) -> UUID {
+    public mutating func addImage(_ image: CGImage, scale: CGFloat, documentScale: CGFloat, centeredAt point: CGPoint?, margin: CGFloat, shaper: any TextShaper) -> UUID {
         let size = Self.placementSize(of: image, scale: scale, documentScale: documentScale)
         let rect: CGRect
         if let point {

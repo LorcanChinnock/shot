@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 // Bounds and hit tests without CGPath, so they work where CoreGraphics doesn't. Curves are measured exactly for the
