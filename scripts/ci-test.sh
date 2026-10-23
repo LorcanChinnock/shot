@@ -82,6 +82,6 @@ wait "$watcher" 2>/dev/null
 perf_summary
 if [ "$status" -ne 0 ]; then
     [ -f "$events" ] && running_tests
-    scripts/crash-reports.sh
+    CRASH_REPORT_DIR="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/crash-reports" scripts/crash-reports.sh
 fi
 exit "$status"
