@@ -9,9 +9,11 @@ import Testing
 /// thread in AVFoundation and, on a runner with few cores, can wait on each other forever, and they run out of
 /// hardware codec sessions (`Cannot Decode`). Two suites run side by side, so at most two block at once and a
 /// 3-core runner keeps a thread free. Keep their serial times about even; `CompositionTests` alone is about 10 s.
-@Suite(.serialized) struct MediaTests {}
+/// The time limit is per test, and far above any of them: a release build hung 17 minutes in an AVAssetExportSession,
+/// and this fails that test, and so the job, in two.
+@Suite(.serialized, .timeLimit(.minutes(2))) struct MediaTests {}
 /// The second half of the media tests: composition, GIF export, and the commands and agent tools that export.
-@Suite(.serialized) struct CompositingMediaTests {}
+@Suite(.serialized, .timeLimit(.minutes(2))) struct CompositingMediaTests {}
 
 /// A new, empty folder in the temporary directory; the caller removes it.
 func temporaryFolder() throws -> URL {
