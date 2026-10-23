@@ -128,7 +128,8 @@ public enum BugReport {
     static let instructions = """
     You turn a screenshot or screen recording into a bug report that someone else can reproduce. Use only what the \
     images, the text read from them and the user's words show. Don't guess at causes or versions. Steps are short \
-    imperative sentences, one action each. If the images don't show what was expected, say "Not shown". \
+    imperative sentences, one action each, such as "Click Save": rewrite what the user said in their own words, not \
+    quoting it or writing "I". If the images don't show what was expected, say "Not shown". \
     List any error message exactly as it appears in the text read from the images; leave the list empty when there is none.
     """
 

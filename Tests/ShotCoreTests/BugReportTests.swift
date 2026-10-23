@@ -70,3 +70,11 @@ private func recording(frames: Int, text: (Int) -> [String] = { _ in [] }) -> Bu
     let markdown = BugReport.markdown(from: .object([:]), readText: [])
     #expect(markdown == "## Bug report\n")
 }
+
+@Test func aRefusalForContextLengthIsRecognised() {
+    #expect(ChatProvider.Failure.server(status: 400, message: "request (9049 tokens) exceeds the available context size (4096 tokens)").isContextTooSmall)
+    #expect(ChatProvider.Failure.server(status: 413, message: "prompt is too long").isContextTooSmall)
+    #expect(!ChatProvider.Failure.server(status: 401, message: "invalid context key").isContextTooSmall)
+    #expect(!ChatProvider.Failure.server(status: 400, message: "model not found").isContextTooSmall)
+    #expect(!ChatProvider.Failure.tooLarge.isContextTooSmall)
+}

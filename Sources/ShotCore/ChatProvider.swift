@@ -290,3 +290,12 @@ public struct ChatProvider: Sendable {
         "additionalProperties": .bool(false),
     ])
 }
+
+extension ChatProvider.Failure {
+    /// Whether the server refused the request for being longer than the model's context.
+    var isContextTooSmall: Bool {
+        guard case .server(let status, let message) = self, status == 400 || status == 413 else { return false }
+        let text = (message ?? "").lowercased()
+        return text.contains("context") || text.contains("too many tokens") || text.contains("too long")
+    }
+}
