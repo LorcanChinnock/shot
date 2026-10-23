@@ -5,9 +5,9 @@
 set -eu
 
 # ReportCrash writes the report some seconds after the process dies, so the run that just failed has none yet. Wait for
-# one (up to $CRASH_REPORT_WAIT seconds, default 90) when the caller says a process crashed. Copies go to
+# one, up to $CRASH_REPORT_WAIT seconds (default 0), when the caller knows a process crashed. Copies go to
 # $CRASH_REPORT_DIR, which the workflow uploads.
-wait_for=${CRASH_REPORT_WAIT:-90}
+wait_for=${CRASH_REPORT_WAIT:-0}
 keep=${CRASH_REPORT_DIR:-}
 dirs="$HOME/Library/Logs/DiagnosticReports /Library/Logs/DiagnosticReports"
 
