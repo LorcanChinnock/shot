@@ -28,7 +28,7 @@ Right-click a screenshot and choose **Copy Alt Text**. Shot sends the image to y
 - A local service keeps all of it on your Mac. An online service gets the image under its own terms, so blur private details first.
 
 > [!TIP]
-> On Ollama, `gemma3` was the quickest and most dependable model we tried. It answered in about seven seconds. `qwen2.5vl` took about three times as long and gave more wrong-shaped answers. `llama3.2-vision` didn't load at all on the Ollama version we tested. Large screenshots can overflow Ollama's default context length, which shows as an error. Raise **Context length** to 8192 in Ollama's settings if you see one.
+> On Ollama, `gemma3` was the quickest model we tried. It answered in about seven seconds for alt text, and 10 to 25 seconds for a bug report, though its bug reports often ignored what was said in a recording. `qwen2.5vl` took about three times as long, followed a recording more closely, but added steps nobody had done. `llama3.2-vision` didn't load at all on the Ollama version we tested. Large screenshots can overflow Ollama's default context length, which shows as an error. Raise **Context length** to 8192 in Ollama's settings if you see one.
 
 > [!NOTE]
 > Shot checks every answer before it copies it. If a model replies in the wrong shape, you get an error and nothing is copied. Small local models do this more often than large ones.

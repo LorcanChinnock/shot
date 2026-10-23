@@ -115,11 +115,19 @@ public enum BugReporter {
         guard #available(macOS 27, *) else { throw AltText.Unavailable() }
         let session = LanguageModelSession(instructions: request.instructions)
         let scaled = images.map { AltText.scaled($0, toLongEdge: request.maxLongEdge) }
-        let response = try await session.respond(generating: Reply.self) {
-            request.prompt
-            for image in scaled { Attachment(image) }
+        let reply: Reply
+        do {
+            reply = try await session.respond(generating: Reply.self) {
+                request.prompt
+                for image in scaled { Attachment(image) }
+            }.content
+        } catch LanguageModelError.guardrailViolation, LanguageModelError.refusal {
+            // The safety check sometimes flags an ordinary screenshot, such as a warning banner. The text read from
+            // the images is still in the prompt, so write the report from that alone.
+            reply = try await LanguageModelSession(instructions: request.instructions).respond(generating: Reply.self) {
+                request.prompt
+            }.content
         }
-        let reply = response.content
         return .object([
             "title": .string(reply.title),
             "steps": .array(reply.steps.map(JSONValue.string)),
