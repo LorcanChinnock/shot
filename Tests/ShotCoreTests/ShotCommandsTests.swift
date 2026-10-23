@@ -577,12 +577,9 @@ private func writeScenes(to url: URL, levels: [UInt8], fps: Int32 = 10) async th
     writer.startSession(atSourceTime: .zero)
     for frame in 0 ..< Int(fps) * levels.count {
         try await waitUntilReady(input, of: writer)
-        var buffer: CVPixelBuffer?
-        CVPixelBufferPoolCreatePixelBuffer(nil, adaptor.pixelBufferPool!, &buffer)
-        let pixels = try #require(buffer)
-        CVPixelBufferLockBaseAddress(pixels, [])
-        memset(CVPixelBufferGetBaseAddress(pixels), Int32(levels[frame / Int(fps)]), CVPixelBufferGetDataSize(pixels))
-        CVPixelBufferUnlockBaseAddress(pixels, [])
+        let pixels = try makeFrame(width: 320, height: 180) { base, buffer in
+            memset(base, Int32(levels[frame / Int(fps)]), CVPixelBufferGetDataSize(buffer))
+        }
         adaptor.append(pixels, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: fps))
     }
     input.markAsFinished()

@@ -76,6 +76,24 @@ func waitUntilReady(_ input: AVAssetWriterInput, of writer: AVAssetWriter) async
     }
 }
 
+/// A BGRA frame in plain memory, which `fill` writes through its base address. The status of every step is checked, so
+/// a buffer that can't be made or mapped fails the test here, not as a write through a nil pointer in the test process.
+/// It isn't taken from the writer's pool: the pool's IOSurface-backed buffers were sometimes handed out unmapped on a
+/// CI runner (a nil `CGContext`, and signal 11 in the tests).
+func makeFrame(width: Int, height: Int, _ fill: (_ base: UnsafeMutableRawPointer, _ buffer: CVPixelBuffer) throws -> Void) throws -> CVPixelBuffer {
+    var created: CVPixelBuffer?
+    let status = CVPixelBufferCreate(nil, width, height, kCVPixelFormatType_32BGRA, nil, &created)
+    let frame = try #require(created, "No frame buffer (CVReturn \(status))")
+    let locked = CVPixelBufferLockBaseAddress(frame, [])
+    try #require(locked == kCVReturnSuccess, "The frame buffer wouldn't lock (CVReturn \(locked))")
+    defer {
+        CVPixelBufferUnlockBaseAddress(frame, [])
+    }
+    let base = try #require(CVPixelBufferGetBaseAddress(frame), "The locked frame buffer has no base address")
+    try fill(base, frame)
+    return frame
+}
+
 /// Each frame is one grey, `gray(frame)`, which by default steps on every frame.
 func writeSyntheticVideo(to url: URL, seconds: Int, fps: Int32, width: Int, height: Int, codec: AVVideoCodecType = .h264, gray: (Int) -> Int = { $0 * 4 % 255 }) async throws {
     let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
@@ -90,12 +108,9 @@ func writeSyntheticVideo(to url: URL, seconds: Int, fps: Int32, width: Int, heig
     writer.startSession(atSourceTime: .zero)
     for frame in 0..<(Int(fps) * seconds) {
         try await waitUntilReady(input, of: writer)
-        var buffer: CVPixelBuffer?
-        CVPixelBufferPoolCreatePixelBuffer(nil, adaptor.pixelBufferPool!, &buffer)
-        let pixels = try #require(buffer)
-        CVPixelBufferLockBaseAddress(pixels, [])
-        memset(CVPixelBufferGetBaseAddress(pixels), Int32(gray(frame)), CVPixelBufferGetDataSize(pixels))
-        CVPixelBufferUnlockBaseAddress(pixels, [])
+        let pixels = try makeFrame(width: width, height: height) { base, buffer in
+            memset(base, Int32(gray(frame)), CVPixelBufferGetDataSize(buffer))
+        }
         adaptor.append(pixels, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: fps))
     }
     input.markAsFinished()
@@ -220,12 +235,9 @@ func writeTimedRecording(to url: URL, seconds: Int, width: Int = 320, height: In
         sound.append(try #require(audioBuffer))
 
         try await waitUntilReady(video, of: writer)
-        var buffer: CVPixelBuffer?
-        CVPixelBufferPoolCreatePixelBuffer(nil, try #require(adaptor.pixelBufferPool), &buffer)
-        let pixels = try #require(buffer)
-        CVPixelBufferLockBaseAddress(pixels, [])
-        memset(CVPixelBufferGetBaseAddress(pixels), Int32(frame * grayStep), CVPixelBufferGetDataSize(pixels))
-        CVPixelBufferUnlockBaseAddress(pixels, [])
+        let pixels = try makeFrame(width: width, height: height) { base, buffer in
+            memset(base, Int32(frame * grayStep), CVPixelBufferGetDataSize(buffer))
+        }
         adaptor.append(pixels, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: CMTimeScale(fps)))
     }
     video.markAsFinished()
@@ -284,16 +296,13 @@ func writeScreenRecording(to url: URL, seconds: Int, audio: Bool, video hasVideo
             continue
         }
         try await waitUntilReady(video, of: writer)
-        var buffer: CVPixelBuffer?
-        CVPixelBufferPoolCreatePixelBuffer(nil, try #require(adaptor.pixelBufferPool), &buffer)
-        let pixels = try #require(buffer)
-        CVPixelBufferLockBaseAddress(pixels, [])
-        let context = try #require(CGContext(
-            data: CVPixelBufferGetBaseAddress(pixels), width: width, height: height, bitsPerComponent: 8, bytesPerRow: CVPixelBufferGetBytesPerRow(pixels),
-            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
-        ))
-        drawScreen(in: context, width: width, height: height, frame: frame)
-        CVPixelBufferUnlockBaseAddress(pixels, [])
+        let pixels = try makeFrame(width: width, height: height) { base, buffer in
+            let context = try #require(CGContext(
+                data: base, width: width, height: height, bitsPerComponent: 8, bytesPerRow: CVPixelBufferGetBytesPerRow(buffer),
+                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+            ))
+            drawScreen(in: context, width: width, height: height, frame: frame)
+        }
         adaptor.append(pixels, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: CMTimeScale(fps)))
     }
     if hasVideo {
