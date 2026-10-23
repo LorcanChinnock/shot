@@ -46,7 +46,9 @@ jobs:
       # `make dist` builds a universal app, so the release must compile for Intel too. Compile only; nothing runs it.
       - name: Build for Intel
         run: swift build --arch x86_64 --force-resolved-versions
+      # The tests take about 90 seconds. A hang would otherwise hold the runner for the rest of the job's 20 minutes.
       - name: Test on macOS
+        timeout-minutes: 10
         run: scripts/ci-test.sh test --skip-build
       # Only at the release gate, to keep ordinary PRs' runs short. Alone, so other tests running in parallel don't skew
       # the timings. Budgets: docs/performance.md.
