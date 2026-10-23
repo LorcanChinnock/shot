@@ -26,6 +26,7 @@ concurrency:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     # release-please writes with the app's token, so GITHUB_TOKEN needs nothing.
     permissions: {}
     outputs:
@@ -53,6 +54,9 @@ jobs:
     if: needs.release-please.outputs.release_created == 'true'
     # The same image as CI's macos check, so the release is built with the SDK the gate tested. See ci.yml.
     runs-on: xcode-27
+    # A release takes about 10 minutes. A hung test would otherwise hold this runner, and the `release` concurrency group
+    # that every later push to main waits on, for GitHub's 6-hour default.
+    timeout-minutes: 30
     # The `release` environment holds the release secrets and only deploys from main and v* tags. See CONTRIBUTING.md › Release secrets.
     environment: release
     # Uploads and publishes the release's assets with GITHUB_TOKEN; the last two sign the build provenance attestation.
@@ -74,6 +78,7 @@ jobs:
       # PR, so the tagged commit may be one the gate never ran. Test it here, before any secret is in reach, with the
       # same Package.resolved that `make dist` builds against.
       - name: Test
+        timeout-minutes: 15
         run: scripts/ci-test.sh test --force-resolved-versions
       # Every release signs with the same self-signed certificate, so macOS keeps the
       # Screen Recording permission across updates. See CONTRIBUTING.md › Release secrets.

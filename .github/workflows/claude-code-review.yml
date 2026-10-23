@@ -27,6 +27,8 @@ jobs:
     #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
 
     runs-on: ubuntu-latest
+    # A review takes up to 5 minutes. A stuck one would otherwise hold a runner for GitHub's 6-hour default.
+    timeout-minutes: 20
     permissions:
       contents: read
       pull-requests: read
