@@ -52,3 +52,12 @@ jobs:
       - name: Perf
         if: startsWith(github.head_ref, 'release-please--')
         run: scripts/ci-test.sh perf --skip-build
+      # A test process that crashes leaves only its signal in the log; the report has the stack. See scripts/crash-reports.sh.
+      - name: Keep the crash reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: crash-reports
+          path: ~/Library/Logs/DiagnosticReports/*.ips
+          if-no-files-found: ignore
+          retention-days: 7
