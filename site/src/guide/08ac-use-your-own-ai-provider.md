@@ -19,7 +19,7 @@ It's off until you turn it on, and Shot never signs in to an AI account for you.
 
 Right-click a screenshot and choose **Copy Alt Text**. Shot sends the image to your service, copies the answer and shows a toast. With the setting on, the item shows on any macOS, not only 27.
 
-**Copy Bug Report** uses the same service. For a recording it sends up to eight frames, the text read from them and the words you said, which Shot transcribes on your Mac first.
+**Copy Bug Report** uses the same service. For a recording it sends up to eight frames, the text read from them and the words you said, which Shot transcribes on your Mac first. If the model's context is too small for that many frames, Shot tries again with half as many, down to one.
 
 ## What leaves your Mac
 

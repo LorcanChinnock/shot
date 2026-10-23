@@ -63,8 +63,22 @@ public enum BugReporter {
     }
 
     private static func report(gathering: () async throws -> Gathered, provider: ChatProvider?) async throws -> String {
-        let budget: BugReport.Budget = provider == nil ? .onDevice : .provider
+        var budget: BugReport.Budget = provider == nil ? .onDevice : .provider
         let gathered = try await gathering()
+        while true {
+            do {
+                return try await report(gathered, budget: budget, provider: provider)
+            } catch let failure as ChatProvider.Failure where failure.isContextTooSmall && budget.frames > 1 {
+                // A local model often runs with a small context (Ollama starts at 4,096 tokens), so try again with
+                // fewer frames rather than fail on a long recording.
+                budget.frames /= 2
+            } catch let failure as ChatProvider.Failure where failure.isContextTooSmall {
+                throw ChatProvider.Failure.malformed("the model's context is too small for this capture. Raise the context length in the model's settings, or choose a model with more")
+            }
+        }
+    }
+
+    private static func report(_ gathered: Gathered, budget: BugReport.Budget, provider: ChatProvider?) async throws -> String {
         let prepared = BugReport.prepare(gathered.input, budget: budget)
         let images = prepared.frames.map { gathered.images[$0] }
         let reply: JSONValue

@@ -82,7 +82,7 @@ You get one or two plain sentences, usually within a couple of seconds. Read the
 
 Copy Bug Report turns a screenshot or a recording into repro steps you can paste into a ticket or a message. It uses the same model as alt text: Apple's on your Mac on macOS 27 or later, or the AI provider you set up. It never runs unless you ask.
 
-1. Right-click the capture's Quick Access card or its tile in the gallery and choose **Copy Bug Report**, or in the image editor choose **Edit › Copy Bug Report**.
+1. Right-click the capture's Quick Access card or its tile in the gallery and choose **Copy Bug Report**, or in the image editor or video editor choose **Edit › Copy Bug Report**. The video editor writes it from the recording as it was made, before any trims or cuts.
 2. Paste the result. It has a title, **Steps**, **Expected**, **Actual** and, if the capture shows one, the **Error text**.
 
 For a recording, Shot picks a few frames where the picture changes, reads the text on them, and includes what you said if the recording has your voice (macOS 26 or later). Apple's model takes only a few frames, so a long recording is summarised from part of it, and the report says so.
