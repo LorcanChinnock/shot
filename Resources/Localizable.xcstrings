@@ -23005,7 +23005,13 @@
         }
       }
     },
+    "Puts the position, scale, turn and opacity back and clears the keyframes. The crop and style stay." : {
+
+    },
     "Puts the shadow, border and corners back to how new ones start." : {
+
+    },
+    "Puts the volume back and clears its keyframes" : {
 
     },
     "Quick Access" : {
