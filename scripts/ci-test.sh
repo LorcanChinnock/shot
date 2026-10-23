@@ -81,7 +81,10 @@ kill "$watcher" 2>/dev/null
 wait "$watcher" 2>/dev/null
 perf_summary
 if [ "$status" -ne 0 ]; then
-    [ -f "$events" ] && running_tests
-    scripts/crash-reports.sh
+    # A process that died mid-test leaves a test started and never ended; only then is a crash report on its way.
+    interrupted=$([ -f "$events" ] && running_tests)
+    [ -z "$interrupted" ] || echo "$interrupted"
+    CRASH_REPORT_WAIT=$([ -n "$interrupted" ] && echo 90 || echo 0) \
+        CRASH_REPORT_DIR="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/crash-reports" scripts/crash-reports.sh
 fi
 exit "$status"
