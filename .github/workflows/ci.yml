@@ -26,7 +26,7 @@ jobs:
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
     # A run takes about 5 minutes. A hung test would otherwise hold a macOS runner for GitHub's 6-hour default.
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # What `make lint` runs before its build, which the next step does.
@@ -48,9 +48,9 @@ jobs:
         run: swift build --arch x86_64 --force-resolved-versions
       # The tests take about 90 seconds. A hang would otherwise hold the runner for the rest of the job's 20 minutes.
       - name: Test on macOS
-        timeout-minutes: 40
+        timeout-minutes: 80
         run: |
-          for i in $(seq 1 20); do
+          for i in $(seq 1 45); do
             echo "=== pass $i"
             scripts/ci-test.sh test --skip-build || exit 1
           done
