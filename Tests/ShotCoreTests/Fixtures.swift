@@ -145,25 +145,20 @@ func writeSolidVideo(to url: URL, color: Color, corner: Color? = nil, size: CGSi
     writer.startWriting()
     writer.startSession(atSourceTime: .zero)
     // Every frame is the same, so it's filled once: per pixel per frame is slow in a debug build.
-    var buffer: CVPixelBuffer?
-    CVPixelBufferCreate(nil, Int(size.width), Int(size.height), kCVPixelFormatType_32BGRA, nil, &buffer)
-    let pixels = try #require(buffer)
-    CVPixelBufferLockBaseAddress(pixels, [])
-    let base = CVPixelBufferGetBaseAddress(pixels)!.assumingMemoryBound(to: UInt8.self)
-    let stride = CVPixelBufferGetBytesPerRow(pixels)
-    for y in 0..<Int(size.height) {
-        for x in 0..<Int(size.width) {
-            let marked = corner != nil && x < Int(size.width) / 4 && y < Int(size.height) / 4
-            let c = marked ? corner! : color
-            let p = base + y * stride + x * 4
-            p[0] = c.b; p[1] = c.g; p[2] = c.r; p[3] = 255
+    let pixels = try makeFrame(width: Int(size.width), height: Int(size.height)) { base, buffer in
+        let base = base.assumingMemoryBound(to: UInt8.self)
+        let stride = CVPixelBufferGetBytesPerRow(buffer)
+        for y in 0..<Int(size.height) {
+            for x in 0..<Int(size.width) {
+                let marked = corner != nil && x < Int(size.width) / 4 && y < Int(size.height) / 4
+                let c = marked ? corner! : color
+                let p = base + y * stride + x * 4
+                p[0] = c.b; p[1] = c.g; p[2] = c.r; p[3] = 255
+            }
         }
     }
-    CVPixelBufferUnlockBaseAddress(pixels, [])
     for frame in 0..<Int(seconds * 30) {
-        while !input.isReadyForMoreMediaData {
-            try await Task.sleep(for: .milliseconds(2))
-        }
+        try await waitUntilReady(input, of: writer)
         adaptor.append(pixels, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: 30))
     }
     input.markAsFinished()
