@@ -31,7 +31,7 @@ public enum ProviderPreset: String, CaseIterable, Sendable {
     /// A model that sees images, as a starting point; empty when it depends on what's installed.
     public var suggestedModel: String {
         switch self {
-        case .ollama: "qwen2.5vl"
+        case .ollama: "gemma3"
         case .lmStudio: ""
         case .openAI: "gpt-4o-mini"
         case .gemini: "gemini-2.0-flash"

@@ -12,7 +12,7 @@ It's off until you turn it on, and Shot never signs in to an AI account for you.
 
 1. Open **Settings › Agents** and turn on **Use my own AI provider**.
 2. Choose a **Service**. **Ollama** and **LM Studio** are listed first, since they run on your Mac. **OpenAI**, **Gemini** and **OpenRouter** run on the internet. **Custom** takes any address that follows the OpenAI format.
-3. Check the **Address** and **Model**. Choose a model that can read images, such as `qwen2.5vl` on Ollama.
+3. Check the **Address** and **Model**. Choose a model that can read images, such as `gemma3` on Ollama.
 4. For an online service, paste your **Key**. Shot keeps it in your Keychain, not in a file. Local services don't need one.
 
 ## Use it
@@ -25,5 +25,10 @@ Right-click a screenshot and choose **Copy Alt Text**. Shot sends the image to y
 - The image is scaled to 2000 pixels on its longest side and sent as a JPEG under 5 MB, with a short instruction. Anything you've drawn on it is part of the image. Its file name isn't sent.
 - A local service keeps all of it on your Mac. An online service gets the image under its own terms, so blur private details first.
 
+> [!TIP]
+> On Ollama, `gemma3` was the quickest and most dependable model we tried. It answered in about seven seconds. `qwen2.5vl` took about three times as long and gave more wrong-shaped answers. `llama3.2-vision` didn't load at all on the Ollama version we tested. Large screenshots can overflow Ollama's default context length, which shows as an error. Raise **Context length** to 8192 in Ollama's settings if you see one.
+
 > [!NOTE]
 > Shot checks every answer before it copies it. If a model replies in the wrong shape, you get an error and nothing is copied. Small local models do this more often than large ones.
+>
+> Local models also misread text. In our tests the best one got about three quarters of the lines of text in a screenshot exactly right, so don't rely on alt text to copy text exactly.
