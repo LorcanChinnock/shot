@@ -89,7 +89,7 @@ For a recording, Shot picks a few frames where the picture changes, reads the te
 
 Error text is copied from what your Mac read in the capture, never from the model's guess, so it matches the screen word for word. The steps and the expected result are the model's reading: check them before you send.
 
-
+## Without a mouse
 
 After <kbd>⌘⇧4</kbd>, press an arrow key to start an area at the pointer, or in the middle of the screen. Then:
 
