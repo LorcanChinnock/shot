@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.7.0-beta.69](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.68...v0.7.0-beta.69) (2026-10-23)
+
+
+### Features
+
+* **ai:** bring your own provider with the Anthropic Messages format ([#836](https://github.com/LorcanChinnock/shot/issues/836)) ([640af0c](https://github.com/LorcanChinnock/shot/commit/640af0c87f1ace256be46828ad538a6958598b0d))
+* **ai:** bring your own provider with the OpenAI-compatible format ([#831](https://github.com/LorcanChinnock/shot/issues/831)) ([bd79318](https://github.com/LorcanChinnock/shot/commit/bd79318578f392cabdec2734a554d4e78503428e))
+* **editor:** Reset in the image editor's tool options ([#838](https://github.com/LorcanChinnock/shot/issues/838)) ([70e7054](https://github.com/LorcanChinnock/shot/commit/70e7054a8e4b415a10c1ea94f944066c815901b4))
+* **editor:** Reset in the Style popover ([#834](https://github.com/LorcanChinnock/shot/issues/834)) ([cc85f91](https://github.com/LorcanChinnock/shot/commit/cc85f9157a3351d7635766df70e12db9145a6e6a))
+* **video-editor:** Reset in the clip inspector ([#835](https://github.com/LorcanChinnock/shot/issues/835)) ([4df99ed](https://github.com/LorcanChinnock/shot/commit/4df99ed88b10238323c2180964c8b5a9d1ae8660))
+* **video-editor:** Reset in the export options ([#837](https://github.com/LorcanChinnock/shot/issues/837)) ([4442e81](https://github.com/LorcanChinnock/shot/commit/4442e8152f5ec17b7844150f903bdfa93a3ae405))
+
+
+### Bug Fixes
+
+* **ai:** suggest gemma3 for Ollama and say what the comparison found ([#833](https://github.com/LorcanChinnock/shot/issues/833)) ([1e741f9](https://github.com/LorcanChinnock/shot/commit/1e741f9e63c471693698a45f341f4a394a8a363b))
+
 ## [0.7.0-beta.68](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.67...v0.7.0-beta.68) (2026-10-22)
 
 
