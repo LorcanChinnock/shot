@@ -64,15 +64,18 @@ struct EditorToolbar: View {
             HStack(spacing: 14) {
                 if model.showsStyle {
                     styleOptions
+                    resetButton
                 } else if model.tool == .crop {
                     CropOptions(selected: model.cropAspect, canReset: model.canResetCrop, choose: model.chooseCropAspect, reset: model.resetCrop)
                 } else if let redaction = model.paletteRedaction {
                     RedactionOptions(selected: redaction, amount: model.paletteRedactionAmount, choose: model.setRedaction, setAmount: model.setRedactionAmount, dragAmount: model.setDraggingStyle)
+                    resetButton
                 } else if let spotlight = model.paletteSpotlight {
                     SpotlightOptions(
                         style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook,
                         chooseSoftEdge: model.setSpotlightSoftEdge, dragSlider: model.setDraggingStyle
                     )
+                    resetButton
                 } else {
                     Text(model.tool.summary)
                         .font(Brutal.caption)
@@ -83,6 +86,14 @@ struct EditorToolbar: View {
             }
             .frame(height: 30 + Brutal.groupInset * 2)
         }
+    }
+
+    /// Puts this tool's options back to how a fresh install starts, so the next arrow, blur or spotlight comes out plain too.
+    private var resetButton: some View {
+        Button("Reset", action: model.resetToolOptions)
+            .buttonStyle(BrutalButtonStyle(compact: true))
+            .disabled(!model.canResetToolOptions)
+            .brutalTip("Reset", detail: "Puts this tool's colour, size and other options back to how a new install starts. Your saved custom colours stay.")
     }
 
     @ViewBuilder private var styleOptions: some View {
