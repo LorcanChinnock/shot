@@ -5,7 +5,7 @@ group: Edit and share
 aliases: [video-editor]
 ---
 
-![The video editor timeline with a text label and an arrow on their own lanes, the arrow's Pop keyframes, a trimmed start, a cut, the Inspector and the GIF export options](../../../docs/media/video-timeline.png)
+![The video editor timeline with a text label and an arrow on their own lanes above the clips, and the pink seam where a cut was made](../../../docs/media/video-timeline.png)
 
 ## Open the video editor
 
