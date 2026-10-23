@@ -25,6 +25,8 @@ Drag the card straight into another app to drop the file there, or onto an open 
 
 Right-click the card for the same actions, plus **Copy Path**, and for a screenshot, **Copy Text**, **Translate Text** (macOS 26 or later), **Copy Alt Text** and **Copy Bug Report** (macOS 27 or later, or any macOS with your own AI provider; **Copy Bug Report** also works on a recording) and **Pin**.
 
+![The Quick Access card's right-click menu: Copy, Copy Path, Copy Text, Translate Text, Copy Alt Text, Copy Bug Report, Save As…, Annotate, Pin and Show in Finder](../../../docs/media/quick-access-menu.png)
+
 ## Pin a screenshot
 
 **Pin** floats a screenshot above your other windows, so you can keep it in view while you work.
