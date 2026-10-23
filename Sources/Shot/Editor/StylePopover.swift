@@ -30,6 +30,9 @@ protocol StyleEditing: AnyObject, Observable {
     func setBorderColor(_ color: RGBA)
     func pickBorderColor(_ color: RGBA)
     func setTargetCornerRadius(_ points: CGFloat)
+    /// Puts the target's shadow, border and corners back to how a new one of its kind starts, as one undo step, and
+    /// remembers that for the next one.
+    func resetTargetStyle()
     func setDraggingStyle(_ dragging: Bool)
     /// Whether new captures get the screenshot's style; `nil` hides the switch, as the video editor has no screenshot.
     var newCaptureStyle: Binding<Bool>? { get }
@@ -101,6 +104,7 @@ struct StylePopover<Model: StyleEditing>: View {
                             slider(value: model.targetCornerRadius, range: 0...48, name: "Corner radius", set: { model.setTargetCornerRadius($0) })
                         }
                     }
+                    ResetStyleButton(isDefault: kind.isDefault(style: style, cornerRadius: model.targetCornerRadius), reset: model.resetTargetStyle)
                     if kind == .capture, let newCaptureStyle = model.newCaptureStyle {
                         NewCaptureStyleSwitch(isOn: newCaptureStyle, otherStyleSaved: model.newCapturesHaveOtherStyle)
                     }
@@ -334,6 +338,19 @@ struct StylePopover<Model: StyleEditing>: View {
         )
         .frame(height: 30)
         .accessibilityLabel(Text(name))
+    }
+}
+
+/// Puts the shadow, border and corners back to how new ones start; off when they already are.
+private struct ResetStyleButton: View {
+    let isDefault: Bool
+    let reset: () -> Void
+
+    var body: some View {
+        Button("Reset", action: reset)
+            .buttonStyle(BrutalButtonStyle(compact: true))
+            .disabled(isDefault)
+            .brutalTip("Reset", detail: "Puts the shadow, border and corners back to how new ones start.")
     }
 }
 

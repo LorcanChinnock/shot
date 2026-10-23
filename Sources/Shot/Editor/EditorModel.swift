@@ -506,6 +506,27 @@ final class EditorModel {
         restyleTarget { $0 = style }
     }
 
+    /// Puts the target's shadow, border and corners back to how a new one of its kind starts, as one undo step, and
+    /// remembers that style for the next one. The screenshot's "use for new captures" setting stays as it is.
+    func resetTargetStyle() {
+        guard let styleTarget, let kind = targetStyleKind else {
+            return
+        }
+        stylePreview = nil
+        let style = kind.defaultStyle.scaled(by: scale)
+        let radius = kind.defaultCornerRadius * scale
+        edit {
+            $0.setStyle(style, of: styleTarget, margin: canvasMargin)
+            if kind.takesCorners {
+                $0.setCornerRadius(radius, of: styleTarget)
+            }
+        }
+        if kind != .capture {
+            objectStyles[kind] = kind.defaultStyle
+            rememberStyle { $0.objectStyles[kind] = kind.defaultStyle }
+        }
+    }
+
     /// Changes during a drag of a style slider are one undo step.
     func setShadowElevation(_ points: CGFloat) {
         restyleTarget(coalescing: "shadow") { $0.shadow?.elevation = points * scale }

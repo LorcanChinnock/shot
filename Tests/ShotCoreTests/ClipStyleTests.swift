@@ -165,3 +165,18 @@ private func pixel(_ image: CIImage, x: CGFloat, y: CGFloat, side: CGFloat) -> (
     #expect(edges.color(of: id, second: 1, read: read) == RGBA(1, 0, 0))
     #expect(reads == 2)
 }
+
+@Test func styleResetDefaultsAreThePlainStyle() {
+    for kind in StyleKind.allCases {
+        #expect(kind.isDefault(style: kind.defaultStyle, cornerRadius: kind.defaultCornerRadius))
+        #expect(!kind.isDefault(style: ObjectStyle(shadow: float), cornerRadius: 0))
+        #expect(!kind.isDefault(style: ObjectStyle(border: .hairline), cornerRadius: 0))
+    }
+}
+
+@Test func cornersCountTowardTheDefaultOnlyForKindsThatTakeThem() {
+    #expect(!StyleKind.capture.isDefault(style: ObjectStyle(), cornerRadius: 8))
+    #expect(!StyleKind.image.isDefault(style: ObjectStyle(), cornerRadius: 8))
+    #expect(StyleKind.mark.isDefault(style: ObjectStyle(), cornerRadius: 8))
+    #expect(StyleKind.text.isDefault(style: ObjectStyle(), cornerRadius: 8))
+}

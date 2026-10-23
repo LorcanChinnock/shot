@@ -78,6 +78,18 @@ public enum StyleKind: String, CaseIterable, Codable, CodingKeyRepresentable, Se
     public var takesCorners: Bool {
         self == .capture || self == .image
     }
+
+    /// The shadow and border a new object of this kind starts with, which the Style popover's Reset puts back: none.
+    public var defaultStyle: ObjectStyle { ObjectStyle() }
+
+    /// The corner radius a new object of this kind starts with, in points.
+    public var defaultCornerRadius: CGFloat { 0 }
+
+    /// Whether `style` and `cornerRadius` (in points) are what a new object of this kind starts with. A kind that takes
+    /// no corners ignores the radius.
+    public func isDefault(style: ObjectStyle, cornerRadius: CGFloat) -> Bool {
+        style == defaultStyle && (!takesCorners || cornerRadius == defaultCornerRadius)
+    }
 }
 
 /// A soft shadow under an object, lit from straight above. Each preset is a point in the one space of elevation,

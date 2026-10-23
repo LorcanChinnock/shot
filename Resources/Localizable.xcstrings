@@ -22999,6 +22999,9 @@
         }
       }
     },
+    "Puts the shadow, border and corners back to how new ones start." : {
+
+    },
     "Quick Access" : {
       "localizations" : {
         "de" : {

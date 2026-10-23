@@ -26,6 +26,8 @@ Solid and Outline come in three widths, **S**, **M** and **L**, in the palette c
 
 **Corners:** the slider rounds the corners.
 
+**Reset** at the bottom puts the shadow, border and corners back to how new ones start, in one undo step. It's greyed out when they already are. It also makes the next mark, text or image of that kind start plain. On a screenshot it leaves **Use this style for new captures** as it is. The video editor's Style panel has the same **Reset**.
+
 > [!NOTE]
 > A window captured with its macOS shadow already has one, so Style shows **Uses macOS window shadow** instead of its choices. The image includes the shadow's see-through margin, which another shadow, a border or corners would go round. Pasted styles and **Use this style for new captures** leave it as it is.
 
