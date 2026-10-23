@@ -54,7 +54,7 @@
 
 ### Trim and export to GIF
 
-<img src="docs/media/video-editor.png" width="720" alt="The video editor with a trimmed start, a cut where the recording went to another page, a Best day label and an arrow over the video, and the GIF export options">
+<img src="docs/media/video-editor.png" width="720" alt="The video editor with a cut where the recording went to another page, a Best day label and an arrow over the video, and the GIF export options">
 
 ### Works with AI agents
 
