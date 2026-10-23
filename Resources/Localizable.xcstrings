@@ -14325,6 +14325,9 @@
         }
       }
     },
+    "Format" : {
+
+    },
     "Frame" : {
 
     },
@@ -18754,6 +18757,9 @@
       }
     },
     "Model" : {
+
+    },
+    "Most services use the OpenAI format. Choose Anthropic only for a service that uses Claude's." : {
 
     },
     "Move to Trash" : {

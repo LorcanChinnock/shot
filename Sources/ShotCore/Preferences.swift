@@ -96,6 +96,8 @@ public enum PreferenceKey {
     public static let providerPreset = "providerPreset"
     public static let providerBaseURL = "providerBaseURL"
     public static let providerModel = "providerModel"
+    /// A `ProviderFormat`; only the Custom service lets you choose it.
+    public static let providerFormat = "providerFormat"
     /// How far the welcome window got, an `OnboardingProgress`. Not a setting, so resetting settings keeps it.
     public static let onboarding = "onboarding"
 
@@ -186,6 +188,7 @@ public struct Preferences {
             PreferenceKey.providerPreset: ProviderPreset.ollama.rawValue,
             PreferenceKey.providerBaseURL: ProviderPreset.ollama.baseURL,
             PreferenceKey.providerModel: ProviderPreset.ollama.suggestedModel,
+            PreferenceKey.providerFormat: ProviderFormat.openAI.rawValue,
         ]
         for action in ShotAction.allCases {
             values[PreferenceKey.hotkey(action)] = action.defaultCombo?.encoded ?? ""
@@ -487,7 +490,10 @@ public struct Preferences {
         guard provider, let model = store.string(forKey: PreferenceKey.providerModel), !model.trimmingCharacters(in: .whitespaces).isEmpty else {
             return nil
         }
-        return ChatProvider(baseURL: store.string(forKey: PreferenceKey.providerBaseURL) ?? "", model: model, apiKey: ProviderKeychain.load())
+        let preset = store.string(forKey: PreferenceKey.providerPreset).flatMap(ProviderPreset.init(rawValue:)) ?? .ollama
+        let chosen = store.string(forKey: PreferenceKey.providerFormat).flatMap(ProviderFormat.init(rawValue:)) ?? .openAI
+        let format = preset.format ?? chosen
+        return ChatProvider(baseURL: store.string(forKey: PreferenceKey.providerBaseURL) ?? "", model: model, apiKey: ProviderKeychain.load(), format: format)
     }
 
     public var partyModeUnlocked: Bool { store.bool(forKey: PreferenceKey.partyModeUnlocked) }
