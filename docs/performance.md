@@ -4,22 +4,24 @@ Shot is meant to be fast by default. Its worst regressions so far were power fea
 
 ## In CI: `make perf`
 
-`Tests/ShotCoreTests/PerfTests.swift` times the pure paths with `ContinuousClock`. After one warm-up run, it keeps the fastest of at least 15 runs spread over at least half a second. A busy runner can only add time, so the fastest run is the closest to what the work costs, and a slow spell would have to last the whole half second to fail a test. `make test` skips the suite. `make perf` and CI's **Perf** step run it alone, one test at a time, so other tests don't skew the timings. CI runs it at the release gate, on the release pull request only, so a regression shows up per release. Run `make perf` yourself when you change `Sources/ShotCore`.
+`Tests/ShotCoreTests/PerfTests.swift` times the pure paths with `ContinuousClock`. After one warm-up run, it keeps the fastest of at least 15 runs spread over at least half a second. A busy runner can only add time, so the fastest run is the closest to what the work costs, and a slow spell would have to last the whole half second to fail a test. `make test` skips the suite. `make perf` and CI's **Perf** step run it alone, one test at a time, so other tests don't skew the timings. CI runs it at the release gate, on the release pull request only, so a regression shows up per release. The Perf step writes each path's fastest run beside its budget to the job summary (`scripts/ci-test.sh` collects them from the file `SHOT_PERF_RESULTS` names), so drift is visible before a budget fails. Run `make perf` yourself when you change `Sources/ShotCore`.
 
 Each budget is 2× the baseline measured on the CI runner, which is slower than the reference Mac. The baseline is the slowest of three CI runs. That leaves room for a noisy runner but still fails a change that does the work again on every call: removing the overlay cache from #222 makes the overlay test about 140× slower.
 
 | Path | What's measured | Reference Mac | CI runner | Budget |
 |---|---|---|---|---|
-| Flatten + encode | Flatten a 5120×2880 capture with 20 annotations, including a blur and a spotlight, and encode it as PNG | 261 ms | 423 ms | 847 ms |
-| Overlay render | `AnnotationFrame.apply` of 20 annotations at 1920×1080, per frame over 30 frames, with the compositor's overlay cache | 9.7 µs | 19.4 µs | 39 µs |
-| Marker render | `AnnotationFrame.apply` of one marker over a 1920×1080 frame, which draws the whole canvas on the CPU and sends it back, then reading the frame out | not measured | 14.3 ms | 29 ms |
-| GIF export memory | Peak growth of the process footprint while exporting a 20 s 1080p video as a GIF | < 1 MB | 226 MB | 452 MB |
-| Gallery grouping | Filter, sort and group 1,500 items into date sections | 1.2 ms | 2.9 ms | 5.8 ms |
-| Gallery text search | Search 1,500 items whose screenshots have about 1.5 KB of text each for a word 15 of them contain, then group them | 2.9 ms | 5.3 ms | 10.6 ms |
+| Flatten + encode | Flatten a 5120×2880 capture with 20 annotations, including a blur and a spotlight, and encode it as PNG | 261 ms | 438 ms | 876 ms |
+| Encode PNG | `ImageCodec.data` of an unannotated 3840×2486 capture (the 15″ panel at a scaled resolution) at 2×: the quick sharer's save | 228 ms | 353 ms | 706 ms |
+| Encode JPEG | The same capture as a JPEG at the default quality | 12 ms | 21 ms | 43 ms |
+| Overlay render | `AnnotationFrame.apply` of 20 annotations at 1920×1080, per frame over 30 frames, with the compositor's overlay cache | 11 µs | 22 µs | 44 µs |
+| Marker render | `AnnotationFrame.apply` of one marker over a 1920×1080 frame, which draws the whole canvas on the CPU and sends it back, then reading the frame out | 2.8 ms | 5.8 ms | 11.6 ms |
+| GIF export memory | Peak growth of the process footprint while exporting a 20 s 1080p video as a GIF | < 1 MB | 208 MB | 416 MB |
+| Gallery grouping | Filter, sort and group 1,500 items into date sections | 1.3 ms | 2.6 ms | 5.2 ms |
+| Gallery text search | Search 1,500 items whose screenshots have about 1.5 KB of text each for a word 15 of them contain, then group them | 3.0 ms | 5.4 ms | 10.8 ms |
 
 GIF export grows memory by under 1 MB on the reference Mac but by about 226 MB on the CI runner, probably because the runner's virtual machine decodes video in software, inside the test process. The budget follows the CI runner. Reverting #230 adds about 500 MB at this size, as measured in its PR, so CI still catches it.
 
-Gallery text search was measured on the `xcode-27` runner, at the release gate after CI moved there (#815). The other rows were measured on `macos-26`.
+Every CI baseline was measured on the `xcode-27` runner. Before CI moved there (#815), the budgets came from `macos-26`, which was slower: the marker render, for one, ran about 6× under its old budget, which would have hidden a regression. The reference Mac column is from `make perf` on the Mac below.
 
 To change a budget, measure again, then update both this table and `Budget` in `PerfTests.swift`.
 

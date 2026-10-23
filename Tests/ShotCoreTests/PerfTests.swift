@@ -118,14 +118,14 @@ import Testing
 
 /// Twice the CI runner's baselines in `docs/performance.md`; change both together.
 private enum Budget {
-    static let flattenAndEncode = 847
-    static let encodePNG = 1000
-    static let encodeJPEG = 1000
-    static let overlayFrame = 39
-    static let markerFrame = 29_000
-    static let gifExportMegabytes = 452
-    static let galleryGrouping = 5.8
-    static let gallerySearch = 10.6
+    static let flattenAndEncode = 876
+    static let encodePNG = 706
+    static let encodeJPEG = 43
+    static let overlayFrame = 44
+    static let markerFrame = 11_600
+    static let gifExportMegabytes = 416
+    static let galleryGrouping = 5.2
+    static let gallerySearch = 10.8
 }
 
 /// The fastest run of `body`, after one untimed run that warms caches. It runs at least fifteen times and for at least
