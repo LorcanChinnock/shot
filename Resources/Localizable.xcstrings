@@ -23005,6 +23005,9 @@
         }
       }
     },
+    "Puts the format, GIF size, mute and speed back to how new exports start." : {
+
+    },
     "Puts the position, scale, turn and opacity back and clears the keyframes. The crop and style stay." : {
 
     },

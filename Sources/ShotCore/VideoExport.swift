@@ -29,6 +29,12 @@ public struct VideoExportOptions: Equatable, Sendable {
         self.speed = speed
     }
 
+    /// How every option starts, and what the video editor's Reset puts back.
+    public static let `default` = VideoExportOptions()
+
+    /// Whether every option is at its default, so Reset has nothing to do.
+    public var isDefault: Bool { self == Self.default }
+
     /// `nil` keeps the recording's width.
     public var gifMaxWidth: CGFloat? { gifWidth == Self.originalWidth ? nil : CGFloat(gifWidth) }
 
