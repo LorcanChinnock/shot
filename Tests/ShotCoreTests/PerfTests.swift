@@ -18,6 +18,23 @@ import Testing
         try check(time, budget: .milliseconds(Budget.flattenAndEncode), "Flatten + encode")
     }
 
+    /// The quick sharer's save: a full-screen capture of the 15″ panel at a scaled resolution, with nothing drawn on it.
+    @Test func encodingAnUnannotatedRetinaCaptureAsPNGStaysInBudget() throws {
+        let image = try gradient(width: 3840, height: 2486)
+        let time = try fastest {
+            _ = try #require(ImageCodec.data(from: image, scale: 2))
+        }
+        try check(time, budget: .milliseconds(Budget.encodePNG), "Encode PNG")
+    }
+
+    @Test func encodingAnUnannotatedRetinaCaptureAsJPEGStaysInBudget() throws {
+        let image = try gradient(width: 3840, height: 2486)
+        let time = try fastest {
+            _ = try #require(ImageCodec.data(from: image, scale: 2, format: .jpeg))
+        }
+        try check(time, budget: .milliseconds(Budget.encodeJPEG), "Encode JPEG")
+    }
+
     @Test func drawingAnnotationsOverAVideoFrameStaysInBudget() throws {
         let canvas = CGRect(x: 0, y: 0, width: 1920, height: 1080)
         let items = twentyAnnotations(in: canvas.size, special: false).map { AnnotationFrame.Item(annotation: $0) }
@@ -61,6 +78,7 @@ import Testing
         let growth = sampler.stop()
         let budget = Budget.gifExportMegabytes << 20
         print("GIF export peak memory growth: \(growth >> 20) MB, budget \(Budget.gifExportMegabytes) MB")
+        record("GIF export memory", "\(growth >> 20) MB", "\(Budget.gifExportMegabytes) MB")
         #expect(growth <= budget, "GIF export grew memory by \(growth >> 20) MB, over its \(Budget.gifExportMegabytes) MB budget")
     }
 
@@ -101,6 +119,8 @@ import Testing
 /// Twice the CI runner's baselines in `docs/performance.md`; change both together.
 private enum Budget {
     static let flattenAndEncode = 847
+    static let encodePNG = 1000
+    static let encodeJPEG = 1000
     static let overlayFrame = 39
     static let markerFrame = 29_000
     static let gifExportMegabytes = 452
@@ -125,9 +145,26 @@ private func fastest(_ body: () throws -> Void) throws -> Duration {
 }
 
 private func check(_ time: Duration, budget: Duration, _ name: String) throws {
-    let style = Duration.UnitsFormatStyle(allowedUnits: [.milliseconds, .microseconds], width: .abbreviated, fractionalPart: .show(length: 2))
-    print("\(name): \(time.formatted(style)), budget \(budget.formatted(style))")
+    print("\(name): \(describe(time)), budget \(describe(budget))")
+    record(name, describe(time), describe(budget))
     #expect(time <= budget, "\(name) took \(time), over its \(budget) budget")
+}
+
+/// One unit, so the table reads at a glance: milliseconds from one up, microseconds below.
+private func describe(_ duration: Duration) -> String {
+    let microseconds = Double(duration.components.seconds) * 1e6 + Double(duration.components.attoseconds) / 1e12
+    return microseconds >= 1000 ? String(format: "%.1f ms", microseconds / 1000) : String(format: "%.1f µs", microseconds)
+}
+
+/// Appends a row to the file `SHOT_PERF_RESULTS` names, if it's set, for `scripts/ci-test.sh` to turn into the timing table
+/// in the job summary. Tab separated: name, measured, budget.
+private func record(_ name: String, _ measured: String, _ budget: String) {
+    guard let path = ProcessInfo.processInfo.environment["SHOT_PERF_RESULTS"], let handle = FileHandle(forWritingAtPath: path) else {
+        return
+    }
+    defer { try? handle.close() }
+    _ = try? handle.seekToEnd()
+    try? handle.write(contentsOf: Data("\(name)\t\(measured)\t\(budget)\n".utf8))
 }
 
 /// A smooth gradient, so PNG encoding does real work rather than compressing a flat colour to nothing.

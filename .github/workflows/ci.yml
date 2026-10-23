@@ -53,7 +53,7 @@ jobs:
       # Only at the release gate, to keep ordinary PRs' runs short. Alone, so other tests running in parallel don't skew
       # the timings. Budgets: docs/performance.md.
       - name: Perf
-        if: startsWith(github.head_ref, 'release-please--')
+        if: startsWith(github.head_ref, 'release-please--') || startsWith(github.head_ref, 'test/perf-capture-save') # TEMP
         run: scripts/ci-test.sh perf --skip-build
       # CI builds debug, but `make dist` builds the release configuration (scripts/bundle.sh) after the release is tagged.
       # Build it here so a release-only compile error fails the gate, not the release. One slice: the debug Intel compile
