@@ -19,9 +19,11 @@ It's off until you turn it on, and Shot never signs in to an AI account for you.
 
 Right-click a screenshot and choose **Copy Alt Text**. Shot sends the image to your service, copies the answer and shows a toast. With the setting on, the item shows on any macOS, not only 27.
 
+**Copy Bug Report** uses the same service. For a recording it sends up to eight frames, the text read from them and the words you said, which Shot transcribes on your Mac first.
+
 ## What leaves your Mac
 
-- Only the screenshot you chose, and only when you choose **Copy Alt Text**. Nothing is sent when you take a capture.
+- Only the capture you chose, and only when you choose **Copy Alt Text** or **Copy Bug Report**. Nothing is sent when you take a capture.
 - The image is scaled to 2000 pixels on its longest side and sent as a JPEG under 5 MB (an Anthropic request is also kept under 32 MB in all), with a short instruction. Anything you've drawn on it is part of the image. Its file name isn't sent.
 - A local service keeps all of it on your Mac. An online service gets the image under its own terms, so blur private details first.
 

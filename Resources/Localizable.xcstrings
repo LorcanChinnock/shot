@@ -7469,6 +7469,9 @@
         }
       }
     },
+    "Copied bug report" : {
+
+    },
     "Copied path" : {
       "localizations" : {
         "de" : {
@@ -7791,6 +7794,9 @@
 
     },
     "Copy Alt Text sends the capture to the service you choose, instead of Apple's model on this Mac. It only sends when you pick the action. Local services like Ollama keep it on this Mac." : {
+
+    },
+    "Copy Bug Report" : {
 
     },
     "Copy Latest Capture's Path" : {
@@ -9785,6 +9791,12 @@
       }
     },
     "Couldn't translate the text: %@" : {
+
+    },
+    "Couldn't write a bug report for this image" : {
+
+    },
+    "Couldn't write a bug report: %@" : {
 
     },
     "Couldn't write alt text for this image" : {
@@ -34277,6 +34289,9 @@
       }
     },
     "Writing alt text…" : {
+
+    },
+    "Writing bug report…" : {
 
     },
     "X: rotate" : {

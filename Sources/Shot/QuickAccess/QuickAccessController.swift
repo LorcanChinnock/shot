@@ -357,6 +357,11 @@ final class QuickAccessController {
                 })
             }
         }
+        if BugReportAction.isAvailable {
+            actions.append(QuickAccessCardAction(title: String(localized: "Copy Bug Report")) {
+                Task { await BugReportAction.copy(fileAt: card.styledURL ?? card.fileURL) }
+            })
+        }
         actions.append(QuickAccessCardAction(title: String(localized: "Save As…")) { self.saveAs(card) })
         actions.append(nil)
         actions.append(QuickAccessCardAction(title: card.isVideo ? String(localized: "Edit Video") : String(localized: "Annotate")) { self.annotate(card) })
