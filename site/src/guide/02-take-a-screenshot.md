@@ -87,7 +87,7 @@ Copy Bug Report turns a screenshot or a recording into repro steps you can paste
 
 For a recording, Shot picks a few frames where the picture changes, reads the text on them, and includes what you said if the recording has your voice (macOS 26 or later). Apple's model takes only a few frames, so a long recording is summarised from part of it, and the report says so.
 
-Error text is copied from what your Mac read in the capture, never from the model's guess, so it matches the screen word for word. The steps and the expected result are the model's reading: check them before you send.
+Error text is copied from what your Mac read in the capture, never from the model's guess, so it matches the screen word for word. The steps and the expected result are the model's reading: check them before you send. If a recording shows nothing going wrong, the **Actual** says "No problem shown". Smaller models sometimes add a step nobody did.
 
 ## Without a mouse
 

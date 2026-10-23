@@ -71,6 +71,13 @@ private func recording(frames: Int, text: (Int) -> [String] = { _ in [] }) -> Bu
     #expect(markdown == "## Bug report\n")
 }
 
+@Test func anActualThatRepeatsTheExpectedIsLeftOut() {
+    let reply: JSONValue = .object(["title": .string("Upload"), "expected": .string("A program is created."), "actual": .string("a program is created.")])
+    let markdown = BugReport.markdown(from: reply, readText: [])
+    #expect(markdown.contains("### Expected"))
+    #expect(!markdown.contains("### Actual"))
+}
+
 @Test func aRefusalForContextLengthIsRecognised() {
     #expect(ChatProvider.Failure.server(status: 400, message: "request (9049 tokens) exceeds the available context size (4096 tokens)").isContextTooSmall)
     #expect(ChatProvider.Failure.server(status: 413, message: "prompt is too long").isContextTooSmall)

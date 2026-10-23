@@ -129,7 +129,8 @@ public enum BugReport {
     You turn a screenshot or screen recording into a bug report that someone else can reproduce. Use only what the \
     images, the text read from them and the user's words show. Don't guess at causes or versions. Steps are short \
     imperative sentences, one action each, such as "Click Save": rewrite what the user said in their own words, not \
-    quoting it or writing "I". If the images don't show what was expected, say "Not shown". \
+    quoting it or writing "I". Only list actions the images or the user's words show. If the images don't show what \
+    was expected, say "Not shown". If nothing looks wrong, write "No problem shown" as the actual result. \
     List any error message exactly as it appears in the text read from the images; leave the list empty when there is none.
     """
 
@@ -180,7 +181,8 @@ public enum BugReport {
         }
         let expected = clean(reply["expected"]), actual = clean(reply["actual"])
         if !expected.isEmpty { out.append("### Expected\n" + expected) }
-        if !actual.isEmpty { out.append("### Actual\n" + actual) }
+        // A model with nothing wrong to report sometimes writes the same sentence twice.
+        if !actual.isEmpty, actual.lowercased() != expected.lowercased() { out.append("### Actual\n" + actual) }
         let errors = verified(list(reply["errors"]), in: readText)
         if !errors.isEmpty {
             out.append("### Error text\n" + errors.map { "> " + $0 }.joined(separator: "\n"))
