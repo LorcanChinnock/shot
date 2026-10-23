@@ -221,6 +221,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         // Always added; the editor shows or hides it each time the menu opens, since the AI provider setting can change.
         edit.addItem(withTitle: String(localized: "Copy Alt Text"), action: #selector(EditorWindowController.copyAltText(_:)), keyEquivalent: "").isHidden = !AltTextAction.isAvailable
+        edit.addItem(withTitle: String(localized: "Copy Bug Report"), action: #selector(EditorWindowController.copyBugReport(_:)), keyEquivalent: "").isHidden = !BugReportAction.isAvailable
         let editItem = NSMenuItem(title: String(localized: "Edit"), action: nil, keyEquivalent: "")
         editItem.submenu = edit
         let main = NSMenu()

@@ -78,6 +78,17 @@ Alt text describes an image for people who use a screen reader. On macOS 27 or l
 
 You get one or two plain sentences, usually within a couple of seconds. Read the text before you use it: the model can miss small details or misread tiny text.
 
+## Copy a bug report
+
+Copy Bug Report turns a screenshot or a recording into repro steps you can paste into a ticket or a message. It uses the same model as alt text: Apple's on your Mac on macOS 27 or later, or the AI provider you set up. It never runs unless you ask.
+
+1. Right-click the capture's Quick Access card or its tile in the gallery and choose **Copy Bug Report**, or in the image editor choose **Edit › Copy Bug Report**.
+2. Paste the result. It has a title, **Steps**, **Expected**, **Actual** and, if the capture shows one, the **Error text**.
+
+For a recording, Shot picks a few frames where the picture changes, reads the text on them, and includes what you said if the recording has your voice (macOS 26 or later). Apple's model takes only a few frames, so a long recording is summarised from part of it, and the report says so.
+
+Error text is copied from what your Mac read in the capture, never from the model's guess, so it matches the screen word for word. The steps and the expected result are the model's reading: check them before you send.
+
 ## Without a mouse
 
 After <kbd>⌘⇧4</kbd>, press an arrow key to start an area at the pointer, or in the middle of the screen. Then:

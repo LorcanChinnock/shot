@@ -218,6 +218,17 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         }
     }
 
+    /// Edit › Copy Bug Report: repro steps for the image as it looks now, marks and all.
+    @objc func copyBugReport(_ sender: Any?) {
+        Task { [model] in
+            guard let image = await model.renderedImage() else {
+                Toast.error("Couldn't write a bug report for this image")
+                return
+            }
+            await BugReportAction.copy(image)
+        }
+    }
+
     /// Sends the saved version, saving first when there are marks it doesn't have yet, so the agent sees them and never
     /// the original under a blur.
     @objc func sendToAgent(_ sender: Any?) {
@@ -275,12 +286,18 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         return AltTextAction.isAvailable
     }
 
+    private func showsBugReport(in menuItem: NSMenuItem) -> Bool {
+        menuItem.isHidden = !BugReportAction.isAvailable
+        return BugReportAction.isAvailable
+    }
+
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         switch menuItem.action {
         case #selector(copyStyle(_:)): model.styleTarget != nil
         case #selector(pasteStyle(_:)), #selector(applyStyleToAllImages(_:)): model.canPasteStyle && model.editingText == nil
         case #selector(flatten(_:)): model.version != nil
         case #selector(copyAltText(_:)): showsAltText(in: menuItem)
+        case #selector(copyBugReport(_:)): showsBugReport(in: menuItem)
         default: true
         }
     }

@@ -503,6 +503,9 @@ private struct GalleryTileMenu: View {
                 Button("Copy Alt Text") { Task { await AltTextAction.copy(imageAt: item.url) } }
             }
         }
+        if targets.count == 1, BugReportAction.isAvailable {
+            Button("Copy Bug Report") { Task { await BugReportAction.copy(fileAt: item.url) } }
+        }
         Button("Quick Look") { GalleryPreview.shared.show(targets.map(\.url)) }
         if targets.count == 1, item.kind == .image {
             Button("Pin") { PinController.shared.pin(item.url) }
