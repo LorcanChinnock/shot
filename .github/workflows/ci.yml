@@ -32,6 +32,9 @@ jobs:
       # What `make lint` runs before its build, which the next step does.
       - name: Lint
         run: scripts/lint.sh
+      # Apart from the build, so a run shows how long fetching dependencies takes next to compiling.
+      - name: Resolve packages
+        run: swift package resolve --force-resolved-versions
       - name: Build
         run: swift build --build-tests --force-resolved-versions
       # An older SDK would leave Copy Alt Text out without an error, so check it's in. See scripts/check-sdk.sh.
