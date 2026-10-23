@@ -55,6 +55,12 @@ jobs:
       - name: Perf
         if: startsWith(github.head_ref, 'release-please--')
         run: scripts/ci-test.sh perf --skip-build
+      # CI builds debug, but `make dist` builds the release configuration (scripts/bundle.sh) after the release is tagged.
+      # Build it here so a release-only compile error fails the gate, not the release. One slice: the debug Intel compile
+      # covers the other.
+      - name: Build the release configuration
+        if: startsWith(github.head_ref, 'release-please--')
+        run: swift build -c release --arch arm64 --force-resolved-versions
       # A test process that crashes leaves only its signal in the log; the report has the stack. See scripts/crash-reports.sh.
       - name: Keep the crash reports
         if: failure()
