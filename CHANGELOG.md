@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0-beta.70](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.69...v0.7.0-beta.70) (2026-10-23)
+
+
+### Features
+
+* **ai:** copy a bug report from a capture or recording ([#839](https://github.com/LorcanChinnock/shot/issues/839)) ([d3d4ad5](https://github.com/LorcanChinnock/shot/commit/d3d4ad59526e52b2de209964610d643765da9827))
+* **ai:** Copy Bug Report in the video editor ([#841](https://github.com/LorcanChinnock/shot/issues/841)) ([5ae1b84](https://github.com/LorcanChinnock/shot/commit/5ae1b84bade2b2c3196f1d3a802078545b81fe16))
+
+
+### Bug Fixes
+
+* **ai:** Copy Bug Report copes with a flagged screenshot and a capture with no bug ([#843](https://github.com/LorcanChinnock/shot/issues/843)) ([9f2f67f](https://github.com/LorcanChinnock/shot/commit/9f2f67fc3958dfec8e23c69ffb9898fda7eb3e61))
+
 ## [0.7.0-beta.69](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.68...v0.7.0-beta.69) (2026-10-23)
 
 
