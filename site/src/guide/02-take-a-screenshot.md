@@ -85,7 +85,9 @@ Copy Bug Report turns a screenshot or a recording into repro steps you can paste
 ![The Quick Access card's right-click menu with Copy Bug Report below Copy Alt Text](../../../docs/media/quick-access-menu.png)
 
 1. Right-click the capture's Quick Access card or its tile in the gallery and choose **Copy Bug Report**, or in the image editor or video editor choose **Edit › Copy Bug Report**. The video editor writes it from the recording as it was made, before any trims or cuts.
-2. Paste the result. It has a title, **Steps**, **Expected**, **Actual** and, if the capture shows one, the **Error text**.
+2. Wait for the **Writing bug report…** note at the bottom of the screen to say **Copied bug report**. On your Mac's own model this can take up to a minute. Then paste the result. It has a title, **Steps**, **Expected**, **Actual** and, if the capture shows one, the **Error text**.
+
+![A team chat with a pasted bug report: a title, Steps, Expected and Actual](../../../docs/media/bug-report-result.png)
 
 For a recording, Shot picks a few frames where the picture changes, reads the text on them, and includes what you said if the recording has your voice (macOS 26 or later). Apple's model takes only a few frames, so a long recording is summarised from part of it, and the report says so.
 

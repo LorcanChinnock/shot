@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// A team chat to paste a screenshot into: click the composer, ⌘V, then Return.
+/// A team chat to paste a screenshot or text into: click the composer, ⌘V, then Return.
 struct ChatScene: View {
     private struct Message: Identifiable {
         let id: Int
@@ -96,8 +96,12 @@ struct ChatScene: View {
         .focusEffectDisabled()
         .focused($composing)
         .onTapGesture { composing = true }
-        .onPasteCommand(of: [.image, .png, .tiff]) { _ in
-            if let image = NSImage(pasteboard: .general) { attachment = image }
+        .onPasteCommand(of: [.image, .png, .tiff, .plainText]) { _ in
+            if let image = NSImage(pasteboard: .general) {
+                attachment = image
+            } else if let text = NSPasteboard.general.string(forType: .string) {
+                draft += text
+            }
         }
         .onKeyPress(.return) {
             send()
