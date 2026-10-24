@@ -21,6 +21,8 @@ The agent runs on your own account, as if you'd started it yourself. Shot needs 
 2. Right-click its Quick Access card, or its tile in the gallery, and choose **Send to Claude Code** (or your agent's name). In the editor, it's in the **File** menu.
 3. A terminal window opens with the agent running and your task in it. When the agent finishes, the window stays open in your working folder.
 
+![The Quick Access card's right-click menu with Send to Claude Code at the bottom, below Show in Finder](../../../docs/media/send-to-agent-menu.png)
+
 From the editor, Shot saves your changes first, so the agent gets the version with your marks. It always gets the saved file with the marks drawn on, never the original under a blur.
 
 > [!TIP]
