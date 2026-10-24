@@ -6,7 +6,7 @@ aliases: [annotation-editor]
 anchors: [tools, editing-annotations, zoom, saving]
 ---
 
-![The editor toolbar: the tools, then the colours and line widths for the arrow tool](../../../docs/media/editor-toolbar.png)
+![The editor toolbar: the tools, then the colours, line widths and Reset button for the arrow tool](../../../docs/media/editor-toolbar.png)
 
 ## Open the editor
 
