@@ -5,6 +5,7 @@ import Loop from '../components/Loop.astro';
 import Window from '../components/Window.astro';
 import Copy from '../components/Copy.astro';
 import ForMacs from '../components/ForMacs.astro';
+import HeroStage from '../components/HeroStage.astro';
 import { latestRelease } from '../lib/release';
 import editor from '../../../docs/media/editor.png';
 import videoEditor from '../../../docs/media/video-editor.png';
@@ -13,70 +14,182 @@ import openAnyway from '../../../docs/media/open-anyway.png';
 const release = await latestRelease();
 const full = '(min-width: 1120px) 1088px, 100vw';
 const half = '(min-width: 900px) 540px, 100vw';
+
+// The strip of shortcuts under the hero. It scrolls, so it's written twice and the copy is hidden from screen readers.
+const shortcuts: [string[], string][] = [
+  [['⌘', '⇧', '4'], 'Area'],
+  [['⌘', '⇧', '3'], 'Whole screen'],
+  [['⌘', '⇧', '5'], 'Record'],
+  [['A'], 'Arrow'],
+  [['B'], 'Blur'],
+  [['T'], 'Text'],
+  [['H'], 'Highlight'],
+  [['⌘', 'C'], 'Copy'],
+  [['⌘', 'Z'], 'Undo'],
+];
+
+// One card per kind of person, the quick sharer first (CLAUDE.md › Who uses Shot).
+const audiences = [
+  {
+    color: 'yellow',
+    who: 'You paste screenshots into chats',
+    what: 'Press the keys you already know. The screenshot is copied before you let go, so paste it straight into a message or an email.',
+    link: '/docs/take-a-screenshot/',
+    cta: 'Take a screenshot',
+  },
+  {
+    color: 'pink',
+    who: 'You show people how things work',
+    what: 'Point with arrows, blur private details, and record a short walkthrough with your voice. Then send it as a video or a GIF.',
+    link: '/docs/record-your-screen/',
+    cta: 'Record your screen',
+  },
+  {
+    color: 'sky',
+    who: 'You make images for docs and slides',
+    what: 'Combine screenshots, add padding, a background and a shadow, and reuse the same style on every capture.',
+    link: '/docs/style-a-screenshot/',
+    cta: 'Style a screenshot',
+  },
+  {
+    color: 'mint',
+    who: 'You ask Claude or ChatGPT about your screen',
+    what: "Your arrows and boxes show the assistant where to look. Connect it once with a click in Settings, and it can fetch your latest screenshot itself.",
+    link: '/docs/use-shot-with-ai-agents/',
+    cta: 'Use Shot with AI assistants',
+  },
+  {
+    color: 'violet',
+    who: 'You build software with coding agents',
+    what: 'Send a marked-up capture to Claude Code, Codex or Cursor as a task, or let the agent capture the iOS Simulator to check its own work, through the MCP server or the shot command.',
+    link: '/docs/the-mcp-server/',
+    cta: 'Set up the MCP server',
+  },
+];
 ---
 
 <Base>
   <section class="hero">
-    <div class="wrap">
-      <h1>A better <kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd></h1>
-      <p class="lede">Shot is a screenshot app that sits in your menu bar. It uses the keys you already know.</p>
-      <div class="cta">
-        <a class="button big" href="/download">Download Shot</a>
-        <Copy command="brew install lorcanchinnock/tap/shot" />
+    <div class="wrap hero-grid">
+      <div class="hero-text">
+        <h1>A better <span class="keys"><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd></span></h1>
+        <p class="lede">Shot is a screenshot app that sits in your menu bar. It uses the keys you already know.</p>
+        <div class="cta">
+          <a class="button big" href="/download">Download Shot</a>
+          <Copy command="brew install lorcanchinnock/tap/shot" />
+        </div>
+        <ForMacs />
+        <p class="meta">Free and open source. Version {release.version}, for macOS 15 or later, on Apple Silicon or Intel. <a href="#install">How to install</a></p>
       </div>
-      <ForMacs />
-      <p class="meta">Free and open source. Version {release.version}, for macOS 15 or later, on Apple Silicon or Intel. <a href="#install">How to install</a></p>
       <Window>
-        <Loop name="hero" label="Pressing ⌘⇧4, adding a note with an arrow to the problem, then pasting the screenshot into a chat" eager />
+        <HeroStage />
       </Window>
     </div>
   </section>
 
+  <div class="strip-wrap">
+  <div class="strip">
+    {[0, 1].map((copy) => (
+      <ul aria-label={copy ? undefined : 'Shortcuts'} aria-hidden={copy ? 'true' : undefined}>
+        {shortcuts.map(([keys, label]) => (
+          <li>{keys.map((k) => <kbd class="key">{k}</kbd>)}<span>{label}</span></li>
+        ))}
+      </ul>
+    ))}
+  </div>
+  </div>
+
   <section>
-    <div class="wrap">
-      <h2 class="say">Let go of the mouse and the screenshot is already copied and saved. A little card shows up in the corner, and you can drag it straight into a message.</h2>
-      <Window><Loop name="capture" label="Dragging out an area with the magnifier, then the Quick Access card sliding into the corner and showing its buttons" /></Window>
+    <div class="wrap stack">
+      <div class="say reveal">
+        <span class="step">That's the real app</span>
+        <h2>Let go of the mouse and the screenshot is already copied and saved. A little card shows up in the corner, and you can drag it straight into a message.</h2>
+      </div>
+      <Window class="reveal"><Loop name="hero" label="Pressing ⌘⇧4, adding a note with an arrow to the problem, then pasting the screenshot into a chat" /></Window>
     </div>
   </section>
 
   <section>
     <div class="wrap pair">
-      <div>
-        <h2 class="say">Press <kbd class="key">A</kbd> for an arrow, or <kbd class="key">B</kbd> to blur an email address.</h2>
-        <Window><Image src={editor} alt="The annotation editor with a blurred email address, the discount line highlighted, and a sticky note with an arrow pointing at it" widths={[540, 1080]} sizes={half} /></Window>
+      <div class="stack reveal">
+        <div class="say">
+          <span class="step" style="--chip: var(--pink)">Capture</span>
+          <h2>Drag out an area with a magnifier for the last pixel, or click a window.</h2>
+        </div>
+        <Window tint="var(--pink)"><Loop name="capture" label="Dragging out an area with the magnifier, then the Quick Access card sliding into the corner and showing its buttons" /></Window>
       </div>
-      <div>
-        <h2 class="say"><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">5</kbd> records instead.</h2>
-        <Window><Loop name="recording" label="Recording an area of the screen while a chart animates" /></Window>
+      <div class="stack reveal">
+        <div class="say">
+          <span class="step" style="--chip: var(--sky)">Mark up</span>
+          <h2>Press <kbd class="key">A</kbd> for an arrow, or <kbd class="key">B</kbd> to blur an email address.</h2>
+        </div>
+        <Window tint="var(--sky)"><Image src={editor} alt="The annotation editor with a blurred email address, the discount line highlighted, and a sticky note with an arrow pointing at it" widths={[540, 1080]} sizes={half} /></Window>
       </div>
     </div>
   </section>
 
   <section>
+    <div class="wrap pair flip">
+      <div class="stack reveal">
+        <div class="say">
+          <span class="step" style="--chip: var(--mint)">Record</span>
+          <h2><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">5</kbd> records instead, with your voice and your camera if you like.</h2>
+        </div>
+        <Window tint="var(--mint)"><Loop name="recording" label="Recording an area of the screen while a chart animates" /></Window>
+      </div>
+      <div class="stack reveal">
+        <div class="say">
+          <span class="step" style="--chip: var(--violet)">Trim</span>
+          <h2>Then cut the part where you went looking for the right tab, and save it as a GIF.</h2>
+        </div>
+        <Window tint="var(--violet)"><Image src={videoEditor} alt="The video editor with a cut where the recording went to another page, a Best day label and an arrow, and the GIF export options" widths={[540, 1080, 1600]} sizes={half} /></Window>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
     <div class="wrap">
-      <h2 class="say">Then cut the part where you went looking for the right tab, and save it as a GIF.</h2>
-      <Window><Image src={videoEditor} alt="The video editor with a cut where the recording went to another page, a Best day label and an arrow, and the GIF export options" widths={[640, 1088, 1600]} sizes={full} /></Window>
+      <div class="section-head reveal">
+        <span class="chip">Who it's for</span>
+        <h2>Start with what you do.</h2>
+        <p>Shot opens in its simplest state. Everything else is there when you want it.</p>
+      </div>
+      <ul class="audiences">
+        {audiences.map((a, i) => (
+          <li class={`reveal ${i === 0 ? 'first' : ''}`} style={`--accent: var(--${a.color})`}>
+            <a class="card" href={a.link}>
+              <strong>{a.who}</strong>
+              <span>{a.what}</span>
+              <em>{a.cta} →</em>
+            </a>
+          </li>
+        ))}
+      </ul>
     </div>
   </section>
 
-  <section class="small">
-    <div class="wrap narrow-text">
-      <h2 class="say">Circle the bug, and your coding agent sees exactly what you marked. Or let it ask Shot for your latest screenshot, or the key frames of a recording and what you said over them.</h2>
-      <p>For your marks to reach the agent, turn on <b>Hand captures to agents</b> in <b>Settings › Agents</b>. Or turn on <b>Send to Agent</b>, and Shot opens Claude Code, Codex or Cursor in a terminal with your screenshot and what you marked, as a task. The <a href="/docs/#using-shot-with-ai-agents">guide</a> shows how to connect your agent.</p>
-    </div>
-  </section>
-
-  <section class="small">
-    <div class="wrap narrow-text">
-      <p>There's no account to make. Shot only goes online to check for updates, and it asks you first. The <a href="https://github.com/LorcanChinnock/shot">code is on GitHub</a> if you want to look. Shot is free. If it saves you time, you can <a href="/sponsor">sponsor it</a>.</p>
-      <p>Shot speaks English, German, French, Spanish, Italian, Brazilian Portuguese, Japanese, Korean and Simplified Chinese, and follows the language your Mac is set to. It follows your Mac's light or dark appearance too, or you can pick one in <b>Settings › General</b>.</p>
-      <p>Everything else is in the <a href="/docs/">guide</a>.</p>
+  <section>
+    <div class="wrap">
+      <ul class="facts">
+        <li class="card reveal" style="--accent: var(--mint)">
+          <span class="chip">Private</span>
+          <p>There's no account to make. Shot only goes online to check for updates, and it asks you first. The <a href="https://github.com/LorcanChinnock/shot">code is on GitHub</a> if you want to look.</p>
+        </li>
+        <li class="card reveal" style="--accent: var(--sky)">
+          <span class="chip">Speaks your language</span>
+          <p>English, German, French, Spanish, Italian, Brazilian Portuguese, Japanese, Korean and Simplified Chinese. Shot follows the language your Mac is set to.</p>
+        </li>
+        <li class="card reveal" style="--accent: var(--pink)">
+          <span class="chip">Free</span>
+          <p>Shot follows your Mac's light or dark appearance, and costs nothing. If it saves you time, you can <a href="/sponsor">sponsor it</a>. Everything else is in the <a href="/docs/">guide</a>.</p>
+        </li>
+      </ul>
     </div>
   </section>
 
   <section class="install" id="install">
     <div class="wrap pair">
-      <div>
+      <div class="stack reveal">
         <h2>Install</h2>
         <Copy command="brew install lorcanchinnock/tap/shot" />
         <p>Or <a href="/download">download the zip</a> and drag Shot into Applications.</p>
@@ -89,42 +202,102 @@ const half = '(min-width: 900px) 540px, 100vw';
           <li>In Shot's welcome window, click <b>Grant</b>, turn Shot on under Screen &amp; System Audio Recording, then click <b>Relaunch</b>.</li>
           <li>Press <kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd> and drag out an area.</li>
         </ol>
-        <p>The <a href="/docs/#first-launch">guide</a> covers the rest of the first launch.</p>
+        <p>The <a href="/docs/get-started/">guide</a> covers the rest of the first launch.</p>
       </div>
-      <Image src={openAnyway} alt="The Security section of Privacy & Security, with the Open Anyway button circled next to the message that Shot was blocked" widths={[495, 990]} sizes={half} class="shot" />
+      <Image src={openAnyway} alt="The Security section of Privacy & Security, with the Open Anyway button circled next to the message that Shot was blocked" widths={[495, 990]} sizes={half} class="shot reveal" />
     </div>
   </section>
 </Base>
 
 <style>
-  .hero { padding-top: clamp(40px, 6vw, 72px); }
-  .hero .wrap { justify-items: start; }
-  .hero h1 { font-size: clamp(44px, 7vw, 80px); display: flex; flex-wrap: wrap; align-items: center; gap: 0.18em; }
-  .hero h1 .key { font-size: 0.62em; padding: 0.05em 0.3em; border-width: 3px; border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); }
+  .hero { padding-block: clamp(32px, 6vw, 72px) clamp(32px, 5vw, 56px); }
+  .hero-grid { display: grid; gap: 32px; align-items: center; }
+  @media (min-width: 1000px) { .hero-grid { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 48px; } }
+  .hero-text { display: grid; gap: 20px; justify-items: start; min-width: 0; }
+  .hero h1 { font-size: clamp(44px, 7vw, 84px); display: flex; flex-wrap: wrap; align-items: center; gap: 0.18em; }
+  .keys { display: inline-flex; gap: 0.12em; }
+  .hero h1 .key { font-size: 0.62em; padding: 0.05em 0.3em; border-width: 3px; border-radius: 12px; box-shadow: 4px 4px 0 var(--line); }
   .lede { font-size: clamp(19px, 2.2vw, 22px); margin: 0; max-width: 30em; }
   .cta { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; width: 100%; }
-  .cta :global(.copy) { flex: 0 1 460px; min-width: 0; }
+  .cta :global(.copy) { flex: 1 1 320px; min-width: 0; }
   .button.big { min-height: 52px; padding: 12px 22px; font-size: 18px; }
-  .meta { margin: 0 0 28px; font-size: 15px; color: var(--muted); }
+  .meta { margin: 0; font-size: 15px; color: var(--muted); }
   .hero :global(.window) { width: 100%; }
 
-  section { padding-block: clamp(28px, 4vw, 48px); }
-  .wrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
-  .say { font: 800 clamp(20px, 2.4vw, 26px)/1.3 var(--display); letter-spacing: -0.015em; margin: 0; max-width: 30em; text-wrap: pretty; }
+  /* The keycaps in the title press in time with the hero's animation (HeroStage.astro's --loop). */
+  @media (prefers-reduced-motion: no-preference) {
+    .hero h1 .key { animation: press 11s infinite both; }
+    .hero h1 .key:nth-child(2) { animation-delay: 0.12s; }
+    .hero h1 .key:nth-child(3) { animation-delay: 0.24s; }
+  }
+  @keyframes press {
+    0%, 4% { transform: none; box-shadow: 4px 4px 0 var(--line); background: var(--paper); color: var(--ink); }
+    5%, 10% { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--line); background: var(--yellow); color: var(--on-accent); }
+    12%, 100% { transform: none; box-shadow: 4px 4px 0 var(--line); background: var(--paper); color: var(--ink); }
+  }
+
+  /* An ink band of shortcuts that scrolls on its own, and stands still with reduced motion. */
+  /* The tilted strip is wider than the page, so its wrapper clips it, leaving room above and below for the tilt. */
+  .strip-wrap { overflow: clip; padding-block: 16px; }
+  .strip { display: flex; overflow: hidden; background: var(--line); color: #f6f4ef; border-block: var(--border) solid var(--line); transform: rotate(-1deg); margin-inline: -8px; }
+  .strip ul { display: flex; flex: none; gap: 40px; margin: 0; padding: 14px 20px; list-style: none; }
+  .strip li { display: flex; align-items: center; gap: 6px; font-weight: 800; white-space: nowrap; }
+  .strip li span { margin-left: 6px; }
+  .strip .key { color: var(--on-accent); background: var(--yellow); border-color: #000; box-shadow: 2px 2px 0 #000; }
+  .strip li:nth-child(3n + 2) .key { background: var(--pink); }
+  .strip li:nth-child(3n) .key { background: var(--mint); }
+  @media (prefers-reduced-motion: no-preference) {
+    .strip ul { animation: marquee 40s linear infinite; }
+    .strip:hover ul { animation-play-state: paused; }
+  }
+  @keyframes marquee { to { transform: translateX(-100%); } }
+
+  section { padding-block: clamp(32px, 5vw, 64px); }
+  .stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-content: start; min-width: 0; }
+  .say { display: grid; gap: 12px; justify-items: start; }
+  .say h2 { font: 800 clamp(20px, 2.4vw, 26px)/1.3 var(--display); letter-spacing: -0.015em; max-width: 30em; text-wrap: pretty; }
   /* A tight line height keeps the caps from making a caption's line taller than plain text. */
   .say .key { font-size: 0.75em; line-height: 1.1; }
   .say .key + .key { margin-left: 0.2em; }
+  .step { display: inline-flex; padding: 3px 10px; font: 800 12px/1.4 var(--font); letter-spacing: 0.06em; text-transform: uppercase; color: var(--on-accent); background: var(--chip, var(--yellow)); border: 2px solid var(--line); border-radius: 999px; }
 
   .pair { display: grid; gap: 40px; }
-  @media (min-width: 900px) { .pair { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
-  .pair > * { min-width: 0; display: grid; gap: 20px; align-content: start; }
+  @media (min-width: 900px) {
+    .pair { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+    /* The second of each pair sits lower, so the page zigzags instead of stacking boxes in a grid. */
+    .pair > :nth-child(2) { margin-top: 72px; }
+    .pair.flip > :nth-child(2) { margin-top: 0; }
+    .pair.flip > :nth-child(1) { margin-top: 72px; }
+    .install .pair > :nth-child(2) { margin-top: 0; }
+  }
 
-  .narrow-text p { max-width: 36em; }
-  .small p { font-size: 19px; margin: 0; }
-  .small a, .install a { font-weight: 700; }
+  /* The audiences, on a tinted band so the page has a change of pace. */
+  .band { background: color-mix(in srgb, var(--yellow) calc(var(--blob) * 22%), transparent); border-block: var(--border) solid var(--line); }
+  .audiences { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+  .audiences li { display: grid; }
+  .audiences .card { display: grid; align-content: start; gap: 8px; padding: 20px 22px; text-decoration: none; background: var(--glass-strong); border-top-width: 10px; border-top-color: var(--accent); }
+  .audiences strong { font: 900 22px/1.15 var(--display); letter-spacing: -0.02em; }
+  .audiences span { color: var(--muted); font-size: 16px; line-height: 1.5; }
+  .audiences em { margin-top: 6px; font-style: normal; font-weight: 800; }
+  .audiences em { justify-self: start; padding: 2px 10px; color: var(--on-accent); background: var(--accent); border: 2px solid var(--line); border-radius: 8px; }
+  @media (min-width: 700px) {
+    .audiences { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .audiences .first { grid-column: 1 / -1; }
+    .audiences .first .card { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); align-items: center; column-gap: 32px; background: var(--yellow); color: var(--on-accent); }
+    .audiences .first strong { font-size: clamp(26px, 3vw, 34px); grid-row: span 2; }
+    .audiences .first span { color: var(--on-accent); opacity: 0.8; }
+    .audiences .first em { background: #fff; color: var(--on-accent); }
+  }
 
-  .install h2 { font-size: clamp(28px, 3.6vw, 38px); }
+  .facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+  .facts li { display: grid; gap: 12px; align-content: start; justify-items: start; padding: 20px 22px; }
+  .facts .chip { --chip: var(--accent); }
+  .facts p { margin: 0; font-size: 17px; }
+  .facts a { font-weight: 700; }
+
+  .install h2 { font-size: clamp(32px, 4vw, 44px); }
   .install p { margin: 0; }
+  .install a { font-weight: 700; }
   .install .steps { margin: 0; padding-left: 1.4em; display: grid; gap: 4px; }
-  .install :global(.shot) { border: 2px solid var(--ink); border-radius: 10px; }
+  .install :global(.shot) { border: 2px solid var(--line); border-radius: 10px; box-shadow: var(--shadow) var(--shadow) 0 var(--line); }
 </style>

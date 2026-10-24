@@ -3,11 +3,12 @@
 interface Props {
   title?: string;
   tint?: string;
+  class?: string;
 }
-const { title, tint = 'var(--yellow)' } = Astro.props;
+const { title, tint = 'var(--yellow)', class: className } = Astro.props;
 ---
 
-<figure class="window card" style={`--tint: ${tint}`}>
+<figure class:list={['window card', className]} style={`--tint: ${tint}`}>
   <div class="titlebar">
     <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
     {title && <span class="name">{title}</span>}
@@ -19,10 +20,10 @@ const { title, tint = 'var(--yellow)' } = Astro.props;
   .window { margin: 0; padding: 0 8px 8px; background: var(--glass-strong); overflow: hidden; }
   .titlebar { display: flex; align-items: center; gap: 12px; height: 36px; padding: 0 6px; }
   .lights { display: flex; gap: 7px; }
-  .lights i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--ink); background: var(--red); }
+  .lights i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--line); background: var(--red); }
   .lights i:nth-child(2) { background: var(--yellow); }
   .lights i:nth-child(3) { background: var(--mint); }
   .name { font: 800 13px/1 var(--font); }
-  .pane { border: 2px solid var(--ink); border-radius: 6px; overflow: hidden; background: var(--tint); }
+  .pane { border: 2px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--tint); }
   .pane :global(img), .pane :global(video) { width: 100%; }
 </style>

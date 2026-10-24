@@ -30,17 +30,43 @@ const links = pages.map((p) => ({ href: `/docs/${p.slug}/`, title: p.title, curr
   </nav>
 </Prose>
 
+<script>
+  // A Copy button on each code block. It says Copied, or selects the code and says Press ⌘C when the clipboard is blocked.
+  for (const button of document.querySelectorAll<HTMLButtonElement>('.copy-code')) {
+    const code = button.previousElementSibling as HTMLElement;
+    button.hidden = false;
+    let reset: ReturnType<typeof setTimeout> | undefined;
+    button.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(code.innerText.trimEnd());
+        button.textContent = 'Copied';
+      } catch {
+        button.textContent = 'Press ⌘C';
+        const range = document.createRange();
+        range.selectNodeContents(code);
+        getSelection()?.removeAllRanges();
+        getSelection()?.addRange(range);
+      }
+      button.classList.add('done');
+      clearTimeout(reset);
+      reset = setTimeout(() => {
+        button.textContent = 'Copy';
+        button.classList.remove('done');
+      }, 1600);
+    });
+  }
+</script>
+
 <style is:global>
   .prose .page-head { margin-bottom: 32px; }
   /* Lighter rules than the changelog's, so a page of short tasks doesn't read as a stack of boxes. */
-  .prose [data-pagefind-body] h2 { margin-top: 44px; padding-top: 20px; border-top: 2px solid rgb(18 18 26 / 0.14); }
+  .prose [data-pagefind-body] h2 { margin-top: 44px; padding-top: 20px; border-top: 2px solid var(--well); }
   .prose .crumb { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font-weight: 700; font-size: 15px; }
   .prose .crumb .chip { --chip: var(--accent); }
   .prose .page-head h1 { margin-bottom: 12px; }
   .prose .lede { margin: 0; font-size: 20px; line-height: 1.45; color: var(--muted); max-width: 40em; }
   .prose .pager { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 48px; }
-  .prose .pager a { display: grid; gap: 2px; padding: 14px 18px; text-decoration: none; font-weight: 900; font-size: 18px; background: #fff; }
-  .prose .pager a:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--ink); }
+  .prose .pager a { display: grid; gap: 2px; padding: 14px 18px; text-decoration: none; font-weight: 900; font-size: 18px; background: var(--paper); }
   .prose .pager span { font: 800 12px/1.4 var(--font); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
   .prose .pager .next { text-align: right; }
   @media (max-width: 560px) { .prose .pager { grid-template-columns: 1fr; } .prose .pager .next { text-align: left; } }

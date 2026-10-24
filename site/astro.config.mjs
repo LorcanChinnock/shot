@@ -67,7 +67,7 @@ export default defineConfig({
   integrations: [redirects(), search()],
   markdown: {
     rehypePlugins: [rehypeRepoLinks, rehypeDropCommitLinks],
-    shikiConfig: { theme: 'github-light' },
+    shikiConfig: { themes: { light: 'github-light', dark: 'github-dark' } },
   },
   vite: {
     // CHANGELOG.md and docs/media live outside the site folder.
