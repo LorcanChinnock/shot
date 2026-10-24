@@ -45,7 +45,7 @@ Four slow colour blobs and a dot grid behind everything, as in the app's `GlassB
 
 ## Rules
 
-- No script where CSS will do. The only scripts are the copy buttons, search, the loops' play/pause, the guide's "On this page" marker and the old `/docs/#anchor` redirect.
+- No script where CSS will do. The only scripts are the copy buttons, search, the loops' play/pause and the guide's "On this page" marker.
 - No web fonts, analytics or third-party requests, so the Content-Security-Policy in `public/_headers` stays at `'self'`.
 - Phone width works: 16px side gutters and no sideways scrolling.
 - Copy speaks to the quick sharer first. Developer words (MCP, CLI, JSON) stay in the developer card and the developer pages.
