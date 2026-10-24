@@ -2,7 +2,6 @@
 title: Find your captures
 summary: "Browse, search, filter and reopen everything in your save folder in the gallery."
 group: Edit and share
-aliases: [gallery]
 ---
 
 ![The gallery: an annotated screenshot, a GIF, a recording and three screenshots, with filters, sort and the thumbnail size slider](../../../docs/media/gallery.png)

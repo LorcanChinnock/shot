@@ -86,11 +86,9 @@ const rendered = await Promise.all(
   }),
 );
 
-/** Where each heading id lives, for links between pages and for /docs/#… links from when the guide was one page. */
-export const anchors: Record<string, string> = {};
-for (const { slug, aliases, anchors: moved } of rendered) {
-  for (const id of [slug, ...aliases, ...moved]) anchors[id] ??= `/docs/${slug}/`;
-}
+/** Where each page and heading lives, so a guide page can link to another page's section with just its id, as `(#id)`. */
+const anchors: Record<string, string> = {};
+for (const { slug } of rendered) anchors[slug] = `/docs/${slug}/`;
 for (const { slug, headings } of rendered) {
   for (const h of headings) anchors[h.slug] ??= `/docs/${slug}/#${h.slug}`;
 }

@@ -2,7 +2,6 @@
 title: Use Shot with AI agents
 summary: "Hand your captures to Claude, ChatGPT or a coding agent, and let them capture and record for you."
 group: AI agents
-aliases: [using-shot-with-ai-agents]
 ---
 
 AI assistants like Claude and ChatGPT, and coding agents like Claude Code, Codex and Cursor, all take a pasted screenshot, and your arrows and boxes show them where to look. Shot can do more: hand over the file itself, tell the agent exactly what you marked, and let it fetch your captures, edit them, or take its own.

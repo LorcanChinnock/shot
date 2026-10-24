@@ -2,7 +2,6 @@
 title: Crop and arrange
 summary: "Crop a screenshot, reorder and hide your marks in Layers, and grow or trim the canvas."
 group: Edit and share
-anchors: [cropping, canvas]
 ---
 
 ![The annotation editor in crop mode: the area outside the crop dimmed, handles on the crop's corners and edges, Aspect set to Free, the Reset button, and the Layers panel with only the locked image](../../../docs/media/editor-crop.png)

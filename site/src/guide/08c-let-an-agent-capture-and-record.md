@@ -2,7 +2,6 @@
 title: Let an agent capture and record
 summary: "Let an agent screenshot or record a window, such as the iOS Simulator, to check its own work."
 group: AI agents
-anchors: [letting-an-agent-capture-and-record]
 ---
 
 An agent can take its own screenshot or recording of a window, such as the iOS Simulator or the app it's building, so it can check its work without asking you: "record the Simulator while the UI test runs, then show me what happened."

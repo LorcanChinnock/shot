@@ -2,7 +2,6 @@
 title: Edit a recording
 summary: "Trim, cut, split, crop and add clips to a recording, then save it."
 group: Edit and share
-aliases: [video-editor]
 ---
 
 ![The video editor timeline with a text label and an arrow on their own lanes above the clips, and the pink seam where a cut was made](../../../docs/media/video-timeline.png)

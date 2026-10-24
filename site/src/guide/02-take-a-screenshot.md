@@ -2,7 +2,6 @@
 title: Take a screenshot
 summary: "Capture an area, a window or the whole screen, use a timer, or copy the text off your screen."
 group: Capture
-aliases: [screenshots]
 ---
 
 ![Dragging out an area with the magnifier, then the Quick Access card sliding into the corner and showing its buttons](../../../docs/media/capture.gif)

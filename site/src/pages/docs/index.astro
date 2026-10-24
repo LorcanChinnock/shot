@@ -1,7 +1,7 @@
 ---
 import GuideSearch from '../../components/GuideSearch.astro';
 import Prose from '../../layouts/Prose.astro';
-import { anchors, groups, pages } from '../../lib/guide';
+import { groups, pages } from '../../lib/guide';
 
 const [start] = pages;
 const sections = groups
@@ -38,16 +38,6 @@ const sections = groups
     ))}
   </div>
 </Prose>
-
-<script id="anchors" type="application/json" set:html={JSON.stringify(anchors)} />
-
-<script>
-  // The guide used to be one page, and links such as /docs/#first-launch are in the wild (the `shot` command prints one).
-  // Browsers don't send the part after "#" to the server, so the redirect has to happen here.
-  const id = decodeURIComponent(location.hash.slice(1));
-  const anchors: Record<string, string> = JSON.parse(document.getElementById('anchors')?.textContent ?? '{}');
-  if (id && Object.hasOwn(anchors, id)) location.replace(anchors[id]);
-</script>
 
 <style>
   .guide-home h1 { margin-bottom: 12px; }
