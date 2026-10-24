@@ -96,7 +96,7 @@ The title bar shows **EDITED** while you have unsaved changes, and closing the w
 
 ## Reopen a saved version
 
-![A saved version reopened in the editor as the screenshot it came from, with its counter, box and arrow still live: the arrow is selected with its handles, and the Layers panel lists Step 1, Ellipse and Arrow](../../../docs/media/editor-versions.png)
+![A saved version reopened in the editor as the screenshot it came from, with its counter, ellipse and arrow still live: the arrow is selected with its handles, and the Layers panel lists Step 1, Ellipse and Arrow](../../../docs/media/editor-versions.png)
 
 Open a version you saved, from the gallery, Quick Access or a `shot://annotate` link, and every mark is still live, so you can move, change or delete it. **Save** then writes the next version.
 
