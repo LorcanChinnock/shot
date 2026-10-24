@@ -23,6 +23,18 @@ Click Shot's menu bar icon and choose **Settings…**, or press <kbd>⌘,</kbd> 
 | Shortcuts | The macOS screenshot keys and every global shortcut |
 | About | The version, updates, permissions, the save folder, links to the code and its licence, this guide, the acknowledgements, to report a bug and to sponsor Shot, and resetting all settings |
 
+## Use dark mode
+
+Shot's windows and panels follow your Mac's light or dark appearance. To pick one yourself:
+
+1. Open **Settings › General**.
+2. Next to **Appearance**, choose **System**, **Light** or **Dark**.
+
+![Settings › General in dark mode, with Appearance set to Dark, the sidebar listing every section and the Behaviour and Files cards](../../../docs/media/settings-dark.png)
+
+> [!NOTE]
+> This changes Shot's own windows and panels only. Your captures look the same either way.
+
 ## Reset everything
 
 In **Settings › About**, click **Reset**, then **Click to confirm**. It restores every setting and shortcut. Your captures stay.
