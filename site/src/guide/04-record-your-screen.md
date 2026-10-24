@@ -6,7 +6,7 @@ aliases: [screen-recording]
 anchors: [camera-bubble]
 ---
 
-![The recording controls: elapsed time, Pause, the camera bubble, discard and Stop](../../../docs/media/recording-controls.png)
+![The recording controls: elapsed time, Pause, the camera bubble switch (off), a dimmed second switch, discard and Stop](../../../docs/media/recording-controls.png)
 
 ## Start a recording
 

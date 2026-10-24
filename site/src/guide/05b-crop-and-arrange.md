@@ -5,7 +5,7 @@ group: Edit and share
 anchors: [cropping, canvas]
 ---
 
-![The annotation editor in crop mode: the area outside the crop dimmed, handles on the crop's corners and edges, Aspect set to Free, and the Layers panel listing Frame, Step 2, Rectangle and Step 1 above the locked image](../../../docs/media/editor-crop.png)
+![The annotation editor in crop mode: the area outside the crop dimmed, handles on the crop's corners and edges, Aspect set to Free, the Reset button, and the Layers panel with only the locked image](../../../docs/media/editor-crop.png)
 
 ## Crop
 
