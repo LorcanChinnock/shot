@@ -18,7 +18,7 @@ const links = pages.map((p) => ({ href: `/docs/${p.slug}/`, title: p.title, curr
   <GuideSearch slot="side" />
   <div data-pagefind-body style={`--accent: var(--${colorOf(page.group)})`}>
     <header class="page-head">
-      <p class="crumb"><a href="/docs/">User guide</a> <span aria-hidden="true">›</span> <span class="chip">{page.group}</span></p>
+      <p class="crumb"><a href="/docs/get-started/">User guide</a> <span aria-hidden="true">›</span> <span class="chip">{page.group}</span></p>
       <h1>{page.title}</h1>
       <p class="lede">{page.summary}</p>
     </header>
