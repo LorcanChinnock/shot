@@ -19,16 +19,34 @@ enum BugReportAction {
         await copy { provider in try await BugReporter.report(for: sendable.image, provider: provider) }
     }
 
+    private static var writing: Task<String, Error>?
+
     private static func copy(_ make: @escaping @Sendable (ChatProvider?) async throws -> String) async {
         let provider = Preferences().chatProvider
         guard provider != nil || BugReporter.onDeviceAvailable else {
+            Toast.error("Set up an AI provider in Settings › Agents, or turn on Apple Intelligence.")
             return
         }
-        Toast.progress("Writing bug report…")
+        guard writing == nil else {
+            Toast.error("A bug report is already being written")
+            return
+        }
+        // Apple's on-device model can take most of a minute, so say so and let the wait be cancelled.
+        let work = Task.detached { try await make(provider) }
+        writing = work
+        defer { writing = nil }
+        let cancel: @MainActor @Sendable () -> Void = { work.cancel() }
+        if provider == nil {
+            Toast.show("Writing bug report… this can take a minute", duration: nil, cancel: cancel)
+        } else {
+            Toast.show("Writing bug report…", duration: nil, cancel: cancel)
+        }
         do {
-            let markdown = try await Task.detached { try await make(provider) }.value
+            let markdown = try await work.value
             Clipboard.copy(string: markdown)
             Toast.show("Copied bug report")
+        } catch where work.isCancelled {
+            Toast.show("Bug report cancelled")
         } catch {
             log.error("Bug report failed: \(error.localizedDescription, privacy: .public)")
             Toast.error("Couldn't write a bug report: \(error.localizedDescription)")

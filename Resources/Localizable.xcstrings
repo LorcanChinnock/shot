@@ -1893,6 +1893,9 @@
         }
       }
     },
+    "A bug report is already being written" : {
+
+    },
     "A few more things worth knowing." : {
       "localizations" : {
         "de" : {
@@ -4366,6 +4369,9 @@
           }
         }
       }
+    },
+    "Bug report cancelled" : {
+
     },
     "Bug reports and ideas are welcome." : {
       "localizations" : {
@@ -27290,6 +27296,9 @@
     "Set the command for Send to Agent first." : {
 
     },
+    "Set up an AI provider in Settings › Agents, or turn on Apple Intelligence." : {
+
+    },
     "Settings reset" : {
       "localizations" : {
         "de" : {
@@ -34292,6 +34301,9 @@
 
     },
     "Writing bug report…" : {
+
+    },
+    "Writing bug report… this can take a minute" : {
 
     },
     "X: rotate" : {
