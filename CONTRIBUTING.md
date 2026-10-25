@@ -92,6 +92,7 @@ The `shot://` [URL scheme](https://shot.lorcanchinnock.com/docs/url-scheme/) dri
 - Keep each pull request focused on one change, and match the style of the surrounding code.
 - Run `make lint` and `make test`, then run the app and try your change. CI runs the same checks on macOS, but running them first saves a round trip.
 - Use a [Conventional Commits](https://www.conventionalcommits.org) title for the pull request, such as `fix(recording): …` or `feat(editor): …`. Pull requests are squash-merged, so the title becomes the commit on `main`, and release notes are generated from it.
+- Use `site: …` for website changes (the Astro site and the user guide in `site/`). release-please ignores that type, so it makes no changelog entry and no new app version. If the same change also alters what the app does, split it, and give the app change its own `fix:` or `feat:` title.
 
 Everyone taking part in the project follows the [Code of Conduct](CODE_OF_CONDUCT.md).
 
