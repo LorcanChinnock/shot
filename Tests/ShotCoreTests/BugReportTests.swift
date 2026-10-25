@@ -31,24 +31,20 @@ private func recording(frames: Int, text: (Int) -> [String] = { _ in [] }) -> Bu
 }
 
 @Test func aLineRepeatedOnTheNextFrameIsSaidOnce() {
-    let prepared = BugReport.prepare(recording(frames: 2) { _ in ["Menu", "Total $5"] }, budget: .provider)
+    let prepared = BugReport.prepare(recording(frames: 2) { _ in ["Menu", "Total $5"] }, budget: .onDevice)
     #expect(prepared.request.prompt.components(separatedBy: "Total $5").count == 2)
 }
 
 @Test func thePromptNamesTheSourceTheNotesAndWhatWasSaid() {
     var input = recording(frames: 2)
     input.notes = ["the total is wrong"]
-    let prompt = BugReport.prepare(input, budget: .provider).request.prompt
+    let prompt = BugReport.prepare(input, budget: .onDevice).request.prompt
     #expect(prompt.contains("screen recording that runs 30.0s"))
     #expect(prompt.contains("Safari, window \"Checkout\""))
     #expect(prompt.contains("\"the total is wrong\""))
     #expect(prompt.contains("Said at 0.0–1.0s: \"step 0\""))
-    let shot = BugReport.prepare(BugReport.Input(frames: [BugReport.Frame()]), budget: .provider).request.prompt
+    let shot = BugReport.prepare(BugReport.Input(frames: [BugReport.Frame()]), budget: .onDevice).request.prompt
     #expect(shot.contains("The image is a screenshot.") && !shot.contains("What the user said"))
-}
-
-@Test func theReplySchemaIsOneEveryProviderAccepts() {
-    #expect(ProviderSchema.problem(with: BugReport.schema) == nil)
 }
 
 @Test func errorTextIsQuotedFromTheTextTheMacReadNotFromTheModel() {
@@ -76,12 +72,4 @@ private func recording(frames: Int, text: (Int) -> [String] = { _ in [] }) -> Bu
     let markdown = BugReport.markdown(from: reply, readText: [])
     #expect(markdown.contains("### Expected"))
     #expect(!markdown.contains("### Actual"))
-}
-
-@Test func aRefusalForContextLengthIsRecognised() {
-    #expect(ChatProvider.Failure.server(status: 400, message: "request (9049 tokens) exceeds the available context size (4096 tokens)").isContextTooSmall)
-    #expect(ChatProvider.Failure.server(status: 413, message: "prompt is too long").isContextTooSmall)
-    #expect(!ChatProvider.Failure.server(status: 401, message: "invalid context key").isContextTooSmall)
-    #expect(!ChatProvider.Failure.server(status: 400, message: "model not found").isContextTooSmall)
-    #expect(!ChatProvider.Failure.tooLarge.isContextTooSmall)
 }

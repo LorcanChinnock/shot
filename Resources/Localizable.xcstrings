@@ -2000,9 +2000,6 @@
         }
       }
     },
-    "AI provider" : {
-
-    },
     "ASPECT" : {
 
     },
@@ -2654,9 +2651,6 @@
           }
         }
       }
-    },
-    "Address" : {
-
     },
     "Adds Send to Agent to the Quick Access, editor and gallery menus. It opens your coding agent in a terminal with the screenshot and a summary of what you marked, as a task." : {
 
@@ -7797,9 +7791,6 @@
       }
     },
     "Copy Alt Text" : {
-
-    },
-    "Copy Alt Text sends the capture to the service you choose, instead of Apple's model on this Mac. It only sends when you pick the action. Local services like Ollama keep it on this Mac." : {
 
     },
     "Copy Bug Report" : {
@@ -14343,9 +14334,6 @@
         }
       }
     },
-    "Format" : {
-
-    },
     "Frame" : {
 
     },
@@ -17230,12 +17218,6 @@
     "Keeps the crop this shape, wide or tall to match it." : {
 
     },
-    "Kept in your Keychain, never in a file." : {
-
-    },
-    "Key" : {
-
-    },
     "Keyframe %@ here" : {
       "localizations" : {
         "de" : {
@@ -17978,9 +17960,6 @@
           }
         }
       }
-    },
-    "Local services don't need one." : {
-
     },
     "Lock" : {
       "localizations" : {
@@ -18773,12 +18752,6 @@
           }
         }
       }
-    },
-    "Model" : {
-
-    },
-    "Most services use the OpenAI format. Choose Anthropic only for a service that uses Claude's." : {
-
     },
     "Move to Trash" : {
       "localizations" : {
@@ -21711,9 +21684,6 @@
         }
       }
     },
-    "Paste a key" : {
-
-    },
     "Pause" : {
       "localizations" : {
         "de" : {
@@ -22233,9 +22203,6 @@
           }
         }
       }
-    },
-    "Pick one that can read images." : {
-
     },
     "Pin" : {
 
@@ -25281,9 +25248,6 @@
     "Runs %@." : {
 
     },
-    "Runs on this Mac. Nothing leaves it." : {
-
-    },
     "SCALE" : {
       "localizations" : {
         "de" : {
@@ -27284,19 +27248,10 @@
     "Send to Cursor" : {
 
     },
-    "Sends the capture over the internet to %@." : {
-
-    },
     "Sent to %@" : {
 
     },
-    "Service" : {
-
-    },
     "Set the command for Send to Agent first." : {
-
-    },
-    "Set up an AI provider in Settings › Agents, or turn on Apple Intelligence." : {
 
     },
     "Settings reset" : {
@@ -32505,6 +32460,9 @@
         }
       }
     },
+    "Turn on Apple Intelligence in System Settings to write bug reports." : {
+
+    },
     "Turn on Send to Agent in Settings › Agents first." : {
 
     },
@@ -33394,9 +33352,6 @@
           }
         }
       }
-    },
-    "Use my own AI provider" : {
-
     },
     "Use this style for new captures" : {
       "localizations" : {
@@ -34298,9 +34253,6 @@
       }
     },
     "Writing alt text…" : {
-
-    },
-    "Writing bug report…" : {
 
     },
     "Writing bug report… this can take a minute" : {

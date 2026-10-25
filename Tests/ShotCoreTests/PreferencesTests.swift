@@ -352,3 +352,16 @@ import Testing
     Preferences.resetAll(in: store)
     #expect(store.persistentDomain(forName: suite.name)?[PreferenceKey.onboarding] as? String == "done")
 }
+
+@Test func removingTheProviderSettingsClearsEveryKeyItSaved() throws {
+    let store = try #require(UserDefaults(suiteName: "provider-\(UUID().uuidString)"))
+    for key in LegacyProviderSettings.keys {
+        store.set("x", forKey: key)
+    }
+    store.set("kept", forKey: PreferenceKey.sendToAgentPreset)
+    LegacyProviderSettings.remove(from: store, keychainService: "dev.lorcan.Shot.tests.\(UUID().uuidString)")
+    for key in LegacyProviderSettings.keys {
+        #expect(store.object(forKey: key) == nil)
+    }
+    #expect(store.string(forKey: PreferenceKey.sendToAgentPreset) == "kept")
+}

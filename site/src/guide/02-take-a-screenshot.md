@@ -79,7 +79,7 @@ You get one or two plain sentences, usually within a couple of seconds. Read the
 
 ## Copy a bug report
 
-Copy Bug Report turns a screenshot or a recording into repro steps you can paste into a ticket or a message. It uses the same model as alt text: Apple's on your Mac on macOS 27 or later, or the AI provider you set up. It never runs unless you ask.
+Copy Bug Report turns a screenshot or a recording into repro steps you can paste into a ticket or a message. It uses the same model as alt text: Apple's on your Mac, on macOS 27 or later. It never runs unless you ask.
 
 ![The Quick Access card's right-click menu with Copy Bug Report below Copy Alt Text](../../../docs/media/quick-access-menu.png)
 
