@@ -5,10 +5,13 @@ import { latestRelease } from '../lib/release';
 interface Props {
   title?: string;
   description?: string;
+  /** A wider page, for the guide's three columns. */
+  wide?: boolean;
 }
 
 const {
   title,
+  wide = false,
   description = 'A screenshot, annotation and screen recording app for the Mac menu bar. Free and open source.',
 } = Astro.props;
 const fullTitle = title ? `${title} · Shot` : 'Shot: screenshots and screen recording for macOS';
@@ -44,7 +47,7 @@ const current = (href: string) => (path === href ? 'page' : undefined);
     <link rel="sitemap" href="/sitemap.xml" />
     <slot name="head" />
   </head>
-  <body>
+  <body class={wide ? 'wide' : undefined}>
     <a class="skip" href="#main">Skip to content</a>
     <div class="backdrop" aria-hidden="true">
       <div class="blob pink"></div>
