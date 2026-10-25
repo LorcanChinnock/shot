@@ -46,9 +46,6 @@ The controls float beside the recorded area:
 
 You can also stop by pressing any record shortcut again. Shot's menu bar menu has **Pause Recording** (**Resume Recording** while paused) and **Stop Recording** too.
 
-> [!NOTE]
-> On a Mac with a notch, when there's no room for the controls outside the recorded area, they move into the notch: a black pill shows the elapsed time, and hovering it shows the controls.
-
 ## Record a window
 
 A window recording captures just that window. It follows the window when you move it and leaves out anything on top of it. It has no camera bubble, and dragging its frame turns it into an area recording.

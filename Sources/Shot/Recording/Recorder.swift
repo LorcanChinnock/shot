@@ -540,12 +540,7 @@ final class Recorder: NSObject {
             cycleCameraSize: { [weak self] in self?.cycleCameraSize() },
             stop: { [weak self] discard in self?.onStopRequested?(discard) }
         )
-        // The notch is dead space, so it holds the controls when the floating panel would cover the recording.
-        let controls: NSPanel = if let notch = screen.notch, RecordingControlPanel.covers(region, on: screen, microphone: model.microphoneOn) {
-            NotchRecordingPanel(notch: notch, model: model, actions: actions)
-        } else {
-            RecordingControlPanel(region: region, screen: screen, model: model, actions: actions)
-        }
+        let controls = RecordingControlPanel(region: region, screen: screen, model: model, actions: actions)
         controls.orderFrontRegardless()
         self.controls = controls
     }

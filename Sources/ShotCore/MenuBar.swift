@@ -12,12 +12,4 @@ public enum MenuBar {
     public static func frameBelow(screenFrame: CGRect, height: CGFloat) -> CGRect {
         CGRect(x: screenFrame.minX, y: screenFrame.minY, width: screenFrame.width, height: screenFrame.height - height)
     }
-
-    /// The camera housing between the menu bar areas either side of it, or `nil` on a screen without a notch.
-    public static func notch(safeAreaTop: CGFloat, leftArea: CGRect?, rightArea: CGRect?) -> CGRect? {
-        guard safeAreaTop > 0, let leftArea, let rightArea, rightArea.minX > leftArea.maxX else {
-            return nil
-        }
-        return CGRect(x: leftArea.maxX, y: leftArea.maxY - safeAreaTop, width: rightArea.minX - leftArea.maxX, height: safeAreaTop)
-    }
 }

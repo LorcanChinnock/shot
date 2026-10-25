@@ -19,11 +19,6 @@ extension NSScreen {
         MenuBar.height(screenFrame: frame, visibleFrame: visibleFrame, safeAreaTop: safeAreaInsets.top)
     }
 
-    /// AppKit global frame of the camera housing, or `nil` without one.
-    var notch: CGRect? {
-        MenuBar.notch(safeAreaTop: safeAreaInsets.top, leftArea: auxiliaryTopLeftArea, rightArea: auxiliaryTopRightArea)
-    }
-
     /// The screen's frame, without the menu bar when the setting excludes it.
     var fullCaptureFrame: CGRect {
         Preferences().excludesMenuBar ? MenuBar.frameBelow(screenFrame: frame, height: menuBarHeight) : frame
