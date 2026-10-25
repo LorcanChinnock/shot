@@ -207,7 +207,7 @@ final class VideoEditorModel {
             restoring = nil
             savedProject = project
             // A saved edit with imports or transforms has no trim strip to go back to.
-            showsTracks = isComposite
+            if isComposite { showsTracks = true }
         } catch let failure as LoadFailure {
             throw failure
         } catch {
