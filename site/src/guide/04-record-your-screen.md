@@ -18,7 +18,7 @@ group: Capture
 The camera bubble, microphone and cursor are on or off as you set them in **Settings › Recording**.
 
 > [!TIP]
-> **Record Full Screen** and **Record Window** can have shortcuts of their own. Set them in **Settings › Shortcuts**.
+> **Record Full Screen** and **Record Window** are in the Shot menu in the menu bar. To pick between them after <kbd>⌃⇧5</kbd>, press <kbd>Enter</kbd> or <kbd>Space</kbd> in the record overlay.
 
 ## Check everything before you start
 

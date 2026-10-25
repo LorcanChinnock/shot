@@ -242,6 +242,24 @@ import Testing
         #expect(store.string(forKey: PreferenceKey.hotkey(.record)) == "")
         #expect(ShotAction(rawValue: "capture-text") == nil)
     }
+
+    @Test func menuOnlyActionsHaveNoShortcutAndTheirSavedOnesAreRemoved() throws {
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
+        let menuOnly: [ShotAction] = [.recordFullscreen, .recordWindow, .capturePrevious]
+        #expect(ShotAction.allCases.filter { !$0.hasShortcut } == menuOnly)
+        for action in menuOnly {
+            store.set("17:4608", forKey: PreferenceKey.hotkey(action))
+            #expect(Preferences(store: store).hotkey(for: action) == nil)
+        }
+        store.set("15:4608", forKey: PreferenceKey.hotkey(.record))
+        Preferences.removeMenuOnlyHotkeys(in: store)
+        for action in menuOnly {
+            #expect((store.string(forKey: PreferenceKey.hotkey(action)) ?? "").isEmpty)
+        }
+        #expect(store.string(forKey: PreferenceKey.hotkey(.record)) == "15:4608")
+    }
 }
 
 /// `@Setting(key)` with no default of its own takes the one `Preferences` registers, so every key a view declares that way
