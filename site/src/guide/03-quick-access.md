@@ -39,7 +39,7 @@ A pin opens in the middle of the screen at its own size, or at half the screen i
 
 ## Use it from the keyboard
 
-1. Give **Focus Quick Access** a shortcut in **Settings › Shortcuts**, then press it.
+1. Choose **Focus Quick Access** in the menu bar menu.
 2. The newest card gets a yellow ring and shows its buttons. The app you were using stays in front, and the cards stop closing on their own.
 
 Then:

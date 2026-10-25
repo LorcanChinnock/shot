@@ -39,8 +39,8 @@ public enum ShotAction: String, CaseIterable, Sendable {
     /// tools only, since few people would bind them. They keep their place in `allCases`, which numbers hotkeys.
     public var hasShortcut: Bool {
         switch self {
-        case .recordFullscreen, .recordWindow, .capturePrevious: false
-        case .captureArea, .captureFullscreen, .captureWindow, .record, .pickColor, .copyPath, .copyText, .focusQuickAccess: true
+        case .recordFullscreen, .recordWindow, .capturePrevious, .pickColor, .copyPath, .focusQuickAccess: false
+        case .captureArea, .captureFullscreen, .captureWindow, .record, .copyText: true
         }
     }
 
