@@ -55,4 +55,15 @@ const sections = groups
   ul .card strong { font-size: 18px; font-weight: 900; letter-spacing: -0.01em; line-height: 1.2; }
   ul .card span { font-size: 15px; line-height: 1.45; font-weight: 500; color: var(--muted); }
   ul .card:hover { background: color-mix(in srgb, var(--accent) 22%, var(--paper)); }
+
+  /* On a phone the 28 cards would run to five screens, so each group becomes one list of titles, and the summaries stay on wider screens. */
+  @media (max-width: 699px) {
+    ul { gap: 0; overflow: hidden; background: var(--glass-strong); border: var(--border) solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow) var(--shadow) 0 var(--line); }
+    li + li { border-top: 2px solid var(--line); }
+    ul .card { grid-template-columns: minmax(0, 1fr) auto; align-items: center; align-content: center; min-height: 52px; padding: 0 16px; background: none; border: 0; border-radius: 0; box-shadow: none; }
+    ul .card:hover, ul .card:active { transform: none; box-shadow: none; }
+    ul .card span { display: none; }
+    ul .card strong { font-size: 16px; font-weight: 800; }
+    ul .card::after { content: "›"; font: 900 22px/1 var(--display); }
+  }
 </style>
