@@ -20,7 +20,7 @@
 <p align="center">
   <a href="https://github.com/LorcanChinnock/shot/releases/latest"><b>Download</b></a> ·
   <a href="https://shot.lorcanchinnock.com">Website</a> ·
-  <a href="https://shot.lorcanchinnock.com/docs/">User guide</a> ·
+  <a href="https://shot.lorcanchinnock.com/docs/get-started/">User guide</a> ·
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 

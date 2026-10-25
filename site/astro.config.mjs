@@ -32,6 +32,7 @@ function redirects() {
         const release = await latestRelease();
         const lines = [
           `/download ${release.zip} 302`,
+          '/docs /docs/get-started/ 301',
           `/github ${repo} 302`,
           '/sponsor https://github.com/sponsors/LorcanChinnock 302',
           `/releases ${repo}/releases 302`,
@@ -61,6 +62,8 @@ function search() {
 export default defineConfig({
   site: 'https://shot.lorcanchinnock.com',
   trailingSlash: 'ignore',
+  // The guide's pages carry their own contents and search, so there's no separate home.
+  redirects: { '/docs': '/docs/get-started/' },
   integrations: [redirects(), search()],
   markdown: {
     rehypePlugins: [rehypeRepoLinks, rehypeDropCommitLinks],

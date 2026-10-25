@@ -50,5 +50,5 @@ Four slow colour blobs and a dot grid behind everything, as in the app's `GlassB
 - No cards with one thick coloured edge (a coloured stripe along the top or side). It's a stock look that reads as generated. Colour a card with a fill, a chip or a button instead, and keep the same 3px ink border on every side. `scripts/lint.sh` rejects `border-top-color` and its kin, and `var(--accent)` or another colour on a one-edge border.
 - No script where CSS will do. The only scripts are the copy buttons, search, the loops' play/pause and the guide's "On this page" marker.
 - No web fonts, analytics or third-party requests, so the Content-Security-Policy in `public/_headers` stays at `'self'`.
-- Phone width works: 16px side gutters and no sideways scrolling. The guide home turns each group into a list of titles on phones, so it isn't five screens tall.
+- Phone width works: 16px side gutters and no sideways scrolling.
 - Copy speaks to the quick sharer first. Developer words (MCP, CLI, JSON) stay in the developer card and the developer pages.
