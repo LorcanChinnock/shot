@@ -91,12 +91,12 @@ struct Setting<Value> {
 extension Setting where Value: RawRepresentable, Value.RawValue == String {
     /// An enum stored as its raw value, falling back to the registered default when the stored one isn't a case.
     init(_ key: String) {
-        guard let fallback = (registeredDefaults[key] as? String).flatMap(Value.init(rawValue:)) else {
+        guard let fallback = (registeredDefaults[key] as? String).flatMap({ Value(rawValue: $0) }) else {
             preconditionFailure("\(key) has no registered default that is a \(Value.self)")
         }
         self.key = key
         self.fallback = fallback
-        read = { ($0 as? String).flatMap(Value.init(rawValue:)) }
+        read = { ($0 as? String).flatMap { Value(rawValue: $0) } }
         write = { $0.rawValue }
     }
 }

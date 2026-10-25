@@ -675,10 +675,11 @@ private struct AgentSettings: View {
     /// Checks again each time Shot comes forward, so an agent installed, or set up, while Settings is open shows up.
     /// Reads the configs off the main thread, since Claude Code's can run to megabytes.
     private func findAgents() async {
+        let (server, name) = (Self.server, Self.name)
         let (found, statuses) = await Task.detached {
             let home = NSHomeDirectory()
             let found = AgentClient.shown(installed: AgentClient.installed(home: home))
-            return (found, Dictionary(uniqueKeysWithValues: found.map { ($0, $0.status(server: Self.server, name: Self.name, home: home)) }))
+            return (found, Dictionary(uniqueKeysWithValues: found.map { ($0, $0.status(server: server, name: name, home: home)) }))
         }.value
         agents = found
         self.statuses = statuses
