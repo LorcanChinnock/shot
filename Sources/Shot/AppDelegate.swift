@@ -9,7 +9,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let state = AppState()
     lazy var coordinator = CaptureCoordinator(state: state)
     private var defaultsObserver: NSObjectProtocol?
-    private let translateMenu = TranslateMenu()
     private let sendToAgentItem = NSMenuItem(title: "", action: #selector(EditorWindowController.sendToAgent(_:)), keyEquivalent: "")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -18,7 +17,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Preferences.registerDefaults()
         applyAppearance()
         SystemShortcuts.giveBackTextCaptureKeyIfNeeded()
-        Translator.prepare()
         HotkeyCenter.shared.onPress = { [weak self] action in
             self?.coordinator.perform(action)
         }
@@ -214,11 +212,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             edit.addItem(withTitle: String(localized: "Add Captions"), action: Selector(("addCaptions:")), keyEquivalent: "")
         }
         edit.addItem(withTitle: String(localized: "Flatten"), action: Selector(("flatten:")), keyEquivalent: "")
-        if Translator.isAvailable {
-            let translate = edit.addItem(withTitle: String(localized: "Translate Text"), action: nil, keyEquivalent: "")
-            translate.submenu = NSMenu(title: String(localized: "Translate Text"))
-            translate.submenu?.delegate = translateMenu
-        }
         // Always added; the editor shows or hides it each time the menu opens, since the Mac's model can become available.
         edit.addItem(withTitle: String(localized: "Copy Alt Text"), action: #selector(EditorWindowController.copyAltText(_:)), keyEquivalent: "").isHidden = !AltTextAction.isAvailable
         edit.addItem(withTitle: String(localized: "Copy Bug Report"), action: #selector(EditorWindowController.copyBugReport(_:)), keyEquivalent: "").isHidden = !BugReportAction.isAvailable
@@ -233,19 +226,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showSettings() {
         MainWindowController.showSettings()
-    }
-}
-
-/// The image editor's Edit › Translate Text submenu, filled with the languages each time it opens, the last used first.
-@MainActor
-private final class TranslateMenu: NSObject, NSMenuDelegate {
-    func menuNeedsUpdate(_ menu: NSMenu) {
-        menu.removeAllItems()
-        for language in Translator.languages {
-            let item = NSMenuItem(title: language.title, action: #selector(EditorWindowController.translateText(_:)), keyEquivalent: "")
-            item.representedObject = language.language.minimalIdentifier
-            menu.addItem(item)
-        }
     }
 }
 

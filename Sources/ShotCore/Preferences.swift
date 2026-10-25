@@ -76,8 +76,6 @@ public enum PreferenceKey {
     public static let agentHandoff = "agentHandoff"
     /// Lets agents ask the running app, through the `shot` command line or the MCP server, to capture or record a window.
     public static let agentCapture = "agentCapture"
-    /// The language Translate Text last translated into, as a language identifier; empty for the Mac's language.
-    public static let translateTarget = "translateTarget"
     /// Shows Send to Agent in the Quick Access, editor and gallery menus, opening a coding agent with the capture.
     public static let sendToAgent = "sendToAgent"
     /// Which agent it opens, an `AgentPreset`, and in which terminal, an `AgentTerminal`.
@@ -167,7 +165,6 @@ public struct Preferences {
             PreferenceKey.videoEditorShowsInspector: false,
             PreferenceKey.agentHandoff: false,
             PreferenceKey.agentCapture: false,
-            PreferenceKey.translateTarget: "",
             PreferenceKey.sendToAgent: false,
             PreferenceKey.sendToAgentPreset: AgentPreset.claudeCode.rawValue,
             PreferenceKey.sendToAgentTerminal: AgentTerminal.terminal.rawValue,
@@ -219,6 +216,11 @@ public struct Preferences {
     /// Deletes the shortcut saved for text capture, which Shot no longer has.
     public static func removeTextCapture(in store: UserDefaults = .standard) {
         store.removeObject(forKey: "hotkey.capture-text")
+    }
+
+    /// Deletes the language Translate Text remembered, which Shot no longer has.
+    public static func removeTranslateTarget(in store: UserDefaults = .standard) {
+        store.removeObject(forKey: "translateTarget")
     }
 
     /// Deletes the shortcuts saved for actions that are now menu-only, which `hotkey(for:)` ignores anyway.

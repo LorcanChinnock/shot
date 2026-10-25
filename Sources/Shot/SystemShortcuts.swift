@@ -65,6 +65,7 @@ enum SystemShortcuts {
     static func giveBackTextCaptureKeyIfNeeded() {
         let store = UserDefaults.standard
         Preferences.removeTextCapture(in: store)
+        Preferences.removeTranslateTarget(in: store)
         Preferences.removeMenuOnlyHotkeys(in: store)
         LegacyProviderSettings.remove(from: store)
         let prefs = Preferences()
