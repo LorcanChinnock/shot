@@ -243,6 +243,17 @@ import Testing
         #expect(ShotAction(rawValue: "capture-text") == nil)
     }
 
+    @Test func removingTranslateTargetDeletesTheSavedLanguage() throws {
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
+        store.set("fr", forKey: "translateTarget")
+        store.set("fr", forKey: PreferenceKey.sendToAgentPreset)
+        Preferences.removeTranslateTarget(in: store)
+        #expect(store.object(forKey: "translateTarget") == nil)
+        #expect(store.string(forKey: PreferenceKey.sendToAgentPreset) == "fr")
+    }
+
     @Test func menuOnlyActionsHaveNoShortcutAndTheirSavedOnesAreRemoved() throws {
         let suite = try TestDefaults()
         let store = suite.store

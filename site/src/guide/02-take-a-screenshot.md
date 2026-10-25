@@ -58,16 +58,6 @@ Copy Text reads the text in part of the screen and copies it, without saving a s
 
 To copy the text from a screenshot you already took, right-click its Quick Access card or its tile in the [gallery](#find-your-captures) and choose **Copy Text**.
 
-## Translate the text in a screenshot
-
-On macOS 26 or later, Shot can copy the text in a screenshot translated into another language. It uses Apple's translation on your Mac, so nothing is uploaded.
-
-1. Right-click the screenshot's Quick Access card and choose **Translate Text**, or in the editor choose **Edit › Translate Text**.
-2. Choose a language. The one you used last is at the top, and the first time it's your Mac's language.
-3. Paste the translation wherever you like. Each paragraph is on its own line.
-
-The first time you translate between two languages, macOS asks to download them. Click **Download** beside each one, then **Done**. In the editor, the translation includes text you've added on top of the screenshot.
-
 ## Copy alt text for a screenshot
 
 Alt text describes an image for people who use a screen reader. On macOS 27 or later, with Apple Intelligence turned on, Shot can write it for you with Apple's model on your Mac. Nothing is uploaded, and it never runs unless you ask.

@@ -7631,9 +7631,6 @@
         }
       }
     },
-    "Copied the text in %@" : {
-
-    },
     "Copies the finished recording, ready to paste as a file." : {
       "localizations" : {
         "de" : {
@@ -9362,9 +9359,6 @@
         }
       }
     },
-    "Couldn't read the text" : {
-
-    },
     "Couldn't read the text: %@" : {
 
     },
@@ -9786,9 +9780,6 @@
           }
         }
       }
-    },
-    "Couldn't translate the text: %@" : {
-
     },
     "Couldn't write a bug report for this image" : {
 
@@ -15122,9 +15113,6 @@
           }
         }
       }
-    },
-    "Getting the languages ready…" : {
-
     },
     "GitHub" : {
       "localizations" : {
@@ -31603,9 +31591,6 @@
     "The shot command" : {
 
     },
-    "The text is already in %@" : {
-
-    },
     "This Mac can't transcribe speech in your language" : {
 
     },
@@ -31972,25 +31957,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "轨道"
-          }
-        }
-      }
-    },
-    "Translate Text" : {
-
-    },
-    "Translate Text needs both languages downloaded" : {
-
-    },
-    "Translating into %@…" : {
-
-    },
-    "Translation can't translate %@ into %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Translation can't translate %1$@ into %2$@"
           }
         }
       }

@@ -193,20 +193,6 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         window.performClose(nil)
     }
 
-    /// Edit › Translate Text: the text in the image as it looks now, marks and all, copied in the language the item names.
-    @objc func translateText(_ sender: NSMenuItem) {
-        guard let identifier = sender.representedObject as? String else {
-            return
-        }
-        Task { [model] in
-            guard let image = await model.renderedImage() else {
-                Toast.error("Couldn't read the text")
-                return
-            }
-            await Translator.translate(image: image, to: Locale.Language(identifier: identifier))
-        }
-    }
-
     /// Edit › Copy Alt Text: a description of the image as it looks now, marks and all.
     @objc func copyAltText(_ sender: Any?) {
         Task { [model] in
