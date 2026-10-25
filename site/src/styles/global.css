@@ -281,6 +281,9 @@ section { padding-block: clamp(48px, 8vw, 96px); }
   ::view-transition-old(root) { animation: 160ms ease-in both page-out; }
   ::view-transition-new(root) { animation: 260ms var(--ease-out) both page-in; }
 
+  /* The numbered steps in the guide pop in. */
+  .prose ol > li::before { animation: badge 500ms 150ms var(--ease-out) both; }
+
   /* Sections lift in as they scroll into view. */
   @supports (animation-timeline: view()) {
     .reveal {
@@ -292,6 +295,7 @@ section { padding-block: clamp(48px, 8vw, 96px); }
 }
 @keyframes page-out { to { opacity: 0; transform: translateY(-6px); } }
 @keyframes page-in { from { opacity: 0; transform: translateY(10px); } }
+@keyframes badge { from { transform: scale(0) rotate(-90deg); } }
 @keyframes reveal { from { opacity: 0; transform: translateY(40px) scale(0.98); } }
 
 @media (prefers-reduced-motion: reduce) {

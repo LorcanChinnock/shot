@@ -68,6 +68,13 @@ const side = toc.length > 0 || pages.length > 0 || Astro.slots.has('side');
   .toc a:hover { background: var(--well); }
   .toc a[aria-current] { background: var(--yellow); color: var(--on-accent); font-weight: 800; }
   .pages a[aria-current] { background: var(--dot, var(--pink)); }
+  @media (prefers-reduced-motion: no-preference) {
+    .toc a { transition: transform 180ms var(--ease-out), background-color 150ms; }
+    .toc a:hover { transform: translateX(4px); }
+    /* The marker wipes in each time it moves, on the pages list and on "On this page". */
+    .toc a[aria-current] { animation: wipe 600ms 150ms var(--ease-out) both; }
+  }
+  @keyframes wipe { from { clip-path: inset(0 100% 0 0); } }
   .group + .group { margin-top: 12px; }
   .group-name { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; font: 800 12px/1.4 var(--font); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
   .group-name::before { content: ""; width: 10px; height: 10px; border: 2px solid var(--line); border-radius: 50%; background: var(--dot, var(--yellow)); }

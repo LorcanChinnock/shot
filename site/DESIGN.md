@@ -33,6 +33,7 @@ Four slow colour blobs and a dot grid behind everything, as in the app's `GlassB
 - **The hero** acts out the whole path in CSS: the ⌘⇧4 keys press, a selection is dragged out, the screen flashes, an arrow and a note are drawn, the Quick Access card slides into the corner and says Copied. The real recording of the same thing follows straight after, so nothing is promised that the app doesn't do.
 - **Scroll reveals** fade and lift each section in as it enters the window (CSS scroll-driven animations, so no script). A browser without them just shows the content.
 - **Micro-interactions**: buttons, cards and keycaps press. The copy button says Copied. The strip of shortcuts scrolls on its own.
+- **Guide details**: sidebar links slide right on hover, the current page's marker wipes in each time it moves, and the numbered steps pop in.
 - **Page transitions** are the browser's own cross-document view transitions: the header stays put and the page fades through. Again no script, and a browser without them just loads the page.
 - **Reduced motion** turns all of it off. The hero shows its last frame, loops show their poster with controls, the shortcut strip stands still and pages change instantly.
 
@@ -47,5 +48,5 @@ Four slow colour blobs and a dot grid behind everything, as in the app's `GlassB
 
 - No script where CSS will do. The only scripts are the copy buttons, search, the loops' play/pause and the guide's "On this page" marker.
 - No web fonts, analytics or third-party requests, so the Content-Security-Policy in `public/_headers` stays at `'self'`.
-- Phone width works: 16px side gutters and no sideways scrolling.
+- Phone width works: 16px side gutters and no sideways scrolling. The guide home turns each group into a list of titles on phones, so it isn't five screens tall.
 - Copy speaks to the quick sharer first. Developer words (MCP, CLI, JSON) stay in the developer card and the developer pages.
