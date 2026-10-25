@@ -757,7 +757,7 @@ public enum ShotCommand: Equatable, Sendable {
         overwritten. Results are JSON on standard output; errors go to standard error with an exit code for each kind:
         64 a wrong option, 65 a file or marks Shot can't use, 66 no such file, capture, window or recording, no new
         capture, or a pick cancelled, 69 Shot isn't answering agents, 70 an internal error, 73 the output can't be made, 74 reading or writing
-        failed, 75 Shot is busy, 77 no Screen Recording permission. More: \(docs)the-shot-command-line/
+        failed, 75 Shot is busy, 77 no Screen Recording permission. More: \(docs)automation-reference/#the-shot-command-line
         """
     }
 

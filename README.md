@@ -58,7 +58,7 @@
 
 ### Works with AI agents
 
-Circle the bug, copy, and paste it into your agent: your arrows and notes show it exactly where to look. Or turn on Send to Agent, and Shot opens Claude Code, Codex or Cursor in a terminal with the screenshot and your marks as a task. An agent can also find your captures, read the text in them and what you said while recording, hide secrets in them, edit them with every layer still live, and screenshot or record a window such as the Simulator. See [Use Shot with AI agents](https://shot.lorcanchinnock.com/docs/use-shot-with-ai-agents/).
+Circle the bug, copy, and paste it into your agent: your arrows and notes show it exactly where to look. Or turn on Send to Agent, and Shot opens Claude Code, Codex or Cursor in a terminal with the screenshot and your marks as a task. An agent can also find your captures, read the text in them and what you said while recording, hide secrets in them, edit them with every layer still live, and screenshot or record a window such as the Simulator. See [Share a capture with an AI assistant](https://shot.lorcanchinnock.com/docs/share-a-capture-with-an-ai-assistant/) and [Work with coding agents](https://shot.lorcanchinnock.com/docs/work-with-coding-agents/).
 
 <img src="docs/media/agents-settings.png" width="720" alt="Settings › Agents with Hand captures to agents, Let agents capture and record, and Send to Agent turned on, Send to Agent set to open Claude Code in Terminal, the shot command installed, and the MCP server's setup for Claude and Claude Code">
 
@@ -97,8 +97,8 @@ The [user guide](https://shot.lorcanchinnock.com/docs/) covers every feature, sh
 - [Get started](https://shot.lorcanchinnock.com/docs/get-started/) and [Take a screenshot](https://shot.lorcanchinnock.com/docs/take-a-screenshot/)
 - [Annotate a screenshot](https://shot.lorcanchinnock.com/docs/annotate-a-screenshot/) and [style it](https://shot.lorcanchinnock.com/docs/style-a-screenshot/)
 - [Record your screen](https://shot.lorcanchinnock.com/docs/record-your-screen/), [edit the recording](https://shot.lorcanchinnock.com/docs/edit-a-recording/) and [export a GIF](https://shot.lorcanchinnock.com/docs/export-a-video-or-gif/)
-- [Use Shot with AI agents](https://shot.lorcanchinnock.com/docs/use-shot-with-ai-agents/), [the MCP server](https://shot.lorcanchinnock.com/docs/the-mcp-server/) and [the `shot` command](https://shot.lorcanchinnock.com/docs/the-shot-command-line/)
-- [The `shot://` URL scheme](https://shot.lorcanchinnock.com/docs/url-scheme/), for scripts and launchers
+- [Share a capture with an AI assistant](https://shot.lorcanchinnock.com/docs/share-a-capture-with-an-ai-assistant/) and [work with coding agents](https://shot.lorcanchinnock.com/docs/work-with-coding-agents/)
+- [Automation reference](https://shot.lorcanchinnock.com/docs/automation-reference/): the MCP server, the `shot` command and the `shot://` URL scheme, for scripts and launchers
 - [Troubleshooting](https://shot.lorcanchinnock.com/docs/troubleshooting/)
 
 Shot is in English, German, French, Spanish, Italian, Brazilian Portuguese, Japanese, Korean and Simplified Chinese, and follows your Mac's language.
