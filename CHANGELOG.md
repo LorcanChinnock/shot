@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.72](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.71...v0.7.0-beta.72) (2026-10-25)
+
+
+### Features
+
+* **settings:** make rarely used hotkey actions menu-only ([#901](https://github.com/LorcanChinnock/shot/issues/901)) ([9b8ec8a](https://github.com/LorcanChinnock/shot/commit/9b8ec8a4de4010362e36cef4af6f1af67c2a5cda))
+
 ## [0.7.0-beta.71](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.70...v0.7.0-beta.71) (2026-10-25)
 
 
