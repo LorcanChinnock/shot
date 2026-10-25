@@ -13,10 +13,12 @@ const { title, description, headings = [], pages = [] } = Astro.props;
 const pageGroups = [...new Set(pages.map((p) => p.group))].map((group) => ({ group, color: pages.find((p) => p.group === group)?.color, links: pages.filter((p) => p.group === group) }));
 const toc = headings.filter((h) => h.depth === 2);
 const side = toc.length > 0 || pages.length > 0 || Astro.slots.has('side');
+// With the page list on the left, "On this page" gets its own rail on the right of wide screens.
+const rail = pages.length > 0 && toc.length > 0;
 ---
 
-<Base title={title} description={description}>
-  <div id="top" class={`wrap doc ${side ? 'with-side' : ''}`}>
+<Base title={title} description={description} wide={rail}>
+  <div id="top" class={`wrap doc ${side ? 'with-side' : ''} ${rail ? 'has-rail' : ''}`}>
     {side && (
       <div class="side">
         <slot name="side" />
@@ -34,7 +36,7 @@ const side = toc.length > 0 || pages.length > 0 || Astro.slots.has('side');
           </nav>
         )}
         {toc.length > 0 && (
-          <nav class="toc on-page card solid" aria-label="On this page">
+          <nav class={`toc on-page card solid ${rail ? 'inline' : ''}`} aria-label="On this page">
             <details>
               <summary>On this page</summary>
               <ul>{toc.map((h) => <li><a href={`#${h.slug}`}>{h.text}</a></li>)}</ul>
@@ -46,6 +48,16 @@ const side = toc.length > 0 || pages.length > 0 || Astro.slots.has('side');
     <article class="prose card solid">
       <slot />
     </article>
+    {rail && (
+      <aside class="rail">
+        <nav class="toc on-page card solid" aria-label="On this page">
+          <details>
+            <summary>On this page</summary>
+            <ul>{toc.map((h) => <li><a href={`#${h.slug}`}>{h.text}</a></li>)}</ul>
+          </details>
+        </nav>
+      </aside>
+    )}
   </div>
   {toc.length > 0 && <a class="to-top button small white" href="#top" hidden>↑ Back to top</a>}
 </Base>
@@ -58,6 +70,13 @@ const side = toc.length > 0 || pages.length > 0 || Astro.slots.has('side');
     .doc.with-side { grid-template-columns: 250px 1fr; align-items: start; }
     /* The sidebar scrolls on its own when it's taller than the window; the padding keeps the cards' shadows in view. */
     .side { position: sticky; top: 96px; max-height: calc(100dvh - 112px); overflow-y: auto; padding: 0 6px 6px 0; margin-right: -6px; }
+  }
+  /* On wide screens "On this page" moves to a rail beside the article; below that it stays under the page list. */
+  .rail { display: none; }
+  @media (min-width: 1280px) {
+    .doc.has-rail { grid-template-columns: 250px minmax(0, 1fr) 210px; }
+    .doc.has-rail .toc.inline { display: none; }
+    .rail { display: block; position: sticky; top: 96px; max-height: calc(100dvh - 112px); overflow-y: auto; padding: 0 6px 6px 0; margin-right: -6px; }
   }
   .toc { padding: 16px 18px; font-size: 15px; }
   .toc summary { font-weight: 900; cursor: pointer; }
@@ -85,7 +104,9 @@ const side = toc.length > 0 || pages.length > 0 || Astro.slots.has('side');
 
 <script>
   // Mark the section being read in "On this page", and offer a way back up once the title has scrolled away.
-  const links = new Map([...document.querySelectorAll<HTMLAnchorElement>('.on-page a')].map((a) => [a.hash.slice(1), a]));
+  // Both copies of the list (under the page list, and the rail) are marked together.
+  const links = new Map<string, HTMLAnchorElement[]>();
+  for (const a of document.querySelectorAll<HTMLAnchorElement>('.on-page a')) links.set(a.hash.slice(1), [...(links.get(a.hash.slice(1)) ?? []), a]);
   const headings = [...document.querySelectorAll<HTMLElement>('.prose h2[id]')].filter((h) => links.has(h.id));
   const title = document.querySelector('.prose h1');
   const toTop = document.querySelector<HTMLElement>('.to-top');
@@ -94,9 +115,11 @@ const side = toc.length > 0 || pages.length > 0 || Astro.slots.has('side');
   const mark = () => {
     const line = innerHeight * 0.34;
     const current = headings.findLast((h) => h.getBoundingClientRect().top <= line);
-    for (const [id, a] of links) {
-      if (id === current?.id) a.setAttribute('aria-current', 'location');
-      else a.removeAttribute('aria-current');
+    for (const [id, anchors] of links) {
+      for (const a of anchors) {
+        if (id === current?.id) a.setAttribute('aria-current', 'location');
+        else a.removeAttribute('aria-current');
+      }
     }
   };
   // The observed area runs from far above the window down to that line, so every heading that crosses it fires,

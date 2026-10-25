@@ -33,6 +33,7 @@ Four slow colour blobs and a dot grid behind everything, as in the app's `GlassB
 - **The hero** acts out the whole path in CSS: the ⌘⇧4 keys press, a selection is dragged out, the screen flashes, an arrow and a note are drawn, the Quick Access card slides into the corner and says Copied. The real recording of the same thing follows straight after, so nothing is promised that the app doesn't do.
 - **Scroll reveals** fade and lift each section in as it enters the window (CSS scroll-driven animations, so no script). A browser without them just shows the content.
 - **Micro-interactions**: buttons, cards and keycaps press. The copy button says Copied. The strip of shortcuts scrolls on its own.
+- **Home steps**: three accent cards (capture, mark up, share) under the shortcut strip. They lift on hover, like the "Private / Speaks your language / Free" cards.
 - **Guide details**: sidebar links slide right on hover, the current page's marker wipes in each time it moves, and the numbered steps pop in.
 - **Page transitions** are the browser's own cross-document view transitions: the header stays put and the page fades through. Again no script, and a browser without them just loads the page.
 - **Reduced motion** turns all of it off. The hero shows its last frame, loops show their poster with controls, the shortcut strip stands still and pages change instantly.
@@ -41,7 +42,7 @@ Four slow colour blobs and a dot grid behind everything, as in the app's `GlassB
 
 - **Install block**: the Homebrew command in a glass card with a Copy button that says Copied, or "Press ⌘C" if the clipboard is blocked.
 - **Keycaps**: white (raised grey in dark) with an ink border and a hard 2px shadow, never plain text.
-- **Guide**: a sidebar with the pages in their groups and a search box, an "On this page" list that marks where you are, previous and next links, a back-to-top button, numbered steps, callouts, and a Copy button on every code block.
+- **Guide**: a sidebar with the pages in their groups and a search box, an "On this page" list that marks where you are (a rail on the right of wide screens, under the page list on narrower ones), previous and next links, a back-to-top button, numbered steps, callouts, and a Copy button on every code block.
 - **Footer**: ends with the "LC_" mark and "Made by Lorcan Chinnock", linked to lorcanchinnock.com, in Shot's ink with the underscore in yellow, and "Not affiliated with Apple."
 
 ## Rules

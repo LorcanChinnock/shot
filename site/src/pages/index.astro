@@ -28,6 +28,13 @@ const shortcuts: [string[], string][] = [
   [['⌘', 'Z'], 'Undo'],
 ];
 
+// The whole job in three steps, one accent each.
+const steps = [
+  { color: 'pink', name: 'Capture', title: 'Drag out an area, or click a window.', body: "A magnifier shows the last pixel. It's copied and saved the moment you let go." },
+  { color: 'sky', name: 'Mark up', title: 'Hover the corner card to add an arrow.', body: 'Blur an email address, circle the problem, type a note. Or skip it.' },
+  { color: 'mint', name: 'Share', title: 'Paste it, or drag it into a message.', body: 'Recordings and GIFs work the same way, with your voice if you like.' },
+];
+
 // One card per kind of person, the quick sharer first (CLAUDE.md › Who uses Shot).
 const audiences = [
   {
@@ -73,7 +80,7 @@ const audiences = [
     <div class="wrap hero-grid">
       <div class="hero-text">
         <h1>A better <span class="keys"><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd></span></h1>
-        <p class="lede">Shot is a screenshot app that sits in your menu bar. It uses the keys you already know.</p>
+        <p class="lede">Shot is a screenshot app that lives in your menu bar. Press the keys you already know, and the picture is copied before you let go.</p>
         <div class="cta">
           <a class="button big" href="/download">Download Shot</a>
           <Copy command="brew install lorcanchinnock/tap/shot" />
@@ -98,6 +105,26 @@ const audiences = [
     ))}
   </div>
   </div>
+
+  <section>
+    <div class="wrap">
+      <div class="section-head reveal">
+        <h2>Three steps. Zero settings.</h2>
+        <p>Shot opens in its simplest state. Everything else stays out of the way until you ask.</p>
+      </div>
+      <ol class="three">
+        {steps.map((s, i) => (
+          <li class="reveal">
+            <div class="card tile" style={`--fill: var(--${s.color})`}>
+              <span class="n">{i + 1} {s.name}</span>
+              <strong>{s.title}</strong>
+              <span>{s.body}</span>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
 
   <section>
     <div class="wrap stack">
@@ -288,6 +315,15 @@ const audiences = [
     .audiences .first span { color: var(--on-accent); opacity: 0.8; }
     .audiences .first em { background: #fff; color: var(--on-accent); }
   }
+
+  .three { list-style: none; margin: 0; padding: 0; display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+  .three li { display: grid; }
+  .tile { display: grid; align-content: start; gap: 12px; min-height: 200px; padding: 26px; color: var(--on-accent); background: var(--fill); transition: transform 120ms var(--ease-out), box-shadow 120ms var(--ease-out); }
+  .tile .n { font: 900 13px/1.4 var(--font); letter-spacing: 0.08em; text-transform: uppercase; }
+  .tile strong { font: 900 clamp(22px, 2.6vw, 28px)/1.1 var(--display); letter-spacing: -0.02em; text-wrap: balance; }
+  .tile span:last-child { font-size: 16px; line-height: 1.5; }
+  .tile:hover, .facts li:hover { transform: translate(-3px, -3px); box-shadow: calc(var(--shadow) + 3px) calc(var(--shadow) + 3px) 0 var(--line); }
+  .facts li { transition: transform 120ms var(--ease-out), box-shadow 120ms var(--ease-out); }
 
   .facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
   .facts li { display: grid; gap: 12px; align-content: start; justify-items: start; padding: 20px 22px; }
