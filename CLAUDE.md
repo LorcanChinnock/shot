@@ -44,7 +44,7 @@ swift test --filter <testName>    # one test, e.g. --filter hitTestFilledKinds
 - With only the Command Line Tools selected, the Makefile pins the newest 26.x SDK and adds the testing plugin path, so a bare `swift build`/`swift test` can fail on SwiftUI macros. Prefer `make`, or prefix with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
 - Signing uses the `Shot Dev` certificate from `scripts/make-dev-cert.sh` so the Screen Recording permission survives rebuilds. `make reset-tcc` clears it.
 - Logs: `log stream --predicate 'subsystem == "dev.lorcan.Shot.dev"'` for ShotDev, `dev.lorcan.Shot` for a release. Use `Logger.shot("category")` from `Sources/ShotCore/ShotLog.swift`.
-- The `shot://` URL scheme drives every action without a keyboard (`shot://annotate?path=`, `shot://edit-video?path=`, `shot://gallery`, `shot://settings?section=`; full list on the URL scheme page, `site/src/guide/10-url-scheme.md`). ShotDev registers `shot-dev://` instead, so it never collides with an installed release.
+- The `shot://` URL scheme drives every action without a keyboard (`shot://annotate?path=`, `shot://edit-video?path=`, `shot://gallery`, `shot://settings?section=`; full list on the URL scheme page, `site/src/guide/10-automation-reference.md`). ShotDev registers `shot-dev://` instead, so it never collides with an installed release.
 
 ## Running and testing locally
 

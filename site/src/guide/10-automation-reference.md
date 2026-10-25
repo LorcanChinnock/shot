@@ -12,7 +12,7 @@ Shot has three ways in:
 - Agents with a shell, and scripts, use [the `shot` command](#the-shot-command-line).
 - Launchers, Shortcuts and other apps use [`shot://` links](#url-scheme).
 
-The MCP server and the command share one definition, so what one can do, the other can too.
+The MCP server and the command cover mostly the same ground. Only the MCP server can zoom, and only the command has `doctor`, `record --status` and `record -- <command>`.
 
 ## The MCP server
 
