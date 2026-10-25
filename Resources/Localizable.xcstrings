@@ -18753,6 +18753,9 @@
         }
       }
     },
+    "More tools" : {
+
+    },
     "Move to Trash" : {
       "localizations" : {
         "de" : {
@@ -28331,6 +28334,9 @@
         }
       }
     },
+    "Show or hide the tracks, keyframes, imports and annotations (T)" : {
+
+    },
     "Show the layers (⌘L)" : {
       "localizations" : {
         "de" : {
@@ -28483,58 +28489,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "显示此轨道"
-          }
-        }
-      }
-    },
-    "Show the tracks (T)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spuren zeigen (T)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostrar las pistas (T)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Afficher les pistes (T)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostra le tracce (T)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "トラックを表示（T）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "트랙 보기 (T)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostrar as faixas (T)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "显示轨道（T）"
           }
         }
       }

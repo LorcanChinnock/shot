@@ -46,7 +46,7 @@ Most recordings start with a few seconds of reaching for the mouse and end with 
 - **Split** (<kbd>S</kbd>) splits the clips under the playhead.
 - **Delete** (<kbd>⌫</kbd>) cuts out the selected clip and closes the gap.
 - **Snap** (<kbd>N</kbd>) snaps the playhead, and clips you drag or trim, to clip edges and the playhead.
-- **Tracks** (<kbd>T</kbd>) shows or hides the tracks. Once your edit is more than trims and cuts, they stay shown.
+- **More tools** (<kbd>T</kbd>) shows or hides the tracks, keyframes, imports and annotations. The editor opens with just the trim strip each time. Once your edit is more than trims and cuts, they stay shown.
 
 ## Add video or sound
 

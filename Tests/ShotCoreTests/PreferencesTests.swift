@@ -295,12 +295,12 @@ import Testing
     let suite = try TestDefaults()
     let store = suite.store
     defer { suite.remove() }
-    for key in [PreferenceKey.editorShowsLayers, PreferenceKey.videoEditorShowsTracks, PreferenceKey.videoEditorShowsInspector] {
+    for key in [PreferenceKey.editorShowsLayers, PreferenceKey.videoEditorShowsInspector] {
         store.set(true, forKey: key)
     }
     Preferences.resetAll(in: store)
     // The registration domain is shared by every store in the process, so a cleared key reads its registered default.
-    for key in [PreferenceKey.editorShowsLayers, PreferenceKey.videoEditorShowsTracks, PreferenceKey.videoEditorShowsInspector] {
+    for key in [PreferenceKey.editorShowsLayers, PreferenceKey.videoEditorShowsInspector] {
         #expect(store.persistentDomain(forName: suite.name)?[key] == nil, Comment(rawValue: key))
         #expect(!store.bool(forKey: key), Comment(rawValue: key))
     }

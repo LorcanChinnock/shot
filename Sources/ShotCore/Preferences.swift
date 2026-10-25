@@ -68,9 +68,8 @@ public enum PreferenceKey {
     public static let disabledSystemScreenshots = "disabledSystemScreenshots"
     /// True once Shot has given ⌘⇧6 back to macOS, so it does that only once.
     public static let gaveBackTextCaptureKey = "gaveBackTextCaptureKey"
-    /// Window layout: whether the photo editor shows its layers, and the video editor its tracks and inspector.
+    /// Window layout: whether the photo editor shows its layers, and the video editor its inspector.
     public static let editorShowsLayers = "editorShowsLayers"
-    public static let videoEditorShowsTracks = "videoEditorShowsTracks"
     public static let videoEditorShowsInspector = "videoEditorShowsInspector"
     /// Hands captures to AI agents: each file records where it came from and what was marked on it, and a copied
     /// capture is kept as a file an agent can fetch.
@@ -165,7 +164,6 @@ public struct Preferences {
             PreferenceKey.partyModeUnlocked: false,
             PreferenceKey.partyMode: false,
             PreferenceKey.editorShowsLayers: false,
-            PreferenceKey.videoEditorShowsTracks: false,
             PreferenceKey.videoEditorShowsInspector: false,
             PreferenceKey.agentHandoff: false,
             PreferenceKey.agentCapture: false,
