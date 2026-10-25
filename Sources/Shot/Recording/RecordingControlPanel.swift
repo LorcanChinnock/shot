@@ -17,13 +17,6 @@ final class RecordingControlPanel: NSPanel {
         NSSize(width: microphone ? 556 : 456, height: 62)
     }
 
-    /// Whether the panel has to sit over the recorded region, for want of room outside it.
-    static func covers(_ region: CGRect, on screen: NSScreen, microphone: Bool) -> Bool {
-        let size = size(microphone: microphone)
-        let origin = ControlPlacement.origin(for: size, region: region, visible: screen.visibleFrame)
-        return CGRect(origin: origin, size: size).intersects(region)
-    }
-
     @MainActor
     init(region: CGRect, screen: NSScreen, model: RecordingSessionModel, actions: Actions) {
         let size = Self.size(microphone: model.microphoneOn)
