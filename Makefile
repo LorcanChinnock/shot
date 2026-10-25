@@ -13,7 +13,7 @@ INSTALL_DIR ?= /Applications
 # Extra `swift test` flags, e.g. ARGS=--skip-build in CI.
 ARGS ?=
 
-.PHONY: build test perf perf-app lint strings bundle app run dist reset-tcc icon clean
+.PHONY: build test perf perf-app lint strings bundle app run demo dist reset-tcc icon clean
 
 build:
 	swift build
@@ -49,6 +49,10 @@ run: app
 	pkill -x ShotDev || true
 	while pgrep -x ShotDev >/dev/null; do sleep 0.1; done
 	open "$(INSTALL_DIR)/ShotDev.app"
+
+# Builds and opens the MugCo sample app (Samples/MugCo), a steady window to capture in QA runs and screenshots.
+demo:
+	scripts/demo.sh
 
 dist: export SHOT_RELEASE = 1
 dist: bundle

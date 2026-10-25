@@ -37,6 +37,7 @@ make strings                      # sync Resources/Localizable.xcstrings with th
 make build                        # swift build
 make bundle                       # build and sign build/ShotDev.app only
 make run                          # build, install to /Applications/ShotDev.app, relaunch
+make demo                         # build and open the MugCo sample app (Samples/MugCo): fake data, fixed size, for QA runs and screenshots
 cd site && npm run dev            # the marketing site (see site/README.md)
 swift test --filter <testName>    # one test, e.g. --filter hitTestFilledKinds
 ```
@@ -59,6 +60,10 @@ Local builds are `ShotDev.app`. The real installed version is `/Applications/Sho
    open /Applications/Shot.app
    ```
    Leave ShotDev's settings (`dev.lorcan.Shot.dev`) and its Screen Recording permission in place, so the next run doesn't ask for the permission again.
+
+## Capturing something in QA and screenshots
+
+Use the MugCo sample app (`make demo`), not whatever window is open: your screen can show private tabs and mail, and changes every run. It is a fake support inbox in its own package, `Samples/MugCo`, so the main build and CI never compile it. It has an email address and card number to blur, and a wrong balance to point an arrow at. All its data is made up, so captures of it are safe to publish. Its window is titled "Mug Co. Support" and the process is `MugCo`.
 
 ## Architecture
 
