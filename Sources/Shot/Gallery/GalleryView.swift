@@ -29,7 +29,7 @@ struct GalleryRootView: View {
                 .font(.scaled(10, weight: .bold))
                 .foregroundStyle(Brutal.faded(0.6))
             Slider(value: Bindable(model).tileSize, in: Gallery.tileSizes)
-                .frame(width: 80)
+                .frame(minWidth: 40, idealWidth: 80, maxWidth: 80)
                 .tint(Brutal.ink)
                 .brutalTip("Thumbnail size (⌘+ and ⌘−)")
                 .accessibilityLabel(Text("Thumbnail size"))
@@ -38,6 +38,7 @@ struct GalleryRootView: View {
                 .foregroundStyle(Brutal.faded(0.6))
         }
         .padding(.horizontal, 3)
+        .frame(minWidth: 0, maxWidth: .infinity)
         .frame(height: 36)
     }
 
@@ -67,7 +68,7 @@ struct GalleryRootView: View {
             }
         }
         .padding(.horizontal, 10)
-        .frame(width: 170, height: 30)
+        .frame(minWidth: 90, idealWidth: 170, maxWidth: 170, minHeight: 30, maxHeight: 30)
         .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
         .brutalTip("Search by file name or by text in screenshots (⌘F)")
     }
