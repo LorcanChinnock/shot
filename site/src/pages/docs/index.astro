@@ -1,7 +1,7 @@
 ---
 import GuideSearch from '../../components/GuideSearch.astro';
 import Prose from '../../layouts/Prose.astro';
-import { anchors, groups, pages } from '../../lib/guide';
+import { groups, pages } from '../../lib/guide';
 
 const [start] = pages;
 const sections = groups
@@ -16,7 +16,7 @@ const sections = groups
     <GuideSearch />
 
     <a class="start card" href={`/docs/${start.slug}/`}>
-      <span class="chip">New to Shot?</span>
+      <span class="chip" style="--chip: var(--pink)">New to Shot?</span>
       <strong>{start.title} →</strong>
       <span>{start.summary}</span>
     </a>
@@ -39,31 +39,19 @@ const sections = groups
   </div>
 </Prose>
 
-<script id="anchors" type="application/json" set:html={JSON.stringify(anchors)} />
-
-<script>
-  // The guide used to be one page, and links such as /docs/#first-launch are in the wild (the `shot` command prints one).
-  // Browsers don't send the part after "#" to the server, so the redirect has to happen here.
-  const id = decodeURIComponent(location.hash.slice(1));
-  const anchors: Record<string, string> = JSON.parse(document.getElementById('anchors')?.textContent ?? '{}');
-  if (id && Object.hasOwn(anchors, id)) location.replace(anchors[id]);
-</script>
-
 <style>
   .guide-home h1 { margin-bottom: 12px; }
   .lede { margin: 0 0 24px; font-size: 20px; line-height: 1.45; color: var(--muted); }
   .guide-home :global(.guide-search) { margin-bottom: 28px; }
-  .start { display: grid; gap: 6px; justify-items: start; padding: 20px 22px; text-decoration: none; background: var(--yellow); }
+  .start { display: grid; gap: 6px; justify-items: start; padding: 20px 22px; text-decoration: none; background: var(--yellow); color: var(--on-accent); }
   .start strong { font: 900 26px/1.1 var(--display); letter-spacing: -0.02em; }
   .start span:last-child { font-size: 17px; }
   section { padding: 0; margin-top: 36px; }
   .guide-home section h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; padding: 0; border: 0; font-size: 22px; }
-  h2::before { content: ""; flex: none; width: 14px; height: 14px; border: var(--border) solid var(--ink); border-radius: 50%; background: var(--accent); }
+  h2::before { content: ""; flex: none; width: 14px; height: 14px; border: var(--border) solid var(--line); border-radius: 50%; background: var(--accent); }
   ul { list-style: none; margin: 0; padding: 0 !important; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
   li { margin: 0 !important; display: grid; }
-  ul .card { display: grid; align-content: start; gap: 4px; padding: 14px 16px; text-decoration: none; background: #fff; border-top-width: 8px; border-top-color: var(--accent); }
+  ul .card { display: grid; align-content: start; gap: 4px; padding: 14px 16px; text-decoration: none; background: var(--paper); border-top-width: 8px; border-top-color: var(--accent); }
   ul .card strong { font-size: 18px; font-weight: 900; }
   ul .card span { font-size: 15px; line-height: 1.45; font-weight: 500; color: var(--muted); }
-  .card { transition: transform 80ms ease-out, box-shadow 80ms ease-out; }
-  .card:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--ink); }
 </style>

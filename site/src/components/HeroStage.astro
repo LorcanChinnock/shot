@@ -1,0 +1,185 @@
+---
+/**
+ * The hero's animation, in CSS only: an area is dragged out over a support ticket, the screen flashes, the discount line
+ * is highlighted, an arrow and a note are drawn, and the Quick Access card slides in and says Copied. It tells the same
+ * story as the hero recording below it. With reduced motion it shows its last frame and stands still.
+ * Positions are percentages of the 16:10 stage, and text is in cqw, so the whole scene scales as one picture.
+ */
+---
+
+<div class="stage" role="img" aria-label="An area is dragged out around an order with a discount that didn't apply. The discount line is highlighted, an arrow and a note saying the code is valid but the total is unchanged are added, and the Quick Access card slides in with Copy and Save As buttons.">
+  <div class="screen" aria-hidden="true">
+    <div class="app">
+      <div class="sidebar">
+        <p class="logo"><i></i>Acme</p>
+        <span class="bar" style="width: 58%"></span>
+        <span class="bar on" style="width: 66%"></span>
+        <span class="bar" style="width: 70%"></span>
+        <span class="bar" style="width: 52%"></span>
+        <span class="bar" style="width: 60%"></span>
+      </div>
+      <div class="main">
+        <p class="id">#4821</p>
+        <p class="title">Discount code isn't applied at checkout</p>
+        <p class="tags"><span class="t red">High priority</span><span class="t blue">Checkout</span><span class="t pink">Promotions</span></p>
+        <div class="message">
+          <i class="avatar">JD</i>
+          <p><b>Jane Doe</b> I entered SPRING20 and it says the code is valid, but the total doesn't change.</p>
+        </div>
+        <div class="order">
+          <p class="row head"><b>Order #A-20931</b><span>Placed today</span></p>
+          <p class="row"><span>Trail runners, size 9</span><span>$128.00</span></p>
+          <p class="row"><span>Shipping</span><span>$6.50</span></p>
+          <p class="row discount"><span>Discount&nbsp; SPRING20</span><span>−$0.00</span></p>
+          <p class="row total"><b>Total</b><b>$134.50</b></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="marks">
+      <div class="highlight"></div>
+      <svg class="arrow" viewBox="0 0 160 100">
+        <path class="shaft" pathLength="1" d="M 103 47 C 100 61, 93 69, 82.5 72" />
+        <path class="head" d="M 86.6 68.2 L 82.5 72 L 87.6 74" />
+      </svg>
+      <p class="note">Code is valid but the total is unchanged</p>
+    </div>
+
+    <div class="selection"><span class="size">1136 × 688</span></div>
+    <div class="cursor"></div>
+    <div class="flash"></div>
+
+    <div class="quick">
+      <div class="thumb">
+        <span style="width: 62%"></span><span style="width: 80%"></span><span class="hl" style="width: 70%"></span><span style="width: 76%"></span>
+      </div>
+      <span class="pill copy">Copy</span>
+      <span class="pill save">Save As…</span>
+    </div>
+    <p class="copied">✓ Copied</p>
+  </div>
+</div>
+
+<style>
+  .stage {
+    --loop: 11s;
+    position: relative;
+    aspect-ratio: 16 / 10;
+    container-type: inline-size;
+    overflow: hidden;
+    /* A wallpaper behind the app, warm in light mode and dusky in dark. */
+    background:
+      radial-gradient(circle at 15% 10%, color-mix(in srgb, var(--pink) 55%, transparent), transparent 55%),
+      radial-gradient(circle at 90% 90%, color-mix(in srgb, var(--sky) 60%, transparent), transparent 55%),
+      color-mix(in srgb, var(--violet) 35%, var(--bg));
+  }
+  .screen { position: absolute; inset: 0; font: 500 1.45cqw/1.35 var(--font); color: #23232b; }
+  .screen p { margin: 0; }
+  .screen * { position: absolute; }
+  .screen p *, .screen .row > *, .screen .thumb * { position: static; }
+
+  /* The ticket app being captured. It's someone's screen, so it stays light in both themes. */
+  .app { left: 3%; top: 5%; width: 94%; height: 90%; background: #fff; border-radius: 1.2cqw; box-shadow: 0 1cqw 3cqw rgb(0 0 0 / 0.18); overflow: hidden; }
+  .sidebar { left: 0; top: 0; bottom: 0; width: 22%; background: #f2f2f4; border-right: 1px solid #e3e3e8; }
+  .sidebar .logo { position: relative; left: 14%; top: 7%; display: flex; align-items: center; gap: 0.6cqw; font-weight: 800; font-size: 1.7cqw; }
+  .logo i { width: 1.9cqw; height: 1.9cqw; border-radius: 0.5cqw; background: #2fb589; }
+  .sidebar .bar { position: relative; display: block; left: 14%; height: 1cqw; margin-top: 2.2cqw; border-radius: 1cqw; background: #d6d6dc; }
+  .sidebar .bar:first-of-type { margin-top: 5cqw; }
+  .sidebar .bar.on { background: #b9e6d6; }
+  .main { left: 25%; top: 0; right: 3%; bottom: 0; }
+  .id { left: 0; top: 5%; color: #77777f; font-size: 1.25cqw; }
+  .title { left: 0; top: 10%; font-weight: 800; font-size: 2.35cqw; letter-spacing: -0.02em; white-space: nowrap; }
+  .tags { left: 0; top: 19.5%; display: flex; gap: 0.7cqw; font-size: 1.15cqw; font-weight: 700; }
+  .t { padding: 0.15cqw 0.6cqw; border-radius: 0.5cqw; }
+  .t.red { color: #d23c3c; background: #fde6e6; }
+  .t.blue { color: #2b7bd3; background: #e3f0fd; }
+  .t.pink { color: #c034b5; background: #fbe6f8; }
+  .message { left: 0; right: 0; top: 27%; height: 16%; border: 1px solid #e3e3e8; border-radius: 1cqw; }
+  .message .avatar { position: absolute; left: 2%; top: 18%; width: 3.4cqw; height: 3.4cqw; display: grid; place-items: center; border-radius: 50%; background: #f59a3c; color: #fff; font: 800 1.2cqw/1 var(--font); }
+  .message p { left: 11%; top: 16%; right: 4%; }
+  .order { left: 0; right: 0; top: 50%; height: 40%; border: 1px solid #e3e3e8; border-radius: 1cqw; padding: 0 3%; }
+  .row { position: relative !important; display: flex; justify-content: space-between; margin-top: 1.25cqw !important; }
+  .row.head { margin-top: 1.6cqw !important; padding-bottom: 1cqw; border-bottom: 1px solid #e3e3e8; }
+  .row.head span { color: #77777f; }
+  .row.discount { color: #d23c3c; }
+  .row.total { padding-top: 1cqw; border-top: 1px solid #e3e3e8; }
+
+  /* Shot's marks, in the editor's colours. */
+  .marks { inset: 0; }
+  .highlight { left: 27.8%; top: 70.5%; width: 19.5%; height: 4.6%; background: rgb(255 212 59 / 0.6); border-radius: 0.3cqw; transform-origin: left; transform: rotate(-1deg); }
+  .arrow { inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .arrow path { fill: none; stroke: #ff4d3d; stroke-width: 0.9; stroke-linecap: round; stroke-linejoin: round; }
+  .shaft { stroke-dasharray: 1; }
+  .note { left: 58%; top: 31%; width: 30%; padding: 1.2cqw 1.4cqw; font-size: 1.5cqw; font-weight: 600; background: #ffe98a; border-radius: 0.4cqw; box-shadow: 0 0.6cqw 1.6cqw rgb(0 0 0 / 0.18); transform: rotate(-2deg); }
+
+  /* The capture overlay: a selection whose huge shadow dims the rest of the screen. */
+  .selection { left: 24%; top: 48%; width: 72%; height: 44%; border: 2px solid #fff; outline: 1px solid rgb(0 0 0 / 0.5); box-shadow: 0 0 0 200cqw rgb(10 10 20 / 0.35); opacity: 0; }
+  .size { left: auto; right: 0; top: calc(100% + 0.8cqw); padding: 0.3cqw 0.8cqw; font: 700 1.2cqw/1.3 var(--mono); color: #fff; background: rgb(18 18 26 / 0.85); border-radius: 0.5cqw; white-space: nowrap; }
+  .cursor { left: 96%; top: 92%; width: 3cqw; height: 3cqw; margin: -1.5cqw 0 0 -1.5cqw; opacity: 0; }
+  .cursor::before, .cursor::after { content: ""; position: absolute; background: #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.6); }
+  .cursor::before { left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; }
+  .cursor::after { top: 50%; left: 0; right: 0; height: 2px; margin-top: -1px; }
+  .flash { inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+
+  /* Quick Access: always dark, like the app's card. */
+  .quick { left: 2.5%; top: 67%; width: 21%; height: 25%; background: #0d0d10; border: 0.35cqw solid #2a2a30; border-radius: 1.6cqw; box-shadow: 0 1cqw 3cqw rgb(0 0 0 / 0.35); }
+  .thumb { left: 5%; right: 5%; top: 18%; bottom: 18%; padding: 4% 6%; background: #f4f4f6; display: grid; align-content: space-evenly; }
+  .thumb span { display: block; height: 0.7cqw; border-radius: 1cqw; background: #c9c9d0; }
+  .thumb .hl { background: #f08b8b; box-shadow: 0 0 0 0.35cqw rgb(255 212 59 / 0.7); }
+  .pill { left: 50%; transform: translateX(-50%); padding: 0.4cqw 1.2cqw; font: 800 1.25cqw/1.3 var(--font); color: #12121a; border: 0.3cqw solid #0d0d10; border-radius: 0.8cqw; box-shadow: 0.25cqw 0.25cqw 0 #0d0d10; white-space: nowrap; }
+  .pill.copy { top: 26%; background: #ffd43b; }
+  .pill.save { top: 55%; background: #fff; }
+  .copied { left: 2.5%; top: 59%; padding: 0.3cqw 1cqw; font: 800 1.3cqw/1.4 var(--font); color: #12121a; background: #4fe3b5; border: 0.25cqw solid #12121a; border-radius: 99px; }
+
+  /* The loop, as fractions of --loop: keys press 4–12%, drag 15–34%, flash 36%, highlight 42–49%, arrow 50–58%,
+     note 56–62%, Quick Access 66–72%, Copied 72%, hold, then everything fades from 92%. */
+  @media (prefers-reduced-motion: no-preference) {
+    .selection { animation: select var(--loop) infinite both; }
+    .size { animation: show-size var(--loop) infinite both; }
+    .cursor { animation: cursor var(--loop) infinite both; }
+    .flash { animation: flash var(--loop) infinite both; }
+    .highlight { animation: highlight var(--loop) infinite both; }
+    .shaft { animation: draw var(--loop) infinite both; }
+    .head { animation: head var(--loop) infinite both; }
+    .note { animation: note var(--loop) infinite both; }
+    .quick { animation: quick var(--loop) infinite both; }
+    .copied { animation: copied var(--loop) infinite both; }
+    .marks { animation: fade var(--loop) infinite both; }
+  }
+  @keyframes select {
+    0%, 11% { opacity: 0; width: 0; height: 0; }
+    13%, 15% { opacity: 1; width: 0; height: 0; }
+    34% { width: 72%; height: 44%; box-shadow: 0 0 0 200cqw rgb(10 10 20 / 0.35); }
+    36% { opacity: 1; box-shadow: 0 0 0 200cqw rgb(10 10 20 / 0.35); }
+    40%, 100% { opacity: 0; width: 72%; height: 44%; box-shadow: 0 0 0 200cqw rgb(10 10 20 / 0); }
+  }
+  @keyframes show-size { 0%, 18% { opacity: 0; } 20%, 35% { opacity: 1; } 37%, 100% { opacity: 0; } }
+  @keyframes cursor {
+    0%, 11% { opacity: 0; left: 24%; top: 48%; }
+    13%, 15% { opacity: 1; left: 24%; top: 48%; }
+    34% { opacity: 1; left: 96%; top: 92%; }
+    36%, 100% { opacity: 0; left: 96%; top: 92%; }
+  }
+  @keyframes flash { 0%, 35% { opacity: 0; } 36.5% { opacity: 0.85; } 41%, 100% { opacity: 0; } }
+  @keyframes highlight { 0%, 42% { transform: rotate(-1deg) scaleX(0); } 49%, 100% { transform: rotate(-1deg) scaleX(1); } }
+  @keyframes draw { 0%, 50% { stroke-dashoffset: 1; } 57%, 100% { stroke-dashoffset: 0; } }
+  @keyframes head { 0%, 56.5% { opacity: 0; } 57.5%, 100% { opacity: 1; } }
+  @keyframes note {
+    0%, 56% { opacity: 0; transform: rotate(-8deg) scale(0.6); }
+    60% { opacity: 1; transform: rotate(1deg) scale(1.06); }
+    63%, 100% { opacity: 1; transform: rotate(-2deg) scale(1); }
+  }
+  @keyframes quick {
+    0%, 66% { opacity: 0; transform: translateX(-130%); }
+    70% { opacity: 1; transform: translateX(6%); }
+    73%, 92% { opacity: 1; transform: translateX(0); }
+    97%, 100% { opacity: 0; transform: translateX(0); }
+  }
+  @keyframes copied {
+    0%, 72% { opacity: 0; transform: translateY(40%) scale(0.7); }
+    75% { opacity: 1; transform: translateY(0) scale(1.08); }
+    77%, 92% { opacity: 1; transform: none; }
+    97%, 100% { opacity: 0; transform: none; }
+  }
+  @keyframes fade { 0%, 92% { opacity: 1; } 97%, 100% { opacity: 0; } }
+</style>

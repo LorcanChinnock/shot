@@ -29,7 +29,8 @@ const current = (href: string) => (path === href ? 'page' : undefined);
     <link rel="canonical" href={canonical} />
     <link rel="icon" href="/favicon.png" type="image/png" sizes="64x64" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta name="theme-color" content="#ffd43b" />
+    <meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#17161b" media="(prefers-color-scheme: dark)" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Shot" />
     <meta property="og:title" content={fullTitle} />
@@ -44,6 +45,7 @@ const current = (href: string) => (path === href ? 'page' : undefined);
     <slot name="head" />
   </head>
   <body>
+    <a class="skip" href="#main">Skip to content</a>
     <div class="backdrop" aria-hidden="true">
       <div class="blob pink"></div>
       <div class="blob yellow"></div>
@@ -53,7 +55,7 @@ const current = (href: string) => (path === href ? 'page' : undefined);
 
     <header class="site-header wrap">
       <div class="bar card solid">
-        <a class="brand" href="/" aria-label="Shot home">
+        <a class="brand" href="/">
           <img src="/icon-64.png" alt="" width="32" height="32" />
           <span>Shot<sup>beta</sup></span>
         </a>
@@ -67,26 +69,31 @@ const current = (href: string) => (path === href ? 'page' : undefined);
       </div>
     </header>
 
-    <main>
+    <main id="main">
       <slot />
     </main>
 
     <footer class="site-footer wrap">
       <div class="bar card">
-        <a class="brand" href="/">
-          <img src="/icon-64.png" alt="" width="32" height="32" />
-          <span>Shot</span>
-        </a>
-        <nav aria-label="Footer">
-          <a href="/docs/">Guide</a>
-          <a href="/changelog/">Changelog</a>
-          <a href="/privacy/">Privacy</a>
-          <a href="https://github.com/LorcanChinnock/shot">Source</a>
-          <a href="https://github.com/LorcanChinnock/shot/issues">Report a bug</a>
-          <a href="/sponsor">Sponsor</a>
-          <a href="https://github.com/LorcanChinnock/shot/blob/main/LICENSE">GPL-3.0</a>
-        </nav>
-        <small>Made by <a href="https://lorcanchinnock.com">Lorcan Chinnock</a>. Not affiliated with Apple.</small>
+        <div class="top">
+          <a class="brand" href="/">
+            <img src="/icon-64.png" alt="" width="32" height="32" />
+            <span>Shot</span>
+          </a>
+          <nav aria-label="Footer">
+            <a href="/docs/">Guide</a>
+            <a href="/changelog/">Changelog</a>
+            <a href="/privacy/">Privacy</a>
+            <a href="https://github.com/LorcanChinnock/shot">Source</a>
+            <a href="https://github.com/LorcanChinnock/shot/issues">Report a bug</a>
+            <a href="/sponsor">Sponsor</a>
+            <a href="https://github.com/LorcanChinnock/shot/blob/main/LICENSE">GPL-3.0 license</a>
+          </nav>
+        </div>
+        <p class="credit">
+          <a class="mark" href="https://lorcanchinnock.com"><b aria-hidden="true">LC<i>_</i></b><span>Made by Lorcan Chinnock</span></a>
+          <span>Not affiliated with Apple.</span>
+        </p>
       </div>
     </footer>
   </body>

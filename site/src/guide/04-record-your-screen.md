@@ -2,8 +2,6 @@
 title: Record your screen
 summary: "Record an area, a window or the whole screen, with your voice, the sound from your Mac and your camera."
 group: Capture
-aliases: [screen-recording]
-anchors: [camera-bubble]
 ---
 
 ![The recording controls: elapsed time, Pause, the camera bubble button (showing the bubble is off), the dimmed Change camera bubble size button, discard and Stop](../../../docs/media/recording-controls.png)

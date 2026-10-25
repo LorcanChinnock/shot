@@ -2,7 +2,6 @@
 title: Edit captures with JSON
 summary: "Crop, pad, style and mark up a screenshot, or cut, speed up and shrink a recording, from one JSON edit."
 group: AI agents
-anchors: [editing-images, editing-videos]
 ---
 
 `shot edit` and the MCP server's `edit_image` and `edit_video` tools make the editors' changes from one JSON object, so an agent can do in one step what you'd do by hand. The result opens in Shot with every layer still live.

@@ -2,7 +2,6 @@
 title: Get started
 summary: "Install Shot, give it one permission, and take your first screenshot. It takes about a minute."
 group: Get started
-aliases: [first-launch]
 ---
 
 ## Install Shot

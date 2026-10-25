@@ -2,8 +2,6 @@
 title: Annotate a screenshot
 summary: "Add arrows, text, highlights and blur to a screenshot, then copy or save it."
 group: Edit and share
-aliases: [annotation-editor]
-anchors: [tools, editing-annotations, zoom, saving]
 ---
 
 ![The editor toolbar: the tools, then the colours, line widths and Reset button for the arrow tool](../../../docs/media/editor-toolbar.png)

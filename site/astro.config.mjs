@@ -3,7 +3,6 @@ import { writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import * as pagefind from 'pagefind';
 import { SKIP, visit } from 'unist-util-visit';
-import { readGuide } from './src/lib/guide-files.ts';
 import { latestRelease } from './src/lib/release.ts';
 import { rehypeRepoLinks } from './src/lib/rehype.ts';
 
@@ -24,7 +23,7 @@ function rehypeDropCommitLinks() {
     });
 }
 
-/** Writes Cloudflare's _redirects, so /download is a real redirect to the latest release's zip, and old guide pages go to their new ones. */
+/** Writes Cloudflare's _redirects, so /download is a real redirect to the latest release's zip. */
 function redirects() {
   return {
     name: 'shot-redirects',
@@ -36,8 +35,6 @@ function redirects() {
           `/github ${repo} 302`,
           '/sponsor https://github.com/sponsors/LorcanChinnock 302',
           `/releases ${repo}/releases 302`,
-          // A renamed guide page lists its old address in `aliases`.
-          ...readGuide().flatMap(({ slug, aliases }) => aliases.map((alias) => `/docs/${alias}/ /docs/${slug}/ 301`)),
         ];
         await writeFile(new URL('_redirects', dir), lines.join('\n') + '\n');
       },
@@ -67,7 +64,7 @@ export default defineConfig({
   integrations: [redirects(), search()],
   markdown: {
     rehypePlugins: [rehypeRepoLinks, rehypeDropCommitLinks],
-    shikiConfig: { theme: 'github-light' },
+    shikiConfig: { themes: { light: 'github-light', dark: 'github-dark' } },
   },
   vite: {
     // CHANGELOG.md and docs/media live outside the site folder.

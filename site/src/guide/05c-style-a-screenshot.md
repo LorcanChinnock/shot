@@ -2,7 +2,6 @@
 title: Style a screenshot
 summary: "Round the corners and add a shadow or border, then reuse the style or apply it to every new capture."
 group: Edit and share
-anchors: [style]
 ---
 
 ![The Style panel open over a screenshot: Float shadow and Hairline border selected, Elevation and Opacity sliders, a Corners slider, a Reset button and Use this style for new captures turned off](../../../docs/media/editor-style.png)
