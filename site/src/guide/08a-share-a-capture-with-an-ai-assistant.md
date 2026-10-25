@@ -15,7 +15,7 @@ That's all most people need. Your marks show the assistant where to look.
 
 ## Give the assistant the file
 
-Right-click a Quick Access card and choose **Copy Path**, or give **Copy Latest Capture's Path** a shortcut in **Settings › Shortcuts**. An assistant that can open files can read the image from its path, now or later in the conversation. Copies are always the image alone.
+Right-click a Quick Access card and choose **Copy Path**. An assistant that can open files can read the image from its path, now or later in the conversation. Copies are always the image alone.
 
 ## Let the assistant fetch your captures
 

@@ -54,6 +54,12 @@ private struct ShotMenu: View {
                 }
             }
         }
+        if !state.isRecording {
+            Section("Tools") {
+                ActionButton(action: .pickColor, title: ShotAction.pickColor.title, coordinator: coordinator)
+                ActionButton(action: .focusQuickAccess, title: ShotAction.focusQuickAccess.title, coordinator: coordinator)
+            }
+        }
         Divider()
         Button("Open Gallery") { GalleryController.shared.show() }
         Button("Settings…") { MainWindowController.showSettings() }
