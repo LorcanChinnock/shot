@@ -57,7 +57,7 @@ if [ -n "$hits" ]; then
 fi
 
 # A card with one thick coloured edge is a stock "generated" look (site/DESIGN.md). One-edge borders may only be thin neutral dividers.
-hits=$(grep -rnE 'border-(top|right|bottom|left|inline|block)(-start|-end)?-(width|color)|border-(top|right|bottom|left)(-start|-end)?: *[^;]*(var\(--(accent|yellow|pink|sky|mint|violet|red)\)|#[0-9a-fA-F]{3,8}[^0-9a-fA-F])' site/src --include='*.astro' --include='*.css' | grep -v 'site/src/components/HeroStage.astro' || true)
+hits=$(grep -rnE 'border-(top|right|bottom|left|inline|block)(-start|-end)?-(width|color)|border-(top|right|bottom|left|inline|block)(-start|-end)?: *[^;]*(var\(--(accent|yellow|pink|sky|mint|violet|red)\)|#[0-9a-fA-F]{3,8}[^0-9a-fA-F])' site/src --include='*.astro' --include='*.css' | grep -v 'site/src/components/HeroStage.astro' || true)
 if [ -n "$hits" ]; then
     echo "No cards with one coloured edge; it reads as generated. Colour a card with a fill, chip or button and keep the ink border on every side (site/DESIGN.md):"
     echo "$hits"
