@@ -23,7 +23,7 @@ An agent can take a screenshot or recording through Shot only while **Let agents
 - It never records the microphone or camera, and it records system audio only if **Settings › Recording** has it on.
 
 > [!WARNING]
-> Whatever an agent reads goes to that agent's model provider. See [Use Shot with AI agents](#use-shot-with-ai-agents) for how to hide private text first.
+> Whatever an agent reads goes to that agent's model provider. See [Work with coding agents](#work-with-coding-agents) for how to hide private text first.
 
 ## Permissions
 
