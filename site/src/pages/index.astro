@@ -156,7 +156,7 @@ const audiences = [
   </section>
 
   <section>
-    <div class="wrap pair flip">
+    <div class="wrap pair">
       <div class="stack reveal">
         <div class="say">
           <span class="step" style="--chip: var(--mint)">Record</span>
@@ -291,11 +291,6 @@ const audiences = [
   .pair { display: grid; gap: 40px; }
   @media (min-width: 900px) {
     .pair { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
-    /* The second of each pair sits lower, so the page zigzags instead of stacking boxes in a grid. */
-    .pair > :nth-child(2) { margin-top: 72px; }
-    .pair.flip > :nth-child(2) { margin-top: 0; }
-    .pair.flip > :nth-child(1) { margin-top: 72px; }
-    .install .pair > :nth-child(2) { margin-top: 0; }
   }
 
   /* The audiences, on a tinted band so the page has a change of pace. */
