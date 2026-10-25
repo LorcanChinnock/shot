@@ -8,8 +8,7 @@ import ShotCore
 enum AltTextAction {
     private static let log = Logger.shot("alt-text")
 
-    /// Either the Mac's own model, or the provider set up in Settings, which works on any macOS.
-    static var isAvailable: Bool { AltText.isAvailable || Preferences().chatProvider != nil }
+    static var isAvailable: Bool { AltText.isAvailable }
 
     static func copy(imageAt url: URL) async {
         guard let image = ImageCodec.image(at: url) else {
@@ -20,17 +19,13 @@ enum AltTextAction {
     }
 
     static func copy(_ image: CGImage) async {
-        let provider = Preferences().chatProvider
-        guard provider != nil || AltText.isAvailable else {
+        guard AltText.isAvailable else {
             return
         }
         Toast.progress("Writing alt text…")
         let sendable = SendableImage(image)
         do {
             let text = try await Task.detached {
-                if let provider {
-                    return try await provider.altText(for: sendable.image)
-                }
                 guard #available(macOS 27, *) else {
                     throw AltText.Unavailable()
                 }

@@ -53,7 +53,6 @@ public enum BugReport {
         }
 
         public static let onDevice = Budget(frames: 3, transcriptCharacters: 1500, textCharacters: 1200)
-        public static let provider = Budget(frames: 8, transcriptCharacters: 6000, textCharacters: 4000)
     }
 
     /// What goes to the model: the frames kept, and the request for them.
@@ -141,20 +140,6 @@ public enum BugReport {
         guard n > 1 else { return [0] }
         return (0 ..< n).map { Int((Double($0) * Double(count - 1) / Double(n - 1)).rounded()) }
     }
-
-    /// What the model replies with: one flat object, which every provider's structured output accepts.
-    public static let schema: JSONValue = .object([
-        "type": .string("object"),
-        "properties": .object([
-            "title": .object(["type": .string("string")]),
-            "steps": .object(["type": .string("array"), "items": .object(["type": .string("string")])]),
-            "expected": .object(["type": .string("string")]),
-            "actual": .object(["type": .string("string")]),
-            "errors": .object(["type": .string("array"), "items": .object(["type": .string("string")])]),
-        ]),
-        "required": .array(["title", "steps", "expected", "actual", "errors"].map(JSONValue.string)),
-        "additionalProperties": .bool(false),
-    ])
 
     /// The reply as Markdown. Error text is quoted from the text the Mac read, never from the model's own reading: an
     /// error the model reports is kept only when a line read from the images contains it (ignoring case and spacing),

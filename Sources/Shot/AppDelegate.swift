@@ -219,7 +219,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             translate.submenu = NSMenu(title: String(localized: "Translate Text"))
             translate.submenu?.delegate = translateMenu
         }
-        // Always added; the editor shows or hides it each time the menu opens, since the AI provider setting can change.
+        // Always added; the editor shows or hides it each time the menu opens, since the Mac's model can become available.
         edit.addItem(withTitle: String(localized: "Copy Alt Text"), action: #selector(EditorWindowController.copyAltText(_:)), keyEquivalent: "").isHidden = !AltTextAction.isAvailable
         edit.addItem(withTitle: String(localized: "Copy Bug Report"), action: #selector(EditorWindowController.copyBugReport(_:)), keyEquivalent: "").isHidden = !BugReportAction.isAvailable
         let editItem = NSMenuItem(title: String(localized: "Edit"), action: nil, keyEquivalent: "")

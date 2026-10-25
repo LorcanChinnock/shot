@@ -23,10 +23,6 @@ Right-click a Quick Access card and choose **Copy Path**, or give **Copy Latest 
 
 Turn on **Send to Agent** in **Settings › Agents**, and a Quick Access card's menu gets **Send to Claude Code** (or Codex, Cursor, or a command of your own). It opens the agent in a terminal, in your project, with the screenshot and your marks as a task. See [Send a capture to your coding agent](#send-a-capture-to-your-coding-agent).
 
-## Use your own AI provider
-
-**Copy Alt Text** can use Ollama, LM Studio, OpenAI, Gemini, OpenRouter or Anthropic (Claude) instead of Apple's model. See [Use your own AI provider](#use-your-own-ai-provider).
-
 ## Set it up so the agent can ask Shot
 
 Everything below is in **Settings › Agents**. Every switch there starts off.

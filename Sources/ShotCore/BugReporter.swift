@@ -51,46 +51,20 @@ public enum BugReporter {
     /// Whether Apple's on-device model can write one: it has to see images.
     public static var onDeviceAvailable: Bool { AltText.isAvailable }
 
-    /// The Markdown bug report for the image or recording at `url`, from `provider` or, with none, the Mac's model.
-    public static func report(for url: URL, provider: ChatProvider?) async throws -> String {
-        let budget: BugReport.Budget = provider == nil ? .onDevice : .provider
-        return try await report(gathering: { try await gather(from: url, frames: budget.frames) }, provider: provider)
+    /// The Markdown bug report for the image or recording at `url`, from the Mac's model.
+    public static func report(for url: URL) async throws -> String {
+        try await report(gathered: try await gather(from: url, frames: BugReport.Budget.onDevice.frames))
     }
 
     /// The Markdown bug report for `image`.
-    public static func report(for image: CGImage, provider: ChatProvider?) async throws -> String {
-        try await report(gathering: { await gather(from: image, record: nil) }, provider: provider)
+    public static func report(for image: CGImage) async throws -> String {
+        try await report(gathered: await gather(from: image, record: nil))
     }
 
-    private static func report(gathering: () async throws -> Gathered, provider: ChatProvider?) async throws -> String {
-        var budget: BugReport.Budget = provider == nil ? .onDevice : .provider
-        let gathered = try await gathering()
-        while true {
-            do {
-                return try await report(gathered, budget: budget, provider: provider)
-            } catch let failure as ChatProvider.Failure where failure.isContextTooSmall && budget.frames > 1 {
-                // A local model often runs with a small context (Ollama starts at 4,096 tokens), so try again with
-                // fewer frames rather than fail on a long recording.
-                budget.frames /= 2
-            } catch let failure as ChatProvider.Failure where failure.isContextTooSmall {
-                throw ChatProvider.Failure.malformed("the model's context is too small for this capture. Raise the context length in the model's settings, or choose a model with more")
-            }
-        }
-    }
-
-    private static func report(_ gathered: Gathered, budget: BugReport.Budget, provider: ChatProvider?) async throws -> String {
-        let prepared = BugReport.prepare(gathered.input, budget: budget)
+    private static func report(gathered: Gathered) async throws -> String {
+        let prepared = BugReport.prepare(gathered.input, budget: .onDevice)
         let images = prepared.frames.map { gathered.images[$0] }
-        let reply: JSONValue
-        if let provider {
-            let encoded = try images.map { image in
-                guard let encoded = ProviderImage.encoding(image) else { throw ChatProvider.Failure.malformed("the image couldn't be prepared") }
-                return encoded
-            }
-            reply = try await provider.send(prepared.request, images: encoded, schema: BugReport.schema)
-        } else {
-            reply = try await onDeviceReply(prepared.request, images: images)
-        }
+        let reply = try await onDeviceReply(prepared.request, images: images)
         var markdown = BugReport.markdown(from: reply, readText: prepared.text)
         if prepared.trimmed {
             markdown += "\n_Written from part of the capture: some frames and text were left out to fit._\n"
