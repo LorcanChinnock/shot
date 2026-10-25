@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.0-beta.71](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.70...v0.7.0-beta.71) (2026-10-25)
+
+
+### Features
+
+* **site:** remake the site with motion, dark mode and a sharper guide ([#876](https://github.com/LorcanChinnock/shot/issues/876)) ([d8cbc43](https://github.com/LorcanChinnock/shot/commit/d8cbc436a2c31f34b7240721bf2fea34d0e5873c))
+
+
+### Bug Fixes
+
+* **bug-report:** say the on-device wait can take a minute and let it be cancelled ([#877](https://github.com/LorcanChinnock/shot/issues/877)) ([66cbf97](https://github.com/LorcanChinnock/shot/commit/66cbf976fb54f08565b66e89624aac7c2b1745b8))
+* **media:** build test video frames in plain memory and check every step ([#863](https://github.com/LorcanChinnock/shot/issues/863)) ([61c9114](https://github.com/LorcanChinnock/shot/commit/61c9114f42f7ca406bbe2740ed144b82e87a38ea))
+* **media:** stop the solid video fixture waiting forever on a failed writer ([#865](https://github.com/LorcanChinnock/shot/issues/865)) ([79cc03f](https://github.com/LorcanChinnock/shot/commit/79cc03fffb625211bd0880075cdee6ad5d9d6ab6))
+
 ## [0.7.0-beta.70](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.69...v0.7.0-beta.70) (2026-10-23)
 
 
