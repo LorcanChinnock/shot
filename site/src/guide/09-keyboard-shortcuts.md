@@ -112,7 +112,7 @@ Turn off **Use Shot for ⌘⇧3 to ⌘⇧5** in **Settings › Shortcuts**. macO
 | S | Split the clips under the playhead |
 | K | Key everything the selected clip or annotation can animate at the playhead, or take those keyframes away |
 | N | Turn snapping on or off |
-| T | Show or hide the tracks |
+| T | Show or hide more tools (the tracks) |
 | C | Crop the selected clip, or the frame with nothing selected |
 | Return | Apply the crop |
 | Delete | Take away the selected keyframe, section, or clip or annotation |

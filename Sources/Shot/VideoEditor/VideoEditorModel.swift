@@ -64,8 +64,8 @@ final class VideoEditorModel {
     /// A saved project to open the recording with instead of the plain one, until it's loaded.
     @ObservationIgnored private var restoring: Project?
 
-    // Tracks panel
-    private(set) var showsTracks = UserDefaults.standard.bool(forKey: VideoEditorModel.showsTracksKey)
+    // More tools (the tracks panel): closed for each new editor, open only when the edit needs it.
+    private(set) var showsTracks = false
     /// 1 fits the project in the window; see `TimelineZoom`.
     private(set) var zoom: Double = 1
     private(set) var snapping = true
@@ -113,7 +113,6 @@ final class VideoEditorModel {
     /// dragged) amends that step instead of adding one each; see `replaceProject`.
     @ObservationIgnored private var coalescingKey: String?
 
-    private static let showsTracksKey = PreferenceKey.videoEditorShowsTracks
     private static let showsInspectorKey = PreferenceKey.videoEditorShowsInspector
 
     @ObservationIgnored private var dragOrigin: Project?
@@ -207,6 +206,8 @@ final class VideoEditorModel {
             project = restoring ?? Project(source: fileURL, duration: duration, canvasSize: CGSize(width: abs(size.width), height: abs(size.height)), hasAudio: hasAudio)
             restoring = nil
             savedProject = project
+            // A saved edit with imports or transforms has no trim strip to go back to.
+            if isComposite { showsTracks = true }
         } catch let failure as LoadFailure {
             throw failure
         } catch {
@@ -339,7 +340,6 @@ final class VideoEditorModel {
             return
         }
         showsTracks = shown
-        UserDefaults.standard.set(shown, forKey: Self.showsTracksKey)
         onLayoutChanged?()
     }
 

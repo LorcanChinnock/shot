@@ -32,9 +32,9 @@ struct VideoEditorRootView: View {
                     .minimumScaleFactor(0.75)
                     .layoutPriority(1)
                 Group {
-                    Button { model.toggleTracks() } label: { Label("Tracks", systemImage: "rectangle.split.3x1").fixedSize() }
+                    Button { model.toggleTracks() } label: { Label("More tools", systemImage: "rectangle.split.3x1").fixedSize() }
                         .buttonStyle(BrutalButtonStyle(color: model.showsTracks ? (model.canHideTracks ? Brutal.violet : Brutal.violet.opacity(0.55)) : Brutal.paper, compact: true))
-                        .brutalTip("Show the tracks (T)")
+                        .brutalTip("Show or hide the tracks, keyframes, imports and annotations (T)")
                     Button("Copy") { Task { await model.copy() } }
                         .buttonStyle(BrutalButtonStyle(compact: true))
                         .brutalTip("Copy video (⌘C)")
