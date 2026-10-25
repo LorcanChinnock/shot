@@ -1017,8 +1017,9 @@ private struct ShortcutSettings: View {
         }
 
         SettingsCard(title: "Global hotkeys", symbol: "keyboard.fill") {
-            ForEach(Array(ShotAction.allCases.enumerated()), id: \.element) { index, action in
-                SettingRow(title: action.title, divider: index < ShotAction.allCases.count - 1) {
+            let actions = ShotAction.allCases.filter(\.hasShortcut)
+            ForEach(Array(actions.enumerated()), id: \.element) { index, action in
+                SettingRow(title: action.title, divider: index < actions.count - 1) {
                     ShortcutRecorderView(action: action, color: color)
                 }
             }

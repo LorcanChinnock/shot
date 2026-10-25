@@ -35,6 +35,15 @@ public enum ShotAction: String, CaseIterable, Sendable {
         }
     }
 
+    /// Whether Settings offers a global shortcut for this action. The rest are menu items, `shot://` URLs and agent
+    /// tools only, since few people would bind them. They keep their place in `allCases`, which numbers hotkeys.
+    public var hasShortcut: Bool {
+        switch self {
+        case .recordFullscreen, .recordWindow, .capturePrevious: false
+        case .captureArea, .captureFullscreen, .captureWindow, .record, .pickColor, .copyPath, .copyText, .focusQuickAccess: true
+        }
+    }
+
     /// Mirrors the macOS screenshot keys with ⌃ in place of ⌘. Record fullscreen and window
     /// have no default: press Enter or Space in the record overlay instead. Pick Colour, Copy Path, Capture Previous
     /// Area, Copy Text and Focus Quick Access stay out of the way with none.

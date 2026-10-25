@@ -236,6 +236,13 @@ public struct Preferences {
         store.removeObject(forKey: "hotkey.capture-text")
     }
 
+    /// Deletes the shortcuts saved for actions that are now menu-only, which `hotkey(for:)` ignores anyway.
+    public static func removeMenuOnlyHotkeys(in store: UserDefaults = .standard) {
+        for action in ShotAction.allCases where !action.hasShortcut {
+            store.removeObject(forKey: PreferenceKey.hotkey(action))
+        }
+    }
+
     /// Remembers the video editor's format and GIF settings; speed and mute are chosen per video.
     public static func remember(_ options: VideoExportOptions, in store: UserDefaults = .standard) {
         store.set(options.format.rawValue, forKey: PreferenceKey.videoExportFormat)
@@ -513,6 +520,9 @@ public struct Preferences {
 
     /// `nil` means the user cleared the shortcut.
     public func hotkey(for action: ShotAction) -> KeyCombo? {
-        KeyCombo(encoded: store.string(forKey: PreferenceKey.hotkey(action)) ?? "")
+        guard action.hasShortcut else {
+            return nil
+        }
+        return KeyCombo(encoded: store.string(forKey: PreferenceKey.hotkey(action)) ?? "")
     }
 }
