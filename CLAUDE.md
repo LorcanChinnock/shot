@@ -51,7 +51,7 @@ swift test --filter <testName>    # one test, e.g. --filter hitTestFilledKinds
 Local builds are `ShotDev.app`. The real installed version is `/Applications/Shot.app`, usually from Homebrew. Never install over, rename or delete `Shot.app`, or Homebrew loses track of it.
 
 1. **Quit the installed release first:** `pkill -x Shot`. Both apps register the same global shortcuts, so with both running a hotkey can reach the wrong one. `-x` matches the executable name exactly, so `pkill -x Shot` never kills ShotDev, and `pkill -x ShotDev` never kills the release.
-2. **Run the dev build:** `make run` builds, installs `/Applications/ShotDev.app` and launches it. Drive it with `shot-dev://` URLs, and confirm the running binary with `pgrep -lf ShotDev`. The ux-qa skill runs `build/ShotDev.app` from `make bundle` without installing it.
+2. **Run the dev build:** `make run` builds, installs `/Applications/ShotDev.app` and launches it. Drive it with `shot-dev://` URLs, and confirm the running binary with `pgrep -lf ShotDev`.
 3. **When finished, quit and uninstall the dev build,** then reopen the release if it was running:
    ```bash
    pkill -x ShotDev
@@ -117,4 +117,3 @@ The repository is public, so GitHub's runners are free, but the free plan runs o
 - Every PR links an issue or sub-issue: put `Closes #N` (or `Part of #N` when it doesn't finish the issue) in the PR body. Create the issue before starting any work, as a sub-issue when the work belongs to an umbrella issue.
 - Any substantial change or new feature must keep docs and marketing in line in the same PR: the user guide in `site/src/guide/`, `README.md`, the landing page `site/src/pages/index.astro`, and the media in `docs/media/` if they now show stale UI. If an update needs new screenshots or recordings you can't make, say so rather than skipping it silently. `CHANGELOG.md` is generated, so don't edit it.
 - Only `make dist` builds `Shot.app` with the Sparkle feed. Every other build is `ShotDev.app` (bundle ID `dev.lorcan.Shot.dev`, executable `ShotDev`, scheme `shot-dev://`, no feed), so dev builds never self-update or replace the installed release. `scripts/bundle.sh` does the renaming.
-- To QA UI changes by driving the real app, use the `.agents/skills/ux-qa` skill.

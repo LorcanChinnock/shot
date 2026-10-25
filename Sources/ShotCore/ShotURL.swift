@@ -1,8 +1,8 @@
 import Foundation
 import UniformTypeIdentifiers
 
-/// A `shot://` URL, which runs Shot from a launcher, the Shortcuts app or a script, and drives it in `perf.sh` and the
-/// ux-qa skill. Every route is parsed here, so a typo in one fails a test rather than a run.
+/// A `shot://` URL, which runs Shot from a launcher, the Shortcuts app or a script, and drives it in
+/// `perf.sh`. Every route is parsed here, so a typo in one fails a test rather than a run.
 public enum ShotURL: Equatable, Sendable {
     case action(ShotAction)
     /// Pauses or resumes the recording.
