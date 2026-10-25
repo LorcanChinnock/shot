@@ -24,7 +24,7 @@ Connect Shot to your assistant once, and you can ask "what did I mark in my late
 ![Settings › Agents with Hand captures to agents, Let agents capture and record, and Send to Agent turned on, Send to Agent set to open Claude Code in Terminal, the shot command installed, and the MCP server's setup for Claude and Claude Code](../../../docs/media/agents-settings.png)
 
 1. Open **Settings › Agents**. Every switch there starts off.
-2. On the **MCP server** card, click **Install** beside your assistant. It lists the ones it finds on your Mac. The row then shows **Installed**.
+2. On the **MCP server** card (the connection that lets an assistant use Shot), click **Install** beside your assistant. It lists the ones it finds on your Mac. The row then shows **Installed**.
 3. Restart the assistant if Shot asks you to. Claude only reads its setup when it opens.
 4. Optionally, turn on **Hand captures to agents**, so Shot records inside each screenshot which app and window it came from and what you marked. The assistant sees the image either way, but with this on it also knows what each mark points at. See [Hand captures to agents](#hand-captures-to-agents).
 
