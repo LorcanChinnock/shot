@@ -1,6 +1,6 @@
 # Security
 
-Shot has access to your screen, and optionally your microphone and camera. It also updates itself, takes `shot://` URLs, and runs a local server for AI agents. If you find a way to misuse any of that, please tell me privately first.
+Shot has access to your screen, and optionally your microphone and camera. It also updates itself, takes `shot://` URLs. If you find a way to misuse any of that, please tell me privately first.
 
 ## Reporting a vulnerability
 
@@ -17,7 +17,7 @@ Only the latest release gets security fixes. Shot updates itself, and `brew upgr
 ## What counts
 
 - Captures, recordings or the camera or microphone reaching something you didn't ask for.
-- A `shot://` URL, the agent server or a file Shot opens doing more than it should.
+- A `shot://` URL or a file Shot opens doing more than it should.
 - The update path installing something that wasn't signed by the project.
 - A file or setting being overwritten or deleted without you asking.
 

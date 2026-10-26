@@ -20,12 +20,10 @@ for arch in arm64 x86_64; do
     swift build -c release --arch "$arch" ${resolved[@]+"${resolved[@]}"}
     bin_path="$(swift build -c release --arch "$arch" --show-bin-path)"
     mkdir "$universal/$arch"
-    cp "$bin_path/Shot" "$bin_path/ShotCLI" "$universal/$arch/"
+    cp "$bin_path/Shot" "$universal/$arch/"
 done
-for exe in Shot ShotCLI; do
-    lipo -create "$universal/arm64/$exe" "$universal/x86_64/$exe" -output "$universal/$exe"
-    lipo -info "$universal/$exe"
-done
+lipo -create "$universal/arm64/Shot" "$universal/x86_64/Shot" -output "$universal/Shot"
+lipo -info "$universal/Shot"
 binary="$universal/Shot"
 
 if [ "${SHOT_RELEASE:-}" = 1 ]; then
@@ -37,8 +35,6 @@ app="build/$name.app"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$app/Contents/Frameworks"
 cp "$binary" "$app/Contents/MacOS/$name"
-# The MCP server. Never "shot": on a case-insensitive volume that is the app's own Shot executable.
-cp "$universal/ShotCLI" "$app/Contents/MacOS/shot-cli"
 ditto "$bin_path/Sparkle.framework" "$app/Contents/Frameworks/Sparkle.framework"
 cp Resources/Info.plist "$app/Contents/Info.plist"
 cp Resources/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
@@ -79,8 +75,6 @@ for part in XPCServices/Installer.xpc XPCServices/Downloader.xpc Autoupdate Upda
     codesign --force --sign "$identity" --preserve-metadata=entitlements "$sparkle/$part"
 done
 codesign --force --sign "$identity" "$app/Contents/Frameworks/Sparkle.framework"
-# The outer signature doesn't cover a nested executable, and Sparkle checks nested code on update.
-codesign --force --sign "$identity" "$app/Contents/MacOS/shot-cli"
 codesign --force --sign "$identity" "$app"
 version="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist")"
 echo "Built $app $version ($build_number) for $(lipo -archs "$app/Contents/MacOS/$name")"

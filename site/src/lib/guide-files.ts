@@ -7,7 +7,6 @@ export const groups = [
   { name: 'Get started', color: 'yellow' },
   { name: 'Capture', color: 'pink' },
   { name: 'Edit and share', color: 'sky' },
-  { name: 'AI agents', color: 'mint' },
   { name: 'Reference', color: 'violet' },
   { name: 'Help', color: 'red' },
 ] as const;

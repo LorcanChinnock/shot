@@ -48,12 +48,11 @@ Only `make dist` builds `Shot.app` with the update feed. Every other build is `S
 ```
 Sources/ShotCore/     Everything with no window: undo, keyframes, video trim and cuts,
                       hotkeys, layout math, file naming, image encoding, annotations and
-                      rendering, redaction, GIF export, segment joining, agents and MCP,
-                      preferences
+                      rendering, redaction, GIF export, segment joining, preferences,
+                      the gallery
 Sources/Shot/         The app: capture, selection overlay, Quick Access, editor,
                       video editor, recording, gallery, settings, the welcome window,
-                      the agent server (Agents/), and the design system
-Sources/ShotCLI/      The `shot` command and MCP server, bundled as shot-cli
+                      and the design system
 Tests/ShotCoreTests/  ShotCore's Swift Testing suite, and its performance budgets
 Resources/            Info.plist, the app icon and the string catalogs
 scripts/              Bundling, install, signing certificate, icon, lint, performance
@@ -73,7 +72,7 @@ A string reaches the catalog when it's a literal passed to an API that localizes
 - SwiftUI's `Text`, `Button`, `Toggle` and the like, and Shot's own `brutalTip`, `Tile`, `SettingRow`, `BrutalChip`, `Toast` and other design components. A `String` variable passed to one of these is shown as it is, so a string that needs translating has to be localized where it's defined.
 - `String(localized: "…")`, for AppKit titles, alerts, panel messages, ShotCore's labels and errors, and any `String` property that holds text the user reads.
 
-Interpolate values into one string, such as `"Saved \(name)"`, rather than joining fragments, so a translator can reorder the words. Leave text that agents, the `shot` command or scripts read in English, and the same goes for log messages and file names.
+Interpolate values into one string, such as `"Saved \(name)"`, rather than joining fragments, so a translator can reorder the words. Leave `shot://` output, log messages and file names in English.
 
 To add a language, open the catalogs in Xcode, add the language, translate each string and add its code to `CFBundleLocalizations` in `Resources/Info.plist`. `Resources/InfoPlist.xcstrings` holds the camera and microphone permission prompts. To try a language without changing your Mac's, run `open -a ShotDev --args -AppleLanguages '(de)'`.
 

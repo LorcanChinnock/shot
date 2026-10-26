@@ -33,7 +33,7 @@ final class SelectionOverlayView: NSView {
         setAccessibilityElement(true)
         setAccessibilityRole(.group)
         setAccessibilityLabel(String(localized: "Capture overlay"))
-        setAccessibilityHelp([controller.prompt, hintText].compactMap { $0 }.joined(separator: ". "))
+        setAccessibilityHelp(hintText)
     }
 
     @available(*, unavailable)
@@ -420,11 +420,6 @@ final class SelectionOverlayView: NSView {
         let textSize = Preferences().textSize
         let font = NSFont.systemFont(ofSize: textSize.points(13), weight: .bold)
         let width = (text as NSString).size(withAttributes: [.font: font]).width + 20
-        let hint = drawChip(text, at: CGPoint(x: ((bounds.width - width) / 2).rounded(), y: bounds.height - 90), yellow: false, font: font)
-        if let prompt = controller.prompt {
-            let promptFont = NSFont.systemFont(ofSize: textSize.points(15), weight: .heavy)
-            let promptWidth = (prompt as NSString).size(withAttributes: [.font: promptFont]).width + 20
-            _ = drawChip(prompt, at: CGPoint(x: ((bounds.width - promptWidth) / 2).rounded(), y: hint.maxY + 12), yellow: true, font: promptFont)
-        }
+        _ = drawChip(text, at: CGPoint(x: ((bounds.width - width) / 2).rounded(), y: bounds.height - 90), yellow: false, font: font)
     }
 }

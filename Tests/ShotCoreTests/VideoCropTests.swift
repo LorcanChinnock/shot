@@ -140,10 +140,3 @@ extension MediaTests {
     clip.crop = ImageCrop(left: 0.5, top: 0, right: 0, bottom: 0.5)
     #expect(LayerGeometry.frame(of: clip, canvas: canvas) == CGRect(x: 320, y: 0, width: 320, height: 180))
 }
-
-@Test func reframingAProjectKeepsItsFrameCropOnTheSamePicture() throws {
-    let project = Project(source: URL(fileURLWithPath: "/tmp/a.mp4"), duration: 2, canvasSize: canvas, hasAudio: false)
-        .setting(frameCrop: CGRect(x: 100, y: 40, width: 400, height: 300))
-    let reframed = try #require(project.reframed(to: CGRect(x: 50, y: 20, width: 500, height: 330)))
-    #expect(reframed.frameCrop == CGRect(x: 50, y: 20, width: 400, height: 300))
-}

@@ -15,8 +15,6 @@ public enum ShotURL: Equatable, Sendable {
     /// Takes a full-screen screenshot after counting down `seconds`.
     case captureTimer(seconds: Int)
     case edit(EditorRoute)
-    /// Opens the coding agent set up in Settings › Agents with the image at the URL, as Send to Agent does.
-    case sendToAgent(URL)
 
     /// Releases register `shot`. Dev builds (ShotDev.app) register `shot-dev`, so the two can run side by side without
     /// one answering URLs meant for the other.
@@ -65,11 +63,6 @@ public enum ShotURL: Equatable, Sendable {
                 throw .invalidSeconds(text)
             }
             self = .captureTimer(seconds: seconds)
-        case "send-to-agent":
-            guard let path = value("path"), !path.isEmpty else {
-                throw .missingPath(host: host)
-            }
-            self = .sendToAgent(URL(fileURLWithPath: (path as NSString).expandingTildeInPath))
         case _ where EditorRoute.hosts.contains(host):
             guard let route = EditorRoute(host: host, path: value("path")) else {
                 throw .missingPath(host: host)

@@ -26,7 +26,6 @@ cask "shot" do
   depends_on macos: :sequoia
 
   app "Shot.app"
-  binary "#{appdir}/Shot.app/Contents/MacOS/shot-cli", target: "shot"
 
   uninstall quit: "dev.lorcan.Shot"
 

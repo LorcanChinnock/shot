@@ -269,14 +269,8 @@ private struct SetupStep: View {
         .padding(.vertical, 4)
         .glassCard()
         Spacer(minLength: 0)
-        HStack(spacing: 12) {
-            Text("Using Claude Code, Codex or Cursor? Shot can hand them your captures.")
-                .font(Brutal.caption)
-                .foregroundStyle(Brutal.faded(0.65))
-                .fixedSize(horizontal: false, vertical: true)
-            Button("Agents") { MainWindowController.showSettings(section: .agents) }
-                .buttonStyle(BrutalButtonStyle(color: SettingsSection.agents.color, compact: true))
-            Spacer(minLength: 8)
+        HStack {
+            Spacer()
             Button("Continue") { model.finishSetup() }
                 .buttonStyle(BrutalButtonStyle(color: Brutal.yellow))
                 .keyboardShortcut(.defaultAction)

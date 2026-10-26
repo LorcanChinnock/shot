@@ -13,18 +13,17 @@ By default, Shot is fast, convenient and bloat-free for its main use: taking qui
 
 ## Who uses Shot
 
-Shot is for anyone on a Mac, not just developers. Design and write for the first person on this list; the later ones opt in to more.
+Shot is for anyone on a Mac. Design and write for the first person on this list; the later ones opt in to more.
 
 - **The quick sharer.** Takes a screenshot, maybe adds an arrow, and pastes it into a chat or email. Rarely opens Settings. Every default is set for them, and the capture → copy/save path is theirs.
 - **The explainer.** Support staff, teachers, managers and testers showing someone what's wrong or how to do something. Annotates, blurs private details, records short walkthroughs with their voice, and exports GIFs.
 - **The polisher.** Designers, marketers and writers making images for docs, slides and social posts. Uses the editor: combining screenshots, padding, backgrounds, styled markup, trimmed and sped-up recordings.
-- **The AI assistant user.** Asks Claude, ChatGPT or another assistant about what's on their screen. Isn't a developer and won't edit a config file or use a terminal, so agent features need one-click setup and plain words.
-- **The developer.** Uses coding agents (Claude Code, Codex, Cursor), the `shot` command and the MCP server, and lets agents capture windows such as the iOS Simulator to check their own work.
+- **The AI assistant user.** Asks Claude, ChatGPT or another assistant about what's on their screen. Pastes a marked-up screenshot, or copies its path or its text. Isn't a developer and won't edit a config file or use a terminal.
 
 What this means in practice:
-- UI strings, Settings and the user guide speak to everyone. Avoid jargon (MCP, CLI, JSON, stdio) outside the developer-facing parts, and explain it where it can't be avoided.
-- When a feature mentions AI, lead with general assistants as examples, then coding agents.
-- Developer features stay in their own Settings cards and guide pages, off by default, so they never clutter the path the quick sharer uses.
+- UI strings, Settings and the user guide speak to everyone. Avoid jargon (JSON, URL scheme) outside the reference pages, and explain it where it can't be avoided.
+- When a feature mentions AI, lead with general assistants as examples.
+- Technical features, such as the `shot://` links, stay in their own guide pages, so they never clutter the path the quick sharer uses.
 
 ## Commands
 
@@ -67,10 +66,9 @@ Use the MugCo sample app (`make demo`), not whatever window is open: your screen
 
 ## Architecture
 
-Three targets, all macOS-only:
-- `Sources/ShotCore` (library): everything that needs no window, display or permission. The undo stack, keyframes, cut list and trim range, hotkeys (`ShotAction`, `KeyCombo`), layout math and text wrapping (`TextLayout`, `NoteLayout`), the annotation model and renderer, the timeline and composition, GIF export, agents and MCP, preferences, file naming and the gallery. It imports no AppKit, SwiftUI or Cocoa (`make lint` checks).
-- `Sources/Shot` (the app): AppKit and SwiftUI that need a real session, grouped by feature (`Capture`, `Overlay`, `QuickAccess`, `Editor`, `Recording`, `VideoEditor`, `Gallery`, `Settings`, `Agents`, `Design`).
-- `Sources/ShotCLI`: the `shot` command and MCP server, on Foundation and ShotCore only. `scripts/bundle.sh` ships it inside the app as `shot-cli`.
+Two targets, all macOS-only:
+- `Sources/ShotCore` (library): everything that needs no window, display or permission. The undo stack, keyframes, cut list and trim range, hotkeys (`ShotAction`, `KeyCombo`), layout math and text wrapping (`TextLayout`, `NoteLayout`), the annotation model and renderer, the timeline and composition, GIF export, preferences, file naming and the gallery. It imports no AppKit, SwiftUI or Cocoa (`make lint` checks).
+- `Sources/Shot` (the app): AppKit and SwiftUI that need a real session, grouped by feature (`Capture`, `Overlay`, `QuickAccess`, `Editor`, `Recording`, `VideoEditor`, `Gallery`, `Settings`, `Design`).
 
 ShotCore calls Apple's frameworks directly, with no protocol in between:
 - Images are `CGImage`s, so a capture keeps its own colour space. `ImageCodec` reads and writes them with ImageIO.
@@ -78,7 +76,7 @@ ShotCore calls Apple's frameworks directly, with no protocol in between:
 - Annotation outlines are `CGPath`s, hit-tested by Core Graphics. Filters are `CoreImageEffects`, text is `CoreTextShaper`, OCR is Vision.
 - Video goes through `AVVideoReader`, `AVVideoAssembler` and `AVVideoWriter`.
 
-**If logic can be tested without a window, it goes in ShotCore with a test.** The one test target is `Tests/ShotCoreTests`: mostly top-level `@Test func` with sentence-style names, plus the `PerfTests` budgets. The app and CLI have no tests.
+**If logic can be tested without a window, it goes in ShotCore with a test.** The one test target is `Tests/ShotCoreTests`: mostly top-level `@Test func` with sentence-style names, plus the `PerfTests` budgets. The app has no tests.
 
 Flow:
 - `ShotApp` is a `MenuBarExtra` with an `AppDelegate` adaptor. `AppDelegate` owns `AppState` and the `CaptureCoordinator`, wires hotkeys and controller callbacks to it, and routes `shot://` URLs. Other long-lived controllers are `.shared` singletons.
@@ -116,7 +114,7 @@ The repository is public, so GitHub's runners are free, but the free plan runs o
 
 ## Conventions
 
-- UI strings go through `Resources/Localizable.xcstrings` (CONTRIBUTING.md › Strings and translations). Pass literals to localizing APIs: SwiftUI views, the Design components and `Toast`, which take `LocalizedStringResource` with a `@_disfavoredOverload` generic `StringProtocol` overload for text that's already localized. Keep that overload generic: a concrete `String` one, even disfavoured, wins over `LocalizedStringResource` when the call has other arguments, and the literal goes unlocalized. Two traps remain: a literal title next to a `String` subtitle or detail picks the verbatim overload (wrap the title in `String(localized:)`), and a ternary passed to an optional `LocalizedStringResource?` parameter extracts only its first branch (use a computed property). Anything else, such as AppKit titles, ShotCore's labels or a `String` property, uses `String(localized:)`. Agent, MCP, CLI and `shot://` output, logs and file names stay English. After adding strings, run `make strings` and commit the catalog; `make lint` and CI fail while it's stale.
+- UI strings go through `Resources/Localizable.xcstrings` (CONTRIBUTING.md › Strings and translations). Pass literals to localizing APIs: SwiftUI views, the Design components and `Toast`, which take `LocalizedStringResource` with a `@_disfavoredOverload` generic `StringProtocol` overload for text that's already localized. Keep that overload generic: a concrete `String` one, even disfavoured, wins over `LocalizedStringResource` when the call has other arguments, and the literal goes unlocalized. Two traps remain: a literal title next to a `String` subtitle or detail picks the verbatim overload (wrap the title in `String(localized:)`), and a ternary passed to an optional `LocalizedStringResource?` parameter extracts only its first branch (use a computed property). Anything else, such as AppKit titles, ShotCore's labels or a `String` property, uses `String(localized:)`. `shot://` output, logs and file names stay English. After adding strings, run `make strings` and commit the catalog; `make lint` and CI fail while it's stale.
 - PR titles use Conventional Commits (`feat(editor): …`, `fix(recording): …`). PRs are squash-merged and release-please generates versions and `CHANGELOG.md`, so never edit the version or tags by hand.
 - Website changes use the `site:` type, with no scope (`site: remake the guide home`). release-please ignores it, so it makes no changelog entry or app version. `exclude-paths` already skips commits that touch only `site/`, but a PR that also touches app files counts unless it's `site:`. If a change also alters the app's behaviour, split it so the app part has its own `fix:` or `feat:` PR.
 - Every PR links an issue or sub-issue: put `Closes #N` (or `Part of #N` when it doesn't finish the issue) in the PR body. Create the issue before starting any work, as a sub-issue when the work belongs to an umbrella issue.
