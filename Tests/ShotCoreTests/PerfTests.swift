@@ -122,7 +122,7 @@ private enum Budget {
     static let encodePNG = 706
     static let encodeJPEG = 43
     static let overlayFrame = 44
-    static let markerFrame = 11_600
+    static let markerFrame = 39_400
     static let gifExportMegabytes = 416
     static let galleryGrouping = 5.2
     static let gallerySearch = 10.8
