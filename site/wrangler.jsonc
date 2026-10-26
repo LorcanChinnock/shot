@@ -1,5 +1,4 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "shot-site",
   "compatibility_date": "2026-10-01",
   // A static site: no Worker script, only assets.

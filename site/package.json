@@ -5,9 +5,8 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro build && wrangler dev",
+    "preview": "astro build && astro preview",
     "media": "sh scripts/media.sh",
-    "deploy": "astro build && wrangler deploy",
     "icons": "node scripts/icons.mjs"
   },
   "dependencies": {
@@ -15,7 +14,6 @@
     "astro": "^7.4.0"
   },
   "devDependencies": {
-    "pagefind": "^1.5.2",
-    "wrangler": "^4.151.1"
+    "pagefind": "^1.5.2"
   }
 }
