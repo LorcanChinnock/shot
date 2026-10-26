@@ -30,8 +30,12 @@ public enum LegacyAgentCleanup {
     }
 
     /// Removes the link only when it points at a `shot-cli` inside an app, so a `shot` the person installed themselves stays.
+    /// `/usr/local/bin` belongs to root on most Macs, and Shot doesn't ask for a password at launch, so a link in a folder
+    /// it can't write to stays, and the guide's removal page says how to delete it.
     static func removeLink(at path: String) {
-        guard let target = try? FileManager.default.destinationOfSymbolicLink(atPath: path), target.hasSuffix("/Contents/MacOS/shot-cli") else {
+        guard let target = try? FileManager.default.destinationOfSymbolicLink(atPath: path), target.hasSuffix("/Contents/MacOS/shot-cli"),
+              FileManager.default.isWritableFile(atPath: (path as NSString).deletingLastPathComponent)
+        else {
             return
         }
         do {

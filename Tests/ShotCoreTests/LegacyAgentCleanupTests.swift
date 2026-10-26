@@ -43,3 +43,17 @@ import Testing
     LegacyAgentCleanup.removeLink(at: theirs)
     #expect((try? FileManager.default.destinationOfSymbolicLink(atPath: theirs)) != nil)
 }
+
+@Test func agentCleanupLeavesTheLinkWhereItCantWriteTheFolder() throws {
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent("agent-locked-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let link = LegacyAgentCleanup.linkPath(bundleID: "dev.lorcan.Shot", folder: folder.path)
+    try FileManager.default.createSymbolicLink(atPath: link, withDestinationPath: "/Applications/Shot.app/Contents/MacOS/shot-cli")
+    try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: folder.path)
+    defer {
+        try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: folder.path)
+        try? FileManager.default.removeItem(at: folder)
+    }
+    LegacyAgentCleanup.removeLink(at: link)
+    #expect((try? FileManager.default.destinationOfSymbolicLink(atPath: link)) != nil)
+}

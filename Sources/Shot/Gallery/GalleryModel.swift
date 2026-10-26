@@ -83,6 +83,7 @@ final class GalleryModel {
                 self?.texts = texts
             }
         }
+        readTextIfSearching()
         reload()
     }
 
