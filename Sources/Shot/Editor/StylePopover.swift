@@ -386,7 +386,7 @@ private struct StyleTile: View {
             .inkOnFill(selected ? Brutal.sky : nil)
             .background {
                 if selected {
-                    PartyColor(Brutal.sky) { Color.clear.brutalSurface($0, radius: Brutal.Radius.inset, shadow: 2) }
+                    Color.clear.brutalSurface(Brutal.sky, radius: Brutal.Radius.inset, shadow: 2)
                 } else if hovering || highlighted {
                     RoundedRectangle(cornerRadius: Brutal.Radius.inset, style: .circular).fill(Brutal.ink.opacity(0.08))
                 }

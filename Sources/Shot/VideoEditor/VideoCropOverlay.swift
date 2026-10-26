@@ -38,7 +38,7 @@ struct VideoCropOverlay: View {
                     .stroke(Color.white, lineWidth: 2)
                     .allowsHitTesting(false)
                     ForEach(CropHandle.allCases, id: \.self) { handle in
-                        PartyColor(Brutal.yellow) { Rectangle().fill($0) }
+                        Rectangle().fill(Brutal.yellow)
                             .inkBorder(Rectangle(), width: 2)
                             .frame(width: Self.handleSize, height: Self.handleSize)
                             .position(mapping.toView(handle.point(on: draft)))
@@ -132,11 +132,9 @@ private struct VideoCropBar: View {
             Button("Cancel") { model.cancelCrop() }
                 .buttonStyle(BrutalButtonStyle(compact: true))
                 .brutalTip("Leave the crop as it was (Esc)")
-            PartyColor(Brutal.yellow) { color in
-                Button("Apply") { model.applyCrop() }
-                    .buttonStyle(BrutalButtonStyle(color: color, compact: true))
-            }
-            .brutalTip("Crop to this (Return)")
+            Button("Apply") { model.applyCrop() }
+                .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
+                .brutalTip("Crop to this (Return)")
         }
         .padding(8)
         .glassCard()
