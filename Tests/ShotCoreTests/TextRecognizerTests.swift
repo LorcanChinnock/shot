@@ -57,18 +57,6 @@ func textImage(width: Int, height: Int, _ lines: [(text: String, x: CGFloat, top
     #expect(line.box.minY >= 50 && line.box.maxY <= 105)
 }
 
-@Test func sensitiveTextReadFromAnImageIsBoxedWhereItWasDrawn() async throws {
-    let picture = try textImage(width: 900, height: 200, [("Contact jane@example.com today", 40, 80)])
-    let text = try await TextRecognizer.recognize(picture)
-    let found = try #require(text.sensitive().first)
-    #expect(found.kind == .email)
-    #expect(found.text == "jane@example.com")
-    let contact = try #require(text.lines.first?.words.first?.box)
-    // The email's box starts after "Contact" and stays inside the line.
-    #expect(found.box.minX > contact.maxX)
-    #expect(found.box.minY >= 60 && found.box.maxY <= 130)
-}
-
 @Test func anImageWithNoTextHasNoLines() async throws {
     let text = try await TextRecognizer.recognize(try textImage(width: 200, height: 100, []))
     #expect(text.lines.isEmpty)

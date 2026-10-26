@@ -10,7 +10,7 @@ public enum ShotAction: String, CaseIterable, Sendable {
     case recordWindow = "record-window"
     /// Samples a colour on screen and copies its hex.
     case pickColor = "pick-color"
-    /// Copies the newest capture's path, for an agent to open the file itself.
+    /// Copies the newest capture's path.
     case copyPath = "copy-path"
     /// Captures the area the last area screenshot took again, for before and after shots. New actions go last, since
     /// `HotkeyCenter` numbers hotkeys by position.
@@ -35,8 +35,8 @@ public enum ShotAction: String, CaseIterable, Sendable {
         }
     }
 
-    /// Whether Settings offers a global shortcut for this action. The rest are menu items, `shot://` URLs and agent
-    /// tools only, since few people would bind them. They keep their place in `allCases`, which numbers hotkeys.
+    /// Whether Settings offers a global shortcut for this action. The rest are menu items and `shot://` URLs
+    /// only, since few people would bind them. They keep their place in `allCases`, which numbers hotkeys.
     public var hasShortcut: Bool {
         switch self {
         case .recordFullscreen, .recordWindow, .capturePrevious, .pickColor, .copyPath, .focusQuickAccess: false

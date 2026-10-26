@@ -264,71 +264,6 @@
         }
       }
     },
-    "%@ asks you to pick something to capture" : {
-
-    },
-    "%@ asks: %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ asks: %2$@"
-          }
-        }
-      }
-    },
-    "%@ command" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Befehl „%@“"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Comando %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Commande %@"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Comando %@"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@コマンド"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ 명령"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Comando %@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ 命令"
-          }
-        }
-      }
-    },
     "%@ has no video or sound" : {
       "localizations" : {
         "de" : {
@@ -595,19 +530,6 @@
         }
       }
     },
-    "%@ is waiting for a capture. Choose Send to %@ on one to send it." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ is waiting for a capture. Choose Send to %2$@ on one to send it."
-          }
-        }
-      }
-    },
-    "%@ isn't valid JSON, so Shot left it alone. Copy the setup and add it there instead." : {
-
-    },
     "%@ of %@" : {
       "localizations" : {
         "de" : {
@@ -821,9 +743,6 @@
           }
         }
       }
-    },
-    "%@ stopped waiting. Send it again to open it in a terminal." : {
-
     },
     "%@, update available" : {
 
@@ -2639,22 +2558,6 @@
     "Added 1 caption" : {
 
     },
-    "Added Shot to %@." : {
-
-    },
-    "Added Shot to %@. Restart %@ to use it." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Added Shot to %1$@. Restart %2$@ to use it."
-          }
-        }
-      }
-    },
-    "Adds Send to Agent to the Quick Access, editor and gallery menus. It opens your coding agent in a terminal with the screenshot and a summary of what you marked, as a task." : {
-
-    },
     "Adjust before recording" : {
       "localizations" : {
         "de" : {
@@ -2758,113 +2661,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "捕捉后"
-          }
-        }
-      }
-    },
-    "Agent" : {
-
-    },
-    "Agents" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Agenten"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Agentes"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Agents"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Agenti"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "エージェント"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "에이전트"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Agentes"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "智能体"
-          }
-        }
-      }
-    },
-    "Agents can't reach Shot: %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Agenten erreichen Shot nicht: %@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Los agentes no pueden conectar con Shot: %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les agents ne peuvent pas joindre Shot : %@"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gli agenti non riescono a raggiungere Shot: %@"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "エージェントがShotに接続できません：%@"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "에이전트가 Shot에 연결할 수 없음: %@"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Os agentes não alcançam o Shot: %@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "智能体无法连接 Shot：%@"
           }
         }
       }
@@ -3138,165 +2934,6 @@
         }
       }
     },
-    "An agent" : {
-
-    },
-    "An agent is recording %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ein Agent zeichnet %@ auf"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un agente está grabando %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un agent enregistre : %@"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un agente sta registrando %@"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "エージェントが%@を収録中です"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "에이전트가 %@ 화면을 녹화하고 있습니다"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Um agente está gravando: %@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "智能体正在录制 %@"
-          }
-        }
-      }
-    },
-    "An agent stopped recording %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ein Agent hat die Aufzeichnung von %@ beendet"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un agente dejó de grabar %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un agent a arrêté d'enregistrer : %@"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un agente ha smesso di registrare %@"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "エージェントが%@の収録を停止しました"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "에이전트가 %@ 화면 녹화를 중단했습니다"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Um agente parou de gravar: %@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "智能体已停止录制 %@"
-          }
-        }
-      }
-    },
-    "An agent took a screenshot of %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ein Agent hat ein Bildschirmfoto von %@ gemacht"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un agente hizo una captura de %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Capture d'écran prise par un agent : %@"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un agente ha fatto uno screenshot di %@"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "エージェントが%@のスクリーンショットを撮りました"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "에이전트가 %@의 스크린샷을 찍었습니다"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Um agente fez uma captura de tela: %@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "智能体对 %@ 进行了截屏"
-          }
-        }
-      }
-    },
     "Annotate" : {
       "localizations" : {
         "de" : {
@@ -3348,70 +2985,6 @@
           }
         }
       }
-    },
-    "Another program uses %@. Run %@ instead." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ein anderes Programm verwendet %1$@. Nutze stattdessen %2$@."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Another program uses %1$@. Run %2$@ instead."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Otro programa usa %1$@. Ejecuta %2$@ en su lugar."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un autre programme utilise %1$@. Lancez plutôt %2$@."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un altro programma usa %1$@. Esegui invece %2$@."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@は別のプログラムが使用しています。代わりに%2$@を実行してください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "다른 프로그램이 %1$@ 경로를 사용 중입니다. 대신 %2$@ 명령을 실행하세요."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Outro programa usa %1$@. Execute %2$@."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "另一个程序在使用 %1$@。请改为运行 %2$@。"
-          }
-        }
-      }
-    },
-    "Any command that runs an agent in a terminal." : {
-
-    },
-    "Any other app" : {
-
     },
     "Appearance" : {
 
@@ -6162,12 +5735,6 @@
         }
       }
     },
-    "Claude" : {
-
-    },
-    "Claude Code" : {
-
-    },
     "Clear Keyframes" : {
       "localizations" : {
         "de" : {
@@ -6896,9 +6463,6 @@
         }
       }
     },
-    "Codex" : {
-
-    },
     "Colour" : {
       "localizations" : {
         "de" : {
@@ -6950,9 +6514,6 @@
           }
         }
       }
-    },
-    "Command" : {
-
     },
     "Command line" : {
       "localizations" : {
@@ -8212,26 +7773,6 @@
         }
       }
     },
-    "Couldn't add Shot to %@: %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Couldn't add Shot to %1$@: %2$@"
-          }
-        }
-      }
-    },
-    "Couldn't add Shot to %@: %@ didn't finish within a minute. Copy the command and run it in Terminal instead." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Couldn't add Shot to %1$@: %2$@ didn't finish within a minute. Copy the command and run it in Terminal instead."
-          }
-        }
-      }
-    },
     "Couldn't add the audio to its file" : {
       "localizations" : {
         "de" : {
@@ -8280,64 +7821,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法将音频添加到其文件"
-          }
-        }
-      }
-    },
-    "Couldn't change the %@ command: %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Befehl „%1$@“ konnte nicht geändert werden: %2$@"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Couldn't change the %1$@ command: %2$@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se pudo cambiar el comando %1$@: %2$@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossible de modifier la commande %1$@ : %2$@"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossibile modificare il comando %1$@: %2$@"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@コマンドを変更できませんでした：%2$@"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ 명령을 변경할 수 없음: %2$@"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Não foi possível alterar o comando %1$@: %2$@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "无法更改 %1$@ 命令：%2$@"
           }
         }
       }
@@ -8810,18 +8293,6 @@
         }
       }
     },
-    "Couldn't find %@. Choose another terminal in Settings › Agents." : {
-
-    },
-    "Couldn't find the %@ command. Copy the command and run it in Terminal instead." : {
-
-    },
-    "Couldn't find the %@ command. Install it, or choose another agent in Settings › Agents." : {
-
-    },
-    "Couldn't find the %@ command. Install it, then come back here." : {
-
-    },
     "Couldn't finish writing the GIF" : {
       "localizations" : {
         "de" : {
@@ -9128,19 +8599,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "Couldn't open %@. Copy the setup and add it there instead." : {
-
-    },
-    "Couldn't open %@: %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Couldn't open %1$@: %2$@"
           }
         }
       }
@@ -10123,12 +9581,6 @@
         }
       }
     },
-    "Cursor" : {
-
-    },
-    "Custom" : {
-
-    },
     "Custom background colour" : {
       "localizations" : {
         "de" : {
@@ -11021,9 +10473,6 @@
           }
         }
       }
-    },
-    "Devin" : {
-
     },
     "Diamond" : {
       "localizations" : {
@@ -14273,58 +13722,6 @@
     "Focus Quick Access" : {
 
     },
-    "For agents and scripts that run in a terminal. The MCP server works without it." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Für Agenten und Skripte im Terminal. Der MCP-Server funktioniert auch ohne."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Para agentes y scripts que se ejecutan en un terminal. El servidor MCP funciona sin él."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pour les agents et scripts qui s'exécutent dans un terminal. Le serveur MCP fonctionne sans."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Per agenti e script che girano nel Terminale. Il server MCP funziona anche senza."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ターミナルで動くエージェントやスクリプト用です。MCPサーバはこれがなくても動作します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "터미널에서 실행되는 에이전트와 스크립트용입니다. MCP 서버는 이것 없이도 작동합니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Para agentes e scripts que rodam no terminal. O servidor MCP funciona sem ele."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "供在终端中运行的智能体和脚本使用。MCP 服务器无需它也能工作。"
-          }
-        }
-      }
-    },
     "Frame" : {
 
     },
@@ -15059,9 +14456,6 @@
         }
       }
     },
-    "Gemini CLI" : {
-
-    },
     "General" : {
       "localizations" : {
         "de" : {
@@ -15682,113 +15076,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "抓手"
-          }
-        }
-      }
-    },
-    "Hand captures to AI assistants and coding tools." : {
-
-    },
-    "Hand captures to agents" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aufnahmen an Agenten übergeben"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pasar capturas a agentes"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Transmettre les captures aux agents"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Passa le catture agli agenti"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "キャプチャをエージェントに渡す"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "에이전트에게 캡처 넘기기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enviar capturas para agentes"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "将捕捉内容交给智能体"
-          }
-        }
-      }
-    },
-    "Hand-off" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Übergabe"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Traspaso"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Transmission"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Passaggio"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "受け渡し"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "넘기기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Envio"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "移交"
           }
         }
       }
@@ -16527,58 +15814,6 @@
         }
       }
     },
-    "INSTALLED" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "INSTALLIERT"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "INSTALADO"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "INSTALLÉ"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "INSTALLATO"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "インストール済み"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "설치됨"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "INSTALADO"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已安装"
-          }
-        }
-      }
-    },
     "Image" : {
       "localizations" : {
         "de" : {
@@ -16783,214 +16018,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "检查器"
-          }
-        }
-      }
-    },
-    "Install" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Installieren"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Instalar"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Installer"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Installa"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "インストール"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "설치"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Instalar"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "安装"
-          }
-        }
-      }
-    },
-    "Installed at %@. Updates with Shot." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Installiert unter %@. Wird mit Shot aktualisiert."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Instalado en %@. Se actualiza con Shot."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Installé dans %@. Mis à jour avec Shot."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Installato in %@. Si aggiorna con Shot."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@にインストール済み。Shotと一緒にアップデートされます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@에 설치됨. Shot과 함께 업데이트됩니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Instalado em %@. Atualiza com o Shot."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已安装在 %@。随 Shot 一起更新。"
-          }
-        }
-      }
-    },
-    "Installed by Homebrew. Updates with Shot." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Über Homebrew installiert. Wird mit Shot aktualisiert."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Instalado con Homebrew. Se actualiza con Shot."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Installé par Homebrew. Mis à jour avec Shot."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Installato da Homebrew. Si aggiorna con Shot."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Homebrewでインストール済み。Shotと一緒にアップデートされます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Homebrew로 설치됨. Shot과 함께 업데이트됩니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Instalado pelo Homebrew. Atualiza com o Shot."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "由 Homebrew 安装。随 Shot 一起更新。"
-          }
-        }
-      }
-    },
-    "Installing asks for your password once." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Installation fragt einmal nach deinem Passwort."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Al instalarlo se pide tu contraseña una vez."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L'installation demande votre mot de passe une seule fois."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L'installazione chiede la password una volta."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "インストール時にパスワードを一度だけ求められます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "설치할 때 암호를 한 번 묻습니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A instalação pede sua senha uma vez."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "安装时会要求输入一次密码。"
           }
         }
       }
@@ -17310,9 +16337,6 @@
         }
       }
     },
-    "LM Studio" : {
-
-    },
     "Large" : {
       "localizations" : {
         "de" : {
@@ -17575,162 +16599,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "不包含声音"
-          }
-        }
-      }
-    },
-    "Let agents capture and record" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Agenten dürfen aufnehmen und aufzeichnen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Permitir que los agentes capturen y graben"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Autoriser les agents à capturer et enregistrer"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Consenti agli agenti di catturare e registrare"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "エージェントにキャプチャと収録を許可"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "에이전트의 캡처 및 녹화 허용"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Permitir que agentes capturem e gravem"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "允许智能体捕捉和录制"
-          }
-        }
-      }
-    },
-    "Lets agents read your captures and save edited copies beside them. Your originals never change. What an agent reads goes to its model provider, so blur private details first." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Agenten können deine Aufnahmen lesen und bearbeitete Kopien daneben sichern. Deine Originale bleiben unverändert. Was ein Agent liest, geht an seinen Modellanbieter, also zeichne private Details vorher weich."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Permite que los agentes lean tus capturas y guarden copias editadas junto a ellas. Tus originales nunca cambian. Lo que lee un agente se envía a su proveedor de modelos, así que desenfoca antes los datos privados."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Permet aux agents de lire vos captures et d'enregistrer des copies modifiées à côté. Vos originaux ne changent jamais. Ce qu'un agent lit est envoyé à son fournisseur de modèle : floutez d'abord les informations privées."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Consente agli agenti di leggere le tue catture e salvarne copie modificate accanto. Gli originali non cambiano mai. Ciò che un agente legge va al suo fornitore del modello, quindi sfoca prima i dati privati."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "エージェントがキャプチャを読み取り、編集したコピーを横に保存できるようにします。元のファイルは変更されません。エージェントが読み取った内容はモデルの提供元に送られるため、個人情報は先にぼかしてください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "에이전트가 캡처를 읽고 편집한 사본을 옆에 저장할 수 있습니다. 원본은 바뀌지 않습니다. 에이전트가 읽은 내용은 해당 모델 제공업체로 전송되므로 개인 정보는 먼저 흐리게 처리하세요."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Permite que agentes leiam suas capturas e salvem cópias editadas ao lado delas. Os originais nunca mudam. O que um agente lê vai para o provedor do modelo, então desfoque dados privados antes."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "允许智能体读取你的捕捉，并在旁边存储编辑后的副本。原件永远不会更改。智能体读取的内容会发送给其模型提供商，因此请先模糊隐私信息。"
-          }
-        }
-      }
-    },
-    "Lets agents screenshot or record a window by name. Shot shows a notice each time. Recordings skip the microphone and camera and stop after %lld minutes." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Agenten können ein Fenster per Name fotografieren oder aufzeichnen. Shot zeigt dabei jedes Mal einen Hinweis. Aufzeichnungen lassen Mikrofon und Kamera aus und stoppen nach %lld Minuten."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Permite que los agentes hagan capturas o grabaciones de una ventana por su nombre. Shot muestra un aviso cada vez. Las grabaciones no incluyen micrófono ni cámara y se detienen a los %lld minutos."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Permet aux agents de capturer ou d'enregistrer une fenêtre par son nom. Shot affiche un avis à chaque fois. Les enregistrements n'utilisent ni le micro ni la caméra et s'arrêtent après %lld minutes."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Consente agli agenti di fare screenshot o registrare una finestra per nome. Shot mostra un avviso ogni volta. Le registrazioni escludono microfono e fotocamera e si fermano dopo %lld minuti."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "エージェントが名前を指定してウインドウのスクリーンショットや収録を行えるようにします。毎回Shotが通知を表示します。収録ではマイクとカメラを使わず、%lld分で停止します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "에이전트가 이름으로 윈도우를 스크린샷하거나 녹화할 수 있습니다. 그때마다 Shot이 알림을 표시합니다. 녹화에는 마이크와 카메라가 포함되지 않으며 %lld분 후에 중단됩니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Permite que agentes façam capturas de tela ou gravem uma janela pelo nome. O Shot mostra um aviso a cada vez. As gravações ignoram o microfone e a câmera e param após %lld minutos."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "允许智能体按名称对窗口截屏或录制。Shot 每次都会显示通知。录制不包含麦克风和摄像头，并在 %lld 分钟后停止。"
           }
         }
       }
@@ -18105,9 +16973,6 @@
         }
       }
     },
-    "Looking for %@…" : {
-
-    },
     "Looks for a new version once, even when automatic checks are off." : {
       "localizations" : {
         "de" : {
@@ -18156,58 +17021,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "查找一次新版本，即使自动检查已关闭。"
-          }
-        }
-      }
-    },
-    "MCP server" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MCP-Server"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Servidor MCP"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Serveur MCP"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Server MCP"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MCPサーバ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MCP 서버"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Servidor MCP"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MCP 服务器"
           }
         }
       }
@@ -22565,58 +21378,6 @@
         }
       }
     },
-    "Points to a copy of Shot that has moved. Reinstall to fix it." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zeigt auf eine verschobene Kopie von Shot. Installiere neu, um das zu beheben."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apunta a una copia de Shot que se ha movido. Reinstala para arreglarlo."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pointe vers une copie de Shot qui a été déplacée. Réinstallez pour corriger."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Punta a una copia di Shot che è stata spostata. Reinstalla per correggere."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "移動したShotを指しています。再インストールして修正してください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "이동된 Shot 사본을 가리키고 있습니다. 다시 설치하여 해결하세요."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aponta para uma cópia do Shot que foi movida. Reinstale para corrigir."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "指向已移动的 Shot 副本。重新安装即可修复。"
-          }
-        }
-      }
-    },
     "Pop" : {
       "localizations" : {
         "de" : {
@@ -23255,9 +22016,6 @@
           }
         }
       }
-    },
-    "Raycast" : {
-
     },
     "Record" : {
       "localizations" : {
@@ -23989,58 +22747,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "区域边框"
-          }
-        }
-      }
-    },
-    "Reinstall" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neu installieren"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reinstalar"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Réinstaller"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reinstalla"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "再インストール"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "다시 설치"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reinstalar"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重新安装"
           }
         }
       }
@@ -25236,9 +23942,6 @@
         }
       }
     },
-    "Runs %@." : {
-
-    },
     "SCALE" : {
       "localizations" : {
         "de" : {
@@ -26120,58 +24823,6 @@
         }
       }
     },
-    "Saved the agent's recording of %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aufzeichnung des Agenten von %@ gesichert"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se guardó la grabación del agente de %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vidéo de l'agent enregistrée : %@"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Registrazione dell'agente di %@ salvata"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "エージェントによる%@の収録を保存しました"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "에이전트가 녹화한 %@ 화면을 저장했습니다"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gravação do agente salva: %@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已存储智能体对 %@ 的录制"
-          }
-        }
-      }
-    },
     "Saved the parts of an interrupted recording" : {
 
     },
@@ -26223,58 +24874,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已存储，但无法重新载入：%@"
-          }
-        }
-      }
-    },
-    "Saves the app, window and your marks in each screenshot, and saves copied ones as files too, so agents can read them." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sichert App, Fenster und deine Markierungen zu jedem Bildschirmfoto und sichert kopierte auch als Datei, damit Agenten sie lesen können."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guarda la app, la ventana y tus marcas en cada captura, y guarda también como archivo las que copias, para que los agentes puedan leerlas."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enregistre l'app, la fenêtre et vos annotations dans chaque capture d'écran, et enregistre aussi les captures copiées comme fichiers, pour que les agents puissent les lire."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Salva app, finestra e segni in ogni screenshot, e salva come file anche quelli copiati, così gli agenti possono leggerli."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "各スクリーンショットにアプリ、ウインドウ、書き込んだマークの情報を保存し、コピーしたものもファイルとして保存して、エージェントが読み取れるようにします。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "각 스크린샷에 앱, 윈도우 및 표시한 내용을 함께 저장하고, 복사한 스크린샷도 파일로 저장하여 에이전트가 읽을 수 있게 합니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Salva o app, a janela e suas marcações em cada captura de tela, e salva as copiadas também como arquivos, para que os agentes possam lê-las."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在每张截屏中存储 App、窗口和你的标记，并将拷贝的截屏也存储为文件，以便智能体读取。"
           }
         }
       }
@@ -27221,30 +25820,6 @@
         }
       }
     },
-    "Send to %@" : {
-
-    },
-    "Send to Agent" : {
-
-    },
-    "Send to Agent sends screenshots. Couldn't read %@ as an image." : {
-
-    },
-    "Send to Claude Code" : {
-
-    },
-    "Send to Codex" : {
-
-    },
-    "Send to Cursor" : {
-
-    },
-    "Sent to %@" : {
-
-    },
-    "Set the command for Send to Agent first." : {
-
-    },
     "Settings reset" : {
       "localizations" : {
         "de" : {
@@ -27766,9 +26341,6 @@
       }
     },
     "Shot comes with no warranty. It updates itself with Sparkle, under the MIT license." : {
-
-    },
-    "Shot fills in {path}, {dir} and {prompt}, and adds the prompt at the end if you leave it out." : {
 
     },
     "Shot is free, with no ads or account. Sponsoring keeps it that way." : {
@@ -30897,9 +29469,6 @@
     "Takes the crop off, so the whole image is kept." : {
 
     },
-    "Terminal" : {
-
-    },
     "Test" : {
       "localizations" : {
         "de" : {
@@ -31217,9 +29786,6 @@
           }
         }
       }
-    },
-    "The agent starts in %@, and works on what's in it." : {
-
     },
     "The area is too small for the camera bubble" : {
       "localizations" : {
@@ -31587,9 +30153,6 @@
           }
         }
       }
-    },
-    "The shot command" : {
-
     },
     "This Mac can't transcribe speech in your language" : {
 
@@ -32386,9 +30949,6 @@
     "Turn on Apple Intelligence in System Settings to write bug reports." : {
 
     },
-    "Turn on Send to Agent in Settings › Agents first." : {
-
-    },
     "Turn on Shot under Screen & System Audio Recording." : {
       "localizations" : {
         "de" : {
@@ -32697,58 +31257,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "撤销（⌘Z）"
-          }
-        }
-      }
-    },
-    "Uninstall" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deinstallieren"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desinstalar"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Désinstaller"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Disinstalla"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "アンインストール"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "제거"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desinstalar"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "卸载"
           }
         }
       }
@@ -33117,9 +31625,6 @@
         }
       }
     },
-    "Update" : {
-
-    },
     "Update to Shot %@…" : {
       "localizations" : {
         "de" : {
@@ -33435,58 +31940,6 @@
         }
       }
     },
-    "Using Claude Code, Codex or Cursor? Shot can hand them your captures." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nutzt du Claude Code, Codex oder Cursor? Shot kann ihnen deine Aufnahmen übergeben."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¿Usas Claude Code, Codex o Cursor? Shot puede pasarles tus capturas."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vous utilisez Claude Code, Codex ou Cursor ? Shot peut leur transmettre vos captures."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usi Claude Code, Codex o Cursor? Shot può passare loro le tue catture."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Claude Code、Codex、Cursorを使っていますか？Shotからキャプチャを渡せます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Claude Code, Codex 또는 Cursor를 사용하나요? Shot이 캡처를 넘겨줄 수 있습니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usa Claude Code, Codex ou Cursor? O Shot pode enviar suas capturas para eles."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在用 Claude Code、Codex 或 Cursor？Shot 可以把捕捉内容交给它们。"
-          }
-        }
-      }
-    },
     "VOLUME" : {
       "localizations" : {
         "de" : {
@@ -33538,9 +31991,6 @@
           }
         }
       }
-    },
-    "VS Code" : {
-
     },
     "Version, updates, permissions and reset." : {
       "localizations" : {
@@ -34120,9 +32570,6 @@
         }
       }
     },
-    "Working folder" : {
-
-    },
     "Write the edit as a new video next to the original and copy it (⌘S)" : {
       "localizations" : {
         "de" : {
@@ -34492,9 +32939,6 @@
           }
         }
       }
-    },
-    "Zed" : {
-
     },
     "Zoom" : {
       "localizations" : {
@@ -35227,9 +33671,6 @@
         }
       }
     },
-    "it stopped with code %d." : {
-
-    },
     "macOS asks for permission on first use. Mute it from the recording controls." : {
       "localizations" : {
         "de" : {
@@ -35542,9 +33983,6 @@
         }
       }
     },
-    "my-agent {prompt}" : {
-
-    },
     "the sound" : {
       "localizations" : {
         "de" : {
@@ -35700,9 +34138,6 @@
           }
         }
       }
-    },
-    "your agent" : {
-
     }
   },
   "version" : "1.0"

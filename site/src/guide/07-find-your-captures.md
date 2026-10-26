@@ -40,9 +40,3 @@ Click, <kbd>⌘</kbd>-click or <kbd>⇧</kbd>-click, press <kbd>⌘A</kbd> or us
 Right-click for the same actions, plus **Quick Look**. On a single item, right-click also offers **Rename…**, **Export GIF** for a video, and **Copy Text**, **Copy Alt Text** and [**Pin**](#pin-a-screenshot) for a screenshot. **Copy Bug Report** is there for a screenshot or a recording, on macOS 27 or later.
 
 A GIF opens in an editor only if the video editor exported it, and then opens its [project](#reopen-an-edit-later).
-
-## See what agents made
-
-Anything an agent or the `shot` command made has a small mark in its corner: a terminal for the command line, sparkles for an agent over [MCP](#the-mcp-server). Hover the mark to see who made it, what they did and when, such as **Made by Claude Code · annotate · 14:03**. A `shot` run always reads **Command line**, whoever started it.
-
-Once there's at least one, the filter adds **Made by agents**, which lists only those. Your own captures have no mark.

@@ -27,7 +27,7 @@ Apple hasn't notarized Shot yet, so macOS asks you to confirm it once.
 
 ## Follow the welcome window
 
-![The welcome window's second step, Make it yours: Use Shot for ⌘⇧3 to ⌘⇧5 and Open Shot at login both on, with Agents and Continue buttons](../../../docs/media/welcome.png)
+![The welcome window's second step, Make it yours: Use Shot for ⌘⇧3 to ⌘⇧5 and Open Shot at login both on, with a Continue button](../../../docs/media/welcome.png)
 
 A short welcome window walks you through three steps. You can close it at any point to skip the rest.
 
@@ -59,7 +59,7 @@ Every other shortcut is on the [Keyboard shortcuts](#keyboard-shortcuts) page.
 - [Take a screenshot](#take-a-screenshot): areas, windows, a timer, and copying text off the screen.
 - [Record your screen](#record-your-screen), with your voice and camera if you like.
 - [Annotate a screenshot](#annotate-a-screenshot) with arrows, text and blur.
-- [Share a capture with an AI assistant](#share-a-capture-with-an-ai-assistant), or [work with coding agents](#work-with-coding-agents) such as Claude Code, Codex or Cursor.
+- [Share a capture with an AI assistant](#share-a-capture-with-an-ai-assistant) such as Claude or ChatGPT.
 
 > [!NOTE]
 > To see the welcome window again, open [`shot://welcome`](#url-scheme). It starts from your current settings, and closing it changes nothing. If Shot ever loses its screen recording permission, your next capture opens the window at that step.

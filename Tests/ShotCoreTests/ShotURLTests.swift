@@ -29,7 +29,6 @@ private let home = FileManager.default.homeDirectoryForCurrentUser
     ("shot://annotate?path=/tmp/a.mov", .edit(.video(URL(fileURLWithPath: "/tmp/a.mov")))),
     ("shot://edit-video?path=/tmp/a.png", .edit(.video(URL(fileURLWithPath: "/tmp/a.png")))),
     ("shot://annotate?path=~/My%20Shot.png", .edit(.image(home.appendingPathComponent("My Shot.png")))),
-    ("shot://send-to-agent?path=~/My%20Shot.png", .sendToAgent(home.appendingPathComponent("My Shot.png"))),
     ("shot-dev://gallery", .gallery),
 ])
 func everyShotURLHasARoute(_ string: String, _ expected: ShotURL) throws {
@@ -47,7 +46,6 @@ func everyShotURLHasARoute(_ string: String, _ expected: ShotURL) throws {
 @Test(arguments: [
     ("shot://annotate", ShotURL.ParseError.missingPath(host: "annotate")),
     ("shot://edit-video?path=", .missingPath(host: "edit-video")),
-    ("shot://send-to-agent", .missingPath(host: "send-to-agent")),
     ("shot://capture", .unknownHost("capture")),
     ("shot://capture-timer?seconds=0", .invalidSeconds("0")),
     ("shot://capture-timer?seconds=61", .invalidSeconds("61")),

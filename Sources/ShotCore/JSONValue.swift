@@ -1,6 +1,6 @@
 import Foundation
 
-/// Any JSON value, for the parts of an MCP message whose shape the server doesn't fix.
+/// Any JSON value, for the parts of a message whose shape isn't fixed.
 public enum JSONValue: Codable, Equatable, Sendable {
     case null
     case bool(Bool)
@@ -44,7 +44,7 @@ public enum JSONValue: Codable, Equatable, Sendable {
         if case let .string(value) = self { value } else { nil }
     }
 
-    /// A number, or a string that reads as one, since agents sometimes quote them.
+    /// A number, or a string that reads as one, since a model sometimes quotes them.
     public var number: Double? {
         switch self {
         case let .number(value): value

@@ -1,6 +1,6 @@
 ---
 title: Troubleshooting
-summary: "Fixes for permissions, shortcuts and agents that don't work."
+summary: "Fixes for permissions and shortcuts that don't work."
 group: Help
 ---
 
@@ -31,20 +31,6 @@ Shot takes over <kbd>⌘⇧3</kbd> to <kbd>⌘⇧5</kbd> only once it has Screen
 
 - If you turned the macOS shortcuts back on in System Settings, turn that setting on again.
 - A **Shortcut unavailable** message means another app already uses that shortcut. Pick another in **Settings › Shortcuts**.
-
-## An agent can't see my captures, or can't capture or record
-
-Run `shot doctor` from the terminal or editor the agent runs in. Without the `shot` command, run `/Applications/Shot.app/Contents/MacOS/shot-cli doctor`.
-
-It checks:
-
-- which copy of Shot answers (Shot or a ShotDev build) and its version,
-- **Let agents capture and record**,
-- the socket agents reach Shot on,
-- Shot's Screen Recording access,
-- whether macOS lets that terminal or editor read the capture folder.
-
-It prints each check as JSON with a `fix` for anything that isn't passing, and exits with 1 if a check fails. It never opens Shot; it only asks a copy that's already running.
 
 ## Something else is wrong
 

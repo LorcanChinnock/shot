@@ -1,6 +1,6 @@
 #!/bin/bash
 # Builds the MugCo sample app (Samples/MugCo) into build/MugCo.app and opens it. A steady window for QA runs, guide
-# screenshots and agent checks to capture, with only made-up data in it.
+# screenshots to capture, with only made-up data in it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

@@ -43,9 +43,6 @@ final class Recorder: NSObject {
     }
 
     var onFinish: ((URL) -> Void)?
-    /// How a session ended, once it has, with the file it was to be saved as: after `onFinish` when saved; or discarded,
-    /// though Undo can still save it through `onFinish`; or with nothing saved.
-    var onEnd: ((URL?, Ending) -> Void)?
     var onError: ((Error) -> Void)?
     /// Called by the on-screen controls; `true` means discard.
     var onStopRequested: ((Bool) -> Void)?
@@ -56,10 +53,6 @@ final class Recorder: NSObject {
     }
 
     var isRecording: Bool { phase == .recording || phase == .paused }
-
-    enum Ending {
-        case saved, discarded, failed
-    }
 
     /// The file the recording in progress will be saved as.
     var outputURL: URL? { session?.finalURL }
@@ -74,10 +67,6 @@ final class Recorder: NSObject {
         let showsCursor: Bool
         /// Set when recording one window, which then follows the window and leaves out anything covering it.
         let windowID: CGWindowID?
-        /// Shows the red border whatever Settings say, for a recording the user didn't start themselves.
-        var alwaysShowsBorder = false
-        /// Leaves out the window's shadow, for an agent that asked for it.
-        var ignoresShadow = false
     }
 
     private struct Session {
@@ -95,7 +84,6 @@ final class Recorder: NSObject {
         let fps: Int
         let systemAudio: Bool
         let finalURL: URL
-        var ignoresShadow = false
     }
 
     private var session: Session?
@@ -144,7 +132,7 @@ final class Recorder: NSObject {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let finalURL = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "mp4", prefix: prefs.filePrefix)
         let microphoneID = CaptureDevices.device(id: prefs.microphoneDeviceID, for: .audio)?.uniqueID
-        session = Session(screen: screen, region: region, windowID: options.windowID, microphone: microphone, showsCursor: options.showsCursor, showsClicks: prefs.recordShowsClicks, microphoneID: microphoneID, fps: RecordingFrameRate.effective(setting: prefs.recordingFPS, displayRate: screen.maximumFramesPerSecond), systemAudio: prefs.recordSystemAudio, finalURL: finalURL, ignoresShadow: options.ignoresShadow)
+        session = Session(screen: screen, region: region, windowID: options.windowID, microphone: microphone, showsCursor: options.showsCursor, showsClicks: prefs.recordShowsClicks, microphoneID: microphoneID, fps: RecordingFrameRate.effective(setting: prefs.recordingFPS, displayRate: screen.maximumFramesPerSecond), systemAudio: prefs.recordSystemAudio, finalURL: finalURL)
         segments = []
         segmentAudio = []
         mutes = CutList()
@@ -155,7 +143,7 @@ final class Recorder: NSObject {
         model.cameraAvailable = options.windowID == nil
         model.microphoneOn = microphone
         // Panels exist before the stream so the filter can exclude them by window ID.
-        showPanels(screen: screen, region: region, border: prefs.showRecordingBorder || options.alwaysShowsBorder)
+        showPanels(screen: screen, region: region, border: prefs.showRecordingBorder)
         do {
             try await startSegment()
         } catch {
@@ -262,11 +250,9 @@ final class Recorder: NSObject {
                 }
             )
             Toast.show("Recording discarded", duration: .seconds(5), undoable: pending)
-            onEnd?(finalURL, .discarded)
             return
         }
-        let saved = await join(parts, audio: audio, to: finalURL, muting: muted)
-        onEnd?(finalURL, saved ? .saved : .failed)
+        await join(parts, audio: audio, to: finalURL, muting: muted)
     }
 
     /// Joins the segments into `finalURL`; false when there was nothing to join or joining failed.
@@ -403,9 +389,6 @@ final class Recorder: NSObject {
             let scale = CGFloat(filter.pointPixelScale)
             config.width = Geometry.evenFloor(filter.contentRect.width * scale)
             config.height = Geometry.evenFloor(filter.contentRect.height * scale)
-            if session.ignoresShadow {
-                config.ignoreShadowsSingleWindow = true
-            }
         } else {
             let scale = session.screen.backingScaleFactor
             let local = Geometry.displayLocalTopLeft(session.region, screenFrame: session.screen.frame)

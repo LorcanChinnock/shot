@@ -4,7 +4,7 @@ import ShotCore
 import SwiftUI
 
 enum SettingsSection: String, CaseIterable, Identifiable {
-    case gallery, general, capture, quickAccess, recording, agents, shortcuts, about
+    case gallery, general, capture, quickAccess, recording, shortcuts, about
 
     var id: String { rawValue }
 
@@ -15,7 +15,6 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .capture: String(localized: "Capture")
         case .quickAccess: String(localized: "Quick Access")
         case .recording: String(localized: "Recording")
-        case .agents: String(localized: "Agents")
         case .shortcuts: String(localized: "Shortcuts")
         case .about: String(localized: "About")
         }
@@ -28,7 +27,6 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .capture: String(localized: "What happens when you take a shot.")
         case .quickAccess: String(localized: "The floating card after each capture.")
         case .recording: String(localized: "Screen recording video and audio.")
-        case .agents: String(localized: "Hand captures to AI assistants and coding tools.")
         case .shortcuts: String(localized: "Global hotkeys for every action.")
         case .about: String(localized: "Version, updates, permissions and reset.")
         }
@@ -41,7 +39,6 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .capture: "viewfinder"
         case .quickAccess: "rectangle.stack"
         case .recording: "record.circle"
-        case .agents: "terminal"
         case .shortcuts: "command"
         case .about: "info.circle"
         }
@@ -55,7 +52,6 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .capture: Brutal.pink
         case .quickAccess: Brutal.sky
         case .recording: Brutal.red
-        case .agents: Brutal.mint
         case .shortcuts: Brutal.orange
         case .about: Brutal.lime
         }
@@ -135,7 +131,6 @@ struct SettingsView: View {
         case .capture: CaptureSettings()
         case .quickAccess: QuickAccessSettings()
         case .recording: RecordingSettings()
-        case .agents: AgentSettings()
         case .shortcuts: ShortcutSettings()
         case .about: AboutSettings()
         }
@@ -581,335 +576,6 @@ private struct DevicePicker: View {
 
     private var selectedName: String {
         devices.first { $0.uniqueID == selection }?.localizedName ?? String(localized: "System default")
-    }
-}
-
-// MARK: Agents
-
-private struct AgentSettings: View {
-    @Setting(PreferenceKey.agentHandoff) private var handoff: Bool
-    @Setting(PreferenceKey.agentCapture) private var capture: Bool
-    @State private var agents = AgentClient.shown(installed: AgentClient.installed(home: NSHomeDirectory()))
-    @State private var statuses: [AgentClient: AgentClient.Status] = [:]
-    @State private var installing: AgentClient?
-    private let color = SettingsSection.agents.color
-
-    /// The MCP server inside this app's bundle, so a dev build names its own.
-    private static let server = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/shot-cli").path
-    /// The name agents list the server under: `shot-dev` for a dev build, so installing one never replaces the release.
-    private static let name = CommandLink.name(bundleID: Bundle.main.bundleIdentifier)
-
-    var body: some View {
-        SettingsCard(title: "Hand-off", symbol: "arrow.right.doc.on.clipboard") {
-            ToggleRow(
-                title: "Hand captures to agents",
-                subtitle: "Saves the app, window and your marks in each screenshot, and saves copied ones as files too, so agents can read them.",
-                isOn: $handoff, color: color, divider: false
-            )
-        }
-        SettingsCard(title: "Capture", symbol: "macwindow") {
-            ToggleRow(
-                title: "Let agents capture and record",
-                subtitle: "Lets agents screenshot or record a window by name. Shot shows a notice each time. Recordings skip the microphone and camera and stop after \(Int(AgentRequest.maximumDuration / 60)) minutes.",
-                isOn: $capture, color: color, divider: false
-            )
-        }
-        SendToAgentCard(color: color)
-        SettingsCard(title: "Command line", symbol: "apple.terminal") {
-            CardNote(text: "For agents and scripts that run in a terminal. The MCP server works without it.")
-            CommandLinkRow(cli: Self.server)
-        }
-        SettingsCard(title: "MCP server", symbol: "terminal.fill") {
-            CardNote(text: "Lets agents read your captures and save edited copies beside them. Your originals never change. What an agent reads goes to its model provider, so blur private details first.")
-            ForEach(agents, id: \.self) { agent in
-                CommandRow(title: title(agent), command: agent.setup(server: Self.server, name: Self.name), divider: agent != agents.last) {
-                    installButton(agent)
-                }
-            }
-        }
-        .task { await findAgents() }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            Task { await findAgents() }
-        }
-    }
-
-    private func title(_ agent: AgentClient) -> LocalizedStringResource {
-        switch agent {
-        case .claude: "Claude"
-        case .lmStudio: "LM Studio"
-        case .raycast: "Raycast"
-        case .claudeCode: "Claude Code"
-        case .codex: "Codex"
-        case .cursor: "Cursor"
-        case .vsCode: "VS Code"
-        case .gemini: "Gemini CLI"
-        case .devin: "Devin"
-        case .zed: "Zed"
-        case .json: "Any other app"
-        }
-    }
-
-    /// Install, or Update when the server points at another copy of Shot, or a chip once it's set up. Nothing for the
-    /// setups Shot can only copy.
-    @ViewBuilder
-    private func installButton(_ agent: AgentClient) -> some View {
-        if agent.install(server: Self.server, name: Self.name) != nil {
-            switch statuses[agent] ?? .unknown {
-            case .installed:
-                BrutalChip(text: "INSTALLED", color: Brutal.mint)
-            case let status:
-                Button(status == .stale ? "Update" : "Install") {
-                    installing = agent
-                    Task {
-                        await AgentInstaller.install(agent, title: String(localized: title(agent)), server: Self.server, name: Self.name, replacing: status == .stale)
-                        installing = nil
-                        await findAgents()
-                    }
-                }
-                .buttonStyle(BrutalButtonStyle(compact: true))
-                .disabled(installing != nil)
-            }
-        }
-    }
-
-    /// Checks again each time Shot comes forward, so an agent installed, or set up, while Settings is open shows up.
-    /// Reads the configs off the main thread, since Claude Code's can run to megabytes.
-    private func findAgents() async {
-        let (server, name) = (Self.server, Self.name)
-        let (found, statuses) = await Task.detached {
-            let home = NSHomeDirectory()
-            let found = AgentClient.shown(installed: AgentClient.installed(home: home))
-            return (found, Dictionary(uniqueKeysWithValues: found.map { ($0, $0.status(server: server, name: name, home: home)) }))
-        }.value
-        agents = found
-        self.statuses = statuses
-    }
-}
-
-/// Send to Agent: which coding agent a capture opens in, in which terminal, and where it starts.
-private struct SendToAgentCard: View {
-    let color: Color
-    @Setting(PreferenceKey.sendToAgent) private var isOn: Bool
-    @Setting(PreferenceKey.sendToAgentPreset) private var preset: AgentPreset
-    @Setting(PreferenceKey.sendToAgentTerminal) private var terminal: AgentTerminal
-    @Setting(PreferenceKey.sendToAgentFolder) private var folder: String
-    @Setting(PreferenceKey.sendToAgentCommand) private var command: String
-    @Setting(PreferenceKey.sendToAgentTemplate) private var template: String
-    @State private var looking = false
-
-    var body: some View {
-        SettingsCard(title: "Send to Agent", symbol: "paperplane.fill") {
-            ToggleRow(
-                title: "Send to Agent",
-                subtitle: "Adds Send to Agent to the Quick Access, editor and gallery menus. It opens your coding agent in a terminal with the screenshot and a summary of what you marked, as a task.",
-                isOn: $isOn, color: color, divider: isOn
-            )
-            if isOn {
-                SettingRow(title: String(localized: "Agent"), subtitle: agentSubtitle) {
-                    BrutalSegmented(selection: $preset, options: AgentPreset.allCases.map { ($0, Self.name(of: $0)) }, color: color)
-                }
-                if preset == .custom {
-                    SettingRow(title: "Command", subtitle: "Shot fills in {path}, {dir} and {prompt}, and adds the prompt at the end if you leave it out.") {
-                        TextField("my-agent {prompt}", text: $template)
-                            .textFieldStyle(.plain)
-                            .font(Brutal.mono)
-                            .padding(.horizontal, 10)
-                            .frame(width: 230, height: 30)
-                            .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
-                    }
-                }
-                SettingRow(title: "Terminal") {
-                    BrutalSegmented(selection: $terminal, options: terminals.map { ($0, $0.name) }, color: color)
-                }
-                SettingRow(title: String(localized: "Working folder"), subtitle: String(localized: "The agent starts in \((folder as NSString).abbreviatingWithTildeInPath), and works on what's in it."), divider: false) {
-                    Button("Choose…", action: chooseFolder)
-                        .buttonStyle(BrutalButtonStyle(color: color, compact: true))
-                }
-            }
-        }
-        .task(id: isOn ? preset : nil) { await locate() }
-    }
-
-    private var agentSubtitle: String {
-        guard let name = preset.command else {
-            return String(localized: "Any command that runs an agent in a terminal.")
-        }
-        if looking {
-            return String(localized: "Looking for \(name)…")
-        }
-        return command.hasPrefix("/")
-            ? String(localized: "Runs \((command as NSString).abbreviatingWithTildeInPath).")
-            : String(localized: "Couldn't find the \(name) command. Install it, then come back here.")
-    }
-
-    /// The terminals installed, and the chosen one even when it isn't.
-    private var terminals: [AgentTerminal] {
-        AgentTerminal.allCases.filter { $0 == terminal || NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0.bundleID) != nil }
-    }
-
-    /// Product names, which stay the same in every language.
-    private static func name(of preset: AgentPreset) -> String {
-        switch preset {
-        case .claudeCode: "Claude Code"
-        case .codex: "Codex"
-        case .cursor: "Cursor"
-        case .custom: String(localized: "Custom")
-        }
-    }
-
-    /// Finds the chosen agent's command through the login shell, which can take a moment, off the main thread.
-    private func locate() async {
-        guard isOn, let name = preset.command else {
-            return
-        }
-        looking = true
-        let found = await Task.detached { AgentLaunch.locate(name) }.value
-        // A lookup for a preset since changed would save the wrong agent's path.
-        guard !Task.isCancelled, preset.command == name else {
-            return
-        }
-        looking = false
-        command = found ?? ""
-    }
-
-    private func chooseFolder() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.canCreateDirectories = true
-        panel.directoryURL = URL(fileURLWithPath: folder)
-        if panel.runModal() == .OK, let url = panel.url {
-            folder = url.path
-        }
-    }
-}
-
-/// A short note at the top of a card, above its rows.
-private struct CardNote: View {
-    let text: LocalizedStringResource
-
-    var body: some View {
-        Text(text)
-            .font(Brutal.caption)
-            .foregroundStyle(Brutal.faded(0.65))
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 9)
-    }
-}
-
-/// Installs or removes the `shot` command, a link in `/usr/local/bin` to this app's `shot-cli`, with an administrator's
-/// password.
-private struct CommandLinkRow: View {
-    let cli: String
-    @State private var status = CommandLink.Status.missing
-    @State private var working = false
-    private let name = CommandLink.name(bundleID: Bundle.main.bundleIdentifier)
-    private var link: String { (CommandLink.folder as NSString).appendingPathComponent(name) }
-
-    var body: some View {
-        SettingRow(title: String(localized: "\(name) command"), subtitle: subtitle, divider: false) {
-            switch status {
-            case .missing:
-                button("Install", CommandLink.installScript(name: name, cli: cli))
-            case .linked:
-                button("Uninstall", CommandLink.uninstallScript(name: name))
-            case .stale:
-                button("Reinstall", CommandLink.installScript(name: name, cli: cli))
-            case .homebrew:
-                BrutalChip(text: "INSTALLED", color: Brutal.mint)
-            case .taken:
-                EmptyView()
-            }
-        }
-        .onAppear(perform: refresh)
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in refresh() }
-    }
-
-    private var subtitle: String {
-        switch status {
-        case .missing: String(localized: "Installing asks for your password once.")
-        case .linked: String(localized: "Installed at \(link). Updates with Shot.")
-        case .homebrew: String(localized: "Installed by Homebrew. Updates with Shot.")
-        case .stale: String(localized: "Points to a copy of Shot that has moved. Reinstall to fix it.")
-        case .taken: String(localized: "Another program uses \(link). Run \(cli) instead.")
-        }
-    }
-
-    private func button(_ title: LocalizedStringResource, _ script: String) -> some View {
-        Button(String(localized: title)) { run(script) }
-            .buttonStyle(BrutalButtonStyle(compact: true))
-            .disabled(working)
-    }
-
-    private func refresh() {
-        status = CommandLink.status(name: name, cli: cli)
-    }
-
-    /// Runs `script` through `osascript`, whose password prompt would stall the main thread if run in process.
-    private func run(_ script: String) {
-        working = true
-        Task {
-            let failure = await Task.detached { () -> String? in
-                let process = Process()
-                let errors = Pipe()
-                process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-                process.arguments = ["-e", script]
-                process.standardError = errors
-                do {
-                    try process.run()
-                } catch {
-                    return error.localizedDescription
-                }
-                let message = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-                process.waitUntilExit()
-                // -128 is the user cancelling the password prompt, which needs no message.
-                guard process.terminationStatus != 0, !message.contains("(-128)") else {
-                    return nil
-                }
-                return message.trimmingCharacters(in: .whitespacesAndNewlines)
-            }.value
-            working = false
-            refresh()
-            if let failure {
-                Toast.error("Couldn't change the \(name) command: \(failure)")
-            }
-        }
-    }
-}
-
-/// A command to paste into a terminal or a config file, with a button that copies it, and `accessory` before that.
-private struct CommandRow<Accessory: View>: View {
-    let title: LocalizedStringResource
-    let command: String
-    var divider = true
-    @ViewBuilder var accessory: Accessory
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 12) {
-                Text(title).font(Brutal.label).foregroundStyle(Brutal.ink)
-                Spacer(minLength: 8)
-                accessory
-                Button("Copy") {
-                    Clipboard.copy(string: command)
-                    Toast.show("Copied")
-                }
-                .buttonStyle(BrutalButtonStyle(compact: true))
-            }
-            Text(command)
-                .font(Brutal.mono)
-                .foregroundStyle(Brutal.ink)
-                .textSelection(.enabled)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
-        }
-        .padding(.vertical, 9)
-        if divider {
-            Rectangle().fill(Brutal.faint(0.12)).frame(height: 1.5)
-        }
     }
 }
 

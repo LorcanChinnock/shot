@@ -101,7 +101,3 @@ Open a version you saved, from the gallery, Quick Access or a `shot://annotate` 
 - This keeps working when you move or rename the original. If the original is gone, or another image has replaced it, the version opens flattened.
 - To edit a version as a plain image instead, choose **Edit › Flatten**, or open the original.
 - Shot keeps the layers in its own Application Support folder, not in the image, so a version you share never carries hidden layers or the full-size images you placed.
-- A version saved by an older Shot reopens live only if [**Hand captures to agents**](#hand-captures-to-agents) was on when you saved it, and only if it has no placed images, spotlights, styled marks, aligned text, hidden layers or styled screenshot.
-
-> [!NOTE]
-> **When an agent annotates:** an agent's `annotate`, `redact` or `crop`, from the [`shot` command](#the-shot-command-line) or the [MCP server](#the-mcp-server), saves a version the same way. On a version, it draws on the original with the version's layers, so your marks stay live and the agent's go on top. Unlike **Save**, it never copies, shows a Quick Access card or opens the editor; with `-o` it writes the name you give; and the `shot` command also takes an image outside your save folder and writes the version beside it. That version isn't in the gallery, but it still reopens live.

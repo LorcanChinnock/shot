@@ -154,7 +154,3 @@ private func scene(_ shapes: [Annotation]) -> EditorDocument {
     #expect(sized.cornerRadius == 5)
     #expect(try #require(Annotation(mark: CaptureMark(id: "c", type: "rectangle", rect: [10, 10, 80, 40]))).cornerRadius == nil)
 }
-
-@Test func theMarkTypesStillAcceptRounded() {
-    #expect(CaptureMark.types.contains("rounded") && CaptureMark.types.contains("rectangle"))
-}

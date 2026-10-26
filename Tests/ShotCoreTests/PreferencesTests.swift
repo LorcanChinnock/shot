@@ -248,10 +248,10 @@ import Testing
         let store = suite.store
         defer { suite.remove() }
         store.set("fr", forKey: "translateTarget")
-        store.set("fr", forKey: PreferenceKey.sendToAgentPreset)
+        store.set("fr", forKey: "unrelatedKey")
         Preferences.removeTranslateTarget(in: store)
         #expect(store.object(forKey: "translateTarget") == nil)
-        #expect(store.string(forKey: PreferenceKey.sendToAgentPreset) == "fr")
+        #expect(store.string(forKey: "unrelatedKey") == "fr")
     }
 
     @Test func menuOnlyActionsHaveNoShortcutAndTheirSavedOnesAreRemoved() throws {
@@ -369,10 +369,10 @@ import Testing
     for key in LegacyProviderSettings.keys {
         store.set("x", forKey: key)
     }
-    store.set("kept", forKey: PreferenceKey.sendToAgentPreset)
+    store.set("kept", forKey: "unrelatedKey")
     LegacyProviderSettings.remove(from: store, keychainService: "dev.lorcan.Shot.tests.\(UUID().uuidString)")
     for key in LegacyProviderSettings.keys {
         #expect(store.object(forKey: key) == nil)
     }
-    #expect(store.string(forKey: PreferenceKey.sendToAgentPreset) == "kept")
+    #expect(store.string(forKey: "unrelatedKey") == "kept")
 }

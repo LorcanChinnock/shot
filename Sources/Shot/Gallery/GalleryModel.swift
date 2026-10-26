@@ -25,7 +25,13 @@ final class GalleryModel {
     }
     var filter = GalleryFilter.all { didSet { measure("Gallery filter"); refilter() } }
     var sort = GallerySort.newest { didSet { measure("Gallery filter"); refilter() } }
-    var query = "" { didSet { measure("Gallery filter"); refilter() } }
+    var query = "" {
+        didSet {
+            measure("Gallery filter")
+            refilter()
+            readTextIfSearching()
+        }
+    }
     private(set) var visible: [GalleryItem] = []
     private(set) var sections: [GallerySection] = []
     private(set) var hasLoaded = false
@@ -72,12 +78,12 @@ final class GalleryModel {
 
     /// Lists the folder now and keeps the list current while the gallery is open.
     func start() {
-        TextIndexer.shared.update()
         TextIndexer.shared.onTexts = { [weak self] texts in
             if self?.texts != texts {
                 self?.texts = texts
             }
         }
+        readTextIfSearching()
         reload()
     }
 
@@ -90,6 +96,15 @@ final class GalleryModel {
         debounce?.cancel()
         loadTask?.cancel()
         thumbnails.removeAll()
+    }
+
+    /// Text is read only while there's something in the search field, and stops when it's cleared.
+    private func readTextIfSearching() {
+        if query.trimmingCharacters(in: .whitespaces).isEmpty {
+            TextIndexer.shared.stop()
+        } else {
+            TextIndexer.shared.read(folder: folder)
+        }
     }
 
     func reload() {
@@ -112,6 +127,7 @@ final class GalleryModel {
             }
             if found != items {
                 items = found
+                readTextIfSearching()
             }
             hasLoaded = true
             selection.formIntersection(Set(found.map(\.url)))

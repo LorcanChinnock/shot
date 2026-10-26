@@ -26,14 +26,12 @@ public struct AfterCapture: Equatable, Sendable {
     public static func plan(prefs: Preferences, isVideo: Bool) -> AfterCapture {
         plan(
             copy: isVideo ? prefs.copyAfterRecording : prefs.copyAfterCapture, save: prefs.saveAfterCapture,
-            quickAccess: prefs.quickAccessAfterCapture, openEditor: prefs.openEditorAfterCapture, isVideo: isVideo,
-            agentHandoff: prefs.agentHandoff
+            quickAccess: prefs.quickAccessAfterCapture, openEditor: prefs.openEditorAfterCapture, isVideo: isVideo
         )
     }
 
-    /// A recording never opens the editor by itself (#209): it shows its Quick Access card instead. With `agentHandoff`,
-    /// a copied screenshot is also written to a file, so an agent can fetch it.
-    static func plan(copy: Bool, save: Bool, quickAccess: Bool, openEditor: Bool, isVideo: Bool, agentHandoff: Bool = false) -> AfterCapture {
+    /// A recording never opens the editor by itself (#209): it shows its Quick Access card instead.
+    static func plan(copy: Bool, save: Bool, quickAccess: Bool, openEditor: Bool, isVideo: Bool) -> AfterCapture {
         let next: Next = if openEditor, !isVideo {
             .editor
         } else if quickAccess {
@@ -45,7 +43,7 @@ public struct AfterCapture: Equatable, Sendable {
         } else {
             .nothing
         }
-        return AfterCapture(copies: copy, writesFile: !isVideo && (save || quickAccess || openEditor || agentHandoff && copy), next: next)
+        return AfterCapture(copies: copy, writesFile: !isVideo && (save || quickAccess || openEditor), next: next)
     }
 }
 

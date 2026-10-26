@@ -82,7 +82,7 @@ public enum VersionWriter {
     /// in `projects`, whatever that setting, so it reopens live. A project that can't be written leaves the version
     /// saved, flat, as a version saved before projects is.
     public static func saveImage(
-        _ document: EditorDocument, of original: URL, scale: CGFloat, recordForAgents: Bool = Preferences().agentHandoff,
+        _ document: EditorDocument, of original: URL, scale: CGFloat, recordForAgents: Bool = false,
         projects: ProjectStore? = nil, origin: ProjectOrigin = ProjectOrigin(via: .app)
     ) throws(Failure) -> SavedImage {
         let format = ImageFormat(fileExtension: original.pathExtension)

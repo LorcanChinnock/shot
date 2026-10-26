@@ -39,6 +39,3 @@ A GIF works the same way: **Edit** on it in the gallery, or a `shot://annotate` 
 - To edit a copy or export as itself instead, choose **Edit › Flatten**, or open the recording. A flattened GIF opens in the annotation editor.
 
 Shot keeps projects in its own Application Support folder, not in your files, so a video you share never carries them.
-
-> [!NOTE]
-> **When an agent edits a recording:** a trim from `shot trim` or `trim_video` saves like **Save Copy**. It never replaces the recording, and the new file opens in the video editor with the rest of the recording there to drag back. `shot gif` and `make_gif` save like **Export**, so **Edit** on the GIF opens the trim too.

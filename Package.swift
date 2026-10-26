@@ -15,7 +15,7 @@ let package = Package(
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.10.0"),
     ],
     targets: [
-        // Everything with no window: the model, rendering, video, GIF, agents and MCP, preferences and the gallery.
+        // Everything with no window: the model, rendering, video, GIF, preferences and the gallery.
         .target(name: "ShotCore", swiftSettings: extractingStrings("ShotCore")),
         .testTarget(name: "ShotCoreTests", dependencies: ["ShotCore"]),
         .executableTarget(
@@ -25,8 +25,5 @@ let package = Package(
             // bundle.sh copies Sparkle.framework into Contents/Frameworks.
             linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]
         ),
-        // The MCP server and command line. bundle.sh copies it into the app as shot-cli: a "shot" there would be the
-        // app's own Shot executable on a case-insensitive volume.
-        .executableTarget(name: "ShotCLI", dependencies: ["ShotCore"]),
     ]
 )

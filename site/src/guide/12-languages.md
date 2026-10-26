@@ -13,4 +13,4 @@ Shot is in English, German, French, Spanish, Italian, Brazilian Portuguese, Japa
 3. Quit Shot and open it again.
 
 > [!NOTE]
-> File names stay in English, as do the `shot` command, the MCP server and the setup text in **Settings › Agents**, which tools read.
+> File names stay in English.
