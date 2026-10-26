@@ -6497,58 +6497,6 @@
         }
       }
     },
-    "Confetti on every capture and recording, and a rainbow through the editors. Reduce Motion keeps the colours still and skips the confetti." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Konfetti bei jeder Aufnahme und ein Regenbogen in den Editoren. „Bewegung reduzieren“ hält die Farben still und lässt das Konfetti weg."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Confeti en cada captura y grabación, y un arcoíris por los editores. Con Reducir movimiento, los colores no se mueven y no hay confeti."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Des confettis à chaque capture et enregistrement, et un arc-en-ciel dans les éditeurs. Avec Réduire les animations, les couleurs restent fixes et les confettis disparaissent."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Coriandoli a ogni cattura e registrazione, e un arcobaleno negli editor. Riduci movimento ferma i colori e salta i coriandoli."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "キャプチャや収録のたびに紙吹雪、エディタには虹色を。「視差効果を減らす」がオンのときは色を動かさず、紙吹雪も出しません。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "캡처하고 녹화할 때마다 색종이가 터지고 편집기에 무지개가 흐릅니다. 동작 줄이기를 켜면 색상이 멈추고 색종이는 나오지 않습니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Confete em cada captura e gravação, e um arco-íris nos editores. Reduzir Movimento mantém as cores paradas e dispensa o confete."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "每次捕捉和录制时撒彩纸，编辑器中还有彩虹。开启“减弱动态效果”时颜色保持静止，且不显示彩纸。"
-          }
-        }
-      }
-    },
     "Contact" : {
       "localizations" : {
         "de" : {
@@ -20217,58 +20165,6 @@
         }
       }
     },
-    "Party mode" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Partymodus"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modo fiesta"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mode fête"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modalità festa"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "パーティーモード"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "파티 모드"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modo festa"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "派对模式"
-          }
-        }
-      }
-    },
     "Paste" : {
       "localizations" : {
         "de" : {
@@ -32650,58 +32546,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "昨天"
-          }
-        }
-      }
-    },
-    "You found it" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gefunden!"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lo encontraste"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vous l'avez trouvé"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L'hai trovato"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "見つけましたね"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "찾으셨군요"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Você achou"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "被你发现了"
           }
         }
       }
