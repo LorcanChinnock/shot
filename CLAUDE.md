@@ -64,6 +64,8 @@ Local builds are `ShotDev.app`. The real installed version is `/Applications/Sho
 
 Use the MugCo sample app (`make demo`), not whatever window is open: your screen can show private tabs and mail, and changes every run. It is a fake support inbox in its own package, `Samples/MugCo`, so the main build and CI never compile it. It has an email address and card number to blur, and a wrong balance to point an arrow at. All its data is made up, so captures of it are safe to publish. Its window is titled "Mug Co. Support" and the process is `MugCo`.
 
+The screenshots and recordings in `docs/media` come from a second sample, `docs/demo` (ShotDemo, "Acme Support"), whose ticket, dashboard and chat scenes are scripted so a reshoot lines up with the last one. Use it to reshoot the guide media (see `docs/demo/README.md`), and MugCo for everything else.
+
 ## Architecture
 
 Two targets, all macOS-only:

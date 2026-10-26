@@ -408,7 +408,7 @@ struct Tile<Label: View>: View {
                 .inkOnFill(selected ? color : nil)
                 .background {
                     if selected {
-                        PartyColor(color) { Color.clear.brutalSurface($0, radius: Brutal.Radius.inset, shadow: 2) }
+                        Color.clear.brutalSurface(color, radius: Brutal.Radius.inset, shadow: 2)
                     } else if hovering {
                         RoundedRectangle(cornerRadius: Brutal.Radius.inset, style: .circular).fill(Brutal.ink.opacity(0.08))
                     }
