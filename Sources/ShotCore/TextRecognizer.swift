@@ -29,8 +29,7 @@ private actor Turns {
 }
 
 /// Reads the text in an image with Vision, on the device: nothing leaves the Mac. Boxes come back in the image's
-/// pixels with a top-left origin, rounded out to whole pixels, so they line up with the marks in a capture's record
-/// and hiding one covers all of its text.
+/// pixels with a top-left origin, rounded out to whole pixels, so a box covers all of its text.
 public enum TextRecognizer {
     public static func recognize(_ image: CGImage) async throws -> CaptureText {
         do {

@@ -1,46 +1,5 @@
 import Foundation
 
-/// Who made a capture or version, kept in Shot's own project store rather than in the file, so a file you share never
-/// says an agent made it.
-public struct ProjectOrigin: Codable, Equatable, Sendable {
-    public enum Via: String, Codable, Sendable {
-        case app, cli, mcp
-    }
-
-    public var via: Via
-    /// The MCP client's name, from `clientInfo` in `initialize`, such as "claude-code".
-    public var client: String?
-    /// The MCP tool or command that made it, such as "annotate" or "record_window"; `nil` for the app.
-    public var action: String?
-    /// To the second.
-    public var date: Date
-
-    public init(via: Via, client: String? = nil, action: String? = nil, date: Date = Date()) {
-        self.via = via
-        self.client = client
-        self.action = action
-        self.date = Date(timeIntervalSince1970: date.timeIntervalSince1970.rounded(.down))
-    }
-}
-
-extension ProjectOrigin {
-    /// Whether an agent or the command line made it, which the gallery marks.
-    public var isAgent: Bool { via != .app }
-
-    /// `client` as people know it: the product for the MCP clients Shot knows, or the name as the client sent it.
-    public var clientName: String? {
-        client.map { Self.knownClients[$0.lowercased()] ?? $0 }
-    }
-
-    /// The `clientInfo` names some MCP clients send, and the product each one is.
-    private static let knownClients = [
-        "claude-code": "Claude Code",
-        "claude-ai": "Claude",
-        "cursor-vscode": "Cursor",
-        "codex-mcp-client": "Codex",
-    ]
-}
-
 /// A file a project points at: where it was, a bookmark that follows it when it moves, and enough of its identity to
 /// tell it from another file put at the same path.
 public struct ProjectFile: Codable, Equatable, Sendable {
@@ -75,8 +34,9 @@ public struct ProjectFile: Codable, Equatable, Sendable {
     }
 }
 
-/// One project in the store: a capture or version, the original it was edited from, and who made it. The layers
-/// themselves sit beside it in the same file, in a shape only ShotCore knows.
+/// One project in the store: a capture or version and the original it was edited from. The layers themselves sit
+/// beside it in the same file, in a shape only ShotCore knows. Entries an older Shot wrote also carry an `origin`, which
+/// decoding ignores.
 public struct ProjectEntry: Codable, Equatable, Sendable {
     public static let currentSchema = "shot.project/1"
 
@@ -88,15 +48,13 @@ public struct ProjectEntry: Codable, Equatable, Sendable {
     public var file: ProjectFile
     /// What the layers sit on: the capture a version was edited from. `nil` for a capture with no layers.
     public var original: ProjectFile?
-    public var origin: ProjectOrigin
 
-    public init(id: String, stamped: Bool, file: ProjectFile, original: ProjectFile? = nil, origin: ProjectOrigin) {
+    public init(id: String, stamped: Bool, file: ProjectFile, original: ProjectFile? = nil) {
         schema = Self.currentSchema
         self.id = id
         self.stamped = stamped
         self.file = file
         self.original = original
-        self.origin = origin
     }
 
     /// Whether `sighting`, a file found where this entry's file was or where its bookmark led, is still its file.
@@ -122,7 +80,7 @@ public struct ProjectEntry: Codable, Equatable, Sendable {
 /// A project as the store keeps it: the entry's fields with the layers beside them under `document`.
 public struct StoredProject<Document: Codable & Sendable>: Codable, Sendable {
     public var entry: ProjectEntry
-    /// `nil` for a capture with no layers, which keeps only its origin.
+    /// `nil` for an entry with no layers.
     public var document: Document?
 
     public init(entry: ProjectEntry, document: Document?) {
@@ -206,47 +164,9 @@ public enum ProjectKey {
 
 /// Which projects to drop at launch: those whose files are gone.
 public enum ProjectPruning {
-    /// How long a new entry is kept even when its file can't be found, since the CLI may write the project a moment
-    /// before the app looks for it.
-    public static let grace: TimeInterval = 10 * 60
-
     /// Whether to keep `entry`, given the files found where it points (`sightings`) and whether the volume its file
     /// was on is mounted. A file on an unmounted disk isn't gone, so its project stays.
-    public static func keeps(_ entry: ProjectEntry, sightings: [ProjectSighting], volumeMounted: Bool, now: Date = Date()) -> Bool {
-        sightings.contains(where: entry.isFile) || !volumeMounted || now.timeIntervalSince(entry.origin.date) < grace
-    }
-}
-
-/// Which files an agent or the command line made, for the gallery's mark and its Made by agents filter.
-public enum ProjectProvenance {
-    /// The origin of each file an agent or the command line made, keyed by the path it's at now. Each entry comes with
-    /// the files found where it points (`ProjectStore` looks only for these, so the cost follows the number of agent
-    /// entries, not the size of the folder). App entries are left out. Where two entries claim one file, the newer wins.
-    public static func agentOrigins(_ located: [(entry: ProjectEntry, sightings: [ProjectSighting])]) -> [String: ProjectOrigin] {
-        var origins: [String: ProjectOrigin] = [:]
-        for (entry, sightings) in located where entry.origin.isAgent {
-            guard let sighting = sightings.first(where: entry.isFile) else {
-                continue
-            }
-            if let claimed = origins[sighting.file.path], claimed.date > entry.origin.date {
-                continue
-            }
-            origins[sighting.file.path] = entry.origin
-        }
-        return origins
-    }
-}
-
-extension ProjectOrigin {
-    /// Who made a file and how, as the gallery's mark says: "Made by Claude Code · annotate · 14:03", or
-    /// "Command line · trim · 14:03" for a `shot` run, whoever started it. The date shows too when it isn't today.
-    public func summary(now: Date = Date(), calendar: Calendar = .current) -> String {
-        let who: String? = switch via {
-        case .app: nil
-        case .cli: String(localized: "Command line")
-        case .mcp: clientName.map { String(localized: "Made by \($0)") } ?? String(localized: "Made by an agent")
-        }
-        let when = calendar.isDate(date, inSameDayAs: now) ? date.formatted(date: .omitted, time: .shortened) : date.formatted(date: .abbreviated, time: .shortened)
-        return [who, action, when].compactMap { $0 }.joined(separator: " · ")
+    public static func keeps(_ entry: ProjectEntry, sightings: [ProjectSighting], volumeMounted: Bool) -> Bool {
+        sightings.contains(where: entry.isFile) || !volumeMounted
     }
 }

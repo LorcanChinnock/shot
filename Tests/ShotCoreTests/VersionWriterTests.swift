@@ -25,27 +25,20 @@ private let arrow = Annotation(kind: .arrow(from: CGPoint(x: 10, y: 10), to: CGP
     #expect(VersionWriter.nextVersionURL(of: folder.appendingPathComponent("Photo.heic"), savedAs: .png) { taken.contains($0.lastPathComponent) }.lastPathComponent == "Photo (3).png")
 }
 
-@Test func savingAnImageWritesItsNextVersionAndRecordsMarksOnlyForAgents() throws {
+@Test func savingAnImageWritesItsNextVersionAndKeepsItsScale() throws {
     let folder = try temporaryFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
     let original = folder.appendingPathComponent("Shot.png")
     try #require(ImageCodec.data(from: plainImage(), scale: 2)).write(to: original)
     let document = EditorDocument(base: plainImage(), annotations: [arrow])
 
-    let quiet = try VersionWriter.saveImage(document, of: original, scale: 2, recordForAgents: false)
-    #expect(quiet.url.lastPathComponent == "Shot (2).png")
-    #expect(try Data(contentsOf: quiet.url) == quiet.png)
-    #expect(ImageCodec.record(ofFileAt: quiet.url) == nil)
-    #expect(ImageCodec.scale(ofFileAt: quiet.url) == 2)
+    let saved = try VersionWriter.saveImage(document, of: original, scale: 2)
+    #expect(saved.url.lastPathComponent == "Shot (2).png")
+    #expect(try Data(contentsOf: saved.url) == saved.png)
+    #expect(ImageCodec.scale(ofFileAt: saved.url) == 2)
 
-    let recorded = try VersionWriter.saveImage(document, of: original, scale: 2, recordForAgents: true)
-    #expect(recorded.url.lastPathComponent == "Shot (3).png")
-    let record = try #require(ImageCodec.record(ofFileAt: recorded.url))
-    #expect(record.original == "Shot.png")
-    #expect(record.size == CaptureRecord.Size(width: 120, height: 80))
-    #expect(record.canvas == [0, 0, 120, 80])
-    #expect(record.editable == true)
-    #expect(record.annotations.map(\.type) == ["arrow"])
+    let next = try VersionWriter.saveImage(document, of: original, scale: 2)
+    #expect(next.url.lastPathComponent == "Shot (3).png")
 }
 
 @Test func aJPEGVersionStaysJPEGAndStillGivesAPNGForTheClipboard() throws {
@@ -55,24 +48,10 @@ private let arrow = Annotation(kind: .arrow(from: CGPoint(x: 10, y: 10), to: CGP
     try #require(ImageCodec.data(from: plainImage(), scale: 1, format: .jpeg)).write(to: original)
     let document = EditorDocument(base: plainImage(), annotations: [arrow], background: EditorDocument.defaultBackground(for: .jpeg))
 
-    let saved = try VersionWriter.saveImage(document, of: original, scale: 1, recordForAgents: true)
+    let saved = try VersionWriter.saveImage(document, of: original, scale: 1)
     #expect(saved.url.lastPathComponent == "Shot (2).jpeg")
     #expect(ImageCodec.image(from: saved.png) != nil)
     #expect(try Data(contentsOf: saved.url) != saved.png)
-    #expect(ImageCodec.record(ofFileAt: saved.url)?.editable == true)
-}
-
-@Test func aRecordIsntEditableOnceTheCaptureIsStyledOrItsBackgroundChanged() {
-    let original = URL(fileURLWithPath: "/tmp/shots/Shot.png")
-    var document = EditorDocument(base: plainImage(), annotations: [arrow])
-    #expect(VersionWriter.record(of: document, drawnOn: original, savedAs: .png, scale: 1).editable == true)
-    document.captureCornerRadius = 8
-    #expect(VersionWriter.record(of: document, drawnOn: original, savedAs: .png, scale: 1).editable == false)
-    document.captureCornerRadius = 0
-    document.background = RGBA(1, 1, 1)
-    #expect(VersionWriter.record(of: document, drawnOn: original, savedAs: .png, scale: 1).editable == false)
-    // White is JPEG's own background, so there it's no change.
-    #expect(VersionWriter.record(of: document, drawnOn: original, savedAs: .jpeg, scale: 1).editable == true)
 }
 
 @Test func aVideoCopyIsANewCaptureNameInTheRecordingsFormat() {
@@ -85,13 +64,13 @@ private let arrow = Annotation(kind: .arrow(from: CGPoint(x: 10, y: 10), to: CGP
     #expect(VersionWriter.videoCopyURL(of: folder.appendingPathComponent("Clip.m4v"), prefix: "Bug", date: date).lastPathComponent == "Bug 2026-10-02 at 14.03.11.mp4")
 }
 
-@Test func aSavedVersionsLayersComeBackLiveWithoutTheAgentSetting() throws {
+@Test func aSavedVersionsLayersComeBackLive() throws {
     let folder = try temporaryFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
     let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
     let original = folder.appendingPathComponent("Shot.png")
     try #require(ImageCodec.data(from: plainImage(), scale: 2)).write(to: original)
-    // Everything a record can't hold: a placed image, a spotlight, a hidden and a styled layer, a styled screenshot.
+    // A placed image, a spotlight, a hidden and a styled layer, a styled screenshot.
     var document = EditorDocument(base: plainImage(), annotations: [arrow])
     document.addImage(plainImage(width: 20, height: 20), scale: 2, documentScale: 2, centeredAt: CGPoint(x: 30, y: 30), margin: 16)
     document.annotations.append(Annotation(kind: .spotlight(CGRect(x: 5, y: 5, width: 40, height: 30), style: SpotlightStyle()), color: RGBA(0, 0, 0), lineWidth: 0))
@@ -100,12 +79,11 @@ private let arrow = Annotation(kind: .arrow(from: CGPoint(x: 10, y: 10), to: CGP
     document.setCornerRadius(12, of: .capture)
     document.background = RGBA(0.2, 0.4, 0.6)
 
-    let saved = try VersionWriter.saveImage(document, of: original, scale: 2, recordForAgents: false, projects: store)
-    #expect(ImageCodec.record(ofFileAt: saved.url) == nil)
+    let saved = try VersionWriter.saveImage(document, of: original, scale: 2, projects: store)
     let reopened = try #require(VersionWriter.layers(of: saved.url, in: store))
     #expect(reopened.original.resolvingSymlinksInPath() == original.resolvingSymlinksInPath())
     #expect(reopened.layers == document.snapshot)
-    #expect(store.entry(for: saved.url)?.origin.via == .app)
+    #expect(store.entry(for: saved.url) != nil)
 }
 
 @Test func aVersionOpensFlatWhenItsOriginalIsReplacedButFollowsItWhenMoved() throws {
@@ -114,7 +92,7 @@ private let arrow = Annotation(kind: .arrow(from: CGPoint(x: 10, y: 10), to: CGP
     let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
     let original = folder.appendingPathComponent("Shot.png")
     try #require(ImageCodec.data(from: plainImage(), scale: 1)).write(to: original)
-    let saved = try VersionWriter.saveImage(EditorDocument(base: plainImage(), annotations: [arrow]), of: original, scale: 1, recordForAgents: false, projects: store)
+    let saved = try VersionWriter.saveImage(EditorDocument(base: plainImage(), annotations: [arrow]), of: original, scale: 1, projects: store)
 
     let moved = folder.appendingPathComponent("Moved.png")
     try FileManager.default.moveItem(at: original, to: moved)
@@ -132,7 +110,7 @@ private let arrow = Annotation(kind: .arrow(from: CGPoint(x: 10, y: 10), to: CGP
     defer { try? FileManager.default.removeItem(at: folder) }
     let original = folder.appendingPathComponent("Shot.png")
     try #require(ImageCodec.data(from: plainImage(), scale: 1)).write(to: original)
-    let saved = try VersionWriter.saveImage(EditorDocument(base: plainImage(), annotations: [arrow]), of: original, scale: 1, recordForAgents: false)
+    let saved = try VersionWriter.saveImage(EditorDocument(base: plainImage(), annotations: [arrow]), of: original, scale: 1)
     #expect(ImageCodec.projectID(ofFileAt: saved.url) == nil)
 }
 
@@ -189,7 +167,7 @@ extension CompositingMediaTests {
         let copy = VersionWriter.videoCopyURL(of: recording, prefix: "Shot")
         try await VersionWriter.writeVideo(VersionWriter.videoPlan(for: project, of: recording), of: project, original: recording, to: copy, projects: store)
         #expect(ProjectStamp.id(ofFileAt: copy) != nil)
-        #expect(store.entry(for: copy)?.origin.via == .app)
+        #expect(store.entry(for: copy) != nil)
         let reopened = try #require(VersionWriter.project(of: copy, in: store))
         #expect(reopened.original.resolvingSymlinksInPath() == recording.resolvingSymlinksInPath())
         #expect(resolved(reopened.project) == resolved(project))
@@ -237,30 +215,5 @@ extension CompositingMediaTests {
         try FileManager.default.removeItem(at: moved.appendingPathComponent("Recording.mp4"))
         try await writeSyntheticVideo(to: moved.appendingPathComponent("Recording.mp4"), seconds: 3, fps: 10, width: 160, height: 90)
         #expect(VersionWriter.project(of: moved.appendingPathComponent("Copy.mp4"), in: store) == nil)
-    }
-
-    @Test func aRecordingTrimmedInPlaceKeepsItsIDAndOriginButNotItsLayers() async throws {
-        let folder = try temporaryFolder()
-        defer { try? FileManager.default.removeItem(at: folder) }
-        let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
-        let recording = folder.appendingPathComponent("Recording.mp4")
-        try await writeSyntheticVideo(to: recording, seconds: 2, fps: 10, width: 160, height: 90)
-        let id = ProjectKey.newID()
-        try ProjectStamp.stamp(movieAt: recording, id: id)
-        let origin = ProjectOrigin(via: .cli, action: "record")
-        try store.save(Project(source: recording, duration: 2, canvasSize: CGSize(width: 160, height: 90), hasAudio: false), for: recording, id: id, origin: origin)
-        let before = try #require(store.entry(for: recording))
-
-        // Save writes the trim as a new file, which has no stamp, and swaps it in.
-        let trimmed = folder.appendingPathComponent("Trimmed.mp4")
-        try await VideoExportPlan.copy(of: try #require(Project(source: recording, duration: 2, canvasSize: CGSize(width: 160, height: 90), hasAudio: false).deleting(range: 0..<0.5)), as: .mp4).run(to: trimmed)
-        _ = try FileManager.default.replaceItemAt(recording, withItemAt: trimmed)
-        #expect(ProjectStamp.id(ofFileAt: recording) == nil)
-
-        VersionWriter.restamp(trimmed: recording, as: before, in: store)
-        #expect(ProjectStamp.id(ofFileAt: recording) == id)
-        let after = try #require(store.project(for: recording, as: Project.self))
-        #expect(after.entry.origin == origin)
-        #expect(after.document == nil)
     }
 }

@@ -14,21 +14,15 @@ private func writePNG(to url: URL, id: String?) throws {
     try #require(ImageCodec.data(from: solidImage(width: 20, height: 10), scale: 1, projectID: id)).write(to: url)
 }
 
-/// Long enough after now that pruning's grace for new entries is over.
-private let later = Date().addingTimeInterval(ProjectPruning.grace + 60)
-
 @Test(arguments: [ImageFormat.png, .jpeg])
-func theProjectIDGoesInTheImagesXMPBesideTheRecord(format: ImageFormat) throws {
-    let record = CaptureRecord(kind: "image", created: Date(timeIntervalSince1970: 1_791_640_992), size: .init(width: 20, height: 10), scale: 1)
+func theProjectIDGoesInTheImagesXMP(format: ImageFormat) throws {
     let url = FileManager.default.temporaryDirectory.appendingPathComponent("project-\(UUID().uuidString).\(format.fileExtension)")
     defer { try? FileManager.default.removeItem(at: url) }
-    try #require(ImageCodec.data(from: solidImage(width: 20, height: 10), scale: 1, format: format, record: record, projectID: "ID-1")).write(to: url)
+    try #require(ImageCodec.data(from: solidImage(width: 20, height: 10), scale: 1, format: format, projectID: "ID-1")).write(to: url)
     #expect(ImageCodec.projectID(ofFileAt: url) == "ID-1")
-    #expect(ImageCodec.record(ofFileAt: url) == record)
 
     try #require(ImageCodec.data(from: solidImage(width: 20, height: 10), scale: 1, format: format, projectID: "ID-2")).write(to: url)
     #expect(ImageCodec.projectID(ofFileAt: url) == "ID-2")
-    #expect(ImageCodec.record(ofFileAt: url) == nil)
 }
 
 @Test func eachAppKeepsItsOwnStore() {
@@ -43,8 +37,7 @@ func theProjectIDGoesInTheImagesXMPBesideTheRecord(format: ImageFormat) throws {
     try writePNG(to: original, id: nil)
     let id = ProjectKey.newID()
     try writePNG(to: version, id: id)
-    let origin = ProjectOrigin(via: .mcp, client: "claude-code", action: "annotate")
-    try store.save(Layers(marks: ["arrow", "blur"]), for: version, id: id, original: original, origin: origin)
+    try store.save(Layers(marks: ["arrow", "blur"]), for: version, id: id, original: original)
 
     let moved = folder.appendingPathComponent("Moved", isDirectory: true)
     try FileManager.default.createDirectory(at: moved, withIntermediateDirectories: true)
@@ -53,21 +46,18 @@ func theProjectIDGoesInTheImagesXMPBesideTheRecord(format: ImageFormat) throws {
 
     let project = try #require(store.project(for: moved.appendingPathComponent("Renamed.png"), as: Layers.self))
     #expect(project.document == Layers(marks: ["arrow", "blur"]))
-    #expect(project.entry.origin == origin)
     #expect(project.entry.original?.locate()?.resolvingSymlinksInPath() == moved.appendingPathComponent("Shot.png").resolvingSymlinksInPath())
 }
 
-@Test func aCaptureWithNoLayersKeepsOnlyItsOrigin() throws {
+@Test func anEntryWithNoLayersKeepsOnlyTheFile() throws {
     let folder = try temporaryFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
     let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
     let capture = folder.appendingPathComponent("Shot.png"), id = ProjectKey.newID()
     try writePNG(to: capture, id: id)
-    try store.save(origin: ProjectOrigin(via: .cli, action: "capture"), for: capture, id: id)
+    try store.save(String?.none, for: capture, id: id)
 
     let entry = try #require(store.entry(for: capture))
-    #expect(entry.origin.via == .cli)
-    #expect(entry.origin.action == "capture")
     #expect(entry.original == nil)
     #expect(store.project(for: capture, as: Layers.self)?.document == nil)
 }
@@ -82,7 +72,7 @@ func theProjectIDGoesInTheImagesXMPBesideTheRecord(format: ImageFormat) throws {
     #expect(store.entry(for: plain) == nil)
     #expect(store.entry(for: unknown) == nil)
     #expect(throws: ProjectStore.StoreError.noFile) {
-        try store.save(origin: ProjectOrigin(via: .app), for: folder.appendingPathComponent("Missing.png"), id: "ID")
+        try store.save(String?.none, for: folder.appendingPathComponent("Missing.png"), id: "ID")
     }
 }
 
@@ -92,7 +82,7 @@ func theProjectIDGoesInTheImagesXMPBesideTheRecord(format: ImageFormat) throws {
     let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
     let gif = folder.appendingPathComponent("Shot.gif")
     try Data("GIF89a".utf8).write(to: gif)
-    let entry = try store.save(Layers(marks: ["trim"]), for: gif, id: nil, origin: ProjectOrigin(via: .app))
+    let entry = try store.save(Layers(marks: ["trim"]), for: gif, id: nil)
     #expect(!entry.stamped)
     #expect(ProjectKey.isIdentity(entry.id))
 
@@ -108,12 +98,12 @@ func theProjectIDGoesInTheImagesXMPBesideTheRecord(format: ImageFormat) throws {
     let store = ProjectStore(folder: projects)
     let gif = folder.appendingPathComponent("Shot.gif")
     try Data("GIF89a one".utf8).write(to: gif)
-    try store.save(Layers(marks: ["first"]), for: gif, id: nil, origin: ProjectOrigin(via: .app))
+    try store.save(Layers(marks: ["first"]), for: gif, id: nil)
 
     try Data("GIF89a, another".utf8).write(to: gif, options: .atomic)
     #expect(store.entry(for: gif) == nil)
 
-    try store.save(Layers(marks: ["second"]), for: gif, id: nil, origin: ProjectOrigin(via: .cli, action: "gif"))
+    try store.save(Layers(marks: ["second"]), for: gif, id: nil)
     #expect(store.project(for: gif, as: Layers.self)?.document == Layers(marks: ["second"]))
     #expect(try FileManager.default.contentsOfDirectory(atPath: projects.path).count == 1)
 }
@@ -128,18 +118,17 @@ func theProjectIDGoesInTheImagesXMPBesideTheRecord(format: ImageFormat) throws {
     let keptID = ProjectKey.newID()
     for (url, id) in [(kept, keptID), (deleted, ProjectKey.newID()), (replaced, ProjectKey.newID())] {
         try writePNG(to: url, id: id)
-        try store.save(origin: ProjectOrigin(via: .app), for: url, id: id)
+        try store.save(String?.none, for: url, id: id)
     }
     try Data("GIF89a".utf8).write(to: gif)
-    try store.save(origin: ProjectOrigin(via: .app), for: gif, id: nil)
+    try store.save(String?.none, for: gif, id: nil)
     try FileManager.default.removeItem(at: deleted)
     try FileManager.default.removeItem(at: gif)
     try writePNG(to: replaced, id: nil)
     // An entry it can't read, perhaps from a newer Shot, stays.
     try Data("{}".utf8).write(to: projects.appendingPathComponent("\(ProjectKey.newID()).json"))
 
-    #expect(store.prune() == 0)
-    #expect(store.prune(now: later) == 3)
+    #expect(store.prune() == 3)
     #expect(store.entry(for: kept)?.id == keptID)
     #expect(try FileManager.default.contentsOfDirectory(atPath: projects.path).count == 2)
 }
@@ -150,34 +139,28 @@ func theProjectIDGoesInTheImagesXMPBesideTheRecord(format: ImageFormat) throws {
     let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
     let capture = folder.appendingPathComponent("Shot.png"), id = ProjectKey.newID()
     try writePNG(to: capture, id: id)
-    try store.save(origin: ProjectOrigin(via: .app), for: capture, id: id)
+    try store.save(String?.none, for: capture, id: id)
     try FileManager.default.moveItem(at: capture, to: folder.appendingPathComponent("Moved.png"))
 
-    #expect(store.prune(now: later) == 0)
+    #expect(store.prune() == 0)
 }
 
-@Test func theGalleryFindsWhatAgentsMadeEvenAfterARename() throws {
+@Test func anEntryAnOlderShotWroteWithAnOriginStillLoads() throws {
     let folder = try temporaryFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
-    let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
-    let mine = folder.appendingPathComponent("Mine.png"), plain = folder.appendingPathComponent("Plain.png")
-    let cli = folder.appendingPathComponent("Shot.png"), gif = folder.appendingPathComponent("Shot.gif")
-    let mineID = ProjectKey.newID(), cliID = ProjectKey.newID()
-    try writePNG(to: mine, id: mineID)
-    try writePNG(to: plain, id: nil)
-    try writePNG(to: cli, id: cliID)
-    try Data("GIF89a".utf8).write(to: gif)
-    try store.save(origin: ProjectOrigin(via: .app), for: mine, id: mineID)
-    try store.save(origin: ProjectOrigin(via: .cli, action: "capture"), for: cli, id: cliID)
-    let made = ProjectOrigin(via: .mcp, client: "claude-code", action: "make_gif")
-    try store.save(origin: made, for: gif, id: nil)
-    let renamed = folder.appendingPathComponent("Renamed.png")
-    try FileManager.default.moveItem(at: cli, to: renamed)
+    let projects = folder.appendingPathComponent("Projects")
+    let store = ProjectStore(folder: projects)
+    let capture = folder.appendingPathComponent("Shot.png"), id = ProjectKey.newID()
+    try writePNG(to: capture, id: id)
+    try store.save(Layers(marks: ["arrow"]), for: capture, id: id)
+    let name = try #require(ProjectKey.fileName(for: id))
+    var object = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: projects.appendingPathComponent(name))) as? [String: Any])
+    object["origin"] = ["via": "mcp", "client": "claude-code", "action": "annotate", "date": "2026-10-10T14:03:12Z"]
+    try JSONSerialization.data(withJSONObject: object).write(to: projects.appendingPathComponent(name))
 
-    let origins = Gallery.agentOrigins(of: Gallery.items(in: folder), in: folder, store: store)
-    #expect(origins.keys.map(\.lastPathComponent).sorted() == ["Renamed.png", "Shot.gif"])
-    #expect(origins.first { $0.key.lastPathComponent == "Renamed.png" }?.value.action == "capture")
-    #expect(origins.first { $0.key.lastPathComponent == "Shot.gif" }?.value == made)
+    let project = try #require(store.project(for: capture, as: Layers.self))
+    #expect(project.document == Layers(marks: ["arrow"]))
+    #expect(store.entry(for: capture)?.id == id)
 }
 
 extension MediaTests {
@@ -232,11 +215,10 @@ extension MediaTests {
         let id = ProjectKey.newID()
         try ProjectStamp.stamp(movieAt: copy, id: id)
         let project = Project(source: recording, duration: 1, canvasSize: CGSize(width: 320, height: 180), hasAudio: false)
-        try store.save(project, for: copy, id: id, original: recording, origin: ProjectOrigin(via: .mcp, client: "cursor", action: "trim_video"))
+        try store.save(project, for: copy, id: id, original: recording)
 
         let stored = try #require(store.project(for: copy, as: Project.self))
         #expect(stored.document == project)
-        #expect(stored.entry.origin.client == "cursor")
         #expect(store.entry(for: recording) == nil)
     }
 }

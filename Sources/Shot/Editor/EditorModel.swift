@@ -1146,7 +1146,7 @@ final class EditorModel {
     private func renderedPNG() async -> Data? {
         let document = document, scale = scale
         return await Task.detached {
-            try? VersionWriter.render(document, scale: scale, as: .png, record: nil).file
+            try? VersionWriter.render(document, scale: scale, as: .png).file
         }.value
     }
 

@@ -140,17 +140,3 @@ private func scene(_ shapes: [Annotation]) -> EditorDocument {
     let decoded = try JSONDecoder().decode(CopiedStyle.self, from: JSONSerialization.data(withJSONObject: object))
     #expect(decoded == copied && !decoded.isFromShape)
 }
-
-// MARK: Agent marks
-
-@Test func aRoundedMarkIsARectangleWithTheDefaultRadius() throws {
-    let mark = CaptureMark(id: "a", type: "rounded", rect: [10, 10, 80, 40])
-    let annotation = try #require(Annotation(mark: mark))
-    #expect(annotation.kind == .shape(.rectangle, rect: CGRect(x: 10, y: 10, width: 80, height: 40)))
-    #expect(annotation.cornerRadius == Annotation.defaultCornerRadius)
-    let reported = CaptureMark(annotation, origin: .zero, scale: 1)
-    #expect(reported.type == "rectangle" && reported.cornerRadius == Double(Annotation.defaultCornerRadius))
-    let sized = try #require(Annotation(mark: CaptureMark(id: "b", type: "rounded", rect: [10, 10, 80, 40], cornerRadius: 5)))
-    #expect(sized.cornerRadius == 5)
-    #expect(try #require(Annotation(mark: CaptureMark(id: "c", type: "rectangle", rect: [10, 10, 80, 40]))).cornerRadius == nil)
-}
