@@ -47,8 +47,7 @@ struct VideoEditorRootView: View {
                     }
                     .brutalTip(model.isComposite ? "Write the edit as a new video next to the original and copy it (⌘S)" : "Save the edited video and copy it (⌘S)")
                 }
-                // Captions being added would be lost to an export that starts first.
-                .disabled(model.isExporting || model.isCaptioning)
+                .disabled(model.isExporting)
                 if model.isExporting {
                     Button("Cancel") { model.cancelExport() }
                         .buttonStyle(BrutalButtonStyle(compact: true))

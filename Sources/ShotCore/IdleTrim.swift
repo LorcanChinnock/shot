@@ -2,7 +2,7 @@ import Foundation
 
 /// **Trim Idle Time**: where the action in a recording starts and ends, from how much the picture changes and where
 /// the sound is loud enough to be speech. Most recordings open with a few seconds of reaching for the mouse and end with
-/// a few reaching for Stop. No AI: it's frame comparison, the samples `KeyFrameExtractor` takes for agents.
+/// a few reaching for Stop. No AI: it's frame comparison, the samples `KeyFrameExtractor` takes.
 public enum IdleTrim {
     /// How much a sample must differ from the one before to count as a change, from 0 to 1. A cursor moving over a
     /// still screen stays under it at 64×36, which is right: that's the idle time being cut.

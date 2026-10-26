@@ -1,26 +1,25 @@
 import CoreGraphics
 import Foundation
 
-/// Pulls still frames out of a video for an agent, which can't watch one: samples it a few times a second as tiny
-/// grayscale thumbnails to find where the picture changes (`FramePicker` does the picking), then decodes
-/// only the frames picked at full size.
+/// Finds where the picture of a video changes: samples it a few times a second as tiny grayscale thumbnails and
+/// compares each with the one before, which Trim Idle Time reads to find the still start and end.
 public enum KeyFrameExtractor {
-    public struct Frame: @unchecked Sendable {
-        /// Seconds from the start, of the frame actually decoded.
-        public let time: Double
-        public let image: CGImage
-    }
-
     /// Samples a second when looking for changes, and the most for a long video, which is then sampled less often.
     static let sampleRate = 4.0
     static let maximumSamples = 1200
     /// The thumbnails compared, small enough to ignore noise and fast to decode.
     static let thumbnailSize = (width: 64, height: 36)
 
-    /// The times of the `count` frames that show what happens in the video at `url`, which is `duration` long.
-    public static func changeTimes(in url: URL, duration: Double, count: Int) async throws -> [Double] {
-        let sampled = try await differences(in: url, duration: duration)
-        return FramePicker.pick(differences: sampled.differences, times: sampled.times, count: count).map { sampled.actual[$0] }
+    /// How different two equally sized grayscale thumbnails are, from 0 for the same to 1 for black against white.
+    public static func difference(_ a: [UInt8], _ b: [UInt8]) -> Double {
+        guard a.count == b.count, !a.isEmpty else {
+            return a.count == b.count ? 0 : 1
+        }
+        var total = 0
+        for index in a.indices {
+            total += abs(Int(a[index]) - Int(b[index]))
+        }
+        return Double(total) / Double(a.count) / 255
     }
 
     /// The times sampled through the video at `url`, which is `duration` long, how much each differs from the one before
@@ -41,20 +40,9 @@ public enum KeyFrameExtractor {
         }
         var differences = [0.0]
         for (previous, next) in zip(times, times.dropFirst()) {
-            differences.append(thumbnails[previous].flatMap { a in thumbnails[next].map { FramePicker.difference(a, $0) } } ?? 0)
+            differences.append(thumbnails[previous].flatMap { a in thumbnails[next].map { difference(a, $0) } } ?? 0)
         }
         return (times, differences, times.map { actual[$0] ?? $0 })
-    }
-
-    /// The frames at `times`, at most `maxWidth` wide and never enlarged, decoded exactly there.
-    public static func frames(of url: URL, at times: [Double], maxWidth: Int) async throws -> [Frame] {
-        var frames: [Frame] = []
-        try await AVVideoReader.readFrames(of: url, at: times, maxSize: CGSize(width: maxWidth, height: 0), tolerance: 0) { frame in
-            try Task.checkCancellation()
-            let (time, image) = try frame.decoded.get()
-            frames.append(Frame(time: time, image: image))
-        }
-        return frames.sorted { $0.time < $1.time }
     }
 
     /// `image` drawn small into a grey bitmap, as bytes.

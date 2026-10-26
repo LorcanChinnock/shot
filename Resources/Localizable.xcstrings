@@ -1812,9 +1812,6 @@
         }
       }
     },
-    "A bug report is already being written" : {
-
-    },
     "A few more things worth knowing." : {
       "localizations" : {
         "de" : {
@@ -2132,9 +2129,6 @@
           }
         }
       }
-    },
-    "Add Captions" : {
-
     },
     "Add Video or Audio at Playhead…" : {
       "localizations" : {
@@ -2551,12 +2545,6 @@
           }
         }
       }
-    },
-    "Added %lld captions" : {
-
-    },
-    "Added 1 caption" : {
-
     },
     "Adjust before recording" : {
       "localizations" : {
@@ -3937,9 +3925,6 @@
         }
       }
     },
-    "Bug report cancelled" : {
-
-    },
     "Bug reports and ideas are welcome." : {
       "localizations" : {
         "de" : {
@@ -4890,9 +4875,6 @@
           }
         }
       }
-    },
-    "Captions weren't added because an export started. Choose Add Captions again once it's done." : {
-
     },
     "Capture" : {
       "localizations" : {
@@ -6923,9 +6905,6 @@
         }
       }
     },
-    "Copied alt text" : {
-
-    },
     "Copied annotation" : {
       "localizations" : {
         "de" : {
@@ -6977,9 +6956,6 @@
           }
         }
       }
-    },
-    "Copied bug report" : {
-
     },
     "Copied path" : {
       "localizations" : {
@@ -7295,12 +7271,6 @@
           }
         }
       }
-    },
-    "Copy Alt Text" : {
-
-    },
-    "Copy Bug Report" : {
-
     },
     "Copy Latest Capture's Path" : {
       "localizations" : {
@@ -8400,9 +8370,6 @@
     "Couldn't join the recording. Its parts are saved in your save folder." : {
 
     },
-    "Couldn't listen to the recording: %@" : {
-
-    },
     "Couldn't move %lld files to the Trash" : {
       "localizations" : {
         "de" : {
@@ -9186,18 +9153,6 @@
           }
         }
       }
-    },
-    "Couldn't write a bug report for this image" : {
-
-    },
-    "Couldn't write a bug report: %@" : {
-
-    },
-    "Couldn't write alt text for this image" : {
-
-    },
-    "Couldn't write alt text: %@" : {
-
     },
     "Countdown" : {
       "localizations" : {
@@ -16710,9 +16665,6 @@
         }
       }
     },
-    "Listening to the recording…" : {
-
-    },
     "Loading…" : {
       "localizations" : {
         "de" : {
@@ -18749,12 +18701,6 @@
       }
     },
     "Nothing happens in this recording to keep" : {
-
-    },
-    "Nothing is said in the part you kept" : {
-
-    },
-    "Nothing is said in this recording" : {
 
     },
     "Nothing matches" : {
@@ -30093,9 +30039,6 @@
         }
       }
     },
-    "This Mac can't transcribe speech in your language" : {
-
-    },
     "This Month" : {
       "localizations" : {
         "de" : {
@@ -30884,9 +30827,6 @@
           }
         }
       }
-    },
-    "Turn on Apple Intelligence in System Settings to write bug reports." : {
-
     },
     "Turn on Shot under Screen & System Audio Recording." : {
       "localizations" : {
@@ -32194,9 +32134,6 @@
         }
       }
     },
-    "Wait for the captions first" : {
-
-    },
     "Welcome to Shot" : {
       "localizations" : {
         "de" : {
@@ -32560,12 +32497,6 @@
           }
         }
       }
-    },
-    "Writing alt text…" : {
-
-    },
-    "Writing bug report… this can take a minute" : {
-
     },
     "X: rotate" : {
       "localizations" : {

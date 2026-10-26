@@ -186,19 +186,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         edit.addItem(withTitle: String(localized: "Paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
         edit.addItem(withTitle: String(localized: "Select All"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         // The editors'; elsewhere nothing answers them, so they're greyed out. Apply Style to All Images is the image
-        // editor's, and Trim Idle Time and Add Captions the video editor's.
+        // editor's, and Trim Idle Time the video editor's.
         edit.addItem(.separator())
         edit.addItem(withTitle: String(localized: "Copy Style"), action: Selector(("copyStyle:")), keyEquivalent: "c").keyEquivalentModifierMask = [.command, .option]
         edit.addItem(withTitle: String(localized: "Paste Style"), action: Selector(("pasteStyle:")), keyEquivalent: "v").keyEquivalentModifierMask = [.command, .option]
         edit.addItem(withTitle: String(localized: "Apply Style to All Images"), action: Selector(("applyStyleToAllImages:")), keyEquivalent: "")
         edit.addItem(withTitle: String(localized: "Trim Idle Time"), action: Selector(("trimIdleTime:")), keyEquivalent: "")
-        if #available(macOS 26, *) {
-            edit.addItem(withTitle: String(localized: "Add Captions"), action: Selector(("addCaptions:")), keyEquivalent: "")
-        }
         edit.addItem(withTitle: String(localized: "Flatten"), action: Selector(("flatten:")), keyEquivalent: "")
-        // Always added; the editor shows or hides it each time the menu opens, since the Mac's model can become available.
-        edit.addItem(withTitle: String(localized: "Copy Alt Text"), action: #selector(EditorWindowController.copyAltText(_:)), keyEquivalent: "").isHidden = !AltTextAction.isAvailable
-        edit.addItem(withTitle: String(localized: "Copy Bug Report"), action: #selector(EditorWindowController.copyBugReport(_:)), keyEquivalent: "").isHidden = !BugReportAction.isAvailable
         let editItem = NSMenuItem(title: String(localized: "Edit"), action: nil, keyEquivalent: "")
         editItem.submenu = edit
         let main = NSMenu()

@@ -53,7 +53,7 @@ jobs:
     needs: release-please
     if: needs.release-please.outputs.release_created == 'true'
     # The same image as CI's macos check, so the release is built with the SDK the gate tested. See ci.yml.
-    runs-on: xcode-27
+    runs-on: macos-26
     # A release takes about 10 minutes. A hung test would otherwise hold this runner, and the `release` concurrency group
     # that every later push to main waits on, for GitHub's 6-hour default.
     timeout-minutes: 30
@@ -66,8 +66,6 @@ jobs:
       attestations: write
     env:
       TAG: ${{ needs.release-please.outputs.tag_name }}
-      # The Xcode CI's gate tested. See ci.yml.
-      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -101,9 +99,6 @@ jobs:
         run: make dist
         env:
           SHOT_SIGN_IDENTITY: Shot Release
-      # Both slices of the universal app, so Copy Alt Text is in the release and it still launches on macOS 15.
-      - name: Check the SDK
-        run: scripts/check-sdk.sh build/Shot.app/Contents/MacOS/Shot
       - name: Build the update feed
         env:
           GH_TOKEN: ${{ github.token }}
