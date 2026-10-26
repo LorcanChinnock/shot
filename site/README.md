@@ -7,7 +7,7 @@ cd site
 npm install
 npm run dev       # http://localhost:4321
 npm run build     # static site in dist/
-npm run preview   # build, then serve dist/ with wrangler, _redirects and _headers included
+npm run preview   # build, then serve dist/ (Astro's server ignores `_redirects` and `_headers`)
 ```
 
 - The user guide is `src/guide/`, one Markdown file per page at `/docs/<slug>/`, in file name order (`src/lib/guide.ts`). Front matter gives each page its `title`, `summary` and `group`. A link to another page's section can use just its id, `(#id)`, and the build points it at the right page. GitHub alerts (`> [!TIP]`, `> [!NOTE]`, `> [!WARNING]`) become callouts, numbered lists become steps, `<kbd>` becomes a key cap, and every code block gets a Copy button. Screenshots stay in `../docs/media/`, which the repo README uses too, and `/docs/` redirects to the start page. `/changelog/` renders `CHANGELOG.md`, so they never drift from the repo.
@@ -22,10 +22,10 @@ npm run preview   # build, then serve dist/ with wrangler, _redirects and _heade
 Cloudflare Workers Builds builds and deploys the site from the GitHub repo, so it uses no GitHub Actions minutes. The `shot-site` Worker is connected to the repo with:
 
 - Root directory: `site` (the build also reads `../docs`, `../CHANGELOG.md` and `../.release-please-manifest.json`)
-- Build command: `npm run build`; deploy command: `npx wrangler deploy`
+- Build command: `npm run build`; deploy command: `npx wrangler deploy` (Cloudflare's build provides wrangler, so it isn't a dependency)
 - Production branch `main`; build watch paths `site/*`, `docs/*`, `CHANGELOG.md`
 - Build variable `GITHUB_TOKEN`: a read-only token, so `src/lib/release.ts` doesn't hit GitHub's anonymous rate limit on shared build IPs
 
 `release.yml` POSTs to a deploy hook (Settings › Builds › Deploy Hooks, branch `main`) after publishing a release, so the download button moves to the new zip. Its URL is the repository secret `SITE_DEPLOY_HOOK`.
 
-`lorcanchinnock.com` must be a zone on the same Cloudflare account; the first deploy creates the `shot` custom domain and its DNS record. To deploy by hand: `npx wrangler login`, then `npm run deploy`.
+`lorcanchinnock.com` must be a zone on the same Cloudflare account; the first deploy creates the `shot` custom domain and its DNS record. To deploy by hand: `npx wrangler login`, then `npm run build && npx wrangler deploy`.
