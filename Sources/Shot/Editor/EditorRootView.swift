@@ -25,11 +25,9 @@ struct EditorRootView: View {
                 Button("Copy") { Task { await model.copy() } }
                     .buttonStyle(BrutalButtonStyle(compact: true))
                     .brutalTip("Copy image (⌘C)")
-                PartyColor(Brutal.yellow) { color in
-                    Button("Save") { Task { await model.save() } }
-                        .buttonStyle(BrutalButtonStyle(color: color, compact: true))
-                }
-                .brutalTip("Save and copy (⌘S)")
+                Button("Save") { Task { await model.save() } }
+                    .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
+                    .brutalTip("Save and copy (⌘S)")
             }
             .padding(.leading, GlassWindow.trafficLightsWidth)
             .frame(height: GlassWindow.titlebarHeight)

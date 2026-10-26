@@ -57,8 +57,6 @@ public enum PreferenceKey {
     /// The style Use this style for new captures saved; empty while it's off.
     public static let newCaptureStyle = "newCaptureStyle"
     public static let galleryTileSize = "galleryTileSize"
-    public static let partyModeUnlocked = "partyModeUnlocked"
-    public static let partyMode = "partyMode"
     /// How large Shot draws its own text, a `TextSize`.
     public static let textSize = "textSize"
     /// Whether Shot follows the system appearance, an `AppearanceMode`.
@@ -143,8 +141,6 @@ public struct Preferences {
             PreferenceKey.editorObjectStyles: Data(),
             PreferenceKey.newCaptureStyle: Data(),
             PreferenceKey.galleryTileSize: Gallery.defaultTileSize,
-            PreferenceKey.partyModeUnlocked: false,
-            PreferenceKey.partyMode: false,
             PreferenceKey.editorShowsLayers: false,
             PreferenceKey.videoEditorShowsInspector: false,
         ]
@@ -421,8 +417,6 @@ public struct Preferences {
         Gallery.tileSizes.contains(store.double(forKey: PreferenceKey.galleryTileSize)) ? store.double(forKey: PreferenceKey.galleryTileSize) : Gallery.defaultTileSize
     }
 
-    public var partyModeUnlocked: Bool { store.bool(forKey: PreferenceKey.partyModeUnlocked) }
-    public var partyMode: Bool { store.bool(forKey: PreferenceKey.partyMode) }
 
     public var textSize: TextSize {
         TextSize(rawValue: store.string(forKey: PreferenceKey.textSize) ?? "") ?? .standard

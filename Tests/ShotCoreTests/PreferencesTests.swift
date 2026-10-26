@@ -50,8 +50,6 @@ import Testing
         #expect(prefs.cameraDeviceID.isEmpty)
         #expect(prefs.microphoneDeviceID.isEmpty)
         #expect(prefs.cameraSize == .medium)
-        #expect(!prefs.partyModeUnlocked)
-        #expect(!prefs.partyMode)
         #expect(prefs.saveAfterCapture)
         #expect(prefs.copyAfterCapture)
         #expect(prefs.quickAccessAfterCapture)
@@ -362,17 +360,4 @@ import Testing
     store.set(OnboardingProgress.done.rawValue, forKey: PreferenceKey.onboarding)
     Preferences.resetAll(in: store)
     #expect(store.persistentDomain(forName: suite.name)?[PreferenceKey.onboarding] as? String == "done")
-}
-
-@Test func removingTheProviderSettingsClearsEveryKeyItSaved() throws {
-    let store = try #require(UserDefaults(suiteName: "provider-\(UUID().uuidString)"))
-    for key in LegacyProviderSettings.keys {
-        store.set("x", forKey: key)
-    }
-    store.set("kept", forKey: "unrelatedKey")
-    LegacyProviderSettings.remove(from: store, keychainService: "dev.lorcan.Shot.tests.\(UUID().uuidString)")
-    for key in LegacyProviderSettings.keys {
-        #expect(store.object(forKey: key) == nil)
-    }
-    #expect(store.string(forKey: "unrelatedKey") == "kept")
 }

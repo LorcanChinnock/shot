@@ -320,7 +320,6 @@ final class CaptureCoordinator {
         if plan.copies {
             Clipboard.copy(fileURL: url)
         }
-        Confetti.burst(from: recordingRegion)
         switch plan.next {
         case .quickAccess:
             Task {
@@ -426,7 +425,6 @@ final class CaptureCoordinator {
                 copy: copies, card: card
             )
         }
-        Confetti.burst(from: frame)
         WelcomeWindow.captureFinished()
     }
 
