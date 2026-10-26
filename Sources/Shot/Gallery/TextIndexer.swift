@@ -57,6 +57,10 @@ final class TextIndexer {
             } catch {
                 log.error("Reading screenshots' text stopped: \(error.localizedDescription)")
             }
+            // A run that `stop()` cancelled has already been replaced, and mustn't touch the newer one's handle.
+            guard !Task.isCancelled else {
+                return
+            }
             readTask = nil
             if rerun, let folder = self.folder {
                 read(folder: folder)
