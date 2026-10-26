@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.7.0-beta.73](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.72...v0.7.0-beta.73) (2026-10-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove Copy Alt Text, Copy Bug Report and Add Captions ([#935](https://github.com/LorcanChinnock/shot/issues/935))
+* stop embedding a capture record in images and drop gallery origins ([#934](https://github.com/LorcanChinnock/shot/issues/934))
+* remove the shot command, MCP server and agent features ([#933](https://github.com/LorcanChinnock/shot/issues/933))
+
+### Features
+
+* remove Copy Alt Text, Copy Bug Report and Add Captions ([#935](https://github.com/LorcanChinnock/shot/issues/935)) ([b4f8142](https://github.com/LorcanChinnock/shot/commit/b4f8142096a5f7c1534dc1f38aa35dfc010d794d))
+* remove the shot command, MCP server and agent features ([#933](https://github.com/LorcanChinnock/shot/issues/933)) ([d268bf9](https://github.com/LorcanChinnock/shot/commit/d268bf98875383d1b5c6957b6c36f17af8800f71))
+* stop embedding a capture record in images and drop gallery origins ([#934](https://github.com/LorcanChinnock/shot/issues/934)) ([5c16f1a](https://github.com/LorcanChinnock/shot/commit/5c16f1abeb9f82e5874a351389a0780a89639128))
+
+
+### Bug Fixes
+
+* **gallery:** keep the toolbar inside its column at larger text sizes ([#919](https://github.com/LorcanChinnock/shot/issues/919)) ([768d444](https://github.com/LorcanChinnock/shot/commit/768d444e945f8a651b6b52a141173df757494b9c))
+
 ## [0.7.0-beta.72](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.71...v0.7.0-beta.72) (2026-10-25)
 
 
