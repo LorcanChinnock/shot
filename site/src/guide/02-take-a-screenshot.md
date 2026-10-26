@@ -58,30 +58,6 @@ Copy Text reads the text in part of the screen and copies it, without saving a s
 
 To copy the text from a screenshot you already took, right-click its Quick Access card or its tile in the [gallery](#find-your-captures) and choose **Copy Text**.
 
-## Copy alt text for a screenshot
-
-Alt text describes an image for people who use a screen reader. On macOS 27 or later, with Apple Intelligence turned on, Shot can write it for you with Apple's model on your Mac. Nothing is uploaded, and it never runs unless you ask.
-
-1. Right-click the screenshot's Quick Access card or its tile in the gallery and choose **Copy Alt Text**, or in the editor choose **Edit › Copy Alt Text**.
-2. Paste the description where the image's alt text goes, such as a document, a post or an email.
-
-You get one or two plain sentences, usually within a couple of seconds. Read the text before you use it: the model can miss small details or misread tiny text.
-
-## Copy a bug report
-
-Copy Bug Report turns a screenshot or a recording into repro steps you can paste into a ticket or a message. It uses the same model as alt text: Apple's on your Mac, on macOS 27 or later. It never runs unless you ask.
-
-![The Quick Access card's right-click menu with Copy Bug Report below Copy Alt Text](../../../docs/media/quick-access-menu.png)
-
-1. Right-click the capture's Quick Access card or its tile in the gallery and choose **Copy Bug Report**, or in the image editor or video editor choose **Edit › Copy Bug Report**. The video editor writes it from the recording as it was made, before any trims or cuts.
-2. Wait for the **Writing bug report…** note at the bottom of the screen to say **Copied bug report**. On your Mac's own model this can take up to a minute. Then paste the result. It has a title, **Steps**, **Expected**, **Actual** and, if the capture shows one, the **Error text**.
-
-![A team chat with a pasted bug report: a title, Steps, Expected and Actual](../../../docs/media/bug-report-result.png)
-
-For a recording, Shot picks a few frames where the picture changes, reads the text on them, and includes what you said if the recording has your voice (macOS 26 or later). Apple's model takes only a few frames, so a long recording is summarised from part of it, and the report says so.
-
-Error text is copied from what your Mac read in the capture, never from the model's guess, so it matches the screen word for word. The steps and the expected result are the model's reading: check them before you send. If a recording shows nothing going wrong, the **Actual** says "No problem shown". Smaller models sometimes add a step nobody did.
-
 ## Without a mouse
 
 After <kbd>⌘⇧4</kbd>, press an arrow key to start an area at the pointer, or in the middle of the screen. Then:

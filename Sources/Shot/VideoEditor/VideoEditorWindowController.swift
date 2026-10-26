@@ -278,26 +278,9 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
         Task { await model.trimIdleTime() }
     }
 
-    /// Adds captions from what's said in the recording.
-    @objc func addCaptions(_ sender: Any?) {
-        Task { await model.addCaptions() }
-    }
-
-    /// Edit › Copy Bug Report: repro steps from the recording file, as recorded, before any trims or cuts.
-    @objc func copyBugReport(_ sender: Any?) {
-        Task { [fileURL = model.fileURL] in await BugReportAction.copy(fileAt: fileURL) }
-    }
-
-    private func showsBugReport(in menuItem: NSMenuItem) -> Bool {
-        menuItem.isHidden = !BugReportAction.isAvailable
-        return BugReportAction.isAvailable
-    }
-
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         switch menuItem.action {
-        case #selector(copyBugReport(_:)): showsBugReport(in: menuItem)
         case #selector(trimIdleTime(_:)): model.canTrimIdleTime
-        case #selector(addCaptions(_:)): model.canAddCaptions
         case #selector(copyStyle(_:)): model.targetStyleKind != nil
         case #selector(pasteStyle(_:)): model.canPasteStyle
         case #selector(flatten(_:)): model.version != nil

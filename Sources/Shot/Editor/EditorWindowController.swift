@@ -193,28 +193,6 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         window.performClose(nil)
     }
 
-    /// Edit › Copy Alt Text: a description of the image as it looks now, marks and all.
-    @objc func copyAltText(_ sender: Any?) {
-        Task { [model] in
-            guard let image = await model.renderedImage() else {
-                Toast.error("Couldn't write alt text for this image")
-                return
-            }
-            await AltTextAction.copy(image)
-        }
-    }
-
-    /// Edit › Copy Bug Report: repro steps for the image as it looks now, marks and all.
-    @objc func copyBugReport(_ sender: Any?) {
-        Task { [model] in
-            guard let image = await model.renderedImage() else {
-                Toast.error("Couldn't write a bug report for this image")
-                return
-            }
-            await BugReportAction.copy(image)
-        }
-    }
-
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         guard model.isDirty, !discarding else {
             return true
@@ -255,24 +233,11 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         resolveQuit(false)
     }
 
-    /// Shows Copy Alt Text only while an on-device model or an AI provider can write it.
-    private func showsAltText(in menuItem: NSMenuItem) -> Bool {
-        menuItem.isHidden = !AltTextAction.isAvailable
-        return AltTextAction.isAvailable
-    }
-
-    private func showsBugReport(in menuItem: NSMenuItem) -> Bool {
-        menuItem.isHidden = !BugReportAction.isAvailable
-        return BugReportAction.isAvailable
-    }
-
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         switch menuItem.action {
         case #selector(copyStyle(_:)): model.styleTarget != nil
         case #selector(pasteStyle(_:)), #selector(applyStyleToAllImages(_:)): model.canPasteStyle && model.editingText == nil
         case #selector(flatten(_:)): model.version != nil
-        case #selector(copyAltText(_:)): showsAltText(in: menuItem)
-        case #selector(copyBugReport(_:)): showsBugReport(in: menuItem)
         default: true
         }
     }

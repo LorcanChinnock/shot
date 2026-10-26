@@ -588,67 +588,6 @@ final class VideoEditorModel {
         Toast.show("Trimmed \(Timecode.string(before - trimmed.duration)) of idle time")
     }
 
-    /// The recording Add Captions listens to: the main track's first clip, when it has its own sound on the track below.
-    private var captionSource: Clip? {
-        guard let clip = project.tracks.first?.clips.first, project.tracks.count > 1,
-              project.tracks[1].clips.contains(where: { $0.source == clip.source }) else {
-            return nil
-        }
-        return clip
-    }
-
-    /// Whether Add Captions can run: macOS 26 or later, on a recording with sound, and not while it's already listening.
-    var canAddCaptions: Bool {
-        guard #available(macOS 26, *) else {
-            return false
-        }
-        return captionSource != nil && !isExporting && !isCaptioning
-    }
-
-    private(set) var isCaptioning = false
-
-    /// Transcribes the recording on the Mac and adds a caption clip for each phrase, as one undo step. They're ordinary
-    /// text clips, so each can be edited, moved or deleted like any other.
-    func addCaptions() async {
-        guard let clip = captionSource, canAddCaptions else {
-            return
-        }
-        isCaptioning = true
-        defer { isCaptioning = false }
-        Toast.progress("Listening to the recording…")
-        let source = clip.source
-        let words: [Narration.Word]?
-        do {
-            words = try await Task.detached(priority: .userInitiated) { try await SpeechRecognizer.words(in: source) }.value
-        } catch {
-            log.error("Captions failed: \(error.localizedDescription, privacy: .public)")
-            Toast.error("Couldn't listen to the recording: \(error.localizedDescription)")
-            return
-        }
-        guard let words else {
-            Toast.error("This Mac can't transcribe speech in your language")
-            return
-        }
-        let captions = Captions.captions(words, duration: clip.sourceDuration)
-        let placed = Captions.placements(captions, in: project, source: source)
-        guard !placed.isEmpty else {
-            Toast.show(captions.isEmpty ? "Nothing is said in this recording" : "Nothing is said in the part you kept")
-            return
-        }
-        var captioned = project
-        for placement in placed {
-            captioned = captioned.adding(annotation: Captions.annotation(placement.caption, frame: project.outputRect), at: placement.start, duration: placement.duration).project
-        }
-        guard replaceProject(with: captioned) else {
-            Toast.error("Captions weren't added because an export started. Choose Add Captions again once it's done.")
-            return
-        }
-        setShowsTracks(true)
-        // A caption across a cut is placed once for each side of it, but counts once.
-        let count = Set(placed.map { "\($0.caption.start)" }).count
-        Toast.show(count == 1 ? "Added 1 caption" : "Added \(count) captions")
-    }
-
     func setOptions(_ new: VideoExportOptions) {
         guard new != options else {
             return
@@ -890,10 +829,6 @@ final class VideoEditorModel {
 
     /// Copies the file, or an edited copy of it, to the clipboard.
     func copy() async {
-        guard !isCaptioning else {
-            Toast.show("Wait for the captions first")
-            return
-        }
         guard isDirty else {
             Clipboard.copy(fileURL: fileURL)
             Toast.show("Copied")
@@ -913,10 +848,6 @@ final class VideoEditorModel {
     /// An edit with imports or transforms is written as a copy next to the file, since the recording itself stays as it was.
     @discardableResult
     func save() async -> Bool {
-        guard !isCaptioning else {
-            Toast.show("Wait for the captions first")
-            return false
-        }
         guard isDirty else {
             Toast.error("Nothing to save yet")
             return false
@@ -978,8 +909,8 @@ final class VideoEditorModel {
 
     /// Writes a new file next to the original with the trim, cuts and export options, and copies it.
     func export() async {
-        // Checked before picking a name, so two exports can't pick the same one. Captions being added would be lost.
-        guard !isExporting, !isCaptioning else {
+        // Checked before picking a name, so two exports can't pick the same one.
+        guard !isExporting else {
             return
         }
         let options = options, project = project, plan = VideoExportPlan(project: project, options: options), fileURL = fileURL

@@ -333,7 +333,7 @@ final class QuickAccessController {
     }
 
     /// The card's actions in menu order, with `nil` for a divider: the hover buttons' actions, plus Copy Path, Copy Text,
-    /// Copy Alt Text and Pin, which have no button.
+    /// Pin, which have no button.
     func actions(for card: QuickAccessCard) -> [QuickAccessCardAction?] {
         var actions: [QuickAccessCardAction?] = [
             QuickAccessCardAction(title: String(localized: "Copy")) { self.copy(card) },
@@ -342,16 +342,6 @@ final class QuickAccessController {
         if !card.isVideo {
             actions.append(QuickAccessCardAction(title: String(localized: "Copy Text")) {
                 Task { await Clipboard.copyText(inImageAt: card.styledURL ?? card.fileURL) }
-            })
-            if AltTextAction.isAvailable {
-                actions.append(QuickAccessCardAction(title: String(localized: "Copy Alt Text")) {
-                    Task { await AltTextAction.copy(imageAt: card.styledURL ?? card.fileURL) }
-                })
-            }
-        }
-        if BugReportAction.isAvailable {
-            actions.append(QuickAccessCardAction(title: String(localized: "Copy Bug Report")) {
-                Task { await BugReportAction.copy(fileAt: card.styledURL ?? card.fileURL) }
             })
         }
         actions.append(QuickAccessCardAction(title: String(localized: "Save As…")) { self.saveAs(card) })

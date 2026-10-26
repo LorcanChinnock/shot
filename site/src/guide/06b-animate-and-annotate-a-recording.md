@@ -12,18 +12,6 @@ group: Edit and share
 
 Each annotation starts at the playhead and shows for 3 seconds. It goes on the first annotation lane that's free at that time and not locked, or else on a new lane.
 
-## Add captions
-
-On macOS 26 or later, Shot can turn what you said while recording into captions, so a walkthrough or a GIF makes sense without sound.
-
-1. Record with the microphone on, then open the recording in the video editor.
-2. Choose **Edit › Add Captions**. Shot listens to the recording on your Mac; nothing is uploaded.
-3. Play it back. Each caption is a text clip on its own lane: white text on a dark box, centred near the bottom, at most two lines.
-
-![The video editor after Add Captions: a caption reading Here is the revenue report. over the video, and three caption clips on their own lane above the clips, with the voice's waveform below](../../../docs/media/video-captions.png)
-
-Speech recognition gets some words wrong, especially names and jargon, so check the captions before you share. To fix one, click **Annotate** and double-click it on the video. Drag a caption clip's edges to change when it shows, or delete it. <kbd>⌘Z</kbd> removes them all at once. Captions follow your trims and cuts, and only the part you kept gets them.
-
 ## Fine-tune with the Inspector
 
 Click **Inspector** to see the selected clip's or annotation's properties:
