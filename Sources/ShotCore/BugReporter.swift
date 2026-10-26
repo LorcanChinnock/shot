@@ -15,10 +15,8 @@ public enum BugReporter {
 
     /// The frames, text and transcript of the image or recording at `url`, at most `frames` frames.
     public static func gather(from url: URL, frames count: Int) async throws -> Gathered {
-        let record = ImageCodec.record(ofFileAt: url)
-        let notes = record?.annotations.filter { $0.type == "note" }.compactMap(\.text) ?? []
         if let image = ImageCodec.image(at: url) {
-            return await gather(from: image, record: record)
+            return await gather(from: image)
         }
         guard let media = try? await MediaProbe.probe(url), media.size != nil else {
             throw Unreadable()
@@ -32,15 +30,14 @@ public enum BugReporter {
             let text = try? await TextRecognizer.recognize(still.image)
             frames.append(BugReport.Frame(time: still.time, text: text?.lines.map(\.text) ?? [], said: said[index]))
         }
-        return Gathered(input: BugReport.Input(app: record?.source?.app, windowTitle: record?.source?.windowTitle, duration: media.duration, notes: notes, frames: frames), images: stills.map(\.image))
+        return Gathered(input: BugReport.Input(duration: media.duration, frames: frames), images: stills.map(\.image))
     }
 
     /// A single image, such as the editor's current picture with its marks.
-    public static func gather(from image: CGImage, record: CaptureRecord?) async -> Gathered {
-        let notes = record?.annotations.filter { $0.type == "note" }.compactMap(\.text) ?? []
+    public static func gather(from image: CGImage) async -> Gathered {
         let text = try? await TextRecognizer.recognize(image)
         let lines = text?.lines.map(\.text) ?? []
-        return Gathered(input: BugReport.Input(app: record?.source?.app, windowTitle: record?.source?.windowTitle, notes: notes, frames: [BugReport.Frame(text: lines)]), images: [image])
+        return Gathered(input: BugReport.Input(frames: [BugReport.Frame(text: lines)]), images: [image])
     }
 
     public struct Unreadable: LocalizedError {
@@ -58,7 +55,7 @@ public enum BugReporter {
 
     /// The Markdown bug report for `image`.
     public static func report(for image: CGImage) async throws -> String {
-        try await report(gathered: await gather(from: image, record: nil))
+        try await report(gathered: await gather(from: image))
     }
 
     private static func report(gathered: Gathered) async throws -> String {

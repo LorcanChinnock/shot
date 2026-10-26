@@ -46,12 +46,3 @@ private func caption(_ string: String = "Click Save", fill: RGBA? = dark) -> Ann
     }
     #expect(brightest > 0.8)
 }
-
-@Test func aBoxedTextRoundTripsThroughTheCaptureRecord() throws {
-    let text = caption()
-    let mark = try #require(CaptureMark.mapping([text], canvas: CGRect(x: 0, y: 0, width: 300, height: 120)).first)
-    #expect(mark.fill == dark.hex)
-    let rebuilt = try #require(Annotation(mark: mark))
-    #expect(rebuilt.fill?.hex == text.fill?.hex && rebuilt.textBox == text.textBox)
-    #expect(CaptureMark.rebuildExactly([text], canvas: CGRect(x: 0, y: 0, width: 300, height: 120)))
-}

@@ -936,8 +936,6 @@ final class VideoEditorModel {
         guard await export(to: trimmed, creating: nil, keepingProject: false) else {
             return false
         }
-        // Read before the trim replaces the file, whose stamp it doesn't carry.
-        let entry = ProjectStore.app.entry(for: fileURL)
         do {
             // Replacing is atomic but leaves no way back to the cut footage, so a copy of the original goes to the Trash first.
             let original = replacements.appendingPathComponent("original").appendingPathComponent(fileURL.lastPathComponent)
@@ -951,10 +949,6 @@ final class VideoEditorModel {
         }
         // The recording is the edit now, with no project over it.
         version = nil
-        if let entry {
-            let fileURL = fileURL
-            await Task.detached { VersionWriter.restamp(trimmed: fileURL, as: entry, in: .app) }.value
-        }
         log.notice("Saved edited video: \(self.fileURL.path)")
         Clipboard.copy(fileURL: fileURL)
         Toast.show("Saved and copied.\(TemporaryCaptures.toastNote(for: fileURL))")

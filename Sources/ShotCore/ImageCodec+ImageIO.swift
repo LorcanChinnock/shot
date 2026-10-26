@@ -3,39 +3,23 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
-/// What an image file is, read without decoding its pixels.
-public struct ImageFileInfo: Equatable, Sendable {
-    public var isGIF: Bool
-    public var frames: Int
-    /// `nil` when the file doesn't say.
-    public var size: CaptureRecord.Size?
-
-    public init(isGIF: Bool, frames: Int, size: CaptureRecord.Size?) {
-        self.isGIF = isGIF
-        self.frames = frames
-        self.size = size
-    }
-}
-
 /// Encodes and decodes captures as PNG or JPEG with ImageIO, preserving the Retina scale as DPI, with `ImageMetadata`
-/// beside it: whether it has the window shadow, its capture record and its project ID. HEIC and GIF decode too.
+/// beside it: whether it has the window shadow and its project ID. HEIC and GIF decode too.
 extension ImageCodec {
     /// What a window capture that includes the macOS window shadow says in its Exif comment, so the editor opened on it
     /// later knows not to offer a second shadow.
     static let windowShadowMarker = ImageMetadata.windowShadowComment
 
-    /// The XMP namespace of `record`, and the property it's stored in as JSON text.
-    static let recordNamespace = ImageMetadata.xmpNamespace
-    static let recordPath = "shot:record"
-    /// Where the ID of the file's project in Shot's own store goes, in the same namespace.
+    /// The XMP namespace of the project ID.
+    static let projectNamespace = ImageMetadata.xmpNamespace
+    /// Where the ID of the file's project in Shot's own store goes.
     static let projectPath = "shot:project"
 
     /// Encodes with DPI = 72 × scale so Retina captures open at point size. `windowShadow` marks a window capture that
-    /// includes the macOS window shadow. `record`, for agents, goes in the file's XMP, written in the same pass: copying
-    /// the image again with metadata added would be cheaper, but ImageIO then empties a PNG's Exif comment. `projectID`
-    /// keys the file's project in `ProjectStore` and goes in the XMP too, whatever the Agents setting. `quality` is a
-    /// JPEG's, from 0 to 1.
-    public static func data(from image: CGImage, scale: CGFloat, format: ImageFormat = .png, quality: Double = 0.9, windowShadow: Bool = false, record: CaptureRecord? = nil, projectID: String? = nil) -> Data? {
+    /// includes the macOS window shadow. `projectID` keys the file's project in `ProjectStore` and goes in the file's
+    /// XMP, written in the same pass: copying the image again with metadata added would be cheaper, but ImageIO then
+    /// empties a PNG's Exif comment. `quality` is a JPEG's, from 0 to 1.
+    public static func data(from image: CGImage, scale: CGFloat, format: ImageFormat = .png, quality: Double = 0.9, windowShadow: Bool = false, projectID: String? = nil) -> Data? {
         let data = NSMutableData()
         let type = format == .png ? UTType.png : UTType.jpeg
         guard let destination = CGImageDestinationCreateWithData(data, type.identifier as CFString, 1, nil) else {
@@ -49,7 +33,7 @@ extension ImageCodec {
         if windowShadow {
             properties[kCGImagePropertyExifDictionary] = [kCGImagePropertyExifUserComment: windowShadowMarker]
         }
-        if let metadata = metadata(record: record, projectID: projectID) {
+        if let metadata = metadata(projectID: projectID) {
             CGImageDestinationAddImageAndMetadata(destination, image, metadata, properties as CFDictionary)
         } else {
             CGImageDestinationAddImage(destination, image, properties as CFDictionary)
@@ -60,15 +44,13 @@ extension ImageCodec {
         return data as Data
     }
 
-    private static func metadata(record: CaptureRecord?, projectID: String?) -> CGImageMetadata? {
-        let text = record.flatMap { try? $0.encoded() }.flatMap { String(data: $0, encoding: .utf8) }
-        guard text != nil || projectID != nil else {
+    private static func metadata(projectID: String?) -> CGImageMetadata? {
+        guard let projectID else {
             return nil
         }
         let metadata = CGImageMetadataCreateMutable()
-        guard CGImageMetadataRegisterNamespaceForPrefix(metadata, recordNamespace as CFString, "shot" as CFString, nil),
-              text.map({ CGImageMetadataSetValueWithPath(metadata, nil, recordPath as CFString, $0 as CFString) }) ?? true,
-              projectID.map({ CGImageMetadataSetValueWithPath(metadata, nil, projectPath as CFString, $0 as CFString) }) ?? true
+        guard CGImageMetadataRegisterNamespaceForPrefix(metadata, projectNamespace as CFString, "shot" as CFString, nil),
+              CGImageMetadataSetValueWithPath(metadata, nil, projectPath as CFString, projectID as CFString)
         else {
             return nil
         }
@@ -84,25 +66,6 @@ extension ImageCodec {
             return nil
         }
         return CGImageMetadataTagCopyValue(tag) as? String
-    }
-
-    /// The record Shot wrote in the image file at `url`, or `nil` when it has none or isn't an image.
-    public static func record(ofFileAt url: URL) -> CaptureRecord? {
-        CGImageSourceCreateWithURL(url as CFURL, nil).flatMap(record)
-    }
-
-    public static func record(of data: Data) -> CaptureRecord? {
-        CGImageSourceCreateWithData(data as CFData, nil).flatMap(record)
-    }
-
-    private static func record(_ source: CGImageSource) -> CaptureRecord? {
-        guard let metadata = CGImageSourceCopyMetadataAtIndex(source, 0, nil),
-              let tag = CGImageMetadataCopyTagWithPath(metadata, nil, recordPath as CFString),
-              let text = CGImageMetadataTagCopyValue(tag) as? String
-        else {
-            return nil
-        }
-        return try? CaptureRecord.decoded(from: Data(text.utf8))
     }
 
     /// An independent bitmap at most `maxPixelSize` on its long edge, decoded from encoded image data.
@@ -199,27 +162,6 @@ extension ImageCodec {
             return 1
         }
         return scale(of: source)
-    }
-
-    /// What the image file at `url` is, or `nil` when it isn't an image.
-    public static func info(ofFileAt url: URL) -> ImageFileInfo? {
-        CGImageSourceCreateWithURL(url as CFURL, nil).flatMap(info)
-    }
-
-    public static func info(of data: Data) -> ImageFileInfo? {
-        CGImageSourceCreateWithData(data as CFData, nil).flatMap(info)
-    }
-
-    private static func info(_ source: CGImageSource) -> ImageFileInfo? {
-        guard CGImageSourceGetCount(source) > 0, let type = CGImageSourceGetType(source).flatMap({ UTType($0 as String) }), type.conforms(to: .image) else {
-            return nil
-        }
-        let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
-        var size: CaptureRecord.Size?
-        if let width = properties?[kCGImagePropertyPixelWidth] as? Int, let height = properties?[kCGImagePropertyPixelHeight] as? Int {
-            size = CaptureRecord.Size(width: width, height: height)
-        }
-        return ImageFileInfo(isGIF: type.conforms(to: .gif), frames: CGImageSourceGetCount(source), size: size)
     }
 
     /// Whether the image file at `url` is a window capture that includes the macOS window shadow.

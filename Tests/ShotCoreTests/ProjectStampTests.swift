@@ -26,8 +26,7 @@ import Testing
     let gif = folder.appendingPathComponent("Clip.gif")
     try Data("GIF89a".utf8).write(to: gif)
     let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
-    let origin = ProjectOrigin(via: .cli, action: "gif")
-    let saved = try store.save(origin: origin, for: gif, id: nil)
+    let saved = try store.save(String?.none, for: gif, id: nil)
     #expect(ProjectKey.isIdentity(saved.id))
-    #expect(store.entry(for: gif)?.origin == origin)
+    #expect(store.entry(for: gif)?.id == saved.id)
 }

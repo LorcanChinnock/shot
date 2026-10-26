@@ -2,8 +2,8 @@ import Foundation
 
 /// The layered projects behind captures and versions, kept app-private in
 /// `~/Library/Application Support/<bundle ID>/Projects/` rather than in the files, so hidden layers, full-resolution
-/// placed images and who made a file never leak into anything you share. One JSON file per project, written
-/// atomically, so the CLI can write while the app runs without a lock. A project is keyed by an ID stamped in its file's
+/// placed images never leak into anything you share. One JSON file per project, written
+/// atomically. A project is keyed by an ID stamped in its file's
 /// metadata (`ProjectStamp`), or for a GIF, which can't hold one, by its volume and inode.
 public struct ProjectStore: Sendable {
     public enum StoreError: Error, Equatable {
@@ -19,23 +19,22 @@ public struct ProjectStore: Sendable {
         self.folder = folder
     }
 
-    /// The store of the app with `bundleID`, so Shot and ShotDev keep their own, as `AgentSocket` does.
+    /// The store of the app with `bundleID`, so Shot and ShotDev keep their own.
     public init(bundleID: String) {
         self.init(folder: AppSupport.folder(bundleID: bundleID).appendingPathComponent("Projects", isDirectory: true))
     }
 
-    /// Keeps `document`, the layers of `file` over `original`, and who made it. `id` is the ID stamped in `file`, or
-    /// `nil` for a file that can't hold one. A capture with no layers passes no document or original, and keeps only
-    /// its origin. Write `file` first: its identity and a bookmark to it go in the entry.
+    /// Keeps `document`, the layers of `file` over `original`. `id` is the ID stamped in `file`, or
+    /// `nil` for a file that can't hold one. Write `file` first: its identity and a bookmark to it go in the entry.
     @discardableResult
-    public func save<Document: Codable & Sendable>(_ document: Document?, for file: URL, id: String?, original: URL? = nil, origin: ProjectOrigin) throws -> ProjectEntry {
+    public func save<Document: Codable & Sendable>(_ document: Document?, for file: URL, id: String?, original: URL? = nil) throws -> ProjectEntry {
         guard let located = ProjectFile(at: file) else {
             throw StoreError.noFile
         }
         guard let key = id ?? ProjectKey.id(identifying: located), let name = ProjectKey.fileName(for: key) else {
             throw StoreError.noKey
         }
-        let saved = ProjectEntry(id: key, stamped: id != nil, file: located, original: original.flatMap { ProjectFile(at: $0) }, origin: origin)
+        let saved = ProjectEntry(id: key, stamped: id != nil, file: located, original: original.flatMap { ProjectFile(at: $0) })
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         try ProjectEntry.encoder().encode(StoredProject(entry: saved, document: document)).write(to: folder.appendingPathComponent(name), options: .atomic)
         // A GIF saved again at the same path has a new inode, so the entries keyed by its old ones are stale.
@@ -47,12 +46,6 @@ public struct ProjectStore: Sendable {
         return saved
     }
 
-    /// Keeps only who made `file`, for a capture or recording with no layers.
-    @discardableResult
-    public func save(origin: ProjectOrigin, for file: URL, id: String?) throws -> ProjectEntry {
-        try save(String?.none, for: file, id: id, origin: origin)
-    }
-
     /// The project of `file`, with its layers decoded as `Document`; `nil` when it has none, or they aren't one.
     public func project<Document: Codable & Sendable>(for file: URL, as type: Document.Type = Document.self) -> StoredProject<Document>? {
         guard let id = id(of: file), let data = read(id) else {
@@ -61,7 +54,7 @@ public struct ProjectStore: Sendable {
         return try? ProjectEntry.decoder().decode(StoredProject<Document>.self, from: data)
     }
 
-    /// The entry of `file`, without its layers, such as for the provenance the gallery shows.
+    /// The entry of `file`, without its layers.
     public func entry(for file: URL) -> ProjectEntry? {
         guard let id = id(of: file) else {
             return nil
@@ -69,21 +62,10 @@ public struct ProjectStore: Sendable {
         return entry(id)
     }
 
-    /// Who made each file an agent or the command line made, keyed by its path now with symlinks resolved. Run off the
-    /// main actor: it reads every entry, then looks only for the agent entries' files.
-    public func agentOrigins() -> [String: ProjectOrigin] {
-        let located = ids().compactMap(entry).filter(\.origin.isAgent).map { ($0, sightings(of: $0)) }
-        var origins: [String: ProjectOrigin] = [:]
-        for (path, origin) in ProjectProvenance.agentOrigins(located) {
-            origins[URL(fileURLWithPath: path).resolvingSymlinksInPath().path] = origin
-        }
-        return origins
-    }
-
     /// Removes the projects whose files are gone, and returns how many. Run at launch, off the main actor: it reads
     /// every entry and looks for its file. An entry it can't read, perhaps from a newer Shot, is left alone.
     @discardableResult
-    public func prune(now: Date = Date()) -> Int {
+    public func prune() -> Int {
         let mounted = Set((FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: [.volumeUUIDStringKey], options: []) ?? [])
             .compactMap { try? $0.resourceValues(forKeys: [.volumeUUIDStringKey]).volumeUUIDString })
         var pruned = 0
@@ -92,7 +74,7 @@ public struct ProjectStore: Sendable {
                 continue
             }
             let volumeMounted = entry.file.volume.map(mounted.contains) ?? true
-            if !ProjectPruning.keeps(entry, sightings: sightings(of: entry), volumeMounted: volumeMounted, now: now) {
+            if !ProjectPruning.keeps(entry, sightings: sightings(of: entry), volumeMounted: volumeMounted) {
                 remove(id)
                 pruned += 1
             }

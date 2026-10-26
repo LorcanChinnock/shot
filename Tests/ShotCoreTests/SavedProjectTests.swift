@@ -73,7 +73,7 @@ private func expectFixturePicture(_ annotation: Annotation?) throws {
     let picture = try #require(try ProjectEntry.decoder().decode(StoredProject<EditorSnapshot>.self, from: fixture("project.json")).document)
 
     let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
-    try store.save(picture, for: file, id: "ID-1", origin: ProjectOrigin(via: .app))
+    try store.save(picture, for: file, id: "ID-1")
     let layers = try #require(store.project(for: file, as: EditorSnapshot.self)?.document)
     #expect(layers == picture)
     try expectFixturePicture(layers.annotations.first { $0.id == imageID })

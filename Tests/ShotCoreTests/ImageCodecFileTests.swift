@@ -47,23 +47,18 @@ func aDecodedPNGEncodesAndDecodesToTheSamePixels(scale: CGFloat) throws {
 
 @Test(arguments: [ImageFormat.png, .jpeg])
 func whatAnImageIsEncodedWithReadsBackFromTheFile(format: ImageFormat) throws {
-    let record = CaptureRecord(original: "Shot.png", kind: "image", created: Date(timeIntervalSince1970: 1_791_640_992), size: .init(width: 20, height: 10), scale: 2)
-    let data = try #require(ImageCodec.data(from: gradient(width: 20, height: 10), scale: 2, format: format, windowShadow: true, record: record, projectID: "ID-1"))
+    let data = try #require(ImageCodec.data(from: gradient(width: 20, height: 10), scale: 2, format: format, windowShadow: true, projectID: "ID-1"))
     let url = FileManager.default.temporaryDirectory.appendingPathComponent("codec-\(UUID().uuidString).\(format.fileExtension)")
     defer { try? FileManager.default.removeItem(at: url) }
     try data.write(to: url)
-    #expect(ImageCodec.info(ofFileAt: url) == ImageFileInfo(isGIF: false, frames: 1, size: CaptureRecord.Size(width: 20, height: 10)))
-    #expect(ImageCodec.info(of: data) == ImageCodec.info(ofFileAt: url))
     #expect(ImageCodec.scale(ofFileAt: url) == 2)
-    #expect(ImageCodec.record(ofFileAt: url) == record)
     #expect(ImageCodec.projectID(ofFileAt: url) == "ID-1")
     #expect(ImageCodec.hasWindowShadow(ofFileAt: url))
     let read = try #require(ImageCodec.image(at: url))
     #expect(read.width == 20 && read.height == 10)
 }
 
-@Test func aFileThatIsntAnImageHasNoInfo() {
-    #expect(ImageCodec.info(of: Data("not an image".utf8)) == nil)
+@Test func aFileThatIsntAnImageHasNoImage() {
     #expect(ImageCodec.image(from: Data("not an image".utf8)) == nil)
 }
 
