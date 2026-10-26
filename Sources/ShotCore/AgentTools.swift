@@ -943,7 +943,7 @@ public struct AgentTools: Sendable {
     /// it has read every one from `since` on.
     public func unread(_ entries: [AgentCaptures.Entry], since: Date?, index: TextIndex) -> String? {
         let unread = entries.filter { entry in
-            TextIndex.reads(entry) && since.map { entry.date >= $0 } ?? true && Self.file(of: entry).flatMap(index.text) == nil
+            TextIndex.reads(entry.url) && since.map { entry.date >= $0 } ?? true && Self.file(of: entry).flatMap(index.text) == nil
         }.count
         guard unread > 0 else {
             return nil

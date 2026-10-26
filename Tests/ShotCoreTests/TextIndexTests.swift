@@ -72,10 +72,9 @@ private func file(_ name: String, bytes: Int = 100, minutes: Double = 0, folder:
 }
 
 @Test func onlyScreenshotsAreRead() {
-    let date = Date()
-    #expect(TextIndex.reads(AgentCaptures.Entry(url: URL(fileURLWithPath: "/shots/a.PNG"), isVideo: false, date: date)))
-    #expect(!TextIndex.reads(AgentCaptures.Entry(url: URL(fileURLWithPath: "/shots/a.gif"), isVideo: false, date: date)))
-    #expect(!TextIndex.reads(AgentCaptures.Entry(url: URL(fileURLWithPath: "/shots/a.mov"), isVideo: true, date: date)))
+    #expect(TextIndex.reads(URL(fileURLWithPath: "/shots/a.PNG")))
+    #expect(!TextIndex.reads(URL(fileURLWithPath: "/shots/a.gif")))
+    #expect(!TextIndex.reads(URL(fileURLWithPath: "/shots/a.mov")))
 }
 
 @Test func searchableTextMatchesByItsBytes() {

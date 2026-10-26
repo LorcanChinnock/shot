@@ -39,8 +39,8 @@ public struct TextIndex: Codable, Equatable, Sendable {
     public init() {}
 
     /// Only screenshots are read: not recordings, and not GIFs, which are made from recordings.
-    public static func reads(_ entry: AgentCaptures.Entry) -> Bool {
-        !entry.isVideo && entry.url.pathExtension.lowercased() != "gif"
+    public static func reads(_ url: URL) -> Bool {
+        GalleryKind(fileExtension: url.pathExtension) == .image
     }
 
     /// The text read from `file`, or `nil` when it hasn't been read as it is now.
