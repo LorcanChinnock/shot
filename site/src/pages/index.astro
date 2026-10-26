@@ -298,6 +298,8 @@ const audiences = [
   @media (min-width: 700px) {
     .audiences { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .audiences .first { grid-column: 1 / -1; }
+    /* With the first card across the top, an even count leaves the last one alone on its row, so it spans too. */
+    .audiences li:last-child:nth-child(even) { grid-column: 1 / -1; }
     .audiences .first .card { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); align-items: center; column-gap: 32px; background: var(--yellow); color: var(--on-accent); }
     .audiences .first strong { font-size: clamp(26px, 3vw, 34px); grid-row: span 2; }
     .audiences .first span { color: var(--on-accent); opacity: 0.8; }
