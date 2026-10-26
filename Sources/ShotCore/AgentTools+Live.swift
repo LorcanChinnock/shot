@@ -108,7 +108,7 @@ extension AgentTools {
         guard let media = await ShotCommands.probe(url), media.size != nil else {
             throw .data("Couldn't read \(url.lastPathComponent) as a video.")
         }
-        async let heard = narration(of: url, hasAudio: media.hasAudio)
+        async let heard = Narration.transcript(of: url, hasAudio: media.hasAudio)
         let limit = ShotCommand.FramesOptions.maximumCount
         let marked = RecordingMark.frames(for: marks, duration: media.duration, limit: limit)
         let keyFrames: [RecordingMark.KeyFrame]
@@ -147,33 +147,6 @@ extension AgentTools {
             }
         }
         return content
-    }
-
-    /// What's said in the recording at `url`, as phrases to line up with its frames, and a line for the agent about
-    /// the transcript, if there's anything to say: that nothing was said, that it was cut short, or why there's none.
-    static func narration(of url: URL, hasAudio: Bool) async -> (phrases: [Narration.Phrase], note: String?) {
-        guard hasAudio else {
-            return ([], nil)
-        }
-        let words: [Narration.Word]?
-        do {
-            words = try await SpeechRecognizer.words(in: url)
-        } catch {
-            return ([], "Couldn't transcribe its sound: \(error.localizedDescription)")
-        }
-        guard let words else {
-            return ([], "Its sound isn't transcribed: that needs macOS 26 and a language with on-device speech recognition.")
-        }
-        let phrases = Narration.phrases(words)
-        guard !phrases.isEmpty else {
-            return ([], "Nothing is said in its sound.")
-        }
-        let fit = Narration.fitting(phrases)
-        var note = "\"Said at\" lines are what's said in its sound, transcribed on this Mac, each after the frame on screen as it starts."
-        if fit.left > 0, let last = fit.kept.last {
-            note += String(format: " The transcript stops at %.1fs to keep this short, leaving out %d more phrases.", last.end, fit.left)
-        }
-        return (fit.kept, note)
     }
 
     /// A frame from early on, where a recording has usually settled, plus how long it runs.

@@ -150,12 +150,12 @@ final class CaptureCoordinator {
         }
     }
 
-    /// Copies the path of the newest capture, preferring an edited version over its original as the agent tools do, so
-    /// it pastes into an agent's prompt as the file itself.
+    /// Copies the path of the newest capture, preferring an edited version over its original, so it pastes as the file
+    /// itself.
     private func copyLatestPath() async {
         let folder = Preferences().captureFolder
         let latest = await Task.detached {
-            AgentCaptures.latest(Gallery.items(in: folder).map { AgentCaptures.Entry(url: $0.url, isVideo: $0.kind == .video, date: $0.date) }, kind: .any)?.url
+            Gallery.latest(in: Gallery.items(in: folder))?.url
         }.value
         guard let latest else {
             Toast.show("No captures in \(folder.lastPathComponent) yet")

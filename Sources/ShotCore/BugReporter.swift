@@ -23,7 +23,7 @@ public enum BugReporter {
         guard let media = try? await MediaProbe.probe(url), media.size != nil else {
             throw Unreadable()
         }
-        async let heard = AgentTools.narration(of: url, hasAudio: media.hasAudio)
+        async let heard = Narration.transcript(of: url, hasAudio: media.hasAudio)
         let times = try await KeyFrameExtractor.changeTimes(in: url, duration: media.duration, count: count)
         let stills = try await KeyFrameExtractor.frames(of: url, at: times, maxWidth: 1024)
         let said = Narration.align(await heard.phrases, to: stills.map(\.time))
