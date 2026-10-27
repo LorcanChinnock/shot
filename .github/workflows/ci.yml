@@ -1,12 +1,13 @@
 name: CI
 
-# Every pull request runs `macos`, which lints, builds the app and runs every test, so a break can't reach main. On
-# release-please's PR it also runs the performance budgets: that's the release gate. release-please opens that PR as
-# the repository's GitHub App (release.yml), so its runs start without approval.
+# Every pull request runs two required jobs. `linux` lints, including the website's rules. `macos` builds the app and
+# runs every test, so a break can't reach main. On release-please's PR, and any PR labelled performance, it also runs
+# the performance budgets: that's the release gate. release-please opens that PR as the repository's GitHub App
+# (release.yml), so its runs start without approval.
 # There's no run on push to main: PRs are squash-merged, and their merge commit was already tested.
 # A pull request that changes only the website, the docs or Markdown skips `macos`, which counts as a pass for the
-# required check, so those PRs don't queue for a macOS runner. `changes` lints them on Linux first, and if it fails
-# for any reason, `macos` runs after all. Release-please's PR always runs it.
+# required check, so those PRs don't queue for a macOS runner. `changes` decides that, and if it fails for any reason,
+# `macos` runs after all. Release-please's PR always runs it.
 on:
   pull_request:
 
@@ -18,9 +19,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Decides whether the app needs testing at all, and lints on Linux, where scripts/lint.sh runs too, so a PR that
-  # skips `macos` still gets its rules checked (the website's among them). It takes seconds. `macos` runs when this
-  # job fails or times out, so a problem here can't skip the app's checks.
+  # Decides whether the app needs testing at all. It takes seconds. `macos` runs when this job fails or times out, so a
+  # problem here can't skip the app's checks.
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -33,8 +33,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Lint
-        run: scripts/lint.sh
       - id: files
         env:
           GH_TOKEN: ${{ github.token }}
@@ -55,19 +53,29 @@ jobs:
           done <<< "$files"
           echo "app=$app" >> "$GITHUB_OUTPUT"
 
-  # The required check, so main's ruleset needs it by name. The repository is public, so macOS minutes are free; the
-  # cost is queue time, since the free plan runs 5 macOS jobs at once.
+  # A required check, so main's ruleset needs it by name. It always runs, so a PR that skips `macos` still gets its
+  # rules checked (the website's among them). Warble's version also runs its Linux-portable tests; Shot has none.
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Lint
+        run: scripts/lint.sh
+
+  # A required check too. The repository is public, so macOS minutes are free; the cost is queue time, since the free
+  # plan runs 5 macOS jobs at once.
   macos:
     needs: changes
     if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.app == 'true') }}
+    # macOS: builds the app and runs ShotCore's tests, which need Core Graphics, Core Image, AVFoundation and Vision.
     runs-on: macos-26
     # A run takes about 5 minutes. A hung test would otherwise hold a macOS runner for GitHub's 6-hour default.
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # What `make lint` runs before its build, which the next step does.
-      - name: Lint
-        run: scripts/lint.sh
       # Apart from the build, so a run shows how long fetching dependencies takes next to compiling.
       - name: Resolve packages
         run: swift package resolve --force-resolved-versions
@@ -83,10 +91,11 @@ jobs:
       - name: Test on macOS
         timeout-minutes: 10
         run: scripts/ci-test.sh test --skip-build
-      # Only at the release gate, to keep ordinary PRs' runs short. Alone, so other tests running in parallel don't skew
+      # On the release PR, which makes it the release gate, and on any PR labelled performance, to keep ordinary PRs'
+      # runs short. Alone, so other tests running in parallel don't skew
       # the timings. Budgets: docs/performance.md.
       - name: Perf
-        if: startsWith(github.head_ref, 'release-please--')
+        if: startsWith(github.head_ref, 'release-please--') || contains(github.event.pull_request.labels.*.name, 'performance')
         run: scripts/ci-test.sh perf --skip-build
       # CI builds debug, but `make dist` builds the release configuration (scripts/bundle.sh) after the release is tagged.
       # Build it here so a release-only compile error fails the gate, not the release. One slice: the debug Intel compile
