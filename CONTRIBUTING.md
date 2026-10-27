@@ -113,7 +113,7 @@ To force a particular version, add a `Release-As: X.Y.Z` line to the body of a c
 
 ### Release secrets
 
-The release workflow needs five secrets, which belong in a GitHub Environment named `release` so no other workflow or branch can read them. Create them once, and keep a backup of each somewhere safe: if you lose the Sparkle key, installed copies can't verify updates and you have to ship a new key by hand.
+The release workflow needs four secrets, which belong in a GitHub Environment named `release` so no other workflow or branch can read them. Create them once, and keep a backup of each somewhere safe: if you lose the Sparkle key, installed copies can't verify updates and you have to ship a new key by hand.
 
 | Secret | What it is |
 |---|---|
@@ -121,9 +121,8 @@ The release workflow needs five secrets, which belong in a GitHub Environment na
 | `SHOT_SIGNING_CERT_P12` | A base64 `.p12` of the self-signed `Shot Release` code-signing certificate. Every release signs with it, so macOS keeps the Screen Recording permission across updates. |
 | `SHOT_SIGNING_CERT_PASSWORD` | The password for that `.p12`. |
 | `HOMEBREW_TAP_DEPLOY_KEY` | The private half of an SSH deploy key with write access to `LorcanChinnock/homebrew-tap` only. The workflow uses it to update `Casks/shot.rb` there; the tap's `main` ruleset lets deploy keys push. |
-| `SITE_DEPLOY_HOOK` | The URL of the website's Cloudflare deploy hook, which rebuilds the site so its download button moves to the new release. See [site/README.md](site/README.md). |
 
-Set the environment up once under Settings › Environments › `release`: limit deployment branches and tags to `main` and `v*`, and store the five secrets there instead of at repository level (`gh secret set --env release NAME`). Add a ruleset for `v*` tags that blocks deletion, updates and non-fast-forward pushes. The release build fails if the `Shot Release` signing identity is missing, rather than signing ad hoc.
+Set the environment up once under Settings › Environments › `release`: limit deployment branches and tags to `main` and `v*`, and store the four secrets there instead of at repository level (`gh secret set --env release NAME`). Add a ruleset for `v*` tags that blocks deletion, updates and non-fast-forward pushes. The release build fails if the `Shot Release` signing identity is missing, rather than signing ad hoc.
 
 release-please opens the release pull request as a GitHub App rather than with the workflow's own token, because GitHub holds the workflows on a pull request from `github-actions[bot]` until someone approves them. Create a private GitHub App once (Settings › Developer settings › GitHub Apps) with no webhook and these repository permissions: Contents, Pull requests and Issues set to read and write. Install it on this repository only. Then store its client ID as a repository variable and a private key as a repository secret. The release-please job runs on every push to `main`, outside the `release` environment, so these two can't live there:
 
@@ -151,5 +150,4 @@ gh repo deploy-key add tap_key.pub -R LorcanChinnock/homebrew-tap --allow-write 
 gh secret set HOMEBREW_TAP_DEPLOY_KEY < tap_key
 rm tap_key tap_key.pub                                         # make a new key if you lose it
 
-gh secret set SITE_DEPLOY_HOOK                                 # paste the hook URL from Cloudflare
 ```
