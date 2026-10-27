@@ -92,8 +92,8 @@ jobs:
         timeout-minutes: 10
         run: scripts/ci-test.sh test --skip-build
       # On the release PR, which makes it the release gate, and on any PR labelled performance, to keep ordinary PRs'
-      # runs short. Alone, so other tests running in parallel don't skew
-      # the timings. Budgets: docs/performance.md.
+      # runs short. Adding the label doesn't start a run; the next push does. Alone, so other tests running in parallel
+      # don't skew the timings. Budgets: docs/performance.md.
       - name: Perf
         if: startsWith(github.head_ref, 'release-please--') || contains(github.event.pull_request.labels.*.name, 'performance')
         run: scripts/ci-test.sh perf --skip-build
