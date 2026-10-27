@@ -47,7 +47,8 @@ jobs:
           fi
           # Anything outside site/, docs/ and top-level Markdown files can change the app or its build.
           # Read into a variable first, so a failed call fails this step (and `macos` runs) instead of reading no files.
-          files="$(gh api "repos/$REPO/pulls/$PR/files" --paginate --jq '.[].filename')"
+          # A renamed file lists its old path too, so moving a file out of the app counts as an app change.
+          files="$(gh api "repos/$REPO/pulls/$PR/files" --paginate --jq '.[] | .filename, (.previous_filename // empty)')"
           app=false
           while IFS= read -r file; do
             if ! [[ "$file" =~ ^(site/|docs/|[^/]+\.md$) ]]; then app=true; fi
