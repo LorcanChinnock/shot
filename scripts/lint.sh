@@ -48,6 +48,14 @@ if [ -n "$hits" ]; then
     exit 1
 fi
 
+# macOS jobs queue, since the free plan runs only 5 at once.
+hits=$(awk '/runs-on:.*macos/ && prev !~ /# macOS: / { print FILENAME ":" FNR ": " $0 } { prev = $0 }' .github/workflows/*.yml)
+if [ -n "$hits" ]; then
+    echo "Put a '# macOS: <reason>' comment above each macOS runs-on, saying why the job can't run on Linux:"
+    echo "$hits"
+    exit 1
+fi
+
 # SwiftUI holds a single tap until the double-click interval passes, so every click lags by up to half a second.
 hits=$(grep -rnE 'onTapGesture\(count: *[2-9]' Sources || true)
 if [ -n "$hits" ]; then
