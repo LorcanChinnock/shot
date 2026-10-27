@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.74](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.73...v0.7.0-beta.74) (2026-10-27)
+
+
+### Bug Fixes
+
+* **quick-access:** remove Focus Quick Access ([#948](https://github.com/LorcanChinnock/shot/issues/948)) ([246d8bf](https://github.com/LorcanChinnock/shot/commit/246d8bf36bd095e938fd8eb6a00e3ab8c6829197)), closes [#947](https://github.com/LorcanChinnock/shot/issues/947)
+
 ## [0.7.0-beta.73](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.72...v0.7.0-beta.73) (2026-10-26)
 
 
