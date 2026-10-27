@@ -60,10 +60,6 @@ final class CaptureCoordinator {
             Task { await copyLatestPath() }
             return
         }
-        if action == .focusQuickAccess {
-            QuickAccessController.shared.focusNewest()
-            return
-        }
         guard !busy else {
             return
         }
@@ -94,7 +90,7 @@ final class CaptureCoordinator {
                     try await startRecording(mode: .screen)
                 case .recordWindow:
                     try await startRecording(mode: .window)
-                case .pickColor, .copyPath, .focusQuickAccess:
+                case .pickColor, .copyPath:
                     break
                 }
             } catch {

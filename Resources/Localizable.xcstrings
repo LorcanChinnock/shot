@@ -13570,9 +13570,6 @@
         }
       }
     },
-    "Focus Quick Access" : {
-
-    },
     "Frame" : {
 
     },
@@ -18220,9 +18217,6 @@
         }
       }
     },
-    "No Quick Access cards to focus" : {
-
-    },
     "No camera found" : {
       "localizations" : {
         "de" : {
@@ -22110,9 +22104,6 @@
         }
       }
     },
-    "Recording %@. Return copies it, Space shows its actions, Esc goes back." : {
-
-    },
     "Recording discarded" : {
       "localizations" : {
         "de" : {
@@ -24918,9 +24909,6 @@
           }
         }
       }
-    },
-    "Screenshot %@. Return copies it, Space shows its actions, Esc goes back." : {
-
     },
     "Screenshots" : {
       "localizations" : {
