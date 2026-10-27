@@ -35,7 +35,7 @@ Turn off **Use Shot for ⌘⇧3 to ⌘⇧5** in **Settings › Shortcuts**. macO
 
 ## Actions you can give a shortcut
 
-**Copy Text** has no shortcut until you set one. **Pick Colour**, **Focus Quick Access**, **Record Full Screen**, **Record Window** and **Capture Previous Area** are in the menu bar menu only. Every action also has a [`shot://` link](#url-scheme).
+**Copy Text** has no shortcut until you set one. **Pick Colour**, **Record Full Screen**, **Record Window** and **Capture Previous Area** are in the menu bar menu only. Every action also has a [`shot://` link](#url-scheme).
 
 - **Pick Colour** shows a loupe. Click any pixel on screen to copy its hex, such as `#1E90FF`.
 - **Capture Window** has no shortcut while Shot uses ⌘⇧3 to ⌘⇧5. Press <kbd>Space</kbd> after <kbd>⌘⇧4</kbd> instead.
@@ -60,17 +60,6 @@ Turn off **Use Shot for ⌘⇧3 to ⌘⇧5** in **Settings › Shortcuts**. macO
 | Key | Action |
 |---|---|
 | ⌘Z | Undo a discard, for 5 seconds after it, whichever app is in front |
-
-## Quick Access, after Focus Quick Access
-
-| Key | Action |
-|---|---|
-| ↑ / ↓ | Choose a card |
-| Return or ⌘C | Copy the card, then go back to your app |
-| Space | Open the card's menu |
-| ⌘S / ⌘E | Save As… / Annotate or Edit |
-| Delete | Close the card |
-| Esc | Go back to your app |
 
 ## Annotation editor
 

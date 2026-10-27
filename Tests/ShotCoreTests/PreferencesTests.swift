@@ -256,7 +256,7 @@ import Testing
         let suite = try TestDefaults()
         let store = suite.store
         defer { suite.remove() }
-        let menuOnly: [ShotAction] = [.recordFullscreen, .recordWindow, .pickColor, .copyPath, .capturePrevious, .focusQuickAccess]
+        let menuOnly: [ShotAction] = [.recordFullscreen, .recordWindow, .pickColor, .copyPath, .capturePrevious]
         #expect(ShotAction.allCases.filter { !$0.hasShortcut } == menuOnly)
         for action in menuOnly {
             store.set("17:4608", forKey: PreferenceKey.hotkey(action))

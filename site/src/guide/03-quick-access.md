@@ -37,28 +37,8 @@ Right-click the card for the same actions, plus **Copy Path**, and for a screens
 
 A pin opens in the middle of the screen at its own size, or at half the screen if it's bigger, and the card closes. If the screenshot has a style, the pin shows it the way **Copy** would, shadow and border included. You can have several pins open at once.
 
-## Use it from the keyboard
-
-1. Choose **Focus Quick Access** in the menu bar menu.
-2. The newest card gets a yellow ring and shows its buttons. The app you were using stays in front, and the cards stop closing on their own.
-
-Then:
-
-| Press | To |
-|---|---|
-| <kbd>↑</kbd> <kbd>↓</kbd> | Move between cards. |
-| <kbd>Return</kbd> or <kbd>⌘C</kbd> | Copy the card and hand the keyboard back to your app, ready to paste. |
-| <kbd>Space</kbd> | Open the card's menu, the same as right-clicking. |
-| <kbd>⌘S</kbd> | **Save As…** |
-| <kbd>⌘E</kbd> | **Annotate**, or **Edit** for a recording. |
-| <kbd>Delete</kbd> | Close the card. |
-| <kbd>Esc</kbd> | Hand the keyboard back. Clicking somewhere else does the same, and the cards' timers start again. |
-
 ## Choose where cards go and how long they stay
 
 New cards stack above older ones, up to five. A sixth closes the oldest. Each card closes on its own after 8 seconds, and hovering it pauses the timer.
 
 In **Settings › Quick Access**, choose the bottom-left or bottom-right corner, and how long cards stay: 4, 8, 15 or 30 seconds, or **Never**. To skip the card altogether, turn off **Show Quick Access** in **Settings › Capture**.
-
-> [!NOTE]
-> **Focus Quick Access** also has a [`shot://` link](#url-scheme): `shot://focus-quick-access`.

@@ -17,13 +17,11 @@ public enum ShotAction: String, CaseIterable, Sendable {
     case capturePrevious = "capture-previous"
     /// Reads the text in a dragged-out area and copies it, without saving a capture.
     case copyText = "copy-text"
-    /// Hands the keyboard to the newest Quick Access card, without bringing Shot to the front.
-    case focusQuickAccess = "focus-quick-access"
 
     public var isRecording: Bool {
         switch self {
         case .record, .recordFullscreen, .recordWindow: true
-        case .captureArea, .captureFullscreen, .captureWindow, .capturePrevious, .pickColor, .copyPath, .copyText, .focusQuickAccess: false
+        case .captureArea, .captureFullscreen, .captureWindow, .capturePrevious, .pickColor, .copyPath, .copyText: false
         }
     }
 
@@ -31,7 +29,7 @@ public enum ShotAction: String, CaseIterable, Sendable {
     public var isCapture: Bool {
         switch self {
         case .captureArea, .captureFullscreen, .captureWindow, .capturePrevious: true
-        case .record, .recordFullscreen, .recordWindow, .pickColor, .copyPath, .copyText, .focusQuickAccess: false
+        case .record, .recordFullscreen, .recordWindow, .pickColor, .copyPath, .copyText: false
         }
     }
 
@@ -39,21 +37,21 @@ public enum ShotAction: String, CaseIterable, Sendable {
     /// only, since few people would bind them. They keep their place in `allCases`, which numbers hotkeys.
     public var hasShortcut: Bool {
         switch self {
-        case .recordFullscreen, .recordWindow, .capturePrevious, .pickColor, .copyPath, .focusQuickAccess: false
+        case .recordFullscreen, .recordWindow, .capturePrevious, .pickColor, .copyPath: false
         case .captureArea, .captureFullscreen, .captureWindow, .record, .copyText: true
         }
     }
 
     /// Mirrors the macOS screenshot keys with ⌃ in place of ⌘. Record fullscreen and window
     /// have no default: press Enter or Space in the record overlay instead. Pick Colour, Copy Path, Capture Previous
-    /// Area, Copy Text and Focus Quick Access stay out of the way with none.
+    /// Area and Copy Text stay out of the way with none.
     public var defaultCombo: KeyCombo? {
         switch self {
         case .captureArea: KeyCombo(keyCode: 21, modifiers: KeyCombo.control | KeyCombo.shift)
         case .captureFullscreen: KeyCombo(keyCode: 20, modifiers: KeyCombo.control | KeyCombo.shift)
         case .captureWindow: KeyCombo(keyCode: 13, modifiers: KeyCombo.control | KeyCombo.shift)
         case .record: KeyCombo(keyCode: 23, modifiers: KeyCombo.control | KeyCombo.shift)
-        case .recordFullscreen, .recordWindow, .pickColor, .copyPath, .capturePrevious, .copyText, .focusQuickAccess: nil
+        case .recordFullscreen, .recordWindow, .pickColor, .copyPath, .capturePrevious, .copyText: nil
         }
     }
 
@@ -68,7 +66,7 @@ public enum ShotAction: String, CaseIterable, Sendable {
         case .captureArea: return KeyCombo(keyCode: 21, modifiers: KeyCombo.command | KeyCombo.shift)
         case .record: return KeyCombo(keyCode: 23, modifiers: KeyCombo.command | KeyCombo.shift)
         case .captureWindow: return nil
-        case .recordFullscreen, .recordWindow, .pickColor, .copyPath, .capturePrevious, .copyText, .focusQuickAccess: return defaultCombo
+        case .recordFullscreen, .recordWindow, .pickColor, .copyPath, .capturePrevious, .copyText: return defaultCombo
         }
     }
 
@@ -180,7 +178,6 @@ extension ShotAction {
         case .copyPath: String(localized: "Copy Latest Capture's Path")
         case .capturePrevious: String(localized: "Capture Previous Area")
         case .copyText: String(localized: "Copy Text")
-        case .focusQuickAccess: String(localized: "Focus Quick Access")
         }
     }
 }

@@ -1,5 +1,4 @@
 import AppKit
-import Carbon.HIToolbox
 import os
 import Observation
 import ShotCore
@@ -33,8 +32,6 @@ struct QuickAccessCard: Identifiable {
 @Observable
 final class QuickAccessModel {
     var cards: [QuickAccessCard] = []
-    /// The card the keyboard acts on, while Focus Quick Access has handed the cards the keyboard.
-    var selected: UUID?
 }
 
 /// A card's action, for its right-click menu and the menu Space opens. With `children`, it's a submenu of them instead.
@@ -54,7 +51,7 @@ final class QuickAccessController {
     var onExportGIF: ((URL) -> Void)?
 
     private let model = QuickAccessModel()
-    private var panel: QuickAccessPanel?
+    private var panel: NSPanel?
     private var timers: [UUID: Task<Void, Never>] = [:]
     private var settleTask: Task<Void, Never>?
 
@@ -127,15 +124,6 @@ final class QuickAccessController {
 
     func remove(_ id: UUID) {
         timers.removeValue(forKey: id)?.cancel()
-        if model.selected == id {
-            let index = model.cards.firstIndex { $0.id == id } ?? 0
-            let rest = model.cards.filter { $0.id != id }
-            if rest.isEmpty {
-                endKeyboard()
-            } else {
-                select(rest[min(index, rest.count - 1)].id)
-            }
-        }
         if let styled = model.cards.first(where: { $0.id == id })?.styledURL {
             Self.removeStyled(styled)
         }
@@ -167,8 +155,7 @@ final class QuickAccessController {
     private func startTimer(for id: UUID) {
         timers[id]?.cancel()
         let duration = Preferences().quickAccessDuration
-        // Cards wait while the keyboard is on them; `endKeyboard` starts their timers again.
-        guard duration > 0, model.selected == nil else {
+        guard duration > 0 else {
             return
         }
         timers[id] = Task { [weak self] in
@@ -197,7 +184,7 @@ final class QuickAccessController {
 
     private func ensurePanel() {
         if panel == nil {
-            let panel = QuickAccessPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+            let panel = NSPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
             panel.level = .floating
             panel.isOpaque = false
             panel.backgroundColor = .clear
@@ -206,8 +193,6 @@ final class QuickAccessController {
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             panel.isReleasedWhenClosed = false
             panel.contentView = NSView(hosting: QuickAccessView(model: model, controller: self))
-            panel.onKey = { [weak self] in self?.handleKey($0) ?? false }
-            panel.onResignKey = { [weak self] in self?.endKeyboard() }
             self.panel = panel
         }
     }
@@ -226,110 +211,6 @@ final class QuickAccessController {
         let x = Preferences().quickAccessPosition == .left ? visible.minX + Self.inset : visible.maxX - Self.inset - size.width
         let origin = CGPoint(x: x, y: visible.minY + Self.inset)
         panel.setFrame(NSRect(origin: origin, size: size), display: true)
-    }
-
-    // MARK: Keyboard
-
-    /// Hands the keyboard to the newest card, with its buttons showing, until Esc, a click elsewhere, or an action that
-    /// leaves the card. The panel never activates Shot, so the app in front stays in front.
-    func focusNewest() {
-        guard let panel, let newest = model.cards.last else {
-            Toast.show("No Quick Access cards to focus")
-            return
-        }
-        for timer in timers.values {
-            timer.cancel()
-        }
-        timers.removeAll()
-        panel.acceptsKeys = true
-        select(newest.id)
-        panel.makeKeyAndOrderFront(nil)
-        log.notice("Keyboard on Quick Access, \(self.model.cards.count) cards")
-    }
-
-    private func select(_ id: UUID) {
-        model.selected = id
-        guard let panel, let card = model.cards.first(where: { $0.id == id }) else {
-            return
-        }
-        let name = card.fileURL.lastPathComponent
-        let message = card.isVideo
-            ? String(localized: "Recording \(name). Return copies it, Space shows its actions, Esc goes back.")
-            : String(localized: "Screenshot \(name). Return copies it, Space shows its actions, Esc goes back.")
-        NSAccessibility.post(element: panel, notification: .announcementRequested, userInfo: [.announcement: message, .priority: NSAccessibilityPriorityLevel.high.rawValue])
-    }
-
-    /// Gives the keyboard back to the app in front and starts the cards' timers again.
-    private func endKeyboard() {
-        guard model.selected != nil, let panel else {
-            return
-        }
-        model.selected = nil
-        panel.acceptsKeys = false
-        if panel.isKeyWindow {
-            // A panel can't hand key status back to another app, but ordering it out does, and it comes straight back.
-            panel.orderOut(nil)
-            panel.orderFrontRegardless()
-        }
-        for card in model.cards {
-            startTimer(for: card.id)
-        }
-    }
-
-    private func handleKey(_ event: NSEvent) -> Bool {
-        guard let index = model.cards.firstIndex(where: { $0.id == model.selected }) else {
-            return false
-        }
-        let card = model.cards[index]
-        let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
-        switch (Int(event.keyCode), modifiers) {
-        case (kVK_Escape, []):
-            endKeyboard()
-        case (kVK_UpArrow, []):
-            select(model.cards[max(index - 1, 0)].id)
-        case (kVK_DownArrow, []):
-            select(model.cards[min(index + 1, model.cards.count - 1)].id)
-        case (kVK_Return, []), (kVK_ANSI_KeypadEnter, []), (kVK_ANSI_C, .command):
-            copy(card)
-            // Straight back to the app in front, ready to paste.
-            endKeyboard()
-        case (kVK_ANSI_S, .command):
-            saveAs(card)
-        case (kVK_ANSI_E, .command):
-            annotate(card)
-        case (kVK_Delete, []), (kVK_ForwardDelete, []):
-            remove(card.id)
-        case (kVK_Space, []):
-            showMenu(for: card, at: index)
-        default:
-            return false
-        }
-        return true
-    }
-
-    private func showMenu(for card: QuickAccessCard, at index: Int) {
-        guard let view = panel?.contentView else {
-            return
-        }
-        let menu = NSMenu()
-        for action in actions(for: card) {
-            if let action {
-                let item = ClosureMenuItem(title: action.title, perform: action.perform)
-                if !action.children.isEmpty {
-                    item.submenu = NSMenu()
-                    for child in action.children {
-                        item.submenu?.addItem(ClosureMenuItem(title: child.title, perform: child.perform))
-                    }
-                }
-                menu.addItem(item)
-            } else {
-                menu.addItem(.separator())
-            }
-        }
-        // Card frames count up from the bottom; a hosting view counts down.
-        let frame = QuickAccessLayout(cardHeights: model.cards.map(\.height)).cardFrames[index]
-        let top = view.isFlipped ? view.bounds.height - frame.maxY : frame.maxY
-        menu.popUp(positioning: menu.items.first, at: NSPoint(x: frame.minX + 12, y: view.isFlipped ? top + 12 : top - 12), in: view)
     }
 
     /// The card's actions in menu order, with `nil` for a divider: the hover buttons' actions, plus Copy Path, Copy Text,
@@ -423,47 +304,5 @@ final class QuickAccessController {
 
     func exportGIF(_ card: QuickAccessCard) {
         onExportGIF?(card.fileURL)
-    }
-}
-
-/// Becomes key only while Focus Quick Access hands it the keyboard, so clicking a card never takes focus from the app in
-/// front.
-private final class QuickAccessPanel: NSPanel {
-    var acceptsKeys = false
-    var onKey: ((NSEvent) -> Bool)?
-    var onResignKey: (() -> Void)?
-
-    override var canBecomeKey: Bool { acceptsKeys }
-
-    // Ahead of the hosted views, which would otherwise take the arrows and Space.
-    override func sendEvent(_ event: NSEvent) {
-        if event.type == .keyDown, onKey?(event) == true {
-            return
-        }
-        super.sendEvent(event)
-    }
-
-    override func resignKey() {
-        super.resignKey()
-        onResignKey?()
-    }
-}
-
-private final class ClosureMenuItem: NSMenuItem {
-    private let perform: () -> Void
-
-    init(title: String, perform: @escaping () -> Void) {
-        self.perform = perform
-        super.init(title: title, action: #selector(run), keyEquivalent: "")
-        target = self
-    }
-
-    @available(*, unavailable)
-    required init(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    @objc private func run() {
-        perform()
     }
 }
