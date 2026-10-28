@@ -69,32 +69,23 @@ The screenshots and recordings in `docs/media` come from a second sample, `docs/
 ## Architecture
 
 Two targets, all macOS-only:
-- `Sources/ShotCore` (library): everything that needs no window, display or permission. The undo stack, keyframes, cut list and trim range, hotkeys (`ShotAction`, `KeyCombo`), layout math and text wrapping (`TextLayout`, `NoteLayout`), the annotation model and renderer, the timeline and composition, GIF export, preferences, file naming and the gallery. It imports no AppKit, SwiftUI or Cocoa (`make lint` checks).
+- `Sources/ShotCore` (library): everything that needs no window, display or permission. It imports no AppKit, SwiftUI or Cocoa (`make lint` checks).
 - `Sources/Shot` (the app): AppKit and SwiftUI that need a real session, grouped by feature (`Capture`, `Overlay`, `QuickAccess`, `Editor`, `Recording`, `VideoEditor`, `Gallery`, `Settings`, `Design`).
 
-ShotCore calls Apple's frameworks directly, with no protocol in between:
-- Images are `CGImage`s, so a capture keeps its own colour space. `ImageCodec` reads and writes them with ImageIO.
-- Drawing takes a `CGContext`. `CGContext+Drawing.swift` adds the bitmap factory, the CTM-mapped `setShadow` and drawing of `CoreTextLine`s.
-- Annotation outlines are `CGPath`s, hit-tested by Core Graphics. Filters are `CoreImageEffects`, text is `CoreTextShaper`, OCR is Vision.
-- Video goes through `AVVideoReader`, `AVVideoAssembler` and `AVVideoWriter`.
+**If logic can be tested without a window, it goes in ShotCore with a test.** The one test target is `Tests/ShotCoreTests`. The app has no tests.
 
-**If logic can be tested without a window, it goes in ShotCore with a test.** The one test target is `Tests/ShotCoreTests`: mostly top-level `@Test func` with sentence-style names, plus the `PerfTests` budgets. The app has no tests.
+Read the note in `docs/architecture/` before changing the area it covers:
 
-Flow:
-- `ShotApp` is a `MenuBarExtra` with an `AppDelegate` adaptor. `AppDelegate` owns `AppState` and the `CaptureCoordinator`, wires hotkeys and controller callbacks to it, and routes `shot://` URLs. Other long-lived controllers are `.shared` singletons.
-- `CaptureCoordinator.perform(_: ShotAction)` is the central dispatcher. `ShotAction` and `EditorRoute` live in ShotCore.
-- Capture: for an area or window pick, `DisplayCapturer` freezes every display, then `SelectionOverlayController.select` returns an area, window or display. Fullscreen freezes only its screen and shows no overlay, a picked window is captured afresh, live, and recording runs live. `finish` encodes off the main actor, saves and copies, then opens Quick Access or the editor.
-- Image editor: `EditorDocument` / `Annotation` (ShotCore) is the model. `AnnotationRenderer` is shared by the on-screen canvas, flattened export, and the video compositors (`ProjectCompositor` via `AnnotationFrame`/`RenderCache`), so a rendering change affects them all. Undo is snapshot-based through ShotCore's generic `UndoStack`, not `NSUndoManager`. Group continuous edits (slider drags, held keys) into one step; view state like zoom is not undoable.
-- Recording: `Recorder` uses `SCStream` + `SCRecordingOutput`. Each pause starts a new segment, and `VideoConcatenator` joins them on stop. With both the microphone and system audio on, each is also written to its own file, so mute silences only the microphone.
-- Video editor: `VideoEditorModel` keeps its own `UndoStack`. The timeline and composition logic is in ShotCore (`Timeline*`, `ProjectComposition`); so are keyframes, trim and cuts (`Keyframes`, `TrimRange`, `VideoCuts`). GIF export reads frames (`GIFExporter`, `GIFStreamWriter`) and encodes them (`GIFEncoder`, `ColorQuantizer`).
-- Settings: keys and defaults live in ShotCore `Preferences`. `SettingsStore` is an `@Observable` cache, and views use its `@Setting(key)` wrapper.
-- Design system: `Sources/Shot/Design`. `Brutal` holds the tokens in `BrutalStyle.swift`, and `GlassWindow.swift` the window chrome.
-
-Website: `site/` is the Astro marketing site, built and deployed by Cloudflare Workers Builds (see `site/README.md`). `site/DESIGN.md` is its design direction: Shot's `Brutal` tokens in light and dark, and CSS-only motion with a still version for reduced motion. The user guide lives in `site/src/guide/`, one Markdown file per page at `/docs/<slug>/`, in file name order. Each file's front matter gives its `title`, a one-line `summary` and its `group` (the groups are in `site/src/lib/guide-files.ts`). A page's address comes from its title, so when you rename a page, add its old slug to an `aliases` list in its front matter and the build redirects the old address to it. Write pages as tasks, in second person: numbered steps, `<kbd>⌘⇧4</kbd>` for keys, and `> [!TIP]` or `> [!NOTE]` callouts. Link to another page's section with just its id, `(#id)`, and the build points it at the right page. A new file becomes a new page. The site also renders `CHANGELOG.md` directly. release-please ignores `site/`.
-
-Views in lazy collections (`LazyVGrid`, `List`, `LazyVStack`): a row or tile reads only its own state. It takes plain values, not the shared `@Observable` model, for anything that changes often (selection, hover, the playing item), and is `Equatable` with `.equatable()`, so one change re-evaluates the few views whose values changed, not all of them. Put footers and status text that read such state in their own `View` structs, not computed properties of a big body. One interaction must cost the same however big the library is. Use a single `onTapGesture` and read `NSApp.currentEvent?.clickCount`; `onTapGesture(count: 2)` delays every single click (lint rejects it).
-
-Concurrency: UI and model types are `@MainActor`. Heavy work runs in `Task.detached`, and CG types cross actors through `@unchecked Sendable` wrappers (`SendableImage`, `EditorDocument`).
+| Before changing | Read |
+| --- | --- |
+| What belongs in ShotCore, or how it handles images and drawing | [core.md](docs/architecture/core.md) |
+| Taking a capture: `CaptureCoordinator`, picking what to capture, saving | [capture.md](docs/architecture/capture.md) |
+| Annotations, `AnnotationRenderer` or editor undo | [image-editor.md](docs/architecture/image-editor.md) |
+| `Recorder`, pausing or audio | [recording.md](docs/architecture/recording.md) |
+| The video timeline, or GIF export | [video-editor.md](docs/architecture/video-editor.md) |
+| Preferences and `@Setting` | [settings.md](docs/architecture/settings.md) |
+| Shared UI components, lazy lists and grids, or concurrency | [design-system.md](docs/architecture/design-system.md) |
+| `site/` and the user guide | [website.md](docs/architecture/website.md) |
 
 ## Rules enforced by `make lint`
 
