@@ -70,15 +70,15 @@ const rail = pages.length > 0 && toc.length > 0;
   .side { display: grid; gap: 16px; min-width: 0; }
   @media (min-width: 1000px) {
     .doc.with-side { grid-template-columns: 250px 1fr; align-items: start; }
-    /* The sidebar scrolls on its own when it's taller than the window; the padding keeps the cards' shadows in view. */
-    .side { position: sticky; top: 96px; max-height: calc(100dvh - 112px); overflow-y: auto; padding: 0 6px 6px 0; margin-right: -6px; }
+    /* The sidebar scrolls with the page: a box with its own scrollbar would clip the cards' shadows and add a second place to scroll. */
+    .side { padding-right: 6px; margin-right: -6px; }
   }
   /* On wide screens "On this page" moves to a rail beside the article; below that it stays under the page list. */
   .rail { display: none; }
   @media (min-width: 1280px) {
     .doc.has-rail { grid-template-columns: 250px minmax(0, 1fr) 210px; }
     .doc.has-rail .toc.inline { display: none; }
-    .rail { display: block; position: sticky; top: 96px; max-height: calc(100dvh - 112px); overflow-y: auto; padding: 0 6px 6px 0; margin-right: -6px; }
+    .rail { display: block; position: sticky; top: 96px; align-self: start; padding-right: 6px; margin-right: -6px; }
   }
   .toc { padding: 16px 18px; font-size: 15px; }
   .toc summary { font-weight: 900; cursor: pointer; }
