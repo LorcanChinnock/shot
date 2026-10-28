@@ -12,6 +12,8 @@ export const groups = [
 ] as const;
 
 export interface GuideFile {
+  /** The Markdown file's name in src/guide/. */
+  file: string;
   slug: string;
   title: string;
   summary: string;
@@ -33,6 +35,6 @@ export function readGuide(siteDir = process.cwd()): GuideFile[] {
       if (!title || !summary || !groups.some((g) => g.name === group)) {
         throw new Error(`src/guide/${name} needs a title, a summary and one of these groups: ${groups.map((g) => g.name).join(', ')}`);
       }
-      return { slug: slugOf(title), title, summary, group: group!, markdown: content };
+      return { file: name, slug: slugOf(title), title, summary, group: group!, markdown: content };
     });
 }

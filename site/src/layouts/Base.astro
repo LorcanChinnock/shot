@@ -7,16 +7,24 @@ interface Props {
   description?: string;
   /** A wider page, for the guide's three columns. */
   wide?: boolean;
+  /** A card for this page's link previews, as a path under /; every page without one shares /og.png. */
+  image?: string;
+  imageAlt?: string;
+  /** Keeps the page out of search results. */
+  noindex?: boolean;
 }
 
 const {
   title,
   wide = false,
   description = 'A screenshot, annotation and screen recording app for the Mac menu bar. Free and open source.',
+  image = '/og.png',
+  imageAlt = "Shot's menu bar app: a better ⌘⇧4. A support ticket with a highlighted line, an arrow and a note, and the Quick Access card saying Copied. Free and open source, for Mac.",
+  noindex = false,
 } = Astro.props;
 const fullTitle = title ? `${title} · Shot` : 'Shot: screenshots and screen recording for macOS';
 const canonical = new URL(Astro.url.pathname, Astro.site);
-const ogImage = new URL('/og.png', Astro.site);
+const ogImage = new URL(image, Astro.site);
 const release = await latestRelease();
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const current = (href: string) => (path === href ? 'page' : undefined);
@@ -42,8 +50,16 @@ const current = (href: string) => (path === href ? 'page' : undefined);
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Shot's yellow icon beside the words: A screenshot app that sits in your Mac's menu bar. Free and open source." />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:alt" content={imageAlt} />
+    <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={imageAlt} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="alternate" type="application/rss+xml" title="Shot releases" href="/changelog/rss.xml" />
     <link rel="sitemap" href="/sitemap.xml" />
     <slot name="head" />
   </head>
@@ -86,6 +102,7 @@ const current = (href: string) => (path === href ? 'page' : undefined);
           <nav aria-label="Footer">
             <a href="/docs/get-started/">Guide</a>
             <a href="/changelog/">Changelog</a>
+            <a href="/screenshot-apps/">Other screenshot apps</a>
             <a href="/privacy/">Privacy</a>
             <a href="https://github.com/LorcanChinnock/shot">Source</a>
             <a href="https://github.com/LorcanChinnock/shot/issues">Report a bug</a>

@@ -14,7 +14,7 @@ const colorOf = (group: string) => groups.find((g) => g.name === group)?.color;
 const links = pages.map((p) => ({ href: `/docs/${p.slug}/`, title: p.title, current: p === page, group: p.group, color: colorOf(p.group) }));
 ---
 
-<Prose title={page.title} description={page.summary} headings={page.headings} pages={links}>
+<Prose title={page.title} description={page.summary} image={`/og/${page.slug}.png`} imageAlt={`Shot user guide: ${page.title}`} headings={page.headings} pages={links}>
   <GuideSearch slot="side" />
   <div data-pagefind-body style={`--accent: var(--${colorOf(page.group)})`}>
     <header class="page-head">
