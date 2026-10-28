@@ -41,8 +41,8 @@ const scenes = {
   'style-a-screenshot': shot('editor-style.png', wide, editorWindow),
   'combine-images': shot('editor-combine.png', wide, editorWindow),
   'edit-a-recording': shot('video-editor.png', wide, [350, 670, 900, 285]),
-  'animate-and-annotate-a-recording': shot('video-editor.png', wide, [350, 12, 900, 640]),
-  'export-a-video-or-gif': `<div style="width: 66%">${shot('video-editor.png', wide, [350, 12, 900, 940])}</div>`,
+  'animate-and-annotate-a-recording': `<svg class="sc-chart" viewBox="0 0 520 280"><rect x="6" y="6" width="508" height="268" rx="14" fill="#fff"/><text x="30" y="40" font-weight="800" font-size="20" fill="#23232b">Revenue</text><text x="124" y="40" font-size="14" fill="#77777f">Last 14 days</text><rect x="40" y="170" width="22" height="50" rx="3" fill="#b7d3ca"/><rect x="72" y="158" width="22" height="62" rx="3" fill="#b7d3ca"/><rect x="104" y="168" width="22" height="52" rx="3" fill="#b7d3ca"/><rect x="136" y="140" width="22" height="80" rx="3" fill="#b7d3ca"/><rect x="168" y="148" width="22" height="72" rx="3" fill="#b7d3ca"/><rect x="200" y="132" width="22" height="88" rx="3" fill="#b7d3ca"/><rect x="232" y="120" width="22" height="100" rx="3" fill="#b7d3ca"/><rect x="264" y="150" width="22" height="70" rx="3" fill="#b7d3ca"/><rect x="296" y="156" width="22" height="64" rx="3" fill="#b7d3ca"/><rect x="328" y="135" width="22" height="85" rx="3" fill="#b7d3ca"/><rect x="360" y="125" width="22" height="95" rx="3" fill="#b7d3ca"/><rect x="392" y="130" width="22" height="90" rx="3" fill="#b7d3ca"/><rect x="424" y="110" width="22" height="110" rx="3" fill="#b7d3ca"/><rect x="456" y="70" width="22" height="150" rx="3" fill="#3f9c7c"/><line x1="30" y1="221" x2="490" y2="221" stroke="#d6d6dc" stroke-width="2"/><text x="296" y="58" font-weight="800" font-size="26" fill="#ff4d3d">Best day</text><path d="M 404 52 Q 430 52 449 70" fill="none" stroke="#ff4d3d" stroke-width="4" stroke-linecap="round"/><path d="M 445.5 59.6 L 449 70 L 438.4 67.1" fill="none" stroke="#ff4d3d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'export-a-video-or-gif': `<div class="sc-seg"><p><b>Format</b><span>MP4</span><span class=on>GIF</span></p><p><b>FPS</b><span>10</span><span class=on>15</span><span>24</span></p><p><b>Width</b><span>480</span><span class=on>720</span><span>1080</span><span>Full</span></p><p><b>Speed</b><span class=on>1x</span><span>1.5x</span><span>2x</span></p><p class="est">≈ 105 KB</p></div>`,
   'find-your-captures': shot('gallery.png', wide, [170, 56, 1260, 850]),
   'keyboard-shortcuts': `<div class="sc-keys">${shortcuts.map(([k, l], i) => `<p style="--fill: var(--${['yellow', 'pink', 'mint'][i % 3]})">${kbd([k])}<span>${l}</span></p>`).join('')}</div>`,
   'automation-reference': code(['<b>open</b> "shot://capture-area"', '<b>open</b> "shot://capture-timer?seconds=5"', '<b>open</b> "shot://copy-text"', '<b>open</b> "shot://gallery"']),
@@ -82,6 +82,13 @@ const page = ({ chip, chipColor, headline, size, keys, scene }) => `<!doctype ht
   .sc-keys kbd { font-size: 30px; background: var(--fill); color: var(--on-accent); border-color: #000; box-shadow: 3px 3px 0 #000; }
   .sc-langs { width: 88%; display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
   .sc-langs span { padding: 8px 20px; font: 800 28px/1.2 var(--font); color: var(--on-accent); background: var(--fill); border: 3px solid var(--line); border-radius: 12px; box-shadow: 3px 3px 0 var(--line); }
+  .sc-chart { width: 92%; filter: drop-shadow(4px 4px 0 var(--line)); }
+  .sc-seg { width: 86%; display: grid; gap: 14px; }
+  .sc-seg p { margin: 0; display: flex; align-items: center; gap: 10px; font: 800 22px/1.2 var(--font); color: var(--on-accent); }
+  .sc-seg b { width: 100px; font-size: 16px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .sc-seg span { padding: 7px 16px; background: var(--paper); color: var(--ink); border: 3px solid var(--line); border-radius: 10px; box-shadow: 2px 2px 0 var(--line); }
+  .sc-seg span.on { background: var(--mint); color: var(--on-accent); }
+  .sc-seg .est { justify-content: flex-end; font-size: 20px; }
   .sc-list { width: 82%; display: grid; gap: 12px; }
   .sc-list p { margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; font: 800 24px/1.25 var(--font); background: var(--paper); color: var(--ink); border: 3px solid var(--line); border-radius: 12px; box-shadow: 4px 4px 0 var(--line); }
   .sc-list .no, .sc-list .q { justify-content: flex-start; } .sc-list p b { flex: none; width: 36px; height: 36px; display: grid; place-items: center; font-size: 20px; color: var(--on-accent); background: var(--red); border: 3px solid var(--line); border-radius: 50%; }
