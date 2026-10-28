@@ -229,7 +229,7 @@ public struct ScrollStitcher: Sendable {
     /// One FNV-1a hash per row, so rows compare as numbers.
     static func rowHashes(_ bitmap: Bitmap) -> [UInt64] {
         let rowBytes = bitmap.bytesPerRow
-        return bitmap.pixels.withUnsafeBytes { bytes in
+        return bitmap.pixels.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) -> [UInt64] in
             (0..<bitmap.height).map { y in
                 var hash: UInt64 = 0xcbf29ce484222325
                 for byte in bytes[y * rowBytes..<(y + 1) * rowBytes] {
@@ -245,7 +245,7 @@ extension Bitmap {
     /// The bitmap with rows and columns swapped, so the pixel at (x, y) moves to (y, x).
     public func transposed() -> Bitmap {
         let out = [UInt8](unsafeUninitializedCapacity: pixels.count) { dst, count in
-            pixels.withUnsafeBytes { src in
+            pixels.withUnsafeBytes { (src: UnsafeRawBufferPointer) -> Void in
                 for y in 0..<height {
                     for x in 0..<width {
                         let from = (y * width + x) * 4
