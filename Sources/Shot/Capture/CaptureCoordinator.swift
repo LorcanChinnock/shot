@@ -17,6 +17,8 @@ final class CaptureCoordinator {
     /// The last area an area screenshot took, as a global AppKit rect, for Capture Previous Area. It's forgotten on quit.
     private var previousArea: CGRect?
     private var gifExports: [URL: Task<Void, Never>] = [:]
+    /// The scrolling capture in progress, which its own action finishes.
+    private var scrolling: ScrollingCaptureController?
     /// From a full-screen capture action to its clipboard write; ended with "copied", or "not copied" when nothing was copied.
     /// Area and window captures wait for the user's selection, so their time says nothing about Shot's speed.
     private var captureInterval: OSSignpostIntervalState?
@@ -60,6 +62,10 @@ final class CaptureCoordinator {
             Task { await copyLatestPath() }
             return
         }
+        if action == .captureScrolling, let scrolling {
+            scrolling.finish()
+            return
+        }
         guard !busy else {
             return
         }
@@ -90,6 +96,8 @@ final class CaptureCoordinator {
                     try await startRecording(mode: .screen)
                 case .recordWindow:
                     try await startRecording(mode: .window)
+                case .captureScrolling:
+                    try await captureScrollingArea()
                 case .pickColor, .copyPath:
                     break
                 }
@@ -263,6 +271,21 @@ final class CaptureCoordinator {
             throw CaptureError.encodingFailed
         }
         try await finish(image: image, scale: frozen.scale, from: area)
+    }
+
+    /// Picks the area that scrolls on the live overlay, then streams it while the person scrolls, stitching the frames
+    /// into one image until Return. Esc saves and copies nothing.
+    private func captureScrollingArea() async throws {
+        guard let pick = await RecordingSetupController.pickRegion(mode: .area) else {
+            return
+        }
+        let controller = ScrollingCaptureController(screen: pick.screen, region: pick.region)
+        scrolling = controller
+        defer { scrolling = nil }
+        guard case let .finished(image, scale) = try await controller.run() else {
+            return
+        }
+        try await finish(image: image, scale: scale, from: pick.region)
     }
 
     func togglePause() {

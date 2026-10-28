@@ -1,12 +1,15 @@
 import AppKit
 
-/// Outline around the recording region; Shot is excluded from the capture, so it never appears in the video.
+/// Outline around a recording's region, or a scrolling capture's area; Shot is excluded from the capture, so it never
+/// appears in the video or the frames.
 final class RecordingBorderPanel: NSPanel {
     enum Style {
         /// Framing before recording: ink line with a white dashed inner line.
         case setup
         case recording
         case paused
+        /// A solid line in `color`, as a scrolling capture's outline, which follows its status.
+        case outline(NSColor)
     }
 
     static let lineWidth: CGFloat = 3
@@ -69,6 +72,9 @@ final class RecordingBorderPanel: NSPanel {
             case .paused:
                 Brutal.yellowNS.setStroke()
                 path.setLineDash([10, 6], count: 2, phase: 0)
+                path.stroke()
+            case let .outline(color):
+                color.setStroke()
                 path.stroke()
             }
         }

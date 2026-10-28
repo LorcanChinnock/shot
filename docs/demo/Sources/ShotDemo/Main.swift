@@ -5,7 +5,7 @@ import SwiftUI
 ///
 ///     swift run ShotDemo --scene ticket,chat --appearance light
 ///
-/// `--scene` takes `ticket`, `dashboard` and `chat`, comma-separated; each opens its own window, laid out
+/// `--scene` takes `ticket`, `dashboard`, `chat` and `article`, comma-separated; each opens its own window, laid out
 /// left to right and centred on the main screen. `--appearance light|dark` overrides the system appearance.
 /// `--area x,y,w,h` centres the windows in that rectangle instead (screen points, from the top left), to line them
 /// up with a capture region. `--backdrop` puts a plain backdrop behind the windows, so captures show no wallpaper or other apps.
@@ -25,7 +25,7 @@ enum DemoMain {
 }
 
 enum Scene: String, CaseIterable {
-    case ticket, dashboard, chat
+    case ticket, dashboard, chat, article
 
     var size: CGSize { self == .chat ? CGSize(width: 380, height: 600) : CGSize(width: 960, height: 600) }
 
@@ -34,6 +34,7 @@ enum Scene: String, CaseIterable {
         case .ticket: "Ticket #4821"
         case .dashboard: "Reports"
         case .chat: "#checkout"
+        case .article: "Help centre"
         }
     }
 }
@@ -180,6 +181,7 @@ struct SceneRoot: View {
             case .ticket: TicketScene()
             case .dashboard: DashboardScene()
             case .chat: ChatScene()
+            case .article: ArticleScene()
             }
         }
         .id(replay.count)

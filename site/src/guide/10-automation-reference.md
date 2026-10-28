@@ -24,6 +24,7 @@ Shot starts an area screenshot, just as <kbd>⌘⇧4</kbd> does.
 |---|---|
 | `shot://capture-area`, `capture-fullscreen`, `capture-window` | Take a screenshot |
 | `shot://capture-previous` | Take the last area screenshot's area again |
+| `shot://capture-scrolling` | Drag out an area that scrolls, then scroll it yourself while Shot builds one screenshot; a second call finishes it |
 | `shot://record`, `record-fullscreen`, `record-window` | Set up, confirm, or stop a recording |
 | `shot://pause` | Pause or resume the recording |
 | `shot://pick-color` | Pick a colour on screen and copy its hex |

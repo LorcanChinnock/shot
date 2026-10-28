@@ -118,6 +118,7 @@ import Testing
 
 /// Twice the CI runner's baselines in `docs/performance.md`; change both together.
 private enum Budget {
+    static let scrollFrame = 60
     static let flattenAndEncode = 876
     static let encodePNG = 706
     static let encodeJPEG = 43
@@ -126,6 +127,25 @@ private enum Budget {
     static let gifExportMegabytes = 416
     static let galleryGrouping = 5.2
     static let gallerySearch = 10.8
+}
+
+extension PerfTests {
+    /// A scrolling capture of the whole 15″ panel at 2×: lining one frame up with the last and painting it, which has to
+    /// keep up with the frames as they come, or the ones left out make the next move a bigger jump.
+    @Test func liningUpAScrollingCaptureFrameStaysInBudget() throws {
+        let scene = ScrollScene(content: CGSize(width: 1800, height: 6000), viewport: CGSize(width: 1512, height: 982), scale: 2)
+        let frames = [CGPoint(x: 0, y: 0), CGPoint(x: 0, y: 37.5), CGPoint(x: 0, y: 81)].map { scene.frame(at: $0) }
+        let time = try fastest {
+            let stitcher = ScrollStitcher(width: frames[0].width, height: frames[0].height, scale: 2, byteOrder: .rgba)
+            for frame in frames {
+                frame.pixels.withUnsafeBytes { bytes in
+                    _ = stitcher.process(ScrollFrame(width: frame.width, height: frame.height, bytesPerRow: frame.bytesPerRow, pixels: bytes))
+                }
+            }
+        }
+        // Three frames: the first only paints, so the two that line up share the rest.
+        try check(time / 3, budget: .milliseconds(Budget.scrollFrame), "Scrolling capture frame")
+    }
 }
 
 /// The fastest run of `body`, after one untimed run that warms caches. It runs at least fifteen times and for at least
