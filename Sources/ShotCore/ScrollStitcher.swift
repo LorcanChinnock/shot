@@ -244,21 +244,20 @@ public struct ScrollStitcher: Sendable {
 extension Bitmap {
     /// The bitmap with rows and columns swapped, so the pixel at (x, y) moves to (y, x).
     public func transposed() -> Bitmap {
-        var out = Data(count: pixels.count)
-        pixels.withUnsafeBytes { src in
-            out.withUnsafeMutableBytes { dst in
+        let out = [UInt8](unsafeUninitializedCapacity: pixels.count) { dst, count in
+            pixels.withUnsafeBytes { src in
                 for y in 0..<height {
                     for x in 0..<width {
                         let from = (y * width + x) * 4
                         let to = (x * height + y) * 4
-                        dst[to] = src[from]
-                        dst[to + 1] = src[from + 1]
-                        dst[to + 2] = src[from + 2]
-                        dst[to + 3] = src[from + 3]
+                        for channel in 0..<4 {
+                            dst[to + channel] = src[from + channel]
+                        }
                     }
                 }
             }
+            count = pixels.count
         }
-        return Bitmap(width: height, height: width, scale: scale, pixels: out)!
+        return Bitmap(width: height, height: width, scale: scale, pixels: Data(out))!
     }
 }
