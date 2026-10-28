@@ -103,9 +103,10 @@
         status.textContent = 'Search works on the built site only.';
         return;
       }
-      // A newer search replaced this one.
-      if (!found || input.value.trim() !== query) return;
+      if (!found) return;
       const pages = await Promise.all(found.results.slice(0, 6).map((r) => r.data()));
+      // A newer search, or clearing the box, replaced this one while its pages loaded.
+      if (input.value.trim() !== query) return;
       // Each page lists its best-matching sections, at most two, so one long page can't fill the list.
       const items = pages.flatMap((page) =>
         [...page.sub_results]

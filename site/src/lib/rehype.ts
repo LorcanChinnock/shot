@@ -8,7 +8,7 @@ export function rehypeRepoLinks() {
   return (tree: any) =>
     visit(tree, 'element', (node: any) => {
       const href = node.tagName === 'a' && node.properties?.href;
-      if (typeof href !== 'string' || /^(https?:|#|mailto:)/.test(href)) return;
+      if (typeof href !== 'string' || /^(https?:|#|\/|mailto:)/.test(href)) return;
       node.properties.href = map[href] ?? `${repo}/blob/main/${href.replace(/^\.\.\//, '')}`;
     });
 }
