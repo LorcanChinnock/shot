@@ -24,6 +24,8 @@ final class ScrollCaptureModel {
     var status = ScrollCaptureStatus.ready
     var size = CGSize.zero
     var preview: CGImage?
+    /// Where the newest frame sits in the preview, as a share of its width and height.
+    var previewView = CGRect.zero
 
     var message: LocalizedStringResource? {
         switch status {
@@ -132,6 +134,7 @@ final class ScrollCapture {
         model.size = update.size
         if let preview = update.preview {
             model.preview = preview
+            model.previewView = update.view
         }
         switch update.outcome {
         case nil:
@@ -336,6 +339,8 @@ private struct ScrollCapturePanelView: View {
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { onResize($0) }
     }
 
+    /// The whole image so far, shrunk to fit. What isn't captured yet is hatched, so gaps show, and the frame marks what
+    /// the area shows now.
     @ViewBuilder private var preview: some View {
         ZStack {
             Brutal.well
@@ -344,11 +349,34 @@ private struct ScrollCapturePanelView: View {
                     .resizable()
                     .interpolation(.medium)
                     .aspectRatio(contentMode: .fit)
+                    .background {
+                        // Behind the image, which is clear where nothing was captured, so only its own gaps are hatched.
+                        Canvas { context, size in
+                            var path = Path()
+                            var x: CGFloat = -size.height
+                            while x < size.width {
+                                path.move(to: CGPoint(x: x, y: size.height))
+                                path.addLine(to: CGPoint(x: x + size.height, y: 0))
+                                x += 6
+                            }
+                            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Brutal.paper))
+                            context.stroke(path, with: .color(Brutal.red.opacity(0.7)), lineWidth: 1)
+                        }
+                    }
+                    .overlay {
+                        GeometryReader { proxy in
+                            let view = model.previewView
+                            Rectangle()
+                                .stroke(Brutal.ink, lineWidth: 2)
+                                .frame(width: proxy.size.width * view.width, height: proxy.size.height * view.height)
+                                .offset(x: proxy.size.width * view.minX, y: proxy.size.height * view.minY)
+                        }
+                    }
             }
         }
         .frame(height: 130)
         .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.button, style: .circular), width: 2)
-        .accessibilityLabel(Text("Preview of the newest part of the stitched image"))
+        .accessibilityLabel(Text("Overview of the stitched image, with gaps hatched and the current view outlined"))
     }
 
     private var chipText: LocalizedStringResource {

@@ -34,6 +34,10 @@ public struct ScrollStitcher: Sendable {
 
     /// Frames in a row that must keep changing in place before they are called moving rather than too far.
     private static let movingFrames = 4
+    /// Every frame's position is measured to a pixel, and a scroll that lands between two pixels can't be placed any
+    /// closer. Adding what each frame shows would pile those errors up, so a frame is only added once the content has
+    /// moved this share of the frame's smaller side from the last one added, and the rest is added by `finish`.
+    private static let paintShare = 8
 
     private let scale: CGFloat
     private let frameWidth: Int
@@ -42,14 +46,19 @@ public struct ScrollStitcher: Sendable {
     private var lastLuma: ScrollMotion.Luma
     private var previous: ScrollFrame
     private var changingFrames = 0
+    /// How far the newest frame was from the last one added, and how much that changed from the frame before it, to guess
+    /// where the next will be. Nil when the last frame couldn't be followed.
+    private var tracking: (shift: (dx: Int, dy: Int), velocity: (dx: Int, dy: Int))? = (shift: (0, 0), velocity: (0, 0))
     private var canvas: Canvas
     /// Where the last good frame's top-left corner sits on the canvas.
-    private var placement = (x: 0, y: 0)
+    private(set) var placement = (x: 0, y: 0)
     /// Rows at the top and columns at the left that stay put while the content scrolls the other way, as a spreadsheet's
     /// header row does when it scrolls only sideways. Their pixels belong at the canvas's own edge, not wherever the
     /// frame is placed.
     private var pinned = (top: 0, left: 0)
     private var full = false
+    /// The newest frame that moved too little to add yet, and how far.
+    private var pending: (frame: ScrollFrame, luma: ScrollMotion.Luma, shift: (dx: Int, dy: Int))?
 
     public init(first frame: Bitmap, maxLength: Int = ScrollStitcher.defaultMaxLength, maxPixels: Int = ScrollStitcher.defaultMaxPixels) {
         self.maxLength = maxLength
@@ -70,22 +79,32 @@ public struct ScrollStitcher: Sendable {
         (canvas.width, canvas.height)
     }
 
+    /// Adds what the newest frames showed that wasn't added yet. Call it before taking the `result` of a finished capture.
+    public mutating func finish() {
+        guard let pending, !full else {
+            return
+        }
+        self.pending = nil
+        _ = place(pending.frame, pending.luma, shiftedBy: pending.shift)
+    }
+
     /// The image so far.
     public var result: Bitmap {
         canvas.bitmap(in: CGRect(x: 0, y: 0, width: canvas.width, height: canvas.height), scale: scale)
     }
 
-    /// A part of the image no larger than `aspect` (width over height) allows, centred on the newest frame and as wide
-    /// as one frame, so a preview shows what was captured last and stays readable however big the image grows.
-    public func preview(aspect: Double) -> Bitmap {
-        var width = min(canvas.width, frameWidth)
-        var height = min(canvas.height, max(1, Int(Double(width) / aspect)))
-        width = min(width, max(1, Int(Double(height) * aspect)))
-        height = min(height, canvas.height)
-        let midX = placement.x + frameWidth / 2, midY = placement.y + frameHeight / 2
-        let x = min(max(midX - width / 2, 0), canvas.width - width)
-        let y = min(max(midY - height / 2, 0), canvas.height - height)
-        return canvas.bitmap(in: CGRect(x: x, y: y, width: width, height: height), scale: scale)
+    /// The whole image shrunk to fit `box`, with what hasn't been captured yet left clear so gaps show, and where the
+    /// newest frame sits in it, as a share of the image's width and height. Cheap however big the image grows, since it
+    /// samples rather than averages.
+    public func overview(fitting box: (width: Int, height: Int)) -> (image: Bitmap, view: CGRect) {
+        let scale = min(Double(box.width) / Double(canvas.width), Double(box.height) / Double(canvas.height), 1)
+        let width = max(1, Int(Double(canvas.width) * scale)), height = max(1, Int(Double(canvas.height) * scale))
+        let image = Bitmap(width: width, height: height, scale: self.scale, pixels: canvas.sampled(width: width, height: height))!
+        let view = CGRect(
+            x: Double(placement.x) / Double(canvas.width), y: Double(placement.y) / Double(canvas.height),
+            width: Double(frameWidth) / Double(canvas.width), height: Double(frameHeight) / Double(canvas.height)
+        )
+        return (image, view)
     }
 
     public mutating func add(_ frame: Bitmap) -> Outcome {
@@ -99,19 +118,33 @@ public struct ScrollStitcher: Sendable {
         defer { previous = current }
         if current.pixels == last.pixels {
             changingFrames = 0
+            tracking = (shift: (0, 0), velocity: (0, 0))
             return .unchanged
         }
         let luma = ScrollMotion.luma(of: current)
-        switch ScrollMotion.estimate(from: last, lastLuma, to: current, luma) {
+        let expected = tracking.map { (dx: $0.shift.dx + $0.velocity.dx, dy: $0.shift.dy + $0.velocity.dy) }
+        switch ScrollMotion.estimate(from: last, lastLuma, to: current, luma, hint: expected) {
         case let .shift(dx, dy):
             changingFrames = 0
+            let before = tracking?.shift ?? (dx: 0, dy: 0)
+            tracking = (shift: (dx, dy), velocity: (dx - before.dx, dy - before.dy))
+            guard max(abs(dx), abs(dy)) >= max(8, min(frameWidth, frameHeight) / Self.paintShare) else {
+                pending = (current, luma, (dx, dy))
+                return .unchanged
+            }
+            pending = nil
+            // The newest frame is now the one the next is measured from.
+            tracking = (shift: (0, 0), velocity: tracking?.velocity ?? (0, 0))
             return place(current, luma, shiftedBy: (dx, dy))
         case .still:
             // Something changed without the content moving. A caret or a hover is nothing; a video keeps on changing.
+            tracking = (shift: (0, 0), velocity: (0, 0))
             return failure(for: current, whenQuiet: .unchanged)
         case .featureless:
+            tracking = nil
             return .featureless
         case .lost:
+            tracking = nil
             return failure(for: current, whenQuiet: .tooFar)
         }
     }
@@ -319,6 +352,20 @@ public struct ScrollStitcher: Sendable {
                 }
             }
             return painted
+        }
+
+        /// The canvas picked at `width` by `height` points, nearest first, with pixels not painted yet clear.
+        func sampled(width outWidth: Int, height outHeight: Int) -> Data {
+            var out = [UInt32](repeating: 0, count: outWidth * outHeight)
+            for y in 0..<outHeight {
+                let sy = min(height - 1, (2 * y + 1) * height / (2 * outHeight))
+                for x in 0..<outWidth {
+                    let sx = min(width - 1, (2 * x + 1) * width / (2 * outWidth))
+                    let at = sy * stride + sx
+                    out[y * outWidth + x] = levels[at] == Level.empty.rawValue ? 0 : pixels[at]
+                }
+            }
+            return out.withUnsafeBytes { Data($0) }
         }
 
         func bitmap(in rect: CGRect, scale: CGFloat) -> Bitmap {

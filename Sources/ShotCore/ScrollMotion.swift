@@ -42,6 +42,24 @@ enum ScrollMotion {
         let height: Int
         let factor: Int
         let values: [Int32]
+
+        /// This, shrunk by a further `times`, which costs a fraction of shrinking the frame again.
+        func reduced(by times: Int) -> Luma {
+            let (newWidth, newHeight) = (width / times, height / times)
+            var reduced = [Int32](repeating: 0, count: newWidth * newHeight)
+            for y in 0..<newHeight {
+                for x in 0..<newWidth {
+                    var sum: Int32 = 0
+                    for j in 0..<times {
+                        for i in 0..<times {
+                            sum += values[(y * times + j) * width + x * times + i]
+                        }
+                    }
+                    reduced[y * newWidth + x] = sum / Int32(times * times)
+                }
+            }
+            return Luma(width: newWidth, height: newHeight, factor: factor * times, values: reduced)
+        }
     }
 
     private struct Offset: Hashable {
@@ -57,12 +75,22 @@ enum ScrollMotion {
     /// Votes a shift needs, so one patch can't decide alone.
     private static let minimumVotes = 2
     /// Shifts tried on the real pixels, best supported first.
-    private static let shiftsToTry = 24
+    private static let shiftsToTry = 12
     /// The share of the pixels that changed which the shift must explain.
-    private static let minimumQuality = 0.8
+    private static let minimumQuality = 0.5
 
-    static func luma(of frame: ScrollFrame) -> Luma {
-        let factor = min(frame.width, frame.height) >= 240 ? 4 : 1
+    /// Whether two pixels are close enough to be the same thing drawn twice. A scroll that lands between two device
+    /// pixels, as a trackpad's does, draws the same text a little differently each time, so exact equality never holds.
+    static func similar(_ a: UInt32, _ b: UInt32) -> Bool {
+        if a == b {
+            return true
+        }
+        return difference(a, b) <= 36
+    }
+
+    /// `factor` shrinks the frame by that much in each direction; the default suits the frame's size.
+    static func luma(of frame: ScrollFrame, factor requested: Int? = nil) -> Luma {
+        let factor = requested ?? (min(frame.width, frame.height) >= 240 ? 4 : 1)
         let width = frame.width / factor, height = frame.height / factor
         var values = [Int32](repeating: 0, count: width * height)
         frame.pixels.withUnsafeBufferPointer { pixels in
@@ -83,10 +111,32 @@ enum ScrollMotion {
         return Luma(width: width, height: height, factor: factor, values: values)
     }
 
-    static func estimate(from previous: ScrollFrame, _ previousLuma: Luma, to current: ScrollFrame, _ currentLuma: Luma) -> Result {
+    /// `hint` is where the content is expected to have moved to, from how it moved before: scrolling is smooth, so a small
+    /// look around it usually finds the answer at a fraction of the cost of a look at everything.
+    static func estimate(from previous: ScrollFrame, _ previousLuma: Luma, to current: ScrollFrame, _ currentLuma: Luma, hint: (dx: Int, dy: Int)? = nil) -> Result {
+        guard previousLuma.factor > 1 else {
+            return search(from: previous, previousLuma, to: current, currentLuma)
+        }
+        if let hint {
+            let near = search(from: previous, previousLuma, to: current, currentLuma, around: Offset(dx: hint.dx, dy: hint.dy), radius: 10)
+            if case .shift = near {
+                return near
+            }
+        }
+        // Everywhere else, from a look at a smaller picture where the frames are big, which reaches a thousand pixels for
+        // little work. Frames may be that far apart, since the machine can't always keep up with the screen.
+        let times = min(previousLuma.width, previousLuma.height) >= 200 ? 4 : (min(previousLuma.width, previousLuma.height) >= 120 ? 2 : 1)
+        guard times > 1 else {
+            return search(from: previous, previousLuma, to: current, currentLuma)
+        }
+        return search(from: previous, previousLuma.reduced(by: times), to: current, currentLuma.reduced(by: times), fullSize: (previous, current))
+    }
+
+    private static func search(from previousFrame: ScrollFrame, _ previousLuma: Luma, to currentFrame: ScrollFrame, _ currentLuma: Luma, around center: Offset = Offset(dx: 0, dy: 0), radius requested: Int? = nil, fullSize: (ScrollFrame, ScrollFrame)? = nil) -> Result {
+        let (previous, current) = fullSize ?? (previousFrame, currentFrame)
         let factor = previousLuma.factor
-        let patch = factor == 1 ? 8 : 12
-        let radius = factor == 1 ? min(24, min(previousLuma.width, previousLuma.height) / 3) : 64
+        let patch = factor == 4 ? 12 : 8
+        let radius = requested ?? (factor == 1 ? min(24, min(previousLuma.width, previousLuma.height) / 3) : 64)
         guard previousLuma.width >= patch * 2, previousLuma.height >= patch * 2, radius > 0 else {
             return .featureless
         }
@@ -98,7 +148,7 @@ enum ScrollMotion {
         // label in every column, fits in several. The shift most patches agree on is the real one.
         var votes: [Offset: Int] = [:]
         for origin in patches {
-            for offset in candidates(for: origin, size: patch, radius: radius, in: previousLuma, against: currentLuma) {
+            for offset in candidates(for: origin, size: patch, radius: radius, around: Offset(dx: center.dx / factor, dy: center.dy / factor), in: previousLuma, against: currentLuma) {
                 votes[offset, default: 0] += 1
             }
         }
@@ -109,7 +159,7 @@ enum ScrollMotion {
             votes.filter { abs($0.key.dx - offset.dx) <= 1 && abs($0.key.dy - offset.dy) <= 1 }.values.reduce(0, +)
         }
         // Any shift a patch voted for may be the real one, so the best supported are tried on the real pixels below; what
-        // lines up exactly is the judge, not the vote count.
+        // lines up there is the judge, not the vote count.
         let ranked = votes.keys.filter { $0.dx != 0 || $0.dy != 0 }.map { ($0, support($0)) }.sorted { $0.1 > $1.1 }
         let stays = support(Offset(dx: 0, dy: 0)) >= minimumVotes
         guard !ranked.isEmpty else {
@@ -122,18 +172,47 @@ enum ScrollMotion {
             return .featureless
         }
         var distinct: [Offset] = []
-        var fits: [(offset: Offset, quality: Double)] = []
-        for (offset, _) in ranked where distinct.count < shiftsToTry && !distinct.contains(where: { abs($0.dx - offset.dx) <= 2 && abs($0.dy - offset.dy) <= 2 }) {
+        var local: [(offset: Offset, quality: Double)] = []
+        // Not having moved, or having moved by a pixel or two, is tried first: scrolling slowly enough shows no shift in
+        // the shrunken frames at all.
+        for offset in [Offset(dx: 0, dy: 0)] + ranked.map(\.0) where distinct.count < shiftsToTry && !distinct.contains(where: { abs($0.dx - offset.dx) <= 2 && abs($0.dy - offset.dy) <= 2 }) {
             distinct.append(offset)
-            if let fit = refine(Offset(dx: offset.dx * factor, dy: offset.dy * factor), range: factor, samples: changed, in: previous) {
-                fits.append(fit)
+            guard let found = refine(Offset(dx: offset.dx * factor, dy: offset.dy * factor), range: factor, samples: changed, in: previous),
+                  let quality = alignment(previous, current, shiftedBy: found.offset), quality >= 0.35
+            else {
+                continue
+            }
+            local.append((found.offset, quality))
+        }
+        // The best few are polished: the whole-pixel shift may be one off in either direction, which a fraction of a pixel
+        // can't make up for.
+        var fits: [(offset: Offset, quality: Double)] = []
+        for (rank, candidate) in local.sorted(by: { $0.quality > $1.quality }).enumerated() {
+            var (shifted, quality) = candidate
+            if rank < 3 {
+                for dy in -1...1 {
+                    for dx in -1...1 where dx != 0 || dy != 0 {
+                        let neighbour = Offset(dx: candidate.offset.dx + dx, dy: candidate.offset.dy + dy)
+                        if let better = alignment(previous, current, shiftedBy: neighbour), better > quality {
+                            quality = better
+                            shifted = neighbour
+                        }
+                    }
+                }
+            }
+            if quality >= minimumQuality {
+                fits.append((shifted, quality))
             }
         }
         guard let best = fits.max(by: { $0.quality < $1.quality }) else {
             return stays ? .still : .lost
         }
-        if fits.contains(where: { $0.offset != best.offset && $0.quality >= best.quality - 0.05 }) {
+        // Shifts a few pixels apart are the same answer found twice; only ones further apart make it ambiguous.
+        if fits.contains(where: { max(abs($0.offset.dx - best.offset.dx), abs($0.offset.dy - best.offset.dy)) > 4 && $0.quality >= best.quality - 0.05 }) {
             return .featureless
+        }
+        if best.offset.dx == 0, best.offset.dy == 0 {
+            return .still
         }
         return .shift(dx: best.offset.dx, dy: best.offset.dy)
     }
@@ -167,10 +246,12 @@ enum ScrollMotion {
 
     /// Where `patch` of `previous` may have gone in `current`: every place within `radius` that fits nearly as well as
     /// the best one, as offsets the content may have moved by. None when it fits nowhere.
-    private static func candidates(for patch: (x: Int, y: Int), size: Int, radius: Int, in previous: Luma, against current: Luma) -> [Offset] {
+    private static func candidates(for patch: (x: Int, y: Int), size: Int, radius: Int, around center: Offset, in previous: Luma, against current: Luma) -> [Offset] {
         let area = size * size
-        let x0 = max(0, patch.x - radius), x1 = min(current.width - size, patch.x + radius)
-        let y0 = max(0, patch.y - radius), y1 = min(current.height - size, patch.y + radius)
+        // The patch is expected `center` away from where it was, in the direction the content moved.
+        let expectedX = patch.x - center.dx, expectedY = patch.y - center.dy
+        let x0 = max(0, expectedX - radius), x1 = min(current.width - size, expectedX + radius)
+        let y0 = max(0, expectedY - radius), y1 = min(current.height - size, expectedY + radius)
         guard x0 <= x1, y0 <= y1 else {
             return []
         }
@@ -223,13 +304,14 @@ enum ScrollMotion {
 
     private typealias Sample = (x: Int, y: Int, value: UInt32)
 
-    /// Pixels, sampled across the frame, that differ between the frames; nil when too few do to say anything.
+    /// Pixels, sampled across the frame, that really differ between the frames, which a shift has to explain; at most a
+    /// few thousand, since each candidate shift checks them all. Nil when too few differ to say anything.
     private static func changedSamples(from previous: ScrollFrame, to current: ScrollFrame) -> [Sample]? {
         let (w, h) = (current.width, current.height)
-        let stepX = max(1, w / 160), stepY = max(1, h / 220)
+        let stepX = max(1, w / 120), stepY = max(1, h / 160)
         var changed: [Sample] = []
         for y in stride(from: 0, to: h, by: stepY) {
-            for x in stride(from: 0, to: w, by: stepX) where previous.pixels[y * w + x] != current.pixels[y * w + x] {
+            for x in stride(from: 0, to: w, by: stepX) where !similar(previous.pixels[y * w + x], current.pixels[y * w + x]) {
                 changed.append((x, y, current.pixels[y * w + x]))
             }
         }
@@ -239,11 +321,27 @@ enum ScrollMotion {
     /// The shift within `range` pixels of `guess` that explains the most of `samples`, and the share it explains of those
     /// that have a counterpart in the earlier frame. Nil when that share is too small.
     private static func refine(_ guess: Offset, range: Int, samples: [Sample], in previous: ScrollFrame) -> (offset: Offset, quality: Double)? {
+        // Coarsely over the whole range, then to the pixel around the best of that.
+        let step = range > 4 ? 4 : 1
+        var best = score(guess, samples: samples, in: previous, over: Array(stride(from: -range, through: range, by: step)))
+        if step > 1, let coarse = best {
+            best = score(coarse.offset, samples: samples, in: previous, over: Array(-(step - 1)...(step - 1)))
+        }
+        guard let found = best, found.quality >= 0.2 else {
+            return nil
+        }
+        return found
+    }
+
+    /// The offset around `guess` by each of `deltas` in each direction that matches `samples` best, and how well.
+    private static func score(_ guess: Offset, samples: [Sample], in previous: ScrollFrame, over deltas: [Int]) -> (offset: Offset, quality: Double)? {
         let (w, h) = (previous.width, previous.height)
-        var best = -1, bestOffset = guess, bestComparable = 0
-        for dy in guess.dy - range...guess.dy + range {
-            for dx in guess.dx - range...guess.dx + range {
-                var score = 0, comparable = 0
+        var best = -1.0, bestOffset = guess, bestComparable = 0
+        for deltaY in deltas {
+            for deltaX in deltas {
+                let dx = guess.dx + deltaX, dy = guess.dy + deltaY
+                var total = 0.0
+                var comparable = 0
                 for sample in samples {
                     let xs = sample.x + dx, ys = sample.y + dy
                     // A pixel that came from outside the earlier frame has nothing to be compared with.
@@ -251,20 +349,104 @@ enum ScrollMotion {
                         continue
                     }
                     comparable += 1
-                    if previous.pixels[ys * w + xs] == sample.value {
-                        score += 1
-                    }
+                    // How close the pixels are, not only whether they are close enough: text drawn at a fraction of a pixel
+                    // differs a little from itself, and something that merely resembles it differs a lot.
+                    total += max(0, 1 - Double(difference(previous.pixels[ys * w + xs], sample.value)) / 150)
                 }
-                if score > best {
-                    best = score
+                // Candidates compare by their average, since those near an edge have fewer pixels to compare.
+                if comparable >= 20, bestComparable == 0 || total / Double(comparable) > best / Double(bestComparable) {
+                    best = total
                     bestOffset = Offset(dx: dx, dy: dy)
                     bestComparable = comparable
                 }
             }
         }
-        guard bestComparable >= 20, Double(best) / Double(bestComparable) >= minimumQuality else {
+        return bestComparable >= 20 ? (bestOffset, best / Double(bestComparable)) : nil
+    }
+
+    /// How well `current`, moved back by `shift`, matches `previous`, from 0 to 1. Each dark mark in `current` (text, lines)
+    /// is compared with the same place in `previous` shifted by a fraction of a pixel, since the true shift usually isn't a
+    /// whole number of pixels and text drawn at a fraction of a pixel differs from itself at the edges. The same text
+    /// fits at some fraction with almost no error. Different text in the same layout, such as a table whose numbers
+    /// differ, doesn't fit at any, however much its lines and cells line up. The middle of the scores of tiles across
+    /// the shared part is used, so a few matching tiles can't carry the rest. Nil when they share too little.
+    private static func alignment(_ previous: ScrollFrame, _ current: ScrollFrame, shiftedBy shift: Offset) -> Double? {
+        let (w, h) = (previous.width, previous.height)
+        let tiles = 4
+        struct Mark {
+            var x: Int, y: Int, brightness: Int, tile: Int
+        }
+        var marks: [Mark] = []
+        for y in stride(from: 0, to: h, by: 2) {
+            let ys = y + shift.dy
+            guard ys >= 1, ys < h - 1 else {
+                continue
+            }
+            for x in stride(from: 0, to: w, by: 2) {
+                let xs = x + shift.dx
+                guard xs >= 1, xs < w - 1 else {
+                    continue
+                }
+                let b = brightness(current.pixels[y * w + x])
+                // Background says nothing: only what stands out is looked for.
+                if b < 200 {
+                    marks.append(Mark(x: xs, y: ys, brightness: b, tile: (y * tiles / h) * tiles + x * tiles / w))
+                }
+            }
+        }
+        guard marks.count >= 100 else {
             return nil
         }
-        return (bestOffset, Double(best) / Double(bestComparable))
+        // A few thousand marks tell as much as all of them, at a fraction of the cost.
+        if marks.count > 3000 {
+            let step = marks.count / 3000 + 1
+            marks = marks.enumerated().filter { $0.offset % step == 0 }.map(\.element)
+        }
+        // The brightness of `previous` at a fraction of a pixel from (x, y), by blending with the neighbour that way.
+        func sample(_ x: Int, _ y: Int, _ fx: Double, _ fy: Double) -> Double {
+            let nx = fx < 0 ? x - 1 : x + 1, ny = fy < 0 ? y - 1 : y + 1
+            let ax = abs(fx), ay = abs(fy)
+            let p00 = Double(brightness(previous.pixels[y * w + x])), p10 = Double(brightness(previous.pixels[y * w + nx]))
+            let p01 = Double(brightness(previous.pixels[ny * w + x])), p11 = Double(brightness(previous.pixels[ny * w + nx]))
+            return (p00 * (1 - ax) + p10 * ax) * (1 - ay) + (p01 * (1 - ax) + p11 * ax) * ay
+        }
+        let fractions: [Double] = [-0.5, -0.25, 0, 0.25, 0.5]
+        var bestError = Double.infinity, bestFraction = (0.0, 0.0)
+        for fy in fractions {
+            for fx in fractions {
+                var error = 0.0
+                for mark in marks {
+                    error += abs(Double(mark.brightness) - sample(mark.x, mark.y, fx, fy))
+                }
+                if error < bestError {
+                    bestError = error
+                    bestFraction = (fx, fy)
+                }
+            }
+        }
+        var errors = [Double](repeating: 0, count: tiles * tiles), counts = [Double](repeating: 0, count: tiles * tiles)
+        for mark in marks {
+            errors[mark.tile] += abs(Double(mark.brightness) - sample(mark.x, mark.y, bestFraction.0, bestFraction.1))
+            counts[mark.tile] += 1
+        }
+        var scores: [Double] = []
+        for tile in 0..<tiles * tiles where counts[tile] >= 15 {
+            scores.append(max(0, 1 - errors[tile] / counts[tile] / 70))
+        }
+        guard scores.count >= 3 else {
+            return nil
+        }
+        scores.sort()
+        return scores[scores.count / 2]
+    }
+
+    private static func brightness(_ pixel: UInt32) -> Int {
+        Int((pixel & 0xff) * 77 + ((pixel >> 8) & 0xff) * 151 + ((pixel >> 16) & 0xff) * 28) >> 8
+    }
+
+    /// The summed difference of the red, green and blue of two pixels.
+    static func difference(_ a: UInt32, _ b: UInt32) -> Int {
+        func gap(_ shift: UInt32) -> Int { abs(Int((a >> shift) & 0xff) - Int((b >> shift) & 0xff)) }
+        return gap(0) + gap(8) + gap(16)
     }
 }

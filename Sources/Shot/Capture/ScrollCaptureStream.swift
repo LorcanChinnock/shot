@@ -10,16 +10,18 @@ struct ScrollUpdate: @unchecked Sendable {
     var outcome: ScrollStitcher.Outcome?
     /// The size of the whole image in pixels.
     var size: CGSize
-    /// The newest part of the image, when it changed and the last preview is old enough to replace.
+    /// The whole image shrunk down, and where the newest frame sits in it as a share of its width and height, when the
+    /// image changed and the last overview is old enough to replace.
     var preview: CGImage?
+    var view = CGRect.zero
 }
 
 /// Runs the stitcher off the main actor, one frame at a time.
 actor ScrollStitchWorker {
     private var stitcher: ScrollStitcher?
     private var lastPreview = ContinuousClock.now - .seconds(1)
-    /// Width over height of the preview box in the panel.
-    static let previewAspect = 2.0
+    /// The size the overview is shrunk to fit, in pixels: the panel's preview box at twice its size.
+    static let previewBox = (width: 520, height: 260)
 
     func add(_ frame: Bitmap) -> ScrollUpdate {
         guard stitcher != nil else {
@@ -31,25 +33,26 @@ actor ScrollStitchWorker {
     }
 
     func result() -> Bitmap? {
-        stitcher?.result
+        stitcher?.finish()
+        return stitcher?.result
     }
 
     private func update(outcome: ScrollStitcher.Outcome?, changed: Bool) -> ScrollUpdate {
         guard let stitcher else {
-            return ScrollUpdate(outcome: outcome, size: .zero, preview: nil)
+            return ScrollUpdate(outcome: outcome, size: .zero, preview: nil, view: .zero)
         }
         let now = ContinuousClock.now
-        // Cutting the preview out costs a little, so it refreshes a few times a second.
-        let preview: CGImage? = if changed, now - lastPreview > .milliseconds(250) {
-            stitcher.preview(aspect: Self.previewAspect).cgImage
-        } else {
-            nil
-        }
-        if preview != nil {
+        // Shrinking the image costs a little, so the overview refreshes a few times a second.
+        var preview: CGImage?
+        var view = CGRect.zero
+        if changed, now - lastPreview > .milliseconds(250) {
+            let overview = stitcher.overview(fitting: Self.previewBox)
+            preview = overview.image.cgImage
+            view = overview.view
             lastPreview = now
         }
         let size = stitcher.size
-        return ScrollUpdate(outcome: outcome, size: CGSize(width: size.width, height: size.height), preview: preview)
+        return ScrollUpdate(outcome: outcome, size: CGSize(width: size.width, height: size.height), preview: preview, view: view)
     }
 }
 

@@ -20022,6 +20022,9 @@
         }
       }
     },
+    "Overview of the stitched image, with gaps hatched and the current view outlined" : {
+
+    },
     "PNG" : {
       "localizations" : {
         "de" : {
@@ -21483,9 +21486,6 @@
           }
         }
       }
-    },
-    "Preview of the newest part of the stitched image" : {
-
     },
     "Project" : {
       "localizations" : {

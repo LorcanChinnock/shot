@@ -194,11 +194,52 @@ private func add(_ stitcher: inout ScrollStitcher, _ offsets: [(Int, Int)], over
     #expect(stitcher.size.width == size)
 }
 
-@Test func scrollStitcherPreviewShowsTheNewestPart() {
+@Test func scrollStitcherOverviewShowsTheWholeImageAndWhereTheNewestFrameIs() {
     var stitcher = ScrollStitcher(first: frame(0, 0))
     _ = add(&stitcher, [(0, 20), (0, 40)])
-    let preview = stitcher.preview(aspect: 2)
-    #expect(preview.width == size && preview.height == size / 2)
-    // Centred on the last frame, which sits 40 rows down.
-    #expect(preview == bitmap(width: size, height: size / 2) { page($0, $1 + 40 + size / 4) })
+    // The image is 80 × 120, so it shrinks to fit 40 × 40 at a third of its size.
+    let overview = stitcher.overview(fitting: (40, 40))
+    #expect(overview.image.width == 26 && overview.image.height == 40)
+    #expect(overview.view.minX == 0 && overview.view.minY == 40.0 / 120 && overview.view.width == 1 && overview.view.height == 80.0 / 120)
+    // A larger box doesn't blow the image up.
+    #expect(stitcher.overview(fitting: (500, 500)).image.height == 120)
+}
+
+@Test func scrollStitcherOverviewLeavesGapsClear() {
+    // Down and right at once leaves the top right and bottom left corners unseen.
+    var stitcher = ScrollStitcher(first: frame(0, 0))
+    _ = add(&stitcher, [(20, 20)])
+    let overview = stitcher.overview(fitting: (500, 500)).image
+    #expect(overview.width == size + 20 && overview.height == size + 20)
+    #expect(overview[5, 5].a == 255)
+    #expect(overview[90, 5].a == 0)
+    #expect(overview[5, 90].a == 0)
+    #expect(overview[50, 50].a == 255)
+}
+
+@Test func scrollStitcherAddsSmallStepsOnceTheyAddUpAndOnFinish() {
+    // Steps of 4 rows are too small to add one by one, so they are added every third frame, and the last on finish.
+    var stitcher = ScrollStitcher(first: frame(0, 0))
+    let outcomes = add(&stitcher, [(0, 4), (0, 8), (0, 12), (0, 16), (0, 20)])
+    #expect(outcomes == [.unchanged, .unchanged, .extended, .unchanged, .unchanged])
+    #expect(stitcher.size.height == size + 12)
+    stitcher.finish()
+    #expect(stitcher.result == bitmap(width: size, height: size + 20, page))
+}
+
+@Test func scrollStitcherFollowsScrollingThatLandsBetweenPixels() {
+    // The page is blocks of colour, and a frame scrolled by half a pixel blends each pair of rows, as a trackpad's
+    // scrolling redraws text a little differently each time.
+    func blocks(_ x: Int, _ y: Int) -> UInt32 { noise(x / 6, y / 6) }
+    func blend(_ a: UInt32, _ b: UInt32) -> UInt32 {
+        (0..<3).reduce(UInt32(0xff00_0000)) { result, channel in
+            let shift = UInt32(channel * 8)
+            return result | ((((a >> shift) & 0xff) + ((b >> shift) & 0xff)) / 2) << shift
+        }
+    }
+    func halfway(_ oy: Int) -> Bitmap { bitmap(width: size, height: size) { x, y in blend(blocks(x, y + oy), blocks(x, y + oy + 1)) } }
+    var stitcher = ScrollStitcher(first: bitmap(width: size, height: size) { blocks($0, $1) })
+    #expect(stitcher.add(halfway(20)) == .extended)
+    #expect(stitcher.add(halfway(40)) == .extended)
+    #expect((size + 40)...(size + 42) ~= stitcher.size.height)
 }
