@@ -35,7 +35,7 @@ Turn off **Use Shot for ⌘⇧3 to ⌘⇧5** in **Settings › Shortcuts**. macO
 
 ## Actions you can give a shortcut
 
-**Copy Text** has no shortcut until you set one. **Pick Colour**, **Record Full Screen**, **Record Window** and **Capture Previous Area** are in the menu bar menu only. Every action also has a [`shot://` link](#url-scheme).
+**Copy Text** and **Capture Scrolling Area** have no shortcut until you set one. **Pick Colour**, **Record Full Screen**, **Record Window** and **Capture Previous Area** are in the menu bar menu only. Every action also has a [`shot://` link](#url-scheme).
 
 - **Pick Colour** shows a loupe. Click any pixel on screen to copy its hex, such as `#1E90FF`.
 - **Capture Window** has no shortcut while Shot uses ⌘⇧3 to ⌘⇧5. Press <kbd>Space</kbd> after <kbd>⌘⇧4</kbd> instead.

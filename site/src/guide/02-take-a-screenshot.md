@@ -58,6 +58,21 @@ Copy Text reads the text in part of the screen and copies it, without saving a s
 
 To copy the text from a screenshot you already took, right-click its Quick Access card or its tile in the [gallery](#find-your-captures) and choose **Copy Text**.
 
+## Capture a long page
+
+Capture Scrolling Area joins a web page, chat thread, document or wide table that is bigger than your screen into one image.
+
+1. Choose **Capture Scrolling Area** from Shot's menu bar menu, or give it a shortcut in **Settings › Shortcuts**.
+2. Drag out the part of the screen that scrolls. Keep a sticky header, footer or first column inside it.
+3. In the panel beside the area, choose **Vertical** or **Horizontal**, and whether you scroll or Shot does.
+4. Scroll the content with your trackpad, mouse wheel or <kbd>Page Down</kbd>, or press **Scroll for me**.
+5. Press <kbd>Return</kbd> to finish. The image is copied and saved like any other capture. <kbd>Esc</kbd> cancels, or stops Shot's scrolling.
+
+Shot keeps only new rows, so a sticky header or footer appears once and scrolling back up adds nothing. If you scroll too far at once, the outline turns red: scroll back a little and carry on. A page that keeps changing, such as a playing video, can't be lined up, so pause it first. The image stops growing at 30,000 pixels along the scroll direction.
+
+> [!NOTE]
+> Scrolling by hand asks for no new permission. The first time you choose **Scroll for me**, macOS asks you to allow Shot under **Accessibility**, because Shot sends the scrolling. If you decline, scroll by hand.
+
 ## Without a mouse
 
 After <kbd>⌘⇧4</kbd>, press an arrow key to start an area at the pointer, or in the middle of the screen. Then:
@@ -73,4 +88,4 @@ To pick a window, press <kbd>Space</kbd>, step through the windows with <kbd>Tab
 In **Settings › Capture**, choose whether Shot saves each screenshot, copies it and shows Quick Access, or opens it in the [annotation editor](#annotate-a-screenshot) straight away.
 
 > [!NOTE]
-> Every action here also has a [`shot://` link](#url-scheme), such as `shot://capture-timer?seconds=5`, `shot://capture-previous` and `shot://copy-text`, for scripts and launchers.
+> Every action here also has a [`shot://` link](#url-scheme), such as `shot://capture-timer?seconds=5`, `shot://capture-previous`, `shot://capture-scrolling` and `shot://copy-text`, for scripts and launchers.

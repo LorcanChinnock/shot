@@ -84,6 +84,8 @@ final class CaptureCoordinator {
                     try await capturePreviousArea()
                 case .copyText:
                     try await copyTextFromArea()
+                case .captureScrolling:
+                    try await captureScrolling()
                 case .record:
                     try await startRecording(mode: .area)
                 case .recordFullscreen:
@@ -241,6 +243,30 @@ final class CaptureCoordinator {
             image = frozen[index].image
         }
         await Clipboard.copyText(in: image)
+    }
+
+    /// Picks an area on the usual overlay, then stitches what scrolls through it into one image that takes the normal
+    /// after-capture path. The area isn't remembered for Capture Previous Area, since it isn't a one-frame capture.
+    private func captureScrolling() async throws {
+        let windows = WindowCapturer.onScreenWindows()
+        let frozen = try await DisplayCapturer.captureAll()
+        let displays = frozen.map { OverlayDisplay(frame: $0.frame, scale: $0.scale, image: $0.image) }
+        guard let selection = await SelectionOverlayController.select(displays: displays, windowMode: false, windows: windows) else {
+            return
+        }
+        let area: CGRect
+        switch selection {
+        case let .area(index, rect, _):
+            area = rect.offsetBy(dx: frozen[index].frame.minX, dy: frozen[index].frame.minY)
+        case let .window(info):
+            area = Geometry.flip(info.frame, primaryHeight: NSScreen.screens.first?.frame.height ?? 0)
+        case let .fullDisplay(index):
+            area = frozen[index].frame
+        }
+        guard let result = try await ScrollCapture.run(area: area) else {
+            return
+        }
+        try await finish(image: result.image, scale: result.scale, from: area)
     }
 
     /// Takes the area the last area screenshot took, without the overlay.
