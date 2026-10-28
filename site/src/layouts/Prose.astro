@@ -4,12 +4,14 @@ import Base from './Base.astro';
 interface Props {
   title: string;
   description?: string;
+  image?: string;
+  imageAlt?: string;
   headings?: { depth: number; slug: string; text: string }[];
   /** Links to every page of a multi-page document, such as the guide, shown in the sidebar above "On this page",
    * under their group's name when they have one. */
   pages?: { href: string; title: string; current?: boolean; group?: string; color?: string }[];
 }
-const { title, description, headings = [], pages = [] } = Astro.props;
+const { title, description, image, imageAlt, headings = [], pages = [] } = Astro.props;
 const pageGroups = [...new Set(pages.map((p) => p.group))].map((group) => ({ group, color: pages.find((p) => p.group === group)?.color, links: pages.filter((p) => p.group === group) }));
 const toc = headings.filter((h) => h.depth === 2);
 const side = toc.length > 0 || pages.length > 0 || Astro.slots.has('side');
@@ -17,7 +19,7 @@ const side = toc.length > 0 || pages.length > 0 || Astro.slots.has('side');
 const rail = pages.length > 0 && toc.length > 0;
 ---
 
-<Base title={title} description={description} wide={rail}>
+<Base title={title} description={description} image={image} imageAlt={imageAlt} wide={rail}>
   <div id="top" class={`wrap doc ${side ? 'with-side' : ''} ${rail ? 'has-rail' : ''}`}>
     {side && (
       <div class="side">

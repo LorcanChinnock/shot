@@ -45,6 +45,10 @@ Four slow colour blobs and a dot grid behind everything, as in the app's `GlassB
 - **Guide**: a sidebar with the pages in their groups and a search box, an "On this page" list that marks where you are (a rail on the right of wide screens, under the page list on narrower ones), previous and next links, a back-to-top button, numbered steps, callouts, and a Copy button on every code block.
 - **Footer**: ends with the "LC_" mark and "Made by Lorcan Chinnock", linked to lorcanchinnock.com, in Shot's ink with the underscore in yellow, and "Not affiliated with Apple."
 
+## Social cards
+
+`npm run og` renders each card from the site itself: the home card is the hero (`A better ⌘⇧4` beside the window with its last frame), and each guide page's card swaps the headline for the page's title, with its group as a chip in the group's accent. Both sit on the backdrop, in the system fonts, and reuse `global.css` and `HeroStage.astro`, so a change to either shows up the next time the cards are rendered.
+
 ## Rules
 
 - No cards with one thick coloured edge (a coloured stripe along the top or side). It's a stock look that reads as generated. Colour a card with a fill, a chip or a button instead, and keep the same 3px ink border on every side. `scripts/lint.sh` rejects `border-top-color` and its kin, and `var(--accent)` or another colour on a one-edge border.

@@ -9,6 +9,7 @@ import HeroStage from '../components/HeroStage.astro';
 import { latestRelease } from '../lib/release';
 import editor from '../../../docs/media/editor.png';
 import videoEditor from '../../../docs/media/video-editor.png';
+import quickAccess from '../../../docs/media/quick-access.png';
 import openAnyway from '../../../docs/media/open-anyway.png';
 
 const release = await latestRelease();
@@ -66,9 +67,27 @@ const audiences = [
     cta: 'Share a capture with an assistant',
   },
 ];
+const software = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Shot',
+  description: 'A screenshot, annotation and screen recording app for the Mac menu bar, with a GIF exporter. Free and open source.',
+  url: 'https://shot.lorcanchinnock.com/',
+  image: 'https://shot.lorcanchinnock.com/icon-256.png',
+  applicationCategory: 'UtilitiesApplication',
+  operatingSystem: 'macOS 15 or later',
+  softwareVersion: release.version,
+  downloadUrl: 'https://shot.lorcanchinnock.com/download',
+  license: 'https://github.com/LorcanChinnock/shot/blob/main/LICENSE',
+  isAccessibleForFree: true,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  author: { '@type': 'Person', name: 'Lorcan Chinnock', url: 'https://lorcanchinnock.com' },
+  sameAs: ['https://github.com/LorcanChinnock/shot'],
+};
 ---
 
 <Base>
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(software)} />
   <section class="hero">
     <div class="wrap hero-grid">
       <div class="hero-text">
@@ -126,6 +145,7 @@ const audiences = [
         <h2>Let go of the mouse and the screenshot is already copied and saved. A little card shows up in the corner, and you can drag it straight into a message.</h2>
       </div>
       <Window class="reveal"><Loop name="hero" label="Pressing ⌘⇧4, adding a note with an arrow to the problem, then pasting the screenshot into a chat" /></Window>
+      <noscript><img class="still" src={quickAccess.src} width={quickAccess.width} height={quickAccess.height} alt="Shot's Quick Access card showing a screenshot of an order with a $0.00 discount, with Copy and Save As buttons in the middle and close, edit and folder buttons in the corners." /></noscript>
     </div>
   </section>
 
@@ -230,6 +250,7 @@ const audiences = [
 </Base>
 
 <style>
+  .still { margin-inline: auto; }
   .hero { padding-block: clamp(32px, 6vw, 72px) clamp(32px, 5vw, 56px); }
   .hero-grid { display: grid; gap: 32px; align-items: center; }
   @media (min-width: 1000px) { .hero-grid { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 48px; } }
