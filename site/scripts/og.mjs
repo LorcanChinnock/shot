@@ -19,7 +19,10 @@ const stageStyle = between(hero, '<style>', '</style>');
 const windowStyle = between(source('../src/components/Window.astro'), '<style>', '</style>');
 
 const media = (file) => url(`../../docs/media/${file}`);
-const shot = (file, zoom = 1) => `<img class="sc-shot" src="${media(file)}" style="scale: ${zoom}">`;
+const shot = (file, size, [x, y, w, h]) => `<div class="sc-crop" style="aspect-ratio: ${w} / ${h}"><img src="${media(file)}" style="width: ${(size[0] / w) * 100}%; left: ${(-x / w) * 100}%; top: ${(-y / h) * 100}%"></div>`;
+const wide = [1600, 1000];
+const editorWindow = [230, 56, 1140, 850];
+const marks = (extra = '') => `<div class="sc-marks ${extra}">${stage}</div>`;
 const strip = (file) => `<div class="sc-strip"><img src="${media(file)}"></div>`;
 const kbd = (keys) => keys.map((k) => `<kbd class="key">${k}</kbd>`).join('');
 const code = (lines) => `<div class="sc-code">${lines.map((l) => `<p>${l}</p>`).join('')}</div>`;
@@ -29,22 +32,22 @@ const code = (lines) => `<div class="sc-code">${lines.map((l) => `<p>${l}</p>`).
 const shortcuts = [['⌘⇧4', 'Area'], ['⌘⇧3', 'Whole screen'], ['⌘⇧5', 'Record'], ['A', 'Arrow'], ['B', 'Blur'], ['T', 'Text'], ['H', 'Highlight'], ['⌘C', 'Copy'], ['⌘Z', 'Undo']];
 const languages = ['English', 'Deutsch', 'Français', 'Español', 'Italiano', 'Português', '日本語', '한국어', '简体中文'];
 const scenes = {
-  'get-started': shot('welcome.png'),
+  'get-started': shot('welcome.png', [1240, 940], [190, 150, 860, 600]),
   'take-a-screenshot': { stage: '.selection, .size, .cursor { opacity: 1; } .marks, .quick, .copied { display: none; }' },
-  'quick-access': shot('quick-access.png'),
+  'quick-access': `<img class="sc-plain" src="${media('quick-access.png')}">`,
   'record-your-screen': strip('recording-controls.png'),
-  'annotate-a-screenshot': shot('editor.png', 1.6),
-  'crop-and-arrange': shot('editor-crop.png', 1.6),
-  'style-a-screenshot': shot('editor-style.png', 1.6),
-  'combine-images': shot('editor-combine.png', 1.6),
-  'edit-a-recording': strip('video-timeline.png'),
-  'animate-and-annotate-a-recording': shot('video-editor.png', 1.6),
-  'export-a-video-or-gif': `<div class="sc-right">${shot('video-editor.png')}</div>`,
-  'find-your-captures': shot('gallery.png', 1.6),
-  'share-a-capture-with-an-ai-assistant': `<div class="sc-chat"><div class="me"><img src="${media('editor.png')}"><p>What's wrong with this order?</p></div><div class="ai"><p>The SPRING20 code is valid, but the total is unchanged.</p></div></div>`,
+  'annotate-a-screenshot': marks('only'),
+  'crop-and-arrange': shot('editor-crop.png', wide, editorWindow),
+  'style-a-screenshot': shot('editor-style.png', wide, editorWindow),
+  'combine-images': shot('editor-combine.png', wide, editorWindow),
+  'edit-a-recording': shot('video-editor.png', wide, [350, 670, 900, 285]),
+  'animate-and-annotate-a-recording': shot('video-editor.png', wide, [350, 12, 900, 640]),
+  'export-a-video-or-gif': `<div style="width: 66%">${shot('video-editor.png', wide, [350, 12, 900, 940])}</div>`,
+  'find-your-captures': shot('gallery.png', wide, [170, 56, 1260, 850]),
+  'share-a-capture-with-an-ai-assistant': `<div class="sc-chat"><div class="me"><div class="sc-marks" style="border-radius: 8px">${stage}</div><p>What's wrong with this order?</p></div><div class="ai"><p>The SPRING20 code is valid, but the total is unchanged.</p></div></div>`,
   'keyboard-shortcuts': `<div class="sc-keys">${shortcuts.map(([k, l], i) => `<p style="--fill: var(--${['yellow', 'pink', 'mint'][i % 3]})">${kbd([k])}<span>${l}</span></p>`).join('')}</div>`,
   'automation-reference': code(['<b>open</b> "shot://capture-area"', '<b>open</b> "shot://capture-timer?seconds=5"', '<b>open</b> "shot://copy-text"', '<b>open</b> "shot://gallery"']),
-  settings: shot('settings.png', 1.2),
+  settings: shot('settings.png', wide, [170, 56, 1260, 850]),
   languages: `<div class="sc-langs">${languages.map((l, i) => `<span style="--fill: var(--${['yellow', 'pink', 'sky', 'mint', 'violet', 'orange'][i % 6]})">${l}</span>`).join('')}</div>`,
   updates: `<div class="sc-list"><p><span>Check for updates</span><i class="on"></i></p><p><span>Ask me before going online</span><i class="on"></i></p><p class="btn"><b>Check Now</b></p></div>`,
   privacy: `<div class="sc-list"><p class="no"><b>✕</b><span>No account</span></p><p class="no"><b>✕</b><span>No cloud</span></p><p class="no"><b>✕</b><span>No analytics</span></p><p class="fine">Goes online only to check for updates.</p></div>`,
@@ -70,9 +73,9 @@ const page = ({ chip, chipColor, headline, size, keys, scene }) => `<!doctype ht
   .lede { margin: 0; font: 500 26px/1.35 var(--font); max-width: 17em; }
   .window { position: absolute; left: 590px; top: 50%; width: 560px; translate: 0 -50%; }
   .sc { aspect-ratio: 16 / 10; display: grid; place-items: center; overflow: hidden; }
-  .sc-shot { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  .sc-crop { position: relative; width: 100%; overflow: hidden; } .sc-crop img { position: absolute; max-width: none; height: auto; }
+  .sc:has(.sc-crop) { aspect-ratio: auto; display: block; } .sc-plain { width: 100%; } .sc-marks.only .quick, .sc-marks.only .copied { display: none; } .sc-marks { width: 100%; overflow: hidden; }
   .sc-strip { padding: 0 24px; } .sc-strip img { border: 2px solid var(--line); border-radius: 8px; box-shadow: 3px 3px 0 var(--line); }
-  .sc-right { position: relative; align-self: stretch; justify-self: stretch; overflow: hidden; } .sc-right img { position: absolute; width: 190%; height: auto; max-width: none; left: -90%; top: 0; scale: 1; }
   .sc-code { width: 86%; padding: 26px 28px; background: #12121a; color: #f6f4ef; border: 3px solid var(--line); border-radius: 12px; box-shadow: 4px 4px 0 var(--line); font: 600 18px/1.8 var(--mono); }
   .sc-code p { margin: 0; white-space: nowrap; } .sc-code b { color: var(--yellow); }
   .sc-keys { width: 90%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px 14px; }
@@ -89,8 +92,8 @@ const page = ({ chip, chipColor, headline, size, keys, scene }) => `<!doctype ht
   .sc-list i.on { background: var(--mint); } .sc-list i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--paper); border: 2px solid var(--line); } .sc-list i.on::after { left: 27px; }
   .sc-list .btn b { width: auto; height: auto; background: none; border: 0; border-radius: 0; font-size: 24px; } .sc-list .btn { justify-content: center; background: var(--yellow); color: var(--on-accent); }
   .sc-chat { width: 88%; display: grid; gap: 16px; font: 600 20px/1.35 var(--font); }
-  .sc-chat p { margin: 0; } .sc-chat .me { justify-self: end; width: 62%; padding: 10px; display: grid; gap: 8px; background: var(--yellow); color: var(--on-accent); border: 3px solid var(--line); border-radius: 14px; box-shadow: 3px 3px 0 var(--line); }
-  .sc-chat .me img { border-radius: 8px; height: 100px; width: 100%; object-fit: cover; object-position: center 30%; } .sc-chat .ai { width: 80%; padding: 14px 16px; display: grid; gap: 10px; background: var(--paper); color: var(--ink); border: 3px solid var(--line); border-radius: 14px; box-shadow: 3px 3px 0 var(--line); }
+  .sc-chat p { margin: 0; } .sc-chat .me { justify-self: end; width: 46%; padding: 10px; display: grid; gap: 8px; background: var(--yellow); color: var(--on-accent); border: 3px solid var(--line); border-radius: 14px; box-shadow: 3px 3px 0 var(--line); }
+  .sc-chat .ai { width: 80%; padding: 14px 16px; display: grid; gap: 10px; background: var(--paper); color: var(--ink); border: 3px solid var(--line); border-radius: 14px; box-shadow: 3px 3px 0 var(--line); }
   .sc-chat .ai i { height: 10px; width: 80%; border-radius: 9px; background: var(--well); } .sc-chat .ai i + i { width: 55%; }
 </style>
 <div class="backdrop"><div class="blob pink"></div><div class="blob yellow"></div><div class="blob mint"></div><div class="blob sky"></div></div>
