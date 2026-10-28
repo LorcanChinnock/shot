@@ -3256,9 +3256,6 @@
         }
       }
     },
-    "Auto" : {
-
-    },
     "Auto-close" : {
       "localizations" : {
         "de" : {
@@ -4784,9 +4781,6 @@
           }
         }
       }
-    },
-    "Cancel ⎋" : {
-
     },
     "Canvas" : {
       "localizations" : {
@@ -10396,9 +10390,6 @@
         }
       }
     },
-    "Direction" : {
-
-    },
     "Discard" : {
       "localizations" : {
         "de" : {
@@ -13228,9 +13219,6 @@
         }
       }
     },
-    "Fast" : {
-
-    },
     "File" : {
       "localizations" : {
         "de" : {
@@ -15372,9 +15360,6 @@
         }
       }
     },
-    "Horizontal" : {
-
-    },
     "Horizontal position" : {
       "localizations" : {
         "de" : {
@@ -15639,9 +15624,6 @@
 
     },
     "Hue" : {
-
-    },
-    "I scroll" : {
 
     },
     "IMAGE STYLE" : {
@@ -18575,9 +18557,6 @@
         }
       }
     },
-    "Normal" : {
-
-    },
     "Note" : {
       "localizations" : {
         "de" : {
@@ -20615,9 +20594,6 @@
         }
       }
     },
-    "Permission" : {
-
-    },
     "Permissions" : {
       "localizations" : {
         "de" : {
@@ -21352,9 +21328,6 @@
         }
       }
     },
-    "Press Scroll for me to start." : {
-
-    },
     "Press Space while you pick an area to capture a window instead." : {
       "localizations" : {
         "de" : {
@@ -21511,7 +21484,7 @@
         }
       }
     },
-    "Preview of the stitched image" : {
+    "Preview of the newest part of the stitched image" : {
 
     },
     "Project" : {
@@ -25118,22 +25091,10 @@
         }
       }
     },
-    "Scroll for me" : {
+    "Scroll the content in any direction." : {
 
     },
-    "Scroll myself" : {
-
-    },
-    "Scroll the content sideways." : {
-
-    },
-    "Scroll the content." : {
-
-    },
-    "Scrolled too far at once. Scroll back left a little and carry on." : {
-
-    },
-    "Scrolled too far at once. Scroll back up a little and carry on." : {
+    "Scrolled too far at once. Scroll back a little and carry on." : {
 
     },
     "Scrolling capture" : {
@@ -26237,12 +26198,6 @@
         }
       }
     },
-    "Shot reached the end and stopped. Press Return to save." : {
-
-    },
-    "Shot scrolls" : {
-
-    },
     "Shot's windows and panels. Captures look the same either way." : {
 
     },
@@ -27112,9 +27067,6 @@
         }
       }
     },
-    "Slow" : {
-
-    },
     "Small" : {
       "localizations" : {
         "de" : {
@@ -27793,9 +27745,6 @@
           }
         }
       }
-    },
-    "Speed" : {
-
     },
     "Speed isn't available for an MP4 with imports, annotations or transforms. A GIF can change speed." : {
       "localizations" : {
@@ -29592,10 +29541,7 @@
         }
       }
     },
-    "That's as tall as Shot can stitch (30,000 px). Press Return to save." : {
-
-    },
-    "That's as wide as Shot can stitch (30,000 px). Press Return to save." : {
+    "That's as big as Shot can stitch (30,000 px along a side). Press Return to save." : {
 
     },
     "That's it" : {
@@ -30017,6 +29963,9 @@
         }
       }
     },
+    "There isn't enough in the area to line frames up. Include some text or an image, or drag out another area." : {
+
+    },
     "This Month" : {
       "localizations" : {
         "de" : {
@@ -30276,9 +30225,6 @@
           }
         }
       }
-    },
-    "To scroll for you, Shot needs the Accessibility permission in System Settings. Shot uses it only to scroll while you capture." : {
-
     },
     "Today" : {
       "localizations" : {
@@ -31907,9 +31853,6 @@
         }
       }
     },
-    "Vertical" : {
-
-    },
     "Vertical position" : {
       "localizations" : {
         "de" : {
@@ -32276,9 +32219,6 @@
           }
         }
       }
-    },
-    "Who scrolls" : {
-
     },
     "Width" : {
       "localizations" : {

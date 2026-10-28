@@ -8,33 +8,26 @@ import ShotCore
 struct ScrollUpdate: @unchecked Sendable {
     /// `nil` for the first frame, which only starts the image.
     var outcome: ScrollStitcher.Outcome?
-    /// Pixels stitched so far along the scroll direction, and the size of the whole image.
-    var length: Int
+    /// The size of the whole image in pixels.
     var size: CGSize
-    /// The image so far, when it changed and the last preview is old enough to replace.
+    /// The newest part of the image, when it changed and the last preview is old enough to replace.
     var preview: CGImage?
 }
 
 /// Runs the stitcher off the main actor, one frame at a time.
 actor ScrollStitchWorker {
-    private let axis: ScrollStitcher.Axis
     private var stitcher: ScrollStitcher?
     private var lastPreview = ContinuousClock.now - .seconds(1)
-
-    init(axis: ScrollStitcher.Axis) {
-        self.axis = axis
-    }
+    /// Width over height of the preview box in the panel.
+    static let previewAspect = 2.0
 
     func add(_ frame: Bitmap) -> ScrollUpdate {
         guard stitcher != nil else {
-            stitcher = ScrollStitcher(first: frame, axis: axis)
+            stitcher = ScrollStitcher(first: frame)
             return update(outcome: nil, changed: true)
         }
         let outcome = stitcher!.add(frame)
-        if case .appended = outcome {
-            return update(outcome: outcome, changed: true)
-        }
-        return update(outcome: outcome, changed: outcome == .limit)
+        return update(outcome: outcome, changed: outcome == .extended || outcome == .limit)
     }
 
     func result() -> Bitmap? {
@@ -43,12 +36,12 @@ actor ScrollStitchWorker {
 
     private func update(outcome: ScrollStitcher.Outcome?, changed: Bool) -> ScrollUpdate {
         guard let stitcher else {
-            return ScrollUpdate(outcome: outcome, length: 0, size: .zero, preview: nil)
+            return ScrollUpdate(outcome: outcome, size: .zero, preview: nil)
         }
         let now = ContinuousClock.now
-        // Joining the rows costs as much as the image is big, so the preview refreshes a few times a second.
+        // Cutting the preview out costs a little, so it refreshes a few times a second.
         let preview: CGImage? = if changed, now - lastPreview > .milliseconds(250) {
-            stitcher.result.cgImage
+            stitcher.preview(aspect: Self.previewAspect).cgImage
         } else {
             nil
         }
@@ -56,7 +49,7 @@ actor ScrollStitchWorker {
             lastPreview = now
         }
         let size = stitcher.size
-        return ScrollUpdate(outcome: outcome, length: stitcher.length, size: CGSize(width: size.width, height: size.height), preview: preview)
+        return ScrollUpdate(outcome: outcome, size: CGSize(width: size.width, height: size.height), preview: preview)
     }
 }
 

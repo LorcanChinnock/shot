@@ -31,7 +31,7 @@
 ## Features
 
 - **Capture:** an area on a frozen screen with a magnifier, a window, or the whole screen, with a timer if you need one. Shot copies and saves it as soon as you let go.
-- **Scrolling capture:** scroll a long web page, chat or table through an area, or let Shot scroll, and get one stitched image.
+- **Scrolling capture:** scroll a long web page, chat or spreadsheet through an area, down, sideways or both, and get one stitched image.
 - **Quick Access:** a card in the corner after every capture. Annotate it, pin it above your other windows, or drag it straight into another app.
 - **Annotate:** arrows, text, sticky notes, highlights, a spotlight, blur and pixelate, and several images on one canvas.
 - **Record:** an area, a window or a screen to MP4, with your microphone, the sound from your Mac and a camera bubble.

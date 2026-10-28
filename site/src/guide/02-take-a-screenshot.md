@@ -60,18 +60,22 @@ To copy the text from a screenshot you already took, right-click its Quick Acces
 
 ## Capture a long page
 
-Capture Scrolling Area joins a web page, chat thread, document or wide table that is bigger than your screen into one image.
+Capture Scrolling Area joins a web page, chat thread, document or spreadsheet that is bigger than your screen into one image. You scroll, in any direction and as many directions as you like, and Shot works out how the content moved.
 
 1. Choose **Capture Scrolling Area** from Shot's menu bar menu, or give it a shortcut in **Settings › Shortcuts**.
-2. Drag out the part of the screen that scrolls. Keep a sticky header, footer or first column inside it.
-3. In the panel beside the area, choose **Vertical** or **Horizontal**, and whether you scroll or Shot does.
-4. Scroll the content with your trackpad, mouse wheel or <kbd>Page Down</kbd>, or press **Scroll for me**.
-5. Press <kbd>Return</kbd> to finish. The image is copied and saved like any other capture. <kbd>Esc</kbd> cancels, or stops Shot's scrolling.
+2. Drag out the part of the screen that scrolls. A sticky header, footer or first column can be inside it.
+3. Scroll the content with your trackpad, mouse wheel or <kbd>Page Down</kbd>. Go down, sideways or both, so a wide spreadsheet can be captured top to bottom and left to right in one image. The panel beside the area shows the size so far and the newest part.
+4. Press <kbd>Return</kbd> to finish. The image is copied and saved like any other capture. <kbd>Esc</kbd> cancels.
 
-Shot keeps only new rows, so a sticky header or footer appears once and scrolling back up adds nothing. If you scroll too far at once, the outline turns red: scroll back a little and carry on. A page that keeps changing, such as a playing video, can't be lined up, so pause it first. The image stops growing at 30,000 pixels along the scroll direction.
+Shot keeps only what it hasn't seen yet. A sticky header, footer or floating button appears once, and scrolling back over what you've captured adds nothing. The image can reach 30,000 pixels along a side.
 
-> [!NOTE]
-> Scrolling by hand asks for no new permission. The first time you choose **Scroll for me**, macOS asks you to allow Shot under **Accessibility**, because Shot sends the scrolling. If you decline, scroll by hand.
+Shot tells you in the panel when it can't carry on, and the outline turns red:
+
+- **Scrolled too far at once:** scroll back a little and carry on.
+- **Something keeps changing:** a playing video or animation can't be lined up, so pause it or scroll past it.
+- **Not enough to line up:** an area that is blank, or repeats the same thing, gives Shot nothing to follow. Include some text or an image.
+
+Scrolling by hand asks for no permission beyond the Screen Recording one every capture needs.
 
 ## Without a mouse
 
