@@ -3,6 +3,7 @@ import { writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import * as pagefind from 'pagefind';
 import { SKIP, visit } from 'unist-util-visit';
+import { readGuide } from './src/lib/guide-files.ts';
 import { latestRelease } from './src/lib/release.ts';
 import { rehypeRepoLinks } from './src/lib/rehype.ts';
 
@@ -36,6 +37,8 @@ function redirects() {
           `/github ${repo} 302`,
           '/sponsor https://github.com/sponsors/LorcanChinnock 302',
           `/releases ${repo}/releases 302`,
+          // A renamed page lists its old slugs as `aliases`, so links to its old address keep working.
+          ...readGuide().flatMap((page) => page.aliases.map((alias) => `/docs/${alias} /docs/${page.slug}/ 301`)),
         ];
         await writeFile(new URL('_redirects', dir), lines.join('\n') + '\n');
       },
