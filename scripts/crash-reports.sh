@@ -13,7 +13,7 @@ dirs="$HOME/Library/Logs/DiagnosticReports /Library/Logs/DiagnosticReports"
 
 has_report() {
     for dir in $dirs; do
-        for report in "$dir"/swiftpm-testing-helper* "$dir"/ShotCorePackageTests* "$dir"/xctest*; do
+        for report in "$dir"/swiftpm-testing-helper* "$dir"/xctest*; do
             [ -f "$report" ] && return 0
         done
     done
@@ -32,7 +32,7 @@ for dir in $dirs; do
     for report in "$dir"/*.ips; do
         [ -f "$report" ] || continue
         case "$(basename "$report")" in
-        swiftpm-testing-helper* | ShotCorePackageTests* | xctest*)
+        swiftpm-testing-helper* | xctest*)
             found=1
             if [ -n "$keep" ]; then
                 mkdir -p "$keep"

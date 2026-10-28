@@ -64,7 +64,7 @@ watch_for_a_stall() {
         if [ "$still" -ge 300 ]; then
             echo "::warning::No test has started or ended for five minutes."
             running_tests
-            for pid in $(pgrep -f swiftpm-testing-helper) $(pgrep -f ShotCorePackageTests); do
+            for pid in $(pgrep -f swiftpm-testing-helper); do
                 echo "=== sample of $(ps -o command= -p "$pid")"
                 sample "$pid" 3 -file "${events%.jsonl}-$pid.txt" >/dev/null 2>&1 && cat "${events%.jsonl}-$pid.txt"
             done
