@@ -28,17 +28,17 @@ final class ScrollCaptureModel {
     var message: LocalizedStringResource? {
         switch status {
         case .ready:
-            "Scroll the content in any direction."
+            return LocalizedStringResource("Scroll the content in any direction.")
         case .stitching:
-            nil
+            return nil
         case .tooFar:
-            "Scrolled too far at once. Scroll back a little and carry on."
+            return LocalizedStringResource("Scrolled too far at once. Scroll back a little and carry on.")
         case .moving:
-            "Something in the area keeps changing, so Shot can't line frames up. Pause the video or scroll past it."
+            return LocalizedStringResource("Something in the area keeps changing, so Shot can't line frames up. Pause the video or scroll past it.")
         case .featureless:
-            "There isn't enough in the area to line frames up. Include some text or an image, or drag out another area."
+            return LocalizedStringResource("There isn't enough in the area to line frames up. Include some text or an image, or drag out another area.")
         case .limit:
-            "That's as big as Shot can stitch (30,000 px along a side). Press Return to save."
+            return LocalizedStringResource("That's as big as Shot can stitch (30,000 px along a side). Press Return to save.")
         }
     }
 
@@ -353,11 +353,11 @@ private struct ScrollCapturePanelView: View {
 
     private var chipText: LocalizedStringResource {
         switch model.status {
-        case .ready: "Ready"
-        case .stitching: "Live"
-        case .tooFar: "Too fast"
-        case .moving, .featureless: "Paused"
-        case .limit: "Done"
+        case .ready: return LocalizedStringResource("Ready")
+        case .stitching: return LocalizedStringResource("Live")
+        case .tooFar: return LocalizedStringResource("Too fast")
+        case .moving, .featureless: return LocalizedStringResource("Paused")
+        case .limit: return LocalizedStringResource("Done")
         }
     }
 
