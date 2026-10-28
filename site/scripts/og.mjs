@@ -18,10 +18,45 @@ const stage = hero.slice(hero.indexOf('<div class="stage"'), hero.indexOf('<styl
 const stageStyle = between(hero, '<style>', '</style>');
 const windowStyle = between(source('../src/components/Window.astro'), '<style>', '</style>');
 
-const page = ({ chip, chipColor, headline, size, keys }) => `<!doctype html>
+const media = (file) => url(`../../docs/media/${file}`);
+const shot = (file, zoom = 1) => `<img class="sc-shot" src="${media(file)}" style="scale: ${zoom}">`;
+const strip = (file) => `<div class="sc-strip"><img src="${media(file)}"></div>`;
+const kbd = (keys) => keys.map((k) => `<kbd class="key">${k}</kbd>`).join('');
+const code = (lines) => `<div class="sc-code">${lines.map((l) => `<p>${l}</p>`).join('')}</div>`;
+
+// What each guide page's card shows beside its title: the page's own screenshot where the guide has one, otherwise a drawing of
+// what the page is about. Anything not listed shows the hero's last frame.
+const shortcuts = [['⌘⇧4', 'Area'], ['⌘⇧3', 'Whole screen'], ['⌘⇧5', 'Record'], ['A', 'Arrow'], ['B', 'Blur'], ['T', 'Text'], ['H', 'Highlight'], ['⌘C', 'Copy'], ['⌘Z', 'Undo']];
+const languages = ['English', 'Deutsch', 'Français', 'Español', 'Italiano', 'Português', '日本語', '한국어', '简体中文'];
+const scenes = {
+  'get-started': shot('welcome.png'),
+  'take-a-screenshot': { stage: '.selection, .size, .cursor { opacity: 1; } .marks, .quick, .copied { display: none; }' },
+  'quick-access': shot('quick-access.png'),
+  'record-your-screen': strip('recording-controls.png'),
+  'annotate-a-screenshot': shot('editor.png', 1.6),
+  'crop-and-arrange': shot('editor-crop.png', 1.6),
+  'style-a-screenshot': shot('editor-style.png', 1.6),
+  'combine-images': shot('editor-combine.png', 1.6),
+  'edit-a-recording': strip('video-timeline.png'),
+  'animate-and-annotate-a-recording': shot('video-editor.png', 1.6),
+  'export-a-video-or-gif': `<div class="sc-right">${shot('video-editor.png')}</div>`,
+  'find-your-captures': shot('gallery.png', 1.6),
+  'share-a-capture-with-an-ai-assistant': `<div class="sc-chat"><div class="me"><img src="${media('editor.png')}"><p>What's wrong with this order?</p></div><div class="ai"><p>The SPRING20 code is valid, but the total is unchanged.</p></div></div>`,
+  'keyboard-shortcuts': `<div class="sc-keys">${shortcuts.map(([k, l], i) => `<p style="--fill: var(--${['yellow', 'pink', 'mint'][i % 3]})">${kbd([k])}<span>${l}</span></p>`).join('')}</div>`,
+  'automation-reference': code(['<b>open</b> "shot://capture-area"', '<b>open</b> "shot://capture-timer?seconds=5"', '<b>open</b> "shot://copy-text"', '<b>open</b> "shot://gallery"']),
+  settings: shot('settings.png', 1.2),
+  languages: `<div class="sc-langs">${languages.map((l, i) => `<span style="--fill: var(--${['yellow', 'pink', 'sky', 'mint', 'violet', 'orange'][i % 6]})">${l}</span>`).join('')}</div>`,
+  updates: `<div class="sc-list"><p><span>Check for updates</span><i class="on"></i></p><p><span>Ask me before going online</span><i class="on"></i></p><p class="btn"><b>Check Now</b></p></div>`,
+  privacy: `<div class="sc-list"><p class="no"><b>✕</b><span>No account</span></p><p class="no"><b>✕</b><span>No cloud</span></p><p class="no"><b>✕</b><span>No analytics</span></p><p class="fine">Goes online only to check for updates.</p></div>`,
+  troubleshooting: `<div class="sc-list"><p class="q"><b>?</b><span>Captures fail after I turned on Screen Recording</span></p><p class="q"><b>?</b><span>Microphone says NOT ASKED</span></p><p class="q"><b>?</b><span>⌘⇧4 still opens the macOS tool</span></p></div>`,
+  'removing-shot': code(['<b>$</b> brew uninstall --zap shot']),
+};
+
+const page = ({ chip, chipColor, headline, size, keys, scene }) => `<!doctype html>
 <link rel="stylesheet" href="${url('../src/styles/global.css')}">
 <style>
   ${stageStyle}
+  ${scene?.stage ?? ''}
   ${windowStyle}
   body { width: 1200px; height: 630px; min-height: 0; overflow: hidden; position: relative; }
   .brand { position: absolute; left: 56px; top: 44px; }
@@ -33,18 +68,41 @@ const page = ({ chip, chipColor, headline, size, keys }) => `<!doctype html>
   h1 .keys { display: flex; margin-top: 0.14em; gap: 0.12em; }
   h1 .key { font-size: 0.62em; padding: 0.05em 0.3em; border-width: 3px; border-radius: 12px; box-shadow: 4px 4px 0 var(--line); }
   .lede { margin: 0; font: 500 26px/1.35 var(--font); max-width: 17em; }
-  .window { position: absolute; left: 590px; top: 118px; width: 560px; }
+  .window { position: absolute; left: 590px; top: 50%; width: 560px; translate: 0 -50%; }
+  .sc { aspect-ratio: 16 / 10; display: grid; place-items: center; overflow: hidden; }
+  .sc-shot { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  .sc-strip { padding: 0 24px; } .sc-strip img { border: 2px solid var(--line); border-radius: 8px; box-shadow: 3px 3px 0 var(--line); }
+  .sc-right { position: relative; align-self: stretch; justify-self: stretch; overflow: hidden; } .sc-right img { position: absolute; width: 190%; height: auto; max-width: none; left: -90%; top: 0; scale: 1; }
+  .sc-code { width: 86%; padding: 26px 28px; background: #12121a; color: #f6f4ef; border: 3px solid var(--line); border-radius: 12px; box-shadow: 4px 4px 0 var(--line); font: 600 18px/1.8 var(--mono); }
+  .sc-code p { margin: 0; white-space: nowrap; } .sc-code b { color: var(--yellow); }
+  .sc-keys { width: 90%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px 14px; }
+  .sc-keys p { margin: 0; display: grid; gap: 8px; justify-items: start; font: 800 20px/1.2 var(--font); color: var(--on-accent); }
+  .sc-keys kbd { font-size: 30px; background: var(--fill); color: var(--on-accent); border-color: #000; box-shadow: 3px 3px 0 #000; }
+  .sc-langs { width: 88%; display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+  .sc-langs span { padding: 8px 20px; font: 800 28px/1.2 var(--font); color: var(--on-accent); background: var(--fill); border: 3px solid var(--line); border-radius: 12px; box-shadow: 3px 3px 0 var(--line); }
+  .sc-list { width: 82%; display: grid; gap: 12px; }
+  .sc-list p { margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; font: 800 24px/1.25 var(--font); background: var(--paper); color: var(--ink); border: 3px solid var(--line); border-radius: 12px; box-shadow: 4px 4px 0 var(--line); }
+  .sc-list .no, .sc-list .q { justify-content: flex-start; } .sc-list p b { flex: none; width: 36px; height: 36px; display: grid; place-items: center; font-size: 20px; color: var(--on-accent); background: var(--red); border: 3px solid var(--line); border-radius: 50%; }
+  .sc-list .q b { background: var(--yellow); } .sc-list .q { font-size: 21px; }
+  .sc-list .fine { display: block; font-size: 18px; font-weight: 600; background: none; border: 0; box-shadow: none; color: var(--ink); padding: 0 4px; }
+  .sc-list i { flex: none; width: 56px; height: 32px; border: 3px solid var(--line); border-radius: 99px; background: var(--well); position: relative; }
+  .sc-list i.on { background: var(--mint); } .sc-list i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--paper); border: 2px solid var(--line); } .sc-list i.on::after { left: 27px; }
+  .sc-list .btn b { width: auto; height: auto; background: none; border: 0; border-radius: 0; font-size: 24px; } .sc-list .btn { justify-content: center; background: var(--yellow); color: var(--on-accent); }
+  .sc-chat { width: 88%; display: grid; gap: 16px; font: 600 20px/1.35 var(--font); }
+  .sc-chat p { margin: 0; } .sc-chat .me { justify-self: end; width: 62%; padding: 10px; display: grid; gap: 8px; background: var(--yellow); color: var(--on-accent); border: 3px solid var(--line); border-radius: 14px; box-shadow: 3px 3px 0 var(--line); }
+  .sc-chat .me img { border-radius: 8px; height: 100px; width: 100%; object-fit: cover; object-position: center 30%; } .sc-chat .ai { width: 80%; padding: 14px 16px; display: grid; gap: 10px; background: var(--paper); color: var(--ink); border: 3px solid var(--line); border-radius: 14px; box-shadow: 3px 3px 0 var(--line); }
+  .sc-chat .ai i { height: 10px; width: 80%; border-radius: 9px; background: var(--well); } .sc-chat .ai i + i { width: 55%; }
 </style>
 <div class="backdrop"><div class="blob pink"></div><div class="blob yellow"></div><div class="blob mint"></div><div class="blob sky"></div></div>
-<div class="brand"><img src="${url('../public/icon-256.png')}"><span>Shot<sup>beta</sup></span></div>
+<div class="brand"><img src="${url('../public/icon-256.png')}"><span>Shot</span></div>
 <div class="intro">
   <span class="chip" style="--chip: var(--${chipColor})">${chip}</span>
   <h1>${headline}${keys ? '<span class="keys"><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd></span>' : ''}</h1>
   ${keys ? '<p class="lede">A screenshot app that lives in your menu bar.</p>' : ''}
 </div>
-<figure class="window card" style="--tint: var(--yellow)">
+<figure class="window card" style="--tint: var(--${chipColor})">
   <div class="titlebar"><span class="lights"><i></i><i></i><i></i></span></div>
-  <div class="pane">${stage}</div>
+  <div class="pane">${typeof scene === 'string' ? `<div class="sc">${scene}</div>` : stage}</div>
 </figure>`;
 
 const dir = mkdtempSync(join(tmpdir(), 'shot-og-'));
@@ -62,6 +120,7 @@ render(page({ chip: 'Free and open source', chipColor: 'yellow', headline: 'A be
 
 mkdirSync(new URL('../public/og/', import.meta.url), { recursive: true });
 for (const { slug, title, group } of readGuide()) {
-  const size = title.length > 40 ? 52 : title.length > 22 ? 64 : 84;
-  render(page({ chip: `User guide · ${group}`, chipColor: groups.find((g) => g.name === group).color, headline: title, size }), `../public/og/${slug}.png`);
+  const longest = Math.max(...title.split(' ').map((w) => w.length));
+  const size = title.length > 40 ? 52 : title.length > 22 || longest > 12 ? 64 : 84;
+  render(page({ chip: `User guide · ${group}`, chipColor: groups.find((g) => g.name === group).color, headline: title, size, scene: scenes[slug] }), `../public/og/${slug}.png`);
 }

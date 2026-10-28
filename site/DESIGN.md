@@ -47,7 +47,7 @@ Four slow colour blobs and a dot grid behind everything, as in the app's `GlassB
 
 ## Social cards
 
-`npm run og` renders each card from the site itself: the home card is the hero (`A better ⌘⇧4` beside the window with its last frame), and each guide page's card swaps the headline for the page's title, with its group as a chip in the group's accent. Both sit on the backdrop, in the system fonts, and reuse `global.css` and `HeroStage.astro`, so a change to either shows up the next time the cards are rendered.
+`npm run og` renders each card from the site itself: the home card is the hero (`A better ⌘⇧4` beside the window with its last frame). A guide page's card swaps the headline for the page's title, with its group as a chip in the group's accent, and shows what the page is about in the window: the guide's own screenshot where it has one, otherwise a drawing in the site's style (keycaps for the shortcuts page, a command for removing Shot). The scenes are listed in `scripts/og.mjs`; a page without one shows the hero. Cards sit on the backdrop, in the system fonts, and reuse `global.css` and `HeroStage.astro`, so a change to either shows up the next time the cards are rendered.
 
 ## Rules
 
