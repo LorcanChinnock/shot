@@ -30721,57 +30721,8 @@
         }
       }
     },
-    "Use Shot for ⌘⇧3 to ⌘⇧5" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shot für ⌘⇧3 bis ⌘⇧5 verwenden"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usar Shot para ⌘⇧3 a ⌘⇧5"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Utiliser Shot pour ⌘⇧3 à ⌘⇧5"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usa Shot per ⌘⇧3–⌘⇧5"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "⌘⇧3〜⌘⇧5にShotを使用"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "⌘⇧3~⌘⇧5에 Shot 사용"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usar o Shot para ⌘⇧3 a ⌘⇧5"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "将 ⌘⇧3 至 ⌘⇧5 交给 Shot"
-          }
-        }
-      }
+    "Use Shot for ⌘⇧4 and ⌘⇧5" : {
+
     },
     "Use this style for new captures" : {
       "localizations" : {

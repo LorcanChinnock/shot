@@ -2,12 +2,13 @@ import Foundation
 
 /// The macOS screenshot shortcuts Shot can take over, keyed by their ID in `com.apple.symbolichotkeys`.
 public enum SystemScreenshotShortcut: Int, CaseIterable, Sendable {
-    case saveScreen = 28
     case saveArea = 30
     case options = 184
 
     /// ⌘⇧6, which Shot took over for text capture until it dropped that feature.
     static let textCaptureID = "181"
+    /// ⌘⇧3, which Shot took over until Tab on the overlay replaced a full-screen shortcut.
+    static let fullScreenID = "28"
 
     public static let domain = "com.apple.symbolichotkeys"
     public static let key = "AppleSymbolicHotKeys"
@@ -16,7 +17,6 @@ public enum SystemScreenshotShortcut: Int, CaseIterable, Sendable {
     var defaultParameters: [Int] {
         let commandShift = 0x10_0000 | 0x2_0000
         switch self {
-        case .saveScreen: return [51, 20, commandShift]
         case .saveArea: return [52, 21, commandShift]
         case .options: return [53, 23, commandShift]
         }
@@ -53,12 +53,21 @@ public enum SystemScreenshotShortcut: Int, CaseIterable, Sendable {
 
     /// Returns `hotkeys` with ⌘⇧6 turned back on and its key kept, or `nil` when it's already on.
     public static func givingBackTextCaptureKey(in hotkeys: [String: Any]) -> [String: Any]? {
-        guard var entry = hotkeys[textCaptureID] as? [String: Any], entry["enabled"] as? Bool == false else {
+        givingBack(textCaptureID, in: hotkeys)
+    }
+
+    /// Returns `hotkeys` with ⌘⇧3 turned back on and its key kept, or `nil` when it's already on.
+    public static func givingBackFullScreenKey(in hotkeys: [String: Any]) -> [String: Any]? {
+        givingBack(fullScreenID, in: hotkeys)
+    }
+
+    private static func givingBack(_ id: String, in hotkeys: [String: Any]) -> [String: Any]? {
+        guard var entry = hotkeys[id] as? [String: Any], entry["enabled"] as? Bool == false else {
             return nil
         }
         entry["enabled"] = true
         var result = hotkeys
-        result[textCaptureID] = entry
+        result[id] = entry
         return result
     }
 }

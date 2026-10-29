@@ -12,7 +12,7 @@ group: Help
 Your captures stay in your save folder until you delete them.
 
 > [!TIP]
-> If <kbd>⌘⇧3</kbd> to <kbd>⌘⇧5</kbd> still do nothing, for example because Shot crashed before you removed it, turn the shortcuts back on in **System Settings › Keyboard › Keyboard Shortcuts › Screenshots**.
+> If <kbd>⌘⇧4</kbd> and <kbd>⌘⇧5</kbd> still do nothing, for example because Shot crashed before you removed it, turn the shortcuts back on in **System Settings › Keyboard › Keyboard Shortcuts › Screenshots**.
 
 ## Remove everything else
 

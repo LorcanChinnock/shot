@@ -27,7 +27,7 @@ tccutil reset Camera dev.lorcan.Shot
 
 ## ⌘⇧4 still opens the macOS screenshot tool
 
-Shot takes over <kbd>⌘⇧3</kbd> to <kbd>⌘⇧5</kbd> only once it has Screen Recording access, and only while **Use Shot for ⌘⇧3 to ⌘⇧5** is on in **Settings › Shortcuts**.
+Shot takes over <kbd>⌘⇧4</kbd> and <kbd>⌘⇧5</kbd> only once it has Screen Recording access, and only while **Use Shot for ⌘⇧4 and ⌘⇧5** is on in **Settings › Shortcuts**.
 
 - If you turned the macOS shortcuts back on in System Settings, turn that setting on again.
 - A **Shortcut unavailable** message means another app already uses that shortcut. Pick another in **Settings › Shortcuts**.
