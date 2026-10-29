@@ -25,7 +25,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/media/hero.gif" width="720" alt="Capturing an order with ⌘⇧4, opening it from the Quick Access card, adding a note with an arrow to the $0 discount, then pasting it into a chat">
+  <img src="docs/media/hero.gif" width="720" alt="Capturing an order with ⌘⇧4, opening it from the Quick Access card, highlighting the discount and pointing an arrow at the $0, then pasting it into a chat">
 </p>
 
 ## Features
@@ -42,7 +42,7 @@
 
 ### Capture and Quick Access
 
-<img src="docs/media/capture.gif" width="720" alt="Dragging out an area with the magnifier, then the Quick Access card sliding into the corner and showing its buttons">
+<img src="docs/media/capture.gif" width="720" alt="Pressing Tab to step the capture between an area, a window and the full screen, dragging out an area with the magnifier, then the Quick Access card sliding into the corner and showing its buttons">
 
 ### Annotate anything
 
@@ -50,7 +50,7 @@
 
 ### Record your screen, and yourself
 
-<img src="docs/media/recording.gif" width="720" alt="Picking an area to record, then the recording outline and the controls while a chart animates">
+<img src="docs/media/recording.gif" width="720" alt="Stepping the Delay chip through its choices, picking an area to record, then the recording outline and the controls while a chart animates">
 
 ### Trim and export to GIF
 
