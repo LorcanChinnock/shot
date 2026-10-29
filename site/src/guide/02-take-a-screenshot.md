@@ -1,6 +1,6 @@
 ---
 title: Take a screenshot
-summary: "Capture an area, a window or the whole screen, use a timer, or copy the text off your screen."
+summary: "Capture an area, a window or the whole screen, wait a few seconds first, or copy the text off your screen."
 group: Capture
 ---
 

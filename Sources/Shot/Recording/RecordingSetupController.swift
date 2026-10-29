@@ -22,7 +22,7 @@ final class RecordingSetupModel {
         didSet { onCountdown(countdown) }
     }
     /// How long the countdown runs once Record is pressed; 0 starts at once.
-    let countdownSeconds: Int
+    var countdownSeconds: Int
     @ObservationIgnored private let onCountdown: (Int?) -> Void
 
     init(mode: CaptureTarget, prefs: Preferences, countdownSeconds: Int, onCountdown: @escaping (Int?) -> Void) {
@@ -81,6 +81,8 @@ final class RecordingSetupController {
         var optionHeld = false
         /// Seconds chosen on the overlay to wait before recording; 0 is off.
         var delay = 0
+        /// What was picked, which can differ from what the overlay opened on after Tab.
+        var target = CaptureTarget.area
     }
 
     /// Lets the user pick an area or window with the live overlay, or takes the screen under the pointer.
@@ -88,7 +90,7 @@ final class RecordingSetupController {
         let screens = NSScreen.screens
         if mode == .screen {
             let screen = NSScreen.underPointer ?? screens[0]
-            return Pick(screen: screen, region: screen.fullCaptureFrame, windowID: nil, ratio: nil)
+            return Pick(screen: screen, region: screen.fullCaptureFrame, windowID: nil, ratio: nil, target: .screen)
         }
         let displays = screens.map { OverlayDisplay(frame: $0.frame, scale: $0.backingScaleFactor, image: nil) }
         let windows = WindowCapturer.onScreenWindows()
@@ -100,12 +102,12 @@ final class RecordingSetupController {
         switch selection {
         case let .area(index, rect, ratio):
             let screen = screens[index]
-            return Pick(screen: screen, region: rect.offsetBy(dx: screen.frame.minX, dy: screen.frame.minY), windowID: nil, ratio: ratio, optionHeld: optionHeld, delay: result.delay)
+            return Pick(screen: screen, region: rect.offsetBy(dx: screen.frame.minX, dy: screen.frame.minY), windowID: nil, ratio: ratio, optionHeld: optionHeld, delay: result.delay, target: .area)
         case let .window(info):
             let (screen, region) = region(of: info)
-            return Pick(screen: screen, region: region, windowID: info.windowID, ratio: nil, optionHeld: optionHeld, delay: result.delay)
+            return Pick(screen: screen, region: region, windowID: info.windowID, ratio: nil, optionHeld: optionHeld, delay: result.delay, target: .window)
         case let .fullDisplay(index):
-            return Pick(screen: screens[index], region: screens[index].fullCaptureFrame, windowID: nil, ratio: nil, optionHeld: optionHeld, delay: result.delay)
+            return Pick(screen: screens[index], region: screens[index].fullCaptureFrame, windowID: nil, ratio: nil, optionHeld: optionHeld, delay: result.delay, target: .screen)
         }
     }
 
@@ -201,7 +203,8 @@ final class RecordingSetupController {
         }
         setSetupVisible(false)
         if let picked = await Self.pickRegion(mode: mode) {
-            model.mode = mode
+            model.mode = picked.target
+            model.countdownSeconds = RecordingStart.after(adjustBeforeRecording: false, countdown: picked.delay, optionHeld: false).countdown
             screen = picked.screen
             region = picked.region
             model.windowID = picked.windowID

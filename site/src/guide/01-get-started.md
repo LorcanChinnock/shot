@@ -36,7 +36,7 @@ A short welcome window walks you through three steps. You can close it at any po
 3. **Try it.** Press <kbd>⌘⇧4</kbd> and drag across anything on screen. The window comes back with a few tips.
 
 > [!TIP]
-> Turned off **Use Shot for ⌘⇧3 to ⌘⇧5**? Shot uses <kbd>⌃⇧3</kbd>, <kbd>⌃⇧4</kbd> and <kbd>⌃⇧5</kbd> instead, and the macOS screenshot tool keeps its keys. Either way, macOS gets its keys back whenever Shot quits.
+> Turned off **Use Shot for ⌘⇧3 to ⌘⇧5**? Shot uses <kbd>⌃⇧4</kbd> and <kbd>⌃⇧5</kbd> instead, and the macOS screenshot tool keeps its keys. Either way, macOS gets its keys back whenever Shot quits.
 
 ## Where to find Shot
 

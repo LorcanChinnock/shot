@@ -244,7 +244,17 @@ final class CaptureCoordinator {
             let result = try await WindowCapturer.capture(windowID: info.windowID, includeShadow: windowShadow)
             return (result.image, result.scale, Geometry.flip(info.frame, primaryHeight: NSScreen.screens.first?.frame.height ?? 0), windowShadow)
         case let .fullDisplay(index):
-            return (frozen[index].image, frozen[index].scale, frozen[index].frame, false)
+            let display = frozen[index]
+            // Cropped as a whole-screen capture is anywhere else, which leaves out the menu bar when Settings say to.
+            guard let screen = NSScreen.screens.first(where: { $0.frame == display.frame }) else {
+                return (display.image, display.scale, display.frame, false)
+            }
+            let visible = screen.fullCaptureFrame.offsetBy(dx: -screen.frame.minX, dy: -screen.frame.minY)
+            let pixels = Geometry.pixelRect(forViewRect: visible, viewHeight: display.frame.height, scale: display.scale)
+            guard let cropped = display.image.cropping(to: pixels) else {
+                throw CaptureError.encodingFailed
+            }
+            return (cropped, display.scale, screen.fullCaptureFrame, false)
         }
     }
 
@@ -305,7 +315,7 @@ final class CaptureCoordinator {
         let prefs = Preferences()
         // Record Fullscreen has no pick to end, so `pickRegion` never reports ⌥ for it; its hotkey may itself hold ⌥.
         let start = RecordingStart.after(adjustBeforeRecording: prefs.adjustBeforeRecording, countdown: pick.delay, optionHeld: pick.optionHeld)
-        let controller = RecordingSetupController(mode: mode, screen: pick.screen, region: pick.region, windowID: pick.windowID, ratio: pick.ratio, start: start) { [state] in
+        let controller = RecordingSetupController(mode: pick.target, screen: pick.screen, region: pick.region, windowID: pick.windowID, ratio: pick.ratio, start: start) { [state] in
             state.countdown = $0
         }
         setup = controller

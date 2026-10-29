@@ -54,7 +54,7 @@ Turn off **Use Shot for ⌘⇧3 to ⌘⇧5** in **Settings › Shortcuts**. macO
 
 | Key | Action |
 |---|---|
-| Return | Start recording, after the countdown if one is set |
+| Return | Start recording, after the delay if you set one |
 | Esc | Cancel |
 
 ## Recording
