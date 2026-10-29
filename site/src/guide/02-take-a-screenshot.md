@@ -52,9 +52,9 @@ After <kbd>⌘⇧4</kbd>, press an arrow key to start an area at the pointer, or
 
 - Arrow keys move the area by 10 points, or by 1 with <kbd>Shift</kbd>.
 - <kbd>⌥</kbd> with the arrow keys resizes it.
-- <kbd>Tab</kbd> still sets the ratio, and <kbd>Return</kbd> captures.
+- <kbd>R</kbd> sets the ratio, and <kbd>Return</kbd> captures.
 
-To pick a window, press <kbd>Tab</kbd>, step through the windows with <kbd>Tab</kbd> and <kbd>⇧Tab</kbd>, and press <kbd>Return</kbd>. VoiceOver reads out the size and the window's name as you go.
+To pick a window, press <kbd>Tab</kbd>, step through the windows with the arrow keys, and press <kbd>Return</kbd>. VoiceOver reads out the size and the window's name as you go.
 
 ## Choose what happens after a capture
 
