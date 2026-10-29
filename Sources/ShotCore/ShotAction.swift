@@ -2,71 +2,47 @@ import CoreGraphics
 import Foundation
 
 public enum ShotAction: String, CaseIterable, Sendable {
-    case captureArea = "capture-area"
-    case captureFullscreen = "capture-fullscreen"
-    case captureWindow = "capture-window"
+    /// Opens the selection overlay for a screenshot; Tab there picks area, window or screen.
+    case screenshot
+    /// Opens the selection overlay for a recording.
     case record
-    case recordFullscreen = "record-fullscreen"
-    case recordWindow = "record-window"
     /// Samples a colour on screen and copies its hex.
     case pickColor = "pick-color"
     /// Copies the newest capture's path.
     case copyPath = "copy-path"
-    /// Captures the area the last area screenshot took again, for before and after shots. New actions go last, since
-    /// `HotkeyCenter` numbers hotkeys by position.
-    case capturePrevious = "capture-previous"
     /// Reads the text in a dragged-out area and copies it, without saving a capture.
     case copyText = "copy-text"
 
-    public var isRecording: Bool {
-        switch self {
-        case .record, .recordFullscreen, .recordWindow: true
-        case .captureArea, .captureFullscreen, .captureWindow, .capturePrevious, .pickColor, .copyPath, .copyText: false
-        }
-    }
-
-    /// Takes a screenshot, as opposed to recording or a tool like Pick Colour.
-    public var isCapture: Bool {
-        switch self {
-        case .captureArea, .captureFullscreen, .captureWindow, .capturePrevious: true
-        case .record, .recordFullscreen, .recordWindow, .pickColor, .copyPath, .copyText: false
-        }
-    }
+    public var isRecording: Bool { self == .record }
 
     /// Whether Settings offers a global shortcut for this action. The rest are menu items and `shot://` URLs
     /// only, since few people would bind them. They keep their place in `allCases`, which numbers hotkeys.
     public var hasShortcut: Bool {
         switch self {
-        case .recordFullscreen, .recordWindow, .capturePrevious, .pickColor, .copyPath: false
-        case .captureArea, .captureFullscreen, .captureWindow, .record, .copyText: true
+        case .pickColor, .copyPath: false
+        case .screenshot, .record, .copyText: true
         }
     }
 
-    /// Mirrors the macOS screenshot keys with ⌃ in place of ⌘. Record fullscreen and window
-    /// have no default: press Enter or Space in the record overlay instead. Pick Colour, Copy Path, Capture Previous
-    /// Area and Copy Text stay out of the way with none.
+    /// Mirrors the macOS screenshot keys with ⌃ in place of ⌘. Pick Colour, Copy Path and Copy Text stay out of
+    /// the way with none.
     public var defaultCombo: KeyCombo? {
         switch self {
-        case .captureArea: KeyCombo(keyCode: 21, modifiers: KeyCombo.control | KeyCombo.shift)
-        case .captureFullscreen: KeyCombo(keyCode: 20, modifiers: KeyCombo.control | KeyCombo.shift)
-        case .captureWindow: KeyCombo(keyCode: 13, modifiers: KeyCombo.control | KeyCombo.shift)
+        case .screenshot: KeyCombo(keyCode: 21, modifiers: KeyCombo.control | KeyCombo.shift)
         case .record: KeyCombo(keyCode: 23, modifiers: KeyCombo.control | KeyCombo.shift)
-        case .recordFullscreen, .recordWindow, .pickColor, .copyPath, .capturePrevious, .copyText: nil
+        case .pickColor, .copyPath, .copyText: nil
         }
     }
 
-    /// The default once Shot takes over ⌘⇧3 to ⌘⇧5 from macOS. Window has none, as in macOS: press
-    /// Space after ⌘⇧4. ⌘⇧W stays with apps, which use it to close windows.
+    /// The default once Shot takes over ⌘⇧3 to ⌘⇧5 from macOS.
     public func defaultCombo(replacingSystemScreenshots: Bool) -> KeyCombo? {
         guard replacingSystemScreenshots else {
             return defaultCombo
         }
         switch self {
-        case .captureFullscreen: return KeyCombo(keyCode: 20, modifiers: KeyCombo.command | KeyCombo.shift)
-        case .captureArea: return KeyCombo(keyCode: 21, modifiers: KeyCombo.command | KeyCombo.shift)
+        case .screenshot: return KeyCombo(keyCode: 21, modifiers: KeyCombo.command | KeyCombo.shift)
         case .record: return KeyCombo(keyCode: 23, modifiers: KeyCombo.command | KeyCombo.shift)
-        case .captureWindow: return nil
-        case .recordFullscreen, .recordWindow, .pickColor, .copyPath, .capturePrevious, .copyText: return defaultCombo
+        case .pickColor, .copyPath, .copyText: return defaultCombo
         }
     }
 
@@ -168,15 +144,10 @@ public struct KeyCombo: Equatable, Hashable, Sendable {
 extension ShotAction {
     public var title: String {
         switch self {
-        case .captureArea: String(localized: "Capture Area")
-        case .captureFullscreen: String(localized: "Capture Full Screen")
-        case .captureWindow: String(localized: "Capture Window")
-        case .record: String(localized: "Record Area")
-        case .recordFullscreen: String(localized: "Record Full Screen")
-        case .recordWindow: String(localized: "Record Window")
+        case .screenshot: String(localized: "Screenshot")
+        case .record: String(localized: "Record")
         case .pickColor: String(localized: "Pick Colour")
         case .copyPath: String(localized: "Copy Latest Capture's Path")
-        case .capturePrevious: String(localized: "Capture Previous Area")
         case .copyText: String(localized: "Copy Text")
         }
     }

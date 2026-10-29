@@ -16,6 +16,14 @@ final class SelectionOverlayView: NSView {
     private var portrait: Bool?
     /// The selection was made with the arrow keys, so Return takes it and Option-arrows resize it.
     private var isKeyboardSelection = false
+    /// What a click on the target and delay chips does, with where each was last drawn.
+    private enum BarAction: Equatable {
+        case target(CaptureTarget)
+        case delay
+    }
+    private var barHits: [(rect: CGRect, action: BarAction)] = []
+    /// A press landed on a chip, so its release isn't a click on the screen or window underneath.
+    private var pressedBar = false
     var magnifierImage: CGImage? {
         didSet { needsDisplay = true }
     }
@@ -61,6 +69,16 @@ final class SelectionOverlayView: NSView {
         window?.makeFirstResponder(self)
     }
 
+    /// Drops a half-made area when Tab or a click changes what the overlay picks.
+    func targetChanged() {
+        selection = nil
+        dragStart = nil
+        isMoving = false
+        isKeyboardSelection = false
+        portrait = nil
+        needsDisplay = true
+    }
+
     override func mouseExited(with event: NSEvent) {
         pointer = nil
         needsDisplay = true
@@ -79,7 +97,15 @@ final class SelectionOverlayView: NSView {
     override func mouseDown(with event: NSEvent) {
         let point = clamped(convert(event.locationInWindow, from: nil))
         pointer = point
-        if controller.windowMode {
+        if let hit = barHits.first(where: { $0.rect.contains(point) }) {
+            pressedBar = true
+            switch hit.action {
+            case let .target(target): controller.setTarget(target)
+            case .delay: controller.cycleDelay()
+            }
+            return
+        }
+        if controller.target != .area {
             return
         }
         dragStart = point
@@ -91,7 +117,7 @@ final class SelectionOverlayView: NSView {
     }
 
     override func mouseDragged(with event: NSEvent) {
-        guard !controller.windowMode, let start = dragStart else {
+        guard controller.target == .area, let start = dragStart else {
             return
         }
         let point = clamped(convert(event.locationInWindow, from: nil))
@@ -128,10 +154,18 @@ final class SelectionOverlayView: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
+        if pressedBar {
+            pressedBar = false
+            return
+        }
         if controller.windowMode {
             if let window = controller.hoveredWindow {
                 controller.finish(.window(window), modifiers: event.modifierFlags)
             }
+            return
+        }
+        if controller.screenMode {
+            controller.finish(.fullDisplay(index), modifiers: event.modifierFlags)
             return
         }
         defer {
@@ -158,11 +192,15 @@ final class SelectionOverlayView: NSView {
             } else if !event.isARepeat {
                 controller.toggleWindowMode()
             }
-        case 48 where controller.windowMode:
-            controller.stepWindow(backward: event.modifierFlags.contains(.shift))
-        case 123...126 where !controller.windowMode && dragStart == nil:
+        case 48:
+            controller.cycleTarget(backward: event.modifierFlags.contains(.shift))
+        case 2:
+            controller.cycleDelay()
+        case 123...126 where controller.windowMode:
+            controller.stepWindow(backward: event.keyCode == 123 || event.keyCode == 126)
+        case 123...126 where controller.target == .area && dragStart == nil:
             nudgeSelection(keyCode: event.keyCode, event.modifierFlags)
-        case 48 where !controller.windowMode:
+        case 15 where controller.target == .area:
             controller.aspectRatio = controller.aspectRatio.next(backward: event.modifierFlags.contains(.shift))
             if isKeyboardSelection, let current = selection {
                 let ratio = controller.aspectRatio.value.map { current.width >= current.height ? $0 : 1 / $0 }
@@ -188,10 +226,8 @@ final class SelectionOverlayView: NSView {
             if let window = controller.hoveredWindow {
                 controller.finish(.window(window), modifiers: event.modifierFlags)
             }
-        case 36, 76:
-            if controller.isLive {
-                controller.finish(.fullDisplay(index), modifiers: event.modifierFlags)
-            }
+        case 36 where controller.screenMode, 76 where controller.screenMode:
+            controller.finish(.fullDisplay(index), modifiers: event.modifierFlags)
         default:
             super.keyDown(with: event)
         }
@@ -270,7 +306,7 @@ final class SelectionOverlayView: NSView {
         ctx.fillPath(using: .evenOdd)
 
         if let hole {
-            if controller.windowMode {
+            if controller.target != .area {
                 ctx.setFillColor(NSColor.systemBlue.withAlphaComponent(0.25).cgColor)
                 ctx.fill(hole)
             }
@@ -280,7 +316,8 @@ final class SelectionOverlayView: NSView {
         }
 
         drawHint(in: ctx)
-        guard let pointer, !controller.windowMode else {
+        drawBar()
+        guard let pointer, controller.target == .area else {
             return
         }
         if selection == nil {
@@ -296,6 +333,9 @@ final class SelectionOverlayView: NSView {
     }
 
     private func holeRect() -> CGRect? {
+        if controller.screenMode {
+            return pointer == nil ? nil : bounds
+        }
         if controller.windowMode {
             guard let window = controller.hoveredWindow else {
                 return nil
@@ -399,19 +439,22 @@ final class SelectionOverlayView: NSView {
 
     private var hintText: String {
         var parts: [String]
-        if controller.windowMode {
-            parts = [String(localized: "Click a window"), String(localized: "Tab: next window"), String(localized: "Space: area"), String(localized: "Esc: cancel")]
-        } else {
-            parts = [String(localized: "Drag an area"), String(localized: "Arrows: move"), String(localized: "Tab: ratio (\(controller.aspectRatio.label))")]
+        switch controller.target {
+        case .area:
+            parts = [String(localized: "Drag an area"), String(localized: "Arrows: move"), String(localized: "R: ratio (\(controller.aspectRatio.label))")]
             if controller.aspectRatio != .free {
                 parts.append(String(localized: "X: rotate"))
             }
-            parts.append(String(localized: "Space: window"))
-            if controller.isLive {
-                parts.append(String(localized: "Return: full screen"))
-            }
-            parts.append(String(localized: "Esc: cancel"))
+        case .window:
+            parts = [String(localized: "Click a window"), String(localized: "Arrows: next window")]
+        case .screen:
+            parts = [String(localized: "Click a screen")]
         }
+        parts.append(String(localized: "Tab: area, window or screen"))
+        if controller.offersDelay {
+            parts.append(String(localized: "D: delay"))
+        }
+        parts.append(String(localized: "Esc: cancel"))
         return parts.joined(separator: "   ·   ")
     }
 
@@ -421,5 +464,25 @@ final class SelectionOverlayView: NSView {
         let font = NSFont.systemFont(ofSize: textSize.points(13), weight: .bold)
         let width = (text as NSString).size(withAttributes: [.font: font]).width + 20
         _ = drawChip(text, at: CGPoint(x: ((bounds.width - width) / 2).rounded(), y: bounds.height - 90), yellow: false, font: font)
+    }
+
+    /// The chips under the hint that pick area, window or full screen, and the delay. Clicking one does what Tab and D do.
+    private func drawBar() {
+        let font = NSFont.systemFont(ofSize: Preferences().textSize.points(13), weight: .bold)
+        var chips: [(text: String, yellow: Bool, action: BarAction)] = CaptureTarget.allCases.map {
+            ($0.title, $0 == controller.target, .target($0))
+        }
+        if controller.offersDelay {
+            chips.append((String(localized: "Delay: \(CaptureDelay.label(controller.delay))"), controller.delay > 0, .delay))
+        }
+        let gap: CGFloat = 12
+        let widths = chips.map { ($0.text as NSString).size(withAttributes: [.font: font]).width.rounded() + 20 }
+        var x = ((bounds.width - widths.reduce(0, +) - gap * CGFloat(chips.count - 1)) / 2).rounded()
+        barHits = []
+        for (chip, width) in zip(chips, widths) {
+            let box = drawChip(chip.text, at: CGPoint(x: x, y: bounds.height - 138), yellow: chip.yellow, font: font)
+            barHits.append((box, chip.action))
+            x += width + gap
+        }
     }
 }

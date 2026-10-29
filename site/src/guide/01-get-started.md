@@ -44,12 +44,11 @@ Shot lives in the menu bar, not the Dock. Click its icon for every capture and r
 
 After each capture, Shot saves it, copies it, and shows a small [Quick Access](#quick-access) card in the corner of the screen. Paste it anywhere straight away, or hover the card to annotate it.
 
-## Three shortcuts to remember
+## Two shortcuts to remember
 
 | Press | To |
 |---|---|
-| <kbd>⌘⇧4</kbd> | Capture an area. Press <kbd>Space</kbd> to pick a window instead. |
-| <kbd>⌘⇧3</kbd> | Capture the whole screen. |
+| <kbd>⌘⇧4</kbd> | Take a screenshot. Press <kbd>Tab</kbd> to pick an area, a window or the whole screen. |
 | <kbd>⌘⇧5</kbd> | Record your screen. |
 
 Every other shortcut is on the [Keyboard shortcuts](#keyboard-shortcuts) page.

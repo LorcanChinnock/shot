@@ -31,7 +31,6 @@ public enum PreferenceKey {
     public static let copyAfterRecording = "copyAfterRecording"
     public static let recordCamera = "recordCamera"
     public static let adjustBeforeRecording = "adjustBeforeRecording"
-    public static let recordingCountdown = "recordingCountdown"
     public static let cameraDeviceID = "cameraDeviceID"
     public static let cameraSize = "cameraSize"
     public static let replacesSystemScreenshots = "replacesSystemScreenshots"
@@ -116,7 +115,6 @@ public struct Preferences {
             PreferenceKey.copyAfterRecording: true,
             PreferenceKey.recordCamera: false,
             PreferenceKey.adjustBeforeRecording: false,
-            PreferenceKey.recordingCountdown: 0,
             PreferenceKey.cameraDeviceID: "",
             PreferenceKey.cameraSize: CameraBubbleSize.medium.rawValue,
             PreferenceKey.textSize: TextSize.standard.rawValue,
@@ -193,6 +191,19 @@ public struct Preferences {
     /// Deletes the language Translate Text remembered, which Shot no longer has.
     public static func removeTranslateTarget(in store: UserDefaults = .standard) {
         store.removeObject(forKey: "translateTarget")
+    }
+
+    /// Moves the shortcut saved for Capture Area to Screenshot, then deletes what the separate capture and record
+    /// actions and the recording countdown left behind. Capture Full Screen's and Capture Window's go: Tab on the
+    /// overlay picks those now.
+    public static func migrateCaptureActions(in store: UserDefaults = .standard) {
+        if let area = store.string(forKey: "hotkey.capture-area") {
+            store.set(area, forKey: PreferenceKey.hotkey(.screenshot))
+        }
+        for key in ["hotkey.capture-area", "hotkey.capture-fullscreen", "hotkey.capture-window", "hotkey.capture-previous",
+                    "hotkey.record-fullscreen", "hotkey.record-window", "recordingCountdown"] {
+            store.removeObject(forKey: key)
+        }
     }
 
     /// Deletes the shortcuts saved for actions that are now menu-only, which `hotkey(for:)` ignores anyway.
@@ -328,12 +339,6 @@ public struct Preferences {
     public var recordCamera: Bool { store.bool(forKey: PreferenceKey.recordCamera) }
     /// Shows the setup panel, with frame handles and option toggles, before each recording.
     public var adjustBeforeRecording: Bool { store.bool(forKey: PreferenceKey.adjustBeforeRecording) }
-
-    /// Seconds to count down before recording starts, one of `RecordingStart.countdowns`; 0 is off.
-    public var recordingCountdown: Int {
-        let seconds = store.integer(forKey: PreferenceKey.recordingCountdown)
-        return RecordingStart.countdowns.contains(seconds) ? seconds : 0
-    }
 
     /// Empty means the system default camera.
     public var cameraDeviceID: String { store.string(forKey: PreferenceKey.cameraDeviceID) ?? "" }

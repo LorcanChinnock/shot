@@ -4,10 +4,10 @@ import Testing
 
 @Test func aShortcutTakenByAnotherActionOrMacOSConflicts() {
     let area = KeyCombo(keyCode: 21, modifiers: KeyCombo.command | KeyCombo.shift)
-    let bindings: [ShotAction: KeyCombo] = [.captureArea: area]
-    #expect(ShotAction.record.conflict(for: area, bindings: bindings) == .taken(by: .captureArea))
+    let bindings: [ShotAction: KeyCombo] = [.screenshot: area]
+    #expect(ShotAction.record.conflict(for: area, bindings: bindings) == .taken(by: .screenshot))
     // Its own shortcut, recorded again, is no conflict.
-    #expect(ShotAction.captureArea.conflict(for: area, bindings: bindings) == nil)
+    #expect(ShotAction.screenshot.conflict(for: area, bindings: bindings) == nil)
     #expect(ShotAction.record.conflict(for: KeyCombo(keyCode: 12, modifiers: KeyCombo.command), bindings: bindings) == .reserved)
     #expect(ShotAction.record.conflict(for: KeyCombo(keyCode: 49, modifiers: KeyCombo.command), bindings: [:]) == .reserved)
     // ⇧⌘Q is free: only the plain ⌘ keys are everyone's.
