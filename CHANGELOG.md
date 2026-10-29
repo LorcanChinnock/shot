@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0-beta.75](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.74...v0.7.0-beta.75) (2026-10-29)
+
+
+### Features
+
+* **capture:** replace the capture and record actions with Screenshot and Record ([#973](https://github.com/LorcanChinnock/shot/issues/973)) ([e3e5baa](https://github.com/LorcanChinnock/shot/commit/e3e5baab0cd0d0236c6c96ef04ea58e89a4d0ef7))
+
+
+### Bug Fixes
+
+* **shortcuts:** leave ⌘⇧3 with macOS when Shot takes over the screenshot keys ([#976](https://github.com/LorcanChinnock/shot/issues/976)) ([4e5f3d1](https://github.com/LorcanChinnock/shot/commit/4e5f3d1cbd3c25f4cff1857dba5207d740f100ba))
+
 ## [0.7.0-beta.74](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.73...v0.7.0-beta.74) (2026-10-27)
 
 
