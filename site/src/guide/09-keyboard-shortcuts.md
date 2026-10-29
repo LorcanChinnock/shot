@@ -23,14 +23,14 @@ Shot takes these keys over from macOS while it runs, once it has Screen Recordin
 2. Click a shortcut, then press the new keys. They must include <kbd>⌘</kbd>, <kbd>⌥</kbd> or <kbd>⌃</kbd>.
 3. <kbd>Esc</kbd> cancels, and <kbd>Delete</kbd> clears the shortcut.
 
-Shot won't take a shortcut that another action already uses, or <kbd>⌘Q</kbd>, <kbd>⌘W</kbd>, <kbd>⌘Tab</kbd>, <kbd>⌘Space</kbd>, <kbd>⌘H</kbd> or <kbd>⌘M</kbd>. **Restore Defaults** puts them all back, and turns **Use Shot for ⌘⇧3 to ⌘⇧5** back on.
+Shot won't take a shortcut that another action already uses, or <kbd>⌘Q</kbd>, <kbd>⌘W</kbd>, <kbd>⌘Tab</kbd>, <kbd>⌘Space</kbd>, <kbd>⌘H</kbd> or <kbd>⌘M</kbd>. **Restore Defaults** puts them all back, and turns **Use Shot for ⌘⇧4 and ⌘⇧5** back on.
 
 ## Keep the macOS screenshot tool
 
-Turn off **Use Shot for ⌘⇧3 to ⌘⇧5** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with <kbd>⌃</kbd> in place of <kbd>⌘</kbd>: <kbd>⌃⇧4</kbd> and <kbd>⌃⇧5</kbd>.
+Turn off **Use Shot for ⌘⇧4 and ⌘⇧5** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with <kbd>⌃</kbd> in place of <kbd>⌘</kbd>: <kbd>⌃⇧4</kbd> and <kbd>⌃⇧5</kbd>.
 
 > [!NOTE]
-> If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧3 to ⌘⇧5** on again.
+> If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧4 and ⌘⇧5** on again.
 
 ## Actions you can give a shortcut
 

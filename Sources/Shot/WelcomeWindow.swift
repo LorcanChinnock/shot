@@ -259,7 +259,7 @@ private struct SetupStep: View {
         Header(symbol: "keyboard.fill", color: Brutal.pink, title: "Make it yours", subtitle: "Two choices, both in Settings later.")
         VStack(spacing: 0) {
             ToggleRow(
-                title: "Use Shot for ⌘⇧3 to ⌘⇧5",
+                title: "Use Shot for ⌘⇧4 and ⌘⇧5",
                 subtitle: keysSubtitle,
                 isOn: $model.usesSystemKeys, color: Brutal.pink
             )

@@ -65,6 +65,8 @@ public enum PreferenceKey {
     public static let disabledSystemScreenshots = "disabledSystemScreenshots"
     /// True once Shot has given ⌘⇧6 back to macOS, so it does that only once.
     public static let gaveBackTextCaptureKey = "gaveBackTextCaptureKey"
+    /// True once Shot has given ⌘⇧3 back to macOS, so it does that only once.
+    public static let gaveBackFullScreenKey = "gaveBackFullScreenKey"
     /// Window layout: whether the photo editor shows its layers, and the video editor its inspector.
     public static let editorShowsLayers = "editorShowsLayers"
     public static let videoEditorShowsInspector = "videoEditorShowsInspector"
@@ -346,6 +348,7 @@ public struct Preferences {
     public var replacesSystemScreenshots: Bool { store.bool(forKey: PreferenceKey.replacesSystemScreenshots) }
     public var disabledSystemScreenshots: Bool { store.bool(forKey: PreferenceKey.disabledSystemScreenshots) }
     public var gaveBackTextCaptureKey: Bool { store.bool(forKey: PreferenceKey.gaveBackTextCaptureKey) }
+    public var gaveBackFullScreenKey: Bool { store.bool(forKey: PreferenceKey.gaveBackFullScreenKey) }
 
     /// The last-used export settings, which Quick Access's Export GIF also uses, at normal speed with sound.
     public var videoExportOptions: VideoExportOptions {
