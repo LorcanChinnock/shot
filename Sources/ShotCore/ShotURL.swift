@@ -4,7 +4,9 @@ import UniformTypeIdentifiers
 /// A `shot://` URL, which runs Shot from a launcher, the Shortcuts app or a script, and drives it in
 /// `perf.sh`. Every route is parsed here, so a typo in one fails a test rather than a run.
 public enum ShotURL: Equatable, Sendable {
-    case action(ShotAction)
+    /// `target` is the part of the screen to take, or `nil` to open the overlay on area. A `.screen` target takes the
+    /// screen under the pointer at once, with no overlay.
+    case action(ShotAction, target: CaptureTarget? = nil)
     /// Pauses or resumes the recording.
     case pause
     case gallery
@@ -19,6 +21,15 @@ public enum ShotURL: Equatable, Sendable {
     /// Releases register `shot`. Dev builds (ShotDev.app) register `shot-dev`, so the two can run side by side without
     /// one answering URLs meant for the other.
     public static let schemes: Set<String> = ["shot", "shot-dev"]
+
+    /// The routes from before Screenshot and Record took a target.
+    private static let captureAliases: [String: (ShotAction, CaptureTarget)] = [
+        "capture-area": (.screenshot, .area),
+        "capture-window": (.screenshot, .window),
+        "capture-fullscreen": (.screenshot, .screen),
+        "record-window": (.record, .window),
+        "record-fullscreen": (.record, .screen),
+    ]
 
     public enum ParseError: LocalizedError, Equatable {
         /// Not a `shot://` URL at all, which is ignored.
@@ -69,11 +80,14 @@ public enum ShotURL: Equatable, Sendable {
             }
             self = .edit(route)
         default:
-            guard let action = ShotAction(rawValue: host) else {
+            if let (action, target) = Self.captureAliases[host] {
+                self = .action(action, target: target)
+            } else if let action = ShotAction(rawValue: host) {
+                // `shot://record?full=1` predates `shot://record-fullscreen`; keep it working.
+                self = .action(action, target: action == .record && value("full") == "1" ? .screen : nil)
+            } else {
                 throw .unknownHost(host)
             }
-            // `shot://record?full=1` predates `shot://record-fullscreen`; keep it working.
-            self = .action(action == .record && value("full") == "1" ? .recordFullscreen : action)
         }
     }
 }

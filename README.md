@@ -30,7 +30,7 @@
 
 ## Features
 
-- **Capture:** an area on a frozen screen with a magnifier, a window, or the whole screen, with a timer if you need one. Shot copies and saves it as soon as you let go.
+- **Capture:** an area on a frozen screen with a magnifier, a window, or the whole screen, with a delay if you need one. Shot copies and saves it as soon as you let go.
 - **Quick Access:** a card in the corner after every capture. Annotate it, pin it above your other windows, or drag it straight into another app.
 - **Annotate:** arrows, text, sticky notes, highlights, a spotlight, blur and pixelate, and several images on one canvas.
 - **Record:** an area, a window or a screen to MP4, with your microphone, the sound from your Mac and a camera bubble.
@@ -78,9 +78,8 @@ Shot lives in the menu bar. It takes over the macOS screenshot keys while it run
 
 | Press | To |
 |---|---|
-| ⌘⇧4 | Capture an area. Press Space to pick a window instead. |
-| ⌘⇧3 | Capture the whole screen. |
-| ⌘⇧5 | Record an area. Press Space to pick a window, or Return for the whole screen. |
+| ⌘⇧4 | Take a screenshot. Press Tab to pick an area, a window or the whole screen. |
+| ⌘⇧5 | Record. Press Tab to pick an area, a window or the whole screen. |
 
 To keep the macOS screenshot tool, and for every other shortcut, see [Keyboard shortcuts](https://shot.lorcanchinnock.com/docs/keyboard-shortcuts/).
 

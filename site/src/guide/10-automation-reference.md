@@ -22,9 +22,12 @@ Shot starts an area screenshot, just as <kbd>⌘⇧4</kbd> does.
 
 | URL | Action |
 |---|---|
-| `shot://capture-area`, `capture-fullscreen`, `capture-window` | Take a screenshot |
-| `shot://capture-previous` | Take the last area screenshot's area again |
-| `shot://record`, `record-fullscreen`, `record-window` | Set up, confirm, or stop a recording |
+| `shot://screenshot` | Open the screenshot overlay, where Tab picks an area, window or full screen |
+| `shot://capture-area`, `capture-window` | Take a screenshot, starting on an area or a window |
+| `shot://capture-fullscreen` | Take a screenshot of the screen under the pointer at once |
+| `shot://record` | Open the recording overlay, or confirm or stop a recording |
+| `shot://record-window` | Record, starting on a window |
+| `shot://record-fullscreen` | Record the screen under the pointer |
 | `shot://pause` | Pause or resume the recording |
 | `shot://pick-color` | Pick a colour on screen and copy its hex |
 | `shot://copy-path` | Copy the newest capture's path |

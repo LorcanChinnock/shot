@@ -37,27 +37,11 @@ private struct ShotMenu: View {
             Button(state.isPaused ? "Resume Recording" : "Pause Recording") { coordinator.togglePause() }
             Divider()
         }
-        Section("Capture") {
-            ForEach(ShotAction.allCases.filter(\.isCapture), id: \.self) { action in
-                ActionButton(action: action, title: action.title, coordinator: coordinator)
-            }
-            Menu("Capture Full Screen After Delay") {
-                ForEach(ScreenshotTimer.delays, id: \.self) { seconds in
-                    Button("\(seconds) seconds") { coordinator.captureAfterCountdown(seconds: seconds) }
-                }
-            }
-        }
+        ActionButton(action: .screenshot, title: ShotAction.screenshot.title, coordinator: coordinator)
         if !state.isRecording {
-            Section("Record") {
-                ForEach(ShotAction.allCases.filter(\.isRecording), id: \.self) { action in
-                    ActionButton(action: action, title: action.title, coordinator: coordinator)
-                }
-            }
-        }
-        if !state.isRecording {
-            Section("Tools") {
-                ActionButton(action: .pickColor, title: ShotAction.pickColor.title, coordinator: coordinator)
-            }
+            ActionButton(action: .record, title: ShotAction.record.title, coordinator: coordinator)
+            Divider()
+            ActionButton(action: .pickColor, title: ShotAction.pickColor.title, coordinator: coordinator)
         }
         Divider()
         Button("Open Gallery") { GalleryController.shared.show() }

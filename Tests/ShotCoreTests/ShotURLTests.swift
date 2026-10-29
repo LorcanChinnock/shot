@@ -5,15 +5,15 @@ import Testing
 private let home = FileManager.default.homeDirectoryForCurrentUser
 
 @Test(arguments: [
-    ("shot://capture-area", ShotURL.action(.captureArea)),
-    ("shot://capture-fullscreen", .action(.captureFullscreen)),
-    ("shot://capture-window", .action(.captureWindow)),
-    ("shot://capture-previous", .action(.capturePrevious)),
+    ("shot://screenshot", ShotURL.action(.screenshot)),
+    ("shot://capture-area", .action(.screenshot, target: .area)),
+    ("shot://capture-fullscreen", .action(.screenshot, target: .screen)),
+    ("shot://capture-window", .action(.screenshot, target: .window)),
     ("shot://copy-text", .action(.copyText)),
     ("shot://record", .action(.record)),
-    ("shot://record-fullscreen", .action(.recordFullscreen)),
-    ("shot://record-window", .action(.recordWindow)),
-    ("shot://record?full=1", .action(.recordFullscreen)),
+    ("shot://record-fullscreen", .action(.record, target: .screen)),
+    ("shot://record-window", .action(.record, target: .window)),
+    ("shot://record?full=1", .action(.record, target: .screen)),
     ("shot://record?full=0", .action(.record)),
     ("shot://capture-timer", .captureTimer(seconds: 5)),
     ("shot://capture-timer?seconds=3", .captureTimer(seconds: 3)),

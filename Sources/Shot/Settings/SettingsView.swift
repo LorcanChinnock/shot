@@ -402,7 +402,6 @@ private struct RecordingSettings: View {
     @Setting(PreferenceKey.showRecordingBorder) private var border: Bool
     @Setting(PreferenceKey.copyAfterRecording) private var copy: Bool
     @Setting(PreferenceKey.adjustBeforeRecording) private var adjust: Bool
-    @Setting(PreferenceKey.recordingCountdown) private var countdown: Int
     // Read only so the GIF summary updates when the video editor changes them.
     @Setting(PreferenceKey.gifFrameRate) private var gifFrameRate: Int
     @Setting(PreferenceKey.gifWidth) private var gifWidth: Int
@@ -419,10 +418,7 @@ private struct RecordingSettings: View {
 
     var body: some View {
         SettingsCard(title: "Starting", symbol: "record.circle") {
-            ToggleRow(title: "Adjust before recording", subtitle: "Shows the frame handles and options first. Hold ⌥ as you finish the selection to show them once.", isOn: $adjust, color: color)
-            SettingRow(title: "Countdown", subtitle: "Counts down before recording starts.", divider: false) {
-                BrutalSegmented(selection: $countdown, options: RecordingStart.countdowns.map { ($0, $0 == 0 ? "Off" : "\($0) s") }, color: color)
-            }
+            ToggleRow(title: "Adjust before recording", subtitle: "Shows the frame handles and options first. Hold ⌥ as you finish the selection to show them once.", isOn: $adjust, color: color, divider: false)
         }
         SettingsCard(title: "Video", symbol: "film.fill") {
             SettingRow(title: "Frame rate", subtitle: frameRateSubtitle) {

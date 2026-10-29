@@ -12,15 +12,15 @@ import Testing
         let prefs = Preferences(store: store)
         #expect(prefs.hotkey(for: .record)?.displayString == "⇧⌘5")
         let custom = KeyCombo(keyCode: 122, modifiers: KeyCombo.control | KeyCombo.option)
-        store.set(custom.encoded, forKey: PreferenceKey.hotkey(.captureFullscreen))
+        store.set(custom.encoded, forKey: PreferenceKey.hotkey(.record))
         store.set(false, forKey: PreferenceKey.replacesSystemScreenshots)
         Preferences.registerDefaults(in: store)
-        #expect(prefs.hotkey(for: .captureArea)?.displayString == "⌃⇧4")
-        #expect(prefs.hotkey(for: .captureFullscreen) == custom)
+        #expect(prefs.hotkey(for: .screenshot)?.displayString == "⌃⇧4")
+        #expect(prefs.hotkey(for: .record) == custom)
         store.set(true, forKey: PreferenceKey.replacesSystemScreenshots)
         Preferences.registerDefaults(in: store)
-        #expect(prefs.hotkey(for: .captureArea)?.displayString == "⇧⌘4")
-        #expect(prefs.hotkey(for: .captureFullscreen) == custom)
+        #expect(prefs.hotkey(for: .screenshot)?.displayString == "⇧⌘4")
+        #expect(prefs.hotkey(for: .record) == custom)
     }
 
     @Test func preferenceDefaults() throws {
@@ -46,7 +46,6 @@ import Testing
         #expect(prefs.copyAfterRecording)
         #expect(!prefs.recordCamera)
         #expect(!prefs.adjustBeforeRecording)
-        #expect(prefs.recordingCountdown == 0)
         #expect(prefs.cameraDeviceID.isEmpty)
         #expect(prefs.microphoneDeviceID.isEmpty)
         #expect(prefs.cameraSize == .medium)
@@ -61,7 +60,7 @@ import Testing
         #expect(!prefs.recordShowsClicks)
         #expect(prefs.replacesSystemScreenshots)
         #expect(prefs.videoExportOptions == VideoExportOptions())
-        #expect(prefs.hotkey(for: .captureArea)?.displayString == "⇧⌘4")
+        #expect(prefs.hotkey(for: .screenshot)?.displayString == "⇧⌘4")
         store.set("", forKey: PreferenceKey.hotkey(.record))
         #expect(prefs.hotkey(for: .record) == nil)
     }
@@ -76,10 +75,10 @@ import Testing
         #expect(prefs.filePrefix == "Shot")
         store.set("a/b", forKey: PreferenceKey.filePrefix)
         #expect(prefs.filePrefix == "a-b")
-        store.set("", forKey: PreferenceKey.hotkey(.captureArea))
+        store.set("", forKey: PreferenceKey.hotkey(.screenshot))
         store.set(false, forKey: PreferenceKey.playSound)
         Preferences.resetHotkeys(in: store)
-        #expect(prefs.hotkey(for: .captureArea)?.displayString == "⇧⌘4")
+        #expect(prefs.hotkey(for: .screenshot)?.displayString == "⇧⌘4")
         #expect(!prefs.playSound)
         store.set(true, forKey: PreferenceKey.disabledSystemScreenshots)
         Preferences.resetAll(in: store)
@@ -256,7 +255,7 @@ import Testing
         let suite = try TestDefaults()
         let store = suite.store
         defer { suite.remove() }
-        let menuOnly: [ShotAction] = [.recordFullscreen, .recordWindow, .pickColor, .copyPath, .capturePrevious]
+        let menuOnly: [ShotAction] = [.pickColor, .copyPath]
         #expect(ShotAction.allCases.filter { !$0.hasShortcut } == menuOnly)
         for action in menuOnly {
             store.set("17:4608", forKey: PreferenceKey.hotkey(action))
@@ -331,15 +330,25 @@ import Testing
     #expect(suite.store.object(forKey: key) == nil)
 }
 
-@Test func storedCountdownOutsideTheOffersReadsAsOff() throws {
+@Test func separateCaptureActionsMoveToScreenshotAndRecord() throws {
     let suite = try TestDefaults()
     let store = suite.store
     defer { suite.remove() }
-    let prefs = Preferences(store: store)
-    store.set(5, forKey: PreferenceKey.recordingCountdown)
-    #expect(prefs.recordingCountdown == 5)
-    store.set(4, forKey: PreferenceKey.recordingCountdown)
-    #expect(prefs.recordingCountdown == 0)
+    let custom = KeyCombo(keyCode: 122, modifiers: KeyCombo.control | KeyCombo.option).encoded
+    store.set(custom, forKey: "hotkey.capture-area")
+    store.set("20:4608", forKey: "hotkey.capture-fullscreen")
+    store.set("13:4608", forKey: "hotkey.capture-window")
+    store.set(5, forKey: "recordingCountdown")
+    store.set("23:4608", forKey: PreferenceKey.hotkey(.record))
+    Preferences.migrateCaptureActions(in: store)
+    #expect(store.string(forKey: PreferenceKey.hotkey(.screenshot)) == custom)
+    #expect(store.string(forKey: PreferenceKey.hotkey(.record)) == "23:4608")
+    for key in ["hotkey.capture-area", "hotkey.capture-fullscreen", "hotkey.capture-window", "recordingCountdown"] {
+        #expect(store.object(forKey: key) == nil)
+    }
+    // Running again, with nothing left to move, keeps the shortcut.
+    Preferences.migrateCaptureActions(in: store)
+    #expect(store.string(forKey: PreferenceKey.hotkey(.screenshot)) == custom)
 }
 
 @Test func savedSettingsMarkSomeoneWhoUsedShotBefore() {

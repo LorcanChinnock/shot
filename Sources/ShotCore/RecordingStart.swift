@@ -1,7 +1,7 @@
 /// What happens once the area to record is picked: show the setup panel or not, then count down or start at once.
 public struct RecordingStart: Equatable, Sendable {
-    /// The countdown lengths Settings offers, in seconds; 0 is off.
-    public static let countdowns = [0, 3, 5]
+    /// The delays the overlay offers before a capture or recording, in seconds; 0 is off.
+    public static let countdowns = [0, 3, 5, 10]
 
     public let showsSetup: Bool
     /// Seconds to count down before recording starts; 0 starts at once.

@@ -19,13 +19,25 @@ enum OverlaySelection {
     case fullDisplay(Int)
 }
 
+/// What the overlay returns: the pick, the modifiers held as it ended, and the delay chosen before the capture starts.
+struct OverlayResult {
+    let selection: OverlaySelection?
+    let modifiers: NSEvent.ModifierFlags
+    let delay: Int
+}
+
 final class OverlayPanel: NSPanel {
     override var canBecomeKey: Bool { true }
 }
 
 @MainActor
 final class SelectionOverlayController {
-    private(set) var windowMode: Bool
+    private(set) var target: CaptureTarget
+    var windowMode: Bool { target == .window }
+    var screenMode: Bool { target == .screen }
+    /// Seconds to wait after the pick before capturing; 0 is off. `offersDelay` is false where waiting makes no sense.
+    private(set) var delay = 0
+    let offersDelay: Bool
     /// CoreGraphics global space, front to back.
     let windows: [WindowInfo]
     let isLive: Bool
@@ -46,20 +58,22 @@ final class SelectionOverlayController {
     /// The modifier keys held by the event that ended the selection.
     private var endModifiers: NSEvent.ModifierFlags = []
 
-    private init(windowMode: Bool, windows: [WindowInfo], isLive: Bool) {
-        self.windowMode = windowMode
+    private init(target: CaptureTarget, offersDelay: Bool, windows: [WindowInfo], isLive: Bool) {
+        self.target = target
+        self.offersDelay = offersDelay
         self.windows = windows
         self.isLive = isLive
     }
 
     /// The area, window or display the person picks, or nil when they cancel.
-    static func select(displays: [OverlayDisplay], windowMode: Bool, windows: [WindowInfo], isLive: Bool = false) async -> OverlaySelection? {
-        await selectWithModifiers(displays: displays, windowMode: windowMode, windows: windows, isLive: isLive).selection
+    static func select(displays: [OverlayDisplay], target: CaptureTarget, windows: [WindowInfo], isLive: Bool = false) async -> OverlaySelection? {
+        await select(displays: displays, target: target, offersDelay: false, windows: windows, isLive: isLive).selection
     }
 
-    /// Like `select`, also returning the modifier keys held as the selection ended, read from that event rather than later.
-    static func selectWithModifiers(displays: [OverlayDisplay], windowMode: Bool, windows: [WindowInfo], isLive: Bool = false) async -> (selection: OverlaySelection?, modifiers: NSEvent.ModifierFlags) {
-        let controller = SelectionOverlayController(windowMode: windowMode, windows: windows, isLive: isLive)
+    /// Like the above, also returning the modifier keys held as the selection ended, read from that event rather than
+    /// later, and the delay chosen when `offersDelay`.
+    static func select(displays: [OverlayDisplay], target: CaptureTarget, offersDelay: Bool, windows: [WindowInfo], isLive: Bool = false) async -> OverlayResult {
+        let controller = SelectionOverlayController(target: target, offersDelay: offersDelay, windows: windows, isLive: isLive)
         // The overlay views hold the controller unowned; keep it alive until the user finishes.
         let selection = await withCheckedContinuation { continuation in
             controller.continuation = continuation
@@ -70,7 +84,7 @@ final class SelectionOverlayController {
         }
         controller.magnifierTask?.cancel()
         withExtendedLifetime(controller) {}
-        return (selection, controller.endModifiers)
+        return OverlayResult(selection: selection, modifiers: controller.endModifiers, delay: controller.delay)
     }
 
     private func show(_ displays: [OverlayDisplay]) {
@@ -133,10 +147,36 @@ final class SelectionOverlayController {
         }
     }
 
+    /// Space: between area and window, as in macOS.
     func toggleWindowMode() {
-        windowMode.toggle()
+        setTarget(windowMode ? .area : .window)
+    }
+
+    /// Tab: area, window, then full screen.
+    func cycleTarget(backward: Bool) {
+        setTarget(target.next(backward: backward))
+    }
+
+    func setTarget(_ newTarget: CaptureTarget) {
+        guard newTarget != target else {
+            return
+        }
+        target = newTarget
         isWindowPinned = false
+        for view in views {
+            view.targetChanged()
+        }
         updateHover(redraw: true)
+    }
+
+    func cycleDelay() {
+        guard offersDelay else {
+            return
+        }
+        delay = CaptureDelay.next(after: delay)
+        for view in views {
+            view.needsDisplay = true
+        }
     }
 
     func updateHover(redraw: Bool = false) {
