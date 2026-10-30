@@ -49,6 +49,7 @@ final class SelectionOverlayController {
             }
         }
     }
+    private var pageCache: [UInt32: CGRect?] = [:]
     /// A window picked with Tab holds the highlight until the mouse moves.
     private var isWindowPinned = false
     private var panels: [OverlayPanel] = []
@@ -221,6 +222,34 @@ final class SelectionOverlayController {
         }
         let name = [visible[next].ownerName, visible[next].title].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
         views.first?.announceWindow(name)
+    }
+
+    /// The page of a browser window, in AppKit global points, while Shift is held over Window. Nil for any other window,
+    /// or when Accessibility isn't allowed (the first Shift asks for it).
+    func pageFrame(of window: WindowInfo) -> CGRect? {
+        guard windowMode, NSEvent.modifierFlags.contains(.shift) else {
+            return nil
+        }
+        guard BrowserPageFinder.isTrusted else {
+            BrowserPageFinder.requestTrust()
+            return nil
+        }
+        let page: CGRect?
+        if let cached = pageCache[window.windowID] {
+            page = cached
+        } else {
+            page = BrowserPageFinder.page(of: window)
+            pageCache[window.windowID] = .some(page)
+        }
+        return page.map { Geometry.flip($0, primaryHeight: NSScreen.screens.first?.frame.height ?? 0) }
+    }
+
+    /// What a click on `window` picks on the display at `index`: the window, or just its page when Shift is held over a browser.
+    func selection(for window: WindowInfo, onDisplay index: Int, frame: CGRect) -> OverlaySelection {
+        guard let page = pageFrame(of: window)?.intersection(frame), !page.isNull else {
+            return .window(window)
+        }
+        return .area(display: index, rect: page.offsetBy(dx: -frame.minX, dy: -frame.minY), ratio: nil)
     }
 
     /// AppKit global frame of a window.

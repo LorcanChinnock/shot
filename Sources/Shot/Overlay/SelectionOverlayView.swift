@@ -84,6 +84,13 @@ final class SelectionOverlayView: NSView {
         needsDisplay = true
     }
 
+    override func flagsChanged(with event: NSEvent) {
+        if controller.windowMode {
+            needsDisplay = true
+        }
+        super.flagsChanged(with: event)
+    }
+
     override func mouseMoved(with event: NSEvent) {
         pointer = convert(event.locationInWindow, from: nil)
         if controller.windowMode {
@@ -160,7 +167,7 @@ final class SelectionOverlayView: NSView {
         }
         if controller.windowMode {
             if let window = controller.hoveredWindow {
-                controller.finish(.window(window), modifiers: event.modifierFlags)
+                controller.finish(controller.selection(for: window, onDisplay: index, frame: display.frame), modifiers: event.modifierFlags)
             }
             return
         }
@@ -224,7 +231,7 @@ final class SelectionOverlayView: NSView {
             }
         case 36 where controller.windowMode && controller.hoveredWindow != nil, 76 where controller.windowMode && controller.hoveredWindow != nil:
             if let window = controller.hoveredWindow {
-                controller.finish(.window(window), modifiers: event.modifierFlags)
+                controller.finish(controller.selection(for: window, onDisplay: index, frame: display.frame), modifiers: event.modifierFlags)
             }
         case 36 where controller.screenMode, 76 where controller.screenMode:
             controller.finish(.fullDisplay(index), modifiers: event.modifierFlags)
@@ -340,7 +347,7 @@ final class SelectionOverlayView: NSView {
             guard let window = controller.hoveredWindow else {
                 return nil
             }
-            let global = controller.appKitFrame(of: window)
+            let global = controller.pageFrame(of: window) ?? controller.appKitFrame(of: window)
             let local = global.offsetBy(dx: -display.frame.minX, dy: -display.frame.minY).intersection(bounds)
             return local.isNull ? nil : local
         }
@@ -446,7 +453,7 @@ final class SelectionOverlayView: NSView {
                 parts.append(String(localized: "X: rotate"))
             }
         case .window:
-            parts = [String(localized: "Click a window"), String(localized: "Arrows: next window")]
+            parts = [String(localized: "Click a window"), String(localized: "Arrows: next window"), String(localized: "Shift: browser page")]
         case .screen:
             parts = [String(localized: "Click a screen")]
         }

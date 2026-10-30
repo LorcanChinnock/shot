@@ -56,6 +56,7 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | R | Step the area's ratio. |
 | Arrow keys | Move an area. In window mode, step through the windows. |
 | Space | While dragging an area, hold it to move the area. |
+| ⇧ (hold) | In window mode over a browser, highlight just the web page instead of the whole window. |
 | Return | Take the highlighted window or screen, or the area you made with the keys. |
 | Esc | Cancel |
 

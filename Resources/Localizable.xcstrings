@@ -25172,6 +25172,9 @@
         }
       }
     },
+    "Shift: browser page" : {
+
+    },
     "Shortcut unavailable: %@. Another app may use it, so choose a different one in Settings › Shortcuts." : {
       "localizations" : {
         "de" : {
