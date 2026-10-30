@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0-beta.77](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.76...v0.7.0-beta.77) (2026-10-30)
+
+
+### Features
+
+* **capture:** ask for Accessibility in onboarding, Settings and Browser mode ([#1006](https://github.com/LorcanChinnock/shot/issues/1006)) ([57e88a8](https://github.com/LorcanChinnock/shot/commit/57e88a8e11f76690d94fdf202f27420efa5f9479))
+* **editor:** Save goes over Shot's own captures, keeping the original to revert to ([#1009](https://github.com/LorcanChinnock/shot/issues/1009)) ([fb7e265](https://github.com/LorcanChinnock/shot/commit/fb7e2656fe06a866431ea0e4bb13ed67e1d78d14))
+
 ## [0.7.0-beta.76](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.75...v0.7.0-beta.76) (2026-10-30)
 
 
