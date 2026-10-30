@@ -83,24 +83,16 @@ jobs:
       # Every build extracts the app's strings, so this needs the build above. See scripts/strings.sh.
       - name: Check strings
         run: scripts/strings.sh --check
-      # `make dist` builds a universal app, so the release must compile for Intel too. Compile only; nothing runs it.
-      - name: Build for Intel
-        run: swift build --arch x86_64 --force-resolved-versions
       # The tests take about 90 seconds. A hang would otherwise hold the runner for the rest of the job's 20 minutes.
       - name: Test on macOS
         timeout-minutes: 10
         run: scripts/ci-test.sh test --skip-build
       # Starts the app, which no other step does, so a bad entitlement, a missing resource or a Sparkle misconfiguration
-      # fails here and not after release. Builds the universal release app, as `make dist` does. See scripts/smoke.sh.
+      # fails here and not after release. Builds the universal release app, as `make dist` does, so this also checks that
+      # the release configuration compiles for both architectures. See scripts/smoke.sh.
       - name: Launch smoke test
         timeout-minutes: 10
         run: make bundle && scripts/smoke.sh
-      # CI builds debug, but `make dist` builds the release configuration (scripts/bundle.sh) after the release is tagged.
-      # Build it here so a release-only compile error fails the gate, not the release. One slice: the debug Intel compile
-      # covers the other.
-      - name: Build the release configuration
-        if: startsWith(github.head_ref, 'release-please--')
-        run: swift build -c release --arch arm64 --force-resolved-versions
       # A test process that crashes leaves only its signal in the log; the report has the stack. See scripts/crash-reports.sh.
       - name: Keep the crash reports
         if: failure()

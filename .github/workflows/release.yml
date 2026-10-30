@@ -2,7 +2,7 @@ name: Release
 
 # release-please keeps a release PR open that bumps the version and changelog from
 # Conventional Commits on main. Merging that PR tags the release, and the build job
-# then attaches Shot-vX.Y.Z.zip and the Sparkle update feed (appcast.xml) to it.
+# then attaches Shot-vX.Y.Z.zip and the Sparkle update feed (appcast.xml) to it once the tests and the build pass.
 # Installed copies read the feed from releases/latest/download/appcast.xml, so the release stays a
 # draft (tag created up front) until its assets are attached; otherwise `latest` has no feed mid-build.
 # release-please acts as the repository's GitHub App, not GITHUB_TOKEN: GitHub holds the workflows on a pull request
@@ -12,7 +12,7 @@ on:
   push:
     branches: [main]
 
-# Each job asks for what it needs; the build job has every secret, so it gets no more than the release upload.
+# Each job asks for what it needs; the build job has the signing secrets, so it only reads the release, and the publish job holds the upload rights.
 permissions:
   contents: read
 
@@ -49,21 +49,51 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+  # Runs beside `build` and gates `publish`, so the tests cost no wall-clock time unless they're the slower of the two.
+  # The release PR's gate tested its own head, but a docs:, test: or ci: commit merged after it doesn't update that
+  # PR, so the tagged commit may be one the gate never ran. Holds no secrets, and uses the same Package.resolved that
+  # `make dist` builds against.
+  test:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    # macOS: ShotCore's tests need Core Graphics, Core Image, AVFoundation and Vision.
+    runs-on: macos-26
+    # A hung test would otherwise hold this runner, and the `release` concurrency group that every later push to main
+    # waits on, for GitHub's 6-hour default.
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+          persist-credentials: false
+      - name: Test
+        timeout-minutes: 15
+        run: scripts/ci-test.sh test --force-resolved-versions
+      # A test process that crashes leaves only its signal in the log; the report has the stack. See scripts/crash-reports.sh.
+      - name: Keep the crash reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: crash-reports
+          path: ${{ runner.temp }}/crash-reports
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # Builds and signs the zip and the update feed, and hands them to `publish`, which waits for `test`.
   build:
     needs: release-please
     if: needs.release-please.outputs.release_created == 'true'
     # macOS: builds and signs the app, on the same image as CI's macos check so the SDK is the one the gate tested.
     runs-on: macos-26
-    # A release takes about 10 minutes. A hung test would otherwise hold this runner, and the `release` concurrency group
-    # that every later push to main waits on, for GitHub's 6-hour default.
+    # A build takes about 10 minutes.
     timeout-minutes: 30
     # The `release` environment holds the release secrets and only deploys from main and v* tags. See CONTRIBUTING.md › Release secrets.
     environment: release
-    # Uploads and publishes the release's assets with GITHUB_TOKEN; the last two sign the build provenance attestation.
+    # A draft release's notes need write access to read, though this job only reads them.
     permissions:
       contents: write
-      id-token: write
-      attestations: write
     env:
       TAG: ${{ needs.release-please.outputs.tag_name }}
     steps:
@@ -72,12 +102,6 @@ jobs:
           ref: ${{ needs.release-please.outputs.tag_name }}
           fetch-depth: 0 # The build number counts commits.
           persist-credentials: false # Later steps run scripts with every secret, and none of them pushes to this repo.
-      # The release PR's gate tested its own head, but a docs:, test: or ci: commit merged after it doesn't update that
-      # PR, so the tagged commit may be one the gate never ran. Test it here, before any secret is in reach, with the
-      # same Package.resolved that `make dist` builds against.
-      - name: Test
-        timeout-minutes: 15
-        run: scripts/ci-test.sh test --force-resolved-versions
       # Every release signs with the same self-signed certificate, so macOS keeps the
       # Screen Recording permission across updates. See CONTRIBUTING.md › Release secrets.
       - name: Import the signing certificate
@@ -117,6 +141,37 @@ jobs:
       - name: Checksum the zip
         working-directory: build/release
         run: shasum -a 256 "Shot-${TAG}.zip" > SHA256SUMS
+      - name: Keep the release files
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release
+          path: build/release
+          compression-level: 0
+          retention-days: 1
+
+  # Only after the tests pass does anything reach the release, so a failing test leaves a draft nobody can download.
+  publish:
+    needs: [release-please, test, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: release
+    # Uploads and publishes the release's assets with GITHUB_TOKEN; the first two sign the build provenance attestation.
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      TAG: ${{ needs.release-please.outputs.tag_name }}
+    steps:
+      # For scripts/homebrew-cask.sh.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+          path: build/release
       - name: Attest build provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
