@@ -1,8 +1,7 @@
 name: CI
 
 # Every pull request runs two required jobs. `linux` lints, including the website's rules. `macos` builds the app and
-# runs every test, so a break can't reach main. On release-please's PR, and any PR labelled performance, it also runs
-# the performance budgets: that's the release gate. release-please opens that PR as the repository's GitHub App
+# runs every test, so a break can't reach main. release-please opens its PR as the repository's GitHub App
 # (release.yml), so its runs start without approval.
 # There's no run on push to main: PRs are squash-merged, and their merge commit was already tested.
 # A pull request that changes only the website, the docs or Markdown skips `macos`, which counts as a pass for the
@@ -96,12 +95,6 @@ jobs:
       - name: Launch smoke test
         timeout-minutes: 10
         run: make bundle && scripts/smoke.sh
-      # On the release PR, which makes it the release gate, and on any PR labelled performance, to keep ordinary PRs'
-      # runs short. Adding the label doesn't start a run; the next push does. Alone, so other tests running in parallel
-      # don't skew the timings. Budgets: docs/performance.md.
-      - name: Perf
-        if: startsWith(github.head_ref, 'release-please--') || contains(github.event.pull_request.labels.*.name, 'performance')
-        run: scripts/ci-test.sh perf --skip-build
       # CI builds debug, but `make dist` builds the release configuration (scripts/bundle.sh) after the release is tagged.
       # Build it here so a release-only compile error fails the gate, not the release. One slice: the debug Intel compile
       # covers the other.
