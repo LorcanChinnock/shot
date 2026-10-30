@@ -49,12 +49,12 @@ struct EditorToolbar: View {
                 }
                 Spacer(minLength: 0)
                 ToolGroup {
-                    Tile(selected: false, color: Brutal.paper, help: "Undo (⌘Z)", isEnabled: model.undoStack.canUndo) {
+                    Tile(selected: false, color: Brutal.paper, help: "Undo (⌘Z)", isEnabled: model.history.canUndo) {
                         model.undo()
                     } label: {
                         Image(systemName: "arrow.uturn.backward").font(Brutal.toolIcon)
                     }
-                    Tile(selected: false, color: Brutal.paper, help: "Redo (⇧⌘Z)", isEnabled: model.undoStack.canRedo) {
+                    Tile(selected: false, color: Brutal.paper, help: "Redo (⇧⌘Z)", isEnabled: model.history.canRedo) {
                         model.redo()
                     } label: {
                         Image(systemName: "arrow.uturn.forward").font(Brutal.toolIcon)
