@@ -213,18 +213,13 @@ final class QuickAccessController {
         panel.setFrame(NSRect(origin: origin, size: size), display: true)
     }
 
-    /// The card's actions in menu order, with `nil` for a divider: the hover buttons' actions, plus Copy Path, Copy Text,
+    /// The card's actions in menu order, with `nil` for a divider: the hover buttons' actions, plus Copy Path and
     /// Pin, which have no button.
     func actions(for card: QuickAccessCard) -> [QuickAccessCardAction?] {
         var actions: [QuickAccessCardAction?] = [
             QuickAccessCardAction(title: String(localized: "Copy")) { self.copy(card) },
             QuickAccessCardAction(title: String(localized: "Copy Path")) { self.copyPath(card) },
         ]
-        if !card.isVideo {
-            actions.append(QuickAccessCardAction(title: String(localized: "Copy Text")) {
-                Task { await Clipboard.copyText(inImageAt: card.styledURL ?? card.fileURL) }
-            })
-        }
         actions.append(QuickAccessCardAction(title: String(localized: "Save As…")) { self.saveAs(card) })
         actions.append(nil)
         actions.append(QuickAccessCardAction(title: card.isVideo ? String(localized: "Edit Video") : String(localized: "Annotate")) { self.annotate(card) })

@@ -546,19 +546,6 @@ func fabPixels(in image: Bitmap) -> Int {
     #expect(clamped == CGPoint(x: 414, y: 567))
 }
 
-@Test func captureScrollingHasAShortcutButNoDefault() throws {
-    #expect(ShotAction.captureScrolling.rawValue == "capture-scrolling")
-    #expect(!ShotAction.captureScrolling.isRecording)
-    #expect(ShotAction.captureScrolling.hasShortcut)
-    #expect(ShotAction.captureScrolling.defaultCombo == nil)
-    #expect(ShotAction.captureScrolling.defaultCombo(replacingSystemScreenshots: true) == nil)
-    #expect(ShotAction.allCases.last == .captureScrolling)
-    #expect(ShotAction.captureScrolling.title == "Capture Scrolling Area")
-    let url = try #require(URL(string: "shot://capture-scrolling"))
-    let route = try ShotURL(url)
-    #expect(route == .action(.captureScrolling))
-}
-
 @Test func stickyPartsArePaintedAsStickyAndTheRestAsContent() throws {
     let scene = ScrollScene(header: 36, footer: 30)
     let (stitcher, _, _) = stitch(scene, offsets: path(steps: down([20, 30, 45, 25, 60])))

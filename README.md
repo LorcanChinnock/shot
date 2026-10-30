@@ -31,12 +31,11 @@
 ## Features
 
 - **Capture:** an area on a frozen screen with a magnifier, a window, or the whole screen, with a delay if you need one. Shot copies and saves it as soon as you let go.
-- **Capture a long page:** drag out the part of the screen that scrolls and scroll it yourself, in any direction. Shot builds one screenshot as you go, keeps sticky headers and columns once, and shows you what you haven't covered yet.
+- **Capture a long page:** turn on Scroll, pick the part of the screen that scrolls and scroll it yourself, in any direction. Shot builds one screenshot as you go, keeps sticky headers and columns once, and shows you what you haven't covered yet.
 - **Quick Access:** a card in the corner after every capture. Annotate it, pin it above your other windows, or drag it straight into another app.
 - **Annotate:** arrows, text, sticky notes, highlights, a spotlight, blur and pixelate, and several images on one canvas.
 - **Record:** an area, a window or a screen to MP4, with your microphone, the sound from your Mac and a camera bubble.
 - **Edit video and make GIFs:** trim, cut, crop, speed up and draw over a recording, then export an MP4 or a GIF.
-- **Copy text** from any part of the screen, read on your Mac.
 - **Ask an AI assistant:** paste a marked-up screenshot into Claude or ChatGPT, or copy its path for an assistant that can open files.
 - **Light or dark:** Shot follows your Mac's appearance, or you can pick one in Settings.
 - **Private:** no account, no cloud and no analytics. Shot only goes online to check for updates, once you agree.

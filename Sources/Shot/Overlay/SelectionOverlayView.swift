@@ -16,9 +16,10 @@ final class SelectionOverlayView: NSView {
     private var portrait: Bool?
     /// The selection was made with the arrow keys, so Return takes it and Option-arrows resize it.
     private var isKeyboardSelection = false
-    /// What a click on the target and delay chips does, with where each was last drawn.
+    /// What a click on the target, scroll and delay chips does, with where each was last drawn.
     private enum BarAction: Equatable {
         case target(CaptureTarget)
+        case scrolling
         case delay
     }
     private var barHits: [(rect: CGRect, action: BarAction)] = []
@@ -84,13 +85,6 @@ final class SelectionOverlayView: NSView {
         needsDisplay = true
     }
 
-    override func flagsChanged(with event: NSEvent) {
-        if controller.windowMode {
-            needsDisplay = true
-        }
-        super.flagsChanged(with: event)
-    }
-
     override func mouseMoved(with event: NSEvent) {
         pointer = convert(event.locationInWindow, from: nil)
         if controller.windowMode {
@@ -108,6 +102,7 @@ final class SelectionOverlayView: NSView {
             pressedBar = true
             switch hit.action {
             case let .target(target): controller.setTarget(target)
+            case .scrolling: controller.toggleScrolling()
             case .delay: controller.cycleDelay()
             }
             return
@@ -201,6 +196,8 @@ final class SelectionOverlayView: NSView {
             }
         case 48:
             controller.cycleTarget(backward: event.modifierFlags.contains(.shift))
+        case 1:
+            controller.toggleScrolling()
         case 2:
             controller.cycleDelay()
         case 123...126 where controller.windowMode:
@@ -347,7 +344,7 @@ final class SelectionOverlayView: NSView {
             guard let window = controller.hoveredWindow else {
                 return nil
             }
-            let global = controller.pageFrame(of: window) ?? controller.appKitFrame(of: window)
+            let global = controller.hoveredPageFrame ?? controller.appKitFrame(of: window)
             let local = global.offsetBy(dx: -display.frame.minX, dy: -display.frame.minY).intersection(bounds)
             return local.isNull ? nil : local
         }
@@ -453,11 +450,18 @@ final class SelectionOverlayView: NSView {
                 parts.append(String(localized: "X: rotate"))
             }
         case .window:
-            parts = [String(localized: "Click a window"), String(localized: "Arrows: next window"), String(localized: "Shift: browser page")]
+            parts = [String(localized: "Click a window"), String(localized: "Arrows: next window")]
+        case .browser:
+            parts = controller.needsPageAccess
+                ? [String(localized: "Allow Accessibility in System Settings to pick a page")]
+                : [String(localized: "Click a browser page"), String(localized: "Arrows: next browser")]
         case .screen:
             parts = [String(localized: "Click a screen")]
         }
-        parts.append(String(localized: "Tab: area, window or screen"))
+        parts.append(String(localized: "Tab: area, window, browser or screen"))
+        if controller.offersScrolling {
+            parts.append(String(localized: "S: scroll"))
+        }
         if controller.offersDelay {
             parts.append(String(localized: "D: delay"))
         }
@@ -473,11 +477,14 @@ final class SelectionOverlayView: NSView {
         _ = drawChip(text, at: CGPoint(x: ((bounds.width - width) / 2).rounded(), y: bounds.height - 90), yellow: false, font: font)
     }
 
-    /// The chips under the hint that pick area, window or full screen, and the delay. Clicking one does what Tab and D do.
+    /// The chips under the hint that pick area, window, browser or full screen, the scroll toggle and the delay. Clicking one does what Tab and D do.
     private func drawBar() {
         let font = NSFont.systemFont(ofSize: Preferences().textSize.points(13), weight: .bold)
         var chips: [(text: String, yellow: Bool, action: BarAction)] = CaptureTarget.allCases.map {
             ($0.title, $0 == controller.target, .target($0))
+        }
+        if controller.offersScrolling {
+            chips.append((String(localized: "Scroll"), controller.scrolling, .scrolling))
         }
         if controller.offersDelay {
             chips.append((String(localized: "Delay: \(CaptureDelay.label(controller.delay))"), controller.delay > 0, .delay))

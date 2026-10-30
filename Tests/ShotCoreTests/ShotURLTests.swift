@@ -9,7 +9,6 @@ private let home = FileManager.default.homeDirectoryForCurrentUser
     ("shot://capture-area", .action(.screenshot, target: .area)),
     ("shot://capture-fullscreen", .action(.screenshot, target: .screen)),
     ("shot://capture-window", .action(.screenshot, target: .window)),
-    ("shot://copy-text", .action(.copyText)),
     ("shot://record", .action(.record)),
     ("shot://record-fullscreen", .action(.record, target: .screen)),
     ("shot://record-window", .action(.record, target: .window)),

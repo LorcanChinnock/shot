@@ -21,11 +21,14 @@ enum OverlaySelection {
     case fullDisplay(Int)
 }
 
-/// What the overlay returns: the pick, the modifiers held as it ended, and the delay chosen before the capture starts.
+/// What the overlay returns: the pick, the modifiers held as it ended, the delay chosen before the capture starts, whether
+/// the pick is to be scrolled, and the target it ended on, which the next overlay opens on.
 struct OverlayResult {
     let selection: OverlaySelection?
     let modifiers: NSEvent.ModifierFlags
     let delay: Int
+    let scrolling: Bool
+    let target: CaptureTarget
 }
 
 final class OverlayPanel: NSPanel {
@@ -35,15 +38,22 @@ final class OverlayPanel: NSPanel {
 @MainActor
 final class SelectionOverlayController {
     private(set) var target: CaptureTarget
-    var windowMode: Bool { target == .window }
+    /// Windows are highlighted for picking, whole or, for a browser, as just their page.
+    var windowMode: Bool { target == .window || target == .browser }
+    var browserMode: Bool { target == .browser }
     var screenMode: Bool { target == .screen }
     /// Seconds to wait after the pick before capturing; 0 is off. `offersDelay` is false where waiting makes no sense.
     private(set) var delay = 0
     let offersDelay: Bool
+    /// Whether the pick can be scrolled, which only a screenshot does. Off until the person turns it on.
+    let offersScrolling: Bool
+    private(set) var scrolling = false
     /// CoreGraphics global space, front to back.
     let windows: [WindowInfo]
     let isLive: Bool
     private(set) var hoveredWindow: WindowInfo?
+    /// The page of `hoveredWindow` in CoreGraphics global space, in browser mode.
+    private(set) var hoveredPage: CGRect?
     var aspectRatio = AspectRatio.free {
         didSet {
             for view in views {
@@ -61,9 +71,10 @@ final class SelectionOverlayController {
     /// The modifier keys held by the event that ended the selection.
     private var endModifiers: NSEvent.ModifierFlags = []
 
-    private init(target: CaptureTarget, offersDelay: Bool, windows: [WindowInfo], isLive: Bool) {
+    private init(target: CaptureTarget, offersDelay: Bool, offersScrolling: Bool, windows: [WindowInfo], isLive: Bool) {
         self.target = target
         self.offersDelay = offersDelay
+        self.offersScrolling = offersScrolling
         self.windows = windows
         self.isLive = isLive
     }
@@ -75,8 +86,8 @@ final class SelectionOverlayController {
 
     /// Like the above, also returning the modifier keys held as the selection ended, read from that event rather than
     /// later, and the delay chosen when `offersDelay`.
-    static func select(displays: [OverlayDisplay], target: CaptureTarget, offersDelay: Bool, windows: [WindowInfo], isLive: Bool = false) async -> OverlayResult {
-        let controller = SelectionOverlayController(target: target, offersDelay: offersDelay, windows: windows, isLive: isLive)
+    static func select(displays: [OverlayDisplay], target: CaptureTarget, offersDelay: Bool, offersScrolling: Bool = false, windows: [WindowInfo], isLive: Bool = false) async -> OverlayResult {
+        let controller = SelectionOverlayController(target: target, offersDelay: offersDelay, offersScrolling: offersScrolling, windows: windows, isLive: isLive)
         // The overlay views hold the controller unowned; keep it alive until the user finishes.
         let selection = await withCheckedContinuation { continuation in
             controller.continuation = continuation
@@ -87,7 +98,7 @@ final class SelectionOverlayController {
         }
         controller.magnifierTask?.cancel()
         withExtendedLifetime(controller) {}
-        return OverlayResult(selection: selection, modifiers: controller.endModifiers, delay: controller.delay)
+        return OverlayResult(selection: selection, modifiers: controller.endModifiers, delay: controller.delay, scrolling: controller.scrolling, target: controller.target)
     }
 
     private func show(_ displays: [OverlayDisplay]) {
@@ -128,6 +139,7 @@ final class SelectionOverlayController {
             keyPanel.makeKey()
             keyPanel.makeFirstResponder(views.first { $0.window === keyPanel })
         }
+        requestPageAccessIfNeeded()
         updateHover(redraw: true)
         NSCursor.crosshair.set()
     }
@@ -166,10 +178,32 @@ final class SelectionOverlayController {
         }
         target = newTarget
         isWindowPinned = false
+        requestPageAccessIfNeeded()
         for view in views {
             view.targetChanged()
         }
         updateHover(redraw: true)
+    }
+
+    /// Finding a browser's page needs Accessibility, so it is asked for as soon as the overlay is on Browser, never after a
+    /// capture has already come out wrong.
+    private func requestPageAccessIfNeeded() {
+        if browserMode, !BrowserPageFinder.isTrusted {
+            BrowserPageFinder.requestTrust()
+        }
+    }
+
+    /// Whether Browser is waiting on the Accessibility permission, for the hint to say so.
+    var needsPageAccess: Bool { browserMode && !BrowserPageFinder.isTrusted }
+
+    func toggleScrolling() {
+        guard offersScrolling else {
+            return
+        }
+        scrolling.toggle()
+        for view in views {
+            view.needsDisplay = true
+        }
     }
 
     func cycleDelay() {
@@ -188,11 +222,19 @@ final class SelectionOverlayController {
         guard !isWindowPinned else {
             return
         }
-        let hovered = windowMode ? WindowInfo.topmost(at: point, in: windows) : nil
-        guard redraw || hovered != hoveredWindow else {
+        var hovered = windowMode ? WindowInfo.topmost(at: point, in: windows) : nil
+        var page: CGRect?
+        if browserMode, let window = hovered {
+            page = pageRect(of: window)
+            if page == nil {
+                hovered = nil
+            }
+        }
+        guard redraw || hovered != hoveredWindow || page != hoveredPage else {
             return
         }
         hoveredWindow = hovered
+        hoveredPage = page
         for view in views {
             view.needsDisplay = true
         }
@@ -205,7 +247,7 @@ final class SelectionOverlayController {
     /// Steps the window highlight front to back (back to front when `backward`) among the windows on a display, for use without a mouse.
     func stepWindow(backward: Bool) {
         let visible = windows.filter { window in
-            panels.contains { $0.frame.intersects(appKitFrame(of: window)) }
+            panels.contains { $0.frame.intersects(appKitFrame(of: window)) } && (!browserMode || pageRect(of: window) != nil)
         }
         guard !visible.isEmpty else {
             return
@@ -218,6 +260,7 @@ final class SelectionOverlayController {
             next = backward ? visible.count - 1 : 0
         }
         hoveredWindow = visible[next]
+        hoveredPage = browserMode ? pageRect(of: visible[next]) : nil
         isWindowPinned = true
         for view in views {
             view.needsDisplay = true
@@ -226,14 +269,10 @@ final class SelectionOverlayController {
         views.first?.announceWindow(name)
     }
 
-    /// The page of a browser window, in CoreGraphics global space, while Shift is held over Window. Nil for any other
-    /// window, or when Accessibility isn't allowed (the first Shift asks for it).
+    /// The page of a browser window in CoreGraphics global space, or nil for any other window or while Accessibility
+    /// isn't allowed.
     private func pageRect(of window: WindowInfo) -> CGRect? {
-        guard windowMode, NSEvent.modifierFlags.contains(.shift) else {
-            return nil
-        }
         guard BrowserPageFinder.isTrusted else {
-            BrowserPageFinder.requestTrust()
             return nil
         }
         if let cached = pageCache[window.windowID] {
@@ -244,14 +283,14 @@ final class SelectionOverlayController {
         return page
     }
 
-    /// The page of a browser window in AppKit global points.
-    func pageFrame(of window: WindowInfo) -> CGRect? {
-        pageRect(of: window).map { Geometry.flip($0, primaryHeight: NSScreen.screens.first?.frame.height ?? 0) }
+    /// The highlighted page in AppKit global points.
+    var hoveredPageFrame: CGRect? {
+        hoveredPage.map { Geometry.flip($0, primaryHeight: NSScreen.screens.first?.frame.height ?? 0) }
     }
 
-    /// What a click on `window` picks: the window, or just its page when Shift is held over a browser.
+    /// What a click on `window` picks: the window, or in browser mode just its page.
     func selection(for window: WindowInfo) -> OverlaySelection {
-        guard let page = pageRect(of: window) else {
+        guard browserMode, let page = hoveredPage else {
             return .window(window)
         }
         return .page(window, PageInsets(window: window.frame, page: page))

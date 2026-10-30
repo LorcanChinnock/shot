@@ -48,7 +48,7 @@ After each capture, Shot saves it, copies it, and shows a small [Quick Access](#
 
 | Press | To |
 |---|---|
-| <kbd>⌘⇧4</kbd> | Take a screenshot. Press <kbd>Tab</kbd> to pick an area, a window or the whole screen. |
+| <kbd>⌘⇧4</kbd> | Take a screenshot. Press <kbd>Tab</kbd> to pick an area, a window, a browser page or the whole screen. |
 | <kbd>⌘⇧5</kbd> | Record your screen. |
 
 Every other shortcut is on the [Keyboard shortcuts](#keyboard-shortcuts) page.

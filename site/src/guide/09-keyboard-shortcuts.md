@@ -10,8 +10,8 @@ These work in any app, while Shot is running:
 
 | Shortcut | Action |
 |---|---|
-| <kbd>⌘⇧4</kbd> | Take a screenshot. Press <kbd>Tab</kbd> to pick an area, a window or the full screen. |
-| <kbd>⌘⇧5</kbd> | Record. Press <kbd>Tab</kbd> to pick an area, a window or the full screen. |
+| <kbd>⌘⇧4</kbd> | Take a screenshot. Press <kbd>Tab</kbd> to pick an area, a window, a browser page or the full screen. |
+| <kbd>⌘⇧5</kbd> | Record. Press <kbd>Tab</kbd> to pick an area, a window, a browser page or the full screen. |
 
 While you set up a recording, the record shortcut starts it. While you record, it stops the recording.
 
@@ -34,7 +34,7 @@ Turn off **Use Shot for ⌘⇧4 and ⌘⇧5** in **Settings › Shortcuts**. mac
 
 ## Actions you can give a shortcut
 
-**Copy Text** and **Capture Scrolling Area** have no shortcut until you set one. **Pick Colour** is in the menu bar menu only. Every action also has a [`shot://` link](#url-scheme).
+**Pick Colour** is in the menu bar menu only. Every action also has a [`shot://` link](#url-scheme).
 
 - **Pick Colour** shows a loupe. Click any pixel on screen to copy its hex, such as `#1E90FF`.
 
@@ -45,18 +45,18 @@ Turn off **Use Shot for ⌘⇧4 and ⌘⇧5** in **Settings › Shortcuts**. mac
 | Return | Save and copy the picture so far |
 | Esc | Cancel, keeping nothing |
 
-These work while the content's app has the keyboard, so you can keep scrolling with <kbd>Page Down</kbd> or <kbd>Space</kbd>. The Capture Scrolling Area shortcut, if you set one, also finishes the capture.
+These work while the content's app has the keyboard, so you can keep scrolling with <kbd>Page Down</kbd> or <kbd>Space</kbd>. The screenshot shortcut also finishes the capture.
 
 ## While selecting
 
 | Key | Action |
 |---|---|
-| Tab | Switch between picking an area, a window and the full screen. <kbd>⇧Tab</kbd> goes back. |
+| Tab | Switch between picking an area, a window, a browser page and the full screen. <kbd>⇧Tab</kbd> goes back. |
 | D | Step the delay through Off, 3, 5 and 10 seconds. |
 | R | Step the area's ratio. |
 | Arrow keys | Move an area. In window mode, step through the windows. |
 | Space | While dragging an area, hold it to move the area. |
-| ⇧ (hold) | In window mode over a browser, highlight just the web page instead of the whole window. |
+| S | Turn scrolling on or off, to build one screenshot of a long page. |
 | Return | Take the highlighted window or screen, or the area you made with the keys. |
 | Esc | Cancel |
 

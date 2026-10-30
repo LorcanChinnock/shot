@@ -38,7 +38,6 @@ private struct ShotMenu: View {
             Divider()
         }
         ActionButton(action: .screenshot, title: ShotAction.screenshot.title, coordinator: coordinator)
-        ActionButton(action: .captureScrolling, title: ShotAction.captureScrolling.title, coordinator: coordinator)
         if !state.isRecording {
             ActionButton(action: .record, title: ShotAction.record.title, coordinator: coordinator)
             Divider()

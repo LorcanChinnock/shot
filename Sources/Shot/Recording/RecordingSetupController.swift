@@ -90,15 +90,20 @@ final class RecordingSetupController {
     }
 
     /// Lets the user pick an area or window with the live overlay, or takes the screen under the pointer.
-    static func pickRegion(mode: CaptureTarget, offersDelay: Bool = true) async -> Pick? {
+    /// `remembering` keeps the target the overlay ends on, for the next recording to open on. `mode` of `.screen` takes
+    /// the screen at once unless `opensOverlayOnScreen`, as when Full Screen was only the last thing picked.
+    static func pickRegion(mode: CaptureTarget, offersDelay: Bool = true, remembering: Bool = false, opensOverlayOnScreen: Bool = false) async -> Pick? {
         let screens = NSScreen.screens
-        if mode == .screen {
+        if mode == .screen, !opensOverlayOnScreen {
             let screen = NSScreen.underPointer ?? screens[0]
             return Pick(screen: screen, region: screen.fullCaptureFrame, windowID: nil, ratio: nil, target: .screen)
         }
         let displays = screens.map { OverlayDisplay(frame: $0.frame, scale: $0.backingScaleFactor, image: nil) }
         let windows = WindowCapturer.onScreenWindows()
         let result = await SelectionOverlayController.select(displays: displays, target: mode, offersDelay: offersDelay, windows: windows, isLive: true)
+        if remembering {
+            Preferences().recordTarget = result.target
+        }
         guard let selection = result.selection else {
             return nil
         }
@@ -209,7 +214,7 @@ final class RecordingSetupController {
             return
         }
         setSetupVisible(false)
-        if let picked = await Self.pickRegion(mode: mode) {
+        if let picked = await Self.pickRegion(mode: mode, remembering: true) {
             model.mode = picked.target
             model.countdownSeconds = RecordingStart.after(adjustBeforeRecording: false, countdown: picked.delay, optionHeld: false).countdown
             screen = picked.screen
