@@ -36,10 +36,10 @@ extension Project {
         }
     }
 
-    /// The clip and keyframe still selected once the project is restored to this one: the ones it still has. A keyframe
+    /// The clip, of either kind, and keyframe still selected once the project is restored to this one: the ones it still has. A keyframe
     /// this project doesn't have can't be worked on, and Delete would act on nothing.
     public func keepingSelection(clip: UUID?, keyframe: Double?) -> (clip: UUID?, keyframe: Double?) {
-        let kept = clip.flatMap { self.clip($0) == nil ? nil : $0 }
+        let kept = clip.flatMap { self.clip($0) != nil || annotationClip($0) != nil ? $0 : nil }
         let animation = kept.flatMap(self.animation(ofClip:))
         let keptKeyframe = keyframe.flatMap { time in
             AnimatedProperty.allCases.contains { animation?.hasKeyframe($0, at: time) == true } ? time : nil
