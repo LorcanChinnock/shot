@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0-beta.76](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.75...v0.7.0-beta.76) (2026-10-30)
+
+
+### Features
+
+* **capture:** Browser capture mode, remembered modes, Scroll toggle, no Copy Text ([#991](https://github.com/LorcanChinnock/shot/issues/991)) ([be1d66e](https://github.com/LorcanChinnock/shot/commit/be1d66e04931d0508113e76525675d984d06691b))
+* **capture:** Capture Scrolling Area ([#971](https://github.com/LorcanChinnock/shot/issues/971)) ([a1993f3](https://github.com/LorcanChinnock/shot/commit/a1993f337930255141b2c61bae40a899ea94851b))
+
+
+### Bug Fixes
+
+* **video-editor:** keep a selected annotation clip through undo and redo ([#998](https://github.com/LorcanChinnock/shot/issues/998)) ([2686ade](https://github.com/LorcanChinnock/shot/commit/2686ade24138429d737ffd956a8002366bb9b236))
+
 ## [0.7.0-beta.75](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.74...v0.7.0-beta.75) (2026-10-29)
 
 
