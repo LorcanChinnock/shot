@@ -54,6 +54,8 @@ final class EditorModel {
     /// The file the document's base image is, when that isn't `fileURL`: the original the opened version was saved from, or
     /// the copy kept when a save went over it. Saving keeps the layers on it.
     private(set) var pristine: URL?
+    /// Whether `version` is a file a save went over, so `pristine` is what it was before and Revert to Original can put it back.
+    private(set) var canRevert = false
     private(set) var document: EditorDocument
     // The tool, colours and width are remembered for the next editor window as they change.
     // They're not part of the document, so changing them is never an undo step.
@@ -169,6 +171,8 @@ final class EditorModel {
     ) {
         self.fileURL = fileURL
         self.pristine = layers == nil ? nil : pristine
+        // A version opened under its own name is one saved over, as a copy would have the original's name.
+        canRevert = layers != nil && pristine != nil && version == fileURL
         self.scale = scale
         self.version = layers == nil ? nil : version
         var document = EditorDocument(base: image, background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension)))
@@ -1153,6 +1157,7 @@ final class EditorModel {
             let overwrote = version.url == target
             self.version = version.url
             self.pristine = version.original
+            canRevert = overwrote
             history.didSave(snapshot, document: self.document)
             let note = TemporaryCaptures.toastNote(for: version.url)
             Toast.show(overwrote ? "Saved over \(version.url.lastPathComponent) and copied.\(note)" : "Saved as \(version.url.lastPathComponent) and copied.\(note)", duration: .seconds(3))

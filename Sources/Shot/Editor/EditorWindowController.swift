@@ -196,7 +196,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
 
     /// Puts the screenshot back as it was before Save went over it, and opens it again. Unsaved changes go with it.
     @objc func revertToOriginal(_ sender: Any?) {
-        guard let file = model.version, let pristine = model.pristine else {
+        guard model.canRevert, let file = model.version, let pristine = model.pristine else {
             return
         }
         discarding = true
@@ -256,7 +256,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         case #selector(copyStyle(_:)): model.styleTarget != nil
         case #selector(pasteStyle(_:)), #selector(applyStyleToAllImages(_:)): model.canPasteStyle && model.editingText == nil
         case #selector(flatten(_:)): model.version != nil
-        case #selector(revertToOriginal(_:)): model.version != nil && model.pristine.map(ProjectStore.app.keeps) == true
+        case #selector(revertToOriginal(_:)): model.canRevert
         default: true
         }
     }
