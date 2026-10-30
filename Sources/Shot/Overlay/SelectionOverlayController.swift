@@ -139,7 +139,6 @@ final class SelectionOverlayController {
             keyPanel.makeKey()
             keyPanel.makeFirstResponder(views.first { $0.window === keyPanel })
         }
-        requestPageAccessIfNeeded()
         updateHover(redraw: true)
         NSCursor.crosshair.set()
     }
@@ -178,23 +177,20 @@ final class SelectionOverlayController {
         }
         target = newTarget
         isWindowPinned = false
-        requestPageAccessIfNeeded()
         for view in views {
             view.targetChanged()
         }
         updateHover(redraw: true)
     }
 
-    /// Finding a browser's page needs Accessibility, so it is asked for as soon as the overlay is on Browser, never after a
-    /// capture has already come out wrong.
-    private func requestPageAccessIfNeeded() {
-        if browserMode, !BrowserPageFinder.isTrusted {
-            BrowserPageFinder.requestTrust()
-        }
-    }
+    /// Whether Browser is waiting on the Accessibility permission, which the overlay explains with a card.
+    var needsPageAccess: Bool { browserMode && !Permissions.hasAccessibility }
 
-    /// Whether Browser is waiting on the Accessibility permission, for the hint to say so.
-    var needsPageAccess: Bool { browserMode && !BrowserPageFinder.isTrusted }
+    /// Closes the overlay and asks macOS for Accessibility, so its prompt isn't left behind the overlay.
+    func grantPageAccess() {
+        finish(nil)
+        Permissions.requestAccessibility()
+    }
 
     func toggleScrolling() {
         guard offersScrolling else {
@@ -271,7 +267,7 @@ final class SelectionOverlayController {
     /// The page of a browser window in CoreGraphics global space, or nil for any other window or while Accessibility
     /// isn't allowed.
     private func pageRect(of window: WindowInfo) -> CGRect? {
-        guard BrowserPageFinder.isTrusted else {
+        guard Permissions.hasAccessibility else {
             return nil
         }
         if let cached = pageCache[window.windowID] {

@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import CoreGraphics
 
 @MainActor
@@ -19,6 +20,19 @@ enum Permissions {
             process.waitUntilExit()
         }
         CGRequestScreenCaptureAccess()
+    }
+
+    /// Only Browser capture needs it, to find where a browser shows its page.
+    static var hasAccessibility: Bool { AXIsProcessTrusted() }
+
+    /// Shows macOS's own prompt, which has a button straight to System Settings.
+    static func requestAccessibility() {
+        let key = "AXTrustedCheckOptionPrompt" as CFString
+        _ = AXIsProcessTrustedWithOptions([key: true] as CFDictionary)
+    }
+
+    static func openAccessibilitySettings() {
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
     }
 
     static func openSettings() {

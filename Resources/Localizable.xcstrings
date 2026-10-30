@@ -1971,6 +1971,9 @@
         }
       }
     },
+    "Accessibility" : {
+
+    },
     "Acknowledgements" : {
 
     },
@@ -3830,6 +3833,15 @@
     "Browser" : {
 
     },
+    "Browser capture is ready" : {
+
+    },
+    "Browser capture needs Accessibility" : {
+
+    },
+    "Browser capture needs Accessibility access to find where a browser shows its page. Skip it if you won't use Browser." : {
+
+    },
     "Bubble size" : {
       "localizations" : {
         "de" : {
@@ -4888,6 +4900,9 @@
         }
       }
     },
+    "Capture just the web page" : {
+
+    },
     "Capture overlay" : {
 
     },
@@ -5673,6 +5688,9 @@
           }
         }
       }
+    },
+    "Click Grant, then Open System Settings." : {
+
     },
     "Click a browser page" : {
 
@@ -14270,6 +14288,9 @@
         }
       }
     },
+    "Grant Accessibility" : {
+
+    },
     "Green" : {
       "localizations" : {
         "de" : {
@@ -18768,6 +18789,9 @@
       }
     },
     "Only GIFs exported from the video editor can be edited" : {
+
+    },
+    "Only needed for Browser capture, to find the page in a browser window." : {
 
     },
     "Only needed for the camera bubble." : {
@@ -25432,6 +25456,9 @@
         }
       }
     },
+    "Shot can now find the page in a browser window." : {
+
+    },
     "Shot can't use the camera. Turn it on in System Settings › Privacy & Security › Camera." : {
       "localizations" : {
         "de" : {
@@ -29992,6 +30019,9 @@
         }
       }
     },
+    "Turn on Shot under Accessibility." : {
+
+    },
     "Turn on Shot under Screen & System Audio Recording." : {
       "localizations" : {
         "de" : {
@@ -32707,6 +32737,9 @@
           }
         }
       }
+    },
+    "macOS only lets Shot find where a browser shows its page once you allow it. Area, Window and Screen work without it." : {
+
     },
     "macOS requires Screen Recording access for every capture." : {
       "localizations" : {

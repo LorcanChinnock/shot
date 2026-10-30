@@ -633,6 +633,7 @@ private struct ShortcutSettings: View {
 private struct AboutSettings: View {
     @State private var screenGranted = Permissions.hasScreenCapture
     @State private var screenRequested = Permissions.requestedScreenCapture
+    @State private var accessibilityGranted = Permissions.hasAccessibility
     @State private var microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
     @State private var cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
     @State private var confirmingReset = false
@@ -642,6 +643,7 @@ private struct AboutSettings: View {
     private func refreshPermissions() {
         screenGranted = Permissions.hasScreenCapture
         screenRequested = Permissions.requestedScreenCapture
+        accessibilityGranted = Permissions.hasAccessibility
         microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
         cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
     }
@@ -689,6 +691,18 @@ private struct AboutSettings: View {
                         .buttonStyle(BrutalButtonStyle(compact: true))
                     } else {
                         Button("Open") { Permissions.openSettings() }
+                            .buttonStyle(BrutalButtonStyle(compact: true))
+                    }
+                }
+            }
+            SettingRow(title: "Accessibility", subtitle: "Only needed for Browser capture, to find the page in a browser window.") {
+                HStack(spacing: 10) {
+                    BrutalChip(text: accessibilityGranted ? "GRANTED" : "MISSING", color: accessibilityGranted ? Brutal.mint : Brutal.red)
+                    if accessibilityGranted {
+                        Button("Open") { Permissions.openAccessibilitySettings() }
+                            .buttonStyle(BrutalButtonStyle(compact: true))
+                    } else {
+                        Button("Grant") { Permissions.requestAccessibility() }
                             .buttonStyle(BrutalButtonStyle(compact: true))
                     }
                 }

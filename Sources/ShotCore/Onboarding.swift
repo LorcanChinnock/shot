@@ -2,6 +2,8 @@
 public enum OnboardingStep: Sendable {
     /// Screen Recording access, which every capture needs.
     case permission
+    /// Accessibility access, which only Browser capture needs. It can be skipped.
+    case accessibility
     /// The macOS screenshot keys and Open at login.
     case setup
     /// A first real capture.
@@ -23,16 +25,20 @@ public enum OnboardingProgress: String, Sendable {
     }
 
     /// The steps the welcome window shows at launch, or after a capture fails: all of them for someone new, skipping
-    /// access once it's granted, and only access for everyone else, while it's missing.
-    public func steps(hasPermission: Bool) -> [OnboardingStep] {
+    /// each access step skipped once it's granted, and only Screen Recording access for everyone else, while it's missing.
+    public func steps(hasPermission: Bool, hasAccessibility: Bool) -> [OnboardingStep] {
         switch self {
-        case .new: hasPermission ? [.setup, .tryIt] : [.permission, .setup, .tryIt]
+        case .new: Self.access(hasPermission: hasPermission, hasAccessibility: hasAccessibility) + [.setup, .tryIt]
         case .done: hasPermission ? [] : [.permission]
         }
     }
 
     /// The steps the welcome window shows when it's opened again from Settings or `shot://welcome`.
-    public static func replaySteps(hasPermission: Bool) -> [OnboardingStep] {
-        hasPermission ? [.setup, .tryIt] : [.permission, .setup, .tryIt]
+    public static func replaySteps(hasPermission: Bool, hasAccessibility: Bool) -> [OnboardingStep] {
+        access(hasPermission: hasPermission, hasAccessibility: hasAccessibility) + [.setup, .tryIt]
+    }
+
+    private static func access(hasPermission: Bool, hasAccessibility: Bool) -> [OnboardingStep] {
+        (hasPermission ? [] : [.permission]) + (hasAccessibility ? [] : [.accessibility])
     }
 }

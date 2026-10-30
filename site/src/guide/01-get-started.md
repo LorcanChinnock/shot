@@ -29,11 +29,12 @@ Apple hasn't notarized Shot yet, so macOS asks you to confirm it once.
 
 ![The welcome window's second step, Make it yours: Use Shot for ⌘⇧4 and ⌘⇧5 and Open Shot at login both on, with a Continue button](../../../docs/media/welcome.png)
 
-A short welcome window walks you through three steps. You can close it at any point to skip the rest.
+A short welcome window walks you through up to four steps. You can close it at any point to skip the rest.
 
 1. **Allow screen recording.** macOS needs this for every capture. Click **Grant** and turn Shot on under **Screen & System Audio Recording**, then click **Relaunch**. macOS only applies the permission after Shot restarts. If Shot already has it, you won't see this step.
-2. **Make it yours.** Choose whether Shot takes over the screenshot keys <kbd>⌘⇧4</kbd> and <kbd>⌘⇧5</kbd>, and whether it opens when you log in. Both start on. Click **Continue** to apply them. If you close the window here instead, macOS keeps its keys and Shot doesn't open at login.
-3. **Try it.** Press <kbd>⌘⇧4</kbd> and drag across anything on screen. The window comes back with a few tips.
+2. **Capture just the web page (optional).** Browser capture needs Accessibility access to find where a browser shows its page. Click **Grant**, turn Shot on under **Accessibility**, or click **Skip** if you won't use Browser. You can grant it later in **Settings › About**, or when you first choose Browser.
+3. **Make it yours.** Choose whether Shot takes over the screenshot keys <kbd>⌘⇧4</kbd> and <kbd>⌘⇧5</kbd>, and whether it opens when you log in. Both start on. Click **Continue** to apply them. If you close the window here instead, macOS keeps its keys and Shot doesn't open at login.
+4. **Try it.** Press <kbd>⌘⇧4</kbd> and drag across anything on screen. The window comes back with a few tips.
 
 > [!TIP]
 > Turned off **Use Shot for ⌘⇧4 and ⌘⇧5**? Shot uses <kbd>⌃⇧4</kbd> and <kbd>⌃⇧5</kbd> instead, and the macOS screenshot tool keeps its keys. Either way, macOS gets its keys back whenever Shot quits.

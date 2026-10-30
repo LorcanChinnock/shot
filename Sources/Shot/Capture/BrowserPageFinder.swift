@@ -7,14 +7,6 @@ enum BrowserPageFinder {
     private static let maxDepth = 25
     private static let messagingTimeout: Float = 0.3
 
-    static var isTrusted: Bool { AXIsProcessTrusted() }
-
-    /// Asks macOS for the permission, which shows its own prompt the first time only.
-    static func requestTrust() {
-        let key = "AXTrustedCheckOptionPrompt" as CFString
-        _ = AXIsProcessTrustedWithOptions([key: true] as CFDictionary)
-    }
-
     /// Whether `pid` is an app macOS lists as able to open web links. Electron apps such as Slack show web content too,
     /// but are not browsers.
     private static func isBrowser(pid: pid_t) -> Bool {
@@ -25,9 +17,9 @@ enum BrowserPageFinder {
         return NSWorkspace.shared.urlsForApplications(toOpen: probe).contains { $0.standardizedFileURL == bundle }
     }
 
-    /// The page's rect in CoreGraphics global space, or nil when the window has none (not a browser, or no permission).
+    /// The page's rect in CoreGraphics global space, or nil when the window has none (not a browser). Callers check Accessibility first.
     static func page(of window: WindowInfo) -> CGRect? {
-        guard isTrusted, isBrowser(pid: window.ownerPID) else {
+        guard isBrowser(pid: window.ownerPID) else {
             return nil
         }
         let app = AXUIElementCreateApplication(window.ownerPID)
