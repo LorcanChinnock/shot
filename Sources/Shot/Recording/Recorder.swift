@@ -16,22 +16,29 @@ final class RecordingSessionModel {
     var cameraAvailable = true
     /// Whether this recording captures the microphone at all; mute only silences it.
     var microphoneOn = false
-    var microphoneMuted = false
+    private(set) var microphoneMuted = false
     let meter = AudioMeter()
-    private var accumulated: TimeInterval = 0
-    private var runningSince: Date?
+    private(set) var timeline = RecordingTimeline()
 
     func elapsed(at date: Date) -> TimeInterval {
-        accumulated + (runningSince.map { date.timeIntervalSince($0) } ?? 0)
+        timeline.elapsed(at: date)
     }
 
     func run() {
-        runningSince = Date()
+        timeline.run(at: Date())
     }
 
     func hold() {
-        accumulated = elapsed(at: Date())
-        runningSince = nil
+        timeline.hold(at: Date())
+    }
+
+    func toggleMute() {
+        timeline.toggleMute(at: Date())
+        microphoneMuted = timeline.isMuted
+    }
+
+    func endMute() {
+        timeline.endMute(at: Date())
     }
 }
 
@@ -87,8 +94,7 @@ final class Recorder: NSObject {
     }
 
     private var session: Session?
-    private var segments: [URL] = []
-    private var segmentAudio: [VideoConcatenator.SegmentAudio] = []
+    private var segments = RecordingSegments()
     private var stream: SCStream?
     private var recordingOutput: SCRecordingOutput?
     private var segmentFinished: CheckedContinuation<Void, Never>?
@@ -100,9 +106,6 @@ final class Recorder: NSObject {
     private var controls: NSPanel?
     private var sampleSink = SampleSink(meter: AudioMeter())
     private var model = RecordingSessionModel()
-    /// Stretches of the recording, in recorded seconds, whose audio is silenced when the segments are joined.
-    private var mutes = CutList()
-    private var mutedSince: TimeInterval?
     /// Set once this recording has said its microphone file failed.
     private var microphoneFailureShown = false
 
@@ -133,10 +136,7 @@ final class Recorder: NSObject {
         let finalURL = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "mp4", prefix: prefs.filePrefix)
         let microphoneID = CaptureDevices.device(id: prefs.microphoneDeviceID, for: .audio)?.uniqueID
         session = Session(screen: screen, region: region, windowID: options.windowID, microphone: microphone, showsCursor: options.showsCursor, showsClicks: prefs.recordShowsClicks, microphoneID: microphoneID, fps: RecordingFrameRate.effective(setting: prefs.recordingFPS, displayRate: screen.maximumFramesPerSecond), systemAudio: prefs.recordSystemAudio, finalURL: finalURL)
-        segments = []
-        segmentAudio = []
-        mutes = CutList()
-        mutedSince = nil
+        segments = RecordingSegments()
         microphoneFailureShown = false
         model = RecordingSessionModel()
         model.cameraOn = CameraBubble.shared.isVisible
@@ -166,7 +166,7 @@ final class Recorder: NSObject {
         border?.setStyle(.paused)
         await finishSegment()
         model.meter.reset()
-        log.notice("Recording paused after \(self.segments.count) segments")
+        log.notice("Recording paused after \(self.segments.videos.count) segments")
     }
 
     func resume() async {
@@ -216,7 +216,7 @@ final class Recorder: NSObject {
             return
         }
         phase = .finishing
-        endMute()
+        model.endMute()
         hidePanels()
         // A resume still starting its segment would otherwise leave a live stream after the session ends.
         _ = try? await starting?.value
@@ -228,12 +228,11 @@ final class Recorder: NSObject {
 
     private func complete(discard: Bool) async {
         reportAudio(await sampleSink.finish())
-        let parts = segments
-        let audio = segmentAudio.count == parts.count ? segmentAudio : []
+        let parts = segments.videos
+        let audio = segments.joinableAudio
         let finalURL = session?.finalURL
-        let muted = mutes
-        segments = []
-        segmentAudio = []
+        let muted = model.timeline.mutes
+        segments = RecordingSegments()
         session = nil
         phase = .idle
         if discard {
@@ -288,20 +287,8 @@ final class Recorder: NSObject {
         guard isRecording, session?.microphone == true else {
             return
         }
-        if mutedSince != nil {
-            endMute()
-        } else {
-            mutedSince = model.elapsed(at: Date())
-        }
-        model.microphoneMuted = mutedSince != nil
+        model.toggleMute()
         log.notice("Microphone \(self.model.microphoneMuted ? "muted" : "unmuted")")
-    }
-
-    private func endMute() {
-        if let mutedSince {
-            mutes = mutes.adding(mutedSince..<model.elapsed(at: Date()))
-        }
-        mutedSince = nil
     }
 
     // MARK: Camera
@@ -407,11 +394,8 @@ final class Recorder: NSObject {
         let folder = Self.segmentsFolder
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let id = UUID().uuidString
-        let url = folder.appendingPathComponent("\(id).mp4")
-        // SCK mixes the microphone into system audio's track, so with both on each is also written apart, to mute only the microphone.
-        let audio = session.microphone && session.systemAudio
-            ? VideoConcatenator.SegmentAudio(system: folder.appendingPathComponent("\(id)-system.mov"), microphone: folder.appendingPathComponent("\(id)-microphone.mov"))
-            : nil
+        // With both on, each is also written apart, to mute only the microphone.
+        let (url, audio) = RecordingSegments.files(in: folder, id: id, microphone: session.microphone, systemAudio: session.systemAudio)
         let sink = SampleSink(meter: model.meter, audio: audio)
         let outputConfig = SCRecordingOutputConfiguration()
         outputConfig.outputURL = url
@@ -442,11 +426,8 @@ final class Recorder: NSObject {
         sampleSink = sink
         self.stream = stream
         recordingOutput = output
-        segments.append(url)
-        if let audio {
-            segmentAudio.append(audio)
-        }
-        log.notice("Segment \(self.segments.count) started: \(config.width)x\(config.height) at \(session.fps) fps, mic \(session.microphone), system audio \(session.systemAudio), camera \(CameraBubble.shared.isVisible)")
+        segments.append(url, audio: audio)
+        log.notice("Segment \(self.segments.videos.count) started: \(config.width)x\(config.height) at \(session.fps) fps, mic \(session.microphone), system audio \(session.systemAudio), camera \(CameraBubble.shared.isVisible)")
     }
 
     /// Logs an audio file that couldn't be written, and says so once per recording when it's the microphone's: the
@@ -538,10 +519,7 @@ final class Recorder: NSObject {
     /// Keeps the segment a failed recording output left, if it can still be played, as the end of the recording; otherwise deletes it.
     private func keepOrDrop(_ video: URL, audio: VideoConcatenator.SegmentAudio?) async {
         if await Self.isPlayable(video) {
-            segments.append(video)
-            if let audio {
-                segmentAudio.append(audio)
-            }
+            segments.append(video, audio: audio)
             log.notice("Kept the segment whose recording failed")
         } else {
             for url in [video] + (audio?.files ?? []) {
@@ -559,13 +537,13 @@ final class Recorder: NSObject {
         }
         log.error("Recording failed: \(error.localizedDescription, privacy: .public)")
         phase = .finishing
-        endMute()
+        model.endMute()
         hidePanels()
         // A recording output can fail, a full disk say, while its stream goes on capturing the display and microphone.
         let stopping = stream
         var truncated: (video: URL, audio: VideoConcatenator.SegmentAudio?)?
-        if let output, output == recordingOutput.map(ObjectIdentifier.init), let failed = segments.popLast() {
-            truncated = (failed, segmentAudio.count > segments.count ? segmentAudio.popLast() : nil)
+        if let output, output == recordingOutput.map(ObjectIdentifier.init), let failed = segments.removeLast() {
+            truncated = failed
         }
         stream = nil
         recordingOutput = nil
