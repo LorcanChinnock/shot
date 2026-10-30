@@ -21,6 +21,7 @@ final class SelectionOverlayView: NSView {
         case target(CaptureTarget)
         case scrolling
         case delay
+        case grantAccess
     }
     private var barHits: [(rect: CGRect, action: BarAction)] = []
     /// A press landed on a chip, so its release isn't a click on the screen or window underneath.
@@ -104,6 +105,7 @@ final class SelectionOverlayView: NSView {
             case let .target(target): controller.setTarget(target)
             case .scrolling: controller.toggleScrolling()
             case .delay: controller.cycleDelay()
+            case .grantAccess: controller.grantPageAccess()
             }
             return
         }
@@ -321,6 +323,9 @@ final class SelectionOverlayView: NSView {
 
         drawHint(in: ctx)
         drawBar()
+        if controller.needsPageAccess {
+            drawAccessCard()
+        }
         guard let pointer, controller.target == .area else {
             return
         }
@@ -467,6 +472,42 @@ final class SelectionOverlayView: NSView {
         }
         parts.append(String(localized: "Esc: cancel"))
         return parts.joined(separator: "   ·   ")
+    }
+
+    /// Explains why Browser can't pick a page yet, with a chip that asks for Accessibility.
+    private func drawAccessCard() {
+        let textSize = Preferences().textSize
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+        let title = NSAttributedString(string: String(localized: "Browser capture needs Accessibility"), attributes: [
+            .font: NSFont.systemFont(ofSize: textSize.points(18), weight: .heavy), .foregroundColor: NSColor(Brutal.ink), .paragraphStyle: paragraph,
+        ])
+        let body = NSAttributedString(string: String(localized: "macOS only lets Shot find where a browser shows its page once you allow it. Area, Window and Screen work without it."), attributes: [
+            .font: NSFont.systemFont(ofSize: textSize.points(13), weight: .medium), .foregroundColor: NSColor(Brutal.ink).withAlphaComponent(0.75), .paragraphStyle: paragraph,
+        ])
+        let width: CGFloat = 400
+        let inner = width - 48
+        let titleHeight = title.boundingRect(with: CGSize(width: inner, height: .greatestFiniteMagnitude), options: .usesLineFragmentOrigin).height.rounded(.up)
+        let bodyHeight = body.boundingRect(with: CGSize(width: inner, height: .greatestFiniteMagnitude), options: .usesLineFragmentOrigin).height.rounded(.up)
+        let buttonFont = NSFont.systemFont(ofSize: textSize.points(13), weight: .bold)
+        let buttonHeight = (String("A") as NSString).size(withAttributes: [.font: buttonFont]).height.rounded() + 10
+        let height = 24 + titleHeight + 10 + bodyHeight + 18 + buttonHeight + 24
+        let card = CGRect(x: ((bounds.width - width) / 2).rounded(), y: ((bounds.height - height) / 2).rounded(), width: width, height: height)
+        NSColor(Brutal.line).setFill()
+        NSBezierPath(roundedRect: card.offsetBy(dx: 4, dy: -4), xRadius: 12, yRadius: 12).fill()
+        NSColor(Brutal.paper).setFill()
+        let shape = NSBezierPath(roundedRect: card, xRadius: 12, yRadius: 12)
+        shape.fill()
+        NSColor(Brutal.line).setStroke()
+        shape.lineWidth = 2
+        shape.stroke()
+        // Drawing is bottom-up: the button sits at the bottom, then the body, then the title.
+        let buttonText = String(localized: "Grant Accessibility")
+        let buttonWidth = (buttonText as NSString).size(withAttributes: [.font: buttonFont]).width.rounded() + 20
+        let box = drawChip(buttonText, at: CGPoint(x: (card.midX - buttonWidth / 2).rounded(), y: card.minY + 24), yellow: true, font: buttonFont)
+        barHits.append((box, .grantAccess))
+        body.draw(in: CGRect(x: card.minX + 24, y: box.maxY + 18, width: inner, height: bodyHeight))
+        title.draw(in: CGRect(x: card.minX + 24, y: box.maxY + 18 + bodyHeight + 10, width: inner, height: titleHeight))
     }
 
     private func drawHint(in ctx: CGContext) {

@@ -6,7 +6,7 @@ import SwiftUI
 
 private let log = Logger.shot("welcome")
 
-/// The first-launch window: Screen Recording access, the macOS screenshot keys and Open at login, then a first capture.
+/// The first-launch window: Screen Recording and Accessibility access, the macOS screenshot keys and Open at login, then a first capture.
 /// Closing it never changes anything on the Mac.
 @MainActor
 enum WelcomeWindow {
@@ -33,7 +33,7 @@ enum WelcomeWindow {
     /// Opens the steps still to do, at launch or after a capture fails: all of them for someone new, otherwise Screen
     /// Recording access while it's missing.
     static func showIfNeeded() {
-        let steps = progress.steps(hasPermission: Permissions.hasScreenCapture)
+        let steps = progress.steps(hasPermission: Permissions.hasScreenCapture, hasAccessibility: Permissions.hasAccessibility)
         if !steps.isEmpty {
             show(steps, replay: false)
         }
@@ -41,7 +41,7 @@ enum WelcomeWindow {
 
     /// Opens it again from Settings or `shot://welcome`, starting from the current settings. Closing it changes nothing.
     static func showAgain() {
-        show(OnboardingProgress.replaySteps(hasPermission: Permissions.hasScreenCapture), replay: true)
+        show(OnboardingProgress.replaySteps(hasPermission: Permissions.hasScreenCapture, hasAccessibility: Permissions.hasAccessibility), replay: true)
     }
 
     /// Called when a capture finishes, so the Try it step can say it worked.
@@ -102,6 +102,7 @@ private final class WelcomeModel {
     let replay: Bool
     var index = 0
     var hasPermission = Permissions.hasScreenCapture
+    var hasAccessibility = Permissions.hasAccessibility
     /// Set once Grant or Open Settings sent the user to System Settings. macOS can report access only after a
     /// relaunch, so from then on the step asks for one rather than waiting for the check below.
     var visitedSettings = false
@@ -120,12 +121,13 @@ private final class WelcomeModel {
         // Someone new sees the defaults; opened again, it shows what's set now.
         usesSystemKeys = replay ? Preferences().replacesSystemScreenshots : true
         opensAtLogin = replay ? SMAppService.mainApp.status == .enabled : true
-        if steps.first == .permission {
+        if steps.contains(where: { $0 == .permission || $0 == .accessibility }) {
             // Only while the window is open, so access granted in System Settings shows up without a click.
             permissionCheck = Task { [weak self] in
-                while !Task.isCancelled, let self, !self.hasPermission {
+                while !Task.isCancelled, let self {
                     try? await Task.sleep(for: .seconds(1))
                     self.hasPermission = Permissions.hasScreenCapture
+                    self.hasAccessibility = Permissions.hasAccessibility
                 }
             }
         }
@@ -171,6 +173,7 @@ private struct WelcomeView: View {
         VStack(alignment: .leading, spacing: 18) {
             switch model.step {
             case .permission: PermissionStep(model: model)
+            case .accessibility: AccessibilityStep(model: model)
             case .setup: SetupStep(model: model)
             case .tryIt: TryItStep(model: model)
             }
@@ -236,6 +239,36 @@ private struct PermissionStep: View {
                     .buttonStyle(BrutalButtonStyle(color: Brutal.yellow))
                     .keyboardShortcut(.defaultAction)
             }
+        }
+    }
+}
+
+private struct AccessibilityStep: View {
+    let model: WelcomeModel
+
+    var body: some View {
+        if model.hasAccessibility {
+            Header(symbol: "checkmark", color: Brutal.mint, title: "Browser capture is ready", subtitle: "Shot can now find the page in a browser window.")
+        } else {
+            Header(symbol: "safari.fill", color: Brutal.yellow, title: "Capture just the web page", subtitle: "Browser capture needs Accessibility access to find where a browser shows its page. Skip it if you won't use Browser.")
+            VStack(alignment: .leading, spacing: 10) {
+                Instruction(number: 1, text: "Click Grant, then Open System Settings.")
+                Instruction(number: 2, text: "Turn on Shot under Accessibility.")
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .glassCard()
+        }
+        Spacer(minLength: 0)
+        HStack(spacing: 12) {
+            if !model.hasAccessibility {
+                Button("Grant") { Permissions.requestAccessibility() }
+                    .buttonStyle(BrutalButtonStyle(color: Brutal.mint))
+            }
+            Spacer()
+            Button(model.hasAccessibility ? "Continue" : "Skip") { model.next() }
+                .buttonStyle(BrutalButtonStyle(color: Brutal.yellow))
+                .keyboardShortcut(.defaultAction)
         }
     }
 }

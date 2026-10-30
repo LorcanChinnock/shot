@@ -17,16 +17,18 @@ import Testing
 }
 
 @Test func someoneNewSeesEveryStepAndSkipsAccessOnceGranted() {
-    #expect(OnboardingProgress.new.steps(hasPermission: false) == [.permission, .setup, .tryIt])
-    #expect(OnboardingProgress.new.steps(hasPermission: true) == [.setup, .tryIt])
+    #expect(OnboardingProgress.new.steps(hasPermission: false, hasAccessibility: false) == [.permission, .accessibility, .setup, .tryIt])
+    #expect(OnboardingProgress.new.steps(hasPermission: true, hasAccessibility: false) == [.accessibility, .setup, .tryIt])
+    #expect(OnboardingProgress.new.steps(hasPermission: false, hasAccessibility: true) == [.permission, .setup, .tryIt])
+    #expect(OnboardingProgress.new.steps(hasPermission: true, hasAccessibility: true) == [.setup, .tryIt])
 }
 
-@Test func someoneDoneSeesOnlyAccessAndOnlyWhileItIsMissing() {
-    #expect(OnboardingProgress.done.steps(hasPermission: false) == [.permission])
-    #expect(OnboardingProgress.done.steps(hasPermission: true).isEmpty)
+@Test func someoneDoneSeesOnlyScreenRecordingAndOnlyWhileItIsMissing() {
+    #expect(OnboardingProgress.done.steps(hasPermission: false, hasAccessibility: false) == [.permission])
+    #expect(OnboardingProgress.done.steps(hasPermission: true, hasAccessibility: false).isEmpty)
 }
 
 @Test func openingItAgainShowsSetupAndTryItWhateverTheProgress() {
-    #expect(OnboardingProgress.replaySteps(hasPermission: true) == [.setup, .tryIt])
-    #expect(OnboardingProgress.replaySteps(hasPermission: false) == [.permission, .setup, .tryIt])
+    #expect(OnboardingProgress.replaySteps(hasPermission: true, hasAccessibility: true) == [.setup, .tryIt])
+    #expect(OnboardingProgress.replaySteps(hasPermission: false, hasAccessibility: false) == [.permission, .accessibility, .setup, .tryIt])
 }
