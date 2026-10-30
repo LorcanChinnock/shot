@@ -1,12 +1,12 @@
 name: CI
 
-# Every pull request runs two required jobs. `linux` lints, including the website's rules. `macos` builds the app and
-# runs every test, so a break can't reach main. release-please opens its PR as the repository's GitHub App
-# (release.yml), so its runs start without approval.
+# Every pull request runs two required jobs. `linux` lints, including the website's rules. `macos` stands for the
+# `test` and `smoke` jobs, which build the app and run every test, so a break can't reach main. release-please opens its
+# PR as the repository's GitHub App (release.yml), so its runs start without approval.
 # There's no run on push to main: PRs are squash-merged, and their merge commit was already tested.
-# A pull request that changes only the website, the docs or Markdown skips `macos`, which counts as a pass for the
-# required check, so those PRs don't queue for a macOS runner. `changes` decides that, and if it fails for any reason,
-# `macos` runs after all. Release-please's PR always runs it.
+# A pull request that changes only the website, the docs or Markdown skips `test` and `smoke`, so `macos` passes
+# without those PRs queueing for a macOS runner. `changes` decides that, and if it fails for any reason, they run after
+# all. Release-please's PR always runs them.
 on:
   pull_request:
 
@@ -64,9 +64,10 @@ jobs:
       - name: Lint
         run: scripts/lint.sh
 
-  # A required check too. The repository is public, so macOS minutes are free; the cost is queue time, since the free
+  # The two macOS jobs run side by side, since the smoke test builds the release app and shares nothing with the debug
+  # build the tests need. The repository is public, so macOS minutes are free; the cost is queue time, since the free
   # plan runs 5 macOS jobs at once.
-  macos:
+  test:
     needs: changes
     if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.app == 'true') }}
     # macOS: builds the app and runs ShotCore's tests, which need Core Graphics, Core Image, AVFoundation and Vision.
@@ -87,12 +88,6 @@ jobs:
       - name: Test on macOS
         timeout-minutes: 10
         run: scripts/ci-test.sh test --skip-build
-      # Starts the app, which no other step does, so a bad entitlement, a missing resource or a Sparkle misconfiguration
-      # fails here and not after release. Builds the universal release app, as `make dist` does, so this also checks that
-      # the release configuration compiles for both architectures. See scripts/smoke.sh.
-      - name: Launch smoke test
-        timeout-minutes: 10
-        run: make bundle && scripts/smoke.sh
       # A test process that crashes leaves only its signal in the log; the report has the stack. See scripts/crash-reports.sh.
       - name: Keep the crash reports
         if: failure()
@@ -102,3 +97,35 @@ jobs:
           path: ${{ runner.temp }}/crash-reports
           if-no-files-found: ignore
           retention-days: 7
+
+  # Starts the app, which no other step does, so a bad entitlement, a missing resource or a Sparkle misconfiguration
+  # fails here and not after release. Builds the universal release app, as `make dist` does, so this also checks that
+  # the release configuration compiles for both architectures. See scripts/smoke.sh.
+  smoke:
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.app == 'true') }}
+    # macOS: builds and launches the app, which needs AppKit and a login session.
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Resolve packages
+        run: swift package resolve --force-resolved-versions
+      - name: Launch smoke test
+        timeout-minutes: 10
+        run: make bundle && scripts/smoke.sh
+
+  # A required check, so main's ruleset needs it by name. It stands for `test` and `smoke`, which it waits on. A PR that
+  # skips them (see the top of this file) passes, since a skipped job counts as a pass; a failed or cancelled one fails it.
+  macos:
+    needs: [test, smoke]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check the macOS jobs
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "test and smoke: $RESULTS"
+          case " $RESULTS " in *" failure "*|*" cancelled "*) exit 1 ;; esac
