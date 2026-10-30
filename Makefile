@@ -13,17 +13,13 @@ INSTALL_DIR ?= /Applications
 # Extra `swift test` flags, e.g. ARGS=--skip-build in CI.
 ARGS ?=
 
-.PHONY: build test perf perf-app lint strings bundle app run demo dist reset-tcc icon clean
+.PHONY: build test perf-app lint strings bundle app run demo dist reset-tcc icon clean
 
 build:
 	swift build
 
 test:
-	swift test $(TEST_FLAGS) $(ARGS) --skip PerfTests
-
-# Budgets and baselines: docs/performance.md.
-perf:
-	swift test $(TEST_FLAGS) $(ARGS) --filter PerfTests
+	swift test $(TEST_FLAGS) $(ARGS)
 
 perf-app:
 	scripts/perf.sh

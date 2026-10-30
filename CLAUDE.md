@@ -29,7 +29,6 @@ What this means in practice:
 
 ```bash
 make test                         # ShotCoreTests, the unit tests (Swift Testing)
-make perf                         # ShotCore performance budgets (PerfTests; make test skips them)
 make perf-app                     # scripts/perf.sh: launch, capture, memory, idle CPU of the installed app
 make lint                         # scripts/lint.sh: bans patterns that caused bugs (see below); on macOS also scripts/strings.sh --check
 make strings                      # sync Resources/Localizable.xcstrings with the strings the build extracted
@@ -99,11 +98,10 @@ Read the note in `docs/architecture/` before changing the area it covers:
 
 The repository is public, so GitHub's runners are free, but the free plan runs only 5 macOS jobs at once, so macOS runs can queue (`.github/workflows/ci.yml`):
 - Every PR runs two required checks (`ci.yml`). `linux` runs `scripts/lint.sh`. `macos`, on the `macos-26` image, is skipped, which counts as a pass, when the PR changes only `site/`, `docs/` or top-level Markdown files. It builds the app, checks the strings catalog, compiles for Intel, and runs the tests. The tests run through `scripts/ci-test.sh`, which samples the test process when no test has started or ended for five minutes, and prints crash reports when the run fails, since `swift test` buffers its output and a hang or crash otherwise leaves nothing to go on. `release.yml` builds on the same image.
-- On release-please's PR, and on any PR labelled `performance`, `macos` also runs `PerfTests`: on the release PR that's the release gate, and its job summary has a table of every budget's timing (`docs/performance.md`). Every push to that PR runs it again; adding the label alone doesn't start a run. release-please opens the PR as the repository's GitHub App (`release.yml`), so its runs start without the approval GitHub asks for on `github-actions[bot]` PRs.
 - The repository has auto-merge turned off: an admin merges the release PR by hand once the gate has passed. If the gate fails, fix it in a normal PR. release-please updates the release PR only for commits that change the changelog, so after a `test:`, `ci:` or `docs:` fix, run `gh pr update-branch <release PR>` to gate it again.
 - `release.yml` runs `make test` on the tagged commit before it signs anything, because a `docs:`, `test:` or `ci:` commit merged after the gate passed can change what's released.
 - Run `make lint` and `make test` before every push, and push once per PR where you can, so CI is a check rather than a debugger. Every push re-runs CI, and a newer push cancels the run before it.
-- Every release PR update runs the perf budgets, and every release builds and tests again, so let the release-please PR collect several merges rather than releasing after each one.
+- Every release builds and tests again, so let the release-please PR collect several merges rather than releasing after each one.
 
 ## Conventions
 
