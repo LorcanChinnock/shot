@@ -1418,8 +1418,8 @@ extension VideoEditorModel {
 
     func setCropAspect(_ aspect: CropAspect) {
         cropAspect = aspect
-        if let draft = cropDraft, let ratio = aspect.ratio(for: draft.size) {
-            cropDraft = CropGeometry.fit(ratio: ratio, in: draft)
+        if let draft = cropDraft {
+            cropDraft = CropEditing.draft(draft, holding: aspect)
         }
     }
 
