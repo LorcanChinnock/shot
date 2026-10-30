@@ -294,7 +294,7 @@ final class CaptureCoordinator {
     /// Picks the area that scrolls on the live overlay, then streams it while the person scrolls, stitching the frames
     /// into one image until Return. Esc saves and copies nothing.
     private func captureScrollingArea() async throws {
-        guard let pick = await RecordingSetupController.pickRegion(mode: .area) else {
+        guard let pick = await RecordingSetupController.pickRegion(mode: .area, offersDelay: false) else {
             return
         }
         let controller = ScrollingCaptureController(screen: pick.screen, region: pick.region)
