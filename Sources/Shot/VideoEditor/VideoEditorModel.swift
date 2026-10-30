@@ -6,18 +6,6 @@ import ShotCore
 
 private let log = Logger.shot("video-editor")
 
-/// What one undo step restores. The export options are part of it on purpose, so ⌘Z also takes back a change of format.
-struct VideoEdit: Equatable {
-    var project: Project
-    var options: VideoExportOptions
-}
-
-/// What crop mode is adjusting: the video's frame, or one clip's picture.
-enum VideoCropTarget: Equatable {
-    case frame
-    case clip(UUID)
-}
-
 @MainActor
 @Observable
 final class VideoEditorModel {
@@ -58,7 +46,7 @@ final class VideoEditorModel {
     private(set) var options = Preferences().videoExportOptions
     /// Bytes Export would write, or nil until it's worked out.
     private(set) var estimatedSize: Int?
-    private(set) var undoStack = UndoStack<VideoEdit>()
+    private(set) var history = VideoEditHistory()
     /// The project as last opened or written, so closing asks only about changes since.
     private var savedProject: Project?
     /// A saved project to open the recording with instead of the plain one, until it's loaded.
@@ -109,9 +97,6 @@ final class VideoEditorModel {
     /// The colour a border picked from the custom colour editor had last, which its rainbow swatch applies again; `nil`
     /// until one is picked, so the swatch doesn't offer white, which the palette has.
     private(set) var lastBorderColor: RGBA?
-    /// What the latest undo step changed, while it's still the latest, so a run of changes to it (a colour picker
-    /// dragged) amends that step instead of adding one each; see `replaceProject`.
-    @ObservationIgnored private var coalescingKey: String?
 
     private static let showsInspectorKey = PreferenceKey.videoEditorShowsInspector
 
@@ -220,7 +205,7 @@ final class VideoEditorModel {
         fitDuration = project.duration
         selection = nil
         selectedClipID = nil
-        undoStack = UndoStack()
+        history.reset()
         currentTime = 0
         thumbnailSets = [:]
         thumbnailSources = [:]
@@ -286,8 +271,7 @@ final class VideoEditorModel {
         guard let origin, origin != project else {
             return
         }
-        undoStack.record(VideoEdit(project: origin, options: options))
-        coalescingKey = nil
+        history.record(VideoEdit(project: origin, options: options))
         if landed == nil {
             fitDuration = max(fitDuration, project.duration)
             projectDidChange()
@@ -502,7 +486,7 @@ final class VideoEditorModel {
 
     /// Marks the section between two times in the recording and shows the frame at the second.
     func select(fromSource anchor: Double, toSource time: Double) {
-        let ends = [anchor, time].map { min(max($0, 0), duration) }
+        let ends = [anchor, time].map { TimelineSelection.clamped($0, to: duration) }
         select(fromTimeline: project.timelinePosition(ofSource: ends[0]), toTimeline: project.timelinePosition(ofSource: ends[1]))
         seek(to: ends[1])
     }
@@ -510,9 +494,9 @@ final class VideoEditorModel {
     /// Marks the section between `anchor` and `time` on the timeline and shows the frame at `time`.
     func select(fromTimeline anchor: Double, toTimeline time: Double) {
         player.pause()
-        let ends = [anchor, time].map { min(max($0, 0), project.duration) }
-        selection = ends[0] == ends[1] ? nil : ends.min()!..<ends.max()!
-        seekTimeline(to: ends[1])
+        let marked = TimelineSelection.range(from: anchor, to: time, duration: project.duration)
+        selection = marked.range
+        seekTimeline(to: marked.shownTime)
     }
 
     /// False when nothing was selected.
@@ -592,25 +576,24 @@ final class VideoEditorModel {
         guard new != options else {
             return
         }
-        undoStack.record(edit)
-        coalescingKey = nil
+        history.record(edit)
         options = new
         Preferences.remember(options)
     }
 
     /// Undo and redo wait for an export, since Save reloads the file and would drop the change.
     func undo() {
-        coalescingKey = nil
+        history.stopCoalescing()
         endCropForUndo()
-        if !isExporting, let previous = undoStack.undo(from: edit) {
+        if !isExporting, let previous = history.undo(from: edit) {
             restore(previous)
         }
     }
 
     func redo() {
-        coalescingKey = nil
+        history.stopCoalescing()
         endCropForUndo()
-        if !isExporting, let next = undoStack.redo(from: edit) {
+        if !isExporting, let next = history.redo(from: edit) {
             restore(next)
         }
     }
@@ -618,13 +601,12 @@ final class VideoEditorModel {
     private func restore(_ edit: VideoEdit) {
         project = edit.project
         selection = nil
-        if let selectedClipID, project.clip(selectedClipID) == nil {
-            self.selectedClipID = nil
+        let kept = project.keepingSelection(clip: selectedClipID, keyframe: selectedKeyframe)
+        if selectedClipID != kept.clip {
+            selectedClipID = kept.clip
         }
-        // A keyframe the restored project doesn't have can't be worked on, and Delete would act on nothing.
-        let keyframes = selectedClipID.flatMap(project.animation(ofClip:))
-        if let selectedKeyframe, !AnimatedProperty.allCases.contains(where: { keyframes?.hasKeyframe($0, at: selectedKeyframe) == true }) {
-            self.selectedKeyframe = nil
+        if selectedKeyframe != kept.keyframe {
+            selectedKeyframe = kept.keyframe
         }
         if options != edit.options {
             options = edit.options
@@ -1199,7 +1181,7 @@ extension VideoEditorModel {
 
     /// Call as the colour editor opens, so its run of picks doesn't join the last one's undo step.
     func beginColorPick() {
-        coalescingKey = nil
+        history.stopCoalescing()
     }
 
     /// Sets the colour, or the fill, to one picked from the colour editor, which reports every change as the user drags,
@@ -1334,11 +1316,7 @@ extension VideoEditorModel {
 extension VideoEditorModel {
     /// What the player shows: the project, with the crop being adjusted taken off so all of its picture shows.
     var shownProject: Project {
-        switch cropTarget {
-        case nil: project
-        case .frame: project.setting(frameCrop: nil)
-        case let .clip(id): project.setting(crop: nil, of: id) ?? project
-        }
+        project.showing(cropping: cropTarget)
     }
 
     /// The part of the canvas the player shows, in canvas pixels: the frame crop, or all of it.
@@ -1392,11 +1370,7 @@ extension VideoEditorModel {
 
     /// What the crop can reach: the canvas for the frame, or the whole picture for a clip.
     var cropBounds: CGRect? {
-        switch cropTarget {
-        case nil: nil
-        case .frame: CGRect(origin: .zero, size: project.canvasSize)
-        case let .clip(id): project.clip(id).map { CGRect(origin: .zero, size: $0.size) }
-        }
+        project.cropBounds(of: cropTarget)
     }
 
     /// Return: applies the crop as one undo step.
@@ -1404,13 +1378,7 @@ extension VideoEditorModel {
         guard let target = cropTarget, let draft = cropDraft, let bounds = cropBounds else {
             return
         }
-        let changed: Project?
-        switch target {
-        case .frame:
-            changed = project.setting(frameCrop: draft)
-        case let .clip(id):
-            changed = project.setting(crop: ImageCrop(visible: draft, within: bounds), of: id)
-        }
+        let changed = project.applying(cropDraft: draft, bounds: bounds, to: target)
         cropTarget = nil
         cropDraft = nil
         guard let changed, replaceProject(with: changed) else {
@@ -1793,10 +1761,7 @@ extension VideoEditorModel: StyleEditing {
         guard !isExporting, changed != project else {
             return false
         }
-        if dragOrigin == nil, recording, key == nil || key != coalescingKey {
-            undoStack.record(edit)
-            coalescingKey = key
-        }
+        history.recordChange(from: edit, recording: recording && dragOrigin == nil, coalescing: key)
         project = changed
         return true
     }
