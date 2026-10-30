@@ -101,3 +101,24 @@ private func withOverlay() throws -> (project: Project, id: UUID) {
     #expect(selection.shownTime == 4)
     #expect(TimelineSelection.range(from: 12, to: 20, duration: 10).range == nil)
 }
+
+private func box() -> Annotation {
+    Annotation(kind: .shape(.rectangle, rect: CGRect(x: 100, y: 100, width: 100, height: 60)), color: RGBA.presets[0], lineWidth: 4)
+}
+
+@Test func aRestoredProjectKeepsAnAnnotationClipItStillHas() {
+    let (annotated, id) = project().adding(annotation: box(), at: 2)
+    #expect(annotated.keepingSelection(clip: id, keyframe: nil).clip == id)
+}
+
+@Test func aRestoredProjectDropsAnAnnotationClipItDoesNotHave() {
+    let (_, id) = project().adding(annotation: box(), at: 2)
+    #expect(project().keepingSelection(clip: id, keyframe: nil).clip == nil)
+}
+
+@Test func aRestoredProjectKeepsAnAnnotationClipsKeyframe() throws {
+    var (annotated, id) = project().adding(annotation: box(), at: 2)
+    annotated = try #require(annotated.togglingKeyframe(.scale, ofClip: id, at: 3))
+    let keyframe = try #require(annotated.animation(ofClip: id)?.scale.first?.time)
+    #expect(annotated.keepingSelection(clip: id, keyframe: keyframe).keyframe == keyframe)
+}
