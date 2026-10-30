@@ -46,6 +46,33 @@ public struct ProjectStore: Sendable {
         return saved
     }
 
+    /// Where the pristine copies of files saved over are kept, which layers sit on.
+    public var originalsFolder: URL { folder.appendingPathComponent("Originals", isDirectory: true) }
+
+    /// Copies `file`, as it is now, into the store, and returns the copy.
+    public func keepOriginal(copying file: URL) throws -> URL {
+        try FileManager.default.createDirectory(at: originalsFolder, withIntermediateDirectories: true)
+        let copy = originalsFolder.appendingPathComponent(UUID().uuidString).appendingPathExtension(file.pathExtension)
+        try FileManager.default.copyItem(at: file, to: copy)
+        return copy
+    }
+
+    /// The bytes the kept copies take up.
+    public func keptOriginalsSize() -> Int64 {
+        let files = (try? FileManager.default.contentsOfDirectory(at: originalsFolder, includingPropertiesForKeys: [.fileSizeKey])) ?? []
+        return files.reduce(0) { $0 + Int64((try? $1.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0) }
+    }
+
+    /// Deletes every kept copy. The files saved over stay as they are, and open flat from then on.
+    public func removeKeptOriginals() {
+        removeOriginals(except: [])
+    }
+
+    /// Whether `file` is a copy `keepOriginal(copying:)` made.
+    public func keeps(_ file: URL) -> Bool {
+        file.standardizedFileURL.deletingLastPathComponent().path == originalsFolder.standardizedFileURL.path
+    }
+
     /// The project of `file`, with its layers decoded as `Document`; `nil` when it has none, or they aren't one.
     public func project<Document: Codable & Sendable>(for file: URL, as type: Document.Type = Document.self) -> StoredProject<Document>? {
         guard let id = id(of: file), let data = read(id) else {
@@ -69,15 +96,23 @@ public struct ProjectStore: Sendable {
         let mounted = Set((FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: [.volumeUUIDStringKey], options: []) ?? [])
             .compactMap { try? $0.resourceValues(forKeys: [.volumeUUIDStringKey]).volumeUUIDString })
         var pruned = 0
+        var originals: Set<String> = []
+        var allRead = true
         for id in ids() {
             guard let entry = entry(id) else {
+                allRead = false
                 continue
             }
             let volumeMounted = entry.file.volume.map(mounted.contains) ?? true
             if !ProjectPruning.keeps(entry, sightings: sightings(of: entry), volumeMounted: volumeMounted) {
                 remove(id)
                 pruned += 1
+            } else if let original = entry.original {
+                originals.insert(URL(fileURLWithPath: original.path).standardizedFileURL.path)
             }
+        }
+        if allRead {
+            removeOriginals(except: originals)
         }
         return pruned
     }
@@ -132,6 +167,14 @@ public struct ProjectStore: Sendable {
     /// Reads only the entry: the decoder skips the layers' key.
     private func entry(_ id: String) -> ProjectEntry? {
         read(id).flatMap { try? ProjectEntry.decoder().decode(ProjectEntry.self, from: $0) }
+    }
+
+    /// Removes the kept copies no project sits on any more. Not run when an entry couldn't be read, since it may need one.
+    private func removeOriginals(except used: Set<String>) {
+        let kept = (try? FileManager.default.contentsOfDirectory(at: originalsFolder, includingPropertiesForKeys: nil)) ?? []
+        for file in kept where !used.contains(file.standardizedFileURL.path) {
+            try? FileManager.default.removeItem(at: file)
+        }
     }
 
     private func remove(_ id: String) {

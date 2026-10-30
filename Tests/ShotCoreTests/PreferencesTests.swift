@@ -51,6 +51,7 @@ import Testing
         #expect(prefs.cameraSize == .medium)
         #expect(prefs.saveAfterCapture)
         #expect(prefs.copyAfterCapture)
+        #expect(prefs.editorSavesOverOriginal)
         #expect(prefs.quickAccessAfterCapture)
         #expect(prefs.quickAccessDuration == 8)
         #expect(prefs.windowShadow)

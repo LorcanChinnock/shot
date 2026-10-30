@@ -76,7 +76,8 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
             return
         }
         let saved = flat ? nil : VersionWriter.savedLayers(of: url, in: .app)
-        let file = saved?.original ?? url
+        // A version saved over its file has its original in Shot's own folder, so it keeps its own name.
+        let file = saved.map { ProjectStore.app.keeps($0.original) ? url : $0.original } ?? url
         guard let image = saved?.image ?? ImageCodec.image(at: url) else {
             let reason = FileManager.default.fileExists(atPath: url.path) ? String(localized: "it isn't an image Shot can read") : String(localized: "it doesn't exist")
             Toast.error("Can't open \(url.lastPathComponent): \(reason)")
@@ -84,7 +85,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         }
         let model = EditorModel(
             fileURL: file, image: image, scale: ImageCodec.scale(ofFileAt: file), windowShadow: ImageCodec.hasWindowShadow(ofFileAt: file),
-            newCaptureStyle: saved == nil ? newCaptureStyle : nil, layers: saved?.layers, version: url
+            newCaptureStyle: saved == nil ? newCaptureStyle : nil, layers: saved?.layers, version: url, pristine: saved?.original
         )
         let controller = EditorWindowController(model: model, opened: url)
         open.append(controller)
@@ -193,6 +194,23 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         window.performClose(nil)
     }
 
+    /// Puts the screenshot back as it was before Save went over it, and opens it again. Unsaved changes go with it.
+    @objc func revertToOriginal(_ sender: Any?) {
+        guard let file = model.version, let pristine = model.pristine else {
+            return
+        }
+        discarding = true
+        afterClose = {
+            do {
+                try VersionWriter.revert(file, to: pristine)
+                Self.open(file)
+            } catch {
+                Toast.error("Couldn't revert: \(error.localizedDescription)")
+            }
+        }
+        window.performClose(nil)
+    }
+
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         guard model.isDirty, !discarding else {
             return true
@@ -238,6 +256,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         case #selector(copyStyle(_:)): model.styleTarget != nil
         case #selector(pasteStyle(_:)), #selector(applyStyleToAllImages(_:)): model.canPasteStyle && model.editingText == nil
         case #selector(flatten(_:)): model.version != nil
+        case #selector(revertToOriginal(_:)): model.version != nil && model.pristine.map(ProjectStore.app.keeps) == true
         default: true
         }
     }

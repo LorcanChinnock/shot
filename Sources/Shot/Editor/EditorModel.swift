@@ -51,6 +51,9 @@ final class EditorModel {
     /// The saved version whose layers the editor shows, the one it opened or last saved, which Flatten opens as a
     /// plain image; `nil` until there is one.
     private(set) var version: URL?
+    /// The file the document's base image is, when that isn't `fileURL`: the original the opened version was saved from, or
+    /// the copy kept when a save went over it. Saving keeps the layers on it.
+    private(set) var pristine: URL?
     private(set) var document: EditorDocument
     // The tool, colours and width are remembered for the next editor window as they change.
     // They're not part of the document, so changing them is never an undo step.
@@ -162,9 +165,10 @@ final class EditorModel {
     /// a version saved from this file, which the document starts with instead.
     init(
         fileURL: URL, image: CGImage, scale: CGFloat, windowShadow: Bool = false, style: EditorStyle = Preferences().editorStyle,
-        newCaptureStyle: CopiedStyle? = nil, layers: EditorSnapshot? = nil, version: URL? = nil
+        newCaptureStyle: CopiedStyle? = nil, layers: EditorSnapshot? = nil, version: URL? = nil, pristine: URL? = nil
     ) {
         self.fileURL = fileURL
+        self.pristine = layers == nil ? nil : pristine
         self.scale = scale
         self.version = layers == nil ? nil : version
         var document = EditorDocument(base: image, background: EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension)))
@@ -1135,16 +1139,23 @@ final class EditorModel {
         commitPendingText?()
         applyCropIfCropping()
         let snapshot = document.snapshot
-        let document = document, scale = scale, fileURL = fileURL
+        let prefs = Preferences()
+        let overwriting = prefs.editorSavesOverOriginal && prefs.isOwnCapture(version ?? fileURL)
+        let document = document, scale = scale, target = overwriting ? version ?? fileURL : fileURL, pristine = pristine
         let saved = await Task.detached {
-            Result { () throws(VersionWriter.Failure) in try VersionWriter.saveImage(document, of: fileURL, scale: scale, projects: .app) }
+            Result { () throws(VersionWriter.Failure) in
+                try VersionWriter.saveImage(document, of: target, pristine: pristine, overwriting: overwriting, scale: scale, projects: .app)
+            }
         }.value
         switch saved {
         case let .success(version):
             Clipboard.copy(png: version.png)
+            let overwrote = version.url == target
             self.version = version.url
+            self.pristine = version.original
             history.didSave(snapshot, document: self.document)
-            Toast.show("Saved as \(version.url.lastPathComponent) and copied.\(TemporaryCaptures.toastNote(for: version.url))", duration: .seconds(3))
+            let note = TemporaryCaptures.toastNote(for: version.url)
+            Toast.show(overwrote ? "Saved over \(version.url.lastPathComponent) and copied.\(note)" : "Saved as \(version.url.lastPathComponent) and copied.\(note)", duration: .seconds(3))
             return true
         case .failure(.draw), .failure(.encode):
             Toast.error("Couldn't save the image")

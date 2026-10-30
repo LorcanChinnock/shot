@@ -18,7 +18,7 @@ Your captures stay in your save folder until you delete them.
 
 - **Login item:** turn off **Open Shot at login** in **Settings › General** before you quit, or remove Shot in **System Settings › General › Login Items & Extensions**.
 - **Settings:** run `defaults delete dev.lorcan.Shot`, which removes `~/Library/Preferences/dev.lorcan.Shot.plist`.
-- **Application Support:** delete `~/Library/Application Support/dev.lorcan.Shot`. It holds the layers of saved versions and video projects, and the text Shot read for search.
+- **Application Support:** delete `~/Library/Application Support/dev.lorcan.Shot`. It holds the layers of saved versions and video projects, the originals of screenshots you saved edits over, and the text Shot read for search. Delete it and those screenshots keep their edits but can no longer be reverted.
 - **Caches:** delete `~/Library/Caches/dev.lorcan.Shot`, which holds update downloads and cached update checks.
 - **Temporary files:** run `rm -rf "$TMPDIR/Shot"` to remove captures taken with saving off and leftover recording pieces. macOS also clears this folder on its own over time.
 - **Permissions:** run `tccutil reset All dev.lorcan.Shot` to clear every permission you gave Shot.

@@ -88,7 +88,7 @@ Pinch, or press <kbd>⌘+</kbd> and <kbd>⌘−</kbd>. <kbd>⌘0</kbd> fits the 
 ## Copy or save
 
 - **Copy** copies the annotated image. With nothing or several things selected, <kbd>⌘C</kbd> does the same.
-- **Save** (<kbd>⌘S</kbd>) writes a new version beside the original, `name (2).png` (or `.jpg`), then `name (3).png` and so on, and copies it. The original never changes.
+- **Save** (<kbd>⌘S</kbd>) replaces the screenshot with your edited one and copies it. Shot keeps the original, so you can reopen the screenshot and undo your edits, or choose **Edit › Revert to Original**. This applies to screenshots Shot took. A picture from anywhere else saves as a new copy beside it, `name (2).png` (or `.jpg`), then `name (3).png` and so on, and the original never changes. To always save a new copy, turn off **Settings › General › Save edits over the original**.
 
 The title bar shows **EDITED** while you have unsaved changes, and closing the window asks whether to save them.
 
@@ -96,8 +96,9 @@ The title bar shows **EDITED** while you have unsaved changes, and closing the w
 
 ![A saved version reopened in the editor as the screenshot it came from, with its counter, ellipse and arrow still live: the arrow is selected with its handles, and the Layers panel lists Step 1, Ellipse and Arrow](../../../docs/media/editor-versions.png)
 
-Open a version you saved, from the gallery, Quick Access or a `shot://annotate` link, and every mark is still live, so you can move, change or delete it. **Save** then writes the next version.
+Open a version you saved, from the gallery, Quick Access or a `shot://annotate` link, and every mark is still live, so you can move, change or delete it. **Save** then replaces it again, or writes the next copy if you turned off saving over the original.
 
+- The original Shot kept is stored on this Mac only, in Shot's own folder, so it never travels with a file you share. A screenshot you saved over and then copy to another Mac, or edit in another app, opens as a plain image there, and its edits can't be undone. **Settings › About › Kept originals** shows how much space they take and lets you delete them.
 - This keeps working when you move or rename the original. If the original is gone, or another image has replaced it, the version opens flattened.
 - To edit a version as a plain image instead, choose **Edit › Flatten**, or open the original.
 - Shot keeps the layers in its own Application Support folder, not in the image, so a version you share never carries hidden layers or the full-size images you placed.

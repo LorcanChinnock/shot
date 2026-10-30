@@ -194,6 +194,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         edit.addItem(withTitle: String(localized: "Apply Style to All Images"), action: Selector(("applyStyleToAllImages:")), keyEquivalent: "")
         edit.addItem(withTitle: String(localized: "Trim Idle Time"), action: Selector(("trimIdleTime:")), keyEquivalent: "")
         edit.addItem(withTitle: String(localized: "Flatten"), action: Selector(("flatten:")), keyEquivalent: "")
+        edit.addItem(withTitle: String(localized: "Revert to Original"), action: Selector(("revertToOriginal:")), keyEquivalent: "")
         let editItem = NSMenuItem(title: String(localized: "Edit"), action: nil, keyEquivalent: "")
         editItem.submenu = edit
         let main = NSMenu()

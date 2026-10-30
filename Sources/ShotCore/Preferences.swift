@@ -11,6 +11,7 @@ public enum PreferenceKey {
     public static let downscaleRetina = "downscaleRetina"
     public static let saveAfterCapture = "saveAfterCapture"
     public static let copyAfterCapture = "copyAfterCapture"
+    public static let editorSavesOverOriginal = "editorSavesOverOriginal"
     public static let quickAccessAfterCapture = "quickAccessAfterCapture"
     public static let openEditorAfterCapture = "openEditorAfterCapture"
     public static let captureShowsCursor = "captureShowsCursor"
@@ -100,6 +101,7 @@ public struct Preferences {
             PreferenceKey.downscaleRetina: false,
             PreferenceKey.saveAfterCapture: true,
             PreferenceKey.copyAfterCapture: true,
+            PreferenceKey.editorSavesOverOriginal: true,
             PreferenceKey.quickAccessAfterCapture: true,
             PreferenceKey.openEditorAfterCapture: false,
             PreferenceKey.captureShowsCursor: false,
@@ -314,6 +316,14 @@ public struct Preferences {
     public var saveAfterCapture: Bool { store.bool(forKey: PreferenceKey.saveAfterCapture) }
     /// Where captures and recordings are written: the save folder, or a temporary one Quick Access and the editors can still open.
     public var captureFolder: URL { saveAfterCapture ? saveFolder : TemporaryCaptures.folder }
+    public var editorSavesOverOriginal: Bool { store.bool(forKey: PreferenceKey.editorSavesOverOriginal) }
+
+    /// Whether `file` is a capture Shot made, one directly in the save folder or the temporary one, which is the only kind
+    /// the editor's Save goes over.
+    public func isOwnCapture(_ file: URL) -> Bool {
+        let folder = file.deletingLastPathComponent().resolvingSymlinksInPath().path
+        return folder == saveFolder.resolvingSymlinksInPath().path || TemporaryCaptures.isTemporary(file)
+    }
     public var copyAfterCapture: Bool { store.bool(forKey: PreferenceKey.copyAfterCapture) }
     public var quickAccessAfterCapture: Bool { store.bool(forKey: PreferenceKey.quickAccessAfterCapture) }
     public var openEditorAfterCapture: Bool { store.bool(forKey: PreferenceKey.openEditorAfterCapture) }
