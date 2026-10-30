@@ -25,6 +25,7 @@ Shot starts an area screenshot, just as <kbd>⌘⇧4</kbd> does.
 | `shot://screenshot` | Open the screenshot overlay, where Tab picks an area, window or full screen |
 | `shot://capture-area`, `capture-window` | Take a screenshot, starting on an area or a window |
 | `shot://capture-fullscreen` | Take a screenshot of the screen under the pointer at once |
+| `shot://capture-scrolling` | Drag out an area that scrolls, then scroll it yourself while Shot builds one screenshot; a second call finishes it |
 | `shot://record` | Open the recording overlay, or confirm or stop a recording |
 | `shot://record-window` | Record, starting on a window |
 | `shot://record-fullscreen` | Record the screen under the pointer |

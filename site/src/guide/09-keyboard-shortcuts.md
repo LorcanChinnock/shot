@@ -34,9 +34,18 @@ Turn off **Use Shot for ⌘⇧4 and ⌘⇧5** in **Settings › Shortcuts**. mac
 
 ## Actions you can give a shortcut
 
-**Copy Text** has no shortcut until you set one. **Pick Colour** is in the menu bar menu only. Every action also has a [`shot://` link](#url-scheme).
+**Copy Text** and **Capture Scrolling Area** have no shortcut until you set one. **Pick Colour** is in the menu bar menu only. Every action also has a [`shot://` link](#url-scheme).
 
 - **Pick Colour** shows a loupe. Click any pixel on screen to copy its hex, such as `#1E90FF`.
+
+## Scrolling capture
+
+| Key | Action |
+|---|---|
+| Return | Save and copy the picture so far |
+| Esc | Cancel, keeping nothing |
+
+These work while the content's app has the keyboard, so you can keep scrolling with <kbd>Page Down</kbd> or <kbd>Space</kbd>. The Capture Scrolling Area shortcut, if you set one, also finishes the capture.
 
 ## While selecting
 

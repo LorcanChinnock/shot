@@ -14,9 +14,11 @@ final class HotkeyCenter {
     private var registered: [ShotAction: KeyCombo] = [:]
     /// True while the shortcut recorder listens, so global hotkeys don't swallow the keystroke.
     private var isSuspended = false
-    private var temporaryRef: EventHotKeyRef?
-    private var onTemporaryPress: (() -> Void)?
-    private static let temporaryID = UInt32.max
+    /// Keys taken for a while, by id, counted down from the top so they never meet an action's index.
+    private var temporaries: [UInt32: (ref: EventHotKeyRef, onPress: () -> Void)] = [:]
+    private var nextTemporaryID = UInt32.max
+    private static let firstTemporaryID = UInt32.max - 100_000
+    private var toastKey: TemporaryHotkeys?
 
     func reloadFromPreferences(force: Bool = false) {
         guard !isSuspended else {
@@ -40,29 +42,49 @@ final class HotkeyCenter {
     }
 
     /// Takes `combo` from every app until `unregisterTemporary()`, for a key that only means something briefly,
-    /// such as ⌘Z while a toast offers Undo. Replaces any earlier temporary key. False when it couldn't be registered.
+    /// such as ⌘Z while a toast offers Undo. Replaces any earlier such key. False when it couldn't be registered.
     @discardableResult
     func registerTemporary(_ combo: KeyCombo, onPress: @escaping () -> Void) -> Bool {
         unregisterTemporary()
-        installHandlerIfNeeded()
-        let id = EventHotKeyID(signature: OSType(0x5348_4F54), id: Self.temporaryID)
-        var ref: EventHotKeyRef?
-        let status = RegisterEventHotKey(combo.keyCode, combo.modifiers, id, GetEventDispatcherTarget(), 0, &ref)
-        guard status == noErr, let ref else {
-            log.error("RegisterEventHotKey failed for temporary \(combo.displayString, privacy: .public): \(status)")
-            return false
-        }
-        temporaryRef = ref
-        onTemporaryPress = onPress
-        return true
+        toastKey = registerTemporary(combos: [combo]) { _ in onPress() }
+        return toastKey != nil
     }
 
     func unregisterTemporary() {
-        if let temporaryRef {
-            UnregisterEventHotKey(temporaryRef)
+        toastKey?.unregister()
+        toastKey = nil
+    }
+
+    /// Takes `combos` from every app until the token is unregistered, as a scrolling capture takes Return and Esc.
+    /// `onPress` gets the combo pressed. `nil` when none could be registered; the rest are kept.
+    func registerTemporary(combos: [KeyCombo], onPress: @escaping (KeyCombo) -> Void) -> TemporaryHotkeys? {
+        installHandlerIfNeeded()
+        let token = TemporaryHotkeys(center: self)
+        for combo in combos {
+            if nextTemporaryID <= Self.firstTemporaryID {
+                nextTemporaryID = UInt32.max
+            }
+            let id = nextTemporaryID
+            nextTemporaryID -= 1
+            var ref: EventHotKeyRef?
+            let status = RegisterEventHotKey(combo.keyCode, combo.modifiers, EventHotKeyID(signature: OSType(0x5348_4F54), id: id), GetEventDispatcherTarget(), 0, &ref)
+            guard status == noErr, let ref else {
+                log.error("RegisterEventHotKey failed for temporary \(combo.displayString, privacy: .public): \(status)")
+                continue
+            }
+            temporaries[id] = (ref, { onPress(combo) })
+            token.ids.append(id)
         }
-        temporaryRef = nil
-        onTemporaryPress = nil
+        return token.ids.isEmpty ? nil : token
+    }
+
+    fileprivate func unregister(_ token: TemporaryHotkeys) {
+        for id in token.ids {
+            if let entry = temporaries.removeValue(forKey: id) {
+                UnregisterEventHotKey(entry.ref)
+            }
+        }
+        token.ids = []
     }
 
     private func register(_ bindings: [ShotAction: KeyCombo]) {
@@ -111,13 +133,28 @@ final class HotkeyCenter {
             let index = Int(id.id)
             // Carbon dispatches hotkey events on the main thread.
             MainActor.assumeIsolated {
-                if id.id == HotkeyCenter.temporaryID {
-                    HotkeyCenter.shared.onTemporaryPress?()
+                if id.id > HotkeyCenter.firstTemporaryID {
+                    HotkeyCenter.shared.temporaries[id.id]?.onPress()
                 } else if ShotAction.allCases.indices.contains(index) {
                     HotkeyCenter.shared.onPress?(ShotAction.allCases[index])
                 }
             }
             return noErr
         }, 1, &spec, nil, nil)
+    }
+}
+
+/// Keys taken for a while; `unregister()` gives them back.
+@MainActor
+final class TemporaryHotkeys {
+    fileprivate var ids: [UInt32] = []
+    private weak var center: HotkeyCenter?
+
+    fileprivate init(center: HotkeyCenter) {
+        self.center = center
+    }
+
+    func unregister() {
+        center?.unregister(self)
     }
 }

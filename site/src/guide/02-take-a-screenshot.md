@@ -1,6 +1,6 @@
 ---
 title: Take a screenshot
-summary: "Capture an area, a window or the whole screen, wait a few seconds first, or copy the text off your screen."
+summary: "Capture an area, a window, the whole screen or a long page, wait a few seconds first, or copy the text off your screen."
 group: Capture
 ---
 
@@ -36,6 +36,17 @@ Need to open a menu or hover over something first? Click the **Delay** chip, or 
 
 Shot stays in the background while it counts, so the menu you open stays open. Press <kbd>Esc</kbd> or click **Cancel** to stop. The delay is back to Off the next time you take a screenshot.
 
+## Capture a long page
+
+Capture Scrolling Area takes one screenshot of something taller or wider than the screen: a long web page, a chat thread, a document, a settings list or a spreadsheet. You scroll, and Shot builds the picture as you go. Shot never scrolls for you, so it works in every app and needs no extra permissions.
+
+1. Choose **Capture Scrolling Area** in Shot's menu bar menu, or press the shortcut you gave it in **Settings › Shortcuts**.
+2. Drag across the part of the screen that scrolls, or press <kbd>Space</kbd> and click a window. A panel appears beside it.
+3. Scroll the content with the trackpad, the mouse wheel, <kbd>Page Down</kbd> or <kbd>Space</kbd>. Any direction works, and so does scrolling back. The panel's preview shows the picture so far, with the parts you haven't scrolled over hatched, so you can go back and fill them in.
+4. Press <kbd>Return</kbd> or click **Done**. The screenshot is copied and saved like any other. <kbd>Esc</kbd> cancels and keeps nothing.
+
+Sticky headers, footers, pinned columns and floating buttons appear once, where they belong. If the panel says something needs attention, it tells you what to do: scroll back a little after a big jump, pause a video that's playing in the area, or include some text so there's something to line up. The picture can be up to 30,000 pixels on a side.
+
 ## Copy text from the screen
 
 Copy Text reads the text in part of the screen and copies it, without saving a screenshot. Everything happens on your Mac.
@@ -61,4 +72,4 @@ To pick a window, press <kbd>Tab</kbd>, step through the windows with the arrow 
 In **Settings › Capture**, choose whether Shot saves each screenshot, copies it and shows Quick Access, or opens it in the [annotation editor](#annotate-a-screenshot) straight away.
 
 > [!NOTE]
-> Every action here also has a [`shot://` link](#url-scheme), such as `shot://capture-window` and `shot://copy-text`, for scripts and launchers.
+> Every action here also has a [`shot://` link](#url-scheme), such as `shot://capture-window`, `shot://capture-scrolling` and `shot://copy-text`, for scripts and launchers.

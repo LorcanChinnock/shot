@@ -86,7 +86,7 @@ final class RecordingSetupController {
     }
 
     /// Lets the user pick an area or window with the live overlay, or takes the screen under the pointer.
-    static func pickRegion(mode: CaptureTarget) async -> Pick? {
+    static func pickRegion(mode: CaptureTarget, offersDelay: Bool = true) async -> Pick? {
         let screens = NSScreen.screens
         if mode == .screen {
             let screen = NSScreen.underPointer ?? screens[0]
@@ -94,7 +94,7 @@ final class RecordingSetupController {
         }
         let displays = screens.map { OverlayDisplay(frame: $0.frame, scale: $0.backingScaleFactor, image: nil) }
         let windows = WindowCapturer.onScreenWindows()
-        let result = await SelectionOverlayController.select(displays: displays, target: mode, offersDelay: true, windows: windows, isLive: true)
+        let result = await SelectionOverlayController.select(displays: displays, target: mode, offersDelay: offersDelay, windows: windows, isLive: true)
         guard let selection = result.selection else {
             return nil
         }

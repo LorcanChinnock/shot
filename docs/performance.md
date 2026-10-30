@@ -16,6 +16,7 @@ Each budget is 2× the baseline measured on the CI runner, which is slower than 
 | Overlay render | `AnnotationFrame.apply` of 20 annotations at 1920×1080, per frame over 30 frames, with the compositor's overlay cache | 11 µs | 22 µs | 44 µs |
 | Marker render | `AnnotationFrame.apply` of one marker over a 1920×1080 frame, which draws the whole canvas on the CPU and sends it back, then reading the frame out | 2.8 ms | 19.7 ms | 39.4 ms |
 | GIF export memory | Peak growth of the process footprint while exporting a 20 s 1080p video as a GIF | < 1 MB | 208 MB | 416 MB |
+| Scrolling capture frame | `ScrollStitcher.process` over three frames of the 15″ panel at 2× (3024×1964), per frame: lining one up with the last and painting it, which has to keep up with the stream | 29 ms | | 60 ms |
 | Gallery grouping | Filter, sort and group 1,500 items into date sections | 1.3 ms | 2.6 ms | 5.2 ms |
 | Gallery text search | Search 1,500 items whose screenshots have about 1.5 KB of text each for a word 15 of them contain, then group them | 3.0 ms | 5.4 ms | 10.8 ms |
 

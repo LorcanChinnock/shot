@@ -12,6 +12,8 @@ public enum ShotAction: String, CaseIterable, Sendable {
     case copyPath = "copy-path"
     /// Reads the text in a dragged-out area and copies it, without saving a capture.
     case copyText = "copy-text"
+    /// Takes one screenshot of content bigger than the screen, built up as the person scrolls it.
+    case captureScrolling = "capture-scrolling"
 
     public var isRecording: Bool { self == .record }
 
@@ -20,17 +22,17 @@ public enum ShotAction: String, CaseIterable, Sendable {
     public var hasShortcut: Bool {
         switch self {
         case .pickColor, .copyPath: false
-        case .screenshot, .record, .copyText: true
+        case .screenshot, .record, .copyText, .captureScrolling: true
         }
     }
 
-    /// Mirrors the macOS screenshot keys with ⌃ in place of ⌘. Pick Colour, Copy Path and Copy Text stay out of
-    /// the way with none.
+    /// Mirrors the macOS screenshot keys with ⌃ in place of ⌘. Pick Colour, Copy Path, Copy Text and Capture Scrolling
+    /// Area stay out of the way with none.
     public var defaultCombo: KeyCombo? {
         switch self {
         case .screenshot: KeyCombo(keyCode: 21, modifiers: KeyCombo.control | KeyCombo.shift)
         case .record: KeyCombo(keyCode: 23, modifiers: KeyCombo.control | KeyCombo.shift)
-        case .pickColor, .copyPath, .copyText: nil
+        case .pickColor, .copyPath, .copyText, .captureScrolling: nil
         }
     }
 
@@ -42,7 +44,7 @@ public enum ShotAction: String, CaseIterable, Sendable {
         switch self {
         case .screenshot: return KeyCombo(keyCode: 21, modifiers: KeyCombo.command | KeyCombo.shift)
         case .record: return KeyCombo(keyCode: 23, modifiers: KeyCombo.command | KeyCombo.shift)
-        case .pickColor, .copyPath, .copyText: return defaultCombo
+        case .pickColor, .copyPath, .copyText, .captureScrolling: return defaultCombo
         }
     }
 
@@ -149,6 +151,7 @@ extension ShotAction {
         case .pickColor: String(localized: "Pick Colour")
         case .copyPath: String(localized: "Copy Latest Capture's Path")
         case .copyText: String(localized: "Copy Text")
+        case .captureScrolling: String(localized: "Capture Scrolling Area")
         }
     }
 }

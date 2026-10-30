@@ -7,3 +7,4 @@ Read this before changing how Shot takes a screenshot or picks an area, window o
 - For an area or window pick, `DisplayCapturer` freezes every display, then `SelectionOverlayController.select` returns an area, window or display.
 - Fullscreen freezes only its screen and shows no overlay. A picked window is captured afresh, live, and recording runs live.
 - `finish` encodes off the main actor, saves and copies, then opens Quick Access or the editor.
+- A scrolling capture (`ScrollingCaptureController`) picks the area on the live overlay, then streams it with `SCStream` while the person scrolls, and `ScrollStitcher` in ShotCore lines each frame up with the last and paints it into a growing canvas. Return hands the image to `finish` like any other capture. The stitcher is pure pixel work, tested with synthetic pages in `ScrollStitcherTests`.

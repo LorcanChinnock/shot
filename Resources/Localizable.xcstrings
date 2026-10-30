@@ -4402,6 +4402,9 @@
         }
       }
     },
+    "Can't line up" : {
+
+    },
     "Can't open %@" : {
       "localizations" : {
         "de" : {
@@ -4879,7 +4882,13 @@
         }
       }
     },
+    "Capture Scrolling Area" : {
+
+    },
     "Capture overlay" : {
+
+    },
+    "Capturing" : {
 
     },
     "Change camera bubble size" : {
@@ -13533,6 +13542,9 @@
         }
       }
     },
+    "Full size" : {
+
+    },
     "Full-screen guide lines through the pointer." : {
       "localizations" : {
         "de" : {
@@ -18339,6 +18351,9 @@
         }
       }
     },
+    "Nothing to line up" : {
+
+    },
     "Nothing to save yet" : {
       "localizations" : {
         "de" : {
@@ -18390,6 +18405,9 @@
           }
         }
       }
+    },
+    "Nothing was captured. Try again." : {
+
     },
     "Nothing was recorded" : {
       "localizations" : {
@@ -21058,6 +21076,9 @@
         }
       }
     },
+    "Preview of the image so far" : {
+
+    },
     "Project" : {
       "localizations" : {
         "de" : {
@@ -21387,6 +21408,9 @@
           }
         }
       }
+    },
+    "Ready" : {
+
     },
     "Record" : {
       "localizations" : {
@@ -23524,6 +23548,9 @@
         }
       }
     },
+    "Save and copy (Return)" : {
+
+    },
     "Save and copy (⌘S)" : {
       "localizations" : {
         "de" : {
@@ -24456,6 +24483,15 @@
           }
         }
       }
+    },
+    "Scroll the content in any direction." : {
+
+    },
+    "Scrolled too far" : {
+
+    },
+    "Scrolled too far at once. Scroll back a little and carry on." : {
+
     },
     "Search" : {
       "localizations" : {
@@ -26788,6 +26824,9 @@
         }
       }
     },
+    "Something in the area keeps changing, so Shot can't line frames up. Pause the video or scroll past it." : {
+
+    },
     "Sort" : {
       "localizations" : {
         "de" : {
@@ -28687,6 +28726,9 @@
         }
       }
     },
+    "That area is too small to capture. Drag out a bigger one." : {
+
+    },
     "That video's GIF is already exporting" : {
       "localizations" : {
         "de" : {
@@ -28947,6 +28989,9 @@
         }
       }
     },
+    "The capture stopped: %@" : {
+
+    },
     "The cuts leave nothing to export" : {
       "localizations" : {
         "de" : {
@@ -29051,6 +29096,9 @@
         }
       }
     },
+    "The image is as big as Shot can stitch. Press Return to save it." : {
+
+    },
     "The microphone couldn't be recorded: %@" : {
       "localizations" : {
         "de" : {
@@ -29154,6 +29202,9 @@
           }
         }
       }
+    },
+    "There isn't enough in the area to line frames up. Include some text or an image, or drag out another area." : {
+
     },
     "This Month" : {
       "localizations" : {
