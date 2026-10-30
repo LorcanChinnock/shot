@@ -21,7 +21,3 @@ That's all most people need. Your marks show the assistant where to look.
 Right-click a Quick Access card and choose **Copy Path**. An assistant that can open files, such as a coding tool running on your Mac, can read the image from its path. Copies are always the image alone.
 
 The `shot://copy-path` link copies the newest capture's path without opening the card. See [Automation reference](#url-scheme).
-
-## Paste the text instead
-
-If the assistant only needs the words in a screenshot, use **Copy Text** to drag out an area and copy the text in it. Shot reads it on your Mac, so nothing leaves it until you paste.
