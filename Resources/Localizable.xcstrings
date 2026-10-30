@@ -811,6 +811,9 @@
         }
       }
     },
+    "%lld files weren't moved: %@ already has files with those names" : {
+
+    },
     "%lld fps" : {
       "localizations" : {
         "de" : {
@@ -2343,6 +2346,9 @@
           }
         }
       }
+    },
+    "Add a tag" : {
+
     },
     "Add an image" : {
       "localizations" : {
@@ -7724,6 +7730,9 @@
         }
       }
     },
+    "Couldn't create the folder: %@" : {
+
+    },
     "Couldn't export the GIF: %@" : {
       "localizations" : {
         "de" : {
@@ -8089,6 +8098,9 @@
       }
     },
     "Couldn't join the recording. Its parts are saved in your save folder." : {
+
+    },
+    "Couldn't move %lld files" : {
 
     },
     "Couldn't move %lld files to the Trash" : {
@@ -8875,6 +8887,9 @@
         }
       }
     },
+    "Couldn't tag %lld files" : {
+
+    },
     "Counter" : {
       "localizations" : {
         "de" : {
@@ -8926,6 +8941,12 @@
           }
         }
       }
+    },
+    "Create" : {
+
+    },
+    "Create and Move" : {
+
     },
     "Crop" : {
       "localizations" : {
@@ -10259,6 +10280,9 @@
           }
         }
       }
+    },
+    "Drag captures onto a folder in the sidebar, or use Move to in a capture's menu." : {
+
     },
     "Drag over private details to blur or pixelate them." : {
       "localizations" : {
@@ -13244,6 +13268,12 @@
           }
         }
       }
+    },
+    "Folder name" : {
+
+    },
+    "Folders are made in %@, so they show in Finder too." : {
+
     },
     "Frame" : {
 
@@ -17077,6 +17107,9 @@
     "More tools" : {
 
     },
+    "Move to" : {
+
+    },
     "Move to Trash" : {
       "localizations" : {
         "de" : {
@@ -17180,6 +17213,9 @@
           }
         }
       }
+    },
+    "Moved %lld files to %@" : {
+
     },
     "Moved %lld files to the Trash (⌘Z to undo)" : {
       "localizations" : {
@@ -17692,6 +17728,12 @@
           }
         }
       }
+    },
+    "New Folder" : {
+
+    },
+    "New Folder…" : {
+
     },
     "New Issue" : {
       "localizations" : {
@@ -23795,6 +23837,9 @@
         }
       }
     },
+    "Save new captures to" : {
+
+    },
     "Save the edited video and copy it (⌘S)" : {
       "localizations" : {
         "de" : {
@@ -26141,6 +26186,9 @@
           }
         }
       }
+    },
+    "Show only captures with this tag" : {
+
     },
     "Show or hide the tracks, keyframes, imports and annotations (T)" : {
 
@@ -28509,6 +28557,9 @@
     "Tab: area, window, browser or screen" : {
 
     },
+    "Tag…" : {
+
+    },
     "Take your first screenshot." : {
       "localizations" : {
         "de" : {
@@ -29364,6 +29415,9 @@
           }
         }
       }
+    },
+    "This folder is empty" : {
+
     },
     "This window was captured with its own shadow, so it takes no other style" : {
       "localizations" : {
@@ -30257,6 +30311,9 @@
           }
         }
       }
+    },
+    "Type a name and press Return. Tags show in Finder too." : {
+
     },
     "Undo" : {
       "localizations" : {
@@ -31410,6 +31467,9 @@
           }
         }
       }
+    },
+    "Where screenshots and recordings are saved from now on" : {
+
     },
     "White" : {
       "localizations" : {

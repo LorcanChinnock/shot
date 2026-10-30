@@ -36,6 +36,7 @@
 - **Annotate:** arrows, text, sticky notes, highlights, a spotlight, blur and pixelate, and several images on one canvas.
 - **Record:** an area, a window or a screen to MP4, with your microphone, the sound from your Mac and a camera bubble.
 - **Edit video and make GIFs:** trim, cut, crop, speed up and draw over a recording, then export an MP4 or a GIF.
+- **Organise:** browse every capture in the gallery, search the text in screenshots, and group captures into folders and Finder tags when you want to.
 - **Ask an AI assistant:** paste a marked-up screenshot into Claude or ChatGPT, or copy its path for an assistant that can open files.
 - **Light or dark:** Shot follows your Mac's appearance, or you can pick one in Settings.
 - **Private:** no account, no cloud and no analytics. Shot only goes online to check for updates, once you agree.

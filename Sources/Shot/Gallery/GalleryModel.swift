@@ -14,8 +14,7 @@ final class GalleryModel {
     /// Only a search uses it, and more text usually finds nothing new, so the grid redraws only when the matches change.
     @ObservationIgnored private var texts: [URL: String] = [:] {
         didSet {
-            if !query.trimmingCharacters(in: .whitespaces).isEmpty,
-               Gallery.visible(items, filter: filter, sort: sort, query: query, texts: texts) != visible {
+            if !query.trimmingCharacters(in: .whitespaces).isEmpty, matching() != visible {
                 refilter()
             }
         }
@@ -29,6 +28,36 @@ final class GalleryModel {
             readTextIfSearching()
         }
     }
+    /// The folder shown, by name, empty for the save folder itself, or `nil` for everything in all of them.
+    var shownFolder: String? = nil { didSet { measure("Gallery filter"); refilter() } }
+    /// The tags picked in the tag row; an item has to carry all of them.
+    var tagFilter: Set<String> = [] { didSet { measure("Gallery filter"); refilter() } }
+    /// The folders in the save folder, by name. The sidebar shows only once there's one.
+    private(set) var folders: [String] = []
+    /// The Finder tags of each item read so far. They're read after the list, off the main actor, and kept until the
+    /// gallery closes, so a tag added in Finder shows the next time it opens.
+    private(set) var tags: [URL: [String]] = [:] {
+        didSet {
+            allTags = GalleryTags.all(tags)
+            if !tagFilter.isEmpty || !GalleryQuery(query).tags.isEmpty {
+                refilter()
+            }
+        }
+    }
+    /// Every tag on the items, which the tag row and the Tag menu offer.
+    private(set) var allTags: [String] = []
+    /// The item whose Tag popover is open.
+    var taggingItem: URL?
+    /// The files the open Tag popover tags, fixed when it opens.
+    @ObservationIgnored private(set) var taggingTargets: [URL] = []
+    /// The files being dragged from the grid, which a folder in the sidebar takes when they're dropped on it.
+    @ObservationIgnored var dragged: [URL] = []
+    /// The folder new captures are saved to, by name; empty for the save folder itself.
+    var captureSubfolder: String {
+        get { folders.contains(storedCaptureSubfolder) ? storedCaptureSubfolder : "" }
+        set { storedCaptureSubfolder = newValue }
+    }
+    @ObservationIgnored @Setting(PreferenceKey.captureSubfolder) private var storedCaptureSubfolder: String
     private(set) var visible: [GalleryItem] = []
     private(set) var sections: [GallerySection] = []
     private(set) var hasLoaded = false
@@ -57,16 +86,21 @@ final class GalleryModel {
     @ObservationIgnored var onEdit: ((URL) -> Void)?
     @ObservationIgnored var onExportGIF: ((URL) -> Void)?
 
-    @ObservationIgnored private var watcher: DispatchSourceFileSystemObject?
-    @ObservationIgnored private var watchedFolder: URL?
+    /// One for the save folder and one for each folder in it, so a capture saved into a folder shows too.
+    @ObservationIgnored private var watchers: [URL: DispatchSourceFileSystemObject] = [:]
     @ObservationIgnored private var loadTask: Task<Void, Never>?
+    @ObservationIgnored private var tagTask: Task<Void, Never>?
     @ObservationIgnored private var debounce: Task<Void, Never>?
 
     var selectedItems: [GalleryItem] { visible.filter { selection.contains($0.url) } }
     var allSelected: Bool { Gallery.allSelected(selection, in: visible) }
 
+    private func matching() -> [GalleryItem] {
+        Gallery.visible(items, filter: filter, sort: sort, query: query, texts: texts, folder: shownFolder, tags: tagFilter, tagsOf: tags)
+    }
+
     private func refilter() {
-        visible = Gallery.visible(items, filter: filter, sort: sort, query: query, texts: texts)
+        visible = matching()
         sections = Gallery.sections(visible, sort: sort)
         selection.formIntersection(visible.map(\.url))
     }
@@ -87,11 +121,12 @@ final class GalleryModel {
     func stop() {
         TextIndexer.shared.onTexts = nil
         texts = [:]
-        watcher?.cancel()
-        watcher = nil
-        watchedFolder = nil
+        watchers.values.forEach { $0.cancel() }
+        watchers = [:]
         debounce?.cancel()
         loadTask?.cancel()
+        tagTask?.cancel()
+        tags = [:]
         thumbnails.removeAll()
     }
 
@@ -105,16 +140,24 @@ final class GalleryModel {
     }
 
     func reload() {
-        folder = Preferences().saveFolder
-        if watchedFolder != folder {
-            watch(folder)
+        let root = Preferences().saveFolder
+        if root != folder {
+            folder = root
+            shownFolder = nil
         }
         let folder = folder
         loadTask?.cancel()
         loadTask = Task {
-            let found = await Task.detached { Gallery.items(in: folder) }.value
+            let (found, names) = await Task.detached { (Gallery.items(in: folder), Gallery.folders(in: folder)) }.value
             guard !Task.isCancelled else {
                 return
+            }
+            watch([folder] + names.map { Gallery.folderURL($0, in: folder) })
+            if names != folders {
+                folders = names
+            }
+            if let shownFolder, !shownFolder.isEmpty, !names.contains(shownFolder) {
+                self.shownFolder = nil
             }
             if found != items {
                 items = found
@@ -122,24 +165,52 @@ final class GalleryModel {
             }
             hasLoaded = true
             selection.formIntersection(Set(found.map(\.url)))
+            readTags()
         }
     }
 
-    private func watch(_ folder: URL) {
-        watcher?.cancel()
-        watcher = nil
-        watchedFolder = folder
-        let descriptor = open(folder.path, O_EVTONLY)
-        guard descriptor >= 0 else {
+    /// Reads the tags of the items not read yet, off the main actor, and drops those of items that have gone.
+    private func readTags() {
+        let unread = items.map(\.url).filter { tags[$0] == nil }
+        let present = Set(items.map(\.url))
+        if tags.keys.contains(where: { !present.contains($0) }) {
+            tags = tags.filter { present.contains($0.key) }
+        }
+        guard !unread.isEmpty else {
             return
         }
-        let source = DispatchSource.makeFileSystemObjectSource(fileDescriptor: descriptor, eventMask: [.write, .rename, .delete, .extend], queue: .main)
-        source.setEventHandler { [weak self] in
-            MainActor.assumeIsolated { self?.reloadSoon() }
+        tagTask?.cancel()
+        tagTask = Task {
+            let read = await Task.detached(priority: .utility) {
+                Dictionary(uniqueKeysWithValues: unread.map { ($0, GalleryTags.tags(of: $0)) })
+            }.value
+            guard !Task.isCancelled else {
+                return
+            }
+            tags.merge(read) { _, new in new }
         }
-        source.setCancelHandler { close(descriptor) }
-        source.resume()
-        watcher = source
+    }
+
+    /// Watches each of `folders`, and stops watching any other.
+    private func watch(_ folders: [URL]) {
+        let wanted = Set(folders)
+        for (url, source) in watchers where !wanted.contains(url) {
+            source.cancel()
+            watchers[url] = nil
+        }
+        for url in folders where watchers[url] == nil {
+            let descriptor = open(url.path, O_EVTONLY)
+            guard descriptor >= 0 else {
+                continue
+            }
+            let source = DispatchSource.makeFileSystemObjectSource(fileDescriptor: descriptor, eventMask: [.write, .rename, .delete, .extend], queue: .main)
+            source.setEventHandler { [weak self] in
+                MainActor.assumeIsolated { self?.reloadSoon() }
+            }
+            source.setCancelHandler { close(descriptor) }
+            source.resume()
+            watchers[url] = source
+        }
     }
 
     /// A capture or export writes several times; wait for it to settle.
@@ -300,6 +371,149 @@ final class GalleryModel {
         } catch {
             Toast.error("Couldn't rename: \(error.localizedDescription)")
         }
+    }
+
+    // MARK: Folders
+
+    /// The name the save folder itself goes by in menus.
+    var rootName: String { folder.lastPathComponent }
+
+    /// Moves `items` into the folder `name`, or out of folders into the save folder itself when it's empty.
+    func move(_ items: [GalleryItem], to name: String) {
+        move(items.map(\.url), to: name)
+    }
+
+    /// Moves the files dropped on the folder `name`: everything the grid dragged when they're among it, otherwise those
+    /// of `urls` that are in the gallery, such as captures dragged in from Finder. Files from elsewhere stay put.
+    func drop(_ urls: [URL], on name: String) {
+        let fromGrid = dragged
+        dragged = []
+        let paths = Set(urls.map(\.standardizedFileURL.path))
+        let files: [URL]
+        if fromGrid.contains(where: { paths.contains($0.standardizedFileURL.path) }) {
+            files = fromGrid
+        } else {
+            files = items.map(\.url).filter { paths.contains($0.standardizedFileURL.path) }
+        }
+        guard !files.isEmpty else {
+            return
+        }
+        move(files, to: name)
+    }
+
+    private func move(_ files: [URL], to name: String) {
+        let result = Gallery.move(files, to: Gallery.folderURL(name, in: folder))
+        let place = name.isEmpty ? rootName : name
+        for failed in result.failed {
+            log.error("Could not move \(failed.path)")
+        }
+        if !result.taken.isEmpty {
+            Toast.error("\(result.taken.count) files weren't moved: \(place) already has files with those names")
+        } else if !result.failed.isEmpty {
+            Toast.error("Couldn't move \(result.failed.count) files")
+        } else if !result.moved.isEmpty {
+            Toast.show("Moved \(result.moved.count) files to \(place)")
+        }
+        let renamed = Dictionary(uniqueKeysWithValues: result.moved.map { ($0.from, $0.to) })
+        selection = Set(selection.map { renamed[$0] ?? $0 })
+        lead = lead.map { renamed[$0] ?? $0 }
+        anchor = anchor.map { renamed[$0] ?? $0 }
+        for (from, to) in renamed {
+            tags[to] = tags[from]
+            tags[from] = nil
+        }
+        reload()
+    }
+
+    /// Asks for a name and makes a folder with it, then moves `items` into it.
+    func newFolder(moving items: [GalleryItem] = []) {
+        let alert = NSAlert()
+        alert.messageText = String(localized: "New Folder")
+        alert.informativeText = String(localized: "Folders are made in \(rootName), so they show in Finder too.")
+        alert.addButton(withTitle: items.isEmpty ? String(localized: "Create") : String(localized: "Create and Move"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
+        let field = NSTextField(string: "")
+        field.placeholderString = String(localized: "Folder name")
+        field.frame = NSRect(x: 0, y: 0, width: 300, height: 24)
+        alert.accessoryView = field
+        alert.window.initialFirstResponder = field
+        NSApp.activate()
+        guard alert.runModal() == .alertFirstButtonReturn else {
+            return
+        }
+        guard let name = Gallery.folderName(field.stringValue) else {
+            Toast.error("Enter a name")
+            return
+        }
+        let url = Gallery.folderURL(name, in: folder)
+        do {
+            try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        } catch {
+            Toast.error("Couldn't create the folder: \(error.localizedDescription)")
+            return
+        }
+        if items.isEmpty {
+            reload()
+        } else {
+            move(items, to: name)
+        }
+    }
+
+    func revealFolder(_ name: String) {
+        NSWorkspace.shared.open(Gallery.folderURL(name, in: folder))
+    }
+
+    // MARK: Tags
+
+    /// Opens the Tag popover on `item`, for it or the selection it's in.
+    func startTagging(_ item: GalleryItem) {
+        taggingTargets = targets(for: item).map(\.url)
+        taggingItem = item.url
+    }
+
+    /// Adds `tag` to every one of `items`, or takes it off them all when they all carry it.
+    func toggleTag(_ tag: String, on items: [URL]) {
+        apply(GalleryTags.toggling(tag, on: items, tagsOf: tags))
+    }
+
+    /// Adds the tag typed in the Tag popover to every one of `items`.
+    func addTag(_ typed: String, to items: [URL]) {
+        let tag = typed.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !tag.isEmpty else {
+            return
+        }
+        // A tag typed in another case is the one already used, as in Finder.
+        let existing = allTags.first { $0.caseInsensitiveCompare(tag) == .orderedSame } ?? tag
+        var changed: [URL: [String]] = [:]
+        for url in items {
+            let current = tags[url] ?? []
+            let next = GalleryTags.adding(existing, to: current)
+            if next != current {
+                changed[url] = next
+            }
+        }
+        apply(changed)
+    }
+
+    private func apply(_ changed: [URL: [String]]) {
+        var failed = 0
+        for (url, next) in changed {
+            do {
+                try GalleryTags.setTags(next, of: url)
+                tags[url] = next
+            } catch {
+                failed += 1
+                log.error("Could not tag \(url.path): \(error.localizedDescription)")
+            }
+        }
+        if failed > 0 {
+            Toast.error("Couldn't tag \(failed) files")
+        }
+        tagFilter = tagFilter.filter { tag in allTags.contains { $0.caseInsensitiveCompare(tag) == .orderedSame } }
+    }
+
+    func toggleTagFilter(_ tag: String) {
+        tagFilter = tagFilter.symmetricDifference([tag])
     }
 
     /// Moves the files to the Trash, where Finder can put them back, then selects the item that takes the first one's place.

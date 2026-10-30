@@ -119,9 +119,11 @@ final class CaptureCoordinator {
     /// Copies the path of the newest capture, preferring an edited version over its original, so it pastes as the file
     /// itself.
     private func copyLatestPath() async {
-        let folder = Preferences().captureFolder
+        let prefs = Preferences()
+        // Saved captures may be in any of the save folder's folders; the temporary folder's own folders hold recording parts.
+        let folder = prefs.saveAfterCapture ? prefs.saveFolder : prefs.captureFolder, subfolders = prefs.saveAfterCapture
         let latest = await Task.detached {
-            Gallery.latest(in: Gallery.items(in: folder))?.url
+            Gallery.latest(in: Gallery.items(in: folder, subfolders: subfolders))?.url
         }.value
         guard let latest else {
             Toast.show("No captures in \(folder.lastPathComponent) yet")

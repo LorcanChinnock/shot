@@ -57,6 +57,8 @@ public enum PreferenceKey {
     /// The style Use this style for new captures saved; empty while it's off.
     public static let newCaptureStyle = "newCaptureStyle"
     public static let galleryTileSize = "galleryTileSize"
+    /// The folder in the save folder new captures go to, by name; empty for the save folder itself.
+    public static let captureSubfolder = "captureSubfolder"
     /// How large Shot draws its own text, a `TextSize`.
     public static let textSize = "textSize"
     /// Whether Shot follows the system appearance, an `AppearanceMode`.
@@ -148,6 +150,7 @@ public struct Preferences {
             PreferenceKey.editorObjectStyles: Data(),
             PreferenceKey.newCaptureStyle: Data(),
             PreferenceKey.galleryTileSize: Gallery.defaultTileSize,
+            PreferenceKey.captureSubfolder: "",
             PreferenceKey.editorShowsLayers: false,
             PreferenceKey.videoEditorShowsInspector: false,
         ]
@@ -314,15 +317,19 @@ public struct Preferences {
     public var imageFormat: ImageFormat { ImageFormat(rawValue: store.string(forKey: PreferenceKey.imageFormat) ?? "") ?? .png }
     public var downscaleRetina: Bool { store.bool(forKey: PreferenceKey.downscaleRetina) }
     public var saveAfterCapture: Bool { store.bool(forKey: PreferenceKey.saveAfterCapture) }
-    /// Where captures and recordings are written: the save folder, or a temporary one Quick Access and the editors can still open.
-    public var captureFolder: URL { saveAfterCapture ? saveFolder : TemporaryCaptures.folder }
+    /// The folder in the save folder that the gallery's Save new captures to menu picked; empty for the save folder itself.
+    public var captureSubfolder: String { store.string(forKey: PreferenceKey.captureSubfolder) ?? "" }
+    /// Where captures and recordings are written: the save folder, or the folder in it picked in the gallery, or a
+    /// temporary one Quick Access and the editors can still open.
+    public var captureFolder: URL { saveAfterCapture ? Gallery.captureFolder(in: saveFolder, subfolder: captureSubfolder) : TemporaryCaptures.folder }
     public var editorSavesOverOriginal: Bool { store.bool(forKey: PreferenceKey.editorSavesOverOriginal) }
 
-    /// Whether `file` is a capture Shot made, one directly in the save folder or the temporary one, which is the only kind
-    /// the editor's Save goes over.
+    /// Whether `file` is a capture Shot made, one in the save folder, or a folder directly in it, or in the temporary
+    /// one, which is the only kind the editor's Save goes over.
     public func isOwnCapture(_ file: URL) -> Bool {
-        let folder = file.deletingLastPathComponent().resolvingSymlinksInPath().path
-        return folder == saveFolder.resolvingSymlinksInPath().path || TemporaryCaptures.isTemporary(file)
+        let folder = file.deletingLastPathComponent().resolvingSymlinksInPath()
+        let root = saveFolder.resolvingSymlinksInPath().path
+        return folder.path == root || folder.deletingLastPathComponent().path == root || TemporaryCaptures.isTemporary(file)
     }
     public var copyAfterCapture: Bool { store.bool(forKey: PreferenceKey.copyAfterCapture) }
     public var quickAccessAfterCapture: Bool { store.bool(forKey: PreferenceKey.quickAccessAfterCapture) }

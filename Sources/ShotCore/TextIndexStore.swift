@@ -28,7 +28,7 @@ public struct TextIndexStore: Sendable {
         try index.encoded().write(to: url, options: .atomic)
     }
 
-    /// Reads the text of each screenshot directly inside `folder` that the index hasn't, newest first, with Vision on
+    /// Reads the text of each screenshot in `folder`, and the folders directly in it, that the index hasn't, newest first, with Vision on
     /// this Mac. It saves after every `saveEvery` and at the end, calling `saved` each time, so the gallery can show what's
     /// been read and a run cut short keeps it. An image Vision can't read is kept as having no text, so it isn't tried
     /// again until it changes. Returns how many it read.

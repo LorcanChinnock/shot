@@ -41,9 +41,20 @@ private func file(_ name: String, bytes: Int = 100, minutes: Double = 0, folder:
     var index = TextIndex()
     index.set("gone", for: file("gone.png"))
     index.set("elsewhere", for: file("x.png", folder: "/other"))
-    index.set("nested", for: file("x.png", folder: "/shots/inner"))
+    // The gallery lists the folders directly in the save folder, but nothing deeper.
+    index.set("in a folder", for: file("x.png", folder: "/shots/inner"))
+    index.set("deeper", for: file("x.png", folder: "/shots/inner/deeper"))
     _ = index.reconcile(folder: "/shots/", files: [])
-    #expect(index.entries.keys.sorted() == ["/other/x.png", "/shots/inner/x.png"])
+    #expect(index.entries.keys.sorted() == ["/other/x.png", "/shots/inner/deeper/x.png"])
+}
+
+@Test func aFileMovedIntoAFolderKeepsItsText() {
+    var index = TextIndex()
+    index.set("Quarterly report", for: file("Shot 1.png", bytes: 555, minutes: 3))
+    let moved = file("Shot 1.png", bytes: 555, minutes: 3, folder: "/shots/Clients")
+    let unread = index.reconcile(folder: "/shots", files: [moved])
+    #expect(unread.isEmpty)
+    #expect(index.text(of: moved) == "Quarterly report")
 }
 
 @Test func aRenamedFileKeepsItsTextWithoutBeingReadAgain() {

@@ -1,6 +1,7 @@
 import AppKit
 import ShotCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct GalleryRootView: View {
     let model: GalleryModel
@@ -9,7 +10,17 @@ struct GalleryRootView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            content
+            if !model.allTags.isEmpty {
+                GalleryTagRow(model: model)
+            }
+            HStack(alignment: .top, spacing: 14) {
+                // Folders stay out of the way until there's one.
+                if !model.folders.isEmpty {
+                    GallerySidebar(model: model)
+                        .frame(width: 170)
+                }
+                content
+            }
             GalleryFooter(model: model)
         }
         .onChange(of: model.searchFocusRequest) {
@@ -115,6 +126,16 @@ struct GalleryRootView: View {
                     .foregroundStyle(Brutal.faded(0.7))
                 Button("Open Folder") { NSWorkspace.shared.open(model.folder) }
                     .buttonStyle(BrutalButtonStyle(compact: true))
+            } else if let shown = model.shownFolder, !model.items.contains(where: { $0.folder == shown }) {
+                Image(systemName: "folder")
+                    .font(.scaled(34, weight: .bold))
+                    .foregroundStyle(Brutal.faded(0.55))
+                Text("This folder is empty")
+                    .font(Brutal.title(17))
+                    .foregroundStyle(Brutal.ink)
+                Text("Drag captures onto a folder in the sidebar, or use Move to in a capture's menu.")
+                    .font(Brutal.caption)
+                    .foregroundStyle(Brutal.faded(0.7))
             } else {
                 Image(systemName: "magnifyingglass")
                     .font(.scaled(34, weight: .bold))
@@ -177,7 +198,8 @@ private struct GalleryGrid: View {
                             .offset(y: top)
                         case let .tile(item, x, y):
                             GalleryTile(item: item, model: model, slot: model.thumbnails.slot(for: item), width: cell,
-                                        selected: model.selection.contains(item.url), selectionActive: !model.selection.isEmpty)
+                                        selected: model.selection.contains(item.url), selectionActive: !model.selection.isEmpty,
+                                        tagging: model.taggingItem == item.url)
                                 .equatable()
                                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { captionHeight = $0 - GalleryTile.thumbnailHeight(width: cell) }
                                 .offset(x: x, y: y)
@@ -328,11 +350,13 @@ private struct GalleryTile: View, Equatable {
     let selected: Bool
     /// Whether anything is selected, which shows every tile's checkbox.
     let selectionActive: Bool
+    /// Whether the Tag popover is open on this tile.
+    let tagging: Bool
     @State private var hovering = false
 
     nonisolated static func == (lhs: GalleryTile, rhs: GalleryTile) -> Bool {
         lhs.item == rhs.item && lhs.model === rhs.model && lhs.slot === rhs.slot && lhs.width == rhs.width
-            && lhs.selected == rhs.selected && lhs.selectionActive == rhs.selectionActive
+            && lhs.selected == rhs.selected && lhs.selectionActive == rhs.selectionActive && lhs.tagging == rhs.tagging
     }
 
     private var thumbnail: Thumbnail? { slot.thumbnail }
@@ -415,8 +439,15 @@ private struct GalleryTile: View, Equatable {
             let flags = event?.modifierFlags ?? NSEvent.modifierFlags
             model.click(item, command: flags.contains(.command), shift: flags.contains(.shift))
         }
-        .onDrag { NSItemProvider(contentsOf: item.url) ?? NSItemProvider() }
+        // The file itself, so it drops into a chat or Finder. A folder in the sidebar moves the whole selection it's in.
+        .onDrag {
+            model.dragged = model.targets(for: item).map(\.url)
+            return NSItemProvider(contentsOf: item.url) ?? NSItemProvider()
+        }
         .contextMenu { GalleryTileMenu(model: model, item: item) }
+        .popover(isPresented: Binding(get: { tagging }, set: { if !$0 { model.taggingItem = nil } }), arrowEdge: .bottom) {
+            GalleryTagPopover(model: model, targets: model.taggingTargets)
+        }
         .task(id: item) {
             await model.thumbnails.load(item)
         }
@@ -479,6 +510,15 @@ private struct GalleryTileMenu: View {
         if targets.count == 1 {
             Button("Rename…") { model.rename(item) }
         }
+        Menu("Move to") {
+            ForEach([""] + model.folders, id: \.self) { name in
+                Button(name.isEmpty ? model.rootName : name) { model.move(targets, to: name) }
+                    .disabled(targets.allSatisfy { $0.folder == name })
+            }
+            Divider()
+            Button("New Folder…") { model.newFolder(moving: targets) }
+        }
+        Button("Tag…") { model.startTagging(item) }
         Button("Show in Finder") { model.reveal(targets) }
         Divider()
         Button("Move to Trash") { model.trash(targets) }
@@ -505,5 +545,284 @@ private struct SelectionCheckbox: View {
         .brutalTip(checked ? "Deselect (⌘-click)" : "Select (⌘-click)")
         .accessibilityLabel(Text("Select"))
         .accessibilityAddTraits(checked ? .isSelected : [])
+    }
+}
+
+// MARK: Folders
+
+/// The folders in the save folder, and where new captures go. It shows only once there's a folder.
+private struct GallerySidebar: View {
+    let model: GalleryModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Save new captures to")
+                .font(Brutal.caption)
+                .foregroundStyle(Brutal.faded(0.7))
+                .padding(.horizontal, 3)
+            saveMenu
+                .padding(.bottom, 10)
+            GalleryFolderRow(model: model, title: String(localized: "All"), symbol: "square.grid.2x2", folder: nil)
+            GalleryFolderRow(model: model, title: model.rootName, symbol: "tray", folder: "")
+            ScrollView {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(model.folders, id: \.self) { name in
+                        GalleryFolderRow(model: model, title: name, symbol: "folder", folder: name)
+                    }
+                }
+            }
+            Button {
+                model.newFolder()
+            } label: {
+                Label("New Folder", systemImage: "plus")
+            }
+            .buttonStyle(BrutalButtonStyle(compact: true))
+            .padding(.top, 6)
+        }
+        .padding(.top, 8)
+        .padding(.leading, 3)
+    }
+
+    private var saveMenu: some View {
+        let entries: [BrutalMenuEntry] = ([""] + model.folders).map { name in
+            .item(name.isEmpty ? model.rootName : name, symbol: name.isEmpty ? "tray" : "folder", selected: name == model.captureSubfolder) {
+                model.captureSubfolder = name
+            }
+        }
+        return BrutalDropdown(title: "Save new captures to", entries: entries) {
+            HStack(spacing: 5) {
+                Image(systemName: model.captureSubfolder.isEmpty ? "tray" : "folder")
+                    .font(.scaled(10, weight: .bold))
+                Text(verbatim: model.captureSubfolder.isEmpty ? model.rootName : model.captureSubfolder)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.down")
+                    .font(.scaled(9, weight: .black))
+            }
+            .font(.scaled(12, weight: .bold))
+            .foregroundStyle(Brutal.ink)
+            .padding(.horizontal, 10)
+            .frame(height: 30)
+            .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
+        }
+        .buttonStyle(.plain)
+        .brutalTip("Where screenshots and recordings are saved from now on")
+    }
+}
+
+/// A folder in the sidebar, which shows only what's in it and takes tiles dropped on it. All shows everything and
+/// takes no drops.
+private struct GalleryFolderRow: View {
+    let model: GalleryModel
+    let title: String
+    let symbol: String
+    /// The folder's name, empty for the save folder itself, or `nil` for All.
+    let folder: String?
+    @State private var hovering = false
+    @State private var targeted = false
+
+    var body: some View {
+        let selected = model.shownFolder == folder
+        Button {
+            model.shownFolder = folder
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: symbol)
+                    .font(.scaled(12, weight: .semibold))
+                    .frame(width: 18)
+                Text(verbatim: title)
+                    .font(.scaled(13, weight: selected ? .heavy : .semibold))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(Brutal.ink)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 7)
+            .background {
+                if targeted {
+                    Color.clear.brutalSurface(Brutal.violet, radius: Brutal.Radius.panel, shadow: 0)
+                } else if selected {
+                    Color.clear.brutalSurface(Brutal.paper.opacity(0.6), glass: true, radius: Brutal.Radius.panel, shadow: 3)
+                } else if hovering {
+                    RoundedRectangle(cornerRadius: Brutal.Radius.panel, style: .circular).fill(Brutal.ink.opacity(0.06))
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .modifier(FolderDrop(model: model, folder: folder, targeted: $targeted))
+        .contextMenu {
+            if let folder {
+                Button("Show in Finder") { model.revealFolder(folder) }
+            }
+        }
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
+/// Moves the tiles dropped on a folder into it.
+private struct FolderDrop: ViewModifier {
+    let model: GalleryModel
+    let folder: String?
+    @Binding var targeted: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if let folder {
+            content.onDrop(of: [UTType.fileURL], isTargeted: $targeted) { providers in
+                Task {
+                    var urls: [URL] = []
+                    for provider in providers {
+                        if let url = await Self.fileURL(from: provider) {
+                            urls.append(url)
+                        }
+                    }
+                    model.drop(urls, on: folder)
+                }
+                return true
+            }
+        } else {
+            content
+        }
+    }
+
+    private static func fileURL(from provider: NSItemProvider) async -> URL? {
+        await withCheckedContinuation { continuation in
+            _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                continuation.resume(returning: url)
+            }
+        }
+    }
+}
+
+// MARK: Tags
+
+/// The tags on the captures, as chips that narrow the grid to those carrying every one picked. It shows only once a
+/// file has a tag.
+private struct GalleryTagRow: View {
+    let model: GalleryModel
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                Image(systemName: "tag")
+                    .font(.scaled(11, weight: .bold))
+                    .foregroundStyle(Brutal.faded(0.6))
+                    .accessibilityHidden(true)
+                ForEach(model.allTags, id: \.self) { tag in
+                    let on = model.tagFilter.contains(tag)
+                    Button {
+                        model.toggleTagFilter(tag)
+                    } label: {
+                        HStack(spacing: 5) {
+                            TagDot(tag: tag)
+                            Text(verbatim: tag)
+                                .lineLimit(1)
+                        }
+                        .font(.scaled(12, weight: .bold))
+                        .foregroundStyle(Brutal.ink)
+                        .inkOnFill(on ? Brutal.violet : nil)
+                        .padding(.horizontal, 9)
+                        .frame(height: 26)
+                        .brutalSurface(on ? Brutal.violet : Brutal.paper.opacity(0.85), radius: Brutal.Radius.chip, shadow: on ? 0 : 2)
+                    }
+                    .buttonStyle(.plain)
+                    .brutalTip("Show only captures with this tag")
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                }
+            }
+            .padding(.horizontal, 3)
+            .padding(.vertical, 6)
+        }
+    }
+}
+
+/// A Finder tag's colour, for the tags named like Finder's coloured ones; other tags have none.
+private struct TagDot: View {
+    let tag: String
+
+    var body: some View {
+        if let color = Self.color(of: tag) {
+            Circle()
+                .fill(Color(nsColor: color))
+                .frame(width: 9, height: 9)
+        }
+    }
+
+    static func color(of tag: String) -> NSColor? {
+        let labels = NSWorkspace.shared.fileLabels, colors = NSWorkspace.shared.fileLabelColors
+        // The first label is None.
+        guard let index = labels.firstIndex(where: { $0.caseInsensitiveCompare(tag) == .orderedSame }), index > 0, index < colors.count else {
+            return nil
+        }
+        return colors[index]
+    }
+}
+
+/// Adds a tag to the files it opened on, or takes one off them, from the tags already used.
+private struct GalleryTagPopover: View {
+    let model: GalleryModel
+    let targets: [URL]
+    @State private var name = ""
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TextField("Add a tag", text: $name)
+                .textFieldStyle(.plain)
+                .font(.scaled(13, weight: .semibold))
+                .focused($focused)
+                .padding(.horizontal, 8)
+                .frame(height: 28)
+                .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
+                .onSubmit {
+                    model.addTag(name, to: targets)
+                    name = ""
+                }
+            if model.allTags.isEmpty {
+                Text("Type a name and press Return. Tags show in Finder too.")
+                    .font(Brutal.caption)
+                    .foregroundStyle(Brutal.faded(0.7))
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(model.allTags, id: \.self) { tag in
+                            row(tag)
+                        }
+                    }
+                }
+                .frame(maxHeight: 220)
+            }
+        }
+        .padding(12)
+        .frame(width: 230)
+        .onAppear { focused = true }
+    }
+
+    private func row(_ tag: String) -> some View {
+        let coverage = GalleryTags.coverage(of: tag, on: targets, tagsOf: model.tags)
+        return Button {
+            model.toggleTag(tag, on: targets)
+        } label: {
+            HStack(spacing: 7) {
+                Image(systemName: coverage == .all ? "checkmark.square.fill" : coverage == .some ? "minus.square" : "square")
+                    .font(.scaled(12, weight: .bold))
+                TagDot(tag: tag)
+                Text(verbatim: tag)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .font(.scaled(13, weight: .semibold))
+            .foregroundStyle(Brutal.ink)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(coverage == .all ? .isSelected : [])
     }
 }
