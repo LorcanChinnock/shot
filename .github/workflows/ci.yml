@@ -91,6 +91,11 @@ jobs:
       - name: Test on macOS
         timeout-minutes: 10
         run: scripts/ci-test.sh test --skip-build
+      # Starts the app, which no other step does, so a bad entitlement, a missing resource or a Sparkle misconfiguration
+      # fails here and not after release. Builds the universal release app, as `make dist` does. See scripts/smoke.sh.
+      - name: Launch smoke test
+        timeout-minutes: 10
+        run: make bundle && scripts/smoke.sh
       # On the release PR, which makes it the release gate, and on any PR labelled performance, to keep ordinary PRs'
       # runs short. Adding the label doesn't start a run; the next push does. Alone, so other tests running in parallel
       # don't skew the timings. Budgets: docs/performance.md.
