@@ -32,7 +32,6 @@ Only `make dist` builds `Shot.app` with the update feed. Every other build is `S
 | `make test` | Run the unit tests in `Tests/ShotCoreTests` |
 | `make lint` | Check for code patterns that have caused bugs (`scripts/lint.sh`) and that the string catalog is up to date |
 | `make strings` | Add new strings to `Resources/Localizable.xcstrings` and drop unused ones |
-| `make perf` | Time the `ShotCore` paths that have [performance budgets](docs/performance.md) |
 | `make perf-app` | Measure launch, capture, memory and idle CPU of the installed app against its budgets |
 | `make app` | Build and install without launching (`INSTALL_DIR=~/Applications make app` to install elsewhere) |
 | `make bundle` | Build and sign `build/ShotDev.app` only |
