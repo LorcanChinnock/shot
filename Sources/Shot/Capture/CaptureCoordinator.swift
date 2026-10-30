@@ -210,7 +210,7 @@ final class CaptureCoordinator {
         switch selection {
         case let .area(display, _, _), let .fullDisplay(display):
             index = display
-        case let .window(info):
+        case let .window(info), let .page(info, _):
             index = frozen.firstIndex { $0.frame.intersects(Geometry.flip(info.frame, primaryHeight: NSScreen.screens.first?.frame.height ?? 0)) } ?? 0
         }
         let screen = NSScreen.screens.first { $0.frame == frozen[index].frame } ?? NSScreen.underPointer ?? NSScreen.screens[0]
@@ -227,7 +227,7 @@ final class CaptureCoordinator {
                 throw CaptureError.encodingFailed
             }
             try await finish(image: image, scale: fresh.scale, from: rect.offsetBy(dx: fresh.frame.minX, dy: fresh.frame.minY))
-        case .window:
+        case .window, .page:
             // A window is captured afresh anyway.
             let picked = try await picture(of: selection, frozen: frozen)
             try await finish(image: picked.image, scale: picked.scale, from: picked.frame, windowShadow: picked.windowShadow)
@@ -251,6 +251,9 @@ final class CaptureCoordinator {
             let windowShadow = Preferences().windowShadow
             let result = try await WindowCapturer.capture(windowID: info.windowID, includeShadow: windowShadow)
             return (result.image, result.scale, Geometry.flip(info.frame, primaryHeight: NSScreen.screens.first?.frame.height ?? 0), windowShadow)
+        case let .page(info, insets):
+            let page = try await WindowCapturer.capturePage(of: info, insets: insets)
+            return (page.image, page.scale, Geometry.flip(insets.page(in: info.frame), primaryHeight: NSScreen.screens.first?.frame.height ?? 0), false)
         case let .fullDisplay(index):
             let display = frozen[index]
             // Cropped as a whole-screen capture is anywhere else, which leaves out the menu bar when Settings say to.
@@ -285,6 +288,8 @@ final class CaptureCoordinator {
             image = cropped
         case let .window(info):
             image = try await WindowCapturer.capture(windowID: info.windowID, includeShadow: false).image
+        case let .page(info, insets):
+            image = try await WindowCapturer.capturePage(of: info, insets: insets).image
         case let .fullDisplay(index):
             image = frozen[index].image
         }
@@ -338,7 +343,7 @@ final class CaptureCoordinator {
         let prefs = Preferences()
         // Record Fullscreen has no pick to end, so `pickRegion` never reports ⌥ for it; its hotkey may itself hold ⌥.
         let start = RecordingStart.after(adjustBeforeRecording: prefs.adjustBeforeRecording, countdown: pick.delay, optionHeld: pick.optionHeld)
-        let controller = RecordingSetupController(mode: pick.target, screen: pick.screen, region: pick.region, windowID: pick.windowID, ratio: pick.ratio, start: start) { [state] in
+        let controller = RecordingSetupController(mode: pick.target, screen: pick.screen, region: pick.region, windowID: pick.windowID, pageInsets: pick.pageInsets, ratio: pick.ratio, start: start) { [state] in
             state.countdown = $0
         }
         setup = controller

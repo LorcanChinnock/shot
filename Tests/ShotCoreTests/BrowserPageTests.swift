@@ -26,3 +26,29 @@ struct BrowserPageTests {
         #expect(BrowserPage.page(among: [], inside: window) == nil)
     }
 }
+
+struct PageInsetsTests {
+    @Test func aResizedWindowKeepsItsToolbarHeight() {
+        let window = CGRect(x: 100, y: 50, width: 1200, height: 800)
+        let insets = PageInsets(window: window, page: CGRect(x: 100, y: 130, width: 1200, height: 720))
+        let resized = CGRect(x: 300, y: 200, width: 900, height: 600)
+        #expect(insets.page(in: resized) == CGRect(x: 300, y: 280, width: 900, height: 520))
+    }
+
+    @Test func aWindowShrunkBelowItsChromeStillHasAPage() {
+        let insets = PageInsets(window: CGRect(x: 0, y: 0, width: 1000, height: 800), page: CGRect(x: 0, y: 700, width: 1000, height: 100))
+        #expect(insets.page(in: CGRect(x: 0, y: 0, width: 500, height: 300)).height == 1)
+    }
+}
+
+struct AspectFitTests {
+    @Test func aWiderShapeIsLetterboxed() {
+        let rect = AspectFit.rect(for: CGSize(width: 200, height: 50), in: CGSize(width: 100, height: 100))
+        #expect(rect == CGRect(x: 0, y: 37.5, width: 100, height: 25))
+    }
+
+    @Test func aTallerShapeIsPillarboxed() {
+        let rect = AspectFit.rect(for: CGSize(width: 50, height: 200), in: CGSize(width: 100, height: 100))
+        #expect(rect == CGRect(x: 37.5, y: 0, width: 25, height: 100))
+    }
+}

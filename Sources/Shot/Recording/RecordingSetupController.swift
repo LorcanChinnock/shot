@@ -17,6 +17,8 @@ final class RecordingSetupModel {
     var cursorOn: Bool
     /// Set when recording a single window rather than a screen area.
     var windowID: CGWindowID?
+    /// Set with `windowID` when recording just a browser window's page.
+    var pageInsets: PageInsets?
     /// Seconds left while counting down.
     var countdown: Int? {
         didSet { onCountdown(countdown) }
@@ -34,7 +36,7 @@ final class RecordingSetupModel {
         cursorOn = prefs.recordShowsCursor
     }
 
-    var options: Recorder.Options { .init(camera: cameraOn, microphone: microphoneOn, showsCursor: cursorOn, windowID: windowID) }
+    var options: Recorder.Options { .init(camera: cameraOn, microphone: microphoneOn, showsCursor: cursorOn, windowID: windowID, pageInsets: pageInsets) }
 }
 
 /// Starts a recording of a picked area, first showing the setup panel and counting down when `RecordingStart` asks for them.
@@ -63,13 +65,14 @@ final class RecordingSetupController {
     private var preparing = false
 
     /// `onCountdown` gets the seconds left as the countdown runs, and `nil` when it ends.
-    init(mode: CaptureTarget, screen: NSScreen, region: CGRect, windowID: CGWindowID?, ratio: CGFloat?, start: RecordingStart, onCountdown: @escaping (Int?) -> Void) {
+    init(mode: CaptureTarget, screen: NSScreen, region: CGRect, windowID: CGWindowID?, pageInsets: PageInsets?, ratio: CGFloat?, start: RecordingStart, onCountdown: @escaping (Int?) -> Void) {
         model = RecordingSetupModel(mode: mode, prefs: Preferences(), countdownSeconds: start.countdown, onCountdown: onCountdown)
         showsSetup = start.showsSetup
         self.screen = screen
         self.region = region
         self.ratio = ratio
         model.windowID = windowID
+        model.pageInsets = pageInsets
     }
 
     /// What `pickRegion` picked; `optionHeld` is whether ⌥ was held as the pick ended.
@@ -77,6 +80,7 @@ final class RecordingSetupController {
         let screen: NSScreen
         let region: CGRect
         let windowID: CGWindowID?
+        var pageInsets: PageInsets?
         let ratio: CGFloat?
         var optionHeld = false
         /// Seconds chosen on the overlay to wait before recording; 0 is off.
@@ -106,15 +110,18 @@ final class RecordingSetupController {
         case let .window(info):
             let (screen, region) = region(of: info)
             return Pick(screen: screen, region: region, windowID: info.windowID, ratio: nil, optionHeld: optionHeld, delay: result.delay, target: .window)
+        case let .page(info, insets):
+            let (screen, region) = region(of: info, insets: insets)
+            return Pick(screen: screen, region: region, windowID: info.windowID, pageInsets: insets, ratio: nil, optionHeld: optionHeld, delay: result.delay, target: .window)
         case let .fullDisplay(index):
             return Pick(screen: screens[index], region: screens[index].fullCaptureFrame, windowID: nil, ratio: nil, optionHeld: optionHeld, delay: result.delay, target: .screen)
         }
     }
 
     /// The screen a window is mostly on, by its centre, and the part of the window on that screen, as an AppKit global rect.
-    static func region(of window: WindowInfo) -> (screen: NSScreen, region: CGRect) {
+    static func region(of window: WindowInfo, insets: PageInsets? = nil) -> (screen: NSScreen, region: CGRect) {
         let screens = NSScreen.screens
-        let frame = Geometry.flip(window.frame, primaryHeight: screens.first?.frame.height ?? 0)
+        let frame = Geometry.flip(insets?.page(in: window.frame) ?? window.frame, primaryHeight: screens.first?.frame.height ?? 0)
         let screen = screens.first { $0.frame.contains(CGPoint(x: frame.midX, y: frame.midY)) } ?? screens[0]
         return (screen, frame.intersection(screen.frame))
     }
@@ -208,6 +215,7 @@ final class RecordingSetupController {
             screen = picked.screen
             region = picked.region
             model.windowID = picked.windowID
+            model.pageInsets = picked.pageInsets
             ratio = picked.ratio
             tearDownSetup()
             await showSetup(placeCamera: true)
@@ -286,6 +294,7 @@ final class RecordingSetupController {
         // A dragged screen or window frame is now a custom area.
         model.mode = .area
         model.windowID = nil
+        model.pageInsets = nil
         updateGeometry()
     }
 

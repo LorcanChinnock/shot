@@ -16,6 +16,8 @@ enum OverlaySelection {
     /// `rect` is in the display's view space: points, bottom-left origin. `ratio` is the width over height it was held to, if any.
     case area(display: Int, rect: CGRect, ratio: CGFloat?)
     case window(WindowInfo)
+    /// A browser window's page alone, as how far it sits in from the window's edges.
+    case page(WindowInfo, PageInsets)
     case fullDisplay(Int)
 }
 
@@ -224,9 +226,9 @@ final class SelectionOverlayController {
         views.first?.announceWindow(name)
     }
 
-    /// The page of a browser window, in AppKit global points, while Shift is held over Window. Nil for any other window,
-    /// or when Accessibility isn't allowed (the first Shift asks for it).
-    func pageFrame(of window: WindowInfo) -> CGRect? {
+    /// The page of a browser window, in CoreGraphics global space, while Shift is held over Window. Nil for any other
+    /// window, or when Accessibility isn't allowed (the first Shift asks for it).
+    private func pageRect(of window: WindowInfo) -> CGRect? {
         guard windowMode, NSEvent.modifierFlags.contains(.shift) else {
             return nil
         }
@@ -234,22 +236,25 @@ final class SelectionOverlayController {
             BrowserPageFinder.requestTrust()
             return nil
         }
-        let page: CGRect?
         if let cached = pageCache[window.windowID] {
-            page = cached
-        } else {
-            page = BrowserPageFinder.page(of: window)
-            pageCache[window.windowID] = .some(page)
+            return cached
         }
-        return page.map { Geometry.flip($0, primaryHeight: NSScreen.screens.first?.frame.height ?? 0) }
+        let page = BrowserPageFinder.page(of: window)
+        pageCache[window.windowID] = .some(page)
+        return page
     }
 
-    /// What a click on `window` picks on the display at `index`: the window, or just its page when Shift is held over a browser.
-    func selection(for window: WindowInfo, onDisplay index: Int, frame: CGRect) -> OverlaySelection {
-        guard let page = pageFrame(of: window)?.intersection(frame), !page.isNull else {
+    /// The page of a browser window in AppKit global points.
+    func pageFrame(of window: WindowInfo) -> CGRect? {
+        pageRect(of: window).map { Geometry.flip($0, primaryHeight: NSScreen.screens.first?.frame.height ?? 0) }
+    }
+
+    /// What a click on `window` picks: the window, or just its page when Shift is held over a browser.
+    func selection(for window: WindowInfo) -> OverlaySelection {
+        guard let page = pageRect(of: window) else {
             return .window(window)
         }
-        return .area(display: index, rect: page.offsetBy(dx: -frame.minX, dy: -frame.minY), ratio: nil)
+        return .page(window, PageInsets(window: window.frame, page: page))
     }
 
     /// AppKit global frame of a window.

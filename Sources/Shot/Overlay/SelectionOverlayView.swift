@@ -167,7 +167,7 @@ final class SelectionOverlayView: NSView {
         }
         if controller.windowMode {
             if let window = controller.hoveredWindow {
-                controller.finish(controller.selection(for: window, onDisplay: index, frame: display.frame), modifiers: event.modifierFlags)
+                controller.finish(controller.selection(for: window), modifiers: event.modifierFlags)
             }
             return
         }
@@ -231,7 +231,7 @@ final class SelectionOverlayView: NSView {
             }
         case 36 where controller.windowMode && controller.hoveredWindow != nil, 76 where controller.windowMode && controller.hoveredWindow != nil:
             if let window = controller.hoveredWindow {
-                controller.finish(controller.selection(for: window, onDisplay: index, frame: display.frame), modifiers: event.modifierFlags)
+                controller.finish(controller.selection(for: window), modifiers: event.modifierFlags)
             }
         case 36 where controller.screenMode, 76 where controller.screenMode:
             controller.finish(.fullDisplay(index), modifiers: event.modifierFlags)

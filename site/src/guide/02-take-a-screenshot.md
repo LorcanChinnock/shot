@@ -18,7 +18,7 @@ Chips at the top of the screen show what you are about to capture: **Area**, **W
 
 - **Area:** drag across it.
 - **Window:** click a window. Shot captures it as it is right now, even if something covers it, and keeps its macOS shadow. To leave the shadow out, turn off **Window shadow** in **Settings › Capture**.
-  - **Just the web page:** hold <kbd>⇧</kbd> over a browser window and the highlight shrinks to the page, without the tabs and address bar. Click to capture it. Shot asks for Accessibility access the first time, because that is how it finds where the page is. It works with Safari, Chrome and Edge, and for recordings too.
+  - **Just the web page:** hold <kbd>⇧</kbd> over a browser window and the highlight shrinks to the page, without the tabs and address bar. Click to capture it. Shot asks for Accessibility access the first time, because that is how it finds where the page is. It works with Safari, Chrome and Edge, and for recordings too. A recording of a window or page follows it when you move or resize it, and keeps the video at the size it started at, with empty bars if the shape changes.
 - **Full Screen:** click the screen you want, or press <kbd>Return</kbd>. With more than one display, the one under the pointer is highlighted.
 
 While you drag an area:
