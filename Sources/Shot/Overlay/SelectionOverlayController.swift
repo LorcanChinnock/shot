@@ -247,7 +247,7 @@ final class SelectionOverlayController {
     /// Steps the window highlight front to back (back to front when `backward`) among the windows on a display, for use without a mouse.
     func stepWindow(backward: Bool) {
         let visible = windows.filter { window in
-            panels.contains { $0.frame.intersects(appKitFrame(of: window)) } && (!browserMode || pageRect(of: window) != nil)
+            panels.contains { $0.frame.intersects(appKitFrame(of: window)) }
         }
         guard !visible.isEmpty else {
             return
@@ -260,7 +260,6 @@ final class SelectionOverlayController {
             next = backward ? visible.count - 1 : 0
         }
         hoveredWindow = visible[next]
-        hoveredPage = browserMode ? pageRect(of: visible[next]) : nil
         isWindowPinned = true
         for view in views {
             view.needsDisplay = true

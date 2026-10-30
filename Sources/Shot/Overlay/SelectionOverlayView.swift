@@ -200,7 +200,7 @@ final class SelectionOverlayView: NSView {
             controller.toggleScrolling()
         case 2:
             controller.cycleDelay()
-        case 123...126 where controller.windowMode:
+        case 123...126 where controller.target == .window:
             controller.stepWindow(backward: event.keyCode == 123 || event.keyCode == 126)
         case 123...126 where controller.target == .area && dragStart == nil:
             nudgeSelection(keyCode: event.keyCode, event.modifierFlags)
@@ -454,7 +454,7 @@ final class SelectionOverlayView: NSView {
         case .browser:
             parts = controller.needsPageAccess
                 ? [String(localized: "Allow Accessibility in System Settings to pick a page")]
-                : [String(localized: "Click a browser page"), String(localized: "Arrows: next browser")]
+                : [String(localized: "Click a browser page")]
         case .screen:
             parts = [String(localized: "Click a screen")]
         }
