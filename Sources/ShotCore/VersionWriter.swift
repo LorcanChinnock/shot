@@ -29,14 +29,20 @@ public enum VersionWriter {
     public struct SavedImage: Sendable {
         public let url: URL
         public let png: Data
+        /// The file whose pixels the layers sit on: the one saved from, or the copy kept when saving over it.
+        public let original: URL
     }
 
     /// The next version of `url` for a file written as `format`. It keeps the original's extension when that names
     /// `format`, so "a.jpeg" gives "a (2).jpeg", and otherwise takes the format's own, so "a.heic" saved as PNG gives "a (2).png".
     public static func nextVersionURL(of url: URL, savedAs format: ImageFormat, exists: (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }) -> URL {
-        let names = format == .png ? ["png"] : ["jpg", "jpeg"]
-        let ext = names.contains(url.pathExtension.lowercased()) ? url.pathExtension : format.fileExtension
+        let ext = keepsExtension(of: url, savedAs: format) ? url.pathExtension : format.fileExtension
         return VersionNaming.nextVersionURL(of: url.deletingPathExtension().appendingPathExtension(ext), exists: exists)
+    }
+
+    /// Whether `url`'s extension already names `format`, so a file saved as `format` can take its place.
+    static func keepsExtension(of url: URL, savedAs format: ImageFormat) -> Bool {
+        (format == .png ? ["png"] : ["jpg", "jpeg"]).contains(url.pathExtension.lowercased())
     }
 
     /// Flattens `document` and encodes it as `format`, with `projectID` stamped in it when it has a project. `atOneX` scales it to one pixel per point, as
@@ -56,13 +62,24 @@ public enum VersionWriter {
     }
 
     /// Saves `document`, drawn on the file at `original`, as that file's next version in its own format, as the image
-    /// editor's Save does. The version keeps its layers
+    /// editor's Save does. With `overwriting`, it replaces `original` instead, after keeping a copy of it in `projects`
+    /// for the layers to sit on, unless `pristine` already is one. A file that isn't saved in its own format, or
+    /// no `projects` to keep the copy in, still gets a new version. The version keeps its layers
     /// in `projects`, so it reopens live. A project that can't be written leaves the version
     /// saved, flat, as a version saved before projects is.
     public static func saveImage(
-        _ document: EditorDocument, of original: URL, scale: CGFloat, projects: ProjectStore? = nil
+        _ document: EditorDocument, of original: URL, pristine: URL? = nil, overwriting: Bool = false, scale: CGFloat, projects: ProjectStore? = nil
     ) throws(Failure) -> SavedImage {
         let format = ImageFormat(fileExtension: original.pathExtension)
+        let overwrites = overwriting && projects != nil && keepsExtension(of: original, savedAs: format)
+        var base = pristine ?? original
+        if overwrites, pristine == nil, let projects {
+            do {
+                base = try projects.keepOriginal(copying: original)
+            } catch {
+                throw .write(error)
+            }
+        }
         let projectID = projects == nil ? nil : ProjectKey.newID()
         let rendered = try render(document, scale: scale, as: format, projectID: projectID)
         let png: Data
@@ -74,14 +91,26 @@ public enum VersionWriter {
             }
             png = data
         }
-        let destination = nextVersionURL(of: original, savedAs: format)
+        let destination = overwrites ? original : nextVersionURL(of: original, savedAs: format)
         do {
             try rendered.file.write(to: destination, options: .atomic)
         } catch {
             throw .write(error)
         }
-        keep(document.snapshot, of: destination, id: projectID, original: original, in: projects)
-        return SavedImage(url: destination, png: png)
+        keep(document.snapshot, of: destination, id: projectID, original: base, in: projects)
+        return SavedImage(url: destination, png: png, original: base)
+    }
+
+    /// Puts the pristine copy `pristine` back over `file`, which was saved over, as it was before.
+    public static func revert(_ file: URL, to pristine: URL) throws {
+        let copy = file.deletingLastPathComponent().appendingPathComponent(".\(UUID().uuidString).\(file.pathExtension)")
+        try FileManager.default.copyItem(at: pristine, to: copy)
+        do {
+            _ = try FileManager.default.replaceItemAt(file, withItemAt: copy)
+        } catch {
+            try? FileManager.default.removeItem(at: copy)
+            throw error
+        }
     }
 
     /// Keeps `layers`, of the version just written at `url` over `original`, in `projects` under `id`, the ID stamped
@@ -104,6 +133,10 @@ public enum VersionWriter {
               let kept = project.entry.original, let original = kept.locate(),
               let found = ProjectFile(at: original, bookmark: false), kept.matches(found), original.standardizedFileURL != url.standardizedFileURL
         else {
+            return nil
+        }
+        // A file saved over is no longer what the layers were saved with once something else changes it.
+        if projects.keeps(original), !(ProjectFile(at: url, bookmark: false).map(project.entry.file.matches) ?? false) {
             return nil
         }
         return (original, layers)

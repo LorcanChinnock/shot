@@ -588,6 +588,9 @@
         }
       }
     },
+    "%@ of screenshots as they were before Save went over them. They let you undo those edits, and stay on this Mac." : {
+
+    },
     "%@ outside" : {
       "localizations" : {
         "de" : {
@@ -8609,6 +8612,9 @@
         }
       }
     },
+    "Couldn't revert: %@" : {
+
+    },
     "Couldn't save the image" : {
       "localizations" : {
         "de" : {
@@ -15754,6 +15760,9 @@
       }
     },
     "Keeps the crop this shape, wide or tall to match it." : {
+
+    },
+    "Kept originals" : {
 
     },
     "Keyframe %@ here" : {
@@ -23092,6 +23101,9 @@
         }
       }
     },
+    "Revert to Original" : {
+
+    },
     "Round webcam overlay recorded with your screen. Drag to move, double-click to resize." : {
       "localizations" : {
         "de" : {
@@ -23728,6 +23740,9 @@
         }
       }
     },
+    "Save edits over the original" : {
+
+    },
     "Save folder" : {
       "localizations" : {
         "de" : {
@@ -24027,6 +24042,16 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Saved as %1$@ and copied.%2$@"
+          }
+        }
+      }
+    },
+    "Saved over %@ and copied.%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Saved over %1$@ and copied.%2$@"
           }
         }
       }
@@ -29070,6 +29095,9 @@
           }
         }
       }
+    },
+    "The editor's Save replaces the screenshot. Shot keeps the original, so you can reopen it and undo your edits. Off writes a new copy instead." : {
+
     },
     "The floating card after each capture." : {
       "localizations" : {

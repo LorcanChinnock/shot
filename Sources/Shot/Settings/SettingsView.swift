@@ -219,6 +219,7 @@ private struct GeneralSettings: View {
     @Setting(PreferenceKey.filePrefix) private var filePrefix: String
     @Setting(PreferenceKey.imageFormat) private var imageFormat: ImageFormat
     @Setting(PreferenceKey.downscaleRetina) private var downscaleRetina: Bool
+    @Setting(PreferenceKey.editorSavesOverOriginal) private var savesOverOriginal: Bool
     @Setting(PreferenceKey.textSize) private var textSize: TextSize
     @Setting(PreferenceKey.appearance) private var appearance: AppearanceMode
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
@@ -260,7 +261,8 @@ private struct GeneralSettings: View {
             SettingRow(title: "Image format", subtitle: "Clipboard copies always use PNG.") {
                 BrutalSegmented(selection: $imageFormat, options: [(ImageFormat.png, "PNG"), (.jpeg, "JPEG")], color: color)
             }
-            ToggleRow(title: "Scale Retina captures to 1×", subtitle: "Halves pixel size on 2× displays. Smaller files, less detail.", isOn: $downscaleRetina, color: color, divider: false)
+            ToggleRow(title: "Scale Retina captures to 1×", subtitle: "Halves pixel size on 2× displays. Smaller files, less detail.", isOn: $downscaleRetina, color: color)
+            ToggleRow(title: "Save edits over the original", subtitle: "The editor's Save replaces the screenshot. Shot keeps the original, so you can reopen it and undo your edits. Off writes a new copy instead.", isOn: $savesOverOriginal, color: color, divider: false)
         }
     }
 
@@ -637,8 +639,14 @@ private struct AboutSettings: View {
     @State private var microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
     @State private var cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
     @State private var confirmingReset = false
+    @State private var confirmingClear = false
+    @State private var keptSize = AboutSettings.sizeText(ProjectStore.app.keptOriginalsSize())
     @Bindable private var updater = Updater.shared
     private let color = SettingsSection.about.color
+
+    private static func sizeText(_ bytes: Int64) -> String {
+        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+    }
 
     private func refreshPermissions() {
         screenGranted = Permissions.hasScreenCapture
@@ -724,6 +732,18 @@ private struct AboutSettings: View {
                     NSWorkspace.shared.open(folder)
                 }
                 .buttonStyle(BrutalButtonStyle(compact: true))
+            }
+            SettingRow(title: "Kept originals", subtitle: "\(keptSize) of screenshots as they were before Save went over them. They let you undo those edits, and stay on this Mac.") {
+                Button(confirmingClear ? "Click to confirm" : "Delete") {
+                    if confirmingClear {
+                        ProjectStore.app.removeKeptOriginals()
+                        keptSize = Self.sizeText(ProjectStore.app.keptOriginalsSize())
+                        confirmingClear = false
+                    } else {
+                        confirmingClear = true
+                    }
+                }
+                .buttonStyle(BrutalButtonStyle(color: confirmingClear ? Brutal.red : Brutal.paper, compact: true))
             }
             SettingRow(title: "Reset all settings", subtitle: "Restores every setting and shortcut. Your captures stay.", divider: false) {
                 Button(confirmingReset ? "Click to confirm" : "Reset") {

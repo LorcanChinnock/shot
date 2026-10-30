@@ -41,6 +41,90 @@ private let arrow = Annotation(kind: .arrow(from: CGPoint(x: 10, y: 10), to: CGP
     #expect(next.url.lastPathComponent == "Shot (3).png")
 }
 
+@Test func savingOverAnImageKeepsItsPristineCopyForTheLayersToSitOn() throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let original = folder.appendingPathComponent("Shot.png")
+    let pristineBytes = try #require(ImageCodec.data(from: plainImage(), scale: 2))
+    try pristineBytes.write(to: original)
+    let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
+    let document = EditorDocument(base: plainImage(), annotations: [arrow])
+
+    let saved = try VersionWriter.saveImage(document, of: original, overwriting: true, scale: 2, projects: store)
+    #expect(saved.url == original)
+    #expect(try Data(contentsOf: original) == saved.png)
+    #expect(try Data(contentsOf: saved.original) == pristineBytes)
+    #expect(store.keeps(saved.original))
+    let reopened = try #require(VersionWriter.savedLayers(of: original, in: store))
+    #expect(reopened.original.resolvingSymlinksInPath() == saved.original.resolvingSymlinksInPath())
+
+    let again = try VersionWriter.saveImage(document, of: original, pristine: saved.original, overwriting: true, scale: 2, projects: store)
+    #expect(again.original == saved.original)
+    #expect(try Data(contentsOf: again.original) == pristineBytes)
+    #expect(try FileManager.default.contentsOfDirectory(atPath: store.originalsFolder.path).count == 1)
+}
+
+@Test func aFileChangedOutsideShotOpensFlatAndRevertingPutsTheOriginalBack() throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let original = folder.appendingPathComponent("Shot.png")
+    let pristineBytes = try #require(ImageCodec.data(from: plainImage(), scale: 1))
+    try pristineBytes.write(to: original)
+    let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
+    let saved = try VersionWriter.saveImage(EditorDocument(base: plainImage(), annotations: [arrow]), of: original, overwriting: true, scale: 1, projects: store)
+    #expect(VersionWriter.savedLayers(of: original, in: store) != nil)
+
+    try VersionWriter.revert(original, to: saved.original)
+    #expect(try Data(contentsOf: original) == pristineBytes)
+    #expect(VersionWriter.savedLayers(of: original, in: store) == nil)
+
+    try Data("changed".utf8).write(to: original)
+    #expect(VersionWriter.savedLayers(of: original, in: store) == nil)
+}
+
+@Test func keptOriginalsCanBeCountedAndDeleted() throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let original = folder.appendingPathComponent("Shot.png")
+    try #require(ImageCodec.data(from: plainImage(), scale: 1)).write(to: original)
+    let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
+    #expect(store.keptOriginalsSize() == 0)
+    let saved = try VersionWriter.saveImage(EditorDocument(base: plainImage(), annotations: [arrow]), of: original, overwriting: true, scale: 1, projects: store)
+    #expect(store.keptOriginalsSize() > 0)
+    store.removeKeptOriginals()
+    #expect(!FileManager.default.fileExists(atPath: saved.original.path))
+    #expect(VersionWriter.savedLayers(of: original, in: store) == nil)
+}
+
+@Test func savingOverNeedsAPlaceToKeepTheOriginalAndAFormatOfItsOwn() throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let document = EditorDocument(base: plainImage(), annotations: [arrow])
+    let png = folder.appendingPathComponent("Shot.png")
+    try #require(ImageCodec.data(from: plainImage(), scale: 1)).write(to: png)
+    #expect(try VersionWriter.saveImage(document, of: png, overwriting: true, scale: 1).url.lastPathComponent == "Shot (2).png")
+
+    let heic = folder.appendingPathComponent("Photo.heic")
+    try #require(ImageCodec.data(from: plainImage(), scale: 1)).write(to: heic)
+    let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
+    #expect(try VersionWriter.saveImage(document, of: heic, overwriting: true, scale: 1, projects: store).url.lastPathComponent == "Photo (2).png")
+}
+
+@Test func pruningRemovesKeptOriginalsNoProjectNeedsAnymore() throws {
+    let folder = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let original = folder.appendingPathComponent("Shot.png")
+    try #require(ImageCodec.data(from: plainImage(), scale: 1)).write(to: original)
+    let store = ProjectStore(folder: folder.appendingPathComponent("Projects"))
+    let saved = try VersionWriter.saveImage(EditorDocument(base: plainImage(), annotations: [arrow]), of: original, overwriting: true, scale: 1, projects: store)
+
+    store.prune()
+    #expect(FileManager.default.fileExists(atPath: saved.original.path))
+    try FileManager.default.removeItem(at: original)
+    store.prune()
+    #expect(!FileManager.default.fileExists(atPath: saved.original.path))
+}
+
 @Test func aJPEGVersionStaysJPEGAndStillGivesAPNGForTheClipboard() throws {
     let folder = try temporaryFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
