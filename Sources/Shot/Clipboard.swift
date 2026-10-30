@@ -40,38 +40,6 @@ enum Clipboard {
         pasteboard.setString(string, forType: .string)
     }
 
-    /// Reads the text in `image` on the device, off the main actor, and copies its lines in reading order.
-    static func copyText(in image: CGImage) async {
-        let sendable = SendableImage(image)
-        do {
-            copyRecognized(try await Task.detached { try await TextRecognizer.recognize(sendable.image) }.value)
-        } catch {
-            Toast.error("Couldn't read the text: \(error.localizedDescription)")
-        }
-    }
-
-    /// Reads the text in the image file at `url` and copies it.
-    static func copyText(inImageAt url: URL) async {
-        do {
-            guard let text = try await Task.detached(operation: { try await TextRecognizer.recognize(fileAt: url) }).value else {
-                Toast.error("Couldn't read \(url.lastPathComponent)")
-                return
-            }
-            copyRecognized(text)
-        } catch {
-            Toast.error("Couldn't read the text: \(error.localizedDescription)")
-        }
-    }
-
-    private static func copyRecognized(_ text: CaptureText) {
-        guard !text.lines.isEmpty else {
-            Toast.show("No text found")
-            return
-        }
-        copy(string: text.string)
-        Toast.show("Copied text")
-    }
-
     static func copy(fileURL: URL) {
         copy(fileURLs: [fileURL])
     }

@@ -42,7 +42,7 @@ final class CaptureCoordinator {
     }
 
     /// `target` skips the overlay's choice: `.screen` takes the screen under the pointer at once, `.window` opens the
-    /// overlay on windows. Without one the overlay opens on area, and Tab there picks.
+    /// overlay on windows. Without one the overlay opens on what it was last left on, and Tab there picks.
     func perform(_ action: ShotAction, target: CaptureTarget? = nil) {
         log.notice("Action received: \(action.rawValue, privacy: .public)")
         if action.isRecording, recorder.isRecording {
@@ -62,7 +62,7 @@ final class CaptureCoordinator {
             Task { await copyLatestPath() }
             return
         }
-        if action == .captureScrolling, let scrolling {
+        if action == .screenshot, let scrolling {
             scrolling.finish()
             return
         }
@@ -83,13 +83,9 @@ final class CaptureCoordinator {
                 case .screenshot where target == .screen:
                     try await captureFullscreen()
                 case .screenshot:
-                    try await captureWithOverlay(target: target ?? .area)
-                case .copyText:
-                    try await copyTextFromArea()
+                    try await captureWithOverlay(target: target ?? Preferences().screenshotTarget, remembering: target == nil)
                 case .record:
-                    try await startRecording(mode: target ?? .area)
-                case .captureScrolling:
-                    try await captureScrollingArea()
+                    try await startRecording(mode: target ?? Preferences().recordTarget, remembering: target == nil)
                 case .pickColor, .copyPath:
                     break
                 }
@@ -185,14 +181,21 @@ final class CaptureCoordinator {
         try await finish(image: image, scale: frozen.scale, from: screen.fullCaptureFrame)
     }
 
-    private func captureWithOverlay(target: CaptureTarget) async throws {
+    private func captureWithOverlay(target: CaptureTarget, remembering: Bool) async throws {
         let start = ContinuousClock.now
         let windows = WindowCapturer.onScreenWindows()
         let frozen = try await DisplayCapturer.captureAll()
         log.debug("Freeze capture of \(frozen.count) displays took \(ContinuousClock.now - start, privacy: .public)")
         let displays = frozen.map { OverlayDisplay(frame: $0.frame, scale: $0.scale, image: $0.image) }
-        let result = await SelectionOverlayController.select(displays: displays, target: target, offersDelay: true, windows: windows)
+        let result = await SelectionOverlayController.select(displays: displays, target: target, offersDelay: true, offersScrolling: true, windows: windows)
+        if remembering {
+            Preferences().screenshotTarget = result.target
+        }
         guard let selection = result.selection else {
+            return
+        }
+        if result.scrolling, let scroll = scrollRegion(of: selection, frozen: frozen) {
+            try await captureScrolling(on: scroll.screen, region: scroll.region)
             return
         }
         if result.delay > 0 {
@@ -210,7 +213,7 @@ final class CaptureCoordinator {
         switch selection {
         case let .area(display, _, _), let .fullDisplay(display):
             index = display
-        case let .window(info):
+        case let .window(info), let .page(info, _):
             index = frozen.firstIndex { $0.frame.intersects(Geometry.flip(info.frame, primaryHeight: NSScreen.screens.first?.frame.height ?? 0)) } ?? 0
         }
         let screen = NSScreen.screens.first { $0.frame == frozen[index].frame } ?? NSScreen.underPointer ?? NSScreen.screens[0]
@@ -227,7 +230,7 @@ final class CaptureCoordinator {
                 throw CaptureError.encodingFailed
             }
             try await finish(image: image, scale: fresh.scale, from: rect.offsetBy(dx: fresh.frame.minX, dy: fresh.frame.minY))
-        case .window:
+        case .window, .page:
             // A window is captured afresh anyway.
             let picked = try await picture(of: selection, frozen: frozen)
             try await finish(image: picked.image, scale: picked.scale, from: picked.frame, windowShadow: picked.windowShadow)
@@ -251,6 +254,9 @@ final class CaptureCoordinator {
             let windowShadow = Preferences().windowShadow
             let result = try await WindowCapturer.capture(windowID: info.windowID, includeShadow: windowShadow)
             return (result.image, result.scale, Geometry.flip(info.frame, primaryHeight: NSScreen.screens.first?.frame.height ?? 0), windowShadow)
+        case let .page(info, insets):
+            let page = try await WindowCapturer.capturePage(of: info, insets: insets)
+            return (page.image, page.scale, Geometry.flip(insets.page(in: info.frame), primaryHeight: NSScreen.screens.first?.frame.height ?? 0), false)
         case let .fullDisplay(index):
             let display = frozen[index]
             // Cropped as a whole-screen capture is anywhere else, which leaves out the menu bar when Settings say to.
@@ -266,44 +272,36 @@ final class CaptureCoordinator {
         }
     }
 
-    /// Reads the text in the area, window or display picked on the overlay and copies it. Nothing is saved.
-    private func copyTextFromArea() async throws {
-        let windows = WindowCapturer.onScreenWindows()
-        let frozen = try await DisplayCapturer.captureAll()
-        let displays = frozen.map { OverlayDisplay(frame: $0.frame, scale: $0.scale, image: $0.image) }
-        guard let selection = await SelectionOverlayController.select(displays: displays, target: .area, windows: windows) else {
-            return
-        }
-        let image: CGImage
+    /// The screen and AppKit global rect that a pick covers, which is what a scrolling capture streams.
+    private func scrollRegion(of selection: OverlaySelection, frozen: [FrozenDisplay]) -> (screen: NSScreen, region: CGRect)? {
         switch selection {
         case let .area(index, rect, _):
-            let display = frozen[index]
-            let pixels = Geometry.pixelRect(forViewRect: rect, viewHeight: display.frame.height, scale: display.scale)
-            guard let cropped = display.image.cropping(to: pixels) else {
-                throw CaptureError.encodingFailed
+            guard let screen = NSScreen.screens.first(where: { $0.frame == frozen[index].frame }) else {
+                return nil
             }
-            image = cropped
+            return (screen, rect.offsetBy(dx: screen.frame.minX, dy: screen.frame.minY))
         case let .window(info):
-            image = try await WindowCapturer.capture(windowID: info.windowID, includeShadow: false).image
+            return RecordingSetupController.region(of: info)
+        case let .page(info, insets):
+            return RecordingSetupController.region(of: info, insets: insets)
         case let .fullDisplay(index):
-            image = frozen[index].image
+            guard let screen = NSScreen.screens.first(where: { $0.frame == frozen[index].frame }) else {
+                return nil
+            }
+            return (screen, screen.fullCaptureFrame)
         }
-        await Clipboard.copyText(in: image)
     }
 
-    /// Picks the area that scrolls on the live overlay, then streams it while the person scrolls, stitching the frames
-    /// into one image until Return. Esc saves and copies nothing.
-    private func captureScrollingArea() async throws {
-        guard let pick = await RecordingSetupController.pickRegion(mode: .area, offersDelay: false) else {
-            return
-        }
-        let controller = ScrollingCaptureController(screen: pick.screen, region: pick.region)
+    /// Streams the picked area while the person scrolls, stitching the frames into one image until Return. Esc saves and
+    /// copies nothing.
+    private func captureScrolling(on screen: NSScreen, region: CGRect) async throws {
+        let controller = ScrollingCaptureController(screen: screen, region: region)
         scrolling = controller
         defer { scrolling = nil }
         guard case let .finished(image, scale) = try await controller.run() else {
             return
         }
-        try await finish(image: image, scale: scale, from: pick.region)
+        try await finish(image: image, scale: scale, from: region)
     }
 
     func togglePause() {
@@ -331,14 +329,14 @@ final class CaptureCoordinator {
     }
 
     /// Picks the area, then starts recording, first showing the setup panel or a countdown if Settings asks for them.
-    private func startRecording(mode: CaptureTarget) async throws {
-        guard let pick = await RecordingSetupController.pickRegion(mode: mode) else {
+    private func startRecording(mode: CaptureTarget, remembering: Bool) async throws {
+        guard let pick = await RecordingSetupController.pickRegion(mode: mode, remembering: remembering, opensOverlayOnScreen: remembering) else {
             return
         }
         let prefs = Preferences()
         // Record Fullscreen has no pick to end, so `pickRegion` never reports ⌥ for it; its hotkey may itself hold ⌥.
         let start = RecordingStart.after(adjustBeforeRecording: prefs.adjustBeforeRecording, countdown: pick.delay, optionHeld: pick.optionHeld)
-        let controller = RecordingSetupController(mode: pick.target, screen: pick.screen, region: pick.region, windowID: pick.windowID, ratio: pick.ratio, start: start) { [state] in
+        let controller = RecordingSetupController(mode: pick.target, screen: pick.screen, region: pick.region, windowID: pick.windowID, pageInsets: pick.pageInsets, ratio: pick.ratio, start: start) { [state] in
             state.countdown = $0
         }
         setup = controller

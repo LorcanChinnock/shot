@@ -37,4 +37,17 @@ enum WindowCapturer {
         log.debug("Window \(windowID) frame \(window.frame.debugDescription, privacy: .public) contentRect \(filter.contentRect.debugDescription, privacy: .public) image \(image.width)x\(image.height)")
         return Result(image: image, scale: scale)
     }
+
+    /// Live capture of just the page of a browser window.
+    static func capturePage(of info: WindowInfo, insets: PageInsets) async throws -> Result {
+        let window = try await capture(windowID: info.windowID, includeShadow: false)
+        let page = insets.page(in: CGRect(origin: .zero, size: info.frame.size))
+        let pixels = CGRect(x: page.minX * window.scale, y: page.minY * window.scale, width: page.width * window.scale, height: page.height * window.scale)
+            .integral
+            .intersection(CGRect(x: 0, y: 0, width: window.image.width, height: window.image.height))
+        guard let cropped = window.image.cropping(to: pixels) else {
+            throw CaptureError.encodingFailed
+        }
+        return Result(image: cropped, scale: window.scale)
+    }
 }

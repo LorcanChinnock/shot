@@ -27,31 +27,30 @@ import Testing
 
 @Test func replacementHotkeysTakeTheMacOSKeys() {
     let replaced = ShotAction.allCases.map { $0.defaultCombo(replacingSystemScreenshots: true)?.displayString }
-    #expect(replaced == ["⇧⌘4", "⇧⌘5", nil, nil, nil, nil])
+    #expect(replaced == ["⇧⌘4", "⇧⌘5", nil, nil])
     #expect(ShotAction.allCases.allSatisfy { $0.defaultCombo(replacingSystemScreenshots: false) == $0.defaultCombo })
 }
 
 @Test func theToolsHaveNoShortcutAndAreNotRecordings() {
-    for action in [ShotAction.pickColor, .copyPath, .copyText] {
+    for action in [ShotAction.pickColor, .copyPath] {
         #expect(action.defaultCombo == nil)
         #expect(action.defaultCombo(replacingSystemScreenshots: true) == nil)
         #expect(!action.isRecording)
     }
     #expect(ShotAction.pickColor.rawValue == "pick-color")
     #expect(ShotAction.copyPath.rawValue == "copy-path")
-    #expect(ShotAction.copyText.rawValue == "copy-text")
     // HotkeyCenter numbers hotkeys by position, so a new action goes last and existing ones keep their ids.
     #expect(ShotAction.allCases.firstIndex(of: .pickColor) == 2)
     #expect(ShotAction.allCases.firstIndex(of: .copyPath) == 3)
-    #expect(ShotAction.allCases.firstIndex(of: .copyText) == 4)
 }
 
 @Test func tabStepsThroughTheTargetsAndWraps() {
     #expect(CaptureTarget.area.next() == .window)
-    #expect(CaptureTarget.window.next() == .screen)
+    #expect(CaptureTarget.window.next() == .browser)
+    #expect(CaptureTarget.browser.next() == .screen)
     #expect(CaptureTarget.screen.next() == .area)
     #expect(CaptureTarget.area.next(backward: true) == .screen)
-    #expect(CaptureTarget.screen.next(backward: true) == .window)
+    #expect(CaptureTarget.screen.next(backward: true) == .browser)
 }
 
 @Test func theDelayStepsFromOffThroughTheChoicesAndBackToOff() {

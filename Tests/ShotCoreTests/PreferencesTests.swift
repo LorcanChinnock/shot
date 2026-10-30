@@ -370,3 +370,24 @@ import Testing
     Preferences.resetAll(in: store)
     #expect(store.persistentDomain(forName: suite.name)?[PreferenceKey.onboarding] as? String == "done")
 }
+
+struct RememberedTargetTests {
+    @Test func screenshotsAndRecordingsRememberTheirOwnTarget() throws {
+        let suite = try TestDefaults()
+        defer { suite.remove() }
+        let prefs = Preferences(store: suite.store)
+        #expect(prefs.screenshotTarget == .area)
+        #expect(prefs.recordTarget == .area)
+        prefs.screenshotTarget = .browser
+        prefs.recordTarget = .window
+        #expect(Preferences(store: suite.store).screenshotTarget == .browser)
+        #expect(Preferences(store: suite.store).recordTarget == .window)
+    }
+
+    @Test func anUnknownStoredTargetFallsBackToArea() throws {
+        let suite = try TestDefaults()
+        defer { suite.remove() }
+        suite.store.set("page", forKey: PreferenceKey.screenshotTarget)
+        #expect(Preferences(store: suite.store).screenshotTarget == .area)
+    }
+}

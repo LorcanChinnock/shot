@@ -45,7 +45,7 @@ const scenes = {
   'export-a-video-or-gif': `<div class="sc-seg"><p><b>Format</b><span>MP4</span><span class=on>GIF</span></p><p><b>FPS</b><span>10</span><span class=on>15</span><span>24</span></p><p><b>Width</b><span>480</span><span class=on>720</span><span>1080</span><span>Full</span></p><p><b>Speed</b><span class=on>1x</span><span>1.5x</span><span>2x</span></p><p class="est">≈ 105 KB</p></div>`,
   'find-your-captures': shot('gallery.png', wide, [170, 56, 1260, 850]),
   'keyboard-shortcuts': `<div class="sc-keys">${shortcuts.map(([k, l], i) => `<p style="--fill: var(--${['yellow', 'pink', 'mint'][i % 3]})">${kbd([k])}<span>${l}</span></p>`).join('')}</div>`,
-  'automation-reference': code(['<b>open</b> "shot://capture-area"', '<b>open</b> "shot://capture-timer?seconds=5"', '<b>open</b> "shot://copy-text"', '<b>open</b> "shot://gallery"']),
+  'automation-reference': code(['<b>open</b> "shot://capture-area"', '<b>open</b> "shot://capture-timer?seconds=5"', '<b>open</b> "shot://capture-window"', '<b>open</b> "shot://gallery"']),
   settings: shot('settings.png', wide, [170, 56, 1260, 850]),
   languages: `<div class="sc-langs">${languages.map((l, i) => `<span style="--fill: var(--${['yellow', 'pink', 'sky', 'mint', 'violet', 'orange'][i % 6]})">${l}</span>`).join('')}</div>`,
   updates: `<div class="sc-list"><p><span>Check for updates</span><i class="on"></i></p><p><span>Ask me before going online</span><i class="on"></i></p><p class="btn"><b>Check Now</b></p></div>`,

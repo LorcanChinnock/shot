@@ -2,7 +2,7 @@ import CoreGraphics
 import Foundation
 
 public enum ShotAction: String, CaseIterable, Sendable {
-    /// Opens the selection overlay for a screenshot; Tab there picks area, window or screen.
+    /// Opens the selection overlay for a screenshot; Tab there picks area, window, browser page or screen.
     case screenshot
     /// Opens the selection overlay for a recording.
     case record
@@ -10,10 +10,6 @@ public enum ShotAction: String, CaseIterable, Sendable {
     case pickColor = "pick-color"
     /// Copies the newest capture's path.
     case copyPath = "copy-path"
-    /// Reads the text in a dragged-out area and copies it, without saving a capture.
-    case copyText = "copy-text"
-    /// Takes one screenshot of content bigger than the screen, built up as the person scrolls it.
-    case captureScrolling = "capture-scrolling"
 
     public var isRecording: Bool { self == .record }
 
@@ -22,17 +18,16 @@ public enum ShotAction: String, CaseIterable, Sendable {
     public var hasShortcut: Bool {
         switch self {
         case .pickColor, .copyPath: false
-        case .screenshot, .record, .copyText, .captureScrolling: true
+        case .screenshot, .record: true
         }
     }
 
-    /// Mirrors the macOS screenshot keys with ⌃ in place of ⌘. Pick Colour, Copy Path, Copy Text and Capture Scrolling
-    /// Area stay out of the way with none.
+    /// Mirrors the macOS screenshot keys with ⌃ in place of ⌘. Pick Colour and Copy Path stay out of the way with none.
     public var defaultCombo: KeyCombo? {
         switch self {
         case .screenshot: KeyCombo(keyCode: 21, modifiers: KeyCombo.control | KeyCombo.shift)
         case .record: KeyCombo(keyCode: 23, modifiers: KeyCombo.control | KeyCombo.shift)
-        case .pickColor, .copyPath, .copyText, .captureScrolling: nil
+        case .pickColor, .copyPath: nil
         }
     }
 
@@ -44,7 +39,7 @@ public enum ShotAction: String, CaseIterable, Sendable {
         switch self {
         case .screenshot: return KeyCombo(keyCode: 21, modifiers: KeyCombo.command | KeyCombo.shift)
         case .record: return KeyCombo(keyCode: 23, modifiers: KeyCombo.command | KeyCombo.shift)
-        case .pickColor, .copyPath, .copyText, .captureScrolling: return defaultCombo
+        case .pickColor, .copyPath: return defaultCombo
         }
     }
 
@@ -150,8 +145,6 @@ extension ShotAction {
         case .record: String(localized: "Record")
         case .pickColor: String(localized: "Pick Colour")
         case .copyPath: String(localized: "Copy Latest Capture's Path")
-        case .copyText: String(localized: "Copy Text")
-        case .captureScrolling: String(localized: "Capture Scrolling Area")
         }
     }
 }

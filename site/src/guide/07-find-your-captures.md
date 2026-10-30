@@ -37,6 +37,6 @@ Click, <kbd>⌘</kbd>-click or <kbd>⇧</kbd>-click, press <kbd>⌘A</kbd> or us
 | Show the file | Click **Show in Finder**. |
 | Delete | Click **Move to Trash**. <kbd>⌘Z</kbd> puts it back, and so can Finder. |
 
-Right-click for the same actions, plus **Quick Look**. On a single item, right-click also offers **Rename…**, **Export GIF** for a video, and **Copy Text** and [**Pin**](#pin-a-screenshot) for a screenshot.
+Right-click for the same actions, plus **Quick Look**. On a single item, right-click also offers **Rename…**, **Export GIF** for a video, and [**Pin**](#pin-a-screenshot) for a screenshot.
 
 A GIF opens in an editor only if the video editor exported it, and then opens its [project](#reopen-an-edit-later).

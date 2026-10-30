@@ -23,9 +23,9 @@ Hover the card to show its buttons:
 
 Drag the card straight into another app to drop the file there, or onto an open editor to [combine images](#combine-images).
 
-Right-click the card for the same actions, plus **Copy Path**, and for a screenshot, **Copy Text** and **Pin**.
+Right-click the card for the same actions, plus **Copy Path**, and for a screenshot, **Pin**.
 
-![The Quick Access card's right-click menu: Copy, Copy Path, Copy Text, Save As…, Annotate, Pin and Show in Finder](../../../docs/media/quick-access-menu.png)
+![The Quick Access card's right-click menu: Copy, Copy Path, Save As…, Annotate, Pin and Show in Finder](../../../docs/media/quick-access-menu.png)
 
 ## Pin a screenshot
 

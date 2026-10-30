@@ -74,6 +74,8 @@ final class Recorder: NSObject {
         let showsCursor: Bool
         /// Set when recording one window, which then follows the window and leaves out anything covering it.
         let windowID: CGWindowID?
+        /// Set with `windowID` to record only a browser window's page.
+        let pageInsets: PageInsets?
     }
 
     private struct Session {
@@ -82,6 +84,7 @@ final class Recorder: NSObject {
         let screen: NSScreen
         let region: CGRect
         let windowID: CGWindowID?
+        let pageInsets: PageInsets?
         let microphone: Bool
         let showsCursor: Bool
         let showsClicks: Bool
@@ -91,11 +94,16 @@ final class Recorder: NSObject {
         let fps: Int
         let systemAudio: Bool
         let finalURL: URL
+        /// A window recording keeps the size it started at, whatever the window does after, so every segment joins.
+        var outputPixels: CGSize?
     }
 
     private var session: Session?
     private var segments = RecordingSegments()
     private var stream: SCStream?
+    private var streamConfig: SCStreamConfiguration?
+    /// Watches the recorded window, so the border and the video follow it when it moves or resizes.
+    private var windowTracker: Task<Void, Never>?
     private var recordingOutput: SCRecordingOutput?
     private var segmentFinished: CheckedContinuation<Void, Never>?
     private var segmentTimeout: Task<Void, Never>?
@@ -135,7 +143,7 @@ final class Recorder: NSObject {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let finalURL = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "mp4", prefix: prefs.filePrefix)
         let microphoneID = CaptureDevices.device(id: prefs.microphoneDeviceID, for: .audio)?.uniqueID
-        session = Session(screen: screen, region: region, windowID: options.windowID, microphone: microphone, showsCursor: options.showsCursor, showsClicks: prefs.recordShowsClicks, microphoneID: microphoneID, fps: RecordingFrameRate.effective(setting: prefs.recordingFPS, displayRate: screen.maximumFramesPerSecond), systemAudio: prefs.recordSystemAudio, finalURL: finalURL)
+        session = Session(screen: screen, region: region, windowID: options.windowID, pageInsets: options.pageInsets, microphone: microphone, showsCursor: options.showsCursor, showsClicks: prefs.recordShowsClicks, microphoneID: microphoneID, fps: RecordingFrameRate.effective(setting: prefs.recordingFPS, displayRate: screen.maximumFramesPerSecond), systemAudio: prefs.recordSystemAudio, finalURL: finalURL)
         segments = RecordingSegments()
         microphoneFailureShown = false
         model = RecordingSessionModel()
@@ -152,6 +160,7 @@ final class Recorder: NSObject {
             session = nil
             throw error
         }
+        trackWindow()
         model.run()
         phase = .recording
     }
@@ -336,6 +345,60 @@ final class Recorder: NSObject {
         }
     }
 
+    // MARK: Following the window
+
+    /// Fits the window, or its page, inside an output that keeps one size, without stretching it.
+    private func applyWindowGeometry(to config: SCStreamConfiguration, windowSize: CGSize, pageInsets: PageInsets?, output: CGSize) {
+        let window = CGRect(origin: .zero, size: windowSize)
+        let source = pageInsets?.page(in: window) ?? window
+        config.sourceRect = source
+        config.destinationRect = AspectFit.rect(for: source.size, in: output)
+    }
+
+    private func trackWindow() {
+        guard let windowID = session?.windowID else {
+            return
+        }
+        windowTracker = Task { [weak self] in
+            var last: CGRect?
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(100))
+                guard let frame = Self.frame(ofWindow: windowID), frame != last else {
+                    continue
+                }
+                last = frame
+                self?.windowChanged(to: frame)
+            }
+        }
+    }
+
+    private func windowChanged(to frame: CGRect) {
+        guard let session else {
+            return
+        }
+        let page = session.pageInsets?.page(in: frame) ?? frame
+        border?.setRegion(Geometry.flip(page, primaryHeight: NSScreen.screens.first?.frame.height ?? 0))
+        guard let stream, let streamConfig, let output = session.outputPixels else {
+            return
+        }
+        applyWindowGeometry(to: streamConfig, windowSize: frame.size, pageInsets: session.pageInsets, output: output)
+        Task {
+            do {
+                try await stream.updateConfiguration(streamConfig)
+            } catch {
+                log.error("Following the window failed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+
+    private nonisolated static func frame(ofWindow id: CGWindowID) -> CGRect? {
+        let list = CGWindowListCopyWindowInfo(.optionIncludingWindow, id) as? [[String: Any]]
+        guard let bounds = list?.first?[kCGWindowBounds as String] as? NSDictionary else {
+            return nil
+        }
+        return CGRect(dictionaryRepresentation: bounds)
+    }
+
     // MARK: Segments
 
     private func makeFilter(_ session: Session) async throws -> SCContentFilter {
@@ -374,8 +437,15 @@ final class Recorder: NSObject {
         let config = SCStreamConfiguration()
         if session.windowID != nil {
             let scale = CGFloat(filter.pointPixelScale)
-            config.width = Geometry.evenFloor(filter.contentRect.width * scale)
-            config.height = Geometry.evenFloor(filter.contentRect.height * scale)
+            let window = CGRect(origin: .zero, size: filter.contentRect.size)
+            let output = self.session?.outputPixels ?? CGSize(
+                width: Geometry.evenFloor((session.pageInsets?.page(in: window) ?? window).width * scale),
+                height: Geometry.evenFloor((session.pageInsets?.page(in: window) ?? window).height * scale)
+            )
+            self.session?.outputPixels = output
+            config.width = Int(output.width)
+            config.height = Int(output.height)
+            applyWindowGeometry(to: config, windowSize: window.size, pageInsets: session.pageInsets, output: output)
         } else {
             let scale = session.screen.backingScaleFactor
             let local = Geometry.displayLocalTopLeft(session.region, screenFrame: session.screen.frame)
@@ -402,6 +472,7 @@ final class Recorder: NSObject {
         outputConfig.outputFileType = .mp4
         outputConfig.videoCodecType = RecordingFrameRate.usesHEVC(fps: session.fps) ? .hevc : .h264
 
+        streamConfig = config
         let stream = SCStream(filter: filter, configuration: config, delegate: self)
         // Without a screen output SCK logs a dropped-frame error for every frame.
         try stream.addStreamOutput(sink, type: .screen, sampleHandlerQueue: sink.queue)
@@ -510,6 +581,8 @@ final class Recorder: NSObject {
     }
 
     private func hidePanels() {
+        windowTracker?.cancel()
+        windowTracker = nil
         border?.orderOut(nil)
         border = nil
         controls?.orderOut(nil)

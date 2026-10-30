@@ -2818,6 +2818,9 @@
         }
       }
     },
+    "Allow Accessibility in System Settings to pick a page" : {
+
+    },
     "Amount" : {
       "localizations" : {
         "de" : {
@@ -3822,6 +3825,9 @@
       }
     },
     "Brightness" : {
+
+    },
+    "Browser" : {
 
     },
     "Bubble size" : {
@@ -4882,9 +4888,6 @@
         }
       }
     },
-    "Capture Scrolling Area" : {
-
-    },
     "Capture overlay" : {
 
     },
@@ -5670,6 +5673,9 @@
           }
         }
       }
+    },
+    "Click a browser page" : {
+
     },
     "Click a screen" : {
 
@@ -6761,9 +6767,6 @@
         }
       }
     },
-    "Copied text" : {
-
-    },
     "Copied the path of %@" : {
       "localizations" : {
         "de" : {
@@ -7127,9 +7130,6 @@
           }
         }
       }
-    },
-    "Copy Text" : {
-
     },
     "Copy image (⌘C)" : {
       "localizations" : {
@@ -8431,9 +8431,6 @@
           }
         }
       }
-    },
-    "Couldn't read the text: %@" : {
-
     },
     "Couldn't read the video" : {
 
@@ -18137,9 +18134,6 @@
         }
       }
     },
-    "No text found" : {
-
-    },
     "None" : {
       "localizations" : {
         "de" : {
@@ -23126,6 +23120,9 @@
         }
       }
     },
+    "S: scroll" : {
+
+    },
     "SCALE" : {
       "localizations" : {
         "de" : {
@@ -24483,6 +24480,9 @@
           }
         }
       }
+    },
+    "Scroll" : {
+
     },
     "Scroll the content in any direction." : {
 
@@ -28454,7 +28454,7 @@
         }
       }
     },
-    "Tab: area, window or screen" : {
+    "Tab: area, window, browser or screen" : {
 
     },
     "Take your first screenshot." : {

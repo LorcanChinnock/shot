@@ -18,7 +18,7 @@ Shot is for anyone on a Mac. Design and write for the first person on this list;
 - **The quick sharer.** Takes a screenshot, maybe adds an arrow, and pastes it into a chat or email. Rarely opens Settings. Every default is set for them, and the capture → copy/save path is theirs.
 - **The explainer.** Support staff, teachers, managers and testers showing someone what's wrong or how to do something. Annotates, blurs private details, records short walkthroughs with their voice, and exports GIFs.
 - **The polisher.** Designers, marketers and writers making images for docs, slides and social posts. Uses the editor: combining screenshots, padding, backgrounds, styled markup, trimmed and sped-up recordings.
-- **The AI assistant user.** Asks Claude, ChatGPT or another assistant about what's on their screen. Pastes a marked-up screenshot, or copies its path or its text. Isn't a developer and won't edit a config file or use a terminal.
+- **The AI assistant user.** Asks Claude, ChatGPT or another assistant about what's on their screen. Pastes a marked-up screenshot, or copies its path. Isn't a developer and won't edit a config file or use a terminal.
 
 What this means in practice:
 - UI strings, Settings and the user guide speak to everyone. Avoid jargon (JSON, URL scheme) outside the reference pages, and explain it where it can't be avoided.
