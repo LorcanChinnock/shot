@@ -36,7 +36,7 @@ private func edit(duration: Double, options: VideoExportOptions = VideoExportOpt
     #expect(!history.canUndo)
 }
 
-@Test func aDifferentKeyOrNoKeyStartsANewStep() {
+@Test func aDifferentVideoKeyOrNoKeyStartsANewStep() {
     var history = VideoEditHistory()
     history.recordChange(from: edit(duration: 10), coalescing: "a")
     history.recordChange(from: edit(duration: 9), coalescing: "b")
