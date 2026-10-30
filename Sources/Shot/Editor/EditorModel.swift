@@ -147,21 +147,14 @@ final class EditorModel {
     private static let showsLayersKey = PreferenceKey.editorShowsLayers
     /// The text or note whose text field is open, with the colour and size picked for it so far; it may not be in the document yet.
     var editingText: Annotation?
-    var isDirty = false
-    /// What the document looked like when it was last saved, so undoing back to it leaves the editor clean.
-    @ObservationIgnored private var savedSnapshot: EditorSnapshot
+    var isDirty: Bool { history.isDirty }
     @ObservationIgnored private var isSaving = false
     /// Set by the canvas: turns the text or note still being typed into an annotation.
     var commitPendingText: (() -> Void)?
     /// The canvas's zoom, where 1 is actual size, for the zoom menu; the canvas view keeps it current.
     /// Zoom is view state, not part of the document, so it isn't undoable.
     var zoom: CGFloat = 1
-    private(set) var undoStack = UndoStack<EditorSnapshot>()
-    /// Which property a custom colour pick, a style slider or an arrow key last changed, while that is still the latest
-    /// undo step, so dragging through the colour panel or along a slider, or holding an arrow key down, undoes as one step.
-    private var pickedKey: String?
-    /// The document as the canvas gesture in progress, a move or resize, began; the gesture undoes as one step when it ends.
-    private var gestureStart: EditorSnapshot?
+    private(set) var history: EditHistory
     private var isDraggingStyle = false
 
     /// `newCaptureStyle` is put on the screenshot as where the document starts, so it's no unsaved change. `windowShadow`
@@ -180,7 +173,7 @@ final class EditorModel {
             document.restore(layers)
         }
         self.document = document
-        savedSnapshot = document.snapshot
+        history = EditHistory(saved: document.snapshot)
         tool = style.tool
         color = style.color
         noteColor = style.noteColor
@@ -197,7 +190,7 @@ final class EditorModel {
         objectStyles = style.objectStyles
         if let newCaptureStyle {
             self.document.pasteStyle(newCaptureStyle, to: [.capture], scale: scale, margin: canvasMargin)
-            savedSnapshot = self.document.snapshot
+            history.setSaved(self.document.snapshot)
         }
     }
 
@@ -437,7 +430,7 @@ final class EditorModel {
         guard changed != before else {
             return
         }
-        pickedKey = nil
+        history.stopCoalescing()
         let restyled = changed.selection != selection ? changed.selection : nil
         let look = changed.sharedSpotlight != before.sharedSpotlight ? changed.sharedSpotlight : nil
         edit { doc in
@@ -680,7 +673,7 @@ final class EditorModel {
     /// Call as a drag of a style slider starts and ends, so each drag is one undo step.
     func setDraggingStyle(_ dragging: Bool) {
         isDraggingStyle = dragging
-        pickedKey = nil
+        history.stopCoalescing()
     }
 
     /// The alignment the toolbar shows: the text being typed's, else the selection's, else the next text's or note's.
@@ -715,7 +708,7 @@ final class EditorModel {
 
     /// Call as the colour editor opens, so its run of picks doesn't join the last one's undo step.
     func beginColorPick() {
-        pickedKey = nil
+        history.stopCoalescing()
     }
 
     /// Sets the border colour, or the fill, to one picked from the colour panel, which reports every
@@ -760,42 +753,26 @@ final class EditorModel {
 
     /// Call as a move or resize on the canvas starts. Its changes, made with `apply`, undo as one step once it ends.
     func beginGesture() {
-        endGesture()
-        gestureStart = document.snapshot
+        history.beginGesture(document)
     }
 
     /// Makes one change of the gesture in progress; outside a gesture it's an undo step of its own.
     func apply(_ change: (inout EditorDocument) -> Void) {
-        guard gestureStart != nil else {
-            edit(change)
-            return
-        }
-        change(&document)
+        history.apply(&document, change)
     }
 
     /// Records the gesture in progress as one undo step, or none if it left the document as it was.
     func endGesture() {
-        guard let gestureStart else {
-            return
-        }
-        self.gestureStart = nil
-        if undoStack.record(gestureStart, endingAt: document.snapshot) {
-            pickedKey = nil
-            isDirty = true
-        }
+        history.endGesture(document)
     }
 
     // MARK: Crop
 
     private func beginCrop(from previous: EditorTool, image: UUID?) {
-        toolBeforeCrop = previous == .crop ? .select : previous
-        if let image, let annotation = document.annotations.first(where: { $0.id == image }) {
-            cropImageID = image
-            cropDraft = annotation.bounds
-        } else {
-            cropImageID = nil
-            cropDraft = document.frameCrop ?? document.contentRect
-        }
+        toolBeforeCrop = CropEditing.toolBefore(taking: previous)
+        let annotation = image.flatMap { image in document.annotations.first { $0.id == image } }
+        cropImageID = annotation?.id
+        cropDraft = CropEditing.startingDraft(imageBounds: annotation?.bounds, frameCrop: document.frameCrop, contentRect: document.contentRect)
     }
 
     /// The selection, when it's a placed image that can be cropped.
@@ -837,17 +814,16 @@ final class EditorModel {
             return
         }
         cropDraft = nil
-        if let image {
-            if let current = document.annotations.first(where: { $0.id == image })?.bounds, draft != current {
-                edit { $0.cropImage(image, to: draft, margin: canvasMargin) }
-            }
-            reselect(image)
-            return
+        let target = image.map { image in (id: image, bounds: document.annotations.first { $0.id == image }?.bounds) }
+        switch CropEditing.outcome(draft: draft, image: target, frameCrop: document.frameCrop, contentRect: document.contentRect, isFrameCropHidden: document.isFrameCropHidden) {
+        case .nothing:
+            break
+        case let .cropImage(id, visible):
+            edit { $0.cropImage(id, to: visible, margin: canvasMargin) }
+        case let .cropFrame(rect):
+            edit { $0.crop(to: rect) }
         }
-        guard draft.integral != (document.frameCrop ?? document.contentRect) || document.isFrameCropHidden else {
-            return
-        }
-        edit { $0.crop(to: draft) }
+        reselect(image)
     }
 
     /// Picks the image just cropped again once the select tool is back, so its handles show.
@@ -878,17 +854,15 @@ final class EditorModel {
     /// Picks the shape the crop is held to, and fits the largest crop of that shape inside the current one.
     func chooseCropAspect(_ aspect: CropAspect) {
         cropAspect = aspect
-        if let draft = cropDraft, let ratio = aspect.ratio(for: draft.size) {
-            cropDraft = CropGeometry.fit(ratio: ratio, in: draft)
+        if let draft = cropDraft {
+            cropDraft = CropEditing.draft(draft, holding: aspect)
         }
     }
 
     /// Makes the crop all of the content again; while the crop tool is active that applies when it's put down.
     func resetCrop() {
-        if let full = cropImageFullRect, cropDraft != nil {
-            cropDraft = full
-        } else if cropDraft != nil {
-            cropDraft = document.contentRect
+        if cropDraft != nil {
+            cropDraft = CropEditing.resetDraft(fullRect: cropImageFullRect, contentRect: document.contentRect)
         } else {
             edit { $0.resetCrop() }
         }
@@ -896,10 +870,7 @@ final class EditorModel {
 
     /// Whether there's a crop to take off, which Reset offers.
     var canResetCrop: Bool {
-        if let full = cropImageFullRect {
-            return cropDraft.map { $0 != full } ?? false
-        }
-        return cropDraft.map { $0 != document.contentRect } ?? (document.frameCrop != nil)
+        CropEditing.canReset(draft: cropDraft, fullRect: cropImageFullRect, contentRect: document.contentRect, hasFrameCrop: document.frameCrop != nil)
     }
 
     /// Shows the uncropped image, and leaves the crop out of Copy and Save, or puts it back.
@@ -921,12 +892,8 @@ final class EditorModel {
             cancelCrop()
             return
         }
-        endGesture()
-        pickedKey = nil
-        if let previous = undoStack.undo(from: document.snapshot) {
-            document.restore(previous)
+        if history.undo(&document) {
             keepSelectionThatRemains()
-            isDirty = document.snapshot != savedSnapshot
         }
     }
 
@@ -935,12 +902,8 @@ final class EditorModel {
             cancelCrop()
             return
         }
-        endGesture()
-        pickedKey = nil
-        if let next = undoStack.redo(from: document.snapshot) {
-            document.restore(next)
+        if history.redo(&document) {
             keepSelectionThatRemains()
-            isDirty = document.snapshot != savedSnapshot
         }
     }
 
@@ -1037,19 +1000,7 @@ final class EditorModel {
     /// Applies `change` as one undoable step, or does nothing if it leaves the document as it was.
     /// Calls with the same `key` in a row amend that step instead of adding another.
     private func edit(coalescing key: String? = nil, _ change: (inout EditorDocument) -> Void) {
-        if key != nil, key == pickedKey {
-            change(&document)
-            isDirty = true
-            return
-        }
-        let before = document.snapshot
-        change(&document)
-        guard document.snapshot != before else {
-            return
-        }
-        undoStack.record(before)
-        pickedKey = key
-        isDirty = true
+        history.edit(&document, coalescing: key, change)
     }
 
     /// Moves the selection by one pixel, or ten when `large`, growing the canvas if it reaches past the edge.
@@ -1059,7 +1010,7 @@ final class EditorModel {
             return
         }
         if !repeated {
-            pickedKey = nil
+            history.stopCoalescing()
         }
         edit(coalescing: "\(selectedID)-nudge") { $0.move(selectedID, by: direction.offset(large: large), margin: canvasMargin) }
     }
@@ -1192,8 +1143,7 @@ final class EditorModel {
         case let .success(version):
             Clipboard.copy(png: version.png)
             self.version = version.url
-            savedSnapshot = snapshot
-            isDirty = self.document.snapshot != snapshot
+            history.didSave(snapshot, document: self.document)
             Toast.show("Saved as \(version.url.lastPathComponent) and copied.\(TemporaryCaptures.toastNote(for: version.url))", duration: .seconds(3))
             return true
         case .failure(.draw), .failure(.encode):
