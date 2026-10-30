@@ -1,3 +1,4 @@
+import AppKit
 import ApplicationServices
 import ShotCore
 
@@ -14,9 +15,19 @@ enum BrowserPageFinder {
         _ = AXIsProcessTrustedWithOptions([key: true] as CFDictionary)
     }
 
+    /// Whether `pid` is an app macOS lists as able to open web links. Electron apps such as Slack show web content too,
+    /// but are not browsers.
+    private static func isBrowser(pid: pid_t) -> Bool {
+        guard let bundle = NSRunningApplication(processIdentifier: pid)?.bundleURL?.standardizedFileURL,
+              let probe = URL(string: "https://example.com") else {
+            return false
+        }
+        return NSWorkspace.shared.urlsForApplications(toOpen: probe).contains { $0.standardizedFileURL == bundle }
+    }
+
     /// The page's rect in CoreGraphics global space, or nil when the window has none (not a browser, or no permission).
     static func page(of window: WindowInfo) -> CGRect? {
-        guard isTrusted else {
+        guard isTrusted, isBrowser(pid: window.ownerPID) else {
             return nil
         }
         let app = AXUIElementCreateApplication(window.ownerPID)
