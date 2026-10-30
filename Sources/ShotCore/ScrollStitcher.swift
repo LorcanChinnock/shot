@@ -175,7 +175,6 @@ public final class ScrollStitcher {
         lap("texture")
         guard texturedCount >= 10 else {
             status = .notEnough
-            swapFrames()
             return update(changed: false)
         }
         let lined = bestShift()
@@ -187,7 +186,6 @@ public final class ScrollStitcher {
         }
         guard case let .value(settled) = lined else {
             status = .notEnough
-            swapFrames()
             return update(changed: false)
         }
         let shift = settled
