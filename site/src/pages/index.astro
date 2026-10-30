@@ -18,8 +18,8 @@ const half = '(min-width: 900px) 540px, 100vw';
 
 // The strip of shortcuts under the hero. It scrolls, so it's written twice and the copy is hidden from screen readers.
 const shortcuts: [string[], string][] = [
-  [['⌘', '⇧', '4'], 'Area'],
-  [['⌘', '⇧', '3'], 'Whole screen'],
+  [['⌘', '⇧', '4'], 'Screenshot'],
+  [['Tab'], 'Area, window, screen'],
   [['⌘', '⇧', '5'], 'Record'],
   [['A'], 'Arrow'],
   [['B'], 'Blur'],
@@ -144,7 +144,7 @@ const software = {
         <span class="step">That's the real app</span>
         <h2>Let go of the mouse and the screenshot is already copied and saved. A little card shows up in the corner, and you can drag it straight into a message.</h2>
       </div>
-      <Window class="reveal"><Loop name="hero" label="Pressing ⌘⇧4, adding a note with an arrow to the problem, then pasting the screenshot into a chat" /></Window>
+      <Window class="reveal"><Loop name="hero" label="Pressing ⌘⇧4, highlighting the problem and pointing an arrow at it, then pasting the screenshot into a chat" /></Window>
       <noscript><img class="still" src={quickAccess.src} width={quickAccess.width} height={quickAccess.height} alt="Shot's Quick Access card showing a screenshot of an order with a $0.00 discount, with Copy and Save As buttons in the middle and close, edit and folder buttons in the corners." /></noscript>
     </div>
   </section>
@@ -156,7 +156,7 @@ const software = {
           <span class="step" style="--chip: var(--pink)">Capture</span>
           <h2>Drag out an area with a magnifier for the last pixel, or click a window.</h2>
         </div>
-        <Window tint="var(--pink)"><Loop name="capture" label="Dragging out an area with the magnifier, then the Quick Access card sliding into the corner and showing its buttons" /></Window>
+        <Window tint="var(--pink)"><Loop name="capture" label="Pressing Tab to step between an area, a window and the full screen, dragging out an area with the magnifier, then the Quick Access card sliding into the corner and showing its buttons" /></Window>
       </div>
       <div class="stack reveal">
         <div class="say">
@@ -175,7 +175,7 @@ const software = {
           <span class="step" style="--chip: var(--mint)">Record</span>
           <h2><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">5</kbd> records instead, with your voice and your camera if you like.</h2>
         </div>
-        <Window tint="var(--mint)"><Loop name="recording" label="Recording an area of the screen while a chart animates" /></Window>
+        <Window tint="var(--mint)"><Loop name="recording" label="Stepping the Delay chip through its choices, picking an area to record, then recording it while a chart animates" /></Window>
       </div>
       <div class="stack reveal">
         <div class="say">

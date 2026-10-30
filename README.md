@@ -25,12 +25,12 @@
 </p>
 
 <p align="center">
-  <img src="docs/media/hero.gif" width="720" alt="Capturing an order with ⌘⇧4, opening it from the Quick Access card, adding a note with an arrow to the $0 discount, then pasting it into a chat">
+  <img src="docs/media/hero.gif" width="720" alt="Capturing an order with ⌘⇧4, opening it from the Quick Access card, highlighting the discount and pointing an arrow at the $0, then pasting it into a chat">
 </p>
 
 ## Features
 
-- **Capture:** an area on a frozen screen with a magnifier, a window, or the whole screen, with a timer if you need one. Shot copies and saves it as soon as you let go.
+- **Capture:** an area on a frozen screen with a magnifier, a window, or the whole screen, with a delay if you need one. Shot copies and saves it as soon as you let go.
 - **Capture a long page:** drag out the part of the screen that scrolls and scroll it yourself, in any direction. Shot builds one screenshot as you go, keeps sticky headers and columns once, and shows you what you haven't covered yet.
 - **Quick Access:** a card in the corner after every capture. Annotate it, pin it above your other windows, or drag it straight into another app.
 - **Annotate:** arrows, text, sticky notes, highlights, a spotlight, blur and pixelate, and several images on one canvas.
@@ -43,7 +43,7 @@
 
 ### Capture and Quick Access
 
-<img src="docs/media/capture.gif" width="720" alt="Dragging out an area with the magnifier, then the Quick Access card sliding into the corner and showing its buttons">
+<img src="docs/media/capture.gif" width="720" alt="Pressing Tab to step the capture between an area, a window and the full screen, dragging out an area with the magnifier, then the Quick Access card sliding into the corner and showing its buttons">
 
 ### Annotate anything
 
@@ -51,7 +51,7 @@
 
 ### Record your screen, and yourself
 
-<img src="docs/media/recording.gif" width="720" alt="Picking an area to record, then the recording outline and the controls while a chart animates">
+<img src="docs/media/recording.gif" width="720" alt="Stepping the Delay chip through its choices, picking an area to record, then the recording outline and the controls while a chart animates">
 
 ### Trim and export to GIF
 
@@ -79,9 +79,8 @@ Shot lives in the menu bar. It takes over the macOS screenshot keys while it run
 
 | Press | To |
 |---|---|
-| ⌘⇧4 | Capture an area. Press Space to pick a window instead. |
-| ⌘⇧3 | Capture the whole screen. |
-| ⌘⇧5 | Record an area. Press Space to pick a window, or Return for the whole screen. |
+| ⌘⇧4 | Take a screenshot. Press Tab to pick an area, a window or the whole screen. |
+| ⌘⇧5 | Record. Press Tab to pick an area, a window or the whole screen. |
 
 To keep the macOS screenshot tool, and for every other shortcut, see [Keyboard shortcuts](https://shot.lorcanchinnock.com/docs/keyboard-shortcuts/).
 

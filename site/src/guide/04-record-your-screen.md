@@ -8,17 +8,16 @@ group: Capture
 
 ## Start a recording
 
-1. Press <kbd>⌘⇧5</kbd>.
-2. Pick what to record:
-   - **An area:** drag across it. The magnifier helps here too.
-   - **A window:** press <kbd>Space</kbd>, then click the window.
-   - **The whole screen:** press <kbd>Return</kbd>.
+1. Press <kbd>⌘⇧5</kbd>, or choose **Record** in the menu bar menu.
+2. Pick what to record. Press <kbd>Tab</kbd> or click a chip at the top of the screen to move between them:
+   - **Area:** drag across it. The magnifier helps here too.
+   - **Window:** click the window.
+   - **Full Screen:** click the screen, or press <kbd>Return</kbd>.
 3. Recording starts as soon as you let go.
 
-The camera bubble, microphone and cursor are on or off as you set them in **Settings › Recording**.
+To wait first, click the **Delay** chip or press <kbd>D</kbd> to step through Off, 3, 5 and 10 seconds. Shot counts down on screen after you pick, then starts recording. It is back to Off the next time.
 
-> [!TIP]
-> **Record Full Screen** and **Record Window** are in the Shot menu in the menu bar. To pick between them after <kbd>⌃⇧5</kbd>, press <kbd>Enter</kbd> or <kbd>Space</kbd> in the record overlay.
+The camera bubble, microphone and cursor are on or off as you set them in **Settings › Recording**.
 
 ## Check everything before you start
 
@@ -30,7 +29,7 @@ Hold <kbd>⌥</kbd> as you finish picking an area or window. Before recording st
 
 Press <kbd>Return</kbd> or click **Record** to start, or <kbd>Esc</kbd> to cancel. To get this step every time, turn on **Adjust before recording** in **Settings › Recording**.
 
-**Countdown**, in the same settings, waits 3 or 5 seconds before recording starts, and Shot's menu bar icon shows the seconds left. <kbd>Esc</kbd> during the countdown goes back to the adjust step if you had it, and cancels otherwise.
+When you set a delay on the overlay, Shot's menu bar icon shows the seconds left. <kbd>Esc</kbd> during the countdown goes back to the adjust step if you had it, and cancels otherwise.
 
 ## While you record
 

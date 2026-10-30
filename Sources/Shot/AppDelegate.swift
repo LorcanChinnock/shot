@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Preferences.registerDefaults()
         applyAppearance()
         SystemShortcuts.giveBackTextCaptureKeyIfNeeded()
+        SystemShortcuts.giveBackFullScreenKeyIfNeeded()
         HotkeyCenter.shared.onPress = { [weak self] action in
             self?.coordinator.perform(action)
         }
@@ -144,8 +145,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             coordinator.captureAfterCountdown(seconds: seconds)
         case let .edit(route):
             coordinator.edit(route)
-        case let .action(action):
-            coordinator.perform(action)
+        case let .action(action, target):
+            coordinator.perform(action, target: target)
         }
     }
 

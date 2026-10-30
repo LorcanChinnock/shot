@@ -546,9 +546,8 @@ func fabPixels(in image: Bitmap) -> Int {
     #expect(clamped == CGPoint(x: 414, y: 567))
 }
 
-@Test func captureScrollingIsACaptureWithAShortcutButNoDefault() throws {
+@Test func captureScrollingHasAShortcutButNoDefault() throws {
     #expect(ShotAction.captureScrolling.rawValue == "capture-scrolling")
-    #expect(ShotAction.captureScrolling.isCapture)
     #expect(!ShotAction.captureScrolling.isRecording)
     #expect(ShotAction.captureScrolling.hasShortcut)
     #expect(ShotAction.captureScrolling.defaultCombo == nil)

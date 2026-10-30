@@ -245,7 +245,7 @@ private struct SetupStep: View {
 
     /// The keys Shot uses when macOS keeps its own.
     private var ownKeys: String {
-        let keys = [ShotAction.captureFullscreen, .captureArea, .record].compactMap { $0.defaultCombo(replacingSystemScreenshots: false)?.displayString }
+        let keys = [ShotAction.screenshot, .record].compactMap { $0.defaultCombo(replacingSystemScreenshots: false)?.displayString }
         return keys.formatted(.list(type: .and))
     }
 
@@ -259,7 +259,7 @@ private struct SetupStep: View {
         Header(symbol: "keyboard.fill", color: Brutal.pink, title: "Make it yours", subtitle: "Two choices, both in Settings later.")
         VStack(spacing: 0) {
             ToggleRow(
-                title: "Use Shot for ⌘⇧3 to ⌘⇧5",
+                title: "Use Shot for ⌘⇧4 and ⌘⇧5",
                 subtitle: keysSubtitle,
                 isOn: $model.usesSystemKeys, color: Brutal.pink
             )
@@ -287,9 +287,9 @@ private struct TryItStep: View {
         if model.captured {
             Header(symbol: "party.popper.fill", color: Brutal.mint, title: "That's it", subtitle: "A few more things worth knowing.")
             VStack(alignment: .leading, spacing: 8) {
-                Tip(symbol: "macwindow", text: "Press Space while you pick an area to capture a window instead.")
+                Tip(symbol: "macwindow", text: "Press Tab while you pick an area to choose a window or the full screen instead.")
                 if let record = prefs.hotkey(for: .record) {
-                    Tip(symbol: "record.circle", text: "\(record.displayString) records an area of the screen.")
+                    Tip(symbol: "record.circle", text: "\(record.displayString) records the screen the same way.")
                 }
                 if prefs.quickAccessAfterCapture {
                     Tip(symbol: "rectangle.on.rectangle", text: "Drag the card in the corner into any app, or click the pencil to annotate.")
@@ -309,10 +309,10 @@ private struct TryItStep: View {
         } else {
             Header(symbol: "camera.viewfinder", color: Brutal.sky, title: "Try it", subtitle: "Take your first screenshot.")
             Group {
-                if let area = prefs.hotkey(for: .captureArea) {
+                if let area = prefs.hotkey(for: .screenshot) {
                     Text("Press \(Text(area.displayString).font(Brutal.title(17).resolved(textSize))), then drag out any area.")
                 } else {
-                    Text("Click the Shot icon in the menu bar, then Capture Area, and drag out any area.")
+                    Text("Click the Shot icon in the menu bar, then Screenshot, and drag out any area.")
                 }
             }
             .font(.scaled(15, weight: .semibold))

@@ -640,57 +640,8 @@
         }
       }
     },
-    "%@ records an area of the screen." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ zeichnet einen Bildschirmbereich auf."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ graba un área de la pantalla."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ enregistre une zone de l'écran."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ registra un'area dello schermo."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@で画面の一部を収録します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ 키를 누르면 화면 영역을 녹화합니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ grava uma área da tela."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ 录制屏幕上的某个区域。"
-          }
-        }
-      }
+    "%@ records the screen the same way." : {
+
     },
     "%@ shortcut" : {
       "localizations" : {
@@ -1334,9 +1285,6 @@
           }
         }
       }
-    },
-    "%lld seconds" : {
-
     },
     "%lld × %lld" : {
       "localizations" : {
@@ -3194,6 +3142,9 @@
     "Arrows: move" : {
 
     },
+    "Arrows: next window" : {
+
+    },
     "Audio" : {
       "localizations" : {
         "de" : {
@@ -4931,170 +4882,8 @@
         }
       }
     },
-    "Capture Area" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bereich aufnehmen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Capturar área"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Capturer une zone"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cattura area"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "範囲をキャプチャ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "영역 캡처"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Capturar Área"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "捕捉区域"
-          }
-        }
-      }
-    },
-    "Capture Full Screen" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vollbild aufnehmen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Capturar pantalla completa"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Capturer tout l'écran"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cattura schermo intero"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "画面全体をキャプチャ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "전체 화면 캡처"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Capturar Tela Inteira"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "捕捉全屏"
-          }
-        }
-      }
-    },
-    "Capture Full Screen After Delay" : {
-
-    },
-    "Capture Previous Area" : {
-
-    },
     "Capture Scrolling Area" : {
 
-    },
-    "Capture Window" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fenster aufnehmen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Capturar ventana"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Capturer une fenêtre"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cattura finestra"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ウインドウをキャプチャ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "윈도우 캡처"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Capturar Janela"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "捕捉窗口"
-          }
-        }
-      }
     },
     "Capture overlay" : {
 
@@ -5882,6 +5671,9 @@
         }
       }
     },
+    "Click a screen" : {
+
+    },
     "Click a shortcut, then press the new keys. Esc cancels, Delete clears." : {
       "localizations" : {
         "de" : {
@@ -6090,57 +5882,8 @@
         }
       }
     },
-    "Click the Shot icon in the menu bar, then Capture Area, and drag out any area." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Klicke in der Menüleiste auf das Shot-Symbol, dann auf „Bereich aufnehmen“, und zieh einen Bereich auf."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Haz clic en el icono de Shot en la barra de menús, luego en Capturar área, y arrastra sobre cualquier área."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cliquez sur l'icône Shot dans la barre des menus, puis sur Capturer une zone, et faites glisser sur la zone voulue."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fai clic sull'icona di Shot nella barra dei menu, poi su Cattura area, e trascina su un'area qualsiasi."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "メニューバーのShotアイコンをクリックし、「範囲をキャプチャ」を選んで、好きな範囲をドラッグします。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "메뉴 막대에서 Shot 아이콘을 클릭하고 영역 캡처를 선택한 다음 원하는 영역을 드래그하세요."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Clique no ícone do Shot na barra de menus, depois em Capturar Área, e arraste qualquer área."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "点按菜单栏中的 Shot 图标，然后点按“捕捉区域”，并拖出任意区域。"
-          }
-        }
-      }
+    "Click the Shot icon in the menu bar, then Screenshot, and drag out any area." : {
+
     },
     "Click to add numbered steps: 1, 2, 3…" : {
       "localizations" : {
@@ -9111,58 +8854,6 @@
         }
       }
     },
-    "Countdown" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Countdown"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Temporizador"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Compte à rebours"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conto alla rovescia"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "カウントダウン"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "카운트다운"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Contagem regressiva"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "倒计时"
-          }
-        }
-      }
-    },
     "Counter" : {
       "localizations" : {
         "de" : {
@@ -9211,58 +8902,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "计数器"
-          }
-        }
-      }
-    },
-    "Counts down before recording starts." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zählt vor dem Start der Aufzeichnung herunter."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Espera unos segundos antes de empezar a grabar."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Décompte avant le début de l'enregistrement."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conta alla rovescia prima che inizi la registrazione."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "カウントダウンしてから収録を開始します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "녹화를 시작하기 전에 카운트다운합니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conta os segundos antes de a gravação começar."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "开始录制前倒计时。"
           }
         }
       }
@@ -9753,6 +9392,9 @@
         }
       }
     },
+    "D: delay" : {
+
+    },
     "DENIED" : {
       "localizations" : {
         "de" : {
@@ -9965,6 +9607,9 @@
       }
     },
     "Default" : {
+
+    },
+    "Delay: %@" : {
 
     },
     "Delete" : {
@@ -18440,9 +18085,6 @@
         }
       }
     },
-    "No previous area yet. Capture an area first." : {
-
-    },
     "No screenshots in your save folder yet" : {
       "localizations" : {
         "de" : {
@@ -21327,57 +20969,8 @@
         }
       }
     },
-    "Press Space while you pick an area to capture a window instead." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Drück beim Auswählen eines Bereichs die Leertaste, um stattdessen ein Fenster aufzunehmen."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pulsa Espacio mientras eliges un área para capturar una ventana."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Appuyez sur Espace pendant que vous choisissez une zone pour capturer plutôt une fenêtre."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Premi Spazio mentre scegli un'area per catturare invece una finestra."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "範囲を選択中にSpaceキーを押すと、代わりにウインドウをキャプチャできます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "영역을 선택하는 동안 Space 바를 누르면 대신 윈도우를 캡처합니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pressione Espaço ao escolher uma área para capturar uma janela."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选取区域时按空格键可改为捕捉窗口。"
-          }
-        }
-      }
+    "Press Tab while you pick an area to choose a window or the full screen instead." : {
+
     },
     "Press keys…" : {
       "localizations" : {
@@ -21709,6 +21302,9 @@
         }
       }
     },
+    "R: ratio (%@)" : {
+
+    },
     "RECENT CAPTURES" : {
       "localizations" : {
         "de" : {
@@ -21864,162 +21460,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "录制"
-          }
-        }
-      }
-    },
-    "Record Area" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bereich aufzeichnen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Grabar área"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enregistrer une zone"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Registra area"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "範囲を収録"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "영역 녹화"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gravar Área"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "录制区域"
-          }
-        }
-      }
-    },
-    "Record Full Screen" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vollbild aufzeichnen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Grabar pantalla completa"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enregistrer tout l'écran"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Registra schermo intero"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "画面全体を収録"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "전체 화면 녹화"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gravar Tela Inteira"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "录制全屏"
-          }
-        }
-      }
-    },
-    "Record Window" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fenster aufzeichnen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Grabar ventana"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enregistrer une fenêtre"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Registra finestra"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ウインドウを収録"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "윈도우 녹화"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gravar Janela"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "录制窗口"
           }
         }
       }
@@ -23582,58 +23022,6 @@
         }
       }
     },
-    "Return: full screen" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Return: Vollbild"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Retorno: pantalla completa"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Retour : plein écran"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A capo: schermo intero"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Return：画面全体"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Return: 전체 화면"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Return: tela inteira"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Return：全屏"
-          }
-        }
-      }
-    },
     "Reveal" : {
       "localizations" : {
         "de" : {
@@ -24884,6 +24272,9 @@
           }
         }
       }
+    },
+    "Screenshot" : {
+
     },
     "Screenshot %@" : {
       "localizations" : {
@@ -27592,110 +26983,6 @@
         }
       }
     },
-    "Space: area" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Leertaste: Bereich"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Espacio: área"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Espace : zone"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spazio: area"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Space：範囲"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Space: 영역"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Espaço: área"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "空格：区域"
-          }
-        }
-      }
-    },
-    "Space: window" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Leertaste: Fenster"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Espacio: ventana"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Espace : fenêtre"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spazio: finestra"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Space：ウインドウ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Space: 윈도우"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Espaço: janela"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "空格：窗口"
-          }
-        }
-      }
-    },
     "Speak to see the level." : {
       "localizations" : {
         "de" : {
@@ -29167,60 +28454,8 @@
         }
       }
     },
-    "Tab: next window" : {
+    "Tab: area, window or screen" : {
 
-    },
-    "Tab: ratio (%@)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tab: Format (%@)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tab: proporción (%@)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tab : proportions (%@)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tab: proporzioni (%@)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tab：比率（%@）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tab: 비율 (%@)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tab: proporção (%@)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tab：比例（%@）"
-          }
-        }
-      }
     },
     "Take your first screenshot." : {
       "localizations" : {
@@ -29916,9 +29151,6 @@
         }
       }
     },
-    "The previous area isn't on a display now" : {
-
-    },
     "The recording has no video track" : {
       "localizations" : {
         "de" : {
@@ -30285,9 +29517,6 @@
           }
         }
       }
-    },
-    "Tools" : {
-
     },
     "Tracks" : {
       "localizations" : {
@@ -31543,57 +30772,8 @@
         }
       }
     },
-    "Use Shot for ⌘⇧3 to ⌘⇧5" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shot für ⌘⇧3 bis ⌘⇧5 verwenden"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usar Shot para ⌘⇧3 a ⌘⇧5"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Utiliser Shot pour ⌘⇧3 à ⌘⇧5"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usa Shot per ⌘⇧3–⌘⇧5"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "⌘⇧3〜⌘⇧5にShotを使用"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "⌘⇧3~⌘⇧5에 Shot 사용"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usar o Shot para ⌘⇧3 a ⌘⇧5"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "将 ⌘⇧3 至 ⌘⇧5 交给 Shot"
-          }
-        }
-      }
+    "Use Shot for ⌘⇧4 and ⌘⇧5" : {
+
     },
     "Use this style for new captures" : {
       "localizations" : {

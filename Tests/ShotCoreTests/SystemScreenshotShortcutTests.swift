@@ -27,9 +27,21 @@ import Testing
 }
 
 @Test func takeoverLeavesCommandShift6WithMacOS() {
-    #expect(SystemScreenshotShortcut.allCases.map(\.rawValue) == [28, 30, 184])
+    #expect(SystemScreenshotShortcut.allCases.map(\.rawValue) == [30, 184])
     let hotkeys = SystemScreenshotShortcut.setting(enabled: false, in: [:])
     #expect(hotkeys["181"] == nil)
+    #expect(hotkeys["28"] == nil)
+}
+
+@Test func givingBackCommandShift3TurnsItOnAndKeepsItsKey() {
+    let taken: [String: Any] = ["enabled": false, "value": ["parameters": [51, 20, 1_179_648], "type": "standard"]]
+    let hotkeys = SystemScreenshotShortcut.givingBackFullScreenKey(in: ["28": taken, "30": ["enabled": false]])
+    let entry = hotkeys?["28"] as? [String: Any]
+    #expect(entry?["enabled"] as? Bool == true)
+    #expect((entry?["value"] as? [String: Any])?["parameters"] as? [Int] == [51, 20, 1_179_648])
+    #expect((hotkeys?["30"] as? [String: Any])?["enabled"] as? Bool == false)
+    #expect(SystemScreenshotShortcut.givingBackFullScreenKey(in: [:]) == nil)
+    #expect(SystemScreenshotShortcut.givingBackFullScreenKey(in: ["28": ["enabled": true]]) == nil)
 }
 
 @Test func givingBackCommandShift6TurnsItOnAndKeepsItsKey() {

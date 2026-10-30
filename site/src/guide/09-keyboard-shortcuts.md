@@ -10,9 +10,8 @@ These work in any app, while Shot is running:
 
 | Shortcut | Action |
 |---|---|
-| <kbd>⌘⇧3</kbd> | Capture the full screen |
-| <kbd>⌘⇧4</kbd> | Capture an area. Press <kbd>Space</kbd> to pick a window instead. |
-| <kbd>⌘⇧5</kbd> | Record an area. Press <kbd>Space</kbd> to pick a window, or <kbd>Return</kbd> for the full screen. |
+| <kbd>⌘⇧4</kbd> | Take a screenshot. Press <kbd>Tab</kbd> to pick an area, a window or the full screen. |
+| <kbd>⌘⇧5</kbd> | Record. Press <kbd>Tab</kbd> to pick an area, a window or the full screen. |
 
 While you set up a recording, the record shortcut starts it. While you record, it stops the recording.
 
@@ -24,21 +23,20 @@ Shot takes these keys over from macOS while it runs, once it has Screen Recordin
 2. Click a shortcut, then press the new keys. They must include <kbd>⌘</kbd>, <kbd>⌥</kbd> or <kbd>⌃</kbd>.
 3. <kbd>Esc</kbd> cancels, and <kbd>Delete</kbd> clears the shortcut.
 
-Shot won't take a shortcut that another action already uses, or <kbd>⌘Q</kbd>, <kbd>⌘W</kbd>, <kbd>⌘Tab</kbd>, <kbd>⌘Space</kbd>, <kbd>⌘H</kbd> or <kbd>⌘M</kbd>. **Restore Defaults** puts them all back, and turns **Use Shot for ⌘⇧3 to ⌘⇧5** back on.
+Shot won't take a shortcut that another action already uses, or <kbd>⌘Q</kbd>, <kbd>⌘W</kbd>, <kbd>⌘Tab</kbd>, <kbd>⌘Space</kbd>, <kbd>⌘H</kbd> or <kbd>⌘M</kbd>. **Restore Defaults** puts them all back, and turns **Use Shot for ⌘⇧4 and ⌘⇧5** back on.
 
 ## Keep the macOS screenshot tool
 
-Turn off **Use Shot for ⌘⇧3 to ⌘⇧5** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with <kbd>⌃</kbd> in place of <kbd>⌘</kbd>: <kbd>⌃⇧3</kbd>, <kbd>⌃⇧4</kbd> and <kbd>⌃⇧5</kbd>, plus <kbd>⌃⇧W</kbd> for a window.
+Turn off **Use Shot for ⌘⇧4 and ⌘⇧5** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with <kbd>⌃</kbd> in place of <kbd>⌘</kbd>: <kbd>⌃⇧4</kbd> and <kbd>⌃⇧5</kbd>.
 
 > [!NOTE]
-> If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧3 to ⌘⇧5** on again.
+> If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧4 and ⌘⇧5** on again.
 
 ## Actions you can give a shortcut
 
-**Copy Text** and **Capture Scrolling Area** have no shortcut until you set one. **Pick Colour**, **Record Full Screen**, **Record Window** and **Capture Previous Area** are in the menu bar menu only. Every action also has a [`shot://` link](#url-scheme).
+**Copy Text** and **Capture Scrolling Area** have no shortcut until you set one. **Pick Colour** is in the menu bar menu only. Every action also has a [`shot://` link](#url-scheme).
 
 - **Pick Colour** shows a loupe. Click any pixel on screen to copy its hex, such as `#1E90FF`.
-- **Capture Window** has no shortcut while Shot uses ⌘⇧3 to ⌘⇧5. Press <kbd>Space</kbd> after <kbd>⌘⇧4</kbd> instead.
 
 ## Scrolling capture
 
@@ -53,15 +51,19 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 
 | Key | Action |
 |---|---|
-| Space | Switch between picking an area and picking a window. While dragging, hold it to move the area. |
-| Return | Record the full screen (recording only) |
+| Tab | Switch between picking an area, a window and the full screen. <kbd>⇧Tab</kbd> goes back. |
+| D | Step the delay through Off, 3, 5 and 10 seconds. |
+| R | Step the area's ratio. |
+| Arrow keys | Move an area. In window mode, step through the windows. |
+| Space | While dragging an area, hold it to move the area. |
+| Return | Take the highlighted window or screen, or the area you made with the keys. |
 | Esc | Cancel |
 
 ## Recording setup
 
 | Key | Action |
 |---|---|
-| Return | Start recording, after the countdown if one is set |
+| Return | Start recording, after the delay if you set one |
 | Esc | Cancel |
 
 ## Recording

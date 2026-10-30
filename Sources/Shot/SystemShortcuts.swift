@@ -4,7 +4,7 @@ import ShotCore
 
 private let log = Logger.shot("system-shortcuts")
 
-/// Hands ⌘⇧3 to ⌘⇧5 between macOS and Shot.
+/// Hands ⌘⇧4 and ⌘⇧5 between macOS and Shot.
 @MainActor
 enum SystemShortcuts {
     private static var hotkeys: [String: Any] {
@@ -66,6 +66,7 @@ enum SystemShortcuts {
         let store = UserDefaults.standard
         Preferences.removeTextCapture(in: store)
         Preferences.removeTranslateTarget(in: store)
+        Preferences.migrateCaptureActions(in: store)
         Preferences.removeMenuOnlyHotkeys(in: store)
         let prefs = Preferences()
         guard !prefs.gaveBackTextCaptureKey else {
@@ -79,6 +80,23 @@ enum SystemShortcuts {
             }
         }
         store.set(true, forKey: PreferenceKey.gaveBackTextCaptureKey)
+    }
+
+    /// Turns ⌘⇧3 back on for people whose takeover included it, as ⌘⇧6 is above. Only once, and only when Shot turned it
+    /// off, so a choice made in System Settings sticks.
+    static func giveBackFullScreenKeyIfNeeded() {
+        let prefs = Preferences()
+        guard !prefs.gaveBackFullScreenKey else {
+            return
+        }
+        if prefs.disabledSystemScreenshots, let updated = SystemScreenshotShortcut.givingBackFullScreenKey(in: hotkeys) {
+            apply(updated, wait: false)
+            guard SystemScreenshotShortcut.givingBackFullScreenKey(in: hotkeys) == nil else {
+                log.error("macOS did not turn ⌘⇧3 back on")
+                return
+            }
+        }
+        UserDefaults.standard.set(true, forKey: PreferenceKey.gaveBackFullScreenKey)
     }
 
     /// Returns true when macOS reports the new state after the change.

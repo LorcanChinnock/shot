@@ -402,7 +402,6 @@ private struct RecordingSettings: View {
     @Setting(PreferenceKey.showRecordingBorder) private var border: Bool
     @Setting(PreferenceKey.copyAfterRecording) private var copy: Bool
     @Setting(PreferenceKey.adjustBeforeRecording) private var adjust: Bool
-    @Setting(PreferenceKey.recordingCountdown) private var countdown: Int
     // Read only so the GIF summary updates when the video editor changes them.
     @Setting(PreferenceKey.gifFrameRate) private var gifFrameRate: Int
     @Setting(PreferenceKey.gifWidth) private var gifWidth: Int
@@ -419,10 +418,7 @@ private struct RecordingSettings: View {
 
     var body: some View {
         SettingsCard(title: "Starting", symbol: "record.circle") {
-            ToggleRow(title: "Adjust before recording", subtitle: "Shows the frame handles and options first. Hold ⌥ as you finish the selection to show them once.", isOn: $adjust, color: color)
-            SettingRow(title: "Countdown", subtitle: "Counts down before recording starts.", divider: false) {
-                BrutalSegmented(selection: $countdown, options: RecordingStart.countdowns.map { ($0, $0 == 0 ? "Off" : "\($0) s") }, color: color)
-            }
+            ToggleRow(title: "Adjust before recording", subtitle: "Shows the frame handles and options first. Hold ⌥ as you finish the selection to show them once.", isOn: $adjust, color: color, divider: false)
         }
         SettingsCard(title: "Video", symbol: "film.fill") {
             SettingRow(title: "Frame rate", subtitle: frameRateSubtitle) {
@@ -595,7 +591,7 @@ private struct ShortcutSettings: View {
 
     var body: some View {
         SettingsCard(title: "macOS screenshot keys", symbol: "command") {
-            ToggleRow(title: "Use Shot for ⌘⇧3 to ⌘⇧5", subtitle: "Turns off the matching macOS shortcuts, so these keys and a keyboard's screenshot key open Shot. macOS gets them back while Shot isn't running, or when you turn this off.", isOn: useShot, color: color, divider: replacesSystemScreenshots && macOSOwnsKeys)
+            ToggleRow(title: "Use Shot for ⌘⇧4 and ⌘⇧5", subtitle: "Turns off the matching macOS shortcuts, so these keys and a keyboard's screenshot key open Shot. macOS gets them back while Shot isn't running, or when you turn this off.", isOn: useShot, color: color, divider: replacesSystemScreenshots && macOSOwnsKeys)
             if replacesSystemScreenshots && macOSOwnsKeys {
                 SettingRow(title: "macOS still uses these keys", subtitle: "Turn off the Screenshots shortcuts under Keyboard Shortcuts.", divider: false) {
                     Button("Open") { SystemShortcuts.openKeyboardSettings() }
