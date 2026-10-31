@@ -811,6 +811,9 @@
         }
       }
     },
+    "%lld files weren't moved: %@ already has files with those names" : {
+
+    },
     "%lld fps" : {
       "localizations" : {
         "de" : {
@@ -1236,6 +1239,9 @@
           }
         }
       }
+    },
+    "%lld points wide" : {
+
     },
     "%lld s" : {
       "localizations" : {
@@ -1815,6 +1821,9 @@
         }
       }
     },
+    "A folder can't go inside itself." : {
+
+    },
     "A red border around the recorded area. It never appears in the video." : {
       "localizations" : {
         "de" : {
@@ -2343,6 +2352,9 @@
           }
         }
       }
+    },
+    "Add a tag" : {
+
     },
     "Add an image" : {
       "localizations" : {
@@ -6224,6 +6236,9 @@
         }
       }
     },
+    "Collapse" : {
+
+    },
     "Colour" : {
       "localizations" : {
         "de" : {
@@ -7464,6 +7479,9 @@
         }
       }
     },
+    "Couldn't change the folder. Check that you can write to %@." : {
+
+    },
     "Couldn't change the macOS screenshot shortcuts. Change them in Keyboard Shortcuts." : {
       "localizations" : {
         "de" : {
@@ -8089,6 +8107,9 @@
       }
     },
     "Couldn't join the recording. Its parts are saved in your save folder." : {
+
+    },
+    "Couldn't move %lld files" : {
 
     },
     "Couldn't move %lld files to the Trash" : {
@@ -8875,6 +8896,9 @@
         }
       }
     },
+    "Couldn't tag %lld files" : {
+
+    },
     "Counter" : {
       "localizations" : {
         "de" : {
@@ -8926,6 +8950,12 @@
           }
         }
       }
+    },
+    "Create" : {
+
+    },
+    "Create and Move" : {
+
     },
     "Crop" : {
       "localizations" : {
@@ -9685,6 +9715,9 @@
         }
       }
     },
+    "Delete Folder and Captures" : {
+
+    },
     "Delete Track" : {
       "localizations" : {
         "de" : {
@@ -9785,6 +9818,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "删除导入的片段和变换以隐藏轨道"
+          }
+        }
+      }
+    },
+    "Delete “%@” and the %lld captures in it?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Delete “%1$@” and the %2$lld captures in it?"
           }
         }
       }
@@ -10259,6 +10302,9 @@
           }
         }
       }
+    },
+    "Drag captures onto this folder in the sidebar, or use Move to in a capture's menu. Captures in the folders inside it show when you open them." : {
+
     },
     "Drag over private details to blur or pixelate them." : {
       "localizations" : {
@@ -10889,6 +10935,9 @@
           }
         }
       }
+    },
+    "Drag to resize. Double-click to reset." : {
+
     },
     "Drag to scrub. Drag a clip to move it and its edges to trim it, and an annotation or picture up or down to restack it. Shift-drag to select a section, then press Delete to cut it. Right-click a lane for its options." : {
       "localizations" : {
@@ -11777,6 +11826,9 @@
         }
       }
     },
+    "Enter a name that doesn't start with a dot." : {
+
+    },
     "Esc: cancel" : {
       "localizations" : {
         "de" : {
@@ -12036,6 +12088,9 @@
           }
         }
       }
+    },
+    "Expand" : {
+
     },
     "Export" : {
       "localizations" : {
@@ -13244,6 +13299,18 @@
           }
         }
       }
+    },
+    "Folder name" : {
+
+    },
+    "Folder options" : {
+
+    },
+    "Folders" : {
+
+    },
+    "Folders are made in %@, so they show in Finder too." : {
+
     },
     "Frame" : {
 
@@ -14869,6 +14936,9 @@
         }
       }
     },
+    "Hide folders" : {
+
+    },
     "Hide the track" : {
       "localizations" : {
         "de" : {
@@ -15551,6 +15621,9 @@
         }
       }
     },
+    "It comes off %lld captures. The captures themselves stay." : {
+
+    },
     "It was installed while Shot was running. Relaunch to use it." : {
       "localizations" : {
         "de" : {
@@ -15602,6 +15675,25 @@
           }
         }
       }
+    },
+    "It's empty. You can put it back from the Trash in Finder." : {
+
+    },
+    "Its %lld captures go to the Trash with it and leave the gallery. You can put them back from the Trash in Finder." : {
+
+    },
+    "Its %lld captures, in %lld folders, go to the Trash with it and leave the gallery. You can put them back from the Trash in Finder." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Its %1$lld captures, in %2$lld folders, go to the Trash with it and leave the gallery. You can put them back from the Trash in Finder."
+          }
+        }
+      }
+    },
+    "Its %lld folders go to the Trash with it. You can put them back from the Trash in Finder." : {
+
     },
     "JPEG" : {
       "localizations" : {
@@ -16762,6 +16854,9 @@
         }
       }
     },
+    "Make a folder, then drag captures onto it." : {
+
+    },
     "Make it yours" : {
       "localizations" : {
         "de" : {
@@ -16813,6 +16908,9 @@
           }
         }
       }
+    },
+    "Manage tags" : {
+
     },
     "Medium" : {
       "localizations" : {
@@ -17077,6 +17175,9 @@
     "More tools" : {
 
     },
+    "Move to" : {
+
+    },
     "Move to Trash" : {
       "localizations" : {
         "de" : {
@@ -17129,6 +17230,9 @@
         }
       }
     },
+    "Move to Trash…" : {
+
+    },
     "Move to the Trash (⌘⌫)" : {
       "localizations" : {
         "de" : {
@@ -17180,6 +17284,12 @@
           }
         }
       }
+    },
+    "Move “%@” to the Trash?" : {
+
+    },
+    "Moved %lld files to %@" : {
+
     },
     "Moved %lld files to the Trash (⌘Z to undo)" : {
       "localizations" : {
@@ -17693,6 +17803,15 @@
         }
       }
     },
+    "New Folder" : {
+
+    },
+    "New Folder Inside" : {
+
+    },
+    "New Folder…" : {
+
+    },
     "New Issue" : {
       "localizations" : {
         "de" : {
@@ -17744,6 +17863,9 @@
           }
         }
       }
+    },
+    "New captures are saved here" : {
+
     },
     "New captures keep a different saved style." : {
       "localizations" : {
@@ -17952,6 +18074,9 @@
           }
         }
       }
+    },
+    "No captures have a tag." : {
+
     },
     "No captures in %@ yet" : {
       "localizations" : {
@@ -22274,6 +22399,15 @@
         }
       }
     },
+    "Remove Tag" : {
+
+    },
+    "Remove tag" : {
+
+    },
+    "Remove the tag “%@”?" : {
+
+    },
     "Remove this keyframe" : {
       "localizations" : {
         "de" : {
@@ -22326,6 +22460,12 @@
         }
       }
     },
+    "Remove this tag from every capture" : {
+
+    },
+    "Remove “%@”…" : {
+
+    },
     "Rename" : {
       "localizations" : {
         "de" : {
@@ -22377,6 +22517,12 @@
           }
         }
       }
+    },
+    "Rename or Remove Tags…" : {
+
+    },
+    "Rename or remove tags" : {
+
     },
     "Rename…" : {
       "localizations" : {
@@ -22640,6 +22786,9 @@
           }
         }
       }
+    },
+    "Resize panel" : {
+
     },
     "Restore Defaults" : {
       "localizations" : {
@@ -23580,6 +23729,9 @@
           }
         }
       }
+    },
+    "Save New Captures Here" : {
+
     },
     "Save and copy (Return)" : {
 
@@ -26038,6 +26190,12 @@
         }
       }
     },
+    "Show folders" : {
+
+    },
+    "Show icons only" : {
+
+    },
     "Show in Finder" : {
       "localizations" : {
         "de" : {
@@ -26141,6 +26299,12 @@
           }
         }
       }
+    },
+    "Show labels" : {
+
+    },
+    "Show only captures with this tag" : {
+
     },
     "Show or hide the tracks, keyframes, imports and annotations (T)" : {
 
@@ -28509,6 +28673,18 @@
     "Tab: area, window, browser or screen" : {
 
     },
+    "Tag name" : {
+
+    },
+    "Tags" : {
+
+    },
+    "Tags are Finder tags, so a change here shows in Finder too." : {
+
+    },
+    "Tag…" : {
+
+    },
     "Take your first screenshot." : {
       "localizations" : {
         "de" : {
@@ -28779,6 +28955,9 @@
       }
     },
     "That area is too small to capture. Drag out a bigger one." : {
+
+    },
+    "That folder has gone. It may have been moved in Finder." : {
 
     },
     "That video's GIF is already exporting" : {
@@ -29261,6 +29440,9 @@
     "There isn't enough in the area to line frames up. Include some text or an image, or drag out another area." : {
 
     },
+    "There's already a folder or file called “%@” there." : {
+
+    },
     "This Month" : {
       "localizations" : {
         "de" : {
@@ -29364,6 +29546,9 @@
           }
         }
       }
+    },
+    "This folder is empty" : {
+
     },
     "This window was captured with its own shadow, so it takes no other style" : {
       "localizations" : {
@@ -30257,6 +30442,9 @@
           }
         }
       }
+    },
+    "Type a name and press Return. Tags show in Finder too." : {
+
     },
     "Undo" : {
       "localizations" : {

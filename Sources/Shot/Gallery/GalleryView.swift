@@ -1,6 +1,7 @@
 import AppKit
 import ShotCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct GalleryRootView: View {
     let model: GalleryModel
@@ -9,7 +10,24 @@ struct GalleryRootView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            content
+            if !model.allTags.isEmpty {
+                GalleryTagRow(model: model)
+            }
+            HStack(alignment: .top, spacing: 14) {
+                // Folders stay out of the way until someone opens the sidebar.
+                if model.showsSidebar {
+                    GallerySidebar(model: model)
+                        .frame(width: model.sidebarWidth)
+                        .overlay(alignment: .trailing) {
+                            // Centred in the gap before the grid.
+                            PanelResizeHandle(width: Bindable(model).sidebarWidth, range: GalleryModel.sidebarWidths, defaultWidth: GalleryModel.defaultSidebarWidth) {
+                                model.showsSidebar = false
+                            }
+                            .offset(x: 14)
+                        }
+                }
+                content
+            }
             GalleryFooter(model: model)
         }
         .onChange(of: model.searchFocusRequest) {
@@ -21,6 +39,7 @@ struct GalleryRootView: View {
 
     private var header: some View {
         HStack(spacing: 12) {
+            sidebarToggle
             BrutalSegmented(selection: Bindable(model).filter, options: GalleryFilter.allCases.map { ($0, $0.title) }, color: Brutal.violet)
             Spacer(minLength: 8)
             searchField
@@ -40,6 +59,26 @@ struct GalleryRootView: View {
         .padding(.horizontal, 3)
         .frame(minWidth: 0, maxWidth: .infinity)
         .frame(height: 36)
+    }
+
+    private var sidebarTip: LocalizedStringResource { model.showsSidebar ? "Hide folders" : "Show folders" }
+
+    private var sidebarToggle: some View {
+        let on = model.showsSidebar
+        return Button {
+            model.showsSidebar.toggle()
+        } label: {
+            Image(systemName: "sidebar.left")
+                .font(.scaled(13, weight: .bold))
+                .foregroundStyle(Brutal.ink)
+                .inkOnFill(on ? Brutal.violet : nil)
+                .frame(width: 30, height: 30)
+                .brutalSurface(on ? Brutal.violet : Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: on ? 0 : 2)
+        }
+        .buttonStyle(.plain)
+        .brutalTip(sidebarTip)
+        .accessibilityLabel(Text("Folders"))
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 
     private var searchField: some View {
@@ -115,6 +154,16 @@ struct GalleryRootView: View {
                     .foregroundStyle(Brutal.faded(0.7))
                 Button("Open Folder") { NSWorkspace.shared.open(model.folder) }
                     .buttonStyle(BrutalButtonStyle(compact: true))
+            } else if let shown = model.shownFolder, !model.items.contains(where: { $0.folder == shown }) {
+                Image(systemName: "folder")
+                    .font(.scaled(34, weight: .bold))
+                    .foregroundStyle(Brutal.faded(0.55))
+                Text("This folder is empty")
+                    .font(Brutal.title(17))
+                    .foregroundStyle(Brutal.ink)
+                Text("Drag captures onto this folder in the sidebar, or use Move to in a capture's menu. Captures in the folders inside it show when you open them.")
+                    .font(Brutal.caption)
+                    .foregroundStyle(Brutal.faded(0.7))
             } else {
                 Image(systemName: "magnifyingglass")
                     .font(.scaled(34, weight: .bold))
@@ -177,7 +226,8 @@ private struct GalleryGrid: View {
                             .offset(y: top)
                         case let .tile(item, x, y):
                             GalleryTile(item: item, model: model, slot: model.thumbnails.slot(for: item), width: cell,
-                                        selected: model.selection.contains(item.url), selectionActive: !model.selection.isEmpty)
+                                        selected: model.selection.contains(item.url), selectionActive: !model.selection.isEmpty,
+                                        tagging: model.taggingItem == item.url)
                                 .equatable()
                                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { captionHeight = $0 - GalleryTile.thumbnailHeight(width: cell) }
                                 .offset(x: x, y: y)
@@ -328,11 +378,13 @@ private struct GalleryTile: View, Equatable {
     let selected: Bool
     /// Whether anything is selected, which shows every tile's checkbox.
     let selectionActive: Bool
+    /// Whether the Tag popover is open on this tile.
+    let tagging: Bool
     @State private var hovering = false
 
     nonisolated static func == (lhs: GalleryTile, rhs: GalleryTile) -> Bool {
         lhs.item == rhs.item && lhs.model === rhs.model && lhs.slot === rhs.slot && lhs.width == rhs.width
-            && lhs.selected == rhs.selected && lhs.selectionActive == rhs.selectionActive
+            && lhs.selected == rhs.selected && lhs.selectionActive == rhs.selectionActive && lhs.tagging == rhs.tagging
     }
 
     private var thumbnail: Thumbnail? { slot.thumbnail }
@@ -415,8 +467,15 @@ private struct GalleryTile: View, Equatable {
             let flags = event?.modifierFlags ?? NSEvent.modifierFlags
             model.click(item, command: flags.contains(.command), shift: flags.contains(.shift))
         }
-        .onDrag { NSItemProvider(contentsOf: item.url) ?? NSItemProvider() }
+        // The file itself, so it drops into a chat or Finder. A folder in the sidebar moves the whole selection it's in.
+        .onDrag {
+            model.dragged = model.targets(for: item).map(\.url)
+            return NSItemProvider(contentsOf: item.url) ?? NSItemProvider()
+        }
         .contextMenu { GalleryTileMenu(model: model, item: item) }
+        .popover(isPresented: Binding(get: { tagging }, set: { if !$0 { model.taggingItem = nil } }), arrowEdge: .bottom) {
+            GalleryTagPopover(model: model, targets: model.taggingTargets)
+        }
         .task(id: item) {
             await model.thumbnails.load(item)
         }
@@ -479,6 +538,16 @@ private struct GalleryTileMenu: View {
         if targets.count == 1 {
             Button("Rename…") { model.rename(item) }
         }
+        Menu("Move to") {
+            ForEach([""] + model.folders, id: \.self) { path in
+                // A folder inside another reads as its path, such as Clients › Acme.
+                Button(path.isEmpty ? model.rootName : path.replacingOccurrences(of: "/", with: " › ")) { model.move(targets, to: path) }
+                    .disabled(targets.allSatisfy { $0.folder == path })
+            }
+            Divider()
+            Button("New Folder…") { model.newFolder(moving: targets) }
+        }
+        Button("Tag…") { model.startTagging(item) }
         Button("Show in Finder") { model.reveal(targets) }
         Divider()
         Button("Move to Trash") { model.trash(targets) }
@@ -505,5 +574,222 @@ private struct SelectionCheckbox: View {
         .brutalTip(checked ? "Deselect (⌘-click)" : "Select (⌘-click)")
         .accessibilityLabel(Text("Select"))
         .accessibilityAddTraits(checked ? .isSelected : [])
+    }
+}
+
+// MARK: Tags
+
+/// The tags on the captures, as chips that narrow the grid to those carrying every one picked. It shows only once a
+/// file has a tag.
+private struct GalleryTagRow: View {
+    let model: GalleryModel
+    @State private var managing = false
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                Button {
+                    managing.toggle()
+                } label: {
+                    Image(systemName: "tag")
+                        .font(.scaled(12, weight: .bold))
+                        .foregroundStyle(Brutal.ink)
+                        .frame(width: 26, height: 26)
+                        .brutalSurface(managing ? Brutal.violet : Brutal.paper.opacity(0.85), radius: Brutal.Radius.chip, shadow: managing ? 0 : 2)
+                }
+                .buttonStyle(.plain)
+                .brutalTip("Rename or remove tags")
+                .accessibilityLabel(Text("Manage tags"))
+                .popover(isPresented: $managing, arrowEdge: .bottom) {
+                    GalleryTagManager(model: model)
+                }
+                ForEach(model.allTags, id: \.self) { tag in
+                    let on = model.tagFilter.contains(tag)
+                    Button {
+                        model.toggleTagFilter(tag)
+                    } label: {
+                        HStack(spacing: 5) {
+                            TagDot(tag: tag)
+                            Text(verbatim: tag)
+                                .lineLimit(1)
+                        }
+                        .font(.scaled(12, weight: .bold))
+                        .foregroundStyle(Brutal.ink)
+                        .inkOnFill(on ? Brutal.violet : nil)
+                        .padding(.horizontal, 9)
+                        .frame(height: 26)
+                        .brutalSurface(on ? Brutal.violet : Brutal.paper.opacity(0.85), radius: Brutal.Radius.chip, shadow: on ? 0 : 2)
+                    }
+                    .buttonStyle(.plain)
+                    .brutalTip("Show only captures with this tag")
+                    .contextMenu {
+                        Button("Rename or Remove Tags…") { managing = true }
+                        Button("Remove “\(tag)”…") { model.deleteTag(tag) }
+                    }
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                }
+            }
+            .padding(.horizontal, 3)
+            .padding(.vertical, 6)
+        }
+    }
+}
+
+/// Every tag in use, each with a field to rename it and a button to remove it from all the captures that have it.
+/// Renaming one to the name of another merges them.
+private struct GalleryTagManager: View {
+    let model: GalleryModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Tags")
+                .font(Brutal.caption)
+                .foregroundStyle(Brutal.faded(0.7))
+            if model.allTags.isEmpty {
+                Text("No captures have a tag.")
+                    .font(Brutal.caption)
+                    .foregroundStyle(Brutal.faded(0.7))
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(model.allTags, id: \.self) { tag in
+                            GalleryTagManagerRow(model: model, tag: tag)
+                        }
+                    }
+                }
+                .frame(maxHeight: 260)
+                Text("Tags are Finder tags, so a change here shows in Finder too.")
+                    .font(Brutal.caption)
+                    .foregroundStyle(Brutal.faded(0.7))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(12)
+        .frame(width: 260)
+    }
+}
+
+private struct GalleryTagManagerRow: View {
+    let model: GalleryModel
+    let tag: String
+    @State private var name: String
+
+    init(model: GalleryModel, tag: String) {
+        self.model = model
+        self.tag = tag
+        _name = State(initialValue: tag)
+    }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            TagDot(tag: tag)
+            TextField("Tag name", text: $name)
+                .textFieldStyle(.plain)
+                .font(.scaled(13, weight: .semibold))
+                .padding(.horizontal, 8)
+                .frame(height: 28)
+                .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
+                .onSubmit { model.renameTag(tag, to: name) }
+                .accessibilityLabel(Text("Tag name"))
+            Button {
+                model.deleteTag(tag)
+            } label: {
+                Image(systemName: "trash")
+                    .font(.scaled(12, weight: .bold))
+                    .foregroundStyle(Brutal.ink)
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .brutalTip("Remove this tag from every capture")
+            .accessibilityLabel(Text("Remove tag"))
+        }
+    }
+}
+
+/// A Finder tag's colour, for the tags named like Finder's coloured ones; other tags have none.
+private struct TagDot: View {
+    let tag: String
+
+    var body: some View {
+        if let color = Self.color(of: tag) {
+            Circle()
+                .fill(Color(nsColor: color))
+                .frame(width: 9, height: 9)
+        }
+    }
+
+    static func color(of tag: String) -> NSColor? {
+        let labels = NSWorkspace.shared.fileLabels, colors = NSWorkspace.shared.fileLabelColors
+        // The first label is None.
+        guard let index = labels.firstIndex(where: { $0.caseInsensitiveCompare(tag) == .orderedSame }), index > 0, index < colors.count else {
+            return nil
+        }
+        return colors[index]
+    }
+}
+
+/// Adds a tag to the files it opened on, or takes one off them, from the tags already used.
+private struct GalleryTagPopover: View {
+    let model: GalleryModel
+    let targets: [URL]
+    @State private var name = ""
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TextField("Add a tag", text: $name)
+                .textFieldStyle(.plain)
+                .font(.scaled(13, weight: .semibold))
+                .focused($focused)
+                .padding(.horizontal, 8)
+                .frame(height: 28)
+                .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
+                .onSubmit {
+                    model.addTag(name, to: targets)
+                    name = ""
+                }
+            if model.allTags.isEmpty {
+                Text("Type a name and press Return. Tags show in Finder too.")
+                    .font(Brutal.caption)
+                    .foregroundStyle(Brutal.faded(0.7))
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(model.allTags, id: \.self) { tag in
+                            row(tag)
+                        }
+                    }
+                }
+                .frame(maxHeight: 220)
+            }
+        }
+        .padding(12)
+        .frame(width: 230)
+        .onAppear { focused = true }
+    }
+
+    private func row(_ tag: String) -> some View {
+        let coverage = GalleryTags.coverage(of: tag, on: targets, tagsOf: model.tags)
+        return Button {
+            model.toggleTag(tag, on: targets)
+        } label: {
+            HStack(spacing: 7) {
+                Image(systemName: coverage == .all ? "checkmark.square.fill" : coverage == .some ? "minus.square" : "square")
+                    .font(.scaled(12, weight: .bold))
+                TagDot(tag: tag)
+                Text(verbatim: tag)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .font(.scaled(13, weight: .semibold))
+            .foregroundStyle(Brutal.ink)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(coverage == .all ? .isSelected : [])
     }
 }
