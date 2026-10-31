@@ -6,15 +6,28 @@ group: Help
 
 ## Uninstall Shot
 
-1. Quit Shot. Quitting gives the screenshot keys back to macOS.
-2. Move Shot to the Trash. If you installed it with Homebrew in the past, run `brew uninstall --zap shot` instead.
+Paste this line into Terminal and press Return. It quits Shot and moves it to the Trash, and leaves your settings, your permissions and the saved versions of edited screenshots in place, so installing Shot again picks up where you left off:
 
-Your captures stay in your save folder until you delete them.
+```sh
+curl -fsSL https://shot.lorcanchinnock.com/uninstall.sh | bash
+```
+
+To remove everything Shot keeps as well, use this line instead:
+
+```sh
+curl -fsSL https://shot.lorcanchinnock.com/uninstall.sh | bash -s -- --everything
+```
+
+That deletes the saved versions in Application Support, so screenshots you saved edits over can no longer be reverted. Your captures stay in your save folder either way.
+
+To do it by hand, quit Shot (quitting gives the screenshot keys back to macOS) and move it to the Trash. If you installed it with Homebrew in the past, run `brew uninstall --zap shot` instead.
 
 > [!TIP]
 > If <kbd>⌘⇧4</kbd> and <kbd>⌘⇧5</kbd> still do nothing, for example because Shot crashed before you removed it, turn the shortcuts back on in **System Settings › Keyboard › Keyboard Shortcuts › Screenshots**.
 
-## Remove everything else
+## Remove everything else by hand
+
+The `--everything` command above does all of this except the login item and the old `shot` command. It prints the `sudo rm` line for that command but doesn't run it, and it doesn't touch any AI app's settings.
 
 - **Login item:** turn off **Open Shot at login** in **Settings › General** before you quit, or remove Shot in **System Settings › General › Login Items & Extensions**.
 - **Settings:** run `defaults delete dev.lorcan.Shot`, which removes `~/Library/Preferences/dev.lorcan.Shot.plist`.
