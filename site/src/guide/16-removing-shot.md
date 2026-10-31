@@ -27,7 +27,7 @@ To do it by hand, quit Shot (quitting gives the screenshot keys back to macOS) a
 
 ## Remove everything else by hand
 
-The `--everything` command above does all of this except the login item.
+The `--everything` command above does all of this except the login item and the old `shot` command. It prints the `sudo rm` line for that command but doesn't run it, and it doesn't touch any AI app's settings.
 
 - **Login item:** turn off **Open Shot at login** in **Settings › General** before you quit, or remove Shot in **System Settings › General › Login Items & Extensions**.
 - **Settings:** run `defaults delete dev.lorcan.Shot`, which removes `~/Library/Preferences/dev.lorcan.Shot.plist`.
