@@ -10,7 +10,7 @@ private func item(_ name: String, folder: String = "") -> GalleryItem {
     return GalleryItem(url: URL(fileURLWithPath: "\(directory)/\(name)"), kind: kind, date: now, bytes: 1, folder: folder)
 }
 
-@Test func theGalleryListsTheFoldersInTheSaveFolderButNoDeeper() throws {
+@Test func theGalleryListsTheFoldersInTheSaveFolderAtAnyDepth() throws {
     let root = try temporaryFolder()
     defer { try? FileManager.default.removeItem(at: root) }
     let manager = FileManager.default
@@ -21,9 +21,9 @@ private func item(_ name: String, folder: String = "") -> GalleryItem {
         try Data([1, 2, 3]).write(to: root.appendingPathComponent(path))
     }
 
-    #expect(Gallery.folders(in: root) == ["Bugs 9", "Bugs 10", "Clients"])
+    #expect(Gallery.folders(in: root) == ["Bugs 9", "Bugs 10", "Clients", "Clients/Acme"])
     let items = Gallery.items(in: root)
-    #expect(Set(items.map { "\($0.folder)/\($0.name)" }) == ["/top.png", "Clients/a.png", "Bugs 9/b.mp4"])
+    #expect(Set(items.map { "\($0.folder)/\($0.name)" }) == ["/top.png", "Clients/a.png", "Clients/Acme/deep.png", "Bugs 9/b.mp4"])
     #expect(Gallery.items(in: root, subfolders: false).map(\.name) == ["top.png"])
     #expect(Gallery.folders(in: root.appendingPathComponent("missing")).isEmpty)
 }
@@ -117,10 +117,63 @@ private func item(_ name: String, folder: String = "") -> GalleryItem {
 
     #expect(prefs.isOwnCapture(root.appendingPathComponent("a.png")))
     #expect(prefs.isOwnCapture(root.appendingPathComponent("Clients/a.png")))
-    #expect(!prefs.isOwnCapture(root.appendingPathComponent("Clients/Acme/a.png")))
+    #expect(prefs.isOwnCapture(root.appendingPathComponent("Clients/Acme/a.png")))
+    #expect(!prefs.isOwnCapture(root.deletingLastPathComponent().appendingPathComponent("\(root.lastPathComponent)-other/a.png")))
     #expect(!prefs.isOwnCapture(root.deletingLastPathComponent().appendingPathComponent("a.png")))
 
     #expect(prefs.captureFolder.path == root.path)
     suite.store.set("Clients", forKey: PreferenceKey.captureSubfolder)
     #expect(prefs.captureFolder.path == root.appendingPathComponent("Clients").path)
+}
+
+@Test func foldersNestAndPathsSplitIntoNames() {
+    let root = URL(fileURLWithPath: "/shots")
+    #expect(Gallery.folderURL("Clients/Acme", in: root).path == "/shots/Clients/Acme")
+    #expect(Gallery.folderPath("Acme", in: "Clients") == "Clients/Acme")
+    #expect(Gallery.folderPath("Clients", in: "") == "Clients")
+    #expect(Gallery.parentFolder(of: "Clients/Acme") == "Clients")
+    #expect(Gallery.parentFolder(of: "Clients").isEmpty)
+    #expect(Gallery.folderLeaf(of: "Clients/Acme") == "Acme")
+    #expect(Gallery.ancestors(of: "Clients/Acme/Q1") == ["Clients", "Clients/Acme"])
+    #expect(Gallery.ancestors(of: "Clients").isEmpty)
+    #expect(Gallery.folder("Clients/Acme", isIn: "Clients"))
+    #expect(!Gallery.folder("Clients 2", isIn: "Clients"))
+}
+
+@Test func newCapturesFindTheirFolderWhenItsRenamedOrMoved() {
+    #expect(Gallery.relocated("Clients", from: "Clients", to: "Work/Clients") == "Work/Clients")
+    #expect(Gallery.relocated("Clients/Acme", from: "Clients", to: "Customers") == "Customers/Acme")
+    #expect(Gallery.relocated("Clients 2", from: "Clients", to: "Customers") == "Clients 2")
+    #expect(Gallery.relocated("", from: "Clients", to: "Customers").isEmpty)
+}
+
+@Test func aFoldersContentsCountEverythingInsideIt() {
+    let items = [item("a.png"), item("b.png", folder: "Clients"), item("c.png", folder: "Clients/Acme"), item("d.png", folder: "Bugs")]
+    let counts = Gallery.contents(of: "Clients", items: items, folders: ["Bugs", "Clients", "Clients/Acme", "Clients/Acme/Q1"])
+    #expect(counts.captures == 2)
+    #expect(counts.folders == 2)
+}
+
+@Test func makingRenamingAndMovingNestedFolders() throws {
+    let root = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: root) }
+    let manager = FileManager.default
+
+    #expect(try Gallery.createFolder(" Clients ", in: "", root: root) == "Clients")
+    #expect(try Gallery.createFolder("Acme", in: "Clients", root: root) == "Clients/Acme")
+    #expect(throws: GalleryFolderError.exists) { try Gallery.createFolder("Acme", in: "Clients", root: root) }
+    #expect(throws: GalleryFolderError.invalidName) { try Gallery.createFolder(".hidden", in: "", root: root) }
+    try Data([1]).write(to: root.appendingPathComponent("Clients/Acme/a.png"))
+
+    #expect(try Gallery.renameFolder("Clients/Acme", to: "Globex", root: root) == "Clients/Globex")
+    #expect(manager.fileExists(atPath: root.appendingPathComponent("Clients/Globex/a.png").path))
+    #expect(try Gallery.renameFolder("Clients", to: "clients", root: root) == "clients")
+    #expect(throws: GalleryFolderError.invalidName) { try Gallery.renameFolder("clients", to: "  ", root: root) }
+
+    _ = try Gallery.createFolder("Bugs", in: "", root: root)
+    #expect(throws: GalleryFolderError.exists) { try Gallery.renameFolder("Bugs", to: "clients", root: root) }
+    #expect(throws: GalleryFolderError.intoItself) { try Gallery.moveFolder("clients", into: "clients/Globex", root: root) }
+    #expect(try Gallery.moveFolder("Bugs", into: "clients", root: root) == "clients/Bugs")
+    #expect(Gallery.folders(in: root) == ["clients", "clients/Bugs", "clients/Globex"])
+    #expect(throws: GalleryFolderError.missing) { try Gallery.renameFolder("Gone", to: "x", root: root) }
 }

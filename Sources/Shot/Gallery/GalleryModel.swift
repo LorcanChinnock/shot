@@ -28,12 +28,49 @@ final class GalleryModel {
             readTextIfSearching()
         }
     }
-    /// The folder shown, by name, empty for the save folder itself, or `nil` for everything in all of them.
+    /// The folder shown, by path, empty for the save folder itself, or `nil` for everything in all of them.
     var shownFolder: String? = nil { didSet { measure("Gallery filter"); refilter() } }
     /// The tags picked in the tag row; an item has to carry all of them.
     var tagFilter: Set<String> = [] { didSet { measure("Gallery filter"); refilter() } }
-    /// The folders in the save folder, by name. The sidebar shows only once there's one.
+    /// Every folder in the save folder at any depth, by path, each before the folders in it.
     private(set) var folders: [String] = []
+    /// Whether the sidebar of folders is open, which stays off until someone opens it.
+    var showsSidebar: Bool {
+        get { storedShowsSidebar }
+        set { storedShowsSidebar = newValue }
+    }
+    @ObservationIgnored @Setting(PreferenceKey.galleryShowsSidebar) private var storedShowsSidebar: Bool
+    /// How wide the folder sidebar is, kept between the narrowest and widest it can be dragged to.
+    static let sidebarWidths = 150.0...360.0
+    static let defaultSidebarWidth = 200.0
+    var sidebarWidth: Double {
+        get { min(max(storedSidebarWidth, Self.sidebarWidths.lowerBound), Self.sidebarWidths.upperBound) }
+        set { storedSidebarWidth = newValue }
+    }
+    @ObservationIgnored @Setting(PreferenceKey.galleryFolderSidebarWidth) private var storedSidebarWidth: Double
+    /// The folders whose folders the sidebar lists, by path.
+    var expandedFolders: Set<String> = []
+    /// The folder being named in the sidebar, which shows a text field in its place.
+    var folderEdit: FolderEdit?
+    /// The folder being dragged from the sidebar, which another folder takes when it's dropped on it.
+    @ObservationIgnored var draggedFolder: String?
+
+    /// What the sidebar's text field is naming.
+    enum FolderEdit: Equatable {
+        /// A new folder inside this one, empty for the save folder itself.
+        case new(parent: String)
+        case rename(String)
+    }
+
+    /// The folders the sidebar lists: those at the top, and those inside a folder that's open.
+    var listedFolders: [String] {
+        folders.filter { path in Gallery.ancestors(of: path).allSatisfy { expandedFolders.contains($0) } }
+    }
+
+    /// Whether the folder at `path` has folders inside it.
+    func hasFolders(in path: String) -> Bool {
+        folders.contains { Gallery.parentFolder(of: $0) == path }
+    }
     /// The Finder tags of each item read so far. They're read after the list, off the main actor, and kept until the
     /// gallery closes, so a tag added in Finder shows the next time it opens.
     private(set) var tags: [URL: [String]] = [:] {
@@ -52,7 +89,7 @@ final class GalleryModel {
     @ObservationIgnored private(set) var taggingTargets: [URL] = []
     /// The files being dragged from the grid, which a folder in the sidebar takes when they're dropped on it.
     @ObservationIgnored var dragged: [URL] = []
-    /// The folder new captures are saved to, by name; empty for the save folder itself.
+    /// The folder new captures are saved to, by path; empty for the save folder itself.
     var captureSubfolder: String {
         get { folders.contains(storedCaptureSubfolder) ? storedCaptureSubfolder : "" }
         set { storedCaptureSubfolder = newValue }
@@ -386,6 +423,17 @@ final class GalleryModel {
     /// Moves the files dropped on the folder `name`: everything the grid dragged when they're among it, otherwise those
     /// of `urls` that are in the gallery, such as captures dragged in from Finder. Files from elsewhere stay put.
     func drop(_ urls: [URL], on name: String) {
+        // A folder drag that was cancelled leaves its path behind, so it counts only when the drop carries that folder.
+        if let path = draggedFolder {
+            draggedFolder = nil
+            let dragged = Gallery.folderURL(path, in: folder).standardizedFileURL.path
+            if urls.contains(where: { $0.standardizedFileURL.path == dragged }) {
+                if !Gallery.folder(name, isIn: path) {
+                    moveFolder(path, into: name)
+                }
+                return
+            }
+        }
         let fromGrid = dragged
         dragged = []
         let paths = Set(urls.map(\.standardizedFileURL.path))
@@ -441,26 +489,123 @@ final class GalleryModel {
         guard alert.runModal() == .alertFirstButtonReturn else {
             return
         }
-        guard let name = Gallery.folderName(field.stringValue) else {
-            Toast.error("Enter a name")
+        guard let path = createFolder(field.stringValue, in: "") else {
             return
         }
-        let url = Gallery.folderURL(name, in: folder)
+        move(items, to: path)
+    }
+
+    /// Makes a folder called `typed` inside the folder at `parent` and returns its path, or says why it couldn't.
+    @discardableResult
+    func createFolder(_ typed: String, in parent: String) -> String? {
         do {
-            try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-        } catch {
-            Toast.error("Couldn't create the folder: \(error.localizedDescription)")
-            return
-        }
-        if items.isEmpty {
+            let path = try Gallery.createFolder(typed, in: parent, root: folder)
+            expandedFolders.formUnion(Gallery.ancestors(of: path))
             reload()
-        } else {
-            move(items, to: name)
+            return path
+        } catch {
+            Toast.error(message(for: error, name: typed))
+            return nil
         }
     }
 
-    func revealFolder(_ name: String) {
-        NSWorkspace.shared.open(Gallery.folderURL(name, in: folder))
+    /// Renames the folder at `path` to `typed`. Whatever pointed into it follows: the folder shown, the one new captures
+    /// go to, and the folders open in the sidebar.
+    func renameFolder(_ path: String, to typed: String) {
+        guard Gallery.folderName(typed) != Gallery.folderLeaf(of: path) else {
+            return
+        }
+        do {
+            relocated(path, to: try Gallery.renameFolder(path, to: typed, root: folder))
+        } catch {
+            Toast.error(message(for: error, name: typed))
+        }
+    }
+
+    /// Moves the folder at `path` into the folder at `parent`.
+    func moveFolder(_ path: String, into parent: String) {
+        guard Gallery.parentFolder(of: path) != parent else {
+            return
+        }
+        do {
+            let new = try Gallery.moveFolder(path, into: parent, root: folder)
+            expandedFolders.formUnion(Gallery.ancestors(of: new))
+            relocated(path, to: new)
+        } catch {
+            Toast.error(message(for: error, name: Gallery.folderLeaf(of: path)))
+        }
+    }
+
+    /// Asks, with how much is inside, then puts the folder at `path` in the Trash. Finder can put it back.
+    func deleteFolder(_ path: String) {
+        let inside = Gallery.contents(of: path, items: items, folders: folders)
+        let name = Gallery.folderLeaf(of: path)
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = inside.captures > 0
+            ? String(localized: "Delete “\(name)” and the \(inside.captures) captures in it?")
+            : String(localized: "Move “\(name)” to the Trash?")
+        alert.informativeText = Self.contentsSummary(captures: inside.captures, folders: inside.folders)
+        let confirm = alert.addButton(withTitle: inside.captures > 0 ? String(localized: "Delete Folder and Captures") : String(localized: "Move to Trash"))
+        confirm.hasDestructiveAction = true
+        alert.addButton(withTitle: String(localized: "Cancel"))
+        NSApp.activate()
+        guard alert.runModal() == .alertFirstButtonReturn else {
+            return
+        }
+        do {
+            try Gallery.trashFolder(path, root: folder)
+        } catch {
+            Toast.error(message(for: error, name: name))
+            return
+        }
+        let url = Gallery.folderURL(path, in: folder).standardizedFileURL.path + "/"
+        selection = selection.filter { !$0.standardizedFileURL.path.hasPrefix(url) }
+        if let shown = shownFolder, Gallery.folder(shown, isIn: path) {
+            shownFolder = Gallery.parentFolder(of: path)
+        }
+        if Gallery.folder(storedCaptureSubfolder, isIn: path) {
+            storedCaptureSubfolder = ""
+        }
+        expandedFolders = expandedFolders.filter { !Gallery.folder($0, isIn: path) }
+        reload()
+    }
+
+    private static func contentsSummary(captures: Int, folders: Int) -> String {
+        switch (captures, folders) {
+        case (0, 0): String(localized: "It's empty. You can put it back from the Trash in Finder.")
+        case (_, 0): String(localized: "Its \(captures) captures go to the Trash with it and leave the gallery. You can put them back from the Trash in Finder.")
+        case (0, _): String(localized: "Its \(folders) folders go to the Trash with it. You can put them back from the Trash in Finder.")
+        default: String(localized: "Its \(captures) captures, in \(folders) folders, go to the Trash with it and leave the gallery. You can put them back from the Trash in Finder.")
+        }
+    }
+
+    /// Points everything that referred to the folder at `old` at `new`, where it is now.
+    private func relocated(_ old: String, to new: String) {
+        if let shown = shownFolder {
+            shownFolder = Gallery.relocated(shown, from: old, to: new)
+        }
+        storedCaptureSubfolder = Gallery.relocated(storedCaptureSubfolder, from: old, to: new)
+        expandedFolders = Set(expandedFolders.map { Gallery.relocated($0, from: old, to: new) })
+        // The files have new URLs. Their tags are read again with the list.
+        let prefix = Gallery.folderURL(old, in: folder).standardizedFileURL.path + "/"
+        selection = selection.filter { !$0.standardizedFileURL.path.hasPrefix(prefix) }
+        tags = tags.filter { !$0.key.standardizedFileURL.path.hasPrefix(prefix) }
+        reload()
+    }
+
+    private func message(for error: Error, name: String) -> String {
+        switch error as? GalleryFolderError {
+        case .invalidName: String(localized: "Enter a name that doesn't start with a dot.")
+        case .exists: String(localized: "There's already a folder or file called “\(name)” there.")
+        case .intoItself: String(localized: "A folder can't go inside itself.")
+        case .missing: String(localized: "That folder has gone. It may have been moved in Finder.")
+        default: String(localized: "Couldn't change the folder. Check that you can write to \(rootName).")
+        }
+    }
+
+    func revealFolder(_ path: String) {
+        NSWorkspace.shared.open(Gallery.folderURL(path, in: folder))
     }
 
     // MARK: Tags
@@ -510,6 +655,34 @@ final class GalleryModel {
             Toast.error("Couldn't tag \(failed) files")
         }
         tagFilter = tagFilter.filter { tag in allTags.contains { $0.caseInsensitiveCompare(tag) == .orderedSame } }
+    }
+
+    /// Calls `tag` `typed` on every file that has it, or merges it into a tag of that name that's there already.
+    func renameTag(_ tag: String, to typed: String) {
+        guard let name = GalleryTags.tagName(typed), name != tag else {
+            return
+        }
+        let filtered = tagFilter.contains(tag)
+        apply(GalleryTags.renaming(tag, to: name, tagsOf: tags))
+        if filtered {
+            tagFilter.insert(name)
+        }
+    }
+
+    /// Asks, then takes `tag` off every file that has it. The files stay.
+    func deleteTag(_ tag: String) {
+        let count = tags.values.filter { GalleryTags.has($0, tag) }.count
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = String(localized: "Remove the tag “\(tag)”?")
+        alert.informativeText = String(localized: "It comes off \(count) captures. The captures themselves stay.")
+        alert.addButton(withTitle: String(localized: "Remove Tag"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
+        NSApp.activate()
+        guard alert.runModal() == .alertFirstButtonReturn else {
+            return
+        }
+        apply(GalleryTags.renaming(tag, to: nil, tagsOf: tags))
     }
 
     func toggleTagFilter(_ tag: String) {

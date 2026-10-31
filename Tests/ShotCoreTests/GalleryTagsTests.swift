@@ -66,3 +66,22 @@ private func item(_ name: String) -> GalleryItem {
     try GalleryTags.setTags([], of: there)
     #expect(GalleryTags.tags(of: there).isEmpty)
 }
+
+@Test func tagNamesAreTrimmedAndKeepToOneLine() {
+    #expect(GalleryTags.tagName("  Bug 42 ") == "Bug 42")
+    #expect(GalleryTags.tagName("Red\n6") == "Red 6")
+    #expect(GalleryTags.tagName("  ") == nil)
+}
+
+@Test func renamingATagKeepsItsPlaceAndMergesWithOneAlreadyThere() {
+    #expect(GalleryTags.renaming("bug", to: "Issue", in: ["Home", "BUG"]) == ["Home", "Issue"])
+    #expect(GalleryTags.renaming("bug", to: "issue", in: ["Bug", "Issue"]) == ["Issue"])
+    #expect(GalleryTags.renaming("bug", to: "x", in: ["Home"]) == ["Home"])
+}
+
+@Test func renamingOrDeletingATagChangesOnlyTheFilesCarryingIt() {
+    let a = URL(fileURLWithPath: "/a.png"), b = URL(fileURLWithPath: "/b.png"), c = URL(fileURLWithPath: "/c.png")
+    let tagsOf = [a: ["Bug", "Home"], b: ["bug"], c: ["Home"]]
+    #expect(GalleryTags.renaming("Bug", to: "Issue", tagsOf: tagsOf) == [a: ["Issue", "Home"], b: ["Issue"]])
+    #expect(GalleryTags.renaming("Bug", to: nil, tagsOf: tagsOf) == [a: ["Home"], b: []])
+}

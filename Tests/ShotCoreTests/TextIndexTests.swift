@@ -41,11 +41,12 @@ private func file(_ name: String, bytes: Int = 100, minutes: Double = 0, folder:
     var index = TextIndex()
     index.set("gone", for: file("gone.png"))
     index.set("elsewhere", for: file("x.png", folder: "/other"))
-    // The gallery lists the folders directly in the save folder, but nothing deeper.
+    // The gallery lists the folders in the save folder at any depth.
     index.set("in a folder", for: file("x.png", folder: "/shots/inner"))
     index.set("deeper", for: file("x.png", folder: "/shots/inner/deeper"))
+    index.set("beside", for: file("x.png", folder: "/shots-old"))
     _ = index.reconcile(folder: "/shots/", files: [])
-    #expect(index.entries.keys.sorted() == ["/other/x.png", "/shots/inner/deeper/x.png"])
+    #expect(index.entries.keys.sorted() == ["/other/x.png", "/shots-old/x.png"])
 }
 
 @Test func aFileMovedIntoAFolderKeepsItsText() {

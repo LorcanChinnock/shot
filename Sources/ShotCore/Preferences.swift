@@ -59,6 +59,13 @@ public enum PreferenceKey {
     public static let galleryTileSize = "galleryTileSize"
     /// The folder in the save folder new captures go to, by name; empty for the save folder itself.
     public static let captureSubfolder = "captureSubfolder"
+    /// Whether the gallery shows its sidebar of folders; off until someone opens it.
+    public static let galleryShowsSidebar = "galleryShowsSidebar"
+    /// How wide the gallery's folder sidebar is, in points.
+    public static let galleryFolderSidebarWidth = "galleryFolderSidebarWidth"
+    /// How wide the window's sidebar of sections is, in points, and whether it's shrunk to icons.
+    public static let appSidebarWidth = "appSidebarWidth"
+    public static let appSidebarCollapsed = "appSidebarCollapsed"
     /// How large Shot draws its own text, a `TextSize`.
     public static let textSize = "textSize"
     /// Whether Shot follows the system appearance, an `AppearanceMode`.
@@ -151,6 +158,10 @@ public struct Preferences {
             PreferenceKey.newCaptureStyle: Data(),
             PreferenceKey.galleryTileSize: Gallery.defaultTileSize,
             PreferenceKey.captureSubfolder: "",
+            PreferenceKey.galleryShowsSidebar: false,
+            PreferenceKey.galleryFolderSidebarWidth: 200.0,
+            PreferenceKey.appSidebarWidth: 196.0,
+            PreferenceKey.appSidebarCollapsed: false,
             PreferenceKey.editorShowsLayers: false,
             PreferenceKey.videoEditorShowsInspector: false,
         ]
@@ -317,19 +328,19 @@ public struct Preferences {
     public var imageFormat: ImageFormat { ImageFormat(rawValue: store.string(forKey: PreferenceKey.imageFormat) ?? "") ?? .png }
     public var downscaleRetina: Bool { store.bool(forKey: PreferenceKey.downscaleRetina) }
     public var saveAfterCapture: Bool { store.bool(forKey: PreferenceKey.saveAfterCapture) }
-    /// The folder in the save folder that the gallery's Save new captures to menu picked; empty for the save folder itself.
+    /// The path of the folder in the save folder that new captures go to, picked in the gallery; empty for the save folder itself.
     public var captureSubfolder: String { store.string(forKey: PreferenceKey.captureSubfolder) ?? "" }
     /// Where captures and recordings are written: the save folder, or the folder in it picked in the gallery, or a
     /// temporary one Quick Access and the editors can still open.
     public var captureFolder: URL { saveAfterCapture ? Gallery.captureFolder(in: saveFolder, subfolder: captureSubfolder) : TemporaryCaptures.folder }
     public var editorSavesOverOriginal: Bool { store.bool(forKey: PreferenceKey.editorSavesOverOriginal) }
 
-    /// Whether `file` is a capture Shot made, one in the save folder, or a folder directly in it, or in the temporary
+    /// Whether `file` is a capture Shot made, one in the save folder or any folder in it, or in the temporary
     /// one, which is the only kind the editor's Save goes over.
     public func isOwnCapture(_ file: URL) -> Bool {
-        let folder = file.deletingLastPathComponent().resolvingSymlinksInPath()
+        let folder = file.deletingLastPathComponent().resolvingSymlinksInPath().path
         let root = saveFolder.resolvingSymlinksInPath().path
-        return folder.path == root || folder.deletingLastPathComponent().path == root || TemporaryCaptures.isTemporary(file)
+        return folder == root || folder.hasPrefix(root.hasSuffix("/") ? root : root + "/") || TemporaryCaptures.isTemporary(file)
     }
     public var copyAfterCapture: Bool { store.bool(forKey: PreferenceKey.copyAfterCapture) }
     public var quickAccessAfterCapture: Bool { store.bool(forKey: PreferenceKey.quickAccessAfterCapture) }

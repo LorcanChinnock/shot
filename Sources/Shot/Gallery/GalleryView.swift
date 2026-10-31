@@ -14,10 +14,17 @@ struct GalleryRootView: View {
                 GalleryTagRow(model: model)
             }
             HStack(alignment: .top, spacing: 14) {
-                // Folders stay out of the way until there's one.
-                if !model.folders.isEmpty {
+                // Folders stay out of the way until someone opens the sidebar.
+                if model.showsSidebar {
                     GallerySidebar(model: model)
-                        .frame(width: 170)
+                        .frame(width: model.sidebarWidth)
+                        .overlay(alignment: .trailing) {
+                            // Centred in the gap before the grid.
+                            PanelResizeHandle(width: Bindable(model).sidebarWidth, range: GalleryModel.sidebarWidths, defaultWidth: GalleryModel.defaultSidebarWidth) {
+                                model.showsSidebar = false
+                            }
+                            .offset(x: 14)
+                        }
                 }
                 content
             }
@@ -32,6 +39,7 @@ struct GalleryRootView: View {
 
     private var header: some View {
         HStack(spacing: 12) {
+            sidebarToggle
             BrutalSegmented(selection: Bindable(model).filter, options: GalleryFilter.allCases.map { ($0, $0.title) }, color: Brutal.violet)
             Spacer(minLength: 8)
             searchField
@@ -51,6 +59,26 @@ struct GalleryRootView: View {
         .padding(.horizontal, 3)
         .frame(minWidth: 0, maxWidth: .infinity)
         .frame(height: 36)
+    }
+
+    private var sidebarTip: LocalizedStringResource { model.showsSidebar ? "Hide folders" : "Show folders" }
+
+    private var sidebarToggle: some View {
+        let on = model.showsSidebar
+        return Button {
+            model.showsSidebar.toggle()
+        } label: {
+            Image(systemName: "sidebar.left")
+                .font(.scaled(13, weight: .bold))
+                .foregroundStyle(Brutal.ink)
+                .inkOnFill(on ? Brutal.violet : nil)
+                .frame(width: 30, height: 30)
+                .brutalSurface(on ? Brutal.violet : Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: on ? 0 : 2)
+        }
+        .buttonStyle(.plain)
+        .brutalTip(sidebarTip)
+        .accessibilityLabel(Text("Folders"))
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 
     private var searchField: some View {
@@ -133,7 +161,7 @@ struct GalleryRootView: View {
                 Text("This folder is empty")
                     .font(Brutal.title(17))
                     .foregroundStyle(Brutal.ink)
-                Text("Drag captures onto a folder in the sidebar, or use Move to in a capture's menu.")
+                Text("Drag captures onto this folder in the sidebar, or use Move to in a capture's menu. Captures in the folders inside it show when you open them.")
                     .font(Brutal.caption)
                     .foregroundStyle(Brutal.faded(0.7))
             } else {
@@ -511,9 +539,10 @@ private struct GalleryTileMenu: View {
             Button("Rename…") { model.rename(item) }
         }
         Menu("Move to") {
-            ForEach([""] + model.folders, id: \.self) { name in
-                Button(name.isEmpty ? model.rootName : name) { model.move(targets, to: name) }
-                    .disabled(targets.allSatisfy { $0.folder == name })
+            ForEach([""] + model.folders, id: \.self) { path in
+                // A folder inside another reads as its path, such as Clients › Acme.
+                Button(path.isEmpty ? model.rootName : path.replacingOccurrences(of: "/", with: " › ")) { model.move(targets, to: path) }
+                    .disabled(targets.allSatisfy { $0.folder == path })
             }
             Divider()
             Button("New Folder…") { model.newFolder(moving: targets) }
@@ -548,170 +577,32 @@ private struct SelectionCheckbox: View {
     }
 }
 
-// MARK: Folders
-
-/// The folders in the save folder, and where new captures go. It shows only once there's a folder.
-private struct GallerySidebar: View {
-    let model: GalleryModel
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Save new captures to")
-                .font(Brutal.caption)
-                .foregroundStyle(Brutal.faded(0.7))
-                .padding(.horizontal, 3)
-            saveMenu
-                .padding(.bottom, 10)
-            GalleryFolderRow(model: model, title: String(localized: "All"), symbol: "square.grid.2x2", folder: nil)
-            GalleryFolderRow(model: model, title: model.rootName, symbol: "tray", folder: "")
-            ScrollView {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(model.folders, id: \.self) { name in
-                        GalleryFolderRow(model: model, title: name, symbol: "folder", folder: name)
-                    }
-                }
-            }
-            Button {
-                model.newFolder()
-            } label: {
-                Label("New Folder", systemImage: "plus")
-            }
-            .buttonStyle(BrutalButtonStyle(compact: true))
-            .padding(.top, 6)
-        }
-        .padding(.top, 8)
-        .padding(.leading, 3)
-    }
-
-    private var saveMenu: some View {
-        let entries: [BrutalMenuEntry] = ([""] + model.folders).map { name in
-            .item(name.isEmpty ? model.rootName : name, symbol: name.isEmpty ? "tray" : "folder", selected: name == model.captureSubfolder) {
-                model.captureSubfolder = name
-            }
-        }
-        return BrutalDropdown(title: "Save new captures to", entries: entries) {
-            HStack(spacing: 5) {
-                Image(systemName: model.captureSubfolder.isEmpty ? "tray" : "folder")
-                    .font(.scaled(10, weight: .bold))
-                Text(verbatim: model.captureSubfolder.isEmpty ? model.rootName : model.captureSubfolder)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.down")
-                    .font(.scaled(9, weight: .black))
-            }
-            .font(.scaled(12, weight: .bold))
-            .foregroundStyle(Brutal.ink)
-            .padding(.horizontal, 10)
-            .frame(height: 30)
-            .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
-        }
-        .buttonStyle(.plain)
-        .brutalTip("Where screenshots and recordings are saved from now on")
-    }
-}
-
-/// A folder in the sidebar, which shows only what's in it and takes tiles dropped on it. All shows everything and
-/// takes no drops.
-private struct GalleryFolderRow: View {
-    let model: GalleryModel
-    let title: String
-    let symbol: String
-    /// The folder's name, empty for the save folder itself, or `nil` for All.
-    let folder: String?
-    @State private var hovering = false
-    @State private var targeted = false
-
-    var body: some View {
-        let selected = model.shownFolder == folder
-        Button {
-            model.shownFolder = folder
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: symbol)
-                    .font(.scaled(12, weight: .semibold))
-                    .frame(width: 18)
-                Text(verbatim: title)
-                    .font(.scaled(13, weight: selected ? .heavy : .semibold))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                Spacer(minLength: 0)
-            }
-            .foregroundStyle(Brutal.ink)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 7)
-            .background {
-                if targeted {
-                    Color.clear.brutalSurface(Brutal.violet, radius: Brutal.Radius.panel, shadow: 0)
-                } else if selected {
-                    Color.clear.brutalSurface(Brutal.paper.opacity(0.6), glass: true, radius: Brutal.Radius.panel, shadow: 3)
-                } else if hovering {
-                    RoundedRectangle(cornerRadius: Brutal.Radius.panel, style: .circular).fill(Brutal.ink.opacity(0.06))
-                }
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering = $0 }
-        .modifier(FolderDrop(model: model, folder: folder, targeted: $targeted))
-        .contextMenu {
-            if let folder {
-                Button("Show in Finder") { model.revealFolder(folder) }
-            }
-        }
-        .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-}
-
-/// Moves the tiles dropped on a folder into it.
-private struct FolderDrop: ViewModifier {
-    let model: GalleryModel
-    let folder: String?
-    @Binding var targeted: Bool
-
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        if let folder {
-            content.onDrop(of: [UTType.fileURL], isTargeted: $targeted) { providers in
-                Task {
-                    var urls: [URL] = []
-                    for provider in providers {
-                        if let url = await Self.fileURL(from: provider) {
-                            urls.append(url)
-                        }
-                    }
-                    model.drop(urls, on: folder)
-                }
-                return true
-            }
-        } else {
-            content
-        }
-    }
-
-    private static func fileURL(from provider: NSItemProvider) async -> URL? {
-        await withCheckedContinuation { continuation in
-            _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                continuation.resume(returning: url)
-            }
-        }
-    }
-}
-
 // MARK: Tags
 
 /// The tags on the captures, as chips that narrow the grid to those carrying every one picked. It shows only once a
 /// file has a tag.
 private struct GalleryTagRow: View {
     let model: GalleryModel
+    @State private var managing = false
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                Image(systemName: "tag")
-                    .font(.scaled(11, weight: .bold))
-                    .foregroundStyle(Brutal.faded(0.6))
-                    .accessibilityHidden(true)
+                Button {
+                    managing.toggle()
+                } label: {
+                    Image(systemName: "tag")
+                        .font(.scaled(12, weight: .bold))
+                        .foregroundStyle(Brutal.ink)
+                        .frame(width: 26, height: 26)
+                        .brutalSurface(managing ? Brutal.violet : Brutal.paper.opacity(0.85), radius: Brutal.Radius.chip, shadow: managing ? 0 : 2)
+                }
+                .buttonStyle(.plain)
+                .brutalTip("Rename or remove tags")
+                .accessibilityLabel(Text("Manage tags"))
+                .popover(isPresented: $managing, arrowEdge: .bottom) {
+                    GalleryTagManager(model: model)
+                }
                 ForEach(model.allTags, id: \.self) { tag in
                     let on = model.tagFilter.contains(tag)
                     Button {
@@ -731,11 +622,87 @@ private struct GalleryTagRow: View {
                     }
                     .buttonStyle(.plain)
                     .brutalTip("Show only captures with this tag")
+                    .contextMenu {
+                        Button("Rename or Remove Tags…") { managing = true }
+                        Button("Remove “\(tag)”…") { model.deleteTag(tag) }
+                    }
                     .accessibilityAddTraits(on ? .isSelected : [])
                 }
             }
             .padding(.horizontal, 3)
             .padding(.vertical, 6)
+        }
+    }
+}
+
+/// Every tag in use, each with a field to rename it and a button to remove it from all the captures that have it.
+/// Renaming one to the name of another merges them.
+private struct GalleryTagManager: View {
+    let model: GalleryModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Tags")
+                .font(Brutal.caption)
+                .foregroundStyle(Brutal.faded(0.7))
+            if model.allTags.isEmpty {
+                Text("No captures have a tag.")
+                    .font(Brutal.caption)
+                    .foregroundStyle(Brutal.faded(0.7))
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(model.allTags, id: \.self) { tag in
+                            GalleryTagManagerRow(model: model, tag: tag)
+                        }
+                    }
+                }
+                .frame(maxHeight: 260)
+                Text("Tags are Finder tags, so a change here shows in Finder too.")
+                    .font(Brutal.caption)
+                    .foregroundStyle(Brutal.faded(0.7))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(12)
+        .frame(width: 260)
+    }
+}
+
+private struct GalleryTagManagerRow: View {
+    let model: GalleryModel
+    let tag: String
+    @State private var name: String
+
+    init(model: GalleryModel, tag: String) {
+        self.model = model
+        self.tag = tag
+        _name = State(initialValue: tag)
+    }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            TagDot(tag: tag)
+            TextField("Tag name", text: $name)
+                .textFieldStyle(.plain)
+                .font(.scaled(13, weight: .semibold))
+                .padding(.horizontal, 8)
+                .frame(height: 28)
+                .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
+                .onSubmit { model.renameTag(tag, to: name) }
+                .accessibilityLabel(Text("Tag name"))
+            Button {
+                model.deleteTag(tag)
+            } label: {
+                Image(systemName: "trash")
+                    .font(.scaled(12, weight: .bold))
+                    .foregroundStyle(Brutal.ink)
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .brutalTip("Remove this tag from every capture")
+            .accessibilityLabel(Text("Remove tag"))
         }
     }
 }

@@ -112,6 +112,35 @@ public enum GalleryTags {
         tags.filter { $0.caseInsensitiveCompare(tag) != .orderedSame }
     }
 
+    /// `typed` as a tag's name: trimmed, with newlines turned to spaces since Finder keeps a tag's colour after one, and
+    /// `nil` when nothing is left.
+    public static func tagName(_ typed: String) -> String? {
+        let name = typed.components(separatedBy: .newlines).joined(separator: " ").trimmingCharacters(in: .whitespaces)
+        return name.isEmpty ? nil : name
+    }
+
+    /// `tags` with `old` called `new` in place, or just without `old` when `new` is there already.
+    public static func renaming(_ old: String, to new: String, in tags: [String]) -> [String] {
+        guard has(tags, old) else {
+            return tags
+        }
+        let others = removing(old, from: tags)
+        return has(others, new) ? others : tags.map { $0.caseInsensitiveCompare(old) == .orderedSame ? new : $0 }
+    }
+
+    /// The tags each of the files in `tagsOf` that carry `old` gets when it's renamed to `new`, or removed when `new` is
+    /// `nil`. Only the files that change are returned.
+    public static func renaming(_ old: String, to new: String?, tagsOf: [URL: [String]]) -> [URL: [String]] {
+        var changed: [URL: [String]] = [:]
+        for (file, tags) in tagsOf where has(tags, old) {
+            let next = new.map { renaming(old, to: $0, in: tags) } ?? removing(old, from: tags)
+            if next != tags {
+                changed[file] = next
+            }
+        }
+        return changed
+    }
+
     /// The tags each of `files` gets when `tag` is clicked in the Tag menu: removed from all of them when every one
     /// carries it, otherwise added to those that don't. Only the files that change are returned.
     public static func toggling(_ tag: String, on files: [URL], tagsOf: [URL: [String]]) -> [URL: [String]] {
