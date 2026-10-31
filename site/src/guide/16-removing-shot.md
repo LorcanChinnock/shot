@@ -7,7 +7,7 @@ group: Help
 ## Uninstall Shot
 
 1. Quit Shot. Quitting gives the screenshot keys back to macOS.
-2. Move Shot to the Trash. If you installed it with Homebrew, run `brew uninstall --zap shot` instead.
+2. Move Shot to the Trash. If you installed it with Homebrew in the past, run `brew uninstall --zap shot` instead.
 
 Your captures stay in your save folder until you delete them.
 

@@ -95,7 +95,7 @@ const software = {
         <p class="lede">Shot is a screenshot app that lives in your menu bar. Press the keys you already know, and the picture is copied before you let go.</p>
         <div class="cta">
           <a class="button big" href="/download">Download Shot</a>
-          <Copy command="brew install lorcanchinnock/tap/shot" />
+          <Copy command="curl -fsSL https://shot.lorcanchinnock.com/install.sh | bash" />
         </div>
         <ForMacs />
         <p class="meta">Free and open source. Version {release.version}, for macOS 15 or later, on Apple Silicon or Intel. <a href="#install">How to install</a></p>
@@ -231,17 +231,15 @@ const software = {
     <div class="wrap pair">
       <div class="stack reveal">
         <h2>Install</h2>
-        <Copy command="brew install lorcanchinnock/tap/shot" />
-        <p>Or <a href="/download">download the zip</a> and drag Shot into Applications.</p>
+        <p>Paste this into Terminal. It downloads the latest release, checks it against the release's checksum, and copies Shot into Applications.</p>
+        <Copy command="curl -fsSL https://shot.lorcanchinnock.com/install.sh | bash" />
         <ForMacs />
-        <p>Shot isn't notarized by Apple yet, so macOS blocks it the first time:</p>
         <ol class="steps">
-          <li>Open Shot from Applications. macOS says it can't verify Shot. Click <b>Done</b>.</li>
-          <li>Open <b>System Settings</b>, go to <b>Privacy &amp; Security</b> and scroll down to Security.</li>
-          <li>Click <b>Open Anyway</b> next to the message about Shot, then confirm.</li>
           <li>In Shot's welcome window, click <b>Grant</b>, turn Shot on under Screen &amp; System Audio Recording, then click <b>Relaunch</b>.</li>
           <li>Press <kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd> and drag out an area.</li>
         </ol>
+        <h3>Prefer to download it?</h3>
+        <p><a href="/download">Download the zip</a> and drag Shot into Applications. Apple hasn't notarized Shot, so macOS blocks a browser download the first time you open it: click <b>Done</b>, open <b>System Settings › Privacy &amp; Security</b>, click <b>Open Anyway</b> next to the message about Shot, then confirm. The command above skips this.</p>
         <p>The <a href="/docs/get-started/">guide</a> covers the rest of the first launch.</p>
       </div>
       <Image src={openAnyway} alt="The Security section of Privacy & Security, with the Open Anyway button circled next to the message that Shot was blocked" widths={[495, 990]} sizes={half} class="shot reveal" />
