@@ -70,7 +70,7 @@ Shot opens straight away, and a short welcome window asks for the screen recordi
 
 **Or by hand:** download `Shot-v<version>.zip` from the [latest release](https://github.com/LorcanChinnock/shot/releases/latest), unzip it, and move **Shot.app** to Applications. Apple hasn't notarized Shot, and a browser download is checked by macOS, so the first time you open it macOS says it can't verify Shot. Click **Done**, then **Open Anyway** in **System Settings › Privacy & Security**. The command above skips this, because Terminal downloads aren't checked that way.
 
-Shot updates itself once you allow it to. To uninstall, see [Removing Shot](https://shot.lorcanchinnock.com/docs/removing-shot/). If you installed Shot with Homebrew before, it keeps updating itself, and `brew uninstall --zap shot` still removes it.
+Shot updates itself once you allow it to. To uninstall, run `curl -fsSL https://shot.lorcanchinnock.com/uninstall.sh | bash`, or see [Removing Shot](https://shot.lorcanchinnock.com/docs/removing-shot/) for the steps by hand and for clearing everything Shot keeps. If you installed Shot with Homebrew before, it keeps updating itself, and `brew uninstall --zap shot` still removes it.
 
 ## Quick start
 
