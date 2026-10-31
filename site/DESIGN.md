@@ -40,7 +40,7 @@ Four slow colour blobs and a dot grid behind everything, as in the app's `GlassB
 
 ## The shared pieces
 
-- **Install block**: the Homebrew command in a glass card with a Copy button that says Copied, or "Press ⌘C" if the clipboard is blocked.
+- **Install block**: the install command in a glass card with a Copy button that says Copied, or "Press ⌘C" if the clipboard is blocked.
 - **Keycaps**: white (raised grey in dark) with an ink border and a hard 2px shadow, never plain text.
 - **Guide**: a sidebar with the pages in their groups and a search box, an "On this page" list that marks where you are (a rail on the right of wide screens, under the page list on narrower ones), previous and next links, a back-to-top button, numbered steps, callouts, and a Copy button on every code block.
 - **Footer**: ends with the "LC_" mark and "Made by Lorcan Chinnock", linked to lorcanchinnock.com, in Shot's ink with the underscore in yellow, and "Not affiliated with Apple."

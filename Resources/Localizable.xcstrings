@@ -812,7 +812,14 @@
       }
     },
     "%lld files weren't moved: %@ already has files with those names" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld files weren't moved: %2$@ already has files with those names"
+          }
+        }
+      }
     },
     "%lld fps" : {
       "localizations" : {
@@ -14728,58 +14735,6 @@
         }
       }
     },
-    "Hide Shot from captures" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shot in Aufnahmen ausblenden"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ocultar Shot en las capturas"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Masquer Shot dans les captures"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nascondi Shot dalle catture"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "キャプチャにShotを写さない"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "캡처에서 Shot 숨기기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ocultar o Shot nas capturas"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在捕捉中隐藏 Shot"
-          }
-        }
-      }
-    },
     "Hide Track" : {
       "localizations" : {
         "de" : {
@@ -15743,58 +15698,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "JPEG"
-          }
-        }
-      }
-    },
-    "Keep Quick Access cards, toasts and other Shot windows out of screenshots and recordings. The camera bubble always shows." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hält Schnellzugriff-Karten, Hinweise und andere Shot-Fenster aus Bildschirmfotos und Aufzeichnungen heraus. Die Kamerablase ist immer zu sehen."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mantiene las tarjetas de Acceso rápido, los avisos y otras ventanas de Shot fuera de las capturas y grabaciones. La burbuja de cámara siempre se ve."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Garde les vignettes Accès rapide, les notifications et les autres fenêtres de Shot hors des captures d'écran et des enregistrements. La bulle de caméra reste toujours visible."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tieni schede di Accesso rapido, notifiche e altre finestre di Shot fuori da screenshot e registrazioni. La bolla fotocamera si vede sempre."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "クイックアクセスのカード、通知、その他のShotのウインドウをスクリーンショットや収録に写さないようにします。カメラバブルは常に写ります。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "빠른 접근 카드, 알림 및 기타 Shot 윈도우가 스크린샷과 녹화에 나타나지 않게 합니다. 카메라 버블은 항상 표시됩니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mantém os cartões do Acesso Rápido, avisos e outras janelas do Shot fora das capturas e gravações. A bolha da câmera sempre aparece."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "让快速访问卡片、提示和其他 Shot 窗口不出现在截屏和录制中。摄像头气泡始终显示。"
           }
         }
       }
@@ -17289,7 +17192,14 @@
 
     },
     "Moved %lld files to %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Moved %1$lld files to %2$@"
+          }
+        }
+      }
     },
     "Moved %lld files to the Trash (⌘Z to undo)" : {
       "localizations" : {

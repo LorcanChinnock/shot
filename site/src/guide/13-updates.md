@@ -16,9 +16,9 @@ To change your mind, turn **Check for updates automatically** on or off in **Set
 
 Click **Check** in **Settings › About**, or choose **Check for Updates…** in Shot's menu bar menu. When a check finds a new version, that menu item becomes **Update to Shot** and the version. When an automatic check finds one, a dot also takes the place of the top-right corner of Shot's menu bar icon until you open the update.
 
-## Homebrew
+## Installing over a running copy
 
-`brew upgrade` quits Shot before replacing it. If Homebrew, or a new copy you installed, replaced Shot while it was running, a check offers to relaunch it instead.
+If you ran the install command again, or Homebrew replaced Shot, while Shot was running, a check offers to relaunch it instead of updating.
 
 > [!NOTE]
 > Every release is signed with the same certificate, so macOS keeps Shot's Screen Recording access after an update. If you installed Shot before it could update itself, macOS asks for that access once more after your next install.

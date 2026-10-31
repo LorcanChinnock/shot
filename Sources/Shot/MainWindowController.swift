@@ -30,6 +30,9 @@ enum MainWindowController {
     /// Narrowest width that fits the gallery toolbar beside the sidebar.
     static let minSize = NSSize(width: 1020, height: 520)
 
+    /// The window's ID for screen capture, so captures can include it while Shot's overlays stay out.
+    static var windowID: CGWindowID? { window.map { CGWindowID($0.windowNumber) } }
+
     private static var showingGallery: Bool { SettingsNavigation.shared.section == .gallery }
 
     static func show(section: SettingsSection? = nil) {

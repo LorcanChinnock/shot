@@ -8,17 +8,17 @@ group: Get started
 
 Shot needs macOS 15 or later.
 
-**With [Homebrew](https://brew.sh):**
+Open Terminal (in Applications › Utilities), paste this line and press Return. It downloads the latest release, checks it against the release's checksum, copies Shot into Applications and opens it:
 
 ```sh
-brew install lorcanchinnock/tap/shot
+curl -fsSL https://shot.lorcanchinnock.com/install.sh | bash
 ```
 
-**Or by hand:** download the zip from the [latest release](https://github.com/LorcanChinnock/shot/releases/latest), unzip it, and move **Shot.app** to Applications.
+macOS doesn't check apps that Terminal downloads, so Shot opens without a warning.
 
-## Open it for the first time
+## If you downloaded the zip instead
 
-Apple hasn't notarized Shot yet, so macOS asks you to confirm it once.
+Download the zip from the [latest release](https://github.com/LorcanChinnock/shot/releases/latest), unzip it, and move **Shot.app** to Applications. Apple hasn't notarized Shot, so macOS checks a browser download and asks you to confirm it once.
 
 1. Open Shot from Applications. macOS says it can't verify Shot. Click **Done**.
 2. Open **System Settings › Privacy & Security**, scroll down to the message about Shot, and click **Open Anyway**.

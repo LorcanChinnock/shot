@@ -48,7 +48,8 @@ jobs:
           files="$(gh api "repos/$REPO/pulls/$PR/files" --paginate --jq '.[] | .filename, (.previous_filename // empty)')"
           app=false
           while IFS= read -r file; do
-            if ! [[ "$file" =~ ^(site/|docs/|[^/]+\.md$) ]]; then app=true; fi
+            # site/public/install.sh is what users run to install Shot, and the macOS job tests it.
+            if ! [[ "$file" =~ ^(site/|docs/|[^/]+\.md$) ]] || [[ "$file" == site/public/install.sh ]]; then app=true; fi
           done <<< "$files"
           echo "app=$app" >> "$GITHUB_OUTPUT"
 
@@ -88,6 +89,10 @@ jobs:
       - name: Test on macOS
         timeout-minutes: 10
         run: scripts/ci-test.sh test --skip-build
+      # Runs install.sh against a local folder; it needs macOS for ditto, xattr and sw_vers.
+      - name: Test the installer
+        timeout-minutes: 2
+        run: make test-install
       # A test process that crashes leaves only its signal in the log; the report has the stack. See scripts/crash-reports.sh.
       - name: Keep the crash reports
         if: failure()

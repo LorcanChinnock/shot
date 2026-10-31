@@ -47,7 +47,7 @@ swift test --filter <testName>    # one test, e.g. --filter hitTestFilledKinds
 
 ## Running and testing locally
 
-Local builds are `ShotDev.app`. The real installed version is `/Applications/Shot.app`, usually from Homebrew. Never install over, rename or delete `Shot.app`, or Homebrew loses track of it.
+Local builds are `ShotDev.app`. The real installed version is `/Applications/Shot.app`, usually from the curl installer on the website. Never install over, rename or delete `Shot.app`; it is the copy the user relies on.
 
 1. **Quit the installed release first:** `pkill -x Shot`. Both apps register the same global shortcuts, so with both running a hotkey can reach the wrong one. `-x` matches the executable name exactly, so `pkill -x Shot` never kills ShotDev, and `pkill -x ShotDev` never kills the release.
 2. **Run the dev build:** `make run` builds, installs `/Applications/ShotDev.app` and launches it. Drive it with `shot-dev://` URLs, and confirm the running binary with `pgrep -lf ShotDev`.
