@@ -12,7 +12,7 @@ Please give me reasonable time to fix it before you share it more widely. I'll c
 
 ## Supported versions
 
-Only the latest release gets security fixes. Shot updates itself, and `brew upgrade --cask shot` installs the same release.
+Only the latest release gets security fixes. Shot updates itself, and running the install command from the website again installs the same release.
 
 ## What counts
 

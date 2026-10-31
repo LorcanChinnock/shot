@@ -71,3 +71,8 @@ if [ -n "$hits" ]; then
     echo "$hits"
     exit 1
 fi
+
+# The install command pipes this script into bash, so it gets the checks a script people run unread should.
+if command -v shellcheck > /dev/null; then
+    shellcheck site/public/install.sh scripts/test-install.sh
+fi

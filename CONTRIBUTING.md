@@ -55,7 +55,7 @@ Sources/Shot/         The app: capture, selection overlay, Quick Access, editor,
 Tests/ShotCoreTests/  ShotCore's Swift Testing suite, and its performance budgets
 Resources/            Info.plist, the app icon and the string catalogs
 scripts/              Bundling, install, signing certificate, icon, lint, performance
-                      checks, and the Homebrew cask
+                      checks, and the installer's test
 docs/                 Screenshots for the README and the user guide, and the demo app they show
 site/                 The website (see site/README.md)
 ```
@@ -106,22 +106,21 @@ Before a release, run `make app` and then `make perf-app`, which CI can't run be
 2. The release pull request's CI is the release gate: it runs the checks every pull request gets. It runs again on every push to the pull request, and the pull request can't merge until it passes.
    - A repository admin merges the release pull request by hand. The repository has auto-merge turned off.
    - If the gate fails, fix it in a normal pull request first. release-please only updates the release pull request for changes that appear in the changelog, so after a `test:`, `ci:` or `docs:` fix, run `gh pr update-branch <number>` on the release pull request to run the gate again.
-3. The merge tags the release (`v0.7.0-beta.36`, say) and creates a draft GitHub release. The release workflow runs the tests again on the tagged commit, since a commit merged after the gate passed may have changed it. At the same time it builds `Shot-<tag>.zip` and signs it for Sparkle. Once both finish, it attaches the zip with `appcast.xml`, the update feed, and only then publishes the release, so the latest release always has a feed. Installed copies read the feed from the latest release. Last, the workflow rebuilds the website and updates the Homebrew cask.
+3. The merge tags the release (`v0.7.0-beta.36`, say) and creates a draft GitHub release. The release workflow runs the tests again on the tagged commit, since a commit merged after the gate passed may have changed it. At the same time it builds `Shot-<tag>.zip` and signs it for Sparkle. Once both finish, it attaches the zip with `appcast.xml`, the update feed, and only then publishes the release, so the latest release always has a feed. Installed copies read the feed from the latest release. Last, the workflow rebuilds the website. `site/public/install.sh`, the command on the download page, reads the latest release's `SHA256SUMS` and zip, so it needs no change per release.
 
 To force a particular version, add a `Release-As: X.Y.Z` line to the body of a commit on `main`.
 
 ### Release secrets
 
-The release workflow needs four secrets, which belong in a GitHub Environment named `release` so no other workflow or branch can read them. Create them once, and keep a backup of each somewhere safe: if you lose the Sparkle key, installed copies can't verify updates and you have to ship a new key by hand.
+The release workflow needs three secrets, which belong in a GitHub Environment named `release` so no other workflow or branch can read them. Create them once, and keep a backup of each somewhere safe: if you lose the Sparkle key, installed copies can't verify updates and you have to ship a new key by hand.
 
 | Secret | What it is |
 |---|---|
 | `SPARKLE_PRIVATE_KEY` | The EdDSA key that signs updates. Its public half is `SUPublicEDKey` in `Resources/Info.plist`. |
 | `SHOT_SIGNING_CERT_P12` | A base64 `.p12` of the self-signed `Shot Release` code-signing certificate. Every release signs with it, so macOS keeps the Screen Recording permission across updates. |
 | `SHOT_SIGNING_CERT_PASSWORD` | The password for that `.p12`. |
-| `HOMEBREW_TAP_DEPLOY_KEY` | The private half of an SSH deploy key with write access to `LorcanChinnock/homebrew-tap` only. The workflow uses it to update `Casks/shot.rb` there; the tap's `main` ruleset lets deploy keys push. |
 
-Set the environment up once under Settings › Environments › `release`: limit deployment branches and tags to `main` and `v*`, and store the four secrets there instead of at repository level (`gh secret set --env release NAME`). Add a ruleset for `v*` tags that blocks deletion, updates and non-fast-forward pushes. The release build fails if the `Shot Release` signing identity is missing, rather than signing ad hoc.
+Set the environment up once under Settings › Environments › `release`: limit deployment branches and tags to `main` and `v*`, and store the three secrets there instead of at repository level (`gh secret set --env release NAME`). Add a ruleset for `v*` tags that blocks deletion, updates and non-fast-forward pushes. The release build fails if the `Shot Release` signing identity is missing, rather than signing ad hoc.
 
 release-please opens the release pull request as a GitHub App rather than with the workflow's own token, because GitHub holds the workflows on a pull request from `github-actions[bot]` until someone approves them. Create a private GitHub App once (Settings › Developer settings › GitHub Apps) with no webhook and these repository permissions: Contents, Pull requests and Issues set to read and write. Install it on this repository only. Then store its client ID as a repository variable and a private key as a repository secret. The release-please job runs on every push to `main`, outside the `release` environment, so these two can't live there:
 
@@ -143,10 +142,5 @@ base64 -i release.p12 | gh secret set SHOT_SIGNING_CERT_P12
 gh secret set SHOT_SIGNING_CERT_PASSWORD                       # paste the password
 
 rm sparkle.key release.p12                                     # both stay in your login keychain
-
-ssh-keygen -t ed25519 -N "" -C "shot release workflow" -f tap_key
-gh repo deploy-key add tap_key.pub -R LorcanChinnock/homebrew-tap --allow-write --title "shot release workflow"
-gh secret set HOMEBREW_TAP_DEPLOY_KEY < tap_key
-rm tap_key tap_key.pub                                         # make a new key if you lose it
 
 ```

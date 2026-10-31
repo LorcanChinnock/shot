@@ -1,8 +1,12 @@
 ---
 title: Troubleshooting
-summary: "Fixes for permissions and shortcuts that don't work."
+summary: "Fixes for the first-open warning, permissions and shortcuts that don't work."
 group: Help
 ---
+
+## macOS says it can't verify Shot
+
+Apple hasn't notarized Shot, and macOS checks apps you download in a browser. Click **Done**, open **System Settings › Privacy & Security**, scroll down to the message about Shot, click **Open Anyway** and confirm. You only do this once. Installing with the command in [Get started](/docs/get-started/) avoids it.
 
 ## Captures fail after I turned on Screen Recording
 
