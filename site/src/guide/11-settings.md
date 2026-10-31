@@ -4,7 +4,7 @@ summary: "What each part of Settings controls."
 group: Reference
 ---
 
-![Settings › General in light mode, with the sidebar listing every section and the Behaviour and Files cards: Play capture sound and Hide Shot from captures are on](../../../docs/media/settings.png)
+![Settings › General in light mode, with the sidebar listing every section and the Behaviour and Files cards: Play capture sound is on](../../../docs/media/settings.png)
 
 ## Open Settings
 

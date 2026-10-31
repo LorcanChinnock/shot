@@ -630,7 +630,7 @@ final class ScreenshotCountdown {
         }
         remaining = nil
         panel.orderOut(nil)
-        // Let the panel leave the screen before it's captured; it isn't hidden from captures when Hide Shot is off.
+        // Let the panel leave the screen before it's captured; it would otherwise be in the capture.
         try? await Task.sleep(for: .milliseconds(150))
         return !cancelled
     }

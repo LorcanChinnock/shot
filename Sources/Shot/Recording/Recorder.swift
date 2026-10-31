@@ -412,18 +412,14 @@ final class Recorder: NSObject {
         guard let display = content.displays.first(where: { $0.displayID == session.screen.displayID }) else {
             throw CaptureError.displayNotFound
         }
-        if !Preferences().hidesShotUI {
-            // Show Shot's windows such as Quick Access cards, but never the recording chrome.
-            let chrome = Set([border?.windowNumber, controls?.windowNumber].compactMap { $0 }.map { CGWindowID($0) })
-            return SCContentFilter(display: display, excludingWindows: content.windows.filter { chrome.contains($0.windowID) })
-        }
         let ownApps = content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
-        // Shot's windows stay out of the video, except the camera bubble.
+        // Shot's windows stay out of the video, except the camera bubble and the main window (Settings and the gallery).
         let cameraWindows = content.windows.filter { $0.windowID == CameraBubble.shared.windowID }
+        let mainWindows = content.windows.filter { $0.windowID == MainWindowController.windowID }
         if CameraBubble.shared.isVisible, cameraWindows.isEmpty {
             log.error("Camera bubble window not found in shareable content")
         }
-        return SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: cameraWindows)
+        return SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: cameraWindows + mainWindows)
     }
 
     private func startSegment() async throws {

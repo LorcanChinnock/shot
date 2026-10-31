@@ -36,7 +36,6 @@ import Testing
         #expect(!prefs.downscaleRetina)
         #expect(!prefs.openEditorAfterCapture)
         #expect(!prefs.captureShowsCursor)
-        #expect(prefs.hidesShotUI)
         #expect(!prefs.excludesMenuBar)
         #expect(prefs.showMagnifier)
         #expect(prefs.showCrosshair)

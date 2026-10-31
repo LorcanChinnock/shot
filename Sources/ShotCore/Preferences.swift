@@ -15,7 +15,6 @@ public enum PreferenceKey {
     public static let quickAccessAfterCapture = "quickAccessAfterCapture"
     public static let openEditorAfterCapture = "openEditorAfterCapture"
     public static let captureShowsCursor = "captureShowsCursor"
-    public static let hidesShotUI = "hidesShotUI"
     public static let excludesMenuBar = "excludesMenuBar"
     public static let showMagnifier = "showMagnifier"
     public static let showCrosshair = "showCrosshair"
@@ -105,7 +104,6 @@ public struct Preferences {
             PreferenceKey.quickAccessAfterCapture: true,
             PreferenceKey.openEditorAfterCapture: false,
             PreferenceKey.captureShowsCursor: false,
-            PreferenceKey.hidesShotUI: true,
             PreferenceKey.excludesMenuBar: false,
             PreferenceKey.showMagnifier: true,
             PreferenceKey.showCrosshair: true,
@@ -328,8 +326,6 @@ public struct Preferences {
     public var quickAccessAfterCapture: Bool { store.bool(forKey: PreferenceKey.quickAccessAfterCapture) }
     public var openEditorAfterCapture: Bool { store.bool(forKey: PreferenceKey.openEditorAfterCapture) }
     public var captureShowsCursor: Bool { store.bool(forKey: PreferenceKey.captureShowsCursor) }
-    /// Keeps Quick Access cards, toasts and other Shot windows out of screenshots and recordings; the camera bubble always shows.
-    public var hidesShotUI: Bool { store.bool(forKey: PreferenceKey.hidesShotUI) }
     /// Crops the menu bar, and the notch beside it, off full-screen screenshots and recordings.
     public var excludesMenuBar: Bool { store.bool(forKey: PreferenceKey.excludesMenuBar) }
     public var showMagnifier: Bool { store.bool(forKey: PreferenceKey.showMagnifier) }
