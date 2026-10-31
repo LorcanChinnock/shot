@@ -103,6 +103,17 @@ private func item(_ name: String, folder: String = "") -> GalleryItem {
     #expect(Gallery.captureFolder(in: root, subfolder: "Gone") == root)
     #expect(Gallery.captureFolder(in: root, subfolder: "file.png") == root)
     #expect(Gallery.captureFolder(in: root, subfolder: "../elsewhere") == root)
+    #expect(Gallery.captureFolder(in: root, subfolder: ".hidden") == root)
+}
+
+@Test func newCapturesGoToAFolderMadeInFinderWhateverItsName() throws {
+    let root = try temporaryFolder()
+    defer { try? FileManager.default.removeItem(at: root) }
+    // Names `folderName` would change, which the gallery still lists and offers as the place for new captures.
+    for name in ["Q1:Q2", " padded ", String(repeating: "x", count: Gallery.maxFolderName + 20)] {
+        try FileManager.default.createDirectory(at: root.appendingPathComponent(name), withIntermediateDirectories: true)
+        #expect(Gallery.captureFolder(in: root, subfolder: name) == root.appendingPathComponent(name, isDirectory: true))
+    }
 }
 
 @Test func capturesInTheSaveFoldersFoldersAreShotsOwn() throws {

@@ -76,7 +76,9 @@ extension Gallery {
     /// folder deleted in Finder never loses a capture.
     public static func captureFolder(in root: URL, subfolder: String, fileManager: FileManager = .default) -> URL {
         let names = subfolder.split(separator: "/").map(String.init)
-        guard !names.isEmpty, names.allSatisfy({ folderName($0) == $0 }) else {
+        // Any folder the gallery lists is fine, even one made in Finder with a name `folderName` would change. Only a
+        // hidden name, which includes `..`, is refused, so the path can't leave the save folder.
+        guard !names.isEmpty, names.allSatisfy({ !$0.hasPrefix(".") }) else {
             return root
         }
         let folder = folderURL(subfolder, in: root)
