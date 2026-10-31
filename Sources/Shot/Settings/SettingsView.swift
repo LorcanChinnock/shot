@@ -213,7 +213,6 @@ private struct SidebarItem: View {
 
 private struct GeneralSettings: View {
     @Setting(PreferenceKey.playSound) private var playSound: Bool
-    @Setting(PreferenceKey.hidesShotUI) private var hidesShotUI: Bool
     @Setting(PreferenceKey.excludesMenuBar) private var excludesMenuBar: Bool
     @Setting(PreferenceKey.saveFolder) private var saveFolder: String
     @Setting(PreferenceKey.filePrefix) private var filePrefix: String
@@ -232,7 +231,6 @@ private struct GeneralSettings: View {
                     setLaunchAtLogin(enabled)
                 }
             ToggleRow(title: "Play capture sound", isOn: $playSound, color: color)
-            ToggleRow(title: "Hide Shot from captures", subtitle: "Keep Quick Access cards, toasts and other Shot windows out of screenshots and recordings. The camera bubble always shows.", isOn: $hidesShotUI, color: color)
             ToggleRow(title: "Exclude menu bar", subtitle: "Crop the menu bar and notch off screenshots and recordings of the full screen.", isOn: $excludesMenuBar, color: color)
             SettingRow(title: "Appearance", subtitle: "Shot's windows and panels. Captures look the same either way.") {
                 BrutalSegmented(selection: $appearance, options: AppearanceMode.allCases.map { ($0, Self.title(of: $0)) }, color: color)

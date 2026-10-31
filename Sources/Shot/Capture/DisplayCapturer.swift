@@ -61,19 +61,19 @@ enum DisplayCapturer {
     /// Captures every display (or only `screens`) concurrently.
     static func captureAll(screens: [NSScreen] = NSScreen.screens) async throws -> [FrozenDisplay] {
         let prefs = Preferences()
-        return try await capture(targets(screens), showsCursor: prefs.captureShowsCursor, hidesShotUI: prefs.hidesShotUI)
+        return try await capture(targets(screens), showsCursor: prefs.captureShowsCursor, keeping: MainWindowController.windowID)
     }
 
     /// Captures every display without Shot's windows or the cursor, for the live overlay's magnifier.
     static func captureForMagnifier() async throws -> [FrozenDisplay] {
-        try await capture(targets(NSScreen.screens), showsCursor: false, hidesShotUI: true)
+        try await capture(targets(NSScreen.screens), showsCursor: false, keeping: MainWindowController.windowID)
     }
 
     private static func targets(_ screens: [NSScreen]) -> [Target] {
         screens.map { Target(displayID: $0.displayID, frame: $0.frame, backingScale: $0.backingScaleFactor) }
     }
 
-    private nonisolated static func capture(_ targets: [Target], showsCursor: Bool, hidesShotUI: Bool) async throws -> [FrozenDisplay] {
+    private nonisolated static func capture(_ targets: [Target], showsCursor: Bool, keeping mainWindowID: CGWindowID?) async throws -> [FrozenDisplay] {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         return try await withThrowingTaskGroup(of: FrozenDisplay.self) { group in
             for target in targets {
@@ -81,9 +81,9 @@ enum DisplayCapturer {
                     throw CaptureError.displayNotFound
                 }
                 let ownApps = content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
-                let filter = hidesShotUI
-                    ? SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: [])
-                    : SCContentFilter(display: display, excludingWindows: [])
+                // Shot's overlays stay out of captures; the main window (Settings and the gallery) stays in, so it can be screenshotted.
+                let kept = content.windows.filter { $0.windowID == mainWindowID }
+                let filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: kept)
                 let config = SCStreamConfiguration()
                 config.width = Int(target.frame.width * target.backingScale)
                 config.height = Int(target.frame.height * target.backingScale)

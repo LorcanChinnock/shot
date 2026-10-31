@@ -1,9 +1,7 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    " It's temporary: Shot deletes it after a day." : {
-
-    },
+    " It's temporary: Shot deletes it after a day." : {},
     "%@ already exists" : {
       "localizations" : {
         "de" : {
@@ -588,9 +586,7 @@
         }
       }
     },
-    "%@ of screenshots as they were before Save went over them. They let you undo those edits, and stay on this Mac." : {
-
-    },
+    "%@ of screenshots as they were before Save went over them. They let you undo those edits, and stay on this Mac." : {},
     "%@ outside" : {
       "localizations" : {
         "de" : {
@@ -643,9 +639,7 @@
         }
       }
     },
-    "%@ records the screen the same way." : {
-
-    },
+    "%@ records the screen the same way." : {},
     "%@ shortcut" : {
       "localizations" : {
         "de" : {
@@ -698,9 +692,7 @@
         }
       }
     },
-    "%@, update available" : {
-
-    },
+    "%@, update available" : {},
     "%@.%@" : {
       "localizations" : {
         "de" : {
@@ -1867,9 +1859,7 @@
         }
       }
     },
-    "ASPECT" : {
-
-    },
+    "ASPECT" : {},
     "About" : {
       "localizations" : {
         "de" : {
@@ -1974,12 +1964,8 @@
         }
       }
     },
-    "Accessibility" : {
-
-    },
-    "Acknowledgements" : {
-
-    },
+    "Accessibility" : {},
+    "Acknowledgements" : {},
     "Actual Size" : {
       "localizations" : {
         "de" : {
@@ -2552,9 +2538,7 @@
         }
       }
     },
-    "Adjust crop" : {
-
-    },
+    "Adjust crop" : {},
     "After capture" : {
       "localizations" : {
         "de" : {
@@ -2607,9 +2591,7 @@
         }
       }
     },
-    "Align Bottom" : {
-
-    },
+    "Align Bottom" : {},
     "Align Centre" : {
       "localizations" : {
         "de" : {
@@ -2714,9 +2696,7 @@
         }
       }
     },
-    "Align Middle" : {
-
-    },
+    "Align Middle" : {},
     "Align Right" : {
       "localizations" : {
         "de" : {
@@ -2769,9 +2749,7 @@
         }
       }
     },
-    "Align Top" : {
-
-    },
+    "Align Top" : {},
     "All" : {
       "localizations" : {
         "de" : {
@@ -2824,9 +2802,7 @@
         }
       }
     },
-    "Allow Accessibility in System Settings to pick a page" : {
-
-    },
+    "Allow Accessibility in System Settings to pick a page" : {},
     "Amount" : {
       "localizations" : {
         "de" : {
@@ -2931,9 +2907,7 @@
         }
       }
     },
-    "Appearance" : {
-
-    },
+    "Appearance" : {},
     "Applies to every spotlight in the image." : {
       "localizations" : {
         "de" : {
@@ -2986,9 +2960,7 @@
         }
       }
     },
-    "Apply" : {
-
-    },
+    "Apply" : {},
     "Apply Style to All Images" : {
       "localizations" : {
         "de" : {
@@ -3093,9 +3065,7 @@
         }
       }
     },
-    "Area started. Arrow keys move it, Option and arrow keys resize it, Return captures it." : {
-
-    },
+    "Area started. Arrow keys move it, Option and arrow keys resize it, Return captures it." : {},
     "Arrow" : {
       "localizations" : {
         "de" : {
@@ -3148,12 +3118,8 @@
         }
       }
     },
-    "Arrows: move" : {
-
-    },
-    "Arrows: next window" : {
-
-    },
+    "Arrows: move" : {},
+    "Arrows: next window" : {},
     "Audio" : {
       "localizations" : {
         "de" : {
@@ -3830,21 +3796,11 @@
         }
       }
     },
-    "Brightness" : {
-
-    },
-    "Browser" : {
-
-    },
-    "Browser capture is ready" : {
-
-    },
-    "Browser capture needs Accessibility" : {
-
-    },
-    "Browser capture needs Accessibility access to find where a browser shows its page. Skip it if you won't use Browser." : {
-
-    },
+    "Brightness" : {},
+    "Browser" : {},
+    "Browser capture is ready" : {},
+    "Browser capture needs Accessibility" : {},
+    "Browser capture needs Accessibility access to find where a browser shows its page. Skip it if you won't use Browser." : {},
     "Bubble size" : {
       "localizations" : {
         "de" : {
@@ -4053,12 +4009,8 @@
         }
       }
     },
-    "CROP CLIP" : {
-
-    },
-    "CROP FRAME" : {
-
-    },
+    "CROP CLIP" : {},
+    "CROP FRAME" : {},
     "CUSTOM" : {
       "localizations" : {
         "de" : {
@@ -4423,9 +4375,7 @@
         }
       }
     },
-    "Can't line up" : {
-
-    },
+    "Can't line up" : {},
     "Can't open %@" : {
       "localizations" : {
         "de" : {
@@ -4588,9 +4538,7 @@
         }
       }
     },
-    "Can't trim the video there" : {
-
-    },
+    "Can't trim the video there" : {},
     "Can't write this kind of video" : {
       "localizations" : {
         "de" : {
@@ -4903,15 +4851,9 @@
         }
       }
     },
-    "Capture just the web page" : {
-
-    },
-    "Capture overlay" : {
-
-    },
-    "Capturing" : {
-
-    },
+    "Capture just the web page" : {},
+    "Capture overlay" : {},
+    "Capturing" : {},
     "Change camera bubble size" : {
       "localizations" : {
         "de" : {
@@ -5692,15 +5634,9 @@
         }
       }
     },
-    "Click Grant, then Open System Settings." : {
-
-    },
-    "Click a browser page" : {
-
-    },
-    "Click a screen" : {
-
-    },
+    "Click Grant, then Open System Settings." : {},
+    "Click a browser page" : {},
+    "Click a screen" : {},
     "Click a shortcut, then press the new keys. Esc cancels, Delete clears." : {
       "localizations" : {
         "de" : {
@@ -5909,9 +5845,7 @@
         }
       }
     },
-    "Click the Shot icon in the menu bar, then Screenshot, and drag out any area." : {
-
-    },
+    "Click the Shot icon in the menu bar, then Screenshot, and drag out any area." : {},
     "Click to add numbered steps: 1, 2, 3…" : {
       "localizations" : {
         "de" : {
@@ -8088,9 +8022,7 @@
         }
       }
     },
-    "Couldn't join the recording. Its parts are saved in your save folder." : {
-
-    },
+    "Couldn't join the recording. Its parts are saved in your save folder." : {},
     "Couldn't move %lld files to the Trash" : {
       "localizations" : {
         "de" : {
@@ -8453,9 +8385,7 @@
         }
       }
     },
-    "Couldn't read the video" : {
-
-    },
+    "Couldn't read the video" : {},
     "Couldn't relaunch Shot. Quit and open it again." : {
       "localizations" : {
         "de" : {
@@ -8612,9 +8542,7 @@
         }
       }
     },
-    "Couldn't revert: %@" : {
-
-    },
+    "Couldn't revert: %@" : {},
     "Couldn't save the image" : {
       "localizations" : {
         "de" : {
@@ -8979,18 +8907,10 @@
         }
       }
     },
-    "Crop Image" : {
-
-    },
-    "Crop the clip" : {
-
-    },
-    "Crop the clip's picture (C)" : {
-
-    },
-    "Crop the frame" : {
-
-    },
+    "Crop Image" : {},
+    "Crop the clip" : {},
+    "Crop the clip's picture (C)" : {},
+    "Crop the frame" : {},
     "Crop the menu bar and notch off screenshots and recordings of the full screen." : {
       "localizations" : {
         "de" : {
@@ -9043,12 +8963,8 @@
         }
       }
     },
-    "Crop the video's frame (C)" : {
-
-    },
-    "Crop to this (Return)" : {
-
-    },
+    "Crop the video's frame (C)" : {},
+    "Crop to this (Return)" : {},
     "Crosshair" : {
       "localizations" : {
         "de" : {
@@ -9413,9 +9329,7 @@
         }
       }
     },
-    "D: delay" : {
-
-    },
+    "D: delay" : {},
     "DENIED" : {
       "localizations" : {
         "de" : {
@@ -9520,9 +9434,7 @@
         }
       }
     },
-    "Dark" : {
-
-    },
+    "Dark" : {},
     "Darken" : {
       "localizations" : {
         "de" : {
@@ -9627,12 +9539,8 @@
         }
       }
     },
-    "Default" : {
-
-    },
-    "Delay: %@" : {
-
-    },
+    "Default" : {},
+    "Delay: %@" : {},
     "Delete" : {
       "localizations" : {
         "de" : {
@@ -9789,9 +9697,7 @@
         }
       }
     },
-    "Deselect" : {
-
-    },
+    "Deselect" : {},
     "Deselect (⌘-click)" : {
       "localizations" : {
         "de" : {
@@ -10416,12 +10322,8 @@
         }
       }
     },
-    "Drag the crop to any shape." : {
-
-    },
-    "Drag the handles to choose the area to keep, of the whole picture or the placed image selected. Return applies it, Esc cancels." : {
-
-    },
+    "Drag the crop to any shape." : {},
+    "Drag the handles to choose the area to keep, of the whole picture or the placed image selected. Return applies it, Esc cancels." : {},
     "Drag the handles to trim. Shift-drag to select a section, then press Delete to cut it." : {
       "localizations" : {
         "de" : {
@@ -11046,9 +10948,7 @@
         }
       }
     },
-    "Draws a circle where you click." : {
-
-    },
+    "Draws a circle where you click." : {},
     "Duplicate" : {
       "localizations" : {
         "de" : {
@@ -12719,9 +12619,7 @@
         }
       }
     },
-    "FRAME" : {
-
-    },
+    "FRAME" : {},
     "Fade In" : {
       "localizations" : {
         "de" : {
@@ -13190,9 +13088,7 @@
         }
       }
     },
-    "Flatten" : {
-
-    },
+    "Flatten" : {},
     "Float" : {
       "localizations" : {
         "de" : {
@@ -13245,9 +13141,7 @@
         }
       }
     },
-    "Frame" : {
-
-    },
+    "Frame" : {},
     "Frame rate" : {
       "localizations" : {
         "de" : {
@@ -13404,9 +13298,7 @@
         }
       }
     },
-    "Free crop" : {
-
-    },
+    "Free crop" : {},
     "From the Quick Access card" : {
       "localizations" : {
         "de" : {
@@ -13563,9 +13455,7 @@
         }
       }
     },
-    "Full size" : {
-
-    },
+    "Full size" : {},
     "Full-screen guide lines through the pointer." : {
       "localizations" : {
         "de" : {
@@ -14294,9 +14184,7 @@
         }
       }
     },
-    "Grant Accessibility" : {
-
-    },
+    "Grant Accessibility" : {},
     "Green" : {
       "localizations" : {
         "de" : {
@@ -14657,58 +14545,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "隐藏"
-          }
-        }
-      }
-    },
-    "Hide Shot from captures" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shot in Aufnahmen ausblenden"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ocultar Shot en las capturas"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Masquer Shot dans les captures"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nascondi Shot dalle catture"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "キャプチャにShotを写さない"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "캡처에서 Shot 숨기기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ocultar o Shot nas capturas"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在捕捉中隐藏 Shot"
           }
         }
       }
@@ -15285,12 +15121,8 @@
         }
       }
     },
-    "How to use every part of Shot." : {
-
-    },
-    "Hue" : {
-
-    },
+    "How to use every part of Shot." : {},
+    "Hue" : {},
     "IMAGE STYLE" : {
       "localizations" : {
         "de" : {
@@ -15655,58 +15487,6 @@
         }
       }
     },
-    "Keep Quick Access cards, toasts and other Shot windows out of screenshots and recordings. The camera bubble always shows." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hält Schnellzugriff-Karten, Hinweise und andere Shot-Fenster aus Bildschirmfotos und Aufzeichnungen heraus. Die Kamerablase ist immer zu sehen."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mantiene las tarjetas de Acceso rápido, los avisos y otras ventanas de Shot fuera de las capturas y grabaciones. La burbuja de cámara siempre se ve."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Garde les vignettes Accès rapide, les notifications et les autres fenêtres de Shot hors des captures d'écran et des enregistrements. La bulle de caméra reste toujours visible."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tieni schede di Accesso rapido, notifiche e altre finestre di Shot fuori da screenshot e registrazioni. La bolla fotocamera si vede sempre."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "クイックアクセスのカード、通知、その他のShotのウインドウをスクリーンショットや収録に写さないようにします。カメラバブルは常に写ります。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "빠른 접근 카드, 알림 및 기타 Shot 윈도우가 스크린샷과 녹화에 나타나지 않게 합니다. 카메라 버블은 항상 표시됩니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mantém os cartões do Acesso Rápido, avisos e outras janelas do Shot fora das capturas e gravações. A bolha da câmera sempre aparece."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "让快速访问卡片、提示和其他 Shot 窗口不出现在截屏和录制中。摄像头气泡始终显示。"
-          }
-        }
-      }
-    },
     "Keep the macOS drop shadow in window captures." : {
       "localizations" : {
         "de" : {
@@ -15759,12 +15539,8 @@
         }
       }
     },
-    "Keeps the crop this shape, wide or tall to match it." : {
-
-    },
-    "Kept originals" : {
-
-    },
+    "Keeps the crop this shape, wide or tall to match it." : {},
+    "Kept originals" : {},
     "Keyframe %@ here" : {
       "localizations" : {
         "de" : {
@@ -15921,9 +15697,7 @@
         }
       }
     },
-    "Larger" : {
-
-    },
+    "Larger" : {},
     "Largest first" : {
       "localizations" : {
         "de" : {
@@ -16080,9 +15854,7 @@
         }
       }
     },
-    "Leave the crop as it was (Esc)" : {
-
-    },
+    "Leave the crop as it was (Esc)" : {},
     "Leave the sound out" : {
       "localizations" : {
         "de" : {
@@ -16135,9 +15907,7 @@
         }
       }
     },
-    "Light" : {
-
-    },
+    "Light" : {},
     "Line" : {
       "localizations" : {
         "de" : {
@@ -17074,9 +16844,7 @@
         }
       }
     },
-    "More tools" : {
-
-    },
+    "More tools" : {},
     "Move to Trash" : {
       "localizations" : {
         "de" : {
@@ -18057,9 +17825,7 @@
         }
       }
     },
-    "No idle time to trim" : {
-
-    },
+    "No idle time to trim" : {},
     "No microphone found" : {
       "localizations" : {
         "de" : {
@@ -18320,9 +18086,7 @@
         }
       }
     },
-    "Nothing happens in this recording to keep" : {
-
-    },
+    "Nothing happens in this recording to keep" : {},
     "Nothing matches" : {
       "localizations" : {
         "de" : {
@@ -18375,9 +18139,7 @@
         }
       }
     },
-    "Nothing to line up" : {
-
-    },
+    "Nothing to line up" : {},
     "Nothing to save yet" : {
       "localizations" : {
         "de" : {
@@ -18430,9 +18192,7 @@
         }
       }
     },
-    "Nothing was captured. Try again." : {
-
-    },
+    "Nothing was captured. Try again." : {},
     "Nothing was recorded" : {
       "localizations" : {
         "de" : {
@@ -18797,12 +18557,8 @@
         }
       }
     },
-    "Only GIFs exported from the video editor can be edited" : {
-
-    },
-    "Only needed for Browser capture, to find the page in a browser window." : {
-
-    },
+    "Only GIFs exported from the video editor can be edited" : {},
+    "Only needed for Browser capture, to find the page in a browser window." : {},
     "Only needed for the camera bubble." : {
       "localizations" : {
         "de" : {
@@ -19479,9 +19235,7 @@
         }
       }
     },
-    "Opened without %@, which can't be found" : {
-
-    },
+    "Opened without %@, which can't be found" : {},
     "Opens a menu" : {
       "localizations" : {
         "de" : {
@@ -20470,12 +20224,8 @@
         }
       }
     },
-    "Pin" : {
-
-    },
-    "Pinned %@" : {
-
-    },
+    "Pin" : {},
+    "Pinned %@" : {},
     "Pixelate" : {
       "localizations" : {
         "de" : {
@@ -20996,9 +20746,7 @@
         }
       }
     },
-    "Press Tab while you pick an area to choose a window or the full screen instead." : {
-
-    },
+    "Press Tab while you pick an area to choose a window or the full screen instead." : {},
     "Press keys…" : {
       "localizations" : {
         "de" : {
@@ -21103,9 +20851,7 @@
         }
       }
     },
-    "Preview of the image so far" : {
-
-    },
+    "Preview of the image so far" : {},
     "Project" : {
       "localizations" : {
         "de" : {
@@ -21158,21 +20904,11 @@
         }
       }
     },
-    "Puts the format, GIF size, mute and speed back to how new exports start." : {
-
-    },
-    "Puts the position, scale, turn and opacity back and clears the keyframes. The crop and style stay." : {
-
-    },
-    "Puts the shadow, border and corners back to how new ones start." : {
-
-    },
-    "Puts the volume back and clears its keyframes" : {
-
-    },
-    "Puts this tool's colour, size and other options back to how a new install starts. Your saved custom colours stay." : {
-
-    },
+    "Puts the format, GIF size, mute and speed back to how new exports start." : {},
+    "Puts the position, scale, turn and opacity back and clears the keyframes. The crop and style stay." : {},
+    "Puts the shadow, border and corners back to how new ones start." : {},
+    "Puts the volume back and clears its keyframes" : {},
+    "Puts this tool's colour, size and other options back to how a new install starts. Your saved custom colours stay." : {},
     "Quick Access" : {
       "localizations" : {
         "de" : {
@@ -21329,9 +21065,7 @@
         }
       }
     },
-    "R: ratio (%@)" : {
-
-    },
+    "R: ratio (%@)" : {},
     "RECENT CAPTURES" : {
       "localizations" : {
         "de" : {
@@ -21436,9 +21170,7 @@
         }
       }
     },
-    "Ready" : {
-
-    },
+    "Ready" : {},
     "Record" : {
       "localizations" : {
         "de" : {
@@ -21699,9 +21431,7 @@
         }
       }
     },
-    "Recovered an interrupted recording" : {
-
-    },
+    "Recovered an interrupted recording" : {},
     "Rectangle" : {
       "localizations" : {
         "de" : {
@@ -22586,9 +22316,7 @@
         }
       }
     },
-    "Reset Crop" : {
-
-    },
+    "Reset Crop" : {},
     "Reset all settings" : {
       "localizations" : {
         "de" : {
@@ -23101,9 +22829,7 @@
         }
       }
     },
-    "Revert to Original" : {
-
-    },
+    "Revert to Original" : {},
     "Round webcam overlay recorded with your screen. Drag to move, double-click to resize." : {
       "localizations" : {
         "de" : {
@@ -23156,9 +22882,7 @@
         }
       }
     },
-    "S: scroll" : {
-
-    },
+    "S: scroll" : {},
     "SCALE" : {
       "localizations" : {
         "de" : {
@@ -23419,12 +23143,8 @@
         }
       }
     },
-    "Saturation" : {
-
-    },
-    "Saturation and brightness" : {
-
-    },
+    "Saturation" : {},
+    "Saturation and brightness" : {},
     "Save" : {
       "localizations" : {
         "de" : {
@@ -23581,9 +23301,7 @@
         }
       }
     },
-    "Save and copy (Return)" : {
-
-    },
+    "Save and copy (Return)" : {},
     "Save and copy (⌘S)" : {
       "localizations" : {
         "de" : {
@@ -23740,9 +23458,7 @@
         }
       }
     },
-    "Save edits over the original" : {
-
-    },
+    "Save edits over the original" : {},
     "Save folder" : {
       "localizations" : {
         "de" : {
@@ -24033,9 +23749,7 @@
         }
       }
     },
-    "Saved and copied.%@" : {
-
-    },
+    "Saved and copied.%@" : {},
     "Saved as %@ and copied.%@" : {
       "localizations" : {
         "en" : {
@@ -24056,9 +23770,7 @@
         }
       }
     },
-    "Saved the parts of an interrupted recording" : {
-
-    },
+    "Saved the parts of an interrupted recording" : {},
     "Saved, but couldn't reload it: %@" : {
       "localizations" : {
         "de" : {
@@ -24319,9 +24031,7 @@
         }
       }
     },
-    "Screenshot" : {
-
-    },
+    "Screenshot" : {},
     "Screenshot %@" : {
       "localizations" : {
         "de" : {
@@ -24530,18 +24240,10 @@
         }
       }
     },
-    "Scroll" : {
-
-    },
-    "Scroll the content in any direction." : {
-
-    },
-    "Scrolled too far" : {
-
-    },
-    "Scrolled too far at once. Scroll back a little and carry on." : {
-
-    },
+    "Scroll" : {},
+    "Scroll the content in any direction." : {},
+    "Scrolled too far" : {},
+    "Scrolled too far at once. Scroll back a little and carry on." : {},
     "Search" : {
       "localizations" : {
         "de" : {
@@ -24594,9 +24296,7 @@
         }
       }
     },
-    "Search by file name or by text in screenshots (⌘F)" : {
-
-    },
+    "Search by file name or by text in screenshots (⌘F)" : {},
     "Select" : {
       "localizations" : {
         "de" : {
@@ -25481,9 +25181,7 @@
         }
       }
     },
-    "Shot can now find the page in a browser window." : {
-
-    },
+    "Shot can now find the page in a browser window." : {},
     "Shot can't use the camera. Turn it on in System Settings › Privacy & Security › Camera." : {
       "localizations" : {
         "de" : {
@@ -25588,9 +25286,7 @@
         }
       }
     },
-    "Shot comes with no warranty. It updates itself with Sparkle, under the MIT license." : {
-
-    },
+    "Shot comes with no warranty. It updates itself with Sparkle, under the MIT license." : {},
     "Shot is free, with no ads or account. Sponsoring keeps it that way." : {
       "localizations" : {
         "de" : {
@@ -25643,9 +25339,7 @@
         }
       }
     },
-    "Shot's windows and panels. Captures look the same either way." : {
-
-    },
+    "Shot's windows and panels. Captures look the same either way." : {},
     "Shot, recording" : {
       "localizations" : {
         "de" : {
@@ -25928,9 +25622,7 @@
         }
       }
     },
-    "Show all of the clip's picture again" : {
-
-    },
+    "Show all of the clip's picture again" : {},
     "Show camera bubble" : {
       "localizations" : {
         "de" : {
@@ -25983,9 +25675,7 @@
         }
       }
     },
-    "Show clicks" : {
-
-    },
+    "Show clicks" : {},
     "Show cursor" : {
       "localizations" : {
         "de" : {
@@ -26142,9 +25832,7 @@
         }
       }
     },
-    "Show or hide the tracks, keyframes, imports and annotations (T)" : {
-
-    },
+    "Show or hide the tracks, keyframes, imports and annotations (T)" : {},
     "Show the layers (⌘L)" : {
       "localizations" : {
         "de" : {
@@ -26301,9 +25989,7 @@
         }
       }
     },
-    "Show the whole frame again" : {
-
-    },
+    "Show the whole frame again" : {},
     "Shows the frame handles and options first. Hold ⌥ as you finish the selection to show them once." : {
       "localizations" : {
         "de" : {
@@ -26876,9 +26562,7 @@
         }
       }
     },
-    "Something in the area keeps changing, so Shot can't line frames up. Pause the video or scroll past it." : {
-
-    },
+    "Something in the area keeps changing, so Shot can't line frames up. Pause the video or scroll past it." : {},
     "Sort" : {
       "localizations" : {
         "de" : {
@@ -27399,9 +27083,7 @@
         }
       }
     },
-    "Square, 1:1" : {
-
-    },
+    "Square, 1:1" : {},
     "Star" : {
       "localizations" : {
         "de" : {
@@ -27662,9 +27344,7 @@
         }
       }
     },
-    "Step" : {
-
-    },
+    "Step" : {},
     "Step %lld" : {
       "localizations" : {
         "de" : {
@@ -28243,9 +27923,7 @@
         }
       }
     },
-    "System" : {
-
-    },
+    "System" : {},
     "System audio" : {
       "localizations" : {
         "de" : {
@@ -28506,9 +28184,7 @@
         }
       }
     },
-    "Tab: area, window, browser or screen" : {
-
-    },
+    "Tab: area, window, browser or screen" : {},
     "Take your first screenshot." : {
       "localizations" : {
         "de" : {
@@ -28561,9 +28237,7 @@
         }
       }
     },
-    "Takes the crop off, so the whole image is kept." : {
-
-    },
+    "Takes the crop off, so the whole image is kept." : {},
     "Test" : {
       "localizations" : {
         "de" : {
@@ -28720,12 +28394,8 @@
         }
       }
     },
-    "Text in Shot's windows, panels and toasts. Captures keep their size." : {
-
-    },
-    "Text size" : {
-
-    },
+    "Text in Shot's windows, panels and toasts. Captures keep their size." : {},
+    "Text size" : {},
     "Text size: %@" : {
       "localizations" : {
         "de" : {
@@ -28778,9 +28448,7 @@
         }
       }
     },
-    "That area is too small to capture. Drag out a bigger one." : {
-
-    },
+    "That area is too small to capture. Drag out a bigger one." : {},
     "That video's GIF is already exporting" : {
       "localizations" : {
         "de" : {
@@ -29041,9 +28709,7 @@
         }
       }
     },
-    "The capture stopped: %@" : {
-
-    },
+    "The capture stopped: %@" : {},
     "The cuts leave nothing to export" : {
       "localizations" : {
         "de" : {
@@ -29096,9 +28762,7 @@
         }
       }
     },
-    "The editor's Save replaces the screenshot. Shot keeps the original, so you can reopen it and undo your edits. Off writes a new copy instead." : {
-
-    },
+    "The editor's Save replaces the screenshot. Shot keeps the original, so you can reopen it and undo your edits. Off writes a new copy instead." : {},
     "The floating card after each capture." : {
       "localizations" : {
         "de" : {
@@ -29151,9 +28815,7 @@
         }
       }
     },
-    "The image is as big as Shot can stitch. Press Return to save it." : {
-
-    },
+    "The image is as big as Shot can stitch. Press Return to save it." : {},
     "The microphone couldn't be recorded: %@" : {
       "localizations" : {
         "de" : {
@@ -29258,9 +28920,7 @@
         }
       }
     },
-    "There isn't enough in the area to line frames up. Include some text or an image, or drag out another area." : {
-
-    },
+    "There isn't enough in the area to line frames up. Include some text or an image, or drag out another area." : {},
     "This Month" : {
       "localizations" : {
         "de" : {
@@ -29729,9 +29389,7 @@
         }
       }
     },
-    "Trim Idle Time" : {
-
-    },
+    "Trim Idle Time" : {},
     "Trim timeline" : {
       "localizations" : {
         "de" : {
@@ -29836,9 +29494,7 @@
         }
       }
     },
-    "Trimmed %@ of idle time" : {
-
-    },
+    "Trimmed %@ of idle time" : {},
     "Try another search, or show All." : {
       "localizations" : {
         "de" : {
@@ -30047,9 +29703,7 @@
         }
       }
     },
-    "Turn on Shot under Accessibility." : {
-
-    },
+    "Turn on Shot under Accessibility." : {},
     "Turn on Shot under Screen & System Audio Recording." : {
       "localizations" : {
         "de" : {
@@ -30830,9 +30484,7 @@
         }
       }
     },
-    "Use Shot for ⌘⇧4 and ⌘⇧5" : {
-
-    },
+    "Use Shot for ⌘⇧4 and ⌘⇧5" : {},
     "Use this style for new captures" : {
       "localizations" : {
         "de" : {
@@ -30885,9 +30537,7 @@
         }
       }
     },
-    "User Guide" : {
-
-    },
+    "User Guide" : {},
     "Uses macOS window shadow" : {
       "localizations" : {
         "de" : {
@@ -31252,9 +30902,7 @@
         }
       }
     },
-    "View" : {
-
-    },
+    "View" : {},
     "WIDTH" : {
       "localizations" : {
         "de" : {
@@ -32399,9 +32047,7 @@
         }
       }
     },
-    "annotation" : {
-
-    },
+    "annotation" : {},
     "it doesn't exist" : {
       "localizations" : {
         "de" : {
@@ -32766,9 +32412,7 @@
         }
       }
     },
-    "macOS only lets Shot find where a browser shows its page once you allow it. Area, Window and Screen work without it." : {
-
-    },
+    "macOS only lets Shot find where a browser shows its page once you allow it. Area, Window and Screen work without it." : {},
     "macOS requires Screen Recording access for every capture." : {
       "localizations" : {
         "de" : {
