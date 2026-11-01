@@ -4,7 +4,7 @@ summary: "Browse, search, filter and reopen everything in your save folder in th
 group: Edit and share
 ---
 
-![The gallery: an annotated screenshot, a GIF, a recording and three screenshots, with filters, sort and the thumbnail size slider](../../../docs/media/gallery.png)
+![The gallery with its folder sidebar open, listing a Bugs and a Reports folder beside three screenshots, with filters, sort and the thumbnail size slider](../../../docs/media/gallery.png)
 
 ## Open the gallery
 
