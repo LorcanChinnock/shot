@@ -141,13 +141,16 @@ jobs:
       - name: Checksum the zip
         working-directory: build/release
         run: shasum -a 256 "Shot-${TAG}.zip" > SHA256SUMS
+      # `publish` downloads this. If the tests fail, rerunning the failed jobs needs it still here: once the tag exists,
+      # a full rerun releases nothing, and an expired artifact leaves an empty draft (#1020). The zip is signed
+      # already, so it holds no secrets, and a week costs about 8 MB.
       - name: Keep the release files
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release
           path: build/release
           compression-level: 0
-          retention-days: 1
+          retention-days: 7
 
   # Only after the tests pass does anything reach the release, so a failing test leaves a draft nobody can download.
   publish:
