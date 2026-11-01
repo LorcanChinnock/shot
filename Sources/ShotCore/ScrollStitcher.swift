@@ -85,6 +85,9 @@ public final class ScrollStitcher {
     private(set) var extremes = (minX: 0, maxX: 0, minY: 0, maxY: 0)
     private var lastShift = (x: 0, y: 0)
     private var overshoot = ScrollOvershoot()
+    private var excludesPinned = false
+    /// Per tile: whether it has detail and is identical in this frame and the last, which marks it as pinned.
+    private var stayPut: [Bool]
     /// Frames in a row that didn't line up.
     private var failures = 0
     private static let sweepFailures = 4
@@ -104,6 +107,7 @@ public final class ScrollStitcher {
     private static let agreeDevice: Float = 28, capDevice: Float = 56, gateDevice: Float = 14
     private static let voteMargin: Float = 8
     private static let peakCount = 5
+    private static let stayPutLimit: Float = 3
     /// Points at each side of the area where a fading scroll bar can lie.
     private static let barWidth = 16
 
@@ -131,6 +135,7 @@ public final class ScrollStitcher {
         current2 = previous2
         let tiles = columns * rows
         textured = [Bool](repeating: false, count: tiles)
+        stayPut = textured
         residuals = [Float](repeating: .nan, count: tiles)
         followX = [Float](repeating: 0, count: tiles)
         followY = followX
@@ -184,12 +189,25 @@ public final class ScrollStitcher {
         flags = previousFlags
         bands = previousBands
         texturedCount = measureTexture()
+        for t in 0..<(columns * rows) {
+            stayPut[t] = textured[t] && deviceResidual(tile: t, shift: (0, 0)) < Self.stayPutLimit
+        }
         lap("texture")
         guard texturedCount >= 10 else {
             status = .notEnough
             return update(changed: false)
         }
         var lined = bestShift()
+        if lined == nil || lined == .ambiguous {
+            // Bars that haven't been told apart yet can outweigh a big move, or a move across them, so once more
+            // without the tiles that haven't moved.
+            excludesPinned = true
+            let again = bestShift()
+            excludesPinned = false
+            if case .value = again {
+                lined = again
+            }
+        }
         if lined == nil, failures < Self.sweepFailures {
             // The correlation can miss on flat or sparse pages and short moves, so before giving up on a frame every move
             // along each axis is tried on the half-size greys.
@@ -560,14 +578,14 @@ public final class ScrollStitcher {
                 for dx in -reach...reach {
                     let shift = (x: around.x + dx, y: around.y + dy)
                     residuals(shift: shift, every: 5)
-                    if let candidate = score(shift: shift, agree: Self.agreeDevice, cap: Self.capDevice), candidate.score < bestScore {
+                    if let candidate = score(shift: shift, agree: Self.agreeDevice, cap: Self.capDevice, unit: 1), candidate.score < bestScore {
                         bestScore = candidate.score
                         bestShift = shift
                     }
                 }
             }
             residuals(shift: bestShift, every: 1)
-            best = score(shift: bestShift, agree: Self.agreeDevice, cap: Self.capDevice)
+            best = score(shift: bestShift, agree: Self.agreeDevice, cap: Self.capDevice, unit: 1)
             if let best, best.evaluable >= minimum {
                 note("device \(best.shift) score \(best.score) agree \(best.agreement) n \(best.evaluable)\(againstCanvas ? "" : " vs frame")")
                 return best
@@ -579,11 +597,15 @@ public final class ScrollStitcher {
 
     /// The candidate's score over the textured tiles whose match lies inside the previous frame: the mean of the
     /// capped residuals, so a sticky header or a changing patch counts a bounded amount against it.
-    private func score(shift: (x: Int, y: Int), agree: Float, cap: Float) -> Candidate? {
+    private func score(shift: (x: Int, y: Int), agree: Float, cap: Float, unit: Int? = nil) -> Candidate? {
         var sum: Float = 0
         var evaluable = 0
         var agreed = 0
-        for t in 0..<(columns * rows) where textured[t] {
+        // A tile with detail that's pixel for pixel the same in both frames isn't following a move of a tile or more:
+        // it's pinned, such as a bar that hasn't been told apart yet, and counts neither for nor against.
+        let far = excludesPinned && max(abs(shift.x), abs(shift.y)) * (unit ?? scale) >= tile
+        let move = (x: shift.x * (unit ?? scale), y: shift.y * (unit ?? scale))
+        for t in 0..<(columns * rows) where textured[t] && !(far && (stayPut[t] || pinnedBehind(t, move: move))) {
             let residual = residuals[t]
             if residual.isNaN {
                 continue
@@ -598,6 +620,20 @@ public final class ScrollStitcher {
             return nil
         }
         return Candidate(shift: shift, score: sum / Float(evaluable), agreement: Float(agreed) / Float(evaluable), evaluable: evaluable)
+    }
+
+    /// Whether the part of the last frame that tile `t` is matched with, after a move of `move` device pixels, is a
+    /// pinned bar: the bar scrolled into the middle of this frame is just content, so it can't be matched.
+    private func pinnedBehind(_ t: Int, move: (x: Int, y: Int)) -> Bool {
+        func floorDivide(_ a: Int, _ b: Int) -> Int { a >= 0 ? a / b : -((-a + b - 1) / b) }
+        let x = t % columns * tile + move.x, y = t / columns * tile + move.y
+        let c0 = floorDivide(x, tile), r0 = floorDivide(y, tile)
+        for r in r0...(r0 + (y - r0 * tile != 0 ? 1 : 0)) where r >= 0 && r < rows {
+            for c in c0...(c0 + (x - c0 * tile != 0 ? 1 : 0)) where c >= 0 && c < columns && stayPut[r * columns + c] {
+                return true
+            }
+        }
+        return false
     }
 
     /// The level-1 shift within a pixel of `around` with the least residual.
