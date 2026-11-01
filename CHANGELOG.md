@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.0-beta.78](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.77...v0.7.0-beta.78) (2026-11-01)
+
+
+### Features
+
+* **capture:** always hide Shot's overlays from captures, keep Settings capturable ([#1015](https://github.com/LorcanChinnock/shot/issues/1015)) ([eace8dc](https://github.com/LorcanChinnock/shot/commit/eace8dcd36d793560555cca2b82b14dfa36c3e71))
+* **gallery:** folders and tags to organise captures ([#1011](https://github.com/LorcanChinnock/shot/issues/1011)) ([2d9e128](https://github.com/LorcanChinnock/shot/commit/2d9e128a229bad541d1e0ceda507ee3a8cbe4989))
+* **release:** add an uninstall script ([#1018](https://github.com/LorcanChinnock/shot/issues/1018)) ([87f2ed2](https://github.com/LorcanChinnock/shot/commit/87f2ed2d52dc9c1ada3115b0186bb231a6bf4d79))
+* **release:** install with a curl command and drop Homebrew ([#1013](https://github.com/LorcanChinnock/shot/issues/1013)) ([75eb01c](https://github.com/LorcanChinnock/shot/commit/75eb01c8fb23dd28b5188470ea33deb352b8e781))
+
 ## [0.7.0-beta.77](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.76...v0.7.0-beta.77) (2026-10-30)
 
 
