@@ -107,6 +107,7 @@ public final class ScrollStitcher {
     private static let agreeDevice: Float = 28, capDevice: Float = 56, gateDevice: Float = 14
     private static let voteMargin: Float = 8
     private static let peakCount = 5
+    private static let partsMargin: Float = 0.08
     private static let stayPutLimit: Float = 3
     /// Points at each side of the area where a fading scroll bar can lie.
     private static let barWidth = 16
@@ -517,7 +518,19 @@ public final class ScrollStitcher {
             settled.append(settle((x: rival.shift.x * scale, y: rival.shift.y * scale)))
         }
         lap("settle ×\(settled.count)")
-        let judged = settled.compactMap { $0 }.sorted { $0.score < $1.score }
+        var judged = settled.compactMap { $0 }.sorted { $0.score < $1.score }
+        // A pinned column or bar moves on one axis only, so on a diagonal move it fits the move's parts but not the
+        // move; and the move across the content then scores worse than a move along one axis that the pinned part and
+        // the page's lines fit. Crediting each tile with the better of the move and its parts tells them apart, and
+        // where the parts explain just as much, as in a plain vertical scroll, the plain score decides.
+        var decidedByParts = false
+        if judged.count > 1, (judged[0].shift.x != 0 && judged[0].shift.y != 0) || (judged[1].shift.x != 0 && judged[1].shift.y != 0) {
+            let first = agreementWithParts(judged[0].shift), second = agreementWithParts(judged[1].shift)
+            if second > first + Self.partsMargin {
+                judged.swapAt(0, 1)
+                decidedByParts = true
+            }
+        }
         guard let best = judged.first, best.agreement >= 0.5, best.evaluable >= minimum else {
             return nil
         }
@@ -528,10 +541,34 @@ public final class ScrollStitcher {
         guard best.score <= Self.gateDevice || (continues && clearlyBest && best.score <= Self.gateDevice * 1.5) else {
             return nil
         }
-        if judged.count > 1, judged[1].score < best.score * 1.25 + 0.5 {
+        if !decidedByParts, judged.count > 1, judged[1].score < best.score * 1.25 + 0.5 {
             return .ambiguous
         }
         return .value(best.shift)
+    }
+
+    /// The share of textured tiles that fit a move of `shift` device pixels, or one of its two single-axis parts, as
+    /// when a pinned column stays put in x on a diagonal move.
+    private func agreementWithParts(_ shift: (x: Int, y: Int)) -> Float {
+        var fitting = 0, counted = 0
+        for t in 0..<(columns * rows) where textured[t] {
+            var least = deviceResidual(tile: t, shift: shift)
+            if shift.x != 0, shift.y != 0 {
+                for part in [(0, shift.y), (shift.x, 0)] {
+                    let residual = deviceResidual(tile: t, shift: part)
+                    if !residual.isNaN, residual < least || least.isNaN {
+                        least = residual
+                    }
+                }
+            }
+            if !least.isNaN {
+                counted += 1
+                if least < Self.agreeDevice {
+                    fitting += 1
+                }
+            }
+        }
+        return counted > 0 ? Float(fitting) / Float(counted) : 0
     }
 
     /// The level-1 shift within a pixel of `around` with the least residual, searched on a third of the tiles and

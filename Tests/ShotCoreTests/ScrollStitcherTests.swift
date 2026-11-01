@@ -664,3 +664,14 @@ func fabPixels(in image: Bitmap) -> Int {
     #expect(statuses.dropFirst().allSatisfy { $0 == .live }, "\(statuses)")
     #expect(abs(CGFloat(result.height) - (scene.viewport.height + 280) * 2) <= 2)
 }
+
+@Test func aDiagonalMoveAcrossAPinnedColumnAndHeaderLinesUpFromTheFirstFrame() throws {
+    let scene = ScrollScene(table: true, header: 28, column: 90)
+    let offsets = path(steps: Array(repeating: CGPoint(x: 9, y: 11), count: 14))
+    let (_, image, statuses) = stitch(scene, offsets: offsets)
+    let result = try #require(image)
+    #expect(statuses.dropFirst().allSatisfy { $0 == .live }, "\(statuses)")
+    let last = offsets.last!
+    #expect(abs(CGFloat(result.width) - (scene.viewport.width + last.x) * 2) <= 2, "\(result.width) wide")
+    #expect(abs(CGFloat(result.height) - (scene.viewport.height + last.y) * 2) <= 2, "\(result.height) tall")
+}
