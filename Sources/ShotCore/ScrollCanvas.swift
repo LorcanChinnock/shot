@@ -483,14 +483,14 @@ final class ScrollCanvas {
         return Float(sum) / Float(3 * n)
     }
 
-    private static func bitmapInfo(_ byteOrder: ScrollStitcher.ByteOrder) -> CGBitmapInfo {
+    static func bitmapInfo(_ byteOrder: ScrollStitcher.ByteOrder) -> CGBitmapInfo {
         switch byteOrder {
         case .bgra: CGBitmapInfo(rawValue: CGBitmapInfo.byteOrder32Little.rawValue | CGImageAlphaInfo.premultipliedFirst.rawValue)
         case .rgba: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
         }
     }
 
-    private static func makeImage(_ data: Data, width: Int, height: Int, byteOrder: ScrollStitcher.ByteOrder, colorSpace: CGColorSpace) -> CGImage? {
+    static func makeImage(_ data: Data, width: Int, height: Int, byteOrder: ScrollStitcher.ByteOrder, colorSpace: CGColorSpace) -> CGImage? {
         guard width > 0, height > 0, let provider = CGDataProvider(data: data as CFData) else {
             return nil
         }

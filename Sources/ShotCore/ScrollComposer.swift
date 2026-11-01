@@ -1,0 +1,388 @@
+import CoreGraphics
+import Foundation
+
+/// A frame kept for the final pass: where the area was in the image's coordinates, and what it showed, tightly packed
+/// in the frames' byte order.
+struct ScrollKeyFrame: Sendable {
+    let x: Int
+    let y: Int
+    let pixels: [UInt8]
+}
+
+/// The rows and columns of the area that stay where they are while the content moves: a bar along the top or bottom
+/// (rows that stay put in y), a column along the left or right (columns that stay put in x). Counts from each edge.
+struct ScrollBands: Equatable, Sendable {
+    var top = 0
+    var bottom = 0
+    var left = 0
+    var right = 0
+}
+
+/// A pinned part that isn't a band across the whole area, such as a floating button or a banner in a corner: where it
+/// is in the frame, and the corner of the image it stays with.
+struct ScrollBlob: Equatable, Sendable {
+    var x0: Int
+    var y0: Int
+    var x1: Int
+    var y1: Int
+    var left: Bool
+    var top: Bool
+}
+
+/// Votes on which rows and columns of the area stay put while the content moves, gathered pair by pair as the frames
+/// come. A pixel with detail votes in an axis once two frames moved enough along it to tell: that it stayed where it
+/// was, or that it followed the content. Pairs a few tens of pixels apart are what make this work: a bar taller than
+/// the move still has its own pixels to compare, which it wouldn't against a frame a whole screen away.
+struct ScrollBandVotes: Sendable {
+    private var votesY: [Int32]
+    private var stayY: [Int32]
+    private var votesX: [Int32]
+    private var stayX: [Int32]
+    /// The same votes at each pixel on the grid the votes are taken on, to find pinned parts that aren't bands.
+    private var mapVotes: [Int32]
+    private var mapStays: [Int32]
+    private let width: Int
+    private let height: Int
+    private static let step = 2
+
+    init(width: Int, height: Int) {
+        self.width = width
+        self.height = height
+        votesY = [Int32](repeating: 0, count: height)
+        stayY = votesY
+        votesX = [Int32](repeating: 0, count: width)
+        stayX = votesX
+        mapVotes = [Int32](repeating: 0, count: (width / Self.step) * (height / Self.step))
+        mapStays = mapVotes
+    }
+
+    /// Takes the pair `a`, `b`, where `b` is the area `shift` pixels on from `a`.
+    mutating func add(from a: UnsafePointer<UInt8>, to b: UnsafePointer<UInt8>, shift: (x: Int, y: Int), scale: Int) {
+        let step = 2
+        let minimumMove = max(12, 6 * scale)
+        let useY = abs(shift.y) >= minimumMove, useX = abs(shift.x) >= minimumMove
+        guard useY || useX else {
+            return
+        }
+        let far: Int32 = 255
+        let width = width, height = height
+        @inline(__always) func residual(_ ia: Int, _ ub: Int, _ vb: Int) -> Int32 {
+            guard ub >= 0, ub < width, vb >= 0, vb < height else {
+                return far
+            }
+            let ib = (vb * width + ub) * 4
+            return Int32(abs(Int(a[ia]) - Int(b[ib])) + abs(Int(a[ia + 1]) - Int(b[ib + 1])) + abs(Int(a[ia + 2]) - Int(b[ib + 2]))) / 3
+        }
+        // The same test from the second frame's side: its pixel here against the first frame a move on. A pixel that
+        // seems to have stayed only because where it would have gone is hidden, as just beside a pinned column, looks
+        // just as much like it followed from this side; one that is pinned doesn't.
+        @inline(__always) func reverse(_ ib: Int, _ ua: Int, _ va: Int) -> Int32 {
+            guard ua >= 0, ua < width, va >= 0, va < height else {
+                return far
+            }
+            let ia = (va * width + ua) * 4
+            return Int32(abs(Int(b[ib]) - Int(a[ia])) + abs(Int(b[ib + 1]) - Int(a[ia + 1])) + abs(Int(b[ib + 2]) - Int(a[ia + 2]))) / 3
+        }
+        for v in stride(from: 0, to: height - step, by: step) {
+            for u in stride(from: 0, to: width - step, by: step) {
+                let ia = (v * width + u) * 4
+                // Only pixels with detail can say anything.
+                let right = ia + step * 4, below = ia + step * width * 4
+                let detail = abs(Int(a[ia]) - Int(a[right])) + abs(Int(a[ia + 1]) - Int(a[right + 1])) + abs(Int(a[ia + 2]) - Int(a[right + 2])) + abs(Int(a[ia]) - Int(a[below])) + abs(Int(a[ia + 1]) - Int(a[below + 1])) + abs(Int(a[ia + 2]) - Int(a[below + 2]))
+                guard detail >= 36 else {
+                    continue
+                }
+                let stay = residual(ia, u, v), follow = residual(ia, u - shift.x, v - shift.y)
+                let stayOnlyY = residual(ia, u - shift.x, v), stayOnlyX = residual(ia, u, v - shift.y)
+                let cell = (v / step) * (width / step) + u / step
+                let ib = ia
+                if useY {
+                    let back = min(reverse(ib, u + shift.x, v + shift.y), reverse(ib, u, v + shift.y))
+                    Self.vote(stay: min(stay, stayOnlyY), follow: min(follow, stayOnlyX), back: back, votes: &votesY[v], stays: &stayY[v])
+                    Self.vote(stay: min(stay, stayOnlyY), follow: min(follow, stayOnlyX), back: back, votes: &mapVotes[cell], stays: &mapStays[cell])
+                }
+                if useX {
+                    let back = min(reverse(ib, u + shift.x, v + shift.y), reverse(ib, u + shift.x, v))
+                    Self.vote(stay: min(stay, stayOnlyX), follow: min(follow, stayOnlyY), back: back, votes: &votesX[u], stays: &stayX[u])
+                    Self.vote(stay: min(stay, stayOnlyX), follow: min(follow, stayOnlyY), back: back, votes: &mapVotes[cell], stays: &mapStays[cell])
+                }
+            }
+        }
+    }
+
+    /// The pinned parts outside the bands: pixels that stayed in nearly every vote, joined into parts when they're close
+    /// together, each boxed. A part stays with the corner of the image it's nearest.
+    func blobs(bands: ScrollBands, scale: Int) -> [ScrollBlob] {
+        let step = Self.step
+        let columns = width / step, rows = height / step
+        var pinned = [Bool](repeating: false, count: columns * rows)
+        for r in 0..<rows {
+            let v = r * step
+            guard v >= bands.top, v < height - bands.bottom else {
+                continue
+            }
+            for c in 0..<columns {
+                let u = c * step
+                guard u >= bands.left, u < width - bands.right else {
+                    continue
+                }
+                let i = r * columns + c
+                pinned[i] = mapStays[i] >= 3 && Float(mapStays[i]) >= 0.9 * Float(mapVotes[i])
+            }
+        }
+        // Pixels of one part are a few away from each other, so each is spread by this much before they're joined.
+        let reach = max(2, 6 * scale / step)
+        var spread = [Bool](repeating: false, count: pinned.count)
+        for r in 0..<rows {
+            for c in 0..<columns where pinned[r * columns + c] {
+                for rr in max(0, r - reach)...min(rows - 1, r + reach) {
+                    for cc in max(0, c - reach)...min(columns - 1, c + reach) {
+                        spread[rr * columns + cc] = true
+                    }
+                }
+            }
+        }
+        var label = [Int](repeating: -1, count: pinned.count)
+        var blobs: [ScrollBlob] = []
+        for start in 0..<pinned.count where spread[start] && label[start] < 0 {
+            var stack = [start]
+            label[start] = blobs.count
+            var minC = columns, maxC = 0, minR = rows, maxR = 0, members = 0
+            while let i = stack.popLast() {
+                let r = i / columns, c = i % columns
+                if pinned[i] {
+                    members += 1
+                    minC = min(minC, c); maxC = max(maxC, c); minR = min(minR, r); maxR = max(maxR, r)
+                }
+                for (dr, dc) in [(-1, 0), (1, 0), (0, -1), (0, 1)] {
+                    let rr = r + dr, cc = c + dc
+                    if rr >= 0, rr < rows, cc >= 0, cc < columns, spread[rr * columns + cc], label[rr * columns + cc] < 0 {
+                        label[rr * columns + cc] = blobs.count
+                        stack.append(rr * columns + cc)
+                    }
+                }
+            }
+            guard members >= 6, maxC >= minC else {
+                continue
+            }
+            let margin = 3 * scale
+            let x0 = max(0, minC * step - margin), x1 = min(width, (maxC + 1) * step + margin)
+            let y0 = max(0, minR * step - margin), y1 = min(height, (maxR + 1) * step + margin)
+            // Not a floating part if it takes up most of the area, which is content that happened to hold still.
+            guard (x1 - x0) * (y1 - y0) * 5 < width * height * 2 else {
+                continue
+            }
+            blobs.append(ScrollBlob(x0: x0, y0: y0, x1: x1, y1: y1, left: (x0 + x1) / 2 < width / 2, top: (y0 + y1) / 2 < height / 2))
+        }
+        return blobs
+    }
+
+    /// A pixel votes only when both ways could be tested: a pixel whose place after the move is off the frame can't
+    /// say whether it followed the content, and it would vote that it stayed whenever it happened to look like what
+    /// was there.
+    private static func vote(stay: Int32, follow: Int32, back: Int32, votes: inout Int32, stays: inout Int32) {
+        let threshold: Int32 = 8, margin: Int32 = 10, far: Int32 = 255
+        guard stay < far, follow < far else {
+            return
+        }
+        if stay < threshold, stay + margin < follow, back >= threshold {
+            votes += 1
+            stays += 1
+        } else if follow < threshold, follow + margin < stay {
+            votes += 1
+        }
+    }
+
+    /// Which rows and columns are pinned: a row or column is when most of its votes stayed, and a band runs from the
+    /// edge to its last pinned row, across the gaps a bar's own padding leaves.
+    func bands(scale: Int) -> ScrollBands {
+        let gap = 20 * scale
+        return ScrollBands(
+            top: Self.band(votes: votesY, stays: stayY, fromStart: true, gap: gap),
+            bottom: Self.band(votes: votesY, stays: stayY, fromStart: false, gap: gap),
+            left: Self.band(votes: votesX, stays: stayX, fromStart: true, gap: gap),
+            right: Self.band(votes: votesX, stays: stayX, fromStart: false, gap: gap)
+        )
+    }
+
+    /// How many rows or columns from an edge are pinned: up to the last one whose votes mostly stayed, as long as no
+    /// more than `gap` unpinned ones come between, and no more than 45% of the area.
+    private static func band(votes: [Int32], stays: [Int32], fromStart: Bool, gap: Int) -> Int {
+        let count = votes.count
+        // A bar's own pixels give nearly every vote as stayed, over several rows; a stray row of content whose shapes
+        // happen to repeat doesn't.
+        let pinned = (0..<count).map { stays[$0] >= 4 && Float(stays[$0]) >= 0.9 * Float(votes[$0]) }
+        func isPinned(_ k: Int) -> Bool {
+            // Votes are on every other row, so a neighbour is within two.
+            // A thin rule has one row and plenty of votes.
+            pinned[k] && (stays[k] >= 200 || (k > 1 && (pinned[k - 1] || pinned[k - 2])) || (k + 2 < count && (pinned[k + 1] || pinned[k + 2])))
+        }
+        var last = -1
+        var i = 0
+        while i < count * 45 / 100 {
+            let k = fromStart ? i : count - 1 - i
+            if isPinned(k) {
+                last = i
+            } else if votes[k] >= 100, Float(stays[k]) < 0.75 * Float(votes[k]) {
+                // Content, which a bar's own padding, with nothing in it to vote, never is.
+                if last >= 0 {
+                    break
+                }
+            } else if i - last > (last < 0 ? 3 * gap : gap) {
+                break
+            }
+            i += 1
+        }
+        return last + 1
+    }
+}
+
+/// Builds the stitched image once the capture is over, from every frame that was kept rather than one at a time as
+/// they came.
+///
+/// With all the frames to hand, two things that are guesses while capturing become measurements. What's pinned is
+/// found from how every pair of frames agrees at each pixel, so a bar is known from its first frame to its last and
+/// its edge to the pixel. And each pixel of the image is the one most of the frames that saw it agree on, so a scroll
+/// bar that fades over an edge, a bounce, a cursor or a bar that was pinned for only part of the time is outvoted
+/// instead of overwriting what was right.
+enum ScrollComposer {
+    /// Samples kept for each pixel of the image; more than this saw it and the rest are ignored.
+    private static let samples = 10
+    /// How alike two samples are to agree: the sum of their channels' differences.
+    private static let agreeing = 30
+
+    // MARK: Composing
+
+    /// The image over `bounds`, in the frames' byte order with alpha 255 where something was seen and 0 where not.
+    /// A pixel is what most of the frames that saw it agree on, preferring the one that saw it nearest their middle,
+    /// where a bar or a shadow at an edge can't reach. Where only a pinned band saw it, the band's.
+    static func compose(keys: [ScrollKeyFrame], width: Int, height: Int, bounds: ScrollCanvas.Bounds, bands: ScrollBands, blobs: [ScrollBlob] = []) -> [UInt8]? {
+        let outWidth = bounds.width, outHeight = bounds.height
+        guard outWidth > 0, outHeight > 0, !keys.isEmpty, keys.allSatisfy({ $0.pixels.count == width * height * 4 }) else {
+            return nil
+        }
+        var out = [UInt8](repeating: 0, count: outWidth * outHeight * 4)
+        let k = samples
+        let stripe = max(8, min(128, 4_000_000 / (outWidth * k)))
+        // Where a frame's row or column goes when it's pinned, and how near the middle of the frame it is.
+        let rowBand = (0..<height).map { $0 < bands.top ? 1 : $0 >= height - bands.bottom ? 2 : 0 }
+        let columnBand = (0..<width).map { $0 < bands.left ? 1 : $0 >= width - bands.right ? 2 : 0 }
+        let columnWeight = (0..<width).map { UInt8(min(255, abs(2 * $0 - width) * 255 / width)) }
+        let rowWeight = (0..<height).map { UInt8(min(255, abs(2 * $0 - height) * 255 / height)) }
+        // Which part, if any, each pixel of a frame belongs to, as its index in `blobs` plus one.
+        var blobAt = [UInt8](repeating: 0, count: width * height)
+        for (index, blob) in blobs.prefix(250).enumerated() {
+            for v in blob.y0..<blob.y1 {
+                for u in blob.x0..<blob.x1 {
+                    blobAt[v * width + u] = UInt8(index + 1)
+                }
+            }
+        }
+        func anchoredX(_ u: Int) -> Int { columnBand[u] == 1 ? u : outWidth - (width - u) }
+        func anchoredY(_ v: Int) -> Int { rowBand[v] == 1 ? v : outHeight - (height - v) }
+
+        var colors = [UInt32](repeating: 0, count: stripe * outWidth * k * 2)
+        var weights = [UInt8](repeating: 0, count: stripe * outWidth * k * 2)
+        var counts = [UInt8](repeating: 0, count: stripe * outWidth * 2)
+        var y0 = 0
+        while y0 < outHeight {
+            let y1 = min(outHeight, y0 + stripe)
+            for i in counts.indices {
+                counts[i] = 0
+            }
+            let layer = stripe * outWidth
+            for key in keys {
+                key.pixels.withUnsafeBufferPointer { frame in
+                    frame.baseAddress!.withMemoryRebound(to: UInt32.self, capacity: width * height) { pixels in
+                        @inline(__always) func add(_ wx: Int, _ wy: Int, _ u: Int, _ v: Int, pinned: Bool) {
+                            guard wx >= 0, wx < outWidth, wy >= y0, wy < y1 else {
+                                return
+                            }
+                            let slot = (wy - y0) * outWidth + wx + (pinned ? layer : 0)
+                            let n = Int(counts[slot])
+                            guard n < k else {
+                                return
+                            }
+                            colors[slot * k + n] = pixels[v * width + u]
+                            weights[slot * k + n] = max(columnWeight[u], rowWeight[v])
+                            counts[slot] = UInt8(n + 1)
+                        }
+                        for v in 0..<height {
+                            if rowBand[v] == 0 {
+                                let wy = key.y - bounds.y0 + v
+                                guard wy >= y0, wy < y1 else {
+                                    continue
+                                }
+                                for u in 0..<width {
+                                    if columnBand[u] == 0 {
+                                        let part = Int(blobAt[v * width + u])
+                                        if part == 0 {
+                                            add(key.x - bounds.x0 + u, wy, u, v, pinned: false)
+                                        } else {
+                                            let blob = blobs[part - 1]
+                                            add(blob.left ? u : outWidth - (width - u), blob.top ? v : outHeight - (height - v), u, v, pinned: true)
+                                        }
+                                    } else {
+                                        add(anchoredX(u), wy, u, v, pinned: true)
+                                    }
+                                }
+                            } else {
+                                let wy = anchoredY(v)
+                                guard wy >= y0, wy < y1 else {
+                                    continue
+                                }
+                                for u in 0..<width {
+                                    add(columnBand[u] == 0 ? key.x - bounds.x0 + u : anchoredX(u), wy, u, v, pinned: true)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            for wy in y0..<y1 {
+                for wx in 0..<outWidth {
+                    let slot = (wy - y0) * outWidth + wx
+                    let content = Int(counts[slot]), pinned = Int(counts[slot + layer])
+                    guard content > 0 || pinned > 0 else {
+                        continue
+                    }
+                    let base = content > 0 ? slot : slot + layer
+                    let color = consensus(colors, weights, base * k, content > 0 ? content : pinned)
+                    let o = (wy * outWidth + wx) * 4
+                    out[o] = UInt8(truncatingIfNeeded: color)
+                    out[o + 1] = UInt8(truncatingIfNeeded: color >> 8)
+                    out[o + 2] = UInt8(truncatingIfNeeded: color >> 16)
+                    out[o + 3] = 255
+                }
+            }
+            y0 = y1
+        }
+        return out
+    }
+
+    @inline(__always) private static func close(_ a: UInt32, _ b: UInt32) -> Bool {
+        let d0 = abs(Int(a & 255) - Int(b & 255)), d1 = abs(Int((a >> 8) & 255) - Int((b >> 8) & 255)), d2 = abs(Int((a >> 16) & 255) - Int((b >> 16) & 255))
+        return d0 + d1 + d2 <= agreeing
+    }
+
+    /// The sample most of the others agree with; of equals, the one seen nearest the middle of its frame.
+    private static func consensus(_ colors: [UInt32], _ weights: [UInt8], _ start: Int, _ n: Int) -> UInt32 {
+        if n == 1 {
+            return colors[start]
+        }
+        var best = 0, bestAgree = -1, bestWeight = 256
+        for i in 0..<n {
+            var agree = 0
+            for j in 0..<n where close(colors[start + i], colors[start + j]) {
+                agree += 1
+            }
+            let weight = Int(weights[start + i])
+            if agree > bestAgree || (agree == bestAgree && weight < bestWeight) {
+                best = i
+                bestAgree = agree
+                bestWeight = weight
+            }
+        }
+        return colors[start + best]
+    }
+}

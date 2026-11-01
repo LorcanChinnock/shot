@@ -78,6 +78,7 @@ func run(_ dir: URL, outDir: URL) -> Score? {
     let stitcher = ScrollStitcher(width: fw, height: fh, scale: dpr, byteOrder: .rgba)
     let diag = ProcessInfo.processInfo.environment["DIAG"].map { m.name.contains($0) } ?? false
     stitcher.collectsDiagnostics = diag
+    stitcher.composes = ProcessInfo.processInfo.environment["NOCOMPOSE"] == nil
     var statuses: [ScrollCaptureStatus: Int] = [:]
     let start = ContinuousClock.now
     for i in 0..<m.offsets.count {

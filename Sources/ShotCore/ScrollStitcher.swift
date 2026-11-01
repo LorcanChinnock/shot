@@ -85,6 +85,18 @@ public final class ScrollStitcher {
     private(set) var extremes = (minX: 0, maxX: 0, minY: 0, maxY: 0)
     private var lastShift = (x: 0, y: 0)
     private var overshoot = ScrollOvershoot()
+    /// Whether the image is built at the end from the frames kept along the way, which is more robust than the
+    /// canvas painted as they came; off, it's the canvas.
+    public var composes = true
+    private var keys: [ScrollKeyFrame] = []
+    private var bandVotes: ScrollBandVotes
+    /// The frame the next pair of votes is against, and where the area was for it.
+    private let voteReference: UnsafeMutablePointer<UInt8>
+    private var voteReferencePosition = (x: 0, y: 0)
+    private var keyBytes = 0
+    /// How far the area moves, as a share of its size, before another frame is kept.
+    private var keySpacing = 6
+    private static let keyBudget = 600_000_000
     private var excludesPinned = false
     /// Per tile: whether it has detail and is identical in this frame and the last, which marks it as pinned.
     private var stayPut: [Bool]
@@ -107,6 +119,8 @@ public final class ScrollStitcher {
     private static let agreeDevice: Float = 28, capDevice: Float = 56, gateDevice: Float = 14
     private static let voteMargin: Float = 8
     private static let peakCount = 5
+    /// Points the area moves before another pair votes on what's pinned.
+    private static let voteSpacing = 12
     private static let partsMargin: Float = 0.08
     private static let stayPutLimit: Float = 3
     /// Points at each side of the area where a fading scroll bar can lie.
@@ -137,6 +151,9 @@ public final class ScrollStitcher {
         let tiles = columns * rows
         textured = [Bool](repeating: false, count: tiles)
         stayPut = textured
+        bandVotes = ScrollBandVotes(width: width, height: height)
+        voteReference = .allocate(capacity: width * height * 4)
+        voteReference.initialize(repeating: 0, count: width * height * 4)
         residuals = [Float](repeating: .nan, count: tiles)
         followX = [Float](repeating: 0, count: tiles)
         followY = followX
@@ -150,6 +167,7 @@ public final class ScrollStitcher {
     deinit {
         previous.deallocate()
         current.deallocate()
+        voteReference.deallocate()
     }
 
     /// The image so far, in pixels.
@@ -182,6 +200,9 @@ public final class ScrollStitcher {
         frames += 1
         if frames == 1 {
             canvas.paintContent(current, width: width, height: height, at: (0, 0), rect: (0, 0, width, height))
+            recordKey()
+            voteReference.update(from: current, count: width * height * 4)
+            voteReferencePosition = (0, 0)
             status = .ready
             swapFrames()
             return update(changed: true)
@@ -255,6 +276,8 @@ public final class ScrollStitcher {
         let changed = paint(movedAnchors: before)
         lap("paint")
         status = hitLimit ? .sizeLimit : .live
+        recordKey()
+        collectBandVotes()
         swapFrames()
         return update(changed: changed)
     }
@@ -1196,7 +1219,58 @@ public final class ScrollStitcher {
     /// The stitched image: every pixel seen, with the rest clear. `colorSpace` is the frames'.
     public func image(colorSpace: CGColorSpace? = nil) -> CGImage? {
         overshoot.finish(width: width, height: height, isBlank: canvas.isBlank)
-        return canvas.image(byteOrder: byteOrder, colorSpace: colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)!, keeping: canvas.seen.map { overshoot.kept(of: $0) })
+        let space = colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)!
+        let bounds = canvas.seen.map { overshoot.kept(of: $0) }
+        if composes, frames > 1, let bounds, let composed = composedImage(bounds: bounds, colorSpace: space) {
+            return composed
+        }
+        return canvas.image(byteOrder: byteOrder, colorSpace: space, keeping: bounds)
+    }
+
+    /// Votes on what's pinned between the last reference and this frame once the area has moved a little from it, then
+    /// this frame becomes the reference.
+    private func collectBandVotes() {
+        let move = (x: position.x - voteReferencePosition.x, y: position.y - voteReferencePosition.y)
+        guard max(abs(move.x), abs(move.y)) >= Self.voteSpacing * scale else {
+            return
+        }
+        bandVotes.add(from: voteReference, to: current, shift: move, scale: scale)
+        voteReference.update(from: current, count: width * height * 4)
+        voteReferencePosition = position
+    }
+
+    /// Keeps the frame being processed, if the area has moved far enough from the last one kept.
+    private func recordKey() {
+        if let last = keys.last, abs(position.x - last.x) * keySpacing < width, abs(position.y - last.y) * keySpacing < height {
+            return
+        }
+        keys.append(ScrollKeyFrame(x: position.x, y: position.y, pixels: Array(UnsafeBufferPointer(start: current, count: width * height * 4))))
+        keyBytes += width * height * 4
+        // Past the budget, every other frame goes and the spacing doubles, so what's left still covers each part of
+        // the image more than once.
+        while keyBytes > Self.keyBudget, keys.count > 3 {
+            keys = keys.enumerated().filter { $0.offset % 2 == 0 || $0.offset == keys.count - 1 }.map(\.element)
+            keyBytes = keys.count * width * height * 4
+            keySpacing = max(2, keySpacing / 2)
+        }
+    }
+
+    /// The image from the frames kept, pinned parts found from all of them; nil when it can't be built.
+    private func composedImage(bounds: ScrollCanvas.Bounds, colorSpace: CGColorSpace) -> CGImage? {
+        var all = keys
+        // The last frame that lined up is always in, wherever it falls between the spacing.
+        if let last = all.last, last.x != position.x || last.y != position.y {
+            all.append(ScrollKeyFrame(x: position.x, y: position.y, pixels: Array(UnsafeBufferPointer(start: previous, count: width * height * 4))))
+        }
+        guard bounds.width * bounds.height <= ScrollCaptureLimits.standard.maxPixels else {
+            return nil
+        }
+        let bands = bandVotes.bands(scale: scale)
+        let blobs = bandVotes.blobs(bands: bands, scale: scale)
+        guard let pixels = ScrollComposer.compose(keys: all, width: width, height: height, bounds: bounds, bands: bands, blobs: blobs) else {
+            return nil
+        }
+        return ScrollCanvas.makeImage(Data(pixels), width: bounds.width, height: bounds.height, byteOrder: byteOrder, colorSpace: colorSpace)
     }
 }
 
