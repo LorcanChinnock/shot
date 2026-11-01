@@ -43,7 +43,7 @@
 
 ### Capture and Quick Access
 
-<img src="docs/media/capture.gif" width="720" alt="Pressing Tab to step the capture between an area, a window and the full screen, dragging out an area with the magnifier, then the Quick Access card sliding into the corner and showing its buttons">
+<img src="docs/media/capture.gif" width="720" alt="Pressing Tab to step the capture between an area, a window, a browser page and the full screen, dragging out an area with the magnifier, then the Quick Access card sliding into the corner">
 
 ### Annotate anything
 
@@ -51,11 +51,11 @@
 
 ### Record your screen, and yourself
 
-<img src="docs/media/recording.gif" width="720" alt="Stepping the Delay chip through its choices, picking an area to record, then the recording outline and the controls while a chart animates">
+<img src="docs/media/recording.gif" width="720" alt="Stepping the Delay chip through its choices, picking an area to record, then the red recording outline around a chart, with the timer, Pause and Stop controls">
 
 ### Trim and export to GIF
 
-<img src="docs/media/video-editor.png" width="720" alt="The video editor with a cut where the recording went to another page, a Best day label and an arrow over the video, and the GIF export options">
+<img src="docs/media/video-editor.png" width="720" alt="The video editor with More tools open: a cut in the recording, a Best day label and an arrow over the video, the annotation tools, and the GIF export options">
 
 ## Install
 
