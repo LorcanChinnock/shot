@@ -72,7 +72,7 @@ const scenarios = [
     // clamp, as a real scroller does
     const clamped = offsets.map(o => ({ x: Math.min(Math.max(o.x, 0), max.x), y: Math.min(Math.max(o.y, 0), max.y) }));
     // How much of the viewport's top and bottom the pinned parts take at rest, and where the page ends.
-    const pins = await page.evaluate(() => { const v = innerHeight; let top = 0, bottom = 0; for (const e of document.querySelectorAll('.pin:not(.fixedonly)')) { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); if (cs.position !== 'sticky') continue; if (cs.top !== 'auto' && r.height < v / 2 && r.width > innerWidth / 2) top = Math.max(top, r.bottom); if (cs.bottom !== 'auto' && r.width > innerWidth / 2) bottom = Math.max(bottom, v - r.top); } return { top, bottom }; });
+    const pins = await page.evaluate(() => { const v = innerHeight; let top = 0, bottom = 0; for (const e of document.querySelectorAll('.pin.fixedonly')) { const r = e.getBoundingClientRect(); if (r.bottom > v - 120) bottom = Math.max(bottom, v - r.top); } for (const e of document.querySelectorAll('.pin:not(.fixedonly)')) { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); if (cs.position !== 'sticky') continue; if (cs.top !== 'auto' && r.height < v / 2 && r.width > innerWidth / 2) top = Math.max(top, r.bottom); if (cs.bottom !== 'auto' && r.width > innerWidth / 2) bottom = Math.max(bottom, v - r.top); } return { top, bottom }; });
     const start = profile === 'upward' ? { x: 0, y: 560 } : { x: 0, y: 0 };
     const all = [start, ...clamped];
     await page.evaluate((s) => scrollTo(s.x, s.y), start);

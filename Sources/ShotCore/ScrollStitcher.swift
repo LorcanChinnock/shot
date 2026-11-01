@@ -84,6 +84,8 @@ public final class ScrollStitcher {
     /// How far the view has been on each side, which sticky edges anchor to.
     private(set) var extremes = (minX: 0, maxX: 0, minY: 0, maxY: 0)
     private var lastShift = (x: 0, y: 0)
+    private var lastReceived1: [Float] = []
+    private var stillSinceLastFrame = false
     private var frames = 0
     private var hitLimit = false
     public private(set) var status: ScrollCaptureStatus = .ready
@@ -160,6 +162,10 @@ public final class ScrollStitcher {
         lapMark = ContinuousClock.now
         copy(frame, into: current)
         greys()
+        // Whether the frame is the same as the one before it, whether or not that one lined up, which tells a scroll
+        // that went too far and stopped from something that keeps changing.
+        stillSinceLastFrame = frames > 0 && Self.meanDifference(current1, lastReceived1) < 1.5
+        lastReceived1 = current1
         lap("copy+greys")
         frames += 1
         if frames == 1 {
@@ -250,7 +256,26 @@ public final class ScrollStitcher {
         swap(&previousBands, &bands)
     }
 
+    private static func meanDifference(_ a: [Float], _ b: [Float]) -> Float {
+        guard a.count == b.count, !a.isEmpty else {
+            return .infinity
+        }
+        var sum: Float = 0
+        for i in stride(from: 0, to: a.count, by: 3) {
+            sum += abs(a[i] - b[i])
+        }
+        return sum / Float((a.count + 2) / 3)
+    }
+
     private func fail() {
+        if stillSinceLastFrame {
+            // Nothing is moving or changing: the content is simply further than a frame can follow.
+            for t in 0..<changing.count {
+                changing[t] *= 0.5
+            }
+            status = .tooFar
+            return
+        }
         // While nothing lines up, the last frame that did stays the reference, so scrolling back recovers.
         let shifts: [(Int, Int)] = [(0, 0), (lastShift.x, lastShift.y)]
         var unmatched = 0
@@ -389,9 +414,17 @@ public final class ScrollStitcher {
     /// apart line up about as well, as on a pattern that repeats. A move over three quarters of the area is too far:
     /// the sliver left can match the wrong line.
     private func bestShift() -> Coarse? {
-        var shifts: [(x: Int, y: Int)] = [(0, 0), (lastShift.x / scale, lastShift.y / scale)]
+        // The peaks come first, strongest first: a nearby guess that's tried first would stand in for a peak that's a
+        // grey pixel off it, and the half-size greys can't tell them apart.
+        var shifts: [(x: Int, y: Int)] = []
         for peak in correlator.peaks(from: previous2, to: current2, count: Self.peakCount) {
             shifts.append((peak.dx * 2, peak.dy * 2))
+        }
+        shifts.append(contentsOf: [(0, 0), (lastShift.x / scale, lastShift.y / scale)])
+        // A pinned bar or a still part of the page makes a strong peak at no move that hides the small moves beside it,
+        // such as the tail of a wheel notch, so a few small moves along each axis are tried too.
+        for k in [2, 4, 6] {
+            shifts.append(contentsOf: [(0, k), (0, -k), (k, 0), (-k, 0)])
         }
         lap("peaks")
         var ranked: [Candidate] = []
@@ -411,7 +444,15 @@ public final class ScrollStitcher {
                 coarse.append(candidate)
             }
         }
-        for around in coarse.sorted(by: { $0.score < $1.score }).prefix(3).map(\.shift) {
+        // The best three, and also the strongest peak and the last move: the half-size greys can't hold an odd move,
+        // so these rank lower than they should, and the cut would otherwise lose the true one.
+        var toRefine = coarse.sorted(by: { $0.score < $1.score }).prefix(3).map(\.shift)
+        for must in [shifts.first, (lastShift.x / scale, lastShift.y / scale)].compactMap({ $0 }) {
+            if let candidate = coarse.first(where: { abs($0.shift.x - must.0) <= 1 && abs($0.shift.y - must.1) <= 1 }), !toRefine.contains(where: { abs($0.x - candidate.shift.x) <= 1 && abs($0.y - candidate.shift.y) <= 1 }) {
+                toRefine.append(candidate.shift)
+            }
+        }
+        for around in toRefine {
             guard let candidate = refine(around), candidate.evaluable >= minimum else {
                 continue
             }

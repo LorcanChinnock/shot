@@ -84,6 +84,13 @@ func run(_ dir: URL, outDir: URL) -> Score? {
             stitcher.process(ScrollFrame(width: fw, height: fh, bytesPerRow: fw * 4, pixels: raw))
         }
         statuses[update.status, default: 0] += 1
+        if ProcessInfo.processInfo.environment["DRIFT"].map({ m.name.contains($0) }) ?? false {
+            // Where the stitcher put this frame against where the page really was, in device pixels from the first frame.
+            let expected = (m.offsets[i].y - m.offsets[0].y) * Double(dpr), expectedX = (m.offsets[i].x - m.offsets[0].x) * Double(dpr)
+            let gotY = Double(update.viewport.minY) - Double(stitcher.viewport.minY) + Double(update.viewport.minY)
+            _ = gotY
+            print("[\(m.name) f\(i)] expected \(expectedX),\(expected) viewport \(update.viewport.minX),\(update.viewport.minY) status \(update.status)")
+        }
         if diag { print("[\(m.name) f\(i) off \(m.offsets[i].x),\(m.offsets[i].y)] \(update.status) \(Int(update.size.width))x\(Int(update.size.height)) \(stitcher.diagnostics)") }
         score.frames += 1
     }
