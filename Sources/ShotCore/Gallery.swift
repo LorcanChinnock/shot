@@ -30,18 +30,21 @@ public struct GalleryItem: Identifiable, Hashable, Sendable {
     public let bytes: Int
     /// When the file last changed, which the text index checks its entry against.
     public let modified: Date
+    /// The path of the folder in the save folder it's in, such as `Clients/Acme`, or empty when it's in the save folder itself.
+    public let folder: String
 
     public var id: URL { url }
     public var name: String { url.lastPathComponent }
     /// What the text index keys the file's text by.
     public var textFile: TextIndex.File { TextIndex.File(path: url.path, bytes: bytes, modified: modified) }
 
-    public init(url: URL, kind: GalleryKind, date: Date, bytes: Int, modified: Date? = nil) {
+    public init(url: URL, kind: GalleryKind, date: Date, bytes: Int, modified: Date? = nil, folder: String = "") {
         self.url = url
         self.kind = kind
         self.date = date
         self.bytes = bytes
         self.modified = modified ?? date
+        self.folder = folder
     }
 }
 
@@ -94,10 +97,52 @@ public enum Gallery {
     public static let tileSizes: ClosedRange<Double> = 120...320
     public static let defaultTileSize: Double = 190
 
-    /// The screenshots, recordings and GIFs directly inside `folder`; hidden files and other types are skipped.
-    public static func items(in folder: URL, fileManager: FileManager = .default) -> [GalleryItem] {
+    /// The most levels of folders the gallery looks through, which also stops a loop of links.
+    static let maxFolderDepth = 16
+
+    /// The screenshots, recordings and GIFs inside `folder` and, with `subfolders`, inside the folders in it at any depth.
+    /// Hidden files and other types are skipped.
+    public static func items(in folder: URL, subfolders: Bool = true, fileManager: FileManager = .default) -> [GalleryItem] {
+        let found = files(in: folder, folder: "", fileManager: fileManager)
+        guard subfolders else {
+            return found
+        }
+        return found + folders(in: folder, fileManager: fileManager).flatMap { path in
+            files(in: folderURL(path, in: folder), folder: path, fileManager: fileManager)
+        }
+    }
+
+    /// Every folder inside `folder`, at any depth, as its path from `folder` with `/` between names. Each comes before
+    /// the folders in it, and they're by name in Finder's order within their parent. Hidden folders, packages such as
+    /// an app or a photo library, and links to folders are left out.
+    public static func folders(in folder: URL, fileManager: FileManager = .default) -> [String] {
+        var found: [String] = []
+        func walk(_ directory: URL, prefix: String, depth: Int) {
+            let keys: [URLResourceKey] = [.isDirectoryKey, .isPackageKey, .isSymbolicLinkKey]
+            let urls = (try? fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: keys, options: [.skipsHiddenFiles])) ?? []
+            let names = urls.compactMap { url -> String? in
+                guard let values = try? url.resourceValues(forKeys: Set(keys)), values.isDirectory == true,
+                      values.isPackage != true, values.isSymbolicLink != true else {
+                    return nil
+                }
+                return url.lastPathComponent
+            }
+            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+            for name in names {
+                let path = prefix.isEmpty ? name : prefix + "/" + name
+                found.append(path)
+                if depth < maxFolderDepth {
+                    walk(directory.appendingPathComponent(name, isDirectory: true), prefix: path, depth: depth + 1)
+                }
+            }
+        }
+        walk(folder, prefix: "", depth: 1)
+        return found
+    }
+
+    private static func files(in directory: URL, folder: String, fileManager: FileManager) -> [GalleryItem] {
         let keys: [URLResourceKey] = [.contentModificationDateKey, .creationDateKey, .fileSizeKey, .isRegularFileKey]
-        let urls = (try? fileManager.contentsOfDirectory(at: folder, includingPropertiesForKeys: keys, options: [.skipsHiddenFiles])) ?? []
+        let urls = (try? fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: keys, options: [.skipsHiddenFiles])) ?? []
         return urls.compactMap { url in
             guard let kind = GalleryKind(fileExtension: url.pathExtension),
                   let values = try? url.resourceValues(forKeys: Set(keys)),
@@ -105,7 +150,7 @@ public enum Gallery {
                 return nil
             }
             let date = values.creationDate ?? values.contentModificationDate ?? .distantPast
-            return GalleryItem(url: url, kind: kind, date: date, bytes: values.fileSize ?? 0, modified: values.contentModificationDate ?? date)
+            return GalleryItem(url: url, kind: kind, date: date, bytes: values.fileSize ?? 0, modified: values.contentModificationDate ?? date, folder: folder)
         }
     }
 
@@ -115,13 +160,21 @@ public enum Gallery {
         return Array(items.filter { $0.kind == .image && $0.url.standardizedFileURL != excluded }.sorted { $0.date > $1.date }.prefix(limit))
     }
 
-    /// `items` that pass `filter` and `query`, in `sort` order. `texts` holds the text read from screenshots, folded as
-    /// `TextSearch` folds it, so the query finds a screenshot by what's in it as well as by its name.
-    public static func visible(_ items: [GalleryItem], filter: GalleryFilter, sort: GallerySort, query: String, texts: [URL: String] = [:]) -> [GalleryItem] {
-        let query = query.trimmingCharacters(in: .whitespaces)
+    /// `items` that pass `filter`, `folder` and `query`, in `sort` order. `texts` holds the text read from screenshots,
+    /// folded as `TextSearch` folds it, so the query finds a screenshot by what's in it as well as by its name. `folder`
+    /// is the path of one folder, empty for the save folder itself, or `nil` for all of them; a folder shows what is directly in it, not what is in its folders. An item has to carry every
+    /// one of `tags`, and every `tag:name` in the query, among its own in `tagsOf`.
+    public static func visible(
+        _ items: [GalleryItem], filter: GalleryFilter, sort: GallerySort, query: String, texts: [URL: String] = [:],
+        folder: String? = nil, tags: Set<String> = [], tagsOf: [URL: [String]] = [:]
+    ) -> [GalleryItem] {
+        let parsed = GalleryQuery(query)
+        let query = parsed.text
+        let required = Array(tags) + parsed.tags
         let folded = texts.isEmpty ? nil : TextSearch.query(query)
         let matching = items.filter { item in
-            guard filter.includes(item.kind) else {
+            guard filter.includes(item.kind), folder.map({ $0 == item.folder }) ?? true,
+                  required.isEmpty || GalleryTags.has(tagsOf[item.url] ?? [], all: required) else {
                 return false
             }
             return query.isEmpty || item.name.localizedStandardContains(query) || folded.map { query in texts[item.url].map { TextSearch.contains($0, query) } == true } == true

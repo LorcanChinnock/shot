@@ -52,15 +52,15 @@ public struct TextIndex: Codable, Equatable, Sendable {
         entries[file.path] = Entry(bytes: file.bytes, modified: file.modified.timeIntervalSinceReferenceDate, text: text)
     }
 
-    /// Brings the entries for `folder` up to date with `files`, the screenshots directly inside it, and returns those
-    /// still to read, newest first. An entry whose file has gone is dropped, unless a file of the same size and
-    /// modification date has appeared without an entry: that's the same file renamed, so its text moves to the new path
-    /// rather than being read again. Entries in other folders stay, so switching back to one doesn't read it all again.
+    /// Brings the entries for `folder` up to date with `files`, the screenshots inside it and the folders in it,
+    /// and returns those still to read, newest first. An entry whose file has gone is dropped, unless a file of the same
+    /// size and modification date has appeared without an entry: that's the same file renamed or moved to another
+    /// folder, so its text moves to the new path rather than being read again. Entries in other folders stay, so switching back to one doesn't read it all again.
     public mutating func reconcile(folder: String, files: [File]) -> [File] {
         let folder = Self.standardized(folder)
         let present = Set(files.map(\.path))
         var gone: [String: Entry] = [:]
-        for (path, entry) in entries where !present.contains(path) && Self.parent(of: path) == folder {
+        for (path, entry) in entries where !present.contains(path) && Self.isInside(Self.parent(of: path), folder) {
             gone[path] = entry
             entries[path] = nil
         }
@@ -102,6 +102,12 @@ public struct TextIndex: Codable, Equatable, Sendable {
 
     static func parent(of path: String) -> String {
         URL(fileURLWithPath: path).deletingLastPathComponent().standardizedFileURL.path
+    }
+
+    /// Whether the folder `directory` is `folder` or inside it, at any depth. Both are standardized, so a file that has
+    /// gone is looked up by its folder, which still resolves the same way.
+    static func isInside(_ directory: String, _ folder: String) -> Bool {
+        directory == folder || directory.hasPrefix(folder.hasSuffix("/") ? folder : folder + "/")
     }
 
     static func standardized(_ path: String) -> String {

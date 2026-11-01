@@ -67,6 +67,13 @@ final class SettingsNavigation {
 
 struct SettingsView: View {
     private static let bottomInset = Brutal.windowInset - 6
+    private static let sidebarWidths = 150.0...280.0
+    private static let defaultSidebarWidth = 196.0
+    /// How wide the sidebar is when it's shrunk to icons.
+    private static let railWidth: CGFloat = 52
+
+    @Setting(PreferenceKey.appSidebarWidth) private var sidebarWidth: Double
+    @Setting(PreferenceKey.appSidebarCollapsed) private var sidebarCollapsed: Bool
 
     @Bindable private var navigation = SettingsNavigation.shared
     @Environment(\.colorScheme) private var colorScheme
@@ -74,8 +81,17 @@ struct SettingsView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 22) {
-            Sidebar(selection: $navigation.section)
-                .frame(width: 196)
+            Sidebar(selection: $navigation.section, collapsed: sidebarCollapsed) { sidebarCollapsed.toggle() }
+                .frame(width: sidebarCollapsed ? Self.railWidth : min(max(sidebarWidth, Self.sidebarWidths.lowerBound), Self.sidebarWidths.upperBound))
+                .overlay(alignment: .trailing) {
+                    if !sidebarCollapsed {
+                        // Centred in the gap between the sidebar and what's beside it.
+                        PanelResizeHandle(width: $sidebarWidth, range: Self.sidebarWidths, defaultWidth: Self.defaultSidebarWidth) {
+                            sidebarCollapsed = true
+                        }
+                        .offset(x: 18)
+                    }
+                }
             VStack(alignment: .leading, spacing: 16) {
                 header
                 if section == .gallery {
@@ -154,33 +170,51 @@ private struct AppIconView: View {
 
 private struct Sidebar: View {
     @Binding var selection: SettingsSection
+    /// Whether it's shrunk to a column of icons.
+    let collapsed: Bool
+    let toggle: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: collapsed ? .center : .leading, spacing: 8) {
             HStack(spacing: 10) {
-                AppIconView(size: 44)
-                Text("Shot").font(Brutal.title(24)).foregroundStyle(Brutal.ink)
+                AppIconView(size: collapsed ? 34 : 44)
+                if !collapsed {
+                    Text("Shot").font(Brutal.title(24)).foregroundStyle(Brutal.ink)
+                }
             }
             .padding(.bottom, 14)
             ForEach(SettingsSection.allCases) { item in
-                SidebarItem(section: item, selected: item == selection) {
+                SidebarItem(section: item, selected: item == selection, collapsed: collapsed) {
                     withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                         selection = item
                     }
                 }
             }
             Spacer()
+            Button(action: toggle) {
+                Image(systemName: "sidebar.left")
+                    .font(.scaled(13, weight: .bold))
+                    .foregroundStyle(Brutal.faded(0.7))
+                    .frame(width: 30, height: 30)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .brutalTip(collapsedTip)
+            .accessibilityLabel(Text(collapsedTip))
         }
     }
+
+    private var collapsedTip: LocalizedStringResource { collapsed ? "Show labels" : "Show icons only" }
 }
 
 private struct SidebarItem: View {
     let section: SettingsSection
     let selected: Bool
+    let collapsed: Bool
     let action: () -> Void
     @State private var hovering = false
 
-    var body: some View {
+    private var button: some View {
         Button(action: action) {
             HStack(spacing: 10) {
                 Image(systemName: section.symbol)
@@ -188,10 +222,12 @@ private struct SidebarItem: View {
                     .foregroundStyle(Brutal.ink)
                     .frame(width: 28, height: 28)
                     .brutalSurface(section.color, radius: Brutal.Radius.button, shadow: 0, border: 2)
-                Text(section.title)
-                    .font(.scaled(13.5, weight: selected ? .heavy : .semibold))
-                    .foregroundStyle(Brutal.ink)
-                Spacer()
+                if !collapsed {
+                    Text(section.title)
+                        .font(.scaled(13.5, weight: selected ? .heavy : .semibold))
+                        .foregroundStyle(Brutal.ink)
+                    Spacer()
+                }
             }
             .padding(.horizontal, 9)
             .padding(.vertical, 8)
@@ -206,6 +242,18 @@ private struct SidebarItem: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
+        .accessibilityLabel(Text(section.title))
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    @ViewBuilder
+    var body: some View {
+        if collapsed {
+            // Without its label, the icon needs a tip to say what it is.
+            button.brutalTip(section.title)
+        } else {
+            button
+        }
     }
 }
 

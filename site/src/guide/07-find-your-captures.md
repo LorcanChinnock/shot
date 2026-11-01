@@ -10,7 +10,7 @@ group: Edit and share
 
 Choose **Open Gallery** in Shot's menu bar menu, or open [`shot://gallery`](#url-scheme). The gallery is the first section of the Settings window.
 
-It shows every image, movie and GIF in your save folder, whether Shot made it or not, and stays up to date as you capture. Captures taken with saving turned off aren't in it.
+It shows every image, movie and GIF in your save folder and the folders inside it, whether Shot made it or not, and stays up to date as you capture. Captures taken with saving turned off aren't in it. To group captures into folders or tag them, see [Organise your captures](#organise-your-captures).
 
 ## Search, filter and sort
 
