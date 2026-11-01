@@ -557,11 +557,11 @@ final class ScrollCanvas {
     }
 
     /// Every pixel seen, opaque, with the rest clear.
-    func image(byteOrder: ScrollStitcher.ByteOrder, colorSpace: CGColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!) -> CGImage? {
+    func image(byteOrder: ScrollStitcher.ByteOrder, colorSpace: CGColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!, keeping: Bounds? = nil) -> CGImage? {
         guard let seen, let buffer else {
             return nil
         }
-        let region = seen.intersection(bounds)
+        let region = (keeping ?? seen).intersection(seen).intersection(bounds)
         guard !region.isEmpty else {
             return nil
         }
@@ -583,5 +583,40 @@ final class ScrollCanvas {
             }
         }
         return Self.makeImage(data, width: region.width, height: region.height, byteOrder: byteOrder, colorSpace: colorSpace)
+    }
+
+    /// Whether the painted pixels of `rect` are one flat colour: a page's background and nothing on it.
+    func isBlank(_ rect: Bounds) -> Bool {
+        guard let buffer else {
+            return false
+        }
+        let area = rect.intersection(bounds)
+        guard !area.isEmpty else {
+            return false
+        }
+        var reference: (Int, Int, Int)?
+        var samples = 0, differing = 0
+        let stride = stride
+        var wy = area.y0
+        while wy < area.y1 {
+            var wx = area.x0
+            while wx < area.x1 {
+                let p = buffer + (wy - bounds.y0) * stride + (wx - bounds.x0) * 4
+                if p[3] != 0 {
+                    let color = (Int(p[0]), Int(p[1]), Int(p[2]))
+                    if let reference {
+                        samples += 1
+                        if abs(color.0 - reference.0) + abs(color.1 - reference.1) + abs(color.2 - reference.2) > 24 {
+                            differing += 1
+                        }
+                    } else {
+                        reference = color
+                    }
+                }
+                wx += 3
+            }
+            wy += 2
+        }
+        return samples >= 20 && differing * 50 <= samples
     }
 }

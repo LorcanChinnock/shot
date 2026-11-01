@@ -84,6 +84,10 @@ public final class ScrollStitcher {
     /// How far the view has been on each side, which sticky edges anchor to.
     private(set) var extremes = (minX: 0, maxX: 0, minY: 0, maxY: 0)
     private var lastShift = (x: 0, y: 0)
+    private var overshoot = ScrollOvershoot()
+    /// Frames in a row that didn't line up.
+    private var failures = 0
+    private static let sweepFailures = 4
     private var lastReceived1: [Float] = []
     private var stillSinceLastFrame = false
     private var frames = 0
@@ -185,7 +189,12 @@ public final class ScrollStitcher {
             status = .notEnough
             return update(changed: false)
         }
-        let lined = bestShift()
+        var lined = bestShift()
+        if lined == nil, failures < Self.sweepFailures {
+            // The correlation can miss on flat or sparse pages and short moves, so before giving up on a frame every move
+            // along each axis is tried on the half-size greys.
+            lined = bestShift(sweeping: true)
+        }
         lap("bestShift")
         guard let lined else {
             // Nothing lined up: the content moved too far, or too much of it keeps changing in place.
@@ -201,12 +210,14 @@ public final class ScrollStitcher {
         let classified = classify(shift: shift)
         lap("classify")
         if !moved {
+            overshoot.update(frame: frames, before: extremes, after: extremes, position: position, width: width, height: height, isBlank: canvas.isBlank)
             if status.isWarning {
                 status = .live
             }
             swapFrames()
             return update(changed: false)
         }
+        failures = 0
         lastShift = shift
         previousPosition = position
         position = (position.x + shift.x, position.y + shift.y)
@@ -215,6 +226,7 @@ public final class ScrollStitcher {
         extremes.maxX = max(extremes.maxX, position.x)
         extremes.minY = min(extremes.minY, position.y)
         extremes.maxY = max(extremes.maxY, position.y)
+        overshoot.update(frame: frames, before: before, after: extremes, position: position, width: width, height: height, isBlank: canvas.isBlank)
         if classified {
             assignFlags()
         }
@@ -270,6 +282,7 @@ public final class ScrollStitcher {
     }
 
     private func fail() {
+        failures += 1
         if stillSinceLastFrame {
             // Nothing is moving or changing: the content is simply further than a frame can follow.
             for t in 0..<changing.count {
@@ -415,7 +428,7 @@ public final class ScrollStitcher {
     /// painted, so small errors never add up. `nil` when nothing lines up, and `.ambiguous` when two moves well
     /// apart line up about as well, as on a pattern that repeats. A move over three quarters of the area is too far:
     /// the sliver left can match the wrong line.
-    private func bestShift() -> Coarse? {
+    private func bestShift(sweeping: Bool = false) -> Coarse? {
         // The peaks come first, strongest first: a nearby guess that's tried first would stand in for a peak that's a
         // grey pixel off it, and the half-size greys can't tell them apart.
         var shifts: [(x: Int, y: Int)] = []
@@ -427,6 +440,15 @@ public final class ScrollStitcher {
         // such as the tail of a wheel notch, so a few small moves along each axis are tried too.
         for k in [2, 4, 6] {
             shifts.append(contentsOf: [(0, k), (0, -k), (k, 0), (-k, 0)])
+        }
+        if sweeping {
+            shifts = []
+            for k in stride(from: -(height1 * 3 / 4), through: height1 * 3 / 4, by: 2) {
+                shifts.append((0, k))
+            }
+            for k in stride(from: -(width1 * 3 / 4), through: width1 * 3 / 4, by: 2) where k != 0 {
+                shifts.append((k, 0))
+            }
         }
         lap("peaks")
         var ranked: [Candidate] = []
@@ -478,7 +500,14 @@ public final class ScrollStitcher {
         }
         lap("settle ×\(settled.count)")
         let judged = settled.compactMap { $0 }.sorted { $0.score < $1.score }
-        guard let best = judged.first, best.agreement >= 0.5, best.score <= Self.gateDevice, best.evaluable >= minimum else {
+        guard let best = judged.first, best.agreement >= 0.5, best.evaluable >= minimum else {
+            return nil
+        }
+        // Just over the gate is still a match when it carries on the move before it, which a wrong line seldom does,
+        // and the rest line up clearly worse.
+        let continues = lastShift != (0, 0) && abs(best.shift.x - lastShift.x) <= scale && abs(best.shift.y - lastShift.y) <= scale
+        let clearlyBest = best.agreement >= 0.65 && judged.dropFirst().allSatisfy { $0.agreement + 0.25 <= best.agreement }
+        guard best.score <= Self.gateDevice || (continues && clearlyBest && best.score <= Self.gateDevice * 1.5) else {
             return nil
         }
         if judged.count > 1, judged[1].score < best.score * 1.25 + 0.5 {
@@ -1087,7 +1116,8 @@ public final class ScrollStitcher {
 
     /// The stitched image: every pixel seen, with the rest clear. `colorSpace` is the frames'.
     public func image(colorSpace: CGColorSpace? = nil) -> CGImage? {
-        canvas.image(byteOrder: byteOrder, colorSpace: colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)!)
+        overshoot.finish(width: width, height: height, isBlank: canvas.isBlank)
+        return canvas.image(byteOrder: byteOrder, colorSpace: colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)!, keeping: canvas.seen.map { overshoot.kept(of: $0) })
     }
 }
 

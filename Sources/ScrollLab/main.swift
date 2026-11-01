@@ -64,7 +64,7 @@ struct Score {
     var extra = 0.0       // percent of the image outside what any frame covered
     var warnings = ""
     var msPerFrame = 0.0
-    var ok: Bool { bad < 0.6 && worstBand < 6 && unseen < 0.3 }
+    var ok: Bool { bad < 0.6 && worstBand < 6 && unseen < 0.3 && extra < 0.5 }
 }
 
 func run(_ dir: URL, outDir: URL) -> Score? {

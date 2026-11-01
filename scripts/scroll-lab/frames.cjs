@@ -9,7 +9,14 @@ const VIEW = { width: 640, height: 440 }, DPR = 2;
 
 // Scroll paths in css px, one entry per captured frame (30 a second). Each returns [{x, y}].
 const steps = (n, dx, dy, x0 = 0, y0 = 0) => Array.from({ length: n }, (_, i) => ({ x: x0 + dx * (i + 1), y: y0 + dy * (i + 1) }));
+// Bounce: native scrolling lets the content go past its end and springs it back, showing the background beyond. A
+// frame's `over` is how many points it is past the end: positive past the bottom, negative above the top.
+const bounce = (n = 14, peak = 36) => Array.from({ length: n }, (_, i) => Math.round(peak * Math.sin(Math.PI * (i + 1) / (n + 1)) * 2) / 2);
 const profiles = {
+  bottomBounce: (max) => { const o = []; let y = 0; while (y < max.y) { y = Math.min(max.y, y + 120); o.push({ x: 0, y }); } for (const d of bounce()) o.push({ x: 0, y: max.y, over: d }); o.push({ x: 0, y: max.y }, { x: 0, y: max.y }); return o; },
+  topBounce: (max) => { const o = []; let y = 300; while (y > 0) { y = Math.max(0, y - 20); o.push({ x: 0, y }); } for (const d of bounce(12, 30)) o.push({ x: 0, y: 0, over: -d }); o.push({ x: 0, y: 0 }, { x: 0, y: 0 }); return o; },
+  // a flick that arrives at the end and bounces once
+  flickToEnd: (max) => { const o = []; let y = max.y - 700, v = 60; while (y < max.y) { y = Math.min(max.y, y + v); v *= 0.97; o.push({ x: 0, y: Math.round(y * 2) / 2 }); } for (const d of bounce(16, 44)) o.push({ x: 0, y: max.y, over: d }); o.push({ x: 0, y: max.y }); return o; },
   steady: () => steps(70, 0, 12),
   slow: () => steps(120, 0, 3),
   // wheel notches: 100 px each, eased over 9 frames, with a rest between
@@ -35,6 +42,7 @@ const scenarios = [
   ['article-flick', 'article', 'flick'], ['article-reversal', 'article', 'reversal'], ['article-drops', 'article', 'drops'],
   ['article-jumps', 'article', 'jumps'], ['article-fractional', 'article', 'fractional'], ['article-upward', 'article', 'upward'],
   ['glass-notches', 'article:translucent', 'notches'], ['glass-flick', 'article:translucent', 'flick'],
+  ['feed-bottom-bounce', 'feed', 'bottomBounce'], ['feed-top-bounce', 'feed', 'topBounce'], ['feed-flick-to-end', 'feed', 'flickToEnd'],
   ['table-steady', 'table', 'steady'], ['table-sideways', 'table', 'sideways'], ['table-diagonal', 'table', 'diagonal'], ['table-drops', 'table', 'drops'],
   ['chat-steady', 'chat', 'steady'], ['chat-flick', 'chat', 'flick'], ['chat-notches', 'chat', 'notches'], ['chat-reversal', 'chat', 'reversal'],
   ['feed-steady', 'feed', 'steady'], ['feed-flick', 'feed', 'flick'], ['feed-notches', 'feed', 'notches'],
@@ -67,17 +75,17 @@ const scenarios = [
       await page.evaluate(() => document.body.classList.remove('flat'));
       truths.set(spec, truthPath);
     }
-    const offsets = profiles[profile]();
     const max = await page.evaluate(() => ({ x: document.documentElement.scrollWidth - innerWidth, y: document.documentElement.scrollHeight - innerHeight }));
+    const offsets = profiles[profile](max);
     // clamp, as a real scroller does
-    const clamped = offsets.map(o => ({ x: Math.min(Math.max(o.x, 0), max.x), y: Math.min(Math.max(o.y, 0), max.y) }));
+    const clamped = offsets.map(o => ({ x: Math.min(Math.max(o.x, 0), max.x), y: Math.min(Math.max(o.y, 0), max.y), over: o.over || 0 }));
     // How much of the viewport's top and bottom the pinned parts take at rest, and where the page ends.
     const pins = await page.evaluate(() => { const v = innerHeight; let top = 0, bottom = 0; for (const e of document.querySelectorAll('.pin.fixedonly')) { const r = e.getBoundingClientRect(); if (r.bottom > v - 120) bottom = Math.max(bottom, v - r.top); } for (const e of document.querySelectorAll('.pin:not(.fixedonly)')) { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); if (cs.position !== 'sticky') continue; if (cs.top !== 'auto' && r.height < v / 2 && r.width > innerWidth / 2) top = Math.max(top, r.bottom); if (cs.bottom !== 'auto' && r.width > innerWidth / 2) bottom = Math.max(bottom, v - r.top); } return { top, bottom }; });
-    const start = profile === 'upward' ? { x: 0, y: 560 } : { x: 0, y: 0 };
+    const start = profile === 'upward' ? { x: 0, y: 560 } : profile === 'topBounce' ? { x: 0, y: 300 } : profile === 'flickToEnd' ? { x: 0, y: max.y - 700 } : { x: 0, y: 0 };
     const all = [start, ...clamped];
     await page.evaluate((s) => scrollTo(s.x, s.y), start);
     for (let i = 0; i < all.length; i++) {
-      await page.evaluate((o) => scrollTo(o.x, o.y), all[i]);
+      await page.evaluate((o) => { scrollTo(o.x, o.y); document.body.style.transform = o.over ? `translateY(${-o.over}px)` : ''; }, all[i]);
       await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
       await page.screenshot({ path: path.join(dir, `f${String(i).padStart(4, '0')}.png`) });
     }
