@@ -10,7 +10,6 @@ import { latestRelease } from '../lib/release';
 import editor from '../../../docs/media/editor.png';
 import videoEditor from '../../../docs/media/video-editor.png';
 import quickAccess from '../../../docs/media/quick-access.png';
-import openAnyway from '../../../docs/media/open-anyway.png';
 
 const release = await latestRelease();
 const full = '(min-width: 1120px) 1088px, 100vw';
@@ -227,7 +226,7 @@ const software = {
   </section>
 
   <section class="install" id="install">
-    <div class="wrap pair">
+    <div class="wrap">
       <div class="stack reveal">
         <h2>Install</h2>
         <p>Paste this into Terminal. It downloads the latest release, checks it against the release's checksum, and copies Shot into Applications.</p>
@@ -239,7 +238,6 @@ const software = {
         </ol>
         <p>The <a href="/docs/get-started/">guide</a> covers the rest of the first launch.</p>
       </div>
-      <Image src={openAnyway} alt="The Security section of Privacy & Security, with the Open Anyway button circled next to the message that Shot was blocked" widths={[495, 990]} sizes={half} class="shot reveal" />
     </div>
   </section>
 </Base>
