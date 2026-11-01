@@ -36,12 +36,6 @@ Shot takes over <kbd>⌘⇧4</kbd> and <kbd>⌘⇧5</kbd> only once it has Scree
 - If you turned the macOS shortcuts back on in System Settings, turn that setting on again.
 - A **Shortcut unavailable** message means another app already uses that shortcut. Pick another in **Settings › Shortcuts**.
 
-## A scrolling screenshot has a seam, a repeated header or a gap
-
-- **A seam or a repeated header:** something in the area moved while you scrolled, such as a video or an animated banner, so Shot lined the pieces up slightly wrong. Pause it, or drag the area so it leaves that part out, and capture again.
-- **A gap or a hatched strip:** you scrolled past a part without stopping. The panel's preview hatches anything you haven't covered, so scroll back over it before you press **Done**.
-- **A header that shows twice:** drag the area so it starts below the header and capture again.
-
 ## Something else is wrong
 
 Shot writes to the macOS log. Run this in Terminal while you try again:
