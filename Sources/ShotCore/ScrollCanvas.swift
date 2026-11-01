@@ -204,7 +204,7 @@ final class ScrollCanvas {
             var source = frame + ((tile.y + wy - at.y) * width + tile.x + clipped.x0 - at.x) * 4
             var destination = buffer + (wy - bounds.y0) * stride + (clipped.x0 - bounds.x0) * 4
             for _ in 0..<clipped.width {
-                if destination[3] != 255 {
+                if destination[3] != 255, !Self.isConverted(destination[3]) {
                     destination[0] = source[0]
                     destination[1] = source[1]
                     destination[2] = source[2]
@@ -228,7 +228,7 @@ final class ScrollCanvas {
         guard let buffer else {
             return
         }
-        let code = 240 + flags
+        let code = Self.convertedCode + flags
         let clipped = Bounds(x0: rect.x, y0: rect.y, x1: rect.x + rect.width, y1: rect.y + rect.height).intersection(bounds)
         guard !clipped.isEmpty else {
             return
@@ -245,14 +245,43 @@ final class ScrollCanvas {
         pinnedBounds[code] = pinnedBounds[code].map { $0.union(clipped) } ?? clipped
     }
 
-    /// Clears the sticky paint with `flags` in `rect`.
-    func clearPinned(rect: (x: Int, y: Int, width: Int, height: Int), flags: UInt8) {
-        clear(Bounds(x0: rect.x, y0: rect.y, x1: rect.x + rect.width, y1: rect.y + rect.height), code: 240 + flags)
+    /// Alpha codes for paint that began as content: it's sticky paint while the tile is sticky, and goes back to being
+    /// content when the tile turns out not to be.
+    static let convertedCode: UInt8 = 224
+    /// Converted paint stands: sticky paint doesn't overwrite it with a later frame's.
+    private static func isConverted(_ alpha: UInt8) -> Bool { alpha >= convertedCode && alpha < 240 }
+
+    /// Gives up the sticky paint with `flags` in `rect`, for a tile that proved not to stick: paint that began as
+    /// content is content again, which the page's blank margin under a bar needs, and paint copied from a frame at
+    /// the edge is cleared, for the content to fill in as it's seen.
+    func releasePinned(rect: (x: Int, y: Int, width: Int, height: Int), flags: UInt8) {
+        guard let buffer else {
+            return
+        }
+        let clipped = Bounds(x0: rect.x, y0: rect.y, x1: rect.x + rect.width, y1: rect.y + rect.height).intersection(bounds)
+        guard !clipped.isEmpty else {
+            return
+        }
+        for wy in clipped.y0..<clipped.y1 {
+            var p = buffer + (wy - bounds.y0) * stride + (clipped.x0 - bounds.x0) * 4
+            for _ in 0..<clipped.width {
+                if p[3] == Self.convertedCode + flags {
+                    p[3] = 255
+                } else if p[3] == 240 + flags {
+                    p[0] = 0
+                    p[1] = 0
+                    p[2] = 0
+                    p[3] = 0
+                }
+                p += 4
+            }
+        }
+        updateMip(clipped)
     }
 
     /// Clears every sticky paint anchored to any of the edges in `flags`, whose edge has moved.
     func clearPinned(anchoredTo flags: UInt8) {
-        for (code, extent) in pinnedBounds where (code - 240) & flags != 0 {
+        for (code, extent) in pinnedBounds where code & 15 & flags != 0 {
             clear(extent, code: code)
             pinnedBounds[code] = nil
         }
@@ -319,7 +348,7 @@ final class ScrollCanvas {
         var destination = buffer + (clipped.y0 - bounds.y0) * stride + (clipped.x0 - bounds.x0) * 4
         var any = false
         for _ in 0..<clipped.width {
-            if destination[3] != 255 {
+            if destination[3] != 255, !Self.isConverted(destination[3]) {
                 destination[0] = source[0]
                 destination[1] = source[1]
                 destination[2] = source[2]
@@ -485,7 +514,7 @@ final class ScrollCanvas {
                         q[2] = code
                     } else {
                         // Red for top, yellow for bottom, green for left, blue for right; mixed for corners.
-                        let flags = code - 240
+                        let flags = code & 15
                         q[0] = flags & 3 != 0 ? 220 : 40
                         q[1] = flags & 2 != 0 || flags & 4 != 0 ? 200 : 40
                         q[2] = flags & 8 != 0 ? 220 : 40

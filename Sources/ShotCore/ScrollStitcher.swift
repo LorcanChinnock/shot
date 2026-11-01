@@ -936,7 +936,7 @@ public final class ScrollStitcher {
                         return
                     }
                     let at = (x: anchorX(runFlags, extremes: before, position: previousPosition), y: anchorY(runFlags, extremes: before, position: previousPosition))
-                    canvas.clearPinned(rect: (at.x + x0, at.y + y, x1 - x0, 1), flags: runFlags)
+                    canvas.releasePinned(rect: (at.x + x0, at.y + y, x1 - x0, 1), flags: runFlags)
                 }
             } else {
                 // Only what this tile painted as content last frame: a part that was a band already went elsewhere.
