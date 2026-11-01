@@ -604,7 +604,7 @@ private struct GalleryTagRow: View {
                     GalleryTagManager(model: model)
                 }
                 ForEach(model.allTags, id: \.self) { tag in
-                    let on = model.tagFilter.contains(tag)
+                    let on = model.isFiltering(on: tag)
                     Button {
                         model.toggleTagFilter(tag)
                     } label: {

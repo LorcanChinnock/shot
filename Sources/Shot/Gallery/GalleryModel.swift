@@ -654,7 +654,9 @@ final class GalleryModel {
         if failed > 0 {
             Toast.error("Couldn't tag \(failed) files")
         }
-        tagFilter = tagFilter.filter { tag in allTags.contains { $0.caseInsensitiveCompare(tag) == .orderedSame } }
+        // A filter on a tag that's gone is dropped, and each one that's left takes the spelling the chips show, so two
+        // spellings of one tag are a single entry the chip can switch off.
+        tagFilter = Set(tagFilter.compactMap(shownSpelling))
     }
 
     /// Calls `tag` `typed` on every file that has it, or merges it into a tag of that name that's there already.
@@ -662,10 +664,10 @@ final class GalleryModel {
         guard let name = GalleryTags.tagName(typed), name != tag else {
             return
         }
-        let filtered = tagFilter.contains(tag)
+        let filtered = isFiltering(on: tag)
         apply(GalleryTags.renaming(tag, to: name, tagsOf: tags))
-        if filtered {
-            tagFilter.insert(name)
+        if filtered, let shown = shownSpelling(name) {
+            tagFilter.insert(shown)
         }
     }
 
@@ -685,8 +687,22 @@ final class GalleryModel {
         apply(GalleryTags.renaming(tag, to: nil, tagsOf: tags))
     }
 
+    /// `tag` as the chips spell it, or `nil` when no capture has it. Tags ignore case, as in Finder.
+    private func shownSpelling(_ tag: String) -> String? {
+        allTags.first { $0.caseInsensitiveCompare(tag) == .orderedSame }
+    }
+
+    /// Whether the grid is narrowed to `tag`, in whatever case it was picked.
+    func isFiltering(on tag: String) -> Bool {
+        tagFilter.contains { $0.caseInsensitiveCompare(tag) == .orderedSame }
+    }
+
     func toggleTagFilter(_ tag: String) {
-        tagFilter = tagFilter.symmetricDifference([tag])
+        if isFiltering(on: tag) {
+            tagFilter = tagFilter.filter { $0.caseInsensitiveCompare(tag) != .orderedSame }
+        } else {
+            tagFilter.insert(tag)
+        }
     }
 
     /// Moves the files to the Trash, where Finder can put them back, then selects the item that takes the first one's place.
