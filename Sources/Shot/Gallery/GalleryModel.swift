@@ -618,6 +618,7 @@ final class GalleryModel {
 
     /// Adds `tag` to every one of `items`, or takes it off them all when they all carry it.
     func toggleTag(_ tag: String, on items: [URL]) {
+        refreshTags(of: items)
         apply(GalleryTags.toggling(tag, on: items, tagsOf: tags))
     }
 
@@ -627,6 +628,7 @@ final class GalleryModel {
         guard !tag.isEmpty else {
             return
         }
+        refreshTags(of: items)
         // A tag typed in another case is the one already used, as in Finder.
         let existing = allTags.first { $0.caseInsensitiveCompare(tag) == .orderedSame } ?? tag
         var changed: [URL: [String]] = [:]
@@ -664,11 +666,28 @@ final class GalleryModel {
         guard let name = GalleryTags.tagName(typed), name != tag else {
             return
         }
-        let filtered = isFiltering(on: tag)
-        apply(GalleryTags.renaming(tag, to: name, tagsOf: tags))
-        if filtered, let shown = shownSpelling(name) {
-            tagFilter.insert(shown)
+        Task {
+            await refreshAllTags()
+            let filtered = isFiltering(on: tag)
+            apply(GalleryTags.renaming(tag, to: name, tagsOf: tags))
+            if filtered, let shown = shownSpelling(name) {
+                tagFilter.insert(shown)
+            }
         }
+    }
+
+    /// Reads the tags on `files` from the disk now. The cache can be behind a change made in Finder, and a tag list
+    /// written from a stale one would undo that change.
+    private func refreshTags(of files: [URL]) {
+        tags.merge(Dictionary(files.map { ($0, GalleryTags.tags(of: $0)) }) { _, new in new }) { _, new in new }
+    }
+
+    /// Reads the tags on every item from the disk, off the main actor, for a change that touches all the files with a tag.
+    private func refreshAllTags() async {
+        let urls = items.map(\.url)
+        tags = await Task.detached(priority: .userInitiated) {
+            Dictionary(urls.map { ($0, GalleryTags.tags(of: $0)) }) { _, new in new }
+        }.value
     }
 
     /// Asks, then takes `tag` off every file that has it. The files stay.
@@ -684,7 +703,10 @@ final class GalleryModel {
         guard alert.runModal() == .alertFirstButtonReturn else {
             return
         }
-        apply(GalleryTags.renaming(tag, to: nil, tagsOf: tags))
+        Task {
+            await refreshAllTags()
+            apply(GalleryTags.renaming(tag, to: nil, tagsOf: tags))
+        }
     }
 
     /// `tag` as the chips spell it, or `nil` when no capture has it. Tags ignore case, as in Finder.
