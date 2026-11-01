@@ -102,7 +102,7 @@ public final class ScrollStitcher {
     private var keyBytes = 0
     /// How far the area moves, as a share of its size, before another frame is kept.
     private var keySpacing = 6
-    private static let keyBudget = 600_000_000
+    private static let keyBudget = 400_000_000
     private var excludesPinned = false
     /// Per tile: whether it has detail and is identical in this frame and the last, which marks it as pinned.
     private var stayPut: [Bool]
