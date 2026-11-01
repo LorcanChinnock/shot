@@ -70,6 +70,7 @@ struct Score {
 }
 
 func run(_ dir: URL, outDir: URL) -> Score? {
+    let out = outDir
     guard let manifestData = try? Data(contentsOf: dir.appendingPathComponent("manifest.json")), let m = try? JSONDecoder().decode(Manifest.self, from: manifestData) else { return nil }
     var score = Score(name: m.name)
     let dpr = m.dpr
@@ -86,6 +87,9 @@ func run(_ dir: URL, outDir: URL) -> Score? {
             stitcher.process(ScrollFrame(width: fw, height: fh, bytesPerRow: fw * 4, pixels: raw))
         }
         statuses[update.status, default: 0] += 1
+        if let snap = ProcessInfo.processInfo.environment["SNAP"], snap.split(separator: ",").contains(Substring("\(i)")), m.name.contains(ProcessInfo.processInfo.environment["SNAPNAME"] ?? "?"), let image = stitcher.image() {
+            write(pixels(of: image), to: out.appendingPathComponent("\(m.name).snap\(i).png"))
+        }
         if ProcessInfo.processInfo.environment["DRIFT"].map({ m.name.contains($0) }) ?? false {
             // Where the stitcher put this frame against where the page really was, in device pixels from the first frame.
             let expected = (m.offsets[i].y - m.offsets[0].y) * Double(dpr), expectedX = (m.offsets[i].x - m.offsets[0].x) * Double(dpr)

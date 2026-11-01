@@ -629,7 +629,7 @@ public final class ScrollStitcher {
         let x = t % columns * tile + move.x, y = t / columns * tile + move.y
         let c0 = floorDivide(x, tile), r0 = floorDivide(y, tile)
         for r in r0...(r0 + (y - r0 * tile != 0 ? 1 : 0)) where r >= 0 && r < rows {
-            for c in c0...(c0 + (x - c0 * tile != 0 ? 1 : 0)) where c >= 0 && c < columns && stayPut[r * columns + c] {
+            for c in c0...(c0 + (x - c0 * tile != 0 ? 1 : 0)) where c >= 0 && c < columns && (stayPut[r * columns + c] || previousFlags[r * columns + c] != 0) {
                 return true
             }
         }
@@ -707,7 +707,13 @@ public final class ScrollStitcher {
     private func classify(shift: (x: Int, y: Int)) -> Bool {
         let hypotheses: [(x: Int, y: Int)] = [(shift.x, shift.y), (0, 0), (shift.x, 0), (0, shift.y)]
         var voted = false
+        let far = max(abs(shift.x), abs(shift.y)) >= tile
         for t in 0..<(columns * rows) where textured[t] {
+            // After a big move a pinned bar from the last frame lies in the middle of this one; what a tile there
+            // matches is the bar, which says nothing about whether the tile is pinned.
+            if far, pinnedBehind(t, move: shift) {
+                continue
+            }
             let rS = deviceResidual(tile: t, shift: hypotheses[0])
             let rZ = deviceResidual(tile: t, shift: hypotheses[1])
             let rX = deviceResidual(tile: t, shift: hypotheses[2])

@@ -27,8 +27,8 @@ const profiles = {
   reversal: () => { const o = []; let y = 0; for (const d of [260, -140, 330, -200, 420]) { const n = 18; for (let i = 1; i <= n; i++) o.push({ x: 0, y: y + d * i / n }); y += d; } return o; },
   // steady with a dropped frame (a double step) every fifth frame
   drops: () => { const o = []; let y = 0; for (let i = 0; i < 60; i++) { y += i % 5 === 4 ? 70 : 14; o.push({ x: 0, y }); } return o; },
-  // big jumps, each under three quarters of the view
-  jumps: () => steps(14, 0, 270),
+  // the fastest steps a flick makes at 30 frames a second: 150 points, a third of the area
+  jumps: () => steps(30, 0, 150),
   // fractional steps, as a trackpad gives
   fractional: () => Array.from({ length: 80 }, (_, i) => ({ x: 0, y: Math.round(i * 9.37 * 2) / 2 + 9 })),
   sideways: () => steps(60, 14, 0),
@@ -42,7 +42,7 @@ const scenarios = [
   ['article-flick', 'article', 'flick'], ['article-reversal', 'article', 'reversal'], ['article-drops', 'article', 'drops'],
   ['article-jumps', 'article', 'jumps'], ['article-fractional', 'article', 'fractional'], ['article-upward', 'article', 'upward'],
   ['glass-notches', 'article:translucent', 'notches'], ['glass-flick', 'article:translucent', 'flick'],
-  ['feed-bottom-bounce', 'feed', 'bottomBounce'], ['feed-top-bounce', 'feed', 'topBounce'], ['feed-flick-to-end', 'feed', 'flickToEnd'],
+  ['feed-bottom-bounce', 'feed', 'bottomBounce'], ['chat-bottom-bounce', 'chat', 'bottomBounce'], ['code-bottom-bounce', 'code', 'bottomBounce'], ['article-flick-to-end', 'article', 'flickToEnd'], ['feed-top-bounce', 'feed', 'topBounce'], ['feed-flick-to-end', 'feed', 'flickToEnd'],
   ['table-steady', 'table', 'steady'], ['table-sideways', 'table', 'sideways'], ['table-diagonal', 'table', 'diagonal'], ['table-drops', 'table', 'drops'],
   ['chat-steady', 'chat', 'steady'], ['chat-flick', 'chat', 'flick'], ['chat-notches', 'chat', 'notches'], ['chat-reversal', 'chat', 'reversal'],
   ['feed-steady', 'feed', 'steady'], ['feed-flick', 'feed', 'flick'], ['feed-notches', 'feed', 'notches'],
