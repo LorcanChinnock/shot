@@ -87,12 +87,14 @@ public final class ScrollStitcher {
     private var overshoot = ScrollOvershoot()
     /// Whether the image is built at the end from the frames kept along the way, which is more robust than the
     /// canvas painted as they came; off, it's the canvas.
-    public var composes = true
+    public var composes = ProcessInfo.processInfo.environment["NOCOMPOSE"] == nil
     private var keys: [ScrollKeyFrame] = []
     /// Tiles of the image that kept frames cover.
     private var keyCoverage = Set<Int>()
     /// The frame furthest left, right, up and down.
     private var furthest: [ScrollKeyFrame?] = [nil, nil, nil, nil]
+    private var reachingBefore = [true, true, true, true]
+    private var reach = (minX: 0, maxX: 0, minY: 0, maxY: 0)
     private var bandVotes: ScrollBandVotes
     /// The frame the next pair of votes is against, and where the area was for it.
     private let voteReference: UnsafeMutablePointer<UInt8>
@@ -1252,12 +1254,14 @@ public final class ScrollStitcher {
 
     /// Keeps the frame being processed, if the area has moved far enough from the last one kept.
     private func recordKey() {
-        // The frame furthest each way is held as well, in case it's the only one to see a corner.
-        let copy = { ScrollKeyFrame(x: self.position.x, y: self.position.y, pixels: Array(UnsafeBufferPointer(start: self.current, count: self.width * self.height * 4))) }
-        if furthest[0] == nil || position.x < furthest[0]!.x { furthest[0] = copy() }
-        if furthest[1] == nil || position.x > furthest[1]!.x { furthest[1] = copy() }
-        if furthest[2] == nil || position.y < furthest[2]!.y { furthest[2] = copy() }
-        if furthest[3] == nil || position.y > furthest[3]!.y { furthest[3] = copy() }
+        // The frame furthest each way is held as well, in case it's the only one to see a corner. It's the last frame
+        // while the area keeps going that way, which is always in, so it's only copied when the next one doesn't go as far.
+        let reaching = [position.x < reach.minX, position.x > reach.maxX, position.y < reach.minY, position.y > reach.maxY]
+        for i in 0..<4 where reachingBefore[i] && !reaching[i] && frames > 1 {
+            furthest[i] = ScrollKeyFrame(x: previousPosition.x, y: previousPosition.y, pixels: Array(UnsafeBufferPointer(start: previous, count: width * height * 4)))
+        }
+        reachingBefore = reaching
+        reach = (min(reach.minX, position.x), max(reach.maxX, position.x), min(reach.minY, position.y), max(reach.maxY, position.y))
         // A frame is kept once the area has moved a fair way from the last one kept, or if it's the first to see a good
         // part of the image, as at a corner reached by a diagonal move.
         let tile = 16
@@ -1293,7 +1297,7 @@ public final class ScrollStitcher {
     /// The image over `bounds` from the frames kept, pinned parts found from all of them; nil when it can't be built.
     private func composed(over bounds: ScrollCanvas.Bounds, excludingBeyond limit: ScrollCanvas.Bounds) -> [UInt8]? {
         var all = keys
-        for held in furthest.compactMap({ $0 }) where !all.contains(where: { $0.x == held.x && $0.y == held.y }) {
+        for held in (0..<4).compactMap({ extremeFrame($0) }) where !all.contains(where: { $0.x == held.x && $0.y == held.y }) {
             all.append(held)
         }
         // The last frame that lined up is always in, wherever it falls between the spacing.
@@ -1313,10 +1317,18 @@ public final class ScrollStitcher {
         return ScrollComposer.compose(keys: all, width: width, height: height, bounds: bounds, bands: bands, blobs: blobs, edge: Self.barWidth * scale)
     }
 
+    /// The frame furthest left, right, up or down (0 to 3): the last one while the area is still going that way.
+    private func extremeFrame(_ i: Int) -> ScrollKeyFrame? {
+        if reachingBefore[i] {
+            return ScrollKeyFrame(x: position.x, y: position.y, pixels: Array(UnsafeBufferPointer(start: previous, count: width * height * 4)))
+        }
+        return furthest[i]
+    }
+
     /// Whether the rows or columns `base..<reach` past the origin on `edge` are flat in the frame that went furthest
     /// that way.
     private func flatBeyond(edge: Int, base: Int, reach: Int) -> Bool {
-        guard let frame = furthest[edge < 2 ? (edge == 0 ? 2 : 3) : (edge == 2 ? 0 : 1)] else {
+        guard let frame = extremeFrame(edge < 2 ? (edge == 0 ? 2 : 3) : (edge == 2 ? 0 : 1)) else {
             return false
         }
         switch edge {

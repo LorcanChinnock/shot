@@ -56,7 +56,31 @@ struct ScrollBandVotes: Sendable {
         mapStays = mapVotes
     }
 
+    @_optimize(speed)
+    @inline(__always)
+    private static func residual(_ a: UnsafePointer<UInt8>, _ b: UnsafePointer<UInt8>, _ width: Int, _ height: Int, _ ia: Int, _ ub: Int, _ vb: Int) -> Int32 {
+        guard ub >= 0, ub < width, vb >= 0, vb < height else {
+            return 255
+        }
+        let ib = (vb * width + ub) * 4
+        return Int32(abs(Int(a[ia]) - Int(b[ib])) + abs(Int(a[ia + 1]) - Int(b[ib + 1])) + abs(Int(a[ia + 2]) - Int(b[ib + 2]))) / 3
+    }
+
+    /// The same test from the second frame's side: its pixel here against the first frame a move on. A pixel that
+    /// seems to have stayed only because where it would have gone is hidden, as just beside a pinned column, looks
+    /// just as much like it followed from this side; one that is pinned doesn't.
+    @_optimize(speed)
+    @inline(__always)
+    private static func reverse(_ a: UnsafePointer<UInt8>, _ b: UnsafePointer<UInt8>, _ width: Int, _ height: Int, _ ib: Int, _ ua: Int, _ va: Int) -> Int32 {
+        guard ua >= 0, ua < width, va >= 0, va < height else {
+            return 255
+        }
+        let ia = (va * width + ua) * 4
+        return Int32(abs(Int(b[ib]) - Int(a[ia])) + abs(Int(b[ib + 1]) - Int(a[ia + 1])) + abs(Int(b[ib + 2]) - Int(a[ia + 2]))) / 3
+    }
+
     /// Takes the pair `a`, `b`, where `b` is the area `shift` pixels on from `a`.
+    @_optimize(speed)
     mutating func add(from a: UnsafePointer<UInt8>, to b: UnsafePointer<UInt8>, shift: (x: Int, y: Int), scale: Int) {
         let step = 2
         let minimumMove = max(12, 6 * scale)
@@ -64,25 +88,7 @@ struct ScrollBandVotes: Sendable {
         guard useY || useX else {
             return
         }
-        let far: Int32 = 255
         let width = width, height = height
-        @inline(__always) func residual(_ ia: Int, _ ub: Int, _ vb: Int) -> Int32 {
-            guard ub >= 0, ub < width, vb >= 0, vb < height else {
-                return far
-            }
-            let ib = (vb * width + ub) * 4
-            return Int32(abs(Int(a[ia]) - Int(b[ib])) + abs(Int(a[ia + 1]) - Int(b[ib + 1])) + abs(Int(a[ia + 2]) - Int(b[ib + 2]))) / 3
-        }
-        // The same test from the second frame's side: its pixel here against the first frame a move on. A pixel that
-        // seems to have stayed only because where it would have gone is hidden, as just beside a pinned column, looks
-        // just as much like it followed from this side; one that is pinned doesn't.
-        @inline(__always) func reverse(_ ib: Int, _ ua: Int, _ va: Int) -> Int32 {
-            guard ua >= 0, ua < width, va >= 0, va < height else {
-                return far
-            }
-            let ia = (va * width + ua) * 4
-            return Int32(abs(Int(b[ib]) - Int(a[ia])) + abs(Int(b[ib + 1]) - Int(a[ia + 1])) + abs(Int(b[ib + 2]) - Int(a[ia + 2]))) / 3
-        }
         for v in stride(from: 0, to: height - step, by: step) {
             for u in stride(from: 0, to: width - step, by: step) {
                 let ia = (v * width + u) * 4
@@ -92,17 +98,17 @@ struct ScrollBandVotes: Sendable {
                 guard detail >= 36 else {
                     continue
                 }
-                let stay = residual(ia, u, v), follow = residual(ia, u - shift.x, v - shift.y)
-                let stayOnlyY = residual(ia, u - shift.x, v), stayOnlyX = residual(ia, u, v - shift.y)
+                let stay = Self.residual(a, b, width, height, ia, u, v), follow = Self.residual(a, b, width, height, ia, u - shift.x, v - shift.y)
+                let stayOnlyY = Self.residual(a, b, width, height, ia, u - shift.x, v), stayOnlyX = Self.residual(a, b, width, height, ia, u, v - shift.y)
                 let cell = (v / step) * (width / step) + u / step
                 let ib = ia
                 if useY {
-                    let back = min(reverse(ib, u + shift.x, v + shift.y), reverse(ib, u, v + shift.y))
+                    let back = min(Self.reverse(a, b, width, height, ib, u + shift.x, v + shift.y), Self.reverse(a, b, width, height, ib, u, v + shift.y))
                     Self.vote(stay: min(stay, stayOnlyY), follow: min(follow, stayOnlyX), back: back, votes: &votesY[v], stays: &stayY[v])
                     Self.vote(stay: min(stay, stayOnlyY), follow: min(follow, stayOnlyX), back: back, votes: &mapVotes[cell], stays: &mapStays[cell])
                 }
                 if useX {
-                    let back = min(reverse(ib, u + shift.x, v + shift.y), reverse(ib, u + shift.x, v))
+                    let back = min(Self.reverse(a, b, width, height, ib, u + shift.x, v + shift.y), Self.reverse(a, b, width, height, ib, u + shift.x, v))
                     Self.vote(stay: min(stay, stayOnlyX), follow: min(follow, stayOnlyY), back: back, votes: &votesX[u], stays: &stayX[u])
                     Self.vote(stay: min(stay, stayOnlyX), follow: min(follow, stayOnlyY), back: back, votes: &mapVotes[cell], stays: &mapStays[cell])
                 }
@@ -112,6 +118,7 @@ struct ScrollBandVotes: Sendable {
 
     /// The pinned parts outside the bands: pixels that stayed in nearly every vote, joined into parts when they're close
     /// together, each boxed. A part stays with the corner of the image it's nearest.
+    @_optimize(speed)
     func blobs(bands: ScrollBands, scale: Int) -> [ScrollBlob] {
         let step = Self.step
         let columns = width / step, rows = height / step
@@ -256,6 +263,7 @@ enum ScrollComposer {
     /// The image over `bounds`, in the frames' byte order with alpha 255 where something was seen and 0 where not.
     /// A pixel is what most of the frames that saw it agree on, preferring the one that saw it nearest their middle,
     /// where a bar or a shadow at an edge can't reach. Where only a pinned band saw it, the band's.
+    @_optimize(speed)
     static func compose(keys: [ScrollKeyFrame], width: Int, height: Int, bounds: ScrollCanvas.Bounds, bands: ScrollBands, blobs: [ScrollBlob] = [], edge: Int = 0) -> [UInt8]? {
         let outWidth = bounds.width, outHeight = bounds.height
         guard outWidth > 0, outHeight > 0, !keys.isEmpty, keys.allSatisfy({ $0.pixels.count == width * height * 4 }) else {
@@ -281,15 +289,23 @@ enum ScrollComposer {
         func anchoredX(_ u: Int) -> Int { columnBand[u] == 1 ? u : outWidth - (width - u) }
         func anchoredY(_ v: Int) -> Int { rowBand[v] == 1 ? v : outHeight - (height - v) }
 
-        var colors = [UInt32](repeating: 0, count: stripe * outWidth * k * 2)
-        var weights = [UInt8](repeating: 0, count: stripe * outWidth * k * 2)
-        var counts = [UInt8](repeating: 0, count: stripe * outWidth * 2)
+        // Raw buffers, since this runs over every pixel of every frame and arrays captured by closures are slow.
+        let slots = stripe * outWidth * 2
+        let colors = UnsafeMutablePointer<UInt32>.allocate(capacity: slots * k)
+        let weights = UnsafeMutablePointer<UInt8>.allocate(capacity: slots * k)
+        let counts = UnsafeMutablePointer<UInt8>.allocate(capacity: slots)
+        colors.initialize(repeating: 0, count: slots * k)
+        weights.initialize(repeating: 0, count: slots * k)
+        counts.initialize(repeating: 0, count: slots)
+        defer {
+            colors.deallocate()
+            weights.deallocate()
+            counts.deallocate()
+        }
         var y0 = 0
         while y0 < outHeight {
             let y1 = min(outHeight, y0 + stripe)
-            for i in counts.indices {
-                counts[i] = 0
-            }
+            counts.update(repeating: 0, count: slots)
             let layer = stripe * outWidth
             for key in keys {
                 key.pixels.withUnsafeBufferPointer { frame in
@@ -378,6 +394,7 @@ enum ScrollComposer {
         return out
     }
 
+    @_optimize(speed)
     @inline(__always) private static func close(_ a: UInt32, _ b: UInt32) -> Bool {
         let d0 = abs(Int(a & 255) - Int(b & 255)), d1 = abs(Int((a >> 8) & 255) - Int((b >> 8) & 255)), d2 = abs(Int((a >> 16) & 255) - Int((b >> 16) & 255))
         return d0 + d1 + d2 <= agreeing
@@ -385,7 +402,8 @@ enum ScrollComposer {
 
     /// The sample most of the others agree with; of equals, the one seen nearest the middle of its frame. With a
     /// `near` colour, the sample closest to it if one is close and the samples disagree.
-    private static func consensus(_ colors: [UInt32], _ weights: [UInt8], _ start: Int, _ n: Int, near: UInt32? = nil) -> UInt32 {
+    @_optimize(speed)
+    private static func consensus(_ colors: UnsafeMutablePointer<UInt32>, _ weights: UnsafeMutablePointer<UInt8>, _ start: Int, _ n: Int, near: UInt32? = nil) -> UInt32 {
         if n == 1 {
             return colors[start]
         }
@@ -458,6 +476,7 @@ enum ScrollComposer {
     }
 
     /// Whether the pixels of `frame` in the box are one flat colour.
+    @_optimize(speed)
     static func isFlat(_ frame: [UInt8], width: Int, height: Int, x0: Int, y0: Int, x1: Int, y1: Int) -> Bool {
         let x0 = max(0, x0), y0 = max(0, y0), x1 = min(width, x1), y1 = min(height, y1)
         guard x1 > x0, y1 > y0, frame.count == width * height * 4 else {
