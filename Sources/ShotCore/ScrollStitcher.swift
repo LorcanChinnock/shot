@@ -254,7 +254,7 @@ public final class ScrollStitcher {
         let classified = classify(shift: shift)
         lap("classify")
         if !moved {
-            overshoot.update(frame: frames, before: extremes, after: extremes, position: position, width: width, height: height, scale: scale, isBlank: canvas.isBlank)
+            overshoot.update(frame: frames, before: extremes, after: extremes, position: position, width: width, height: height, scale: scale)
             if status.isWarning {
                 status = .live
             }
@@ -270,7 +270,7 @@ public final class ScrollStitcher {
         extremes.maxX = max(extremes.maxX, position.x)
         extremes.minY = min(extremes.minY, position.y)
         extremes.maxY = max(extremes.maxY, position.y)
-        overshoot.update(frame: frames, before: before, after: extremes, position: position, width: width, height: height, scale: scale, isBlank: canvas.isBlank)
+        overshoot.update(frame: frames, before: before, after: extremes, position: position, width: width, height: height, scale: scale)
         if classified {
             assignFlags()
         }
@@ -1222,13 +1222,20 @@ public final class ScrollStitcher {
 
     /// The stitched image: every pixel seen, with the rest clear. `colorSpace` is the frames'.
     public func image(colorSpace: CGColorSpace? = nil) -> CGImage? {
-        overshoot.finish(width: width, height: height, isBlank: canvas.isBlank)
+        overshoot.finish(width: width, height: height)
         let space = colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)!
-        let bounds = canvas.seen.map { overshoot.kept(of: $0) }
-        if composes, frames > 1, let bounds, let composed = composedImage(bounds: bounds, colorSpace: space) {
-            return composed
+        guard let seen = canvas.seen else {
+            return nil
         }
-        return canvas.image(byteOrder: byteOrder, colorSpace: space, keeping: bounds)
+        if composes, frames > 1 {
+            // A bounce is cut when what it pulled in is flat in the frame that went furthest, which has the background
+            // and nothing else past the page's end; frames that went past where the area rested are then left out.
+            let kept = overshoot.kept(of: seen) { edge, base, reach in flatBeyond(edge: edge, base: base, reach: reach) }
+            if let composed = composed(over: kept, excludingBeyond: kept) {
+                return croppedImage(composed, over: kept, to: kept, colorSpace: space)
+            }
+        }
+        return canvas.image(byteOrder: byteOrder, colorSpace: space, keeping: overshoot.kept(of: seen) { edge, base, reach in canvas.isBlank(ScrollOvershoot.region(edge, base: base, reach: reach)) })
     }
 
     /// Votes on what's pinned between the last reference and this frame once the area has moved a little from it, then
@@ -1283,8 +1290,8 @@ public final class ScrollStitcher {
         }
     }
 
-    /// The image from the frames kept, pinned parts found from all of them; nil when it can't be built.
-    private func composedImage(bounds: ScrollCanvas.Bounds, colorSpace: CGColorSpace) -> CGImage? {
+    /// The image over `bounds` from the frames kept, pinned parts found from all of them; nil when it can't be built.
+    private func composed(over bounds: ScrollCanvas.Bounds, excludingBeyond limit: ScrollCanvas.Bounds) -> [UInt8]? {
         var all = keys
         for held in furthest.compactMap({ $0 }) where !all.contains(where: { $0.x == held.x && $0.y == held.y }) {
             all.append(held)
@@ -1293,15 +1300,49 @@ public final class ScrollStitcher {
         if !all.contains(where: { $0.x == position.x && $0.y == position.y }) {
             all.append(ScrollKeyFrame(x: position.x, y: position.y, pixels: Array(UnsafeBufferPointer(start: previous, count: width * height * 4))))
         }
+        // Frames that went past where the area came to rest are the bounce, and their bars may have moved with it.
+        let rested = all.filter { $0.x >= limit.x0 - 1 && $0.y >= limit.y0 - 1 && $0.x + width <= limit.x1 + 1 && $0.y + height <= limit.y1 + 1 }
+        if !rested.isEmpty {
+            all = rested
+        }
         guard bounds.width * bounds.height <= ScrollCaptureLimits.standard.maxPixels else {
             return nil
         }
         let bands = bandVotes.bands(scale: scale)
         let blobs = bandVotes.blobs(bands: bands, scale: scale)
-        guard let pixels = ScrollComposer.compose(keys: all, width: width, height: height, bounds: bounds, bands: bands, blobs: blobs, edge: Self.barWidth * scale) else {
+        return ScrollComposer.compose(keys: all, width: width, height: height, bounds: bounds, bands: bands, blobs: blobs, edge: Self.barWidth * scale)
+    }
+
+    /// Whether the rows or columns `base..<reach` past the origin on `edge` are flat in the frame that went furthest
+    /// that way.
+    private func flatBeyond(edge: Int, base: Int, reach: Int) -> Bool {
+        guard let frame = furthest[edge < 2 ? (edge == 0 ? 2 : 3) : (edge == 2 ? 0 : 1)] else {
+            return false
+        }
+        switch edge {
+        case 0: return ScrollComposer.isFlat(frame.pixels, width: width, height: height, x0: 0, y0: -reach - frame.y, x1: width, y1: -base - frame.y)
+        case 1: return ScrollComposer.isFlat(frame.pixels, width: width, height: height, x0: 0, y0: base - frame.y, x1: width, y1: reach - frame.y)
+        case 2: return ScrollComposer.isFlat(frame.pixels, width: width, height: height, x0: -reach - frame.x, y0: 0, x1: -base - frame.x, y1: height)
+        default: return ScrollComposer.isFlat(frame.pixels, width: width, height: height, x0: base - frame.x, y0: 0, x1: reach - frame.x, y1: height)
+        }
+    }
+
+    /// The part of the composed image `pixels`, which covers `bounds`, that lies in `kept`.
+    private func croppedImage(_ pixels: [UInt8], over bounds: ScrollCanvas.Bounds, to kept: ScrollCanvas.Bounds, colorSpace: CGColorSpace) -> CGImage? {
+        let area = kept.intersection(bounds)
+        guard !area.isEmpty else {
             return nil
         }
-        return ScrollCanvas.makeImage(Data(pixels), width: bounds.width, height: bounds.height, byteOrder: byteOrder, colorSpace: colorSpace)
+        var data = Data(count: area.width * area.height * 4)
+        data.withUnsafeMutableBytes { out in
+            pixels.withUnsafeBufferPointer { source in
+                for y in 0..<area.height {
+                    let from = ((area.y0 + y - bounds.y0) * bounds.width + area.x0 - bounds.x0) * 4
+                    memcpy(out.baseAddress! + y * area.width * 4, source.baseAddress! + from, area.width * 4)
+                }
+            }
+        }
+        return ScrollCanvas.makeImage(data, width: area.width, height: area.height, byteOrder: byteOrder, colorSpace: colorSpace)
     }
 }
 

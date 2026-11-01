@@ -425,4 +425,59 @@ enum ScrollComposer {
         }
         return colors[start + best]
     }
+
+    /// Whether the seen pixels of `rect` in the composed image `pixels`, which covers `bounds`, are one flat colour.
+    static func isBlank(_ pixels: [UInt8], bounds: ScrollCanvas.Bounds, rect: ScrollCanvas.Bounds) -> Bool {
+        let area = rect.intersection(bounds)
+        guard !area.isEmpty else {
+            return false
+        }
+        var reference: (Int, Int, Int)?
+        var counted = 0, differing = 0
+        var wy = area.y0
+        while wy < area.y1 {
+            var wx = area.x0
+            while wx < area.x1 {
+                let i = ((wy - bounds.y0) * bounds.width + wx - bounds.x0) * 4
+                if pixels[i + 3] == 255 {
+                    let color = (Int(pixels[i]), Int(pixels[i + 1]), Int(pixels[i + 2]))
+                    if let reference {
+                        counted += 1
+                        if abs(color.0 - reference.0) + abs(color.1 - reference.1) + abs(color.2 - reference.2) > 24 {
+                            differing += 1
+                        }
+                    } else {
+                        reference = color
+                    }
+                }
+                wx += 3
+            }
+            wy += 2
+        }
+        return counted >= 20 && differing * 50 <= counted
+    }
+
+    /// Whether the pixels of `frame` in the box are one flat colour.
+    static func isFlat(_ frame: [UInt8], width: Int, height: Int, x0: Int, y0: Int, x1: Int, y1: Int) -> Bool {
+        let x0 = max(0, x0), y0 = max(0, y0), x1 = min(width, x1), y1 = min(height, y1)
+        guard x1 > x0, y1 > y0, frame.count == width * height * 4 else {
+            return false
+        }
+        let reference = (Int(frame[(y0 * width + x0) * 4]), Int(frame[(y0 * width + x0) * 4 + 1]), Int(frame[(y0 * width + x0) * 4 + 2]))
+        var counted = 0, differing = 0
+        var y = y0
+        while y < y1 {
+            var x = x0
+            while x < x1 {
+                let i = (y * width + x) * 4
+                counted += 1
+                if abs(Int(frame[i]) - reference.0) + abs(Int(frame[i + 1]) - reference.1) + abs(Int(frame[i + 2]) - reference.2) > 24 {
+                    differing += 1
+                }
+                x += 3
+            }
+            y += 2
+        }
+        return counted >= 20 && differing * 50 <= counted
+    }
 }

@@ -53,7 +53,7 @@ struct ScrollOvershoot {
     }
 
     /// The world rectangle that rows `base..<reach` past the origin on `edge` take up.
-    private static func region(_ edge: Int, base: Int, reach: Int) -> ScrollCanvas.Bounds {
+    static func region(_ edge: Int, base: Int, reach: Int) -> ScrollCanvas.Bounds {
         let huge = 1 << 30
         switch edge {
         case 0: return ScrollCanvas.Bounds(x0: -huge, y0: -reach, x1: huge, y1: -base)
@@ -64,7 +64,7 @@ struct ScrollOvershoot {
     }
 
     /// Takes one frame: the image's extremes before and after it, and where the area is now.
-    mutating func update(frame: Int, before: Extremes, after: Extremes, position: (x: Int, y: Int), width: Int, height: Int, scale: Int, isBlank: (ScrollCanvas.Bounds) -> Bool) {
+    mutating func update(frame: Int, before: Extremes, after: Extremes, position: (x: Int, y: Int), width: Int, height: Int, scale: Int) {
         let drift = Int((Self.drift * Double(scale)).rounded(.down))
         for edge in 0..<4 {
             let was = Self.reach(before, edge: edge, width: width, height: height)
@@ -88,7 +88,7 @@ struct ScrollOvershoot {
             }
             if run.returning, run.stillFrames >= Self.stillNeeded {
                 let limit = (edge < 2 ? height : width) / Self.share
-                if run.reach - view > 0, run.reach - view <= limit, isBlank(Self.region(edge, base: view, reach: run.reach)) {
+                if run.reach - view > 0, run.reach - view <= limit {
                     trims[edge].append((view, run.reach))
                 }
                 pending[edge] = nil
@@ -99,25 +99,26 @@ struct ScrollOvershoot {
     }
 
     /// Settles the bounces still under way when the capture ends, as the person pressing Return does while one is.
-    mutating func finish(width: Int, height: Int, isBlank: (ScrollCanvas.Bounds) -> Bool) {
+    mutating func finish(width: Int, height: Int) {
         for edge in 0..<4 {
             guard let run = pending[edge], run.returning else {
                 continue
             }
             let limit = (edge < 2 ? height : width) / Self.share
-            if run.reach - run.lastView > 0, run.reach - run.lastView <= limit, isBlank(Self.region(edge, base: run.lastView, reach: run.reach)) {
+            if run.reach - run.lastView > 0, run.reach - run.lastView <= limit {
                 trims[edge].append((run.lastView, run.reach))
             }
             pending[edge] = nil
         }
     }
 
-    /// What of the image to keep: `seen` without the bounced rows that are still its outermost.
-    func kept(of seen: ScrollCanvas.Bounds) -> ScrollCanvas.Bounds {
+    /// What of the image to keep: `seen` without the bounced rows that are still its outermost and have nothing in
+    /// them, as `isBlank` says of the image as it would be without cutting.
+    func kept(of seen: ScrollCanvas.Bounds, isBlank: (_ edge: Int, _ base: Int, _ reach: Int) -> Bool) -> ScrollCanvas.Bounds {
         var kept = seen
         func settle(_ edge: Int, _ start: Int) -> Int {
             var current = start
-            while let trim = trims[edge].first(where: { $0.reach == current }) {
+            while let trim = trims[edge].first(where: { $0.reach == current && isBlank(edge, $0.base, $0.reach) }) {
                 current = trim.base
             }
             return current
