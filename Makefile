@@ -13,7 +13,7 @@ INSTALL_DIR ?= /Applications
 # Extra `swift test` flags, e.g. ARGS=--skip-build in CI.
 ARGS ?=
 
-.PHONY: build test test-install perf-app lint strings bundle app run demo dist reset-tcc icon clean
+.PHONY: build test test-install test-uninstall perf-app lint strings bundle app run demo dist reset-tcc icon clean
 
 build:
 	swift build
@@ -24,6 +24,10 @@ test:
 # Runs site/public/install.sh against a local folder standing in for the GitHub release.
 test-install:
 	scripts/test-install.sh
+
+# Runs site/public/uninstall.sh against a fake home folder.
+test-uninstall:
+	scripts/test-uninstall.sh
 
 perf-app:
 	scripts/perf.sh

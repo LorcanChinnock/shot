@@ -55,7 +55,7 @@ Sources/Shot/         The app: capture, selection overlay, Quick Access, editor,
 Tests/ShotCoreTests/  ShotCore's Swift Testing suite, and its performance budgets
 Resources/            Info.plist, the app icon and the string catalogs
 scripts/              Bundling, install, signing certificate, icon, lint, performance
-                      checks, and the installer's test
+                      checks, and the install and uninstall tests
 docs/                 Screenshots for the README and the user guide, and the demo app they show
 site/                 The website (see site/README.md)
 ```
@@ -106,7 +106,7 @@ Before a release, run `make app` and then `make perf-app`, which CI can't run be
 2. The release pull request's CI is the release gate: it runs the checks every pull request gets. It runs again on every push to the pull request, and the pull request can't merge until it passes.
    - A repository admin merges the release pull request by hand. The repository has auto-merge turned off.
    - If the gate fails, fix it in a normal pull request first. release-please only updates the release pull request for changes that appear in the changelog, so after a `test:`, `ci:` or `docs:` fix, run `gh pr update-branch <number>` on the release pull request to run the gate again.
-3. The merge tags the release (`v0.7.0-beta.36`, say) and creates a draft GitHub release. The release workflow runs the tests again on the tagged commit, since a commit merged after the gate passed may have changed it. At the same time it builds `Shot-<tag>.zip` and signs it for Sparkle. Once both finish, it attaches the zip with `appcast.xml`, the update feed, and only then publishes the release, so the latest release always has a feed. Installed copies read the feed from the latest release. Last, the workflow rebuilds the website. `site/public/install.sh`, the command on the download page, reads the latest release's `SHA256SUMS` and zip, so it needs no change per release.
+3. The merge tags the release (`v0.7.0-beta.36`, say) and creates a draft GitHub release. The release workflow runs the tests again on the tagged commit, since a commit merged after the gate passed may have changed it. At the same time it builds `Shot-<tag>.zip` and signs it for Sparkle. Once both finish, it attaches the zip with `appcast.xml`, the update feed, and only then publishes the release, so the latest release always has a feed. Installed copies read the feed from the latest release. Last, the workflow rebuilds the website. `site/public/install.sh`, the command on the download page, reads the latest release's `SHA256SUMS` and zip, so it needs no change per release. `site/public/uninstall.sh` removes what Shot keeps on a Mac, so add any new folder Shot writes to it and to the Removing Shot guide.
 
 To force a particular version, add a `Release-As: X.Y.Z` line to the body of a commit on `main`.
 
