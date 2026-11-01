@@ -1,17 +1,17 @@
 ---
 name: shot-capture-session
-description: Drive ShotDev and the ShotDemo sample app with computer use to QA a change or reshoot guide media in docs/media. Use for "reshoot", "update the screenshots", "check it in the running app", or any task that needs screenshots of Shot's own windows.
+description: Drive ShotDev with computer use, using the ShotDemo sample app to reshoot guide media in docs/media. Use for "reshoot", "update the screenshots", "re-record the GIFs", or any task that needs pictures of Shot's own windows for the guide or site. For QA runs, use the same steps with the MugCo sample app (`make demo`) instead of ShotDemo.
 ---
 
 # Driving Shot with computer use
 
-Read CLAUDE.md's "Running and testing locally" first. This skill adds what goes wrong when computer use drives Shot.
+Read CLAUDE.md's "Running and testing locally" and "Capturing something in QA and screenshots" first. ShotDemo is only for the media in `docs/media`. QA runs and one-off captures use MugCo (`make demo`, window "Mug Co. Support", process `MugCo`). This skill adds what goes wrong when computer use drives Shot, and it applies to both.
 
 ## Set up
 
 1. **Quit the release and build the dev app:** `pkill -x Shot`, then `make run`. Confirm with `pgrep -lf ShotDev`.
 2. **Wrap ShotDemo in an app bundle.** `swift run ShotDemo` makes a bare executable, and `request_access` rejects it as "not installed or running". Build it with `cd docs/demo && swift build -c release`, then make `ShotDemo.app` in the scratchpad (not the repo): `Contents/MacOS/ShotDemo` is the binary, `Contents/Info.plist` sets `CFBundleIdentifier` `dev.lorcan.ShotDemo`, `CFBundleExecutable`, `CFBundleName` and `CFBundlePackageType` `APPL`, then `codesign -s - --force`. Launch it with `open ShotDemo.app --args --scene article --appearance light`. Scenes are listed in `docs/demo/README.md`.
-3. **Request access by name or bundle id:** `ShotDemo`, and `dev.lorcan.Shot.dev` for ShotDev, whose menu bar app doesn't resolve by its display name. Don't request a terminal: it is click-only and can't type.
+3. **Request access by name or bundle id:** `ShotDemo` (or `MugCo` for a QA run, wrapping it the same way if the request says it isn't installed or running), and `dev.lorcan.Shot.dev` for ShotDev, whose menu bar app doesn't resolve by its display name. Don't request a terminal: it is click-only and can't type.
 4. **First launch needs the user.** ShotDev starts on the welcome window and macOS needs Screen Recording turned on for it. Never change that setting yourself. Ask the user to grant it and relaunch. `make reset-tcc` undoes it, so avoid that.
 
 ## Drive it
