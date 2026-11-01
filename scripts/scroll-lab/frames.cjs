@@ -80,7 +80,7 @@ const scenarios = [
     // clamp, as a real scroller does
     const clamped = offsets.map(o => ({ x: Math.min(Math.max(o.x, 0), max.x), y: Math.min(Math.max(o.y, 0), max.y), over: o.over || 0 }));
     // How much of the viewport's top and bottom the pinned parts take at rest, and where the page ends.
-    const pins = await page.evaluate(() => { const v = innerHeight; let top = 0, bottom = 0; for (const e of document.querySelectorAll('.pin.fixedonly')) { const r = e.getBoundingClientRect(); if (r.bottom > v - 120) bottom = Math.max(bottom, v - r.top); } for (const e of document.querySelectorAll('.pin:not(.fixedonly)')) { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); if (cs.position !== 'sticky') continue; if (cs.top !== 'auto' && r.height < v / 2 && r.width > innerWidth / 2) top = Math.max(top, r.bottom); if (cs.bottom !== 'auto' && r.width > innerWidth / 2) bottom = Math.max(bottom, v - r.top); } return { top, bottom }; });
+    const pins = await page.evaluate(() => { const v = innerHeight, w = innerWidth; let top = 0, bottom = 0, left = 0, right = 0; for (const e of document.querySelectorAll('.pin')) { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); if (e.classList.contains('fixedonly')) { if (r.bottom > v - 120) bottom = Math.max(bottom, v - r.top); continue; } if (cs.position !== 'sticky') continue; if (cs.top !== 'auto' && r.top <= 1 && r.height < v / 2) top = Math.max(top, r.bottom); if (cs.bottom !== 'auto' && r.bottom >= v - 1 && r.height < v / 2) bottom = Math.max(bottom, v - r.top); if (cs.left !== 'auto' && r.left <= 1 && r.width < w / 2) left = Math.max(left, r.right); if (cs.right !== 'auto' && r.right >= w - 1 && r.width < w / 2) right = Math.max(right, w - r.left); } return { top, bottom, left, right }; });
     const start = profile === 'upward' ? { x: 0, y: 560 } : profile === 'topBounce' ? { x: 0, y: 300 } : profile === 'flickToEnd' ? { x: 0, y: max.y - 700 } : { x: 0, y: 0 };
     const all = [start, ...clamped];
     await page.evaluate((s) => scrollTo(s.x, s.y), start);
@@ -89,7 +89,7 @@ const scenarios = [
       await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
       await page.screenshot({ path: path.join(dir, `f${String(i).padStart(4, '0')}.png`) });
     }
-    fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify({ name, truth: truthPath, dpr: DPR, view: VIEW, offsets: all, pinTop: pins.top, pinBottom: pins.bottom, maxX: max.x, maxY: max.y }, null, 1));
+    fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify({ name, truth: truthPath, dpr: DPR, view: VIEW, offsets: all, pinTop: pins.top, pinBottom: pins.bottom, pinLeft: pins.left, pinRight: pins.right, maxX: max.x, maxY: max.y }, null, 1));
     console.log('rendered', name, all.length, 'frames');
   }
   await browser.close();

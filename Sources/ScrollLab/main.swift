@@ -18,6 +18,8 @@ struct Manifest: Decodable {
     var offsets: [Point]
     var pinTop: Double?
     var pinBottom: Double?
+    var pinLeft: Double?
+    var pinRight: Double?
     var maxX: Double?
     var maxY: Double?
 }
@@ -108,9 +110,22 @@ func run(_ dir: URL, outDir: URL) -> Score? {
     let cell = 8
     let cw = (ew + cell - 1) / cell, ch = (eh + cell - 1) / cell
     var covered = [Bool](repeating: false, count: cw * ch)
+    // A frame shows what's under a pinned band only where the view is at that edge of the page, so away from it the
+    // band hides what lies behind it.
+    let lowX = m.offsets.map(\.x).min()!, highX = m.offsets.map(\.x).max()!, lowY = m.offsets.map(\.y).min()!, highY = m.offsets.map(\.y).max()!
     for o in m.offsets {
-        let x0 = max(0, Int((o.x * Double(dpr)).rounded()) - minX), y0 = max(0, Int((o.y * Double(dpr)).rounded()) - minY)
-        for cy in (y0 / cell)..<min(ch, (y0 + fh + cell - 1) / cell) { for cx in (x0 / cell)..<min(cw, (x0 + fw + cell - 1) / cell) { covered[cy * cw + cx] = true } }
+        var fx = Int((o.x * Double(dpr)).rounded()), fy = Int((o.y * Double(dpr)).rounded()), w = fw, h = fh
+        if o.y > lowY + 0.5 || true {
+            // top band hides rows only once the view is below the page's top
+            if o.y > 0.5 { let d = Int((m.pinTop ?? 0) * Double(dpr)); fy += d; h -= d }
+            if o.y < (m.maxY ?? 0) - 0.5 { h -= Int((m.pinBottom ?? 0) * Double(dpr)) }
+            if o.x > 0.5 { let d = Int((m.pinLeft ?? 0) * Double(dpr)); fx += d; w -= d }
+            if o.x < (m.maxX ?? 0) - 0.5 { w -= Int((m.pinRight ?? 0) * Double(dpr)) }
+        }
+        _ = (lowX, highX, highY)
+        let x0 = max(0, fx - minX), y0 = max(0, fy - minY)
+        guard w > 0, h > 0 else { continue }
+        for cy in (y0 / cell)..<min(ch, (y0 + h + cell - 1) / cell) { for cx in (x0 / cell)..<min(cw, (x0 + w + cell - 1) / cell) { covered[cy * cw + cx] = true } }
     }
     // Pinned bands stick to the image's edge, so they only match the truth where the capture reaches the page's edge.
     let ignoreTop = (m.offsets.map(\.y).min()! > 0.5) ? Int((m.pinTop ?? 0) * Double(dpr)) : 0
@@ -194,7 +209,7 @@ if args.count == 5, args[1] == "compare" {
     var worst = 0.0, at = 0
     for (i, b) in rowBad.enumerated() where rowTotal[i] > 0 { let v = Double(b) * 100 / Double(rowTotal[i]); if v > worst { worst = v; at = i * band } }
     write(diff, to: URL(fileURLWithPath: args[4]))
-    print("result \(result.width)x\(result.height) at truth y\(bestY) (sample diff \(String(format: "%.2f", best))): bad \(String(format: "%.2f", Double(bad) * 100 / Double(max(1, total))))%, worst band \(String(format: "%.1f", worst))% at y\(at)")
+    print("result \(result.width)x\(result.height) at truth y\(bestY) (sample diff \(String(format: "%.2f", best))): bad \(String(format: "%.2f", Double(bad) * 100 / Double(max(1, total))))%, worst band \(String(format: "%.1f", worst))% at y\(at), \(truth.height - (bestY + result.height)) px short of the page end")
     exit(0)
 }
 guard args.count >= 3 else { print("usage: scroll-lab <framesDir> <outDir> [filter]"); exit(2) }

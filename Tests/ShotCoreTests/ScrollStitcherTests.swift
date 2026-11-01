@@ -623,3 +623,44 @@ func fabPixels(in image: Bitmap) -> Int {
     }
     #expect(Double(differing) / Double(total) < 0.01, "\(differing) of \(total) pixels in the bar's strip differ from the page")
 }
+
+@Test func aBounceAtTheEndOfThePageIsNotPartOfTheImage() throws {
+    let scene = ScrollScene(content: CGSize(width: 1400, height: 1000))
+    let end = scene.content.height - scene.viewport.height
+    // Down to the end, then pulled 30 points past it and let back.
+    let offsets = path(steps: down([60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, end - 660, 8, 9, 7, 4, 2, -3, -8, -10, -9, 0, 0, 0]))
+    let (_, image, statuses) = stitch(scene, offsets: offsets)
+    let result = try #require(image)
+    #expect(statuses.dropFirst().allSatisfy { $0 == .live }, "\(statuses)")
+    #expect(abs(CGFloat(result.height) - scene.content.height * 2) <= 2, "\(result.height) pixels tall, not \(scene.content.height * 2)")
+}
+
+@Test func aBounceAtTheTopOfThePageIsNotPartOfTheImage() throws {
+    let scene = ScrollScene(content: CGSize(width: 1400, height: 1000))
+    let offsets = path(from: CGPoint(x: 0, y: 300), steps: down([-60, -60, -60, -60, -60, -9, -8, -7, -4, -2, 3, 8, 10, 9, 0, 0, 0]))
+    let (_, image, statuses) = stitch(scene, offsets: offsets)
+    let result = try #require(image)
+    #expect(statuses.dropFirst().allSatisfy { $0 == .live }, "\(statuses)")
+    // The view started 300 points down and reached the top: the image is from the top to the first view's bottom.
+    #expect(abs(CGFloat(result.height) - (scene.viewport.height + 300) * 2) <= 2, "\(result.height) pixels tall, not \((scene.viewport.height + 300) * 2)")
+}
+
+@Test func scrollingOnPastABounceKeepsWhatWasPulledIn() throws {
+    let scene = ScrollScene(content: CGSize(width: 1400, height: 1000))
+    let end = scene.content.height - scene.viewport.height
+    // Pulled 30 points past the end and back 12, then on again to 47 past it: nothing is cut.
+    let offsets = path(steps: down([60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, end - 660, 8, 9, 7, 4, 2, -3, -3, -3, -3, 0, 0, 0, 9, 10, 10]))
+    let (_, image, _) = stitch(scene, offsets: offsets)
+    let result = try #require(image)
+    #expect(abs(CGFloat(result.height) - (scene.content.height + 47) * 2) <= 2, "\(result.height) pixels tall, not \((scene.content.height + 47) * 2)")
+}
+
+@Test func aBigJumpPastAPinnedHeaderAndFooterStillLinesUp() throws {
+    let scene = ScrollScene(header: 36, footer: 30)
+    // 200 points of a 320 point area, the first move there is, with nothing yet known about the bars.
+    let offsets = path(steps: down([200, 40, 40]))
+    let (_, image, statuses) = stitch(scene, offsets: offsets)
+    let result = try #require(image)
+    #expect(statuses.dropFirst().allSatisfy { $0 == .live }, "\(statuses)")
+    #expect(abs(CGFloat(result.height) - (scene.viewport.height + 280) * 2) <= 2)
+}

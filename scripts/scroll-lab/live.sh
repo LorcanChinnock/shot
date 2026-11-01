@@ -27,6 +27,7 @@ case "$PATTERN" in
   notches) for i in 1 2 3 4 5 6 7 8; do $D scroll $X $Y 20 5 16; sleep 0.35; done ;;
   slow) $D scroll $X $Y 3 160 16 ;;
   fast) $D flick $X $Y 110 0.93 45 16; sleep 1; $D flick $X $Y 90 0.93 45 16 ;;
+  toend) for i in 1 2 3 4 5 6 7 8 9 10 11 12; do $D flick $X $Y 110 0.93 40 16; sleep 0.25; done; $D flick $X $Y 120 0.95 40 16 ;;
   reversal) $D scroll $X $Y 14 40 16; $D scroll $X $Y -14 25 16; $D scroll $X $Y 18 50 16; $D scroll $X $Y -18 35 16; $D scroll $X $Y 16 60 16 ;;
 esac
 sleep 1
