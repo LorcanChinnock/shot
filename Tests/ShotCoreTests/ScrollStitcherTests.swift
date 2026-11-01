@@ -677,3 +677,35 @@ func fabPixels(in image: Bitmap) -> Int {
     #expect(abs(CGFloat(result.width) - (scene.viewport.width + last.x) * 2) <= 2, "\(result.width) wide")
     #expect(abs(CGFloat(result.height) - (scene.viewport.height + last.y) * 2) <= 2, "\(result.height) tall")
 }
+
+@Test func keepingFewerFramesThanThePageNeedsNeverLeavesAGap() throws {
+    let scene = ScrollScene()
+    let stitcher = ScrollStitcher(width: Int(scene.viewport.width) * scene.scale, height: Int(scene.viewport.height) * scene.scale, scale: scene.scale, byteOrder: .rgba)
+    // Room for four frames while the page takes far more to cover.
+    stitcher.keyBudget = 4 * stitcher.frameBytes
+    let offsets = path(steps: Array(repeating: CGPoint(x: 0, y: 14), count: 80))
+    let (_, image, statuses) = stitch(scene, offsets: offsets, stitcher: stitcher)
+    let result = try #require(image)
+    #expect(statuses.dropFirst().allSatisfy { $0 == .live }, "\(statuses)")
+    let d = difference(result, expectedTruth(scene, start: .zero, stitcher: stitcher))
+    #expect(d.mean < 6, "mean \(d.mean)")
+    #expect(d.unseen == 0, "unseen \(d.unseen) in \(d.unseenBox)")
+}
+
+@Test func aBounceFollowedByMoreScrollingStillHasTheFrameItRestedOn() throws {
+    let scene = ScrollScene(content: CGSize(width: 1400, height: 1000))
+    let end = scene.content.height - scene.viewport.height
+    // Pulled 30 past the end and let back to rest, then up 90 and the capture ends away from the end.
+    let offsets = path(steps: down([60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, end - 660, 8, 9, 7, 4, 2, -3, -8, -10, -9, 0, 0, 0, -30, -30, -30]))
+    let (_, image, statuses) = stitch(scene, offsets: offsets)
+    let result = try #require(image)
+    #expect(statuses.dropFirst().allSatisfy { $0 == .live }, "\(statuses)")
+    #expect(abs(CGFloat(result.height) - scene.content.height * 2) <= 2, "\(result.height) pixels tall, not \(scene.content.height * 2)")
+    var transparent = 0
+    for y in 0..<result.height where y >= result.height - 80 {
+        for x in stride(from: 0, to: result.width, by: 7) where result.pixels[(y * result.width + x) * 4 + 3] == 0 {
+            transparent += 1
+        }
+    }
+    #expect(transparent == 0, "\(transparent) transparent pixels in the last rows")
+}

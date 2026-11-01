@@ -102,7 +102,12 @@ public final class ScrollStitcher {
     private var keyBytes = 0
     /// How far the area moves, as a share of its size, before another frame is kept.
     private var keySpacing = 6
-    private static let keyBudget = 400_000_000
+    /// Set when the frames kept can't be thinned to the budget and still cover the image.
+    private var keysIncomplete = false
+    /// Bytes in one frame.
+    var frameBytes: Int { width * height * 4 }
+    /// Bytes of frames kept for the final pass.
+    var keyBudget = 400_000_000
     private var excludesPinned = false
     /// Per tile: whether it has detail and is identical in this frame and the last, which marks it as pinned.
     private var stayPut: [Bool]
@@ -256,7 +261,9 @@ public final class ScrollStitcher {
         let classified = classify(shift: shift)
         lap("classify")
         if !moved {
-            overshoot.update(frame: frames, before: extremes, after: extremes, position: position, width: width, height: height, scale: scale)
+            if overshoot.update(frame: frames, before: extremes, after: extremes, position: position, width: width, height: height, scale: scale) {
+                appendKey()
+            }
             if status.isWarning {
                 status = .live
             }
@@ -272,7 +279,7 @@ public final class ScrollStitcher {
         extremes.maxX = max(extremes.maxX, position.x)
         extremes.minY = min(extremes.minY, position.y)
         extremes.maxY = max(extremes.maxY, position.y)
-        overshoot.update(frame: frames, before: before, after: extremes, position: position, width: width, height: height, scale: scale)
+        let restedHere = overshoot.update(frame: frames, before: before, after: extremes, position: position, width: width, height: height, scale: scale)
         if classified {
             assignFlags()
         }
@@ -282,7 +289,7 @@ public final class ScrollStitcher {
         let changed = paint(movedAnchors: before)
         lap("paint")
         status = hitLimit ? .sizeLimit : .live
-        recordKey()
+        recordKey(force: restedHere)
         collectBandVotes()
         swapFrames()
         return update(changed: changed)
@@ -1229,7 +1236,7 @@ public final class ScrollStitcher {
         guard let seen = canvas.seen else {
             return nil
         }
-        if composes, frames > 1 {
+        if composes, !keysIncomplete, frames > 1 {
             // A bounce is cut when what it pulled in is flat in the frame that went furthest, which has the background
             // and nothing else past the page's end; frames that went past where the area rested are then left out.
             let kept = overshoot.kept(of: seen) { edge, base, reach in flatBeyond(edge: edge, base: base, reach: reach) }
@@ -1253,7 +1260,10 @@ public final class ScrollStitcher {
     }
 
     /// Keeps the frame being processed, if the area has moved far enough from the last one kept.
-    private func recordKey() {
+    private func recordKey(force: Bool = false) {
+        guard !keysIncomplete else {
+            return
+        }
         // The frame furthest each way is held as well, in case it's the only one to see a corner. It's the last frame
         // while the area keeps going that way, which is always in, so it's only copied when the next one doesn't go as far.
         let reaching = [position.x < reach.minX, position.x > reach.maxX, position.y < reach.minY, position.y > reach.maxY]
@@ -1275,7 +1285,7 @@ public final class ScrollStitcher {
             }
         }
         let total = (tx1 - tx0 + 1) * (ty1 - ty0 + 1)
-        if let last = keys.last, abs(position.x - last.x) * keySpacing < width, abs(position.y - last.y) * keySpacing < height, fresh * 100 < total * 3 {
+        if let last = keys.last, abs(position.x - last.x) * keySpacing < width, abs(position.y - last.y) * keySpacing < height, fresh * 100 < total * 3, !force {
             return
         }
         for ty in ty0...ty1 {
@@ -1283,14 +1293,30 @@ public final class ScrollStitcher {
                 keyCoverage.insert((tx + (1 << 20)) << 24 | (ty + (1 << 20)))
             }
         }
+        appendKey()
+    }
+
+    /// Keeps the frame being processed as it is, and keeps what's kept within the budget.
+    private func appendKey() {
+        guard !keysIncomplete, !keys.contains(where: { $0.x == position.x && $0.y == position.y }) else {
+            return
+        }
         keys.append(ScrollKeyFrame(x: position.x, y: position.y, pixels: Array(UnsafeBufferPointer(start: current, count: width * height * 4))))
         keyBytes += width * height * 4
-        // Past the budget, every other frame goes and the spacing doubles, so what's left still covers each part of
-        // the image more than once.
-        while keyBytes > Self.keyBudget, keys.count > 3 {
-            keys = keys.enumerated().filter { $0.offset % 2 == 0 || $0.offset == keys.count - 1 }.map(\.element)
-            keyBytes = keys.count * width * height * 4
-            keySpacing = max(2, keySpacing / 2)
+        // Past the budget, frames go whose neighbours still overlap by a good part, oldest first. When none can go,
+        // what's left wouldn't cover the image, so the image is built from the canvas painted along the way instead.
+        while keyBytes > keyBudget {
+            let droppable = (1..<max(1, keys.count - 1)).first { i in
+                abs(keys[i + 1].x - keys[i - 1].x) * 10 <= width * 6 && abs(keys[i + 1].y - keys[i - 1].y) * 10 <= height * 6
+            }
+            guard let droppable else {
+                keysIncomplete = true
+                keys.removeAll()
+                keyBytes = 0
+                return
+            }
+            keys.remove(at: droppable)
+            keyBytes -= width * height * 4
         }
     }
 

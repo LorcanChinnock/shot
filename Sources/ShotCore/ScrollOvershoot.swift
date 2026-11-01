@@ -64,7 +64,10 @@ struct ScrollOvershoot {
     }
 
     /// Takes one frame: the image's extremes before and after it, and where the area is now.
-    mutating func update(frame: Int, before: Extremes, after: Extremes, position: (x: Int, y: Int), width: Int, height: Int, scale: Int) {
+    /// Whether a bounce settled with this frame, the frame the area rested on.
+    @discardableResult
+    mutating func update(frame: Int, before: Extremes, after: Extremes, position: (x: Int, y: Int), width: Int, height: Int, scale: Int) -> Bool {
+        var settled = false
         let drift = Int((Self.drift * Double(scale)).rounded(.down))
         for edge in 0..<4 {
             let was = Self.reach(before, edge: edge, width: width, height: height)
@@ -90,12 +93,14 @@ struct ScrollOvershoot {
                 let limit = (edge < 2 ? height : width) / Self.share
                 if run.reach - view > 0, run.reach - view <= limit {
                     trims[edge].append((view, run.reach))
+                    settled = true
                 }
                 pending[edge] = nil
             } else {
                 pending[edge] = run
             }
         }
+        return settled
     }
 
     /// Settles the bounces still under way when the capture ends, as the person pressing Return does while one is.
