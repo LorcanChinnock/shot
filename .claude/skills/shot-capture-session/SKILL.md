@@ -36,3 +36,11 @@ computer-use screenshots are for looking only and can't be saved. Make files wit
 ## Finish
 
 Quit ShotDemo and ShotDev, `rm -rf /Applications/ShotDev.app build/ShotDev.app`, reopen `/Applications/Shot.app` if it was running, and refocus the terminal. Each reshot file needs matching alt text next to where the guide uses it.
+
+## Record a clip (GIFs and videos)
+
+- Start `screencapture -v -V <seconds> -R0,38,1920,1205 raw.mov` with `run_in_background`, then run the whole interaction in one `computer_batch` so the timing holds. The recording starts a second or two late, so open with a 3 second wait and trim the start with `ffmpeg -ss`.
+- The overlay opens in the mode you used last. Click the Area chip once and press Escape before recording so a drag really drags out an area.
+- Click a tool, then wait 1.5 seconds before dragging, or the drag does nothing. Keep arrows inside the image, or the canvas grows and everything shifts.
+- `⌘W` on an edited editor asks to save. Click Discard, or stale editor windows show up in the next take.
+- Build the site copies with `cd site && npm run media`. Make the GIF from the 2× mp4 at 12 fps and 960 wide: `fps=12,scale=960:-2:flags=lanczos,split[a][b];[a]palettegen=max_colors=128[p];[b][p]paletteuse=dither=bayer:bayer_scale=4`.
