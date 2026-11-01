@@ -46,7 +46,27 @@ Scroll takes one screenshot of something taller or wider than the screen: a long
 3. Scroll the content with the trackpad, the mouse wheel, <kbd>Page Down</kbd> or <kbd>Space</kbd>. Any direction works, and so does scrolling back. The panel's preview shows the picture so far, with the parts you haven't scrolled over hatched, so you can go back and fill them in.
 4. Press <kbd>Return</kbd> or click **Done**. The screenshot is copied and saved like any other. <kbd>Esc</kbd> cancels and keeps nothing.
 
-Sticky headers, footers, pinned columns and floating buttons appear once, where they belong. If the panel says something needs attention, it tells you what to do: scroll back a little after a big jump, pause a video that's playing in the area, or include some text so there's something to line up. The picture can be up to 30,000 pixels on a side.
+Sticky headers, footers, pinned columns and floating buttons appear once, where they belong. The picture can be up to 30,000 pixels on a side.
+
+![The Scroll panel beside a help article window. Its preview shows the picture so far, with the parts not yet scrolled over hatched, and Cancel and Done buttons below it](../../../docs/media/scroll-capture.png)
+
+### What you can scroll
+
+- **A window:** choose Window, click the window, then scroll it. This suits a chat thread or a settings list.
+- **A browser page:** choose Browser, click the page, then scroll it. Shot scrolls along the page you clicked.
+- **A screen:** choose Screen to scroll everything you see, such as a spreadsheet that fills the display.
+- **An area:** drag across the part that scrolls, which keeps a sidebar or a toolbar out of the picture.
+
+### When the panel asks for something
+
+The panel's outline turns red and it says what to do:
+
+| Message | What to do |
+| --- | --- |
+| Scrolled too far at once. Scroll back a little and carry on. | You jumped further than the area is tall, so Shot can't tell how the two parts join. Scroll back until you see something you saw before, then continue more slowly. |
+| Something in the area keeps changing, so Shot can't line frames up. | A video, an animation or a live counter is moving. Pause the video, or scroll past it. |
+| There isn't enough in the area to line frames up. | The area is a blank page or a single flat colour. Include some text or an image, or drag out another area. |
+| The image is as big as Shot can stitch. | You reached the size limit. Press <kbd>Return</kbd> to save it. |
 
 ## Without a mouse
 
