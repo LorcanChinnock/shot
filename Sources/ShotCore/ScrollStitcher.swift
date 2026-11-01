@@ -228,7 +228,7 @@ public final class ScrollStitcher {
         let classified = classify(shift: shift)
         lap("classify")
         if !moved {
-            overshoot.update(frame: frames, before: extremes, after: extremes, position: position, width: width, height: height, isBlank: canvas.isBlank)
+            overshoot.update(frame: frames, before: extremes, after: extremes, position: position, width: width, height: height, scale: scale, isBlank: canvas.isBlank)
             if status.isWarning {
                 status = .live
             }
@@ -244,7 +244,7 @@ public final class ScrollStitcher {
         extremes.maxX = max(extremes.maxX, position.x)
         extremes.minY = min(extremes.minY, position.y)
         extremes.maxY = max(extremes.maxY, position.y)
-        overshoot.update(frame: frames, before: before, after: extremes, position: position, width: width, height: height, isBlank: canvas.isBlank)
+        overshoot.update(frame: frames, before: before, after: extremes, position: position, width: width, height: height, scale: scale, isBlank: canvas.isBlank)
         if classified {
             assignFlags()
         }
@@ -558,7 +558,7 @@ public final class ScrollStitcher {
     /// frame stands in for the canvas.
     private func settle(_ around: (x: Int, y: Int)) -> Candidate? {
         var best: Candidate?
-        let reach = max(1, scale - 1)
+        let reach = scale - 1
         let minimum = max(10, texturedCount / 5)
         for againstCanvas in [true, false] {
             // The search runs on a fifth of the tiles; the winner is then scored on all of them.

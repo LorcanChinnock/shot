@@ -25,7 +25,8 @@ struct ScrollOvershoot {
     private static let settling = 36
     /// Frames the area must hold still to have settled, and how far it can drift in one and still count as still.
     private static let stillNeeded = 3
-    private static let drift = 3
+    /// In points: 1.5, which is 3 pixels at 2x.
+    private static let drift = 1.5
     /// How much of the area a bounce can pull past the end.
     private static let share = 4
 
@@ -63,7 +64,8 @@ struct ScrollOvershoot {
     }
 
     /// Takes one frame: the image's extremes before and after it, and where the area is now.
-    mutating func update(frame: Int, before: Extremes, after: Extremes, position: (x: Int, y: Int), width: Int, height: Int, isBlank: (ScrollCanvas.Bounds) -> Bool) {
+    mutating func update(frame: Int, before: Extremes, after: Extremes, position: (x: Int, y: Int), width: Int, height: Int, scale: Int, isBlank: (ScrollCanvas.Bounds) -> Bool) {
+        let drift = Int((Self.drift * Double(scale)).rounded(.down))
         for edge in 0..<4 {
             let was = Self.reach(before, edge: edge, width: width, height: height)
             let now = Self.reach(after, edge: edge, width: width, height: height)
@@ -79,9 +81,9 @@ struct ScrollOvershoot {
                 pending[edge] = nil
                 continue
             }
-            run.stillFrames = abs(view - run.lastView) <= Self.drift ? run.stillFrames + 1 : 0
+            run.stillFrames = abs(view - run.lastView) <= drift ? run.stillFrames + 1 : 0
             run.lastView = view
-            if view < run.reach - Self.drift {
+            if view < run.reach - drift {
                 run.returning = true
             }
             if run.returning, run.stillFrames >= Self.stillNeeded {

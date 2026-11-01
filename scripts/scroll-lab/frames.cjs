@@ -5,7 +5,7 @@ const fs = require('fs'), path = require('path');
 const puppeteer = require('puppeteer-core');
 const { pages } = require('./pages.cjs');
 
-const VIEW = { width: 640, height: 440 }, DPR = 2;
+const VIEW = { width: 640, height: 440 }, DPR = Number(process.env.DPR || 2);
 
 // Scroll paths in css px, one entry per captured frame (30 a second). Each returns [{x, y}].
 const steps = (n, dx, dy, x0 = 0, y0 = 0) => Array.from({ length: n }, (_, i) => ({ x: x0 + dx * (i + 1), y: y0 + dy * (i + 1) }));
