@@ -100,6 +100,8 @@ public final class ScrollStitcher {
     private static let agreeDevice: Float = 28, capDevice: Float = 56, gateDevice: Float = 14
     private static let voteMargin: Float = 8
     private static let peakCount = 5
+    /// Points at each side of the area where a fading scroll bar can lie.
+    private static let barWidth = 16
 
     /// `scale` is device pixels per point. Frames must be `width` × `height` device pixels.
     public init(width: Int, height: Int, scale: Int, byteOrder: ByteOrder, limits: ScrollCaptureLimits = .standard) {
@@ -1033,7 +1035,7 @@ public final class ScrollStitcher {
                     }
                     let at = (x: anchorX(runFlags, extremes: extremes, position: position), y: anchorY(runFlags, extremes: extremes, position: position))
                     let painted = runFlags == 0
-                        ? canvas.paintContentRow(current, width: width, y: y, x0: runStart, x1: end, at: at)
+                        ? canvas.paintContentRow(current, width: width, y: y, x0: runStart, x1: end, at: at, edge: Self.barWidth * scale)
                         : canvas.paintPinnedRow(current, width: width, y: y, x0: runStart, x1: end, at: at, flags: runFlags)
                     if let painted {
                         if runFlags == 0 {

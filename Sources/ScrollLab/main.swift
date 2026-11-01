@@ -167,6 +167,36 @@ func run(_ dir: URL, outDir: URL) -> Score? {
 }
 
 let args = CommandLine.arguments
+// scroll-lab compare <result.png> <truth.png> <diff-out.png>: finds where the result sits in the truth, then scores it.
+if args.count == 5, args[1] == "compare" {
+    guard let result = load(URL(fileURLWithPath: args[2])), let truth = load(URL(fileURLWithPath: args[3])) else { print("can't load"); exit(1) }
+    func sampleDiff(_ y0: Int, rows: Int) -> Double {
+        var sum = 0.0, n = 0
+        for y in stride(from: 0, to: min(result.height, rows), by: 5) { for x in stride(from: 0, to: min(result.width, truth.width), by: 7) {
+            let ri = (y * result.width + x) * 4, ti = ((y0 + y) * truth.width + x) * 4
+            sum += Double(abs(Int(result.data[ri]) - Int(truth.data[ti])) + abs(Int(result.data[ri + 1]) - Int(truth.data[ti + 1]))); n += 1
+        } }
+        return sum / Double(max(1, n))
+    }
+    var bestY = 0, best = Double.infinity
+    // The top of the result is the page's top unless the capture started part way down: search the truth for its first rows.
+    for y0 in 0...max(0, truth.height - result.height) { let d = sampleDiff(y0, rows: 120); if d < best { best = d; bestY = y0 } }
+    var diff = Pixels(width: result.width, height: result.height, data: [UInt8](repeating: 255, count: result.width * result.height * 4))
+    var bad = 0, total = 0
+    let band = 24
+    var rowBad = [Int](repeating: 0, count: (result.height + band - 1) / band), rowTotal = rowBad
+    for y in 0..<(result.height - 24) where bestY + y < truth.height { for x in 0..<min(result.width, truth.width) {
+        let ri = (y * result.width + x) * 4, ti = ((bestY + y) * truth.width + x) * 4
+        let d = (abs(Int(result.data[ri]) - Int(truth.data[ti])) + abs(Int(result.data[ri + 1]) - Int(truth.data[ti + 1])) + abs(Int(result.data[ri + 2]) - Int(truth.data[ti + 2]))) / 3
+        total += 1; rowTotal[y / band] += 1
+        if d > 48 { bad += 1; rowBad[y / band] += 1; diff.data[ri] = 255; diff.data[ri + 1] = 40; diff.data[ri + 2] = 40 } else { let g = UInt8(255 - min(120, d * 2)); diff.data[ri] = g; diff.data[ri + 1] = g; diff.data[ri + 2] = g }
+    } }
+    var worst = 0.0, at = 0
+    for (i, b) in rowBad.enumerated() where rowTotal[i] > 0 { let v = Double(b) * 100 / Double(rowTotal[i]); if v > worst { worst = v; at = i * band } }
+    write(diff, to: URL(fileURLWithPath: args[4]))
+    print("result \(result.width)x\(result.height) at truth y\(bestY) (sample diff \(String(format: "%.2f", best))): bad \(String(format: "%.2f", Double(bad) * 100 / Double(max(1, total))))%, worst band \(String(format: "%.1f", worst))% at y\(at)")
+    exit(0)
+}
 guard args.count >= 3 else { print("usage: scroll-lab <framesDir> <outDir> [filter]"); exit(2) }
 let frames = URL(fileURLWithPath: args[1]), out = URL(fileURLWithPath: args[2]), filter = args.count > 3 ? args[3] : ""
 try? FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)

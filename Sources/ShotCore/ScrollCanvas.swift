@@ -312,7 +312,7 @@ final class ScrollCanvas {
 
     /// Paints pixels `x0..<x1` of the frame's row `y` as content, with the frame's top left at `at` in the world.
     /// Returns what landed; `painted` must be told once the rows are done.
-    func paintContentRow(_ frame: UnsafeMutablePointer<UInt8>, width: Int, y: Int, x0: Int, x1: Int, at: (x: Int, y: Int)) -> Bounds? {
+    func paintContentRow(_ frame: UnsafeMutablePointer<UInt8>, width: Int, y: Int, x0: Int, x1: Int, at: (x: Int, y: Int), edge: Int = 0) -> Bounds? {
         let world = Bounds(x0: at.x + x0, y0: at.y + y, x1: at.x + x1, y1: at.y + y + 1)
         guard let buffer else {
             return nil
@@ -321,11 +321,39 @@ final class ScrollCanvas {
         guard !clipped.isEmpty else {
             return nil
         }
-        let source = frame + (y * width + clipped.x0 - at.x) * 4
+        let row = frame + y * width * 4
+        let source = row + (clipped.x0 - at.x) * 4
         let destination = buffer + (clipped.y0 - bounds.y0) * stride + (clipped.x0 - bounds.x0) * 4
-        destination.update(from: source, count: clipped.width * 4)
+        let first = clipped.x0 - at.x, count = clipped.width
+        if edge > 0, first < edge || first + count > width - edge {
+            // A scroll bar that fades in over the edge moves against the content, so it lands on different pixels in
+            // each frame. Where a pixel in the outer strip differs strongly from what's painted, the one that's
+            // nearer the pixel just inside the strip, which the bar never covers, is the page's.
+            let inner = [row + edge * 4, row + (width - edge - 1) * 4]
+            for i in 0..<count {
+                let fx = first + i
+                let s = source + i * 4, d = destination + i * 4
+                if fx < edge || fx >= width - edge, d[3] == 255 {
+                    let ref = fx < edge ? inner[0] : inner[1]
+                    func far(_ p: UnsafeMutablePointer<UInt8>) -> Int { abs(Int(p[0]) - Int(ref[0])) + abs(Int(p[1]) - Int(ref[1])) + abs(Int(p[2]) - Int(ref[2])) }
+                    let change = abs(Int(s[0]) - Int(d[0])) + abs(Int(s[1]) - Int(d[1])) + abs(Int(s[2]) - Int(d[2]))
+                    // The new pixel replaces the old only if it plainly is the page's: close to the one inside the strip
+                    // and much closer than the old one. Where the page runs to the edge and that pixel says nothing,
+                    // the first sight stands.
+                    if change > 20, !(far(s) < 30 && far(s) + 10 < far(d)) {
+                        continue
+                    }
+                }
+                d[0] = s[0]
+                d[1] = s[1]
+                d[2] = s[2]
+                d[3] = 255
+            }
+            return clipped
+        }
+        destination.update(from: source, count: count * 4)
         var p = destination + 3
-        for _ in 0..<clipped.width {
+        for _ in 0..<count {
             p.pointee = 255
             p += 4
         }

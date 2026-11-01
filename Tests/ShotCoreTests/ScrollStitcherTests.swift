@@ -21,6 +21,10 @@ struct ScrollScene {
     var fab: CGRect?
     var video: CGRect?
     var blank = false
+    /// Rows at the top of the content with nothing in them, as a page's margin under a bar.
+    var topMargin: CGFloat = 0
+    /// A scroll bar over the right edge from the second frame on, as one that fades in once scrolling starts; it moves with the scroll position rather than with the content.
+    var scrollBar = false
 
     static let fabColor = (r: 255, g: 0, b: 255)
 
@@ -63,6 +67,13 @@ struct ScrollScene {
             ctx.setFillColor(CGColor(gray: 1, alpha: 1))
             ctx.fill(CGRect(x: fab.midX - 8, y: fab.midY - 2, width: 16, height: 4))
             ctx.fill(CGRect(x: fab.midX - 2, y: fab.midY - 8, width: 4, height: 16))
+        }
+        if scrollBar, index > 0 {
+            let travel = viewport.height - 70
+            let top = min(max(0, offset.y / (content.height - viewport.height)), 1) * travel
+            ctx.setFillColor(CGColor(gray: 0.3, alpha: 0.75))
+            ctx.addPath(CGPath(roundedRect: CGRect(x: viewport.width - 10, y: top + 4, width: 7, height: 62), cornerWidth: 3.5, cornerHeight: 3.5, transform: nil))
+            ctx.fillPath()
         }
         if let video {
             var state = UInt64(index &+ 1) &* 0x9E37_79B9_7F4A_7C15
@@ -148,7 +159,7 @@ struct ScrollScene {
                 row += 1
             }
         } else {
-            var y: CGFloat = 18
+            var y: CGFloat = max(18, topMargin)
             var n = 0
             while y < content.height {
                 var x: CGFloat = 12
@@ -554,4 +565,61 @@ func fabPixels(in image: Bitmap) -> Int {
     #expect(owners[480, 20].r > 200 && owners[480, 20].g < 100, "header")
     #expect(owners[480, owners.height - 20].r > 200 && owners[480, owners.height - 20].g > 150, "footer")
     #expect(owners[480, owners.height / 2] == (255, 255, 255, 255), "content")
+}
+
+// MARK: - Fixes found by the scroll lab
+
+@Test func aBlankMarginUnderAStickyBarIsKeptAfterTheBarsEdgeSettles() throws {
+    let scene = ScrollScene(header: 36, topMargin: 100)
+    let offsets = path(steps: down(Array(repeating: 12, count: 14) + [30, 30]))
+    let (stitcher, image, statuses) = stitch(scene, offsets: offsets)
+    let result = try #require(image)
+    #expect(statuses.dropFirst().allSatisfy { $0 == .live }, "\(statuses)")
+    let headerBand = CGRect(x: 0, y: 0, width: CGFloat(result.width), height: scene.header * 2 + 4)
+    let d = difference(result, expectedTruth(scene, start: .zero, stitcher: stitcher), excluding: [headerBand])
+    #expect(d.mean < 6, "mean \(d.mean)")
+    #expect(d.unseen == 0, "unseen \(d.unseen) in \(d.unseenBox)")
+}
+
+@Test func theSmallMovesAtTheEndOfAWheelNotchLineUpBesideAStrongPinnedPeak() throws {
+    let scene = ScrollScene(header: 36, footer: 30)
+    // Each notch eases out: 60, 46, 35, 25, 17, 10, 5.2, 1.9 points, then rests.
+    let notch: [CGFloat] = [60, 46, 35, 25, 17, 10, 5.2, 1.9, 0, 0]
+    let offsets = path(steps: down(notch + notch + notch))
+    let (stitcher, image, statuses) = stitch(scene, offsets: offsets)
+    let result = try #require(image)
+    #expect(statuses.dropFirst().allSatisfy { $0 == .live }, "\(statuses)")
+    let total = offsets.last!.y
+    #expect(abs(CGFloat(result.height) - (scene.viewport.height + total) * 2) <= 2, "\(result.height) vs \((scene.viewport.height + total) * 2)")
+    let headerBand = CGRect(x: 0, y: 0, width: CGFloat(result.width), height: scene.header * 2)
+    let footerBand = CGRect(x: 0, y: CGFloat(result.height) - scene.footer * 2, width: CGFloat(result.width), height: scene.footer * 2)
+    let d = difference(result, expectedTruth(scene, start: .zero, stitcher: stitcher), excluding: [headerBand, footerBand])
+    #expect(d.mean < 6, "mean \(d.mean)")
+    #expect(d.worstBand < 20, "worst band \(d.worstBand) at \(d.worstBandAt)")
+}
+
+@Test func reversingDirectionNeverWarnsOnTheWay() throws {
+    let scene = ScrollScene(header: 36, footer: 30)
+    let offsets = path(steps: down([14, 14, 14, 14, 14, -7.8, -7.8, -7.8, -11, -11, 23.3, 23.3, 23.3, 11, 7.8, -23.3, -23.3, 14, 14, 14]))
+    let (_, _, statuses) = stitch(scene, offsets: offsets)
+    #expect(statuses.dropFirst().allSatisfy { $0 == .live }, "\(statuses)")
+}
+
+@Test func aScrollBarOverTheEdgeLeavesNoFragmentsInTheImage() throws {
+    let scene = ScrollScene(scrollBar: true)
+    let offsets = path(steps: down(Array(repeating: 9, count: 60)))
+    let (stitcher, image, statuses) = stitch(scene, offsets: offsets)
+    let result = try #require(image)
+    #expect(statuses.dropFirst().allSatisfy { $0 == .live }, "\(statuses)")
+    // The strip the bar lies in, against the page as it is without a bar.
+    let truth = expectedTruth(scene, start: .zero, stitcher: stitcher)
+    var differing = 0, total = 0
+    for y in 0..<min(result.height, truth.height) {
+        for x in (result.width - 22)..<(result.width - 4) {
+            total += 1
+            let i = (y * result.width + x) * 4
+            if abs(Int(result.pixels[i]) - Int(truth.pixels[i])) > 40 { differing += 1 }
+        }
+    }
+    #expect(Double(differing) / Double(total) < 0.01, "\(differing) of \(total) pixels in the bar's strip differ from the page")
 }

@@ -8,3 +8,12 @@ Read this before changing how Shot takes a screenshot or picks an area, window o
 - Fullscreen freezes only its screen and shows no overlay. A picked window is captured afresh, live, and recording runs live.
 - `finish` encodes off the main actor, saves and copies, then opens Quick Access or the editor.
 - Scroll is a toggle on the screenshot overlay (`S`, or its chip), off each time. When it is on, the pick (an area, window, browser page or screen) goes to `ScrollingCaptureController` instead of being captured, which streams it with `SCStream` while the person scrolls, and `ScrollStitcher` in ShotCore lines each frame up with the last and paints it into a growing canvas. Return hands the image to `finish` like any other capture. The stitcher is pure pixel work, tested with synthetic pages in `ScrollStitcherTests`.
+
+## Scroll lab
+
+`scripts/scroll-lab/` checks scrolling capture against real rendering rather than the synthetic pages in `ScrollStitcherTests`. Run it after any change to `ScrollStitcher` or `ScrollCanvas`.
+
+- `run.sh [filter]` renders 33 scenarios in headless Chrome (pages in `pages.cjs`, scroll paths in `frames.cjs`: wheel notches, flicks, reversals, drops, jumps, sideways and diagonal), replays the frames through `ScrollStitcher` with the `ScrollLab` target, and scores each image against a full-page screenshot. It needs Google Chrome and `puppeteer-core` (installed into `$LAB_DIR`, default `/tmp/shot-scroll-lab`). Frames are cached, so a rerun only costs the stitching. `*.diff.png` shows where an image differs (red) and what was never painted (magenta); `CROP=y,height` writes a close-up and `DIAG=<name>` prints each frame's candidates.
+- `live.sh <page> <pattern>` scrolls a real `NSScrollView` (`target.swift`, with overlay scroll bars) using synthetic events (`drive.swift`) while the running `ShotDev` captures it, then scores the saved image. It moves the pointer and sends keys, so leave the machine alone while it runs. The terminal needs Accessibility access.
+- A scenario passes when under 0.6% of its pixels differ, no 24-pixel band is more than 6% wrong, and under 0.3% of what any frame showed is missing. Diagonal movement over a pinned column and jumps of more than half the area are known failures.
+
