@@ -10,7 +10,6 @@ import { latestRelease } from '../lib/release';
 import editor from '../../../docs/media/editor.png';
 import videoEditor from '../../../docs/media/video-editor.png';
 import quickAccess from '../../../docs/media/quick-access.png';
-import openAnyway from '../../../docs/media/open-anyway.png';
 
 const release = await latestRelease();
 const full = '(min-width: 1120px) 1088px, 100vw';
@@ -77,7 +76,7 @@ const software = {
   applicationCategory: 'UtilitiesApplication',
   operatingSystem: 'macOS 15 or later',
   softwareVersion: release.version,
-  downloadUrl: 'https://shot.lorcanchinnock.com/download',
+  downloadUrl: 'https://github.com/LorcanChinnock/shot/releases/latest',
   license: 'https://github.com/LorcanChinnock/shot/blob/main/LICENSE',
   isAccessibleForFree: true,
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
@@ -94,7 +93,6 @@ const software = {
         <h1>A better <span class="keys"><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd></span></h1>
         <p class="lede">Shot is a screenshot app that lives in your menu bar. Press the keys you already know, and the picture is copied before you let go.</p>
         <div class="cta">
-          <a class="button big" href="/download">Download Shot</a>
           <Copy command="curl -fsSL https://shot.lorcanchinnock.com/install.sh | bash" />
         </div>
         <ForMacs />
@@ -228,7 +226,7 @@ const software = {
   </section>
 
   <section class="install" id="install">
-    <div class="wrap pair">
+    <div class="wrap">
       <div class="stack reveal">
         <h2>Install</h2>
         <p>Paste this into Terminal. It downloads the latest release, checks it against the release's checksum, and copies Shot into Applications.</p>
@@ -238,11 +236,8 @@ const software = {
           <li>In Shot's welcome window, click <b>Grant</b>, turn Shot on under Screen &amp; System Audio Recording, then click <b>Relaunch</b>.</li>
           <li>Press <kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd> and drag out an area.</li>
         </ol>
-        <h3>Prefer to download it?</h3>
-        <p><a href="/download">Download the zip</a> and drag Shot into Applications. Apple hasn't notarized Shot, so macOS blocks a browser download the first time you open it: click <b>Done</b>, open <b>System Settings › Privacy &amp; Security</b>, click <b>Open Anyway</b> next to the message about Shot, then confirm. The command above skips this.</p>
         <p>The <a href="/docs/get-started/">guide</a> covers the rest of the first launch.</p>
       </div>
-      <Image src={openAnyway} alt="The Security section of Privacy & Security, with the Open Anyway button circled next to the message that Shot was blocked" widths={[495, 990]} sizes={half} class="shot reveal" />
     </div>
   </section>
 </Base>
