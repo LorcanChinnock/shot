@@ -256,7 +256,7 @@ enum ScrollComposer {
     /// The image over `bounds`, in the frames' byte order with alpha 255 where something was seen and 0 where not.
     /// A pixel is what most of the frames that saw it agree on, preferring the one that saw it nearest their middle,
     /// where a bar or a shadow at an edge can't reach. Where only a pinned band saw it, the band's.
-    static func compose(keys: [ScrollKeyFrame], width: Int, height: Int, bounds: ScrollCanvas.Bounds, bands: ScrollBands, blobs: [ScrollBlob] = []) -> [UInt8]? {
+    static func compose(keys: [ScrollKeyFrame], width: Int, height: Int, bounds: ScrollCanvas.Bounds, bands: ScrollBands, blobs: [ScrollBlob] = [], edge: Int = 0) -> [UInt8]? {
         let outWidth = bounds.width, outHeight = bounds.height
         guard outWidth > 0, outHeight > 0, !keys.isEmpty, keys.allSatisfy({ $0.pixels.count == width * height * 4 }) else {
             return nil
@@ -339,20 +339,38 @@ enum ScrollComposer {
                     }
                 }
             }
+            // The middle of each row first, then its edges: where the samples at an edge disagree, a scroll bar that
+            // fades in there may have been over the pixel for most of the frames that saw it, so the sample nearest the
+            // pixel just inside the strip is taken, which the bar never covers.
+            let inner = min(outWidth / 2, max(edge, 1))
             for wy in y0..<y1 {
-                for wx in 0..<outWidth {
-                    let slot = (wy - y0) * outWidth + wx
-                    let content = Int(counts[slot]), pinned = Int(counts[slot + layer])
-                    guard content > 0 || pinned > 0 else {
-                        continue
+                for pass in 0..<2 {
+                    for wx in 0..<outWidth {
+                        let atEdge = edge > 0 && (wx < inner || wx >= outWidth - inner)
+                        guard atEdge == (pass == 1) else {
+                            continue
+                        }
+                        let slot = (wy - y0) * outWidth + wx
+                        let content = Int(counts[slot]), pinned = Int(counts[slot + layer])
+                        guard content > 0 || pinned > 0 else {
+                            continue
+                        }
+                        let base = content > 0 ? slot : slot + layer
+                        var reference: UInt32?
+                        if atEdge, content > 1 {
+                            let rx = wx < inner ? inner : outWidth - inner - 1
+                            let ro = (wy * outWidth + rx) * 4
+                            if out[ro + 3] == 255 {
+                                reference = UInt32(out[ro]) | UInt32(out[ro + 1]) << 8 | UInt32(out[ro + 2]) << 16
+                            }
+                        }
+                        let color = consensus(colors, weights, base * k, content > 0 ? content : pinned, near: reference)
+                        let o = (wy * outWidth + wx) * 4
+                        out[o] = UInt8(truncatingIfNeeded: color)
+                        out[o + 1] = UInt8(truncatingIfNeeded: color >> 8)
+                        out[o + 2] = UInt8(truncatingIfNeeded: color >> 16)
+                        out[o + 3] = 255
                     }
-                    let base = content > 0 ? slot : slot + layer
-                    let color = consensus(colors, weights, base * k, content > 0 ? content : pinned)
-                    let o = (wy * outWidth + wx) * 4
-                    out[o] = UInt8(truncatingIfNeeded: color)
-                    out[o + 1] = UInt8(truncatingIfNeeded: color >> 8)
-                    out[o + 2] = UInt8(truncatingIfNeeded: color >> 16)
-                    out[o + 3] = 255
                 }
             }
             y0 = y1
@@ -365,10 +383,32 @@ enum ScrollComposer {
         return d0 + d1 + d2 <= agreeing
     }
 
-    /// The sample most of the others agree with; of equals, the one seen nearest the middle of its frame.
-    private static func consensus(_ colors: [UInt32], _ weights: [UInt8], _ start: Int, _ n: Int) -> UInt32 {
+    /// The sample most of the others agree with; of equals, the one seen nearest the middle of its frame. With a
+    /// `near` colour, the sample closest to it if one is close and the samples disagree.
+    private static func consensus(_ colors: [UInt32], _ weights: [UInt8], _ start: Int, _ n: Int, near: UInt32? = nil) -> UInt32 {
         if n == 1 {
             return colors[start]
+        }
+        if let near {
+            var allAgree = true
+            for i in 1..<n where !close(colors[start], colors[start + i]) {
+                allAgree = false
+                break
+            }
+            if !allAgree {
+                var closest = 0, least = Int.max
+                for i in 0..<n {
+                    let c = colors[start + i]
+                    let d = abs(Int(c & 255) - Int(near & 255)) + abs(Int((c >> 8) & 255) - Int((near >> 8) & 255)) + abs(Int((c >> 16) & 255) - Int((near >> 16) & 255))
+                    if d < least {
+                        least = d
+                        closest = i
+                    }
+                }
+                if least <= 3 * agreeing {
+                    return colors[start + closest]
+                }
+            }
         }
         var best = 0, bestAgree = -1, bestWeight = 256
         for i in 0..<n {

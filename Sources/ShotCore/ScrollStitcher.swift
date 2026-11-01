@@ -89,6 +89,10 @@ public final class ScrollStitcher {
     /// canvas painted as they came; off, it's the canvas.
     public var composes = true
     private var keys: [ScrollKeyFrame] = []
+    /// Tiles of the image that kept frames cover.
+    private var keyCoverage = Set<Int>()
+    /// The frame furthest left, right, up and down.
+    private var furthest: [ScrollKeyFrame?] = [nil, nil, nil, nil]
     private var bandVotes: ScrollBandVotes
     /// The frame the next pair of votes is against, and where the area was for it.
     private let voteReference: UnsafeMutablePointer<UInt8>
@@ -1241,8 +1245,32 @@ public final class ScrollStitcher {
 
     /// Keeps the frame being processed, if the area has moved far enough from the last one kept.
     private func recordKey() {
-        if let last = keys.last, abs(position.x - last.x) * keySpacing < width, abs(position.y - last.y) * keySpacing < height {
+        // The frame furthest each way is held as well, in case it's the only one to see a corner.
+        let copy = { ScrollKeyFrame(x: self.position.x, y: self.position.y, pixels: Array(UnsafeBufferPointer(start: self.current, count: self.width * self.height * 4))) }
+        if furthest[0] == nil || position.x < furthest[0]!.x { furthest[0] = copy() }
+        if furthest[1] == nil || position.x > furthest[1]!.x { furthest[1] = copy() }
+        if furthest[2] == nil || position.y < furthest[2]!.y { furthest[2] = copy() }
+        if furthest[3] == nil || position.y > furthest[3]!.y { furthest[3] = copy() }
+        // A frame is kept once the area has moved a fair way from the last one kept, or if it's the first to see a good
+        // part of the image, as at a corner reached by a diagonal move.
+        let tile = 16
+        func floorDivide(_ a: Int, _ b: Int) -> Int { a >= 0 ? a / b : -((-a + b - 1) / b) }
+        let tx0 = floorDivide(position.x, tile), tx1 = floorDivide(position.x + width - 1, tile)
+        let ty0 = floorDivide(position.y, tile), ty1 = floorDivide(position.y + height - 1, tile)
+        var fresh = 0
+        for ty in ty0...ty1 {
+            for tx in tx0...tx1 where !keyCoverage.contains((tx + (1 << 20)) << 24 | (ty + (1 << 20))) {
+                fresh += 1
+            }
+        }
+        let total = (tx1 - tx0 + 1) * (ty1 - ty0 + 1)
+        if let last = keys.last, abs(position.x - last.x) * keySpacing < width, abs(position.y - last.y) * keySpacing < height, fresh * 100 < total * 3 {
             return
+        }
+        for ty in ty0...ty1 {
+            for tx in tx0...tx1 {
+                keyCoverage.insert((tx + (1 << 20)) << 24 | (ty + (1 << 20)))
+            }
         }
         keys.append(ScrollKeyFrame(x: position.x, y: position.y, pixels: Array(UnsafeBufferPointer(start: current, count: width * height * 4))))
         keyBytes += width * height * 4
@@ -1258,8 +1286,11 @@ public final class ScrollStitcher {
     /// The image from the frames kept, pinned parts found from all of them; nil when it can't be built.
     private func composedImage(bounds: ScrollCanvas.Bounds, colorSpace: CGColorSpace) -> CGImage? {
         var all = keys
+        for held in furthest.compactMap({ $0 }) where !all.contains(where: { $0.x == held.x && $0.y == held.y }) {
+            all.append(held)
+        }
         // The last frame that lined up is always in, wherever it falls between the spacing.
-        if let last = all.last, last.x != position.x || last.y != position.y {
+        if !all.contains(where: { $0.x == position.x && $0.y == position.y }) {
             all.append(ScrollKeyFrame(x: position.x, y: position.y, pixels: Array(UnsafeBufferPointer(start: previous, count: width * height * 4))))
         }
         guard bounds.width * bounds.height <= ScrollCaptureLimits.standard.maxPixels else {
@@ -1267,7 +1298,7 @@ public final class ScrollStitcher {
         }
         let bands = bandVotes.bands(scale: scale)
         let blobs = bandVotes.blobs(bands: bands, scale: scale)
-        guard let pixels = ScrollComposer.compose(keys: all, width: width, height: height, bounds: bounds, bands: bands, blobs: blobs) else {
+        guard let pixels = ScrollComposer.compose(keys: all, width: width, height: height, bounds: bounds, bands: bands, blobs: blobs, edge: Self.barWidth * scale) else {
             return nil
         }
         return ScrollCanvas.makeImage(Data(pixels), width: bounds.width, height: bounds.height, byteOrder: byteOrder, colorSpace: colorSpace)

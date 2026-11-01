@@ -606,7 +606,8 @@ func fabPixels(in image: Bitmap) -> Int {
 }
 
 @Test func aScrollBarOverTheEdgeLeavesNoFragmentsInTheImage() throws {
-    let scene = ScrollScene(scrollBar: true)
+    // A page with a margin at the right, as nearly every page has, where the bar goes.
+    let scene = ScrollScene(content: CGSize(width: 480, height: 3000), scrollBar: true)
     let offsets = path(steps: down(Array(repeating: 9, count: 60)))
     let (stitcher, image, statuses) = stitch(scene, offsets: offsets)
     let result = try #require(image)
@@ -614,14 +615,15 @@ func fabPixels(in image: Bitmap) -> Int {
     // The strip the bar lies in, against the page as it is without a bar.
     let truth = expectedTruth(scene, start: .zero, stitcher: stitcher)
     var differing = 0, total = 0
+    var badRows = Set<Int>()
     for y in 0..<min(result.height, truth.height) {
         for x in (result.width - 22)..<(result.width - 4) {
             total += 1
             let i = (y * result.width + x) * 4
-            if abs(Int(result.pixels[i]) - Int(truth.pixels[i])) > 40 { differing += 1 }
+            if abs(Int(result.pixels[i]) - Int(truth.pixels[i])) > 40 { differing += 1; badRows.insert(y / 40 * 40) }
         }
     }
-    #expect(Double(differing) / Double(total) < 0.01, "\(differing) of \(total) pixels in the bar's strip differ from the page")
+    #expect(Double(differing) / Double(total) < 0.01, "\(differing) of \(total) pixels in the bar's strip differ from the page, in rows \(badRows.sorted()) of \(result.height)")
 }
 
 @Test func aBounceAtTheEndOfThePageIsNotPartOfTheImage() throws {
