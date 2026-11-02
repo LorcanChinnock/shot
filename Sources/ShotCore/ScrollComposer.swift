@@ -110,12 +110,12 @@ struct ScrollBandVotes: Sendable {
                     if u < width - edge {
                         Self.vote(stay: min(stay, stayOnlyY), follow: min(follow, stayOnlyX), back: back, votes: &votesY[v], stays: &stayY[v])
                     }
-                    Self.vote(stay: min(stay, stayOnlyY), follow: min(follow, stayOnlyX), back: back, votes: &mapVotes[cell], stays: &mapStays[cell])
+                    Self.vote(stay: min(stay, stayOnlyY), follow: min(follow, stayOnlyX), back: back, votes: &mapVotes[cell], stays: &mapStays[cell], untested: true)
                 }
                 if useX {
                     let back = min(Self.reverse(a, b, width, height, ib, u + shift.x, v + shift.y), Self.reverse(a, b, width, height, ib, u + shift.x, v))
                     Self.vote(stay: min(stay, stayOnlyX), follow: min(follow, stayOnlyY), back: back, votes: &votesX[u], stays: &stayX[u])
-                    Self.vote(stay: min(stay, stayOnlyX), follow: min(follow, stayOnlyY), back: back, votes: &mapVotes[cell], stays: &mapStays[cell])
+                    Self.vote(stay: min(stay, stayOnlyX), follow: min(follow, stayOnlyY), back: back, votes: &mapVotes[cell], stays: &mapStays[cell], untested: true)
                 }
             }
         }
@@ -192,12 +192,21 @@ struct ScrollBandVotes: Sendable {
     /// A pixel votes only when both ways could be tested: a pixel whose place after the move is off the frame can't
     /// say whether it followed the content, and it would vote that it stayed whenever it happened to look like what
     /// was there.
-    private static func vote(stay: Int32, follow: Int32, back: Int32, votes: inout Int32, stays: inout Int32) {
+    ///
+    /// When a move is as tall as the rows above it, as a page that jumps a whole step per frame, the pixels in those
+    /// rows have no place to follow to. They can still vote that they stayed if the pixel in the later frame isn't what
+    /// the content from that far on would have brought there: the same test from the other side. Only the map of pinned
+    /// parts takes such votes (`untested`): a row's votes would otherwise be nothing but a pinned part's, and a list in
+    /// a margin would make every row above it look like a bar.
+    private static func vote(stay: Int32, follow: Int32, back: Int32, votes: inout Int32, stays: inout Int32, untested allowed: Bool = false) {
         let threshold: Int32 = 8, margin: Int32 = 10, far: Int32 = 255
-        guard stay < far, follow < far else {
+        guard stay < far, follow < far || (allowed && back < far) else {
             return
         }
-        if stay < threshold, stay + margin < follow, back >= threshold {
+        // With nothing to follow to, the reverse test is the only evidence, so it has to be clear: text rasterised a
+        // little differently in two frames can differ by this much less than a pixel that was replaced.
+        let untested = follow >= far
+        if stay < threshold, stay + margin < follow, back >= (untested ? 6 * threshold : threshold) {
             votes += 1
             stays += 1
         } else if follow < threshold, follow + margin < stay {
@@ -343,6 +352,8 @@ enum ScrollComposer {
         let colors = UnsafeMutablePointer<UInt32>.allocate(capacity: slots * k)
         let weights = UnsafeMutablePointer<UInt8>.allocate(capacity: slots * k)
         let counts = UnsafeMutablePointer<UInt8>.allocate(capacity: slots)
+        // Output pixels a pinned part hid in some frame: if no frame showed one clean, it is a hole to fill.
+        let hidden = UnsafeMutablePointer<UInt8>.allocate(capacity: stripe * outWidth)
         colors.initialize(repeating: 0, count: slots * k)
         weights.initialize(repeating: 0, count: slots * k)
         counts.initialize(repeating: 0, count: slots)
@@ -350,11 +361,13 @@ enum ScrollComposer {
             colors.deallocate()
             weights.deallocate()
             counts.deallocate()
+            hidden.deallocate()
         }
         var y0 = 0
         while y0 < outHeight {
             let y1 = min(outHeight, y0 + stripe)
             counts.update(repeating: 0, count: slots)
+            hidden.update(repeating: 0, count: stripe * outWidth)
             let layer = stripe * outWidth
             for key in keys {
                 key.pixels.withUnsafeBufferPointer { frame in
@@ -385,6 +398,10 @@ enum ScrollComposer {
                                             add(key.x - bounds.x0 + u, wy, u, v, pinned: false)
                                         } else {
                                             let blob = blobs[part - 1]
+                                            let wx = key.x - bounds.x0 + u
+                                            if wx >= 0, wx < outWidth {
+                                                hidden[(wy - y0) * outWidth + wx] = 1
+                                            }
                                             add(blob.left ? u : outWidth - (width - u), blob.top ? v : outHeight - (height - v), u, v, pinned: true)
                                         }
                                     } else {
@@ -436,6 +453,36 @@ enum ScrollComposer {
                         out[o + 2] = UInt8(truncatingIfNeeded: color >> 16)
                         out[o + 3] = 255
                     }
+                }
+            }
+            // A part that sits at the same place in every frame, over rows that repeat at the move's period, hides
+            // the same rows each time (a list's lines under a step of a whole number of them), and nothing shows what
+            // is under them. Each such run takes its neighbours' colour, the nearer one for each pixel.
+            for wy in y0..<y1 {
+                let row = (wy - y0) * outWidth
+                var wx = 0
+                while wx < outWidth {
+                    guard hidden[row + wx] != 0, out[(wy * outWidth + wx) * 4 + 3] == 0 else {
+                        wx += 1
+                        continue
+                    }
+                    var end = wx
+                    while end < outWidth, hidden[row + end] != 0, out[(wy * outWidth + end) * 4 + 3] == 0 {
+                        end += 1
+                    }
+                    let left = wx > 0 ? (wy * outWidth + wx - 1) * 4 : -1, right = end < outWidth ? (wy * outWidth + end) * 4 : -1
+                    for x in wx..<end {
+                        let from = left >= 0 && (right < 0 || x - wx < end - x) ? left : right
+                        guard from >= 0, out[from + 3] == 255 else {
+                            continue
+                        }
+                        let o = (wy * outWidth + x) * 4
+                        out[o] = out[from]
+                        out[o + 1] = out[from + 1]
+                        out[o + 2] = out[from + 2]
+                        out[o + 3] = 255
+                    }
+                    wx = end
                 }
             }
             y0 = y1
