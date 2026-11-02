@@ -1366,10 +1366,13 @@ public final class ScrollStitcher {
         for held in (0..<4).compactMap({ extremeFrame($0) }) where !all.contains(where: { $0.x == held.x && $0.y == held.y }) {
             all.append(held)
         }
-        // The last frame that lined up is always in, wherever it falls between the spacing.
-        if !all.contains(where: { $0.x == position.x && $0.y == position.y }) {
-            all.append(ScrollKeyFrame(x: position.x, y: position.y, pixels: Array(UnsafeBufferPointer(start: previous, count: width * height * 4))))
-        }
+        // The last frame that lined up is always in, wherever it falls between the spacing. It takes the place of a
+        // frame kept at the same spot: the area has rested there since, and an overlay scroll bar that was over the
+        // last screenful on the way in has faded by then, so it is the one that shows the screenful clean.
+        let last = ScrollKeyFrame(x: position.x, y: position.y, pixels: Array(UnsafeBufferPointer(start: previous, count: width * height * 4)))
+        // It goes first, as the composer keeps only the first few samples of a pixel.
+        all.removeAll { $0.x == position.x && $0.y == position.y }
+        all.insert(last, at: 0)
         // Frames that went past where the area came to rest are the bounce, and their bars may have moved with it.
         let rested = all.filter { $0.x >= limit.x0 - 1 && $0.y >= limit.y0 - 1 && $0.x + width <= limit.x1 + 1 && $0.y + height <= limit.y1 + 1 }
         if !rested.isEmpty {

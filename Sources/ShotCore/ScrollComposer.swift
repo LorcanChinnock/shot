@@ -439,14 +439,25 @@ enum ScrollComposer {
                         }
                         let base = content > 0 ? slot : slot + layer
                         var reference: UInt32?
+                        var closer: UInt32?
                         if atEdge, content > 1 {
                             let rx = wx < inner ? inner : outWidth - inner - 1
                             let ro = (wy * outWidth + rx) * 4
                             if out[ro + 3] == 255 {
                                 reference = UInt32(out[ro]) | UInt32(out[ro + 1]) << 8 | UInt32(out[ro + 2]) << 16
                             }
+                            // Content can reach into the strip (a chat bubble that ends inside it), so the pixel at the
+                            // strip's inner side is no help in that row. One nearer the edge, still clear of a bar's
+                            // thumb, is the page there.
+                            let nx = wx < inner ? edge * 2 / 3 : outWidth - edge * 2 / 3 - 1
+                            if nx >= 0, nx < outWidth, nx != rx {
+                                let no = (wy * outWidth + nx) * 4
+                                if out[no + 3] == 255 {
+                                    closer = UInt32(out[no]) | UInt32(out[no + 1]) << 8 | UInt32(out[no + 2]) << 16
+                                }
+                            }
                         }
-                        let color = consensus(colors, weights, base * k, content > 0 ? content : pinned, near: reference)
+                        let color = consensus(colors, weights, base * k, content > 0 ? content : pinned, near: reference, alsoNear: closer)
                         let o = (wy * outWidth + wx) * 4
                         out[o] = UInt8(truncatingIfNeeded: color)
                         out[o + 1] = UInt8(truncatingIfNeeded: color >> 8)
@@ -499,7 +510,7 @@ enum ScrollComposer {
     /// The sample most of the others agree with; of equals, the one seen nearest the middle of its frame. With a
     /// `near` colour, the sample closest to it if one is close and the samples disagree.
     @_optimize(speed)
-    private static func consensus(_ colors: UnsafeMutablePointer<UInt32>, _ weights: UnsafeMutablePointer<UInt8>, _ start: Int, _ n: Int, near: UInt32? = nil) -> UInt32 {
+    private static func consensus(_ colors: UnsafeMutablePointer<UInt32>, _ weights: UnsafeMutablePointer<UInt8>, _ start: Int, _ n: Int, near: UInt32? = nil, alsoNear: UInt32? = nil) -> UInt32 {
         if n == 1 {
             return colors[start]
         }
@@ -511,12 +522,14 @@ enum ScrollComposer {
             }
             if !allAgree {
                 var closest = 0, least = Int.max
-                for i in 0..<n {
-                    let c = colors[start + i]
-                    let d = abs(Int(c & 255) - Int(near & 255)) + abs(Int((c >> 8) & 255) - Int((near >> 8) & 255)) + abs(Int((c >> 16) & 255) - Int((near >> 16) & 255))
-                    if d < least {
-                        least = d
-                        closest = i
+                for reference in [near, alsoNear].compactMap({ $0 }) {
+                    for i in 0..<n {
+                        let c = colors[start + i]
+                        let d = abs(Int(c & 255) - Int(reference & 255)) + abs(Int((c >> 8) & 255) - Int((reference >> 8) & 255)) + abs(Int((c >> 16) & 255) - Int((reference >> 16) & 255))
+                        if d < least {
+                            least = d
+                            closest = i
+                        }
                     }
                 }
                 if least <= 3 * agreeing {
