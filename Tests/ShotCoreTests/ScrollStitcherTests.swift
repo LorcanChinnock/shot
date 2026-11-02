@@ -25,6 +25,9 @@ struct ScrollScene {
     var topMargin: CGFloat = 0
     /// A scroll bar over the right edge from the second frame on, as one that fades in once scrolling starts; it moves with the scroll position rather than with the content.
     var scrollBar = false
+    /// Rows this many points tall instead of paragraphs, each the same sentence with its number in its own tint, as a
+    /// list of tickets or messages looks: a move of a row and a bit lines up with the one a row off.
+    var rows: CGFloat = 0
 
     static let fabColor = (r: 255, g: 0, b: 255)
 
@@ -133,6 +136,29 @@ struct ScrollScene {
 
     private func drawContent(_ ctx: CGContext) {
         guard !blank else {
+            return
+        }
+        if rows > 0 {
+            var n = 0
+            var y: CGFloat = 0
+            while y < content.height {
+                // hsl(37 n degrees, 60%, 90%)
+                let h = Double((n * 37) % 360) / 60, c = 0.12, m = 0.84
+                let x = c * (1 - abs(h.truncatingRemainder(dividingBy: 2) - 1))
+                let (r, g, b): (Double, Double, Double) = switch Int(h) {
+                case 0: (c, x, 0)
+                case 1: (x, c, 0)
+                case 2: (0, c, x)
+                case 3: (0, x, c)
+                case 4: (x, 0, c)
+                default: (c, 0, x)
+                }
+                ctx.setFillColor(CGColor(srgbRed: r + m, green: g + m, blue: b + m, alpha: 1))
+                ctx.fill(CGRect(x: 0, y: y, width: content.width, height: rows))
+                draw(ctx, "Row \(n) — the quick brown fox jumps over the lazy dog, line \(n).", at: CGPoint(x: 24, y: y + rows / 2 + 5), bold: false)
+                y += rows
+                n += 1
+            }
             return
         }
         if table {
@@ -596,6 +622,38 @@ func fabPixels(in image: Bitmap) -> Int {
     let d = difference(result, expectedTruth(scene, start: .zero, stitcher: stitcher), excluding: [headerBand, footerBand])
     #expect(d.mean < 6, "mean \(d.mean)")
     #expect(d.worstBand < 20, "worst band \(d.worstBand) at \(d.worstBandAt)")
+}
+
+@Test func rowsThatLookAlikeAreNotMistakenForTheOnesNextToThemWhenAFrameMovesAboutARow() throws {
+    // Found in Chrome on a long list: a move of 65 points on 61-point rows also fits 4 and 126, and the true one was
+    // never tried, so frames landed a row off and the image repeated and skipped rows.
+    let scene = ScrollScene(content: CGSize(width: 640, height: 4000), viewport: CGSize(width: 640, height: 440), rows: 60.8)
+    let offsets = path(steps: down([70, 65, 65, 65, 66, 64, 65, 65, 70, 62, 65, 65, 65, 65, 68, 64, 65]))
+    let (stitcher, image, statuses) = stitch(scene, offsets: offsets)
+    let result = try #require(image)
+    #expect(statuses.dropFirst().allSatisfy { $0 == .live }, "\(statuses)")
+    #expect(abs(CGFloat(result.height) - (scene.viewport.height + offsets.last!.y) * 2) <= 2, "\(result.height) vs \((scene.viewport.height + offsets.last!.y) * 2)")
+    let d = difference(result, expectedTruth(scene, start: .zero, stitcher: stitcher))
+    #expect(d.mean < 6, "mean \(d.mean)")
+    #expect(d.worstBand < 20, "worst band \(d.worstBand) at \(d.worstBandAt)")
+}
+
+@Test func aBarWithMoreBlankPaddingUnderItsTextThanAGapIsStillOneBand() throws {
+    // Found in Chrome: a 64-point bar with its text near the top and its rule at the bottom. The rule is the bar's
+    // edge, so the blank rows above it are the bar's and not the page's.
+    let scene = ScrollScene(content: CGSize(width: 480, height: 3000), header: 70, rows: 61)
+    let offsets = path(steps: down(Array(repeating: 12, count: 20) + [30, 30]))
+    let (stitcher, image, statuses) = stitch(scene, offsets: offsets)
+    let result = try #require(image)
+    #expect(statuses.dropFirst().allSatisfy { $0 == .live }, "\(statuses)")
+    let headerBand = CGRect(x: 0, y: 0, width: CGFloat(result.width), height: scene.header * 2)
+    let d = difference(result, expectedTruth(scene, start: .zero, stitcher: stitcher), excluding: [headerBand])
+    #expect(d.mean < 6, "mean \(d.mean)")
+    #expect(d.worstBand < 20, "worst band \(d.worstBand) at \(d.worstBandAt)")
+    #expect(d.unseen == 0, "unseen \(d.unseen) in \(d.unseenBox)")
+    // The bar, border rule included, is in the image once.
+    let rule = Int(scene.header) * 2 - 2
+    #expect(result[600, rule].r < 180, "the bar's rule is missing at row \(rule)")
 }
 
 @Test func reversingDirectionNeverWarnsOnTheWay() throws {

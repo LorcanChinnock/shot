@@ -490,6 +490,18 @@ public final class ScrollStitcher {
         for peak in correlator.peaks(from: previous2, to: current2, count: Self.peakCount) {
             shifts.append((peak.dx * 2, peak.dy * 2))
         }
+        // On rows that look alike the peaks are a ladder one row apart and the true move can be a rung that isn't
+        // among them. The rung between two peaks, and the one past each, are tried too; the scoring picks the right one.
+        let found = shifts
+        var rungs: [(x: Int, y: Int)] = []
+        for (i, a) in found.enumerated() where !sweeping {
+            for b in found[(i + 1)...] where a.x == b.x || a.y == b.y {
+                rungs.append(((a.x + b.x) / 2, (a.y + b.y) / 2))
+                rungs.append((2 * a.x - b.x, 2 * a.y - b.y))
+                rungs.append((2 * b.x - a.x, 2 * b.y - a.y))
+            }
+        }
+        shifts.append(contentsOf: rungs)
         shifts.append(contentsOf: [(0, 0), (lastShift.x / scale, lastShift.y / scale)])
         // A pinned bar or a still part of the page makes a strong peak at no move that hides the small moves beside it,
         // such as the tail of a wheel notch, so a few small moves along each axis are tried too.
@@ -526,7 +538,22 @@ public final class ScrollStitcher {
         // The best three, and also the strongest peak and the last move: the half-size greys can't hold an odd move,
         // so these rank lower than they should, and the cut would otherwise lose the true one.
         var toRefine = coarse.sorted(by: { $0.score < $1.score }).prefix(3).map(\.shift)
-        for must in [shifts.first, (lastShift.x / scale, lastShift.y / scale)].compactMap({ $0 }) {
+        // The likeliest rungs of a ladder go too, for the same reason: the true move may be an odd one.
+        // They're ranked on the level-1 greys themselves, one move at a time, since the half-size ones can't hold an odd move.
+        var rungScores: [Candidate] = []
+        for rung in rungs where abs(rung.x) * 4 <= width1 * 3 && abs(rung.y) * 4 <= height1 * 3 && !rungScores.contains(where: { abs($0.shift.x - rung.x) <= 1 && abs($0.shift.y - rung.y) <= 1 }) {
+            levelResiduals(level: 1, shift: rung, rowStep: 4, every: 3)
+            if let candidate = score(shift: rung, agree: Self.agree1, cap: Self.cap1) {
+                rungScores.append(candidate)
+            }
+        }
+        for rung in rungScores.sorted(by: { $0.score < $1.score }).prefix(3) where !toRefine.contains(where: { abs($0.x - rung.shift.x) <= 1 && abs($0.y - rung.shift.y) <= 1 }) {
+            toRefine.append(rung.shift)
+        }
+        // Every peak is refined, not only the strongest: on rows that look alike the peaks are close, and the true one
+        // can be a grey pixel off one that ranks low for it.
+        let musts: [(x: Int, y: Int)] = (sweeping ? [shifts.first].compactMap { $0 } : found) + [(lastShift.x / scale, lastShift.y / scale)]
+        for must in musts.map({ ($0.x, $0.y) }) {
             if let candidate = coarse.first(where: { abs($0.shift.x - must.0) <= 1 && abs($0.shift.y - must.1) <= 1 }), !toRefine.contains(where: { abs($0.x - candidate.shift.x) <= 1 && abs($0.y - candidate.shift.y) <= 1 }) {
                 toRefine.append(candidate.shift)
             }

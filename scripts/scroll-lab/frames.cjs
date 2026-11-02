@@ -50,6 +50,7 @@ const scenarios = [
   ['settings-steady', 'settings', 'steady'], ['settings-notches', 'settings', 'notches'], ['settings-flick', 'settings', 'flick'],
   ['floaters-steady', 'floaters', 'steady'], ['floaters-notches', 'floaters', 'notches'], ['floaters-flick', 'floaters', 'flick'],
   ['timeline-sideways', 'timeline', 'sideways'], ['timeline-diagonal', 'timeline', 'diagonal'],
+  ['list-steady', 'list', 'steady'], ['list-slow', 'list', 'slow'], ['list-notches', 'list', 'notches'], ['list-flick', 'list', 'flick'],
 ];
 
 (async () => {
