@@ -72,5 +72,20 @@ enum SampleData {
                 Message(fromCustomer: true, text: "Thanks, that fixed it."),
             ]
         ),
+        Conversation(
+            id: "dana", name: "Dana Okafor", preview: "Long thread, for scrolling", when: "Mon",
+            order: Order(
+                number: "#A-20790", item: "Mug set, green", email: "dana.okafor@example.com",
+                card: "6011 1111 1111 1117", balance: "£0.00"
+            ),
+            messages: (1...40).map { n in
+                Message(
+                    fromCustomer: n % 2 == 1,
+                    text: n % 2 == 1
+                        ? "Message \(n): checking in about the mug set. Is it still due this week?"
+                        : "Message \(n): yes, it is booked on the next courier run."
+                )
+            }
+        ),
     ]
 }

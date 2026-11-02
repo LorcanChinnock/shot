@@ -25,6 +25,8 @@ struct ScrollScene {
     var topMargin: CGFloat = 0
     /// A scroll bar over the right edge from the second frame on, as one that fades in once scrolling starts; it moves with the scroll position rather than with the content.
     var scrollBar = false
+    /// The frame the scroll bar has faded out by, as it does a moment after the scrolling stops.
+    var scrollBarFadedAt = Int.max
     /// Rows this many points tall instead of paragraphs, each the same sentence with its number in its own tint, as a
     /// list of tickets or messages looks: a move of a row and a bit lines up with the one a row off.
     var rows: CGFloat = 0
@@ -79,7 +81,7 @@ struct ScrollScene {
             ctx.fill(CGRect(x: fab.midX - 8, y: fab.midY - 2, width: 16, height: 4))
             ctx.fill(CGRect(x: fab.midX - 2, y: fab.midY - 8, width: 4, height: 16))
         }
-        if scrollBar, index > 0 {
+        if scrollBar, index > 0, index < scrollBarFadedAt {
             let travel = viewport.height - 70
             let top = min(max(0, offset.y / (content.height - viewport.height)), 1) * travel
             ctx.setFillColor(CGColor(gray: 0.3, alpha: 0.75))
@@ -711,6 +713,28 @@ func fabPixels(in image: Bitmap) -> Int {
         }
     }
     #expect(Double(differing) / Double(total) < 0.01, "\(differing) of \(total) pixels in the bar's strip differ from the page, in rows \(badRows.sorted()) of \(result.height)")
+}
+
+@Test func aScrollBarThatFadesOnceTheScrollingStopsLeavesNothingAtTheEndOfThePage() throws {
+    // The last screenful is only ever seen on the way to the end, with the bar over it, so the frames after the
+    // scrolling stops, which don't move, are what show it clean.
+    let moving = 48
+    var scene = ScrollScene(content: CGSize(width: 480, height: 800), scrollBar: true)
+    scene.scrollBarFadedAt = moving + 3
+    let offsets = path(steps: down(Array(repeating: 9, count: moving - 2) + [66])) + Array(repeating: CGPoint(x: 0, y: 480), count: 8)
+    let (stitcher, image, _) = stitch(scene, offsets: offsets)
+    let result = try #require(image)
+    let truth = expectedTruth(scene, start: .zero, stitcher: stitcher)
+    var differing = 0, total = 0
+    var badRows = Set<Int>()
+    for y in 0..<min(result.height, truth.height) {
+        for x in (result.width - 22)..<(result.width - 4) {
+            total += 1
+            let i = (y * result.width + x) * 4
+            if abs(Int(result.pixels[i]) - Int(truth.pixels[i])) > 40 { differing += 1; badRows.insert(y / 40 * 40) }
+        }
+    }
+    #expect(differing == 0, "\(differing) of \(total) pixels in the bar's strip differ from the page, in rows \(badRows.sorted()) of \(result.height)")
 }
 
 @Test func aBounceAtTheEndOfThePageIsNotPartOfTheImage() throws {
