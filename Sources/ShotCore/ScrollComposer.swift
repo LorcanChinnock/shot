@@ -204,9 +204,18 @@ struct ScrollBandVotes: Sendable {
     /// edge to its last pinned row, across the gaps a bar's own padding leaves.
     func bands(scale: Int) -> ScrollBands {
         let gap = 20 * scale
+        // Rows where at least 60% of the width's sampled pixels stayed: a bar's rule, where a pinned column's is short.
+        let cells = width / Self.step
+        let wide = (0..<height).map { v -> Bool in
+            let row = v / Self.step
+            guard v % Self.step == 0, cells > 0, (row + 1) * cells <= mapStays.count else {
+                return false
+            }
+            return (0..<cells).reduce(0) { $0 + (mapStays[row * cells + $1] > 0 ? 1 : 0) } * 5 >= cells * 3
+        }
         return ScrollBands(
-            top: Self.band(votes: votesY, stays: stayY, fromStart: true, gap: gap),
-            bottom: Self.band(votes: votesY, stays: stayY, fromStart: false, gap: gap),
+            top: Self.band(votes: votesY, stays: stayY, fromStart: true, gap: gap, wide: wide),
+            bottom: Self.band(votes: votesY, stays: stayY, fromStart: false, gap: gap, wide: wide),
             left: Self.band(votes: votesX, stays: stayX, fromStart: true, gap: gap),
             right: Self.band(votes: votesX, stays: stayX, fromStart: false, gap: gap)
         )
@@ -214,7 +223,7 @@ struct ScrollBandVotes: Sendable {
 
     /// How many rows or columns from an edge are pinned: up to the last one whose votes mostly stayed, as long as no
     /// more than `gap` unpinned ones come between, and no more than 45% of the area.
-    private static func band(votes: [Int32], stays: [Int32], fromStart: Bool, gap: Int) -> Int {
+    private static func band(votes: [Int32], stays: [Int32], fromStart: Bool, gap: Int, wide: [Bool]? = nil) -> Int {
         let count = votes.count
         // A bar's own pixels give nearly every vote as stayed, over several rows; a stray row of content whose shapes
         // happen to repeat doesn't.
@@ -224,9 +233,28 @@ struct ScrollBandVotes: Sendable {
             // A thin rule has one row and plenty of votes.
             pinned[k] && (stays[k] >= 200 || (k > 1 && (pinned[k - 1] || pinned[k - 2])) || (k + 2 < count && (pinned[k + 1] || pinned[k + 2])))
         }
+        let limit = count * 45 / 100
+        /// The next row at or after `i` (counted from the edge) that is a pinned rule across most of the width, within
+        /// two gaps and with no content between; nil otherwise. A rule that's only part of the width is a pinned
+        /// column's cell border, not a bar's edge.
+        func ruleAhead(from i: Int) -> Int? {
+            guard let wide else {
+                return nil
+            }
+            for j in i..<min(i + 2 * gap, limit) {
+                let k = fromStart ? j : count - 1 - j
+                if isPinned(k), stays[k] >= 200, wide[k] {
+                    return j
+                }
+                if votes[k] >= 100, Float(stays[k]) < 0.75 * Float(votes[k]) {
+                    return nil
+                }
+            }
+            return nil
+        }
         var last = -1
         var i = 0
-        while i < count * 45 / 100 {
+        while i < limit {
             let k = fromStart ? i : count - 1 - i
             if isPinned(k) {
                 last = i
@@ -236,6 +264,12 @@ struct ScrollBandVotes: Sendable {
                     break
                 }
             } else if i - last > (last < 0 ? 3 * gap : gap) {
+                // A bar with deep padding is closed by a rule that stayed put, which content never does: a rule of
+                // the page moves with it. The band reaches such a rule across the blank rows, but not across content.
+                if last >= 0, let rule = ruleAhead(from: i) {
+                    i = rule
+                    continue
+                }
                 break
             }
             i += 1

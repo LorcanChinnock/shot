@@ -86,5 +86,13 @@ thead th{position:sticky;top:0;background:#e9edf5;z-index:3;text-align:center}tb
     return `<style>${base}.r{display:flex;width:max-content}.c{width:70px;height:46px;border-right:1px solid #e0e0e0;border-bottom:1px solid #e0e0e0;padding:12px 6px;font-size:12px}.c.h{height:34px;background:#eef;font-weight:600;position:sticky;top:0;z-index:3}
 .lab{position:sticky;left:0;width:150px;height:46px;background:#f7f7f7;border-right:1px solid #bbb;border-bottom:1px solid #e0e0e0;padding:12px;font-weight:600;z-index:4;flex:none}</style><div class="r"><div class="lab pin" style="height:34px;background:#dde">Task</div>${head}</div>${rows}`;
   },
+  // A long list of rows that look alike: the same sentence with a different number, each in its own pastel tint, under an
+  // opaque sticky bar. Seen live in Chrome (#1030): the stitched image repeated and skipped rows.
+  list() {
+    let rows = '';
+    for (let i = 1; i <= 300; i++) rows += `<p class="row" style="background:hsl(${(i * 37) % 360} 60% 90%)"><b>Row ${String(i).padStart(3, '0')}</b> — the quick brown fox jumps over the lazy dog, line ${i}.</p>`;
+    return `<style>${base}.bar{position:sticky;top:0;height:64px;display:flex;align-items:center;padding:0 24px;font-weight:700;border-bottom:1px solid #ccc;background:#fff;z-index:5}.row{margin:0;padding:18px 24px;font-family:Times,serif;font-size:16px}</style>
+<div class="bar pin">Sticky header</div>${rows}`;
+  },
 };
 module.exports = { pages };
