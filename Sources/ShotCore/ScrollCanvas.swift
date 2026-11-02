@@ -204,7 +204,7 @@ final class ScrollCanvas {
             var source = frame + ((tile.y + wy - at.y) * width + tile.x + clipped.x0 - at.x) * 4
             var destination = buffer + (wy - bounds.y0) * stride + (clipped.x0 - bounds.x0) * 4
             for _ in 0..<clipped.width {
-                if destination[3] != 255 {
+                if destination[3] != 255, !Self.isConverted(destination[3]) {
                     destination[0] = source[0]
                     destination[1] = source[1]
                     destination[2] = source[2]
@@ -228,7 +228,7 @@ final class ScrollCanvas {
         guard let buffer else {
             return
         }
-        let code = 240 + flags
+        let code = Self.convertedCode + flags
         let clipped = Bounds(x0: rect.x, y0: rect.y, x1: rect.x + rect.width, y1: rect.y + rect.height).intersection(bounds)
         guard !clipped.isEmpty else {
             return
@@ -245,14 +245,43 @@ final class ScrollCanvas {
         pinnedBounds[code] = pinnedBounds[code].map { $0.union(clipped) } ?? clipped
     }
 
-    /// Clears the sticky paint with `flags` in `rect`.
-    func clearPinned(rect: (x: Int, y: Int, width: Int, height: Int), flags: UInt8) {
-        clear(Bounds(x0: rect.x, y0: rect.y, x1: rect.x + rect.width, y1: rect.y + rect.height), code: 240 + flags)
+    /// Alpha codes for paint that began as content: it's sticky paint while the tile is sticky, and goes back to being
+    /// content when the tile turns out not to be.
+    static let convertedCode: UInt8 = 224
+    /// Converted paint stands: sticky paint doesn't overwrite it with a later frame's.
+    private static func isConverted(_ alpha: UInt8) -> Bool { alpha >= convertedCode && alpha < 240 }
+
+    /// Gives up the sticky paint with `flags` in `rect`, for a tile that proved not to stick: paint that began as
+    /// content is content again, which the page's blank margin under a bar needs, and paint copied from a frame at
+    /// the edge is cleared, for the content to fill in as it's seen.
+    func releasePinned(rect: (x: Int, y: Int, width: Int, height: Int), flags: UInt8) {
+        guard let buffer else {
+            return
+        }
+        let clipped = Bounds(x0: rect.x, y0: rect.y, x1: rect.x + rect.width, y1: rect.y + rect.height).intersection(bounds)
+        guard !clipped.isEmpty else {
+            return
+        }
+        for wy in clipped.y0..<clipped.y1 {
+            var p = buffer + (wy - bounds.y0) * stride + (clipped.x0 - bounds.x0) * 4
+            for _ in 0..<clipped.width {
+                if p[3] == Self.convertedCode + flags {
+                    p[3] = 255
+                } else if p[3] == 240 + flags {
+                    p[0] = 0
+                    p[1] = 0
+                    p[2] = 0
+                    p[3] = 0
+                }
+                p += 4
+            }
+        }
+        updateMip(clipped)
     }
 
     /// Clears every sticky paint anchored to any of the edges in `flags`, whose edge has moved.
     func clearPinned(anchoredTo flags: UInt8) {
-        for (code, extent) in pinnedBounds where (code - 240) & flags != 0 {
+        for (code, extent) in pinnedBounds where code & 15 & flags != 0 {
             clear(extent, code: code)
             pinnedBounds[code] = nil
         }
@@ -283,7 +312,7 @@ final class ScrollCanvas {
 
     /// Paints pixels `x0..<x1` of the frame's row `y` as content, with the frame's top left at `at` in the world.
     /// Returns what landed; `painted` must be told once the rows are done.
-    func paintContentRow(_ frame: UnsafeMutablePointer<UInt8>, width: Int, y: Int, x0: Int, x1: Int, at: (x: Int, y: Int)) -> Bounds? {
+    func paintContentRow(_ frame: UnsafeMutablePointer<UInt8>, width: Int, y: Int, x0: Int, x1: Int, at: (x: Int, y: Int), edge: Int = 0) -> Bounds? {
         let world = Bounds(x0: at.x + x0, y0: at.y + y, x1: at.x + x1, y1: at.y + y + 1)
         guard let buffer else {
             return nil
@@ -292,11 +321,39 @@ final class ScrollCanvas {
         guard !clipped.isEmpty else {
             return nil
         }
-        let source = frame + (y * width + clipped.x0 - at.x) * 4
+        let row = frame + y * width * 4
+        let source = row + (clipped.x0 - at.x) * 4
         let destination = buffer + (clipped.y0 - bounds.y0) * stride + (clipped.x0 - bounds.x0) * 4
-        destination.update(from: source, count: clipped.width * 4)
+        let first = clipped.x0 - at.x, count = clipped.width
+        if edge > 0, first < edge || first + count > width - edge {
+            // A scroll bar that fades in over the edge moves against the content, so it lands on different pixels in
+            // each frame. Where a pixel in the outer strip differs strongly from what's painted, the one that's
+            // nearer the pixel just inside the strip, which the bar never covers, is the page's.
+            let inner = [row + edge * 4, row + (width - edge - 1) * 4]
+            for i in 0..<count {
+                let fx = first + i
+                let s = source + i * 4, d = destination + i * 4
+                if fx < edge || fx >= width - edge, d[3] == 255 {
+                    let ref = fx < edge ? inner[0] : inner[1]
+                    func far(_ p: UnsafeMutablePointer<UInt8>) -> Int { abs(Int(p[0]) - Int(ref[0])) + abs(Int(p[1]) - Int(ref[1])) + abs(Int(p[2]) - Int(ref[2])) }
+                    let change = abs(Int(s[0]) - Int(d[0])) + abs(Int(s[1]) - Int(d[1])) + abs(Int(s[2]) - Int(d[2]))
+                    // The new pixel replaces the old only if it plainly is the page's: close to the one inside the strip
+                    // and much closer than the old one. Where the page runs to the edge and that pixel says nothing,
+                    // the first sight stands.
+                    if change > 20, !(far(s) < 30 && far(s) + 10 < far(d)) {
+                        continue
+                    }
+                }
+                d[0] = s[0]
+                d[1] = s[1]
+                d[2] = s[2]
+                d[3] = 255
+            }
+            return clipped
+        }
+        destination.update(from: source, count: count * 4)
         var p = destination + 3
-        for _ in 0..<clipped.width {
+        for _ in 0..<count {
             p.pointee = 255
             p += 4
         }
@@ -319,7 +376,7 @@ final class ScrollCanvas {
         var destination = buffer + (clipped.y0 - bounds.y0) * stride + (clipped.x0 - bounds.x0) * 4
         var any = false
         for _ in 0..<clipped.width {
-            if destination[3] != 255 {
+            if destination[3] != 255, !Self.isConverted(destination[3]) {
                 destination[0] = source[0]
                 destination[1] = source[1]
                 destination[2] = source[2]
@@ -426,14 +483,14 @@ final class ScrollCanvas {
         return Float(sum) / Float(3 * n)
     }
 
-    private static func bitmapInfo(_ byteOrder: ScrollStitcher.ByteOrder) -> CGBitmapInfo {
+    static func bitmapInfo(_ byteOrder: ScrollStitcher.ByteOrder) -> CGBitmapInfo {
         switch byteOrder {
         case .bgra: CGBitmapInfo(rawValue: CGBitmapInfo.byteOrder32Little.rawValue | CGImageAlphaInfo.premultipliedFirst.rawValue)
         case .rgba: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
         }
     }
 
-    private static func makeImage(_ data: Data, width: Int, height: Int, byteOrder: ScrollStitcher.ByteOrder, colorSpace: CGColorSpace) -> CGImage? {
+    static func makeImage(_ data: Data, width: Int, height: Int, byteOrder: ScrollStitcher.ByteOrder, colorSpace: CGColorSpace) -> CGImage? {
         guard width > 0, height > 0, let provider = CGDataProvider(data: data as CFData) else {
             return nil
         }
@@ -485,7 +542,7 @@ final class ScrollCanvas {
                         q[2] = code
                     } else {
                         // Red for top, yellow for bottom, green for left, blue for right; mixed for corners.
-                        let flags = code - 240
+                        let flags = code & 15
                         q[0] = flags & 3 != 0 ? 220 : 40
                         q[1] = flags & 2 != 0 || flags & 4 != 0 ? 200 : 40
                         q[2] = flags & 8 != 0 ? 220 : 40
@@ -500,11 +557,11 @@ final class ScrollCanvas {
     }
 
     /// Every pixel seen, opaque, with the rest clear.
-    func image(byteOrder: ScrollStitcher.ByteOrder, colorSpace: CGColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!) -> CGImage? {
+    func image(byteOrder: ScrollStitcher.ByteOrder, colorSpace: CGColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!, keeping: Bounds? = nil) -> CGImage? {
         guard let seen, let buffer else {
             return nil
         }
-        let region = seen.intersection(bounds)
+        let region = (keeping ?? seen).intersection(seen).intersection(bounds)
         guard !region.isEmpty else {
             return nil
         }
@@ -526,5 +583,40 @@ final class ScrollCanvas {
             }
         }
         return Self.makeImage(data, width: region.width, height: region.height, byteOrder: byteOrder, colorSpace: colorSpace)
+    }
+
+    /// Whether the painted pixels of `rect` are one flat colour: a page's background and nothing on it.
+    func isBlank(_ rect: Bounds) -> Bool {
+        guard let buffer else {
+            return false
+        }
+        let area = rect.intersection(bounds)
+        guard !area.isEmpty else {
+            return false
+        }
+        var reference: (Int, Int, Int)?
+        var samples = 0, differing = 0
+        let stride = stride
+        var wy = area.y0
+        while wy < area.y1 {
+            var wx = area.x0
+            while wx < area.x1 {
+                let p = buffer + (wy - bounds.y0) * stride + (wx - bounds.x0) * 4
+                if p[3] != 0 {
+                    let color = (Int(p[0]), Int(p[1]), Int(p[2]))
+                    if let reference {
+                        samples += 1
+                        if abs(color.0 - reference.0) + abs(color.1 - reference.1) + abs(color.2 - reference.2) > 24 {
+                            differing += 1
+                        }
+                    } else {
+                        reference = color
+                    }
+                }
+                wx += 3
+            }
+            wy += 2
+        }
+        return samples >= 20 && differing * 50 <= samples
     }
 }

@@ -18,6 +18,8 @@ let package = Package(
         // Everything with no window: the model, rendering, video, GIF, preferences and the gallery.
         .target(name: "ShotCore", swiftSettings: extractingStrings("ShotCore")),
         .testTarget(name: "ShotCoreTests", dependencies: ["ShotCore"]),
+        // Replays recorded scroll scenarios through ScrollStitcher and scores the result: scripts/scroll-lab.
+        .executableTarget(name: "ScrollLab", dependencies: ["ShotCore"]),
         .executableTarget(
             name: "Shot",
             dependencies: ["ShotCore", .product(name: "Sparkle", package: "Sparkle")],

@@ -84,6 +84,38 @@ public final class ScrollStitcher {
     /// How far the view has been on each side, which sticky edges anchor to.
     private(set) var extremes = (minX: 0, maxX: 0, minY: 0, maxY: 0)
     private var lastShift = (x: 0, y: 0)
+    private var overshoot = ScrollOvershoot()
+    /// Whether the image is built at the end from the frames kept along the way, which is more robust than the
+    /// canvas painted as they came; off, it's the canvas.
+    public var composes = ProcessInfo.processInfo.environment["NOCOMPOSE"] == nil
+    private var keys: [ScrollKeyFrame] = []
+    /// Tiles of the image that kept frames cover.
+    private var keyCoverage = Set<Int>()
+    /// The frame furthest left, right, up and down.
+    private var furthest: [ScrollKeyFrame?] = [nil, nil, nil, nil]
+    private var reachingBefore = [true, true, true, true]
+    private var reach = (minX: 0, maxX: 0, minY: 0, maxY: 0)
+    private var bandVotes: ScrollBandVotes
+    /// The frame the next pair of votes is against, and where the area was for it.
+    private let voteReference: UnsafeMutablePointer<UInt8>
+    private var voteReferencePosition = (x: 0, y: 0)
+    private var keyBytes = 0
+    /// How far the area moves, as a share of its size, before another frame is kept.
+    private var keySpacing = 6
+    /// Set when the frames kept can't be thinned to the budget and still cover the image.
+    private var keysIncomplete = false
+    /// Bytes in one frame.
+    var frameBytes: Int { width * height * 4 }
+    /// Bytes of frames kept for the final pass.
+    var keyBudget = 400_000_000
+    private var excludesPinned = false
+    /// Per tile: whether it has detail and is identical in this frame and the last, which marks it as pinned.
+    private var stayPut: [Bool]
+    /// Frames in a row that didn't line up.
+    private var failures = 0
+    private static let sweepFailures = 4
+    private var lastReceived1: [Float] = []
+    private var stillSinceLastFrame = false
     private var frames = 0
     private var hitLimit = false
     public private(set) var status: ScrollCaptureStatus = .ready
@@ -98,6 +130,12 @@ public final class ScrollStitcher {
     private static let agreeDevice: Float = 28, capDevice: Float = 56, gateDevice: Float = 14
     private static let voteMargin: Float = 8
     private static let peakCount = 5
+    /// Points the area moves before another pair votes on what's pinned.
+    private static let voteSpacing = 12
+    private static let partsMargin: Float = 0.08
+    private static let stayPutLimit: Float = 3
+    /// Points at each side of the area where a fading scroll bar can lie.
+    private static let barWidth = 16
 
     /// `scale` is device pixels per point. Frames must be `width` × `height` device pixels.
     public init(width: Int, height: Int, scale: Int, byteOrder: ByteOrder, limits: ScrollCaptureLimits = .standard) {
@@ -123,6 +161,10 @@ public final class ScrollStitcher {
         current2 = previous2
         let tiles = columns * rows
         textured = [Bool](repeating: false, count: tiles)
+        stayPut = textured
+        bandVotes = ScrollBandVotes(width: width, height: height)
+        voteReference = .allocate(capacity: width * height * 4)
+        voteReference.initialize(repeating: 0, count: width * height * 4)
         residuals = [Float](repeating: .nan, count: tiles)
         followX = [Float](repeating: 0, count: tiles)
         followY = followX
@@ -136,6 +178,7 @@ public final class ScrollStitcher {
     deinit {
         previous.deallocate()
         current.deallocate()
+        voteReference.deallocate()
     }
 
     /// The image so far, in pixels.
@@ -160,10 +203,17 @@ public final class ScrollStitcher {
         lapMark = ContinuousClock.now
         copy(frame, into: current)
         greys()
+        // Whether the frame is the same as the one before it, whether or not that one lined up, which tells a scroll
+        // that went too far and stopped from something that keeps changing.
+        stillSinceLastFrame = frames > 0 && Self.meanDifference(current1, lastReceived1) < 1.5
+        lastReceived1 = current1
         lap("copy+greys")
         frames += 1
         if frames == 1 {
             canvas.paintContent(current, width: width, height: height, at: (0, 0), rect: (0, 0, width, height))
+            recordKey()
+            voteReference.update(from: current, count: width * height * 4)
+            voteReferencePosition = (0, 0)
             status = .ready
             swapFrames()
             return update(changed: true)
@@ -172,12 +222,30 @@ public final class ScrollStitcher {
         flags = previousFlags
         bands = previousBands
         texturedCount = measureTexture()
+        for t in 0..<(columns * rows) {
+            stayPut[t] = textured[t] && deviceResidual(tile: t, shift: (0, 0)) < Self.stayPutLimit
+        }
         lap("texture")
         guard texturedCount >= 10 else {
             status = .notEnough
             return update(changed: false)
         }
-        let lined = bestShift()
+        var lined = bestShift()
+        if lined == nil || lined == .ambiguous {
+            // Bars that haven't been told apart yet can outweigh a big move, or a move across them, so once more
+            // without the tiles that haven't moved.
+            excludesPinned = true
+            let again = bestShift()
+            excludesPinned = false
+            if case .value = again {
+                lined = again
+            }
+        }
+        if lined == nil, failures < Self.sweepFailures {
+            // The correlation can miss on flat or sparse pages and short moves, so before giving up on a frame every move
+            // along each axis is tried on the half-size greys.
+            lined = bestShift(sweeping: true)
+        }
         lap("bestShift")
         guard let lined else {
             // Nothing lined up: the content moved too far, or too much of it keeps changing in place.
@@ -193,12 +261,16 @@ public final class ScrollStitcher {
         let classified = classify(shift: shift)
         lap("classify")
         if !moved {
+            if overshoot.update(frame: frames, before: extremes, after: extremes, position: position, width: width, height: height, scale: scale) {
+                appendKey()
+            }
             if status.isWarning {
                 status = .live
             }
             swapFrames()
             return update(changed: false)
         }
+        failures = 0
         lastShift = shift
         previousPosition = position
         position = (position.x + shift.x, position.y + shift.y)
@@ -207,6 +279,7 @@ public final class ScrollStitcher {
         extremes.maxX = max(extremes.maxX, position.x)
         extremes.minY = min(extremes.minY, position.y)
         extremes.maxY = max(extremes.maxY, position.y)
+        let restedHere = overshoot.update(frame: frames, before: before, after: extremes, position: position, width: width, height: height, scale: scale)
         if classified {
             assignFlags()
         }
@@ -216,6 +289,8 @@ public final class ScrollStitcher {
         let changed = paint(movedAnchors: before)
         lap("paint")
         status = hitLimit ? .sizeLimit : .live
+        recordKey(force: restedHere)
+        collectBandVotes()
         swapFrames()
         return update(changed: changed)
     }
@@ -250,7 +325,27 @@ public final class ScrollStitcher {
         swap(&previousBands, &bands)
     }
 
+    private static func meanDifference(_ a: [Float], _ b: [Float]) -> Float {
+        guard a.count == b.count, !a.isEmpty else {
+            return .infinity
+        }
+        var sum: Float = 0
+        for i in stride(from: 0, to: a.count, by: 3) {
+            sum += abs(a[i] - b[i])
+        }
+        return sum / Float((a.count + 2) / 3)
+    }
+
     private func fail() {
+        failures += 1
+        if stillSinceLastFrame {
+            // Nothing is moving or changing: the content is simply further than a frame can follow.
+            for t in 0..<changing.count {
+                changing[t] *= 0.5
+            }
+            status = .tooFar
+            return
+        }
         // While nothing lines up, the last frame that did stays the reference, so scrolling back recovers.
         let shifts: [(Int, Int)] = [(0, 0), (lastShift.x, lastShift.y)]
         var unmatched = 0
@@ -388,10 +483,27 @@ public final class ScrollStitcher {
     /// painted, so small errors never add up. `nil` when nothing lines up, and `.ambiguous` when two moves well
     /// apart line up about as well, as on a pattern that repeats. A move over three quarters of the area is too far:
     /// the sliver left can match the wrong line.
-    private func bestShift() -> Coarse? {
-        var shifts: [(x: Int, y: Int)] = [(0, 0), (lastShift.x / scale, lastShift.y / scale)]
+    private func bestShift(sweeping: Bool = false) -> Coarse? {
+        // The peaks come first, strongest first: a nearby guess that's tried first would stand in for a peak that's a
+        // grey pixel off it, and the half-size greys can't tell them apart.
+        var shifts: [(x: Int, y: Int)] = []
         for peak in correlator.peaks(from: previous2, to: current2, count: Self.peakCount) {
             shifts.append((peak.dx * 2, peak.dy * 2))
+        }
+        shifts.append(contentsOf: [(0, 0), (lastShift.x / scale, lastShift.y / scale)])
+        // A pinned bar or a still part of the page makes a strong peak at no move that hides the small moves beside it,
+        // such as the tail of a wheel notch, so a few small moves along each axis are tried too.
+        for k in [2, 4, 6] {
+            shifts.append(contentsOf: [(0, k), (0, -k), (k, 0), (-k, 0)])
+        }
+        if sweeping {
+            shifts = []
+            for k in stride(from: -(height1 * 3 / 4), through: height1 * 3 / 4, by: 2) {
+                shifts.append((0, k))
+            }
+            for k in stride(from: -(width1 * 3 / 4), through: width1 * 3 / 4, by: 2) where k != 0 {
+                shifts.append((k, 0))
+            }
         }
         lap("peaks")
         var ranked: [Candidate] = []
@@ -411,7 +523,15 @@ public final class ScrollStitcher {
                 coarse.append(candidate)
             }
         }
-        for around in coarse.sorted(by: { $0.score < $1.score }).prefix(3).map(\.shift) {
+        // The best three, and also the strongest peak and the last move: the half-size greys can't hold an odd move,
+        // so these rank lower than they should, and the cut would otherwise lose the true one.
+        var toRefine = coarse.sorted(by: { $0.score < $1.score }).prefix(3).map(\.shift)
+        for must in [shifts.first, (lastShift.x / scale, lastShift.y / scale)].compactMap({ $0 }) {
+            if let candidate = coarse.first(where: { abs($0.shift.x - must.0) <= 1 && abs($0.shift.y - must.1) <= 1 }), !toRefine.contains(where: { abs($0.x - candidate.shift.x) <= 1 && abs($0.y - candidate.shift.y) <= 1 }) {
+                toRefine.append(candidate.shift)
+            }
+        }
+        for around in toRefine {
             guard let candidate = refine(around), candidate.evaluable >= minimum else {
                 continue
             }
@@ -434,14 +554,57 @@ public final class ScrollStitcher {
             settled.append(settle((x: rival.shift.x * scale, y: rival.shift.y * scale)))
         }
         lap("settle ×\(settled.count)")
-        let judged = settled.compactMap { $0 }.sorted { $0.score < $1.score }
-        guard let best = judged.first, best.agreement >= 0.5, best.score <= Self.gateDevice, best.evaluable >= minimum else {
+        var judged = settled.compactMap { $0 }.sorted { $0.score < $1.score }
+        // A pinned column or bar moves on one axis only, so on a diagonal move it fits the move's parts but not the
+        // move; and the move across the content then scores worse than a move along one axis that the pinned part and
+        // the page's lines fit. Crediting each tile with the better of the move and its parts tells them apart, and
+        // where the parts explain just as much, as in a plain vertical scroll, the plain score decides.
+        var decidedByParts = false
+        if judged.count > 1, (judged[0].shift.x != 0 && judged[0].shift.y != 0) || (judged[1].shift.x != 0 && judged[1].shift.y != 0) {
+            let first = agreementWithParts(judged[0].shift), second = agreementWithParts(judged[1].shift)
+            if second > first + Self.partsMargin {
+                judged.swapAt(0, 1)
+                decidedByParts = true
+            }
+        }
+        guard let best = judged.first, best.agreement >= 0.5, best.evaluable >= minimum else {
             return nil
         }
-        if judged.count > 1, judged[1].score < best.score * 1.25 + 0.5 {
+        // Just over the gate is still a match when it carries on the move before it, which a wrong line seldom does,
+        // and the rest line up clearly worse.
+        let continues = lastShift != (0, 0) && abs(best.shift.x - lastShift.x) <= scale && abs(best.shift.y - lastShift.y) <= scale
+        let clearlyBest = best.agreement >= 0.65 && judged.dropFirst().allSatisfy { $0.agreement + 0.25 <= best.agreement }
+        guard best.score <= Self.gateDevice || (continues && clearlyBest && best.score <= Self.gateDevice * 1.5) else {
+            return nil
+        }
+        if !decidedByParts, judged.count > 1, judged[1].score < best.score * 1.25 + 0.5 {
             return .ambiguous
         }
         return .value(best.shift)
+    }
+
+    /// The share of textured tiles that fit a move of `shift` device pixels, or one of its two single-axis parts, as
+    /// when a pinned column stays put in x on a diagonal move.
+    private func agreementWithParts(_ shift: (x: Int, y: Int)) -> Float {
+        var fitting = 0, counted = 0
+        for t in 0..<(columns * rows) where textured[t] {
+            var least = deviceResidual(tile: t, shift: shift)
+            if shift.x != 0, shift.y != 0 {
+                for part in [(0, shift.y), (shift.x, 0)] {
+                    let residual = deviceResidual(tile: t, shift: part)
+                    if !residual.isNaN, residual < least || least.isNaN {
+                        least = residual
+                    }
+                }
+            }
+            if !least.isNaN {
+                counted += 1
+                if least < Self.agreeDevice {
+                    fitting += 1
+                }
+            }
+        }
+        return counted > 0 ? Float(fitting) / Float(counted) : 0
     }
 
     /// The level-1 shift within a pixel of `around` with the least residual, searched on a third of the tiles and
@@ -468,7 +631,7 @@ public final class ScrollStitcher {
     /// frame stands in for the canvas.
     private func settle(_ around: (x: Int, y: Int)) -> Candidate? {
         var best: Candidate?
-        let reach = max(1, scale - 1)
+        let reach = scale - 1
         let minimum = max(10, texturedCount / 5)
         for againstCanvas in [true, false] {
             // The search runs on a fifth of the tiles; the winner is then scored on all of them.
@@ -488,14 +651,14 @@ public final class ScrollStitcher {
                 for dx in -reach...reach {
                     let shift = (x: around.x + dx, y: around.y + dy)
                     residuals(shift: shift, every: 5)
-                    if let candidate = score(shift: shift, agree: Self.agreeDevice, cap: Self.capDevice), candidate.score < bestScore {
+                    if let candidate = score(shift: shift, agree: Self.agreeDevice, cap: Self.capDevice, unit: 1), candidate.score < bestScore {
                         bestScore = candidate.score
                         bestShift = shift
                     }
                 }
             }
             residuals(shift: bestShift, every: 1)
-            best = score(shift: bestShift, agree: Self.agreeDevice, cap: Self.capDevice)
+            best = score(shift: bestShift, agree: Self.agreeDevice, cap: Self.capDevice, unit: 1)
             if let best, best.evaluable >= minimum {
                 note("device \(best.shift) score \(best.score) agree \(best.agreement) n \(best.evaluable)\(againstCanvas ? "" : " vs frame")")
                 return best
@@ -507,11 +670,15 @@ public final class ScrollStitcher {
 
     /// The candidate's score over the textured tiles whose match lies inside the previous frame: the mean of the
     /// capped residuals, so a sticky header or a changing patch counts a bounded amount against it.
-    private func score(shift: (x: Int, y: Int), agree: Float, cap: Float) -> Candidate? {
+    private func score(shift: (x: Int, y: Int), agree: Float, cap: Float, unit: Int? = nil) -> Candidate? {
         var sum: Float = 0
         var evaluable = 0
         var agreed = 0
-        for t in 0..<(columns * rows) where textured[t] {
+        // A tile with detail that's pixel for pixel the same in both frames isn't following a move of a tile or more:
+        // it's pinned, such as a bar that hasn't been told apart yet, and counts neither for nor against.
+        let far = excludesPinned && max(abs(shift.x), abs(shift.y)) * (unit ?? scale) >= tile
+        let move = (x: shift.x * (unit ?? scale), y: shift.y * (unit ?? scale))
+        for t in 0..<(columns * rows) where textured[t] && !(far && (stayPut[t] || pinnedBehind(t, move: move))) {
             let residual = residuals[t]
             if residual.isNaN {
                 continue
@@ -526,6 +693,20 @@ public final class ScrollStitcher {
             return nil
         }
         return Candidate(shift: shift, score: sum / Float(evaluable), agreement: Float(agreed) / Float(evaluable), evaluable: evaluable)
+    }
+
+    /// Whether the part of the last frame that tile `t` is matched with, after a move of `move` device pixels, is a
+    /// pinned bar: the bar scrolled into the middle of this frame is just content, so it can't be matched.
+    private func pinnedBehind(_ t: Int, move: (x: Int, y: Int)) -> Bool {
+        func floorDivide(_ a: Int, _ b: Int) -> Int { a >= 0 ? a / b : -((-a + b - 1) / b) }
+        let x = t % columns * tile + move.x, y = t / columns * tile + move.y
+        let c0 = floorDivide(x, tile), r0 = floorDivide(y, tile)
+        for r in r0...(r0 + (y - r0 * tile != 0 ? 1 : 0)) where r >= 0 && r < rows {
+            for c in c0...(c0 + (x - c0 * tile != 0 ? 1 : 0)) where c >= 0 && c < columns && (stayPut[r * columns + c] || previousFlags[r * columns + c] != 0) {
+                return true
+            }
+        }
+        return false
     }
 
     /// The level-1 shift within a pixel of `around` with the least residual.
@@ -599,7 +780,13 @@ public final class ScrollStitcher {
     private func classify(shift: (x: Int, y: Int)) -> Bool {
         let hypotheses: [(x: Int, y: Int)] = [(shift.x, shift.y), (0, 0), (shift.x, 0), (0, shift.y)]
         var voted = false
+        let far = max(abs(shift.x), abs(shift.y)) >= tile
         for t in 0..<(columns * rows) where textured[t] {
+            // After a big move a pinned bar from the last frame lies in the middle of this one; what a tile there
+            // matches is the bar, which says nothing about whether the tile is pinned.
+            if far, pinnedBehind(t, move: shift) {
+                continue
+            }
             let rS = deviceResidual(tile: t, shift: hypotheses[0])
             let rZ = deviceResidual(tile: t, shift: hypotheses[1])
             let rX = deviceResidual(tile: t, shift: hypotheses[2])
@@ -936,7 +1123,7 @@ public final class ScrollStitcher {
                         return
                     }
                     let at = (x: anchorX(runFlags, extremes: before, position: previousPosition), y: anchorY(runFlags, extremes: before, position: previousPosition))
-                    canvas.clearPinned(rect: (at.x + x0, at.y + y, x1 - x0, 1), flags: runFlags)
+                    canvas.releasePinned(rect: (at.x + x0, at.y + y, x1 - x0, 1), flags: runFlags)
                 }
             } else {
                 // Only what this tile painted as content last frame: a part that was a band already went elsewhere.
@@ -992,7 +1179,7 @@ public final class ScrollStitcher {
                     }
                     let at = (x: anchorX(runFlags, extremes: extremes, position: position), y: anchorY(runFlags, extremes: extremes, position: position))
                     let painted = runFlags == 0
-                        ? canvas.paintContentRow(current, width: width, y: y, x0: runStart, x1: end, at: at)
+                        ? canvas.paintContentRow(current, width: width, y: y, x0: runStart, x1: end, at: at, edge: Self.barWidth * scale)
                         : canvas.paintPinnedRow(current, width: width, y: y, x0: runStart, x1: end, at: at, flags: runFlags)
                     if let painted {
                         if runFlags == 0 {
@@ -1044,7 +1231,156 @@ public final class ScrollStitcher {
 
     /// The stitched image: every pixel seen, with the rest clear. `colorSpace` is the frames'.
     public func image(colorSpace: CGColorSpace? = nil) -> CGImage? {
-        canvas.image(byteOrder: byteOrder, colorSpace: colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)!)
+        overshoot.finish(width: width, height: height)
+        let space = colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)!
+        guard let seen = canvas.seen else {
+            return nil
+        }
+        if composes, !keysIncomplete, frames > 1 {
+            // A bounce is cut when what it pulled in is flat in the frame that went furthest, which has the background
+            // and nothing else past the page's end; frames that went past where the area rested are then left out.
+            let kept = overshoot.kept(of: seen) { edge, base, reach in flatBeyond(edge: edge, base: base, reach: reach) }
+            if let composed = composed(over: kept, excludingBeyond: kept) {
+                return croppedImage(composed, over: kept, to: kept, colorSpace: space)
+            }
+        }
+        return canvas.image(byteOrder: byteOrder, colorSpace: space, keeping: overshoot.kept(of: seen) { edge, base, reach in canvas.isBlank(ScrollOvershoot.region(edge, base: base, reach: reach)) })
+    }
+
+    /// Votes on what's pinned between the last reference and this frame once the area has moved a little from it, then
+    /// this frame becomes the reference.
+    private func collectBandVotes() {
+        let move = (x: position.x - voteReferencePosition.x, y: position.y - voteReferencePosition.y)
+        guard max(abs(move.x), abs(move.y)) >= Self.voteSpacing * scale else {
+            return
+        }
+        bandVotes.add(from: voteReference, to: current, shift: move, scale: scale)
+        voteReference.update(from: current, count: width * height * 4)
+        voteReferencePosition = position
+    }
+
+    /// Keeps the frame being processed, if the area has moved far enough from the last one kept.
+    private func recordKey(force: Bool = false) {
+        guard !keysIncomplete else {
+            return
+        }
+        // The frame furthest each way is held as well, in case it's the only one to see a corner. It's the last frame
+        // while the area keeps going that way, which is always in, so it's only copied when the next one doesn't go as far.
+        let reaching = [position.x < reach.minX, position.x > reach.maxX, position.y < reach.minY, position.y > reach.maxY]
+        for i in 0..<4 where reachingBefore[i] && !reaching[i] && frames > 1 {
+            furthest[i] = ScrollKeyFrame(x: previousPosition.x, y: previousPosition.y, pixels: Array(UnsafeBufferPointer(start: previous, count: width * height * 4)))
+        }
+        reachingBefore = reaching
+        reach = (min(reach.minX, position.x), max(reach.maxX, position.x), min(reach.minY, position.y), max(reach.maxY, position.y))
+        // A frame is kept once the area has moved a fair way from the last one kept, or if it's the first to see a good
+        // part of the image, as at a corner reached by a diagonal move.
+        let tile = 16
+        func floorDivide(_ a: Int, _ b: Int) -> Int { a >= 0 ? a / b : -((-a + b - 1) / b) }
+        let tx0 = floorDivide(position.x, tile), tx1 = floorDivide(position.x + width - 1, tile)
+        let ty0 = floorDivide(position.y, tile), ty1 = floorDivide(position.y + height - 1, tile)
+        var fresh = 0
+        for ty in ty0...ty1 {
+            for tx in tx0...tx1 where !keyCoverage.contains((tx + (1 << 20)) << 24 | (ty + (1 << 20))) {
+                fresh += 1
+            }
+        }
+        let total = (tx1 - tx0 + 1) * (ty1 - ty0 + 1)
+        if let last = keys.last, abs(position.x - last.x) * keySpacing < width, abs(position.y - last.y) * keySpacing < height, fresh * 100 < total * 3, !force {
+            return
+        }
+        for ty in ty0...ty1 {
+            for tx in tx0...tx1 {
+                keyCoverage.insert((tx + (1 << 20)) << 24 | (ty + (1 << 20)))
+            }
+        }
+        appendKey()
+    }
+
+    /// Keeps the frame being processed as it is, and keeps what's kept within the budget.
+    private func appendKey() {
+        guard !keysIncomplete, !keys.contains(where: { $0.x == position.x && $0.y == position.y }) else {
+            return
+        }
+        keys.append(ScrollKeyFrame(x: position.x, y: position.y, pixels: Array(UnsafeBufferPointer(start: current, count: width * height * 4))))
+        keyBytes += width * height * 4
+        // Past the budget, frames go whose neighbours still overlap by a good part, oldest first. When none can go,
+        // what's left wouldn't cover the image, so the image is built from the canvas painted along the way instead.
+        while keyBytes > keyBudget {
+            let droppable = (1..<max(1, keys.count - 1)).first { i in
+                abs(keys[i + 1].x - keys[i - 1].x) * 10 <= width * 6 && abs(keys[i + 1].y - keys[i - 1].y) * 10 <= height * 6
+            }
+            guard let droppable else {
+                keysIncomplete = true
+                keys.removeAll()
+                keyBytes = 0
+                return
+            }
+            keys.remove(at: droppable)
+            keyBytes -= width * height * 4
+        }
+    }
+
+    /// The image over `bounds` from the frames kept, pinned parts found from all of them; nil when it can't be built.
+    private func composed(over bounds: ScrollCanvas.Bounds, excludingBeyond limit: ScrollCanvas.Bounds) -> [UInt8]? {
+        var all = keys
+        for held in (0..<4).compactMap({ extremeFrame($0) }) where !all.contains(where: { $0.x == held.x && $0.y == held.y }) {
+            all.append(held)
+        }
+        // The last frame that lined up is always in, wherever it falls between the spacing.
+        if !all.contains(where: { $0.x == position.x && $0.y == position.y }) {
+            all.append(ScrollKeyFrame(x: position.x, y: position.y, pixels: Array(UnsafeBufferPointer(start: previous, count: width * height * 4))))
+        }
+        // Frames that went past where the area came to rest are the bounce, and their bars may have moved with it.
+        let rested = all.filter { $0.x >= limit.x0 - 1 && $0.y >= limit.y0 - 1 && $0.x + width <= limit.x1 + 1 && $0.y + height <= limit.y1 + 1 }
+        if !rested.isEmpty {
+            all = rested
+        }
+        guard bounds.width * bounds.height <= ScrollCaptureLimits.standard.maxPixels else {
+            return nil
+        }
+        let bands = bandVotes.bands(scale: scale)
+        let blobs = bandVotes.blobs(bands: bands, scale: scale)
+        return ScrollComposer.compose(keys: all, width: width, height: height, bounds: bounds, bands: bands, blobs: blobs, edge: Self.barWidth * scale)
+    }
+
+    /// The frame furthest left, right, up or down (0 to 3): the last one while the area is still going that way.
+    private func extremeFrame(_ i: Int) -> ScrollKeyFrame? {
+        if reachingBefore[i] {
+            return ScrollKeyFrame(x: position.x, y: position.y, pixels: Array(UnsafeBufferPointer(start: previous, count: width * height * 4)))
+        }
+        return furthest[i]
+    }
+
+    /// Whether the rows or columns `base..<reach` past the origin on `edge` are flat in the frame that went furthest
+    /// that way.
+    private func flatBeyond(edge: Int, base: Int, reach: Int) -> Bool {
+        guard let frame = extremeFrame(edge < 2 ? (edge == 0 ? 2 : 3) : (edge == 2 ? 0 : 1)) else {
+            return false
+        }
+        switch edge {
+        case 0: return ScrollComposer.isFlat(frame.pixels, width: width, height: height, x0: 0, y0: -reach - frame.y, x1: width, y1: -base - frame.y)
+        case 1: return ScrollComposer.isFlat(frame.pixels, width: width, height: height, x0: 0, y0: base - frame.y, x1: width, y1: reach - frame.y)
+        case 2: return ScrollComposer.isFlat(frame.pixels, width: width, height: height, x0: -reach - frame.x, y0: 0, x1: -base - frame.x, y1: height)
+        default: return ScrollComposer.isFlat(frame.pixels, width: width, height: height, x0: base - frame.x, y0: 0, x1: reach - frame.x, y1: height)
+        }
+    }
+
+    /// The part of the composed image `pixels`, which covers `bounds`, that lies in `kept`.
+    private func croppedImage(_ pixels: [UInt8], over bounds: ScrollCanvas.Bounds, to kept: ScrollCanvas.Bounds, colorSpace: CGColorSpace) -> CGImage? {
+        let area = kept.intersection(bounds)
+        guard !area.isEmpty else {
+            return nil
+        }
+        var data = Data(count: area.width * area.height * 4)
+        data.withUnsafeMutableBytes { out in
+            pixels.withUnsafeBufferPointer { source in
+                for y in 0..<area.height {
+                    let from = ((area.y0 + y - bounds.y0) * bounds.width + area.x0 - bounds.x0) * 4
+                    memcpy(out.baseAddress! + y * area.width * 4, source.baseAddress! + from, area.width * 4)
+                }
+            }
+        }
+        return ScrollCanvas.makeImage(data, width: area.width, height: area.height, byteOrder: byteOrder, colorSpace: colorSpace)
     }
 }
 
