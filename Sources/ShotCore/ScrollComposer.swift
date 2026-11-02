@@ -277,6 +277,7 @@ struct ScrollBandVotes: Sendable {
             return nil
         }
         var last = -1
+        var contentBefore = 0
         var i = 0
         while i < limit {
             let k = fromStart ? i : count - 1 - i
@@ -285,6 +286,13 @@ struct ScrollBandVotes: Sendable {
             } else if votes[k] >= 100, Float(stays[k]) < 0.75 * Float(votes[k]) {
                 // Content, which a bar's own padding, with nothing in it to vote, never is.
                 if last >= 0 {
+                    break
+                }
+                // A bar reaches the edge across padding and its own rows, not across a stretch of content. A floating
+                // button near the edge has the page's text between it and the edge, and is no bar: its rows would
+                // otherwise be taken as one, and the text in them mixed from frames that saw other text there.
+                contentBefore += 1
+                if !farRule, contentBefore > gap / 8 {
                     break
                 }
             } else if i - last > (last < 0 ? 3 * gap : gap) {

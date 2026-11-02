@@ -36,6 +36,9 @@ final class ScrollCanvas {
     private(set) var seen: Bounds?
     /// Where each kind of sticky paint lies, by its alpha code.
     private var pinnedBounds: [UInt8: Bounds] = [:]
+    /// Where content was painted over different pixels since the preview was last brought up to date: the part of a frame
+    /// that the last one painted too is skipped by `painted(_:refreshingOutside:)` unless something in it changed.
+    private var overwritten: Bounds?
 
     static let cell = 8
     private static let margin = 512
@@ -330,6 +333,12 @@ final class ScrollCanvas {
             // each frame. Where a pixel in the outer strip differs strongly from what's painted, the one that's
             // nearer the pixel just inside the strip, which the bar never covers, is the page's.
             let inner = [row + edge * 4, row + (width - edge - 1) * 4]
+            var changed = false
+            defer {
+                if changed {
+                    overwritten = overwritten.map { $0.union(clipped) } ?? clipped
+                }
+            }
             for i in 0..<count {
                 let fx = first + i
                 let s = source + i * 4, d = destination + i * 4
@@ -344,12 +353,18 @@ final class ScrollCanvas {
                         continue
                     }
                 }
+                if d[3] != 0, d[0] != s[0] || d[1] != s[1] || d[2] != s[2] || d[3] != 255 {
+                    changed = true
+                }
                 d[0] = s[0]
                 d[1] = s[1]
                 d[2] = s[2]
                 d[3] = 255
             }
             return clipped
+        }
+        if memcmp(destination, source, count * 4) != 0 {
+            overwritten = overwritten.map { $0.union(clipped) } ?? clipped
         }
         destination.update(from: source, count: count * 4)
         var p = destination + 3
@@ -397,9 +412,15 @@ final class ScrollCanvas {
     /// inside `skip`, where the preview is left as it was.
     func painted(_ rect: Bounds, refreshingOutside skip: Bounds? = nil) {
         seen = seen.map { $0.union(rect) } ?? rect
+        defer { overwritten = nil }
         guard let skip, !rect.intersection(skip).isEmpty else {
             updateMip(rect)
             return
+        }
+        // Inside `skip` the preview is left as it was, unless a row of it was painted over different pixels, as a part
+        // that was content until it turned out to be pinned is.
+        if let overwritten {
+            updateMip(overwritten)
         }
         // The strips of `rect` above, below, left and right of `skip`.
         if rect.y0 < skip.y0 { updateMip(Bounds(x0: rect.x0, y0: rect.y0, x1: rect.x1, y1: min(rect.y1, skip.y0))) }

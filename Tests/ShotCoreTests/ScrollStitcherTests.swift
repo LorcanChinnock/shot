@@ -621,6 +621,40 @@ func fabPixels(in image: Bitmap) -> Int {
     #expect(d.unseen == 0, "unseen \(d.unseen) in \(d.unseenBox)")
 }
 
+@Test func aWideFloatingButtonNearTheBottomIsNotTakenForABarAcrossTheArea() throws {
+    // A help article with a "Was this helpful?" button over the bottom right, scrolled by two moves: the button's own
+    // rows stayed in every vote, and with nothing else to say a few rows near the bottom edge were taken as a bar,
+    // so the last lines of text were mixed from frames that saw other text there.
+    let fab = CGRect(x: 290, y: 276, width: 170, height: 30)
+    let scene = ScrollScene(viewport: CGSize(width: 480, height: 320), fab: fab)
+    let offsets = path(steps: down(Array(repeating: 0, count: 8) + [50, 100] + Array(repeating: 0, count: 6)))
+    let (stitcher, image, statuses) = stitch(scene, offsets: offsets)
+    let result = try #require(image)
+    #expect(statuses.dropFirst().allSatisfy { $0 == .live || $0 == .ready }, "\(statuses)")
+    let height = CGFloat(result.height)
+    let fabAtEnd = CGRect(x: fab.minX * 2, y: height - (scene.viewport.height - fab.minY) * 2, width: fab.width * 2, height: fab.height * 2)
+    let d = difference(result, expectedTruth(scene, start: .zero, stitcher: stitcher), excluding: [fabAtEnd])
+    #expect(d.mean < 6, "mean \(d.mean)")
+    #expect(d.worstBand < 20, "worst band \(d.worstBand) at \(d.worstBandAt)")
+    #expect(d.unseen == 0, "unseen \(d.unseen) in \(d.unseenBox)")
+}
+
+@Test func thePanelsPreviewShowsAFloatingButtonOnceAsTheImageDoes() throws {
+    // The button is painted as content in the frames before it is known to be pinned, and the frames that follow paint
+    // over those copies. The preview used to leave alone the part a frame shares with the one before it, so the copies
+    // stayed in it.
+    let fab = CGRect(x: 290, y: 276, width: 170, height: 30)
+    let scene = ScrollScene(viewport: CGSize(width: 480, height: 320), fab: fab)
+    let offsets = path(steps: down(Array(repeating: 0, count: 8) + [50, 100] + Array(repeating: 0, count: 6)))
+    let (stitcher, _, _) = stitch(scene, offsets: offsets)
+    let preview = try #require(stitcher.preview().flatMap { Bitmap($0) })
+    // Each preview cell is 8 pixels square, so one ellipse is its area in pixels over 64 cells, less the partly covered
+    // ones at its rim.
+    let ellipse = Double.pi * Double(fab.width * fab.height) / 4 * 4
+    let cells = Double(fabPixels(in: preview))
+    #expect(cells > ellipse / 64 * 0.4 && cells < ellipse / 64 * 1.2, "\(cells) cells of \(ellipse / 64)")
+}
+
 @Test func theSmallMovesAtTheEndOfAWheelNotchLineUpBesideAStrongPinnedPeak() throws {
     let scene = ScrollScene(header: 36, footer: 30)
     // Each notch eases out: 60, 46, 35, 25, 17, 10, 5.2, 1.9 points, then rests.
