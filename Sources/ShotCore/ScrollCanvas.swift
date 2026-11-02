@@ -353,7 +353,7 @@ final class ScrollCanvas {
                         continue
                     }
                 }
-                if d[3] != 0, d[0] != s[0] || d[1] != s[1] || d[2] != s[2] || d[3] != 255 {
+                if d[0] != s[0] || d[1] != s[1] || d[2] != s[2] || d[3] != 255 {
                     changed = true
                 }
                 d[0] = s[0]
@@ -464,6 +464,26 @@ final class ScrollCanvas {
                 }
             }
         }
+    }
+
+    /// How many preview cells differ from what the canvas holds, which tests expect to be none: the preview is brought
+    /// up to date as the canvas is painted, so a cell that doesn't match shows something the image doesn't have.
+    func outOfDatePreviewCells() -> Int {
+        guard buffer != nil else {
+            return 0
+        }
+        let kept = mip
+        updateMip(bounds)
+        let fresh = mip
+        mip = kept
+        var count = 0
+        for cell in 0..<(mipWidth * mipHeight) {
+            let i = cell * 4
+            if (0..<4).reduce(0, { $0 + abs(Int(kept[i + $1]) - Int(fresh[i + $1])) }) > 20 {
+                count += 1
+            }
+        }
+        return count
     }
 
     // MARK: Reading

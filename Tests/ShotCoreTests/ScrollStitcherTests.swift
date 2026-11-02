@@ -651,6 +651,8 @@ func fabPixels(in image: Bitmap) -> Int {
     // Each preview cell is 8 pixels square, so one ellipse is its area in pixels over 64 cells, less the partly covered
     // ones at its rim.
     let ellipse = Double.pi * Double(fab.width * fab.height) / 4 * 4
+    // Nor does it keep the spot the button covered as unseen once a later frame has seen it.
+    #expect(stitcher.canvas.outOfDatePreviewCells() == 0)
     let cells = Double(fabPixels(in: preview))
     #expect(cells > ellipse / 64 * 0.4 && cells < ellipse / 64 * 1.2, "\(cells) cells of \(ellipse / 64)")
 }
