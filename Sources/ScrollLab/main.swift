@@ -217,6 +217,53 @@ if args.count == 5, args[1] == "compare" {
     print("result \(result.width)x\(result.height) at truth y\(bestY) (sample diff \(String(format: "%.2f", best))): bad \(String(format: "%.2f", Double(bad) * 100 / Double(max(1, total))))%, worst band \(String(format: "%.1f", worst))% at y\(at), \(truth.height - (bestY + result.height)) px short of the page end")
     exit(0)
 }
+// scroll-lab replay <framesDir> <out.png> [scale]: stitches frames saved from a live capture (named f00000.png, ...),
+// with NOCOMPOSE=1 to skip the final pass, and prints how many frames got each status.
+if args.count >= 4, args[1] == "replay" {
+    let dir = URL(fileURLWithPath: args[2])
+    // Raw frames (f00000.bgra, as the app dumps them with meta.txt: width height bytesPerRow scale) or PNGs.
+    let all = ((try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? []).filter { $0.hasPrefix("f") }.sorted()
+    let raw = all.filter { $0.hasSuffix(".bgra") }
+    let meta = (try? String(contentsOf: dir.appendingPathComponent("meta.txt"), encoding: .utf8))?.split(separator: " ").compactMap { Int($0) } ?? []
+    let names = raw.isEmpty ? all.filter { $0.hasSuffix(".png") } : raw
+    let stitcher: ScrollStitcher
+    var frameSize = (width: 0, height: 0, bytesPerRow: 0)
+    if !raw.isEmpty, meta.count == 4 {
+        frameSize = (meta[0], meta[1], meta[2])
+        stitcher = ScrollStitcher(width: meta[0], height: meta[1], scale: meta[3], byteOrder: .bgra)
+    } else {
+        guard let first = names.first.flatMap({ load(dir.appendingPathComponent($0)) }) else { print("no frames"); exit(1) }
+        frameSize = (first.width, first.height, first.width * 4)
+        stitcher = ScrollStitcher(width: first.width, height: first.height, scale: args.count > 4 ? Int(args[4]) ?? 2 : 2, byteOrder: .rgba)
+    }
+    stitcher.composes = ProcessInfo.processInfo.environment["NOCOMPOSE"] == nil
+    // DIAG=1 prints the stitcher's notes for every frame.
+    stitcher.collectsDiagnostics = ProcessInfo.processInfo.environment["DIAG"] != nil
+    var statuses: [ScrollCaptureStatus: Int] = [:]
+    var warned: [String] = []
+    for (i, name) in names.enumerated() {
+        let bytes: [UInt8]
+        if raw.isEmpty {
+            guard let frame = load(dir.appendingPathComponent(name)) else { continue }
+            bytes = frame.data
+        } else {
+            guard let data = try? Data(contentsOf: dir.appendingPathComponent(name)) else { continue }
+            bytes = [UInt8](data)
+        }
+        let update = bytes.withUnsafeBytes { raw in
+            stitcher.process(ScrollFrame(width: frameSize.width, height: frameSize.height, bytesPerRow: frameSize.bytesPerRow, pixels: raw))
+        }
+        statuses[update.status, default: 0] += 1
+        if update.status.isWarning { warned.append("\(i):\(update.status)") }
+        if ProcessInfo.processInfo.environment["DIAG"] != nil { print("[f\(i)] \(update.status)\n\(stitcher.diagnostics)") }
+    }
+    print("frames \(names.count)", statuses.map { "\($0.key)×\($0.value)" }.sorted().joined(separator: " "))
+    print("warnings at", warned.prefix(40).joined(separator: " "))
+    guard let image = stitcher.image() else { print("no image"); exit(1) }
+    write(pixels(of: image), to: URL(fileURLWithPath: args[3]), maxSide: 100_000)
+    print("image \(image.width)x\(image.height)")
+    exit(0)
+}
 guard args.count >= 3 else { print("usage: scroll-lab <framesDir> <outDir> [filter]"); exit(2) }
 let frames = URL(fileURLWithPath: args[1]), out = URL(fileURLWithPath: args[2]), filter = args.count > 3 ? args[3] : ""
 try? FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
