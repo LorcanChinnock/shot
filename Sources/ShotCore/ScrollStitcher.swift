@@ -1361,7 +1361,7 @@ public final class ScrollStitcher {
     }
 
     /// The image over `bounds` from the frames kept, pinned parts found from all of them; nil when it can't be built.
-    private func composed(over bounds: ScrollCanvas.Bounds, excludingBeyond limit: ScrollCanvas.Bounds) -> [UInt8]? {
+    private func composed(over bounds: ScrollCanvas.Bounds, excludingBeyond limit: ScrollCanvas.Bounds) -> Data? {
         var all = keys
         for held in (0..<4).compactMap({ extremeFrame($0) }) where !all.contains(where: { $0.x == held.x && $0.y == held.y }) {
             all.append(held)
@@ -1409,14 +1409,18 @@ public final class ScrollStitcher {
     }
 
     /// The part of the composed image `pixels`, which covers `bounds`, that lies in `kept`.
-    private func croppedImage(_ pixels: [UInt8], over bounds: ScrollCanvas.Bounds, to kept: ScrollCanvas.Bounds, colorSpace: CGColorSpace) -> CGImage? {
+    private func croppedImage(_ pixels: Data, over bounds: ScrollCanvas.Bounds, to kept: ScrollCanvas.Bounds, colorSpace: CGColorSpace) -> CGImage? {
         let area = kept.intersection(bounds)
         guard !area.isEmpty else {
             return nil
         }
+        if area == bounds {
+            // The whole of it: the image wraps the pixels without a second copy of them.
+            return ScrollCanvas.makeImage(pixels, width: area.width, height: area.height, byteOrder: byteOrder, colorSpace: colorSpace)
+        }
         var data = Data(count: area.width * area.height * 4)
         data.withUnsafeMutableBytes { out in
-            pixels.withUnsafeBufferPointer { source in
+            pixels.withUnsafeBytes { source in
                 for y in 0..<area.height {
                     let from = ((area.y0 + y - bounds.y0) * bounds.width + area.x0 - bounds.x0) * 4
                     memcpy(out.baseAddress! + y * area.width * 4, source.baseAddress! + from, area.width * 4)

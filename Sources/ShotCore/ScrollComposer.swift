@@ -322,12 +322,17 @@ enum ScrollComposer {
     /// A pixel is what most of the frames that saw it agree on, preferring the one that saw it nearest their middle,
     /// where a bar or a shadow at an edge can't reach. Where only a pinned band saw it, the band's.
     @_optimize(speed)
-    static func compose(keys: [ScrollKeyFrame], width: Int, height: Int, bounds: ScrollCanvas.Bounds, bands: ScrollBands, blobs: [ScrollBlob] = [], edge: Int = 0) -> [UInt8]? {
+    static func compose(keys: [ScrollKeyFrame], width: Int, height: Int, bounds: ScrollCanvas.Bounds, bands: ScrollBands, blobs: [ScrollBlob] = [], edge: Int = 0) -> Data? {
         let outWidth = bounds.width, outHeight = bounds.height
         guard outWidth > 0, outHeight > 0, !keys.isEmpty, keys.allSatisfy({ $0.pixels.count == width * height * 4 }) else {
             return nil
         }
-        var out = [UInt8](repeating: 0, count: outWidth * outHeight * 4)
+        // The image's own memory, which the caller wraps in a `CGImage` as it is rather than copying it: at the size
+        // limit that is 400 MB, on top of the canvas and the frames kept.
+        guard let output = NSMutableData(length: outWidth * outHeight * 4) else {
+            return nil
+        }
+        let out = output.mutableBytes.assumingMemoryBound(to: UInt8.self)
         let k = samples
         let stripe = max(8, min(128, 4_000_000 / (outWidth * k)))
         // Where a frame's row or column goes when it's pinned, and how near the middle of the frame it is.
@@ -498,7 +503,7 @@ enum ScrollComposer {
             }
             y0 = y1
         }
-        return out
+        return Data(bytesNoCopy: output.mutableBytes, count: output.length, deallocator: .custom { _, _ in withExtendedLifetime(output) {} })
     }
 
     @_optimize(speed)
