@@ -46,7 +46,19 @@ Scroll takes one screenshot of something taller or wider than the screen: a long
 3. Scroll the content with the trackpad, the mouse wheel, <kbd>Page Down</kbd> or <kbd>Space</kbd>. Any direction works, and so does scrolling back. The panel's preview shows the picture so far, with the parts you haven't scrolled over hatched, so you can go back and fill them in.
 4. Press <kbd>Return</kbd> or click **Done**. The screenshot is copied and saved like any other. <kbd>Esc</kbd> cancels and keeps nothing.
 
-Sticky headers, footers, pinned columns and floating buttons appear once, where they belong. If the panel says something needs attention, it tells you what to do: scroll back a little after a big jump, pause a video that's playing in the area, or include some text so there's something to line up. The picture can be up to 30,000 pixels on a side.
+Sticky headers, footers, pinned columns and floating buttons appear once, where they belong. When you press Return, Shot builds the saved picture again from every frame it kept, so the saved image can be sharper and cleaner than the live preview. The picture can be up to 30,000 pixels on a side.
+
+Some ways to use it:
+
+- **A window.** Choose Window, click a chat thread or a settings window, and scroll to the top of the conversation. The pinned header and message box appear once.
+- **A browser page.** Choose Browser, click the page and scroll to the footer. A header that stays in view as you scroll appears once, at the top.
+- **A screen.** Drag across the whole screen to join a spreadsheet's rows and columns into one picture. Scroll down, sideways or both.
+
+If the panel says something needs attention, it tells you what to do:
+
+- **Scrolled too far.** The content moved so far in one go that nothing in the new view matches the last one. Scroll back a little and carry on.
+- **Can't line up.** Something in the area keeps changing, such as a video. Pause it or scroll past it.
+- **Nothing to line up.** The area is blank or repeats. Include some text or an image.
 
 ## Without a mouse
 

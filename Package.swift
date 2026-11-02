@@ -16,7 +16,9 @@ let package = Package(
     ],
     targets: [
         // Everything with no window: the model, rendering, video, GIF, preferences and the gallery.
-        .target(name: "ShotCore", swiftSettings: extractingStrings("ShotCore")),
+        // ShotCore is optimised even in debug builds: the scrolling composer's per-pixel loops make the tests take
+        // minutes longer unoptimised. -enable-testing stays on, so @testable imports still work.
+        .target(name: "ShotCore", swiftSettings: extractingStrings("ShotCore") + [.unsafeFlags(["-O"], .when(configuration: .debug))]),
         .testTarget(name: "ShotCoreTests", dependencies: ["ShotCore"]),
         // Replays recorded scroll scenarios through ScrollStitcher and scores the result: scripts/scroll-lab.
         .executableTarget(name: "ScrollLab", dependencies: ["ShotCore"]),
