@@ -130,6 +130,8 @@ public final class ScrollStitcher {
     private static let agreeDevice: Float = 28, capDevice: Float = 56, gateDevice: Float = 14
     private static let voteMargin: Float = 8
     private static let peakCount = 5
+    /// How many well-separated moves are settled at the device pixel and judged against each other.
+    private static let rivalCount = 12
     /// Points the area moves before another pair votes on what's pinned.
     private static let voteSpacing = 12
     private static let partsMargin: Float = 0.08
@@ -575,13 +577,24 @@ public final class ScrollStitcher {
             return nil
         }
         var settled = [settle((x: first.shift.x * scale, y: first.shift.y * scale))]
-        // A rival well apart that scores nearly as well is settled too, to tell a repeating pattern; one that scores
-        // far worse can't be the answer.
-        if let rival = ranked.dropFirst().first(where: { max(abs($0.shift.x - first.shift.x), abs($0.shift.y - first.shift.y)) >= 6 }), rival.score < first.score * 2 + 2 {
+        // Rivals well apart that score nearly as well are settled too, to tell a repeating pattern; one that scores
+        // far worse can't be the answer. Several are settled, not only the next, since the grey level scores a true
+        // odd move worse than it deserves: on flat rows that look alike, such as tinted list rows, it can rank behind
+        // two wrong ones, and settling is the cheaper step.
+        var picked = [first.shift]
+        for rival in ranked.dropFirst() where picked.count < Self.rivalCount && rival.score < first.score * 3 + 12 {
+            guard picked.allSatisfy({ max(abs($0.x - rival.shift.x), abs($0.y - rival.shift.y)) >= 6 }) else {
+                continue
+            }
+            picked.append(rival.shift)
             settled.append(settle((x: rival.shift.x * scale, y: rival.shift.y * scale)))
         }
         lap("settle ×\(settled.count)")
-        var judged = settled.compactMap { $0 }.sorted { $0.score < $1.score }
+        var judged: [Candidate] = []
+        // Two settled moves less than a few grey pixels apart are one answer found twice; the better stands.
+        for candidate in settled.compactMap({ $0 }).sorted(by: { $0.score < $1.score }) where !judged.contains(where: { max(abs($0.shift.x - candidate.shift.x), abs($0.shift.y - candidate.shift.y)) < 6 * scale }) {
+            judged.append(candidate)
+        }
         // A pinned column or bar moves on one axis only, so on a diagonal move it fits the move's parts but not the
         // move; and the move across the content then scores worse than a move along one axis that the pinned part and
         // the page's lines fit. Crediting each tile with the better of the move and its parts tells them apart, and
@@ -1281,7 +1294,7 @@ public final class ScrollStitcher {
         guard max(abs(move.x), abs(move.y)) >= Self.voteSpacing * scale else {
             return
         }
-        bandVotes.add(from: voteReference, to: current, shift: move, scale: scale)
+        bandVotes.add(from: voteReference, to: current, shift: move, scale: scale, edge: Self.barWidth * scale)
         voteReference.update(from: current, count: width * height * 4)
         voteReferencePosition = position
     }

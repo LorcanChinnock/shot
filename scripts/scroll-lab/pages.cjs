@@ -94,5 +94,12 @@ thead th{position:sticky;top:0;background:#e9edf5;z-index:3;text-align:center}tb
     return `<style>${base}.bar{position:sticky;top:0;height:64px;display:flex;align-items:center;padding:0 24px;font-weight:700;border-bottom:1px solid #ccc;background:#fff;z-index:5}.row{margin:0;padding:18px 24px;font-family:Times,serif;font-size:16px}</style>
 <div class="bar pin">Sticky header</div>${rows}`;
   },
+  // The rows of a scrolling pane (#1030): near-identical lines in their own tints, about 50 points apart, with nothing
+  // pinned. A move of a row or so lines up with a neighbour.
+  rows() {
+    let rows = '';
+    for (let i = 1; i <= 200; i++) rows += `<p class="row" style="background:hsl(${(i * 37) % 360} 60% 90%)"><b>Item ${i}</b> — pane content line ${i}, rows that look alike.</p>`;
+    return `<style>${base}.row{margin:0;padding:13px 20px}</style>${rows}`;
+  },
 };
 module.exports = { pages };

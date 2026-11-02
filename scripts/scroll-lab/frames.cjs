@@ -5,7 +5,7 @@ const fs = require('fs'), path = require('path');
 const puppeteer = require('puppeteer-core');
 const { pages } = require('./pages.cjs');
 
-const VIEW = { width: 640, height: 440 }, DPR = Number(process.env.DPR || 2);
+const VIEW = { width: Number(process.env.VIEW_W || 640), height: Number(process.env.VIEW_H || 440) }, DPR = Number(process.env.DPR || 2);
 
 // Scroll paths in css px, one entry per captured frame (30 a second). Each returns [{x, y}].
 const steps = (n, dx, dy, x0 = 0, y0 = 0) => Array.from({ length: n }, (_, i) => ({ x: x0 + dx * (i + 1), y: y0 + dy * (i + 1) }));
@@ -29,6 +29,18 @@ const profiles = {
   drops: () => { const o = []; let y = 0; for (let i = 0; i < 60; i++) { y += i % 5 === 4 ? 70 : 14; o.push({ x: 0, y }); } return o; },
   // the fastest steps a flick makes at 30 frames a second: 150 points, a third of the area
   jumps: () => steps(30, 0, 150),
+  // Chrome's smooth wheel scrolling on a 2x screen: moves of a whole device pixel but an odd one, so half a point, with a
+  // rest or two between (#1030)
+  halves: () => { const o = []; let y = 0; const moves = [17.5, 52.5, 52.5, 0, 17.5, 105.5, 52.5, 17.5, 0, 0, 52.5, 105.5, 17.5, 52.5, 0, 52.5, 17.5, 105.5, 52.5, 52.5, 17.5, 0, 105.5, 52.5, 17.5, 52.5, 105.5, 17.5, 52.5, 52.5, 17.5, 105.5, 52.5, 17.5, 52.5, 105.5, 52.5, 17.5, 52.5, 52.5]; for (const m of moves) { y += m; o.push({ x: 0, y }); } return o; },
+  // The offsets (in device pixels at 2x) of a live Chrome capture of the `list` page on a 1920 x 1084 window (#1030),
+  // four wheel notches at a time with 0.5 s between: a pause, a jump of a third of the area or so, small steps as the
+  // animation settles, and moves of an odd number of device pixels. Scaled to the lab's view height, so the default
+  // 640 x 440 view moves in the same proportions; VIEW_W=1920 VIEW_H=1084 plays it at its own size.
+  chrome: () => [0, 12, 188, 300, 320, 356, 459, 580, 637, 958, 960, 1280, 1315, 1420, 1536, 1910, 1920, 1958, 2134, 2223, 2240, 2560, 2570, 2718, 2869, 2880, 3200, 3209, 3342, 3498, 3840, 3849, 3924, 4053, 4160, 4480, 4525, 4713, 4800, 5120, 5440, 5450, 5532, 5716, 5760, 5796, 5901, 6019, 6080, 6400].map(d => ({ x: 0, y: Math.round(d / 2 * VIEW.height / 1084 * 2) / 2 })),
+  // The offsets (device pixels at 2x) of a live Chrome capture of the `rows` page in a 1679 x 994 area (#1030): four wheel
+  // notches at a time, 160 points, with moves of an odd number of device pixels as the animation settles. Scaled to the
+  // view's height; VIEW_W=1679 VIEW_H=994 plays it at its own size.
+  pane: () => [0, 10, 94, 225, 311, 320, 357, 463, 617, 640, 676, 843, 937, 960, 1000, 1114, 1233, 1280, 1289, 1362, 1486, 1578, 1600, 1640, 1758, 1876, 1920, 1929, 2004, 2129, 2220, 2240, 2250, 2337, 2523, 2560, 2596, 2766, 2858, 2880, 2923, 3044, 3162, 3200, 3209, 3282, 3403, 3497, 3520, 3555, 3662, 3780, 3837, 3840, 3849, 3932, 4061, 4147, 4160, 4196, 4363, 4457, 4480, 4490, 4575, 4708, 4791, 4800, 4809, 4887, 5013, 5102, 5120].map(d => ({ x: 0, y: Math.round(d / 2 * VIEW.height / 994 * 2) / 2 })),
   // fractional steps, as a trackpad gives
   fractional: () => Array.from({ length: 80 }, (_, i) => ({ x: 0, y: Math.round(i * 9.37 * 2) / 2 + 9 })),
   sideways: () => steps(60, 14, 0),
@@ -50,7 +62,7 @@ const scenarios = [
   ['settings-steady', 'settings', 'steady'], ['settings-notches', 'settings', 'notches'], ['settings-flick', 'settings', 'flick'],
   ['floaters-steady', 'floaters', 'steady'], ['floaters-notches', 'floaters', 'notches'], ['floaters-flick', 'floaters', 'flick'],
   ['timeline-sideways', 'timeline', 'sideways'], ['timeline-diagonal', 'timeline', 'diagonal'],
-  ['list-steady', 'list', 'steady'], ['list-slow', 'list', 'slow'], ['list-notches', 'list', 'notches'], ['list-flick', 'list', 'flick'],
+  ['list-steady', 'list', 'steady'], ['list-slow', 'list', 'slow'], ['list-notches', 'list', 'notches'], ['list-flick', 'list', 'flick'],  ['list-halves', 'list', 'halves'], ['list-chrome', 'list', 'chrome'], ['rows-pane', 'rows', 'pane'],
 ];
 
 (async () => {
@@ -86,7 +98,14 @@ const scenarios = [
     const all = [start, ...clamped];
     await page.evaluate((s) => scrollTo(s.x, s.y), start);
     for (let i = 0; i < all.length; i++) {
-      await page.evaluate((o) => { scrollTo(o.x, o.y); document.body.style.transform = o.over ? `translateY(${-o.over}px)` : ''; }, all[i]);
+      // Headless Chrome snaps a scroll offset to a whole point, but a real screen scrolls by device pixels, so a move of
+      // half a point (one pixel at 2x) is drawn by scrolling to the point below and shifting the list's rows by the rest.
+      await page.evaluate((o) => {
+        const base = Math.floor(o.y), rest = o.y - base;
+        scrollTo(o.x, base);
+        for (const row of document.querySelectorAll('.row')) row.style.transform = rest ? `translateY(${-rest}px)` : '';
+        document.body.style.transform = o.over ? `translateY(${-o.over}px)` : '';
+      }, all[i]);
       await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
       await page.screenshot({ path: path.join(dir, `f${String(i).padStart(4, '0')}.png`) });
     }

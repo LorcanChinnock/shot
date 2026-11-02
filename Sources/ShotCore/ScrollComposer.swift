@@ -81,7 +81,10 @@ struct ScrollBandVotes: Sendable {
 
     /// Takes the pair `a`, `b`, where `b` is the area `shift` pixels on from `a`.
     @_optimize(speed)
-    mutating func add(from a: UnsafePointer<UInt8>, to b: UnsafePointer<UInt8>, shift: (x: Int, y: Int), scale: Int) {
+    /// The `edge` columns at the right are where an overlay scroll bar's thumb sits; it moves a pixel for a screenful, so
+    /// it looks pinned, and a few of its votes in the rows below a bar chain across the blank rows there into the bar.
+    /// They don't vote on rows.
+    mutating func add(from a: UnsafePointer<UInt8>, to b: UnsafePointer<UInt8>, shift: (x: Int, y: Int), scale: Int, edge: Int = 0) {
         let step = 2
         let minimumMove = max(12, 6 * scale)
         let useY = abs(shift.y) >= minimumMove, useX = abs(shift.x) >= minimumMove
@@ -104,7 +107,9 @@ struct ScrollBandVotes: Sendable {
                 let ib = ia
                 if useY {
                     let back = min(Self.reverse(a, b, width, height, ib, u + shift.x, v + shift.y), Self.reverse(a, b, width, height, ib, u, v + shift.y))
-                    Self.vote(stay: min(stay, stayOnlyY), follow: min(follow, stayOnlyX), back: back, votes: &votesY[v], stays: &stayY[v])
+                    if u < width - edge {
+                        Self.vote(stay: min(stay, stayOnlyY), follow: min(follow, stayOnlyX), back: back, votes: &votesY[v], stays: &stayY[v])
+                    }
                     Self.vote(stay: min(stay, stayOnlyY), follow: min(follow, stayOnlyX), back: back, votes: &mapVotes[cell], stays: &mapStays[cell])
                 }
                 if useX {
@@ -213,17 +218,27 @@ struct ScrollBandVotes: Sendable {
             }
             return (0..<cells).reduce(0) { $0 + (mapStays[row * cells + $1] > 0 ? 1 : 0) } * 5 >= cells * 3
         }
+        // The same for columns: a pinned column's right edge is a rule that runs down most of the height, and the column
+        // can be blank beside its labels, as a spreadsheet's first column is, for far more than a bar's padding.
+        let rowCount = height / Self.step
+        let tall = (0..<width).map { u -> Bool in
+            let column = u / Self.step
+            guard u % Self.step == 0, rowCount > 0, column < cells else {
+                return false
+            }
+            return (0..<rowCount).reduce(0) { $0 + (mapStays[$1 * cells + column] > 0 ? 1 : 0) } * 5 >= rowCount * 3
+        }
         return ScrollBands(
             top: Self.band(votes: votesY, stays: stayY, fromStart: true, gap: gap, wide: wide),
             bottom: Self.band(votes: votesY, stays: stayY, fromStart: false, gap: gap, wide: wide),
-            left: Self.band(votes: votesX, stays: stayX, fromStart: true, gap: gap),
-            right: Self.band(votes: votesX, stays: stayX, fromStart: false, gap: gap)
+            left: Self.band(votes: votesX, stays: stayX, fromStart: true, gap: gap, wide: tall, farRule: true),
+            right: Self.band(votes: votesX, stays: stayX, fromStart: false, gap: gap, wide: tall, farRule: true)
         )
     }
 
     /// How many rows or columns from an edge are pinned: up to the last one whose votes mostly stayed, as long as no
     /// more than `gap` unpinned ones come between, and no more than 45% of the area.
-    private static func band(votes: [Int32], stays: [Int32], fromStart: Bool, gap: Int, wide: [Bool]? = nil) -> Int {
+    private static func band(votes: [Int32], stays: [Int32], fromStart: Bool, gap: Int, wide: [Bool]? = nil, farRule: Bool = false) -> Int {
         let count = votes.count
         // A bar's own pixels give nearly every vote as stayed, over several rows; a stray row of content whose shapes
         // happen to repeat doesn't.
@@ -235,13 +250,13 @@ struct ScrollBandVotes: Sendable {
         }
         let limit = count * 45 / 100
         /// The next row at or after `i` (counted from the edge) that is a pinned rule across most of the width, within
-        /// two gaps and with no content between; nil otherwise. A rule that's only part of the width is a pinned
+        /// two gaps (or anywhere, for a column) and with no content between; nil otherwise. A rule that's only part of the width is a pinned
         /// column's cell border, not a bar's edge.
         func ruleAhead(from i: Int) -> Int? {
             guard let wide else {
                 return nil
             }
-            for j in i..<min(i + 2 * gap, limit) {
+            for j in i..<(farRule ? limit : min(i + 2 * gap, limit)) {
                 let k = fromStart ? j : count - 1 - j
                 if isPinned(k), stays[k] >= 200, wide[k] {
                     return j
