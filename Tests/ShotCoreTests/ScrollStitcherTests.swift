@@ -28,6 +28,11 @@ struct ScrollScene {
     /// Rows this many points tall instead of paragraphs, each the same sentence with its number in its own tint, as a
     /// list of tickets or messages looks: a move of a row and a bit lines up with the one a row off.
     var rows: CGFloat = 0
+    /// A blank margin at the left of the content, with a list pinned inside it from `listTop`: `listRows` lines of text
+    /// 20 points apart that stay in the view while the content scrolls, as a wiki's table of contents does.
+    var gutter: CGFloat = 0
+    var listTop: CGFloat = 0
+    var listRows = 0
 
     static let fabColor = (r: 255, g: 0, b: 255)
 
@@ -63,6 +68,9 @@ struct ScrollScene {
                 ctx.fill(CGRect(x: 0, y: 0, width: column, height: header))
                 draw(ctx, "Sheet", at: CGPoint(x: 8, y: header / 2 + 5), bold: true)
             }
+        }
+        for line in 0..<listRows {
+            draw(ctx, "Item \(line)", at: CGPoint(x: 8, y: listTop + CGFloat(line) * 20 + 14), bold: line == 3)
         }
         if let fab {
             ctx.setFillColor(CGColor(srgbRed: 1, green: 0, blue: 1, alpha: 1))
@@ -196,6 +204,10 @@ struct ScrollScene {
                     n += 1
                 }
                 y += 22
+            }
+            if gutter > 0 {
+                ctx.setFillColor(CGColor(gray: 1, alpha: 1))
+                ctx.fill(CGRect(x: 0, y: 0, width: gutter, height: content.height))
             }
         }
     }
@@ -636,6 +648,23 @@ func fabPixels(in image: Bitmap) -> Int {
     let d = difference(result, expectedTruth(scene, start: .zero, stitcher: stitcher))
     #expect(d.mean < 6, "mean \(d.mean)")
     #expect(d.worstBand < 20, "worst band \(d.worstBand) at \(d.worstBandAt)")
+}
+
+@Test func aPinnedListInsideAMarginLeavesNothingBehindWhenEachStepIsWholeLinesTall() throws {
+    // Found in Safari on a wiki article: the contents list beside the text was stamped down the image as faint
+    // fragments. Each step jumped 160 points, more than the 130 the list's top rows sit from the top of the view, so
+    // they could never vote, and at 8 lines to a step the list's lines hid the same rows of the margin every time.
+    let scene = ScrollScene(viewport: CGSize(width: 480, height: 600), gutter: 100, listTop: 10, listRows: 28)
+    let offsets = path(steps: down(Array(repeating: 160, count: 8)))
+    let (stitcher, image, statuses) = stitch(scene, offsets: offsets)
+    let result = try #require(image)
+    #expect(statuses.dropFirst().allSatisfy { $0 == .live }, "\(statuses)")
+    // The list shows once, at the top of the image where it was first seen; the margin below it is blank.
+    let list = CGRect(x: 0, y: 0, width: scene.gutter * 2, height: (scene.listTop + 20 * CGFloat(scene.listRows)) * 2 + 8)
+    let d = difference(result, expectedTruth(scene, start: .zero, stitcher: stitcher), excluding: [list])
+    #expect(d.mean < 3, "mean \(d.mean)")
+    #expect(d.worstBand < 20, "worst band \(d.worstBand) at \(d.worstBandAt)")
+    #expect(d.unseen == 0, "unseen \(d.unseen) in \(d.unseenBox)")
 }
 
 @Test func aBarWithMoreBlankPaddingUnderItsTextThanAGapIsStillOneBand() throws {
