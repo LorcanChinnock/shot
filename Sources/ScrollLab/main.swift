@@ -259,6 +259,7 @@ if args.count >= 4, args[1] == "replay" {
     }
     print("frames \(names.count)", statuses.map { "\($0.key)×\($0.value)" }.sorted().joined(separator: " "))
     print("warnings at", warned.prefix(40).joined(separator: " "))
+    if let preview = stitcher.preview() { write(pixels(of: preview), to: URL(fileURLWithPath: args[3] + ".preview.png"), maxSide: 100_000) }
     guard let image = stitcher.image() else { print("no image"); exit(1) }
     write(pixels(of: image), to: URL(fileURLWithPath: args[3]), maxSide: 100_000)
     print("image \(image.width)x\(image.height)")
