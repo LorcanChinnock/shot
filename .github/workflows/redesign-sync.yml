@@ -1,0 +1,101 @@
+name: Redesign sync
+
+# Keeps the long-lived `redesign` branch close to main (#1065), so the final pull request into main stays reviewable.
+# Every Monday, and after every release, it merges main into redesign on a branch and opens a
+# `chore: merge main into redesign` pull request. When the merge conflicts, it opens nothing and fails, listing the
+# files, so someone resolves them by hand (CONTRIBUTING.md › The redesign branch).
+# It does nothing while main is already in redesign, while an earlier sync pull request is still open, or once the
+# redesign branch is gone.
+# Like release-please, it acts as the repository's GitHub App, so CI runs on its pull request without approval. The
+# app needs the Workflows permission too, because a merge from main can carry changes to these files.
+on:
+  schedule:
+    - cron: "41 7 * * 1"
+  # Release runs on every push to main; the job keeps only the runs that tagged a release.
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: redesign-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Everything is written with the app's token, so GITHUB_TOKEN needs nothing.
+    permissions: {}
+    steps:
+      # See CONTRIBUTING.md › Release secrets. The token lasts only for this job.
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app-token
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-workflows: write
+      # Every branch and tag, so the merge and the release check below see the whole history. The job runs no code
+      # from the repository, so keeping the token for the push is safe.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Open the sync pull request
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          EVENT: ${{ github.event_name }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          BRANCH: chore/merge-main-into-redesign
+        run: |
+          set -euo pipefail
+          if ! git rev-parse --verify --quiet origin/redesign >/dev/null; then
+            echo "There's no redesign branch, so there's nothing to sync."
+            exit 0
+          fi
+          if [ "$EVENT" = workflow_run ] && [ -z "$(git tag --points-at "$RUN_SHA" --list 'v*')" ]; then
+            echo "That Release run didn't tag a release."
+            exit 0
+          fi
+          if git merge-base --is-ancestor origin/main origin/redesign; then
+            echo "redesign already has everything on main."
+            exit 0
+          fi
+          open=$(gh pr list --base redesign --head "$BRANCH" --state open --json url --jq '.[].url')
+          if [ -n "$open" ]; then
+            echo "A sync pull request is still open: $open"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git switch --create "$BRANCH" origin/redesign
+          if ! git merge --no-ff --no-edit -m "chore: merge main into redesign" origin/main; then
+            conflicts=$(git diff --name-only --diff-filter=U)
+            {
+              echo "## Merging main into redesign conflicts"
+              echo
+              echo "Resolve it by hand: see CONTRIBUTING.md › The redesign branch. These files conflict:"
+              echo
+              echo '```'
+              echo "$conflicts"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::Merging main into redesign conflicts in: $(echo "$conflicts" | tr '\n' ' ')"
+            exit 1
+          fi
+          git push --force origin "$BRANCH"
+          gh pr create --base redesign --head "$BRANCH" --title "chore: merge main into redesign" --body "$(cat <<'EOF'
+          Merges main into `redesign`. Part of #1065.
+
+          Merge this with **Create a merge commit**, not squash. A squash leaves main's commits out of redesign's history, so the next sync conflicts on the same lines again.
+          EOF
+          )"
