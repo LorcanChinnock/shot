@@ -621,7 +621,9 @@ final class SelectionOverlayView: NSView {
     private func drawBar(avoiding hole: CGRect?) {
         let previous = barHits.map(\.rect)
         barHits = []
-        guard controller.barShown, let window, NSMouseInRect(NSEvent.mouseLocation, window.frame, false) else {
+        let opacity = controller.barOpacity
+        guard opacity > 0, let window, NSMouseInRect(NSEvent.mouseLocation, window.frame, false),
+              let ctx = NSGraphicsContext.current?.cgContext else {
             return
         }
         let textSize = Preferences().textSize
@@ -662,6 +664,18 @@ final class SelectionOverlayView: NSView {
         guard let frame = barPlacement.frame(of: size, in: bounds) else {
             hoveredChip = nil
             return
+        }
+        // While fading, the bar draws into one layer so its shadow and fill fade together rather than showing through each other.
+        if opacity < 1 {
+            ctx.saveGState()
+            ctx.setAlpha(opacity)
+            ctx.beginTransparencyLayer(auxiliaryInfo: nil)
+        }
+        defer {
+            if opacity < 1 {
+                ctx.endTransparencyLayer()
+                ctx.restoreGState()
+            }
         }
         NSColor(Brutal.line).setFill()
         NSBezierPath(roundedRect: frame.offsetBy(dx: 3, dy: -3), xRadius: 9, yRadius: 9).fill()
