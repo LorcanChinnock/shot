@@ -72,10 +72,12 @@ final class SelectionOverlayController {
     private(set) var showMagnifier = Preferences().showMagnifier
     private(set) var showCrosshair = Preferences().showCrosshair
     private(set) var showSizeLabel = Preferences().showSizeLabel
-    /// The bar shows when the overlay opens and after each hotkey, then goes after a pause so the area under it can be picked.
-    private(set) var barShown = true
+    /// The bar shows when the overlay opens and after each hotkey, then fades out after a pause so the area under it can be picked.
+    /// 1 is fully shown, 0 is gone.
+    private(set) var barOpacity: CGFloat = 1
     private var barTimer: Task<Void, Never>?
     private static let barLinger: Duration = .seconds(4)
+    private static let barFade: Duration = .milliseconds(200)
     /// The modifier keys held by the event that ended the selection.
     private var endModifiers: NSEvent.ModifierFlags = []
 
@@ -155,7 +157,7 @@ final class SelectionOverlayController {
 
     /// Shows the bar and starts the pause after which it goes again; it stays while the pointer is on it.
     func revealBar() {
-        barShown = true
+        barOpacity = 1
         barTimer?.cancel()
         barTimer = Task { [weak self] in
             while !Task.isCancelled {
@@ -166,12 +168,26 @@ final class SelectionOverlayController {
                 if views.contains(where: \.pointerIsOnBar) {
                     continue
                 }
-                barShown = false
-                redrawAll()
+                await fadeOutBar()
                 return
             }
         }
         redrawAll()
+    }
+
+    /// Fades the bar out; moving onto it or a hotkey calls `revealBar`, which cancels the fade and shows it again.
+    private func fadeOutBar() async {
+        let clock = ContinuousClock()
+        let start = clock.now
+        while !Task.isCancelled {
+            let progress = min((clock.now - start) / Self.barFade, 1)
+            barOpacity = CGFloat(1 - progress)
+            redrawAll()
+            if progress >= 1 {
+                return
+            }
+            try? await Task.sleep(for: .milliseconds(16))
+        }
     }
 
     private func redrawAll() {
