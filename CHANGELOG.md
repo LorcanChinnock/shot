@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.0-beta.79](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.78...v0.7.0-beta.79) (2026-11-03)
+
+
+### Features
+
+* **capture:** a minimal capture overlay and minimal first-run defaults ([#1042](https://github.com/LorcanChinnock/shot/issues/1042)) ([6e967ff](https://github.com/LorcanChinnock/shot/commit/6e967ff70923d7da819d7b7e723ca3a9f3ecf583))
+* **capture:** make scrolling capture reliable, with a lab to find the bugs and a final pass over all the frames ([#1028](https://github.com/LorcanChinnock/shot/issues/1028)) ([5b0700c](https://github.com/LorcanChinnock/shot/commit/5b0700ca8d70de5855cf2b0b1616918607fe5119))
+
+
+### Bug Fixes
+
+* **capture:** keep a fading scroll bar out of a long thread's last screenful and save a copy of the image ([#1037](https://github.com/LorcanChinnock/shot/issues/1037)) ([77af985](https://github.com/LorcanChinnock/shot/commit/77af98556a62ddeb7fa3eb7d82da35417ba2eead))
+* **capture:** keep a floating button near the bottom from being taken for a bar and from repeating in the preview ([#1038](https://github.com/LorcanChinnock/shot/issues/1038)) ([bc2b376](https://github.com/LorcanChinnock/shot/commit/bc2b376d7c6702545eaa796e232f72250c8cc114))
+* **capture:** keep a pinned list inside a margin out of the image when each scroll step is tall ([#1034](https://github.com/LorcanChinnock/shot/issues/1034)) ([2f40fea](https://github.com/LorcanChinnock/shot/commit/2f40fea0d7f946414b175e9fce68ae57f5334ff7))
+* **capture:** line up odd moves on rows that look alike and keep a wide pinned column out of the image ([#1033](https://github.com/LorcanChinnock/shot/issues/1033)) ([acf0d74](https://github.com/LorcanChinnock/shot/commit/acf0d74af8ed56eb64c2b3abf35db6ace9a2af27))
+* **capture:** line up scrolling capture on rows that look alike and under tall sticky bars ([#1032](https://github.com/LorcanChinnock/shot/issues/1032)) ([5647293](https://github.com/LorcanChinnock/shot/commit/564729386ccd63c2c1744a2e33603879e1d4601a))
+* **capture:** refresh the scroll preview where a frame first sees pixels inside the part it shares with the last ([#1039](https://github.com/LorcanChinnock/shot/issues/1039)) ([719766f](https://github.com/LorcanChinnock/shot/commit/719766f9bb8767dc85b3006255c17d0e1b5b1bf9))
+
 ## [0.7.0-beta.78](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.77...v0.7.0-beta.78) (2026-11-01)
 
 
