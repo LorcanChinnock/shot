@@ -68,6 +68,14 @@ final class SelectionOverlayController {
     private var views: [SelectionOverlayView] = []
     private var continuation: CheckedContinuation<OverlaySelection?, Never>?
     private var magnifierTask: Task<Void, Never>?
+    /// The loupe, guide lines and size readout start as Settings has them and are toggled for this overlay only.
+    private(set) var showMagnifier = Preferences().showMagnifier
+    private(set) var showCrosshair = Preferences().showCrosshair
+    private(set) var showSizeLabel = Preferences().showSizeLabel
+    /// The bar shows when the overlay opens and after each hotkey, then goes after a pause so the area under it can be picked.
+    private(set) var barShown = true
+    private var barTimer: Task<Void, Never>?
+    private static let barLinger: Duration = .seconds(4)
     /// The modifier keys held by the event that ended the selection.
     private var endModifiers: NSEvent.ModifierFlags = []
 
@@ -97,6 +105,7 @@ final class SelectionOverlayController {
             }
         }
         controller.magnifierTask?.cancel()
+        controller.barTimer?.cancel()
         withExtendedLifetime(controller) {}
         return OverlayResult(selection: selection, modifiers: controller.endModifiers, delay: controller.delay, scrolling: controller.scrolling, target: controller.target)
     }
@@ -141,6 +150,52 @@ final class SelectionOverlayController {
         }
         updateHover(redraw: true)
         NSCursor.crosshair.set()
+        revealBar()
+    }
+
+    /// Shows the bar and starts the pause after which it goes again; it stays while the pointer is on it.
+    func revealBar() {
+        barShown = true
+        barTimer?.cancel()
+        barTimer = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: Self.barLinger)
+                guard let self, !Task.isCancelled else {
+                    return
+                }
+                if views.contains(where: \.pointerIsOnBar) {
+                    continue
+                }
+                barShown = false
+                redrawAll()
+                return
+            }
+        }
+        redrawAll()
+    }
+
+    private func redrawAll() {
+        for view in views {
+            view.needsDisplay = true
+        }
+    }
+
+    func toggleMagnifier() {
+        showMagnifier.toggle()
+        if showMagnifier, isLive, magnifierTask == nil {
+            loadMagnifierImages()
+        }
+        redrawAll()
+    }
+
+    func toggleCrosshair() {
+        showCrosshair.toggle()
+        redrawAll()
+    }
+
+    func toggleSizeLabel() {
+        showSizeLabel.toggle()
+        redrawAll()
     }
 
     /// A live overlay has nothing frozen to magnify, so the loupe reads from stills taken while it is open.

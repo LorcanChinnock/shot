@@ -6,9 +6,16 @@ final class SelectionOverlayView: NSView {
     private let index: Int
     private unowned let controller: SelectionOverlayController
 
-    private let showMagnifier = Preferences().showMagnifier
-    private let showCrosshair = Preferences().showCrosshair
-    private let showSizeLabel = Preferences().showSizeLabel
+    private var showMagnifier: Bool { controller.showMagnifier }
+    private var showCrosshair: Bool { controller.showCrosshair }
+    private var showSizeLabel: Bool { controller.showSizeLabel }
+    /// Whether the pointer is over a button of the bar, which keeps the bar from going.
+    var pointerIsOnBar: Bool {
+        guard let pointer else {
+            return false
+        }
+        return barHits.contains { $0.rect.contains(pointer) }
+    }
     private var pointer: CGPoint?
     private var dragStart: CGPoint?
     private var selection: CGRect?
@@ -22,6 +29,9 @@ final class SelectionOverlayView: NSView {
         case target(CaptureTarget)
         case scrolling
         case delay
+        case magnifier
+        case crosshair
+        case resolution
         case grantAccess
     }
     private var barHits: [(rect: CGRect, action: BarAction)] = []
@@ -98,6 +108,9 @@ final class SelectionOverlayView: NSView {
         let point = convert(event.locationInWindow, from: nil)
         pointer = point
         let hovered = barHits.first { $0.rect.contains(point) }?.action
+        if hovered != nil {
+            controller.revealBar()
+        }
         if hovered != hoveredChip {
             hoveredChip = hovered
             needsDisplay = true
@@ -168,6 +181,9 @@ final class SelectionOverlayView: NSView {
         case let .target(target): controller.setTarget(target)
         case .scrolling: controller.toggleScrolling()
         case .delay: controller.cycleDelay()
+        case .magnifier: controller.toggleMagnifier()
+        case .crosshair: controller.toggleCrosshair()
+        case .resolution: controller.toggleSizeLabel()
         case .grantAccess: controller.grantPageAccess()
         }
     }
@@ -219,6 +235,9 @@ final class SelectionOverlayView: NSView {
     }
 
     override func keyDown(with event: NSEvent) {
+        if [49, 48, 1, 2, 46, 8, 34].contains(event.keyCode), !event.isARepeat {
+            controller.revealBar()
+        }
         switch event.keyCode {
         case 53:
             controller.finish(nil)
@@ -234,6 +253,12 @@ final class SelectionOverlayView: NSView {
             controller.toggleScrolling()
         case 2:
             controller.cycleDelay()
+        case 46:
+            controller.toggleMagnifier()
+        case 8:
+            controller.toggleCrosshair()
+        case 34:
+            controller.toggleSizeLabel()
         case 123...126 where controller.target == .window:
             controller.stepWindow(backward: event.keyCode == 123 || event.keyCode == 126)
         case 123...126 where controller.target == .area && dragStart == nil:
@@ -505,10 +530,13 @@ final class SelectionOverlayView: NSView {
         case .screen:
             parts = [String(localized: "Click a screen")]
         }
-        parts.append(String(localized: "Tab: area, window, browser or screen"))
+        parts.append(String(localized: "Tab: area, window, screen or browser"))
         if controller.offersScrolling {
             parts.append(String(localized: "S: scroll"))
         }
+        parts.append(String(localized: "M: magnifier"))
+        parts.append(String(localized: "C: crosshair"))
+        parts.append(String(localized: "I: resolution"))
         if controller.offersDelay {
             parts.append(String(localized: "D: delay"))
         }
@@ -570,7 +598,7 @@ final class SelectionOverlayView: NSView {
         var options: [BarButton] = []
         if controller.offersScrolling {
             let scroll = String(localized: "Scroll")
-            options.append(BarButton(symbol: "arrow.down.to.line", label: controller.scrolling ? scroll : nil, on: controller.scrolling, tip: "\(scroll)  ·  S", action: .scrolling))
+            options.append(BarButton(symbol: "rectangle.expand.vertical", label: controller.scrolling ? scroll : nil, on: controller.scrolling, tip: "\(scroll)  ·  S", action: .scrolling))
         }
         if controller.offersDelay {
             let delay = controller.delay
@@ -579,6 +607,12 @@ final class SelectionOverlayView: NSView {
                 tip: "\(String(localized: "Delay: \(CaptureDelay.label(delay))"))  ·  D", action: .delay
             ))
         }
+        func toggle(_ symbol: String, _ name: String, _ key: String, on: Bool, _ action: BarAction) {
+            options.append(BarButton(symbol: symbol, label: nil, on: on, tip: "\(name)  ·  \(key)", action: action))
+        }
+        toggle("magnifyingglass", String(localized: "Magnifier"), "M", on: controller.showMagnifier, .magnifier)
+        toggle("plus.viewfinder", String(localized: "Crosshair"), "C", on: controller.showCrosshair, .crosshair)
+        toggle("ruler", String(localized: "Resolution"), "I", on: controller.showSizeLabel, .resolution)
         return (modes, options)
     }
 
@@ -587,7 +621,7 @@ final class SelectionOverlayView: NSView {
     private func drawBar(avoiding hole: CGRect?) {
         let previous = barHits.map(\.rect)
         barHits = []
-        guard let window, NSMouseInRect(NSEvent.mouseLocation, window.frame, false) else {
+        guard controller.barShown, let window, NSMouseInRect(NSEvent.mouseLocation, window.frame, false) else {
             return
         }
         let textSize = Preferences().textSize
@@ -595,7 +629,7 @@ final class SelectionOverlayView: NSView {
         let symbolConfig = NSImage.SymbolConfiguration(pointSize: textSize.points(14), weight: .bold)
         let (modes, options) = barButtons
         let pad: CGFloat = 4
-        let gap: CGFloat = 2
+        let gap: CGFloat = 6
         let divider: CGFloat = 14
         let height = (String("A") as NSString).size(withAttributes: [.font: font]).height.rounded() + 14
 

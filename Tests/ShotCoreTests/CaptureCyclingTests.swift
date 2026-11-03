@@ -28,8 +28,8 @@ struct CaptureCyclingTests {
 
     @Test func captureTargetsStepBothWaysAndWrap() {
         #expect(CaptureTarget.area.next() == .window)
-        #expect(CaptureTarget.screen.next() == .area)
-        #expect(CaptureTarget.area.next(backward: true) == .screen)
+        #expect(CaptureTarget.browser.next() == .area)
+        #expect(CaptureTarget.area.next(backward: true) == .browser)
     }
 
     @Test func captureDelayStartsOffAndWrapsBackToIt() {

@@ -4,7 +4,7 @@ summary: "Capture an area, a window, a browser page, the whole screen or a long 
 group: Capture
 ---
 
-![Pressing Tab to step the capture between an area, a window, a browser page and the full screen, dragging out an area with the magnifier, then the Quick Access card sliding into the corner](../../../docs/media/capture.gif)
+![Pressing Tab to step the capture between an area, a window, the full screen and a browser page, dragging out an area with the magnifier, then the Quick Access card sliding into the corner](../../../docs/media/capture.gif)
 
 Every screenshot is saved, copied to the clipboard as a PNG, and shown in a [Quick Access](#quick-access) card, so you can paste it straight away.
 
@@ -14,7 +14,7 @@ Every screenshot is saved, copied to the clipboard as a PNG, and shown in a [Qui
 2. Drag across what you want. For exact edges, turn on the magnifier, the crosshair and a label with the size in pixels in **Settings › Capture**.
 3. Let go.
 
-A small bar at the bottom of the screen shows what you are about to capture: **Area**, **Window**, **Browser** or **Full Screen**. Press <kbd>Tab</kbd> to move to the next one (<kbd>⇧Tab</kbd> goes back), or click its icon. Point at an icon to see its name and key. Shot remembers the one you used last, for screenshots and recordings separately, and opens on it next time.
+A small bar at the bottom of the screen shows what you are about to capture: **Area**, **Window**, **Full Screen** or **Browser**. Press <kbd>Tab</kbd> to move to the next one (<kbd>⇧Tab</kbd> goes back), or click its icon. Point at an icon to see its name and key. Shot remembers the one you used last, for screenshots and recordings separately, and opens on it next time.
 
 The bar never appears in your screenshot, and it stays out of the way: it hides while you drag out an area, and moves to the top of the screen when the window you point at is under it. To start an area right under the bar, just drag from it: a click picks an icon, a drag starts the area.
 

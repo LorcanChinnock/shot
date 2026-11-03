@@ -3968,6 +3968,9 @@
         }
       }
     },
+    "C: crosshair" : {
+
+    },
     "CLIP STYLE" : {
       "localizations" : {
         "de" : {
@@ -15316,6 +15319,9 @@
     "Hue" : {
 
     },
+    "I: resolution" : {
+
+    },
     "IMAGE STYLE" : {
       "localizations" : {
         "de" : {
@@ -16548,6 +16554,9 @@
           }
         }
       }
+    },
+    "M: magnifier" : {
+
     },
     "MISSING" : {
       "localizations" : {
@@ -22700,6 +22709,9 @@
     "Resize panel" : {
 
     },
+    "Resolution" : {
+
+    },
     "Restore Defaults" : {
       "localizations" : {
         "de" : {
@@ -28632,7 +28644,7 @@
         }
       }
     },
-    "Tab: area, window, browser or screen" : {
+    "Tab: area, window, screen or browser" : {
 
     },
     "Tag name" : {
