@@ -4,49 +4,56 @@ import Testing
 @testable import ShotCore
 
 private let screen = CGRect(x: 0, y: 0, width: 1440, height: 900)
-private let block = CGSize(width: 700, height: 74)
+private let bar = CGSize(width: 300, height: 38)
 
-private func place(_ aim: OverlayBarPlacement.Aim?, current: OverlayBarPlacement = .top, pointerOnChip: Bool = false) -> OverlayBarPlacement {
-    OverlayBarPlacement.placement(for: block, in: screen, avoiding: aim, current: current, pointerOnChip: pointerOnChip)
+private func place(
+    _ aim: OverlayBarPlacement.Aim?, dragging: Bool = false, current: OverlayBarPlacement = .bottom, pointerOnBar: Bool = false
+) -> OverlayBarPlacement {
+    OverlayBarPlacement.placement(for: bar, in: screen, avoiding: aim, dragging: dragging, current: current, pointerOnBar: pointerOnBar)
 }
 
 @Test func overlayBarFramesSitAnInsetFromEachEdge() {
-    #expect(OverlayBarPlacement.top.frame(of: block, in: screen) == CGRect(x: 370, y: 762, width: 700, height: 74))
-    #expect(OverlayBarPlacement.bottom.frame(of: block, in: screen) == CGRect(x: 370, y: 64, width: 700, height: 74))
-    #expect(OverlayBarPlacement.hidden.frame(of: block, in: screen) == nil)
+    #expect(OverlayBarPlacement.bottom.frame(of: bar, in: screen) == CGRect(x: 570, y: 56, width: 300, height: 38))
+    #expect(OverlayBarPlacement.top.frame(of: bar, in: screen) == CGRect(x: 570, y: 806, width: 300, height: 38))
+    #expect(OverlayBarPlacement.hidden.frame(of: bar, in: screen) == nil)
 }
 
-@Test func overlayBarStaysAtTheTopWithNothingUnderIt() {
-    #expect(place(nil) == .top)
-    #expect(place(.area(CGRect(x: 100, y: 200, width: 400, height: 300))) == .top)
+@Test func overlayBarSitsAtTheBottomWithNothingUnderIt() {
+    #expect(place(nil) == .bottom)
+    #expect(place(.area(CGRect(x: 100, y: 200, width: 400, height: 300))) == .bottom)
 }
 
-@Test func overlayBarMovesDownWhenAnAreaReachesIt() {
-    #expect(place(.area(CGRect(x: 500, y: 600, width: 200, height: 170))) == .bottom)
+@Test func overlayBarHidesWhileAnAreaIsDraggedOut() {
+    #expect(place(nil, dragging: true) == .hidden)
+    #expect(place(.area(CGRect(x: 100, y: 200, width: 40, height: 30)), dragging: true, pointerOnBar: true) == .hidden)
+}
+
+@Test func overlayBarMovesUpWhenAnAreaReachesIt() {
+    #expect(place(.area(CGRect(x: 600, y: 80, width: 200, height: 200))) == .top)
     // Within the clearance counts as touching.
-    #expect(place(.area(CGRect(x: 500, y: 600, width: 200, height: 155))) == .bottom)
-    // Beside the block, even at the same height, leaves it at the top.
-    #expect(place(.area(CGRect(x: 10, y: 700, width: 300, height: 190))) == .top)
+    #expect(place(.area(CGRect(x: 600, y: 100, width: 200, height: 200))) == .top)
+    // Beside the bar, even at the same height, leaves it at the bottom.
+    #expect(place(.area(CGRect(x: 10, y: 10, width: 300, height: 200))) == .bottom)
 }
 
 @Test func overlayBarHidesWhenAnAreaSpansBothEdges() {
-    #expect(place(.area(CGRect(x: 600, y: 40, width: 100, height: 820))) == .hidden)
-    #expect(place(.area(CGRect(x: 600, y: 300, width: 100, height: 100)), current: .hidden) == .top)
+    #expect(place(.area(CGRect(x: 650, y: 40, width: 100, height: 820))) == .hidden)
+    #expect(place(.area(CGRect(x: 650, y: 300, width: 100, height: 100)), current: .hidden) == .bottom)
 }
 
 @Test func overlayBarStaysOverALargeWindowItCoversOnlyAStripOf() {
-    #expect(place(.target(CGRect(x: 0, y: 0, width: 1440, height: 875))) == .top)
+    #expect(place(.target(CGRect(x: 0, y: 0, width: 1440, height: 875))) == .bottom)
 }
 
 @Test func overlayBarMovesOffASmallWindowItWouldMostlyCover() {
-    #expect(place(.target(CGRect(x: 600, y: 720, width: 300, height: 140))) == .bottom)
-    // A window that only grazes the block keeps it at the top.
-    #expect(place(.target(CGRect(x: 600, y: 300, width: 300, height: 480))) == .top)
+    #expect(place(.target(CGRect(x: 600, y: 40, width: 200, height: 80))) == .top)
+    // A window that only grazes the bar keeps it at the bottom.
+    #expect(place(.target(CGRect(x: 600, y: 80, width: 200, height: 400))) == .bottom)
 }
 
 @Test func overlayBarStaysPutUnderThePointer() {
-    let under = OverlayBarPlacement.Aim.target(CGRect(x: 600, y: 720, width: 300, height: 140))
-    #expect(place(under, current: .top, pointerOnChip: true) == .top)
-    #expect(place(nil, current: .bottom, pointerOnChip: true) == .bottom)
-    #expect(place(nil, current: .hidden, pointerOnChip: true) == .top)
+    let under = OverlayBarPlacement.Aim.target(CGRect(x: 600, y: 40, width: 200, height: 80))
+    #expect(place(under, current: .bottom, pointerOnBar: true) == .bottom)
+    #expect(place(nil, current: .top, pointerOnBar: true) == .top)
+    #expect(place(nil, current: .hidden, pointerOnBar: true) == .bottom)
 }
