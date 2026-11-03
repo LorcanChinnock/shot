@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.80](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.79...v0.7.0-beta.80) (2026-11-03)
+
+
+### Features
+
+* **overlay:** fade the capture overlay's bar out ([#1048](https://github.com/LorcanChinnock/shot/issues/1048)) ([092a453](https://github.com/LorcanChinnock/shot/commit/092a453ff7bdbf3042ecffb568280eec83964db0))
+
 ## [0.7.0-beta.79](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.78...v0.7.0-beta.79) (2026-11-03)
 
 
