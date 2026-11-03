@@ -54,6 +54,9 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | Tab | Switch between picking an area, a window, the full screen and a browser page. <kbd>⇧Tab</kbd> goes back. |
 | D | Step the delay through Off, 3, 5 and 10 seconds. |
 | R | Step the area's ratio. |
+| M | Turn the magnifier on or off for this capture. |
+| C | Turn the crosshair guide lines on or off for this capture. |
+| I | Turn the size readout (the area's width and height in pixels) on or off for this capture. |
 | Arrow keys | Move an area. In window mode, step through the windows. |
 | Space | While dragging an area, hold it to move the area. |
 | S | Turn scrolling on or off, to build one screenshot of a long page. |

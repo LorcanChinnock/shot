@@ -16,7 +16,9 @@ Every screenshot is saved, copied to the clipboard as a PNG, and shown in a [Qui
 
 A small bar at the bottom of the screen shows what you are about to capture: **Area**, **Window**, **Full Screen** or **Browser**. Press <kbd>Tab</kbd> to move to the next one (<kbd>⇧Tab</kbd> goes back), or click its icon. Point at an icon to see its name and key. Shot remembers the one you used last, for screenshots and recordings separately, and opens on it next time.
 
-The bar never appears in your screenshot, and it stays out of the way: it hides while you drag out an area, and moves to the top of the screen when the window you point at is under it. To start an area right under the bar, just drag from it: a click picks an icon, a drag starts the area.
+The bar never appears in your screenshot, and it stays out of the way: it disappears about 4 seconds after it shows (it stays while the pointer is on it), so you can pick the area under it, and any of its keys brings it back. It also hides while you drag out an area, and moves to the top of the screen when the window you point at is under it. To start an area right under the bar, just drag from it: a click picks an icon, a drag starts the area.
+
+The last three icons switch the magnifier (<kbd>M</kbd>), the crosshair (<kbd>C</kbd>) and the size readout (<kbd>I</kbd>) for this capture, whatever **Settings › Capture** says. They only change what you see when you pick an area.
 
 - **Area:** drag across it.
 - **Window:** click a window. Shot captures it as it is right now, even if something covers it, and keeps its macOS shadow. To leave the shadow out, turn off **Window shadow** in **Settings › Capture**.
