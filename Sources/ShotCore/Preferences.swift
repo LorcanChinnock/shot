@@ -83,6 +83,9 @@ public enum PreferenceKey {
     /// Window layout: whether the photo editor shows its layers, and the video editor its inspector.
     public static let editorShowsLayers = "editorShowsLayers"
     public static let videoEditorShowsInspector = "videoEditorShowsInspector"
+    /// True once launch has kept the magnifier, crosshair and size label on for someone who used Shot while they started on.
+    /// Not a setting, so resetting settings keeps it.
+    public static let keptSelectionAids = "keptSelectionAids"
     /// How far the welcome window got, an `OnboardingProgress`. Not a setting, so resetting settings keeps it.
     public static let onboarding = "onboarding"
 
@@ -115,9 +118,10 @@ public struct Preferences {
             PreferenceKey.openEditorAfterCapture: false,
             PreferenceKey.captureShowsCursor: false,
             PreferenceKey.excludesMenuBar: false,
-            PreferenceKey.showMagnifier: true,
-            PreferenceKey.showCrosshair: true,
-            PreferenceKey.showSizeLabel: true,
+            // Off, so a first capture is just a drag; Settings › Capture turns them on for exact edges.
+            PreferenceKey.showMagnifier: false,
+            PreferenceKey.showCrosshair: false,
+            PreferenceKey.showSizeLabel: false,
             PreferenceKey.windowShadow: true,
             PreferenceKey.quickAccessPosition: QuickAccessPosition.left.rawValue,
             PreferenceKey.quickAccessDuration: 8.0,
@@ -214,6 +218,21 @@ public struct Preferences {
     /// Deletes the language Translate Text remembered, which Shot no longer has.
     public static func removeTranslateTarget(in store: UserDefaults = .standard) {
         store.removeObject(forKey: "translateTarget")
+    }
+
+    /// The magnifier, crosshair and size label once started on. Someone who used Shot then keeps them as they were, so an
+    /// update doesn't take them away; someone new gets them off. Runs once: pass `saved`, the keys saved in Shot's defaults
+    /// domain, read before launch saves anything.
+    public static func keepEarlierSelectionAids(saved: [String: Any], in store: UserDefaults = .standard) {
+        guard saved[PreferenceKey.keptSelectionAids] == nil else {
+            return
+        }
+        if hasSavedSettings(saved.keys) {
+            for key in [PreferenceKey.showMagnifier, PreferenceKey.showCrosshair, PreferenceKey.showSizeLabel] where saved[key] == nil {
+                store.set(true, forKey: key)
+            }
+        }
+        store.set(true, forKey: PreferenceKey.keptSelectionAids)
     }
 
     /// Moves the shortcut saved for Capture Area to Screenshot, then deletes what the separate capture and record

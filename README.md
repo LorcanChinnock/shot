@@ -30,7 +30,7 @@
 
 ## Features
 
-- **Capture:** an area on a frozen screen with a magnifier, a window, or the whole screen, with a delay if you need one. Shot copies and saves it as soon as you let go.
+- **Capture:** an area on a frozen screen (with a magnifier if you want one), a window, or the whole screen, with a delay if you need one. Shot copies and saves it as soon as you let go.
 - **Capture a long page:** turn on Scroll, pick the part of the screen that scrolls and scroll it yourself, in any direction. Shot builds one screenshot as you go, keeps sticky headers and columns once, and shows you what you haven't covered yet.
 - **Quick Access:** a card in the corner after every capture. Annotate it, pin it above your other windows, or drag it straight into another app.
 - **Annotate:** arrows, text, sticky notes, highlights, a spotlight, blur and pixelate, and several images on one canvas.
