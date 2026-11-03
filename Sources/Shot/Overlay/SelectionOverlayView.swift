@@ -6,8 +6,16 @@ final class SelectionOverlayView: NSView {
     private let index: Int
     private unowned let controller: SelectionOverlayController
 
-    private let showMagnifier = Preferences().showMagnifier
-    private let showCrosshair = Preferences().showCrosshair
+    private var showMagnifier: Bool { controller.showMagnifier }
+    private var showCrosshair: Bool { controller.showCrosshair }
+    private var showSizeLabel: Bool { controller.showSizeLabel }
+    /// Whether the pointer is over a button of the bar, which keeps the bar from going.
+    var pointerIsOnBar: Bool {
+        guard let pointer else {
+            return false
+        }
+        return barHits.contains { $0.rect.contains(pointer) }
+    }
     private var pointer: CGPoint?
     private var dragStart: CGPoint?
     private var selection: CGRect?
@@ -16,16 +24,23 @@ final class SelectionOverlayView: NSView {
     private var portrait: Bool?
     /// The selection was made with the arrow keys, so Return takes it and Option-arrows resize it.
     private var isKeyboardSelection = false
-    /// What a click on the target, scroll and delay chips does, with where each was last drawn.
+    /// What a click on a button of the bar does, with where each was last drawn.
     private enum BarAction: Equatable {
         case target(CaptureTarget)
         case scrolling
         case delay
+        case magnifier
+        case crosshair
+        case resolution
         case grantAccess
     }
     private var barHits: [(rect: CGRect, action: BarAction)] = []
-    /// A press landed on a chip, so its release isn't a click on the screen or window underneath.
-    private var pressedBar = false
+    /// A press that landed on a button of the bar: its release clicks it, unless it turns into dragging out an area first.
+    private var pressedChip: (action: BarAction, point: CGPoint)?
+    /// Whether the bar sits at the bottom or top, or is hidden, so it stays off what's being picked.
+    private var barPlacement = OverlayBarPlacement.bottom
+    /// The button of the bar under the pointer, which shows its name and key.
+    private var hoveredChip: BarAction?
     var magnifierImage: CGImage? {
         didSet { needsDisplay = true }
     }
@@ -69,6 +84,8 @@ final class SelectionOverlayView: NSView {
     override func mouseEntered(with event: NSEvent) {
         window?.makeKey()
         window?.makeFirstResponder(self)
+        // The bar shows only on the screen with the pointer.
+        needsDisplay = true
     }
 
     /// Drops a half-made area when Tab or a click changes what the overlay picks.
@@ -83,11 +100,21 @@ final class SelectionOverlayView: NSView {
 
     override func mouseExited(with event: NSEvent) {
         pointer = nil
+        hoveredChip = nil
         needsDisplay = true
     }
 
     override func mouseMoved(with event: NSEvent) {
-        pointer = convert(event.locationInWindow, from: nil)
+        let point = convert(event.locationInWindow, from: nil)
+        pointer = point
+        let hovered = barHits.first { $0.rect.contains(point) }?.action
+        if hovered != nil {
+            controller.revealBar()
+        }
+        if hovered != hoveredChip {
+            hoveredChip = hovered
+            needsDisplay = true
+        }
         if controller.windowMode {
             controller.releaseKeyboardWindow()
             controller.updateHover()
@@ -99,17 +126,14 @@ final class SelectionOverlayView: NSView {
     override func mouseDown(with event: NSEvent) {
         let point = clamped(convert(event.locationInWindow, from: nil))
         pointer = point
-        if let hit = barHits.first(where: { $0.rect.contains(point) }) {
-            pressedBar = true
-            switch hit.action {
-            case let .target(target): controller.setTarget(target)
-            case .scrolling: controller.toggleScrolling()
-            case .delay: controller.cycleDelay()
-            case .grantAccess: controller.grantPageAccess()
-            }
+        pressedChip = barHits.first { $0.rect.contains(point) }.map { ($0.action, point) }
+        if controller.target != .area {
             return
         }
-        if controller.target != .area {
+        if pressedChip != nil {
+            // Held back until the press turns into a drag, so a click on a chip keeps an area made with the arrow keys.
+            dragStart = point
+            lastDragPoint = point
             return
         }
         dragStart = point
@@ -126,6 +150,16 @@ final class SelectionOverlayView: NSView {
         }
         let point = clamped(convert(event.locationInWindow, from: nil))
         pointer = point
+        if let chip = pressedChip {
+            // A drag from a chip starts an area there, so what's under the chips can still be picked.
+            guard chip.action != .grantAccess, hypot(point.x - start.x, point.y - start.y) >= Self.orientationLockDistance else {
+                return
+            }
+            pressedChip = nil
+            portrait = nil
+            selection = nil
+            isKeyboardSelection = false
+        }
         if isMoving, let current = selection, let last = lastDragPoint {
             var moved = current.offsetBy(dx: point.x - last.x, dy: point.y - last.y)
             moved.origin.x = min(max(moved.minX, 0), bounds.width - moved.width)
@@ -140,6 +174,18 @@ final class SelectionOverlayView: NSView {
         }
         lastDragPoint = point
         needsDisplay = true
+    }
+
+    private func perform(_ action: BarAction) {
+        switch action {
+        case let .target(target): controller.setTarget(target)
+        case .scrolling: controller.toggleScrolling()
+        case .delay: controller.cycleDelay()
+        case .magnifier: controller.toggleMagnifier()
+        case .crosshair: controller.toggleCrosshair()
+        case .resolution: controller.toggleSizeLabel()
+        case .grantAccess: controller.grantPageAccess()
+        }
     }
 
     private func shaped(from start: CGPoint, to point: CGPoint, square: Bool) -> CGRect {
@@ -158,8 +204,10 @@ final class SelectionOverlayView: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
-        if pressedBar {
-            pressedBar = false
+        if let chip = pressedChip {
+            pressedChip = nil
+            dragStart = nil
+            perform(chip.action)
             return
         }
         if controller.windowMode {
@@ -187,6 +235,9 @@ final class SelectionOverlayView: NSView {
     }
 
     override func keyDown(with event: NSEvent) {
+        if [49, 48, 1, 2, 46, 8, 34].contains(event.keyCode), !event.isARepeat {
+            controller.revealBar()
+        }
         switch event.keyCode {
         case 53:
             controller.finish(nil)
@@ -202,6 +253,12 @@ final class SelectionOverlayView: NSView {
             controller.toggleScrolling()
         case 2:
             controller.cycleDelay()
+        case 46:
+            controller.toggleMagnifier()
+        case 8:
+            controller.toggleCrosshair()
+        case 34:
+            controller.toggleSizeLabel()
         case 123...126 where controller.target == .window:
             controller.stepWindow(backward: event.keyCode == 123 || event.keyCode == 126)
         case 123...126 where controller.target == .area && dragStart == nil:
@@ -301,6 +358,7 @@ final class SelectionOverlayView: NSView {
         }
         ctx.clear(dirtyRect)
 
+        // A light dim says the screen is frozen without hiding it; only the outside of an area being made dims more.
         let hole = holeRect()
         let dim = CGMutablePath()
         dim.addRect(bounds)
@@ -308,21 +366,29 @@ final class SelectionOverlayView: NSView {
             dim.addRect(hole)
         }
         ctx.addPath(dim)
-        ctx.setFillColor(NSColor.black.withAlphaComponent(0.45).cgColor)
+        ctx.setFillColor(NSColor.black.withAlphaComponent(controller.target == .area && hole != nil ? 0.35 : 0.1).cgColor)
         ctx.fillPath(using: .evenOdd)
 
         if let hole {
-            if controller.target != .area {
-                ctx.setFillColor(NSColor.systemBlue.withAlphaComponent(0.25).cgColor)
+            switch controller.target {
+            case .area:
+                ctx.setStrokeColor(NSColor.white.cgColor)
+                ctx.setLineWidth(1)
+                ctx.stroke(hole.insetBy(dx: 0.5, dy: 0.5))
+            case .window, .browser:
+                ctx.setFillColor(NSColor.systemBlue.withAlphaComponent(0.2).cgColor)
                 ctx.fill(hole)
+                ctx.setStrokeColor(NSColor.white.cgColor)
+                ctx.setLineWidth(1)
+                ctx.stroke(hole.insetBy(dx: 0.5, dy: 0.5))
+            case .screen:
+                ctx.setStrokeColor(NSColor.systemBlue.cgColor)
+                ctx.setLineWidth(4)
+                ctx.stroke(hole.insetBy(dx: 2, dy: 2))
             }
-            ctx.setStrokeColor(NSColor.white.cgColor)
-            ctx.setLineWidth(1)
-            ctx.stroke(hole.insetBy(dx: 0.5, dy: 0.5))
         }
 
-        drawHint(in: ctx)
-        drawBar()
+        drawBar(avoiding: hole)
         if controller.needsPageAccess {
             drawAccessCard()
         }
@@ -336,7 +402,7 @@ final class SelectionOverlayView: NSView {
             if showMagnifier {
                 drawLoupe(at: pointer, in: ctx)
             }
-        } else if let selection {
+        } else if let selection, showSizeLabel {
             drawSizeLabel(for: selection, near: pointer)
         }
     }
@@ -446,6 +512,7 @@ final class SelectionOverlayView: NSView {
         _ = drawChip(text, at: origin, yellow: true, font: font)
     }
 
+    /// Every key the overlay takes, for VoiceOver's help. The bar shows none of it, only each button's name and key on hover.
     private var hintText: String {
         var parts: [String]
         switch controller.target {
@@ -463,10 +530,13 @@ final class SelectionOverlayView: NSView {
         case .screen:
             parts = [String(localized: "Click a screen")]
         }
-        parts.append(String(localized: "Tab: area, window, browser or screen"))
+        parts.append(String(localized: "Tab: area, window, screen or browser"))
         if controller.offersScrolling {
             parts.append(String(localized: "S: scroll"))
         }
+        parts.append(String(localized: "M: magnifier"))
+        parts.append(String(localized: "C: crosshair"))
+        parts.append(String(localized: "I: resolution"))
         if controller.offersDelay {
             parts.append(String(localized: "D: delay"))
         }
@@ -510,34 +580,163 @@ final class SelectionOverlayView: NSView {
         title.draw(in: CGRect(x: card.minX + 24, y: box.maxY + 18 + bodyHeight + 10, width: inner, height: titleHeight))
     }
 
-    private func drawHint(in ctx: CGContext) {
-        let text = hintText
-        let textSize = Preferences().textSize
-        let font = NSFont.systemFont(ofSize: textSize.points(13), weight: .bold)
-        let width = (text as NSString).size(withAttributes: [.font: font]).width + 20
-        _ = drawChip(text, at: CGPoint(x: ((bounds.width - width) / 2).rounded(), y: bounds.height - 90), yellow: false, font: font)
+    /// One button of the bar: a mode, Scroll or Delay. `label` is shown beside the icon only while it's picked or on.
+    private struct BarButton {
+        let symbol: String
+        let label: String?
+        let on: Bool
+        let tip: String
+        let action: BarAction
     }
 
-    /// The chips under the hint that pick area, window, browser or full screen, the scroll toggle and the delay. Clicking one does what Tab and D do.
-    private func drawBar() {
-        let font = NSFont.systemFont(ofSize: Preferences().textSize.points(13), weight: .bold)
-        var chips: [(text: String, yellow: Bool, action: BarAction)] = CaptureTarget.allCases.map {
-            ($0.title, $0 == controller.target, .target($0))
+    private var barButtons: (modes: [BarButton], options: [BarButton]) {
+        let symbols: [CaptureTarget: String] = [.area: "rectangle.dashed", .window: "macwindow", .browser: "safari", .screen: "display"]
+        let modes = CaptureTarget.allCases.map { target in
+            let picked = target == controller.target
+            return BarButton(symbol: symbols[target] ?? "rectangle.dashed", label: picked ? target.title : nil, on: picked, tip: "\(target.title)  ·  Tab", action: .target(target))
         }
+        var options: [BarButton] = []
         if controller.offersScrolling {
-            chips.append((String(localized: "Scroll"), controller.scrolling, .scrolling))
+            let scroll = String(localized: "Scroll")
+            options.append(BarButton(symbol: "rectangle.expand.vertical", label: controller.scrolling ? scroll : nil, on: controller.scrolling, tip: "\(scroll)  ·  S", action: .scrolling))
         }
         if controller.offersDelay {
-            chips.append((String(localized: "Delay: \(CaptureDelay.label(controller.delay))"), controller.delay > 0, .delay))
+            let delay = controller.delay
+            options.append(BarButton(
+                symbol: "timer", label: delay > 0 ? CaptureDelay.label(delay) : nil, on: delay > 0,
+                tip: "\(String(localized: "Delay: \(CaptureDelay.label(delay))"))  ·  D", action: .delay
+            ))
         }
-        let gap: CGFloat = 12
-        let widths = chips.map { ($0.text as NSString).size(withAttributes: [.font: font]).width.rounded() + 20 }
-        var x = ((bounds.width - widths.reduce(0, +) - gap * CGFloat(chips.count - 1)) / 2).rounded()
+        func toggle(_ symbol: String, _ name: String, _ key: String, on: Bool, _ action: BarAction) {
+            options.append(BarButton(symbol: symbol, label: nil, on: on, tip: "\(name)  ·  \(key)", action: action))
+        }
+        toggle("magnifyingglass", String(localized: "Magnifier"), "M", on: controller.showMagnifier, .magnifier)
+        toggle("plus.viewfinder", String(localized: "Crosshair"), "C", on: controller.showCrosshair, .crosshair)
+        toggle("ruler", String(localized: "Resolution"), "I", on: controller.showSizeLabel, .resolution)
+        return (modes, options)
+    }
+
+    /// A small bar of icons that pick area, window, browser or full screen, then Scroll and Delay; a click does what Tab, S and D do.
+    /// It shows on the screen with the pointer only, at the bottom unless what's being picked reaches it, and hides while an area is dragged out.
+    private func drawBar(avoiding hole: CGRect?) {
+        let previous = barHits.map(\.rect)
         barHits = []
-        for (chip, width) in zip(chips, widths) {
-            let box = drawChip(chip.text, at: CGPoint(x: x, y: bounds.height - 138), yellow: chip.yellow, font: font)
-            barHits.append((box, chip.action))
-            x += width + gap
+        guard controller.barShown, let window, NSMouseInRect(NSEvent.mouseLocation, window.frame, false) else {
+            return
+        }
+        let textSize = Preferences().textSize
+        let font = NSFont.systemFont(ofSize: textSize.points(13), weight: .bold)
+        let symbolConfig = NSImage.SymbolConfiguration(pointSize: textSize.points(14), weight: .bold)
+        let (modes, options) = barButtons
+        let pad: CGFloat = 4
+        let gap: CGFloat = 6
+        let divider: CGFloat = 14
+        let height = (String("A") as NSString).size(withAttributes: [.font: font]).height.rounded() + 14
+
+        func icon(_ button: BarButton, color: NSColor = .black) -> NSImage? {
+            NSImage(systemSymbolName: button.symbol, accessibilityDescription: nil)?
+                .withSymbolConfiguration(symbolConfig.applying(NSImage.SymbolConfiguration(paletteColors: [color])))
+        }
+        func width(_ button: BarButton) -> CGFloat {
+            let iconWidth = icon(button)?.size.width.rounded(.up) ?? 0
+            guard let label = button.label else {
+                return max(iconWidth + 20, height)
+            }
+            return iconWidth + 6 + (label as NSString).size(withAttributes: [.font: font]).width.rounded(.up) + 20
+        }
+        let modeWidths = modes.map(width)
+        let optionWidths = options.map(width)
+        func span(_ widths: [CGFloat]) -> CGFloat {
+            widths.reduce(0, +) + gap * CGFloat(max(widths.count - 1, 0))
+        }
+        let size = CGSize(
+            width: pad * 2 + span(modeWidths) + (options.isEmpty ? 0 : divider + span(optionWidths)),
+            height: height + pad * 2
+        )
+
+        let dragging = dragStart != nil && pressedChip == nil && !isKeyboardSelection && selection != nil
+        barPlacement = OverlayBarPlacement.placement(
+            for: size, in: bounds, avoiding: aim(hole), dragging: dragging, current: barPlacement,
+            pointerOnBar: dragStart == nil && pointer.map { point in previous.contains { $0.contains(point) } } ?? false
+        )
+        guard let frame = barPlacement.frame(of: size, in: bounds) else {
+            hoveredChip = nil
+            return
+        }
+        NSColor(Brutal.line).setFill()
+        NSBezierPath(roundedRect: frame.offsetBy(dx: 3, dy: -3), xRadius: 9, yRadius: 9).fill()
+        NSColor(Brutal.paper).setFill()
+        let shape = NSBezierPath(roundedRect: frame, xRadius: 9, yRadius: 9)
+        shape.fill()
+        NSColor(Brutal.line).setStroke()
+        shape.lineWidth = 2
+        shape.stroke()
+
+        var x = frame.minX + pad
+        var tip: (text: String, box: CGRect)?
+        func drawButtons(_ buttons: [BarButton], _ widths: [CGFloat]) {
+            for (button, buttonWidth) in zip(buttons, widths) {
+                let box = CGRect(x: x, y: frame.minY + pad, width: buttonWidth, height: height)
+                let ink = button.on ? Self.ink : NSColor(Brutal.ink)
+                if button.on {
+                    NSColor(Brutal.yellow).setFill()
+                    let fill = NSBezierPath(roundedRect: box, xRadius: 6, yRadius: 6)
+                    fill.fill()
+                    NSColor(Brutal.line).setStroke()
+                    fill.lineWidth = 2
+                    fill.stroke()
+                } else if hoveredChip == button.action {
+                    NSColor(Brutal.ink).withAlphaComponent(0.1).setFill()
+                    NSBezierPath(roundedRect: box, xRadius: 6, yRadius: 6).fill()
+                }
+                var contentX = box.minX + 10
+                if let image = icon(button, color: ink) {
+                    let imageSize = image.size
+                    if button.label == nil {
+                        contentX = (box.midX - imageSize.width / 2).rounded()
+                    }
+                    image.draw(in: CGRect(x: contentX, y: (box.midY - imageSize.height / 2).rounded(), width: imageSize.width, height: imageSize.height))
+                    contentX += imageSize.width.rounded(.up) + 6
+                }
+                if let label = button.label {
+                    let string = NSAttributedString(string: label, attributes: [.font: font, .foregroundColor: ink])
+                    string.draw(at: CGPoint(x: contentX, y: (box.midY - string.size().height / 2).rounded()))
+                }
+                barHits.append((box, button.action))
+                if hoveredChip == button.action {
+                    tip = (button.tip, box)
+                }
+                x += buttonWidth + gap
+            }
+        }
+        drawButtons(modes, modeWidths)
+        if !options.isEmpty {
+            x += divider / 2 - gap
+            NSColor(Brutal.line).withAlphaComponent(0.35).setFill()
+            NSBezierPath(rect: CGRect(x: x - 1, y: frame.minY + pad + 6, width: 2, height: height - 12)).fill()
+            x += divider / 2
+            drawButtons(options, optionWidths)
+        }
+        // The hovered button's name and key, on the side of the bar away from the screen's edge.
+        if let tip {
+            let tipFont = NSFont.systemFont(ofSize: textSize.points(12), weight: .bold)
+            let tipWidth = (tip.text as NSString).size(withAttributes: [.font: tipFont]).width.rounded() + 20
+            let tipHeight = (tip.text as NSString).size(withAttributes: [.font: tipFont]).height.rounded() + 10
+            let tipX = min(max(tip.box.midX - tipWidth / 2, 8), bounds.width - tipWidth - 8).rounded()
+            let tipY = barPlacement == .top ? frame.minY - 10 - tipHeight : frame.maxY + 10
+            _ = drawChip(tip.text, at: CGPoint(x: tipX, y: tipY), yellow: false, font: tipFont)
+        }
+    }
+
+    /// What the bar keeps off: an area made with the arrow keys, or the highlighted window or page. A full screen is picked with a click anywhere.
+    private func aim(_ hole: CGRect?) -> OverlayBarPlacement.Aim? {
+        guard let hole else {
+            return nil
+        }
+        switch controller.target {
+        case .area: return .area(hole)
+        case .window, .browser: return .target(hole)
+        case .screen: return nil
         }
     }
 }

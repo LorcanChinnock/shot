@@ -46,11 +46,11 @@ import Testing
 
 @Test func tabStepsThroughTheTargetsAndWraps() {
     #expect(CaptureTarget.area.next() == .window)
-    #expect(CaptureTarget.window.next() == .browser)
-    #expect(CaptureTarget.browser.next() == .screen)
-    #expect(CaptureTarget.screen.next() == .area)
-    #expect(CaptureTarget.area.next(backward: true) == .screen)
-    #expect(CaptureTarget.screen.next(backward: true) == .browser)
+    #expect(CaptureTarget.window.next() == .screen)
+    #expect(CaptureTarget.screen.next() == .browser)
+    #expect(CaptureTarget.browser.next() == .area)
+    #expect(CaptureTarget.area.next(backward: true) == .browser)
+    #expect(CaptureTarget.browser.next(backward: true) == .screen)
 }
 
 @Test func theDelayStepsFromOffThroughTheChoicesAndBackToOff() {

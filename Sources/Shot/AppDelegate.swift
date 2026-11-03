@@ -12,7 +12,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // First, before anything below saves a setting and makes a new user look like an earlier one.
+        let saved = Bundle.main.bundleIdentifier.flatMap(UserDefaults.standard.persistentDomain(forName:)) ?? [:]
         WelcomeWindow.loadProgress()
+        Preferences.keepEarlierSelectionAids(saved: saved)
         Preferences.registerDefaults()
         applyAppearance()
         SystemShortcuts.giveBackTextCaptureKeyIfNeeded()

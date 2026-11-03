@@ -3,7 +3,7 @@ import Foundation
 /// What a screenshot or recording takes: a dragged-out area, one window, just the page of a browser window, or a whole
 /// screen. Tab on the selection overlay steps through them.
 public enum CaptureTarget: String, CaseIterable, Sendable {
-    case area, window, browser, screen
+    case area, window, screen, browser
 
     /// The next target, wrapping around; `backward` steps the other way.
     public func next(backward: Bool = false) -> CaptureTarget {

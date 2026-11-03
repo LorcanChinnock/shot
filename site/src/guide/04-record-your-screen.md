@@ -9,13 +9,13 @@ group: Capture
 ## Start a recording
 
 1. Press <kbd>⌘⇧5</kbd>, or choose **Record** in the menu bar menu.
-2. Pick what to record. Press <kbd>Tab</kbd> or click a chip at the top of the screen to move between them:
-   - **Area:** drag across it. The magnifier helps here too.
+2. Pick what to record. Press <kbd>Tab</kbd> or click an icon on the bar at the bottom of the screen to move between them:
+   - **Area:** drag across it. The magnifier helps here too, if you turn it on in **Settings › Capture**.
    - **Window:** click the window.
    - **Full Screen:** click the screen, or press <kbd>Return</kbd>.
 3. Recording starts as soon as you let go.
 
-To wait first, click the **Delay** chip or press <kbd>D</kbd> to step through Off, 3, 5 and 10 seconds. Shot counts down on screen after you pick, then starts recording. It is back to Off the next time.
+To wait first, click **Delay** (the timer) on the bar or press <kbd>D</kbd> to step through Off, 3, 5 and 10 seconds. Shot counts down on screen after you pick, then starts recording. It is back to Off the next time.
 
 The camera bubble, microphone and cursor are on or off as you set them in **Settings › Recording**.
 

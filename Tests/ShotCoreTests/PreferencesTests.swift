@@ -37,8 +37,9 @@ import Testing
         #expect(!prefs.openEditorAfterCapture)
         #expect(!prefs.captureShowsCursor)
         #expect(!prefs.excludesMenuBar)
-        #expect(prefs.showMagnifier)
-        #expect(prefs.showCrosshair)
+        #expect(!prefs.showMagnifier)
+        #expect(!prefs.showCrosshair)
+        #expect(!prefs.showSizeLabel)
         #expect(prefs.quickAccessPosition == .left)
         #expect(!prefs.recordSystemAudio)
         #expect(prefs.showRecordingBorder)
@@ -349,6 +350,34 @@ import Testing
     // Running again, with nothing left to move, keeps the shortcut.
     Preferences.migrateCaptureActions(in: store)
     #expect(store.string(forKey: PreferenceKey.hotkey(.screenshot)) == custom)
+}
+
+@Test func someoneNewGetsTheSelectionAidsOff() throws {
+    let suite = try TestDefaults()
+    let store = suite.store
+    defer { suite.remove() }
+    Preferences.registerDefaults(in: store)
+    Preferences.keepEarlierSelectionAids(saved: [:], in: store)
+    let prefs = Preferences(store: store)
+    #expect(!prefs.showMagnifier && !prefs.showCrosshair && !prefs.showSizeLabel)
+    // The next launch, with settings saved by now, leaves them off.
+    Preferences.keepEarlierSelectionAids(saved: store.persistentDomain(forName: suite.name) ?? [:], in: store)
+    #expect(!prefs.showMagnifier && !prefs.showCrosshair && !prefs.showSizeLabel)
+}
+
+@Test func someoneWhoUsedShotKeepsTheSelectionAidsTheyHad() throws {
+    let suite = try TestDefaults()
+    let store = suite.store
+    defer { suite.remove() }
+    Preferences.registerDefaults(in: store)
+    store.set(true, forKey: PreferenceKey.gaveBackTextCaptureKey)
+    // A choice they made is theirs to keep.
+    store.set(false, forKey: PreferenceKey.showCrosshair)
+    Preferences.keepEarlierSelectionAids(saved: store.persistentDomain(forName: suite.name) ?? [:], in: store)
+    let prefs = Preferences(store: store)
+    #expect(prefs.showMagnifier)
+    #expect(prefs.showSizeLabel)
+    #expect(!prefs.showCrosshair)
 }
 
 @Test func savedSettingsMarkSomeoneWhoUsedShotBefore() {

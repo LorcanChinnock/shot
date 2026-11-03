@@ -16,9 +16,9 @@ import Testing
     #expect(OnboardingProgress(saved: "", hasSavedSettings: false) == .new)
 }
 
-@Test func someoneNewSeesEveryStepAndSkipsAccessOnceGranted() {
-    #expect(OnboardingProgress.new.steps(hasPermission: false, hasAccessibility: false) == [.permission, .accessibility, .setup, .tryIt])
-    #expect(OnboardingProgress.new.steps(hasPermission: true, hasAccessibility: false) == [.accessibility, .setup, .tryIt])
+@Test func someoneNewIsAskedOnlyForScreenRecordingAndSkipsItOnceGranted() {
+    #expect(OnboardingProgress.new.steps(hasPermission: false, hasAccessibility: false) == [.permission, .setup, .tryIt])
+    #expect(OnboardingProgress.new.steps(hasPermission: true, hasAccessibility: false) == [.setup, .tryIt])
     #expect(OnboardingProgress.new.steps(hasPermission: false, hasAccessibility: true) == [.permission, .setup, .tryIt])
     #expect(OnboardingProgress.new.steps(hasPermission: true, hasAccessibility: true) == [.setup, .tryIt])
 }

@@ -366,6 +366,7 @@ private struct CaptureSettings: View {
     @Setting(PreferenceKey.openEditorAfterCapture) private var openEditor: Bool
     @Setting(PreferenceKey.showMagnifier) private var magnifier: Bool
     @Setting(PreferenceKey.showCrosshair) private var crosshair: Bool
+    @Setting(PreferenceKey.showSizeLabel) private var sizeLabel: Bool
     @Setting(PreferenceKey.captureShowsCursor) private var showsCursor: Bool
     @Setting(PreferenceKey.windowShadow) private var windowShadow: Bool
     private let color = SettingsSection.capture.color
@@ -380,6 +381,7 @@ private struct CaptureSettings: View {
         SettingsCard(title: "Selection", symbol: "plus.viewfinder") {
             ToggleRow(title: "Magnifier", subtitle: "8× loupe next to the pointer for pixel-precise edges.", isOn: $magnifier, color: color)
             ToggleRow(title: "Crosshair", subtitle: "Full-screen guide lines through the pointer.", isOn: $crosshair, color: color)
+            ToggleRow(title: "Size label", subtitle: "Width and height in pixels next to the pointer while you drag.", isOn: $sizeLabel, color: color)
             ToggleRow(title: "Show cursor", subtitle: "Show the pointer when you capture an area or the full screen.", isOn: $showsCursor, color: color)
             ToggleRow(title: "Window shadow", subtitle: "Keep the macOS drop shadow in window captures.", isOn: $windowShadow, color: color, divider: false)
         }
