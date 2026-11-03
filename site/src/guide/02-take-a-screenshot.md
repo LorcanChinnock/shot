@@ -11,10 +11,12 @@ Every screenshot is saved, copied to the clipboard as a PNG, and shown in a [Qui
 ## Take a screenshot
 
 1. Press <kbd>⌘⇧4</kbd>, or choose **Screenshot** in the menu bar menu. The screen freezes.
-2. Drag across what you want. A magnifier by the pointer helps you line up exact edges, and a label shows the size in pixels.
+2. Drag across what you want. A magnifier by the pointer helps you line up exact edges, and a label shows the size in pixels. You can turn either off in **Settings › Capture**.
 3. Let go.
 
 Chips at the top of the screen show what you are about to capture: **Area**, **Window**, **Browser** or **Full Screen**. Press <kbd>Tab</kbd> to move to the next one (<kbd>⇧Tab</kbd> goes back), or click a chip. Shot remembers the one you used last, for screenshots and recordings separately, and opens on it next time.
+
+The chips never appear in your screenshot, and they move out of the way of what you're picking. When the area you drag out, or the window you point at, reaches them, they move to the bottom of the screen, and if the bottom is taken too they hide until there's room. To start an area right under a chip, just drag from it: a click picks the chip, a drag starts the area.
 
 - **Area:** drag across it.
 - **Window:** click a window. Shot captures it as it is right now, even if something covers it, and keeps its macOS shadow. To leave the shadow out, turn off **Window shadow** in **Settings › Capture**.

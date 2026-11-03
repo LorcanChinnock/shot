@@ -8,6 +8,7 @@ final class SelectionOverlayView: NSView {
 
     private let showMagnifier = Preferences().showMagnifier
     private let showCrosshair = Preferences().showCrosshair
+    private let showSizeLabel = Preferences().showSizeLabel
     private var pointer: CGPoint?
     private var dragStart: CGPoint?
     private var selection: CGRect?
@@ -24,8 +25,10 @@ final class SelectionOverlayView: NSView {
         case grantAccess
     }
     private var barHits: [(rect: CGRect, action: BarAction)] = []
-    /// A press landed on a chip, so its release isn't a click on the screen or window underneath.
-    private var pressedBar = false
+    /// A press that landed on a chip: its release clicks the chip, unless it turns into dragging out an area first.
+    private var pressedChip: (action: BarAction, point: CGPoint)?
+    /// Whether the hint and chips sit at the top or bottom, or are hidden, so they stay off what's being picked.
+    private var barPlacement = OverlayBarPlacement.top
     var magnifierImage: CGImage? {
         didSet { needsDisplay = true }
     }
@@ -99,17 +102,14 @@ final class SelectionOverlayView: NSView {
     override func mouseDown(with event: NSEvent) {
         let point = clamped(convert(event.locationInWindow, from: nil))
         pointer = point
-        if let hit = barHits.first(where: { $0.rect.contains(point) }) {
-            pressedBar = true
-            switch hit.action {
-            case let .target(target): controller.setTarget(target)
-            case .scrolling: controller.toggleScrolling()
-            case .delay: controller.cycleDelay()
-            case .grantAccess: controller.grantPageAccess()
-            }
+        pressedChip = barHits.first { $0.rect.contains(point) }.map { ($0.action, point) }
+        if controller.target != .area {
             return
         }
-        if controller.target != .area {
+        if pressedChip != nil {
+            // Held back until the press turns into a drag, so a click on a chip keeps an area made with the arrow keys.
+            dragStart = point
+            lastDragPoint = point
             return
         }
         dragStart = point
@@ -126,6 +126,16 @@ final class SelectionOverlayView: NSView {
         }
         let point = clamped(convert(event.locationInWindow, from: nil))
         pointer = point
+        if let chip = pressedChip {
+            // A drag from a chip starts an area there, so what's under the chips can still be picked.
+            guard chip.action != .grantAccess, hypot(point.x - start.x, point.y - start.y) >= Self.orientationLockDistance else {
+                return
+            }
+            pressedChip = nil
+            portrait = nil
+            selection = nil
+            isKeyboardSelection = false
+        }
         if isMoving, let current = selection, let last = lastDragPoint {
             var moved = current.offsetBy(dx: point.x - last.x, dy: point.y - last.y)
             moved.origin.x = min(max(moved.minX, 0), bounds.width - moved.width)
@@ -140,6 +150,15 @@ final class SelectionOverlayView: NSView {
         }
         lastDragPoint = point
         needsDisplay = true
+    }
+
+    private func perform(_ action: BarAction) {
+        switch action {
+        case let .target(target): controller.setTarget(target)
+        case .scrolling: controller.toggleScrolling()
+        case .delay: controller.cycleDelay()
+        case .grantAccess: controller.grantPageAccess()
+        }
     }
 
     private func shaped(from start: CGPoint, to point: CGPoint, square: Bool) -> CGRect {
@@ -158,8 +177,10 @@ final class SelectionOverlayView: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
-        if pressedBar {
-            pressedBar = false
+        if let chip = pressedChip {
+            pressedChip = nil
+            dragStart = nil
+            perform(chip.action)
             return
         }
         if controller.windowMode {
@@ -321,8 +342,7 @@ final class SelectionOverlayView: NSView {
             ctx.stroke(hole.insetBy(dx: 0.5, dy: 0.5))
         }
 
-        drawHint(in: ctx)
-        drawBar()
+        drawBar(avoiding: hole)
         if controller.needsPageAccess {
             drawAccessCard()
         }
@@ -336,7 +356,7 @@ final class SelectionOverlayView: NSView {
             if showMagnifier {
                 drawLoupe(at: pointer, in: ctx)
             }
-        } else if let selection {
+        } else if let selection, showSizeLabel {
             drawSizeLabel(for: selection, near: pointer)
         }
     }
@@ -510,17 +530,11 @@ final class SelectionOverlayView: NSView {
         title.draw(in: CGRect(x: card.minX + 24, y: box.maxY + 18 + bodyHeight + 10, width: inner, height: titleHeight))
     }
 
-    private func drawHint(in ctx: CGContext) {
-        let text = hintText
-        let textSize = Preferences().textSize
-        let font = NSFont.systemFont(ofSize: textSize.points(13), weight: .bold)
-        let width = (text as NSString).size(withAttributes: [.font: font]).width + 20
-        _ = drawChip(text, at: CGPoint(x: ((bounds.width - width) / 2).rounded(), y: bounds.height - 90), yellow: false, font: font)
-    }
-
-    /// The chips under the hint that pick area, window, browser or full screen, the scroll toggle and the delay. Clicking one does what Tab and D do.
-    private func drawBar() {
+    /// The hint and, under it, the chips that pick area, window, browser or full screen, the scroll toggle and the delay. Clicking a chip
+    /// does what Tab, S and D do. They sit at the top unless what's being picked reaches them; then at the bottom, or hidden when both are in the way.
+    private func drawBar(avoiding hole: CGRect?) {
         let font = NSFont.systemFont(ofSize: Preferences().textSize.points(13), weight: .bold)
+        let hint = hintText
         var chips: [(text: String, yellow: Bool, action: BarAction)] = CaptureTarget.allCases.map {
             ($0.title, $0 == controller.target, .target($0))
         }
@@ -531,13 +545,39 @@ final class SelectionOverlayView: NSView {
             chips.append((String(localized: "Delay: \(CaptureDelay.label(controller.delay))"), controller.delay > 0, .delay))
         }
         let gap: CGFloat = 12
+        let rowHeight = (String("A") as NSString).size(withAttributes: [.font: font]).height.rounded() + 10
+        let hintWidth = (hint as NSString).size(withAttributes: [.font: font]).width.rounded() + 20
         let widths = chips.map { ($0.text as NSString).size(withAttributes: [.font: font]).width.rounded() + 20 }
-        var x = ((bounds.width - widths.reduce(0, +) - gap * CGFloat(chips.count - 1)) / 2).rounded()
+        let rowWidth = widths.reduce(0, +) + gap * CGFloat(chips.count - 1)
+        let size = CGSize(width: max(hintWidth, rowWidth), height: rowHeight * 2 + OverlayBarPlacement.rowGap)
+        let previous = barHits.map(\.rect)
         barHits = []
+
+        barPlacement = OverlayBarPlacement.placement(
+            for: size, in: bounds, avoiding: aim(hole), current: barPlacement,
+            pointerOnChip: dragStart == nil && pointer.map { point in previous.contains { $0.contains(point) } } ?? false
+        )
+        guard let frame = barPlacement.frame(of: size, in: bounds) else {
+            return
+        }
+        _ = drawChip(hint, at: CGPoint(x: (bounds.midX - hintWidth / 2).rounded(), y: frame.maxY - rowHeight), yellow: false, font: font)
+        var x = (bounds.midX - rowWidth / 2).rounded()
         for (chip, width) in zip(chips, widths) {
-            let box = drawChip(chip.text, at: CGPoint(x: x, y: bounds.height - 138), yellow: chip.yellow, font: font)
+            let box = drawChip(chip.text, at: CGPoint(x: x, y: frame.minY), yellow: chip.yellow, font: font)
             barHits.append((box, chip.action))
             x += width + gap
+        }
+    }
+
+    /// What the hint and chips keep off: the area being made, or the highlighted window or page. A full screen is picked with a click anywhere.
+    private func aim(_ hole: CGRect?) -> OverlayBarPlacement.Aim? {
+        guard let hole else {
+            return nil
+        }
+        switch controller.target {
+        case .area: return .area(hole)
+        case .window, .browser: return .target(hole)
+        case .screen: return nil
         }
     }
 }

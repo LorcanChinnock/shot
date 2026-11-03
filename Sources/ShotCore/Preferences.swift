@@ -18,6 +18,7 @@ public enum PreferenceKey {
     public static let excludesMenuBar = "excludesMenuBar"
     public static let showMagnifier = "showMagnifier"
     public static let showCrosshair = "showCrosshair"
+    public static let showSizeLabel = "showSizeLabel"
     public static let windowShadow = "windowShadow"
     public static let quickAccessPosition = "quickAccessPosition"
     public static let quickAccessDuration = "quickAccessDuration"
@@ -116,6 +117,7 @@ public struct Preferences {
             PreferenceKey.excludesMenuBar: false,
             PreferenceKey.showMagnifier: true,
             PreferenceKey.showCrosshair: true,
+            PreferenceKey.showSizeLabel: true,
             PreferenceKey.windowShadow: true,
             PreferenceKey.quickAccessPosition: QuickAccessPosition.left.rawValue,
             PreferenceKey.quickAccessDuration: 8.0,
@@ -348,6 +350,8 @@ public struct Preferences {
     public var excludesMenuBar: Bool { store.bool(forKey: PreferenceKey.excludesMenuBar) }
     public var showMagnifier: Bool { store.bool(forKey: PreferenceKey.showMagnifier) }
     public var showCrosshair: Bool { store.bool(forKey: PreferenceKey.showCrosshair) }
+    /// The width × height label beside the pointer while an area is dragged out.
+    public var showSizeLabel: Bool { store.bool(forKey: PreferenceKey.showSizeLabel) }
     public var windowShadow: Bool { store.bool(forKey: PreferenceKey.windowShadow) }
 
     public var quickAccessPosition: QuickAccessPosition {

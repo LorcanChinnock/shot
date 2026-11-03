@@ -39,6 +39,7 @@ import Testing
         #expect(!prefs.excludesMenuBar)
         #expect(prefs.showMagnifier)
         #expect(prefs.showCrosshair)
+        #expect(prefs.showSizeLabel)
         #expect(prefs.quickAccessPosition == .left)
         #expect(!prefs.recordSystemAudio)
         #expect(prefs.showRecordingBorder)

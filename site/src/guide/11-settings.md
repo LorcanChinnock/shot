@@ -16,7 +16,7 @@ Click Shot's menu bar icon and choose **Settings…**, or press <kbd>⌘,</kbd> 
 |---|---|
 | Gallery | The [gallery](#find-your-captures) |
 | General | Open Shot at login, the capture sound, cropping the menu bar off captures of the full screen, light or dark appearance (or following your Mac), the text size of Shot's own windows (macOS's Accessibility › Text size doesn't reach other apps), the save folder, the file name, PNG or JPEG, and scaling Retina captures to 1× |
-| Capture | What happens after a capture (save, copy, Quick Access, or the editor), the magnifier, the crosshair, the cursor, and window shadows |
+| Capture | What happens after a capture (save, copy, Quick Access, or the editor), the magnifier, the crosshair, the size label, the cursor, and window shadows |
 | Quick Access | The screen corner and how long cards stay |
 | Recording | Adjust before recording, frame rate, cursor, clicks, region outline, copying to the clipboard, the microphone and its input (with a **Test**), system audio, and the camera bubble's camera (with a **Preview**) and size. It also sums up the GIF settings the video editor last used. |
 | Shortcuts | The macOS screenshot keys and every global shortcut |
