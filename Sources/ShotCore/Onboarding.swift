@@ -24,16 +24,18 @@ public enum OnboardingProgress: String, Sendable {
         self = saved.flatMap(Self.init(rawValue:)) ?? (hasSavedSettings ? .done : .new)
     }
 
-    /// The steps the welcome window shows at launch, or after a capture fails: all of them for someone new, skipping
-    /// each access step skipped once it's granted, and only Screen Recording access for everyone else, while it's missing.
+    /// The steps the welcome window shows at launch, or after a capture fails: for someone new, Screen Recording access
+    /// while it's missing, then setup and Try it; for everyone else, only Screen Recording access while it's missing.
+    /// Accessibility isn't asked for here: only Browser needs it, and choosing Browser asks for it then.
     public func steps(hasPermission: Bool, hasAccessibility: Bool) -> [OnboardingStep] {
         switch self {
-        case .new: Self.access(hasPermission: hasPermission, hasAccessibility: hasAccessibility) + [.setup, .tryIt]
+        case .new: (hasPermission ? [] : [.permission]) + [.setup, .tryIt]
         case .done: hasPermission ? [] : [.permission]
         }
     }
 
-    /// The steps the welcome window shows when it's opened again from Settings or `shot://welcome`.
+    /// The steps the welcome window shows when it's opened again with `shot://welcome`, which also offers
+    /// Accessibility to anyone who wants Browser set up ahead of time.
     public static func replaySteps(hasPermission: Bool, hasAccessibility: Bool) -> [OnboardingStep] {
         access(hasPermission: hasPermission, hasAccessibility: hasAccessibility) + [.setup, .tryIt]
     }
