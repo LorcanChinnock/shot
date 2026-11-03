@@ -101,6 +101,7 @@ By contributing, you agree that your contributions are licensed under the projec
 The redesign is built on a long-lived `redesign` branch and lands on `main` in one final pull request. Until then:
 
 - Open redesign pull requests against `redesign`. They get the same `linux` and `macos` checks as any pull request, and are squash-merged like the rest.
+- Close issues as you go. Put `Closes #N` in each pull request body as usual. GitHub only closes issues for pull requests into `main`, so the Redesign close issues workflow (`.github/workflows/redesign-close-issues.yml`) closes them when the pull request merges into `redesign`. The redesign epic (#1050) is the one issue that stays open: the final `redesign` → `main` pull request closes it.
 - `main` is merged into `redesign` every Monday and after every release, so the final pull request stays small. The Redesign sync workflow (`.github/workflows/redesign-sync.yml`) does the merge on `chore/merge-main-into-redesign` and opens a `chore: merge main into redesign` pull request. Merge that one with **Create a merge commit**, never squash: a squash leaves main's commits out of the branch's history, so the next sync conflicts on the same lines again. Run the workflow by hand from the Actions tab for a sync between those times.
 - When the merge conflicts, the workflow fails and lists the files. Resolve them on the redesign side, so `main` never changes:
 

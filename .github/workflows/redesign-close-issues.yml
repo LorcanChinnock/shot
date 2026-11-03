@@ -1,0 +1,46 @@
+name: Redesign close issues
+
+# GitHub closes the issues a pull request names with `Closes #N` only when it merges into the default branch. Redesign
+# pull requests merge into `redesign`, so this closes those issues itself, and the epic's progress stays current. The
+# epic (#1050) stays open until the final `redesign` → `main` pull request merges, which closes it the normal way.
+# pull_request_target, so the token can write even for a pull request from a fork. It checks out nothing and reads the
+# body only through an environment variable, so no code or text from the pull request runs.
+on:
+  pull_request_target:
+    types: [closed]
+    branches: [redesign]
+
+permissions:
+  contents: read
+
+jobs:
+  close:
+    if: github.event.pull_request.merged
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      BODY: ${{ github.event.pull_request.body }}
+      PR: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Close the linked issues
+        run: |
+          set -euo pipefail
+          # The same keywords GitHub recognises: close, closes, closed, fix, fixes, fixed, resolve, resolves, resolved.
+          issues=$(printf '%s' "$BODY" \
+            | grep -oiE '\b(close[sd]?|fix(e[sd])?|resolve[sd]?):?[[:space:]]+#[0-9]+' \
+            | grep -oE '[0-9]+$' | sort -un || true)
+          if [ -z "$issues" ]; then
+            echo "The pull request closes no issues."
+            exit 0
+          fi
+          for n in $issues; do
+            # Skips pull requests, issues that are already closed and numbers that don't exist.
+            state=$(gh api "repos/$GH_REPO/issues/$n" --jq 'if .pull_request then "pr" else .state end' || echo missing)
+            if [ "$state" = open ]; then
+              gh issue close "$n" --reason completed --comment "Closed by #$PR, merged into \`redesign\`."
+            fi
+          done

@@ -1,6 +1,6 @@
 name: Redesign sync
 
-# Keeps the long-lived `redesign` branch close to main (#1065), so the final pull request into main stays reviewable.
+# Keeps the long-lived `redesign` branch close to main, so the final pull request into main stays reviewable.
 # Every Monday, and after every release, it merges main into redesign on a branch and opens a
 # `chore: merge main into redesign` pull request. When the merge conflicts, it opens nothing and fails, listing the
 # files, so someone resolves them by hand (CONTRIBUTING.md › The redesign branch).
@@ -94,7 +94,7 @@ jobs:
           fi
           git push --force origin "$BRANCH"
           gh pr create --base redesign --head "$BRANCH" --title "chore: merge main into redesign" --body "$(cat <<'EOF'
-          Merges main into `redesign`. Part of #1065.
+          Merges main into `redesign`. Part of #1050.
 
           Merge this with **Create a merge commit**, not squash. A squash leaves main's commits out of redesign's history, so the next sync conflicts on the same lines again.
           EOF
