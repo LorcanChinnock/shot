@@ -87,6 +87,7 @@ Read the note in `docs/architecture/` before changing the area it covers:
 | Preferences and `@Setting` | [settings.md](docs/architecture/settings.md) |
 | Shared UI components, lazy lists and grids, or concurrency | [design-system.md](docs/architecture/design-system.md) |
 | `site/` and the user guide | [website.md](docs/architecture/website.md) |
+| Anything for the redesign (#1050): its tokens, rules, and which issue builds each board and updates each guide page | [redesign/spec.md](docs/redesign/spec.md) |
 
 ## Rules enforced by `make lint`
 
