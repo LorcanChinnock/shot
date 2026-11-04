@@ -51,7 +51,20 @@ From **Foundations › Design language**, **Components**, **Capture bar** and **
 | Hover | `rgba(22,22,26,0.07)` | `rgba(255,255,255,0.08)` | Toolbar buttons on hover |
 | Disabled text | `rgba(22,22,26,0.35)` | `rgba(237,235,230,0.35)` | Disabled controls |
 
-**Sidebar icon tints** (light): `#E8E4FF`, `#FFE0EE`, `#DCEFFF`, and the rest of today's eight bright colours, only as the tile behind a sidebar icon. Dark tints come with the dark boards (#1067).
+**Sidebar icon tints** appear only as the tile behind a sidebar icon, never as a fill. The selected row's tile is `#FFFFFF` with a `#16161A` icon in both appearances.
+
+| Section | Light tile | Light icon | Dark tile | Dark icon |
+| --- | --- | --- | --- | --- |
+| General | `#F0EDE6` | `#55545A` | `#3A3A3F` | `#CFCDD4` |
+| Capture | `#FFE0EE` | `#C2306E` | `#4A2336` | `#FF8DBE` |
+| Quick Access | `#DCEFFF` | `#1D6FB8` | `#1E3550` | `#7DBBFF` |
+| Recording | `#FFE1DE` | `#C4271E` | `#4A2220` | `#FF7B72` |
+| Shortcuts | `#FFE9D3` | `#B35A00` | `#4A3118` | `#FFB366` |
+| About | `#EAF6D2` | `#4E7A0E` | `#2E3D1A` | `#A8D86A` |
+
+The gallery sidebar draws its icons in the same colours without a tile: Screenshots `#5B4BD6` (dark `#A99BFF`), Recordings `#C4271E` (dark `#FF7B72`), GIFs `#1D6FB8` (dark `#7DBBFF`), folders in secondary text.
+
+**Dark windows** follow the dark column above: the window's title bar, toolbar and canvas go dark, but the screenshot or recording in it keeps its own colours. Ink outlines and drops use dark ink `#050507`, and text on the yellow accent stays `#16161A`. Popovers, the style bar and the selection bar use `rgba(44,44,48,0.97)` with a 0.5 pt `rgba(255,255,255,0.14)` edge and `0 8px 24px rgba(0,0,0,0.45)`.
 
 **Floating panels** (the capture bar, recording controls, countdown, toasts, Quick Access buttons, pin bar) are dark in both appearances (#1073):
 
@@ -252,6 +265,8 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Video editor and export (dark) | #1103 export panel | `VideoEditor/VideoEditorView.swift`, `VideoEditor/VideoEditorModel.swift` | ☐ |
 | Video editor and export (dark) | #1104 inspectors | `VideoEditor/ClipInspector.swift`, `VideoEditor/VideoEditorView.swift` | ☐ |
 | Video editor and export (dark) | #1105 crop and transform | `VideoEditor/VideoCropOverlay.swift`, `VideoEditor/TransformOverlay.swift` | ☐ |
+| Video editor and export (light) | #1100 | `VideoEditor/VideoEditorView.swift`, `VideoEditor/VideoEditorWindowController.swift`, `VideoEditor/TracksView.swift` | ☐ |
+| Image editor · annotate (dark) | #1119, after #1093–#1099 | `Design/BrutalStyle.swift` (dark values), `Editor/EditorToolbar.swift`, `Editor/EditorCanvasView.swift` | ☐ |
 
 ### Library & Settings
 
@@ -272,6 +287,8 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Settings · Recording | #1115 | `Settings/SettingsView.swift`, `Settings/DevicePreview.swift` | ☐ |
 | Settings · Shortcuts | #1116 | `Settings/ShortcutRecorderView.swift`, `Settings/SettingsView.swift` | ☐ |
 | Settings · About | #1117 | `Settings/SettingsView.swift`, `Updater.swift`, `Permissions.swift` | ☐ |
+| Gallery (dark) | #1119, after #1106–#1110 | `Design/BrutalStyle.swift` (dark values), `Gallery/GallerySidebar.swift`, `Gallery/GalleryView.swift` | ☐ |
+| Settings · General (dark) | #1119, after #1111–#1117 | `Design/BrutalStyle.swift` (dark values and sidebar tints), `Settings/SettingsView.swift` | ☐ |
 
 ### Website
 
@@ -283,17 +300,6 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Site · guide page | #1125 | `site/src/layouts/Prose.astro`, `site/src/pages/docs/[page].astro`, `site/src/components/GuideSearch.astro` | ☐ |
 | Site · guide page › long-form text | #1127 | `site/src/pages/privacy/`, `site/src/pages/screenshot-apps/` | ☐ |
 | Site · changelog | #1126 | `site/src/pages/changelog/index.astro` | ☐ |
-
-### Boards still to draw
-
-#1067 adds these to the canvas. Each gets a row above once it's drawn.
-
-| Board | Draw | Build |
-| --- | --- | --- |
-| Video editor and export (light) | #1067 | #1100 |
-| Image editor (dark) | #1067 | #1093–#1099, then #1119 |
-| Gallery (dark) | #1067 | #1106–#1110, then #1119 |
-| Settings (dark) | #1067 | #1111–#1117, then #1119 |
 
 ### Whole-app checks
 
