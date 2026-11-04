@@ -96,6 +96,26 @@ Everyone taking part in the project follows the [Code of Conduct](CODE_OF_CONDUC
 
 By contributing, you agree that your contributions are licensed under the project's [GPL-3.0 license](LICENSE).
 
+## The redesign branch
+
+The redesign is built on a long-lived `redesign` branch and lands on `main` in one final pull request. Until then:
+
+- Open redesign pull requests against `redesign`. They get the same `linux` and `macos` checks as any pull request, and are squash-merged like the rest.
+- Close issues as you go. Put `Closes #N` in each pull request body as usual. GitHub only closes issues for pull requests into `main`, so the Redesign close issues workflow (`.github/workflows/redesign-close-issues.yml`) closes them when the pull request merges into `redesign`. The redesign epic (#1050) is the one issue that stays open: the final `redesign` → `main` pull request closes it.
+- `main` is merged into `redesign` every Monday and after every release, so the final pull request stays small. The Redesign sync workflow (`.github/workflows/redesign-sync.yml`) does the merge on `chore/merge-main-into-redesign` and opens a `chore: merge main into redesign` pull request. Merge that one with **Create a merge commit**, never squash: a squash leaves main's commits out of the branch's history, so the next sync conflicts on the same lines again. Run the workflow by hand from the Actions tab for a sync between those times.
+- When the merge conflicts, the workflow fails and lists the files. Resolve them on the redesign side, so `main` never changes:
+
+  ```bash
+  git fetch origin
+  git switch -c chore/merge-main-into-redesign origin/redesign
+  git merge origin/main      # resolve the conflicts, then commit
+  git push -u origin chore/merge-main-into-redesign
+  ```
+
+  Then open the pull request into `redesign` with the title `chore: merge main into redesign`, and merge it with a merge commit.
+
+An admin sets this up once under Settings › Rules › Rulesets: a branch ruleset for `redesign` that blocks deletion and force pushes, requires a pull request, and requires the `linux` and `macos` status checks, as `main` does. Allow both the merge and squash methods in that ruleset, so the sync pull requests can merge with a merge commit, and turn on **Allow merge commits** under Settings › General if it's off. If that lets `main` take merge commits too, limit its own rule to squash. The workflow uses the release app (see Release secrets), which also needs the Workflows permission set to read and write, since a merge from `main` can change the workflow files.
+
 ## Releases
 
 Releases are automated with [release-please](https://github.com/googleapis/release-please). Don't create tags or edit the version by hand.
@@ -122,7 +142,7 @@ The release workflow needs three secrets, which belong in a GitHub Environment n
 
 Set the environment up once under Settings › Environments › `release`: limit deployment branches and tags to `main` and `v*`, and store the three secrets there instead of at repository level (`gh secret set --env release NAME`). Add a ruleset for `v*` tags that blocks deletion, updates and non-fast-forward pushes. The release build fails if the `Shot Release` signing identity is missing, rather than signing ad hoc.
 
-release-please opens the release pull request as a GitHub App rather than with the workflow's own token, because GitHub holds the workflows on a pull request from `github-actions[bot]` until someone approves them. Create a private GitHub App once (Settings › Developer settings › GitHub Apps) with no webhook and these repository permissions: Contents, Pull requests and Issues set to read and write. Install it on this repository only. Then store its client ID as a repository variable and a private key as a repository secret. The release-please job runs on every push to `main`, outside the `release` environment, so these two can't live there:
+release-please opens the release pull request as a GitHub App rather than with the workflow's own token, because GitHub holds the workflows on a pull request from `github-actions[bot]` until someone approves them. Create a private GitHub App once (Settings › Developer settings › GitHub Apps) with no webhook and these repository permissions: Contents, Pull requests, Issues and Workflows set to read and write. The Redesign sync workflow needs the Workflows permission (see The redesign branch). Install it on this repository only. Then store its client ID as a repository variable and a private key as a repository secret. The release-please job runs on every push to `main`, outside the `release` environment, so these two can't live there:
 
 ```bash
 gh variable set RELEASE_APP_CLIENT_ID                          # paste the app's client ID
