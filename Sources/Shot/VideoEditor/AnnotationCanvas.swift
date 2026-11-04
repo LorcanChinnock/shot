@@ -53,6 +53,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
     }
 
     override var isFlipped: Bool { true }
+    override var mouseDownCanMoveWindow: Bool { false }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
     /// Clicks pass through to what's under the canvas unless a tool is picked.

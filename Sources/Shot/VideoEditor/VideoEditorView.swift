@@ -220,6 +220,9 @@ private struct PlayerHost: NSViewRepresentable {
 private final class PlayerLayerView: NSView {
     let playerLayer = AVPlayerLayer()
 
+    // A clear plain view would otherwise let a click on the video, or on the handles over it, drag the window.
+    override var mouseDownCanMoveWindow: Bool { false }
+
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         playerLayer.videoGravity = .resizeAspect

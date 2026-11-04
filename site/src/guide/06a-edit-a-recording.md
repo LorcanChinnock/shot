@@ -25,7 +25,7 @@ Click the ruler to move the playhead. Pinch, or press <kbd>âŒ˜+</kbd> and <kbd>â
 
 ## Trim the ends
 
-Drag the yellow handles at either end of the main track. What you trim off stays greyed out, so you can drag it back.
+Drag the yellow handles at either end of the main track. What you trim off stays greyed out, so you can drag it back. The playhead follows the handle and stays on the new start or end when you let go, so the video shows the exact frame the trim lands on.
 
 ### Trim idle time
 

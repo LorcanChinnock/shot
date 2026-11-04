@@ -103,8 +103,6 @@ final class VideoEditorModel {
     @ObservationIgnored private var dragOrigin: Project?
     /// Where the annotation clip being dragged to another lane will land.
     private(set) var laneDrop: LaneDropPreview?
-    /// Where in the recording the playhead was before a trim handle drag moved it to show the edge.
-    @ObservationIgnored private var trimResume: Double?
     @ObservationIgnored private var rebuildTask: Task<Void, Never>?
     @ObservationIgnored private var importTask: Task<Void, Never>?
     /// What the compositor draws over the project's own annotations while one is being edited.
@@ -239,11 +237,9 @@ final class VideoEditorModel {
         player.pause()
     }
 
-    /// The handles stop where the cuts would leave too little to play.
+    /// The handles stop where the cuts would leave too little to play. The playhead follows the handle and stays on
+    /// the new edge once it's let go, so the trim can be timed by playing from there.
     func drag(_ handle: TrimHandle, to time: Double) {
-        if trimResume == nil {
-            trimResume = project.sourceTime(atTimeline: playhead)
-        }
         if let moved = dragOrigin?.trimmingMain(handle, toSource: time) {
             project = moved
         }
@@ -263,10 +259,6 @@ final class VideoEditorModel {
             project = landed
         }
         laneDrop = nil
-        if let resume = trimResume {
-            trimResume = nil
-            seekTimeline(to: project.timelinePosition(ofSource: resume))
-        }
         // A drag that only scrubbed leaves the player alone.
         guard let origin, origin != project else {
             return
