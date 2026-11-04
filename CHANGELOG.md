@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.82](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.81...v0.7.0-beta.82) (2026-11-04)
+
+
+### Bug Fixes
+
+* title bar buttons click, the end trim handle drags, and the webcam starts live ([#1141](https://github.com/LorcanChinnock/shot/issues/1141)) ([e56b55f](https://github.com/LorcanChinnock/shot/commit/e56b55fa485ff812e61fae86e0d3c38ba338bf12))
+
 ## [0.7.0-beta.81](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.80...v0.7.0-beta.81) (2026-11-04)
 
 
