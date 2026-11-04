@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.81](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.80...v0.7.0-beta.81) (2026-11-04)
+
+
+### Bug Fixes
+
+* **video-editor:** title bar buttons click instead of dragging, and the playhead stays on a trim edge ([#1138](https://github.com/LorcanChinnock/shot/issues/1138)) ([67ea716](https://github.com/LorcanChinnock/shot/commit/67ea71652af837966e0ad37740e41897f889f6b5))
+
 ## [0.7.0-beta.80](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.79...v0.7.0-beta.80) (2026-11-03)
 
 
