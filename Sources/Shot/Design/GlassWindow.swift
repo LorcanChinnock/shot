@@ -124,25 +124,26 @@ private struct GlassChrome<Content: View>: View {
     }
 }
 
-/// Drags the window and honours the system "double-click a window's title bar" setting.
-private struct TitleStrip: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView { StripView() }
-    func updateNSView(_ nsView: NSView, context: Context) {}
-
-    private final class StripView: NSView {
-        override var mouseDownCanMoveWindow: Bool { false }
-        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
-
-        override func mouseDown(with event: NSEvent) {
-            guard event.clickCount == 2, let window else {
-                window?.performDrag(with: event)
-                return
-            }
-            switch UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") {
-            case "Minimize": window.performMiniaturize(nil)
-            case "None": break
-            default: window.performZoom(nil)
-            }
-        }
+/// Drags the window and honours the system "double-click a window's title bar" setting. It's SwiftUI, not an AppKit view:
+/// AppKit hands a click to an `NSView` under a SwiftUI button before the button, so a view here took the title bar's
+/// buttons' clicks and dragged the window instead.
+private struct TitleStrip: View {
+    var body: some View {
+        Color.clear
+            .contentShape(Rectangle())
+            .gesture(WindowDragGesture())
+            // A second click without a move; the drag gesture never starts without one.
+            .simultaneousGesture(TapGesture().onEnded {
+                guard let event = NSApp.currentEvent, event.clickCount == 2, let window = event.window else {
+                    return
+                }
+                switch UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") {
+                case "Minimize": window.performMiniaturize(nil)
+                case "None": break
+                default: window.performZoom(nil)
+                }
+            })
+            // The first click on a window in the background drags it too.
+            .allowsWindowActivationEvents(true)
     }
 }
