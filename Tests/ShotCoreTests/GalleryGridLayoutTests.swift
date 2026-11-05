@@ -34,3 +34,14 @@ import Testing
     #expect(layout.rowSpan(ofItem: 0) == 0..<100)
     #expect(GalleryGridLayout(sectionSizes: [], titled: true, columns: 3, rowHeight: 100, headerHeight: 20, spacing: 10).height == 0)
 }
+
+@Test func galleryTilesKeepTheirSizeWhileColumnsReflow() {
+    // 190-point tiles, 10 apart: a column takes 200 points.
+    #expect(Gallery.grid(available: 190, tileSize: 190, spacing: 10).columns == 1)
+    #expect(Gallery.grid(available: 389, tileSize: 190, spacing: 10).columns == 1)
+    #expect(Gallery.grid(available: 390, tileSize: 190, spacing: 10).columns == 2)
+    #expect(Gallery.grid(available: 595, tileSize: 190, spacing: 10).cell == 190)
+    // A window narrower than a tile shrinks it, and never to nothing.
+    #expect(Gallery.grid(available: 150, tileSize: 190, spacing: 10).cell == 150)
+    #expect(Gallery.grid(available: 0, tileSize: 190, spacing: 10).cell == 1)
+}
