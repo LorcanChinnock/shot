@@ -178,8 +178,12 @@ enum Brutal {
     static let sectionCaption = ScaledFont.scaled(11, weight: .semibold)
 
     /// How far content under an ink line stops short of its outer edge: under the line, so nothing bleeds past it, and a whole
-    /// point, because a fractional rounded clip leaves stray pixels at its corner on 1x displays.
-    static func underInk(_ width: CGFloat) -> CGFloat { (width / 2).rounded(.up) }
+    /// device pixel, because a fractional rounded clip leaves stray pixels at its corner. `scale` is the display's pixels per point.
+    static func underInk(_ width: CGFloat, scale: CGFloat = 1) -> CGFloat { (width / 2 * scale).rounded(.up) / scale }
+
+    /// An ink width on a whole number of device pixels, so a 1.5 pt line is 3 pixels on Retina and 2 on a 1x display
+    /// instead of a grey half-pixel seam.
+    static func inkWidth(_ width: CGFloat, scale: CGFloat = 1) -> CGFloat { max(1, (width * scale).rounded()) / scale }
 
     /// Ink faded for secondary text and icons. It's solid with Increase Contrast on, so the text holds its contrast over glass.
     static func faded(_ opacity: Double) -> ContrastAware {
@@ -315,19 +319,22 @@ struct BrutalSurface<S: InsettableShape, Fill: ShapeStyle>: ViewModifier {
     var shadow = Brutal.shadow
     var border = Brutal.border
     @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.displayScale) private var scale
 
     func body(content: Content) -> some View {
-        content
+        let border = Brutal.inkWidth(border, scale: scale)
+        let shadow = Brutal.inkWidth(shadow, scale: scale)
+        return content
             .inkOnFill(fill as? Color)
             .background {
                 ZStack {
                     // Over a material, glass turns solid with Increase Contrast on so text over it holds its contrast.
                     if glass, contrast == .increased {
-                        shape.inset(by: Brutal.underInk(border)).fill(Brutal.group)
+                        shape.inset(by: Brutal.underInk(border, scale: scale)).fill(Brutal.group)
                     } else if glass {
-                        shape.inset(by: Brutal.underInk(border)).fill(.ultraThinMaterial)
+                        shape.inset(by: Brutal.underInk(border, scale: scale)).fill(.ultraThinMaterial)
                     }
-                    shape.inset(by: Brutal.underInk(border)).fill(fill)
+                    shape.inset(by: Brutal.underInk(border, scale: scale)).fill(fill)
                 }
             }
             .overlay(InkOutline(shape: shape, border: border, shadow: shadow).fill(Brutal.line))
@@ -403,7 +410,23 @@ extension View {
     /// An ink border with the content stopping under the line, so no colour bleeds through its anti-aliased outer edge.
     /// `dash` draws it as dashes, as `StrokeStyle` takes them.
     func inkBorder<S: InsettableShape>(_ shape: S, width: CGFloat, color: Color = Brutal.line, dash: [CGFloat] = []) -> some View {
-        clipShape(shape.inset(by: Brutal.underInk(width))).overlay(shape.strokeBorder(color, style: StrokeStyle(lineWidth: width, dash: dash)))
+        modifier(InkBorder(shape: shape, width: width, color: color, dash: dash))
+    }
+}
+
+/// `inkBorder`'s modifier. It reads the display's scale so the line lands on whole device pixels.
+private struct InkBorder<S: InsettableShape>: ViewModifier {
+    let shape: S
+    let width: CGFloat
+    let color: Color
+    let dash: [CGFloat]
+    @Environment(\.displayScale) private var scale
+
+    func body(content: Content) -> some View {
+        let width = Brutal.inkWidth(width, scale: scale)
+        content
+            .clipShape(shape.inset(by: Brutal.underInk(width, scale: scale)))
+            .overlay(shape.strokeBorder(color, style: StrokeStyle(lineWidth: width, dash: dash)))
     }
 }
 
