@@ -185,6 +185,9 @@ enum Brutal {
     /// instead of a grey half-pixel seam.
     static func inkWidth(_ width: CGFloat, scale: CGFloat = 1) -> CGFloat { max(1, (width * scale).rounded()) / scale }
 
+    /// A shadow's offset on whole device pixels. Unlike a line, it can be zero: a pressed button's drop sinks to nothing.
+    static func inkOffset(_ offset: CGFloat, scale: CGFloat = 1) -> CGFloat { (offset * scale).rounded() / scale }
+
     /// Ink faded for secondary text and icons. It's solid with Increase Contrast on, so the text holds its contrast over glass.
     static func faded(_ opacity: Double) -> ContrastAware {
         ContrastAware(standard: ink.opacity(opacity), increased: ink)
@@ -323,7 +326,7 @@ struct BrutalSurface<S: InsettableShape, Fill: ShapeStyle>: ViewModifier {
 
     func body(content: Content) -> some View {
         let border = Brutal.inkWidth(border, scale: scale)
-        let shadow = Brutal.inkWidth(shadow, scale: scale)
+        let shadow = Brutal.inkOffset(shadow, scale: scale)
         return content
             .inkOnFill(fill as? Color)
             .background {
