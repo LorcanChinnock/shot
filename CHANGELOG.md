@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0-beta.83](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.82...v0.7.0-beta.83) (2026-11-05)
+
+
+### Bug Fixes
+
+* **editor:** click edits and drag moves text and notes under their own tool ([#1146](https://github.com/LorcanChinnock/shot/issues/1146)) ([b0e7b95](https://github.com/LorcanChinnock/shot/commit/b0e7b95b1437c3c2643108d46db21d3ad129dfc5))
+* **gallery:** let the main window shrink and keep tiles one size ([#1144](https://github.com/LorcanChinnock/shot/issues/1144)) ([dae394a](https://github.com/LorcanChinnock/shot/commit/dae394ad0f8d386e3c0149ce08ea933831d4c335))
+
 ## [0.7.0-beta.82](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.81...v0.7.0-beta.82) (2026-11-04)
 
 
