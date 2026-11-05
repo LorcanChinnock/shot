@@ -14,9 +14,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private var dragStart: CGPoint?
     private var lastPoint: CGPoint?
     private var movedSinceMouseDown = false
-    /// Text or a note pressed with the text or note tool. A drag moves it and a click edits it, so which one is
-    /// only known when the button comes up.
+    /// Text or a note pressed with the text or note tool. A drag moves it, and a click edits it only if it was already
+    /// selected, so which one is only known when the button comes up.
     private var pressedText: Annotation?
+    private var pressedTextWasSelected = false
     private var textField: NSTextField?
     /// The text or note whose text field is open, hidden while it's edited; it may not be in the document yet.
     /// The model holds it so the toolbar can recolour and resize it.
@@ -350,6 +351,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         dragStart = point
         lastPoint = point
         movedSinceMouseDown = false
+        let selectedBeforePress = model.selectedID
         // The annotation just drawn stays selected, with handles that still resize it, until the next press elsewhere.
         if model.tool != .select, let selected = model.selection {
             if let handle = selected.handle(at: point, tolerance: handleTolerance) {
@@ -393,6 +395,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         case .note:
             // Clicking a note with the note tool edits it rather than stacking a new one on top.
             pressedText = textOrNote(at: point)
+            pressedTextWasSelected = pressedText?.id == selectedBeforePress
             if let pressedText {
                 model.selectedID = pressedText.id
             }
@@ -401,6 +404,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         case .text:
             // Pressing existing text selects it to move or edit instead of starting more text on top of it.
             pressedText = textOrNote(at: point)
+            pressedTextWasSelected = pressedText?.id == selectedBeforePress
             if let pressedText {
                 model.selectedID = pressedText.id
             } else {
@@ -500,8 +504,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         if let pressedText, resizeHandle == nil {
             if movedSinceMouseDown {
                 model.endGesture()
-            } else {
-                // A click on text or a note edits it, which deselects it as double-clicking does.
+            } else if pressedTextWasSelected {
+                // A second click on a selected note, which a double-click also is, edits it and deselects it.
                 model.selectedID = nil
                 if case .note = pressedText.kind {
                     beginNote(pressedText)
