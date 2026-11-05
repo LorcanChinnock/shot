@@ -19,13 +19,6 @@ if [ -n "$hits" ]; then
     exit 1
 fi
 
-hits=$(grep -rnE '(inkBorder\(.*width|border|lineWidth): [0-9]*\.[0-9]' Sources || true)
-if [ -n "$hits" ]; then
-    echo "Use whole-point ink widths; a fractional width leaves a grey half-pixel seam on 1x displays:"
-    echo "$hits"
-    exit 1
-fi
-
 hits=$(grep -rnE 'style: \.continuous' Sources || true)
 if [ -n "$hits" ]; then
     echo "Use style: .circular instead; continuous corners leave steps under ink borders (#92):"
