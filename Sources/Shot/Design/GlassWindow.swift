@@ -40,7 +40,8 @@ enum GlassWindow {
     }
 
     static func setContent<Content: View>(of window: NSWindow, @ViewBuilder content: () -> Content) {
-        window.contentView = NSView(hosting: GlassChrome(content: content()))
+        // Only the title strip moves the window, so a click on a button in the title bar presses it.
+        window.contentView = NSView(hosting: GlassChrome(content: content()), movesWindow: false)
     }
 
     static func present(_ window: NSWindow) {
@@ -78,13 +79,21 @@ enum GlassWindow {
 extension NSView {
     /// A window's content view hosting SwiftUI one level down. A hosting view that is itself the content view resizes the
     /// window and sets its size limits from inside AppKit's layout pass, which throws once content changes under a visible window.
-    convenience init(hosting rootView: some View) {
+    /// `movesWindow` false keeps AppKit from dragging the window from anywhere in the content, so only a view that drags
+    /// it itself, such as a glass window's title strip, does.
+    convenience init(hosting rootView: some View, movesWindow: Bool = true) {
         self.init()
-        let hosting = NSHostingView(rootView: rootView.modifier(TextSizeRoot()))
+        let content = rootView.modifier(TextSizeRoot())
+        let hosting = movesWindow ? NSHostingView(rootView: content) : StillHostingView(rootView: content) as NSHostingView
         hosting.sizingOptions = []
         hosting.autoresizingMask = [.width, .height]
         addSubview(hosting)
     }
+}
+
+/// A hosting view a mouse-down never drags the window from, even over a button inside a transparent title bar.
+private final class StillHostingView<Content: View>: NSHostingView<Content> {
+    override var mouseDownCanMoveWindow: Bool { false }
 }
 
 /// Hands Settings › General › Text size to everything a hosting view shows.
@@ -115,25 +124,26 @@ private struct GlassChrome<Content: View>: View {
     }
 }
 
-/// Drags the window and honours the system "double-click a window's title bar" setting.
-private struct TitleStrip: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView { StripView() }
-    func updateNSView(_ nsView: NSView, context: Context) {}
-
-    private final class StripView: NSView {
-        override var mouseDownCanMoveWindow: Bool { false }
-        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
-
-        override func mouseDown(with event: NSEvent) {
-            guard event.clickCount == 2, let window else {
-                window?.performDrag(with: event)
-                return
-            }
-            switch UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") {
-            case "Minimize": window.performMiniaturize(nil)
-            case "None": break
-            default: window.performZoom(nil)
-            }
-        }
+/// Drags the window and honours the system "double-click a window's title bar" setting. It's SwiftUI, not an AppKit view:
+/// AppKit hands a click to an `NSView` under a SwiftUI button before the button, so a view here took the title bar's
+/// buttons' clicks and dragged the window instead.
+private struct TitleStrip: View {
+    var body: some View {
+        Color.clear
+            .contentShape(Rectangle())
+            .gesture(WindowDragGesture())
+            // A second click without a move; the drag gesture never starts without one.
+            .simultaneousGesture(TapGesture().onEnded {
+                guard let event = NSApp.currentEvent, event.clickCount == 2, let window = event.window else {
+                    return
+                }
+                switch UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") {
+                case "Minimize": window.performMiniaturize(nil)
+                case "None": break
+                default: window.performZoom(nil)
+                }
+            })
+            // The first click on a window in the background drags it too.
+            .allowsWindowActivationEvents(true)
     }
 }

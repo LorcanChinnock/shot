@@ -2,7 +2,7 @@ import CoreGraphics
 import Foundation
 
 public enum ShotAction: String, CaseIterable, Sendable {
-    /// Opens the selection overlay for a screenshot; Tab there picks area, window, browser page or screen.
+    /// Opens the selection overlay for a screenshot; Tab there picks area, window or screen.
     case screenshot
     /// Opens the selection overlay for a recording.
     case record

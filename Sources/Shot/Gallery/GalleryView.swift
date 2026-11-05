@@ -205,8 +205,8 @@ private struct GalleryGrid: View {
         GeometryReader { geometry in
             // An overlay scroller needs the content's room; a legacy one takes the same width from the scroll view.
             let available = geometry.size.width - Brutal.groupInset * 2 - SystemScroller.shared.width
-            let columns = max(1, Int((available + Self.spacing) / (model.tileSize + Self.spacing)))
-            let cell = (available - Self.spacing * CGFloat(columns - 1)) / CGFloat(columns)
+            let (columns, cellWidth) = Gallery.grid(available: available, tileSize: model.tileSize, spacing: Self.spacing)
+            let cell = CGFloat(cellWidth)
             let layout = GalleryGridLayout(sectionSizes: model.sections.map(\.items.count), titled: model.sections.contains { !$0.title.isEmpty },
                                            columns: columns, rowHeight: GalleryTile.thumbnailHeight(width: cell) + captionHeight,
                                            headerHeight: headerHeight, spacing: Self.spacing)

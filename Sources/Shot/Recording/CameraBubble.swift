@@ -85,15 +85,35 @@ final class CameraBubble {
             throw CameraError.cannotUseCamera
         }
         session.addInput(input)
+        // A camera's first frames, before it has set its exposure, are black. They're counted here so the bubble only
+        // shows, and the recording only starts, once the picture is live.
+        let warmUp = CameraWarmUp(device: device)
+        let output = AVCaptureVideoDataOutput()
+        output.alwaysDiscardsLateVideoFrames = true
+        if session.canAddOutput(output) {
+            output.setSampleBufferDelegate(warmUp, queue: DispatchQueue(label: "camera-warm-up"))
+            session.addOutput(output)
+        } else {
+            warmUp.finish()
+        }
         let panel = CameraBubblePanel(session: session, frame: CameraBubbleLayout.initialFrame(in: region, diameter: size.diameter, inset: Self.inset), size: size, region: region)
-        // startRunning blocks until the camera is live, so the first recorded frames already show it.
         let box = SessionBox(session: session)
         await Task.detached { box.session.startRunning() }.value
+        await warmUp.wait(upTo: .milliseconds(1500))
+        // Once it's warm the frames aren't needed, so nothing handles them while recording.
+        output.setSampleBufferDelegate(nil, queue: nil)
         guard current == generation else {
             Task.detached { box.session.stopRunning() }
             return
         }
         panel.orderFrontRegardless()
+        // The preview layer draws its first frame a moment after the window appears.
+        try? await Task.sleep(for: .milliseconds(100))
+        guard current == generation else {
+            panel.orderOut(nil)
+            Task.detached { box.session.stopRunning() }
+            return
+        }
         self.session = session
         self.panel = panel
         log.notice("Camera bubble shown: \(device.localizedName, privacy: .public), \(size.rawValue, privacy: .public)")
@@ -108,6 +128,59 @@ final class CameraBubble {
             Task.detached { box.session.stopRunning() }
         }
         session = nil
+    }
+}
+
+/// Waits for the camera's first few frames and for its exposure to settle, so the bubble never starts black.
+private final class CameraWarmUp: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
+    /// About a sixth of a second at 30 fps: enough for most cameras to stop sending black frames.
+    private static let framesNeeded = 5
+
+    private let device: AVCaptureDevice
+    private let lock = NSLock()
+    private var frames = 0
+    private var done = false
+    private var continuation: CheckedContinuation<Void, Never>?
+
+    init(device: AVCaptureDevice) {
+        self.device = device
+    }
+
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        lock.lock()
+        frames += 1
+        let ready = frames >= Self.framesNeeded && !device.isAdjustingExposure
+        lock.unlock()
+        if ready {
+            finish()
+        }
+    }
+
+    /// Returns once the camera is warm, or after `timeout` for one that never settles.
+    func wait(upTo timeout: Duration) async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            lock.lock()
+            if done {
+                lock.unlock()
+                continuation.resume()
+                return
+            }
+            self.continuation = continuation
+            lock.unlock()
+            Task {
+                try? await Task.sleep(for: timeout)
+                self.finish()
+            }
+        }
+    }
+
+    func finish() {
+        lock.lock()
+        done = true
+        let waiting = continuation
+        continuation = nil
+        lock.unlock()
+        waiting?.resume()
     }
 }
 

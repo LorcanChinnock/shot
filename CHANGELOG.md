@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.7.0-beta.84](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.83...v0.7.0-beta.84) (2026-11-05)
+
+
+### Features
+
+* **capture:** replace the Browser target with a browser-page setting on Window ([#1149](https://github.com/LorcanChinnock/shot/issues/1149)) ([31ebfe3](https://github.com/LorcanChinnock/shot/commit/31ebfe3df4d4e5f4c3b3933267f6ed211b7dc1ad))
+
+## [0.7.0-beta.83](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.82...v0.7.0-beta.83) (2026-11-05)
+
+
+### Bug Fixes
+
+* **editor:** click edits and drag moves text and notes under their own tool ([#1146](https://github.com/LorcanChinnock/shot/issues/1146)) ([b0e7b95](https://github.com/LorcanChinnock/shot/commit/b0e7b95b1437c3c2643108d46db21d3ad129dfc5))
+* **gallery:** let the main window shrink and keep tiles one size ([#1144](https://github.com/LorcanChinnock/shot/issues/1144)) ([dae394a](https://github.com/LorcanChinnock/shot/commit/dae394ad0f8d386e3c0149ce08ea933831d4c335))
+
+## [0.7.0-beta.82](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.81...v0.7.0-beta.82) (2026-11-04)
+
+
+### Bug Fixes
+
+* title bar buttons click, the end trim handle drags, and the webcam starts live ([#1141](https://github.com/LorcanChinnock/shot/issues/1141)) ([e56b55f](https://github.com/LorcanChinnock/shot/commit/e56b55fa485ff812e61fae86e0d3c38ba338bf12))
+
+## [0.7.0-beta.81](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.80...v0.7.0-beta.81) (2026-11-04)
+
+
+### Bug Fixes
+
+* **video-editor:** title bar buttons click instead of dragging, and the playhead stays on a trim edge ([#1138](https://github.com/LorcanChinnock/shot/issues/1138)) ([67ea716](https://github.com/LorcanChinnock/shot/commit/67ea71652af837966e0ad37740e41897f889f6b5))
+
 ## [0.7.0-beta.80](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.79...v0.7.0-beta.80) (2026-11-03)
 
 

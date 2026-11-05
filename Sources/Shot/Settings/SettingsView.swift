@@ -71,20 +71,25 @@ struct SettingsView: View {
     private static let defaultSidebarWidth = 196.0
     /// How wide the sidebar is when it's shrunk to icons.
     private static let railWidth: CGFloat = 52
+    /// Below this window width the sidebar shrinks to icons by itself, whatever was chosen, to leave room for the content.
+    private static let autoCollapseWidth: CGFloat = 920
 
     @Setting(PreferenceKey.appSidebarWidth) private var sidebarWidth: Double
     @Setting(PreferenceKey.appSidebarCollapsed) private var sidebarCollapsed: Bool
 
     @Bindable private var navigation = SettingsNavigation.shared
     @Environment(\.colorScheme) private var colorScheme
+    @State private var windowWidth: CGFloat = .infinity
+    private var narrow: Bool { windowWidth < Self.autoCollapseWidth }
+    private var railShown: Bool { sidebarCollapsed || narrow }
     private var section: SettingsSection { navigation.section }
 
     var body: some View {
         HStack(alignment: .top, spacing: 22) {
-            Sidebar(selection: $navigation.section, collapsed: sidebarCollapsed) { sidebarCollapsed.toggle() }
-                .frame(width: sidebarCollapsed ? Self.railWidth : min(max(sidebarWidth, Self.sidebarWidths.lowerBound), Self.sidebarWidths.upperBound))
+            Sidebar(selection: $navigation.section, collapsed: railShown, canToggle: !narrow) { sidebarCollapsed.toggle() }
+                .frame(width: railShown ? Self.railWidth : min(max(sidebarWidth, Self.sidebarWidths.lowerBound), Self.sidebarWidths.upperBound))
                 .overlay(alignment: .trailing) {
-                    if !sidebarCollapsed {
+                    if !railShown {
                         // Centred in the gap between the sidebar and what's beside it.
                         PanelResizeHandle(width: $sidebarWidth, range: Self.sidebarWidths, defaultWidth: Self.defaultSidebarWidth) {
                             sidebarCollapsed = true
@@ -116,6 +121,7 @@ struct SettingsView: View {
         .padding(.horizontal, Brutal.windowInset)
         .padding(.bottom, Self.bottomInset)
         .frame(minWidth: MainWindowController.minSize.width, maxWidth: .infinity, maxHeight: .infinity)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { windowWidth = $0 }
     }
 
     private var header: some View {
@@ -172,6 +178,8 @@ private struct Sidebar: View {
     @Binding var selection: SettingsSection
     /// Whether it's shrunk to a column of icons.
     let collapsed: Bool
+    /// False while the window is too narrow for the labels, so the button would do nothing.
+    var canToggle = true
     let toggle: () -> Void
 
     var body: some View {
@@ -191,17 +199,23 @@ private struct Sidebar: View {
                 }
             }
             Spacer()
-            Button(action: toggle) {
-                Image(systemName: "sidebar.left")
-                    .font(.scaled(13, weight: .bold))
-                    .foregroundStyle(Brutal.faded(0.7))
-                    .frame(width: 30, height: 30)
-                    .contentShape(Rectangle())
+            if canToggle {
+                toggleButton
             }
-            .buttonStyle(.plain)
-            .brutalTip(collapsedTip)
-            .accessibilityLabel(Text(collapsedTip))
         }
+    }
+
+    private var toggleButton: some View {
+        Button(action: toggle) {
+            Image(systemName: "sidebar.left")
+                .font(.scaled(13, weight: .bold))
+                .foregroundStyle(Brutal.faded(0.7))
+                .frame(width: 30, height: 30)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .brutalTip(collapsedTip)
+        .accessibilityLabel(Text(collapsedTip))
     }
 
     private var collapsedTip: LocalizedStringResource { collapsed ? "Show labels" : "Show icons only" }
@@ -369,6 +383,7 @@ private struct CaptureSettings: View {
     @Setting(PreferenceKey.showSizeLabel) private var sizeLabel: Bool
     @Setting(PreferenceKey.captureShowsCursor) private var showsCursor: Bool
     @Setting(PreferenceKey.windowShadow) private var windowShadow: Bool
+    @Setting(PreferenceKey.browserPageOnly) private var browserPageOnly: Bool
     private let color = SettingsSection.capture.color
 
     var body: some View {
@@ -383,7 +398,21 @@ private struct CaptureSettings: View {
             ToggleRow(title: "Crosshair", subtitle: "Full-screen guide lines through the pointer.", isOn: $crosshair, color: color)
             ToggleRow(title: "Size label", subtitle: "Width and height in pixels next to the pointer while you drag.", isOn: $sizeLabel, color: color)
             ToggleRow(title: "Show cursor", subtitle: "Show the pointer when you capture an area or the full screen.", isOn: $showsCursor, color: color)
-            ToggleRow(title: "Window shadow", subtitle: "Keep the macOS drop shadow in window captures.", isOn: $windowShadow, color: color, divider: false)
+            ToggleRow(title: "Window shadow", subtitle: "Keep the macOS drop shadow in window captures.", isOn: $windowShadow, color: color)
+            ToggleRow(
+                title: "Capture only the page in browser windows",
+                subtitle: "Off captures the whole window. On captures just the web page, without the toolbar and tabs. Needs Accessibility access. Press B on the overlay to switch for one capture.",
+                isOn: Binding(
+                    get: { browserPageOnly },
+                    set: { on in
+                        browserPageOnly = on
+                        if on, !Permissions.hasAccessibility {
+                            Permissions.requestAccessibility()
+                        }
+                    }
+                ),
+                color: color, divider: false
+            )
         }
     }
 }
@@ -751,7 +780,7 @@ private struct AboutSettings: View {
                     }
                 }
             }
-            SettingRow(title: "Accessibility", subtitle: "Only needed for Browser capture, to find the page in a browser window.") {
+            SettingRow(title: "Accessibility", subtitle: "Only needed to capture just the page in browser windows.") {
                 HStack(spacing: 10) {
                     BrutalChip(text: accessibilityGranted ? "GRANTED" : "MISSING", color: accessibilityGranted ? Brutal.mint : Brutal.red)
                     if accessibilityGranted {

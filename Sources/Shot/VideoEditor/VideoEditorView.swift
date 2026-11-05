@@ -220,6 +220,9 @@ private struct PlayerHost: NSViewRepresentable {
 private final class PlayerLayerView: NSView {
     let playerLayer = AVPlayerLayer()
 
+    // A clear plain view would otherwise let a click on the video, or on the handles over it, drag the window.
+    override var mouseDownCanMoveWindow: Bool { false }
+
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         playerLayer.videoGravity = .resizeAspect
@@ -283,6 +286,8 @@ struct TrimTimelineView: View {
                 PlayheadCapsule(model: model, timeline: timeline, time: \.currentTime, height: Self.height + 8)
                     .offset(y: -4)
             }
+            // Offsets don't size a stack, so without this it ends at the strip and the out handle, past it, can't be grabbed.
+            .frame(width: geometry.size.width, height: Self.height, alignment: .topLeading)
             .contentShape(Rectangle())
             .gesture(DragGesture(minimumDistance: 0)
                 .onChanged { value in

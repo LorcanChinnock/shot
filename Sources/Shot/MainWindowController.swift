@@ -27,8 +27,8 @@ enum MainWindowController {
     private static var window: NSWindow?
     private static var contentReleased = false
     static let size = NSSize(width: 1080, height: 720)
-    /// Narrowest width that fits the gallery toolbar beside the sidebar.
-    static let minSize = NSSize(width: 1020, height: 520)
+    /// Narrowest window that still shows every section.
+    static let minSize = NSSize(width: 800, height: 420)
 
     /// The window's ID for screen capture, so captures can include it while Shot's overlays stay out.
     static var windowID: CGWindowID? { window.map { CGWindowID($0.windowNumber) } }

@@ -18,6 +18,7 @@ public enum PreferenceKey {
     public static let excludesMenuBar = "excludesMenuBar"
     public static let showMagnifier = "showMagnifier"
     public static let showCrosshair = "showCrosshair"
+    public static let browserPageOnly = "browserPageOnly"
     public static let showSizeLabel = "showSizeLabel"
     public static let windowShadow = "windowShadow"
     public static let quickAccessPosition = "quickAccessPosition"
@@ -121,6 +122,7 @@ public struct Preferences {
             // Off, so a first capture is just a drag; Settings › Capture turns them on for exact edges.
             PreferenceKey.showMagnifier: false,
             PreferenceKey.showCrosshair: false,
+            PreferenceKey.browserPageOnly: false,
             PreferenceKey.showSizeLabel: false,
             PreferenceKey.windowShadow: true,
             PreferenceKey.quickAccessPosition: QuickAccessPosition.left.rawValue,
@@ -369,6 +371,8 @@ public struct Preferences {
     public var excludesMenuBar: Bool { store.bool(forKey: PreferenceKey.excludesMenuBar) }
     public var showMagnifier: Bool { store.bool(forKey: PreferenceKey.showMagnifier) }
     public var showCrosshair: Bool { store.bool(forKey: PreferenceKey.showCrosshair) }
+    /// Picking a browser window captures just its web page, without the toolbar and tabs. Needs Accessibility access.
+    public var browserPageOnly: Bool { store.bool(forKey: PreferenceKey.browserPageOnly) }
     /// The width × height label beside the pointer while an area is dragged out.
     public var showSizeLabel: Bool { store.bool(forKey: PreferenceKey.showSizeLabel) }
     public var windowShadow: Bool { store.bool(forKey: PreferenceKey.windowShadow) }
@@ -486,13 +490,18 @@ public struct Preferences {
         AppearanceMode(rawValue: store.string(forKey: PreferenceKey.appearance) ?? "") ?? .system
     }
 
+    /// A saved target; the retired "browser" one opens on Window, where a browser's page is now a setting.
+    private static func target(_ raw: String?) -> CaptureTarget {
+        raw == "browser" ? .window : CaptureTarget(rawValue: raw ?? "") ?? .area
+    }
+
     public var screenshotTarget: CaptureTarget {
-        get { CaptureTarget(rawValue: store.string(forKey: PreferenceKey.screenshotTarget) ?? "") ?? .area }
+        get { Self.target(store.string(forKey: PreferenceKey.screenshotTarget)) }
         nonmutating set { store.set(newValue.rawValue, forKey: PreferenceKey.screenshotTarget) }
     }
 
     public var recordTarget: CaptureTarget {
-        get { CaptureTarget(rawValue: store.string(forKey: PreferenceKey.recordTarget) ?? "") ?? .area }
+        get { Self.target(store.string(forKey: PreferenceKey.recordTarget)) }
         nonmutating set { store.set(newValue.rawValue, forKey: PreferenceKey.recordTarget) }
     }
 
