@@ -115,7 +115,7 @@ In dark, Rest is a 0.5 pt `rgba(255,255,255,0.12)` edge with `0 1px 1px rgba(0,0
 | Recording border | 2 pt record red with a soft glow | none |
 | Focus ring | 4 pt halo, accent at 60% (`rgba(255,212,59,0.6)`) | none |
 
-Ink is drawn with `inkBorder`, crisp on 1× displays (#1069 removes the whole-point rule and keeps `inkBorder` as the one way to draw it).
+Ink is drawn with `inkBorder`, crisp on 1× displays (`inkBorder` snaps the width to whole device pixels, and is the one way to draw it).
 
 ### Type
 
