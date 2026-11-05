@@ -20,7 +20,7 @@ Read CLAUDE.md's "Running and testing locally" and "Capturing something in QA an
 - **Key presses and clicks go to the frontmost app.** If a terminal is frontmost, `Escape` and `Return` do nothing. Click the ShotDemo window first.
 - **Banners block clicks.** A macOS notification such as "Login Item Added" makes clicks fail with "would land on Notification Centre". Wait for it to go, or use the keyboard.
 - The welcome window turns on Open Shot at login and ShotDev's screenshot shortcuts. Turn Open Shot at login off before shooting Settings, because the old shots show it off.
-- ShotDev's windows are glass, so they blur whatever is behind them. Quit ShotDemo and minimise other windows before shooting them.
+- On `redesign` and after it merges, ShotDev's windows have a solid background and no longer blur what's behind them. On older builds they're glass, so quit ShotDemo and minimise other windows before shooting them.
 
 ## Take assets
 
