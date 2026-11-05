@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.84](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.83...v0.7.0-beta.84) (2026-11-05)
+
+
+### Features
+
+* **capture:** replace the Browser target with a browser-page setting on Window ([#1149](https://github.com/LorcanChinnock/shot/issues/1149)) ([31ebfe3](https://github.com/LorcanChinnock/shot/commit/31ebfe3df4d4e5f4c3b3933267f6ed211b7dc1ad))
+
 ## [0.7.0-beta.83](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.82...v0.7.0-beta.83) (2026-11-05)
 
 
