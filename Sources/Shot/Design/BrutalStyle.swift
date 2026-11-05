@@ -2,47 +2,130 @@ import AppKit
 import ShotCore
 import SwiftUI
 
-/// Design tokens and components for the glass × neo-brutalist settings UI.
+/// Design tokens and components. The values come from `docs/redesign/spec.md` (#1068).
 enum Brutal {
-    // Dark mode keeps black lines and hard shadows, and shows depth by lightness instead: the backdrop is darkest, glass cards
-    // sit a step lighter, and `paper` (buttons, menus, chips) lighter still. Text is the only light element, a soft off-white
-    // rather than white, and the accents lose a little saturation so they don't glare on dark.
+    // MARK: Colour
+    // Warm neutrals in both appearances, with yellow the only interface accent. Dark shows depth by lightness: the window is
+    // darkest, groups sit a step lighter and control fills lighter still. Text on an accent fill stays near-black either way,
+    // because a surface with a light fill lays out its content in the light appearance.
 
-    /// Text and marks on `paper` or glass: near-black in light mode, off-white in dark. Text on an accent fill stays near-black
-    /// either way, because a surface with a light fill lays out its content in the light appearance.
-    static let ink = Color(light: Color(red: 0.07, green: 0.07, blue: 0.10), dark: Color(hex: 0xE6E3DC))
-    /// Borders and hard shadows: near-black in both appearances.
-    static let line = Color(light: Color(red: 0.07, green: 0.07, blue: 0.10), dark: Color(hex: 0x050507))
-    /// The neutral fill under ink: buttons, chips, menus and floating panels. White in light mode, a raised grey in dark.
-    static let paper = Color(light: .white, dark: Color(hex: 0x38373E))
-    /// A glass card's tint.
-    static let glass = Color(light: .white.opacity(0.42), dark: Color(hex: 0x2C2B31).opacity(0.9))
+    /// Window and canvas background.
+    static let window = Color(light: Color(hex: 0xF7F6F3), dark: Color(hex: 0x1C1C1F))
+    /// Sidebars, under the see-through material.
+    static let sidebar = Color(light: Color(hex: 0xECE9E3), dark: Color(hex: 0x242427))
+    /// Grouped panels, cards and fields.
+    static let group = Color(light: .white, dark: Color(hex: 0x2C2C30))
+    /// Secondary buttons in dark, quiet fills in light.
+    static let controlFill = Color(light: Color(hex: 0xF1EFEA), dark: Color(hex: 0x3A3A3F))
+    /// The thumb of a segmented control.
+    static let selectedSegment = Color(light: .white, dark: Color(hex: 0x4A4A50))
+
+    /// Body text and icons: near-black in light mode, warm off-white in dark. Text on an accent fill stays near-black.
+    static let ink = Color(light: Color(hex: 0x16161A), dark: Color(hex: 0xEDEBE6))
+    static let secondaryText = Color(light: Color(hex: 0x55545A), dark: Color(hex: 0xA9A7AE))
+    /// Captions, section labels and key hints.
+    static let tertiaryText = Color(light: Color(hex: 0x6B6A70), dark: Color(hex: 0xA9A7AE))
+    /// Plain buttons and links, where yellow itself fails contrast on a light window.
+    static let accentText = Color(light: Color(hex: 0x8A6A00), dark: Color(hex: 0xF2CC4A))
+    static let disabledText = Color(light: Color(hex: 0x16161A).opacity(0.35), dark: Color(hex: 0xEDEBE6).opacity(0.35))
+
+    /// Ink outlines and hard drops: near-black in both appearances.
+    static let line = Color(light: Color(hex: 0x16161A), dark: Color(hex: 0x050507))
+    /// The only interface accent: the ink control, the selected tool, focus and toggles. Softer in dark so it doesn't glare.
+    static let accent = Color(light: Color(hex: 0xFFD43B), dark: Color(hex: 0xF2CC4A))
+    /// Recording, and destructive buttons.
+    static let record = Color(light: Color(hex: 0xE5352B), dark: Color(hex: 0xFF453A))
+    /// Selected marks, layers and files.
+    static let selection = Color(hex: 0x2B7FFF)
+    /// Status dots and tags.
+    static let success = Color(hex: 0x34C759)
+
+    /// Edges of groups and cards.
+    static let hairline = Color(light: Color(hex: 0x16161A).opacity(0.08), dark: .white.opacity(0.08))
+    /// Edges of buttons and pop-up menus.
+    static let controlEdge = Color(light: Color(hex: 0x16161A).opacity(0.14), dark: .white.opacity(0.12))
+    /// Rows inside a group.
+    static let separator = Color(light: Color(hex: 0x16161A).opacity(0.07), dark: .white.opacity(0.08))
+    /// Search fields, segmented tracks and tag chips.
+    static let fieldFill = Color(light: Color(hex: 0x16161A).opacity(0.06), dark: .white.opacity(0.07))
+    /// Toolbar buttons on hover.
+    static let hover = Color(light: Color(hex: 0x16161A).opacity(0.07), dark: .white.opacity(0.08))
+
+    /// The neutral fill under ink: buttons, chips, menus and floating panels. Replaced by `group` and `controlFill` as each
+    /// screen is rebuilt.
+    static let paper = Color(light: .white, dark: Color(hex: 0x3A3A3F))
+    /// A glass card's tint. A card is now a solid group; the flag stays so call sites don't change.
+    static let glass = group
     /// A recessed fill below `paper`: a toggle that's off, a segmented control's track, an unlit meter bar.
-    static let well = Color(light: .white.opacity(0.7), dark: Color(hex: 0x1F1E23))
+    static let well = Color(light: Color(hex: 0x16161A).opacity(0.06), dark: Color(hex: 0x1C1C1F))
     /// A toggle's knob while it's off.
     static let knob = Color(light: .white, dark: Color(hex: 0x8E8B93))
     /// `ink`, `yellow`, `red` and `mint` for AppKit drawing, in their light-mode colours, for marks drawn over a capture or the screen.
     /// `inkNS` is also `line` in either appearance. Chrome that follows the appearance uses `NSColor(Brutal.paper)` and friends.
-    static var inkNS: NSColor { NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1) }
+    static var inkNS: NSColor { NSColor(srgbRed: 0x16 / 255, green: 0x16 / 255, blue: 0x1A / 255, alpha: 1) }
     static var yellowNS: NSColor { NSColor(srgbRed: 1, green: 0xD4 / 255, blue: 0x3B / 255, alpha: 1) }
-    static var redNS: NSColor { NSColor(srgbRed: 1, green: 0x5C / 255, blue: 0x5C / 255, alpha: 1) }
+    static var redNS: NSColor { NSColor(srgbRed: 0xE5 / 255, green: 0x35 / 255, blue: 0x2B / 255, alpha: 1) }
     static var mintNS: NSColor { NSColor(srgbRed: 0x4F / 255, green: 0xE3 / 255, blue: 0xB5 / 255, alpha: 1) }
     static let border: CGFloat = 3
-    static let radius: CGFloat = 12
+    static let radius: CGFloat = 10
     static let shadow: CGFloat = 4
 
-    /// Corner radii smaller than `radius`, by what they round.
+    /// A sidebar icon's tile and glyph. Tints appear only behind a sidebar icon, never as a fill.
+    struct SidebarTint {
+        let tile: Color
+        let icon: Color
+
+        init(tile: (light: UInt32, dark: UInt32), icon: (light: UInt32, dark: UInt32)) {
+            self.tile = Color(light: Color(hex: tile.light), dark: Color(hex: tile.dark))
+            self.icon = Color(light: Color(hex: icon.light), dark: Color(hex: icon.dark))
+        }
+
+        static let general = SidebarTint(tile: (0xF0EDE6, 0x3A3A3F), icon: (0x55545A, 0xCFCDD4))
+        static let capture = SidebarTint(tile: (0xFFE0EE, 0x4A2336), icon: (0xC2306E, 0xFF8DBE))
+        static let quickAccess = SidebarTint(tile: (0xDCEFFF, 0x1E3550), icon: (0x1D6FB8, 0x7DBBFF))
+        static let recording = SidebarTint(tile: (0xFFE1DE, 0x4A2220), icon: (0xC4271E, 0xFF7B72))
+        static let shortcuts = SidebarTint(tile: (0xFFE9D3, 0x4A3118), icon: (0xB35A00, 0xFFB366))
+        static let about = SidebarTint(tile: (0xEAF6D2, 0x2E3D1A), icon: (0x4E7A0E, 0xA8D86A))
+        /// The selected row's tile, in both appearances.
+        static let selected = SidebarTint(tile: (0xFFFFFF, 0xFFFFFF), icon: (0x16161A, 0x16161A))
+    }
+
+    /// The gallery sidebar's icons, drawn in these colours without a tile.
+    static let screenshotsIcon = Color(light: Color(hex: 0x5B4BD6), dark: Color(hex: 0xA99BFF))
+    static let recordingsIcon = Color(light: Color(hex: 0xC4271E), dark: Color(hex: 0xFF7B72))
+    static let gifsIcon = Color(light: Color(hex: 0x1D6FB8), dark: Color(hex: 0x7DBBFF))
+
+    // MARK: Shape
+
+    /// Corner radii: Control 6, Group 10, Panel 14, and full (height ÷ 2) for floating panels, toasts, toggles and chips.
     enum Radius {
+        /// Buttons, fields, pop-up menus, toolbar buttons and menu rows.
+        static let control: CGFloat = 6
+        /// Grouped panels, tiles and thumbnails.
+        static let group: CGFloat = 10
+        /// Side panels, Quick Access cards, dialogs and cards.
+        static let panel: CGFloat = 14
         /// Timeline clips and thumbnails.
         static let tiny: CGFloat = 4
         /// Chips and small buttons.
-        static let chip: CGFloat = 6
+        static let chip = control
         /// Options inside a bordered group, such as segments, tiles and layer rows, which sit `groupInset` in.
-        static let inset: CGFloat = 7
-        /// Buttons and cards.
-        static let button: CGFloat = 8
-        /// Floating panels: toasts, popovers and menus.
-        static let panel: CGFloat = 10
+        static let inset = control
+        /// Buttons.
+        static let button = control
+        /// A radius that makes a shape of this height a pill.
+        static func full(height: CGFloat) -> CGFloat { height / 2 }
+    }
+
+    // MARK: Depth
+    // Rest: a 1 pt control edge and `0 1px 1px` at 6% ink, for secondary buttons and pop-up menus.
+    // Group: a 1 pt hairline and `0 1px 2px` at 4% ink, for grouped panels and cards.
+    // Float: a 0.5 pt edge and `0 8px 24px` at 16% ink, for popovers, menus, tooltips and the style bar.
+    // Ink: a 1.5 pt ink outline and a `0 2px 0` ink drop, for the one ink control per screen.
+
+    /// Depth levels for `depth(_:radius:)`.
+    enum Depth {
+        case rest, group, float
     }
 
     // Spacing rule: keep at least `minGap` of clear space between any two ink lines, shadows included.
@@ -53,23 +136,46 @@ enum Brutal {
     static let groupInset: CGFloat = 7
     static let sectionGap: CGFloat = 16
 
-    static let yellow = Color(light: Color(hex: 0xFFD43B), dark: Color(hex: 0xEDCB55))
+    /// The accent, under its old name. New code uses `accent`.
+    static let yellow = accent
+    /// The eight bright colours the old design filled surfaces with. Each screen drops them as it is rebuilt; the sidebar tints
+    /// above replace them behind icons. `red` is now the record red.
+    static let red = record
     static let pink = Color(light: Color(hex: 0xFF7AB6), dark: Color(hex: 0xE58BB3))
     static let mint = Color(light: Color(hex: 0x4FE3B5), dark: Color(hex: 0x62CDAB))
     static let sky = Color(light: Color(hex: 0x6FC3FF), dark: Color(hex: 0x80BBE6))
     static let violet = Color(light: Color(hex: 0x9B8CFF), dark: Color(hex: 0x9C92E3))
-    static let red = Color(light: Color(hex: 0xFF5C5C), dark: Color(hex: 0xE26C6C))
     static let orange = Color(light: Color(hex: 0xFF9F43), dark: Color(hex: 0xE8A060))
     static let lime = Color(light: Color(hex: 0xB6E24B), dark: Color(hex: 0xB1CF62))
 
-    static func title(_ size: CGFloat) -> ScaledFont { .scaled(size, weight: .black) }
+    // MARK: Type
+    // SF Pro at native sizes, through `ScaledFont`, so Settings › Text size still scales it.
+
+    /// Onboarding and empty states only: the one heavy weight.
+    static let display = ScaledFont.scaled(28, weight: .heavy)
+    /// Window and page titles.
+    static let windowTitle = ScaledFont.scaled(20, weight: .bold)
+    /// Settings section titles.
+    static let section = ScaledFont.scaled(15, weight: .bold)
+    /// Floating-panel labels and segmented controls.
+    static let small = ScaledFont.scaled(12, weight: .semibold)
+    /// Rows, labels and buttons.
+    static let body = ScaledFont.scaled(13)
+    /// Timers, sizes and zoom, in tabular figures.
+    static let numbers = ScaledFont.scaled(13, weight: .bold, design: .monospaced, tabular: true)
+    /// Keys in tooltips and hints.
+    static let keycap = ScaledFont.scaled(11, design: .monospaced)
+
+    static func title(_ size: CGFloat) -> ScaledFont { .scaled(size, weight: .bold) }
+    /// File names in title bars and main buttons.
     static let label = ScaledFont.scaled(13, weight: .semibold)
-    static let caption = ScaledFont.scaled(11.5, weight: .medium)
-    static let mono = ScaledFont.scaled(12, weight: .bold, design: .monospaced)
+    /// Notes under rows and key hints; pair it with `tertiaryText`.
+    static let caption = ScaledFont.scaled(11)
+    static let mono = numbers
     /// A toolbar button's symbol.
-    static let toolIcon = ScaledFont.scaled(13, weight: .bold)
-    /// A section's small capitals heading; use `sectionCaption()` for its tracking and colour too.
-    static let sectionCaption = ScaledFont.scaled(11, weight: .black)
+    static let toolIcon = ScaledFont.scaled(13, weight: .semibold)
+    /// A section's small heading; use `sectionCaption()` for its tracking and colour too.
+    static let sectionCaption = ScaledFont.scaled(11, weight: .semibold)
 
     /// How far content under an ink line stops short of its outer edge: under the line, so nothing bleeds past it, and a whole
     /// point, because a fractional rounded clip leaves stray pixels at its corner on 1x displays.
@@ -98,13 +204,16 @@ struct ScaledFont {
     let size: CGFloat
     var weight: Font.Weight?
     var design: Font.Design?
+    /// Fixed-width digits, so a ticking number doesn't shift its neighbours.
+    var tabular = false
 
-    static func scaled(_ size: CGFloat, weight: Font.Weight? = nil, design: Font.Design? = nil) -> ScaledFont {
-        ScaledFont(size: size, weight: weight, design: design)
+    static func scaled(_ size: CGFloat, weight: Font.Weight? = nil, design: Font.Design? = nil, tabular: Bool = false) -> ScaledFont {
+        ScaledFont(size: size, weight: weight, design: design, tabular: tabular)
     }
 
     func resolved(_ textSize: TextSize) -> Font {
-        .system(size: textSize.points(size), weight: weight, design: design)
+        let font = Font.system(size: textSize.points(size), weight: weight, design: design)
+        return tabular ? font.monospacedDigit() : font
     }
 
     /// For AppKit drawing, which can't read the environment.
@@ -212,9 +321,9 @@ struct BrutalSurface<S: InsettableShape, Fill: ShapeStyle>: ViewModifier {
             .inkOnFill(fill as? Color)
             .background {
                 ZStack {
-                    // With Increase Contrast on, glass turns nearly opaque so text over it holds its contrast.
+                    // Over a material, glass turns solid with Increase Contrast on so text over it holds its contrast.
                     if glass, contrast == .increased {
-                        shape.inset(by: Brutal.underInk(border)).fill(Color(light: .white.opacity(0.9), dark: Color(hex: 0x2C2B31).opacity(0.97)))
+                        shape.inset(by: Brutal.underInk(border)).fill(Brutal.group)
                     } else if glass {
                         shape.inset(by: Brutal.underInk(border)).fill(.ultraThinMaterial)
                     }
@@ -222,6 +331,48 @@ struct BrutalSurface<S: InsettableShape, Fill: ShapeStyle>: ViewModifier {
                 }
             }
             .overlay(InkOutline(shape: shape, border: border, shadow: shadow).fill(Brutal.line))
+    }
+}
+
+/// The Rest, Group and Float levels from the spec. In dark, Rest is a 0.5 pt edge with a darker shadow.
+private struct DepthSurface<Fill: ShapeStyle>: ViewModifier {
+    let level: Brutal.Depth
+    let fill: Fill
+    let radius: CGFloat
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: radius, style: .circular)
+        let dark = colorScheme == .dark
+        let ink = Color(hex: 0x16161A)
+        content
+            .background(fill, in: shape)
+            .overlay(shape.strokeBorder(edge, lineWidth: edgeWidth(dark)))
+            .shadow(color: shadow(dark, ink: ink).color, radius: shadow(dark, ink: ink).blur / 2, y: shadow(dark, ink: ink).y)
+    }
+
+    private var edge: Color {
+        switch level {
+        case .rest: Brutal.controlEdge
+        case .group: Brutal.hairline
+        case .float: Color(light: .black.opacity(0.2), dark: .white.opacity(0.14))
+        }
+    }
+
+    private func edgeWidth(_ dark: Bool) -> CGFloat {
+        switch level {
+        case .rest: dark ? 0.5 : 1
+        case .group: 1
+        case .float: 0.5
+        }
+    }
+
+    private func shadow(_ dark: Bool, ink: Color) -> (color: Color, blur: CGFloat, y: CGFloat) {
+        switch level {
+        case .rest: (dark ? .black.opacity(0.3) : ink.opacity(0.06), 1, 1)
+        case .group: (dark ? .black.opacity(0.3) : ink.opacity(0.04), 2, 1)
+        case .float: (dark ? .black.opacity(0.45) : ink.opacity(0.16), 24, 8)
+        }
     }
 }
 
@@ -239,6 +390,11 @@ extension View {
         brutalSurface(Brutal.glass, glass: true)
     }
 
+    /// A rest, group or float surface: the quiet depths, with no ink outline. `fill` is the surface's colour.
+    func depth<Fill: ShapeStyle>(_ level: Brutal.Depth, fill: Fill, radius: CGFloat = Brutal.Radius.group) -> some View {
+        modifier(DepthSurface(level: level, fill: fill, radius: radius))
+    }
+
     /// A section's small capitals heading, as the Style popover and the video inspector have.
     func sectionCaption() -> some View {
         font(Brutal.sectionCaption).tracking(1.2).foregroundStyle(Brutal.faded(0.75))
@@ -253,99 +409,10 @@ extension View {
 
 // MARK: Backdrop
 
-struct VisualEffectBackground: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = .hudWindow
-        view.blendingMode = .behindWindow
-        view.state = .active
-        return view
-    }
-
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
-}
-
-/// Frosted window backdrop: blurred desktop, soft color blobs drifting slowly, and a faint dot grid.
+/// The window's background: one solid, neutral surface, so the capture in it is the most colourful thing on screen.
 struct GlassBackdrop: View {
-    /// Positions and sizes are fractions of the window, so the composition holds at any window or display size.
-    private struct Blob {
-        let color: Color
-        let anchor: CGPoint
-        let size: CGFloat
-        let opacity: Double
-        let drift: CGFloat
-        let period: Double
-        let phase: Double
-    }
-
-    private static let blobs = [
-        Blob(color: Brutal.pink, anchor: CGPoint(x: 0.12, y: 0.15), size: 0.5, opacity: 0.55, drift: 0.08, period: 31, phase: 0),
-        Blob(color: Brutal.sky, anchor: CGPoint(x: 0.9, y: 0.88), size: 0.55, opacity: 0.55, drift: 0.09, period: 37, phase: 2),
-        Blob(color: Brutal.yellow, anchor: CGPoint(x: 0.85, y: 0.1), size: 0.4, opacity: 0.5, drift: 0.07, period: 43, phase: 4),
-        Blob(color: Brutal.mint, anchor: CGPoint(x: 0.15, y: 0.9), size: 0.36, opacity: 0.45, drift: 0.07, period: 29, phase: 5),
-    ]
-
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.controlActiveState) private var activeState
-    @Environment(\.colorSchemeContrast) private var contrast
-    @Environment(\.colorScheme) private var colorScheme
-
     var body: some View {
-        ZStack {
-            VisualEffectBackground()
-            // With Increase Contrast on, the blobs go and the frost turns nearly opaque, so text keeps a plain, solid backing.
-            if contrast == .increased {
-                Color(light: .white.opacity(0.9), dark: Color(hex: 0x17161B).opacity(0.97))
-            } else {
-                Color(light: .white.opacity(0.35), dark: Color(hex: 0x17161B).opacity(0.85))
-                TimelineView(.animation(paused: reduceMotion || activeState == .inactive)) { timeline in
-                    blobLayer(at: reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate)
-                }
-            }
-            dotGrid
-        }
-    }
-
-    private func blobLayer(at time: Double) -> some View {
-        // On dark, full-strength blobs glow; a third of the strength keeps the colour without the glare.
-        let strength = colorScheme == .dark ? 0.36 : 1
-        return Canvas { ctx, size in
-            let reach = max(size.width, size.height)
-            for blob in Self.blobs {
-                let angle = time / blob.period * 2 * .pi + blob.phase
-                let breathing = 1 + 0.08 * sin(angle * 1.7)
-                let diameter = reach * blob.size * breathing
-                let center = CGPoint(
-                    x: size.width * blob.anchor.x + reach * blob.drift * cos(angle),
-                    y: size.height * blob.anchor.y + reach * blob.drift * sin(angle * 0.8)
-                )
-                let rect = CGRect(x: center.x - diameter / 2, y: center.y - diameter / 2, width: diameter, height: diameter)
-                let gradient = Gradient(stops: [
-                    .init(color: blob.color.opacity(blob.opacity * strength), location: 0),
-                    .init(color: blob.color.opacity(blob.opacity * strength * 0.5), location: 0.45),
-                    .init(color: blob.color.opacity(0), location: 1),
-                ])
-                ctx.fill(
-                    Path(ellipseIn: rect),
-                    with: .radialGradient(gradient, center: center, startRadius: 0, endRadius: diameter / 2)
-                )
-            }
-        }
-    }
-
-    /// Strongest at the centre, fading out toward the edges.
-    private var dotGrid: some View {
-        Canvas { ctx, size in
-            let step: CGFloat = 18
-            let middle = CGPoint(x: size.width / 2, y: size.height / 2)
-            let farthest = hypot(middle.x, middle.y)
-            for x in stride(from: step / 2, to: size.width, by: step) {
-                for y in stride(from: step / 2, to: size.height, by: step) {
-                    let falloff = 1 - 0.7 * hypot(x - middle.x, y - middle.y) / farthest
-                    ctx.fill(Path(ellipseIn: CGRect(x: x, y: y, width: 1.6, height: 1.6)), with: .color(Brutal.ink.opacity(0.10 * falloff)))
-                }
-            }
-        }
+        Brutal.window
     }
 }
 
