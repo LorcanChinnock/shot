@@ -14,6 +14,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private var dragStart: CGPoint?
     private var lastPoint: CGPoint?
     private var movedSinceMouseDown = false
+    /// Text or a note pressed with the text or note tool. A drag moves it and a click edits it, so which one is
+    /// only known when the button comes up.
+    private var pressedText: Annotation?
     private var textField: NSTextField?
     /// The text or note whose text field is open, hidden while it's edited; it may not be in the document yet.
     /// The model holds it so the toolbar can recolour and resize it.
@@ -119,6 +122,20 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     /// How near, in image pixels, a press must be to grab a handle.
     private var handleTolerance: CGFloat { 6 / viewScale }
+    /// How far, in view points, a press on text or a note has to move before it counts as a drag.
+    private static let dragThreshold: CGFloat = 4
+
+    /// The topmost text or note under `point`.
+    private func textOrNote(at point: CGPoint) -> Annotation? {
+        guard let index = model.document.annotations.topmostIndex(at: point, tolerance: handleTolerance) else {
+            return nil
+        }
+        let hit = model.document.annotations[index]
+        switch hit.kind {
+        case .text, .note: return hit
+        default: return nil
+        }
+    }
 
     /// The canvas, in view points.
     private var imageRect: CGRect { viewport.viewRect(canvasRect) }
@@ -375,13 +392,20 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             beginCropDrag(at: point)
         case .note:
             // Clicking a note with the note tool edits it rather than stacking a new one on top.
-            if let index = model.document.annotations.topmostIndex(at: point, tolerance: 6 / viewScale), case .note = model.document.annotations[index].kind {
-                beginNote(model.document.annotations[index])
+            pressedText = textOrNote(at: point)
+            if let pressedText {
+                model.selectedID = pressedText.id
             }
         case .counter:
             model.add(Annotation(kind: .counter(model.document.annotations.nextCounterNumber, center: point), color: model.color, lineWidth: model.lineWidth))
         case .text:
-            beginText(at: point)
+            // Pressing existing text selects it to move or edit instead of starting more text on top of it.
+            pressedText = textOrNote(at: point)
+            if let pressedText {
+                model.selectedID = pressedText.id
+            } else {
+                beginText(at: point)
+            }
         default:
             break
         }
@@ -396,6 +420,15 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             return
         }
         let point = imagePoint(event)
+        if pressedText != nil {
+            // A press that barely moves is still a click.
+            guard movedSinceMouseDown || hypot(point.x - start.x, point.y - start.y) >= Self.dragThreshold / viewScale else {
+                return
+            }
+            dragSelection(to: point, from: last, modifiers: event.modifierFlags)
+            lastPoint = point
+            return
+        }
         defer { lastPoint = point }
         if resizeHandle != nil {
             dragSelection(to: point, from: last, modifiers: event.modifierFlags)
@@ -461,7 +494,22 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             resizeHandle = nil
             resizeStart = nil
             spaceMove = nil
+            pressedText = nil
             viewportDidChange()
+        }
+        if let pressedText, resizeHandle == nil {
+            if movedSinceMouseDown {
+                model.endGesture()
+            } else {
+                // A click on text or a note edits it, which deselects it as double-clicking does.
+                model.selectedID = nil
+                if case .note = pressedText.kind {
+                    beginNote(pressedText)
+                } else if case let .text(_, origin, _) = pressedText.kind {
+                    beginText(at: origin, editing: pressedText)
+                }
+            }
+            return
         }
         if model.tool == .note, resizeHandle == nil, let start = dragStart {
             beginNote(newNote(id: draft?.id ?? UUID(), from: start, to: imagePoint(event)))

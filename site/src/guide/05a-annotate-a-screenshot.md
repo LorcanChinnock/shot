@@ -76,7 +76,7 @@ What you've just drawn stays selected, so you can fix its colour, width or fill 
 <kbd>⌘Z</kbd> undoes and <kbd>⇧⌘Z</kbd> redoes.
 
 > [!NOTE]
-> Text and counters have no handles, and a placed image only has them at its corners. A triangle or diamond rounds each corner, a star only its points, and an ellipse has none. New shapes start with square corners. While you type in a text box or note, <kbd>Esc</kbd> finishes it, and <kbd>⌘Z</kbd> removes it again. Clicking a note with the note tool also edits it.
+> Text and counters have no handles, and a placed image only has them at its corners. A triangle or diamond rounds each corner, a star only its points, and an ellipse has none. New shapes start with square corners. While you type in a text box or note, <kbd>Esc</kbd> finishes it, and <kbd>⌘Z</kbd> removes it again. With the text or note tool, clicking existing text or a note edits it and dragging it moves it, so you don't need to switch tools first.
 
 > [!TIP]
 > With VoiceOver, the canvas lists your marks, frontmost first, by their [layer names](#layers), with the full words of a text or note. Press one (VO-Space) to select it.
