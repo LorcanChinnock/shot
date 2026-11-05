@@ -63,6 +63,8 @@ Local builds are `ShotDev.app`. The real installed version is `/Applications/Sho
 
 Use the MugCo sample app (`make demo`), not whatever window is open: your screen can show private tabs and mail, and changes every run. It is a fake support inbox in its own package, `Samples/MugCo`, so the main build and CI never compile it. It has an email address and card number to blur, and a wrong balance to point an arrow at. All its data is made up, so captures of it are safe to publish. Its window is titled "Mug Co. Support" and the process is `MugCo`.
 
+To drive ShotDev with computer use, follow the `shot-capture-session` skill first: `request_access` only finds ShotDev while one of its windows is open.
+
 The screenshots and recordings in `docs/media` come from a second sample, `docs/demo` (ShotDemo, "Acme Support"), whose ticket, dashboard and chat scenes are scripted so a reshoot lines up with the last one. Use it to reshoot the guide media (see `docs/demo/README.md`), and MugCo for everything else.
 
 ## Architecture
@@ -102,7 +104,7 @@ The repository is public, so GitHub's runners are free, but the free plan runs o
 - The repository has auto-merge turned on only for `dependabot-automerge.yml`, which enables it on Dependabot's patch and minor PRs (not major bumps or Sparkle) so they merge once `linux` and `macos` pass. An admin merges the release PR by hand once the gate has passed. If the gate fails, fix it in a normal PR. release-please updates the release PR only for commits that change the changelog, so after a `test:`, `ci:` or `docs:` fix, run `gh pr update-branch <release PR>` to gate it again.
 - `release.yml` runs `make test` on the tagged commit before it signs anything, because a `docs:`, `test:` or `ci:` commit merged after the gate passed can change what's released.
 - Run `make lint` and `make test` before every push, and push once per PR where you can, so CI is a check rather than a debugger. Every push re-runs CI, and a newer push cancels the run before it.
-- The redesign is built on a long-lived `redesign` branch with the same required checks. `redesign-sync.yml` opens a `chore: merge main into redesign` PR every Monday and after each release; merge it with a merge commit, never squash. When main conflicts it fails instead, and the merge is resolved by hand on the redesign side (CONTRIBUTING.md › The redesign branch). PRs into `redesign` still use `Closes #N`; `redesign-close-issues.yml` closes those issues on merge, since GitHub only does it for `main`. Only the epic, #1050, stays open until `redesign` merges into `main`.
+- The redesign is built on a long-lived `redesign` branch with the same required checks. Name work branches `redesign-<slug>`: git can't create `redesign/<slug>` while a `redesign` branch exists. `redesign-sync.yml` opens a `chore: merge main into redesign` PR every Monday and after each release; merge it with a merge commit, never squash. When main conflicts it fails instead, and the merge is resolved by hand on the redesign side (CONTRIBUTING.md › The redesign branch). PRs into `redesign` still use `Closes #N`; `redesign-close-issues.yml` closes those issues on merge, since GitHub only does it for `main`. Only the epic, #1050, stays open until `redesign` merges into `main`.
 - Every release builds and tests again, so let the release-please PR collect several merges rather than releasing after each one.
 
 ## Conventions
