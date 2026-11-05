@@ -248,9 +248,9 @@ private struct AccessibilityStep: View {
 
     var body: some View {
         if model.hasAccessibility {
-            Header(symbol: "checkmark", color: Brutal.mint, title: "Browser capture is ready", subtitle: "Shot can now find the page in a browser window.")
+            Header(symbol: "checkmark", color: Brutal.mint, title: "Browser pages are ready", subtitle: "Shot can now find the page in a browser window. Turn on Capture only the page in browser windows in Settings to use it.")
         } else {
-            Header(symbol: "safari.fill", color: Brutal.yellow, title: "Capture just the web page", subtitle: "Browser capture needs Accessibility access to find where a browser shows its page. Skip it if you won't use Browser.")
+            Header(symbol: "safari.fill", color: Brutal.yellow, title: "Capture just the web page", subtitle: "Capturing only the page in a browser window needs Accessibility access to find where the browser shows its page. Skip it if you'll capture whole windows.")
             VStack(alignment: .leading, spacing: 10) {
                 Instruction(number: 1, text: "Click Grant, then Open System Settings.")
                 Instruction(number: 2, text: "Turn on Shot under Accessibility.")

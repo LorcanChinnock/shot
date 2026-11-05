@@ -43,7 +43,7 @@
 
 ### Capture and Quick Access
 
-<img src="docs/media/capture.gif" width="720" alt="Pressing Tab to step the capture between an area, a window, the full screen and a browser page, dragging out an area with the magnifier, then the Quick Access card sliding into the corner">
+<img src="docs/media/capture.gif" width="720" alt="Pressing Tab to step the capture between an area, a window and the full screen, dragging out an area with the magnifier, then the Quick Access card sliding into the corner">
 
 ### Annotate anything
 

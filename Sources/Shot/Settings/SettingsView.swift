@@ -383,6 +383,7 @@ private struct CaptureSettings: View {
     @Setting(PreferenceKey.showSizeLabel) private var sizeLabel: Bool
     @Setting(PreferenceKey.captureShowsCursor) private var showsCursor: Bool
     @Setting(PreferenceKey.windowShadow) private var windowShadow: Bool
+    @Setting(PreferenceKey.browserPageOnly) private var browserPageOnly: Bool
     private let color = SettingsSection.capture.color
 
     var body: some View {
@@ -397,7 +398,21 @@ private struct CaptureSettings: View {
             ToggleRow(title: "Crosshair", subtitle: "Full-screen guide lines through the pointer.", isOn: $crosshair, color: color)
             ToggleRow(title: "Size label", subtitle: "Width and height in pixels next to the pointer while you drag.", isOn: $sizeLabel, color: color)
             ToggleRow(title: "Show cursor", subtitle: "Show the pointer when you capture an area or the full screen.", isOn: $showsCursor, color: color)
-            ToggleRow(title: "Window shadow", subtitle: "Keep the macOS drop shadow in window captures.", isOn: $windowShadow, color: color, divider: false)
+            ToggleRow(title: "Window shadow", subtitle: "Keep the macOS drop shadow in window captures.", isOn: $windowShadow, color: color)
+            ToggleRow(
+                title: "Capture only the page in browser windows",
+                subtitle: "Off captures the whole window. On captures just the web page, without the toolbar and tabs. Needs Accessibility access. Press B on the overlay to switch for one capture.",
+                isOn: Binding(
+                    get: { browserPageOnly },
+                    set: { on in
+                        browserPageOnly = on
+                        if on, !Permissions.hasAccessibility {
+                            Permissions.requestAccessibility()
+                        }
+                    }
+                ),
+                color: color, divider: false
+            )
         }
     }
 }
@@ -765,7 +780,7 @@ private struct AboutSettings: View {
                     }
                 }
             }
-            SettingRow(title: "Accessibility", subtitle: "Only needed for Browser capture, to find the page in a browser window.") {
+            SettingRow(title: "Accessibility", subtitle: "Only needed to capture just the page in browser windows.") {
                 HStack(spacing: 10) {
                     BrutalChip(text: accessibilityGranted ? "GRANTED" : "MISSING", color: accessibilityGranted ? Brutal.mint : Brutal.red)
                     if accessibilityGranted {

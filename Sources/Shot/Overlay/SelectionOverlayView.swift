@@ -32,7 +32,7 @@ final class SelectionOverlayView: NSView {
         case magnifier
         case crosshair
         case resolution
-        case grantAccess
+        case browserPage
     }
     private var barHits: [(rect: CGRect, action: BarAction)] = []
     /// A press that landed on a button of the bar: its release clicks it, unless it turns into dragging out an area first.
@@ -152,7 +152,7 @@ final class SelectionOverlayView: NSView {
         pointer = point
         if let chip = pressedChip {
             // A drag from a chip starts an area there, so what's under the chips can still be picked.
-            guard chip.action != .grantAccess, hypot(point.x - start.x, point.y - start.y) >= Self.orientationLockDistance else {
+            guard chip.action != .browserPage, hypot(point.x - start.x, point.y - start.y) >= Self.orientationLockDistance else {
                 return
             }
             pressedChip = nil
@@ -184,7 +184,7 @@ final class SelectionOverlayView: NSView {
         case .magnifier: controller.toggleMagnifier()
         case .crosshair: controller.toggleCrosshair()
         case .resolution: controller.toggleSizeLabel()
-        case .grantAccess: controller.grantPageAccess()
+        case .browserPage: controller.togglePageOnly()
         }
     }
 
@@ -259,6 +259,8 @@ final class SelectionOverlayView: NSView {
             controller.toggleCrosshair()
         case 34:
             controller.toggleSizeLabel()
+        case 11 where controller.target == .window:
+            controller.togglePageOnly()
         case 123...126 where controller.target == .window:
             controller.stepWindow(backward: event.keyCode == 123 || event.keyCode == 126)
         case 123...126 where controller.target == .area && dragStart == nil:
@@ -375,7 +377,7 @@ final class SelectionOverlayView: NSView {
                 ctx.setStrokeColor(NSColor.white.cgColor)
                 ctx.setLineWidth(1)
                 ctx.stroke(hole.insetBy(dx: 0.5, dy: 0.5))
-            case .window, .browser:
+            case .window:
                 ctx.setFillColor(NSColor.systemBlue.withAlphaComponent(0.2).cgColor)
                 ctx.fill(hole)
                 ctx.setStrokeColor(NSColor.white.cgColor)
@@ -389,9 +391,6 @@ final class SelectionOverlayView: NSView {
         }
 
         drawBar(avoiding: hole)
-        if controller.needsPageAccess {
-            drawAccessCard()
-        }
         guard let pointer, controller.target == .area else {
             return
         }
@@ -522,15 +521,11 @@ final class SelectionOverlayView: NSView {
                 parts.append(String(localized: "X: rotate"))
             }
         case .window:
-            parts = [String(localized: "Click a window"), String(localized: "Arrows: next window")]
-        case .browser:
-            parts = controller.needsPageAccess
-                ? [String(localized: "Allow Accessibility in System Settings to pick a page")]
-                : [String(localized: "Click a browser page")]
+            parts = [String(localized: "Click a window"), String(localized: "Arrows: next window"), String(localized: "B: browser page only")]
         case .screen:
             parts = [String(localized: "Click a screen")]
         }
-        parts.append(String(localized: "Tab: area, window, screen or browser"))
+        parts.append(String(localized: "Tab: area, window or screen"))
         if controller.offersScrolling {
             parts.append(String(localized: "S: scroll"))
         }
@@ -544,42 +539,6 @@ final class SelectionOverlayView: NSView {
         return parts.joined(separator: "   ·   ")
     }
 
-    /// Explains why Browser can't pick a page yet, with a chip that asks for Accessibility.
-    private func drawAccessCard() {
-        let textSize = Preferences().textSize
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.alignment = .center
-        let title = NSAttributedString(string: String(localized: "Browser capture needs Accessibility"), attributes: [
-            .font: NSFont.systemFont(ofSize: textSize.points(18), weight: .heavy), .foregroundColor: NSColor(Brutal.ink), .paragraphStyle: paragraph,
-        ])
-        let body = NSAttributedString(string: String(localized: "macOS only lets Shot find where a browser shows its page once you allow it. Area, Window and Screen work without it."), attributes: [
-            .font: NSFont.systemFont(ofSize: textSize.points(13), weight: .medium), .foregroundColor: NSColor(Brutal.ink).withAlphaComponent(0.75), .paragraphStyle: paragraph,
-        ])
-        let width: CGFloat = 400
-        let inner = width - 48
-        let titleHeight = title.boundingRect(with: CGSize(width: inner, height: .greatestFiniteMagnitude), options: .usesLineFragmentOrigin).height.rounded(.up)
-        let bodyHeight = body.boundingRect(with: CGSize(width: inner, height: .greatestFiniteMagnitude), options: .usesLineFragmentOrigin).height.rounded(.up)
-        let buttonFont = NSFont.systemFont(ofSize: textSize.points(13), weight: .bold)
-        let buttonHeight = (String("A") as NSString).size(withAttributes: [.font: buttonFont]).height.rounded() + 10
-        let height = 24 + titleHeight + 10 + bodyHeight + 18 + buttonHeight + 24
-        let card = CGRect(x: ((bounds.width - width) / 2).rounded(), y: ((bounds.height - height) / 2).rounded(), width: width, height: height)
-        NSColor(Brutal.line).setFill()
-        NSBezierPath(roundedRect: card.offsetBy(dx: 4, dy: -4), xRadius: 12, yRadius: 12).fill()
-        NSColor(Brutal.paper).setFill()
-        let shape = NSBezierPath(roundedRect: card, xRadius: 12, yRadius: 12)
-        shape.fill()
-        NSColor(Brutal.line).setStroke()
-        shape.lineWidth = 2
-        shape.stroke()
-        // Drawing is bottom-up: the button sits at the bottom, then the body, then the title.
-        let buttonText = String(localized: "Grant Accessibility")
-        let buttonWidth = (buttonText as NSString).size(withAttributes: [.font: buttonFont]).width.rounded() + 20
-        let box = drawChip(buttonText, at: CGPoint(x: (card.midX - buttonWidth / 2).rounded(), y: card.minY + 24), yellow: true, font: buttonFont)
-        barHits.append((box, .grantAccess))
-        body.draw(in: CGRect(x: card.minX + 24, y: box.maxY + 18, width: inner, height: bodyHeight))
-        title.draw(in: CGRect(x: card.minX + 24, y: box.maxY + 18 + bodyHeight + 10, width: inner, height: titleHeight))
-    }
-
     /// One button of the bar: a mode, Scroll or Delay. `label` is shown beside the icon only while it's picked or on.
     private struct BarButton {
         let symbol: String
@@ -590,12 +549,19 @@ final class SelectionOverlayView: NSView {
     }
 
     private var barButtons: (modes: [BarButton], options: [BarButton]) {
-        let symbols: [CaptureTarget: String] = [.area: "rectangle.dashed", .window: "macwindow", .browser: "safari", .screen: "display"]
+        let symbols: [CaptureTarget: String] = [.area: "rectangle.dashed", .window: "macwindow", .screen: "display"]
         let modes = CaptureTarget.allCases.map { target in
             let picked = target == controller.target
             return BarButton(symbol: symbols[target] ?? "rectangle.dashed", label: picked ? target.title : nil, on: picked, tip: "\(target.title)  ·  Tab", action: .target(target))
         }
         var options: [BarButton] = []
+        if controller.windowMode {
+            let page = controller.browserMode
+            options.append(BarButton(
+                symbol: "safari", label: page ? String(localized: "Page") : nil, on: page,
+                tip: "\(String(localized: "Browser page only"))  ·  B", action: .browserPage
+            ))
+        }
         if controller.offersScrolling {
             let scroll = String(localized: "Scroll")
             options.append(BarButton(symbol: "rectangle.expand.vertical", label: controller.scrolling ? scroll : nil, on: controller.scrolling, tip: "\(scroll)  ·  S", action: .scrolling))
@@ -616,7 +582,7 @@ final class SelectionOverlayView: NSView {
         return (modes, options)
     }
 
-    /// A small bar of icons that pick area, window, browser or full screen, then Scroll and Delay; a click does what Tab, S and D do.
+    /// A small bar of icons that pick area, window or full screen, then Scroll and Delay; a click does what Tab, S and D do.
     /// It shows on the screen with the pointer only, at the bottom unless what's being picked reaches it, and hides while an area is dragged out.
     private func drawBar(avoiding hole: CGRect?) {
         let previous = barHits.map(\.rect)
@@ -749,7 +715,7 @@ final class SelectionOverlayView: NSView {
         }
         switch controller.target {
         case .area: return .area(hole)
-        case .window, .browser: return .target(hole)
+        case .window: return .target(hole)
         case .screen: return nil
         }
     }

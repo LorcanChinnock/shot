@@ -39,8 +39,10 @@ final class OverlayPanel: NSPanel {
 final class SelectionOverlayController {
     private(set) var target: CaptureTarget
     /// Windows are highlighted for picking, whole or, for a browser, as just their page.
-    var windowMode: Bool { target == .window || target == .browser }
-    var browserMode: Bool { target == .browser }
+    var windowMode: Bool { target == .window }
+    /// Whether a browser window is picked as just its page. It starts as Settings has it and B switches it for this overlay only.
+    private(set) var pageOnly = Preferences().browserPageOnly
+    var browserMode: Bool { windowMode && pageOnly && Permissions.hasAccessibility }
     var screenMode: Bool { target == .screen }
     /// Seconds to wait after the pick before capturing; 0 is off. `offersDelay` is false where waiting makes no sense.
     private(set) var delay = 0
@@ -254,13 +256,17 @@ final class SelectionOverlayController {
         updateHover(redraw: true)
     }
 
-    /// Whether Browser is waiting on the Accessibility permission, which the overlay explains with a card.
-    var needsPageAccess: Bool { browserMode && !Permissions.hasAccessibility }
-
-    /// Closes the overlay and asks macOS for Accessibility, so its prompt isn't left behind the overlay.
-    func grantPageAccess() {
-        finish(nil)
-        Permissions.requestAccessibility()
+    /// B: picks browser windows as just their page, or whole. Without Accessibility it closes the overlay and asks macOS
+    /// for it, so the prompt isn't left behind the overlay.
+    func togglePageOnly() {
+        guard Permissions.hasAccessibility else {
+            finish(nil)
+            Permissions.requestAccessibility()
+            return
+        }
+        pageOnly.toggle()
+        isWindowPinned = false
+        updateHover(redraw: true)
     }
 
     func toggleScrolling() {
@@ -289,14 +295,9 @@ final class SelectionOverlayController {
         guard !isWindowPinned else {
             return
         }
-        var hovered = windowMode ? WindowInfo.topmost(at: point, in: windows) : nil
-        var page: CGRect?
-        if browserMode, let window = hovered {
-            page = pageRect(of: window)
-            if page == nil {
-                hovered = nil
-            }
-        }
+        let hovered = windowMode ? WindowInfo.topmost(at: point, in: windows) : nil
+        // A window that isn't a browser has no page, so it is picked whole.
+        let page = browserMode ? hovered.flatMap { pageRect(of: $0) } : nil
         guard redraw || hovered != hoveredWindow || page != hoveredPage else {
             return
         }
