@@ -100,6 +100,14 @@ public enum Gallery {
     /// The most levels of folders the gallery looks through, which also stops a loop of links.
     static let maxFolderDepth = 16
 
+    /// How many columns of `tileSize` fit in `available` points, and how wide each tile is. Tiles keep the size
+    /// the slider gives them, so resizing the window only moves them between rows. Only a window narrower than
+    /// one tile shrinks it.
+    public static func grid(available: Double, tileSize: Double, spacing: Double) -> (columns: Int, cell: Double) {
+        let columns = max(1, Int(((available + spacing) / (tileSize + spacing)).rounded(.down)))
+        return (columns, min(tileSize, max(available, 1)))
+    }
+
     /// The screenshots, recordings and GIFs inside `folder` and, with `subfolders`, inside the folders in it at any depth.
     /// Hidden files and other types are skipped.
     public static func items(in folder: URL, subfolders: Bool = true, fileManager: FileManager = .default) -> [GalleryItem] {
