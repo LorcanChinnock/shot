@@ -22,7 +22,7 @@ enum Permissions {
         CGRequestScreenCaptureAccess()
     }
 
-    /// Only Browser capture needs it, to find where a browser shows its page.
+    /// Only capturing just a browser's page needs it, to find where a browser shows its page.
     static var hasAccessibility: Bool { AXIsProcessTrusted() }
 
     /// Shows macOS's own prompt, which has a button straight to System Settings.

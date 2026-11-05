@@ -2,7 +2,7 @@
 public enum OnboardingStep: Sendable {
     /// Screen Recording access, which every capture needs.
     case permission
-    /// Accessibility access, which only Browser capture needs. It can be skipped.
+    /// Accessibility access, which only capturing just a browser's page needs. It can be skipped.
     case accessibility
     /// The macOS screenshot keys and Open at login.
     case setup
@@ -26,7 +26,7 @@ public enum OnboardingProgress: String, Sendable {
 
     /// The steps the welcome window shows at launch, or after a capture fails: for someone new, Screen Recording access
     /// while it's missing, then setup and Try it; for everyone else, only Screen Recording access while it's missing.
-    /// Accessibility isn't asked for here: only Browser needs it, and choosing Browser asks for it then.
+    /// Accessibility isn't asked for here: only capturing a browser's page needs it, and turning that setting on asks for it then.
     public func steps(hasPermission: Bool, hasAccessibility: Bool) -> [OnboardingStep] {
         switch self {
         case .new: (hasPermission ? [] : [.permission]) + [.setup, .tryIt]
@@ -35,7 +35,7 @@ public enum OnboardingProgress: String, Sendable {
     }
 
     /// The steps the welcome window shows when it's opened again with `shot://welcome`, which also offers
-    /// Accessibility to anyone who wants Browser set up ahead of time.
+    /// Accessibility to anyone who wants browser pages set up ahead of time.
     public static func replaySteps(hasPermission: Bool, hasAccessibility: Bool) -> [OnboardingStep] {
         access(hasPermission: hasPermission, hasAccessibility: hasAccessibility) + [.setup, .tryIt]
     }

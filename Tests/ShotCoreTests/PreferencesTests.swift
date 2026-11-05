@@ -407,10 +407,28 @@ struct RememberedTargetTests {
         let prefs = Preferences(store: suite.store)
         #expect(prefs.screenshotTarget == .area)
         #expect(prefs.recordTarget == .area)
-        prefs.screenshotTarget = .browser
+        prefs.screenshotTarget = .screen
         prefs.recordTarget = .window
-        #expect(Preferences(store: suite.store).screenshotTarget == .browser)
+        #expect(Preferences(store: suite.store).screenshotTarget == .screen)
         #expect(Preferences(store: suite.store).recordTarget == .window)
+    }
+
+    @Test func theRetiredBrowserTargetOpensOnWindow() throws {
+        let suite = try TestDefaults()
+        defer { suite.remove() }
+        suite.store.set("browser", forKey: PreferenceKey.screenshotTarget)
+        suite.store.set("browser", forKey: PreferenceKey.recordTarget)
+        let prefs = Preferences(store: suite.store)
+        #expect(prefs.screenshotTarget == .window)
+        #expect(prefs.recordTarget == .window)
+    }
+
+    @Test func browserWindowsAreCapturedWholeUntilTheSettingIsOn() throws {
+        let suite = try TestDefaults()
+        defer { suite.remove() }
+        #expect(!Preferences(store: suite.store).browserPageOnly)
+        suite.store.set(true, forKey: PreferenceKey.browserPageOnly)
+        #expect(Preferences(store: suite.store).browserPageOnly)
     }
 
     @Test func anUnknownStoredTargetFallsBackToArea() throws {

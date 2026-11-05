@@ -22,7 +22,7 @@ Shot starts an area screenshot, just as <kbd>⌘⇧4</kbd> does.
 
 | URL | Action |
 |---|---|
-| `shot://screenshot` | Open the screenshot overlay, where Tab picks an area, window, full screen or browser page |
+| `shot://screenshot` | Open the screenshot overlay, where Tab picks an area, window or full screen |
 | `shot://capture-area`, `capture-window` | Take a screenshot, starting on an area or a window |
 | `shot://capture-fullscreen` | Take a screenshot of the screen under the pointer at once |
 | `shot://record` | Open the recording overlay, or confirm or stop a recording |

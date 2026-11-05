@@ -35,7 +35,7 @@ A short welcome window walks you through up to three steps. You can close it at 
 2. **Make it yours.** Choose whether Shot takes over the screenshot keys <kbd>⌘⇧4</kbd> and <kbd>⌘⇧5</kbd>, and whether it opens when you log in. Both start on. Click **Continue** to apply them. If you close the window here instead, macOS keeps its keys and Shot doesn't open at login.
 3. **Try it.** Press <kbd>⌘⇧4</kbd> and drag across anything on screen. The window comes back with a few tips.
 
-Shot doesn't ask for Accessibility access up front. Only Browser capture needs it, to find where a browser shows its page, so Shot asks when you first choose **Browser**. To set it up ahead of time, grant it in **Settings › About**.
+Shot doesn't ask for Accessibility access up front. Only capturing just the page of a browser window needs it, to find where a browser shows its page, so Shot asks when you turn on **Capture only the page in browser windows** in **Settings › Capture**. To set it up ahead of time, grant it in **Settings › About**.
 
 > [!TIP]
 > Turned off **Use Shot for ⌘⇧4 and ⌘⇧5**? Shot uses <kbd>⌃⇧4</kbd> and <kbd>⌃⇧5</kbd> instead, and the macOS screenshot tool keeps its keys. Either way, macOS gets its keys back whenever Shot quits.
@@ -50,7 +50,7 @@ After each capture, Shot saves it, copies it, and shows a small [Quick Access](#
 
 | Press | To |
 |---|---|
-| <kbd>⌘⇧4</kbd> | Take a screenshot. Press <kbd>Tab</kbd> to pick an area, a window, a browser page or the whole screen. |
+| <kbd>⌘⇧4</kbd> | Take a screenshot. Press <kbd>Tab</kbd> to pick an area, a window or the whole screen. |
 | <kbd>⌘⇧5</kbd> | Record your screen. |
 
 Every other shortcut is on the [Keyboard shortcuts](#keyboard-shortcuts) page.

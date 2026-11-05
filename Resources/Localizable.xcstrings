@@ -2843,9 +2843,6 @@
         }
       }
     },
-    "Allow Accessibility in System Settings to pick a page" : {
-
-    },
     "Amount" : {
       "localizations" : {
         "de" : {
@@ -3276,6 +3273,9 @@
           }
         }
       }
+    },
+    "B: browser page only" : {
+
     },
     "BACKGROUND" : {
       "localizations" : {
@@ -3852,16 +3852,10 @@
     "Brightness" : {
 
     },
-    "Browser" : {
+    "Browser page only" : {
 
     },
-    "Browser capture is ready" : {
-
-    },
-    "Browser capture needs Accessibility" : {
-
-    },
-    "Browser capture needs Accessibility access to find where a browser shows its page. Skip it if you won't use Browser." : {
+    "Browser pages are ready" : {
 
     },
     "Bubble size" : {
@@ -4928,10 +4922,16 @@
     "Capture just the web page" : {
 
     },
+    "Capture only the page in browser windows" : {
+
+    },
     "Capture overlay" : {
 
     },
     "Capturing" : {
+
+    },
+    "Capturing only the page in a browser window needs Accessibility access to find where the browser shows its page. Skip it if you'll capture whole windows." : {
 
     },
     "Change camera bubble size" : {
@@ -5715,9 +5715,6 @@
       }
     },
     "Click Grant, then Open System Settings." : {
-
-    },
-    "Click a browser page" : {
 
     },
     "Click a screen" : {
@@ -14371,9 +14368,6 @@
         }
       }
     },
-    "Grant Accessibility" : {
-
-    },
     "Green" : {
       "localizations" : {
         "de" : {
@@ -18633,6 +18627,9 @@
         }
       }
     },
+    "Off captures the whole window. On captures just the web page, without the toolbar and tabs. Needs Accessibility access. Press B on the overlay to switch for one capture." : {
+
+    },
     "Oldest first" : {
       "localizations" : {
         "de" : {
@@ -18844,9 +18841,6 @@
     "Only GIFs exported from the video editor can be edited" : {
 
     },
-    "Only needed for Browser capture, to find the page in a browser window." : {
-
-    },
     "Only needed for the camera bubble." : {
       "localizations" : {
         "de" : {
@@ -18898,6 +18892,9 @@
           }
         }
       }
+    },
+    "Only needed to capture just the page in browser windows." : {
+
     },
     "Only needed to record your voice." : {
       "localizations" : {
@@ -19889,6 +19886,9 @@
           }
         }
       }
+    },
+    "Page" : {
+
     },
     "Paste" : {
       "localizations" : {
@@ -25555,7 +25555,7 @@
         }
       }
     },
-    "Shot can now find the page in a browser window." : {
+    "Shot can now find the page in a browser window. Turn on Capture only the page in browser windows in Settings to use it." : {
 
     },
     "Shot can't use the camera. Turn it on in System Settings › Privacy & Security › Camera." : {
@@ -28644,7 +28644,7 @@
         }
       }
     },
-    "Tab: area, window, screen or browser" : {
+    "Tab: area, window or screen" : {
 
     },
     "Tag name" : {
@@ -32979,9 +32979,6 @@
           }
         }
       }
-    },
-    "macOS only lets Shot find where a browser shows its page once you allow it. Area, Window and Screen work without it." : {
-
     },
     "macOS requires Screen Recording access for every capture." : {
       "localizations" : {

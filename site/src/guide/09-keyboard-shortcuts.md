@@ -10,8 +10,8 @@ These work in any app, while Shot is running:
 
 | Shortcut | Action |
 |---|---|
-| <kbd>⌘⇧4</kbd> | Take a screenshot. Press <kbd>Tab</kbd> to pick an area, a window, the full screen or a browser page. |
-| <kbd>⌘⇧5</kbd> | Record. Press <kbd>Tab</kbd> to pick an area, a window, the full screen or a browser page. |
+| <kbd>⌘⇧4</kbd> | Take a screenshot. Press <kbd>Tab</kbd> to pick an area, a window or the full screen. |
+| <kbd>⌘⇧5</kbd> | Record. Press <kbd>Tab</kbd> to pick an area, a window or the full screen. |
 
 While you set up a recording, the record shortcut starts it. While you record, it stops the recording.
 
@@ -51,9 +51,10 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 
 | Key | Action |
 |---|---|
-| Tab | Switch between picking an area, a window, the full screen and a browser page. <kbd>⇧Tab</kbd> goes back. |
+| Tab | Switch between picking an area, a window and the full screen. <kbd>⇧Tab</kbd> goes back. |
 | D | Step the delay through Off, 3, 5 and 10 seconds. |
 | R | Step the area's ratio. |
+| B | With a window picked, capture just the page of a browser window, or the whole window, for this capture. |
 | M | Turn the magnifier on or off for this capture. |
 | C | Turn the crosshair guide lines on or off for this capture. |
 | I | Turn the size readout (the area's width and height in pixels) on or off for this capture. |

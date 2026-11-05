@@ -18,7 +18,7 @@ const half = '(min-width: 900px) 540px, 100vw';
 // The strip of shortcuts under the hero. It scrolls, so it's written twice and the copy is hidden from screen readers.
 const shortcuts: [string[], string][] = [
   [['⌘', '⇧', '4'], 'Screenshot'],
-  [['Tab'], 'Area, window, screen, browser'],
+  [['Tab'], 'Area, window, screen'],
   [['⌘', '⇧', '5'], 'Record'],
   [['A'], 'Arrow'],
   [['B'], 'Blur'],
@@ -154,7 +154,7 @@ const software = {
           <span class="step" style="--chip: var(--pink)">Capture</span>
           <h2>Drag out an area, or click a window. A magnifier is there for the last pixel.</h2>
         </div>
-        <Window tint="var(--pink)"><Loop name="capture" label="Pressing Tab to step between an area, a window, a browser page and the full screen, dragging out an area with the magnifier, then the Quick Access card sliding into the corner" /></Window>
+        <Window tint="var(--pink)"><Loop name="capture" label="Pressing Tab to step between an area, a window and the full screen, dragging out an area with the magnifier, then the Quick Access card sliding into the corner" /></Window>
       </div>
       <div class="stack reveal">
         <div class="say">
