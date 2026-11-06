@@ -18,7 +18,7 @@ A small bar at the bottom of the screen starts with **Screenshot** or **Record**
 
 The bar never appears in your screenshot, and it stays out of the way: it fades away about 4 seconds after it shows (it stays while the pointer is on it), so you can pick the area under it, and any of its keys brings it back. It also hides while you drag out an area, and moves to the top of the screen when the window you point at is under it. To start an area right under the bar, just drag from it: a click picks an icon, a drag starts the area.
 
-The last three icons switch the magnifier (<kbd>M</kbd>), the crosshair (<kbd>C</kbd>) and the size readout (<kbd>I</kbd>) for this capture, whatever **Settings › Capture** says. They only change what you see when you pick an area.
+The last three icons switch the magnifier (<kbd>M</kbd>), the crosshair (<kbd>C</kbd>) and the size readout (<kbd>I</kbd>) for this capture, whatever **Settings › Capture** says. They only change what you see when you pick an area. The size readout sits above the area's top-left corner and gives its size in pixels, next to its ratio. The magnifier follows the pointer, showing each pixel around it with the pointer's position in pixels underneath. When you pick a ratio with <kbd>R</kbd>, it shows above the area even with the size readout off.
 
 - **Area:** drag across it.
 - **Window:** click a window. Shot captures it as it is right now, even if something covers it, and keeps its macOS shadow. To leave the shadow out, turn off **Window shadow** in **Settings › Capture**.
