@@ -38,6 +38,8 @@ final class SelectionOverlayView: NSView {
     private var pressedChip: (action: BarAction, point: CGPoint)?
     /// Whether the bar sits at the bottom or top, or is hidden, so it stays off what's being picked.
     private var barPlacement = OverlayBarPlacement.bottom
+    /// Where the bar was last drawn, nil while it's hidden or faded, so the chips and loupe keep off it.
+    private var barFrame: CGRect?
     /// The button of the bar under the pointer, which shows its name and key.
     private var hoveredChip: BarAction?
     var magnifierImage: CGImage? {
@@ -46,8 +48,6 @@ final class SelectionOverlayView: NSView {
 
     private static let minimumSize: CGFloat = 4
     private static let orientationLockDistance: CGFloat = 8
-    private static let loupeSize: CGFloat = 120
-    private static let loupeZoom: CGFloat = 8
 
     init(frame: NSRect, display: OverlayDisplay, index: Int, controller: SelectionOverlayController) {
         self.display = display
@@ -77,7 +77,7 @@ final class SelectionOverlayView: NSView {
     }
 
     override func cursorUpdate(with event: NSEvent) {
-        NSCursor.crosshair.set()
+        Self.cursor.set()
     }
 
     override func mouseEntered(with event: NSEvent) {
@@ -366,15 +366,13 @@ final class SelectionOverlayView: NSView {
             dim.addRect(hole)
         }
         ctx.addPath(dim)
-        ctx.setFillColor(NSColor.black.withAlphaComponent(controller.target == .area && hole != nil ? 0.35 : 0.1).cgColor)
+        ctx.setFillColor(controller.target == .area && hole != nil ? Self.areaDim : NSColor.black.withAlphaComponent(0.1).cgColor)
         ctx.fillPath(using: .evenOdd)
 
         if let hole {
             switch controller.target {
             case .area:
-                ctx.setStrokeColor(NSColor.white.cgColor)
-                ctx.setLineWidth(1)
-                ctx.stroke(hole.insetBy(dx: 0.5, dy: 0.5))
+                drawAreaEdge(hole, in: ctx)
             case .window:
                 ctx.setFillColor(NSColor.systemBlue.withAlphaComponent(0.2).cgColor)
                 ctx.fill(hole)
@@ -389,19 +387,50 @@ final class SelectionOverlayView: NSView {
         }
 
         drawBar(avoiding: hole)
-        guard let pointer, controller.target == .area else {
+        guard controller.target == .area else {
             return
         }
-        // Over the bar, the guides and loupe would cover the buttons and their tooltip.
-        if selection == nil, !pointerIsOnBar {
-            if showCrosshair {
-                drawCrosshair(at: pointer, in: ctx)
-            }
-            if showMagnifier {
-                drawLoupe(at: pointer, in: ctx)
-            }
-        } else if let selection, showSizeLabel {
-            drawSizeLabel(for: selection, near: pointer)
+        let avoiding = barFrame.map { [$0.insetBy(dx: -8, dy: -8)] } ?? []
+        let chips = selection.flatMap { drawChips(for: $0, avoiding: avoiding, in: ctx) }
+        // The guides and loupe follow the pointer before and while dragging, but not for an area made with the arrow keys,
+        // whose edges are elsewhere. Over the bar, they'd cover the buttons and their tooltip.
+        let dragging = dragStart != nil && selection != nil && !isKeyboardSelection
+        guard let pointer, selection == nil || dragging, !pointerIsOnBar else {
+            return
+        }
+        if showCrosshair {
+            drawGuides(at: pointer, in: ctx)
+        }
+        if showMagnifier {
+            // Away from the area, so it doesn't cover the edges being placed: below and right of the pointer to begin with.
+            let start = dragging ? dragStart : nil
+            let right = start.map { pointer.x >= $0.x } ?? true
+            let up = start.map { pointer.y > $0.y } ?? false
+            drawLoupe(at: pointer, right: right, up: up, avoiding: avoiding + (chips.map { [$0] } ?? []), in: ctx)
+        }
+    }
+
+    /// Outside an area being made: `rgba(12,12,16,0.42)`, from the board.
+    private static let areaDim = CGColor(srgbRed: 12 / 255, green: 12 / 255, blue: 16 / 255, alpha: 0.42)
+
+    /// The area's edge from the board: a 1 pt white line just outside it, a 1 pt dark ring outside that, so it shows on light
+    /// and dark screens alike, and a round white handle with an ink edge at each corner and the middle of each long side.
+    private func drawAreaEdge(_ area: CGRect, in ctx: CGContext) {
+        ctx.setLineWidth(1)
+        ctx.setStrokeColor(NSColor.black.withAlphaComponent(0.35).cgColor)
+        ctx.stroke(area.insetBy(dx: -1.5, dy: -1.5))
+        ctx.setStrokeColor(NSColor.white.withAlphaComponent(0.95).cgColor)
+        ctx.stroke(area.insetBy(dx: -0.5, dy: -0.5))
+        let scale = window?.backingScaleFactor ?? 2
+        let edge = Brutal.inkWidth(1.5, scale: scale)
+        let radius = AreaHandles.diameter / 2
+        ctx.setLineWidth(edge)
+        ctx.setStrokeColor(Self.ink.cgColor)
+        ctx.setFillColor(NSColor.white.cgColor)
+        for point in AreaHandles.points(around: area) {
+            let handle = CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2)
+            ctx.fillEllipse(in: handle)
+            ctx.strokeEllipse(in: handle.insetBy(dx: -edge / 2, dy: -edge / 2))
         }
     }
 
@@ -420,96 +449,182 @@ final class SelectionOverlayView: NSView {
         return selection
     }
 
-    private func drawCrosshair(at point: CGPoint, in ctx: CGContext) {
-        ctx.setStrokeColor(NSColor.white.withAlphaComponent(0.8).cgColor)
+    /// The crosshair toggle's guides across the screen, in the area edge's white over a faint dark line so they show on any
+    /// screen. They stop short of the pointer, so the cursor's own crosshair stays clear.
+    private func drawGuides(at point: CGPoint, in ctx: CGContext) {
+        let x = point.x.rounded() + 0.5
+        let y = point.y.rounded() + 0.5
+        let gap = Self.cursorSide / 2 + 3
+        ctx.move(to: CGPoint(x: 0, y: y))
+        ctx.addLine(to: CGPoint(x: x - gap, y: y))
+        ctx.move(to: CGPoint(x: x + gap, y: y))
+        ctx.addLine(to: CGPoint(x: bounds.width, y: y))
+        ctx.move(to: CGPoint(x: x, y: 0))
+        ctx.addLine(to: CGPoint(x: x, y: y - gap))
+        ctx.move(to: CGPoint(x: x, y: y + gap))
+        ctx.addLine(to: CGPoint(x: x, y: bounds.height))
+        guard let path = ctx.path else {
+            return
+        }
+        ctx.setLineWidth(3)
+        ctx.setStrokeColor(NSColor.black.withAlphaComponent(0.25).cgColor)
+        ctx.strokePath()
+        ctx.addPath(path)
         ctx.setLineWidth(1)
-        ctx.move(to: CGPoint(x: 0, y: point.y.rounded() + 0.5))
-        ctx.addLine(to: CGPoint(x: bounds.width, y: point.y.rounded() + 0.5))
-        ctx.move(to: CGPoint(x: point.x.rounded() + 0.5, y: 0))
-        ctx.addLine(to: CGPoint(x: point.x.rounded() + 0.5, y: bounds.height))
+        ctx.setStrokeColor(NSColor.white.withAlphaComponent(0.9).cgColor)
         ctx.strokePath()
     }
 
-    private func drawLoupe(at point: CGPoint, in ctx: CGContext) {
+    /// The board's loupe: the pixels round the pointer, one per cell of an 11 × 11 grid, in a 132 pt circle with a 3 pt white
+    /// ring, a 1.5 pt ink ring and a soft shadow. The pointer's row and column are lit in the accent, its pixel is outlined
+    /// in ink, and a chip at the bottom gives its position in pixels, as the size chip gives the area's size.
+    private func drawLoupe(at point: CGPoint, right: Bool, up: Bool, avoiding: [CGRect], in ctx: CGContext) {
         guard let image = display.image ?? magnifierImage else {
             return
         }
-        let size = Self.loupeSize
-        var origin = CGPoint(x: point.x + 20, y: point.y - size - 20)
-        if origin.x + size > bounds.width {
-            origin.x = point.x - size - 20
-        }
-        if origin.y < 0 {
-            origin.y = point.y + 20
-        }
-        let loupe = CGRect(origin: origin, size: CGSize(width: size, height: size))
-        let sourceSide = size / Self.loupeZoom
-        let source = Geometry.pixelRect(
-            forViewRect: CGRect(x: point.x - sourceSide / 2, y: point.y - sourceSide / 2, width: sourceSide, height: sourceSide),
-            viewHeight: bounds.height,
-            scale: display.scale
-        )
+        let textSize = Preferences().textSize
+        let scale = window?.backingScaleFactor ?? 2
+        let side = textSize.points(Loupe.side).rounded()
+        let inkRing = Brutal.inkWidth(1.5, scale: scale)
+        let outset = 3 + inkRing
+        let loupe = Loupe.frame(side: side, outset: outset, at: point, right: right, up: up, in: bounds, avoiding: avoiding)
+        let imageSize = CGSize(width: image.width, height: image.height)
+        let pixel = Loupe.pixel(at: point, viewHeight: bounds.height, scale: display.scale, imageSize: imageSize)
+
+        // The rings, with the shadow under the outer one.
+        ctx.saveGState()
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor.black.withAlphaComponent(0.4)
+        shadow.shadowOffset = NSSize(width: 0, height: -12)
+        shadow.shadowBlurRadius = 14
+        shadow.set()
+        ctx.setFillColor(Self.ink.cgColor)
+        ctx.fillEllipse(in: loupe.insetBy(dx: -outset, dy: -outset))
+        ctx.restoreGState()
+        ctx.setFillColor(NSColor.white.cgColor)
+        ctx.fillEllipse(in: loupe.insetBy(dx: -3, dy: -3))
+
         ctx.saveGState()
         ctx.addEllipse(in: loupe)
         ctx.clip()
         ctx.setFillColor(NSColor.black.cgColor)
         ctx.fill(loupe)
-        if let crop = image.cropping(to: source) {
+        if let placed = Loupe.destination(of: Loupe.source(around: pixel), imageSize: imageSize, in: loupe),
+           let crop = image.cropping(to: placed.crop) {
             ctx.interpolationQuality = .none
-            ctx.draw(crop, in: loupe)
+            ctx.draw(crop, in: placed.rect)
         }
-        let pixel = size / (sourceSide * display.scale)
-        ctx.setStrokeColor(NSColor.systemRed.cgColor)
-        ctx.setLineWidth(1)
-        ctx.stroke(CGRect(x: loupe.midX - pixel / 2, y: loupe.midY - pixel / 2, width: pixel, height: pixel))
-        ctx.restoreGState()
-        ctx.setStrokeColor(Self.ink.cgColor)
-        ctx.setLineWidth(3)
-        ctx.strokeEllipse(in: loupe.insetBy(dx: -1.5, dy: -1.5))
+        let cell = side / CGFloat(Loupe.cells)
+        let middle = CGFloat(Loupe.cells / 2)
+        let centre = CGRect(x: loupe.minX + middle * cell, y: loupe.minY + middle * cell, width: cell, height: cell)
+        // The board's grid is ink at 7%, which vanishes over dark pixels, so it's mid-grey to show over both.
+        ctx.setFillColor(NSColor(white: 0.5, alpha: 0.3).cgColor)
+        let hairline = 1 / scale
+        for step in 1..<Loupe.cells {
+            let offset = CGFloat(step) * cell
+            ctx.fill(CGRect(x: loupe.minX + offset - hairline / 2, y: loupe.minY, width: hairline, height: side))
+            ctx.fill(CGRect(x: loupe.minX, y: loupe.minY + offset - hairline / 2, width: side, height: hairline))
+        }
+        // The row and column lit, leaving the pointer's own pixel its true colour.
+        ctx.setFillColor(Brutal.yellowNS.withAlphaComponent(0.35).cgColor)
+        ctx.fill([
+            CGRect(x: centre.minX, y: loupe.minY, width: cell, height: centre.minY - loupe.minY),
+            CGRect(x: centre.minX, y: centre.maxY, width: cell, height: loupe.maxY - centre.maxY),
+            CGRect(x: loupe.minX, y: centre.minY, width: centre.minX - loupe.minX, height: cell),
+            CGRect(x: centre.maxX, y: centre.minY, width: loupe.maxX - centre.maxX, height: cell),
+        ])
+        // The board's ink outline, with a hairline of white outside it so it still shows over a dark pixel.
         ctx.setStrokeColor(NSColor.white.cgColor)
-        ctx.setLineWidth(1.5)
-        ctx.strokeEllipse(in: loupe.insetBy(dx: 0.75, dy: 0.75))
+        ctx.setLineWidth(hairline)
+        ctx.stroke(centre.insetBy(dx: -hairline / 2, dy: -hairline / 2))
+        ctx.setStrokeColor(Self.ink.cgColor)
+        ctx.setLineWidth(inkRing)
+        ctx.stroke(centre.insetBy(dx: inkRing / 2, dy: inkRing / 2))
+
+        let position = NSAttributedString(string: "\(pixel.x), \(pixel.y)", attributes: [
+            .font: NSFont.monospacedSystemFont(ofSize: textSize.points(10), weight: .medium), .foregroundColor: NSColor.white,
+        ])
+        let size = position.size()
+        let chip = CGRect(
+            x: (loupe.midX - size.width / 2 - 6).rounded(), y: loupe.minY + 10,
+            width: size.width.rounded(.up) + 12, height: size.height.rounded(.up) + 2
+        )
+        FloatingPanel.fillNS(Self.chipOpacity, solid: FloatingPanel.solidNS).setFill()
+        NSBezierPath(roundedRect: chip, xRadius: 5, yRadius: 5).fill()
+        position.draw(at: CGPoint(x: chip.minX + 6, y: chip.minY + 1))
+        ctx.restoreGState()
     }
 
     private static let ink = Brutal.inkNS
     /// The capture bar is too tall for a pill, so it has its own radius.
     private static let barRadius: CGFloat = 16
+    /// The size, ratio and loupe position chips are a touch more solid than the bar, as the board draws them.
+    private static let chipOpacity = 0.88
 
-    /// Neo-brutalist chip: flat fill, ink border, hard offset shadow. A paper chip follows the appearance; on the yellow accent
-    /// the text stays near-black, as `inkOnFill` keeps it in SwiftUI.
-    private func drawChip(_ text: String, at origin: CGPoint, yellow: Bool, font: NSFont) -> CGRect {
-        let fill = NSColor(yellow ? Brutal.yellow : Brutal.paper)
-        let textColor = yellow ? Self.ink : NSColor(Brutal.ink)
-        let string = NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: textColor])
-        let size = string.size()
-        let box = CGRect(x: origin.x, y: origin.y, width: (size.width + 20).rounded(), height: (size.height + 10).rounded())
-        NSColor(Brutal.line).setFill()
-        NSBezierPath(roundedRect: box.offsetBy(dx: 3, dy: -3), xRadius: 7, yRadius: 7).fill()
-        fill.setFill()
-        let shape = NSBezierPath(roundedRect: box, xRadius: 7, yRadius: 7)
-        shape.fill()
-        NSColor(Brutal.line).setStroke()
-        shape.lineWidth = 2
-        shape.stroke()
-        string.draw(at: CGPoint(x: box.minX + 10, y: box.minY + 5))
-        return box
-    }
+    /// The board's crosshair cursor: white 3 pt lines under ink 1.2 pt ones, with a gap where they'd meet so the pixel under
+    /// the hot spot shows. It replaces the system crosshair, which is thin black and gets lost on dark screens.
+    static let cursor: NSCursor = {
+        let side = cursorSide
+        let image = NSImage(size: NSSize(width: side, height: side), flipped: false) { _ in
+            let mid = side / 2
+            let path = NSBezierPath()
+            for (from, to) in [(0, mid - 2), (mid + 2, side)] {
+                path.move(to: NSPoint(x: mid, y: from))
+                path.line(to: NSPoint(x: mid, y: to))
+                path.move(to: NSPoint(x: from, y: mid))
+                path.line(to: NSPoint(x: to, y: mid))
+            }
+            path.lineWidth = 3
+            NSColor.white.setStroke()
+            path.stroke()
+            path.lineWidth = 1.2
+            Brutal.inkNS.setStroke()
+            path.stroke()
+            return true
+        }
+        return NSCursor(image: image, hotSpot: NSPoint(x: side / 2, y: side / 2))
+    }()
 
-    private func drawSizeLabel(for selection: CGRect, near point: CGPoint) {
-        var text = sizeText(of: selection)
-        if controller.aspectRatio != .free {
-            text = "\(controller.aspectRatio.label(portrait: selection.height > selection.width)) · \(text)"
+    private static let cursorSide: CGFloat = 18
+
+    /// The size chip and, beside it, the ratio chip, above the area's top-left corner. The size is in pixels, as the image
+    /// will be, in bold SF Mono so it doesn't jitter while dragging. Size (I) shows both; a ratio other than Free shows on
+    /// its own even with Size off, since it changes what you get. Returns where they went, for the loupe to keep off.
+    private func drawChips(for area: CGRect, avoiding: [CGRect], in ctx: CGContext) -> CGRect? {
+        let shiftHeld = dragStart != nil && !isKeyboardSelection && NSEvent.modifierFlags.contains(.shift)
+        let ratio = shiftHeld ? AspectRatio.square : controller.aspectRatio
+        guard showSizeLabel || ratio != .free else {
+            return nil
         }
-        let font = NSFont.monospacedDigitSystemFont(ofSize: Preferences().textSize.points(12), weight: .bold)
-        let width = (text as NSString).size(withAttributes: [.font: font]).width + 20
-        var origin = CGPoint(x: point.x + 16, y: point.y - 44)
-        if origin.x + width > bounds.width {
-            origin.x = point.x - width - 16
+        let textSize = Preferences().textSize
+        let increased = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        var texts: [NSAttributedString] = []
+        if showSizeLabel {
+            texts.append(NSAttributedString(string: sizeText(of: area), attributes: [
+                .font: NSFont.monospacedSystemFont(ofSize: textSize.points(12), weight: .bold), .foregroundColor: NSColor.white,
+            ]))
         }
-        if origin.y < 0 {
-            origin.y = point.y + 16
+        let ratioText = ratio == .free ? String(localized: "Free ratio") : ratio.label(portrait: area.height > area.width)
+        texts.append(NSAttributedString(string: ratioText, attributes: [
+            .font: NSFont.systemFont(ofSize: textSize.points(12), weight: .semibold),
+            .foregroundColor: NSColor.white.withAlphaComponent(increased ? 1 : 0.75),
+        ]))
+        let sizes = texts.map { text in
+            let size = text.size()
+            return CGSize(width: size.width.rounded(.up) + 18, height: size.height.rounded(.up) + 6)
         }
-        _ = drawChip(text, at: origin, yellow: true, font: font)
+        let spacing: CGFloat = 6
+        let height = sizes.map(\.height).max() ?? 0
+        let total = CGSize(width: sizes.map(\.width).reduce(0, +) + spacing * CGFloat(sizes.count - 1), height: height)
+        let frame = AreaLabelPlacement.frame(of: total, for: area, in: bounds, avoiding: avoiding)
+        var x = frame.minX
+        for (text, size) in zip(texts, sizes) {
+            let chip = CGRect(x: x, y: frame.minY, width: size.width, height: height)
+            drawPanel(chip, radius: 8, opacity: Self.chipOpacity, shadow: false, increased: increased, in: ctx)
+            text.draw(at: CGPoint(x: chip.minX + 9, y: (chip.midY - text.size().height / 2).rounded()))
+            x = chip.maxX + spacing
+        }
+        return frame
     }
 
     /// Every key the overlay takes, for VoiceOver's help. The bar shows none of it, only each button's name and key on hover.
@@ -608,6 +723,7 @@ final class SelectionOverlayView: NSView {
     private func drawBar(avoiding hole: CGRect?) {
         let previous = barHits.map(\.rect)
         barHits = []
+        barFrame = nil
         let opacity = controller.barOpacity
         guard opacity > 0, let window, NSMouseInRect(NSEvent.mouseLocation, window.frame, false),
               let ctx = NSGraphicsContext.current?.cgContext else {
@@ -664,6 +780,7 @@ final class SelectionOverlayView: NSView {
             hoveredChip = nil
             return
         }
+        barFrame = frame
         // While fading, the bar draws into one layer so its shadow and fill fade together rather than showing through each other.
         if opacity < 1 {
             ctx.saveGState()

@@ -161,7 +161,7 @@ final class SelectionOverlayController {
             keyPanel.makeFirstResponder(views.first { $0.window === keyPanel })
         }
         updateHover(redraw: true)
-        NSCursor.crosshair.set()
+        SelectionOverlayView.cursor.set()
         revealBar()
     }
 
