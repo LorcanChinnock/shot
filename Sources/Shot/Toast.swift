@@ -12,6 +12,9 @@ enum Toast {
     private static var shown: ToastText?
     private static var action: ToastView.Action?
     private static var tick: ToastView.Tick?
+    /// Where the panel rests once it has arrived. Changes work from this, not from `panel.frame`, which is still rising
+    /// for the first 240 ms.
+    private static var restingFrame = NSRect.zero
     fileprivate static let font = ScaledFont.scaled(13, weight: .medium)
     fileprivate static let actionFont = ScaledFont.scaled(12, weight: .semibold)
     fileprivate static let height: CGFloat = 34
@@ -125,17 +128,27 @@ enum Toast {
             return
         }
         let size = size(of: shown.message, fraction: shown.fraction, action: action, tick: tick)
-        panel.setFrame(NSRect(x: panel.frame.midX - size.width / 2, y: panel.frame.minY, width: size.width, height: size.height), display: true)
+        place(panel, at: NSRect(x: restingFrame.midX - size.width / 2, y: restingFrame.minY, width: size.width, height: size.height))
+    }
+
+    /// Moves the panel straight to `frame`, replacing any arrival still running so it can't carry the panel elsewhere.
+    private static func place(_ panel: FloatingPanelWindow, at frame: NSRect) {
+        restingFrame = frame
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0
+            panel.animator().alphaValue = 1
+            panel.animator().setFrame(frame, display: true)
+        }
     }
 
     /// Puts the panel at `frame`. A toast that wasn't showing springs up a few points as it fades in, or only fades with
     /// Reduce Motion; one already showing changes in place.
     private static func arrive(_ panel: FloatingPanelWindow, at frame: NSRect) {
         guard !panel.isVisible else {
-            panel.alphaValue = 1
-            panel.setFrame(frame, display: true)
+            place(panel, at: frame)
             return
         }
+        restingFrame = frame
         let reduced = Motion.reduced
         panel.alphaValue = 0
         panel.setFrame(reduced ? frame : frame.offsetBy(dx: 0, dy: -8), display: true)
