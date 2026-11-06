@@ -100,7 +100,7 @@ private struct QuickAccessCardView: View {
     private var hoverActions: some View {
         ZStack {
             // Dimmed rather than blurred, so the screenshot still shows behind the buttons.
-            Color.black.opacity(0.35)
+            FloatingPanel.scrim
             VStack(spacing: 9) {
                 Button("Copy") { controller.copy(card) }
                     .buttonStyle(BrutalButtonStyle(.main, floating: true))
@@ -137,7 +137,7 @@ struct CornerButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 10, weight: .bold))
+                .font(.system(size: 11, weight: .bold))
         }
         .buttonStyle(CornerButtonStyle())
         .brutalTip(help)
@@ -145,13 +145,18 @@ struct CornerButton: View {
     }
 }
 
+/// A small round floating panel over a capture, with a white icon. It brightens while pressed.
 private struct CornerButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        let pressed = configuration.isPressed
         configuration.label
-            .foregroundStyle(Brutal.ink)
-            .frame(width: 24, height: 24)
-            .brutalSurface(Brutal.paper, radius: Brutal.Radius.chip, shadow: pressed ? 0 : 2)
-            .offset(x: pressed ? 2 : 0, y: pressed ? 2 : 0)
+            .foregroundStyle(.white)
+            .frame(width: 26, height: 26)
+            .overlay {
+                if configuration.isPressed {
+                    Circle().fill(.white.opacity(0.16))
+                }
+            }
+            .floatingPanel(Circle(), opacity: FloatingPanel.Opacity.cornerButton)
+            .contentShape(Circle())
     }
 }
