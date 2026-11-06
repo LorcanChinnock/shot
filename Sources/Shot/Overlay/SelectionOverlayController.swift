@@ -244,14 +244,14 @@ final class SelectionOverlayController {
         }
     }
 
-    /// Space: between area and window, as in macOS.
+    /// Space: between area and window, as in macOS. It lands on Window, not Browser, as Window's keycap says.
     func toggleWindowMode() {
-        setTarget(windowMode ? .area : .window)
+        setMode(windowMode ? .area : .window)
     }
 
-    /// Tab: area, window, then full screen.
+    /// Tab: area, window, then full screen, with page-only off so it reaches Window. Browser is reached with B.
     func cycleTarget(backward: Bool) {
-        setTarget(target.next(backward: backward))
+        setMode(CaptureBarMode(target: target.next(backward: backward), browserPage: false))
     }
 
     func setTarget(_ newTarget: CaptureTarget) {
