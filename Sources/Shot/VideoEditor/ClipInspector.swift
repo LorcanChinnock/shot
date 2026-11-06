@@ -52,7 +52,7 @@ struct ClipInspector: View {
                     Spacer(minLength: 8)
                     if let time = model.selectedKeyframe, let easing = animation.easing(at: time) {
                         Text("EASING").sectionCaption()
-                        BrutalSegmented(selection: Binding(get: { easing }, set: { model.setKeyframeEasing($0) }), options: Easing.allCases.map { ($0, $0.title) }, color: Brutal.mint)
+                        BrutalSegmented(selection: Binding(get: { easing }, set: { model.setKeyframeEasing($0) }), options: Easing.allCases.map { ($0, $0.title) })
                             .brutalTip("How the value moves from this keyframe to the next")
                     }
                     if !animation.isEmpty {

@@ -234,13 +234,16 @@ private struct SaturationBrightnessField: View {
     private func percent(_ value: Double) -> Int { Int((value * 100).rounded()) }
 }
 
-/// A capsule track with a round knob. Once focused, the arrow keys step it by 1% of its range, ⇧ by 10%.
-/// `onEditingChanged` reports a drag, or an arrow key held down, starting and ending, so a caller can make each one
-/// undo step.
+/// A slider, from Components › Choice: a 4 pt track filled in ink up to an 18 pt white knob. A colour slider passes a
+/// `track` gradient instead, drawn 8 pt tall so the colours show. Once focused, the arrow keys step it by 1% of its range,
+/// ⇧ by 10%. `onEditingChanged` reports a drag, or an arrow key held down, starting and ending, so a caller can make each
+/// one undo step.
 struct BrutalSlider: View {
+    private static let knob: CGFloat = 18
+
     @Binding var value: Double
     var range: ClosedRange<Double> = 0...1
-    let track: LinearGradient
+    var track: LinearGradient?
     var checkerboard = false
     var width: CGFloat = 200
     var onEditingChanged: (Bool) -> Void = { _ in }
@@ -251,31 +254,30 @@ struct BrutalSlider: View {
     /// be a copy from before the press, so each repeat steps from this instead.
     @State private var steppedValue: Double?
     @FocusState private var isFocused: Bool
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    private var increased: Bool { contrast == .increased }
 
     private var fraction: Double { (min(max(value, range.lowerBound), range.upperBound) - range.lowerBound) / (range.upperBound - range.lowerBound) }
 
     var body: some View {
+        let knob = Self.knob
         ZStack(alignment: .leading) {
-            if checkerboard {
-                Canvas { ctx, size in
-                    let cell: CGFloat = 6
-                    for x in 0...Int(size.width / cell) {
-                        for y in 0...Int(size.height / cell) where (x + y) % 2 == 0 {
-                            ctx.fill(Path(CGRect(x: CGFloat(x) * cell, y: CGFloat(y) * cell, width: cell, height: cell)), with: .color(.gray.opacity(0.4)))
-                        }
+            trackView
+            Circle().fill(.white)
+                .inkBorder(Circle(), width: 1, color: increased ? Color(hex: 0x16161A).opacity(0.6) : Color(hex: 0x16161A).opacity(0.2))
+                .shadow(color: .black.opacity(0.2), radius: 1.5, y: 1)
+                .frame(width: knob, height: knob)
+                .background {
+                    if isFocused, isEnabled {
+                        Color.clear.inkBorder(Circle(), width: 4, color: Brutal.focusRing).padding(-4)
                     }
                 }
-                .background(Color.white)
-                .clipShape(Capsule().inset(by: 1))
-            }
-            Capsule().fill(track)
-                .inkBorder(Capsule(), width: 2)
-            Circle().fill(isFocused ? Brutal.yellow : Brutal.paper)
-                .inkBorder(Circle(), width: 2)
-                .frame(width: 16, height: 16)
-                .offset(x: fraction * (width - 16))
+                .offset(x: fraction * (width - knob))
         }
-        .frame(width: width, height: 16)
+        .frame(width: width, height: knob)
+        .opacity(isEnabled ? 1 : 0.45)
         .contentShape(Rectangle())
         .gesture(DragGesture(minimumDistance: 0)
             .onChanged { drag in
@@ -283,7 +285,7 @@ struct BrutalSlider: View {
                     isDragging = true
                     onEditingChanged(true)
                 }
-                let dragged = min(max((drag.location.x - 8) / (width - 16), 0), 1)
+                let dragged = min(max((drag.location.x - Self.knob / 2) / (width - Self.knob), 0), 1)
                 value = range.lowerBound + dragged * (range.upperBound - range.lowerBound)
             }
             .onEnded { _ in
@@ -318,6 +320,37 @@ struct BrutalSlider: View {
         .accessibilityRepresentation {
             Slider(value: $value, in: range, step: (range.upperBound - range.lowerBound) / 10)
                 .accessibilityValue(Text("\(Int((fraction * 100).rounded())) percent"))
+        }
+    }
+
+    /// The plain track, filled in ink up to the knob, or a colour slider's gradient over an optional checkerboard.
+    @ViewBuilder
+    private var trackView: some View {
+        if let track {
+            ZStack {
+                if checkerboard {
+                    Canvas { ctx, size in
+                        let cell: CGFloat = 4
+                        for x in 0...Int(size.width / cell) {
+                            for y in 0...Int(size.height / cell) where (x + y) % 2 == 0 {
+                                ctx.fill(Path(CGRect(x: CGFloat(x) * cell, y: CGFloat(y) * cell, width: cell, height: cell)), with: .color(.gray.opacity(0.4)))
+                            }
+                        }
+                    }
+                    .background(Color.white)
+                }
+                Capsule().fill(track)
+            }
+            .clipShape(Capsule())
+            .inkBorder(Capsule(), width: 1, color: increased ? Brutal.ink.opacity(0.6) : Brutal.controlEdge)
+            .frame(height: 8)
+        } else {
+            let filled = Self.knob / 2 + fraction * (width - Self.knob)
+            Capsule().fill(increased ? AnyShapeStyle(Brutal.ink.opacity(0.35)) : AnyShapeStyle(Brutal.quietTrack))
+                .overlay(alignment: .leading) {
+                    Capsule().fill(Brutal.ink).frame(width: filled)
+                }
+                .frame(height: 4)
         }
     }
 

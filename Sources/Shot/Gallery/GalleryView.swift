@@ -40,7 +40,7 @@ struct GalleryRootView: View {
     private var header: some View {
         HStack(spacing: 12) {
             sidebarToggle
-            BrutalSegmented(selection: Bindable(model).filter, options: GalleryFilter.allCases.map { ($0, $0.title) }, color: Brutal.violet)
+            BrutalSegmented(selection: Bindable(model).filter, options: GalleryFilter.allCases.map { ($0, $0.title) })
             Spacer(minLength: 8)
             searchField
             sortMenu
@@ -108,22 +108,9 @@ struct GalleryRootView: View {
     }
 
     private var sortMenu: some View {
-        BrutalDropdown(title: "Sort", entries: GallerySort.allCases.map { sort in
+        BrutalPopUp(title: "Sort", entries: GallerySort.allCases.map { sort in
             .item(sort.title, selected: sort == model.sort) { model.sort = sort }
-        }) {
-            HStack(spacing: 5) {
-                Text(model.sort.title)
-                Image(systemName: "chevron.down")
-                    .font(.scaled(9, weight: .black))
-            }
-            .font(.scaled(12, weight: .bold))
-            .foregroundStyle(Brutal.ink)
-            .padding(.horizontal, 10)
-            .frame(height: 30)
-            .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
-        }
-        .buttonStyle(.plain)
-        .fixedSize()
+        }, value: model.sort.title)
         .brutalTip("Sort")
     }
 
@@ -561,12 +548,9 @@ private struct SelectionCheckbox: View {
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: "checkmark")
-                .font(.scaled(10, weight: .black))
-                .foregroundStyle(Brutal.ink)
-                .opacity(checked ? 1 : 0)
-                .frame(width: 22, height: 22)
-                .brutalSurface(checked ? Brutal.violet : Brutal.paper, radius: Brutal.Radius.chip, shadow: 2)
+            CheckboxMark(checked: checked, size: 20)
+                .frame(width: 26, height: 26)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         // Focus stays on the grid, so the keyboard shortcuts keep working after a click.
