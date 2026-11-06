@@ -1,9 +1,13 @@
 import AppKit
+import QuartzCore
 import ShotCore
 
 final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private let model: EditorModel
     private var draft: Annotation?
+    /// A counter popping in as it lands, and when it was placed. Only drawing changes: the document already holds it whole.
+    private var landing: (id: UUID, start: CFTimeInterval)?
+    private var landingLink: CADisplayLink?
     /// What dragging in crop mode does, decided where the press landed, with the crop as it was then.
     private enum CropDrag {
         case handle(CropHandle, start: CGRect)
@@ -151,6 +155,29 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     // MARK: Drawing
 
+    /// Pops the counter `id` in over 200 ms with a small overshoot. Reduce Motion shows it at once.
+    private func land(_ id: UUID) {
+        guard !Motion.reduced else {
+            return
+        }
+        landing = (id, CACurrentMediaTime())
+        if landingLink == nil {
+            let link = displayLink(target: self, selector: #selector(landingFrame))
+            link.add(to: .main, forMode: .common)
+            landingLink = link
+        }
+    }
+
+    @objc private func landingFrame(_ link: CADisplayLink) {
+        needsDisplay = true
+        guard let landing, CACurrentMediaTime() - landing.start < Moment.markLand.duration else {
+            landing = nil
+            landingLink?.invalidate()
+            landingLink = nil
+            return
+        }
+    }
+
     /// Marks transparent padding, as image editors do.
     private static let checkerboard = NSColor(patternImage: NSImage(size: NSSize(width: 16, height: 16), flipped: false) { rect in
         NSColor.white.setFill()
@@ -166,6 +193,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             return
         }
         var doc = displayDocument
+        if let landing, let index = doc.annotations.firstIndex(where: { $0.id == landing.id }) {
+            let progress = (CACurrentMediaTime() - landing.start) / Moment.markLand.duration
+            doc.annotations[index] = doc.annotations[index].scaled(by: Moment.popScale(progress))
+        }
         // The text being edited is drawn by its text field instead, a note's over blank paper.
         if let editingText {
             doc.annotations.removeAll { $0.id == editingText.id }
@@ -400,7 +431,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
                 model.selectedID = pressedText.id
             }
         case .counter:
-            model.add(Annotation(kind: .counter(model.document.annotations.nextCounterNumber, center: point), color: model.color, lineWidth: model.lineWidth))
+            let counter = Annotation(kind: .counter(model.document.annotations.nextCounterNumber, center: point), color: model.color, lineWidth: model.lineWidth)
+            model.add(counter)
+            land(counter.id)
         case .text:
             // Pressing existing text selects it to move or edit instead of starting more text on top of it.
             pressedText = textOrNote(at: point)

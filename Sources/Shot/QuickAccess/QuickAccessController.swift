@@ -112,7 +112,7 @@ final class QuickAccessController {
             guard let self else {
                 return
             }
-            withAnimation(QuickAccessMotion.enter) {
+            withAnimation(Motion.arrive) {
                 self.model.cards.append(card)
             }
             while self.model.cards.count > Self.maxCards {
@@ -127,7 +127,7 @@ final class QuickAccessController {
         if let styled = model.cards.first(where: { $0.id == id })?.styledURL {
             Self.removeStyled(styled)
         }
-        withAnimation(QuickAccessMotion.exit) {
+        withAnimation(Motion.leave) {
             model.cards.removeAll { $0.id == id }
         }
         settleTask?.cancel()
@@ -241,13 +241,13 @@ final class QuickAccessController {
             Toast.error("Couldn't read \(card.fileURL.lastPathComponent)")
             return
         }
-        Toast.show("Copied")
+        Toast.done("Copied")
     }
 
     /// Copies the file's path as text.
     func copyPath(_ card: QuickAccessCard) {
         Clipboard.copy(string: card.fileURL.path)
-        Toast.show("Copied path")
+        Toast.done("Copied path")
     }
 
     func saveAs(_ card: QuickAccessCard) {
@@ -261,7 +261,7 @@ final class QuickAccessController {
         // Saving over the capture's own file has nothing to copy.
         let source = card.fileURL
         if destination.resolvingSymlinksInPath().standardizedFileURL == source.resolvingSymlinksInPath().standardizedFileURL {
-            Toast.show("Saved \(destination.lastPathComponent)")
+            Toast.done("Saved \(destination.lastPathComponent)")
             return
         }
         do {
@@ -274,7 +274,7 @@ final class QuickAccessController {
             } else {
                 try FileManager.default.copyItem(at: source, to: destination)
             }
-            Toast.show("Saved \(destination.lastPathComponent)")
+            Toast.done("Saved \(destination.lastPathComponent)")
         } catch {
             Toast.error("Couldn't save: \(error.localizedDescription)")
         }
