@@ -216,6 +216,28 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | Marks land | `Editor/EditorCanvasView.swift` | A new counter grows to 122% and settles. An arrow is already whole when you let go of the drag, so it doesn't draw again |
 | Countdown, recording pulse | `Design/BrandMark.swift` (`MenuBarAnimation`) | The digit folds flat and the next unfolds over 160 ms. While recording, a ring breathes out of the mark. A frame loop runs only while one plays. The countdown ring is #1078 and the recording controls' dot is #1089 |
 
+### Capture bar
+
+#1075 builds Foundations › Capture bar, the strip on the selection overlay after ⌘⇧4 or ⌘⇧5. AppKit draws it into the overlay, so it uses `FloatingPanel`'s AppKit values and draws its own shadow outside the bar only.
+
+| Part | Look |
+| --- | --- |
+| Bar | Standard floating panel, radius 16, 6 pt padding, 4 pt between buttons |
+| Kind | An 8 pt dot and "Screenshot" or "Record" in Small type at 80% white. The dot is the accent for a screenshot and record red for a recording |
+| Picked mode | The one ink control: accent fill, 1.5 pt black outline and 2 pt black drop, group radius, 34 pt tall. Its icon and name in 13 semibold `#16161A` |
+| Other modes | 38 × 34, icon only, at 82% white. Hover fill `rgba(255,255,255,0.08)` |
+| Delay, Scroll | 34 pt tall. Scroll always shows its name. Delay is icon only while off and shows its seconds in tabular figures while on. On: the 16% white fill |
+| Toggles | Magnifier, crosshair and size, 34 × 34. On: 16% white fill and a white icon. Off: icon at 55% white (75% with Increase Contrast) |
+| Dividers | The floating divider between modes, Delay and Scroll, and the toggles, with 4 pt either side |
+| Tooltip | On hover: the button's name in 12 pt white and its keycap (10.5 pt bold SF Mono on 16% white, radius 4), on a `rgba(26,26,30,0.92)` panel with the 0.5 pt edge, radius 8, 8 pt above the bar (below it when the bar is at the top) |
+
+- **Picked mode stays yellow.** The board draws it as the accent ink button, and rule 1 allows one ink control per screen, which on the overlay is the mode you're about to capture with. The 16% white fill is for toggles that are on (Delay, Scroll and the aids), so the picked mode and an on toggle never look alike. The accent is its dark value, `#F2CC4A`, as on every floating panel's ink button (`FloatingPanel.accentNS`).
+- **Record red on the kind dot** marks a recording that's about to start, which rule 6 allows.
+- **Modes.** ShotCore's `CaptureBarMode` maps the overlay's three targets and the browser page onto Area, Window, Full Screen and Browser. Browser is a window pick of just the page. Tab steps through Area, Window and Full Screen as before, and lands on Window rather than Browser, as Window's keycap says. Space does the same. B switches to Browser or back to Window from any mode. Browser asks for Accessibility the first time, as B did.
+- **Layout.** `CaptureBarLayout` places the buttons and dividers, with tests. Sizes scale with Settings › Text size. `OverlayBarPlacement` and the 4 s fade are unchanged, and the fade now takes `Moment.panelArrive`'s length, or Reduce Motion's fade.
+- **VoiceOver** finds each button as an element the overlay draws: modes as radio buttons, Scroll and the toggles as toggles, Delay as a button, each with its key in the help. A press shows the bar again. The crosshair and loupe aren't drawn while the pointer is on the bar, so they don't cover its buttons.
+- **Increase Contrast and Reduce Transparency** make the bar and tooltip solid, take the edge to 40% white and the dividers to 60%.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -278,7 +300,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Components › Choice | #1071 | `Design/BrutalControls.swift`, `Design/BrutalDropdown.swift` | ☐ |
 | Components › Choice, Feedback | #1072 | `Design/BrutalFeedback.swift`, `Design/BrutalTip.swift`, `Design/BrutalControls.swift` (`Tile`), `Toast.swift` | ☐ |
 | Sample desktop (shared scene) | #1131 | None: the backdrop behind the Capture and Record boards. QA uses MugCo | ☐ |
-| Capture bar (shared component) | #1075 | `Overlay/SelectionOverlayView.swift`, `Overlay/SelectionOverlayController.swift`, ShotCore `OverlayBarPlacement` | ☐ |
+| Capture bar (shared component) | #1075 | `Overlay/SelectionOverlayView.swift`, `Overlay/SelectionOverlayController.swift`, ShotCore `OverlayBarPlacement`, `CaptureBar.swift` (`CaptureBarMode`, `CaptureBarLayout`), `FloatingPanel.accentNS` in `Design/GlassWindow.swift` | ☐ |
 | Moments of delight | #1074 | `Design/Motion.swift`, `Design/BrandMark.swift`, `Toast.swift`, `Capture/ViewfinderSnap.swift`, `Editor/EditorCanvasView.swift` | ☐ |
 
 ### Capture
@@ -287,7 +309,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | --- | --- | --- | --- |
 | Area capture | #1076 | `Overlay/SelectionOverlayView.swift` | ☐ |
 | Window pick and delay | #1077 highlights | `Overlay/SelectionOverlayView.swift`, `Overlay/SelectionOverlayController.swift` | ☐ |
-| Window pick and delay | #1075 capture bar with delay | `Overlay/SelectionOverlayView.swift` | ☐ |
+| Window pick and delay | #1075 capture bar with delay | `Overlay/SelectionOverlayView.swift` (the bar, Delay's seconds and the tooltip) | ☐ |
 | Scrolling capture | #1086 | `Capture/ScrollingCaptureController.swift` | ☐ |
 | Quick Access, pin, menu and toasts › card | #1081 | `QuickAccess/QuickAccessView.swift` | ☐ |
 | Quick Access, pin, menu and toasts › stack | #1082 | `QuickAccess/QuickAccessController.swift`, `QuickAccess/QuickAccessView.swift` | ☐ |
