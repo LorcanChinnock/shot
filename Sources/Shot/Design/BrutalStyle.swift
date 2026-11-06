@@ -459,6 +459,8 @@ struct BrutalButtonStyle: PrimitiveButtonStyle {
         case main
         /// A white button at the Rest depth, like a native bordered button.
         case secondary
+        /// A pop-up menu's button: the secondary look, tighter, for `BrutalPopUp`.
+        case popUp
         /// Text only, in accent text.
         case plain
         /// Borderless, for toolbars and bars. It fills on hover, and while `isOn`, for a panel or option that's showing.
@@ -540,7 +542,7 @@ private struct BrutalButtonBody: View {
         return style.kind == .main || (style.kind == .tool && style.isOn)
     }
 
-    private var bordered: Bool { style.kind == .secondary || (style.kind == .main && !isEnabled) }
+    private var bordered: Bool { style.kind == .secondary || style.kind == .popUp || (style.kind == .main && !isEnabled) }
     private var borderless: Bool { style.kind == .toolbar || (style.kind == .tool && !inked) }
     private var toolbarSized: Bool { style.kind == .toolbar || style.kind == .tool }
 
@@ -592,7 +594,7 @@ private struct BrutalButtonBody: View {
     private var font: ScaledFont {
         switch style.kind {
         case .main: Brutal.label
-        case .secondary: Brutal.body
+        case .secondary, .popUp: Brutal.body
         case .plain: .scaled(13, weight: .medium)
         case .toolbar, .tool: .scaled(12, weight: .medium)
         }
@@ -601,6 +603,7 @@ private struct BrutalButtonBody: View {
     private var horizontalPadding: CGFloat {
         switch style.kind {
         case .main, .secondary: style.large ? 20 : 14
+        case .popUp: 9
         case .plain: 6
         case .toolbar, .tool: 7
         }
@@ -609,6 +612,7 @@ private struct BrutalButtonBody: View {
     private var verticalPadding: CGFloat {
         switch style.kind {
         case .main, .secondary: floating ? 8 : (style.large ? 7 : 5)
+        case .popUp: 3
         case .plain, .toolbar, .tool: 5
         }
     }
@@ -642,7 +646,7 @@ private struct BrutalButtonBody: View {
             return AnyShapeStyle(Brutal.destructiveText)
         }
         switch style.kind {
-        case .main, .secondary:
+        case .main, .secondary, .popUp:
             return AnyShapeStyle(floating ? Color.white : Brutal.ink)
         case .plain:
             return floating ? AnyShapeStyle(Color.white.opacity(increased ? 1 : 0.8)) : AnyShapeStyle(Brutal.accentText)
@@ -689,75 +693,263 @@ private struct ButtonEdge<S: InsettableShape>: ViewModifier {
     }
 }
 
-struct BrutalToggleStyle: ToggleStyle {
-    var color: Color
+// MARK: Choice
 
+extension Brutal {
+    /// The track behind a switch that's off, and a slider's unfilled part.
+    static let quietTrack = Color(light: Color(hex: 0x16161A).opacity(0.12), dark: .white.opacity(0.16))
+}
+
+/// A switch, from Components › Choice. On, it's the accent with a 1.5 pt ink outline and an inked knob; off, a grey track
+/// with a white knob. It draws the switch only, so put the label beside it and hide the toggle's own with `labelsHidden()`.
+struct BrutalToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
-        Button {
-            withAnimation(.spring(response: 0.22, dampingFraction: 0.75)) {
-                configuration.isOn.toggle()
-            }
-        } label: {
-            ZStack(alignment: configuration.isOn ? .trailing : .leading) {
-                Color.clear
-                    .frame(width: 48, height: 28)
-                Brutal.knob
-                    .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: 2)
-                    .frame(width: 16, height: 16)
-                    .padding(.horizontal, 6)
-            }
-            .brutalSurface(configuration.isOn ? color : Brutal.well, radius: Brutal.Radius.inset, shadow: 2)
-        }
-        .buttonStyle(.plain)
-        .accessibilityValue(Text(configuration.isOn ? "On" : "Off"))
+        BrutalSwitch(configuration: configuration)
     }
 }
 
+private struct BrutalSwitch: View {
+    let configuration: ToggleStyleConfiguration
+    @FocusState private var focused: Bool
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Button {
+            // Reduce Motion moves the knob at once.
+            withAnimation(reduceMotion ? nil : .spring(response: 0.2, dampingFraction: 0.82)) {
+                configuration.isOn.toggle()
+            }
+        } label: {
+            track
+        }
+        .buttonStyle(.plain)
+        .focusEffectDisabled()
+        .focused($focused)
+        .accessibilityRepresentation {
+            Toggle(isOn: configuration.$isOn) { configuration.label }
+                .toggleStyle(.switch)
+        }
+    }
+
+    private var track: some View {
+        let on = configuration.isOn
+        let increased = contrast == .increased
+        return ZStack(alignment: on ? .trailing : .leading) {
+            Capsule().fill(on ? Brutal.accent : Brutal.quietTrack)
+            knob(on: on, increased: increased)
+        }
+        .frame(width: 38, height: 22)
+        .modifier(ButtonEdge(shape: Capsule(), width: on ? 1.5 : (increased ? 1 : 0), color: on ? Brutal.line : Brutal.ink.opacity(0.6)))
+        .background {
+            if focused, isEnabled {
+                Color.clear.inkBorder(Capsule(), width: 4, color: Brutal.focusRing).padding(-4)
+            }
+        }
+        .opacity(isEnabled ? 1 : 0.45)
+        .contentShape(Capsule())
+    }
+
+    /// 17 pt inside the ink outline when on, 18 pt with a soft shadow when off.
+    @ViewBuilder
+    private func knob(on: Bool, increased: Bool) -> some View {
+        if on {
+            Circle().fill(.white)
+                .inkBorder(Circle(), width: 1.5)
+                .frame(width: 17, height: 17)
+                .padding(2.5)
+        } else {
+            Circle().fill(.white)
+                .modifier(ButtonEdge(shape: Circle(), width: increased ? 1 : 0, color: Color(hex: 0x16161A).opacity(0.6)))
+                .frame(width: 18, height: 18)
+                .shadow(color: .black.opacity(0.25), radius: 1, y: 1)
+                .padding(2)
+        }
+    }
+}
+
+/// A checkbox, from Components › Choice: a 16 pt box, the accent with a 1.5 pt ink inner edge and an ink tick when checked.
+struct BrutalCheckboxStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        BrutalCheckbox(configuration: configuration)
+    }
+}
+
+private struct BrutalCheckbox: View {
+    let configuration: ToggleStyleConfiguration
+    @FocusState private var focused: Bool
+    @Environment(\.isEnabled) private var isEnabled
+
+    var body: some View {
+        Button {
+            configuration.isOn.toggle()
+        } label: {
+            HStack(spacing: 7) {
+                CheckboxMark(checked: configuration.isOn, focused: focused)
+                configuration.label
+                    .font(Brutal.body)
+                    .foregroundStyle(isEnabled ? AnyShapeStyle(Brutal.ink) : AnyShapeStyle(Brutal.disabledText))
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .focusEffectDisabled()
+        .focused($focused)
+        .accessibilityRepresentation {
+            Toggle(isOn: configuration.$isOn) { configuration.label }
+                .toggleStyle(.checkbox)
+        }
+    }
+}
+
+/// The box a checkbox draws, for a control that isn't a `Toggle`, such as a gallery tile's selection box.
+struct CheckboxMark: View {
+    let checked: Bool
+    var size: CGFloat = 16
+    var focused = false
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: size / 4, style: .circular)
+        shape.fill(checked ? Brutal.accent : Brutal.secondaryFill)
+            .overlay {
+                if checked {
+                    // The tick stays near-black on the accent in both appearances.
+                    Image(systemName: "checkmark")
+                        .font(.system(size: size * 0.56, weight: .heavy))
+                        .foregroundStyle(Color(hex: 0x16161A))
+                }
+            }
+            .inkBorder(shape, width: checked ? 1.5 : 1, color: edge)
+            .shadow(color: checked ? .clear : (colorScheme == .dark ? .black.opacity(0.3) : Color(hex: 0x16161A).opacity(0.06)), radius: 0.5, y: 1)
+            .frame(width: size, height: size)
+            .background {
+                if focused, isEnabled {
+                    Color.clear.inkBorder(RoundedRectangle(cornerRadius: size / 4 + 4, style: .circular), width: 4, color: Brutal.focusRing).padding(-4)
+                }
+            }
+            .opacity(isEnabled ? 1 : 0.45)
+    }
+
+    private var edge: Color {
+        if checked { return Brutal.line }
+        return contrast == .increased ? Brutal.ink.opacity(0.6) : Brutal.controlEdge
+    }
+}
+
+/// A Mac segmented control: a quiet white thumb on a field-fill track, with no ink. Once focused, the arrow keys move the
+/// selection, and VoiceOver reads it as a segmented control.
 struct BrutalSegmented<Value: Hashable>: View {
     @Binding var selection: Value
     let options: [(value: Value, label: String)]
-    var color: Color
+    @Namespace private var thumb
+    @FocusState private var focused: Bool
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(selection: Binding<Value>, options: [(value: Value, label: LocalizedStringResource)], color: Color) {
-        self.init(selection: selection, options: options.map { ($0.value, String(localized: $0.label)) }, color: color)
+    init(selection: Binding<Value>, options: [(value: Value, label: LocalizedStringResource)]) {
+        self.init(selection: selection, options: options.map { ($0.value, String(localized: $0.label)) })
     }
 
     /// Options whose labels are already localized, such as a filter's titles.
     @_disfavoredOverload
-    init<S: StringProtocol>(selection: Binding<Value>, options: [(value: Value, label: S)], color: Color) {
+    init<S: StringProtocol>(selection: Binding<Value>, options: [(value: Value, label: S)]) {
         _selection = selection
         self.options = options.map { ($0.value, String($0.label)) }
-        self.color = color
     }
 
+    private static var trackRadius: CGFloat { 8 }
+
     var body: some View {
+        let track = RoundedRectangle(cornerRadius: Self.trackRadius, style: .circular)
         HStack(spacing: 0) {
             ForEach(options.indices, id: \.self) { index in
-                let option = options[index]
-                let selected = option.value == selection
-                Button {
-                    withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
-                        selection = option.value
-                    }
-                } label: {
-                    Text(option.label)
-                        .font(.scaled(12, weight: selected ? .heavy : .semibold))
-                        .foregroundStyle(Brutal.faded(selected ? 1 : 0.65))
-                        .padding(.horizontal, 11)
-                        .frame(height: 28)
-                        .inkOnFill(selected ? color : nil)
-                        .background(selected ? color : Color.clear)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                if index < options.count - 1 {
-                    Rectangle().fill(Brutal.line).frame(width: 2)
-                }
+                segment(options[index])
             }
         }
+        .padding(2)
+        .background(Brutal.fieldFill, in: track)
+        .modifier(ButtonEdge(shape: track, width: contrast == .increased ? 1 : 0, color: Brutal.ink.opacity(0.6)))
+        .opacity(isEnabled ? 1 : 0.5)
         .fixedSize()
-        .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.button, style: .circular).inset(by: Brutal.underInk(Brutal.border)))
-        .brutalSurface(Brutal.well, radius: Brutal.Radius.button, shadow: 2)
+        .background {
+            if focused, isEnabled {
+                Color.clear.inkBorder(RoundedRectangle(cornerRadius: Self.trackRadius + 4, style: .circular), width: 4, color: Brutal.focusRing).padding(-4)
+            }
+        }
+        .focusable(interactions: .activate)
+        .focused($focused)
+        .focusEffectDisabled()
+        .onKeyPress(keys: [.leftArrow, .rightArrow], phases: [.down, .repeat]) { press in
+            step(by: press.key == .rightArrow ? 1 : -1)
+            return .handled
+        }
+        .accessibilityRepresentation {
+            Picker(selection: $selection) {
+                ForEach(options.indices, id: \.self) { index in
+                    Text(options[index].label).tag(options[index].value)
+                }
+            } label: {
+                EmptyView()
+            }
+            .pickerStyle(.segmented)
+        }
+    }
+
+    private func segment(_ option: (value: Value, label: String)) -> some View {
+        let selected = option.value == selection
+        return ZStack {
+            // The semibold label holds each segment at its selected width, so picking one doesn't shift the others.
+            Text(option.label).font(Brutal.small).hidden()
+            Text(option.label)
+                .font(selected ? Brutal.small : .scaled(12))
+                .foregroundStyle(selected ? AnyShapeStyle(Brutal.ink) : AnyShapeStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink)))
+        }
+        .lineLimit(1)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 3)
+        .background {
+            if selected {
+                SegmentThumb().matchedGeometryEffect(id: "thumb", in: thumb)
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { select(option.value) }
+    }
+
+    private func select(_ value: Value) {
+        guard isEnabled, value != selection else {
+            return
+        }
+        withAnimation(reduceMotion ? nil : .spring(response: 0.22, dampingFraction: 0.86)) {
+            selection = value
+        }
+    }
+
+    private func step(by offset: Int) {
+        guard let index = options.firstIndex(where: { $0.value == selection }) else {
+            return
+        }
+        let next = min(max(index + offset, 0), options.count - 1)
+        select(options[next].value)
+    }
+}
+
+/// The selected segment: white in light with a soft shadow and a faint edge, `#4A4A50` in dark.
+private struct SegmentThumb: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
+        let dark = colorScheme == .dark
+        shape.fill(Brutal.selectedSegment)
+            .modifier(ButtonEdge(shape: shape, width: contrast == .increased ? 1 : (dark ? 0 : 0.5), color: contrast == .increased ? Brutal.ink.opacity(0.6) : Color(hex: 0x16161A).opacity(0.12)))
+            .shadow(color: dark ? .black.opacity(0.3) : Color(hex: 0x16161A).opacity(0.14), radius: 1, y: 1)
     }
 }
 
@@ -858,12 +1050,11 @@ struct ToggleRow: View {
     let title: LocalizedStringResource
     var subtitle: LocalizedStringResource?
     @Binding var isOn: Bool
-    var color: Color
     var divider = true
 
     var body: some View {
         SettingRow(title: title, subtitle: subtitle, divider: divider) {
-            Toggle(String(localized: title), isOn: $isOn).toggleStyle(BrutalToggleStyle(color: color)).labelsHidden()
+            Toggle(String(localized: title), isOn: $isOn).toggleStyle(BrutalToggleStyle()).labelsHidden()
                 .accessibilityLabel(Text(title))
         }
     }

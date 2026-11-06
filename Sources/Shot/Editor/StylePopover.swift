@@ -332,7 +332,6 @@ struct StylePopover<Model: StyleEditing>: View {
         BrutalSlider(
             value: Binding(get: { Double(value) }, set: { set(CGFloat($0)) }),
             range: Double(range.lowerBound)...Double(range.upperBound),
-            track: LinearGradient(colors: [Brutal.paper, Brutal.sky], startPoint: .leading, endPoint: .trailing),
             width: 160,
             onEditingChanged: { model.setDraggingStyle($0) }
         )
@@ -494,7 +493,7 @@ private struct NewCaptureStyleSwitch: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 10) {
                 Toggle("Use this style for new captures", isOn: isOn)
-                    .toggleStyle(BrutalToggleStyle(color: Brutal.mint))
+                    .toggleStyle(BrutalToggleStyle())
                     .labelsHidden()
                     .accessibilityLabel(Text("Use this style for new captures"))
                 Text("Use this style for new captures")

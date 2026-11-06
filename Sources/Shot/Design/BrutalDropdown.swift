@@ -68,6 +68,30 @@ struct BrutalDropdown<Label: View>: View {
     }
 }
 
+/// A pop-up menu, from Components › Choice: the secondary button's look with the chosen value and up and down chevrons,
+/// opening a menu of `entries` with the chosen one ticked. For a menu of commands rather than a choice, use `BrutalDropdown`.
+struct BrutalPopUp: View {
+    let title: LocalizedStringResource
+    let entries: [BrutalMenuEntry]
+    /// The chosen value's title, already localized.
+    let value: String
+    var maxWidth: CGFloat?
+
+    var body: some View {
+        BrutalDropdown(title: title, entries: entries) {
+            HStack(spacing: 10) {
+                Text(value).lineLimit(1)
+                    .frame(maxWidth: maxWidth, alignment: .leading)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.scaled(9, weight: .bold))
+                    .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+            }
+        }
+        .buttonStyle(BrutalButtonStyle(.popUp))
+        .fixedSize()
+    }
+}
+
 private struct DropdownAnchor: NSViewRepresentable {
     let menu: DropdownMenu
 
@@ -123,7 +147,8 @@ private final class DropdownMenu {
         let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 800, height: 800), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.hasShadow = false
+        // The system draws the menu's shadow, as for a native menu, so it needs no room around the list.
+        panel.hasShadow = true
         panel.isReleasedWhenClosed = false
         let screenHeight = window.screen?.visibleFrame.height ?? 800
         let list = DropdownList(title: title, state: state, minWidth: anchor?.bounds.width ?? 0, maxHeight: screenHeight - Self.gap * 2, pick: { [weak self] in self?.pick($0) }, resize: { [weak self] in self?.place($0) })
@@ -169,6 +194,7 @@ private final class DropdownMenu {
         let visible = window.screen?.visibleFrame ?? rect.insetBy(dx: -size.width, dy: -size.height)
         let origin = Dropdown.origin(size: size, anchor: rect, visible: visible, gap: Self.gap)
         panel.setFrame(NSRect(origin: origin, size: size), display: true)
+        panel.invalidateShadow()
     }
 
     private func pick(_ index: Int) {
@@ -229,8 +255,8 @@ private final class DropdownMenu {
 }
 
 private struct DropdownList: View {
-    /// Room for the shadow, which draws outside the surface.
-    private static let shadowRoom: CGFloat = 3
+    /// The list's inset from the menu's edge.
+    private static let inset: CGFloat = 5
 
     let title: String
     let state: DropdownState
@@ -243,7 +269,7 @@ private struct DropdownList: View {
 
     /// What's left for the rows once the surface's padding and the shadow's room are taken off.
     private var rowsHeight: CGFloat {
-        maxHeight - Brutal.groupInset * 2 - Self.shadowRoom
+        maxHeight - Self.inset * 2
     }
 
     var body: some View {
@@ -269,18 +295,17 @@ private struct DropdownList: View {
                                 }
                             }
                         case .header(let header):
-                            Text(header.uppercased())
-                                .font(.scaled(10, weight: .black))
-                                .tracking(1.2)
-                                .foregroundStyle(Brutal.faded(0.6))
-                                .padding(.horizontal, 8)
+                            Text(header)
+                                .font(.scaled(11, weight: .semibold))
+                                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                                .padding(.horizontal, 10)
                                 .padding(.top, 4)
                                 .padding(.bottom, 2)
                         case .divider:
-                            Rectangle().fill(Brutal.faint(0.12))
-                                .frame(height: 1.5)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 3)
+                            Rectangle().fill(ContrastAware(standard: Brutal.separator, increased: Brutal.ink.opacity(0.6)))
+                                .frame(height: 1)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
                         }
                     }
                 }
@@ -300,15 +325,26 @@ private struct DropdownList: View {
                 }
             }
         }
-        .padding(Brutal.groupInset)
+        .padding(Self.inset)
         .frame(minWidth: minWidth, alignment: .leading)
-        .brutalSurface(Brutal.paper, radius: Brutal.Radius.panel, shadow: 3)
-        // Room for the shadow, which draws outside the surface.
-        .padding([.trailing, .bottom], Self.shadowRoom)
+        .modifier(MenuSurface())
         .fixedSize()
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(title))
         .onGeometryChange(for: CGSize.self) { $0.size } action: { resize($0) }
+    }
+}
+
+/// A native menu's surface: the group fill and the Float depth's 0.5 pt edge. The window draws the shadow.
+private struct MenuSurface: ViewModifier {
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular)
+        let edge = contrast == .increased ? Brutal.ink.opacity(0.6) : Color(light: .black.opacity(0.2), dark: .white.opacity(0.14))
+        content
+            .background(Brutal.group, in: shape)
+            .inkBorder(shape, width: contrast == .increased ? 1 : 0.5, color: edge)
     }
 }
 
@@ -318,41 +354,45 @@ private struct DropdownRow: View {
     let highlighted: Bool
     let action: () -> Void
 
+    private var lit: Bool { highlighted && item.isEnabled }
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
                 if hasSymbols {
                     Image(systemName: item.symbol ?? "")
-                        .font(.scaled(12, weight: .bold))
+                        .font(.scaled(12, weight: .medium))
                         .frame(width: 16)
                 }
                 Text(item.title)
-                    .font(Brutal.label)
+                    .font(Brutal.body)
                     .lineLimit(1)
                 Spacer(minLength: 16)
                 if let shortcut = item.shortcut {
                     Text(shortcut)
                         .font(Brutal.mono)
-                        .foregroundStyle(Brutal.faded(0.5))
+                        .foregroundStyle(highlighted ? AnyShapeStyle(Brutal.ink) : AnyShapeStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink)))
                 }
                 Image(systemName: "checkmark")
-                    .font(.scaled(11, weight: .black))
+                    .font(.scaled(11, weight: .semibold))
                     .opacity(item.isSelected ? 1 : 0)
             }
-            .foregroundStyle(Brutal.ink)
-            .padding(.horizontal, 8)
-            .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
-            .inkOnFill(highlighted && item.isEnabled ? Brutal.yellow : nil)
+            .foregroundStyle(item.isEnabled ? AnyShapeStyle(Brutal.ink) : AnyShapeStyle(Brutal.disabledText))
+            .padding(.horizontal, 10)
+            .frame(maxWidth: .infinity, minHeight: 24, alignment: .leading)
+            .inkOnFill(lit ? Brutal.accent : nil)
             .background {
-                if highlighted && item.isEnabled {
-                    Color.clear.brutalSurface(Brutal.yellow, radius: Brutal.Radius.inset, shadow: 0, border: 2)
+                // The highlighted row, as the menu bar menu draws it: the accent with a faint ink inner edge.
+                if lit {
+                    let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
+                    shape.fill(Brutal.accent)
+                        .inkBorder(shape, width: 1, color: Color(hex: 0x16161A).opacity(0.4))
                 }
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .disabled(!item.isEnabled)
-        .opacity(item.isEnabled ? 1 : 0.35)
         .accessibilityAddTraits(item.isSelected ? .isSelected : [])
     }
 }

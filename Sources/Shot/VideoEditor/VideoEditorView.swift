@@ -130,25 +130,25 @@ struct ExportOptionsBar: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            BrutalSegmented(selection: option(\.format), options: [(.mp4, "MP4"), (.gif, "GIF")], color: Brutal.sky)
+            BrutalSegmented(selection: option(\.format), options: [(.mp4, "MP4"), (.gif, "GIF")])
                 .brutalTip("Export format")
             if model.options.format == .gif {
                 caption("FPS")
-                BrutalSegmented(selection: option(\.gifFrameRate), options: VideoExportOptions.gifFrameRates.map { ($0, "\($0)") }, color: Brutal.mint)
+                BrutalSegmented(selection: option(\.gifFrameRate), options: VideoExportOptions.gifFrameRates.map { ($0, "\($0)") })
                     .brutalTip("GIF frames per second")
                 caption("WIDTH")
-                BrutalSegmented(selection: option(\.gifWidth), options: VideoExportOptions.gifWidths.map { ($0, Self.widthLabel($0)) }, color: Brutal.mint)
+                BrutalSegmented(selection: option(\.gifWidth), options: VideoExportOptions.gifWidths.map { ($0, Self.widthLabel($0)) })
                     .brutalTip("GIF width in pixels; it's never made wider than the video")
             } else {
                 caption("MUTE")
                 Toggle("Mute", isOn: option(\.muted))
-                    .toggleStyle(BrutalToggleStyle(color: Brutal.pink))
+                    .toggleStyle(BrutalToggleStyle())
                     .labelsHidden()
                     .accessibilityLabel(Text("Mute"))
                     .brutalTip("Leave the sound out")
             }
             caption("SPEED")
-            BrutalSegmented(selection: option(\.speed), options: VideoExportOptions.speeds.map { ($0, Self.speedLabel($0)) }, color: Brutal.violet)
+            BrutalSegmented(selection: option(\.speed), options: VideoExportOptions.speeds.map { ($0, Self.speedLabel($0)) })
                 .disabled(speedIsLocked)
                 .overlay {
                     if speedIsLocked {

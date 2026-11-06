@@ -287,14 +287,10 @@ struct ShapeMenu: View {
             }) {
                 HStack(spacing: 6) {
                     Image(systemName: selected.symbol).font(Brutal.toolIcon)
-                    Image(systemName: "chevron.down").font(.scaled(9, weight: .black))
+                    Image(systemName: "chevron.up.chevron.down").font(.scaled(9, weight: .bold))
                 }
-                .foregroundStyle(Brutal.ink)
-                .frame(height: 30)
-                .padding(.horizontal, 8)
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(BrutalButtonStyle(.toolbar))
             .fixedSize()
             .brutalTip(String(localized: "Shape"), detail: selected.title)
         }
@@ -330,7 +326,6 @@ struct RedactionOptions: View {
             BrutalSlider(
                 value: Binding(get: { amount }, set: { setAmount($0) }),
                 range: Redaction.amounts.lowerBound...Redaction.amounts.upperBound,
-                track: LinearGradient(colors: [Brutal.paper, Brutal.sky], startPoint: .leading, endPoint: .trailing),
                 width: 120,
                 onEditingChanged: dragAmount
             )
@@ -365,7 +360,6 @@ struct SpotlightOptions: View {
             BrutalSlider(
                 value: Binding(get: { style.strength }, set: { chooseLook(style.effect, $0) }),
                 range: SpotlightStyle.strengths,
-                track: LinearGradient(colors: [Brutal.ink.opacity(SpotlightStyle.strengths.lowerBound), Brutal.ink.opacity(SpotlightStyle.strengths.upperBound)], startPoint: .leading, endPoint: .trailing),
                 width: 120,
                 onEditingChanged: dragSlider
             )
@@ -378,7 +372,6 @@ struct SpotlightOptions: View {
             Text("EDGE").font(Brutal.mono).foregroundStyle(Brutal.ink).padding(.horizontal, 4)
             BrutalSlider(
                 value: Binding(get: { style.softEdge }, set: { chooseSoftEdge($0) }),
-                track: LinearGradient(colors: [Brutal.paper, Brutal.sky], startPoint: .leading, endPoint: .trailing),
                 width: 100,
                 onEditingChanged: dragSlider
             )

@@ -296,9 +296,9 @@ private struct SetupStep: View {
             ToggleRow(
                 title: "Use Shot for ⌘⇧4 and ⌘⇧5",
                 subtitle: keysSubtitle,
-                isOn: $model.usesSystemKeys, color: Brutal.pink
+                isOn: $model.usesSystemKeys
             )
-            ToggleRow(title: "Open Shot at login", subtitle: "So your shortcuts work after a restart.", isOn: $model.opensAtLogin, color: Brutal.pink, divider: false)
+            ToggleRow(title: "Open Shot at login", subtitle: "So your shortcuts work after a restart.", isOn: $model.opensAtLogin, divider: false)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 4)

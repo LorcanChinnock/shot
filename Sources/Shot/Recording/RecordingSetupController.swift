@@ -486,7 +486,7 @@ private struct SetupBarView: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            BrutalSegmented(selection: Binding(get: { model.mode }, set: { actions.switchMode($0) }), options: CaptureTarget.allCases.map { ($0, $0.title) }, color: Brutal.sky)
+            BrutalSegmented(selection: Binding(get: { model.mode }, set: { actions.switchMode($0) }), options: CaptureTarget.allCases.map { ($0, $0.title) })
                 .brutalTip("Switch what to record")
             BrutalChip(text: "\(Int(model.pixelSize.width)) × \(Int(model.pixelSize.height))")
                 .fixedSize()
