@@ -2,8 +2,8 @@ import AppKit
 import ShotCore
 import SwiftUI
 
-/// Floating recording controls. Shot's windows are excluded from the capture, so they never appear in the video.
-final class RecordingControlPanel: NSPanel {
+/// Floating recording controls, a dark pill. Shot's windows are excluded from the capture, so they never appear in the video.
+final class RecordingControlPanel: FloatingPanelWindow {
     struct Actions {
         let togglePause: @MainActor () -> Void
         let toggleMute: @MainActor () -> Void
@@ -14,18 +14,15 @@ final class RecordingControlPanel: NSPanel {
 
     /// Wider when the microphone controls show.
     static func size(microphone: Bool) -> NSSize {
-        NSSize(width: microphone ? 556 : 456, height: 62)
+        NSSize(width: microphone ? 552 : 452, height: 54)
     }
 
     @MainActor
     init(region: CGRect, screen: NSScreen, model: RecordingSessionModel, actions: Actions) {
         let size = Self.size(microphone: model.microphoneOn)
         let origin = ControlPlacement.origin(for: size, region: region, visible: screen.visibleFrame)
-        super.init(contentRect: NSRect(origin: origin, size: size), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        super.init(contentRect: NSRect(origin: origin, size: size))
         level = .statusBar
-        isOpaque = false
-        backgroundColor = .clear
-        hasShadow = false
         isMovableByWindowBackground = true
         becomesKeyOnlyIfNeeded = true
         isReleasedWhenClosed = false
@@ -42,17 +39,16 @@ private struct RecordingControlView: View {
         HStack(spacing: 8) {
             HStack(spacing: 8) {
                 RecordingDot(isPaused: model.isPaused)
-                ElapsedTime(model: model, color: Brutal.ink)
+                ElapsedTime(model: model, color: .white)
                     .frame(width: 50, alignment: .leading)
             }
             .brutalTip(model.isPaused ? "Paused" : "Recording")
             RecordingControls(model: model, actions: actions)
         }
-        .padding(.horizontal, 14)
+        .padding(.leading, 20)
+        .padding(.trailing, 11)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .brutalSurface(Brutal.paper.opacity(0.72), glass: true, radius: 14, shadow: 4)
-        .padding(.trailing, 4)
-        .padding(.bottom, 4)
+        .floatingPanel(Capsule())
     }
 }
 
@@ -105,7 +101,7 @@ struct RecordingControls: View {
                     .frame(minWidth: 70)
                     .fixedSize()
             }
-            .buttonStyle(BrutalButtonStyle(model.isPaused ? .main : .toolbar, floating: model.isPaused))
+            .buttonStyle(BrutalButtonStyle(model.isPaused ? .main : .toolbar, floating: true))
             .brutalTip(model.isPaused ? "Resume recording" : "Pause recording")
 
             if model.microphoneOn {
@@ -136,7 +132,7 @@ struct RecordingControls: View {
             } label: {
                 Label("Stop", systemImage: "stop.fill").labelStyle(.titleAndIcon).fixedSize()
             }
-            .buttonStyle(BrutalButtonStyle(model.isPaused ? .secondary : .main, destructive: !model.isPaused, floating: !model.isPaused))
+            .buttonStyle(BrutalButtonStyle(model.isPaused ? .secondary : .main, destructive: !model.isPaused, floating: true))
             .brutalTip("Stop and save")
         }
     }
@@ -154,7 +150,7 @@ private struct IconButton: View {
                 .font(.system(size: 11, weight: .bold))
                 .frame(width: 16, height: 16)
         }
-        .buttonStyle(BrutalButtonStyle(.toolbar, isOn: isOn))
+        .buttonStyle(BrutalButtonStyle(.toolbar, isOn: isOn, floating: true))
         .brutalTip(help)
         .accessibilityLabel(Text(help))
     }

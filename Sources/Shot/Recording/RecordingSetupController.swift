@@ -450,7 +450,7 @@ private final class HandleView: NSView {
 
 // MARK: Setup bar
 
-private final class SetupBarPanel: NSPanel {
+private final class SetupBarPanel: FloatingPanelWindow {
     struct Actions {
         let switchMode: @MainActor (CaptureTarget) -> Void
         let toggleCamera: @MainActor () -> Void
@@ -460,16 +460,13 @@ private final class SetupBarPanel: NSPanel {
         let cancel: @MainActor () -> Void
     }
 
-    static let size = NSSize(width: 660, height: 66)
+    static let size = NSSize(width: 656, height: 60)
 
     override var canBecomeKey: Bool { true }
 
     init(model: RecordingSetupModel, actions: Actions) {
-        super.init(contentRect: NSRect(origin: .zero, size: Self.size), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        super.init(contentRect: NSRect(origin: .zero, size: Self.size))
         level = .statusBar
-        isOpaque = false
-        backgroundColor = .clear
-        hasShadow = false
         isReleasedWhenClosed = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         contentView = NSView(hosting: SetupBarView(model: model, actions: actions))
@@ -490,7 +487,7 @@ private struct SetupBarView: View {
                 .brutalTip("Switch what to record")
             BrutalBadge(text: "\(Int(model.pixelSize.width)) × \(Int(model.pixelSize.height))")
                 .fixedSize()
-            Rectangle().fill(Brutal.faint(0.2)).frame(width: 2, height: 28)
+            FloatingDivider()
             OptionToggle(on: model.cameraOn, symbol: model.cameraOn ? "video.fill" : "video.slash.fill", help: model.cameraOn ? "Hide camera bubble" : "Show camera bubble", action: actions.toggleCamera)
             OptionToggle(on: model.microphoneOn, symbol: model.microphoneOn ? "mic.fill" : "mic.slash.fill", help: model.microphoneOn ? "Turn off microphone" : "Turn on microphone", action: actions.toggleMicrophone)
             OptionToggle(on: model.cursorOn, symbol: model.cursorOn ? "cursorarrow" : "cursorarrow.slash", help: model.cursorOn ? "Hide cursor" : "Show cursor", action: actions.toggleCursor)
@@ -500,7 +497,7 @@ private struct SetupBarView: View {
             } label: {
                 Image(systemName: "xmark").font(.system(size: 11, weight: .bold)).frame(width: 16, height: 16)
             }
-            .buttonStyle(BrutalButtonStyle(.toolbar))
+            .buttonStyle(BrutalButtonStyle(.toolbar, floating: true))
             .keyboardShortcut(.cancelAction)
             .brutalTip("Cancel (Esc)")
             .accessibilityLabel(Text("Cancel"))
@@ -513,11 +510,9 @@ private struct SetupBarView: View {
             .keyboardShortcut(.defaultAction)
             .brutalTip(model.countdownSeconds > 0 ? "Start recording after a \(model.countdownSeconds)-second countdown (Return)" : "Start recording (Return)")
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .brutalSurface(Brutal.paper.opacity(0.72), glass: true, radius: 14, shadow: 4)
-        .padding(.trailing, 4)
-        .padding(.bottom, 4)
+        .floatingPanel(RoundedRectangle(cornerRadius: 16, style: .circular))
     }
 }
 
@@ -531,7 +526,7 @@ private struct OptionToggle: View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 11, weight: .bold)).frame(width: 16, height: 16)
         }
-        .buttonStyle(BrutalButtonStyle(.toolbar, isOn: on))
+        .buttonStyle(BrutalButtonStyle(.toolbar, isOn: on, floating: true))
         .brutalTip(help)
         .accessibilityLabel(Text(help))
     }
@@ -541,8 +536,8 @@ private struct OptionToggle: View {
 
 /// The countdown a recording and a timed screenshot share. `remaining` is read while the view draws, so reading an
 /// observable property in it keeps the number current.
-final class CountdownPanel: NSPanel {
-    private static let size = NSSize(width: 220, height: 250)
+final class CountdownPanel: FloatingPanelWindow {
+    private static let size = NSSize(width: 180, height: 216)
     private let onCancel: () -> Void
 
     override var canBecomeKey: Bool { true }
@@ -550,11 +545,8 @@ final class CountdownPanel: NSPanel {
     init(center: CGPoint, remaining: @escaping () -> Int?, onCancel: @escaping () -> Void) {
         self.onCancel = onCancel
         let origin = CGPoint(x: center.x - Self.size.width / 2, y: center.y - Self.size.height / 2)
-        super.init(contentRect: NSRect(origin: origin, size: Self.size), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        super.init(contentRect: NSRect(origin: origin, size: Self.size))
         level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
-        isOpaque = false
-        backgroundColor = .clear
-        hasShadow = false
         isReleasedWhenClosed = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         contentView = NSView(hosting: CountdownView(remaining: remaining, onCancel: onCancel))
@@ -572,20 +564,17 @@ private struct CountdownView: View {
     var body: some View {
         VStack(spacing: 16) {
             Text("\(remaining() ?? 0)")
-                .font(.system(size: 84, weight: .black, design: .rounded))
-                .foregroundStyle(Brutal.ink)
+                .font(.system(size: 64, weight: .heavy).monospacedDigit())
+                .foregroundStyle(.white)
                 .contentTransition(.numericText(countsDown: true))
                 .animation(.spring(response: 0.3, dampingFraction: 0.6), value: remaining())
-                .frame(width: 148, height: 148)
-                .brutalCircle(Brutal.yellow, shadow: 6)
+                .frame(width: 112, height: 112)
             Button("Cancel") { onCancel() }
-                .buttonStyle(BrutalButtonStyle())
+                .buttonStyle(BrutalButtonStyle(floating: true))
                 .keyboardShortcut(.cancelAction)
         }
-        // Fill the panel so the hosting view can't shrink it and clip the shadows.
-        .padding(.trailing, 6)
-        .padding(.bottom, 6)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .floatingPanel(RoundedRectangle(cornerRadius: 22, style: .circular))
     }
 }
 

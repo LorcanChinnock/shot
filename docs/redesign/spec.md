@@ -79,6 +79,10 @@ The gallery sidebar draws its icons in the same colours without a tile: Screensh
 | Divider | 1 × 22 pt `rgba(255,255,255,0.16)` |
 | Scrim behind Quick Access buttons | `rgba(18,18,22,0.46)` |
 
+`FloatingPanel` in `Design/GlassWindow.swift` holds these values. `.floatingPanel(shape, opacity:)` draws the fill and edge and lays the content out in the dark appearance, so `BrutalBadge`, `BrutalSegmented` and the other quiet components pick up their dark values. Buttons inside take `BrutalButtonStyle(…, floating: true)`, and `FloatingDivider` draws the divider. Each panel lives in a `FloatingPanelWindow` sized to its shape. The shadow is the system window shadow, which follows the shape and needs no transparent margin to catch clicks, so it only approximates the board's. The capture bar is drawn by AppKit inside the overlay, so it draws the board's shadow itself, outside the bar only, from `FloatingPanel.shadowNS`. Increase Contrast and Reduce Transparency make every panel solid, and Increase Contrast takes the edge to 40% white and the divider to 60%. Panel layouts stay as they are until each board's own issue rebuilds them.
+
+**Window chrome** (#1073): `GlassWindow` makes a standard titled window with a unified, transparent title bar and the toolbar content beside the standard traffic lights. The window background is the plain Window colour, and the system draws the corners and edge. `SidebarMaterial` is the see-through sidebar (`NSVisualEffectView`, `.sidebar` material), solid in the Sidebar colour with Increase Contrast or Reduce Transparency. Settings runs it from the window's edge to the middle of the gap beside the sidebar, with a separator on its right.
+
 The menu bar menu is a native menu. The board draws it at `rgba(248,246,242,0.96)`, radius 11, with the highlighted row in accent and a 1 pt `rgba(22,22,26,0.4)` inner edge.
 
 ### Shape
@@ -281,7 +285,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Quick Access, pin, menu and toasts › menu | #1084 | `ShotApp.swift`, `Design/BrandMark.swift` | ☐ |
 | Quick Access, pin, menu and toasts › toast | #1085 | `Toast.swift` | ☐ |
 | Quick Access, pin, menu and toasts › countdown | #1078 | `Capture/CaptureCoordinator.swift`, `Design/BrandMark.swift` | ☐ |
-| Quick Access, pin, menu and toasts › floating panels | #1073 | `Design/GlassWindow.swift` | ☐ |
+| Quick Access, pin, menu and toasts › floating panels | #1073 | `Design/GlassWindow.swift` (`FloatingPanel`, `FloatingPanelWindow`), `Toast.swift`, `Overlay/SelectionOverlayView.swift`, `Recording/RecordingControlPanel.swift`, `Recording/RecordingSetupController.swift`, `Capture/ScrollingCaptureController.swift`, `QuickAccess/QuickAccessView.swift` | ☐ |
 | Permission card… › permission card | #1087 | `Overlay/SelectionOverlayController.swift`, `Permissions.swift` | ☐ |
 | Permission card… › colour loupe | #1080 | `ColorSampler.swift` | ☐ |
 | Permission card… › recovery | #1092 | `Recording/RecordingRecovery.swift` | ☐ |
@@ -308,7 +312,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Image editor · annotate | #1093 toolbar | `Editor/EditorToolbar.swift`, `Editor/EditorRootView.swift` | ☐ |
 | Image editor · annotate | #1094 style bar | `Editor/EditorCanvasView.swift`, `Editor/EditorRootView.swift` | ☐ |
 | Image editor · annotate | #1095 canvas | `Editor/EditorCanvasView.swift`, `Design/LayersPanel.swift` (empty state) | ☐ |
-| Image editor · annotate | #1073 title bar | `Design/GlassWindow.swift`, `Editor/EditorWindowController.swift` | ☐ |
+| Image editor · annotate | #1073 title bar | `Design/GlassWindow.swift` | ☐ |
 | Image editor · style | #1096 | `Editor/StylePopover.swift` (replaced by a side panel), `Editor/EditorRootView.swift` | ☐ |
 | Image editor · crop and combine | #1097 crop | `Editor/EditorCanvasView.swift` | ☐ |
 | Image editor · crop and combine | #1098 layers | `Design/LayersPanel.swift` | ☐ |
@@ -335,7 +339,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Settings sidebar (shared component) | #1111 | `Settings/SettingsView.swift` | ☐ |
 | Settings sidebar (shared component) | #1106 Open Gallery | `Settings/SettingsView.swift` | ☐ |
 | Settings · General | #1112 | `Settings/SettingsView.swift` | ☐ |
-| Settings · General | #1073 sidebar material | `Design/GlassWindow.swift` | ☐ |
+| Settings · General | #1073 sidebar material | `Design/GlassWindow.swift` (`SidebarMaterial`), `Settings/SettingsView.swift` | ☐ |
 | Settings · Capture | #1113 | `Settings/SettingsView.swift` | ☐ |
 | Settings · Quick Access | #1114 | `Settings/SettingsView.swift` | ☐ |
 | Settings · Recording | #1115 | `Settings/SettingsView.swift`, `Settings/DevicePreview.swift` | ☐ |

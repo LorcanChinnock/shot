@@ -296,7 +296,7 @@ private final class ScrollFrameSink: NSObject, SCStreamOutput, @unchecked Sendab
 /// The panel beside the area: a status chip and the size, a preview of the image so far with the unseen parts hatched
 /// and the area outlined, one message when something needs attention, and Done and Cancel. It takes no keyboard
 /// focus, so the content's app keeps scrolling with the keyboard, and it grows to fit what it shows.
-private final class ScrollCapturePanel: NSPanel {
+private final class ScrollCapturePanel: FloatingPanelWindow {
     struct Actions {
         let done: @MainActor () -> Void
         let cancel: @MainActor () -> Void
@@ -309,12 +309,9 @@ private final class ScrollCapturePanel: NSPanel {
     init(model: ScrollCaptureModel, region: CGRect, screen: NSScreen, actions: Actions) {
         self.region = region
         room = screen.visibleFrame
-        let size = NSSize(width: ScrollCaptureView.width + 4, height: 200)
-        super.init(contentRect: NSRect(origin: ScrollCapturePanelPlacement.origin(for: size, region: region, visible: screen.visibleFrame), size: size), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        let size = NSSize(width: ScrollCaptureView.width, height: 200)
+        super.init(contentRect: NSRect(origin: ScrollCapturePanelPlacement.origin(for: size, region: region, visible: screen.visibleFrame), size: size))
         level = .statusBar
-        isOpaque = false
-        backgroundColor = .clear
-        hasShadow = false
         isMovableByWindowBackground = true
         becomesKeyOnlyIfNeeded = true
         isReleasedWhenClosed = false
@@ -354,12 +351,12 @@ private struct ScrollCaptureView: View {
             if let message = model.status.message {
                 Text(message)
                     .font(Brutal.caption)
-                    .foregroundStyle(Brutal.ink)
+                    .foregroundStyle(.white)
                     .fixedSize(horizontal: false, vertical: true)
             }
             HStack {
                 Button("Cancel") { actions.cancel() }
-                    .buttonStyle(BrutalButtonStyle())
+                    .buttonStyle(BrutalButtonStyle(floating: true))
                     .brutalTip("Cancel (Esc)")
                 Spacer()
                 Button {
@@ -367,15 +364,13 @@ private struct ScrollCaptureView: View {
                 } label: {
                     Label("Done", systemImage: "checkmark").labelStyle(.titleAndIcon).fixedSize()
                 }
-                .buttonStyle(BrutalButtonStyle(.main))
+                .buttonStyle(BrutalButtonStyle(.main, floating: true))
                 .brutalTip("Save and copy (Return)")
             }
         }
         .padding(14)
         .frame(width: Self.width)
-        .brutalSurface(Brutal.paper.opacity(0.72), glass: true, radius: 14, shadow: 4)
-        .padding(.trailing, 4)
-        .padding(.bottom, 4)
+        .floatingPanel(RoundedRectangle(cornerRadius: 16, style: .circular))
         .fixedSize()
         .onGeometryChange(for: CGSize.self) { $0.size } action: { onSize($0) }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
