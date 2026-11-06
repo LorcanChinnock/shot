@@ -238,6 +238,31 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **VoiceOver** finds each button as an element the overlay draws: modes as radio buttons, Scroll and the toggles as toggles, Delay as a button, each with its key in the help. A press shows the bar again. The crosshair and loupe aren't drawn while the pointer is on the bar, so they don't cover its buttons.
 - **Increase Contrast and Reduce Transparency** make the bar and tooltip solid, take the edge to 40% white and the dividers to 60%.
 
+### Area capture
+
+#1076 builds Capture › Area capture: what you see while dragging out an area after ⌘⇧4. AppKit draws all of it into the overlay view, so nothing adds a screen-sized layer.
+
+| Part | Look |
+| --- | --- |
+| Dim | `rgba(12,12,16,0.42)` outside the area while it's made, and 10% black before, as #1075 left it |
+| Edge | 1 pt `rgba(255,255,255,0.95)` just outside the area, then 1 pt `rgba(0,0,0,0.35)` outside that |
+| Handles | 10 pt white circles with a 1.5 pt ink edge, at the corners and the middle of each side of 48 pt or more. An area under 12 pt both ways has none |
+| Size chip | The size in pixels, as the image will be, in 12 pt bold SF Mono, white |
+| Ratio chip | "Free ratio", or the ratio such as "16:9" or "9:16", in Small type at 75% white (100% with Increase Contrast). Holding Shift shows 1:1 |
+| Chips | `rgba(26,26,30,0.88)`, radius 8, 0.5 pt floating-panel edge, 3 × 9 pt padding, 6 pt apart, 14 pt above the area's top-left corner |
+| Loupe | 132 pt circle showing 11 × 11 device pixels, so the pointer's pixel is in the middle. 3 pt white ring, 1.5 pt ink ring, `0 12px 28px rgba(0,0,0,0.4)`. Grid lines one device pixel wide in mid-grey at 30%. The pointer's row and column in accent (`#FFD43B`) at 35%. The pointer's pixel outlined in 1.5 pt ink with a white hairline outside |
+| Position chip | The pointer's pixel, from the screen's top-left, in 10 pt medium SF Mono on the 0.88 fill, radius 5, 10 pt above the loupe's bottom |
+| Cursor | 18 pt crosshair, white 3 pt under ink 1.2 pt, with a 4 pt gap in the middle. Replaces the system crosshair everywhere on the overlay |
+| Guides | The crosshair toggle (C): lines across the screen, 1 pt white at 90% over 3 pt black at 25%, stopping 12 pt short of the pointer |
+
+- **No key-hint strip.** The board draws ⇧ Square, R Ratio, X Turn, Space Move and Esc Cancel in a floating strip at the bottom. The bar already hides while you drag, so the strip wouldn't collide with it. It's left out anyway, because rule 2 and the mantra keep extra panels closed by default. It would also flash across the screen on every capture for a quick sharer who never uses those keys. The keys stay in the overlay's VoiceOver help and the guide's table, and the ratio chip shows when a ratio is in force.
+- **Toggles stay as they were.** Size (I) shows both chips. A ratio other than Free shows its chip even with Size off, since it changes what you get. Magnifier (M) and Crosshair (C) show the loupe and guides. All three start off, as before.
+- **Loupe and guides while dragging.** The board draws them at the drag corner, so they now show while dragging as well as before it, which is when an exact edge matters. They don't show for an area made with the arrow keys, since the pointer is elsewhere, or while the pointer is on the bar.
+- **Placement.** `AreaLabelPlacement` puts the chips above the area, else below it, else inside its top-left corner, kept 8 pt inside the screen and off the bar. `Loupe.frame` puts the loupe 22 pt from the pointer on the side away from where the drag started (below and right before dragging), and turns to the next corner at a screen edge or when it would cover the chips or the bar. Both are in ShotCore with tests.
+- **Departures from the board.** The board's grid is ink at 7%, which vanishes over dark pixels, so it's mid-grey. The lit row and column skip the pointer's own pixel, so its true colour shows, and that pixel's ink outline gains a white hairline so it shows over dark pixels. The coordinates are in pixels rather than points, matching the size chip.
+- **Text size.** The chips, the position chip and the loupe scale with Settings › Text size. The handles and cursor don't.
+- **Increase Contrast and Reduce Transparency** make the chips solid with the 40% edge, and the position chip solid.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -307,7 +332,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 
 | Board | Issue | Files | QA |
 | --- | --- | --- | --- |
-| Area capture | #1076 | `Overlay/SelectionOverlayView.swift` | ☐ |
+| Area capture | #1076 | `Overlay/SelectionOverlayView.swift` (edge, handles, chips, loupe, guides, cursor), `Overlay/SelectionOverlayController.swift` (cursor), ShotCore `AreaOverlay.swift` (`AreaHandles`, `AreaLabelPlacement`, `Loupe`) | ☐ |
 | Window pick and delay | #1077 highlights | `Overlay/SelectionOverlayView.swift`, `Overlay/SelectionOverlayController.swift` | ☐ |
 | Window pick and delay | #1075 capture bar with delay | `Overlay/SelectionOverlayView.swift` (the bar, Delay's seconds and the tooltip) | ☐ |
 | Scrolling capture | #1086 | `Capture/ScrollingCaptureController.swift` | ☐ |
