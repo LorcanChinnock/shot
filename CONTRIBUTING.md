@@ -68,7 +68,7 @@ Shot's interface is in English, and every string it shows goes through `Resource
 
 A string reaches the catalog when it's a literal passed to an API that localizes:
 
-- SwiftUI's `Text`, `Button`, `Toggle` and the like, and Shot's own `brutalTip`, `Tile`, `SettingRow`, `BrutalChip`, `Toast` and other design components. A `String` variable passed to one of these is shown as it is, so a string that needs translating has to be localized where it's defined.
+- SwiftUI's `Text`, `Button`, `Toggle` and the like, and Shot's own `brutalTip`, `Tile`, `SettingRow`, `BrutalBadge`, `EmptyState`, `Toast` and other design components. A `String` variable passed to one of these is shown as it is, so a string that needs translating has to be localized where it's defined.
 - `String(localized: "…")`, for AppKit titles, alerts, panel messages, ShotCore's labels and errors, and any `String` property that holds text the user reads.
 
 Interpolate values into one string, such as `"Saved \(name)"`, rather than joining fragments, so a translator can reorder the words. Leave `shot://` output, log messages and file names in English.

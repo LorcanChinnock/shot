@@ -10,9 +10,11 @@ enum Toast {
     private static var duration: Duration?
     private static var undoable: PendingAction?
     private static var shown: ToastText?
-    private static var actionTitle: String?
-    fileprivate static let font = ScaledFont.scaled(13, weight: .bold)
-    private static let shadow: CGFloat = 4
+    private static var action: ToastView.Action?
+    fileprivate static let font = ScaledFont.scaled(13, weight: .medium)
+    fileprivate static let actionFont = ScaledFont.scaled(12, weight: .semibold)
+    fileprivate static let height: CGFloat = 34
+    fileprivate static let barWidth: CGFloat = 96
 
     /// Shows `message` for something that didn't happen or went wrong, long enough to read.
     static func error(_ message: LocalizedStringResource) {
@@ -48,7 +50,7 @@ enum Toast {
             }
         }
         let action: ToastView.Action? = if let undoable {
-            ToastView.Action(title: String(localized: "Undo")) { undoable.undo(); hide() }
+            ToastView.Action(title: String(localized: "Undo"), key: "⌘Z") { undoable.undo(); hide() }
         } else if let cancel {
             ToastView.Action(title: String(localized: "Cancel"), perform: cancel)
         } else if let reveal {
@@ -56,8 +58,8 @@ enum Toast {
         } else {
             nil
         }
-        actionTitle = action?.title
-        let size = size(of: message, actionTitle: actionTitle)
+        self.action = action
+        let size = size(of: message, fraction: nil, action: action)
         let text = ToastText(message: message)
         shown = text
         panel.contentView = NSView(hosting: ToastView(text: text, action: action, hold: { hold($0) }, dismiss: { hide() }))
@@ -65,45 +67,79 @@ enum Toast {
         let origin = NSPoint(x: screen.frame.midX - size.width / 2, y: screen.visibleFrame.minY + 80)
         panel.setFrame(NSRect(origin: origin, size: size), display: true)
         panel.orderFrontRegardless()
+        refreshShadow()
         NSAccessibility.post(element: panel, notification: .announcementRequested, userInfo: [.announcement: message, .priority: NSAccessibilityPriorityLevel.high.rawValue])
         self.duration = duration
         scheduleHide()
     }
 
-    /// Shows `message` until the next call, changing the toast's text in place without announcing it, so a percentage
-    /// can tick up without VoiceOver reading every step. Does nothing when `message` is already showing.
-    static func progress(_ message: LocalizedStringResource) {
-        progress(String(localized: message))
+    /// Shows `message` until the next call with a progress bar filled to `fraction`, from 0 to 1, changing the toast in place
+    /// without announcing it, so the bar can fill without VoiceOver reading every step. Does nothing when nothing changed.
+    static func progress(_ message: LocalizedStringResource, fraction: Double) {
+        progress(String(localized: message), fraction: fraction)
     }
 
     /// Progress whose text is already localized.
     @_disfavoredOverload
-    static func progress<S: StringProtocol>(_ message: S) {
+    static func progress<S: StringProtocol>(_ message: S, fraction: Double) {
         let message = String(message)
         guard let panel, let shown, undoable == nil else {
             show(message, duration: nil)
+            self.shown?.fraction = fraction
+            resize()
             return
         }
-        guard shown.message != message else {
+        guard shown.message != message || shown.fraction != fraction else {
             return
         }
+        let resizes = shown.message != message || shown.fraction == nil
         shown.message = message
+        shown.fraction = fraction
         duration = nil
         hideTask?.cancel()
-        let size = size(of: message, actionTitle: actionTitle)
-        panel.setFrame(NSRect(x: panel.frame.midX - size.width / 2, y: panel.frame.minY, width: size.width, height: size.height), display: true)
+        if resizes {
+            resize()
+        }
         if !panel.isVisible {
             panel.orderFrontRegardless()
         }
     }
 
-    private static func size(of message: String, actionTitle: String?) -> NSSize {
-        let textSize = Preferences().textSize
-        var textWidth = (message as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: font.points(textSize), weight: .bold)]).width.rounded(.up)
-        if let actionTitle {
-            textWidth += (actionTitle as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: textSize.points(12), weight: .bold)]).width.rounded(.up) + 36
+    private static func resize() {
+        guard let panel, let shown else {
+            return
         }
-        return NSSize(width: textWidth + 32 + shadow, height: 38 + shadow)
+        let size = size(of: shown.message, fraction: shown.fraction, action: action)
+        panel.setFrame(NSRect(x: panel.frame.midX - size.width / 2, y: panel.frame.minY, width: size.width, height: size.height), display: true)
+        refreshShadow()
+    }
+
+    /// The panel's shadow follows the pill drawn in it, so it's worked out again once the new content has drawn.
+    private static func refreshShadow() {
+        DispatchQueue.main.async {
+            panel?.invalidateShadow()
+        }
+    }
+
+    private static func size(of message: String, fraction: Double?, action: ToastView.Action?) -> NSSize {
+        let textSize = Preferences().textSize
+        func width(_ text: String, _ font: ScaledFont, weight: NSFont.Weight) -> CGFloat {
+            (text as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: font.points(textSize), weight: weight)]).width.rounded(.up)
+        }
+        var total = ToastView.leading + width(message, font, weight: .medium)
+        if fraction != nil {
+            total += ToastView.spacing + barWidth + ToastView.spacing + ToastView.percentWidth(textSize)
+        }
+        if let action {
+            total += ToastView.spacing + ToastView.actionPadding * 2 + width(action.title, actionFont, weight: .semibold)
+            if let key = action.key {
+                total += ToastView.keyGap + width(key, actionFont, weight: .semibold)
+            }
+            total += ToastView.trailingWithAction
+        } else {
+            total += ToastView.leading
+        }
+        return NSSize(width: total + 2, height: height)
     }
 
     private static func hold(_ holding: Bool) {
@@ -146,7 +182,8 @@ enum Toast {
         panel.level = .statusBar
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.hasShadow = false
+        // The system shadow follows the pill's outline, and unlike a drawn one it doesn't catch clicks around it.
+        panel.hasShadow = true
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         self.panel = panel
         return panel
@@ -157,40 +194,91 @@ enum Toast {
 @Observable
 private final class ToastText {
     var message: String
+    /// How far the work has got, from 0 to 1, for a toast that shows a progress bar.
+    var fraction: Double?
 
     init(message: String) {
         self.message = message
     }
 }
 
+/// A dark pill, like the other floating panels in both appearances, with the message, any progress bar and one button.
 private struct ToastView: View {
     struct Action {
         let title: String
+        /// The shortcut that also presses it, shown faded after the title.
+        var key: String?
         let perform: () -> Void
+    }
+
+    static let leading: CGFloat = 14
+    static let trailingWithAction: CGFloat = 6
+    static let spacing: CGFloat = 12
+    static let actionPadding: CGFloat = 10
+    static let keyGap: CGFloat = 5
+
+    static func percentWidth(_ textSize: TextSize) -> CGFloat {
+        ("100%" as NSString).size(withAttributes: [.font: NSFont.monospacedDigitSystemFont(ofSize: Toast.actionFont.points(textSize), weight: .semibold)]).width.rounded(.up)
     }
 
     let text: ToastText
     let action: Action?
     let hold: (Bool) -> Void
     let dismiss: () -> Void
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.textSize) private var textSize
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Self.spacing) {
             Text(text.message)
                 .font(Toast.font)
-                .foregroundStyle(Brutal.ink)
+                .foregroundStyle(.white)
                 .lineLimit(1)
+            if let fraction = text.fraction {
+                BrutalProgressBar(value: fraction)
+                    .frame(width: Toast.barWidth)
+                Text(fraction, format: .percent.precision(.fractionLength(0)))
+                    .font(.scaled(12, weight: .semibold, tabular: true))
+                    .foregroundStyle(.white.opacity(contrast == .increased ? 1 : 0.75))
+                    .frame(width: Self.percentWidth(textSize), alignment: .trailing)
+                    .accessibilityHidden(true)
+            }
             if let action {
-                Button(action.title, action: action.perform)
-                    .buttonStyle(BrutalButtonStyle())
+                Button(action: action.perform) {
+                    HStack(spacing: Self.keyGap) {
+                        Text(action.title)
+                        if let key = action.key {
+                            Text(verbatim: key).opacity(0.6).accessibilityHidden(true)
+                        }
+                    }
+                }
+                .buttonStyle(ToastButtonStyle())
             }
         }
+        .padding(.leading, Self.leading)
+        .padding(.trailing, action == nil ? Self.leading : Self.trailingWithAction)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .brutalSurface(Brutal.paper.opacity(0.75), glass: true, radius: Brutal.Radius.panel, shadow: 4)
-        .padding(.trailing, 4)
-        .padding(.bottom, 4)
-        .contentShape(Rectangle())
+        .background(Color(hex: 0x1A1A1E).opacity(contrast == .increased || reduceTransparency ? 1 : 0.9), in: Capsule())
+        .inkBorder(Capsule(), width: 0.5, color: .white.opacity(contrast == .increased ? 0.4 : 0.14))
+        .environment(\.colorScheme, .dark)
+        .contentShape(Capsule())
         .onHover(perform: hold)
         .onTapGesture(perform: dismiss)
+        .accessibilityElement(children: .contain)
+    }
+}
+
+/// The toast's one button: a white-tinted pill, brighter while pressed.
+private struct ToastButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(Toast.actionFont)
+            .foregroundStyle(.white)
+            .lineLimit(1)
+            .padding(.horizontal, ToastView.actionPadding)
+            .padding(.vertical, 4)
+            .background(.white.opacity(configuration.isPressed ? 0.26 : 0.16), in: Capsule())
+            .contentShape(Capsule())
     }
 }

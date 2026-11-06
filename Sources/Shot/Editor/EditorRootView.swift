@@ -14,7 +14,7 @@ struct EditorRootView: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
                 if model.isDirty {
-                    BrutalChip(text: "EDITED", color: Brutal.pink)
+                    BrutalBadge(text: "EDITED")
                 }
                 Spacer()
                 Button { model.toggleLayers() } label: { Label("Layers", systemImage: "square.3.layers.3d").fixedSize() }

@@ -488,7 +488,7 @@ private struct SetupBarView: View {
         HStack(spacing: 10) {
             BrutalSegmented(selection: Binding(get: { model.mode }, set: { actions.switchMode($0) }), options: CaptureTarget.allCases.map { ($0, $0.title) })
                 .brutalTip("Switch what to record")
-            BrutalChip(text: "\(Int(model.pixelSize.width)) × \(Int(model.pixelSize.height))")
+            BrutalBadge(text: "\(Int(model.pixelSize.width)) × \(Int(model.pixelSize.height))")
                 .fixedSize()
             Rectangle().fill(Brutal.faint(0.2)).frame(width: 2, height: 28)
             OptionToggle(on: model.cameraOn, symbol: model.cameraOn ? "video.fill" : "video.slash.fill", help: model.cameraOn ? "Hide camera bubble" : "Show camera bubble", action: actions.toggleCamera)

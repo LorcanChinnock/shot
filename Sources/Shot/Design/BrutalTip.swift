@@ -16,17 +16,18 @@ extension EnvironmentValues {
 }
 
 extension View {
-    /// Explains the view in a tip after a hover: `title`, with `detail` below it when there is one.
+    /// Explains the view in a tip after a hover, or when it takes keyboard focus: `title`, then `key` on a keycap when the
+    /// view has a shortcut, with `detail` below them when there is one.
     /// VoiceOver reads the tip as a hint, not a label, since most titles add a shortcut to a button's own text, so a
     /// control without readable text, such as an icon, needs its own `accessibilityLabel`.
-    func brutalTip(_ title: LocalizedStringResource, detail: LocalizedStringResource? = nil) -> some View {
-        modifier(TipTrigger(title: String(localized: title), detail: detail.map { String(localized: $0) }))
+    func brutalTip(_ title: LocalizedStringResource, key: String? = nil, detail: LocalizedStringResource? = nil) -> some View {
+        modifier(TipTrigger(title: String(localized: title), key: key, detail: detail.map { String(localized: $0) }))
     }
 
     /// A tip whose text is already localized, or needs no translating, as `Text` takes a string variable as is.
     @_disfavoredOverload
-    func brutalTip<S: StringProtocol>(_ title: S, detail: String? = nil) -> some View {
-        modifier(TipTrigger(title: String(title), detail: detail))
+    func brutalTip<S: StringProtocol>(_ title: S, key: String? = nil, detail: String? = nil) -> some View {
+        modifier(TipTrigger(title: String(title), key: key, detail: detail))
     }
 
     /// Draws the tips of the views inside over all of them, kept within its bounds. Glass windows install it on their content.
@@ -45,6 +46,7 @@ extension View {
 
 private struct Tip {
     let title: String
+    let key: String?
     let detail: String?
     let anchor: Anchor<CGRect>
 }
@@ -59,25 +61,41 @@ private struct TipKey: SwiftUI.PreferenceKey {
 
 private struct TipTrigger: ViewModifier {
     let title: String
+    let key: String?
     let detail: String?
     @Environment(\.hostsTips) private var hostsTips
     @State private var hovering = false
-    @State private var clicked = false
+    /// Set by a click or a key press while the tip is wanted, so it gets out of the way of the work, such as typing in a
+    /// search field. Moving the pointer away or focus to another control clears it.
+    @State private var dismissed = false
     @State private var shows = false
+    /// Keyboard focus shows the tip too, so someone who doesn't use a pointer still learns the name and the key.
+    @FocusState private var focused: Bool
+    /// A field keeps focus while its window is in the background, but its tip shouldn't show there.
+    @Environment(\.appearsActive) private var appearsActive
+
+    private var wanted: Bool { (hovering || (focused && appearsActive)) && !dismissed }
 
     func body(content: Content) -> some View {
         if hostsTips {
             content
                 .accessibilityHint(Text(detail ?? title))
+                .focused($focused)
                 .onHover(perform: hover)
                 .onDisappear { hover(false) }
-                .onReceive(TipClock.shared.clicks) {
-                    if hovering {
-                        clicked = true
+                .onReceive(TipClock.shared.dismissals) {
+                    if hovering || focused {
+                        dismissed = true
                     }
                 }
-                .task(id: hovering && !clicked) {
-                    guard hovering, !clicked else {
+                // A Tab press dismisses the tip it leaves, then focus lands here and this tip shows.
+                .onChange(of: focused) { _, isFocused in
+                    if isFocused || !hovering {
+                        dismissed = false
+                    }
+                }
+                .task(id: wanted) {
+                    guard wanted else {
                         shows = false
                         return
                     }
@@ -88,9 +106,9 @@ private struct TipTrigger: ViewModifier {
                     shows = true
                     TipClock.shared.timing.shown()
                 }
-                .anchorPreference(key: TipKey.self, value: .bounds) { shows ? [Tip(title: title, detail: detail, anchor: $0)] : [] }
+                .anchorPreference(key: TipKey.self, value: .bounds) { shows ? [Tip(title: title, key: key, detail: detail, anchor: $0)] : [] }
         } else {
-            content.help([title, detail].compactMap(\.self).joined(separator: "\n"))
+            content.help([key.map { "\(title) (\($0))" } ?? title, detail].compactMap(\.self).joined(separator: "\n"))
         }
     }
 
@@ -102,23 +120,25 @@ private struct TipTrigger: ViewModifier {
         if inside {
             TipClock.shared.timing.entered(at: .now)
         } else {
-            clicked = false
+            if !focused {
+                dismissed = false
+            }
             TipClock.shared.timing.left(at: .now)
         }
     }
 }
 
-/// Shared by every tip, so moving between controls keeps tips warm, and a click hides the tip of the control under it.
+/// Shared by every tip, so moving between controls keeps tips warm, and a click or key press hides the tip showing.
 @MainActor
 private final class TipClock {
     static let shared = TipClock()
 
     var timing = TipTiming()
-    let clicks = PassthroughSubject<Void, Never>()
+    let dismissals = PassthroughSubject<Void, Never>()
 
     private init() {
-        NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]) { [clicks] event in
-            clicks.send()
+        NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown, .keyDown]) { [dismissals] event in
+            dismissals.send()
             return event
         }
     }
@@ -141,16 +161,20 @@ private struct TipBubble: View {
         let minX = leading
             ? min(max(target.minX, Self.margin), bounds.width - Self.maxWidth - Self.margin)
             : max(min(target.maxX, bounds.width - Self.margin), Self.maxWidth + Self.margin) - Self.maxWidth
-        VStack(alignment: .leading, spacing: 2) {
-            Text(tip.title).font(Brutal.label)
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 8) {
+                Text(tip.title).font(Brutal.small).foregroundStyle(Brutal.ink)
+                if let key = tip.key {
+                    Keycap(key)
+                }
+            }
             if let detail = tip.detail {
-                Text(detail).font(Brutal.caption).opacity(0.75)
+                Text(detail).font(.scaled(12)).foregroundStyle(Brutal.tertiaryText)
             }
         }
-        .foregroundStyle(Brutal.ink)
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
-        .brutalSurface(Brutal.paper, radius: Brutal.Radius.button, shadow: 2)
+        .depth(.float, fill: Brutal.group, radius: Brutal.Radius.control)
         .fixedSize(horizontal: false, vertical: true)
         .frame(width: Self.maxWidth, height: 0, alignment: Alignment(horizontal: leading ? .leading : .trailing, vertical: below ? .top : .bottom))
         .position(x: minX + Self.maxWidth / 2, y: below ? target.maxY + Self.gap : target.minY - Self.gap)

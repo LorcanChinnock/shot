@@ -82,29 +82,9 @@ struct GalleryRootView: View {
     }
 
     private var searchField: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass")
-                .font(.scaled(11, weight: .bold))
-                .foregroundStyle(Brutal.faded(0.6))
-            TextField("Search", text: Bindable(model).query)
-                .textFieldStyle(.plain)
-                .font(.scaled(13, weight: .semibold))
-                .focused($searchFocused)
-            if !model.query.isEmpty {
-                Button {
-                    model.query = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(Brutal.faded(0.5))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Clear search"))
-            }
-        }
-        .padding(.horizontal, 10)
-        .frame(minWidth: 90, idealWidth: 170, maxWidth: 170, minHeight: 30, maxHeight: 30)
-        .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
-        .brutalTip("Search by file name or by text in screenshots (⌘F)")
+        BrutalSearchField(prompt: "Search", text: Bindable(model).query, focus: $searchFocused)
+            .frame(minWidth: 90, idealWidth: 170, maxWidth: 170, minHeight: 28, maxHeight: 28)
+            .brutalTip("Search by file name or by text in screenshots (⌘F)")
     }
 
     private var sortMenu: some View {
@@ -125,45 +105,26 @@ struct GalleryRootView: View {
         }
     }
 
+    @ViewBuilder
     private var emptyState: some View {
-        VStack(spacing: 12) {
+        Group {
             if !model.hasLoaded {
                 ProgressView().controlSize(.small)
             } else if model.items.isEmpty {
-                Image(systemName: "photo.on.rectangle.angled")
-                    .font(.scaled(34, weight: .bold))
-                    .foregroundStyle(Brutal.faded(0.55))
-                Text("No captures yet")
-                    .font(Brutal.title(17))
-                    .foregroundStyle(Brutal.ink)
-                Text("Screenshots and recordings saved to \((model.folder.path as NSString).abbreviatingWithTildeInPath) show up here.")
-                    .font(Brutal.caption)
-                    .foregroundStyle(Brutal.faded(0.7))
-                Button("Open Folder") { NSWorkspace.shared.open(model.folder) }
-                    .buttonStyle(BrutalButtonStyle())
+                EmptyState(
+                    symbol: "photo.on.rectangle.angled", title: String(localized: "No captures yet"),
+                    message: String(localized: "Screenshots and recordings saved to \((model.folder.path as NSString).abbreviatingWithTildeInPath) show up here."),
+                    note: String(localized: "Your first capture goes here")
+                ) {
+                    Button("Open Folder") { NSWorkspace.shared.open(model.folder) }
+                        .buttonStyle(BrutalButtonStyle())
+                }
             } else if let shown = model.shownFolder, !model.items.contains(where: { $0.folder == shown }) {
-                Image(systemName: "folder")
-                    .font(.scaled(34, weight: .bold))
-                    .foregroundStyle(Brutal.faded(0.55))
-                Text("This folder is empty")
-                    .font(Brutal.title(17))
-                    .foregroundStyle(Brutal.ink)
-                Text("Drag captures onto this folder in the sidebar, or use Move to in a capture's menu. Captures in the folders inside it show when you open them.")
-                    .font(Brutal.caption)
-                    .foregroundStyle(Brutal.faded(0.7))
+                EmptyState(symbol: "folder", title: "This folder is empty", message: "Drag captures onto this folder in the sidebar, or use Move to in a capture's menu. Captures in the folders inside it show when you open them.")
             } else {
-                Image(systemName: "magnifyingglass")
-                    .font(.scaled(34, weight: .bold))
-                    .foregroundStyle(Brutal.faded(0.55))
-                Text("Nothing matches")
-                    .font(Brutal.title(17))
-                    .foregroundStyle(Brutal.ink)
-                Text("Try another search, or show All.")
-                    .font(Brutal.caption)
-                    .foregroundStyle(Brutal.faded(0.7))
+                EmptyState(symbol: "magnifyingglass", title: "Nothing matches", message: "Try another search, or show All.")
             }
         }
-        .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -206,7 +167,7 @@ private struct GalleryGrid: View {
                                 Text(section.title)
                                     .font(Brutal.title(15))
                                     .foregroundStyle(Brutal.ink)
-                                BrutalChip(text: "\(section.items.count)")
+                                BrutalBadge(text: "\(section.items.count)")
                                 Spacer()
                             }
                             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { headerHeight = $0 }
@@ -489,10 +450,10 @@ private struct GalleryTile: View, Equatable {
                         .brutalCircle(Brutal.yellow, shadow: 2)
                     Spacer()
                     if let duration = thumbnail?.duration {
-                        BrutalChip(text: Gallery.duration(duration), color: Brutal.paper)
+                        BrutalBadge(text: Gallery.duration(duration), style: .strong)
                     }
                 case .gif:
-                    BrutalChip(text: "GIF", color: Brutal.mint)
+                    BrutalBadge(text: "GIF", style: .strong)
                     Spacer()
                 case .image:
                     Spacer()
@@ -576,12 +537,9 @@ private struct GalleryTagRow: View {
                     managing.toggle()
                 } label: {
                     Image(systemName: "tag")
-                        .font(.scaled(12, weight: .bold))
-                        .foregroundStyle(Brutal.ink)
-                        .frame(width: 26, height: 26)
-                        .brutalSurface(managing ? Brutal.violet : Brutal.paper.opacity(0.85), radius: Brutal.Radius.chip, shadow: managing ? 0 : 2)
+                        .font(.scaled(12, weight: .medium))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(BrutalButtonStyle(.toolbar, isOn: managing))
                 .brutalTip("Rename or remove tags")
                 .accessibilityLabel(Text("Manage tags"))
                 .popover(isPresented: $managing, arrowEdge: .bottom) {
@@ -592,17 +550,7 @@ private struct GalleryTagRow: View {
                     Button {
                         model.toggleTagFilter(tag)
                     } label: {
-                        HStack(spacing: 5) {
-                            TagDot(tag: tag)
-                            Text(verbatim: tag)
-                                .lineLimit(1)
-                        }
-                        .font(.scaled(12, weight: .bold))
-                        .foregroundStyle(Brutal.ink)
-                        .inkOnFill(on ? Brutal.violet : nil)
-                        .padding(.horizontal, 9)
-                        .frame(height: 26)
-                        .brutalSurface(on ? Brutal.violet : Brutal.paper.opacity(0.85), radius: Brutal.Radius.chip, shadow: on ? 0 : 2)
+                        TagChip(name: tag, color: TagDot.color(of: tag).map { Color(nsColor: $0) }, isOn: on)
                     }
                     .buttonStyle(.plain)
                     .brutalTip("Show only captures with this tag")
@@ -657,6 +605,7 @@ private struct GalleryTagManagerRow: View {
     let model: GalleryModel
     let tag: String
     @State private var name: String
+    @FocusState private var focused: Bool
 
     init(model: GalleryModel, tag: String) {
         self.model = model
@@ -668,11 +617,9 @@ private struct GalleryTagManagerRow: View {
         HStack(spacing: 6) {
             TagDot(tag: tag)
             TextField("Tag name", text: $name)
-                .textFieldStyle(.plain)
-                .font(.scaled(13, weight: .semibold))
-                .padding(.horizontal, 8)
-                .frame(height: 28)
-                .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
+                .font(Brutal.body)
+                .focused($focused)
+                .brutalField(focused: focused)
                 .onSubmit { model.renameTag(tag, to: name) }
                 .accessibilityLabel(Text("Tag name"))
             Button {
@@ -723,12 +670,9 @@ private struct GalleryTagPopover: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             TextField("Add a tag", text: $name)
-                .textFieldStyle(.plain)
-                .font(.scaled(13, weight: .semibold))
+                .font(Brutal.body)
                 .focused($focused)
-                .padding(.horizontal, 8)
-                .frame(height: 28)
-                .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
+                .brutalField(focused: focused)
                 .onSubmit {
                     model.addTag(name, to: targets)
                     name = ""

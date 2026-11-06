@@ -389,7 +389,7 @@ final class CaptureCoordinator {
                 guard let export = self?.gifExports[videoURL], !export.isCancelled else {
                     return
                 }
-                Toast.progress("Exporting GIF… \(percent)%")
+                Toast.progress("Exporting GIF…", fraction: Double(percent) / 100)
             }
         }
         gifExports[videoURL] = Task {

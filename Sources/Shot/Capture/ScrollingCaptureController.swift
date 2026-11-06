@@ -346,8 +346,8 @@ private struct ScrollCaptureView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                BrutalChip(text: model.status.title, color: chipColor)
-                BrutalChip(text: sizeText)
+                BrutalBadge(text: model.status.title, dot: statusDot)
+                BrutalBadge(text: sizeText)
                 Spacer(minLength: 0)
             }
             ScrollPreview(image: model.preview, size: model.size, viewport: model.viewport)
@@ -381,13 +381,9 @@ private struct ScrollCaptureView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    private var chipColor: Color {
-        switch model.status {
-        case .ready: Brutal.paper
-        case .live: Brutal.mint
-        case .sizeLimit: Brutal.yellow
-        case .tooFar, .changing, .notEnough: Brutal.red
-        }
+    /// A green dot while frames are being added. Problems have no colour of their own: the message under the preview says what's wrong.
+    private var statusDot: Color? {
+        model.status == .live ? Brutal.success : nil
     }
 
     private var sizeText: String {
