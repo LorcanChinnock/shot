@@ -575,7 +575,8 @@ private struct BrutalButtonBody: View {
             .shadow(color: restShadow, radius: 0.5, y: 1)
             .offset(y: sinks ? drop : 0)
             .background {
-                if isFocused, isEnabled {
+                // A secondary button that's on, such as a shortcut recorder listening for keys, wears the focus halo too.
+                if isEnabled, isFocused || (bordered && style.isOn) {
                     Color.clear
                         .inkBorder(RoundedRectangle(cornerRadius: radius + 4, style: .circular), width: 4, color: Brutal.focusRing)
                         .padding(-4)

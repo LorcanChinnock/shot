@@ -124,7 +124,7 @@ Ink is drawn with `inkBorder`, crisp on 1× displays (`inkBorder` snaps the widt
 | Kind | Rest | Hover, on | Pressed | Disabled |
 | --- | --- | --- | --- | --- |
 | Main | Accent, Ink depth, Window type (13 semibold) | No change | Sinks 2 pt into its drop over 80 ms | Draws as a disabled secondary button |
-| Secondary | White (control fill in dark), Rest depth, Body type | No change | Hover fill over it | Hairline edge, disabled text |
+| Secondary | White (control fill in dark), Rest depth, Body type | Hover: no change. On: the focus halo, as a shortcut recorder shows while it listens | Hover fill over it | Hairline edge, disabled text |
 | Plain | Accent text, 13 medium | No change | 60% opacity | Disabled text |
 | Toolbar | No fill, icons at 85% ink, 12 medium, 30 × 28 minimum | Hover fill | Hover fill twice | Disabled text |
 | Tool | As toolbar | Selected: accent with a 1.5 pt ink outline and 1.5 pt drop | As toolbar, or as main when selected | Disabled text |
