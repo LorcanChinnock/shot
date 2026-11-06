@@ -117,6 +117,22 @@ In dark, Rest is a 0.5 pt `rgba(255,255,255,0.12)` edge with `0 1px 1px rgba(0,0
 
 Ink is drawn with `inkBorder`, crisp on 1× displays (`inkBorder` snaps the width to whole device pixels, and is the one way to draw it).
 
+### Buttons
+
+`BrutalButtonStyle` (#1070) draws every button. Pick the kind by the button's job, so a screen keeps one ink button.
+
+| Kind | Rest | Hover, on | Pressed | Disabled |
+| --- | --- | --- | --- | --- |
+| Main | Accent, Ink depth, Window type (13 semibold) | No change | Sinks 2 pt into its drop over 80 ms | Draws as a disabled secondary button |
+| Secondary | White (control fill in dark), Rest depth, Body type | No change | Hover fill over it | Hairline edge, disabled text |
+| Plain | Accent text, 13 medium | No change | 60% opacity | Disabled text |
+| Toolbar | No fill, icons at 85% ink, 12 medium, 30 × 28 minimum | Hover fill | Hover fill twice | Disabled text |
+| Tool | As toolbar | Selected: accent with a 1.5 pt ink outline and 1.5 pt drop | As toolbar, or as main when selected | Disabled text |
+
+- **Destructive** turns a main button record red with white text (`#C4271E` with Increase Contrast, where record red is under 4.5:1), and other kinds `#C4271E` text and a 40% edge of it (dark `#FF7B72`).
+- **Floating** panels' buttons use group corners. The main button keeps the accent with `#000000` ink, secondary is `rgba(255,255,255,0.12)` with white text, and a toolbar toggle that's on is `rgba(255,255,255,0.16)`.
+- **Focus** replaces the system ring with the 4 pt accent halo. **Reduce Motion** keeps the drop still and darkens the fill on press. **Increase Contrast** takes a secondary button's edge to 60% ink.
+
 ### Type
 
 SF Pro at native sizes, through `ScaledFont`, so Settings › Text size still scales it.

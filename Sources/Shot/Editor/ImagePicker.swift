@@ -37,7 +37,7 @@ struct ImagePicker: View {
                     .frame(width: Self.tile * 3 + 16, height: Self.tile * 0.7)
             }
             Button("Choose File…", action: chooseFiles)
-                .buttonStyle(BrutalButtonStyle(compact: true))
+                .buttonStyle(BrutalButtonStyle())
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding(14)

@@ -200,7 +200,7 @@ private struct PermissionStep: View {
             HStack {
                 Spacer()
                 Button("Relaunch") { Permissions.relaunch() }
-                    .buttonStyle(BrutalButtonStyle(color: Brutal.yellow))
+                    .buttonStyle(BrutalButtonStyle(.main, large: true))
                     .keyboardShortcut(.defaultAction)
             }
         } else {
@@ -227,17 +227,18 @@ private struct PermissionStep: View {
                         model.requestedAccess = true
                         model.visitedSettings = true
                     }
-                        .buttonStyle(BrutalButtonStyle(color: Brutal.mint))
+                        .buttonStyle(BrutalButtonStyle(.main, large: true))
+                        .keyboardShortcut(.defaultAction)
                 }
                 Button("Open System Settings") {
                     Permissions.openSettings()
                     model.visitedSettings = true
                 }
-                    .buttonStyle(BrutalButtonStyle())
+                    .buttonStyle(BrutalButtonStyle(large: true))
                 Spacer()
                 Button("Relaunch") { Permissions.relaunch() }
-                    .buttonStyle(BrutalButtonStyle(color: Brutal.yellow))
-                    .keyboardShortcut(.defaultAction)
+                    .buttonStyle(BrutalButtonStyle(model.requestedAccess ? .main : .secondary, large: true))
+                    .keyboardShortcut(model.requestedAccess ? .defaultAction : nil)
             }
         }
     }
@@ -263,12 +264,13 @@ private struct AccessibilityStep: View {
         HStack(spacing: 12) {
             if !model.hasAccessibility {
                 Button("Grant") { Permissions.requestAccessibility() }
-                    .buttonStyle(BrutalButtonStyle(color: Brutal.mint))
+                    .buttonStyle(BrutalButtonStyle(.main, large: true))
+                    .keyboardShortcut(.defaultAction)
             }
             Spacer()
             Button(model.hasAccessibility ? "Continue" : "Skip") { model.next() }
-                .buttonStyle(BrutalButtonStyle(color: Brutal.yellow))
-                .keyboardShortcut(.defaultAction)
+                .buttonStyle(BrutalButtonStyle(model.hasAccessibility ? .main : .plain, large: true))
+                .keyboardShortcut(model.hasAccessibility ? .defaultAction : nil)
         }
     }
 }
@@ -305,7 +307,7 @@ private struct SetupStep: View {
         HStack {
             Spacer()
             Button("Continue") { model.finishSetup() }
-                .buttonStyle(BrutalButtonStyle(color: Brutal.yellow))
+                .buttonStyle(BrutalButtonStyle(.main, large: true))
                 .keyboardShortcut(.defaultAction)
         }
     }
@@ -336,7 +338,7 @@ private struct TryItStep: View {
             HStack {
                 Spacer()
                 Button("Done") { WelcomeWindow.close() }
-                    .buttonStyle(BrutalButtonStyle(color: Brutal.yellow))
+                    .buttonStyle(BrutalButtonStyle(.main, large: true))
                     .keyboardShortcut(.defaultAction)
             }
         } else {
@@ -358,7 +360,7 @@ private struct TryItStep: View {
             HStack {
                 Spacer()
                 Button("Skip") { WelcomeWindow.close() }
-                    .buttonStyle(BrutalButtonStyle())
+                    .buttonStyle(BrutalButtonStyle(.plain, large: true))
             }
         }
     }

@@ -4,14 +4,12 @@ import SwiftUI
 
 struct ShortcutRecorderView: View {
     let action: ShotAction
-    var color: Color
     @Setting private var encoded: String
     @State private var isRecording = false
     @State private var monitor: Any?
 
-    init(action: ShotAction, color: Color) {
+    init(action: ShotAction) {
         self.action = action
-        self.color = color
         _encoded = Setting(wrappedValue: action.defaultCombo(replacingSystemScreenshots: Preferences().replacesSystemScreenshots)?.encoded ?? "", PreferenceKey.hotkey(action))
     }
 
@@ -31,7 +29,7 @@ struct ShortcutRecorderView: View {
                 .tracking(1)
                 .frame(minWidth: 96)
         }
-        .buttonStyle(BrutalButtonStyle(color: isRecording ? color : Brutal.paper.opacity(0.85), compact: true))
+        .buttonStyle(BrutalButtonStyle(isOn: isRecording))
         .accessibilityLabel(Text("\(action.title) shortcut"))
         .accessibilityValue(Text(label))
         .onDisappear(perform: stop)

@@ -182,7 +182,7 @@ private struct ToastView: View {
                 .lineLimit(1)
             if let action {
                 Button(action.title, action: action.perform)
-                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .buttonStyle(BrutalButtonStyle())
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

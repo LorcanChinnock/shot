@@ -153,7 +153,7 @@ struct GalleryRootView: View {
                     .font(Brutal.caption)
                     .foregroundStyle(Brutal.faded(0.7))
                 Button("Open Folder") { NSWorkspace.shared.open(model.folder) }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .buttonStyle(BrutalButtonStyle())
             } else if let shown = model.shownFolder, !model.items.contains(where: { $0.folder == shown }) {
                 Image(systemName: "folder")
                     .font(.scaled(34, weight: .bold))
@@ -301,29 +301,29 @@ private struct GalleryFooter: View {
                 .lineLimit(1)
             if model.allSelected {
                 Button("Deselect All") { model.clearSelection() }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .buttonStyle(BrutalButtonStyle())
                     .brutalTip("Deselect all (⇧⌘A)")
             } else {
                 Button("Select All") { model.selectAll() }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .buttonStyle(BrutalButtonStyle())
                     .disabled(model.visible.isEmpty)
                     .brutalTip("Select all (⌘A)")
             }
             Spacer()
             Group {
                 Button("Edit") { model.edit(selected) }
-                    .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
+                    .buttonStyle(BrutalButtonStyle(.toolbar))
                     // Whether a GIF has a project is read from the store only on a click, so one never greys it out.
                     .disabled(!Gallery.canEdit(selected) { _ in true })
                     .brutalTip("Open in the editor (Return)")
                 Button("Copy") { model.copy(selected) }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .buttonStyle(BrutalButtonStyle(.main))
                     .brutalTip("Copy (⌘C)")
                 Button("Show in Finder") { model.reveal(selected) }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .buttonStyle(BrutalButtonStyle(.toolbar))
                     .brutalTip("Show in Finder (⌘R)")
                 Button("Move to Trash") { model.trash(selected) }
-                    .buttonStyle(BrutalButtonStyle(color: Brutal.red, compact: true))
+                    .buttonStyle(BrutalButtonStyle(.toolbar, destructive: true))
                     .brutalTip("Move to the Trash (⌘⌫)")
             }
             .disabled(selected.isEmpty)

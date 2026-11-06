@@ -305,9 +305,9 @@ private struct GeneralSettings: View {
             SettingRow(title: String(localized: "Save folder"), subtitle: (saveFolder as NSString).abbreviatingWithTildeInPath) {
                 HStack(spacing: 10) {
                     Button("Reveal") { NSWorkspace.shared.open(URL(fileURLWithPath: saveFolder)) }
-                        .buttonStyle(BrutalButtonStyle(compact: true))
+                        .buttonStyle(BrutalButtonStyle())
                     Button("Choose…", action: chooseFolder)
-                        .buttonStyle(BrutalButtonStyle(color: color, compact: true))
+                        .buttonStyle(BrutalButtonStyle())
                 }
             }
             SettingRow(title: "File name", subtitle: "\(previewName).\(imageFormat.fileExtension)") {
@@ -546,7 +546,7 @@ private struct AudioSettings: View {
                             Task { await preview.start(deviceID: deviceID) }
                         }
                     }
-                    .buttonStyle(BrutalButtonStyle(color: preview.isRunning ? color : Brutal.paper, compact: true))
+                    .buttonStyle(BrutalButtonStyle())
                 }
             }
             ToggleRow(title: "System audio", subtitle: "Sound from other apps. Shot's own sounds are excluded.", isOn: $systemAudio, color: color, divider: false)
@@ -593,7 +593,7 @@ private struct CameraSettings: View {
                             Task { await preview.start(deviceID: deviceID) }
                         }
                     }
-                    .buttonStyle(BrutalButtonStyle(color: preview.isRunning ? color : Brutal.paper, compact: true))
+                    .buttonStyle(BrutalButtonStyle())
                 }
             }
             SettingRow(title: "Bubble size", divider: false) {
@@ -645,7 +645,7 @@ private struct DevicePicker: View {
             }
             .frame(maxWidth: 190)
         }
-        .buttonStyle(BrutalButtonStyle(compact: true))
+        .buttonStyle(BrutalButtonStyle())
         .fixedSize()
     }
 
@@ -674,7 +674,7 @@ private struct ShortcutSettings: View {
             if replacesSystemScreenshots && macOSOwnsKeys {
                 SettingRow(title: "macOS still uses these keys", subtitle: "Turn off the Screenshots shortcuts under Keyboard Shortcuts.", divider: false) {
                     Button("Open") { SystemShortcuts.openKeyboardSettings() }
-                        .buttonStyle(BrutalButtonStyle(compact: true))
+                        .buttonStyle(BrutalButtonStyle())
                 }
             }
         }
@@ -686,7 +686,7 @@ private struct ShortcutSettings: View {
             let actions = ShotAction.allCases.filter(\.hasShortcut)
             ForEach(Array(actions.enumerated()), id: \.element) { index, action in
                 SettingRow(title: action.title, divider: index < actions.count - 1) {
-                    ShortcutRecorderView(action: action, color: color)
+                    ShortcutRecorderView(action: action)
                 }
             }
         }
@@ -701,7 +701,7 @@ private struct ShortcutSettings: View {
                 SystemShortcuts.useShot(true)
                 macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
             }
-                .buttonStyle(BrutalButtonStyle(color: color, compact: true))
+                .buttonStyle(BrutalButtonStyle())
         }
         .padding(.horizontal, 4)
     }
@@ -759,7 +759,7 @@ private struct AboutSettings: View {
             ToggleRow(title: "Check for updates automatically", subtitle: "Shot asks GitHub once a day whether a new version is out, and installs it when you agree. Nothing else is sent.", isOn: $updater.automaticallyChecks, color: color)
             SettingRow(title: "Check now", subtitle: "Looks for a new version once, even when automatic checks are off.", divider: false) {
                 Button("Check") { updater.checkForUpdates() }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .buttonStyle(BrutalButtonStyle())
                     .disabled(!updater.canCheckForUpdates)
             }
         }
@@ -773,10 +773,10 @@ private struct AboutSettings: View {
                             Permissions.requestScreenCapture()
                             screenRequested = true
                         }
-                        .buttonStyle(BrutalButtonStyle(compact: true))
+                        .buttonStyle(BrutalButtonStyle())
                     } else {
                         Button("Open") { Permissions.openSettings() }
-                            .buttonStyle(BrutalButtonStyle(compact: true))
+                            .buttonStyle(BrutalButtonStyle())
                     }
                 }
             }
@@ -785,10 +785,10 @@ private struct AboutSettings: View {
                     BrutalChip(text: accessibilityGranted ? "GRANTED" : "MISSING", color: accessibilityGranted ? Brutal.mint : Brutal.red)
                     if accessibilityGranted {
                         Button("Open") { Permissions.openAccessibilitySettings() }
-                            .buttonStyle(BrutalButtonStyle(compact: true))
+                            .buttonStyle(BrutalButtonStyle())
                     } else {
                         Button("Grant") { Permissions.requestAccessibility() }
-                            .buttonStyle(BrutalButtonStyle(compact: true))
+                            .buttonStyle(BrutalButtonStyle())
                     }
                 }
             }
@@ -808,7 +808,7 @@ private struct AboutSettings: View {
                     try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
                     NSWorkspace.shared.open(folder)
                 }
-                .buttonStyle(BrutalButtonStyle(compact: true))
+                .buttonStyle(BrutalButtonStyle())
             }
             SettingRow(title: "Kept originals", subtitle: "\(keptSize) of screenshots as they were before Save went over them. They let you undo those edits, and stay on this Mac.") {
                 Button(confirmingClear ? "Click to confirm" : "Delete") {
@@ -820,7 +820,7 @@ private struct AboutSettings: View {
                         confirmingClear = true
                     }
                 }
-                .buttonStyle(BrutalButtonStyle(color: confirmingClear ? Brutal.red : Brutal.paper, compact: true))
+                .buttonStyle(BrutalButtonStyle(confirmingClear ? .main : .secondary, destructive: confirmingClear))
             }
             SettingRow(title: "Reset all settings", subtitle: "Restores every setting and shortcut. Your captures stay.", divider: false) {
                 Button(confirmingReset ? "Click to confirm" : "Reset") {
@@ -833,18 +833,18 @@ private struct AboutSettings: View {
                         confirmingReset = true
                     }
                 }
-                .buttonStyle(BrutalButtonStyle(color: confirmingReset ? Brutal.red : Brutal.paper, compact: true))
+                .buttonStyle(BrutalButtonStyle(confirmingReset ? .main : .secondary, destructive: true))
             }
         }
 
         SettingsCard(title: "Project", symbol: "chevron.left.forwardslash.chevron.right") {
             SettingRow(title: "Source code", subtitle: "Free and open source under the GPL-3.0 license.") {
                 Button("GitHub") { NSWorkspace.shared.open(Self.repository) }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .buttonStyle(BrutalButtonStyle())
             }
             SettingRow(title: "User Guide", subtitle: "How to use every part of Shot.") {
                 Button("Open") { NSWorkspace.shared.open(Self.guide) }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .buttonStyle(BrutalButtonStyle())
             }
             SettingRow(title: "Acknowledgements", subtitle: "Shot comes with no warranty. It updates itself with Sparkle, under the MIT license.") {
                 Button("View") {
@@ -852,15 +852,15 @@ private struct AboutSettings: View {
                         NSWorkspace.shared.open(url)
                     }
                 }
-                .buttonStyle(BrutalButtonStyle(compact: true))
+                .buttonStyle(BrutalButtonStyle())
             }
             SettingRow(title: "Support Shot", subtitle: "Shot is free, with no ads or account. Sponsoring keeps it that way.") {
                 Button("Sponsor") { NSWorkspace.shared.open(Self.sponsors) }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .buttonStyle(BrutalButtonStyle())
             }
             SettingRow(title: "Report a problem", subtitle: "Bug reports and ideas are welcome.", divider: false) {
                 Button("New Issue") { NSWorkspace.shared.open(Self.repository.appending(path: "issues/new/choose")) }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .buttonStyle(BrutalButtonStyle())
             }
         }
     }
@@ -890,12 +890,12 @@ private struct PermissionRow: View {
                             status = AVCaptureDevice.authorizationStatus(for: mediaType)
                         }
                     }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .buttonStyle(BrutalButtonStyle())
                 } else {
                     Button("Open") {
                         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)")!)
                     }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .buttonStyle(BrutalButtonStyle())
                 }
             }
         }

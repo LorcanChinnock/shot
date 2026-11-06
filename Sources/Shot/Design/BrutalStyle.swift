@@ -48,8 +48,15 @@ enum Brutal {
     static let separator = Color(light: Color(hex: 0x16161A).opacity(0.07), dark: .white.opacity(0.08))
     /// Search fields, segmented tracks and tag chips.
     static let fieldFill = Color(light: Color(hex: 0x16161A).opacity(0.06), dark: .white.opacity(0.07))
-    /// Toolbar buttons on hover.
+    /// Toolbar buttons on hover, and toolbar toggles that are on.
     static let hover = Color(light: Color(hex: 0x16161A).opacity(0.07), dark: .white.opacity(0.08))
+
+    /// A secondary button: white in light, the control fill in dark.
+    static let secondaryFill = Color(light: .white, dark: Color(hex: 0x3A3A3F))
+    /// Red text and edges on destructive secondary, plain and toolbar buttons, darker than record red so text holds 4.5:1.
+    static let destructiveText = Color(light: Color(hex: 0xC4271E), dark: Color(hex: 0xFF7B72))
+    /// The 4 pt halo around a control with keyboard focus: the accent at 60%.
+    static let focusRing = Color(hex: 0xFFD43B).opacity(0.6)
 
     /// The neutral fill under ink: buttons, chips, menus and floating panels. Replaced by `group` and `controlFill` as each
     /// screen is rebuilt.
@@ -444,23 +451,240 @@ struct GlassBackdrop: View {
 
 // MARK: Controls
 
-struct BrutalButtonStyle: ButtonStyle {
-    var color: Color = Brutal.paper
-    var compact = false
-    @Environment(\.isEnabled) private var isEnabled
+/// Shot's buttons, from Components › Buttons. A screen or panel has at most one ink button, `.main`: the action you'll
+/// take next, such as Copy, Save, Record, Stop or Continue. Every other button is `.secondary`, `.plain` or `.toolbar`.
+struct BrutalButtonStyle: PrimitiveButtonStyle {
+    enum Kind {
+        /// The one ink button per screen: accent fill, 1.5 pt ink outline and a 2 pt drop it sinks into when pressed.
+        case main
+        /// A white button at the Rest depth, like a native bordered button.
+        case secondary
+        /// Text only, in accent text.
+        case plain
+        /// Borderless, for toolbars and bars. It fills on hover, and while `isOn`, for a panel or option that's showing.
+        case toolbar
+        /// A toolbar button that picks a tool. The selected tool (`isOn`) is drawn in ink, like `main`, with a 1.5 pt drop.
+        case tool
+    }
+
+    var kind: Kind
+    /// A toolbar toggle that's on, or the selected tool.
+    var isOn: Bool
+    /// Red: a red ink button for `main`, red text and edge for the others.
+    var destructive: Bool
+    /// For the dark floating panels: black ink, group corners, and white text and icons.
+    var floating: Bool
+    /// Onboarding and dialogs, with more room around the title.
+    var large: Bool
+
+    init(_ kind: Kind = .secondary, isOn: Bool = false, destructive: Bool = false, floating: Bool = false, large: Bool = false) {
+        self.kind = kind
+        self.isOn = isOn
+        self.destructive = destructive
+        self.floating = floating
+        self.large = large
+    }
 
     func makeBody(configuration: Configuration) -> some View {
-        let pressed = configuration.isPressed
-        configuration.label
-            .font(.scaled(compact ? 12 : 13, weight: .bold))
-            .foregroundStyle(Brutal.ink)
-            .padding(.horizontal, compact ? 10 : 14)
-            .padding(.vertical, compact ? 5 : 7)
-            .brutalSurface(color, radius: Brutal.Radius.button, shadow: pressed ? 0 : 3)
-            .offset(x: pressed ? 3 : 0, y: pressed ? 3 : 0)
-            .opacity(isEnabled ? 1 : 0.4)
-            .animation(.spring(response: 0.15, dampingFraction: 0.7), value: pressed)
-            .contentShape(Rectangle())
+        BrutalButtonFocus(style: self, configuration: configuration)
+    }
+}
+
+/// Swaps the system's blue focus ring for the accent halo. A `ButtonStyle` can't see whether its button has keyboard
+/// focus, so this wraps the button and tracks it.
+private struct BrutalButtonFocus: View {
+    let style: BrutalButtonStyle
+    let configuration: PrimitiveButtonStyleConfiguration
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        Button(configuration)
+            .buttonStyle(BrutalButtonLook(style: style, focused: focused))
+            .focusEffectDisabled()
+            .focused($focused)
+    }
+}
+
+private struct BrutalButtonLook: ButtonStyle {
+    let style: BrutalButtonStyle
+    let focused: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        BrutalButtonBody(style: style, label: configuration.label, pressed: configuration.isPressed, isFocused: focused)
+    }
+}
+
+/// `BrutalButtonStyle`'s view, which reads hover and the accessibility settings.
+private struct BrutalButtonBody: View {
+    let style: BrutalButtonStyle
+    let label: ButtonStyleConfiguration.Label
+    let pressed: Bool
+    let isFocused: Bool
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.displayScale) private var scale
+    @State private var hovering = false
+
+    /// Text on the accent stays near-black in both appearances.
+    private static let onAccent = Color(hex: 0x16161A)
+
+    private var floating: Bool { style.floating }
+    private var increased: Bool { contrast == .increased }
+
+    /// Drawn in ink: the main button, or the selected tool. A disabled main button isn't the next action, so it draws as
+    /// a disabled secondary one.
+    private var inked: Bool {
+        guard isEnabled else { return false }
+        return style.kind == .main || (style.kind == .tool && style.isOn)
+    }
+
+    private var bordered: Bool { style.kind == .secondary || (style.kind == .main && !isEnabled) }
+    private var borderless: Bool { style.kind == .toolbar || (style.kind == .tool && !inked) }
+    private var toolbarSized: Bool { style.kind == .toolbar || style.kind == .tool }
+
+    private var radius: CGFloat { floating ? Brutal.Radius.group : Brutal.Radius.control }
+    private var inkColor: Color { floating ? .black : Brutal.line }
+    private var drop: CGFloat { Brutal.inkOffset(style.kind == .tool ? 1.5 : 2, scale: scale) }
+    /// Reduce Motion keeps the drop still and darkens the fill instead.
+    private var sinks: Bool { inked && pressed && !reduceMotion }
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: radius, style: .circular)
+        label
+            .font(font)
+            .foregroundStyle(foreground)
+            .lineLimit(1)
+            .opacity(style.kind == .plain && pressed ? 0.6 : 1)
+            .padding(.horizontal, horizontalPadding)
+            .padding(.vertical, verticalPadding)
+            .frame(minWidth: toolbarSized ? (floating ? 36 : 30) : nil, minHeight: toolbarSized ? (floating ? 32 : 28) : nil)
+            .background(fill, in: shape)
+            .overlay {
+                if pressed, style.kind != .plain, !sinks {
+                    shape.fill(inked ? Brutal.line.opacity(0.12) : (floating ? Color.white.opacity(0.08) : Brutal.hover))
+                }
+            }
+            .modifier(ButtonEdge(shape: shape, width: edgeWidth, color: edgeColor))
+            .background {
+                if inked {
+                    shape.fill(inkColor).offset(y: sinks ? 0 : drop)
+                }
+            }
+            .shadow(color: restShadow, radius: 0.5, y: 1)
+            .offset(y: sinks ? drop : 0)
+            .background {
+                if isFocused, isEnabled {
+                    Color.clear
+                        .inkBorder(RoundedRectangle(cornerRadius: radius + 4, style: .circular), width: 4, color: Brutal.focusRing)
+                        .padding(-4)
+                }
+            }
+            .environment(\.colorScheme, floating ? .dark : colorScheme)
+            .contentShape(shape)
+            .onHover { hovering = $0 }
+            .accessibilityAddTraits(style.isOn ? .isSelected : [])
+            .animation(reduceMotion ? nil : .linear(duration: 0.08), value: pressed)
+    }
+
+    private var font: ScaledFont {
+        switch style.kind {
+        case .main: Brutal.label
+        case .secondary: Brutal.body
+        case .plain: .scaled(13, weight: .medium)
+        case .toolbar, .tool: .scaled(12, weight: .medium)
+        }
+    }
+
+    private var horizontalPadding: CGFloat {
+        switch style.kind {
+        case .main, .secondary: style.large ? 20 : 14
+        case .plain: 6
+        case .toolbar, .tool: 7
+        }
+    }
+
+    private var verticalPadding: CGFloat {
+        switch style.kind {
+        case .main, .secondary: floating ? 8 : (style.large ? 7 : 5)
+        case .plain, .toolbar, .tool: 5
+        }
+    }
+
+    private var fill: AnyShapeStyle {
+        if inked {
+            guard style.kind == .main, style.destructive else { return AnyShapeStyle(Brutal.accent) }
+            // White on record red is under 4.5:1, so Increase Contrast darkens the red.
+            return AnyShapeStyle(increased ? Color(hex: 0xC4271E) : Brutal.record)
+        }
+        if bordered {
+            return AnyShapeStyle(floating ? Color.white.opacity(0.12) : Brutal.secondaryFill)
+        }
+        if borderless, isEnabled, style.isOn {
+            return AnyShapeStyle(floating ? Color.white.opacity(0.16) : Brutal.hover)
+        }
+        if borderless, isEnabled, hovering {
+            return AnyShapeStyle(Brutal.hover)
+        }
+        return AnyShapeStyle(Color.clear)
+    }
+
+    private var foreground: AnyShapeStyle {
+        if !isEnabled {
+            return AnyShapeStyle(floating ? Color.white.opacity(0.35) : Brutal.disabledText)
+        }
+        if inked {
+            return AnyShapeStyle(style.kind == .main && style.destructive ? Color.white : Self.onAccent)
+        }
+        if style.destructive {
+            return AnyShapeStyle(Brutal.destructiveText)
+        }
+        switch style.kind {
+        case .main, .secondary:
+            return AnyShapeStyle(floating ? Color.white : Brutal.ink)
+        case .plain:
+            return floating ? AnyShapeStyle(Color.white.opacity(increased ? 1 : 0.8)) : AnyShapeStyle(Brutal.accentText)
+        case .toolbar, .tool:
+            if floating {
+                return AnyShapeStyle(Color.white.opacity(style.isOn || increased ? 1 : 0.82))
+            }
+            return style.isOn ? AnyShapeStyle(Brutal.ink) : AnyShapeStyle(Brutal.faded(0.85))
+        }
+    }
+
+    private var edgeWidth: CGFloat {
+        if inked { return 1.5 }
+        guard bordered, !floating else { return 0 }
+        return colorScheme == .dark && !increased ? 0.5 : 1
+    }
+
+    /// The Rest edge, or the ink outline. Increase Contrast takes a secondary button's edge to at least 3:1.
+    private var edgeColor: Color {
+        if inked { return inkColor }
+        if style.destructive, isEnabled { return Color(hex: 0xC4271E).opacity(increased ? 1 : 0.4) }
+        if increased { return Brutal.ink.opacity(0.6) }
+        return isEnabled ? Brutal.controlEdge : Brutal.hairline
+    }
+
+    private var restShadow: Color {
+        guard bordered, isEnabled, !floating else { return .clear }
+        return colorScheme == .dark ? .black.opacity(0.3) : Color(hex: 0x16161A).opacity(0.06)
+    }
+}
+
+/// A button's edge, if it has one, drawn with `inkBorder` so it lands on whole device pixels.
+private struct ButtonEdge<S: InsettableShape>: ViewModifier {
+    let shape: S
+    let width: CGFloat
+    let color: Color
+
+    func body(content: Content) -> some View {
+        if width > 0 {
+            content.inkBorder(shape, width: width, color: color)
+        } else {
+            content
+        }
     }
 }
 

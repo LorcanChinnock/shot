@@ -500,7 +500,7 @@ private struct SetupBarView: View {
             } label: {
                 Image(systemName: "xmark").font(.system(size: 11, weight: .bold)).frame(width: 16, height: 16)
             }
-            .buttonStyle(BrutalButtonStyle(compact: true))
+            .buttonStyle(BrutalButtonStyle(.toolbar))
             .keyboardShortcut(.cancelAction)
             .brutalTip("Cancel (Esc)")
             .accessibilityLabel(Text("Cancel"))
@@ -509,7 +509,7 @@ private struct SetupBarView: View {
             } label: {
                 Label("Record", systemImage: "record.circle.fill").labelStyle(.titleAndIcon).fixedSize()
             }
-            .buttonStyle(BrutalButtonStyle(color: Brutal.red, compact: true))
+            .buttonStyle(BrutalButtonStyle(.main, floating: true))
             .keyboardShortcut(.defaultAction)
             .brutalTip(model.countdownSeconds > 0 ? "Start recording after a \(model.countdownSeconds)-second countdown (Return)" : "Start recording (Return)")
         }
@@ -531,7 +531,7 @@ private struct OptionToggle: View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 11, weight: .bold)).frame(width: 16, height: 16)
         }
-        .buttonStyle(BrutalButtonStyle(color: on ? Brutal.mint : Brutal.paper, compact: true))
+        .buttonStyle(BrutalButtonStyle(.toolbar, isOn: on))
         .brutalTip(help)
         .accessibilityLabel(Text(help))
     }
@@ -579,7 +579,7 @@ private struct CountdownView: View {
                 .frame(width: 148, height: 148)
                 .brutalCircle(Brutal.yellow, shadow: 6)
             Button("Cancel") { onCancel() }
-                .buttonStyle(BrutalButtonStyle(compact: true))
+                .buttonStyle(BrutalButtonStyle())
                 .keyboardShortcut(.cancelAction)
         }
         // Fill the panel so the hosting view can't shrink it and clip the shadows.
