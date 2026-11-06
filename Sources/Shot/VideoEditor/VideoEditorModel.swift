@@ -892,7 +892,7 @@ final class VideoEditorModel {
         var truncated = false
         let progress = PercentProgress { percent in
             Task { @MainActor in
-                Toast.progress("Exporting… \(percent)%")
+                Toast.progress("Exporting…", fraction: Double(percent) / 100)
             }
         }
         let exported = await exporting {

@@ -22,7 +22,7 @@ struct VideoEditorRootView: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
                 if model.isDirty {
-                    BrutalChip(text: model.cuts.isEmpty && !model.isComposite ? "TRIMMED" : "EDITED", color: Brutal.pink)
+                    BrutalBadge(text: model.cuts.isEmpty && !model.isComposite ? "TRIMMED" : "EDITED")
                 }
                 Spacer()
                 Text(timesLabel)

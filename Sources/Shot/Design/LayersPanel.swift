@@ -407,28 +407,10 @@ private struct FrameRowView: View {
     }
 }
 
-/// A scribble badge, tilted as if stuck on by hand, over what to do first.
+/// What the list shows before anything is drawn.
 private struct EmptyLayers: View {
     var body: some View {
-        VStack(spacing: 14) {
-            Image(systemName: "scribble.variable")
-                .font(.scaled(22, weight: .black))
-                .foregroundStyle(Brutal.ink)
-                .frame(width: 54, height: 54)
-                .brutalCircle(Brutal.yellow, shadow: 3)
-                .rotationEffect(.degrees(-8))
-                .accessibilityHidden(true)
-            VStack(spacing: 4) {
-                Text("Nothing drawn yet")
-                    .font(Brutal.label)
-                    .foregroundStyle(Brutal.faded(0.8))
-                Text("Pick a tool and draw on the image")
-                    .font(Brutal.caption)
-                    .foregroundStyle(Brutal.faded(0.55))
-            }
-            .multilineTextAlignment(.center)
-        }
-        .padding(.horizontal, 16)
+        EmptyState(symbol: "scribble.variable", title: "Nothing drawn yet", message: "Pick a tool and draw on the image", note: "Your marks show up here")
     }
 }
 
@@ -574,11 +556,8 @@ struct LayerNameField: View {
             .textFieldStyle(.plain)
             .font(.scaled(fontSize, weight: .semibold))
             .lineLimit(1)
-            .padding(.horizontal, 3)
-            .padding(.vertical, 1)
-            .background(Brutal.paper)
-            .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: 1)
             .focused($isFocused)
+            .brutalField(focused: isFocused)
             .onSubmit { finish(commit: true) }
             .onExitCommand { finish(commit: false) }
             .onChange(of: isFocused) { _, focused in

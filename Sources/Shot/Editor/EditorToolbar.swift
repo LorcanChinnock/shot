@@ -15,7 +15,7 @@ struct EditorToolbar: View {
             HStack(spacing: 14) {
                 ToolGroup {
                     ForEach(EditorTool.allCases) { tool in
-                        Tile(selected: model.tool == tool, tool: true, help: "\(tool.title) (\(String(tool.key).uppercased()))", detail: tool.summary) {
+                        Tile(selected: model.tool == tool, tool: true, help: tool.title, key: String(tool.key).uppercased(), detail: tool.summary) {
                             model.tool = tool
                         } label: {
                             Image(systemName: tool.symbol).font(Brutal.toolIcon)
@@ -23,7 +23,7 @@ struct EditorToolbar: View {
                     }
                 }
                 ToolGroup {
-                    Tile(selected: model.showsImagePicker, help: "Add an image (⇧⌘I)", detail: "Place a recent capture or an image file beside your screenshot") {
+                    Tile(selected: model.showsImagePicker, help: "Add an image", key: "⇧⌘I", detail: "Place a recent capture or an image file beside your screenshot") {
                         model.showsImagePicker.toggle()
                     } label: {
                         Image(systemName: "photo.badge.plus").font(Brutal.toolIcon)
@@ -49,12 +49,12 @@ struct EditorToolbar: View {
                 }
                 Spacer(minLength: 0)
                 ToolGroup {
-                    Tile(selected: false, help: "Undo (⌘Z)", isEnabled: model.history.canUndo) {
+                    Tile(selected: false, help: "Undo", key: "⌘Z", isEnabled: model.history.canUndo) {
                         model.undo()
                     } label: {
                         Image(systemName: "arrow.uturn.backward").font(Brutal.toolIcon)
                     }
-                    Tile(selected: false, help: "Redo (⇧⌘Z)", isEnabled: model.history.canRedo) {
+                    Tile(selected: false, help: "Redo", key: "⇧⌘Z", isEnabled: model.history.canRedo) {
                         model.redo()
                     } label: {
                         Image(systemName: "arrow.uturn.forward").font(Brutal.toolIcon)

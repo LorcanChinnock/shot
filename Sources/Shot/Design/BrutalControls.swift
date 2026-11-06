@@ -411,6 +411,8 @@ struct Tile<Label: View>: View {
     /// Picks a tool, so the selected one is the toolbar's ink control.
     var tool = false
     let help: String
+    /// The tile's shortcut, shown on a keycap beside `help` in its tip.
+    var key: String?
     /// What the tile does, shown under `help` in its tip.
     var detail: String?
     /// A disabled tile is dimmed but still shows its tip.
@@ -418,16 +420,17 @@ struct Tile<Label: View>: View {
     let action: () -> Void
     @ViewBuilder let label: Label
 
-    init(selected: Bool, tool: Bool = false, help: LocalizedStringResource, detail: LocalizedStringResource? = nil, isEnabled: Bool = true, action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
-        self.init(selected: selected, tool: tool, help: String(localized: help), detail: detail.map { String(localized: $0) }, isEnabled: isEnabled, action: action, label: label)
+    init(selected: Bool, tool: Bool = false, help: LocalizedStringResource, key: String? = nil, detail: LocalizedStringResource? = nil, isEnabled: Bool = true, action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
+        self.init(selected: selected, tool: tool, help: String(localized: help), key: key, detail: detail.map { String(localized: $0) }, isEnabled: isEnabled, action: action, label: label)
     }
 
     /// A tile whose help is already localized, such as a tool's title.
     @_disfavoredOverload
-    init<S: StringProtocol>(selected: Bool, tool: Bool = false, help: S, detail: String? = nil, isEnabled: Bool = true, action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
+    init<S: StringProtocol>(selected: Bool, tool: Bool = false, help: S, key: String? = nil, detail: String? = nil, isEnabled: Bool = true, action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
         self.selected = selected
         self.tool = tool
         self.help = String(help)
+        self.key = key
         self.detail = detail
         self.isEnabled = isEnabled
         self.action = action
@@ -441,6 +444,6 @@ struct Tile<Label: View>: View {
         .buttonStyle(BrutalButtonStyle(tool ? .tool : .toolbar, isOn: selected))
         .disabled(!isEnabled)
         .accessibilityLabel(Text(help))
-        .brutalTip(help, detail: detail)
+        .brutalTip(help, key: key, detail: detail)
     }
 }

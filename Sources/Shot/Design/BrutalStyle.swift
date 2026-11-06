@@ -953,31 +953,6 @@ private struct SegmentThumb: View {
     }
 }
 
-struct BrutalChip: View {
-    let text: String
-    var color: Color = Brutal.paper
-
-    init(text: LocalizedStringResource, color: Color = Brutal.paper) {
-        self.init(text: String(localized: text), color: color)
-    }
-
-    /// A chip whose text is already localized, or is a number or name.
-    @_disfavoredOverload
-    init<S: StringProtocol>(text: S, color: Color = Brutal.paper) {
-        self.text = String(text)
-        self.color = color
-    }
-
-    var body: some View {
-        Text(text)
-            .font(.scaled(11, weight: .heavy))
-            .foregroundStyle(Brutal.ink)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .brutalSurface(color, radius: Brutal.Radius.chip, shadow: 2)
-    }
-}
-
 // MARK: Layout
 
 struct SettingsCard<Content: View>: View {

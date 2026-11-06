@@ -374,19 +374,15 @@ private struct FolderNameField: View {
                 Image(systemName: "folder")
                     .font(.scaled(12, weight: .semibold))
                     .frame(width: 20)
+                    .foregroundStyle(Brutal.ink)
                 TextField("Folder name", text: $name)
-                    .textFieldStyle(.plain)
-                    .font(.scaled(13, weight: .semibold))
+                    .font(Brutal.body)
                     .focused($focused)
+                    .brutalField(focused: focused)
                     .onSubmit(commit)
                     .onExitCommand { model.folderEdit = nil }
             }
-            .foregroundStyle(Brutal.ink)
-            .padding(.horizontal, 4)
-            .frame(maxHeight: .infinity)
-            .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.panel, shadow: 2)
-            .padding(.vertical, 1)
-            .padding(.trailing, 4)
+            .padding(.trailing, 8)
         }
         .frame(height: 32)
         .onAppear { focused = true }
