@@ -18,15 +18,15 @@ struct EditorRootView: View {
                 }
                 Spacer()
                 Button { model.toggleLayers() } label: { Label("Layers", systemImage: "square.3.layers.3d").fixedSize() }
-                    .buttonStyle(BrutalButtonStyle(color: model.showsLayers ? Brutal.violet : Brutal.paper, compact: true))
+                    .buttonStyle(BrutalButtonStyle(.toolbar, isOn: model.showsLayers))
                     .brutalTip("Show the layers (⌘L)")
                 ZoomMenu(model: model, canvas: canvas)
                 CanvasMenu(model: model)
                 Button("Copy") { Task { await model.copy() } }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .buttonStyle(BrutalButtonStyle(.main))
                     .brutalTip("Copy image (⌘C)")
                 Button("Save") { Task { await model.save() } }
-                    .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
+                    .buttonStyle(BrutalButtonStyle())
                     .brutalTip("Save and copy (⌘S)")
             }
             .padding(.leading, GlassWindow.trafficLightsWidth)
@@ -102,7 +102,7 @@ private struct ZoomMenu: View {
                 Image(systemName: "chevron.down").font(.scaled(9, weight: .black))
             }
         }
-        .buttonStyle(BrutalButtonStyle(compact: true))
+        .buttonStyle(BrutalButtonStyle())
         .fixedSize()
         .brutalTip("Zoom in (⌘+), out (⌘−), to fit (⌘0) or to actual size (⌘1). Pinch to zoom; scroll, Space-drag, middle-drag or the hand tool (H) to move around.")
     }
@@ -124,7 +124,7 @@ private struct CanvasMenu: View {
                 Image(systemName: "chevron.down").font(.scaled(9, weight: .black))
             }
         }
-        .buttonStyle(BrutalButtonStyle(compact: true))
+        .buttonStyle(BrutalButtonStyle())
         .fixedSize()
         .brutalTip("Canvas size and background")
         .popover(isPresented: $showsBackground, arrowEdge: .bottom) {

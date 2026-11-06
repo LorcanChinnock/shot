@@ -130,7 +130,7 @@ private struct ColorEditor: View {
                 Button(action: sample) {
                     Image(systemName: "eyedropper")
                 }
-                .buttonStyle(BrutalButtonStyle(compact: true))
+                .buttonStyle(BrutalButtonStyle(.toolbar))
                 .brutalTip("Pick a colour on screen", detail: "Click anywhere, including the image. Esc cancels.")
                 .accessibilityLabel(Text("Pick a colour on screen"))
                 Spacer()
@@ -372,9 +372,11 @@ struct ToolGroup<Content: View>: View {
     }
 }
 
+/// A toolbar button with a tip. A tool tile (`tool`) draws the selected tool in ink; any other tile fills while it's on.
 struct Tile<Label: View>: View {
     let selected: Bool
-    let color: Color
+    /// Picks a tool, so the selected one is the toolbar's ink control.
+    var tool = false
     let help: String
     /// What the tile does, shown under `help` in its tip.
     var detail: String?
@@ -382,17 +384,16 @@ struct Tile<Label: View>: View {
     var isEnabled = true
     let action: () -> Void
     @ViewBuilder let label: Label
-    @State private var hovering = false
 
-    init(selected: Bool, color: Color, help: LocalizedStringResource, detail: LocalizedStringResource? = nil, isEnabled: Bool = true, action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
-        self.init(selected: selected, color: color, help: String(localized: help), detail: detail.map { String(localized: $0) }, isEnabled: isEnabled, action: action, label: label)
+    init(selected: Bool, tool: Bool = false, help: LocalizedStringResource, detail: LocalizedStringResource? = nil, isEnabled: Bool = true, action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
+        self.init(selected: selected, tool: tool, help: String(localized: help), detail: detail.map { String(localized: $0) }, isEnabled: isEnabled, action: action, label: label)
     }
 
     /// A tile whose help is already localized, such as a tool's title.
     @_disfavoredOverload
-    init<S: StringProtocol>(selected: Bool, color: Color, help: S, detail: String? = nil, isEnabled: Bool = true, action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
+    init<S: StringProtocol>(selected: Bool, tool: Bool = false, help: S, detail: String? = nil, isEnabled: Bool = true, action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
         self.selected = selected
-        self.color = color
+        self.tool = tool
         self.help = String(help)
         self.detail = detail
         self.isEnabled = isEnabled
@@ -402,25 +403,11 @@ struct Tile<Label: View>: View {
 
     var body: some View {
         Button(action: action) {
-            label
-                .foregroundStyle(Brutal.ink)
-                .frame(width: 30, height: 30)
-                .inkOnFill(selected ? color : nil)
-                .background {
-                    if selected {
-                        Color.clear.brutalSurface(color, radius: Brutal.Radius.inset, shadow: 2)
-                    } else if hovering {
-                        RoundedRectangle(cornerRadius: Brutal.Radius.inset, style: .circular).fill(Brutal.ink.opacity(0.08))
-                    }
-                }
-                .contentShape(Rectangle())
+            label.frame(minWidth: 16, minHeight: 16)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(BrutalButtonStyle(tool ? .tool : .toolbar, isOn: selected))
         .disabled(!isEnabled)
-        .opacity(isEnabled ? 1 : 0.35)
         .accessibilityLabel(Text(help))
-        .accessibilityAddTraits(selected ? .isSelected : [])
-        .onHover { hovering = $0 }
         .brutalTip(help, detail: detail)
     }
 }

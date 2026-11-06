@@ -103,9 +103,9 @@ private struct QuickAccessCardView: View {
             Color.black.opacity(0.35)
             VStack(spacing: 9) {
                 Button("Copy") { controller.copy(card) }
-                    .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
+                    .buttonStyle(BrutalButtonStyle(.main, floating: true))
                 Button("Save As…") { controller.saveAs(card) }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .buttonStyle(BrutalButtonStyle())
             }
             VStack {
                 HStack {

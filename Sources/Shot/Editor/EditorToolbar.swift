@@ -15,7 +15,7 @@ struct EditorToolbar: View {
             HStack(spacing: 14) {
                 ToolGroup {
                     ForEach(EditorTool.allCases) { tool in
-                        Tile(selected: model.tool == tool, color: Brutal.yellow, help: "\(tool.title) (\(String(tool.key).uppercased()))", detail: tool.summary) {
+                        Tile(selected: model.tool == tool, tool: true, help: "\(tool.title) (\(String(tool.key).uppercased()))", detail: tool.summary) {
                             model.tool = tool
                         } label: {
                             Image(systemName: tool.symbol).font(Brutal.toolIcon)
@@ -23,7 +23,7 @@ struct EditorToolbar: View {
                     }
                 }
                 ToolGroup {
-                    Tile(selected: model.showsImagePicker, color: Brutal.sky, help: "Add an image (⇧⌘I)", detail: "Place a recent capture or an image file beside your screenshot") {
+                    Tile(selected: model.showsImagePicker, help: "Add an image (⇧⌘I)", detail: "Place a recent capture or an image file beside your screenshot") {
                         model.showsImagePicker.toggle()
                     } label: {
                         Image(systemName: "photo.badge.plus").font(Brutal.toolIcon)
@@ -35,7 +35,7 @@ struct EditorToolbar: View {
                         }
                     }
                     Tile(
-                        selected: model.showsStylePopover, color: Brutal.sky, help: "Style",
+                        selected: model.showsStylePopover, help: "Style",
                         detail: "Add a shadow, border or rounded corners to the selected image, a shadow or glow to a shape, arrow or text, or style the screenshot when nothing is selected",
                         isEnabled: model.styleTarget != nil
                     ) {
@@ -49,12 +49,12 @@ struct EditorToolbar: View {
                 }
                 Spacer(minLength: 0)
                 ToolGroup {
-                    Tile(selected: false, color: Brutal.paper, help: "Undo (⌘Z)", isEnabled: model.history.canUndo) {
+                    Tile(selected: false, help: "Undo (⌘Z)", isEnabled: model.history.canUndo) {
                         model.undo()
                     } label: {
                         Image(systemName: "arrow.uturn.backward").font(Brutal.toolIcon)
                     }
-                    Tile(selected: false, color: Brutal.paper, help: "Redo (⇧⌘Z)", isEnabled: model.history.canRedo) {
+                    Tile(selected: false, help: "Redo (⇧⌘Z)", isEnabled: model.history.canRedo) {
                         model.redo()
                     } label: {
                         Image(systemName: "arrow.uturn.forward").font(Brutal.toolIcon)
@@ -91,7 +91,7 @@ struct EditorToolbar: View {
     /// Puts this tool's options back to how a fresh install starts, so the next arrow, blur or spotlight comes out plain too.
     private var resetButton: some View {
         Button("Reset", action: model.resetToolOptions)
-            .buttonStyle(BrutalButtonStyle(compact: true))
+            .buttonStyle(BrutalButtonStyle(.plain))
             .disabled(!model.canResetToolOptions)
             .brutalTip("Reset", detail: "Puts this tool's colour, size and other options back to how a new install starts. Your saved custom colours stay.")
     }
@@ -146,7 +146,7 @@ struct WidthOptions: View {
     var body: some View {
         ToolGroup {
             ForEach(EditorStyle.widths.indices, id: \.self) { index in
-                Tile(selected: selected == index, color: Brutal.sky, help: sizesText ? "Text size: \(Self.sizeNames[index])" : "Line width: \(Int(EditorStyle.widths[index]))") {
+                Tile(selected: selected == index, help: sizesText ? "Text size: \(Self.sizeNames[index])" : "Line width: \(Int(EditorStyle.widths[index]))") {
                     choose(index)
                 } label: {
                     if sizesText {
@@ -177,7 +177,7 @@ struct AlignmentOptions: View {
     var body: some View {
         ToolGroup {
             ForEach(TextAlign.allCases, id: \.self) { alignment in
-                Tile(selected: selected == alignment, color: Brutal.sky, help: alignment.title) {
+                Tile(selected: selected == alignment, help: alignment.title) {
                     choose(alignment)
                 } label: {
                     Image(systemName: alignment.symbol).font(Brutal.toolIcon)
@@ -194,7 +194,7 @@ struct VerticalAlignmentOptions: View {
     var body: some View {
         ToolGroup {
             ForEach(VerticalTextAlign.allCases, id: \.self) { alignment in
-                Tile(selected: selected == alignment, color: Brutal.sky, help: alignment.title) {
+                Tile(selected: selected == alignment, help: alignment.title) {
                     choose(alignment)
                 } label: {
                     Image(systemName: alignment.symbol).font(Brutal.toolIcon)
@@ -215,7 +215,7 @@ struct CropOptions: View {
         ToolGroup {
             Text("ASPECT").font(Brutal.mono).foregroundStyle(Brutal.ink).padding(.horizontal, 4)
             ForEach(CropAspect.allCases, id: \.self) { aspect in
-                Tile(selected: selected == aspect, color: Brutal.sky, help: aspect.title, detail: aspect.detail) {
+                Tile(selected: selected == aspect, help: aspect.title, detail: aspect.detail) {
                     choose(aspect)
                 } label: {
                     Text(aspect.label).font(.scaled(9, weight: .heavy)).minimumScaleFactor(0.7).lineLimit(1)
@@ -223,7 +223,7 @@ struct CropOptions: View {
             }
         }
         Button("Reset", action: reset)
-            .buttonStyle(BrutalButtonStyle(compact: true))
+            .buttonStyle(BrutalButtonStyle(.plain))
             .disabled(!canReset)
             .brutalTip("Reset", detail: "Takes the crop off, so the whole image is kept.")
     }
@@ -265,7 +265,7 @@ struct ShapeOptions: View {
     var body: some View {
         ToolGroup {
             ForEach(shapes, id: \.self) { shape in
-                Tile(selected: selected == shape, color: Brutal.sky, help: shape.title) {
+                Tile(selected: selected == shape, help: shape.title) {
                     choose(shape)
                 } label: {
                     Image(systemName: shape.symbol).font(Brutal.toolIcon)
@@ -319,7 +319,7 @@ struct RedactionOptions: View {
     var body: some View {
         ToolGroup {
             ForEach(Redaction.allCases, id: \.self) { redaction in
-                Tile(selected: selected == redaction, color: Brutal.sky, help: redaction.title) {
+                Tile(selected: selected == redaction, help: redaction.title) {
                     choose(redaction)
                 } label: {
                     Image(systemName: redaction == .blur ? "drop.halffull" : "square.grid.3x3").font(Brutal.toolIcon)
@@ -354,7 +354,7 @@ struct SpotlightOptions: View {
         ShapeOptions(shapes: BoxShape.spotlightShapes, selected: style.shape, choose: chooseShape)
         ToolGroup {
             ForEach(SpotlightStyle.Effect.allCases, id: \.self) { effect in
-                Tile(selected: style.effect == effect, color: Brutal.sky, help: "\(effect.title) outside", detail: "Applies to every spotlight in the image.") {
+                Tile(selected: style.effect == effect, help: "\(effect.title) outside", detail: "Applies to every spotlight in the image.") {
                     chooseLook(effect, style.strength)
                 } label: {
                     Image(systemName: effect == .darken ? "moon.fill" : "drop.halffull").font(Brutal.toolIcon)

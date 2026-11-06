@@ -33,22 +33,22 @@ struct VideoEditorRootView: View {
                     .layoutPriority(1)
                 Group {
                     Button { model.toggleTracks() } label: { Label("More tools", systemImage: "rectangle.split.3x1").fixedSize() }
-                        .buttonStyle(BrutalButtonStyle(color: model.showsTracks ? (model.canHideTracks ? Brutal.violet : Brutal.violet.opacity(0.55)) : Brutal.paper, compact: true))
+                        .buttonStyle(BrutalButtonStyle(.toolbar, isOn: model.showsTracks))
                         .brutalTip("Show or hide the tracks, keyframes, imports and annotations (T)")
                     Button("Copy") { Task { await model.copy() } }
-                        .buttonStyle(BrutalButtonStyle(compact: true))
+                        .buttonStyle(BrutalButtonStyle())
                         .brutalTip("Copy video (⌘C)")
                     Button("Export") { Task { await model.export() } }
-                        .buttonStyle(BrutalButtonStyle(color: Brutal.sky, compact: true))
+                        .buttonStyle(BrutalButtonStyle(.main))
                         .brutalTip("Export a new \(model.options.format.rawValue.uppercased()) with these options next to the video, and copy it")
                     Button(model.isComposite ? "Save Copy" : "Save") { Task { await model.save() } }
-                        .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
+                        .buttonStyle(BrutalButtonStyle())
                         .brutalTip(model.isComposite ? "Write the edit as a new video next to the original and copy it (⌘S)" : "Save the edited video and copy it (⌘S)")
                 }
                 .disabled(model.isExporting)
                 if model.isExporting {
                     Button("Cancel") { model.cancelExport() }
-                        .buttonStyle(BrutalButtonStyle(compact: true))
+                        .buttonStyle(BrutalButtonStyle())
                         .brutalTip("Stop exporting (Esc)")
                 }
             }
@@ -163,7 +163,7 @@ struct ExportOptionsBar: View {
                 .fixedSize()
                 .brutalTip("Estimated size of the exported file")
             Button("Reset") { model.setOptions(.default) }
-                .buttonStyle(BrutalButtonStyle(compact: true))
+                .buttonStyle(BrutalButtonStyle(.plain))
                 .disabled(model.options.isDefault)
                 .brutalTip("Puts the format, GIF size, mute and speed back to how new exports start.")
         }

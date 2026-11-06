@@ -293,7 +293,7 @@ struct StylePopover<Model: StyleEditing>: View {
                 label("Width")
                 ForEach(widths.indices, id: \.self) { index in
                     let points = widths[index]
-                    Tile(selected: abs(points * model.scale - border.width) < 0.01, color: Brutal.sky, help: WidthOptions.sizeNames[index]) {
+                    Tile(selected: abs(points * model.scale - border.width) < 0.01, help: WidthOptions.sizeNames[index]) {
                         model.setBorderWidth(points)
                     } label: {
                         Text(WidthOptions.sizeNames[index].prefix(1)).font(.scaled(12, weight: .heavy))
@@ -348,7 +348,7 @@ private struct ResetStyleButton: View {
 
     var body: some View {
         Button("Reset", action: reset)
-            .buttonStyle(BrutalButtonStyle(compact: true))
+            .buttonStyle(BrutalButtonStyle(.plain))
             .disabled(isDefault)
             .brutalTip("Reset", detail: "Puts the shadow, border and corners back to how new ones start.")
     }
