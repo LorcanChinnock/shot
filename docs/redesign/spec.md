@@ -263,6 +263,29 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Text size.** The chips, the position chip and the loupe scale with Settings › Text size. The handles and cursor don't.
 - **Increase Contrast and Reduce Transparency** make the chips solid with the 40% edge, and the position chip solid.
 
+### Window pick
+
+#1077 builds the highlights on Capture › Window pick and delay: what you see over the window, browser page or screen a click would capture, after Tab, B or Full Screen on the overlay. AppKit draws it into the overlay view, as it does the area.
+
+| Part | Look |
+| --- | --- |
+| Dim | `rgba(12,12,16,0.34)` outside a highlighted window or page. None for a screen, which fills the view |
+| Tint | Accent (`#FFD43B`) at 16% over what's highlighted |
+| Edge | 3 pt accent just inside the edge, then 1.5 pt ink inside that, on whole device pixels |
+| Corners | Panel radius (14) on a whole window, close to the window's own corners. A page and a screen are square, as captured |
+| Camera | A 64 pt circle at the floating-panel fill (0.86) with its 0.5 pt edge and shadow, holding a 24 pt white `camera` symbol |
+| Name panel | The window's title in Window type, white, cut short past 420 pt. Under it the size in pixels in 11.5 pt medium SF Mono at 75% white, then "· with shadow" when Settings › Capture › Window shadow is on. Floating-panel fill, panel radius, 8 × 14 pt padding |
+| Hint | "Click or press Return to capture", then "Arrows: next window" for a window, in 12 pt ink on a `rgba(255,255,255,0.9)` pill |
+| Stack | Camera, name panel and hint, 10 pt apart, in the middle of what's highlighted |
+
+- **Accent, not selection blue.** The board and the issue both draw the highlight in the accent. Rule 6 keeps selection blue for marks, layers and files inside Shot's windows, while the overlay is choosing what to capture, the same job as the picked mode on the bar. The highlight is never in the image, so rule 5's ban on fills behind windows doesn't apply.
+- **Names.** A window shows its title, else its app's name (the title needs Screen Recording access), else "Window". A screen shows the display's name, else "Screen". The size is the window's, page's or screen's in pixels, as the area's size chip gives it, and doesn't include the shadow.
+- **Fewer parts in a small window.** `WindowPickLabel.layout` in ShotCore drops the camera when the stack doesn't fit 12 pt inside what's highlighted, then the hint, leaving the name panel. It centres the stack on the part that's on screen, keeps it 8 pt inside the screen, and moves it just above or below the bar or its tooltip when it would cover them. `WindowPickTests` covers it.
+- **The hint stays.** Unlike the area's key strip, it sits inside the window being picked and says how to finish, so it is the first thing a quick sharer needs. Delay's countdown on the board is #1078.
+- **Keyboard.** The arrow keys step through windows as before. VoiceOver reads the name and size of each window it steps to, and the overlay's value holds the highlighted window's name and size. Stepping in Browser now finds the page of the window it lands on.
+- **Text size.** The camera, the name panel and the hint scale with Settings › Text size. The tint and edges don't.
+- **Increase Contrast and Reduce Transparency** make the camera and name panel solid with the 40% edge, take the size to full white, and make the hint pill solid white with a 1 pt edge of ink at 40%.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -333,7 +356,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Board | Issue | Files | QA |
 | --- | --- | --- | --- |
 | Area capture | #1076 | `Overlay/SelectionOverlayView.swift` (edge, handles, chips, loupe, guides, cursor), `Overlay/SelectionOverlayController.swift` (cursor), ShotCore `AreaOverlay.swift` (`AreaHandles`, `AreaLabelPlacement`, `Loupe`) | ☐ |
-| Window pick and delay | #1077 highlights | `Overlay/SelectionOverlayView.swift`, `Overlay/SelectionOverlayController.swift` | ☐ |
+| Window pick and delay | #1077 highlights | `Overlay/SelectionOverlayView.swift` (tint, edge, label), `Overlay/SelectionOverlayController.swift` (stepping finds the page), ShotCore `WindowPick.swift` (`WindowPickLabel`, `WindowInfo.pickName`) | ☐ |
 | Window pick and delay | #1075 capture bar with delay | `Overlay/SelectionOverlayView.swift` (the bar, Delay's seconds and the tooltip) | ☐ |
 | Scrolling capture | #1086 | `Capture/ScrollingCaptureController.swift` | ☐ |
 | Quick Access, pin, menu and toasts › card | #1081 | `QuickAccess/QuickAccessView.swift` | ☐ |
