@@ -698,6 +698,9 @@
         }
       }
     },
+    "%@ · with shadow" : {
+
+    },
     "%@, update available" : {
 
     },
@@ -5875,6 +5878,9 @@
           }
         }
       }
+    },
+    "Click or press Return to capture" : {
+
     },
     "Click the Shot icon in the menu bar, then Screenshot, and drag out any area." : {
 
@@ -23976,6 +23982,9 @@
           }
         }
       }
+    },
+    "Screen" : {
+
     },
     "Screen & System Audio Recording" : {
       "localizations" : {
