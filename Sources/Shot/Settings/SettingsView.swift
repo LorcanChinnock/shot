@@ -284,21 +284,20 @@ private struct GeneralSettings: View {
     @Setting(PreferenceKey.textSize) private var textSize: TextSize
     @Setting(PreferenceKey.appearance) private var appearance: AppearanceMode
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
-    private let color = SettingsSection.general.color
 
     var body: some View {
         SettingsCard(title: "Behaviour", symbol: "slider.horizontal.3") {
-            ToggleRow(title: "Open Shot at login", subtitle: "Start Shot when you log in to your Mac.", isOn: $launchAtLogin, color: color)
+            ToggleRow(title: "Open Shot at login", subtitle: "Start Shot when you log in to your Mac.", isOn: $launchAtLogin)
                 .onChange(of: launchAtLogin) { _, enabled in
                     setLaunchAtLogin(enabled)
                 }
-            ToggleRow(title: "Play capture sound", isOn: $playSound, color: color)
-            ToggleRow(title: "Exclude menu bar", subtitle: "Crop the menu bar and notch off screenshots and recordings of the full screen.", isOn: $excludesMenuBar, color: color)
+            ToggleRow(title: "Play capture sound", isOn: $playSound)
+            ToggleRow(title: "Exclude menu bar", subtitle: "Crop the menu bar and notch off screenshots and recordings of the full screen.", isOn: $excludesMenuBar)
             SettingRow(title: "Appearance", subtitle: "Shot's windows and panels. Captures look the same either way.") {
-                BrutalSegmented(selection: $appearance, options: AppearanceMode.allCases.map { ($0, Self.title(of: $0)) }, color: color)
+                BrutalSegmented(selection: $appearance, options: AppearanceMode.allCases.map { ($0, Self.title(of: $0)) })
             }
             SettingRow(title: "Text size", subtitle: "Text in Shot's windows, panels and toasts. Captures keep their size.", divider: false) {
-                BrutalSegmented(selection: $textSize, options: TextSize.allCases.map { ($0, Self.title(of: $0)) }, color: color)
+                BrutalSegmented(selection: $textSize, options: TextSize.allCases.map { ($0, Self.title(of: $0)) })
             }
         }
         SettingsCard(title: "Files", symbol: "folder.fill") {
@@ -319,10 +318,10 @@ private struct GeneralSettings: View {
                     .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
             }
             SettingRow(title: "Image format", subtitle: "Clipboard copies always use PNG.") {
-                BrutalSegmented(selection: $imageFormat, options: [(ImageFormat.png, "PNG"), (.jpeg, "JPEG")], color: color)
+                BrutalSegmented(selection: $imageFormat, options: [(ImageFormat.png, "PNG"), (.jpeg, "JPEG")])
             }
-            ToggleRow(title: "Scale Retina captures to 1×", subtitle: "Halves pixel size on 2× displays. Smaller files, less detail.", isOn: $downscaleRetina, color: color)
-            ToggleRow(title: "Save edits over the original", subtitle: "The editor's Save replaces the screenshot. Shot keeps the original, so you can reopen it and undo your edits. Off writes a new copy instead.", isOn: $savesOverOriginal, color: color, divider: false)
+            ToggleRow(title: "Scale Retina captures to 1×", subtitle: "Halves pixel size on 2× displays. Smaller files, less detail.", isOn: $downscaleRetina)
+            ToggleRow(title: "Save edits over the original", subtitle: "The editor's Save replaces the screenshot. Shot keeps the original, so you can reopen it and undo your edits. Off writes a new copy instead.", isOn: $savesOverOriginal, divider: false)
         }
     }
 
@@ -384,21 +383,20 @@ private struct CaptureSettings: View {
     @Setting(PreferenceKey.captureShowsCursor) private var showsCursor: Bool
     @Setting(PreferenceKey.windowShadow) private var windowShadow: Bool
     @Setting(PreferenceKey.browserPageOnly) private var browserPageOnly: Bool
-    private let color = SettingsSection.capture.color
 
     var body: some View {
         SettingsCard(title: "After capture", symbol: "bolt.fill") {
-            ToggleRow(title: "Save to folder", isOn: $save, color: color)
-            ToggleRow(title: "Copy to clipboard", isOn: $copy, color: color)
-            ToggleRow(title: "Show Quick Access", isOn: $quickAccess, color: color)
-            ToggleRow(title: "Open in editor", subtitle: "Opens the annotation editor instead of Quick Access.", isOn: $openEditor, color: color, divider: false)
+            ToggleRow(title: "Save to folder", isOn: $save)
+            ToggleRow(title: "Copy to clipboard", isOn: $copy)
+            ToggleRow(title: "Show Quick Access", isOn: $quickAccess)
+            ToggleRow(title: "Open in editor", subtitle: "Opens the annotation editor instead of Quick Access.", isOn: $openEditor, divider: false)
         }
         SettingsCard(title: "Selection", symbol: "plus.viewfinder") {
-            ToggleRow(title: "Magnifier", subtitle: "8× loupe next to the pointer for pixel-precise edges.", isOn: $magnifier, color: color)
-            ToggleRow(title: "Crosshair", subtitle: "Full-screen guide lines through the pointer.", isOn: $crosshair, color: color)
-            ToggleRow(title: "Size label", subtitle: "Width and height in pixels next to the pointer while you drag.", isOn: $sizeLabel, color: color)
-            ToggleRow(title: "Show cursor", subtitle: "Show the pointer when you capture an area or the full screen.", isOn: $showsCursor, color: color)
-            ToggleRow(title: "Window shadow", subtitle: "Keep the macOS drop shadow in window captures.", isOn: $windowShadow, color: color)
+            ToggleRow(title: "Magnifier", subtitle: "8× loupe next to the pointer for pixel-precise edges.", isOn: $magnifier)
+            ToggleRow(title: "Crosshair", subtitle: "Full-screen guide lines through the pointer.", isOn: $crosshair)
+            ToggleRow(title: "Size label", subtitle: "Width and height in pixels next to the pointer while you drag.", isOn: $sizeLabel)
+            ToggleRow(title: "Show cursor", subtitle: "Show the pointer when you capture an area or the full screen.", isOn: $showsCursor)
+            ToggleRow(title: "Window shadow", subtitle: "Keep the macOS drop shadow in window captures.", isOn: $windowShadow)
             ToggleRow(
                 title: "Capture only the page in browser windows",
                 subtitle: "Off captures the whole window. On captures just the web page, without the toolbar and tabs. Needs Accessibility access. Press B on the overlay to switch for one capture.",
@@ -411,7 +409,7 @@ private struct CaptureSettings: View {
                         }
                     }
                 ),
-                color: color, divider: false
+                divider: false
             )
         }
     }
@@ -427,10 +425,10 @@ private struct QuickAccessSettings: View {
     var body: some View {
         SettingsCard(title: "Placement", symbol: "rectangle.bottomhalf.inset.filled") {
             SettingRow(title: "Screen corner") {
-                BrutalSegmented(selection: $position, options: [(QuickAccessPosition.left, "Bottom left"), (.right, "Bottom right")], color: color)
+                BrutalSegmented(selection: $position, options: [(QuickAccessPosition.left, "Bottom left"), (.right, "Bottom right")])
             }
             SettingRow(title: "Auto-close", subtitle: "Hovering a card pauses the timer.", divider: false) {
-                BrutalSegmented(selection: $duration, options: [(4.0, "4s"), (8.0, "8s"), (15.0, "15s"), (30.0, "30s"), (0.0, "Never")], color: color)
+                BrutalSegmented(selection: $duration, options: [(4.0, "4s"), (8.0, "8s"), (15.0, "15s"), (30.0, "30s"), (0.0, "Never")])
             }
         }
         ScreenPreview(position: position, color: color)
@@ -497,19 +495,19 @@ private struct RecordingSettings: View {
 
     var body: some View {
         SettingsCard(title: "Starting", symbol: "record.circle") {
-            ToggleRow(title: "Adjust before recording", subtitle: "Shows the frame handles and options first. Hold ⌥ as you finish the selection to show them once.", isOn: $adjust, color: color, divider: false)
+            ToggleRow(title: "Adjust before recording", subtitle: "Shows the frame handles and options first. Hold ⌥ as you finish the selection to show them once.", isOn: $adjust, divider: false)
         }
         SettingsCard(title: "Video", symbol: "film.fill") {
             SettingRow(title: "Frame rate", subtitle: frameRateSubtitle) {
-                BrutalSegmented(selection: $fps, options: frameRates.map { ($0, "\($0) fps") }, color: color)
+                BrutalSegmented(selection: $fps, options: frameRates.map { ($0, "\($0) fps") })
             }
-            ToggleRow(title: "Show cursor", isOn: $showsCursor, color: color)
-            ToggleRow(title: "Show clicks", subtitle: "Draws a circle where you click.", isOn: $showsClicks, color: color)
-            ToggleRow(title: "Region border", subtitle: "A red border around the recorded area. It never appears in the video.", isOn: $border, color: color)
-            ToggleRow(title: "Copy to clipboard", subtitle: "Copies the finished recording, ready to paste as a file.", isOn: $copy, color: color, divider: false)
+            ToggleRow(title: "Show cursor", isOn: $showsCursor)
+            ToggleRow(title: "Show clicks", subtitle: "Draws a circle where you click.", isOn: $showsClicks)
+            ToggleRow(title: "Region border", subtitle: "A red border around the recorded area. It never appears in the video.", isOn: $border)
+            ToggleRow(title: "Copy to clipboard", subtitle: "Copies the finished recording, ready to paste as a file.", isOn: $copy, divider: false)
         }
-        AudioSettings(color: color)
-        CameraSettings(color: color)
+        AudioSettings()
+        CameraSettings()
         SettingsCard(title: "GIF export", symbol: "photo.stack.fill") {
             SettingRow(title: "From the Quick Access card", subtitle: "Uses the video editor's last GIF settings: \(Preferences().videoExportOptions.gifSummary)", divider: false) {
                 BrutalChip(text: "GIF", color: color)
@@ -519,7 +517,6 @@ private struct RecordingSettings: View {
 }
 
 private struct AudioSettings: View {
-    let color: Color
     @Setting(PreferenceKey.recordMicrophone) private var microphone: Bool
     @Setting(PreferenceKey.microphoneDeviceID) private var deviceID: String
     @Setting(PreferenceKey.recordSystemAudio) private var systemAudio: Bool
@@ -532,7 +529,7 @@ private struct AudioSettings: View {
 
     var body: some View {
         SettingsCard(title: "Audio", symbol: "waveform") {
-            ToggleRow(title: "Microphone", subtitle: "macOS asks for permission on first use. Mute it from the recording controls.", isOn: $microphone, color: color)
+            ToggleRow(title: "Microphone", subtitle: "macOS asks for permission on first use. Mute it from the recording controls.", isOn: $microphone)
             SettingRow(title: "Microphone input") {
                 DevicePicker(devices: devices, selection: $deviceID)
             }
@@ -549,7 +546,7 @@ private struct AudioSettings: View {
                     .buttonStyle(BrutalButtonStyle())
                 }
             }
-            ToggleRow(title: "System audio", subtitle: "Sound from other apps. Shot's own sounds are excluded.", isOn: $systemAudio, color: color, divider: false)
+            ToggleRow(title: "System audio", subtitle: "Sound from other apps. Shot's own sounds are excluded.", isOn: $systemAudio, divider: false)
         }
         .onAppear {
             devices = CaptureDevices.microphones()
@@ -564,7 +561,6 @@ private struct AudioSettings: View {
 }
 
 private struct CameraSettings: View {
-    let color: Color
     @Setting(PreferenceKey.recordCamera) private var camera: Bool
     @Setting(PreferenceKey.cameraDeviceID) private var deviceID: String
     @Setting(PreferenceKey.cameraSize) private var size: CameraBubbleSize
@@ -573,7 +569,7 @@ private struct CameraSettings: View {
 
     var body: some View {
         SettingsCard(title: "Camera", symbol: "web.camera.fill") {
-            ToggleRow(title: "Camera bubble", subtitle: "Round webcam overlay recorded with your screen. Drag to move, double-click to resize.", isOn: $camera, color: color)
+            ToggleRow(title: "Camera bubble", subtitle: "Round webcam overlay recorded with your screen. Drag to move, double-click to resize.", isOn: $camera)
             SettingRow(title: "Camera") {
                 DevicePicker(devices: devices, selection: $deviceID)
             }
@@ -597,7 +593,7 @@ private struct CameraSettings: View {
                 }
             }
             SettingRow(title: "Bubble size", divider: false) {
-                BrutalSegmented(selection: $size, options: CameraBubbleSize.allCases.map { ($0, Self.title(of: $0)) }, color: color)
+                BrutalSegmented(selection: $size, options: CameraBubbleSize.allCases.map { ($0, Self.title(of: $0)) })
             }
         }
         .onAppear {
@@ -633,20 +629,12 @@ private struct DevicePicker: View {
     @Binding var selection: String
 
     var body: some View {
-        BrutalDropdown(title: "Device", entries: [
+        BrutalPopUp(title: "Device", entries: [
             .item("System default", selected: !devices.contains { $0.uniqueID == selection }) { selection = "" },
             .divider,
         ] + devices.map { device in
             .item(device.localizedName, selected: device.uniqueID == selection) { selection = device.uniqueID }
-        }) {
-            HStack(spacing: 6) {
-                Text(selectedName).lineLimit(1)
-                Image(systemName: "chevron.down").font(.scaled(9, weight: .black))
-            }
-            .frame(maxWidth: 190)
-        }
-        .buttonStyle(BrutalButtonStyle())
-        .fixedSize()
+        }, value: selectedName, maxWidth: 190)
     }
 
     private var selectedName: String {
@@ -657,7 +645,6 @@ private struct DevicePicker: View {
 // MARK: Shortcuts
 
 private struct ShortcutSettings: View {
-    private let color = SettingsSection.shortcuts.color
     @Setting(PreferenceKey.replacesSystemScreenshots) private var replacesSystemScreenshots: Bool
     @State private var macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
 
@@ -670,7 +657,7 @@ private struct ShortcutSettings: View {
 
     var body: some View {
         SettingsCard(title: "macOS screenshot keys", symbol: "command") {
-            ToggleRow(title: "Use Shot for ⌘⇧4 and ⌘⇧5", subtitle: "Turns off the matching macOS shortcuts, so these keys and a keyboard's screenshot key open Shot. macOS gets them back while Shot isn't running, or when you turn this off.", isOn: useShot, color: color, divider: replacesSystemScreenshots && macOSOwnsKeys)
+            ToggleRow(title: "Use Shot for ⌘⇧4 and ⌘⇧5", subtitle: "Turns off the matching macOS shortcuts, so these keys and a keyboard's screenshot key open Shot. macOS gets them back while Shot isn't running, or when you turn this off.", isOn: useShot, divider: replacesSystemScreenshots && macOSOwnsKeys)
             if replacesSystemScreenshots && macOSOwnsKeys {
                 SettingRow(title: "macOS still uses these keys", subtitle: "Turn off the Screenshots shortcuts under Keyboard Shortcuts.", divider: false) {
                     Button("Open") { SystemShortcuts.openKeyboardSettings() }
@@ -756,7 +743,7 @@ private struct AboutSettings: View {
         .glassCard()
 
         SettingsCard(title: "Updates", symbol: "arrow.down.circle.fill") {
-            ToggleRow(title: "Check for updates automatically", subtitle: "Shot asks GitHub once a day whether a new version is out, and installs it when you agree. Nothing else is sent.", isOn: $updater.automaticallyChecks, color: color)
+            ToggleRow(title: "Check for updates automatically", subtitle: "Shot asks GitHub once a day whether a new version is out, and installs it when you agree. Nothing else is sent.", isOn: $updater.automaticallyChecks)
             SettingRow(title: "Check now", subtitle: "Looks for a new version once, even when automatic checks are off.", divider: false) {
                 Button("Check") { updater.checkForUpdates() }
                     .buttonStyle(BrutalButtonStyle())
