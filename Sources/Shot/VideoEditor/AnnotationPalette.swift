@@ -14,14 +14,14 @@ struct AnnotationPalette: View {
             HStack(spacing: 14) {
                 ToolGroup {
                     ForEach(EditorTool.allCases.filter { $0 != .crop && $0 != .hand }) { tool in
-                        Tile(selected: model.annotationTool == tool, color: Brutal.yellow, help: tool.title, detail: tool.summary) {
+                        Tile(selected: model.annotationTool == tool, tool: true, help: tool.title, detail: tool.summary) {
                             model.annotationStyle.tool = tool
                             model.setAnnotationTool(tool)
                         } label: {
                             Image(systemName: tool.symbol).font(Brutal.toolIcon)
                         }
                     }
-                    Tile(selected: false, color: Brutal.yellow, help: "Add an image") {
+                    Tile(selected: false, tool: true, help: "Add an image") {
                         pickImage()
                     } label: {
                         Image(systemName: "photo").font(Brutal.toolIcon)

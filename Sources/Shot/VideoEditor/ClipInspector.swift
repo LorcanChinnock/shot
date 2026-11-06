@@ -24,7 +24,7 @@ struct ClipInspector: View {
                         ForEach(AnimationPreset.allCases, id: \.self) { preset in
                             if model.project.supports(preset, forClip: id) {
                                 Button(preset.title) { model.applyPreset(preset) }
-                                    .buttonStyle(BrutalButtonStyle(color: Brutal.violet.opacity(0.7), compact: true))
+                                    .buttonStyle(BrutalButtonStyle())
                                     .brutalTip(preset.playsAtEnd
                                         ? isNote ? "\(preset.title) animation at the end of the annotation" : "\(preset.title) animation at the end of the clip"
                                         : isNote ? "\(preset.title) animation at the start of the annotation" : "\(preset.title) animation at the start of the clip")
@@ -33,7 +33,7 @@ struct ClipInspector: View {
                     }
                     if !isSound, model.targetStyleKind != nil {
                         Button("Style") { showsStyle.toggle() }
-                            .buttonStyle(BrutalButtonStyle(color: Brutal.sky.opacity(0.7), compact: true))
+                            .buttonStyle(BrutalButtonStyle(isOn: showsStyle))
                             .brutalTip(isNote ? "Add a shadow, border or rounded corners to the annotation" : "Add a shadow, border or rounded corners to the clip")
                             .popover(isPresented: $showsStyle, arrowEdge: .top) {
                                 StylePopover(model: model)
@@ -41,11 +41,11 @@ struct ClipInspector: View {
                     }
                     if !isSound, !isNote, let clip = model.selectedClip {
                         Button("Crop") { model.beginClipCrop(id) }
-                            .buttonStyle(BrutalButtonStyle(color: Brutal.sky.opacity(0.7), compact: true))
+                            .buttonStyle(BrutalButtonStyle())
                             .brutalTip("Crop the clip's picture (C)")
                         if clip.crop != nil {
                             Button("Reset Crop") { model.removeClipCrop() }
-                                .buttonStyle(BrutalButtonStyle(compact: true))
+                                .buttonStyle(BrutalButtonStyle())
                                 .brutalTip("Show all of the clip's picture again")
                         }
                     }
@@ -57,10 +57,10 @@ struct ClipInspector: View {
                     }
                     if !animation.isEmpty {
                         Button("Clear Keyframes") { model.clearKeyframes() }
-                            .buttonStyle(BrutalButtonStyle(compact: true))
+                            .buttonStyle(BrutalButtonStyle())
                     }
                     Button("Reset") { model.resetSelectedClip() }
-                        .buttonStyle(BrutalButtonStyle(compact: true))
+                        .buttonStyle(BrutalButtonStyle())
                         .disabled(model.selectedClipIsAtDefaults)
                         .brutalTip(Self.resetTip(isSound: isSound))
                 }
@@ -222,11 +222,11 @@ private struct FrameCropRow: View {
             .foregroundStyle(Brutal.faded(0.75))
             .fixedSize()
         Button("Crop") { model.beginFrameCrop() }
-            .buttonStyle(BrutalButtonStyle(color: Brutal.sky.opacity(0.7), compact: true))
+            .buttonStyle(BrutalButtonStyle())
             .brutalTip("Crop the video's frame (C)")
         if model.project.frameCrop != nil {
             Button("Reset") { model.removeFrameCrop() }
-                .buttonStyle(BrutalButtonStyle(compact: true))
+                .buttonStyle(BrutalButtonStyle())
                 .brutalTip("Show the whole frame again")
         }
     }

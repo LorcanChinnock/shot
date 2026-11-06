@@ -359,7 +359,7 @@ private struct ScrollCaptureView: View {
             }
             HStack {
                 Button("Cancel") { actions.cancel() }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
+                    .buttonStyle(BrutalButtonStyle())
                     .brutalTip("Cancel (Esc)")
                 Spacer()
                 Button {
@@ -367,7 +367,7 @@ private struct ScrollCaptureView: View {
                 } label: {
                     Label("Done", systemImage: "checkmark").labelStyle(.titleAndIcon).fixedSize()
                 }
-                .buttonStyle(BrutalButtonStyle(color: Brutal.mint, compact: true))
+                .buttonStyle(BrutalButtonStyle(.main))
                 .brutalTip("Save and copy (Return)")
             }
         }

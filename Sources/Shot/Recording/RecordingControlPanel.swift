@@ -105,12 +105,12 @@ struct RecordingControls: View {
                     .frame(minWidth: 70)
                     .fixedSize()
             }
-            .buttonStyle(BrutalButtonStyle(color: model.isPaused ? Brutal.yellow : Brutal.paper, compact: true))
+            .buttonStyle(BrutalButtonStyle(model.isPaused ? .main : .toolbar, floating: model.isPaused))
             .brutalTip(model.isPaused ? "Resume recording" : "Pause recording")
 
             if model.microphoneOn {
                 HStack(spacing: 8) {
-                    IconButton(symbol: model.microphoneMuted ? "mic.slash.fill" : "mic.fill", color: model.microphoneMuted ? Brutal.yellow : Brutal.mint, help: model.microphoneMuted ? "Unmute microphone" : "Mute microphone") {
+                    IconButton(symbol: model.microphoneMuted ? "mic.slash.fill" : "mic.fill", isOn: false, help: model.microphoneMuted ? "Unmute microphone" : "Mute microphone") {
                         actions.toggleMute()
                     }
                     LevelMeter(meter: model.meter, muted: model.microphoneMuted)
@@ -118,18 +118,17 @@ struct RecordingControls: View {
             }
 
             if model.cameraAvailable {
-                IconButton(symbol: model.cameraOn ? "video.fill" : "video.slash.fill", color: model.cameraOn ? Brutal.mint : Brutal.paper, help: model.cameraOn ? "Hide camera bubble" : "Show camera bubble") {
+                IconButton(symbol: model.cameraOn ? "video.fill" : "video.slash.fill", isOn: model.cameraOn, help: model.cameraOn ? "Hide camera bubble" : "Show camera bubble") {
                     actions.toggleCamera()
                 }
-                IconButton(symbol: "circle.circle", color: Brutal.paper, help: "Change camera bubble size") {
+                IconButton(symbol: "circle.circle", isOn: false, help: "Change camera bubble size") {
                     actions.cycleCameraSize()
                 }
                 .disabled(!model.cameraOn)
-                .opacity(model.cameraOn ? 1 : 0.35)
             }
 
             Spacer(minLength: 0)
-            IconButton(symbol: "trash.fill", color: Brutal.paper, help: "Discard recording") {
+            IconButton(symbol: "trash.fill", isOn: false, help: "Discard recording") {
                 actions.stop(true)
             }
             Button {
@@ -137,7 +136,7 @@ struct RecordingControls: View {
             } label: {
                 Label("Stop", systemImage: "stop.fill").labelStyle(.titleAndIcon).fixedSize()
             }
-            .buttonStyle(BrutalButtonStyle(color: Brutal.red, compact: true))
+            .buttonStyle(BrutalButtonStyle(model.isPaused ? .secondary : .main, destructive: !model.isPaused, floating: !model.isPaused))
             .brutalTip("Stop and save")
         }
     }
@@ -145,7 +144,7 @@ struct RecordingControls: View {
 
 private struct IconButton: View {
     let symbol: String
-    let color: Color
+    let isOn: Bool
     let help: LocalizedStringResource
     let action: () -> Void
 
@@ -155,7 +154,7 @@ private struct IconButton: View {
                 .font(.system(size: 11, weight: .bold))
                 .frame(width: 16, height: 16)
         }
-        .buttonStyle(BrutalButtonStyle(color: color, compact: true))
+        .buttonStyle(BrutalButtonStyle(.toolbar, isOn: isOn))
         .brutalTip(help)
         .accessibilityLabel(Text(help))
     }

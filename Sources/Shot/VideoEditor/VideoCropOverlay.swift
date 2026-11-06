@@ -130,10 +130,10 @@ private struct VideoCropBar: View {
             }
             CropOptions(selected: model.cropAspect, canReset: model.cropDraft != model.cropBounds, choose: model.setCropAspect, reset: model.resetCropDraft)
             Button("Cancel") { model.cancelCrop() }
-                .buttonStyle(BrutalButtonStyle(compact: true))
+                .buttonStyle(BrutalButtonStyle())
                 .brutalTip("Leave the crop as it was (Esc)")
             Button("Apply") { model.applyCrop() }
-                .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
+                .buttonStyle(BrutalButtonStyle(.main))
                 .brutalTip("Crop to this (Return)")
         }
         .padding(8)
