@@ -150,6 +150,27 @@ Ink is drawn with `inkBorder`, crisp on 1× displays (`inkBorder` snaps the widt
 - **Reduce Motion** moves the switch's knob and the segmented thumb at once instead of sliding them.
 - **Increase Contrast** gives the off switch, the segmented track and the slider a 60% ink edge.
 
+### Feedback
+
+#1072 adds the fields, tags, badges, keycaps, tooltips, toast, progress bar and empty state. Like the choice controls, none takes a colour.
+
+| Component | Look | Code |
+| --- | --- | --- |
+| Text field | Group fill, the Rest edge, control radius, 8 pt side padding, Body type, 24 pt tall | `.brutalField(focused:)` on a `TextField` |
+| Search field | Field fill with no edge, a tertiary magnifying glass and prompt, and a clear button once there's text | `BrutalSearchField` |
+| Tag chip | Field-fill pill, 11.5 pt, with an 8 pt dot in the Finder tag's colour. A filter that's on is selection blue at 14% with a 1 pt edge at 35% | `TagChip` |
+| Badge | 10.5 pt on a 4 pt radius. Quiet: `rgba(22,22,26,0.08)` (dark `rgba(255,255,255,0.1)`) with secondary text, beside titles and in rows. Strong: `#16161A` with white bold text, over thumbnails. A status badge can lead with a 6 pt success dot | `BrutalBadge` |
+| Keycap | 11 pt SF Mono on the quiet badge fill, 4 pt radius, with a 1 pt bottom edge at 12% | `Keycap` |
+| Tooltip | The group fill at Float depth, control radius. The name in Small type, then its keycap, with one line of explanation below in 12 pt tertiary text | `brutalTip(_:key:detail:)`, `Tile(help:key:detail:)` |
+| Toast | A 34 pt dark pill, `rgba(26,26,30,0.90)` with a 0.5 pt `rgba(255,255,255,0.14)` edge and the system window shadow. Message in 13 medium white. One button: a `rgba(255,255,255,0.16)` pill in 12 semibold, with its key faded after it (Undo ⌘Z) | `Toast` |
+| Progress bar | 6 pt, the progress track `rgba(22,22,26,0.08)` (dark `0.12` white) filled in ink. In a toast it sits after the message with the percentage in tabular figures | `BrutalProgressBar`, `Toast.progress(_:fraction:)` |
+| Empty state | An optional handwritten note, a 44 pt accent tile with a 1.5 pt ink outline and 2 pt drop, a 14 bold title, a 12 pt tertiary line and any buttons | `EmptyState` |
+
+- **Handwriting** is Bradley Hand Bold at 20 pt, which ships with macOS, in secondary text. It tilts −4° and wobbles to +1° over 4 s; Reduce Motion keeps it still at −4°. The boards use Caveat.
+- **Focus** puts the 4 pt accent halo around a field. A tooltip shows on keyboard focus as well as hover, but only in the active window, and any click or key press hides it until the pointer leaves or focus moves on.
+- **VoiceOver** hears every toast as an announcement, except progress, which updates in place without speaking each step. The progress bar reads as a native progress indicator.
+- **Increase Contrast** gives fields and tag chips a 60% ink edge, badges ink text, the progress track 25% ink, and toasts a solid background with a 40% white edge. Reduce Transparency also makes toasts solid.
+
 ### Type
 
 SF Pro at native sizes, through `ScaledFont`, so Settings › Text size still scales it.
@@ -241,7 +262,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Design language | #1074 motion | `Design/` (new motion helpers) | ☐ |
 | Components › Buttons | #1070 | `Design/BrutalStyle.swift` (`BrutalButtonStyle`) and its call sites | ☐ |
 | Components › Choice | #1071 | `Design/BrutalControls.swift`, `Design/BrutalDropdown.swift` | ☐ |
-| Components › Choice, Feedback | #1072 | `Design/BrutalControls.swift`, `Design/BrutalTip.swift`, `Toast.swift` | ☐ |
+| Components › Choice, Feedback | #1072 | `Design/BrutalFeedback.swift`, `Design/BrutalTip.swift`, `Design/BrutalControls.swift` (`Tile`), `Toast.swift` | ☐ |
 | Sample desktop (shared scene) | #1131 | None: the backdrop behind the Capture and Record boards. QA uses MugCo | ☐ |
 | Capture bar (shared component) | #1075 | `Overlay/SelectionOverlayView.swift`, `Overlay/SelectionOverlayController.swift`, ShotCore `OverlayBarPlacement` | ☐ |
 | Moments of delight | #1074 | `Design/` motion helpers, `Design/BrandMark.swift`, `Toast.swift` | ☐ |

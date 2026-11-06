@@ -172,14 +172,7 @@ struct ClipInspector: View {
     }
 
     private func field(_ value: Double, label: LocalizedStringResource, make: @escaping (Double) -> PropertyValues) -> some View {
-        TextField("0", value: Binding(get: { value.rounded() }, set: { model.setValues(make($0)) }), format: .number.precision(.fractionLength(0)))
-            .textFieldStyle(.plain)
-            .font(Brutal.mono)
-            .multilineTextAlignment(.trailing)
-            .padding(.horizontal, 6)
-            .frame(width: 56, height: 24)
-            .brutalSurface(Brutal.paper.opacity(0.7), radius: Brutal.Radius.chip, shadow: 0, border: 2)
-            .accessibilityLabel(Text(label))
+        NumberField(value: Binding(get: { value.rounded() }, set: { model.setValues(make($0)) }), label: label)
     }
 
     /// Filled when there's a keyframe of the property at the playhead, a dot when it has others, and empty when it has none.
@@ -229,5 +222,22 @@ private struct FrameCropRow: View {
                 .buttonStyle(BrutalButtonStyle())
                 .brutalTip("Show the whole frame again")
         }
+    }
+}
+
+/// A whole number typed into a small field, such as a clip's position.
+private struct NumberField: View {
+    @Binding var value: Double
+    let label: LocalizedStringResource
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        TextField("0", value: $value, format: .number.precision(.fractionLength(0)))
+            .font(Brutal.mono)
+            .multilineTextAlignment(.trailing)
+            .focused($focused)
+            .brutalField(focused: focused)
+            .frame(width: 56)
+            .accessibilityLabel(Text(label))
     }
 }

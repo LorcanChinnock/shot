@@ -278,6 +278,7 @@ private struct GeneralSettings: View {
     @Setting(PreferenceKey.excludesMenuBar) private var excludesMenuBar: Bool
     @Setting(PreferenceKey.saveFolder) private var saveFolder: String
     @Setting(PreferenceKey.filePrefix) private var filePrefix: String
+    @FocusState private var prefixFocused: Bool
     @Setting(PreferenceKey.imageFormat) private var imageFormat: ImageFormat
     @Setting(PreferenceKey.downscaleRetina) private var downscaleRetina: Bool
     @Setting(PreferenceKey.editorSavesOverOriginal) private var savesOverOriginal: Bool
@@ -311,11 +312,10 @@ private struct GeneralSettings: View {
             }
             SettingRow(title: "File name", subtitle: "\(previewName).\(imageFormat.fileExtension)") {
                 TextField("Shot", text: $filePrefix)
-                    .textFieldStyle(.plain)
-                    .font(.scaled(13, weight: .semibold))
-                    .padding(.horizontal, 10)
-                    .frame(width: 150, height: 30)
-                    .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
+                    .font(Brutal.body)
+                    .focused($prefixFocused)
+                    .brutalField(focused: prefixFocused)
+                    .frame(width: 150)
             }
             SettingRow(title: "Image format", subtitle: "Clipboard copies always use PNG.") {
                 BrutalSegmented(selection: $imageFormat, options: [(ImageFormat.png, "PNG"), (.jpeg, "JPEG")])
@@ -447,7 +447,7 @@ private struct ScreenPreview: View {
                 Rectangle().fill(Brutal.paper.opacity(0.7)).frame(height: 14)
                     .overlay(alignment: .bottom) { Rectangle().fill(Brutal.line).frame(height: 2) }
                 HStack {
-                    BrutalChip(text: "PREVIEW")
+                    BrutalBadge(text: "PREVIEW", style: .strong)
                     Spacer()
                 }
                 .padding(12)
@@ -510,7 +510,7 @@ private struct RecordingSettings: View {
         CameraSettings()
         SettingsCard(title: "GIF export", symbol: "photo.stack.fill") {
             SettingRow(title: "From the Quick Access card", subtitle: "Uses the video editor's last GIF settings: \(Preferences().videoExportOptions.gifSummary)", divider: false) {
-                BrutalChip(text: "GIF", color: color)
+                BrutalBadge(text: "GIF")
             }
         }
     }
@@ -731,13 +731,13 @@ private struct AboutSettings: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
                     Text("Shot").font(Brutal.title(26)).foregroundStyle(Brutal.ink)
-                    BrutalChip(text: "BETA", color: Brutal.yellow)
+                    BrutalBadge(text: "BETA")
                 }
                 Text("Screenshots and screen recordings for macOS.")
                     .font(.scaled(12.5, weight: .medium)).foregroundStyle(Brutal.faded(0.65))
             }
             Spacer()
-            BrutalChip(text: "v\(version)", color: color)
+            BrutalBadge(text: "v\(version)")
         }
         .padding(16)
         .glassCard()
@@ -754,7 +754,7 @@ private struct AboutSettings: View {
         SettingsCard(title: "Permissions", symbol: "lock.fill") {
             SettingRow(title: "Screen & System Audio Recording", subtitle: "Required for every capture.") {
                 HStack(spacing: 10) {
-                    BrutalChip(text: screenGranted ? "GRANTED" : "MISSING", color: screenGranted ? Brutal.mint : Brutal.red)
+                    BrutalBadge(text: screenGranted ? "GRANTED" : "MISSING", dot: screenGranted ? Brutal.success : nil)
                     if !screenGranted, !screenRequested {
                         Button("Grant") {
                             Permissions.requestScreenCapture()
@@ -769,7 +769,7 @@ private struct AboutSettings: View {
             }
             SettingRow(title: "Accessibility", subtitle: "Only needed to capture just the page in browser windows.") {
                 HStack(spacing: 10) {
-                    BrutalChip(text: accessibilityGranted ? "GRANTED" : "MISSING", color: accessibilityGranted ? Brutal.mint : Brutal.red)
+                    BrutalBadge(text: accessibilityGranted ? "GRANTED" : "MISSING", dot: accessibilityGranted ? Brutal.success : nil)
                     if accessibilityGranted {
                         Button("Open") { Permissions.openAccessibilitySettings() }
                             .buttonStyle(BrutalButtonStyle())
@@ -868,7 +868,7 @@ private struct PermissionRow: View {
     var body: some View {
         SettingRow(title: title, subtitle: subtitle, divider: divider) {
             HStack(spacing: 10) {
-                BrutalChip(text: label, color: status == .authorized ? Brutal.mint : status == .notDetermined ? Brutal.paper : Brutal.red)
+                BrutalBadge(text: label, dot: status == .authorized ? Brutal.success : nil)
                 // macOS asks only while the status is not determined; after a denial only System Settings can change it.
                 if status == .notDetermined {
                     Button("Grant") {

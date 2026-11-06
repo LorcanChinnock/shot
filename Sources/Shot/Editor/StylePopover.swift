@@ -275,7 +275,7 @@ struct StylePopover<Model: StyleEditing>: View {
                 label("Elevation")
                 slider(value: shadow.elevation / model.scale, range: Shadow.elevations, name: "Elevation", set: { model.setShadowElevation($0) })
                 if ShadowPreset.matching(shadow, scale: model.scale) == nil {
-                    BrutalChip(text: "CUSTOM", color: Brutal.sky)
+                    BrutalBadge(text: "CUSTOM")
                 }
             }
             row("") {
