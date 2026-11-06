@@ -11,6 +11,7 @@ enum Toast {
     private static var undoable: PendingAction?
     private static var shown: ToastText?
     private static var action: ToastView.Action?
+    private static var tick: ToastView.Tick?
     fileprivate static let font = ScaledFont.scaled(13, weight: .medium)
     fileprivate static let actionFont = ScaledFont.scaled(12, weight: .semibold)
     fileprivate static let height: CGFloat = 34
@@ -38,7 +39,22 @@ enum Toast {
     /// A toast whose text is already localized.
     @_disfavoredOverload
     static func show<S: StringProtocol>(_ message: S, duration: Duration? = .seconds(1.5), undoable: PendingAction? = nil, cancel: (() -> Void)? = nil, reveal: URL? = nil) {
-        let message = String(message)
+        present(String(message), duration: duration, undoable: undoable, cancel: cancel, reveal: reveal, tick: nil)
+    }
+
+    /// Shows `message` after a copy or save worked, led by an accent tick that draws itself. `drawsTick` false shows the
+    /// tick already drawn, for when another moment has just played, such as the viewfinder snapping in over a capture.
+    static func done(_ message: LocalizedStringResource, drawsTick: Bool = true, duration: Duration? = .seconds(1.5)) {
+        done(String(localized: message), drawsTick: drawsTick, duration: duration)
+    }
+
+    /// A done toast whose text is already localized.
+    @_disfavoredOverload
+    static func done<S: StringProtocol>(_ message: S, drawsTick: Bool = true, duration: Duration? = .seconds(1.5)) {
+        present(String(message), duration: duration, undoable: nil, cancel: nil, reveal: nil, tick: drawsTick ? .draws : .drawn)
+    }
+
+    private static func present(_ message: String, duration: Duration?, undoable: PendingAction?, cancel: (() -> Void)?, reveal: URL?, tick: ToastView.Tick?) {
         settle()
         self.undoable = undoable
         let panel = panel ?? makePanel()
@@ -59,14 +75,14 @@ enum Toast {
             nil
         }
         self.action = action
-        let size = size(of: message, fraction: nil, action: action)
+        self.tick = tick
+        let size = size(of: message, fraction: nil, action: action, tick: tick)
         let text = ToastText(message: message)
         shown = text
-        panel.contentView = NSView(hosting: ToastView(text: text, action: action, hold: { hold($0) }, dismiss: { hide() }))
+        panel.contentView = NSView(hosting: ToastView(text: text, action: action, tick: tick, hold: { hold($0) }, dismiss: { hide() }))
         let screen = NSScreen.underPointer ?? NSScreen.main ?? NSScreen.screens[0]
         let origin = NSPoint(x: screen.frame.midX - size.width / 2, y: screen.visibleFrame.minY + 80)
-        panel.setFrame(NSRect(origin: origin, size: size), display: true)
-        panel.orderFrontRegardless()
+        arrive(panel, at: NSRect(origin: origin, size: size))
         NSAccessibility.post(element: panel, notification: .announcementRequested, userInfo: [.announcement: message, .priority: NSAccessibilityPriorityLevel.high.rawValue])
         self.duration = duration
         scheduleHide()
@@ -83,7 +99,7 @@ enum Toast {
     static func progress<S: StringProtocol>(_ message: S, fraction: Double) {
         let message = String(message)
         guard let panel, let shown, undoable == nil else {
-            show(message, duration: nil)
+            present(message, duration: nil, undoable: nil, cancel: nil, reveal: nil, tick: nil)
             self.shown?.fraction = fraction
             resize()
             return
@@ -108,16 +124,38 @@ enum Toast {
         guard let panel, let shown else {
             return
         }
-        let size = size(of: shown.message, fraction: shown.fraction, action: action)
+        let size = size(of: shown.message, fraction: shown.fraction, action: action, tick: tick)
         panel.setFrame(NSRect(x: panel.frame.midX - size.width / 2, y: panel.frame.minY, width: size.width, height: size.height), display: true)
     }
 
-    private static func size(of message: String, fraction: Double?, action: ToastView.Action?) -> NSSize {
+    /// Puts the panel at `frame`. A toast that wasn't showing springs up a few points as it fades in, or only fades with
+    /// Reduce Motion; one already showing changes in place.
+    private static func arrive(_ panel: FloatingPanelWindow, at frame: NSRect) {
+        guard !panel.isVisible else {
+            panel.alphaValue = 1
+            panel.setFrame(frame, display: true)
+            return
+        }
+        let reduced = Motion.reduced
+        panel.alphaValue = 0
+        panel.setFrame(reduced ? frame : frame.offsetBy(dx: 0, dy: -8), display: true)
+        panel.orderFrontRegardless()
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = reduced ? Moment.reducedFade : Moment.panelArrive.duration
+            context.timingFunction = reduced ? CAMediaTimingFunction(name: .easeOut) : Motion.arriveCurve
+            panel.animator().alphaValue = 1
+            if !reduced {
+                panel.animator().setFrame(frame, display: true)
+            }
+        }
+    }
+
+    private static func size(of message: String, fraction: Double?, action: ToastView.Action?, tick: ToastView.Tick?) -> NSSize {
         let textSize = Preferences().textSize
         func width(_ text: String, _ font: ScaledFont, weight: NSFont.Weight) -> CGFloat {
             (text as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: font.points(textSize), weight: weight)]).width.rounded(.up)
         }
-        var total = ToastView.leading + width(message, font, weight: .medium)
+        var total = (tick == nil ? ToastView.leading : ToastView.tickLeading + ToastView.tickSize + ToastView.tickGap) + width(message, font, weight: .medium)
         if fraction != nil {
             total += ToastView.spacing + barWidth + ToastView.spacing + ToastView.percentWidth(textSize)
         }
@@ -156,6 +194,7 @@ enum Toast {
 
     private static func hide() {
         panel?.orderOut(nil)
+        panel?.alphaValue = 1
         settle()
     }
 
@@ -198,7 +237,15 @@ private struct ToastView: View {
         let perform: () -> Void
     }
 
+    /// The accent tick that leads a done toast: drawing itself, or already drawn.
+    enum Tick {
+        case draws, drawn
+    }
+
     static let leading: CGFloat = 14
+    static let tickLeading: CGFloat = 7
+    static let tickSize: CGFloat = 20
+    static let tickGap: CGFloat = 8
     static let trailingWithAction: CGFloat = 6
     static let spacing: CGFloat = 12
     static let actionPadding: CGFloat = 10
@@ -210,6 +257,7 @@ private struct ToastView: View {
 
     let text: ToastText
     let action: Action?
+    let tick: Tick?
     let hold: (Bool) -> Void
     let dismiss: () -> Void
     @Environment(\.colorSchemeContrast) private var contrast
@@ -217,10 +265,15 @@ private struct ToastView: View {
 
     var body: some View {
         HStack(spacing: Self.spacing) {
-            Text(text.message)
-                .font(Toast.font)
-                .foregroundStyle(.white)
-                .lineLimit(1)
+            HStack(spacing: Self.tickGap) {
+                if let tick {
+                    ToastTickMark(draws: tick == .draws)
+                }
+                Text(text.message)
+                    .font(Toast.font)
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+            }
             if let fraction = text.fraction {
                 BrutalProgressBar(value: fraction)
                     .frame(width: Toast.barWidth)
@@ -242,7 +295,7 @@ private struct ToastView: View {
                 .buttonStyle(ToastButtonStyle())
             }
         }
-        .padding(.leading, Self.leading)
+        .padding(.leading, tick == nil ? Self.leading : Self.tickLeading)
         .padding(.trailing, action == nil ? Self.leading : Self.trailingWithAction)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .floatingPanel(Capsule(), opacity: FloatingPanel.Opacity.toast)
@@ -264,5 +317,43 @@ private struct ToastButtonStyle: ButtonStyle {
             .padding(.vertical, 4)
             .background(.white.opacity(configuration.isPressed ? 0.26 : 0.16), in: Capsule())
             .contentShape(Capsule())
+    }
+}
+
+/// A 20 pt accent disc whose ink tick draws itself over 240 ms, or shows drawn with Reduce Motion.
+private struct ToastTickMark: View {
+    let draws: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var progress: CGFloat = 0
+
+    var body: some View {
+        Circle()
+            .fill(Brutal.accent)
+            .frame(width: ToastView.tickSize, height: ToastView.tickSize)
+            .overlay {
+                TickShape()
+                    .trim(from: 0, to: progress)
+                    .stroke(Color(hex: 0x16161A), style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+                    .frame(width: 11, height: 11)
+            }
+            .accessibilityHidden(true)
+            .onAppear {
+                guard draws, let animation = Motion.animation(.tick, reduceMotion: reduceMotion) else {
+                    progress = 1
+                    return
+                }
+                withAnimation(animation) { progress = 1 }
+            }
+    }
+}
+
+/// A tick drawn from its short stroke to its long one, so trimming it draws it as a pen would.
+private struct TickShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX + rect.width * 0.08, y: rect.minY + rect.height * 0.52))
+        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.38, y: rect.minY + rect.height * 0.82))
+        path.addLine(to: CGPoint(x: rect.maxX - rect.width * 0.06, y: rect.minY + rect.height * 0.2))
+        return path
     }
 }

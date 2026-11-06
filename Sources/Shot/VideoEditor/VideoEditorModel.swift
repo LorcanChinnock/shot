@@ -805,7 +805,7 @@ final class VideoEditorModel {
     func copy() async {
         guard isDirty else {
             Clipboard.copy(fileURL: fileURL)
-            Toast.show("Copied")
+            Toast.done("Copied")
             return
         }
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("Shot/\(UUID().uuidString)")
@@ -815,7 +815,7 @@ final class VideoEditorModel {
             return
         }
         Clipboard.copy(fileURL: output)
-        Toast.show("Copied")
+        Toast.done("Copied")
     }
 
     /// Replaces the file with the trimmed range, less the cuts, and copies it, like Save in the image editor.
@@ -856,7 +856,7 @@ final class VideoEditorModel {
         version = nil
         log.notice("Saved edited video: \(self.fileURL.path)")
         Clipboard.copy(fileURL: fileURL)
-        Toast.show("Saved and copied.\(TemporaryCaptures.toastNote(for: fileURL))")
+        Toast.done("Saved and copied.\(TemporaryCaptures.toastNote(for: fileURL))")
         do {
             try await load()
         } catch {
@@ -877,7 +877,7 @@ final class VideoEditorModel {
         }
         log.notice("Saved a copy of the edited video: \(output.path)")
         Clipboard.copy(fileURL: output)
-        Toast.show("Saved a copy and copied \(output.lastPathComponent).\(TemporaryCaptures.toastNote(for: output))", duration: .seconds(3))
+        Toast.done("Saved a copy and copied \(output.lastPathComponent).\(TemporaryCaptures.toastNote(for: output))", duration: .seconds(3))
         return true
     }
 
@@ -1729,7 +1729,7 @@ extension VideoEditorModel: StyleEditing {
             return
         }
         StyleClipboard.copied = CopiedStyle(style: targetStyle.scaled(by: 1 / scale), cornerRadius: targetCornerRadius, source: kind, fromShape: selectedAnnotation?.annotation.roundsShape == true)
-        Toast.show("Copied style")
+        Toast.done("Copied style")
     }
 
     var canPasteStyle: Bool { StyleClipboard.copied != nil && targetStyleKind != nil && editingText == nil }

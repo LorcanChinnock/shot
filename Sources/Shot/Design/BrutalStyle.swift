@@ -588,7 +588,7 @@ private struct BrutalButtonBody: View {
             .contentShape(shape)
             .onHover { hovering = $0 }
             .accessibilityAddTraits(style.isOn ? .isSelected : [])
-            .animation(reduceMotion ? nil : .linear(duration: 0.08), value: pressed)
+            .animation(Motion.animation(.press, reduceMotion: reduceMotion), value: pressed)
     }
 
     private var font: ScaledFont {

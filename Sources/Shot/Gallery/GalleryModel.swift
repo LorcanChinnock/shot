@@ -364,7 +364,7 @@ final class GalleryModel {
         } else {
             Clipboard.copy(fileURLs: items.map(\.url))
         }
-        Toast.show("Copied \(items.count) files")
+        Toast.done("Copied \(items.count) files")
     }
 
     func exportGIF(_ item: GalleryItem) {
