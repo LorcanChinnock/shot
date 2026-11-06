@@ -348,12 +348,13 @@ final class SelectionOverlayController {
             next = backward ? visible.count - 1 : 0
         }
         hoveredWindow = visible[next]
+        // The page goes with the window, so Browser highlights and captures the page of the window stepped to.
+        hoveredPage = browserMode ? pageRect(of: visible[next]) : nil
         isWindowPinned = true
         for view in views {
             view.needsDisplay = true
         }
-        let name = [visible[next].ownerName, visible[next].title].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
-        views.first?.announceWindow(name)
+        views.first?.announceWindow()
     }
 
     /// The page of a browser window in CoreGraphics global space, or nil for any other window or while Accessibility

@@ -40,6 +40,8 @@ final class SelectionOverlayView: NSView {
     private var barPlacement = OverlayBarPlacement.bottom
     /// Where the bar was last drawn, nil while it's hidden or faded, so the chips and loupe keep off it.
     private var barFrame: CGRect?
+    /// Where the bar's tooltip was last drawn, so the window pick's label keeps off it too.
+    private var tipFrame: CGRect?
     /// The button of the bar under the pointer, which shows its name and key.
     private var hoveredChip: BarAction?
     var magnifierImage: CGImage? {
@@ -94,6 +96,7 @@ final class SelectionOverlayView: NSView {
         isMoving = false
         isKeyboardSelection = false
         portrait = nil
+        setAccessibilityValue(nil)
         needsDisplay = true
     }
 
@@ -325,8 +328,11 @@ final class SelectionOverlayView: NSView {
         needsDisplay = true
     }
 
-    func announceWindow(_ name: String) {
-        announce(name.isEmpty ? String(localized: "Window") : name)
+    /// Reads out the window stepped to with the arrow keys: its name and size, as its label shows them.
+    func announceWindow() {
+        if let details = pickDetails {
+            announce("\(details.name), \(details.size)")
+        }
     }
 
     private func announce(_ text: String) {
@@ -358,35 +364,36 @@ final class SelectionOverlayView: NSView {
         }
         ctx.clear(dirtyRect)
 
-        // A light dim says the screen is frozen without hiding it; only the outside of an area being made dims more.
+        // A light dim says the screen is frozen without hiding it; only the outside of an area being made or a highlighted
+        // window dims more.
         let hole = holeRect()
+        // A whole window keeps rounded corners like the window's own. A page and a screen are square.
+        let radius = controller.target == .window && controller.hoveredPageFrame == nil ? Brutal.Radius.panel : 0
         let dim = CGMutablePath()
         dim.addRect(bounds)
         if let hole {
-            dim.addRect(hole)
+            dim.addPath(Self.roundedPath(hole, radius: radius))
         }
         ctx.addPath(dim)
-        ctx.setFillColor(controller.target == .area && hole != nil ? Self.areaDim : NSColor.black.withAlphaComponent(0.1).cgColor)
+        let dimColor = switch controller.target {
+        case .area where hole != nil: Self.areaDim
+        case .window where hole != nil: Self.pickDim
+        default: NSColor.black.withAlphaComponent(0.1).cgColor
+        }
+        ctx.setFillColor(dimColor)
         ctx.fillPath(using: .evenOdd)
 
         if let hole {
             switch controller.target {
-            case .area:
-                drawAreaEdge(hole, in: ctx)
-            case .window:
-                ctx.setFillColor(NSColor.systemBlue.withAlphaComponent(0.2).cgColor)
-                ctx.fill(hole)
-                ctx.setStrokeColor(NSColor.white.cgColor)
-                ctx.setLineWidth(1)
-                ctx.stroke(hole.insetBy(dx: 0.5, dy: 0.5))
-            case .screen:
-                ctx.setStrokeColor(NSColor.systemBlue.cgColor)
-                ctx.setLineWidth(4)
-                ctx.stroke(hole.insetBy(dx: 2, dy: 2))
+            case .area: drawAreaEdge(hole, in: ctx)
+            case .window, .screen: drawPickHighlight(hole, radius: radius, in: ctx)
             }
         }
 
         drawBar(avoiding: hole)
+        if let hole, controller.target != .area {
+            drawPickLabel(in: hole, in: ctx)
+        }
         guard controller.target == .area else {
             return
         }
@@ -431,6 +438,129 @@ final class SelectionOverlayView: NSView {
             let handle = CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2)
             ctx.fillEllipse(in: handle)
             ctx.strokeEllipse(in: handle.insetBy(dx: -edge / 2, dy: -edge / 2))
+        }
+    }
+
+    // MARK: Window pick
+
+    /// Outside a highlighted window or page: `rgba(12,12,16,0.34)`, from the board.
+    private static let pickDim = CGColor(srgbRed: 12 / 255, green: 12 / 255, blue: 16 / 255, alpha: 0.34)
+
+    private static func roundedPath(_ rect: CGRect, radius: CGFloat) -> CGPath {
+        let corner = max(min(radius, rect.width / 2, rect.height / 2), 0)
+        return CGPath(roundedRect: rect, cornerWidth: corner, cornerHeight: corner, transform: nil)
+    }
+
+    /// The board's highlight on the window, page or screen a click would capture: the accent at 16% over it, a 3 pt accent
+    /// ring just inside its edge and a 1.5 pt ink ring inside that, so it shows on light and dark windows alike.
+    private func drawPickHighlight(_ hole: CGRect, radius: CGFloat, in ctx: CGContext) {
+        let ink = Brutal.inkWidth(1.5, scale: window?.backingScaleFactor ?? 2)
+        let ring: CGFloat = 3
+        func path(_ inset: CGFloat) -> CGPath {
+            Self.roundedPath(hole.insetBy(dx: inset, dy: inset), radius: radius - inset)
+        }
+        ctx.addPath(path(0))
+        ctx.setFillColor(Brutal.yellowNS.withAlphaComponent(0.16).cgColor)
+        ctx.fillPath()
+        guard hole.width > (ring + ink) * 2, hole.height > (ring + ink) * 2 else {
+            return
+        }
+        ctx.addPath(path(0))
+        ctx.addPath(path(ring))
+        ctx.setFillColor(Brutal.yellowNS.cgColor)
+        ctx.fillPath(using: .evenOdd)
+        ctx.addPath(path(ring))
+        ctx.addPath(path(ring + ink))
+        ctx.setFillColor(Self.ink.cgColor)
+        ctx.fillPath(using: .evenOdd)
+    }
+
+    /// What the label names: the window or screen, its size in pixels as the image will be, and whether the window's shadow
+    /// comes with it. Nil when nothing is highlighted.
+    private var pickDetails: (name: String, size: String, shadow: Bool)? {
+        if controller.screenMode {
+            let name = NSScreen.screens.first { $0.frame == display.frame }?.localizedName ?? String(localized: "Screen")
+            return (name, sizeText(of: bounds), false)
+        }
+        guard let window = controller.hoveredWindow else {
+            return nil
+        }
+        let page = controller.hoveredPageFrame
+        let frame = page ?? controller.appKitFrame(of: window)
+        return (window.pickName ?? String(localized: "Window"), sizeText(of: frame), page == nil && Preferences().windowShadow)
+    }
+
+    /// The board's label in the middle of what's highlighted: a camera on a dark disc, the name and size on a dark panel, and
+    /// how to capture it on a light pill. A small window shows fewer parts, and the label keeps off the bar and its tooltip.
+    private func drawPickLabel(in hole: CGRect, in ctx: CGContext) {
+        guard let details = pickDetails else {
+            return
+        }
+        let textSize = Preferences().textSize
+        let increased = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        let truncating = NSMutableParagraphStyle()
+        truncating.lineBreakMode = .byTruncatingTail
+        let name = NSAttributedString(string: details.name, attributes: [
+            .font: NSFont.systemFont(ofSize: textSize.points(13), weight: .semibold), .foregroundColor: NSColor.white, .paragraphStyle: truncating,
+        ])
+        let sizeLine = details.shadow ? String(localized: "\(details.size) · with shadow") : details.size
+        let size = NSAttributedString(string: sizeLine, attributes: [
+            .font: NSFont.monospacedSystemFont(ofSize: textSize.points(11.5), weight: .medium),
+            .foregroundColor: NSColor.white.withAlphaComponent(increased ? 1 : 0.75),
+        ])
+        let hintLine = controller.windowMode
+            ? [String(localized: "Click or press Return to capture"), String(localized: "Arrows: next window")].joined(separator: " · ")
+            : String(localized: "Click or press Return to capture")
+        let hint = NSAttributedString(string: hintLine, attributes: [
+            .font: NSFont.systemFont(ofSize: textSize.points(12)), .foregroundColor: Self.ink,
+        ])
+
+        // A long title is cut short rather than running past the window.
+        let maxName = min(textSize.points(420), max(hole.width - 2 * WindowPickLabel.inset - 28, 80))
+        let nameSize = CGSize(width: min(name.size().width.rounded(.up), maxName), height: name.size().height.rounded(.up))
+        let sizeSize = CGSize(width: size.size().width.rounded(.up), height: size.size().height.rounded(.up))
+        let panel = CGSize(width: max(nameSize.width, sizeSize.width) + 28, height: nameSize.height + 2 + sizeSize.height + 16)
+        let hintText = hint.size()
+        let pill = CGSize(width: hintText.width.rounded(.up) + 20, height: hintText.height.rounded(.up) + 6)
+        let disc = textSize.points(64).rounded()
+        var avoiding = barFrame.map { [$0.insetBy(dx: -8, dy: -8)] } ?? []
+        if let tipFrame {
+            avoiding.append(tipFrame)
+        }
+        let parts = WindowPickLabel.layout(
+            icon: CGSize(width: disc, height: disc), name: panel, hint: pill, spacing: textSize.points(10).rounded(),
+            target: hole, in: bounds, avoiding: avoiding
+        )
+        for (part, frame) in parts {
+            switch part {
+            case .icon:
+                drawPanel(frame, radius: frame.height / 2, opacity: FloatingPanel.Opacity.standard, shadow: true, increased: increased, in: ctx)
+                let config = NSImage.SymbolConfiguration(pointSize: textSize.points(24), weight: .medium)
+                    .applying(NSImage.SymbolConfiguration(paletteColors: [.white]))
+                if let camera = NSImage(systemSymbolName: "camera", accessibilityDescription: nil)?.withSymbolConfiguration(config) {
+                    let s = camera.size
+                    camera.draw(in: CGRect(x: (frame.midX - s.width / 2).rounded(), y: (frame.midY - s.height / 2).rounded(), width: s.width, height: s.height))
+                }
+            case .name:
+                drawPanel(frame, radius: Brutal.Radius.panel, opacity: FloatingPanel.Opacity.standard, shadow: false, increased: increased, in: ctx)
+                let nameRect = CGRect(x: (frame.midX - nameSize.width / 2).rounded(), y: frame.maxY - 8 - nameSize.height, width: nameSize.width, height: nameSize.height)
+                name.draw(with: nameRect, options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine])
+                size.draw(at: CGPoint(x: (frame.midX - sizeSize.width / 2).rounded(), y: nameRect.minY - 2 - sizeSize.height))
+            case .hint:
+                let shape = NSBezierPath(roundedRect: frame, xRadius: frame.height / 2, yRadius: frame.height / 2)
+                NSColor.white.withAlphaComponent(increased ? 1 : 0.9).setFill()
+                shape.fill()
+                if increased {
+                    Self.ink.withAlphaComponent(0.4).setStroke()
+                    shape.lineWidth = 1
+                    shape.stroke()
+                }
+                hint.draw(at: CGPoint(x: frame.minX + 10, y: (frame.midY - hintText.height / 2).rounded()))
+            }
+        }
+        let spoken = "\(details.name), \(details.size)"
+        if accessibilityValue() as? String != spoken {
+            setAccessibilityValue(spoken)
         }
     }
 
@@ -724,6 +854,7 @@ final class SelectionOverlayView: NSView {
         let previous = barHits.map(\.rect)
         barHits = []
         barFrame = nil
+        tipFrame = nil
         let opacity = controller.barOpacity
         guard opacity > 0, let window, NSMouseInRect(NSEvent.mouseLocation, window.frame, false),
               let ctx = NSGraphicsContext.current?.cgContext else {
@@ -913,6 +1044,7 @@ final class SelectionOverlayView: NSView {
         let x = min(max(box.midX - width / 2, 8), bounds.width - width - 8).rounded()
         let y = barPlacement == .top ? bar.minY - 8 - height : bar.maxY + 8
         let tip = CGRect(x: x, y: y, width: width, height: height)
+        tipFrame = tip
         drawPanel(tip, radius: 8, opacity: Self.tipOpacity, shadow: false, increased: increased, in: ctx)
         name.draw(at: CGPoint(x: tip.minX + 9, y: (tip.midY - nameSize.height / 2).rounded()))
         let cap = CGRect(x: tip.maxX - 9 - capWidth, y: (tip.midY - keySize.height / 2).rounded(), width: capWidth, height: keySize.height.rounded(.up))

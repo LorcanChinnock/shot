@@ -21,9 +21,9 @@ The bar never appears in your screenshot, and it stays out of the way: it fades 
 The last three icons switch the magnifier (<kbd>M</kbd>), the crosshair (<kbd>C</kbd>) and the size readout (<kbd>I</kbd>) for this capture, whatever **Settings › Capture** says. They only change what you see when you pick an area. The size readout sits above the area's top-left corner and gives its size in pixels, next to its ratio. The magnifier follows the pointer, showing each pixel around it with the pointer's position in pixels underneath. When you pick a ratio with <kbd>R</kbd>, it shows above the area even with the size readout off.
 
 - **Area:** drag across it.
-- **Window:** click a window. Shot captures it as it is right now, even if something covers it, and keeps its macOS shadow. To leave the shadow out, turn off **Window shadow** in **Settings › Capture**.
+- **Window:** click a window. The window under the pointer turns yellow, with its name and size in pixels in the middle. Shot captures it as it is right now, even if something covers it, and keeps its macOS shadow. To leave the shadow out, turn off **Window shadow** in **Settings › Capture**.
   To capture just the web page of a browser window, without the tabs and address bar, turn on **Capture only the page in browser windows** in **Settings › Capture**. Shot then captures the page when you click Safari, Chrome or Edge, and the whole window for any other app. It needs Accessibility access to find where the page is, which Shot asks for when you turn the setting on. To switch it for one capture, click **Browser** (the globe) or **Window** on the bar, or press <kbd>B</kbd>. It works for recordings too. A recording of a window or page follows it when you move or resize it, and keeps the video at the size it started at, with empty bars if the shape changes.
-- **Full Screen:** click the screen you want, or press <kbd>Return</kbd>. With more than one display, the one under the pointer is highlighted.
+- **Full Screen:** click the screen you want, or press <kbd>Return</kbd>. With more than one display, the one under the pointer is highlighted in yellow, with its name and size.
 
 While you drag an area:
 
