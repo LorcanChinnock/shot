@@ -3800,7 +3800,7 @@
     "Brightness" : {
 
     },
-    "Browser page only" : {
+    "Browser" : {
 
     },
     "Browser pages are ready" : {
@@ -15157,7 +15157,7 @@
     "Hue" : {
 
     },
-    "I: resolution" : {
+    "I: size" : {
 
     },
     "IMAGE STYLE" : {
@@ -15602,6 +15602,9 @@
 
     },
     "Kept originals" : {
+
+    },
+    "Key: %@" : {
 
     },
     "Keyframe %@ here" : {
@@ -19679,9 +19682,6 @@
         }
       }
     },
-    "Page" : {
-
-    },
     "Paste" : {
       "localizations" : {
         "de" : {
@@ -22447,9 +22447,6 @@
       }
     },
     "Resize panel" : {
-
-    },
-    "Resolution" : {
 
     },
     "Restore Defaults" : {
@@ -26233,6 +26230,9 @@
           }
         }
       }
+    },
+    "Size" : {
+
     },
     "Size label" : {
       "localizations" : {

@@ -213,6 +213,11 @@ enum FloatingPanel {
         NSColor(srgbRed: 0x1A / 255, green: 0x1A / 255, blue: 0x1E / 255, alpha: solid ? 1 : opacity)
     }
 
+    /// The accent and record red as they show on a floating panel: their dark values, as SwiftUI resolves them inside
+    /// `floatingPanel`, since the panel is dark in both appearances.
+    static let accentNS = NSColor(srgbRed: 0xF2 / 255, green: 0xCC / 255, blue: 0x4A / 255, alpha: 1)
+    static let recordNS = NSColor(srgbRed: 1, green: 0x45 / 255, blue: 0x3A / 255, alpha: 1)
+
     static func edgeNS(increased: Bool) -> NSColor { NSColor.white.withAlphaComponent(increased ? 0.4 : 0.14) }
 
     /// `0 14px 36px rgba(0,0,0,0.38)`, for a panel drawn into a view rather than in a window of its own.
