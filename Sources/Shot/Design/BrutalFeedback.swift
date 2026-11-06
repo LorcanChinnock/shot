@@ -334,7 +334,7 @@ struct HandwrittenNote: View {
             .foregroundStyle(Brutal.secondaryText)
             .multilineTextAlignment(.center)
             .rotationEffect(.degrees(wobble ? 1 : -4))
-            .animation(reduceMotion ? nil : .easeInOut(duration: 2).repeatForever(autoreverses: true), value: wobble)
+            .animation(Motion.animation(.noteWobble, reduceMotion: reduceMotion), value: wobble)
             .onAppear { wobble = !reduceMotion }
             .onChange(of: reduceMotion) { _, reduce in wobble = !reduce }
     }

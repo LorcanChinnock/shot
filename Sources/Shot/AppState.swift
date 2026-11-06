@@ -3,8 +3,19 @@ import Observation
 @MainActor
 @Observable
 final class AppState {
-    var isRecording = false
-    var isPaused = false
+    var isRecording = false {
+        didSet { menuBar.recordingChanged(isRecording && !isPaused) }
+    }
+
+    var isPaused = false {
+        didSet { menuBar.recordingChanged(isRecording && !isPaused) }
+    }
+
     /// Seconds left while a timed screenshot or a recording counts down.
-    var countdown: Int?
+    var countdown: Int? {
+        didSet { menuBar.countdownChanged(from: oldValue, to: countdown) }
+    }
+
+    /// The menu bar icon's flip and pulse.
+    let menuBar = MenuBarAnimation()
 }

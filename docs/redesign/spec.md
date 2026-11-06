@@ -206,6 +206,16 @@ SF Pro at native sizes, through `ScaledFont`, so Settings › Text size still sc
 
 Edits and drags are always instant. Sounds follow the capture sound setting.
 
+#1074 builds these on shared helpers. ShotCore's `Moment` holds each length and its Reduce Motion stand-in, with tests that keep every moment except the ambient loops under 300 ms. `Motion` in `Design/Motion.swift` turns them into animations, and `Motion.arrive` and `Motion.leave` replace Quick Access's own springs.
+
+| Moment | Code | Notes |
+| --- | --- | --- |
+| Press, empty-state note | `BrutalButtonStyle`, `HandwrittenNote` | Built by #1070 and #1072, now timed by `Motion` |
+| Viewfinder snap | `Capture/ViewfinderSnap.swift` | 4 pt ink brackets with a white edge fly in 14 pt from outside each corner, overshoot 2 pt and settle, with a 30% white flash. They hold for 180 ms, then fade. Shape layers, so a full-screen capture adds no memory |
+| Copied tick | `Toast.done(_:drawsTick:)` | A 20 pt accent disc with an ink tick, for every copy and save. The toast rises 8 pt as it fades in. After a capture the snap is that action's moment, so the toast shows its tick already drawn |
+| Marks land | `Editor/EditorCanvasView.swift` | A new counter grows to 122% and settles. An arrow is already whole when you let go of the drag, so it doesn't draw again |
+| Countdown, recording pulse | `Design/BrandMark.swift` (`MenuBarAnimation`) | The digit folds flat and the next unfolds over 160 ms. While recording, a ring breathes out of the mark. A frame loop runs only while one plays. The countdown ring is #1078 and the recording controls' dot is #1089 |
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -263,13 +273,13 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | --- | --- | --- | --- |
 | Design language | #1068 tokens | `Design/BrutalStyle.swift`, `Design/GlassWindow.swift` (wash removed) | ☐ |
 | Design language | #1069 1.5 pt ink | `scripts/lint.sh`, `Design/BrutalStyle.swift` (`inkBorder`), `CLAUDE.md` | ☐ |
-| Design language | #1074 motion | `Design/` (new motion helpers) | ☐ |
+| Design language | #1074 motion | `Design/Motion.swift`, ShotCore `Moment`, `QuickAccess/QuickAccessView.swift` | ☐ |
 | Components › Buttons | #1070 | `Design/BrutalStyle.swift` (`BrutalButtonStyle`) and its call sites | ☐ |
 | Components › Choice | #1071 | `Design/BrutalControls.swift`, `Design/BrutalDropdown.swift` | ☐ |
 | Components › Choice, Feedback | #1072 | `Design/BrutalFeedback.swift`, `Design/BrutalTip.swift`, `Design/BrutalControls.swift` (`Tile`), `Toast.swift` | ☐ |
 | Sample desktop (shared scene) | #1131 | None: the backdrop behind the Capture and Record boards. QA uses MugCo | ☐ |
 | Capture bar (shared component) | #1075 | `Overlay/SelectionOverlayView.swift`, `Overlay/SelectionOverlayController.swift`, ShotCore `OverlayBarPlacement` | ☐ |
-| Moments of delight | #1074 | `Design/` motion helpers, `Design/BrandMark.swift`, `Toast.swift` | ☐ |
+| Moments of delight | #1074 | `Design/Motion.swift`, `Design/BrandMark.swift`, `Toast.swift`, `Capture/ViewfinderSnap.swift`, `Editor/EditorCanvasView.swift` | ☐ |
 
 ### Capture
 

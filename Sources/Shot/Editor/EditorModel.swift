@@ -655,7 +655,7 @@ final class EditorModel {
             return
         }
         StyleClipboard.copied = copied
-        Toast.show("Copied style")
+        Toast.done("Copied style")
     }
 
     var canPasteStyle: Bool { StyleClipboard.copied != nil }
@@ -1112,7 +1112,7 @@ final class EditorModel {
         Task {
             do {
                 try await Clipboard.copy(annotation: selection)
-                Toast.show("Copied annotation")
+                Toast.done("Copied annotation")
             } catch {
                 Toast.error("Couldn't copy: \(error.localizedDescription)")
             }
@@ -1129,7 +1129,7 @@ final class EditorModel {
             return
         }
         Clipboard.copy(png: png)
-        Toast.show("Copied")
+        Toast.done("Copied")
     }
 
     /// Returns false if the save failed or another is still running.

@@ -22,7 +22,10 @@ struct ShotApp: App {
         MenuBarExtra {
             ShotMenu(state: appDelegate.state, coordinator: appDelegate.coordinator)
         } label: {
-            Image(nsImage: BrandMark.menuBarImage(menuBarState, updateAvailable: Updater.shared.pendingVersion != nil))
+            Image(nsImage: BrandMark.menuBarImage(
+                menuBarState, updateAvailable: Updater.shared.pendingVersion != nil,
+                flip: appDelegate.state.menuBar.flip, pulse: appDelegate.state.menuBar.pulse
+            ))
         }
     }
 }
