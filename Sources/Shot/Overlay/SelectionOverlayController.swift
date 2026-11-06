@@ -44,6 +44,10 @@ final class SelectionOverlayController {
     private(set) var pageOnly = Preferences().browserPageOnly
     var browserMode: Bool { windowMode && pageOnly && Permissions.hasAccessibility }
     var screenMode: Bool { target == .screen }
+    /// The mode the capture bar shows as picked.
+    var barMode: CaptureBarMode { CaptureBarMode(target: target, browserPage: browserMode) }
+    /// Whether the pick is for a recording rather than a screenshot, which the bar names.
+    let recording: Bool
     /// Seconds to wait after the pick before capturing; 0 is off. `offersDelay` is false where waiting makes no sense.
     private(set) var delay = 0
     let offersDelay: Bool
@@ -79,12 +83,12 @@ final class SelectionOverlayController {
     private(set) var barOpacity: CGFloat = 1
     private var barTimer: Task<Void, Never>?
     private static let barLinger: Duration = .seconds(4)
-    private static let barFade: Duration = .milliseconds(200)
     /// The modifier keys held by the event that ended the selection.
     private var endModifiers: NSEvent.ModifierFlags = []
 
-    private init(target: CaptureTarget, offersDelay: Bool, offersScrolling: Bool, windows: [WindowInfo], isLive: Bool) {
+    private init(target: CaptureTarget, offersDelay: Bool, offersScrolling: Bool, recording: Bool, windows: [WindowInfo], isLive: Bool) {
         self.target = target
+        self.recording = recording
         self.offersDelay = offersDelay
         self.offersScrolling = offersScrolling
         self.windows = windows
@@ -98,8 +102,12 @@ final class SelectionOverlayController {
 
     /// Like the above, also returning the modifier keys held as the selection ended, read from that event rather than
     /// later, and the delay chosen when `offersDelay`.
-    static func select(displays: [OverlayDisplay], target: CaptureTarget, offersDelay: Bool, offersScrolling: Bool = false, windows: [WindowInfo], isLive: Bool = false) async -> OverlayResult {
-        let controller = SelectionOverlayController(target: target, offersDelay: offersDelay, offersScrolling: offersScrolling, windows: windows, isLive: isLive)
+    static func select(
+        displays: [OverlayDisplay], target: CaptureTarget, offersDelay: Bool, offersScrolling: Bool = false, recording: Bool = false, windows: [WindowInfo], isLive: Bool = false
+    ) async -> OverlayResult {
+        let controller = SelectionOverlayController(
+            target: target, offersDelay: offersDelay, offersScrolling: offersScrolling, recording: recording, windows: windows, isLive: isLive
+        )
         // The overlay views hold the controller unowned; keep it alive until the user finishes.
         let selection = await withCheckedContinuation { continuation in
             controller.continuation = continuation
@@ -181,8 +189,10 @@ final class SelectionOverlayController {
     private func fadeOutBar() async {
         let clock = ContinuousClock()
         let start = clock.now
+        // As long as a panel takes to leave, or Reduce Motion's fade.
+        let fade = Duration.seconds(Motion.reduced ? Moment.reducedFade : Moment.panelArrive.duration)
         while !Task.isCancelled {
-            let progress = min((clock.now - start) / Self.barFade, 1)
+            let progress = min((clock.now - start) / fade, 1)
             barOpacity = CGFloat(1 - progress)
             redrawAll()
             if progress >= 1 {
@@ -256,17 +266,27 @@ final class SelectionOverlayController {
         updateHover(redraw: true)
     }
 
-    /// B: picks browser windows as just their page, or whole. Without Accessibility it closes the overlay and asks macOS
-    /// for it, so the prompt isn't left behind the overlay.
+    /// B: switches to Browser, which picks a browser window's page alone, or from Browser back to Window.
     func togglePageOnly() {
-        guard Permissions.hasAccessibility else {
+        setMode(barMode == .browser ? .window : .browser)
+    }
+
+    /// A click on one of the bar's modes. Browser needs Accessibility to find the page: without it the overlay closes and
+    /// asks macOS for it, so the prompt isn't left behind the overlay.
+    func setMode(_ mode: CaptureBarMode) {
+        if mode.picksPage, !Permissions.hasAccessibility {
             finish(nil)
             Permissions.requestAccessibility()
             return
         }
-        pageOnly.toggle()
-        isWindowPinned = false
-        updateHover(redraw: true)
+        if mode.target == .window, pageOnly != mode.picksPage {
+            pageOnly = mode.picksPage
+            isWindowPinned = false
+            if target == .window {
+                updateHover(redraw: true)
+            }
+        }
+        setTarget(mode.target)
     }
 
     func toggleScrolling() {

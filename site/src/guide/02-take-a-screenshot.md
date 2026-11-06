@@ -14,7 +14,7 @@ Every screenshot is saved, copied to the clipboard as a PNG, and shown in a [Qui
 2. Drag across what you want. For exact edges, turn on the magnifier, the crosshair and a label with the size in pixels in **Settings › Capture**.
 3. Let go.
 
-A small bar at the bottom of the screen shows what you are about to capture: **Area**, **Window** or **Full Screen**. Press <kbd>Tab</kbd> to move to the next one (<kbd>⇧Tab</kbd> goes back), or click its icon. Point at an icon to see its name and key. Shot remembers the one you used last, for screenshots and recordings separately, and opens on it next time.
+A small bar at the bottom of the screen starts with **Screenshot** or **Record**, then shows what you are about to capture, picked in yellow: **Area**, **Window**, **Full Screen** or **Browser**. Press <kbd>Tab</kbd> to move between Area, Window and Full Screen (<kbd>⇧Tab</kbd> goes back), or click an icon. Point at an icon to see its name and key. Shot remembers the one you used last, for screenshots and recordings separately, and opens on it next time.
 
 The bar never appears in your screenshot, and it stays out of the way: it fades away about 4 seconds after it shows (it stays while the pointer is on it), so you can pick the area under it, and any of its keys brings it back. It also hides while you drag out an area, and moves to the top of the screen when the window you point at is under it. To start an area right under the bar, just drag from it: a click picks an icon, a drag starts the area.
 
@@ -22,7 +22,7 @@ The last three icons switch the magnifier (<kbd>M</kbd>), the crosshair (<kbd>C<
 
 - **Area:** drag across it.
 - **Window:** click a window. Shot captures it as it is right now, even if something covers it, and keeps its macOS shadow. To leave the shadow out, turn off **Window shadow** in **Settings › Capture**.
-  To capture just the web page of a browser window, without the tabs and address bar, turn on **Capture only the page in browser windows** in **Settings › Capture**. Shot then captures the page when you click Safari, Chrome or Edge, and the whole window for any other app. It needs Accessibility access to find where the page is, which Shot asks for when you turn the setting on. Press <kbd>B</kbd> on the bar, or click the compass icon, to switch it for one capture. It works for recordings too. A recording of a window or page follows it when you move or resize it, and keeps the video at the size it started at, with empty bars if the shape changes.
+  To capture just the web page of a browser window, without the tabs and address bar, turn on **Capture only the page in browser windows** in **Settings › Capture**. Shot then captures the page when you click Safari, Chrome or Edge, and the whole window for any other app. It needs Accessibility access to find where the page is, which Shot asks for when you turn the setting on. To switch it for one capture, click **Browser** (the globe) or **Window** on the bar, or press <kbd>B</kbd>. It works for recordings too. A recording of a window or page follows it when you move or resize it, and keeps the video at the size it started at, with empty bars if the shape changes.
 - **Full Screen:** click the screen you want, or press <kbd>Return</kbd>. With more than one display, the one under the pointer is highlighted.
 
 While you drag an area:
