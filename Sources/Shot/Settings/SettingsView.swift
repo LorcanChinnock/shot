@@ -71,6 +71,7 @@ struct SettingsView: View {
     private static let defaultSidebarWidth = 196.0
     /// How wide the sidebar is when it's shrunk to icons.
     private static let railWidth: CGFloat = 52
+    private static let sidebarGap: CGFloat = 22
     /// Below this window width the sidebar shrinks to icons by itself, whatever was chosen, to leave room for the content.
     private static let autoCollapseWidth: CGFloat = 920
 
@@ -85,9 +86,9 @@ struct SettingsView: View {
     private var section: SettingsSection { navigation.section }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 22) {
+        HStack(alignment: .top, spacing: Self.sidebarGap) {
             Sidebar(selection: $navigation.section, collapsed: railShown, canToggle: !narrow) { sidebarCollapsed.toggle() }
-                .frame(width: railShown ? Self.railWidth : min(max(sidebarWidth, Self.sidebarWidths.lowerBound), Self.sidebarWidths.upperBound))
+                .frame(width: shownSidebarWidth)
                 .overlay(alignment: .trailing) {
                     if !railShown {
                         // Centred in the gap between the sidebar and what's beside it.
@@ -121,7 +122,19 @@ struct SettingsView: View {
         .padding(.horizontal, Brutal.windowInset)
         .padding(.bottom, Self.bottomInset)
         .frame(minWidth: MainWindowController.minSize.width, maxWidth: .infinity, maxHeight: .infinity)
+        .background(alignment: .leading) {
+            // The see-through sidebar runs from the window's edge, under the traffic lights, to the middle of the gap.
+            SidebarMaterial()
+                .frame(width: Brutal.windowInset + shownSidebarWidth + Self.sidebarGap / 2)
+                .overlay(alignment: .trailing) {
+                    Brutal.separator.frame(width: 1)
+                }
+        }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { windowWidth = $0 }
+    }
+
+    private var shownSidebarWidth: CGFloat {
+        railShown ? Self.railWidth : min(max(sidebarWidth, Self.sidebarWidths.lowerBound), Self.sidebarWidths.upperBound)
     }
 
     private var header: some View {

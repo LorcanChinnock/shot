@@ -5,7 +5,7 @@ import SwiftUI
 
 @MainActor
 enum Toast {
-    private static var panel: NSPanel?
+    private static var panel: FloatingPanelWindow?
     private static var hideTask: Task<Void, Never>?
     private static var duration: Duration?
     private static var undoable: PendingAction?
@@ -67,7 +67,6 @@ enum Toast {
         let origin = NSPoint(x: screen.frame.midX - size.width / 2, y: screen.visibleFrame.minY + 80)
         panel.setFrame(NSRect(origin: origin, size: size), display: true)
         panel.orderFrontRegardless()
-        refreshShadow()
         NSAccessibility.post(element: panel, notification: .announcementRequested, userInfo: [.announcement: message, .priority: NSAccessibilityPriorityLevel.high.rawValue])
         self.duration = duration
         scheduleHide()
@@ -111,14 +110,6 @@ enum Toast {
         }
         let size = size(of: shown.message, fraction: shown.fraction, action: action)
         panel.setFrame(NSRect(x: panel.frame.midX - size.width / 2, y: panel.frame.minY, width: size.width, height: size.height), display: true)
-        refreshShadow()
-    }
-
-    /// The panel's shadow follows the pill drawn in it, so it's worked out again once the new content has drawn.
-    private static func refreshShadow() {
-        DispatchQueue.main.async {
-            panel?.invalidateShadow()
-        }
     }
 
     private static func size(of message: String, fraction: Double?, action: ToastView.Action?) -> NSSize {
@@ -177,13 +168,9 @@ enum Toast {
         pending?.commit()
     }
 
-    private static func makePanel() -> NSPanel {
-        let panel = NSPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+    private static func makePanel() -> FloatingPanelWindow {
+        let panel = FloatingPanelWindow(contentRect: .zero)
         panel.level = .statusBar
-        panel.isOpaque = false
-        panel.backgroundColor = .clear
-        // The system shadow follows the pill's outline, and unlike a drawn one it doesn't catch clicks around it.
-        panel.hasShadow = true
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         self.panel = panel
         return panel
@@ -226,7 +213,6 @@ private struct ToastView: View {
     let hold: (Bool) -> Void
     let dismiss: () -> Void
     @Environment(\.colorSchemeContrast) private var contrast
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.textSize) private var textSize
 
     var body: some View {
@@ -240,7 +226,7 @@ private struct ToastView: View {
                     .frame(width: Toast.barWidth)
                 Text(fraction, format: .percent.precision(.fractionLength(0)))
                     .font(.scaled(12, weight: .semibold, tabular: true))
-                    .foregroundStyle(.white.opacity(contrast == .increased ? 1 : 0.75))
+                    .foregroundStyle(contrast == .increased ? .white : FloatingPanel.secondaryText)
                     .frame(width: Self.percentWidth(textSize), alignment: .trailing)
                     .accessibilityHidden(true)
             }
@@ -259,9 +245,7 @@ private struct ToastView: View {
         .padding(.leading, Self.leading)
         .padding(.trailing, action == nil ? Self.leading : Self.trailingWithAction)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(hex: 0x1A1A1E).opacity(contrast == .increased || reduceTransparency ? 1 : 0.9), in: Capsule())
-        .inkBorder(Capsule(), width: 0.5, color: .white.opacity(contrast == .increased ? 0.4 : 0.14))
-        .environment(\.colorScheme, .dark)
+        .floatingPanel(Capsule(), opacity: FloatingPanel.Opacity.toast)
         .contentShape(Capsule())
         .onHover(perform: hold)
         .onTapGesture(perform: dismiss)

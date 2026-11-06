@@ -473,6 +473,8 @@ final class SelectionOverlayView: NSView {
     }
 
     private static let ink = Brutal.inkNS
+    /// The capture bar is too tall for a pill, so it has its own radius.
+    private static let barRadius: CGFloat = 16
 
     /// Neo-brutalist chip: flat fill, ink border, hard offset shadow. A paper chip follows the appearance; on the yellow accent
     /// the text stays near-black, as `inkOnFill` keeps it in SwiftUI.
@@ -643,31 +645,39 @@ final class SelectionOverlayView: NSView {
                 ctx.restoreGState()
             }
         }
-        NSColor(Brutal.line).setFill()
-        NSBezierPath(roundedRect: frame.offsetBy(dx: 3, dy: -3), xRadius: 9, yRadius: 9).fill()
-        NSColor(Brutal.paper).setFill()
-        let shape = NSBezierPath(roundedRect: frame, xRadius: 9, yRadius: 9)
+        // A floating panel, dark in both appearances. The shadow is drawn only outside the bar, so it doesn't darken the
+        // see-through fill.
+        let radius = min(Self.barRadius, frame.height / 2)
+        let shape = NSBezierPath(roundedRect: frame, xRadius: radius, yRadius: radius)
+        ctx.saveGState()
+        let outside = NSBezierPath(rect: bounds)
+        outside.append(shape)
+        outside.windingRule = .evenOdd
+        outside.addClip()
+        FloatingPanel.shadowNS.set()
+        NSColor.black.setFill()
         shape.fill()
-        NSColor(Brutal.line).setStroke()
-        shape.lineWidth = 2
-        shape.stroke()
+        ctx.restoreGState()
+        let solid = FloatingPanel.solidNS
+        let increased = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        FloatingPanel.fillNS(FloatingPanel.Opacity.standard, solid: solid).setFill()
+        shape.fill()
+        let edgeWidth = 1 / window.backingScaleFactor
+        let edge = NSBezierPath(roundedRect: frame.insetBy(dx: edgeWidth / 2, dy: edgeWidth / 2), xRadius: radius - edgeWidth / 2, yRadius: radius - edgeWidth / 2)
+        FloatingPanel.edgeNS(increased: increased).setStroke()
+        edge.lineWidth = edgeWidth
+        edge.stroke()
 
         var x = frame.minX + pad
         var tip: (text: String, box: CGRect)?
         func drawButtons(_ buttons: [BarButton], _ widths: [CGFloat]) {
             for (button, buttonWidth) in zip(buttons, widths) {
                 let box = CGRect(x: x, y: frame.minY + pad, width: buttonWidth, height: height)
-                let ink = button.on ? Self.ink : NSColor(Brutal.ink)
-                if button.on {
-                    NSColor(Brutal.yellow).setFill()
-                    let fill = NSBezierPath(roundedRect: box, xRadius: 6, yRadius: 6)
-                    fill.fill()
-                    NSColor(Brutal.line).setStroke()
-                    fill.lineWidth = 2
-                    fill.stroke()
-                } else if hoveredChip == button.action {
-                    NSColor(Brutal.ink).withAlphaComponent(0.1).setFill()
-                    NSBezierPath(roundedRect: box, xRadius: 6, yRadius: 6).fill()
+                let ink = NSColor.white.withAlphaComponent(button.on || increased ? 1 : 0.82)
+                let buttonRadius = min(Brutal.Radius.group, box.height / 2)
+                if button.on || hoveredChip == button.action {
+                    NSColor.white.withAlphaComponent(button.on ? 0.16 : 0.08).setFill()
+                    NSBezierPath(roundedRect: box, xRadius: buttonRadius, yRadius: buttonRadius).fill()
                 }
                 var contentX = box.minX + 10
                 if let image = icon(button, color: ink) {
@@ -692,8 +702,9 @@ final class SelectionOverlayView: NSView {
         drawButtons(modes, modeWidths)
         if !options.isEmpty {
             x += divider / 2 - gap
-            NSColor(Brutal.line).withAlphaComponent(0.35).setFill()
-            NSBezierPath(rect: CGRect(x: x - 1, y: frame.minY + pad + 6, width: 2, height: height - 12)).fill()
+            NSColor.white.withAlphaComponent(increased ? 0.6 : 0.16).setFill()
+            let dividerHeight = min(22, height - 8)
+            NSBezierPath(rect: CGRect(x: x - 0.5, y: frame.midY - dividerHeight / 2, width: 1, height: dividerHeight)).fill()
             x += divider / 2
             drawButtons(options, optionWidths)
         }
