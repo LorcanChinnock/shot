@@ -10273,6 +10273,9 @@
     "Drag captures onto this folder in the sidebar, or use Move to in a capture's menu. Captures in the folders inside it show when you open them." : {
 
     },
+    "Drag into any app" : {
+
+    },
     "Drag over private details to blur or pixelate them." : {
       "localizations" : {
         "de" : {
@@ -20325,6 +20328,9 @@
       }
     },
     "Pin" : {
+
+    },
+    "Pin to Screen" : {
 
     },
     "Pinned %@" : {

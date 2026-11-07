@@ -5,13 +5,25 @@ import Foundation
 /// round them and `spacing` between. Frames are in the panel's bottom-left-origin coordinates, as AppKit has them.
 /// The panel's SwiftUI view lays the cards out the same way, and the hover check finds a card by its frame here.
 public struct QuickAccessLayout: Equatable, Sendable {
-    public static let cardWidth: CGFloat = 240
+    public static let cardWidth: CGFloat = 280
+    /// The shortest and tallest a card gets. The capture fills the card, so a picture taller or wider than these allow
+    /// is cropped to the middle rather than letterboxed.
+    public static let cardMinHeight: CGFloat = 158
+    public static let cardMaxHeight: CGFloat = 210
     public static let spacing: CGFloat = 14
     public static let padding: CGFloat = 10
 
     public let size: CGSize
     /// One frame per card height, in the same order.
     public let cardFrames: [CGRect]
+
+    /// The height of a card for a picture `size` big: the picture's shape at the card's width, within the limits.
+    public static func cardHeight(for size: CGSize) -> CGFloat {
+        guard size.width > 0, size.height > 0 else {
+            return cardMaxHeight
+        }
+        return min(cardMaxHeight, max(cardMinHeight, (cardWidth * size.height / size.width).rounded()))
+    }
 
     public init(cardHeights heights: [CGFloat]) {
         var frames: [CGRect] = []
