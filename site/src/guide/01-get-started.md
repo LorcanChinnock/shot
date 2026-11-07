@@ -42,7 +42,7 @@ Shot doesn't ask for Accessibility access up front. Only capturing just the page
 
 ## Where to find Shot
 
-Shot lives in the menu bar, not the Dock. Click its icon for every capture and recording action, your [gallery](#find-your-captures) and **Settings**. This guide is linked from **Settings › About**.
+Shot lives in the menu bar, not the Dock. Click its icon for every capture and recording action, your four newest captures, your [gallery](#find-your-captures) and **Settings**. This guide is linked from **Settings › About**.
 
 After each capture, Shot saves it, copies it, and shows a small [Quick Access](#quick-access) card in the corner of the screen. Paste it anywhere straight away, or hover the card to annotate it.
 

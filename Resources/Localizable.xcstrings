@@ -701,6 +701,17 @@
     "%@ · with shadow" : {
 
     },
+    "%@, %@" : {
+      "comment" : "A capture in the menu's Recent row: the kind of capture, then how long ago, such as \"Screenshot, 5 minutes ago\"",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
     "%@, update available" : {
 
     },
@@ -19027,58 +19038,6 @@
         }
       }
     },
-    "Open Gallery" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Galerie öffnen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abrir galería"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ouvrir la galerie"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apri galleria"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ギャラリーを開く"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "갤러리 열기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abrir Galeria"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "打开图库"
-          }
-        }
-      }
-    },
     "Open Shot at login" : {
       "localizations" : {
         "de" : {
@@ -19396,6 +19355,9 @@
           }
         }
       }
+    },
+    "Opens it to edit. Drag it into another app to use the file there." : {
+
     },
     "Opens the annotation editor instead of Quick Access." : {
       "localizations" : {
@@ -21306,6 +21268,12 @@
       }
     },
     "Ready" : {
+
+    },
+    "Recent" : {
+
+    },
+    "Recent captures" : {
 
     },
     "Record" : {

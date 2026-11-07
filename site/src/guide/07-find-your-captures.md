@@ -8,7 +8,9 @@ group: Edit and share
 
 ## Open the gallery
 
-Choose **Open Gallery** in Shot's menu bar menu, or open [`shot://gallery`](#url-scheme). The gallery is the first section of the Settings window.
+Choose **Gallery** in Shot's menu bar menu, or open [`shot://gallery`](#url-scheme). The gallery is the first section of the Settings window.
+
+For your last few captures you don't need the gallery. The menu bar menu shows your four newest under **Recent**: click one to open it in its editor, or drag it into another app. With the keyboard, press <kbd>↓</kbd> until the row is highlighted, then <kbd>→</kbd> for a list of them.
 
 It shows every image, movie and GIF in your save folder and the folders inside it, whether Shot made it or not, and stays up to date as you capture. Captures taken with saving turned off aren't in it. To group captures into folders or tag them, see [Organise your captures](#organise-your-captures).
 
