@@ -410,7 +410,7 @@ private struct FrameRowView: View {
 /// What the list shows before anything is drawn.
 private struct EmptyLayers: View {
     var body: some View {
-        EmptyState(symbol: "scribble.variable", title: "Nothing drawn yet", message: "Pick a tool and draw on the image", note: "Your marks show up here")
+        EmptyState(symbol: "scribble.variable", title: "Nothing drawn yet", message: "Pick a tool and draw on the image")
     }
 }
 

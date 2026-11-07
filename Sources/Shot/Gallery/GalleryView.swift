@@ -113,8 +113,7 @@ struct GalleryRootView: View {
             } else if model.items.isEmpty {
                 EmptyState(
                     symbol: "photo.on.rectangle.angled", title: String(localized: "No captures yet"),
-                    message: String(localized: "Screenshots and recordings saved to \((model.folder.path as NSString).abbreviatingWithTildeInPath) show up here."),
-                    note: String(localized: "Your first capture goes here")
+                    message: String(localized: "Screenshots and recordings saved to \((model.folder.path as NSString).abbreviatingWithTildeInPath) show up here.")
                 ) {
                     Button("Open Folder") { NSWorkspace.shared.open(model.folder) }
                         .buttonStyle(BrutalButtonStyle())

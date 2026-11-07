@@ -24,7 +24,7 @@ struct MomentTests {
     }
 
     @Test func onlyTheLoopsThatTickWithRealTimeRunLonger() {
-        #expect(Moment.allCases.filter(\.isAmbient) == [.countdownRing, .recordingPulse, .noteWobble])
+        #expect(Moment.allCases.filter(\.isAmbient) == [.countdownRing, .recordingPulse])
         #expect(Moment.countdownRing.reduced == .none)
     }
 

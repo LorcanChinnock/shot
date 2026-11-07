@@ -251,35 +251,28 @@ struct BrutalProgressBar: View {
 
 // MARK: Empty states
 
-/// What a list or grid shows with nothing in it: an accent tile in ink, a title, what to do next and any buttons. A
-/// handwritten `note` can sit above it; handwriting appears only here and in onboarding.
+/// What a list or grid shows with nothing in it: an accent tile in ink, a title, what to do next and any buttons.
 struct EmptyState<Actions: View>: View {
     let symbol: String
     let title: String
     var message: String?
-    var note: String?
     @ViewBuilder let actions: Actions
 
-    init(symbol: String, title: LocalizedStringResource, message: LocalizedStringResource? = nil, note: LocalizedStringResource? = nil, @ViewBuilder actions: () -> Actions = { EmptyView() }) {
-        self.init(symbol: symbol, title: String(localized: title), message: message.map { String(localized: $0) }, note: note.map { String(localized: $0) }, actions: actions)
+    init(symbol: String, title: LocalizedStringResource, message: LocalizedStringResource? = nil, @ViewBuilder actions: () -> Actions = { EmptyView() }) {
+        self.init(symbol: symbol, title: String(localized: title), message: message.map { String(localized: $0) }, actions: actions)
     }
 
     /// An empty state whose text is already localized, such as a message with a path in it.
     @_disfavoredOverload
-    init<S: StringProtocol>(symbol: String, title: S, message: String? = nil, note: String? = nil, @ViewBuilder actions: () -> Actions = { EmptyView() }) {
+    init<S: StringProtocol>(symbol: String, title: S, message: String? = nil, @ViewBuilder actions: () -> Actions = { EmptyView() }) {
         self.symbol = symbol
         self.title = String(title)
         self.message = message
-        self.note = note
         self.actions = actions()
     }
 
     var body: some View {
         VStack(spacing: 8) {
-            if let note {
-                HandwrittenNote(text: note)
-                    .padding(.bottom, 6)
-            }
             EmptyStateTile(symbol: symbol)
             Text(title)
                 .font(.scaled(14, weight: .bold))
@@ -318,24 +311,5 @@ private struct EmptyStateTile: View {
             }
             .padding(.bottom, 2)
             .accessibilityHidden(true)
-    }
-}
-
-/// A short note in Bradley Hand, tilted and wobbling slowly as if stuck on by hand. Reduce Motion keeps it still.
-struct HandwrittenNote: View {
-    let text: String
-    @Environment(\.textSize) private var textSize
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var wobble = false
-
-    var body: some View {
-        Text(text)
-            .font(.custom("Bradley Hand", size: textSize.points(20)).weight(.bold))
-            .foregroundStyle(Brutal.secondaryText)
-            .multilineTextAlignment(.center)
-            .rotationEffect(.degrees(wobble ? 1 : -4))
-            .animation(Motion.animation(.noteWobble, reduceMotion: reduceMotion), value: wobble)
-            .onAppear { wobble = !reduceMotion }
-            .onChange(of: reduceMotion) { _, reduce in wobble = !reduce }
     }
 }
