@@ -16,7 +16,7 @@ The boards are HTML mock-ups. They stand Inter in for SF Pro and JetBrains Mono 
 4. **Native where it's familiar.** Unified title bars with the toolbar in them, standard traffic lights, see-through sidebars, grouped forms, native menus, sheets and pop-up menus. Nothing a Mac user has to learn twice.
 5. **Quiet chrome, loud captures.** No gradient washes, neon panels or coloured fills behind windows. Neutral surfaces leave the screenshot as the most colourful thing on screen.
 6. **Each colour has one job.** Yellow is the only interface accent. Record red appears only while something is recording or about to be lost. Selection blue marks selected marks, layers and files. The tints are for sidebar icons only, never fills.
-7. **Handwriting only in empty states and onboarding:** the empty gallery, empty Layers and the welcome window. On the website it appears in sticky notes only, never in text you need to read.
+7. **No handwriting in the app.** Empty states and onboarding use the app's own type. On the website, handwriting appears in sticky notes only, never in text you need to read.
 8. **Reduce Motion** turns every movement into a 120 ms fade, or nothing. **Increase Contrast** and **Reduce Transparency** give floating panels and sidebars solid backgrounds, with text at 4.5:1 and marks at 3:1.
 9. **Heavy weights** (800 and above) appear only in the app icon, onboarding and empty states. Numbers that tick (timers, sizes, zoom, countdowns) use tabular figures.
 
@@ -168,9 +168,9 @@ Ink is drawn with `inkBorder`, crisp on 1× displays (`inkBorder` snaps the widt
 | Tooltip | The group fill at Float depth, control radius. The name in Small type, then its keycap, with one line of explanation below in 12 pt tertiary text | `brutalTip(_:key:detail:)`, `Tile(help:key:detail:)` |
 | Toast | A 34 pt dark pill, `rgba(26,26,30,0.90)` with a 0.5 pt `rgba(255,255,255,0.14)` edge and the system window shadow. Message in 13 medium white. One button: a `rgba(255,255,255,0.16)` pill in 12 semibold, with its key faded after it (Undo ⌘Z) | `Toast` |
 | Progress bar | 6 pt, the progress track `rgba(22,22,26,0.08)` (dark `0.12` white) filled in ink. In a toast it sits after the message with the percentage in tabular figures | `BrutalProgressBar`, `Toast.progress(_:fraction:)` |
-| Empty state | An optional handwritten note, a 44 pt accent tile with a 1.5 pt ink outline and 2 pt drop, a 14 bold title, a 12 pt tertiary line and any buttons | `EmptyState` |
+| Empty state | A 44 pt accent tile with a 1.5 pt ink outline and 2 pt drop, a 14 bold title, a 12 pt tertiary line and any buttons | `EmptyState` |
 
-- **Handwriting** is Bradley Hand Bold at 20 pt, which ships with macOS, in secondary text. It tilts −4° and wobbles to +1° over 4 s; Reduce Motion keeps it still at −4°. The boards use Caveat.
+- **No handwritten note.** The boards put a note in Caveat above the empty gallery and empty Layers. #1169 took it out, so an empty state is the tile, the title and what to do next.
 - **Focus** puts the 4 pt accent halo around a field. A tooltip shows on keyboard focus as well as hover, but only in the active window, and any click or key press hides it until the pointer leaves or focus moves on.
 - **VoiceOver** hears every toast as an announcement, except progress, which updates in place without speaking each step. The progress bar reads as a native progress indicator.
 - **Increase Contrast** gives fields and tag chips a 60% ink edge, badges ink text, the progress track 25% ink, and toasts a solid background with a 40% white edge. Reduce Transparency also makes toasts solid.
@@ -202,7 +202,6 @@ SF Pro at native sizes, through `ScaledFont`, so Settings › Text size still sc
 | Panel arrive | 240 ms spring | Panels and popovers; Quick Access slides in from its corner | 120 ms fade |
 | Countdown | 1 s tick | Menu bar digits flip; the countdown ring empties | Number changes, no flip or ring animation |
 | Recording pulse | 1.6 s loop | The red dot breathes in the menu bar and the recording controls | Steady dot |
-| Empty-state note | 4 s wobble | Handwritten notes | Still |
 
 Edits and drags are always instant. Sounds follow the capture sound setting.
 
@@ -210,7 +209,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 
 | Moment | Code | Notes |
 | --- | --- | --- |
-| Press, empty-state note | `BrutalButtonStyle`, `HandwrittenNote` | Built by #1070 and #1072, now timed by `Motion` |
+| Press | `BrutalButtonStyle` | Built by #1070, now timed by `Motion` |
 | Viewfinder snap | `Capture/ViewfinderSnap.swift` | 4 pt ink brackets with a white edge fly in 14 pt from outside each corner, overshoot 2 pt and settle, with a 30% white flash. They hold for 180 ms, then fade. Shape layers, so a full-screen capture adds no memory |
 | Copied tick | `Toast.done(_:drawsTick:)` | A 20 pt accent disc with an ink tick, for every copy and save. The toast rises 8 pt as it fades in. After a capture the snap is that action's moment, so the toast shows its tick already drawn |
 | Marks land | `Editor/EditorCanvasView.swift` | A new counter grows to 122% and settles. An arrow is already whole when you let go of the drag, so it doesn't draw again |
