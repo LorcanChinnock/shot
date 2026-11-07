@@ -16,8 +16,6 @@ final class ColorPickerOverlay {
     private var panels: [OverlayPanel] = []
     private var views: [ColorPickerView] = []
     private var continuation: CheckedContinuation<RGBA?, Never>?
-    /// The app in front before the loupe showed, which gets the keyboard back after.
-    private var previousApp: NSRunningApplication?
 
     private init(purpose: Purpose) {
         self.purpose = purpose
@@ -70,10 +68,6 @@ final class ColorPickerOverlay {
             finish(nil)
             return
         }
-        // Shot comes to the front while the loupe shows, so Esc, Return and the arrow keys reach it even if another app,
-        // such as a Quick Note from a hot corner, would otherwise have the keyboard. The still hides the change.
-        previousApp = NSWorkspace.shared.frontmostApplication
-        NSApp.activate()
         for panel in panels {
             panel.orderFrontRegardless()
         }
@@ -99,9 +93,6 @@ final class ColorPickerOverlay {
         panels.removeAll()
         views.removeAll()
         NSCursor.arrow.set()
-        if let previousApp, previousApp != .current {
-            previousApp.activate()
-        }
         continuation.resume(returning: color)
     }
 }
@@ -153,7 +144,6 @@ final class ColorPickerView: NSView {
     }
 
     override func mouseEntered(with event: NSEvent) {
-        NSApp.activate()
         window?.makeKey()
         window?.makeFirstResponder(self)
         pointer = convert(event.locationInWindow, from: nil)
@@ -180,6 +170,11 @@ final class ColorPickerView: NSView {
     }
 
     override func rightMouseDown(with event: NSEvent) {
+        overlay.finish(nil)
+    }
+
+    /// Esc can arrive as this rather than as a key press, as in the pin and recording panels.
+    override func cancelOperation(_ sender: Any?) {
         overlay.finish(nil)
     }
 
