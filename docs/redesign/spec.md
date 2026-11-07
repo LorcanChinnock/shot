@@ -359,6 +359,34 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Dark appearance** changes nothing, as for the card.
 - **Increase Contrast** takes the edge of a card behind to 1 pt of white at 40%, since it's dark.
 
+### Pinned capture
+
+#1083 builds the pin on Capture › Quick Access, pin, menu and toasts: a capture floated above other windows from a card's Pin to Screen. Each pin is its own `FloatingPanelWindow` with the system shadow, and the bar is drawn inside it, so no margin catches clicks.
+
+| Part | Look |
+| --- | --- |
+| Pin | The capture at the size `PinLayout` gives it, with group corners (10) and a 1 pt edge of `#16161A` at 18% |
+| Bar | 6 pt in from the pin's left, right and top, padding 3, gap 4, a `floatingPanel` at the pin-bar opacity (0.82) with group corners |
+| Close | A floating toolbar button with a 10 pt bold ✕ |
+| Label | "Pinned · 100%" in 10.5 pt tabular figures at `FloatingPanel.secondaryText`, before the spare width |
+| Opacity slider | A floating `BrutalSlider`, 60 pt wide: a 3 pt track of white at 25%, filled in white up to a 12 pt white knob. It runs from 20% to 100% |
+| Click Through | A floating toolbar button with a 12 pt pointer, filled at white 16% while it's on |
+
+- **The bar starts hidden.** It shows while the pointer is on the pin or the pin is focused, and fades over `Motion.fade`, as Close did before. A pin at rest is just the capture, so Rule 2 holds.
+- **A pin starts solid.** The board shows 80% as an example, and a new pin is 100%. Opacity changes the capture only, so the bar stays readable at 20%. `PinOpacity` in ShotCore clamps it, steps it and makes the label's percentage, with tests.
+- **Click Through lets clicks reach the window under the pin.** The bar's strip still takes clicks while it's on, so the same button turns it off again. While it's on, the pin watches the pointer with event monitors, which need no permission, to show the bar and to take clicks in the strip only. `PinLayout.barStrip(in:barHeight:)` gives the strip, with tests. The monitors stop when Click Through goes off or the pin closes.
+- **The buttons are the floating toolbar buttons.** The board draws 22 pt transparent squares with control corners. `BrutalButtonStyle(.toolbar, floating: true)` is 36 × 32 with group corners, so the bar is 38 pt tall rather than 28, and the buttons stay above the 24 pt minimum target size and match the other floating bars.
+- **The slider has a knob.** The board draws only a track. The knob shows the slider can be dragged and holds the focus ring.
+- **The bar keeps the floating-panel edge.** The board draws none. It uses `floatingPanel`'s 0.5 pt edge at 14%, so it matches every other floating panel and stays apart from a dark capture.
+- **A narrow pin drops the label, then the slider,** so Close and Click Through always fit.
+- **See-through captures float as they are.** A styled capture, or one with transparent pixels such as a window with its shadow, has no frame and no window shadow, and its transparent margin shows the screen through it. This fixes the margin showing as black. The bar is inset from the image's edge, margin included. A capture with no transparency gets the board's frame in place of the 2 pt ink frame on black.
+- **Keyboard.** The first click on a pin focuses it and also reaches what's under the pointer, so the slider moves on that click. Once focused, Esc closes it, ↑ and ↓ step its opacity by 10%, and Full Keyboard Access reaches the bar's buttons and slider, whose arrow keys step by 1%, ⇧ by 10%. macOS gives no way to focus a pin without clicking it, since it never takes focus from the app in front.
+- **Reduce Motion** shows and hides the bar at once.
+- **VoiceOver** reads "Pinned" and the file name, with the opacity as its value. The image is adjustable, so swiping up or down steps the opacity, and it offers Close and Click Through as actions, so a pin can be used without hovering. The slider reads "Opacity".
+- **Text size.** The label scales with Settings › Text size, and the bar grows to fit it. The buttons, the slider and the frame don't.
+- **Dark appearance** changes nothing: the pin is the capture and the bar is a floating panel.
+- **Increase Contrast and Reduce Transparency** make the bar solid. Increase Contrast also takes its edge to 40% white, the slider's track to 50% white and the pin's edge to 60%.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -434,7 +462,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Scrolling capture | #1086 | `Capture/ScrollingCaptureController.swift` | ☐ |
 | Quick Access, pin, menu and toasts › card | #1081 | `QuickAccess/QuickAccessView.swift`, `QuickAccess/QuickAccessController.swift`, ShotCore `QuickAccessLayout.swift` | ☐ |
 | Quick Access, pin, menu and toasts › stack | #1082 | `QuickAccess/QuickAccessController.swift`, `QuickAccess/QuickAccessView.swift`, ShotCore `QuickAccessLayout.swift`, `Design/GlassWindow.swift` (`FloatingPanel.cardBehind`) | ☐ |
-| Quick Access, pin, menu and toasts › pin | #1083 | `QuickAccess/PinController.swift` | ☐ |
+| Quick Access, pin, menu and toasts › pin | #1083 | `QuickAccess/PinController.swift` (`PinState`, `PinBar`, `PinFrame`), ShotCore `PinOpacity.swift`, `PinLayout.swift` (`barStrip`), `Design/BrutalControls.swift` (`BrutalSlider(floating:)`) | ☐ |
 | Quick Access, pin, menu and toasts › menu | #1084 | `ShotApp.swift`, `Design/BrandMark.swift` | ☐ |
 | Quick Access, pin, menu and toasts › toast | #1085 | `Toast.swift` | ☐ |
 | Quick Access, pin, menu and toasts › countdown | #1078 | `Recording/RecordingSetupController.swift` (`CountdownPanel`, `CountdownView`), ShotCore `CountdownRing.swift`, `Moment.countdownRing`, `Design/Motion.swift` | ☐ |
