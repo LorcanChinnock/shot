@@ -131,9 +131,16 @@ The redesign is built on a long-lived `redesign` branch and lands on `main` in o
   git push -u origin chore/merge-main-into-redesign
   ```
 
-  Then open the pull request into `redesign` with the title `chore: merge main into redesign`, and merge it with **Create a merge commit**, never squash: a squash leaves main's commits out of the branch's history, so the next sync conflicts on the same lines again.
+  Then open a pull request into `redesign` titled `chore: merge main into redesign`, so CI checks the merge. Once `linux` and `macos` pass, land it by pushing the merge commit straight onto `redesign`, which fast-forwards the branch and marks the pull request merged:
 
-An admin sets this up once under Settings › Rules › Rulesets: a branch ruleset for `redesign` that blocks deletion and force pushes, requires a pull request, and requires the `linux` and `macos` status checks, as `main` does. Allow both the merge and squash methods in that ruleset, so the sync pull requests can merge with a merge commit, and turn on **Allow merge commits** under Settings › General if it's off. If that lets `main` take merge commits too, limit its own rule to squash.
+  ```bash
+  git push origin chore/merge-main-into-redesign:redesign
+  git push origin --delete chore/merge-main-into-redesign
+  ```
+
+  Never squash it: a squash leaves main's commits out of the branch's history, so the next sync conflicts on the same lines again. The merge button can't keep the merge commit either, because the repository only allows squash merges.
+
+An admin can protect `redesign` under Settings › Rules › Rulesets with a branch ruleset that blocks deletion and force pushes. It mustn't require a pull request, or the sync push above is refused.
 
 ## Releases
 
