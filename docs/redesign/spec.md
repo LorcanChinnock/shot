@@ -336,6 +336,29 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Dark appearance** changes nothing: the card is the capture, the scrim and corner buttons are floating panels, and Save As… stays white.
 - **Increase Contrast and Reduce Transparency** make the corner buttons and drag chip solid. Increase Contrast also takes their edge to 40% white and the card's edge to 1 pt of black at 60%.
 
+### Quick Access stack
+
+#1082 builds the stack on Capture › Quick Access, pin, menu and toasts: how cards pile up when you take captures back to back. All the cards stay in the one `FloatingPanelWindow`, which is only as tall as what's drawn.
+
+| Part | Look |
+| --- | --- |
+| Front card | The newest capture, as the card above, 10 pt in from the panel's corner |
+| Cards behind | Every older card, at 94% of the front card's size, shrunk towards its bottom middle, with its top edge 14 pt above the front card's. Covered in `#2A2A2E` (`FloatingPanel.cardBehind`), with the card's 0.5 pt edge |
+| Fanned out | While the pointer is on the stack, every card shows in full at its own height, 14 pt apart, the newest lowest and the oldest at the top |
+| Movement | A new card slides in from its corner and the old front card moves behind it, on `Motion.arrive`. Fanning out uses `Motion.arrive`, and folding back and closing use `Motion.leave` |
+
+- **Older cards fan out on hover.** Pointing at the front card or the edge behind it fans the stack out, and the front card stays where it was, so Copy never moves under the pointer. Each card then has its own hover buttons, drag and right-click menu. The stack folds back once the pointer leaves the panel, through a gap between cards included. With one card nothing changes.
+- **All the older cards share one place.** The board draws one card behind. Every older card sits there, so the stack never shows more than one edge however many cards wait, and the next card is already in place when the front one closes.
+- **The cards behind are the board's dark fill.** Their 14 pt edge is too thin to show the capture or a recording's length badge, which the board places on the card behind, so both show once the stack fans out.
+- **The board's card behind would be hidden.** Its CSS puts the back card's top 1.6 px below the front card's, so it would never show. The build keeps the 0.94 scale and uses the board's 14 pt lift as the edge that shows. The card behind also takes the front card's height, so none of it shows below a shorter front card.
+- **Timers wait while the pointer is on the stack.** Each card still has its own timer, but none closes a card while the pointer is anywhere on the panel, so a fanned-out card never moves under the pointer. Leaving a card restarts its timer, as before. Five cards at most, and a sixth closes the oldest.
+- **Layout.** `QuickAccessLayout(cardHeights:fannedOut:)` in ShotCore places each card (its height, scale and drawn frame) and sizes the panel, and `card(at:)` finds the frontmost card at a point, with tests. The panel grows at once and shrinks only after the cards stop moving, so nothing is clipped mid-move, and the system shadow is worked out again then.
+- **Reduce Motion** fades a new card in and out and puts every other card in place at once, fanned or folded, with no slide.
+- **VoiceOver** reads the newest card first. Each card offers Close and the right-click menu's actions as VoiceOver actions, so any card can be used or closed without hovering, folded or not.
+- **Text size.** The stack's sizes and gaps don't scale. The labels on each card do, as above.
+- **Dark appearance** changes nothing, as for the card.
+- **Increase Contrast** takes the edge of a card behind to 1 pt of white at 40%, since it's dark.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -410,7 +433,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Window pick and delay | #1075 capture bar with delay | `Overlay/SelectionOverlayView.swift` (the bar, Delay's seconds and the tooltip) | ☐ |
 | Scrolling capture | #1086 | `Capture/ScrollingCaptureController.swift` | ☐ |
 | Quick Access, pin, menu and toasts › card | #1081 | `QuickAccess/QuickAccessView.swift`, `QuickAccess/QuickAccessController.swift`, ShotCore `QuickAccessLayout.swift` | ☐ |
-| Quick Access, pin, menu and toasts › stack | #1082 | `QuickAccess/QuickAccessController.swift`, `QuickAccess/QuickAccessView.swift` | ☐ |
+| Quick Access, pin, menu and toasts › stack | #1082 | `QuickAccess/QuickAccessController.swift`, `QuickAccess/QuickAccessView.swift`, ShotCore `QuickAccessLayout.swift`, `Design/GlassWindow.swift` (`FloatingPanel.cardBehind`) | ☐ |
 | Quick Access, pin, menu and toasts › pin | #1083 | `QuickAccess/PinController.swift` | ☐ |
 | Quick Access, pin, menu and toasts › menu | #1084 | `ShotApp.swift`, `Design/BrandMark.swift` | ☐ |
 | Quick Access, pin, menu and toasts › toast | #1085 | `Toast.swift` | ☐ |
