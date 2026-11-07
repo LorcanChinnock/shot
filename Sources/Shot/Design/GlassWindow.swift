@@ -206,6 +206,8 @@ enum FloatingPanel {
     static let divider = Color.white.opacity(0.16)
     /// Dims a Quick Access card under its hover buttons, so the capture still shows.
     static let scrim = Color(hex: 0x121216).opacity(0.46)
+    /// Covers a Quick Access card waiting behind the newest, so only its dark top edge shows above it.
+    static let cardBehind = Color(hex: 0x2A2A2E)
 
     /// The same values for the capture bar, which AppKit draws over the screen. `solid` is Increase Contrast or Reduce
     /// Transparency.

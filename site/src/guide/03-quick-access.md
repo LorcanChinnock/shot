@@ -41,6 +41,6 @@ A pin opens in the middle of the screen at its own size, or at half the screen i
 
 ## Choose where cards go and how long they stay
 
-New cards stack above older ones, up to five. A sixth closes the oldest. Each card closes on its own after 8 seconds, and hovering it pauses the timer.
+The newest card sits in front, with older ones waiting behind it, up to five. A sixth closes the oldest. Point at the stack to spread the cards out and reach an older one. Each card closes on its own after 8 seconds, but none closes while the pointer is on the stack.
 
 In **Settings › Quick Access**, choose the bottom-left or bottom-right corner, and how long cards stay: 4, 8, 15 or 30 seconds, or **Never**. To skip the card altogether, turn off **Show Quick Access** in **Settings › Capture**.

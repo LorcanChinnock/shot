@@ -21,9 +21,22 @@ struct QuickAccessView: View {
     }
 
     var body: some View {
-        VStack(spacing: QuickAccessLayout.spacing) {
-            ForEach(model.cards) { card in
-                QuickAccessCardView(card: card, controller: controller)
+        let layout = model.layout
+        ZStack(alignment: .bottom) {
+            ForEach(Array(model.cards.enumerated()), id: \.element.id) { index, card in
+                let placement = layout.placements[index]
+                QuickAccessCardView(card: card, height: placement.height, isBehind: placement.isBehind, controller: controller)
+                    .scaleEffect(placement.scale, anchor: .bottom)
+                    .offset(y: QuickAccessLayout.padding - placement.frame.minY)
+                    // Cards move with the change that moved them. Reduce Motion puts them in place at once.
+                    .transaction(value: placement) { transaction in
+                        if Motion.reduced {
+                            transaction.animation = nil
+                        }
+                    }
+                    .zIndex(Double(index))
+                    // VoiceOver reads the newest card first, as it's the one in front.
+                    .accessibilitySortPriority(Double(index))
                     .transition(transition)
             }
         }
@@ -32,9 +45,12 @@ struct QuickAccessView: View {
     }
 }
 
-/// One capture: the picture filling a white card, with Copy, Save As… and the corner buttons over it on hover.
+/// One capture: the picture filling a white card, with Copy, Save As… and the corner buttons over it on hover. Behind the
+/// newest card, it's covered in the dark fill the board gives the cards behind.
 private struct QuickAccessCardView: View {
     let card: QuickAccessCard
+    let height: CGFloat
+    let isBehind: Bool
     let controller: QuickAccessController
     @State private var hovering = false
     @Environment(\.colorSchemeContrast) private var contrast
@@ -45,11 +61,16 @@ private struct QuickAccessCardView: View {
     var body: some View {
         ZStack {
             picture
-            if hovering {
+                .accessibilityActions { accessibilityActions }
+            if isBehind {
+                FloatingPanel.cardBehind
+                    .transition(.opacity)
+                    .accessibilityHidden(true)
+            } else if hovering {
                 hoverActions
                     .transition(.opacity)
             }
-            if card.isVideo, let duration = card.duration {
+            if !isBehind, card.isVideo, let duration = card.duration {
                 BrutalBadge(text: Gallery.duration(duration), style: .strong)
                     .monospacedDigit()
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
@@ -57,11 +78,10 @@ private struct QuickAccessCardView: View {
                     .accessibilityHidden(true)
             }
         }
-        .frame(width: QuickAccessCard.width, height: card.height)
+        .frame(width: QuickAccessCard.width, height: height)
         .background(Color.white)
         .clipShape(shape)
-        // The board's 0.5 pt edge at 30% black; Increase Contrast takes it to 1 pt at 60%.
-        .inkBorder(shape, width: contrast == .increased ? 1 : 0.5, color: .black.opacity(contrast == .increased ? 0.6 : 0.3))
+        .inkBorder(shape, width: contrast == .increased ? 1 : 0.5, color: edgeColor)
         .contentShape(shape)
         .onHover { inside in
             withAnimation(reduceMotion ? nil : Motion.fade) {
@@ -71,6 +91,15 @@ private struct QuickAccessCardView: View {
         }
         .onDrag { NSItemProvider(contentsOf: card.styledURL ?? card.fileURL) ?? NSItemProvider() }
         .contextMenu { menu }
+    }
+
+    /// The board's 0.5 pt edge at 30% black; Increase Contrast takes it to 1 pt at 60%, or at 40% white on a dark card
+    /// behind, as on a floating panel.
+    private var edgeColor: Color {
+        guard contrast == .increased else {
+            return .black.opacity(0.3)
+        }
+        return isBehind ? .white.opacity(0.4) : .black.opacity(0.6)
     }
 
     /// The capture, filling the card and cropped to its middle. A recording with no first frame shows a film symbol.
@@ -90,10 +119,21 @@ private struct QuickAccessCardView: View {
                 .resizable()
                 .interpolation(.high)
                 .aspectRatio(contentMode: .fill)
-                .frame(width: QuickAccessCard.width, height: card.height)
+                .frame(width: QuickAccessCard.width, height: height)
                 .clipped()
                 .accessibilityLabel(label)
                 .accessibilityHint(Text("Drag into any app"))
+        }
+    }
+
+    /// Close and the right-click menu's actions, so VoiceOver can use a card without hovering it.
+    @ViewBuilder
+    private var accessibilityActions: some View {
+        Button("Close") { controller.remove(card.id) }
+        ForEach(Array(controller.actions(for: card).compactMap { $0 }.enumerated()), id: \.offset) { _, action in
+            if action.children.isEmpty {
+                Button(action.title, action: action.perform)
+            }
         }
     }
 
