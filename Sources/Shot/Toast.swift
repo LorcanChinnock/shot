@@ -15,9 +15,11 @@ enum Toast {
     /// Where the panel rests once it has arrived. Changes work from this, not from `panel.frame`, which is still rising
     /// for the first 240 ms.
     private static var restingFrame = NSRect.zero
+    /// The Quick Access corner the toast sits in, which it keeps its outer edge against as it changes size.
+    private static var side = QuickAccessPosition.left
     fileprivate static let font = ScaledFont.scaled(13, weight: .medium)
     fileprivate static let actionFont = ScaledFont.scaled(12, weight: .semibold)
-    fileprivate static let height: CGFloat = 34
+    fileprivate static let height: CGFloat = 36
     fileprivate static let barWidth: CGFloat = 96
 
     /// Shows `message` for something that didn't happen or went wrong, long enough to read.
@@ -84,8 +86,15 @@ enum Toast {
         shown = text
         panel.contentView = NSView(hosting: ToastView(text: text, action: action, tick: tick, hold: { hold($0) }, dismiss: { hide() }))
         let screen = NSScreen.underPointer ?? NSScreen.main ?? NSScreen.screens[0]
-        let origin = NSPoint(x: screen.frame.midX - size.width / 2, y: screen.visibleFrame.minY + 80)
-        arrive(panel, at: NSRect(origin: origin, size: size))
+        side = Preferences().quickAccessPosition
+        let frame = ToastLayout.frame(
+            size: size,
+            in: screen.visibleFrame,
+            side: side,
+            edgeInset: QuickAccessController.cardEdgeInset,
+            cardsTop: QuickAccessController.shared.cardsTop(on: screen)
+        )
+        arrive(panel, at: frame)
         NSAccessibility.post(element: panel, notification: .announcementRequested, userInfo: [.announcement: message, .priority: NSAccessibilityPriorityLevel.high.rawValue])
         self.duration = duration
         scheduleHide()
@@ -128,7 +137,7 @@ enum Toast {
             return
         }
         let size = size(of: shown.message, fraction: shown.fraction, action: action, tick: tick)
-        place(panel, at: NSRect(x: restingFrame.midX - size.width / 2, y: restingFrame.minY, width: size.width, height: size.height))
+        place(panel, at: ToastLayout.resized(restingFrame, to: size, side: side))
     }
 
     /// Moves the panel straight to `frame`, replacing any arrival still running so it can't carry the panel elsewhere.
@@ -168,7 +177,7 @@ enum Toast {
         func width(_ text: String, _ font: ScaledFont, weight: NSFont.Weight) -> CGFloat {
             (text as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: font.points(textSize), weight: weight)]).width.rounded(.up)
         }
-        var total = (tick == nil ? ToastView.leading : ToastView.tickLeading + ToastView.tickSize + ToastView.tickGap) + width(message, font, weight: .medium)
+        var total = (tick == nil ? ToastView.leading : ToastView.tickLeading + ToastView.tickSize + ToastView.spacing) + width(message, font, weight: .medium)
         if fraction != nil {
             total += ToastView.spacing + barWidth + ToastView.spacing + ToastView.percentWidth(textSize)
         }
@@ -256,11 +265,10 @@ private struct ToastView: View {
     }
 
     static let leading: CGFloat = 14
-    static let tickLeading: CGFloat = 7
+    static let tickLeading: CGFloat = 9
     static let tickSize: CGFloat = 20
-    static let tickGap: CGFloat = 8
     static let trailingWithAction: CGFloat = 6
-    static let spacing: CGFloat = 12
+    static let spacing: CGFloat = 10
     static let actionPadding: CGFloat = 10
     static let keyGap: CGFloat = 5
 
@@ -278,7 +286,7 @@ private struct ToastView: View {
 
     var body: some View {
         HStack(spacing: Self.spacing) {
-            HStack(spacing: Self.tickGap) {
+            HStack(spacing: Self.spacing) {
                 if let tick {
                     ToastTickMark(draws: tick == .draws)
                 }
@@ -333,8 +341,11 @@ private struct ToastButtonStyle: ButtonStyle {
     }
 }
 
-/// A 20 pt accent disc whose ink tick draws itself over 240 ms, or shows drawn with Reduce Motion.
+/// A 20 pt accent disc whose ink tick draws itself over 240 ms, or shows drawn with Reduce Motion. The tick is the
+/// board's 24-unit path drawn 11 pt square, so its 3.4-unit stroke is about 1.6 pt.
 private struct ToastTickMark: View {
+    static let tickBox: CGFloat = 11
+
     let draws: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var progress: CGFloat = 0
@@ -346,8 +357,8 @@ private struct ToastTickMark: View {
             .overlay {
                 TickShape()
                     .trim(from: 0, to: progress)
-                    .stroke(Color(hex: 0x16161A), style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
-                    .frame(width: 11, height: 11)
+                    .stroke(Color(hex: 0x16161A), style: StrokeStyle(lineWidth: TickShape.lineWidth * Self.tickBox / TickShape.units, lineCap: .round, lineJoin: .round))
+                    .frame(width: Self.tickBox, height: Self.tickBox)
             }
             .accessibilityHidden(true)
             .onAppear {
@@ -360,13 +371,20 @@ private struct ToastTickMark: View {
     }
 }
 
-/// A tick drawn from its short stroke to its long one, so trimming it draws it as a pen would.
+/// The board's tick, `M5 12l5 5 9-10` in a 24-unit box, drawn from its short stroke to its long one, so trimming it draws
+/// it as a pen would.
 private struct TickShape: Shape {
+    static let units: CGFloat = 24
+    static let lineWidth: CGFloat = 3.4
+
     func path(in rect: CGRect) -> Path {
+        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+            CGPoint(x: rect.minX + rect.width * x / Self.units, y: rect.minY + rect.height * y / Self.units)
+        }
         var path = Path()
-        path.move(to: CGPoint(x: rect.minX + rect.width * 0.08, y: rect.minY + rect.height * 0.52))
-        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.38, y: rect.minY + rect.height * 0.82))
-        path.addLine(to: CGPoint(x: rect.maxX - rect.width * 0.06, y: rect.minY + rect.height * 0.2))
+        path.move(to: point(5, 12))
+        path.addLine(to: point(10, 17))
+        path.addLine(to: point(19, 7))
         return path
     }
 }

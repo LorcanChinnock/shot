@@ -282,6 +282,18 @@ final class QuickAccessController {
         }
     }
 
+    /// How far a card's outer edge sits in from the screen's side and bottom.
+    static var cardEdgeInset: CGFloat { inset + QuickAccessLayout.padding }
+
+    /// The top of the cards in screen coordinates while any are showing on `screen`, so a toast there can rest above
+    /// them. Nil when the cards are on another display, where they'd say nothing about this one.
+    func cardsTop(on screen: NSScreen) -> CGFloat? {
+        guard let panel, panel.isVisible, !model.cards.isEmpty, panel.screen == screen else {
+            return nil
+        }
+        return panel.frame.maxY - QuickAccessLayout.padding
+    }
+
     private func layout() {
         layout(for: model.cards)
     }
