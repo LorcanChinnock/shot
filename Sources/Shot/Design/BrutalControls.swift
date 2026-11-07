@@ -237,15 +237,16 @@ private struct SaturationBrightnessField: View {
 /// A slider, from Components › Choice: a 4 pt track filled in ink up to an 18 pt white knob. A colour slider passes a
 /// `track` gradient instead, drawn 8 pt tall so the colours show. Once focused, the arrow keys step it by 1% of its range,
 /// ⇧ by 10%. `onEditingChanged` reports a drag, or an arrow key held down, starting and ending, so a caller can make each
-/// one undo step.
+/// one undo step. A `floating` slider is for the dark floating panels: a 3 pt white track at 25% filled in white up to a
+/// 12 pt knob.
 struct BrutalSlider: View {
-    private static let knob: CGFloat = 18
 
     @Binding var value: Double
     var range: ClosedRange<Double> = 0...1
     var track: LinearGradient?
     var checkerboard = false
     var width: CGFloat = 200
+    var floating = false
     var onEditingChanged: (Bool) -> Void = { _ in }
     @State private var isDragging = false
     /// Whether an arrow key is down, so its repeats join one edit.
@@ -258,15 +259,15 @@ struct BrutalSlider: View {
     @Environment(\.colorSchemeContrast) private var contrast
 
     private var increased: Bool { contrast == .increased }
+    private var knob: CGFloat { floating ? 12 : 18 }
 
     private var fraction: Double { (min(max(value, range.lowerBound), range.upperBound) - range.lowerBound) / (range.upperBound - range.lowerBound) }
 
     var body: some View {
-        let knob = Self.knob
         ZStack(alignment: .leading) {
             trackView
             Circle().fill(.white)
-                .inkBorder(Circle(), width: 1, color: increased ? Color(hex: 0x16161A).opacity(0.6) : Color(hex: 0x16161A).opacity(0.2))
+                .inkBorder(Circle(), width: 1, color: floating ? .clear : Color(hex: 0x16161A).opacity(increased ? 0.6 : 0.2))
                 .shadow(color: .black.opacity(0.2), radius: 1.5, y: 1)
                 .frame(width: knob, height: knob)
                 .background {
@@ -285,7 +286,7 @@ struct BrutalSlider: View {
                     isDragging = true
                     onEditingChanged(true)
                 }
-                let dragged = min(max((drag.location.x - Self.knob / 2) / (width - Self.knob), 0), 1)
+                let dragged = min(max((drag.location.x - knob / 2) / (width - knob), 0), 1)
                 value = range.lowerBound + dragged * (range.upperBound - range.lowerBound)
             }
             .onEnded { _ in
@@ -344,8 +345,15 @@ struct BrutalSlider: View {
             .clipShape(Capsule())
             .inkBorder(Capsule(), width: 1, color: increased ? Brutal.ink.opacity(0.6) : Brutal.controlEdge)
             .frame(height: 8)
+        } else if floating {
+            let filled = knob / 2 + fraction * (width - knob)
+            Capsule().fill(Color.white.opacity(increased ? 0.5 : 0.25))
+                .overlay(alignment: .leading) {
+                    Capsule().fill(Color.white).frame(width: filled)
+                }
+                .frame(height: 3)
         } else {
-            let filled = Self.knob / 2 + fraction * (width - Self.knob)
+            let filled = knob / 2 + fraction * (width - knob)
             Capsule().fill(increased ? AnyShapeStyle(Brutal.ink.opacity(0.35)) : AnyShapeStyle(Brutal.quietTrack))
                 .overlay(alignment: .leading) {
                     Capsule().fill(Brutal.ink).frame(width: filled)

@@ -23,6 +23,16 @@ public enum PinLayout {
         return CGSize(width: (image.width * scale).rounded(), height: (image.height * scale).rounded())
     }
 
+    /// How far the pin's bar sits in from the capture's left, right and top edges.
+    public static let barInset: CGFloat = 6
+
+    /// The strip across the top of a pin at `frame` that holds its bar, `barHeight` tall, with the inset above and below
+    /// it. While the pin lets clicks through, clicks in this strip still reach the bar. Never taller than the pin.
+    public static func barStrip(in frame: CGRect, barHeight: CGFloat) -> CGRect {
+        let height = min(frame.height, max(0, barHeight) + barInset * 2)
+        return CGRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height)
+    }
+
     /// The pin's frame, `index` being how many pins are already open; the cascade wraps before leaving `visible`.
     public static func initialFrame(for image: CGSize, in visible: CGRect, index: Int) -> CGRect {
         let size = size(for: image, in: visible)
