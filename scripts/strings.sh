@@ -1,5 +1,6 @@
 #!/bin/sh
-# Syncs Resources/Localizable.xcstrings with the strings the last build extracted (see Package.swift): adds new ones
+# Syncs Resources/Localizable.xcstrings with the strings the last Debug build extracted (SWIFT_EMIT_LOC_STRINGS in
+# Config/Shared.xcconfig) from the Shot and ShotCore targets: adds new ones
 # and drops ones the source no longer uses. --check changes nothing and fails when the catalog is out of date, so a
 # string can't ship without an entry to translate.
 set -eu
@@ -8,15 +9,21 @@ cd "$(dirname "$0")/.."
 check=false
 [ "${1:-}" = --check ] && check=true
 catalog=Resources/Localizable.xcstrings
-if [ ! -d .build/stringsdata ]; then
-    echo "No extracted strings in .build/stringsdata; run swift build first." >&2
+intermediates="${DERIVED_DATA:-build/DerivedData}/Build/Intermediates.noindex/Shot.build/Debug"
+if ! ls "$intermediates"/Shot.build/Objects-normal/*/*.stringsdata >/dev/null 2>&1; then
+    echo "No extracted strings in $intermediates; run make build first." >&2
     exit 1
 fi
 
 # A deleted or renamed source file leaves its old .stringsdata behind, so take only those whose source still exists.
+# Each architecture built has its own copy, so take one per file.
 set --
-for data in .build/stringsdata/*/*.stringsdata; do
-    if [ -f "$(plutil -extract source raw -o - "$data")" ]; then
+seen=" "
+for data in "$intermediates"/Shot.build/Objects-normal/*/*.stringsdata "$intermediates"/ShotCore.build/Objects-normal/*/*.stringsdata; do
+    source=$(plutil -extract source raw -o - "$data")
+    case "$seen" in *" $source "*) continue ;; esac
+    seen="$seen$source "
+    if [ -f "$source" ]; then
         set -- "$@" --stringsdata "$data"
     fi
 done

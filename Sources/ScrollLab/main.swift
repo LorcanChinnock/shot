@@ -269,7 +269,8 @@ guard args.count >= 3 else { print("usage: scroll-lab <framesDir> <outDir> [filt
 let frames = URL(fileURLWithPath: args[1]), out = URL(fileURLWithPath: args[2]), filter = args.count > 3 ? args[3] : ""
 try? FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
 let names = ((try? FileManager.default.contentsOfDirectory(atPath: frames.path)) ?? []).sorted().filter { !$0.hasSuffix(".png") && (filter.isEmpty || $0.contains(filter)) }
-var results = [Score?](repeating: nil, count: names.count)
+// Written from concurrentPerform's threads, always under `lock`.
+nonisolated(unsafe) var results = [Score?](repeating: nil, count: names.count)
 let lock = NSLock()
 DispatchQueue.concurrentPerform(iterations: names.count) { i in
     let s = run(frames.appendingPathComponent(names[i]), outDir: out)

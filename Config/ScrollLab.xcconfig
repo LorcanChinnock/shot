@@ -1,0 +1,7 @@
+// Replays recorded scroll scenarios through ScrollStitcher and scores the result: scripts/scroll-lab.
+PRODUCT_NAME = ScrollLab
+SKIP_INSTALL = YES
+CODE_SIGN_IDENTITY = -
+
+// Your own overrides, such as CODE_SIGN_IDENTITY. Git ignores this file.
+#include? "Local.xcconfig"

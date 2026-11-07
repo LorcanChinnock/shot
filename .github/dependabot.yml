@@ -13,7 +13,8 @@ updates:
       interval: weekly
     commit-message:
       prefix: "chore(deps)"
-  # Sparkle. A bump changes Package.resolved, which release builds require (--force-resolved-versions).
+  # Sparkle, from Shot.xcodeproj. A bump changes its Package.resolved, which release builds require
+  # (-onlyUsePackageVersionsFromResolvedFile).
   - package-ecosystem: swift
     directory: /
     schedule:

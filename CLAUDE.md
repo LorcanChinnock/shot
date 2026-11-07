@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Shot is a macOS 15+ menu bar app for screenshots, annotation, screen recording and GIF export. It's a SwiftPM package (Swift 6 language mode, strict concurrency) whose only dependency is Sparkle.
+Shot is a macOS 15+ menu bar app for screenshots, annotation, screen recording and GIF export. It's an Xcode project, `Shot.xcodeproj` (Swift 6 language mode, strict concurrency), whose only dependency is the Sparkle package.
 
 ## Mantra
 
@@ -32,15 +32,16 @@ make test                         # ShotCoreTests, the unit tests (Swift Testing
 make perf-app                     # scripts/perf.sh: launch, capture, memory, idle CPU of the installed app
 make lint                         # scripts/lint.sh: bans patterns that caused bugs (see below); on macOS also scripts/strings.sh --check
 make strings                      # sync Resources/Localizable.xcstrings with the strings the build extracted
-make build                        # swift build
-make bundle                       # build and sign build/ShotDev.app only
+make build                        # Debug build of the app, as Xcode's Build does
+make bundle                       # archive a universal Release build/ShotDev.app only
 make run                          # build, install to /Applications/ShotDev.app, relaunch
 make demo                         # build and open the MugCo sample app (Samples/MugCo): fake data, fixed size, for QA runs and screenshots
 cd site && npm run dev            # the marketing site (see site/README.md)
-swift test --filter <testName>    # one test, e.g. --filter hitTestFilledKinds
+make test ONLY='ShotCoreTests/hitTestFilledKinds()'   # one test or suite
 ```
 
-- With only the Command Line Tools selected, the Makefile pins the newest 26.x SDK and adds the testing plugin path, so a bare `swift build`/`swift test` can fail on SwiftUI macros. Prefer `make`, or prefix with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
+- In Xcode, open `Shot.xcodeproj`: the **Shot** scheme runs and debugs ShotDev (⌘R) and runs the test plan `Tests/Shot.xctestplan` (⌘U). `make` builds the same project through `scripts/xcodebuild.sh` into `build/DerivedData`, never Xcode's own folder, since Xcode 27 can leave a test bundle unsigned when both build into one.
+- Build settings live in `Config/*.xcconfig`, never in the project file: `Shared.xcconfig` (version, signing, Swift), `Debug`/`Release`, and one per target. `Config/Local.xcconfig`, which git ignores, takes personal overrides. Folders are synchronised, so a new Swift file in `Sources/` or `Tests/` needs no project edit.
 - Signing uses the `Shot Dev` certificate from `scripts/make-dev-cert.sh` so the Screen Recording permission survives rebuilds. `make reset-tcc` clears it.
 - Logs: `log stream --predicate 'subsystem == "dev.lorcan.Shot.dev"'` for ShotDev, `dev.lorcan.Shot` for a release. Use `Logger.shot("category")` from `Sources/ShotCore/ShotLog.swift`.
 - The `shot://` URL scheme drives every action without a keyboard (`shot://annotate?path=`, `shot://edit-video?path=`, `shot://gallery`, `shot://settings?section=`; full list on the URL scheme page, `site/src/guide/10-automation-reference.md`). ShotDev registers `shot-dev://` instead, so it never collides with an installed release.
@@ -67,9 +68,10 @@ The screenshots and recordings in `docs/media` come from a second sample, `docs/
 
 ## Architecture
 
-Two targets, all macOS-only:
-- `Sources/ShotCore` (library): everything that needs no window, display or permission. It imports no AppKit, SwiftUI or Cocoa (`make lint` checks).
-- `Sources/Shot` (the app): AppKit and SwiftUI that need a real session, grouped by feature (`Capture`, `Overlay`, `QuickAccess`, `Editor`, `Recording`, `VideoEditor`, `Gallery`, `Settings`, `Design`).
+Four targets in `Shot.xcodeproj`, all macOS-only:
+- `ShotCore` (`Sources/ShotCore`, a static framework): everything that needs no window, display or permission. It imports no AppKit, SwiftUI or Cocoa (`make lint` checks).
+- `Shot` (`Sources/Shot` and `Resources`, the app): AppKit and SwiftUI that need a real session, grouped by feature (`Capture`, `Overlay`, `QuickAccess`, `Editor`, `Recording`, `VideoEditor`, `Gallery`, `Settings`, `Design`).
+- `ShotCoreTests` (`Tests/ShotCoreTests`) and `ScrollLab` (`Sources/ScrollLab`, the tool behind `scripts/scroll-lab`).
 
 **If logic can be tested without a window, it goes in ShotCore with a test.** The one test target is `Tests/ShotCoreTests`. The app has no tests.
 
@@ -100,7 +102,7 @@ The repository is public, so GitHub's runners are free, but the free plan runs o
 - Every PR runs two required checks (`ci.yml`). `linux` runs `scripts/lint.sh`. `macos` waits on two jobs that run side by side on `macos-26` runners, and fails if either fails. When the PR changes only `site/`, `docs/` or top-level Markdown files, both are skipped, which counts as a pass.
   - `test` checks the code. It does a debug build, checks the strings catalog, runs the ShotCore tests, and runs `make test-install test-uninstall`. It never launches the app.
   - `smoke` checks that the app starts. It builds the universal release app as `make dist` does, so the Intel slice must compile. Then `scripts/smoke.sh` launches it and fails if it exits within 8 seconds or leaves a crash report, which catches a bad entitlement, a missing resource or a Sparkle misconfiguration that no unit test sees.
-  - The tests run through `scripts/ci-test.sh`, which samples the test process when no test has started or ended for five minutes, and prints crash reports when the run fails, since `swift test` buffers its output and a hang or crash otherwise leaves nothing to go on. `release.yml` builds on the same image.
+  - The tests run through `scripts/ci-test.sh`, which samples the test process when no test has started or ended for five minutes, prints crash reports when the run fails, and keeps the `.xcresult` as an artifact to open in Xcode. `release.yml` builds on the same image.
 - The repository has auto-merge turned on only for `dependabot-automerge.yml`, which enables it on Dependabot's patch and minor PRs (not major bumps or Sparkle) so they merge once `linux` and `macos` pass. An admin merges the release PR by hand once the gate has passed. If the gate fails, fix it in a normal PR. release-please updates the release PR only for commits that change the changelog, so after a `test:`, `ci:` or `docs:` fix, run `gh pr update-branch <release PR>` to gate it again.
 - `release.yml` runs `make test` on the tagged commit before it signs anything, because a `docs:`, `test:` or `ci:` commit merged after the gate passed can change what's released.
 - Run `make lint` and `make test` before every push, and push once per PR where you can, so CI is a check rather than a debugger. Every push re-runs CI, and a newer push cancels the run before it.
@@ -114,4 +116,4 @@ The repository is public, so GitHub's runners are free, but the free plan runs o
 - Website changes use the `site:` type, with no scope (`site: remake the guide home`). release-please ignores it, so it makes no changelog entry or app version. `exclude-paths` already skips commits that touch only `site/`, but a PR that also touches app files counts unless it's `site:`. If a change also alters the app's behaviour, split it so the app part has its own `fix:` or `feat:` PR.
 - Every PR links an issue or sub-issue: put `Closes #N` (or `Part of #N` when it doesn't finish the issue) in the PR body. Create the issue before starting any work, as a sub-issue when the work belongs to an umbrella issue.
 - Any substantial change or new feature must keep docs and marketing in line in the same PR: the user guide in `site/src/guide/`, `README.md`, the landing page `site/src/pages/index.astro`, and the media in `docs/media/` if they now show stale UI. If an update needs new screenshots or recordings you can't make, say so rather than skipping it silently. `CHANGELOG.md` is generated, so don't edit it.
-- Only `make dist` builds `Shot.app` with the Sparkle feed. Every other build is `ShotDev.app` (bundle ID `dev.lorcan.Shot.dev`, executable `ShotDev`, scheme `shot-dev://`, no feed), so dev builds never self-update or replace the installed release. `scripts/bundle.sh` does the renaming.
+- Only `make dist` builds `Shot.app` with the Sparkle feed. Every other build, Xcode's included, is `ShotDev.app` (bundle ID `dev.lorcan.Shot.dev`, executable `ShotDev`, scheme `shot-dev://`, no feed), so dev builds never self-update or replace the installed release. `Config/Shot.xcconfig` switches them on `SHOT_DISTRIBUTION`, which only `make dist` sets.

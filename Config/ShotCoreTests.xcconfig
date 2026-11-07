@@ -1,0 +1,8 @@
+// The unit tests (Swift Testing). They need no window, so they run without a host app or a signing certificate.
+PRODUCT_NAME = ShotCoreTests
+PRODUCT_BUNDLE_IDENTIFIER = dev.lorcan.Shot.ShotCoreTests
+GENERATE_INFOPLIST_FILE = YES
+CODE_SIGN_IDENTITY = -
+
+// Your own overrides, such as CODE_SIGN_IDENTITY. Git ignores this file.
+#include? "Local.xcconfig"

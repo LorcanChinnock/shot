@@ -8,7 +8,7 @@ The default is the simplest state. Extra tools, panels and controls start off, a
 
 ## Set up
 
-You need a Mac with macOS 15 or later, and either Xcode or the Xcode Command Line Tools. Shot is a SwiftPM package whose only dependency is [Sparkle](https://sparkle-project.org), for updates.
+You need a Mac with macOS 15 or later and Xcode 16 or later. Shot is an Xcode project, `Shot.xcodeproj`, whose only dependency is the [Sparkle](https://sparkle-project.org) package, for updates.
 
 ```bash
 git clone https://github.com/LorcanChinnock/shot.git
@@ -16,6 +16,8 @@ cd shot
 scripts/make-dev-cert.sh   # once: a stable signing identity, so the Screen Recording permission survives rebuilds
 make run                   # build, install to /Applications/ShotDev.app, and launch
 ```
+
+Or open `Shot.xcodeproj` in Xcode and press ⌘R, as described in [Working in Xcode](#working-in-xcode).
 
 macOS ties the Screen Recording permission to the app's code signature. An ad-hoc signature changes on every build, so the permission would reset each time. `make-dev-cert.sh` creates a self-signed certificate named `Shot Dev` in your login keychain, and the build signs with it. Keychain Access shows it as "not trusted"; that's expected and signing still works. To sign with another identity, set `SHOT_SIGN_IDENTITY`.
 
@@ -28,19 +30,29 @@ Only `make dist` builds `Shot.app` with the update feed. Every other build is `S
 | Target | What it does |
 |---|---|
 | `make run` | Build, install to `/Applications/ShotDev.app`, and launch |
-| `make build` | `swift build`, without making an app |
-| `make test` | Run the unit tests in `Tests/ShotCoreTests` |
+| `make build` | A Debug build of the app, the same as Xcode's Build |
+| `make test` | Run the unit tests in `Tests/ShotCoreTests` (`ONLY='ShotCoreTests/hitTestFilledKinds()'` runs one) |
 | `make lint` | Check for code patterns that have caused bugs (`scripts/lint.sh`) and that the string catalog is up to date |
 | `make strings` | Add new strings to `Resources/Localizable.xcstrings` and drop unused ones |
 | `make perf-app` | Measure launch, capture, memory and idle CPU of the installed app against its budgets |
 | `make app` | Build and install without launching (`INSTALL_DIR=~/Applications make app` to install elsewhere) |
-| `make bundle` | Build and sign `build/ShotDev.app` only |
+| `make bundle` | Archive a universal Release `build/ShotDev.app`, as Product › Archive does, and keep the archive with its dSYMs |
 | `make dist` | Build a universal (Apple Silicon and Intel) `build/Shot.zip`, as the release workflow does |
-| `make icon` | Regenerate `Resources/AppIcon.icns` from `scripts/make-icon.swift` |
+| `make icon` | Regenerate the app icon in `Resources/Assets.xcassets` from `scripts/make-icon.swift` |
 | `make reset-tcc` | Clear ShotDev's Screen Recording permission |
 | `make clean` | Remove build output |
 
-**Command Line Tools only:** the CLT's default SDK (27) makes SwiftUI's `@State` a macro whose compiler plugin ships only with Xcode. When Xcode isn't selected, the Makefile pins the newest 26.x SDK the CLT has and points the tests at the CLT's testing plugin, so use `make` rather than a bare `swift build`. With Xcode, nothing is pinned.
+### Working in Xcode
+
+Open `Shot.xcodeproj`. Pick the **Shot** scheme and **My Mac**, then press ⌘R to build ShotDev and run it with the debugger attached, or ⌘U to run the tests in `Tests/Shot.xctestplan`. Breakpoints, the console, SwiftUI previews and `shot-dev://` links all reach the copy Xcode runs. Run `scripts/make-dev-cert.sh` first, as above: the project signs with `Shot Dev`, and the build fails without it.
+
+- **Settings** live in `Config/*.xcconfig`, never in the project file. `Shared.xcconfig` has the version, signing and Swift settings, `Debug.xcconfig` and `Release.xcconfig` the configurations, and each target has its own file. For a setting only you need, such as another signing identity, create `Config/Local.xcconfig`, which git ignores, and set it there: `CODE_SIGN_IDENTITY = Apple Development`, say.
+- **New files** need no project edit. The targets use synchronised folders, so a Swift file added under `Sources/Shot`, `Sources/ShotCore` or `Tests/ShotCoreTests` is part of that target.
+- **ShotDev or Shot.** Every build is ShotDev, Xcode's included. `Config/Shot.xcconfig` builds Shot, with the update feed, only when `SHOT_DISTRIBUTION=YES`, which only `make dist` passes.
+- **Run quits the installed Shot**, because it registers the same global shortcuts as ShotDev and a hotkey could reach it instead. Reopen it when you've finished.
+- **ShotCore is optimised in Debug** so the tests stay quick, which makes stepping through it patchy. Set `SWIFT_OPTIMIZATION_LEVEL = -Onone` in `Config/Local.xcconfig` while you debug it.
+
+The Makefile builds the same project through `scripts/xcodebuild.sh`, into `build/DerivedData` rather than Xcode's own folder: Xcode 27 can leave a test bundle unsigned when the IDE and `xcodebuild` share one. CI and the release workflow run the same `make` targets.
 
 ## Project layout
 
@@ -52,10 +64,15 @@ Sources/ShotCore/     Everything with no window: undo, keyframes, video trim and
 Sources/Shot/         The app: capture, selection overlay, Quick Access, editor,
                       video editor, recording, gallery, settings, the welcome window,
                       and the design system
+Sources/ScrollLab/    The command-line tool behind scripts/scroll-lab
 Tests/ShotCoreTests/  ShotCore's Swift Testing suite, and its performance budgets
-Resources/            Info.plist, the app icon and the string catalogs
-scripts/              Bundling, install, signing certificate, icon, lint, performance
-                      checks, and the install and uninstall tests
+Tests/Shot.xctestplan The test plan the Shot scheme runs
+Resources/            Info.plist, the asset catalog with the app icon, and the string catalogs
+Config/               The build settings (.xcconfig files) for every target
+Shot.xcodeproj        The project: the Shot, ShotCore, ShotCoreTests and ScrollLab targets
+                      and their shared schemes
+scripts/              Building, bundling, install, signing certificate, icon, lint,
+                      performance checks, and the install and uninstall tests
 docs/                 Screenshots for the README and the user guide, and the demo app they show
 site/                 The website (see site/README.md)
 ```
@@ -64,7 +81,7 @@ If logic can be tested without a window, a display, or a permission, put it in `
 
 ## Strings and translations
 
-Shot's interface is in English, and every string it shows goes through `Resources/Localizable.xcstrings`, so it can be translated. Each build extracts the strings from `Sources/Shot` and `Sources/ShotCore` (see `Package.swift`), and `make strings` adds the new ones to the catalog. `make lint` and CI fail while the catalog is out of date.
+Shot's interface is in English, and every string it shows goes through `Resources/Localizable.xcstrings`, so it can be translated. Each build extracts the strings from `Sources/Shot` and `Sources/ShotCore`. Building in Xcode adds the new ones to the catalog, since the catalog belongs to both targets, and `make strings` does the same from the terminal. `make lint` and CI fail while the catalog is out of date.
 
 A string reaches the catalog when it's a literal passed to an API that localizes:
 
@@ -153,8 +170,8 @@ Each release also attaches `SHA256SUMS` and a build provenance attestation. To c
 
 ```bash
 make build                                                     # fetches Sparkle's tools
-.build/artifacts/sparkle/Sparkle/bin/generate_keys             # prints the public key for SUPublicEDKey
-.build/artifacts/sparkle/Sparkle/bin/generate_keys -x sparkle.key
+build/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys     # prints the public key for SUPublicEDKey
+build/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys -x sparkle.key
 gh secret set SPARKLE_PRIVATE_KEY < sparkle.key
 
 scripts/make-dev-cert.sh "Shot Release" release.p12            # prints the .p12 password

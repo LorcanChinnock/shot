@@ -1,6 +1,6 @@
 .build/
 build/
-.swiftpm/
 .DS_Store
-*.xcodeproj/
 xcuserdata/
+# Your own build settings (Config/Shared.xcconfig says how).
+Config/Local.xcconfig

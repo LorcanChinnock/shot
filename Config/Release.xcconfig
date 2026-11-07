@@ -1,0 +1,12 @@
+// The Release configuration: Profile, `make bundle` and `make dist`.
+#include "Shared.xcconfig"
+
+DEBUG_INFORMATION_FORMAT = dwarf-with-dsym
+SWIFT_OPTIMIZATION_LEVEL = -O
+SWIFT_COMPILATION_MODE = wholemodule
+GCC_OPTIMIZATION_LEVEL = s
+ENABLE_NS_ASSERTIONS = NO
+ENABLE_TESTABILITY = NO
+VALIDATE_PRODUCT = YES
+// Sparkle ships signed, so stripping it on copy would only warn.
+COPY_PHASE_STRIP = NO

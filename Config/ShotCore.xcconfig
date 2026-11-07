@@ -1,0 +1,17 @@
+// Everything with no window: the model, rendering, video, GIF, preferences and the gallery. A static framework, so the
+// app stays one binary and launches as fast as before.
+PRODUCT_NAME = ShotCore
+PRODUCT_BUNDLE_IDENTIFIER = dev.lorcan.Shot.ShotCore
+MACH_O_TYPE = staticlib
+DEFINES_MODULE = YES
+GENERATE_INFOPLIST_FILE = YES
+SKIP_INSTALL = YES
+CODE_SIGN_IDENTITY = -
+
+// Optimised even in Debug: the scrolling composer's per-pixel loops make the tests take minutes longer unoptimised.
+// ENABLE_TESTABILITY stays on, so @testable imports still work. Stepping through ShotCore in the debugger is patchy as
+// a result; set this to -Onone in Config/Local.xcconfig while you debug it.
+SWIFT_OPTIMIZATION_LEVEL[config=Debug] = -O
+
+// Your own overrides, such as CODE_SIGN_IDENTITY. Git ignores this file.
+#include? "Local.xcconfig"
