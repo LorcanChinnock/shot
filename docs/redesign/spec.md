@@ -310,6 +310,32 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Text size.** The ring, the number, the hint and Cancel scale with Settings › Text size, and the panel grows to fit.
 - **Increase Contrast and Reduce Transparency** make the panel solid with the 40% edge, and Increase Contrast also brightens the track and the hint.
 
+### Quick Access card
+
+#1081 builds the card on Capture › Quick Access, pin, menu and toasts: the picture of each capture that slides into a bottom corner of the screen. The cards share one `FloatingPanelWindow` with the system shadow, so the shadow follows each card and no margin catches clicks.
+
+| Part | Look |
+| --- | --- |
+| Card | 280 pt wide, panel radius (14), white, with a 0.5 pt edge of black at 30%. Its height follows the capture's shape from 158 to 210 pt, and the capture fills it, cropped to the middle rather than letterboxed |
+| Scrim | On hover, `FloatingPanel.scrim` over the whole card, fading in over `Motion.fade` |
+| Copy | The one ink control, a floating main button, 14 pt semibold, at least 132 pt wide |
+| Save As… | A white secondary button, 14 pt medium, as wide and tall as Copy, 8 pt below it |
+| Corner buttons | 26 pt circles at the corner-button opacity (0.78) with the floating-panel edge, 8 pt in from the card's edges. Close top left, Annotate top right, Pin to Screen bottom right. A recording has Edit Video and Export GIF top right instead, and no Pin |
+| Drag chip | "Drag into any app" in 10.5 pt at 85% white after a 10 pt move symbol, on a capsule at the corner-button opacity, bottom left |
+| Length | A recording's length as a strong badge in tabular figures, bottom right, shown at rest and on hover |
+
+- **The resting card is just the capture.** The scrim, buttons and drag chip show on hover only, as before, so the quick sharer sees the picture and nothing else until they reach for it. A recording's length is the one exception, since it's what tells a recording from a screenshot now the play disc is gone.
+- **Pin replaces Show in Finder.** The board puts Pin to Screen in the bottom-right corner, so Show in Finder moves to the right-click menu, which keeps every action: Copy, Copy Path, Save As…, Annotate (or Edit Video and Export GIF), Pin and Show in Finder.
+- **Save As… is the light secondary button.** The board draws it white at 94% with a soft shadow and group corners. It uses `BrutalButtonStyle()` in the light appearance instead, white with the Rest edge and control corners, so it keeps the focus halo and matches secondary buttons elsewhere. The floating secondary button, white at 12%, would be too faint over a bright capture.
+- **Corner buttons keep the floating-panel edge.** The board draws their edge at 20% white. They use `floatingPanel`'s 14%, so they match every other floating panel.
+- **Card size.** `QuickAccessLayout` in ShotCore holds the width and the height limits, and `cardHeight(for:)` works the height out from the capture's size, with tests.
+- **Shadow.** The system shadow is worked out again once a card has slid in and whenever the panel changes size, so it doesn't lag behind a new card.
+- **Reduce Motion** slides nothing: cards fade in and out, and the scrim appears at once.
+- **VoiceOver** reads the card as "Screenshot" or "Recording" and the file name, with "Drag into any app" as its hint. Each corner button reads its name, and the drag chip and length badge are hidden from it.
+- **Text size.** Copy, Save As…, the drag chip's label and the length badge scale with Settings › Text size. The card and the corner buttons don't.
+- **Dark appearance** changes nothing: the card is the capture, the scrim and corner buttons are floating panels, and Save As… stays white.
+- **Increase Contrast and Reduce Transparency** make the corner buttons and drag chip solid. Increase Contrast also takes their edge to 40% white and the card's edge to 1 pt of black at 60%.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -383,7 +409,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Window pick and delay | #1077 highlights | `Overlay/SelectionOverlayView.swift` (tint, edge, label), `Overlay/SelectionOverlayController.swift` (stepping finds the page), ShotCore `WindowPick.swift` (`WindowPickLabel`, `WindowInfo.pickName`) | ☐ |
 | Window pick and delay | #1075 capture bar with delay | `Overlay/SelectionOverlayView.swift` (the bar, Delay's seconds and the tooltip) | ☐ |
 | Scrolling capture | #1086 | `Capture/ScrollingCaptureController.swift` | ☐ |
-| Quick Access, pin, menu and toasts › card | #1081 | `QuickAccess/QuickAccessView.swift` | ☐ |
+| Quick Access, pin, menu and toasts › card | #1081 | `QuickAccess/QuickAccessView.swift`, `QuickAccess/QuickAccessController.swift`, ShotCore `QuickAccessLayout.swift` | ☐ |
 | Quick Access, pin, menu and toasts › stack | #1082 | `QuickAccess/QuickAccessController.swift`, `QuickAccess/QuickAccessView.swift` | ☐ |
 | Quick Access, pin, menu and toasts › pin | #1083 | `QuickAccess/PinController.swift` | ☐ |
 | Quick Access, pin, menu and toasts › menu | #1084 | `ShotApp.swift`, `Design/BrandMark.swift` | ☐ |
