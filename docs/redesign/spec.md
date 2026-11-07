@@ -424,7 +424,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | Message | One line of 13 pt medium white, such as "Copied" or "Saved Screenshot 2026-11-07 at 10.42.png" |
 | Button | One `rgba(255,255,255,0.16)` pill in 12 pt semibold: Undo with ⌘Z faded after it, Cancel, or Show |
 | Progress | A 96 pt `BrutalProgressBar` after the message, then the percentage in tabular figures |
-| Place | The Quick Access corner chosen in Settings, left by default, with the pill's outer edge in line with the cards'. With cards showing it rests 22 pt above them, and otherwise it sits where a card would |
+| Place | The Quick Access corner chosen in Settings, left by default, with the pill's outer edge in line with the cards'. With cards showing on the same display it rests 22 pt above them, and otherwise it sits where a card would |
 
 - **The board's 24 pt from the right and 236 pt from the bottom** are where its card stack happens to sit on a 1280 × 800 mock. Shot keeps how the toast relates to the cards rather than the numbers: its edge lines up with theirs, 30 pt in from the screen's side (`QuickAccessController.inset` plus the stack's 10 pt padding), and it rests 22 pt above their top, as on the board. `ToastLayout` in ShotCore works out the frame and keeps it on screen above a tall fanned-out stack, with tests. Toasts used to sit in the bottom middle of the screen.
 - **A toast that changes size keeps its edge.** When a progress toast's text or bar changes width, it grows away from the screen's side rather than from its middle.
@@ -516,7 +516,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Quick Access, pin, menu and toasts › stack | #1082 | `QuickAccess/QuickAccessController.swift`, `QuickAccess/QuickAccessView.swift`, ShotCore `QuickAccessLayout.swift`, `Design/GlassWindow.swift` (`FloatingPanel.cardBehind`) | ☐ |
 | Quick Access, pin, menu and toasts › pin | #1083 | `QuickAccess/PinController.swift` (`PinState`, `PinBar`, `PinFrame`), ShotCore `PinOpacity.swift`, `PinLayout.swift` (`barStrip`), `Design/BrutalControls.swift` (`BrutalSlider(floating:)`) | ☐ |
 | Quick Access, pin, menu and toasts › menu | #1084 | `MenuBar/StatusMenu.swift`, `MenuBar/RecentRowView.swift`, `MenuBar/RecentCapturesStore.swift`, `ShotCore/RecentCaptures.swift`, `Design/BrandMark.swift` | ☐ |
-| Quick Access, pin, menu and toasts › toast | #1085 | `Toast.swift` (`ToastView`, `ToastTickMark`), ShotCore `ToastLayout.swift`, `QuickAccess/QuickAccessController.swift` (`cardsTop`, `cardEdgeInset`) | ☐ |
+| Quick Access, pin, menu and toasts › toast | #1085 | `Toast.swift` (`ToastView`, `ToastTickMark`), ShotCore `ToastLayout.swift`, `QuickAccess/QuickAccessController.swift` (`cardsTop(on:)`, `cardEdgeInset`) | ☐ |
 | Quick Access, pin, menu and toasts › countdown | #1078 | `Recording/RecordingSetupController.swift` (`CountdownPanel`, `CountdownView`), ShotCore `CountdownRing.swift`, `Moment.countdownRing`, `Design/Motion.swift` | ☐ |
 | Quick Access, pin, menu and toasts › floating panels | #1073 | `Design/GlassWindow.swift` (`FloatingPanel`, `FloatingPanelWindow`), `Toast.swift`, `Overlay/SelectionOverlayView.swift`, `Recording/RecordingControlPanel.swift`, `Recording/RecordingSetupController.swift`, `Capture/ScrollingCaptureController.swift`, `QuickAccess/QuickAccessView.swift` | ☐ |
 | Permission card… › permission card | #1087 | `Overlay/SelectionOverlayController.swift`, `Permissions.swift` | ☐ |

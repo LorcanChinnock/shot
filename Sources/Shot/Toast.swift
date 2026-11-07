@@ -92,7 +92,7 @@ enum Toast {
             in: screen.visibleFrame,
             side: side,
             edgeInset: QuickAccessController.cardEdgeInset,
-            cardsTop: QuickAccessController.shared.cardsTop
+            cardsTop: QuickAccessController.shared.cardsTop(on: screen)
         )
         arrive(panel, at: frame)
         NSAccessibility.post(element: panel, notification: .announcementRequested, userInfo: [.announcement: message, .priority: NSAccessibilityPriorityLevel.high.rawValue])
