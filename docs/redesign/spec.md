@@ -328,6 +328,33 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Text size.** The ring, the number, the hint and Cancel scale with Settings › Text size, and the panel grows to fit.
 - **Increase Contrast and Reduce Transparency** make the panel solid with the 40% edge, and Increase Contrast also brightens the track and the hint.
 
+### Scrolling capture
+
+#1086 builds Capture › Scrolling capture: the panel beside the area while you scroll it yourself. It is SwiftUI in its own `FloatingPanelWindow` with the system shadow, 300 pt wide, and grows to fit what it shows.
+
+| Part | Look |
+| --- | --- |
+| Panel | Radius 16, `#FAF9F6` in light and the popover grey `#2C2C30` in dark, with a 0.5 pt edge at black 25% (white 14% in dark) |
+| Header | An 8 pt status dot, then the heading in 14 pt bold, and the detail under it in 12 pt tertiary text. 16 pt padding, 12 pt below, and a separator under it |
+| Status dot | Success green with a 3 pt ring of it at 22% while frames are being added; tertiary text otherwise |
+| Preview | 150 × 280 pt at group corners and Group depth. The image so far sits against the side away from the frontier, over hatching of 6 pt stripes every 12 pt at ink 10% on the Window colour. The room past the frontier stays hatched with a "Not yet" label, and at least 40 pt of it is kept while the image can still grow. A 2 pt accent line with a 0.5 pt ink edge marks the area's frontier side |
+| Facts | Size and Frames kept in 13 pt bold tabular SF Mono, Sticky header in 12 pt semibold, each under a 12 pt tertiary label, 14 pt apart |
+| Warning card | At the foot of the facts column: `#FFF4D6` (accent at 14% in dark), a 1 pt `#8A6A00` edge at 25%, control corners, the title in 12 pt semibold and the advice in 12 pt, both `#6B4F00` (`#F2CC4A` in dark) |
+| Footer | "Esc discards" in 11 pt tertiary text, Cancel as a secondary button and "Done ↩" as the main button. 12 × 16 pt padding under a separator |
+| Outline | 1.5 pt accent against the area, with 1.5 pt ink outside it |
+
+- **The frontier is where the image grows.** `ScrollFrontier` in ShotCore follows the side the image last grew on, so scrolling up puts "Not yet" and the edge at the top and scrolling sideways puts them at the side. `ScrollPreviewLayout` places the image, the room and the edge, and `ScrollPreviewLayoutTests` covers it. Once the image reaches the size limit, nothing is marked "Not yet".
+- **Frames kept and the sticky header come from the stitcher.** Frames kept counts the frames the saved image is built from, or every frame painted when those had to be given up. Sticky header reads "Kept once" from the first time a band sticks to the top edge, and "None found" until then.
+- **Headings.** "Start scrolling" before anything moves, "Keep scrolling" while capturing and during a warning, and "Full size" at the size limit, each with its own detail line. The warnings keep their titles, Scrolled too far, Can't line up and Nothing to line up, with shorter advice that fits the card.
+- **It follows the appearance.** The other floating panels are dark in both appearances, but the board draws this one light, and it holds a preview and facts to read, like a popover. In dark it takes the popover grey.
+- **Solid, not 96%.** The board's fill is 96% opaque. Text behind the panel showed through it, so the fill is solid in every mode, which also covers Increase Contrast and Reduce Transparency.
+- **The outline doesn't change colour.** It used to turn red for a warning and green while capturing. Rule 6 keeps red for recording and loss, and the warning card says what's wrong, so the outline stays the board's accent and ink.
+- **No dimmed screen.** The board dims everything outside the area. That would need a screen-sized window over the content being scrolled, so it's left out.
+- **Keyboard.** Return, Enter and the screenshot shortcut finish, and Esc cancels, while the content's app keeps the keyboard. Cancel shows "Esc" in its tooltip and Done shows "↩".
+- **VoiceOver** reads the panel as "Scrolling capture", the header as one element, each fact as one element and the preview as "Preview of the image so far". A warning is announced with its title and advice when it appears.
+- **Text size.** The header, facts, card and buttons scale with Settings › Text size, and the panel grows to fit. A long size shrinks to 70% before it would wrap. The preview stays 150 × 280.
+- **Increase Contrast** takes the panel's edge to 50% black (40% white in dark), the warning card's edge to 60%, and the hatching to 22%.
+
 ### Quick Access card
 
 #1081 builds the card on Capture › Quick Access, pin, menu and toasts: the picture of each capture that slides into a bottom corner of the screen. The cards share one `FloatingPanelWindow` with the system shadow, so the shadow follows each card and no margin catches clicks.
@@ -530,7 +557,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Area capture | #1076 | `Overlay/SelectionOverlayView.swift` (edge, handles, chips, loupe, guides, cursor), `Overlay/SelectionOverlayController.swift` (cursor), ShotCore `AreaOverlay.swift` (`AreaHandles`, `AreaLabelPlacement`, `Loupe`) | ☐ |
 | Window pick and delay | #1077 highlights | `Overlay/SelectionOverlayView.swift` (tint, edge, label), `Overlay/SelectionOverlayController.swift` (stepping finds the page), ShotCore `WindowPick.swift` (`WindowPickLabel`, `WindowInfo.pickName`) | ☐ |
 | Window pick and delay | #1075 capture bar with delay | `Overlay/SelectionOverlayView.swift` (the bar, Delay's seconds and the tooltip) | ☐ |
-| Scrolling capture | #1086 | `Capture/ScrollingCaptureController.swift` | ☐ |
+| Scrolling capture | #1086 | `Capture/ScrollingCaptureController.swift` (`ScrollCaptureView`), `Recording/RecordingBorderPanel.swift` (`.scrolling`), ShotCore `ScrollPreviewLayout.swift`, `ScrollCapture.swift` (headings and warnings), `ScrollStitcher.swift` (`framesKept`, `hasStickyHeader`) | ☐ |
 | Quick Access, pin, menu and toasts › card | #1081 | `QuickAccess/QuickAccessView.swift`, `QuickAccess/QuickAccessController.swift`, ShotCore `QuickAccessLayout.swift` | ☐ |
 | Quick Access, pin, menu and toasts › stack | #1082 | `QuickAccess/QuickAccessController.swift`, `QuickAccess/QuickAccessView.swift`, ShotCore `QuickAccessLayout.swift`, `Design/GlassWindow.swift` (`FloatingPanel.cardBehind`) | ☐ |
 | Quick Access, pin, menu and toasts › pin | #1083 | `QuickAccess/PinController.swift` (`PinState`, `PinBar`, `PinFrame`), ShotCore `PinOpacity.swift`, `PinLayout.swift` (`barStrip`), `Design/BrutalControls.swift` (`BrutalSlider(floating:)`) | ☐ |

@@ -4896,9 +4896,6 @@
     "Capture overlay" : {
 
     },
-    "Capturing" : {
-
-    },
     "Capturing in %lld seconds" : {
 
     },
@@ -10189,6 +10186,9 @@
         }
       }
     },
+    "Discard the capture" : {
+
+    },
     "Done" : {
       "localizations" : {
         "de" : {
@@ -11822,6 +11822,9 @@
     "Enter a name that doesn't start with a dot." : {
 
     },
+    "Esc discards" : {
+
+    },
     "Esc: cancel" : {
       "localizations" : {
         "de" : {
@@ -13255,6 +13258,9 @@
           }
         }
       }
+    },
+    "Frames kept" : {
+
     },
     "Free" : {
       "localizations" : {
@@ -15409,6 +15415,9 @@
         }
       }
     },
+    "Include some text or an image, or pick another area." : {
+
+    },
     "Inspector" : {
       "localizations" : {
         "de" : {
@@ -15587,6 +15596,9 @@
         }
       }
     },
+    "Keep scrolling" : {
+
+    },
     "Keep the macOS drop shadow in window captures." : {
       "localizations" : {
         "de" : {
@@ -15640,6 +15652,9 @@
       }
     },
     "Keeps the crop this shape, wide or tall to match it." : {
+
+    },
+    "Kept once" : {
 
     },
     "Kept originals" : {
@@ -18144,6 +18159,12 @@
           }
         }
       }
+    },
+    "None found" : {
+
+    },
+    "Not yet" : {
+
     },
     "Note" : {
       "localizations" : {
@@ -21276,9 +21297,6 @@
         }
       }
     },
-    "Ready" : {
-
-    },
     "Recent" : {
 
     },
@@ -23405,7 +23423,7 @@
     "Save New Captures Here" : {
 
     },
-    "Save and copy (Return)" : {
+    "Save and copy" : {
 
     },
     "Save and copy (⌘S)" : {
@@ -24360,13 +24378,19 @@
     "Scroll" : {
 
     },
+    "Scroll back a little and carry on." : {
+
+    },
+    "Scroll in any direction. Hatched parts aren't captured yet." : {
+
+    },
     "Scroll the content in any direction." : {
 
     },
     "Scrolled too far" : {
 
     },
-    "Scrolled too far at once. Scroll back a little and carry on." : {
+    "Scrolling capture" : {
 
     },
     "Search" : {
@@ -26770,7 +26794,7 @@
         }
       }
     },
-    "Something in the area keeps changing, so Shot can't line frames up. Pause the video or scroll past it." : {
+    "Something in the area keeps changing. Pause it or scroll past it." : {
 
     },
     "Sort" : {
@@ -27504,6 +27528,9 @@
         }
       }
     },
+    "Start scrolling" : {
+
+    },
     "Starting" : {
       "localizations" : {
         "de" : {
@@ -27668,6 +27695,9 @@
           }
         }
       }
+    },
+    "Sticky header" : {
+
     },
     "Sticky note" : {
       "localizations" : {
@@ -29169,9 +29199,6 @@
           }
         }
       }
-    },
-    "There isn't enough in the area to line frames up. Include some text or an image, or drag out another area." : {
-
     },
     "There's already a folder or file called “%@” there." : {
 

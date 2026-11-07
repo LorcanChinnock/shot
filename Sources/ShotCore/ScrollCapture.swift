@@ -1,7 +1,7 @@
 import CoreGraphics
 import Foundation
 
-/// What a scrolling capture is doing, for the panel's chip, message and outline.
+/// What a scrolling capture is doing, for the panel's heading and warning card.
 public enum ScrollCaptureStatus: Equatable, Sendable {
     /// The area is on screen and nothing has scrolled yet.
     case ready
@@ -16,31 +16,35 @@ public enum ScrollCaptureStatus: Equatable, Sendable {
     /// The image is as big as Shot can stitch; what's captured is kept.
     case sizeLimit
 
-    /// The panel's chip.
-    public var title: String {
+    /// The heading at the top of the panel.
+    public var heading: String {
         switch self {
-        case .ready: String(localized: "Ready")
-        case .live: String(localized: "Capturing")
-        case .tooFar: String(localized: "Scrolled too far")
-        case .changing: String(localized: "Can't line up")
-        case .notEnough: String(localized: "Nothing to line up")
+        case .ready: String(localized: "Start scrolling")
+        case .live, .tooFar, .changing, .notEnough: String(localized: "Keep scrolling")
         case .sizeLimit: String(localized: "Full size")
         }
     }
 
-    /// One plain sentence when something needs attention; nothing while the capture is going well.
-    public var message: String? {
+    /// The line under the heading.
+    public var detail: String {
         switch self {
         case .ready: String(localized: "Scroll the content in any direction.")
-        case .live: nil
-        case .tooFar: String(localized: "Scrolled too far at once. Scroll back a little and carry on.")
-        case .changing: String(localized: "Something in the area keeps changing, so Shot can't line frames up. Pause the video or scroll past it.")
-        case .notEnough: String(localized: "There isn't enough in the area to line frames up. Include some text or an image, or drag out another area.")
+        case .live, .tooFar, .changing, .notEnough: String(localized: "Scroll in any direction. Hatched parts aren't captured yet.")
         case .sizeLimit: String(localized: "The image is as big as Shot can stitch. Press Return to save it.")
         }
     }
 
-    /// Warnings turn the outline red.
+    /// What the warning card says when something needs attention; nothing while the capture is going well.
+    public var warning: (title: String, advice: String)? {
+        switch self {
+        case .tooFar: (String(localized: "Scrolled too far"), String(localized: "Scroll back a little and carry on."))
+        case .changing: (String(localized: "Can't line up"), String(localized: "Something in the area keeps changing. Pause it or scroll past it."))
+        case .notEnough: (String(localized: "Nothing to line up"), String(localized: "Include some text or an image, or pick another area."))
+        case .ready, .live, .sizeLimit: nil
+        }
+    }
+
+    /// Whether the panel shows a warning card.
     public var isWarning: Bool {
         switch self {
         case .tooFar, .changing, .notEnough: true

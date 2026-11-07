@@ -8,8 +8,8 @@ final class RecordingBorderPanel: NSPanel {
         case setup
         case recording
         case paused
-        /// A solid line in `color`, as a scrolling capture's outline, which follows its status.
-        case outline(NSColor)
+        /// A scrolling capture's outline: the accent against the area with ink outside it, 1.5 pt each.
+        case scrolling
     }
 
     static let lineWidth: CGFloat = 3
@@ -73,9 +73,16 @@ final class RecordingBorderPanel: NSPanel {
                 Brutal.yellowNS.setStroke()
                 path.setLineDash([10, 6], count: 2, phase: 0)
                 path.stroke()
-            case let .outline(color):
-                color.setStroke()
-                path.stroke()
+            case .scrolling:
+                let half = width / 2
+                let ink = NSBezierPath(rect: bounds.insetBy(dx: half / 2, dy: half / 2))
+                ink.lineWidth = half
+                Brutal.inkNS.setStroke()
+                ink.stroke()
+                let accent = NSBezierPath(rect: bounds.insetBy(dx: half * 1.5, dy: half * 1.5))
+                accent.lineWidth = half
+                Brutal.yellowNS.setStroke()
+                accent.stroke()
             }
         }
     }

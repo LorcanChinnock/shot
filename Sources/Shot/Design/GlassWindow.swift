@@ -186,7 +186,7 @@ enum FloatingPanel {
 
     /// How much of the screen shows through. Increase Contrast and Reduce Transparency make every panel solid.
     enum Opacity {
-        /// The capture bar, recording controls, the countdown and the scrolling capture panel.
+        /// The capture bar, recording controls and the countdown.
         static let standard = 0.86
         static let toast = 0.90
         static let pinBar = 0.82
