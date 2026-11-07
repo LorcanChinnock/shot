@@ -1,0 +1,32 @@
+// The app. Every build is ShotDev.app, with its own bundle ID, settings, Screen Recording permission and shot-dev://
+// links and no update feed, so it never replaces or answers for an installed release. Only `make dist` passes
+// SHOT_DISTRIBUTION=YES, which builds Shot.app with the feed.
+SHOT_DISTRIBUTION = NO
+
+PRODUCT_NAME = $(SHOT_PRODUCT_NAME_$(SHOT_DISTRIBUTION))
+SHOT_PRODUCT_NAME_NO = ShotDev
+SHOT_PRODUCT_NAME_YES = Shot
+
+PRODUCT_BUNDLE_IDENTIFIER = $(SHOT_BUNDLE_ID_$(SHOT_DISTRIBUTION))
+SHOT_BUNDLE_ID_NO = dev.lorcan.Shot.dev
+SHOT_BUNDLE_ID_YES = dev.lorcan.Shot
+
+SHOT_URL_SCHEME = $(SHOT_URL_SCHEME_$(SHOT_DISTRIBUTION))
+SHOT_URL_SCHEME_NO = shot-dev
+SHOT_URL_SCHEME_YES = shot
+
+// Sparkle's update feed. "$()" keeps xcconfig from reading the "//" as a comment.
+SHOT_FEED_URL = $(SHOT_FEED_URL_$(SHOT_DISTRIBUTION))
+SHOT_FEED_URL_NO =
+SHOT_FEED_URL_YES = https:/$()/github.com/LorcanChinnock/shot/releases/latest/download/appcast.xml
+
+INFOPLIST_FILE = Resources/Info.plist
+GENERATE_INFOPLIST_FILE = NO
+ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon
+COMBINE_HIDPI_IMAGES = YES
+LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/../Frameworks
+// The Sparkle signing phase changes files inside the built app.
+ENABLE_USER_SCRIPT_SANDBOXING = NO
+
+// Your own overrides, such as CODE_SIGN_IDENTITY. Git ignores this file.
+#include? "Local.xcconfig"

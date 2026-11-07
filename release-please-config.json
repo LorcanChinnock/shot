@@ -16,7 +16,7 @@
       "extra-files": [
         {
           "type": "generic",
-          "path": "Resources/Info.plist"
+          "path": "Config/Shared.xcconfig"
         }
       ]
     }

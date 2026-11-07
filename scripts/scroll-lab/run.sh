@@ -10,6 +10,7 @@ mkdir -p "$LAB_DIR/frames"
 if [ ! -d "$LAB_DIR/node_modules/puppeteer-core" ]; then (cd "$LAB_DIR" && npm init -y >/dev/null && npm i puppeteer-core >/dev/null); fi
 NODE_PATH="$LAB_DIR/node_modules" node scripts/scroll-lab/frames.cjs "$LAB_DIR/frames" "${1:-}"
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
-# bundle.sh leaves .build/release pointing at its last (Intel) build, so ask for this machine's own.
-swift build -c release --arch arm64 --product ScrollLab 2>&1 | grep -E "error|Build" | tail -3
-"$(swift build -c release --arch arm64 --product ScrollLab --show-bin-path)/ScrollLab" "$LAB_DIR/frames" "$LAB_DIR/out" "${1:-}"
+# Its own DerivedData, so the native Release build doesn't replace the universal one make bundle leaves.
+DERIVED_DATA=build/ScrollLab scripts/xcodebuild.sh -scheme ScrollLab -configuration Release -destination "platform=macOS,arch=$(uname -m)" -quiet build
+LAB=build/ScrollLab/Build/Products/Release/ScrollLab
+"$LAB" "$LAB_DIR/frames" "$LAB_DIR/out" "${1:-}"

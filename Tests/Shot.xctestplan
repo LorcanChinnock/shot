@@ -1,0 +1,24 @@
+{
+  "configurations" : [
+    {
+      "id" : "B6218CCC-7E7A-4A38-9A1B-6EE90C3FC5C8",
+      "name" : "Default",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:Shot.xcodeproj",
+        "identifier" : "31D03B5B11C9A38E769FCE54",
+        "name" : "ShotCoreTests"
+      }
+    }
+  ],
+  "version" : 1
+}

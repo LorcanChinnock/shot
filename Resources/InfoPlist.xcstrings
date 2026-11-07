@@ -61,6 +61,19 @@
         }
       }
     },
+    "NSHumanReadableCopyright" : {
+      "comment" : "Copyright (human-readable)",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "© 2026 Lorcan Chinnock"
+          }
+        }
+      },
+      "shouldTranslate" : false
+    },
     "NSMicrophoneUsageDescription" : {
       "comment" : "Asked the first time a recording turns the microphone on.",
       "extractionState" : "manual",

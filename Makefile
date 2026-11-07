@@ -1,25 +1,26 @@
-# Building with only the Command Line Tools: their default SDK (27) makes SwiftUI's @State a
-# macro whose compiler plugin ships with Xcode alone, so pin the newest 26.x SDK when there is one.
-# With Xcode selected, the default SDK works and nothing is pinned.
-CLT_SDK := $(lastword $(sort $(wildcard /Library/Developer/CommandLineTools/SDKs/MacOSX26.*.sdk)))
-ifeq ($(findstring CommandLineTools,$(shell xcode-select -p)),CommandLineTools)
-ifneq ($(wildcard $(CLT_SDK)),)
-export SDKROOT ?= $(CLT_SDK)
-endif
-TEST_FLAGS := -Xswiftc -plugin-path -Xswiftc $(shell xcode-select -p)/usr/lib/swift/host/plugins/testing
-endif
+# Every build goes through scripts/xcodebuild.sh, which builds Shot.xcodeproj into build/DerivedData.
 
 INSTALL_DIR ?= /Applications
-# Extra `swift test` flags, e.g. ARGS=--skip-build in CI.
+# Extra xcodebuild arguments, e.g. ARGS=-quiet.
 ARGS ?=
+# One suite or test, e.g. ONLY=ShotCoreTests/GIFEncoderTests or ONLY='ShotCoreTests/hitTestFilledKinds()'.
+ONLY ?=
+# CI builds the tests in one step and runs them in the next, with TEST_ACTION=test-without-building.
+TEST_ACTION ?= test
+XCODEBUILD := scripts/xcodebuild.sh
+DESTINATION := -destination 'platform=macOS,arch=$(shell uname -m)'
 
-.PHONY: build test test-install test-uninstall perf-app lint strings bundle app run demo dist reset-tcc icon clean
+.PHONY: build build-tests test test-install test-uninstall perf-app lint strings bundle app run demo dist reset-tcc icon clean
 
 build:
-	swift build
+	$(XCODEBUILD) -scheme Shot -configuration Debug $(DESTINATION) -quiet build $(ARGS)
+
+# Not -quiet: with it, Xcode 27 reports some test files that compiled fine as failed "with exit code 0".
+build-tests:
+	$(XCODEBUILD) -scheme Shot $(DESTINATION) build-for-testing $(ARGS)
 
 test:
-	swift test $(TEST_FLAGS) $(ARGS)
+	$(XCODEBUILD) -scheme Shot $(DESTINATION) $(TEST_ACTION) $(if $(ONLY),-only-testing:'$(ONLY)') $(ARGS)
 
 # Runs site/public/install.sh against a local folder standing in for the GitHub release.
 test-install:
@@ -35,12 +36,11 @@ perf-app:
 # Also checks Resources/Localizable.xcstrings has every string the app shows.
 lint:
 	scripts/lint.sh
-	swift build
+	$(MAKE) build
 	scripts/strings.sh --check
 
 # Adds new strings to Resources/Localizable.xcstrings and drops ones the source no longer uses.
-strings:
-	swift build
+strings: build
 	scripts/strings.sh
 
 bundle:
@@ -63,12 +63,12 @@ dist: bundle
 	ditto -c -k --keepParent build/Shot.app build/Shot.zip
 	@echo "Wrote build/Shot.zip"
 
-# Clears ShotDev's permission (scripts/bundle.sh gives dev builds the release ID plus .dev), never the release's.
+# Clears ShotDev's Screen Recording permission (Config/Shot.xcconfig gives it its own bundle ID), never the release's.
 reset-tcc:
-	tccutil reset ScreenCapture $$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" Resources/Info.plist).dev
+	tccutil reset ScreenCapture dev.lorcan.Shot.dev
 
 icon:
 	swift scripts/make-icon.swift .
 
 clean:
-	rm -rf .build build
+	rm -rf build

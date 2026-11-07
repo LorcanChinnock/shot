@@ -144,7 +144,7 @@ jobs:
 
             ---
 
-            - When linking to code in inline comments, follow the following format precisely, otherwise the Markdown preview won't render correctly: https://github.com/${{ github.repository }}/blob/${{ github.event.pull_request.head.sha }}/Package.swift#L10-L15
+            - When linking to code in inline comments, follow the following format precisely, otherwise the Markdown preview won't render correctly: https://github.com/${{ github.repository }}/blob/${{ github.event.pull_request.head.sha }}/Sources/Shot/AppDelegate.swift#L10-L15
               - Requires the full git sha, ${{ github.event.pull_request.head.sha }}
               - # sign after the file name
               - Line range format is L[start]-L[end]

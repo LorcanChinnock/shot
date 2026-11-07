@@ -9,9 +9,9 @@ LAB_DIR="${LAB_DIR:-/tmp/shot-scroll-lab}"
 PAGE="$1"; PATTERN="${2:-flicks}"
 BIN="$LAB_DIR/bin"; mkdir -p "$BIN" "$LAB_DIR/live"
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
-# make run leaves an Intel build in the same folder, so build this machine's own first.
-swift build -c release --arch arm64 --product ScrollLab >/dev/null 2>&1
-LAB="$(swift build -c release --arch arm64 --product ScrollLab --show-bin-path)/ScrollLab"
+# Its own DerivedData, so the native Release build doesn't replace the universal one make bundle leaves.
+DERIVED_DATA=build/ScrollLab scripts/xcodebuild.sh -scheme ScrollLab -configuration Release -destination "platform=macOS,arch=$(uname -m)" -quiet build
+LAB=build/ScrollLab/Build/Products/Release/ScrollLab
 [ "$BIN/drive" -nt scripts/scroll-lab/drive.swift ] || swiftc -O scripts/scroll-lab/drive.swift -o "$BIN/drive"
 [ "$BIN/ScrollTarget" -nt scripts/scroll-lab/target.swift ] || swiftc -O scripts/scroll-lab/target.swift -o "$BIN/ScrollTarget"
 pkill -x ScrollTarget || true; sleep 0.3

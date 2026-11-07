@@ -1,4 +1,4 @@
-// Renders Resources/AppIcon.icns and docs/icon.png (for the README). Run: make icon
+// Renders the app icon into Resources/Assets.xcassets, and docs/icon.png (for the README). Run: make icon
 import AppKit
 
 let ink = NSColor(srgbRed: 0.07, green: 0.07, blue: 0.10, alpha: 1)
@@ -50,17 +50,23 @@ func render(size: Int) -> Data {
 }
 
 let root = URL(fileURLWithPath: CommandLine.arguments.dropFirst().first ?? ".")
-let iconset = FileManager.default.temporaryDirectory.appendingPathComponent("AppIcon.iconset")
+let assets = root.appendingPathComponent("Resources/Assets.xcassets")
+let iconset = assets.appendingPathComponent("AppIcon.appiconset")
 try? FileManager.default.removeItem(at: iconset)
 try FileManager.default.createDirectory(at: iconset, withIntermediateDirectories: true)
+var images: [[String: String]] = []
 for base in [16, 32, 128, 256, 512] {
-    try render(size: base).write(to: iconset.appendingPathComponent("icon_\(base)x\(base).png"))
-    try render(size: base * 2).write(to: iconset.appendingPathComponent("icon_\(base)x\(base)@2x.png"))
+    for scale in [1, 2] {
+        let file = scale == 1 ? "icon_\(base)x\(base).png" : "icon_\(base)x\(base)@2x.png"
+        try render(size: base * scale).write(to: iconset.appendingPathComponent(file))
+        images.append(["filename": file, "idiom": "mac", "scale": "\(scale)x", "size": "\(base)x\(base)"])
+    }
 }
-let process = Process()
-process.executableURL = URL(fileURLWithPath: "/usr/bin/iconutil")
-process.arguments = ["-c", "icns", iconset.path, "-o", root.appendingPathComponent("Resources/AppIcon.icns").path]
-try process.run()
-process.waitUntilExit()
+let info = ["author": "xcode", "version": 1] as [String: Any]
+let encode = { (object: Any) in
+    try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
+}
+try encode(["images": images, "info": info]).write(to: iconset.appendingPathComponent("Contents.json"))
+try encode(["info": info]).write(to: assets.appendingPathComponent("Contents.json"))
 try render(size: 512).write(to: root.appendingPathComponent("docs/icon.png"))
-print("Wrote Resources/AppIcon.icns and docs/icon.png")
+print("Wrote Resources/Assets.xcassets/AppIcon.appiconset and docs/icon.png")

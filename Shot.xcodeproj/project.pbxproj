@@ -1,0 +1,129 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1DB494BAA89DC025A92A0307 /* ShotCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB236628A1C32E25F541E31F /* ShotCore.framework */; };
+		84EE97078A442ED78A78AE99 /* ShotCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB236628A1C32E25F541E31F /* ShotCore.framework */; };
+		855B32048773CD1A51724E6E /* ShotCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB236628A1C32E25F541E31F /* ShotCore.framework */; };
+		FFE057FEEF9940B35596DAA3 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = E563FB5DFCD4D4211EA3F470 /* Sparkle */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1DB04936B7C21BA9F3CFCBD2 /* PBXContainerItemProxy */ = {isa = PBXContainerItemProxy; containerPortal = 46F86FAA6BBF9AC94A7E4595 /* Project object */; proxyType = 1; remoteGlobalIDString = 6A8FE6F435481E09D4F116A2; remoteInfo = ShotCore; };
+		1E79D9B6BCF4D360B0BA6B3A /* PBXContainerItemProxy */ = {isa = PBXContainerItemProxy; containerPortal = 46F86FAA6BBF9AC94A7E4595 /* Project object */; proxyType = 1; remoteGlobalIDString = 6A8FE6F435481E09D4F116A2; remoteInfo = ShotCore; };
+		45CBDD422985E2F9C00EDE92 /* PBXContainerItemProxy */ = {isa = PBXContainerItemProxy; containerPortal = 46F86FAA6BBF9AC94A7E4595 /* Project object */; proxyType = 1; remoteGlobalIDString = 6A8FE6F435481E09D4F116A2; remoteInfo = ShotCore; };
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		1D9EE1615A7D269470644EE9 /* ShotCore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = ShotCore.xcconfig; sourceTree = "<group>"; };
+		2BDAF92094EECC308D1BBD7A /* ScrollLab */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ScrollLab; sourceTree = BUILT_PRODUCTS_DIR; };
+		2D5A51172520DC75C5C6590B /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		35893CF4A71F214FE34A77B3 /* ShotDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ShotDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4232272AED54EA88B1D0ACE8 /* Shot.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = Shot.xctestplan; sourceTree = "<group>"; };
+		4F797DD23CF7BCE94F862A29 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		6632D00DFCA464A761285E8F /* ScrollLab.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = ScrollLab.xcconfig; sourceTree = "<group>"; };
+		A9FE36BDD0FD818C358914B2 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Shared.xcconfig; sourceTree = "<group>"; };
+		BBEDA263BD81BD7ED310A2EA /* ShotCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ShotCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		ECD9457F81CB56358153E163 /* ShotCoreTests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = ShotCoreTests.xcconfig; sourceTree = "<group>"; };
+		FB236628A1C32E25F541E31F /* ShotCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ShotCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		FDA1C5D0BDBE6DD4AEC131CF /* Shot.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Shot.xcconfig; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		8ED9F30AA2810962133C380B /* Exceptions for "Resources" folder in "Shot" target */ = {isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = (Info.plist, ); target = 369664540F50F5554E76B220 /* Shot */; };
+		9A3ED391119EC13F12518F16 /* Exceptions for "Resources" folder in "ShotCore" target */ = {isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = (Localizable.xcstrings, ); target = 6A8FE6F435481E09D4F116A2 /* ShotCore */; };
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		0CF0809F88A010D49E6AE2DB /* ShotCore */ = {isa = PBXFileSystemSynchronizedRootGroup; path = ShotCore; sourceTree = "<group>"; };
+		3B92A2E08A3CD528337B43F4 /* Shot */ = {isa = PBXFileSystemSynchronizedRootGroup; path = Shot; sourceTree = "<group>"; };
+		AC9E68F208F16BEF3C126336 /* Resources */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (8ED9F30AA2810962133C380B /* Exceptions for "Resources" folder in "Shot" target */, 9A3ED391119EC13F12518F16 /* Exceptions for "Resources" folder in "ShotCore" target */, ); path = Resources; sourceTree = "<group>"; };
+		B72098B070C15C367903D4DE /* ShotCoreTests */ = {isa = PBXFileSystemSynchronizedRootGroup; path = ShotCoreTests; sourceTree = "<group>"; };
+		E93A4D06E7442B4E8C6F2A12 /* ScrollLab */ = {isa = PBXFileSystemSynchronizedRootGroup; path = ScrollLab; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		9CF246E2BF8A0E5EE7D2A8A9 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		C0A17EA07415E3738F2CBD51 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (1DB494BAA89DC025A92A0307 /* ShotCore.framework in Frameworks */, ); runOnlyForDeploymentPostprocessing = 0; };
+		CC2A14204DA3775A9B3A520E /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (84EE97078A442ED78A78AE99 /* ShotCore.framework in Frameworks */, ); runOnlyForDeploymentPostprocessing = 0; };
+		DB36D4E1DC7145815E5B482B /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (855B32048773CD1A51724E6E /* ShotCore.framework in Frameworks */, FFE057FEEF9940B35596DAA3 /* Sparkle in Frameworks */, ); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		2F3A6B1E78F896718625FF06 /* Products */ = {isa = PBXGroup; children = (35893CF4A71F214FE34A77B3 /* ShotDev.app */, FB236628A1C32E25F541E31F /* ShotCore.framework */, BBEDA263BD81BD7ED310A2EA /* ShotCoreTests.xctest */, 2BDAF92094EECC308D1BBD7A /* ScrollLab */, ); name = Products; sourceTree = "<group>"; };
+		420CFB359C2A33DC60BFB328 /* Sources */ = {isa = PBXGroup; children = (3B92A2E08A3CD528337B43F4 /* Shot */, 0CF0809F88A010D49E6AE2DB /* ShotCore */, E93A4D06E7442B4E8C6F2A12 /* ScrollLab */, ); path = Sources; sourceTree = "<group>"; };
+		518DA81DB9B99529C0C0AEBE = {isa = PBXGroup; children = (420CFB359C2A33DC60BFB328 /* Sources */, AC9E68F208F16BEF3C126336 /* Resources */, 74C0354F987B4FC0FDE2C044 /* Tests */, BD13AA3ACFF3D0C2ED6E4720 /* Config */, 2F3A6B1E78F896718625FF06 /* Products */, ); sourceTree = "<group>"; };
+		74C0354F987B4FC0FDE2C044 /* Tests */ = {isa = PBXGroup; children = (B72098B070C15C367903D4DE /* ShotCoreTests */, 4232272AED54EA88B1D0ACE8 /* Shot.xctestplan */, ); path = Tests; sourceTree = "<group>"; };
+		BD13AA3ACFF3D0C2ED6E4720 /* Config */ = {isa = PBXGroup; children = (A9FE36BDD0FD818C358914B2 /* Shared.xcconfig */, 2D5A51172520DC75C5C6590B /* Debug.xcconfig */, 4F797DD23CF7BCE94F862A29 /* Release.xcconfig */, FDA1C5D0BDBE6DD4AEC131CF /* Shot.xcconfig */, 1D9EE1615A7D269470644EE9 /* ShotCore.xcconfig */, ECD9457F81CB56358153E163 /* ShotCoreTests.xcconfig */, 6632D00DFCA464A761285E8F /* ScrollLab.xcconfig */, ); path = Config; sourceTree = "<group>"; };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		31D03B5B11C9A38E769FCE54 /* ShotCoreTests */ = {isa = PBXNativeTarget; buildConfigurationList = 08A78F74502B5893655B638C /* Build configuration list for PBXNativeTarget "ShotCoreTests" */; buildPhases = (931BAA467492C4C8D1894778 /* Sources */, CC2A14204DA3775A9B3A520E /* Frameworks */, ); buildRules = ( ); dependencies = (D77E69A1C8631CE7765490AD /* PBXTargetDependency */, ); fileSystemSynchronizedGroups = (B72098B070C15C367903D4DE /* ShotCoreTests */, ); name = ShotCoreTests; packageProductDependencies = (); productName = ShotCoreTests; productReference = BBEDA263BD81BD7ED310A2EA /* ShotCoreTests.xctest */; productType = "com.apple.product-type.bundle.unit-test"; };
+		369664540F50F5554E76B220 /* Shot */ = {isa = PBXNativeTarget; buildConfigurationList = 2D3BAC3626D3AB6EF19ABA23 /* Build configuration list for PBXNativeTarget "Shot" */; buildPhases = (6EC8CD754FD8B2797B46634C /* Sources */, DB36D4E1DC7145815E5B482B /* Frameworks */, 1FBE3DCE5108B42B4EC924B5 /* Resources */, 0F27E9CF0FF33789A35309AE /* Sign Sparkle's helpers */, ); buildRules = ( ); dependencies = (B00A274E95A6AE2B5CE7CABE /* PBXTargetDependency */, ); fileSystemSynchronizedGroups = (3B92A2E08A3CD528337B43F4 /* Shot */, AC9E68F208F16BEF3C126336 /* Resources */, ); name = Shot; packageProductDependencies = (E563FB5DFCD4D4211EA3F470 /* Sparkle */, ); productName = Shot; productReference = 35893CF4A71F214FE34A77B3 /* ShotDev.app */; productType = "com.apple.product-type.application"; };
+		6A8FE6F435481E09D4F116A2 /* ShotCore */ = {isa = PBXNativeTarget; buildConfigurationList = 2F3953CA17536C0B24A5E2C1 /* Build configuration list for PBXNativeTarget "ShotCore" */; buildPhases = (5C62E134C6BDF0ADA868061F /* Sources */, 9CF246E2BF8A0E5EE7D2A8A9 /* Frameworks */, CF3E83D3094E744D49E71CB0 /* Resources */, ); buildRules = ( ); dependencies = (); fileSystemSynchronizedGroups = (0CF0809F88A010D49E6AE2DB /* ShotCore */, ); name = ShotCore; packageProductDependencies = (); productName = ShotCore; productReference = FB236628A1C32E25F541E31F /* ShotCore.framework */; productType = "com.apple.product-type.framework"; };
+		AEF698327FA3010E4EFECD2C /* ScrollLab */ = {isa = PBXNativeTarget; buildConfigurationList = 4676BD8A91634C47ED686EE9 /* Build configuration list for PBXNativeTarget "ScrollLab" */; buildPhases = (CC7A04B0FE7BDF42D24D8EF8 /* Sources */, C0A17EA07415E3738F2CBD51 /* Frameworks */, ); buildRules = ( ); dependencies = (23798FE45497D2C671733BFB /* PBXTargetDependency */, ); fileSystemSynchronizedGroups = (E93A4D06E7442B4E8C6F2A12 /* ScrollLab */, ); name = ScrollLab; packageProductDependencies = (); productName = ScrollLab; productReference = 2BDAF92094EECC308D1BBD7A /* ScrollLab */; productType = "com.apple.product-type.tool"; };
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		46F86FAA6BBF9AC94A7E4595 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 2720; LastUpgradeCheck = 2720; TargetAttributes = {369664540F50F5554E76B220 = {CreatedOnToolsVersion = 27.0; }; 6A8FE6F435481E09D4F116A2 = {CreatedOnToolsVersion = 27.0; }; 31D03B5B11C9A38E769FCE54 = {CreatedOnToolsVersion = 27.0; }; AEF698327FA3010E4EFECD2C = {CreatedOnToolsVersion = 27.0; }; }; }; buildConfigurationList = F9FBB92E94E3EF23FA14607F /* Build configuration list for PBXProject "Shot" */; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base, de, es, fr, it, ja, ko, "pt-BR", "zh-Hans", ); mainGroup = 518DA81DB9B99529C0C0AEBE; minimizedProjectReferenceProxies = 1; packageReferences = (798A5224F666F69CC11EBD37 /* XCRemoteSwiftPackageReference "Sparkle" */, ); preferredProjectObjectVersion = 77; productRefGroup = 2F3A6B1E78F896718625FF06 /* Products */; projectDirPath = ""; projectRoot = ""; targets = (369664540F50F5554E76B220 /* Shot */, 6A8FE6F435481E09D4F116A2 /* ShotCore */, 31D03B5B11C9A38E769FCE54 /* ShotCoreTests */, AEF698327FA3010E4EFECD2C /* ScrollLab */, ); };
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1FBE3DCE5108B42B4EC924B5 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		CF3E83D3094E744D49E71CB0 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		0F27E9CF0FF33789A35309AE /* Sign Sparkle's helpers */ = {isa = PBXShellScriptBuildPhase; buildActionMask = 2147483647; files = (); alwaysOutOfDate = 1; inputFileListPaths = ( ); inputPaths = ( ); name = "Sign Sparkle's helpers"; outputFileListPaths = ( ); outputPaths = ( ); shellPath = /bin/sh; shellScript = "# Sparkle's helpers keep the signature they shipped with when Xcode embeds the framework. Sign them, then the\n# framework, with the app's identity, inside-out as Sparkle's docs advise (never --deep), so an update installed\n# by the release keeps its Screen Recording permission. Xcode signs the app itself after this phase.\nset -eu\nsparkle=\"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/Sparkle.framework\"\nfor part in XPCServices/Installer.xpc XPCServices/Downloader.xpc Autoupdate Updater.app; do\n    codesign --force --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" --preserve-metadata=entitlements \"$sparkle/Versions/B/$part\"\ndone\ncodesign --force --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" \"$sparkle\"\n"; showEnvVarsInLog = 0; runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5C62E134C6BDF0ADA868061F /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		6EC8CD754FD8B2797B46634C /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		931BAA467492C4C8D1894778 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		CC7A04B0FE7BDF42D24D8EF8 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		23798FE45497D2C671733BFB /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = 6A8FE6F435481E09D4F116A2 /* ShotCore */; targetProxy = 1DB04936B7C21BA9F3CFCBD2 /* PBXContainerItemProxy */; };
+		B00A274E95A6AE2B5CE7CABE /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = 6A8FE6F435481E09D4F116A2 /* ShotCore */; targetProxy = 1E79D9B6BCF4D360B0BA6B3A /* PBXContainerItemProxy */; };
+		D77E69A1C8631CE7765490AD /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = 6A8FE6F435481E09D4F116A2 /* ShotCore */; targetProxy = 45CBDD422985E2F9C00EDE92 /* PBXContainerItemProxy */; };
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		07EA3E6C27CAF4DCB4105CAA /* Debug */ = {isa = XCBuildConfiguration; baseConfigurationReference = FDA1C5D0BDBE6DD4AEC131CF /* Shot.xcconfig */; buildSettings = { }; name = Debug; };
+		086F0109F2510FADB38F4513 /* Release */ = {isa = XCBuildConfiguration; baseConfigurationReference = ECD9457F81CB56358153E163 /* ShotCoreTests.xcconfig */; buildSettings = { }; name = Release; };
+		324B6E82F9D7FFF494FEAE8F /* Release */ = {isa = XCBuildConfiguration; baseConfigurationReference = FDA1C5D0BDBE6DD4AEC131CF /* Shot.xcconfig */; buildSettings = { }; name = Release; };
+		689887F842B65F6D16AD98B3 /* Debug */ = {isa = XCBuildConfiguration; baseConfigurationReference = 6632D00DFCA464A761285E8F /* ScrollLab.xcconfig */; buildSettings = { }; name = Debug; };
+		6B75F50BA9692ED7A115C613 /* Release */ = {isa = XCBuildConfiguration; baseConfigurationReference = 6632D00DFCA464A761285E8F /* ScrollLab.xcconfig */; buildSettings = { }; name = Release; };
+		9314C312D6403C6791785F64 /* Debug */ = {isa = XCBuildConfiguration; baseConfigurationReference = ECD9457F81CB56358153E163 /* ShotCoreTests.xcconfig */; buildSettings = { }; name = Debug; };
+		A6311276B5558DC6B3A63897 /* Debug */ = {isa = XCBuildConfiguration; baseConfigurationReference = 2D5A51172520DC75C5C6590B /* Debug.xcconfig */; buildSettings = { }; name = Debug; };
+		BBA2393AB3483A1F60BE4CC7 /* Release */ = {isa = XCBuildConfiguration; baseConfigurationReference = 4F797DD23CF7BCE94F862A29 /* Release.xcconfig */; buildSettings = { }; name = Release; };
+		EA2B7D2F6EA71D9DB295AE2B /* Release */ = {isa = XCBuildConfiguration; baseConfigurationReference = 1D9EE1615A7D269470644EE9 /* ShotCore.xcconfig */; buildSettings = { }; name = Release; };
+		EADA5F2B9743D9D1177B4BEB /* Debug */ = {isa = XCBuildConfiguration; baseConfigurationReference = 1D9EE1615A7D269470644EE9 /* ShotCore.xcconfig */; buildSettings = { }; name = Debug; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		08A78F74502B5893655B638C /* Build configuration list for PBXNativeTarget "ShotCoreTests" */ = {isa = XCConfigurationList; buildConfigurations = (9314C312D6403C6791785F64 /* Debug */, 086F0109F2510FADB38F4513 /* Release */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		2D3BAC3626D3AB6EF19ABA23 /* Build configuration list for PBXNativeTarget "Shot" */ = {isa = XCConfigurationList; buildConfigurations = (07EA3E6C27CAF4DCB4105CAA /* Debug */, 324B6E82F9D7FFF494FEAE8F /* Release */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		2F3953CA17536C0B24A5E2C1 /* Build configuration list for PBXNativeTarget "ShotCore" */ = {isa = XCConfigurationList; buildConfigurations = (EADA5F2B9743D9D1177B4BEB /* Debug */, EA2B7D2F6EA71D9DB295AE2B /* Release */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		4676BD8A91634C47ED686EE9 /* Build configuration list for PBXNativeTarget "ScrollLab" */ = {isa = XCConfigurationList; buildConfigurations = (689887F842B65F6D16AD98B3 /* Debug */, 6B75F50BA9692ED7A115C613 /* Release */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		F9FBB92E94E3EF23FA14607F /* Build configuration list for PBXProject "Shot" */ = {isa = XCConfigurationList; buildConfigurations = (A6311276B5558DC6B3A63897 /* Debug */, BBA2393AB3483A1F60BE4CC7 /* Release */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		798A5224F666F69CC11EBD37 /* XCRemoteSwiftPackageReference "Sparkle" */ = {isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/sparkle-project/Sparkle"; requirement = {kind = upToNextMajorVersion; minimumVersion = 2.10.0; }; };
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E563FB5DFCD4D4211EA3F470 /* Sparkle */ = {isa = XCSwiftPackageProductDependency; package = 798A5224F666F69CC11EBD37 /* XCRemoteSwiftPackageReference "Sparkle" */; productName = Sparkle; };
+/* End XCSwiftPackageProductDependency section */
+
+	};
+	rootObject = 46F86FAA6BBF9AC94A7E4595 /* Project object */;
+}
