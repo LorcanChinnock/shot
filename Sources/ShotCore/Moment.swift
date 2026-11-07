@@ -15,6 +15,8 @@ public enum Moment: CaseIterable, Sendable {
     case panelArrive
     /// The menu bar's countdown digit flips.
     case countdownFlip
+    /// The countdown panel's ring drains a second's worth, once a second.
+    case countdownRing
     /// The menu bar's recording mark breathes.
     case recordingPulse
     /// A handwritten note wobbles.
@@ -40,6 +42,7 @@ public enum Moment: CaseIterable, Sendable {
         case .markLand: 0.2
         case .panelArrive: 0.24
         case .countdownFlip: 0.16
+        case .countdownRing: 1
         case .recordingPulse: 1.6
         case .noteWobble: 4
         }
@@ -48,7 +51,7 @@ public enum Moment: CaseIterable, Sendable {
     /// Loops that tick with real time rather than answering an action, so they may run longer than 300 ms.
     public var isAmbient: Bool {
         switch self {
-        case .recordingPulse, .noteWobble: true
+        case .countdownRing, .recordingPulse, .noteWobble: true
         case .press, .viewfinderSnap, .tick, .markLand, .panelArrive, .countdownFlip: false
         }
     }
@@ -56,7 +59,7 @@ public enum Moment: CaseIterable, Sendable {
     public var reduced: Reduced {
         switch self {
         case .viewfinderSnap, .tick, .panelArrive: .fade
-        case .press, .markLand, .countdownFlip, .recordingPulse, .noteWobble: .none
+        case .press, .markLand, .countdownFlip, .countdownRing, .recordingPulse, .noteWobble: .none
         }
     }
 

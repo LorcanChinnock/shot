@@ -4714,6 +4714,9 @@
         }
       }
     },
+    "Cancel · Esc" : {
+
+    },
     "Canvas" : {
       "localizations" : {
         "de" : {
@@ -4880,6 +4883,9 @@
 
     },
     "Capturing" : {
+
+    },
+    "Capturing in %lld seconds" : {
 
     },
     "Capturing only the page in a browser window needs Accessibility access to find where the browser shows its page. Skip it if you'll capture whole windows." : {
@@ -19324,6 +19330,9 @@
         }
       }
     },
+    "Open the menu you need" : {
+
+    },
     "Opened without %@, which can't be found" : {
 
     },
@@ -21491,6 +21500,9 @@
           }
         }
       }
+    },
+    "Recording in %lld seconds" : {
+
     },
     "Recording without the microphone. Turn it on in System Settings › Privacy & Security › Microphone." : {
       "localizations" : {
