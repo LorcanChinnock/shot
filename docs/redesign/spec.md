@@ -387,6 +387,33 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Dark appearance** changes nothing: the pin is the capture and the bar is a floating panel.
 - **Increase Contrast and Reduce Transparency** make the bar solid. Increase Contrast also takes its edge to 40% white, the slider's track to 50% white and the pin's edge to 60%.
 
+### Menu bar menu
+
+#1084 builds the menu on Capture › Quick Access, pin, menu and toasts: the menu that opens from Shot's icon in the menu bar. It stays a native `NSMenu`, so macOS draws the status item's highlight and the whole menu around Shot's items, and keyboard navigation, type-to-select and VoiceOver work as in any other menu. `StatusMenu` is an AppKit `NSStatusItem` rather than SwiftUI's `MenuBarExtra`, because only AppKit lets a menu item hold a view, which the Recent row needs.
+
+| Part | Look |
+| --- | --- |
+| Top rows | Screenshot (`viewfinder`), Record (`record.circle` in record red), Pick Colour (`eyedropper`) and Gallery (`square.grid.2x2`), each with a 13 pt regular SF Symbol and the shortcut set in Settings |
+| Recent | A divider, the native "Recent" section header, and a row of up to four 60 × 40 thumbnails, 6 pt apart, the first lined up with the icons above |
+| Thumbnail | The capture cropped to fill, tiny corners (4), a 1 pt edge of ink at 12% (white at 12% in dark), and a badge bottom right: PNG, JPG or GIF, or a recording's length, in 8 pt bold white on ink at 75% |
+| Bottom rows | Settings… (⌘,), Check for Updates… (Update to Shot N… when one is waiting) and Quit Shot (⌘Q), with the icon column left empty |
+| Recording | Stop Recording and Pause Recording (Resume Recording while paused) come first, and Record and Pick Colour are left out, as before |
+
+- **The board's yellow Screenshot row is the hover state on a mock.** A native menu draws its own highlight in the system accent colour, so no row is yellow and Rule 6 is unaffected. Its 11 pt menu radius, 6 pt row radius and the status item's 30 × 22 highlight are also drawn by macOS.
+- **Icons are templates, so the menu tints them.** They take the menu's text colour rather than the board's `#3A393F`, and turn white on the highlight. Record keeps its red, as on the board.
+- **Pick Colour uses an eyedropper.** The board draws a palette, but the action samples a colour from the screen and copies its hex.
+- **"Open Gallery" is now "Gallery",** as on the board, and it sits with the actions rather than after a divider.
+- **The Recent row shows one thumbnail for each capture.** An image saved again from the editor as "X (2).png" stands in for "X.png", as `Gallery.latest` does for Copy Path. `RecentCaptures` in ShotCore picks the four and makes each badge, with tests.
+- **The row never holds the menu up.** `RecentCapturesStore` reads the save folder and decodes 240-pixel thumbnails off the main thread at launch and each time the menu opens, and keeps what it found. The menu shows the last pictures at once and swaps in anything newer while it's open. The section is hidden while the save folder has no captures.
+- **Thumbnail corners are tiny (4).** The board draws 5, and the tiny token is the one for thumbnails. The badge keeps the board's 3, since 4 would make it a pill at its 11 pt height.
+- **Click opens, drag shares.** Clicking a thumbnail opens it in the image editor, or the video editor for a recording or an exported GIF. Dragging one gives another app the file, and the menu closes when the drop lands. The thumbnail under the pointer gets a 2 pt ring in the system accent colour, to match the row highlight.
+- **Keyboard.** A menu keeps the arrow keys and Return to itself, so a view inside it can't take them. Down reaches the Recent row like any other row, and it draws the native row highlight behind the thumbnails. Right then opens a native submenu listing the same captures, each with a small thumbnail and a name such as "Screenshot, 5 minutes ago", and Return opens the one picked. The submenu is attached only when the keyboard lands on the row, so it never pops out while the pointer aims at a thumbnail.
+- **Reduce Motion** changes nothing: the menu has no motion of its own.
+- **VoiceOver** reads the row as "Recent captures" and each thumbnail as a button named by its kind and age, such as "Screenshot, 5 minutes ago", with a hint that it opens to edit and can be dragged into another app. The keyboard's submenu reads the same names.
+- **Text size.** The menu is native, so Settings › Text size doesn't reach it, as it doesn't reach any AppKit menu. It follows macOS's own menu size.
+- **Dark appearance.** A status menu follows the menu bar's appearance, not Settings › Appearance, as it did before. The thumbnail edge and the record red follow it.
+- **Increase Contrast and Reduce Transparency** are handled by macOS, which draws the menu solid. The thumbnails' edge and badge stay as they are.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -463,7 +490,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Quick Access, pin, menu and toasts › card | #1081 | `QuickAccess/QuickAccessView.swift`, `QuickAccess/QuickAccessController.swift`, ShotCore `QuickAccessLayout.swift` | ☐ |
 | Quick Access, pin, menu and toasts › stack | #1082 | `QuickAccess/QuickAccessController.swift`, `QuickAccess/QuickAccessView.swift`, ShotCore `QuickAccessLayout.swift`, `Design/GlassWindow.swift` (`FloatingPanel.cardBehind`) | ☐ |
 | Quick Access, pin, menu and toasts › pin | #1083 | `QuickAccess/PinController.swift` (`PinState`, `PinBar`, `PinFrame`), ShotCore `PinOpacity.swift`, `PinLayout.swift` (`barStrip`), `Design/BrutalControls.swift` (`BrutalSlider(floating:)`) | ☐ |
-| Quick Access, pin, menu and toasts › menu | #1084 | `ShotApp.swift`, `Design/BrandMark.swift` | ☐ |
+| Quick Access, pin, menu and toasts › menu | #1084 | `MenuBar/StatusMenu.swift`, `MenuBar/RecentRowView.swift`, `MenuBar/RecentCapturesStore.swift`, `ShotCore/RecentCaptures.swift`, `Design/BrandMark.swift` | ☐ |
 | Quick Access, pin, menu and toasts › toast | #1085 | `Toast.swift` | ☐ |
 | Quick Access, pin, menu and toasts › countdown | #1078 | `Recording/RecordingSetupController.swift` (`CountdownPanel`, `CountdownView`), ShotCore `CountdownRing.swift`, `Moment.countdownRing`, `Design/Motion.swift` | ☐ |
 | Quick Access, pin, menu and toasts › floating panels | #1073 | `Design/GlassWindow.swift` (`FloatingPanel`, `FloatingPanelWindow`), `Toast.swift`, `Overlay/SelectionOverlayView.swift`, `Recording/RecordingControlPanel.swift`, `Recording/RecordingSetupController.swift`, `Capture/ScrollingCaptureController.swift`, `QuickAccess/QuickAccessView.swift` | ☐ |
@@ -511,7 +538,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 
 | Board | Issue | Files | QA |
 | --- | --- | --- | --- |
-| Gallery | #1106 own window | `MainWindowController.swift`, `Gallery/GalleryController.swift`, `ShotApp.swift`, `AppDelegate.swift` (`shot://gallery`) | ☐ |
+| Gallery | #1106 own window | `MainWindowController.swift`, `Gallery/GalleryController.swift`, `MenuBar/StatusMenu.swift`, `AppDelegate.swift` (`shot://gallery`) | ☐ |
 | Gallery | #1107 sidebar | `Gallery/GallerySidebar.swift` | ☐ |
 | Gallery | #1108 grid and selection bar | `Gallery/GalleryView.swift` | ☐ |
 | Gallery · preview and empty state | #1109 preview | `Gallery/GalleryPreview.swift` | ☐ |
