@@ -282,6 +282,17 @@ final class QuickAccessController {
         }
     }
 
+    /// How far a card's outer edge sits in from the screen's side and bottom.
+    static var cardEdgeInset: CGFloat { inset + QuickAccessLayout.padding }
+
+    /// The top of the cards in screen coordinates while any are showing, so a toast can rest above them.
+    var cardsTop: CGFloat? {
+        guard let panel, panel.isVisible, !model.cards.isEmpty else {
+            return nil
+        }
+        return panel.frame.maxY - QuickAccessLayout.padding
+    }
+
     private func layout() {
         layout(for: model.cards)
     }

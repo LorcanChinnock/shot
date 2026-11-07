@@ -166,7 +166,7 @@ Ink is drawn with `inkBorder`, crisp on 1× displays (`inkBorder` snaps the widt
 | Badge | 10.5 pt on a 4 pt radius. Quiet: `rgba(22,22,26,0.08)` (dark `rgba(255,255,255,0.1)`) with secondary text, beside titles and in rows. Strong: `#16161A` with white bold text, over thumbnails. A status badge can lead with a 6 pt success dot | `BrutalBadge` |
 | Keycap | 11 pt SF Mono on the quiet badge fill, 4 pt radius, with a 1 pt bottom edge at 12% | `Keycap` |
 | Tooltip | The group fill at Float depth, control radius. The name in Small type, then its keycap, with one line of explanation below in 12 pt tertiary text | `brutalTip(_:key:detail:)`, `Tile(help:key:detail:)` |
-| Toast | A 34 pt dark pill, `rgba(26,26,30,0.90)` with a 0.5 pt `rgba(255,255,255,0.14)` edge and the system window shadow. Message in 13 medium white. One button: a `rgba(255,255,255,0.16)` pill in 12 semibold, with its key faded after it (Undo ⌘Z) | `Toast` |
+| Toast | A 36 pt dark pill in the Quick Access corner (see Toast), `rgba(26,26,30,0.90)` with a 0.5 pt `rgba(255,255,255,0.14)` edge and the system window shadow. Message in 13 medium white. One button: a `rgba(255,255,255,0.16)` pill in 12 semibold, with its key faded after it (Undo ⌘Z) | `Toast` |
 | Progress bar | 6 pt, the progress track `rgba(22,22,26,0.08)` (dark `0.12` white) filled in ink. In a toast it sits after the message with the percentage in tabular figures | `BrutalProgressBar`, `Toast.progress(_:fraction:)` |
 | Empty state | A 44 pt accent tile with a 1.5 pt ink outline and 2 pt drop, a 14 bold title, a 12 pt tertiary line and any buttons | `EmptyState` |
 
@@ -413,6 +413,32 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Dark appearance.** A status menu follows the menu bar's appearance, not Settings › Appearance, as it did before. The thumbnail edge and the record red follow it.
 - **Increase Contrast and Reduce Transparency** are handled by macOS, which draws the menu solid. The thumbnails' edge and badge stay as they are.
 
+### Toast
+
+#1085 builds the toast on Capture › Quick Access, pin, menu and toasts: the dark pill that confirms a copy or save, offers Undo after a discarded recording, and shows how far a GIF export has got. Every toast reuses one SwiftUI `FloatingPanelWindow` sized to the pill, with the system shadow, so no margin catches clicks.
+
+| Part | Look |
+| --- | --- |
+| Pill | 36 pt tall, Full radius, `rgba(26,26,30,0.90)` with a 0.5 pt `rgba(255,255,255,0.14)` edge. 9 pt in from the left before a tick and 14 pt otherwise, 14 pt in from the right (6 pt after a button), and 10 pt between parts |
+| Tick | A 20 pt accent disc holding the board's tick, `M5 12l5 5 9-10` drawn 11 pt square with a 1.6 pt `#16161A` stroke and round ends. It leads every `Toast.done` and draws itself over 240 ms (`Moment.tick`) |
+| Message | One line of 13 pt medium white, such as "Copied" or "Saved Screenshot 2026-11-07 at 10.42.png" |
+| Button | One `rgba(255,255,255,0.16)` pill in 12 pt semibold: Undo with ⌘Z faded after it, Cancel, or Show |
+| Progress | A 96 pt `BrutalProgressBar` after the message, then the percentage in tabular figures |
+| Place | The Quick Access corner chosen in Settings, left by default, with the pill's outer edge in line with the cards'. With cards showing it rests 22 pt above them, and otherwise it sits where a card would |
+
+- **The board's 24 pt from the right and 236 pt from the bottom** are where its card stack happens to sit on a 1280 × 800 mock. Shot keeps how the toast relates to the cards rather than the numbers: its edge lines up with theirs, 30 pt in from the screen's side (`QuickAccessController.inset` plus the stack's 10 pt padding), and it rests 22 pt above their top, as on the board. `ToastLayout` in ShotCore works out the frame and keeps it on screen above a tall fanned-out stack, with tests. Toasts used to sit in the bottom middle of the screen.
+- **A toast that changes size keeps its edge.** When a progress toast's text or bar changes width, it grows away from the screen's side rather than from its middle.
+- **36 pt rather than 34.** The board pads the 20 pt disc by 8 pt above and below, so the pill grew 2 pt. Its radius stays the Full token: the board's 20 is more than half of 36, so it draws a pill too.
+- **The shadow is the system window shadow,** as for every floating panel, in place of the board's `0 10px 28px rgba(0,0,0,0.35)`.
+- **The tick is thinner and smaller than before.** It used to be its own 2.2 pt path filling most of the disc. It now draws the board's path and its 3.4-unit stroke, which the Moments of delight board shares.
+- **One moment per action.** After a capture with Quick Access off, the viewfinder snap is the moment, so the toast's tick shows already drawn.
+- **Reduce Motion** swaps the 8 pt rise for a 120 ms fade (`Moment.reducedFade`), and the tick shows already drawn.
+- **VoiceOver** announces each toast's message at high priority, as the board's `role="status"` would. A progress toast updates in place without reading every step. The button is a button, and the tick is hidden.
+- **Keyboard.** The panel never becomes key, so ⌘Z presses Undo from any app while an undo toast shows. The pointer holds a toast, and a click dismisses it.
+- **Text size** scales the message, button and percentage. The pill stays 36 pt tall, which fits 13 pt at Larger (17 pt), and the disc and tick keep their size.
+- **Dark appearance** changes nothing: the toast is a floating panel, dark in both.
+- **Increase Contrast and Reduce Transparency** make the pill solid. Increase Contrast also takes its edge to 40% white and the percentage to full white.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -490,7 +516,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Quick Access, pin, menu and toasts › stack | #1082 | `QuickAccess/QuickAccessController.swift`, `QuickAccess/QuickAccessView.swift`, ShotCore `QuickAccessLayout.swift`, `Design/GlassWindow.swift` (`FloatingPanel.cardBehind`) | ☐ |
 | Quick Access, pin, menu and toasts › pin | #1083 | `QuickAccess/PinController.swift` (`PinState`, `PinBar`, `PinFrame`), ShotCore `PinOpacity.swift`, `PinLayout.swift` (`barStrip`), `Design/BrutalControls.swift` (`BrutalSlider(floating:)`) | ☐ |
 | Quick Access, pin, menu and toasts › menu | #1084 | `MenuBar/StatusMenu.swift`, `MenuBar/RecentRowView.swift`, `MenuBar/RecentCapturesStore.swift`, `ShotCore/RecentCaptures.swift`, `Design/BrandMark.swift` | ☐ |
-| Quick Access, pin, menu and toasts › toast | #1085 | `Toast.swift` | ☐ |
+| Quick Access, pin, menu and toasts › toast | #1085 | `Toast.swift` (`ToastView`, `ToastTickMark`), ShotCore `ToastLayout.swift`, `QuickAccess/QuickAccessController.swift` (`cardsTop`, `cardEdgeInset`) | ☐ |
 | Quick Access, pin, menu and toasts › countdown | #1078 | `Recording/RecordingSetupController.swift` (`CountdownPanel`, `CountdownView`), ShotCore `CountdownRing.swift`, `Moment.countdownRing`, `Design/Motion.swift` | ☐ |
 | Quick Access, pin, menu and toasts › floating panels | #1073 | `Design/GlassWindow.swift` (`FloatingPanel`, `FloatingPanelWindow`), `Toast.swift`, `Overlay/SelectionOverlayView.swift`, `Recording/RecordingControlPanel.swift`, `Recording/RecordingSetupController.swift`, `Capture/ScrollingCaptureController.swift`, `QuickAccess/QuickAccessView.swift` | ☐ |
 | Permission card… › permission card | #1087 | `Overlay/SelectionOverlayController.swift`, `Permissions.swift` | ☐ |
