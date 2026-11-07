@@ -262,6 +262,25 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Text size.** The chips, the position chip and the loupe scale with Settings › Text size. The handles and cursor don't.
 - **Increase Contrast and Reduce Transparency** make the chips solid with the 40% edge, and the position chip solid.
 
+### Pick Colour
+
+#1080 builds the colour loupe on Capture › Permission card, colour loupe…. Shot draws it over a still of every display, taken with its own windows in, so the editor's eyedropper can pick from the image open in it. `ColorPickerOverlay` in `Overlay/` draws it, and `ColorSampler.sample(for:)` opens it.
+
+| Part | Look |
+| --- | --- |
+| Loupe | 121 pt circle (the board's 120, in 11 whole-point cells) showing 11 × 11 device pixels, centred on the pointer, which is hidden. 3 pt white ring, 1.5 pt ink ring, `0 12px 28px rgba(0,0,0,0.3)` |
+| Grid | Lines one device pixel wide in mid-grey at 30% |
+| Middle pixel | 1.5 pt ink round it, then 1.5 pt white, both outside it |
+| Label | 10 pt below the rings. Floating-panel fill at 0.92 with its 0.5 pt edge, radius 9, padding 4 10 4 5. A 16 pt swatch, radius 4, with a 1 pt white edge at 40%, then the hex in 12.5 pt bold SF Mono |
+| Hint | 10 pt below the label. "Click to copy · Esc to cancel" in 11.5 pt `#3A393F` on white at 85%, radius 8, padding 2 8. From the editor's eyedropper it says "Click to pick" |
+
+- **Picking.** A click, Return or Space picks the middle pixel, as sRGB. The arrow keys move the pointer one device pixel, or ten with Shift, and VoiceOver says each new hex. Esc or a right-click cancels. From the menu, the hex is copied and the toast says "Copied #1E90FF".
+- **Placement.** `ColorLoupe.layout` in ShotCore centres the loupe on the pointer and puts the label and hint below it, or above it near the bottom of the screen, each kept 8 pt inside the screen. The loupe itself can run off the edge, so its middle stays on the pixel picked. `PixelColor` converts the pixel from the display's colour space to sRGB. `ColorLoupeTests` covers both.
+- **Without Screen Recording** Shot can't take the still, so the system loupe shows instead, as before. It needs no permission.
+- **Departures from the board.** The board's grid is ink at 6%, which vanishes over dark pixels, so it's mid-grey, as in the area overlay's loupe. The label gains the floating panel's 0.5 pt edge so it shows over dark content.
+- **Text size.** The loupe, label and hint scale with Settings › Text size.
+- **Increase Contrast and Reduce Transparency** make the label solid with the 40% edge. Increase Contrast also makes the hint solid white with a 40% ink edge, and the swatch's edge 80%.
+
 ### Window pick
 
 #1077 builds the highlights on Capture › Window pick and delay: what you see over the window, browser page or screen a click would capture, after Tab, B or Full Screen on the overlay. AppKit draws it into the overlay view, as it does the area.
@@ -520,7 +539,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Quick Access, pin, menu and toasts › countdown | #1078 | `Recording/RecordingSetupController.swift` (`CountdownPanel`, `CountdownView`), ShotCore `CountdownRing.swift`, `Moment.countdownRing`, `Design/Motion.swift` | ☐ |
 | Quick Access, pin, menu and toasts › floating panels | #1073 | `Design/GlassWindow.swift` (`FloatingPanel`, `FloatingPanelWindow`), `Toast.swift`, `Overlay/SelectionOverlayView.swift`, `Recording/RecordingControlPanel.swift`, `Recording/RecordingSetupController.swift`, `Capture/ScrollingCaptureController.swift`, `QuickAccess/QuickAccessView.swift` | ☐ |
 | Permission card… › permission card | #1087 | `Overlay/SelectionOverlayController.swift`, `Permissions.swift` | ☐ |
-| Permission card… › colour loupe | #1080 | `ColorSampler.swift` | ☐ |
+| Permission card… › colour loupe | #1080 | `ColorSampler.swift`, `Overlay/ColorPickerOverlay.swift`, ShotCore `ColorLoupe.swift` (`ColorLoupe`, `PixelColor`) | ☐ |
 | Permission card… › recovery | #1092 | `Recording/RecordingRecovery.swift` | ☐ |
 | Permission card… › update prompt | #1117 | `Updater.swift` | ☐ |
 | Permission card… › tooltips and menus | #1072 | `Design/BrutalTip.swift` | ☐ |

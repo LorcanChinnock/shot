@@ -135,7 +135,7 @@ final class CaptureCoordinator {
 
     /// Copies the hex of the colour clicked on screen. Esc copies nothing.
     private func pickColor() async {
-        guard let color = await ColorSampler.sample() else {
+        guard let color = await ColorSampler.sample(for: .copy) else {
             return
         }
         Clipboard.copy(string: color.hex)

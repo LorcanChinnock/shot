@@ -159,7 +159,7 @@ private struct ColorEditor: View {
     /// Moves the editor to the colour sampled and applies it exactly, in the same undo step as the editor's other picks.
     private func sample() {
         Task {
-            guard let picked = await ColorSampler.sample() else {
+            guard let picked = await ColorSampler.sample(for: .pick) else {
                 return
             }
             let c = NSColor(srgbRed: picked.r, green: picked.g, blue: picked.b, alpha: picked.a)
