@@ -34,7 +34,8 @@ make lint                         # scripts/lint.sh: bans patterns that caused b
 make strings                      # sync Resources/Localizable.xcstrings with the strings the build extracted
 make build                        # Debug build of the app, as Xcode's Build does
 make bundle                       # archive a universal Release build/ShotDev.app only
-make run                          # build, install to /Applications/ShotDev.app, relaunch
+make run                          # build, install to /Applications/ShotDev.app, relaunch; only when Xcode can't run it (see below)
+scripts/shotdev-open.sh 'shot-dev://gallery'   # send a link to the one running ShotDev
 make demo                         # build and open the MugCo sample app (Samples/MugCo): fake data, fixed size, for QA runs and screenshots
 cd site && npm run dev            # the marketing site (see site/README.md)
 make test ONLY='ShotCoreTests/hitTestFilledKinds()'   # one test or suite
@@ -51,13 +52,10 @@ make test ONLY='ShotCoreTests/hitTestFilledKinds()'   # one test or suite
 Local builds are `ShotDev.app`. The real installed version is `/Applications/Shot.app`, usually from the curl installer on the website. Never install over, rename or delete `Shot.app`; it is the copy the user relies on.
 
 1. **Quit the installed release first:** `pkill -x Shot`. Both apps register the same global shortcuts, so with both running a hotkey can reach the wrong one. `-x` matches the executable name exactly, so `pkill -x Shot` never kills ShotDev, and `pkill -x ShotDev` never kills the release.
-2. **Run the dev build:** `make run` builds, installs `/Applications/ShotDev.app` and launches it. Drive it with `shot-dev://` URLs, and confirm the running binary with `pgrep -lf ShotDev`.
-3. **When finished, quit and uninstall the dev build,** then reopen the release if it was running:
-   ```bash
-   pkill -x ShotDev
-   rm -rf /Applications/ShotDev.app build/ShotDev.app   # or $INSTALL_DIR/ShotDev.app if you set it
-   open /Applications/Shot.app
-   ```
+2. **Run ShotDev from Xcode,** so its console and debugger are attached: the **Shot** scheme with ⌘R, or the Xcode tools' `RunProject` on this checkout's `Shot.xcodeproj` (open it with `XcodeOpenWorkspace` first). Read its logs with `GetConsoleOutput`. `make run`, which installs `/Applications/ShotDev.app`, is only for when Xcode can't be used.
+3. **Keep exactly one ShotDev running.** Each Run starts a new ShotDev and leaves the last one running, so stop it first (⌘. or `StopProject`). Before driving it, `pgrep -lf 'ShotDev.app/Contents/MacOS'` should list one process, in this checkout's DerivedData. If others are left over, `pkill -x ShotDev` and run again.
+4. **Send links with `scripts/shotdev-open.sh 'shot-dev://pick-color'`,** never a plain `open 'shot-dev://…'`. LaunchServices answers a plain `open` with any ShotDev it has seen, such as a stale build in another checkout's DerivedData, and starts it if it isn't running. The script sends the link to the running copy and stops when none or several are running.
+5. **When finished, stop the run** (⌘. or `StopProject`), check that `pgrep -x ShotDev` prints nothing, close any workspace you opened with `XcodeCloseWorkspace`, and reopen the release if it was running: `open /Applications/Shot.app`. If you used `make run`, also `rm -rf /Applications/ShotDev.app build/ShotDev.app` (or `$INSTALL_DIR/ShotDev.app`).
    Leave ShotDev's settings (`dev.lorcan.Shot.dev`) and its Screen Recording permission in place, so the next run doesn't ask for the permission again.
 
 ## Capturing something in QA and screenshots
