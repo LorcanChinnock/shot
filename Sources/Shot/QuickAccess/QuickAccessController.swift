@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 import os
 import Observation
 import ShotCore
@@ -8,8 +9,6 @@ private let log = Logger.shot("quick-access")
 
 struct QuickAccessCard: Identifiable {
     static let width = QuickAccessLayout.cardWidth
-    static let minHeight: CGFloat = 135
-    static let maxHeight: CGFloat = 180
 
     let id = UUID()
     let fileURL: URL
@@ -18,14 +17,10 @@ struct QuickAccessCard: Identifiable {
     /// The capture with the style Use this style for new captures gave it, which Copy and dragging use in place of the
     /// plain file; `nil` while it's drawn, and for a capture with no style.
     var styledURL: URL?
+    /// A recording's length in seconds, once it's read; `nil` before then and for a screenshot.
+    var duration: Double?
 
-    var height: CGFloat {
-        let size = thumbnail.size
-        guard size.width > 0 else {
-            return Self.maxHeight
-        }
-        return min(Self.maxHeight, max(Self.minHeight, (Self.width * size.height / size.width).rounded()))
-    }
+    var height: CGFloat { QuickAccessLayout.cardHeight(for: thumbnail.size) }
 }
 
 @MainActor
@@ -51,7 +46,7 @@ final class QuickAccessController {
     var onExportGIF: ((URL) -> Void)?
 
     private let model = QuickAccessModel()
-    private var panel: NSPanel?
+    private var panel: FloatingPanelWindow?
     private var timers: [UUID: Task<Void, Never>] = [:]
     private var settleTask: Task<Void, Never>?
 
@@ -99,7 +94,16 @@ final class QuickAccessController {
 
     func add(videoURL: URL, thumbnail: CGImage?) {
         let image = thumbnail.map { NSImage(cgImage: $0, size: .zero) } ?? NSImage(systemSymbolName: "film", accessibilityDescription: nil) ?? NSImage()
-        add(QuickAccessCard(fileURL: videoURL, thumbnail: image, isVideo: true))
+        let card = QuickAccessCard(fileURL: videoURL, thumbnail: image, isVideo: true)
+        add(card)
+        // The length badge comes a moment after the card, so reading the file never holds the card up.
+        Task { @MainActor [weak self] in
+            guard let seconds = try? await AVURLAsset(url: videoURL).load(.duration).seconds, seconds.isFinite,
+                  let self, let index = self.model.cards.firstIndex(where: { $0.id == card.id }) else {
+                return
+            }
+            self.model.cards[index].duration = seconds
+        }
     }
 
     private func add(_ card: QuickAccessCard) {
@@ -119,6 +123,9 @@ final class QuickAccessController {
                 self.remove(self.model.cards[0].id)
             }
             self.startTimer(for: card.id)
+            // The system shadow follows what's drawn, so it's worked out again once the card has slid in.
+            try? await Task.sleep(for: .seconds(Moment.panelArrive.duration))
+            self.panel?.refreshShadow()
         }
     }
 
@@ -184,11 +191,10 @@ final class QuickAccessController {
 
     private func ensurePanel() {
         if panel == nil {
-            let panel = NSPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+            // The system shadow follows each card's shape and, unlike one drawn in SwiftUI, needs no margin that
+            // would catch clicks.
+            let panel = FloatingPanelWindow(contentRect: .zero)
             panel.level = .floating
-            panel.isOpaque = false
-            panel.backgroundColor = .clear
-            panel.hasShadow = false
             panel.becomesKeyOnlyIfNeeded = true
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             panel.isReleasedWhenClosed = false
@@ -214,7 +220,7 @@ final class QuickAccessController {
     }
 
     /// The card's actions in menu order, with `nil` for a divider: the hover buttons' actions, plus Copy Path and
-    /// Pin, which have no button.
+    /// Show in Finder, which have no button.
     func actions(for card: QuickAccessCard) -> [QuickAccessCardAction?] {
         var actions: [QuickAccessCardAction?] = [
             QuickAccessCardAction(title: String(localized: "Copy")) { self.copy(card) },

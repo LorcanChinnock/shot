@@ -4,7 +4,7 @@ summary: "The card that pops up after every capture: copy it, annotate it, drag 
 group: Capture
 ---
 
-![The Quick Access card, hovered: the screenshot dimmed behind Close, Annotate, Copy, Save As… and Show in Finder](../../../docs/media/quick-access.png)
+![The Quick Access card, hovered: the screenshot dimmed behind Close, Annotate, Copy, Save As…, Pin to Screen and the Drag into any app hint](../../../docs/media/quick-access.png)
 
 After every screenshot or recording, a small card slides into a bottom corner of the screen you're on. Your capture is already saved and copied, so you can ignore the card and paste. When you want more, it's right there.
 
@@ -18,12 +18,14 @@ Hover the card to show its buttons:
 | **Save As…** | Saves a copy somewhere else. |
 | **Annotate** | Opens a screenshot in the [annotation editor](#annotate-a-screenshot). For a recording, this is **Edit**, which opens the [video editor](#edit-a-recording). |
 | **Export GIF** | Turns a recording into a GIF, at the frame rate and width you last chose in the video editor. It keeps the first 60 seconds. |
-| **Show in Finder** | Shows the file in its folder. |
+| **Pin to Screen** | Floats a screenshot above your other windows (see [Pin a screenshot](#pin-a-screenshot)). |
 | **Close** | Closes the card. |
+
+A recording's card shows its length in the bottom-right corner.
 
 Drag the card straight into another app to drop the file there, or onto an open editor to [combine images](#combine-images).
 
-Right-click the card for the same actions, plus **Copy Path**, and for a screenshot, **Pin**.
+Right-click the card for the same actions, plus **Copy Path** and **Show in Finder**.
 
 ![The Quick Access card's right-click menu: Copy, Copy Path, Save As…, Annotate, Pin and Show in Finder](../../../docs/media/quick-access-menu.png)
 
@@ -31,7 +33,7 @@ Right-click the card for the same actions, plus **Copy Path**, and for a screens
 
 **Pin** floats a screenshot above your other windows, so you can keep it in view while you work.
 
-1. Right-click the card and choose **Pin**.
+1. Hover the card and click the pin button in its bottom-right corner, or right-click the card and choose **Pin**.
 2. Drag the pin to move it, or drag its edges to resize it.
 3. To close it, hover it and click its close button, or click it and press <kbd>Esc</kbd>.
 
