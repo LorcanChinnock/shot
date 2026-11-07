@@ -63,8 +63,8 @@
          <ExecutionAction
             ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
             <ActionContent
-               title = "Quit the installed Shot"
-               scriptText = "# The installed release registers the same global shortcuts, so a hotkey could reach it instead of ShotDev.&#10;pkill -x Shot || true&#10;">
+               title = "Quit every other ShotDev and the installed Shot"
+               scriptText = "# Only one ShotDev runs at a time, and the installed release registers the same global shortcuts. scripts/dev.sh stop reopens it.&#10;&quot;$SRCROOT/scripts/dev.sh&quot; prepare&#10;">
                <EnvironmentBuildable>
                   <BuildableReference
                      BuildableIdentifier = "primary"
@@ -87,6 +87,12 @@
             ReferencedContainer = "container:Shot.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <CommandLineArguments>
+         <CommandLineArgument
+            argument = "-AppleLanguages (de)"
+            isEnabled = "NO">
+         </CommandLineArgument>
+      </CommandLineArguments>
       <EnvironmentVariables>
          <EnvironmentVariable
             key = "MallocLargeCache"

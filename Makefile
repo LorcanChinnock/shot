@@ -1,6 +1,5 @@
 # Every build goes through scripts/xcodebuild.sh, which builds Shot.xcodeproj into build/DerivedData.
 
-INSTALL_DIR ?= /Applications
 # Extra xcodebuild arguments, e.g. ARGS=-quiet.
 ARGS ?=
 # One suite or test, e.g. ONLY=ShotCoreTests/GIFEncoderTests or ONLY='ShotCoreTests/hitTestFilledKinds()'.
@@ -10,7 +9,7 @@ TEST_ACTION ?= test
 XCODEBUILD := scripts/xcodebuild.sh
 DESTINATION := -destination 'platform=macOS,arch=$(shell uname -m)'
 
-.PHONY: build build-tests test test-install test-uninstall perf-app lint strings bundle app run demo dist reset-tcc icon clean
+.PHONY: build build-tests test test-install test-uninstall perf-app lint strings bundle run stop demo dist reset-tcc icon clean
 
 build:
 	$(XCODEBUILD) -scheme Shot -configuration Debug $(DESTINATION) -quiet build $(ARGS)
@@ -30,7 +29,7 @@ test-install:
 test-uninstall:
 	scripts/test-uninstall.sh
 
-perf-app:
+perf-app: bundle
 	scripts/perf.sh
 
 # Also checks Resources/Localizable.xcstrings has every string the app shows.
@@ -46,13 +45,16 @@ strings: build
 bundle:
 	scripts/bundle.sh
 
-app: bundle
-	scripts/install.sh "$(INSTALL_DIR)"
+# Without Xcode open: a Debug build, as Xcode's Run makes, launched from build/DerivedData. Like Run, it first quits every
+# other ShotDev and the installed Shot (scripts/dev.sh). Arguments for the app go in APP_ARGS, e.g.
+# APP_ARGS="-AppleLanguages '(de)'".
+APP_ARGS ?=
+run:
+	scripts/dev.sh run $(APP_ARGS)
 
-run: app
-	pkill -x ShotDev || true
-	while pgrep -x ShotDev >/dev/null; do sleep 0.1; done
-	open "$(INSTALL_DIR)/ShotDev.app"
+# Quits ShotDev, however it started, and reopens the installed Shot if a run quit it.
+stop:
+	scripts/dev.sh stop
 
 # Builds and opens the MugCo sample app (Samples/MugCo), a steady window to capture in QA runs and screenshots.
 demo:
