@@ -15,7 +15,7 @@ enum Motion {
             return moment.reduced == .fade ? fade : nil
         }
         return switch moment {
-        case .press: .linear(duration: moment.duration)
+        case .press, .countdownRing: .linear(duration: moment.duration)
         case .panelArrive: .spring(duration: moment.duration, bounce: 0.25)
         case .noteWobble: .easeInOut(duration: moment.duration / 2).repeatForever(autoreverses: true)
         case .recordingPulse: .easeOut(duration: moment.duration).repeatForever(autoreverses: false)

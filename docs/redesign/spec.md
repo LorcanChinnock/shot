@@ -214,7 +214,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | Viewfinder snap | `Capture/ViewfinderSnap.swift` | 4 pt ink brackets with a white edge fly in 14 pt from outside each corner, overshoot 2 pt and settle, with a 30% white flash. They hold for 180 ms, then fade. Shape layers, so a full-screen capture adds no memory |
 | Copied tick | `Toast.done(_:drawsTick:)` | A 20 pt accent disc with an ink tick, for every copy and save. The toast rises 8 pt as it fades in. After a capture the snap is that action's moment, so the toast shows its tick already drawn |
 | Marks land | `Editor/EditorCanvasView.swift` | A new counter grows to 122% and settles. An arrow is already whole when you let go of the drag, so it doesn't draw again |
-| Countdown, recording pulse | `Design/BrandMark.swift` (`MenuBarAnimation`) | The digit folds flat and the next unfolds over 160 ms. While recording, a ring breathes out of the mark. A frame loop runs only while one plays. The countdown ring is #1078 and the recording controls' dot is #1089 |
+| Countdown, recording pulse | `Design/BrandMark.swift` (`MenuBarAnimation`) | The digit folds flat and the next unfolds over 160 ms. While recording, a ring breathes out of the mark. A frame loop runs only while one plays. The countdown panel's ring is #1078 (see Countdown) and the recording controls' dot is #1089 |
 
 ### Capture bar
 
@@ -281,10 +281,34 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Accent, not selection blue.** The board and the issue both draw the highlight in the accent. Rule 6 keeps selection blue for marks, layers and files inside Shot's windows, while the overlay is choosing what to capture, the same job as the picked mode on the bar. The highlight is never in the image, so rule 5's ban on fills behind windows doesn't apply.
 - **Names.** A window shows its title, else its app's name (the title needs Screen Recording access), else "Window". A screen shows the display's name, else "Screen". The size is the window's, page's or screen's in pixels, as the area's size chip gives it, and doesn't include the shadow.
 - **Fewer parts in a small window.** `WindowPickLabel.layout` in ShotCore drops the camera when the stack doesn't fit 12 pt inside what's highlighted, then the hint, leaving the name panel. It centres the stack on the part that's on screen, keeps it 8 pt inside the screen, and moves it just above or below the bar or its tooltip when it would cover them. `WindowPickTests` covers it.
-- **The hint stays.** Unlike the area's key strip, it sits inside the window being picked and says how to finish, so it is the first thing a quick sharer needs. Delay's countdown on the board is #1078.
+- **The hint stays.** Unlike the area's key strip, it sits inside the window being picked and says how to finish, so it is the first thing a quick sharer needs. Delay's countdown is #1078 (see Countdown).
 - **Keyboard.** The arrow keys step through windows as before. VoiceOver reads the name and size of each window it steps to, and the overlay's value holds the highlighted window's name and size. Stepping in Browser now finds the page of the window it lands on.
 - **Text size.** The camera, the name panel and the hint scale with Settings › Text size. The tint and edges don't.
 - **Increase Contrast and Reduce Transparency** make the camera and name panel solid with the 40% edge, take the size to full white, and make the hint pill solid white with a 1 pt edge of ink at 40%.
+
+### Countdown
+
+#1078 builds the countdown on Capture › Quick Access, pin, menu and toasts: the panel you see after picking an area, window or screen with Delay on, and before a recording when Settings › Recording sets a countdown. It is SwiftUI in its own `FloatingPanelWindow`, about 180 pt square, so it adds no screen-sized layer.
+
+| Part | Look |
+| --- | --- |
+| Panel | Standard floating panel with the system shadow, radius 22, 20 pt above the ring and 14 pt below Cancel, 12 pt between parts |
+| Ring | A 92 pt frame holding an 80 pt circle drawn 6 pt wide: the track in white at 14% (40% with Increase Contrast), and the accent over it with round ends, starting at the top and running clockwise |
+| Seconds | 40 pt bold, tabular figures, white, in the middle of the ring |
+| Hint | "Open the menu you need" in 12 pt at 75% white (100% with Increase Contrast). A screenshot only |
+| Cancel | "Cancel · Esc" as a floating secondary button, `BrutalButtonStyle(floating: true)` |
+
+- **The ring empties with real time.** At each tick it shows the seconds left as a share of the whole delay, so 3 of 5 seconds leaves 60% of it, as on the board. It then drains one second's worth, linearly over that second, and reaches empty as the capture is taken. `CountdownRing` in ShotCore works out both values, with tests. The drain is `Moment.countdownRing`, a 1 s loop counted with the ambient moments, since rule 3 lets the countdown tick with real time.
+- **The number rolls down** over `Moment.countdownFlip`'s 160 ms, the same length as the menu bar digit's flip. The menu bar is unchanged from #1074.
+- **Reduce Motion** stops the ring's drain and the roll. The ring steps to the seconds left at each tick, and the number changes in place.
+- **Bold, not heavy.** The board sets the seconds at weight 800. Rule 9 keeps heavy weights to the app icon, onboarding and empty states, so they're bold.
+- **Cancel is the standard floating button.** The board draws a smaller 12 pt button on a 14% fill. It uses the floating secondary button instead (12% fill, group radius), so it matches Cancel everywhere else on a floating panel.
+- **Where it sits.** A screenshot's countdown stays at the bottom middle of the screen with the pointer, 170 pt up, clear of the menu bar and of whatever menu you're about to open. A recording's sits in the middle of the area being recorded. Both leave the screen before the capture is taken.
+- **Recording** shares the panel without the hint, since there's no menu to open, and VoiceOver says "Recording in 3 seconds" instead of "Capturing in 3 seconds".
+- **VoiceOver** reads the panel's label with the seconds left, which updates each second. It announces the whole label when the countdown starts, then each number. Cancel is read as "Cancel".
+- **Keyboard.** Esc works while the panel is key. Shot isn't activated, so a menu you open stays open, and Cancel always works with the pointer.
+- **Text size.** The ring, the number, the hint and Cancel scale with Settings › Text size, and the panel grows to fit.
+- **Increase Contrast and Reduce Transparency** make the panel solid with the 40% edge, and Increase Contrast also brightens the track and the hint.
 
 ## Website values
 
@@ -364,7 +388,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Quick Access, pin, menu and toasts › pin | #1083 | `QuickAccess/PinController.swift` | ☐ |
 | Quick Access, pin, menu and toasts › menu | #1084 | `ShotApp.swift`, `Design/BrandMark.swift` | ☐ |
 | Quick Access, pin, menu and toasts › toast | #1085 | `Toast.swift` | ☐ |
-| Quick Access, pin, menu and toasts › countdown | #1078 | `Capture/CaptureCoordinator.swift`, `Design/BrandMark.swift` | ☐ |
+| Quick Access, pin, menu and toasts › countdown | #1078 | `Recording/RecordingSetupController.swift` (`CountdownPanel`, `CountdownView`), ShotCore `CountdownRing.swift`, `Moment.countdownRing`, `Design/Motion.swift` | ☐ |
 | Quick Access, pin, menu and toasts › floating panels | #1073 | `Design/GlassWindow.swift` (`FloatingPanel`, `FloatingPanelWindow`), `Toast.swift`, `Overlay/SelectionOverlayView.swift`, `Recording/RecordingControlPanel.swift`, `Recording/RecordingSetupController.swift`, `Capture/ScrollingCaptureController.swift`, `QuickAccess/QuickAccessView.swift` | ☐ |
 | Permission card… › permission card | #1087 | `Overlay/SelectionOverlayController.swift`, `Permissions.swift` | ☐ |
 | Permission card… › colour loupe | #1080 | `ColorSampler.swift` | ☐ |
