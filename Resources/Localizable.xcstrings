@@ -1250,6 +1250,9 @@
         }
       }
     },
+    "%lld percent opacity" : {
+
+    },
     "%lld points wide" : {
 
     },
@@ -5672,6 +5675,9 @@
       }
     },
     "Click Grant, then Open System Settings." : {
+
+    },
+    "Click Through" : {
 
     },
     "Click a screen" : {
@@ -20336,6 +20342,9 @@
     "Pinned %@" : {
 
     },
+    "Pinned · %lld%%" : {
+
+    },
     "Pixelate" : {
       "localizations" : {
         "de" : {
@@ -27786,6 +27795,9 @@
           }
         }
       }
+    },
+    "Stop Clicking Through" : {
+
     },
     "Stop Recording" : {
       "localizations" : {
