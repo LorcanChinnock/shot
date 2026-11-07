@@ -36,7 +36,7 @@ Turn off **Use Shot for ⌘⇧4 and ⌘⇧5** in **Settings › Shortcuts**. mac
 
 **Pick Colour** is in the menu bar menu only. Every action also has a [`shot://` link](#url-scheme).
 
-- **Pick Colour** shows a loupe. Click any pixel on screen to copy its hex, such as `#1E90FF`.
+- **Pick Colour** shows a loupe with the colour under the pointer and its hex. Click any pixel on screen to copy the hex, such as `#1E90FF`. To land on an exact pixel, move with the arrow keys and press Return. Esc cancels.
 
 ## Scrolling capture
 

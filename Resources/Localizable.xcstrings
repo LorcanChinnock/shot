@@ -6012,6 +6012,12 @@
         }
       }
     },
+    "Click to copy · Esc to cancel" : {
+
+    },
+    "Click to pick · Esc to cancel" : {
+
+    },
     "Click to type a label." : {
       "localizations" : {
         "de" : {
@@ -16961,6 +16967,9 @@
       }
     },
     "More tools" : {
+
+    },
+    "Move the pointer or press the arrow keys to choose a pixel. Click or press Return to pick its colour. Esc cancels." : {
 
     },
     "Move to" : {

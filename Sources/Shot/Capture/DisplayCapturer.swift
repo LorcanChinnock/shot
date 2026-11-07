@@ -69,18 +69,24 @@ enum DisplayCapturer {
         try await capture(targets(NSScreen.screens), showsCursor: false, keeping: MainWindowController.windowID)
     }
 
+    /// Captures every display as it looks, Shot's own windows included and without the cursor, for Pick Colour: the
+    /// editor's eyedropper picks colours from the image open in it.
+    static func captureForColorPicking() async throws -> [FrozenDisplay] {
+        try await capture(targets(NSScreen.screens), showsCursor: false, keeping: MainWindowController.windowID, excludingShot: false)
+    }
+
     private static func targets(_ screens: [NSScreen]) -> [Target] {
         screens.map { Target(displayID: $0.displayID, frame: $0.frame, backingScale: $0.backingScaleFactor) }
     }
 
-    private nonisolated static func capture(_ targets: [Target], showsCursor: Bool, keeping mainWindowID: CGWindowID?) async throws -> [FrozenDisplay] {
+    private nonisolated static func capture(_ targets: [Target], showsCursor: Bool, keeping mainWindowID: CGWindowID?, excludingShot: Bool = true) async throws -> [FrozenDisplay] {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         return try await withThrowingTaskGroup(of: FrozenDisplay.self) { group in
             for target in targets {
                 guard let display = content.displays.first(where: { $0.displayID == target.displayID }) else {
                     throw CaptureError.displayNotFound
                 }
-                let ownApps = content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
+                let ownApps = excludingShot ? content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier } : []
                 // Shot's overlays stay out of captures; the main window (Settings and the gallery) stays in, so it can be screenshotted.
                 let kept = content.windows.filter { $0.windowID == mainWindowID }
                 let filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: kept)
