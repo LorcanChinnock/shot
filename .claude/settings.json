@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make stop)",
+      "Bash(scripts/dev.sh status)",
+      "Bash(scripts/dev.sh stop)"
+    ]
+  }
+}
