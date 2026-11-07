@@ -5,11 +5,13 @@
 #   - Accessibility permission for this terminal (keys for the gallery, closing Shot's windows with ⌘W).
 # It takes 20 full-screen screenshots and moves them out of the capture folder afterwards, into a folder it prints.
 # For the gallery it points the app's save folder at a seeded library of 1,500 images for a minute, then puts it back.
-# Usage: scripts/perf.sh [path/to/Shot.app]   (default /Applications/ShotDev.app, which make app installs)
+# Usage: scripts/perf.sh [path/to/Shot.app]   (default build/ShotDev.app, the Release build make bundle archives)
 set -euo pipefail
 
-app="${1:-/Applications/ShotDev.app}"
-[ -d "$app" ] || { echo "No app at $app; run make app first" >&2; exit 1; }
+# Quits every other ShotDev, including one Xcode is running, and the installed Shot, which clean_up reopens.
+"$(dirname "$0")/dev.sh" prepare
+app="${1:-$(dirname "$0")/../build/ShotDev.app}"
+[ -d "$app" ] || { echo "No app at $app; run make bundle first" >&2; exit 1; }
 # Absolute and resolved, as ps reports the running executable.
 app=$(cd "$app" && pwd -P)
 cd "$(dirname "$0")/.."
@@ -123,6 +125,7 @@ restore_save_folder() {
 clean_up() {
   restore_save_folder
   move_captures
+  scripts/dev.sh stop || true
 }
 trap clean_up EXIT
 for i in $(seq 20); do

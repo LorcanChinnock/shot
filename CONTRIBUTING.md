@@ -14,28 +14,30 @@ You need a Mac with macOS 15 or later and Xcode 16 or later. Shot is an Xcode pr
 git clone https://github.com/LorcanChinnock/shot.git
 cd shot
 scripts/make-dev-cert.sh   # once: a stable signing identity, so the Screen Recording permission survives rebuilds
-make run                   # build, install to /Applications/ShotDev.app, and launch
+make run                   # build and launch ShotDev; make stop quits it
 ```
 
-Or open `Shot.xcodeproj` in Xcode and press ⌘R, as described in [Working in Xcode](#working-in-xcode).
+Or, better for day-to-day work, open `Shot.xcodeproj` in Xcode and press ⌘R, as described in [Working in Xcode](#working-in-xcode).
 
 macOS ties the Screen Recording permission to the app's code signature. An ad-hoc signature changes on every build, so the permission would reset each time. `make-dev-cert.sh` creates a self-signed certificate named `Shot Dev` in your login keychain, and the build signs with it. Keychain Access shows it as "not trusted"; that's expected and signing still works. To sign with another identity, set `SHOT_SIGN_IDENTITY`.
 
 On the first run, the welcome window asks for the Screen Recording permission. Once you've turned on ShotDev in System Settings › Privacy & Security › Screen & System Audio Recording, click **Relaunch** in the window so the permission takes effect.
 
-Only `make dist` builds `Shot.app` with the update feed. Every other build is `ShotDev.app`: a separate app with its own bundle ID (`dev.lorcan.Shot.dev`), settings, Screen Recording permission and `shot-dev://` URL scheme, and no update feed. It installs beside a released Shot rather than over it, and Sparkle never replaces it.
+Only `make dist` builds `Shot.app` with the update feed. Every other build is `ShotDev.app`: a separate app with its own bundle ID (`dev.lorcan.Shot.dev`), settings, Screen Recording permission and `shot-dev://` URL scheme, and no update feed. It runs beside a released Shot rather than replacing it, and Sparkle never updates it.
+
+Only one ShotDev runs at a time. Xcode's Run and `make run` both go through `scripts/dev.sh`, which first quits every other ShotDev, whether from another worktree, an earlier run or a copy Xcode is debugging. It also quits the installed Shot, since it registers the same global shortcuts, and `make stop` reopens it.
 
 ### Make targets
 
 | Target | What it does |
 |---|---|
-| `make run` | Build, install to `/Applications/ShotDev.app`, and launch |
+| `make run` | A Debug build, as Xcode's Run makes, launched from `build/DerivedData` after quitting every other ShotDev (`APP_ARGS="-AppleLanguages '(de)'"` passes launch arguments) |
+| `make stop` | Quit ShotDev, however it started, and reopen the installed Shot if a run quit it |
 | `make build` | A Debug build of the app, the same as Xcode's Build |
 | `make test` | Run the unit tests in `Tests/ShotCoreTests` (`ONLY='ShotCoreTests/hitTestFilledKinds()'` runs one) |
 | `make lint` | Check for code patterns that have caused bugs (`scripts/lint.sh`) and that the string catalog is up to date |
 | `make strings` | Add new strings to `Resources/Localizable.xcstrings` and drop unused ones |
-| `make perf-app` | Measure launch, capture, memory and idle CPU of the installed app against its budgets |
-| `make app` | Build and install without launching (`INSTALL_DIR=~/Applications make app` to install elsewhere) |
+| `make perf-app` | Archive `build/ShotDev.app`, then measure its launch, capture, memory and idle CPU against the budgets |
 | `make bundle` | Archive a universal Release `build/ShotDev.app`, as Product › Archive does, and keep the archive with its dSYMs |
 | `make dist` | Build a universal (Apple Silicon and Intel) `build/Shot.zip`, as the release workflow does |
 | `make icon` | Regenerate the app icon in `Resources/Assets.xcassets` from `scripts/make-icon.swift` |
@@ -49,7 +51,8 @@ Open `Shot.xcodeproj`. Pick the **Shot** scheme and **My Mac**, then press ⌘R 
 - **Settings** live in `Config/*.xcconfig`, never in the project file. `Shared.xcconfig` has the version, signing and Swift settings, `Debug.xcconfig` and `Release.xcconfig` the configurations, and each target has its own file. For a setting only you need, such as another signing identity, create `Config/Local.xcconfig`, which git ignores, and set it there: `CODE_SIGN_IDENTITY = Apple Development`, say.
 - **New files** need no project edit. The targets use synchronised folders, so a Swift file added under `Sources/Shot`, `Sources/ShotCore` or `Tests/ShotCoreTests` is part of that target.
 - **ShotDev or Shot.** Every build is ShotDev, Xcode's included. `Config/Shot.xcconfig` builds Shot, with the update feed, only when `SHOT_DISTRIBUTION=YES`, which only `make dist` passes.
-- **Run quits the installed Shot**, because it registers the same global shortcuts as ShotDev and a hotkey could reach it instead. Reopen it when you've finished.
+- **Run quits every other ShotDev and the installed Shot** first, through the scheme's pre-action (`scripts/dev.sh prepare`), because the installed Shot registers the same global shortcuts and a hotkey could reach the wrong copy. Stop (⌘.) ends the run; `make stop` then reopens the installed Shot if Run quit it.
+- **Languages.** The scheme's Run arguments include `-AppleLanguages (de)`, off. Tick it in Product › Scheme › Edit Scheme › Run › Arguments to try German, and untick it before you commit.
 - **ShotCore is optimised in Debug** so the tests stay quick, which makes stepping through it patchy. Set `SWIFT_OPTIMIZATION_LEVEL = -Onone` in `Config/Local.xcconfig` while you debug it.
 
 The Makefile builds the same project through `scripts/xcodebuild.sh`, into `build/DerivedData` rather than Xcode's own folder: Xcode 27 can leave a test bundle unsigned when the IDE and `xcodebuild` share one. CI and the release workflow run the same `make` targets.
@@ -90,7 +93,7 @@ A string reaches the catalog when it's a literal passed to an API that localizes
 
 Interpolate values into one string, such as `"Saved \(name)"`, rather than joining fragments, so a translator can reorder the words. Leave `shot://` output, log messages and file names in English.
 
-To add a language, open the catalogs in Xcode, add the language, translate each string and add its code to `CFBundleLocalizations` in `Resources/Info.plist`. `Resources/InfoPlist.xcstrings` holds the camera and microphone permission prompts. To try a language without changing your Mac's, run `open -a ShotDev --args -AppleLanguages '(de)'`.
+To add a language, open the catalogs in Xcode, add the language, translate each string and add its code to `CFBundleLocalizations` in `Resources/Info.plist`. `Resources/InfoPlist.xcstrings` holds the camera and microphone permission prompts. To try a language without changing your Mac's, turn on `-AppleLanguages (de)` in the scheme's Run arguments, or run `make run APP_ARGS="-AppleLanguages '(de)'"`.
 
 ## Debugging
 
@@ -137,7 +140,7 @@ An admin sets this up once under Settings › Rules › Rulesets: a branch rules
 
 Releases are automated with [release-please](https://github.com/googleapis/release-please). Don't create tags or edit the version by hand.
 
-Before a release, run `make app` and then `make perf-app`, which CI can't run because it needs the Screen Recording permission. It exits non-zero if anything is over budget. See [docs/performance.md](docs/performance.md).
+Before a release, run `make perf-app`, which CI can't run because it needs the Screen Recording permission. It exits non-zero if anything is over budget. See [docs/performance.md](docs/performance.md).
 
 1. When `main` gets a `feat:` or `fix:` commit, release-please opens or updates a release pull request. It bumps the version in `Resources/Info.plist` and `.release-please-manifest.json`, and adds the changes to `CHANGELOG.md`. While Shot is in beta, each release only bumps the beta number, for example `0.7.0-beta.35` to `0.7.0-beta.36`, whether it has features or only fixes. Changes under `site/` never trigger one. Other types such as `docs`, `chore`, `ci`, `refactor`, and `build` appear in the history but don't trigger a release.
 2. The release pull request's CI is the release gate: it runs the checks every pull request gets. It runs again on every push to the pull request, and the pull request can't merge until it passes.
