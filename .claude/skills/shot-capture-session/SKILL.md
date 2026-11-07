@@ -9,15 +9,17 @@ Read CLAUDE.md's "Running and testing locally" and "Capturing something in QA an
 
 ## Set up
 
-1. **Quit the release and build the dev app:** `pkill -x Shot`, then `make run`. Confirm with `pgrep -lf ShotDev`.
+1. **Quit the release and run the dev app from Xcode,** as CLAUDE.md's "Running and testing locally" says: `pkill -x Shot`, then `RunProject` (or ⌘R) on this checkout's `Shot.xcodeproj`. Stop any earlier run first, and confirm that `pgrep -lf 'ShotDev.app/Contents/MacOS'` lists exactly one process. Send every `shot-dev://` link with `scripts/shotdev-open.sh`.
 2. **Wrap ShotDemo in an app bundle.** `swift run ShotDemo` makes a bare executable, and `request_access` rejects it as "not installed or running". Build it with `cd docs/demo && swift build -c release`, then make `ShotDemo.app` in the scratchpad (not the repo): `Contents/MacOS/ShotDemo` is the binary, `Contents/Info.plist` sets `CFBundleIdentifier` `dev.lorcan.ShotDemo`, `CFBundleExecutable`, `CFBundleName` and `CFBundlePackageType` `APPL`, then `codesign -s - --force`. Launch it with `open ShotDemo.app --args --scene article --appearance light`. Scenes are listed in `docs/demo/README.md`.
-3. **Request access by name or bundle id:** `ShotDemo` (or `MugCo` for a QA run, wrapping it the same way if the request says it isn't installed or running), and `dev.lorcan.Shot.dev` for ShotDev. ShotDev is a menu bar app that only counts as a running app while one of its windows is open (it switches itself to a regular app then), so with nothing open `request_access` says it "doesn't match any installed or running application", under its display name too. Run `open 'shot-dev://gallery'` first, then request access, and keep a window open until you have the grant. A wrapper app doesn't help, because screenshots are filtered by the app that owns each window. Don't request a terminal: it is click-only and can't type.
+3. **Request access by name or bundle id:** `ShotDemo` (or `MugCo` for a QA run, wrapping it the same way if the request says it isn't installed or running), and `dev.lorcan.Shot.dev` for ShotDev. ShotDev is a menu bar app that only counts as a running app while one of its windows is open (it switches itself to a regular app then), so with nothing open `request_access` says it "doesn't match any installed or running application", under its display name too. Run `scripts/shotdev-open.sh 'shot-dev://gallery'` first, then request access, and keep a window open until you have the grant. A wrapper app doesn't help, because screenshots are filtered by the app that owns each window. Don't request a terminal: it is click-only and can't type.
 4. **First launch needs the user.** ShotDev starts on the welcome window and macOS needs Screen Recording turned on for it. Never change that setting yourself. Ask the user to grant it and relaunch. `make reset-tcc` undoes it, so avoid that.
 
 ## Drive it
 
 - `⌘⇧4` opens the overlay once ShotDev has permission. Keys: `S` toggles Scroll, `Tab` cycles Area, Window, Browser and Screen. Chips are clickable. `shot-dev://gallery` and `shot-dev://settings?section=general` open windows without a keyboard.
 - **Key presses and clicks go to the frontmost app.** If a terminal is frontmost, `Escape` and `Return` do nothing. Click the ShotDemo window first.
+- **Esc may not reach Shot while computer use drives the Mac.** In the #1080 session no Esc reached any of Shot's overlays, whether it came from computer use, a synthetic key event or the user's keyboard, while Return and the arrow keys did. Check a change to Esc handling against an Esc that's known to work, such as closing the capture overlay, and ask the user to try it by hand once the session is over.
+- **A Shot overlay can miss computer use's key presses.** The overlays are panels that take the keyboard without making ShotDev the frontmost app, and computer use can send its keys to the app it thinks is in front. If a key does nothing, check the console for it first, then post it as a real key event with a small CGEvent script (`CGEvent(keyboardEventSource:virtualKey:keyDown:)` posted to `.cghidEventTap`). That reaches the overlay.
 - **Banners block clicks.** A macOS notification such as "Login Item Added" makes clicks fail with "would land on Notification Centre". Wait for it to go, or use the keyboard.
 - The welcome window turns on Open Shot at login and ShotDev's screenshot shortcuts. Turn Open Shot at login off before shooting Settings, because the old shots show it off.
 - On `redesign` and after it merges, ShotDev's windows have a solid background and no longer blur what's behind them. On older builds they're glass, so quit ShotDemo and minimise other windows before shooting them.
@@ -35,7 +37,7 @@ computer-use screenshots are for looking only and can't be saved. Make files wit
 
 ## Finish
 
-Quit ShotDemo and ShotDev, `rm -rf /Applications/ShotDev.app build/ShotDev.app`, reopen `/Applications/Shot.app` if it was running, and refocus the terminal. Each reshot file needs matching alt text next to where the guide uses it.
+Quit ShotDemo (or MugCo), stop the Xcode run (`StopProject` or ⌘.) and check that `pgrep -x ShotDev` prints nothing, close any workspace you opened, reopen `/Applications/Shot.app` if it was running, and refocus the terminal. Each reshot file needs matching alt text next to where the guide uses it.
 
 ## Record a clip (GIFs and videos)
 
