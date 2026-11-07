@@ -20,6 +20,12 @@ struct MomentTests {
         #expect(Moment.markLand.duration == 0.2)
         #expect(Moment.panelArrive.duration == 0.24)
         #expect(Moment.recordingPulse.duration == 1.6)
+        #expect(Moment.countdownRing.duration == 1)
+    }
+
+    @Test func onlyTheLoopsThatTickWithRealTimeRunLonger() {
+        #expect(Moment.allCases.filter(\.isAmbient) == [.countdownRing, .recordingPulse, .noteWobble])
+        #expect(Moment.countdownRing.reduced == .none)
     }
 
     @Test func popOvershootsThenSettles() {

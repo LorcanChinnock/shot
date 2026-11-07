@@ -162,7 +162,7 @@ final class RecordingSetupController {
             return
         }
         model.countdown = model.countdownSeconds
-        let panel = CountdownPanel(center: CGPoint(x: region.midX, y: region.midY), remaining: { [model] in model.countdown }) { [weak self] in
+        let panel = CountdownPanel(kind: .recording, total: model.countdownSeconds, center: CGPoint(x: region.midX, y: region.midY), remaining: { [model] in model.countdown }) { [weak self] in
             self?.cancelCountdown()
         }
         panel.orderFrontRegardless()
@@ -534,22 +534,28 @@ private struct OptionToggle: View {
 
 // MARK: Countdown
 
-/// The countdown a recording and a timed screenshot share. `remaining` is read while the view draws, so reading an
-/// observable property in it keeps the number current.
+/// The countdown a recording and a timed screenshot share (#1078): a dark floating panel with an accent ring that empties
+/// as the seconds run out, the seconds in large tabular figures, and Cancel. `remaining` is read while the view draws, so
+/// reading an observable property in it keeps the number current.
 final class CountdownPanel: FloatingPanelWindow {
-    private static let size = NSSize(width: 180, height: 216)
+    /// What the countdown is for, which sets its hint and what VoiceOver says.
+    enum Kind {
+        case screenshot, recording
+    }
+
     private let onCancel: () -> Void
 
     override var canBecomeKey: Bool { true }
 
-    init(center: CGPoint, remaining: @escaping () -> Int?, onCancel: @escaping () -> Void) {
+    init(kind: Kind, total: Int, center: CGPoint, remaining: @escaping () -> Int?, onCancel: @escaping () -> Void) {
         self.onCancel = onCancel
-        let origin = CGPoint(x: center.x - Self.size.width / 2, y: center.y - Self.size.height / 2)
-        super.init(contentRect: NSRect(origin: origin, size: Self.size))
+        let size = CountdownView.size(kind: kind, textSize: Preferences().textSize)
+        let origin = CGPoint(x: (center.x - size.width / 2).rounded(), y: (center.y - size.height / 2).rounded())
+        super.init(contentRect: NSRect(origin: origin, size: size))
         level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
         isReleasedWhenClosed = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
-        contentView = NSView(hosting: CountdownView(remaining: remaining, onCancel: onCancel))
+        contentView = NSView(hosting: CountdownView(kind: kind, total: total, remaining: remaining, onCancel: onCancel))
     }
 
     override func cancelOperation(_ sender: Any?) {
@@ -558,23 +564,122 @@ final class CountdownPanel: FloatingPanelWindow {
 }
 
 private struct CountdownView: View {
+    let kind: CountdownPanel.Kind
+    let total: Int
     let remaining: () -> Int?
     let onCancel: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.textSize) private var textSize
+    /// How full the ring is drawn, from 0 to 1.
+    @State private var ring = 1.0
+
+    static let width: CGFloat = 180
+    static let ringSize: CGFloat = 92
+    static let ringWidth: CGFloat = 6
+    /// The ring's line runs 6 pt inside the 92 pt frame, so its circle is 80 pt across, as on the board.
+    static let ringInset: CGFloat = 6
+    static let top: CGFloat = 20
+    static let bottom: CGFloat = 14
+    static let spacing: CGFloat = 12
+    static let digits = ScaledFont.scaled(40, weight: .bold, tabular: true)
+    static let hintFont = ScaledFont.scaled(12)
+    /// The Cancel button's text, as `BrutalButtonStyle` draws a floating secondary button.
+    static let buttonFont = Brutal.body
+    static let buttonPadding: CGFloat = 8
+
+    static func hint(_ kind: CountdownPanel.Kind) -> String? {
+        switch kind {
+        case .screenshot: String(localized: "Open the menu you need")
+        case .recording: nil
+        }
+    }
+
+    /// The panel's size at `textSize`, worked out before it's shown so the window fits its shape.
+    static func size(kind: CountdownPanel.Kind, textSize: TextSize) -> NSSize {
+        func lineHeight(_ font: ScaledFont) -> CGFloat {
+            NSLayoutManager().defaultLineHeight(for: NSFont.systemFont(ofSize: font.points(textSize))).rounded(.up)
+        }
+        let scale = CGFloat(textSize.scale)
+        var height = top + (ringSize * scale).rounded() + spacing + lineHeight(buttonFont) + buttonPadding * 2 + bottom
+        var width = (width * scale).rounded()
+        if let hint = hint(kind) {
+            height += lineHeight(hintFont) + spacing
+            let font = NSFont.systemFont(ofSize: hintFont.points(textSize))
+            width = max(width, (hint as NSString).size(withAttributes: [.font: font]).width.rounded(.up) + 32)
+        }
+        return NSSize(width: width, height: height)
+    }
+
+    private var seconds: Int { remaining() ?? 0 }
+
+    private var label: String {
+        switch kind {
+        case .screenshot: String(localized: "Capturing in \(seconds) seconds")
+        case .recording: String(localized: "Recording in \(seconds) seconds")
+        }
+    }
 
     var body: some View {
-        VStack(spacing: 16) {
-            Text("\(remaining() ?? 0)")
-                .font(.system(size: 64, weight: .heavy).monospacedDigit())
-                .foregroundStyle(.white)
-                .contentTransition(.numericText(countsDown: true))
-                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: remaining())
-                .frame(width: 112, height: 112)
-            Button("Cancel") { onCancel() }
+        let scale = CGFloat(textSize.scale)
+        let ringSize = (Self.ringSize * scale).rounded()
+        let ringWidth = Self.ringWidth * scale
+        VStack(spacing: Self.spacing) {
+            ZStack {
+                Circle()
+                    .stroke(Color.white.opacity(contrast == .increased ? 0.4 : 0.14), lineWidth: ringWidth)
+                Circle()
+                    .trim(from: 0, to: ring)
+                    .stroke(Brutal.accent, style: StrokeStyle(lineWidth: ringWidth, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                Text(verbatim: "\(seconds)")
+                    .font(Self.digits)
+                    .foregroundStyle(.white)
+                    .contentTransition(reduceMotion ? .identity : .numericText(countsDown: true))
+                    .animation(Motion.animation(.countdownFlip, reduceMotion: reduceMotion), value: seconds)
+            }
+            .padding(Self.ringInset * scale)
+            .frame(width: ringSize, height: ringSize)
+            .accessibilityHidden(true)
+            if let hint = Self.hint(kind) {
+                Text(hint)
+                    .font(Self.hintFont)
+                    .foregroundStyle(contrast == .increased ? Color.white : FloatingPanel.secondaryText)
+                    .lineLimit(1)
+                    .accessibilityHidden(true)
+            }
+            Button("Cancel · Esc") { onCancel() }
                 .buttonStyle(BrutalButtonStyle(floating: true))
                 .keyboardShortcut(.cancelAction)
+                .accessibilityLabel(Text("Cancel"))
         }
+        .padding(.top, Self.top)
+        .padding(.bottom, Self.bottom)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .floatingPanel(RoundedRectangle(cornerRadius: 22, style: .circular))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(.updatesFrequently)
+        .onChange(of: seconds, initial: true) { _, now in
+            tick(now)
+        }
+    }
+
+    /// Shows the seconds left on the ring, then drains it a second's worth while that second passes. Reduce Motion
+    /// keeps the ring still at the seconds left. VoiceOver hears the whole label first, then each number.
+    private func tick(_ now: Int) {
+        guard now > 0 else { return }
+        ring = CountdownRing.fraction(remaining: now, of: total)
+        if let drain = Motion.animation(.countdownRing, reduceMotion: reduceMotion) {
+            // Set in the next pass, so the drain starts from the seconds left rather than from wherever the last one was.
+            Task { @MainActor in
+                withAnimation(drain) { ring = CountdownRing.target(remaining: now, of: total) }
+            }
+        }
+        let announcement = now == total ? label : "\(now)"
+        NSAccessibility.post(element: NSApp as Any, notification: .announcementRequested, userInfo: [
+            .announcement: announcement, .priority: NSAccessibilityPriorityLevel.high.rawValue,
+        ])
     }
 }
 
@@ -600,7 +705,7 @@ final class ScreenshotCountdown {
         remaining = seconds
         // Bottom centre, clear of the menu bar and of whatever the user is about to open.
         let visible = screen.visibleFrame
-        let panel = CountdownPanel(center: CGPoint(x: visible.midX, y: visible.minY + 170), remaining: { [weak self] in self?.remaining }) { [weak self] in
+        let panel = CountdownPanel(kind: .screenshot, total: seconds, center: CGPoint(x: visible.midX, y: visible.minY + 170), remaining: { [weak self] in self?.remaining }) { [weak self] in
             self?.cancelled = true
             self?.remaining = nil
             self?.panel?.orderOut(nil)
