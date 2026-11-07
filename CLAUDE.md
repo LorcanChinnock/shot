@@ -29,19 +29,20 @@ What this means in practice:
 
 ```bash
 make test                         # ShotCoreTests, the unit tests (Swift Testing)
-make perf-app                     # scripts/perf.sh: launch, capture, memory, idle CPU of the installed app
+make perf-app                     # make bundle, then scripts/perf.sh: launch, capture, memory, idle CPU of build/ShotDev.app
 make lint                         # scripts/lint.sh: bans patterns that caused bugs (see below); on macOS also scripts/strings.sh --check
 make strings                      # sync Resources/Localizable.xcstrings with the strings the build extracted
 make build                        # Debug build of the app, as Xcode's Build does
 make bundle                       # archive a universal Release build/ShotDev.app only
-make run                          # build, install to /Applications/ShotDev.app, relaunch; only when Xcode can't run it (see below)
+make run                          # without Xcode: Debug build, quit other copies, launch (APP_ARGS=… for the app)
+make stop                         # quit ShotDev and reopen the installed Shot if a run quit it
 scripts/shotdev-open.sh 'shot-dev://gallery'   # send a link to the one running ShotDev
 make demo                         # build and open the MugCo sample app (Samples/MugCo): fake data, fixed size, for QA runs and screenshots
 cd site && npm run dev            # the marketing site (see site/README.md)
 make test ONLY='ShotCoreTests/hitTestFilledKinds()'   # one test or suite
 ```
 
-- In Xcode, open `Shot.xcodeproj`: the **Shot** scheme runs and debugs ShotDev (⌘R) and runs the test plan `Tests/Shot.xctestplan` (⌘U). `make` builds the same project through `scripts/xcodebuild.sh` into `build/DerivedData`, never Xcode's own folder, since Xcode 27 can leave a test bundle unsigned when both build into one.
+- In Xcode, open `Shot.xcodeproj`: the **Shot** scheme runs and debugs ShotDev (⌘R, which first quits every other ShotDev and the installed Shot) and runs the test plan `Tests/Shot.xctestplan` (⌘U). `make` builds the same project through `scripts/xcodebuild.sh` into `build/DerivedData`, never Xcode's own folder, since Xcode 27 can leave a test bundle unsigned when both build into one.
 - Build settings live in `Config/*.xcconfig`, never in the project file: `Shared.xcconfig` (version, signing, Swift), `Debug`/`Release`, and one per target. `Config/Local.xcconfig`, which git ignores, takes personal overrides. Folders are synchronised, so a new Swift file in `Sources/` or `Tests/` needs no project edit.
 - Signing uses the `Shot Dev` certificate from `scripts/make-dev-cert.sh` so the Screen Recording permission survives rebuilds. `make reset-tcc` clears it.
 - Logs: `log stream --predicate 'subsystem == "dev.lorcan.Shot.dev"'` for ShotDev, `dev.lorcan.Shot` for a release. Use `Logger.shot("category")` from `Sources/ShotCore/ShotLog.swift`.
@@ -49,14 +50,13 @@ make test ONLY='ShotCoreTests/hitTestFilledKinds()'   # one test or suite
 
 ## Running and testing locally
 
-Local builds are `ShotDev.app`. The real installed version is `/Applications/Shot.app`, usually from the curl installer on the website. Never install over, rename or delete `Shot.app`; it is the copy the user relies on.
+Run ShotDev through Xcode, with the `run-shotdev` skill (`.claude/skills/run-shotdev/SKILL.md`): it uses the Xcode tools to build, run, read the console, debug and stop. The real installed version is `/Applications/Shot.app`, usually from the curl installer on the website. Never install over, rename or delete `Shot.app`; it is the copy the user relies on.
 
-1. **Quit the installed release first:** `pkill -x Shot`. Both apps register the same global shortcuts, so with both running a hotkey can reach the wrong one. `-x` matches the executable name exactly, so `pkill -x Shot` never kills ShotDev, and `pkill -x ShotDev` never kills the release.
-2. **Run ShotDev from Xcode,** so its console and debugger are attached: the **Shot** scheme with ⌘R, or the Xcode tools' `RunProject` on this checkout's `Shot.xcodeproj` (open it with `XcodeOpenWorkspace` first). Read its logs with `GetConsoleOutput`. `make run`, which installs `/Applications/ShotDev.app`, is only for when Xcode can't be used.
-3. **Keep exactly one ShotDev running.** Each Run starts a new ShotDev and leaves the last one running, so stop it first (⌘. or `StopProject`). Before driving it, `pgrep -lf 'ShotDev.app/Contents/MacOS'` should list one process, in this checkout's DerivedData. If others are left over, `pkill -x ShotDev` and run again.
-4. **Send links with `scripts/shotdev-open.sh 'shot-dev://pick-color'`,** never a plain `open 'shot-dev://…'`. LaunchServices answers a plain `open` with any ShotDev it has seen, such as a stale build in another checkout's DerivedData, and starts it if it isn't running. The script sends the link to the running copy and stops when none or several are running.
-5. **When finished, stop the run** (⌘. or `StopProject`), check that `pgrep -x ShotDev` prints nothing, close any workspace you opened with `XcodeCloseWorkspace`, and reopen the release if it was running: `open /Applications/Shot.app`. If you used `make run`, also `rm -rf /Applications/ShotDev.app build/ShotDev.app` (or `$INSTALL_DIR/ShotDev.app`).
-   Leave ShotDev's settings (`dev.lorcan.Shot.dev`) and its Screen Recording permission in place, so the next run doesn't ask for the permission again.
+- **Only one ShotDev runs at a time.** The Shot scheme's Run pre-action, `make run` and `scripts/perf.sh` all call `scripts/dev.sh prepare`, which quits every other ShotDev (another worktree's, an earlier run, one Xcode is debugging) and the installed Shot, whose global shortcuts would otherwise catch hotkeys, and notes that the release was running. Never start ShotDev any other way, such as `open` on a built app.
+- **Send links with `scripts/shotdev-open.sh 'shot-dev://pick-color'`,** never a plain `open 'shot-dev://…'`. LaunchServices answers a plain `open` with any ShotDev it has seen, such as a stale build in another checkout's DerivedData, and starts it if it isn't running. The script sends the link to the running copy and stops when none or several are running.
+- **Always stop it when finished:** `StopProject`, then `scripts/dev.sh stop` (or `make stop`), which quits anything left and reopens the installed Shot if a run quit it. `scripts/dev.sh status` shows what's running.
+- Languages are launch arguments in the scheme, off by default; the Xcode tools can't pass arguments, so use `make run APP_ARGS="-AppleLanguages '(de)'"` for them, then `make stop`.
+- Leave ShotDev's settings (`dev.lorcan.Shot.dev`) and its Screen Recording permission in place, so the next run doesn't ask for the permission again.
 
 ## Capturing something in QA and screenshots
 

@@ -9,7 +9,7 @@ Read CLAUDE.md's "Running and testing locally" and "Capturing something in QA an
 
 ## Set up
 
-1. **Quit the release and run the dev app from Xcode,** as CLAUDE.md's "Running and testing locally" says: `pkill -x Shot`, then `RunProject` (or ⌘R) on this checkout's `Shot.xcodeproj`. Stop any earlier run first, and confirm that `pgrep -lf 'ShotDev.app/Contents/MacOS'` lists exactly one process. Send every `shot-dev://` link with `scripts/shotdev-open.sh`.
+1. **Run ShotDev from Xcode with the `run-shotdev` skill.** Its Run quits every other ShotDev and the installed Shot, so `scripts/dev.sh status` should then list exactly one ShotDev. Send every `shot-dev://` link with `scripts/shotdev-open.sh`.
 2. **Wrap ShotDemo in an app bundle.** `swift run ShotDemo` makes a bare executable, and `request_access` rejects it as "not installed or running". Build it with `cd docs/demo && swift build -c release`, then make `ShotDemo.app` in the scratchpad (not the repo): `Contents/MacOS/ShotDemo` is the binary, `Contents/Info.plist` sets `CFBundleIdentifier` `dev.lorcan.ShotDemo`, `CFBundleExecutable`, `CFBundleName` and `CFBundlePackageType` `APPL`, then `codesign -s - --force`. Launch it with `open ShotDemo.app --args --scene article --appearance light`. Scenes are listed in `docs/demo/README.md`.
 3. **Request access by name or bundle id:** `ShotDemo` (or `MugCo` for a QA run, wrapping it the same way if the request says it isn't installed or running), and `dev.lorcan.Shot.dev` for ShotDev. ShotDev is a menu bar app that only counts as a running app while one of its windows is open (it switches itself to a regular app then), so with nothing open `request_access` says it "doesn't match any installed or running application", under its display name too. Run `scripts/shotdev-open.sh 'shot-dev://gallery'` first, then request access, and keep a window open until you have the grant. A wrapper app doesn't help, because screenshots are filtered by the app that owns each window. Don't request a terminal: it is click-only and can't type.
 4. **First launch needs the user.** ShotDev starts on the welcome window and macOS needs Screen Recording turned on for it. Never change that setting yourself. Ask the user to grant it and relaunch. `make reset-tcc` undoes it, so avoid that.
@@ -37,7 +37,7 @@ computer-use screenshots are for looking only and can't be saved. Make files wit
 
 ## Finish
 
-Quit ShotDemo (or MugCo), stop the Xcode run (`StopProject` or ⌘.) and check that `pgrep -x ShotDev` prints nothing, close any workspace you opened, reopen `/Applications/Shot.app` if it was running, and refocus the terminal. Each reshot file needs matching alt text next to where the guide uses it.
+Quit ShotDemo (or MugCo), stop ShotDev as the `run-shotdev` skill's Stop section says (`StopProject`, then `scripts/dev.sh stop`, which reopens the installed Shot if Run quit it), close any workspace you opened, and refocus the terminal. Each reshot file needs matching alt text next to where the guide uses it.
 
 ## Record a clip (GIFs and videos)
 

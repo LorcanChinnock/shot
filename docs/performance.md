@@ -4,7 +4,7 @@ Shot is meant to be fast by default. Its worst regressions so far were power fea
 
 ## Locally: `make perf-app`
 
-`scripts/perf.sh` drives an installed Shot (`/Applications/ShotDev.app` by default, or a path you pass) through its URL scheme. CI can't run it, because its runners can't grant the Screen Recording permission. Run it before each release, after `make app`.
+`scripts/perf.sh` drives a built Shot (`build/ShotDev.app` by default, or a path you pass) through its URL scheme, after quitting every other ShotDev and the installed Shot, which it reopens at the end. CI can't run it, because its runners can't grant the Screen Recording permission. Run it before each release with `make perf-app`, which archives `build/ShotDev.app` first.
 
 The app emits `OSSignposter` signposts under its bundle identifier, in category `perf`, which the script reads with `log show --signpost`. Instruments shows them too.
 
@@ -41,4 +41,4 @@ Memory after 20 captures was 577 MB before #276: macOS kept each capture's freed
 
 ## Reference Mac
 
-MacBook Air (Mac16,13), Apple M4, 16 GB, macOS 27.0.1, built-in display only. The `make perf-app` baselines come from the build `make app` installs.
+MacBook Air (Mac16,13), Apple M4, 16 GB, macOS 27.0.1, built-in display only. The `make perf-app` baselines come from the Release build `make bundle` archives.
