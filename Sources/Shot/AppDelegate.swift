@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let state = AppState()
     lazy var coordinator = CaptureCoordinator(state: state)
     private var defaultsObserver: NSObjectProtocol?
+    private var statusMenu: StatusMenu?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // First, before anything below saves a setting and makes a new user look like an earlier one.
@@ -47,6 +48,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         installEditMenu()
         _ = Updater.shared
+        statusMenu = StatusMenu(state: state, coordinator: coordinator)
         Task.detached(priority: .utility) {
             // A loupe left by a run that quit or died mid-pick would otherwise swallow every click.
             ColorSampler.endLoupe()

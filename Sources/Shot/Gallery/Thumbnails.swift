@@ -63,12 +63,10 @@ final class ThumbnailStore {
 }
 
 enum Thumbnails {
-    private static let maxPixels = 640
-
-    /// Decodes off the main actor. Cancelling the caller skips the decode if it hasn't started yet, and a video's frame if
-    /// its duration was still loading; an image already decoding finishes.
-    static func make(_ item: GalleryItem) async -> Thumbnail? {
-        let task = Task.detached(priority: .utility) { await decode(item) }
+    /// Decodes off the main actor, at most `maxPixels` on the longer side. Cancelling the caller skips the decode if it hasn't
+    /// started yet, and a video's frame if its duration was still loading; an image already decoding finishes.
+    static func make(_ item: GalleryItem, maxPixels: Int = 640) async -> Thumbnail? {
+        let task = Task.detached(priority: .utility) { await decode(item, maxPixels: maxPixels) }
         return await withTaskCancellationHandler {
             await task.value
         } onCancel: {
@@ -76,7 +74,7 @@ enum Thumbnails {
         }
     }
 
-    private static func decode(_ item: GalleryItem) async -> Thumbnail? {
+    private static func decode(_ item: GalleryItem, maxPixels: Int) async -> Thumbnail? {
         guard !Task.isCancelled else {
             return nil
         }
