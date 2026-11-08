@@ -34,15 +34,15 @@ When you set a delay on the overlay, Shot's menu bar icon shows the seconds left
 
 ## While you record
 
-The controls float beside the recorded area:
+A dark bar of controls sits under the recorded area, and you can drag it out of the way. On its left, a red dot breathes and the timer counts up. The menu bar shows the same time on red, in place of Shot's icon.
 
 | Control | What it does |
 |---|---|
-| **Pause** | Pauses the recording. Click again to resume. |
-| **Stop** | Stops and saves. |
+| **Microphone** | The bars beside it show how loud you are. Click it to mute. Muting silences only your microphone, not the sound from your Mac. |
+| **Camera** | Shows or hides the camera bubble. Double-click the bubble to change its size. |
+| **Pause** | Pauses the recording. Two amber bars replace the red dot while it's paused, and **Resume** takes Pause's place. |
 | **Discard** | Throws the recording away. **Undo** brings it back for 5 seconds, and so does <kbd>⌘Z</kbd>, whichever app is in front. |
-| **Microphone** | Shows its level, and mutes it. Muting silences only your microphone, not the sound from your Mac. |
-| **Camera** | Shows, hides or resizes the camera bubble. |
+| **Stop** | Stops and saves. |
 
 You can also stop by pressing any record shortcut again. Shot's menu bar menu has **Pause Recording** (**Resume Recording** while paused) and **Stop Recording** too.
 

@@ -11,6 +11,9 @@ final class AppState {
         didSet { menuBar.recordingChanged(isRecording && !isPaused) }
     }
 
+    /// Whole seconds recorded, for the timer in the menu bar; nil when nothing is recording.
+    var recordingSeconds: Int?
+
     /// Seconds left while a timed screenshot or a recording counts down.
     var countdown: Int? {
         didSet { menuBar.countdownChanged(from: oldValue, to: countdown) }

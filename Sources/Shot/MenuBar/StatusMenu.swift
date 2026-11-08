@@ -40,10 +40,17 @@ final class StatusMenu: NSObject, NSMenuDelegate {
 
     private func updateIcon() {
         withObservationTracking {
-            let image = BrandMark.menuBarImage(
-                iconState, updateAvailable: Updater.shared.pendingVersion != nil,
-                flip: state.menuBar.flip, pulse: state.menuBar.pulse
-            )
+            let image: NSImage
+            if state.isRecording, let seconds = state.recordingSeconds {
+                image = BrandMark.timerImage(seconds: seconds, paused: state.isPaused, pulse: state.menuBar.pulse)
+                statusItem.length = NSStatusItem.variableLength
+            } else {
+                image = BrandMark.menuBarImage(
+                    iconState, updateAvailable: Updater.shared.pendingVersion != nil,
+                    flip: state.menuBar.flip, pulse: state.menuBar.pulse
+                )
+                statusItem.length = NSStatusItem.squareLength
+            }
             statusItem.button?.image = image
             statusItem.button?.setAccessibilityLabel(image.accessibilityDescription)
         } onChange: { [weak self] in

@@ -19,6 +19,12 @@ final class RecordingSessionModel {
     private(set) var microphoneMuted = false
     let meter = AudioMeter()
     private(set) var timeline = RecordingTimeline()
+    /// Whole seconds recorded, which the controls and the menu bar show. Set once a second while the clock runs, so
+    /// nothing that reads it redraws more often.
+    private(set) var seconds = 0
+    /// Called with each new `seconds`, and with nil once the clock stops.
+    @ObservationIgnored var onSecond: ((Int?) -> Void)?
+    @ObservationIgnored private var clock: Task<Void, Never>?
 
     func elapsed(at date: Date) -> TimeInterval {
         timeline.elapsed(at: date)
@@ -26,10 +32,44 @@ final class RecordingSessionModel {
 
     func run() {
         timeline.run(at: Date())
+        tick()
     }
 
     func hold() {
         timeline.hold(at: Date())
+        tick()
+    }
+
+    /// Ticks on each whole second until `stopClock`, so the timer never skips or doubles a second.
+    func startClock() {
+        guard clock == nil else {
+            return
+        }
+        clock = Task { [weak self] in
+            while let wait = self.map({ RecordingClock.untilNextSecond($0.elapsed(at: Date())) }) {
+                try? await Task.sleep(for: .seconds(wait))
+                guard !Task.isCancelled else {
+                    return
+                }
+                self?.tick()
+            }
+        }
+        tick(force: true)
+    }
+
+    func stopClock() {
+        clock?.cancel()
+        clock = nil
+        onSecond?(nil)
+    }
+
+    private func tick(force: Bool = false) {
+        let now = RecordingClock.seconds(elapsed(at: Date()))
+        guard clock != nil, now != seconds || force else {
+            return
+        }
+        seconds = now
+        onSecond?(now)
     }
 
     func toggleMute() {
@@ -54,6 +94,8 @@ final class Recorder: NSObject {
     /// Called by the on-screen controls; `true` means discard.
     var onStopRequested: ((Bool) -> Void)?
     var onPhaseChange: ((Phase) -> Void)?
+    /// The whole seconds recorded so far, each second while the controls show, then nil.
+    var onSecond: ((Int?) -> Void)?
 
     private(set) var phase: Phase = .idle {
         didSet { onPhaseChange?(phase) }
@@ -330,10 +372,6 @@ final class Recorder: NSObject {
         }
     }
 
-    func cycleCameraSize() {
-        CameraBubble.shared.cycleSize()
-    }
-
     /// Re-applies the filter so a bubble shown or hidden mid-recording is included or dropped. False when that failed;
     /// while paused there's no stream, and the next segment picks the bubble up.
     private func refreshFilter() async -> Bool {
@@ -572,17 +610,19 @@ final class Recorder: NSObject {
             togglePause: { [weak self] in Task { await self?.togglePause() } },
             toggleMute: { [weak self] in self?.toggleMute() },
             toggleCamera: { [weak self] in Task { await self?.toggleCamera() } },
-            cycleCameraSize: { [weak self] in self?.cycleCameraSize() },
             stop: { [weak self] discard in self?.onStopRequested?(discard) }
         )
         let controls = RecordingControlPanel(region: region, screen: screen, model: model, actions: actions)
         controls.orderFrontRegardless()
         self.controls = controls
+        model.onSecond = { [weak self] seconds in self?.onSecond?(seconds) }
+        model.startClock()
     }
 
     private func hidePanels() {
         windowTracker?.cancel()
         windowTracker = nil
+        model.stopClock()
         border?.orderOut(nil)
         border = nil
         controls?.orderOut(nil)

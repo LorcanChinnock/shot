@@ -32,6 +32,9 @@ final class CaptureCoordinator {
             self?.state.isRecording = phase == .recording || phase == .paused
             self?.state.isPaused = phase == .paused
         }
+        recorder.onSecond = { [weak self] seconds in
+            self?.state.recordingSeconds = seconds
+        }
         recorder.onStopRequested = { [weak self] discard in
             self?.stopRecording(discard: discard)
         }
