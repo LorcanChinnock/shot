@@ -509,7 +509,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 
 ### Check before recording
 
-#1088 builds Record › Check before recording: what you see after picking an area, window or screen to record when Settings › Recording › Adjust before recording is on, or when ⌥ is held as the pick ends. The frame is one panel the size of the screen, which ignores the mouse, and the bar is SwiftUI in its own `FloatingPanelWindow` with the system shadow. The camera bubble keeps its current look until #1091.
+#1088 builds Record › Check before recording: what you see after picking an area, window or screen to record when Settings › Recording › Adjust before recording is on, or when ⌥ is held as the pick ends. The frame is one panel the size of the screen, which ignores the mouse, and the bar is SwiftUI in its own `FloatingPanelWindow` with the system shadow. The camera bubble is #1091 (see Camera bubble).
 
 | Part | Look |
 | --- | --- |
@@ -578,6 +578,28 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Reduce Motion** keeps the ring but drops its fade: it shows for the same 0.4 s and then goes at once. The border doesn't move.
 - **Text size** changes neither, since they mark the screen rather than hold text.
 - **Increase Contrast** takes the border's glow to 40% and the ring's halo to 45%, and adds a 1 pt ink edge inside the ring so it reads on white.
+
+### Camera bubble
+
+#1091 builds the bubble on Record › Check before recording and While recording: your camera in a circle inside the recorded area. It is one AppKit panel just larger than the circle, drawn with shape layers, and the recording's filter lets it in, so the bubble is in the video.
+
+| Part | Look |
+| --- | --- |
+| Bubble | The camera, mirrored and clipped to a circle as wide as the size picked in Settings › Recording, from 160 pt for small to 300 pt for large |
+| Ring | 3 pt white outside the circle, so it never covers the picture |
+| Shadow | macOS's own window shadow, which follows the circle |
+| Place | 18 pt in from the area's left and bottom edges to start, and kept 18 pt inside the area as you drag it |
+| Handle | Checking before recording only: a 16 pt white circle with a 1.5 pt ink edge, centred on the circle's lower edge at 45°, on the side facing the middle of the area |
+
+- **Resizing.** Dragging the handle snaps to small, medium or large, whichever is nearest the circle through the pointer, and never past the largest that fits the area. Double-clicking still steps through the three, and the bubble keeps its centre either way. The size you pick becomes the default. `CameraBubbleStyle` and `CameraBubbleLayout` in ShotCore hold the sizes, where the handle sits and which size a drag asks for, with tests.
+- **The handle goes when the recording starts.** It's for setting up, so the countdown and the recording show the bubble with only its ring, as the While recording board does.
+- **Departures from the board.** The boards place the bubble bottom-right. Shot keeps it bottom-left, where it has always started, since the bottom right of most windows holds the buttons and scroll bars people are recording. The handle mirrors with it, so it always points at the room the bubble can grow into. The boards draw one 120 pt bubble; Shot keeps the three sizes Settings offers. The shadow is macOS's window shadow rather than the board's `0 10px 24px` at 35%, because a drawn shadow would sit in the panel and catch clicks around the circle. The board clips the handle to the circle; Shot draws it whole, on the ring.
+- **Keyboard.** The bubble's panel never takes the keyboard. While the check-before-recording bar shows with the camera on, ⌘+ and ⌘− step the bubble larger and smaller, and the camera toggle's tooltip says so. While recording, the bar never takes the keyboard, so only the mouse and VoiceOver resize it.
+- **VoiceOver** reads the bubble as "Camera bubble" with its size as the value, such as "Medium". Its actions Make larger and Make smaller step the size, offered only when a step would fit, and increment and decrement do the same.
+- **Text size** changes nothing, since the bubble holds no text and its sizes come from Settings.
+- **Dark appearance** changes nothing: the white ring is drawn over the screen in both.
+- **Reduce Motion** changes nothing, since the bubble never animates. Moving and resizing are instant.
+- **Increase Contrast** adds a 1 pt ink line outside the white ring, so the bubble reads on a white page.
 
 ## Website values
 
@@ -672,10 +694,10 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Board | Issue | Files | QA |
 | --- | --- | --- | --- |
 | Check before recording | #1088 | `Recording/RecordingSetupController.swift`, `Recording/AudioMeter.swift` (`MicLevelBars`), `Recording/Recorder.swift` (`Options`), `Recording/RecordingBorderPanel.swift`, ShotCore `RecordSetupFrame.swift` (`RecordSetupFrame`, `LevelBars`) | ☐ |
-| Check before recording | #1091 camera bubble | `Recording/CameraBubble.swift` | ☐ |
+| Check before recording | #1091 camera bubble | `Recording/CameraBubble.swift` (handle, `showsHandle`), `Recording/RecordingSetupController.swift` (⌘+ and ⌘−), ShotCore `CameraBubbleLayout.swift` (`CameraBubbleStyle`, `CameraBubbleLayout`) | ☐ |
 | While recording | #1089 controls | `Recording/RecordingControlPanel.swift`, `Recording/AudioMeter.swift` (`MicLevelColumns`), `Recording/Recorder.swift` (`RecordingSessionModel.seconds`), `Design/BrandMark.swift` (`timerImage`), `MenuBar/StatusMenu.swift`, ShotCore `RecordingClock.swift` | ☐ |
 | While recording | #1090 border and clicks | `Recording/RecordingBorderPanel.swift`, `Recording/ClickRings.swift`, `Recording/Recorder.swift` (`makeFilter`), ShotCore `RecordingMarks.swift` (`RecordingBorder`, `ClickRing`), `Moment.clickRing` | ☐ |
-| While recording | #1091 camera bubble | `Recording/CameraBubble.swift` | ☐ |
+| While recording | #1091 camera bubble | `Recording/CameraBubble.swift`, ShotCore `CameraBubbleLayout.swift` | ☐ |
 | While recording | #1092 discard toast | `Recording/RecordingControlPanel.swift`, `Toast.swift` | ☐ |
 
 ### Edit

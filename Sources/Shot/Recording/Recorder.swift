@@ -183,6 +183,7 @@ final class Recorder: NSObject {
         }
         // A window recording captures only that window, so the bubble would never appear in it.
         let camera = options.camera && options.windowID == nil
+        CameraBubble.shared.showsHandle = false
         if camera, !CameraBubble.shared.isVisible {
             await CameraBubble.shared.showFromPreferences(in: region)
         } else if !camera {
