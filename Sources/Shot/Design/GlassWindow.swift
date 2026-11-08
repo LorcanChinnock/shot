@@ -189,6 +189,8 @@ enum FloatingPanel {
         /// The capture bar, recording controls and the countdown.
         static let standard = 0.86
         static let toast = 0.90
+        /// Cards with a paragraph to read, such as the browser permission card.
+        static let card = 0.92
         static let pinBar = 0.82
         /// Quick Access's round corner buttons, over the capture itself.
         static let cornerButton = 0.78

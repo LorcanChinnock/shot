@@ -36,6 +36,10 @@ Shot takes over <kbd>⌘⇧4</kbd> and <kbd>⌘⇧5</kbd> only once it has Scree
 - If you turned the macOS shortcuts back on in System Settings, turn that setting on again.
 - A **Shortcut unavailable** message means another app already uses that shortcut. Pick another in **Settings › Shortcuts**.
 
+## Browser shows a card asking for Accessibility
+
+Shot needs Accessibility access to find where a browser shows its page, so it can leave out the tabs and address bar. Click **Grant Access**, then in the macOS prompt click **Open System Settings** and turn on Shot under **Privacy & Security › Accessibility**. Your next capture can use Browser. Until then, **Use Window** captures the whole browser window, and Esc closes the card.
+
 ## Scrolling capture shows a warning
 
 The panel beside the area names the problem and what to do:

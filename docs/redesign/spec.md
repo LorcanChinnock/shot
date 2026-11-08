@@ -355,6 +355,27 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Text size.** The header, facts, card and buttons scale with Settings › Text size, and the panel grows to fit. A long size shrinks to 70% before it would wrap. The preview stays 150 × 280.
 - **Increase Contrast** takes the panel's edge to 50% black (40% white in dark), the warning card's edge to 60%, and the hatching to 22%.
 
+### Browser permission card
+
+#1087 builds the card on Capture › Permission card, colour loupe…: what you see after picking Browser on the capture bar, by click or `B`, while Shot has no Accessibility access. It used to close the overlay and open macOS's prompt with no word of why. It is SwiftUI in its own `FloatingPanelWindow` with the system shadow, just above the overlay's level, so it adds no screen-sized layer.
+
+| Part | Look |
+| --- | --- |
+| Card | Floating panel, 300 pt wide, panel radius 14, 18 pt padding, 10 pt between parts. The fill is `FloatingPanel.Opacity.card`, 92%, as on the board |
+| Icon | `globe` at 18 pt semibold, white, in a 36 pt tile of white at 12% with group corners |
+| Title | "Browser needs Accessibility" in 15 pt bold, white |
+| Detail | What Shot uses the permission for, in 12.5 pt at 75% white |
+| Buttons | Use Window as the floating secondary button and Grant Access as the floating main button, 8 pt apart and 4 pt below the detail. Grant Access is 1.3 times as wide, as on the board |
+
+- **Where it sits.** Centred on the bar and 16 pt above it, or below it when the bar is at the top. After `B` with the bar faded, it sits in the middle of the screen with the pointer. `PermissionCardPlacement` in ShotCore keeps it 8 pt inside the screen, with tests.
+- **The overlay waits.** The mode doesn't change under the card. Use Window switches to Window and gives the keyboard back, Esc or a click anywhere on the overlay closes the card in the mode you were in, and that click doesn't capture.
+- **Grant Access closes the overlay first,** then shows macOS's prompt, which would otherwise sit behind the overlay. The next capture can use Browser once access is on.
+- **Panel corners.** The board rounds the card at 16 and its buttons at 9. It uses the panel and group tokens, 14 and 10.
+- **Keyboard.** The card is key while it shows. Return grants access and Esc closes it. With keyboard navigation on, Tab moves between the buttons, which show the accent focus halo.
+- **VoiceOver** announces the title and detail when the card appears, since VoiceOver stays on the overlay under it. The card is a group named by its title, the title is a heading, and both buttons are read by name, with tooltips saying what each does.
+- **Text size.** The card is 300 pt times Settings › Text size wide, so the detail wraps as on the board, and it grows to fit the text.
+- **Increase Contrast and Reduce Transparency** make the card solid with the 40% edge. Increase Contrast also takes the detail to full white and the icon tile to 24%.
+
 ### Quick Access card
 
 #1081 builds the card on Capture › Quick Access, pin, menu and toasts: the picture of each capture that slides into a bottom corner of the screen. The cards share one `FloatingPanelWindow` with the system shadow, so the shadow follows each card and no margin catches clicks.
@@ -565,7 +586,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Quick Access, pin, menu and toasts › toast | #1085 | `Toast.swift` (`ToastView`, `ToastTickMark`), ShotCore `ToastLayout.swift`, `QuickAccess/QuickAccessController.swift` (`cardsTop(on:)`, `cardEdgeInset`) | ☐ |
 | Quick Access, pin, menu and toasts › countdown | #1078 | `Recording/RecordingSetupController.swift` (`CountdownPanel`, `CountdownView`), ShotCore `CountdownRing.swift`, `Moment.countdownRing`, `Design/Motion.swift` | ☐ |
 | Quick Access, pin, menu and toasts › floating panels | #1073 | `Design/GlassWindow.swift` (`FloatingPanel`, `FloatingPanelWindow`), `Toast.swift`, `Overlay/SelectionOverlayView.swift`, `Recording/RecordingControlPanel.swift`, `Recording/RecordingSetupController.swift`, `Capture/ScrollingCaptureController.swift`, `QuickAccess/QuickAccessView.swift` | ☐ |
-| Permission card… › permission card | #1087 | `Overlay/SelectionOverlayController.swift`, `Permissions.swift` | ☐ |
+| Permission card… › permission card | #1087 | `Overlay/BrowserPermissionCard.swift`, `Overlay/SelectionOverlayController.swift` (`showPermissionCard`), `Overlay/SelectionOverlayView.swift` (`barScreenFrame`, a click closes the card), `Design/GlassWindow.swift` (`FloatingPanel.Opacity.card`), ShotCore `PermissionCardPlacement.swift` | ☐ |
 | Permission card… › colour loupe | #1080 | `ColorSampler.swift`, `Overlay/ColorPickerOverlay.swift`, ShotCore `ColorLoupe.swift` (`ColorLoupe`, `PixelColor`) | ☐ |
 | Permission card… › recovery | #1092 | `Recording/RecordingRecovery.swift` | ☐ |
 | Permission card… › update prompt | #1117 | `Updater.swift` | ☐ |
