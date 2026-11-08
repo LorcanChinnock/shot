@@ -67,8 +67,8 @@ macOS asks for microphone and camera access the first time Shot uses them. To al
 Also in **Settings › Recording**:
 
 - **Show cursor** records the pointer.
-- **Show clicks** draws a circle wherever you click.
-- **Region border** outlines the recorded area on screen while you record. The border never appears in the video.
+- **Show clicks** draws a yellow ring wherever you click inside the recorded area, in the video and on your screen. It stays for about half a second, then fades. Clicks while you're paused get no ring.
+- **Region border** draws a red line with a soft glow around the recorded area while you record, and a dashed amber line while you're paused. The border never appears in the video.
 
 ## When you stop
 

@@ -214,6 +214,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | Copied tick | `Toast.done(_:drawsTick:)` | A 20 pt accent disc with an ink tick, for every copy and save. The toast rises 8 pt as it fades in. After a capture the snap is that action's moment, so the toast shows its tick already drawn |
 | Marks land | `Editor/EditorCanvasView.swift` | A new counter grows to 122% and settles. An arrow is already whole when you let go of the drag, so it doesn't draw again |
 | Countdown, recording pulse | `Design/BrandMark.swift` (`MenuBarAnimation`) | The digit folds flat and the next unfolds over 160 ms. While recording, the menu bar shows the time instead, and a ring breathes out of its stop square. A frame loop runs only while one plays. The countdown panel's ring is #1078 (see Countdown), and the recording controls' dot and the menu bar time are #1089 (see Recording controls) |
+| Click ring | `Recording/ClickRings.swift` | Not on the Moments board. A click's ring holds for 0.4 s, then fades over 240 ms; Reduce Motion drops the fade (see Recording border and clicks) |
 
 ### Capture bar
 
@@ -559,6 +560,25 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Text size.** The time, symbols, dot, pause marks, level columns and buttons scale with Settings › Text size, and the bar grows to fit, keeping its middle and top edge. The menu bar doesn't scale.
 - **Increase Contrast and Reduce Transparency** make the bar solid with the 40% edge. Increase Contrast also takes the paused time and a muted microphone to 90% white, unlit columns to 40%, and Stop's red to `#C4271E`.
 
+### Recording border and clicks
+
+#1090 builds the border and click rings on Record › While recording. Both are AppKit panels drawn with shape layers, so neither adds a bitmap the size of the area. The border is left out of the video like Shot's other windows, and the click ring is let in.
+
+| Part | Look |
+| --- | --- |
+| Border | 2 pt record red (`#FF453A`) hugging the area, then a 4 pt glow of the same red at 22% outside it. Both sit outside the area, so neither covers what's recorded. Shown when Settings › Recording › Region border is on |
+| Paused border | The same 2 pt line in amber `#FFB648`, dashed 10 on and 6 off, with no glow |
+| Click ring | A 34 pt circle edged by a 3 pt accent ring at 95%, then a 6 pt accent halo at 30%, centred on the pointer's tip. Shown for clicks inside the area when Show clicks is on |
+
+- **The ring is in the video.** macOS's own click circles can't be restyled, so Shot draws the ring in one small panel that the recording's filter lets in, as it does the camera bubble. The pointer is drawn over it, as on the board. Event monitors catch the clicks, which needs no permission. `ClickRing` and `RecordingBorder` in ShotCore hold the sizes and timing and decide which clicks get a ring, with tests.
+- **The ring holds, then fades.** It shows at once on the click, stays whole for `ClickRing.hold` (0.4 s) so it reads in a video, then fades over `Moment.clickRing` (240 ms). A new click moves it.
+- **Nothing red while paused.** The board shows no paused border. Shot dashes it in the paused marks' amber and drops the glow, so paused differs from recording by more than colour (rule 6), and clicks while paused get no ring, since nothing is recorded.
+- **Departures from the board.** The area's corners stay square, since the recording is, so the ring's inner edge follows the area exactly and only its outer corners round, rather than taking the board's radius 2. A window recording captures only its window, so Shot's ring can't reach it; there macOS draws its own click circles instead.
+- **Keyboard and VoiceOver.** Neither panel takes the mouse, the keyboard or focus, and VoiceOver skips both, since they mark what the recording controls already announce.
+- **Reduce Motion** keeps the ring but drops its fade: it shows for the same 0.4 s and then goes at once. The border doesn't move.
+- **Text size** changes neither, since they mark the screen rather than hold text.
+- **Increase Contrast** takes the border's glow to 40% and the ring's halo to 45%, and adds a 1 pt ink edge inside the ring so it reads on white.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -654,7 +674,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Check before recording | #1088 | `Recording/RecordingSetupController.swift`, `Recording/AudioMeter.swift` (`MicLevelBars`), `Recording/Recorder.swift` (`Options`), `Recording/RecordingBorderPanel.swift`, ShotCore `RecordSetupFrame.swift` (`RecordSetupFrame`, `LevelBars`) | ☐ |
 | Check before recording | #1091 camera bubble | `Recording/CameraBubble.swift` | ☐ |
 | While recording | #1089 controls | `Recording/RecordingControlPanel.swift`, `Recording/AudioMeter.swift` (`MicLevelColumns`), `Recording/Recorder.swift` (`RecordingSessionModel.seconds`), `Design/BrandMark.swift` (`timerImage`), `MenuBar/StatusMenu.swift`, ShotCore `RecordingClock.swift` | ☐ |
-| While recording | #1090 border and clicks | `Recording/RecordingBorderPanel.swift` | ☐ |
+| While recording | #1090 border and clicks | `Recording/RecordingBorderPanel.swift`, `Recording/ClickRings.swift`, `Recording/Recorder.swift` (`makeFilter`), ShotCore `RecordingMarks.swift` (`RecordingBorder`, `ClickRing`), `Moment.clickRing` | ☐ |
 | While recording | #1091 camera bubble | `Recording/CameraBubble.swift` | ☐ |
 | While recording | #1092 discard toast | `Recording/RecordingControlPanel.swift`, `Toast.swift` | ☐ |
 
