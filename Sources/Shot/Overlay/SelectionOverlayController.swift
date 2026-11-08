@@ -71,6 +71,9 @@ final class SelectionOverlayController {
     /// A window picked with Tab holds the highlight until the mouse moves.
     private var isWindowPinned = false
     private var panels: [OverlayPanel] = []
+    /// The card that asks for Accessibility access after Browser is picked without it, while it shows.
+    private var permissionCard: BrowserPermissionCard?
+    var showsPermissionCard: Bool { permissionCard != nil }
     private var views: [SelectionOverlayView] = []
     private var continuation: CheckedContinuation<OverlaySelection?, Never>?
     private var magnifierTask: Task<Void, Never>?
@@ -271,12 +274,11 @@ final class SelectionOverlayController {
         setMode(barMode == .browser ? .window : .browser)
     }
 
-    /// A click on one of the bar's modes. Browser needs Accessibility to find the page: without it the overlay closes and
-    /// asks macOS for it, so the prompt isn't left behind the overlay.
+    /// A click on one of the bar's modes. Browser needs Accessibility to find the page: without it the permission card
+    /// says why and offers Use Window or Grant Access, and the overlay stays in the mode it was in.
     func setMode(_ mode: CaptureBarMode) {
         if mode.picksPage, !Permissions.hasAccessibility {
-            finish(nil)
-            Permissions.requestAccessibility()
+            showPermissionCard()
             return
         }
         if mode.target == .window, pageOnly != mode.picksPage {
@@ -287,6 +289,52 @@ final class SelectionOverlayController {
             }
         }
         setTarget(mode.target)
+    }
+
+    /// Shows the browser permission card next to the bar on the screen with the pointer. Grant Access closes the overlay
+    /// before asking macOS, so the prompt isn't left behind it.
+    private func showPermissionCard() {
+        if let permissionCard {
+            permissionCard.makeKey()
+            return
+        }
+        let pointer = NSEvent.mouseLocation
+        guard let view = views.first(where: { $0.window.map { NSMouseInRect(pointer, $0.frame, false) } ?? false }) ?? views.first,
+              let screen = view.window?.frame else {
+            return
+        }
+        let card = BrowserPermissionCard(bar: view.barScreenFrame, screen: screen, actions: .init(
+            useWindow: { [weak self] in
+                self?.closePermissionCard()
+                self?.setMode(.window)
+            },
+            grant: { [weak self] in
+                self?.finish(nil)
+                Permissions.requestAccessibility()
+            },
+            close: { [weak self] in self?.closePermissionCard() }
+        ))
+        permissionCard = card
+        card.orderFrontRegardless()
+        card.makeKey()
+        card.announce()
+        NSCursor.arrow.set()
+    }
+
+    /// Closes the permission card and gives the keyboard back to the overlay under the pointer.
+    func closePermissionCard() {
+        guard let card = permissionCard else {
+            return
+        }
+        permissionCard = nil
+        card.orderOut(nil)
+        let pointer = NSEvent.mouseLocation
+        if let panel = panels.first(where: { NSMouseInRect(pointer, $0.frame, false) }) ?? panels.first {
+            panel.makeKey()
+            panel.makeFirstResponder(views.first { $0.window === panel })
+        }
+        SelectionOverlayView.cursor.set()
+        revealBar()
     }
 
     func toggleScrolling() {
@@ -395,6 +443,8 @@ final class SelectionOverlayController {
         }
         self.continuation = nil
         endModifiers = modifiers
+        permissionCard?.orderOut(nil)
+        permissionCard = nil
         for panel in panels {
             panel.orderOut(nil)
             panel.close()

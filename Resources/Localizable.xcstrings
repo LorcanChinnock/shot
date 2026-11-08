@@ -3820,6 +3820,9 @@
     "Browser" : {
 
     },
+    "Browser needs Accessibility" : {
+
+    },
     "Browser pages are ready" : {
 
     },
@@ -4894,6 +4897,9 @@
 
     },
     "Capture overlay" : {
+
+    },
+    "Capture the whole window instead" : {
 
     },
     "Capturing in %lld seconds" : {
@@ -14259,6 +14265,9 @@
         }
       }
     },
+    "Grant Access" : {
+
+    },
     "Green" : {
       "localizations" : {
         "de" : {
@@ -19327,6 +19336,9 @@
           }
         }
       }
+    },
+    "Open the macOS prompt for Accessibility access" : {
+
     },
     "Open the menu you need" : {
 
@@ -25494,6 +25506,9 @@
         }
       }
     },
+    "Shot uses it only to find where the page sits inside the browser window, so it can leave out the tabs and address bar." : {
+
+    },
     "Shot's windows and panels. Captures look the same either way." : {
 
     },
@@ -30727,6 +30742,9 @@
       }
     },
     "Use Shot for ⌘⇧4 and ⌘⇧5" : {
+
+    },
+    "Use Window" : {
 
     },
     "Use this style for new captures" : {

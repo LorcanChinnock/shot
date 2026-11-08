@@ -40,6 +40,15 @@ final class SelectionOverlayView: NSView {
     private var barPlacement = OverlayBarPlacement.bottom
     /// Where the bar was last drawn, nil while it's hidden or faded, so the chips and loupe keep off it.
     private var barFrame: CGRect?
+    /// The bar's frame in AppKit global space, nil while it's hidden or faded, for the permission card to sit beside.
+    var barScreenFrame: CGRect? {
+        guard let barFrame, let window else {
+            return nil
+        }
+        return window.convertToScreen(convert(barFrame, to: nil))
+    }
+    /// Set by a click that closed the permission card, so its release doesn't capture.
+    private var swallowsMouseUp = false
     /// Where the bar's tooltip was last drawn, so the window pick's label keeps off it too.
     private var tipFrame: CGRect?
     /// The button of the bar under the pointer, which shows its name and key.
@@ -126,6 +135,12 @@ final class SelectionOverlayView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        // A click beside the permission card closes it, like a popover, rather than capturing.
+        if controller.showsPermissionCard {
+            controller.closePermissionCard()
+            swallowsMouseUp = true
+            return
+        }
         let point = clamped(convert(event.locationInWindow, from: nil))
         pointer = point
         pressedChip = barHits.first { $0.rect.contains(point) }.map { ($0.action, point) }
@@ -205,6 +220,10 @@ final class SelectionOverlayView: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
+        if swallowsMouseUp {
+            swallowsMouseUp = false
+            return
+        }
         if let chip = pressedChip {
             pressedChip = nil
             dragStart = nil
