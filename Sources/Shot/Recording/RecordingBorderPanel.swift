@@ -4,8 +4,6 @@ import AppKit
 /// appears in the video or the frames.
 final class RecordingBorderPanel: NSPanel {
     enum Style {
-        /// Framing before recording: ink line with a white dashed inner line.
-        case setup
         case recording
         case paused
         /// A scrolling capture's outline: the accent against the area with ink outside it, 1.5 pt each.
@@ -58,14 +56,6 @@ final class RecordingBorderPanel: NSPanel {
             let path = NSBezierPath(rect: bounds.insetBy(dx: width / 2, dy: width / 2))
             path.lineWidth = width
             switch style {
-            case .setup:
-                Brutal.inkNS.setStroke()
-                path.stroke()
-                let inner = NSBezierPath(rect: bounds.insetBy(dx: width / 2, dy: width / 2))
-                inner.lineWidth = 1.5
-                inner.setLineDash([8, 6], count: 2, phase: 0)
-                NSColor.white.setStroke()
-                inner.stroke()
             case .recording:
                 Brutal.redNS.setStroke()
                 path.stroke()

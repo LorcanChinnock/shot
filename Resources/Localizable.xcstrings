@@ -1319,64 +1319,6 @@
         }
       }
     },
-    "%lld × %lld" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld × %2$lld"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld × %2$lld"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld × %2$lld"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld × %2$lld"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld × %2$lld"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld × %2$lld"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld × %2$lld"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld × %2$lld"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld × %2$lld"
-          }
-        }
-      }
-    },
     "%lld%%" : {
       "localizations" : {
         "de" : {
@@ -1899,6 +1841,9 @@
           }
         }
       }
+    },
+    "A window recording has no camera bubble" : {
+
     },
     "ASPECT" : {
 
@@ -4679,58 +4624,6 @@
         }
       }
     },
-    "Cancel (Esc)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abbrechen (Esc)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cancelar (Esc)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Annuler (Échap)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Annulla (Esc)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "キャンセル（Esc）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "취소 (Esc)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cancelar (Esc)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "取消（Esc）"
-          }
-        }
-      }
-    },
     "Cancel · Esc" : {
 
     },
@@ -5011,6 +4904,9 @@
           }
         }
       }
+    },
+    "Check before recording" : {
+
     },
     "Check for Updates…" : {
       "localizations" : {
@@ -9123,6 +9019,9 @@
           }
         }
       }
+    },
+    "Cursor" : {
+
     },
     "Custom background colour" : {
       "localizations" : {
@@ -14736,59 +14635,10 @@
         }
       }
     },
-    "Hide cursor" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zeiger ausblenden"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ocultar cursor"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Masquer le curseur"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nascondi cursore"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "カーソルを隠す"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "커서 숨기기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ocultar cursor"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "隐藏光标"
-          }
-        }
-      }
-    },
     "Hide folders" : {
+
+    },
+    "Hide the camera bubble" : {
 
     },
     "Hide the track" : {
@@ -15604,6 +15454,9 @@
           }
         }
       }
+    },
+    "Just for this recording. Settings › Recording sets the one each recording starts with." : {
+
     },
     "Keep scrolling" : {
 
@@ -16619,6 +16472,9 @@
           }
         }
       }
+    },
+    "Mac sound" : {
+
     },
     "Magnifier" : {
       "localizations" : {
@@ -18602,6 +18458,9 @@
           }
         }
       }
+    },
+    "On" : {
+
     },
     "Once Shot is on in System Settings, macOS applies it after a relaunch." : {
       "localizations" : {
@@ -21366,6 +21225,12 @@
           }
         }
       }
+    },
+    "Record the sound other apps on your Mac play" : {
+
+    },
+    "Record your voice with the microphone" : {
+
     },
     "Recording" : {
       "localizations" : {
@@ -24980,6 +24845,9 @@
         }
       }
     },
+    "Settings › Recording picks which microphone." : {
+
+    },
     "Settings…" : {
       "localizations" : {
         "de" : {
@@ -26075,6 +25943,9 @@
         }
       }
     },
+    "Show the pointer in the recording" : {
+
+    },
     "Show the pointer when you capture an area or the full screen." : {
       "localizations" : {
         "de" : {
@@ -26180,6 +26051,9 @@
       }
     },
     "Show the whole frame again" : {
+
+    },
+    "Show your camera in a bubble" : {
 
     },
     "Shows the frame handles and options first. Hold ⌥ as you finish the selection to show them once." : {
@@ -27439,109 +27313,11 @@
         }
       }
     },
-    "Start recording (Return)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aufzeichnung starten (Return)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Empezar a grabar (Retorno)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lancer l'enregistrement (Retour)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Avvia registrazione (A capo)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "収録を開始（Return）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "녹화 시작 (Return)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Começar a gravar (Return)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "开始录制（Return）"
-          }
-        }
-      }
+    "Start recording" : {
+
     },
-    "Start recording after a %lld-second countdown (Return)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aufzeichnung nach %lld Sekunden Countdown starten (Return)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Empezar a grabar tras %lld s de espera (Retorno)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lancer l'enregistrement après un compte à rebours de %lld s (Retour)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Avvia registrazione dopo un conto alla rovescia di %lld secondi (A capo)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld秒のカウントダウン後に収録を開始（Return）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld초 카운트다운 후 녹화 시작 (Return)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Começar a gravar após contagem de %lld s (Return)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "倒计时 %lld 秒后开始录制（Return）"
-          }
-        }
-      }
+    "Start recording after a %lld-second countdown" : {
+
     },
     "Start scrolling" : {
 
@@ -29903,58 +29679,6 @@
         }
       }
     },
-    "Turn off microphone" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mikrofon ausschalten"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desactivar micrófono"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Désactiver le micro"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Disattiva microfono"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "マイクをオフ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "마이크 끄기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desativar microfone"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "关闭麦克风"
-          }
-        }
-      }
-    },
     "Turn off the Screenshots shortcuts under Keyboard Shortcuts." : {
       "localizations" : {
         "de" : {
@@ -30007,6 +29731,9 @@
         }
       }
     },
+    "Turn off the microphone" : {
+
+    },
     "Turn on Shot under Accessibility." : {
 
     },
@@ -30058,58 +29785,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在“录屏与系统录音”下开启 Shot。"
-          }
-        }
-      }
-    },
-    "Turn on microphone" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mikrofon einschalten"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Activar micrófono"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Activer le micro"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Attiva microfono"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "マイクをオン"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "마이크 켜기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ativar microfone"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "打开麦克风"
           }
         }
       }
