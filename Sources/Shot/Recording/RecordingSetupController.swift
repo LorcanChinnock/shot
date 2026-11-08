@@ -297,6 +297,7 @@ final class RecordingSetupController {
     // MARK: Panels
 
     private func showSetup(placeCamera: Bool) async {
+        CameraBubble.shared.showsHandle = true
         let frame = SetupFramePanel(screen: screen.frame, visible: screen.visibleFrame)
         frame.orderFrontRegardless()
         self.frame = frame
@@ -315,6 +316,11 @@ final class RecordingSetupController {
             toggleCursor: { [weak self] in self?.toggleCursor() },
             toggleSystemAudio: { [weak self] in self?.toggleSystemAudio() },
             setFrameRate: { [weak self] in self?.setFrameRate($0) },
+            resizeCamera: { [weak self] step in
+                if self?.model.cameraOn == true {
+                    CameraBubble.shared.step(by: step)
+                }
+            },
             record: { [weak self] in self?.confirm() },
             cancel: { [weak self] in self?.cancel() }
         ))
@@ -367,6 +373,8 @@ final class RecordingSetupController {
     }
 
     private func setSetupVisible(_ visible: Bool) {
+        // The handle is for checking before recording, so the countdown and the recording show the bubble without it.
+        CameraBubble.shared.showsHandle = visible
         for panel in [frame as NSWindow?, bar] + handles.values.map({ $0 as NSWindow? }) {
             if visible {
                 panel?.orderFrontRegardless()
@@ -637,6 +645,8 @@ private final class SetupBarPanel: FloatingPanelWindow {
         let toggleCursor: @MainActor () -> Void
         let toggleSystemAudio: @MainActor () -> Void
         let setFrameRate: @MainActor (Int) -> Void
+        /// Steps the camera bubble one size larger (1) or smaller (-1), from ⌘+ and ⌘−.
+        let resizeCamera: @MainActor (Int) -> Void
         let record: @MainActor () -> Void
         let cancel: @MainActor () -> Void
     }
@@ -665,6 +675,23 @@ private final class SetupBarPanel: FloatingPanelWindow {
 
     override func cancelOperation(_ sender: Any?) {
         actions.cancel()
+    }
+
+    /// ⌘+ (or ⌘=) and ⌘− change the camera bubble's size, since its own panel never takes the keyboard.
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting(.shift) == .command {
+            switch event.charactersIgnoringModifiers {
+            case "=", "+":
+                actions.resizeCamera(1)
+                return true
+            case "-":
+                actions.resizeCamera(-1)
+                return true
+            default:
+                break
+            }
+        }
+        return super.performKeyEquivalent(with: event)
     }
 
     func place(below region: CGRect, on screen: NSScreen) {
@@ -702,7 +729,7 @@ private struct SetupBarView: View {
                 .brutalTip("Switch what to record")
             FloatingDivider().padding(.horizontal, 4)
             microphone
-            SetupToggle(on: model.cameraOn, title: "Camera", symbol: "video", offSymbol: "video.slash", help: cameraTip, action: actions.toggleCamera)
+            SetupToggle(on: model.cameraOn, title: "Camera", symbol: "video", offSymbol: "video.slash", help: cameraTip, detail: cameraDetail, action: actions.toggleCamera)
                 .disabled(model.windowID != nil)
             SetupToggle(on: model.systemAudioOn, title: "Mac sound", symbol: "speaker.wave.2", offSymbol: "speaker.slash", help: "Record the sound other apps on your Mac play", action: actions.toggleSystemAudio)
             SetupToggle(on: model.cursorOn, title: "Cursor", symbol: "cursorarrow", offSymbol: "cursorarrow.slash", help: "Show the pointer in the recording", action: actions.toggleCursor)
@@ -803,6 +830,13 @@ private struct SetupBarView: View {
         return model.cameraOn ? "Hide the camera bubble" : "Show your camera in a bubble"
     }
 
+    private var cameraDetail: LocalizedStringResource? {
+        guard model.cameraOn, model.windowID == nil else {
+            return nil
+        }
+        return "Drag the bubble's handle, or press ⌘+ and ⌘−, to change its size."
+    }
+
     private var recordTip: LocalizedStringResource {
         if model.countdownSeconds > 0 {
             return "Start recording after a \(model.countdownSeconds)-second countdown"
@@ -819,6 +853,7 @@ private struct SetupToggle: View {
     let symbol: String
     let offSymbol: String
     let help: LocalizedStringResource
+    var detail: LocalizedStringResource?
     let action: () -> Void
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.colorSchemeContrast) private var contrast
@@ -846,7 +881,7 @@ private struct SetupToggle: View {
             .padding(.horizontal, 5)
         }
         .buttonStyle(BrutalButtonStyle(.toolbar, isOn: on, floating: true))
-        .brutalTip(help)
+        .brutalTip(help, detail: detail)
         .accessibilityLabel(Text(title))
         .accessibilityValue(on ? Text("On") : Text("Off"))
         .accessibilityAddTraits(.isToggle)

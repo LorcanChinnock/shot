@@ -10308,6 +10308,58 @@
         }
       }
     },
+    "Drag the bubble's handle, or press ⌘+ and ⌘−, to change its size." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ziehe am Griff der Blase oder drücke ⌘+ und ⌘−, um ihre Größe zu ändern."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrastra el tirador de la burbuja, o pulsa ⌘+ y ⌘−, para cambiar su tamaño."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Faites glisser la poignée de la bulle, ou appuyez sur ⌘+ et ⌘−, pour changer sa taille."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trascina la maniglia della bolla, o premi ⌘+ e ⌘−, per cambiarne le dimensioni."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バブルのハンドルをドラッグするか、⌘+ と ⌘− を押すとサイズを変更できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "버블의 핸들을 드래그하거나 ⌘+ 및 ⌘−를 눌러 크기를 바꿉니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arraste a alça da bolha, ou pressione ⌘+ e ⌘−, para mudar o tamanho."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拖移气泡的控制点，或按 ⌘+ 和 ⌘−，可更改其大小。"
+          }
+        }
+      }
+    },
     "Drag the card in the corner into any app, or click the pencil to annotate." : {
       "localizations" : {
         "de" : {
@@ -10726,6 +10778,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "放大时拖移以四处移动。"
+          }
+        }
+      }
+    },
+    "Drag to move it. Double-click to change its size." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zum Bewegen ziehen. Doppelklicken, um die Größe zu ändern."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrástrala para moverla. Haz doble clic para cambiar su tamaño."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Faites-la glisser pour la déplacer. Double-cliquez pour changer sa taille."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trascinala per spostarla. Fai doppio clic per cambiarne le dimensioni."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ドラッグで移動、ダブルクリックでサイズを変更します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "드래그하여 이동하고, 이중 클릭하여 크기를 바꿉니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arraste para mover. Clique duas vezes para mudar o tamanho."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拖移可移动，连按两次可更改大小。"
           }
         }
       }
@@ -16527,6 +16631,110 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "按你的习惯来"
+          }
+        }
+      }
+    },
+    "Make larger" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vergrößern"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agrandar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agrandir"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingrandisci"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "大きくする"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "크게"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aumentar"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "放大"
+          }
+        }
+      }
+    },
+    "Make smaller" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verkleinern"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reducir"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réduire"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimpicciolisci"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小さくする"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작게"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diminuir"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "缩小"
           }
         }
       }

@@ -606,7 +606,7 @@ private struct CameraSettings: View {
                 }
             }
             SettingRow(title: "Bubble size", divider: false) {
-                BrutalSegmented(selection: $size, options: CameraBubbleSize.allCases.map { ($0, Self.title(of: $0)) })
+                BrutalSegmented(selection: $size, options: CameraBubbleSize.allCases.map { ($0, $0.title) })
             }
         }
         .onAppear {
@@ -617,14 +617,6 @@ private struct CameraSettings: View {
         }
         .onDisappear {
             preview.stop()
-        }
-    }
-
-    private static func title(of size: CameraBubbleSize) -> String {
-        switch size {
-        case .small: String(localized: "Small")
-        case .medium: String(localized: "Medium")
-        case .large: String(localized: "Large")
         }
     }
 }
