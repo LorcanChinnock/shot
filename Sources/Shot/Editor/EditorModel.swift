@@ -159,6 +159,13 @@ final class EditorModel {
     /// The canvas's zoom, where 1 is actual size, for the zoom menu; the canvas view keeps it current.
     /// Zoom is view state, not part of the document, so it isn't undoable.
     var zoom: CGFloat = 1
+    /// The mark the style bar sits beside, in the canvas's view points with its selection handles: the text being typed,
+    /// else the selection. `nil` when the bar styles the tool's next mark. The canvas keeps it current.
+    var styleBarMark: CGRect?
+    /// True while a drag on the canvas draws, moves, resizes or crops, when the style bar steps out of the way.
+    var isCanvasDragging = false
+    /// Whether More style, the style bar's popover of the options that don't fit in it, is open.
+    var showsMoreStyle = false
     private(set) var history: EditHistory
     private var isDraggingStyle = false
 
@@ -363,6 +370,11 @@ final class EditorModel {
 
     /// True when the toolbar offers a colour and width: the text being typed or the selection takes them, or else the tool does.
     var showsStyle: Bool { palette.showsStyle }
+
+    /// What the style bar shows; `nil` hides it.
+    var styleBarContent: StyleBarContent? {
+        StyleBarContent.content(showsStyle: showsStyle, tool: tool, showsRedaction: paletteRedaction != nil, showsSpotlight: paletteSpotlight != nil)
+    }
 
     /// True when the width sets a text size, so the toolbar offers sizes rather than line widths.
     var sizesText: Bool { palette.sizesText }

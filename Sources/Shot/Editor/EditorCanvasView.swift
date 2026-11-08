@@ -876,7 +876,27 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             model.zoom = zoom
         }
         layoutTextField()
+        updateStyleBar()
         needsDisplay = true
+    }
+
+    /// Tells the style bar where the mark it styles is, and to step aside while a drag draws, moves, resizes or crops.
+    private func updateStyleBar() {
+        let dragging = dragStart != nil && (draft != nil || movedSinceMouseDown || cropDrag != nil)
+        if model.isCanvasDragging != dragging {
+            model.isCanvasDragging = dragging
+        }
+        let mark = (editingPaper ?? editedText ?? model.selection).flatMap { annotation -> CGRect? in
+            let bounds = annotation.bounds
+            guard !bounds.isNull else {
+                return nil
+            }
+            let outline = viewRect(bounds.insetBy(dx: -annotation.lineWidth / 2, dy: -annotation.lineWidth / 2))
+            return outline.insetBy(dx: -StyleBarPlacement.markPadding, dy: -StyleBarPlacement.markPadding)
+        }
+        if model.styleBarMark != mark {
+            model.styleBarMark = mark
+        }
     }
 
     // MARK: Text
@@ -949,6 +969,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     func controlTextDidChange(_ notification: Notification) {
         layoutTextField()
+        updateStyleBar()
     }
 
     var isEditingText: Bool { textField != nil }

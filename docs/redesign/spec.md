@@ -628,7 +628,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 
 ### Image editor toolbar
 
-#1093 builds the editor's title bar on Edit › Image editor · annotate, and its Share menu on Capture › Permission card… › Menus and tooltips. The title bar and the toolbar were two rows; now they're one, beside the traffic lights. Copy is the window's one main button, and what you need less often moves into Share. The row of colour and width options stays under it until the style bar (#1094) replaces it.
+#1093 builds the editor's title bar on Edit › Image editor · annotate, and its Share menu on Capture › Permission card… › Menus and tooltips. The title bar and the toolbar were two rows; now they're one, beside the traffic lights. Copy is the window's one main button, and what you need less often moves into Share. The style bar (#1094, see Style bar) replaced the row of colour and width options under it.
 
 | Part | Look |
 | --- | --- |
@@ -641,12 +641,35 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **What Share does.** Copy Image copies the annotated image, as Copy does. Copy Path and Show in Finder save unsaved changes first, without the save's own toast, so the file they point at has the marks. Copy Path's toast then says "Saved as … and copied its path". Save As… writes the annotated image to a file the user names, PNG or JPEG by its extension, next to the file to start, and leaves the editor on its own file. It won't replace the file being edited, since Save does that and keeps the original. A JPEG with transparent padding takes a white background. Pin to Screen floats the annotated image as Quick Access's Pin does. `EditorShareAction` in ShotCore holds the order, the divider, the shortcut and which actions save first, with tests.
 - **Which tools have buttons.** `EditorToolbarLayout` in ShotCore lists them, with tests that every tool but the hand has one and each keeps its key. The hand tool has no button, as on the board. H still picks it, and Space-drag, a middle-drag and scrolling still move around. While it's in use no button shows as selected.
 - **Window width.** The title bar needs 1,060 pt, so that's the editor's new minimum, up from 980.
-- **Departures from the board.** Redo has no button, as on the board, and the Undo tooltip says ⇧⌘Z redoes. The zoom menu and the Canvas menu move to the end of the options row until the canvas's zoom control (#1095) and the Canvas menu's new place (#1099); the board has no room for them in the title bar. The board rounds the tool buttons at 7 and the Share, Save and Copy buttons at 7; Shot uses the control token, 6. The tools keep their SF Symbols, and Highlight and Redact keep their names, which the guide and Settings use, where the board says Highlighter and Blur. Style keeps its palette symbol and Layers takes `sidebar.right`, the board's panel icon. The board's menu highlights its row in selection blue; the shared menu highlights in the accent, as every Shot menu does.
+- **Departures from the board.** Redo has no button, as on the board, and the Undo tooltip says ⇧⌘Z redoes. The zoom menu and the Canvas menu moved to the end of the options row, and with the style bar to the canvas's bottom left, until the canvas's zoom control (#1095) and the Canvas menu's new place (#1099); the board has no room for them in the title bar. The board rounds the tool buttons at 7 and the Share, Save and Copy buttons at 7; Shot uses the control token, 6. The tools keep their SF Symbols, and Highlight and Redact keep their names, which the guide and Settings use, where the board says Highlighter and Blur. Style keeps its palette symbol and Layers takes `sidebar.right`, the board's panel icon. The board's menu highlights its row in selection blue; the shared menu highlights in the accent, as every Shot menu does.
 - **Keyboard.** Every tool keeps its key, and its tooltip shows it on a keycap with what the tool does. Undo shows ⌘Z, Layers ⌘L, Add image ⇧⌘I, Save ⌘S and Copy ⌘C. With keyboard navigation on, Tab reaches each button, which shows the accent focus halo, and the Share menu takes the arrow keys, Return and Esc.
 - **VoiceOver** reads the tool group as "Tools" and each tool by name, with the selected one as selected. The file name and size read as one element. Share reads as a button that opens a menu.
 - **Text size** scales the type and icons. At Larger the file name truncates first; the buttons and tools keep their size.
 - **Reduce Motion** keeps the main button's drop still and darkens it on press, as every button does. Nothing else in the title bar moves.
 - **Increase Contrast** takes the size line to the text colour and the secondary buttons' edges to 60% ink.
+
+### Style bar
+
+#1094 builds the style bar on Edit › Image editor · annotate: a small floating bar beside the selected mark with its colour and width. It replaces the row of options under the title bar, so the canvas starts right under it. It is SwiftUI over the canvas, so it costs nothing until the editor opens, and nothing on the capture → copy path.
+
+| Part | Look |
+| --- | --- |
+| Bar | 5 × 7 pt padding, 8 pt between parts, group radius 10. Fill `rgba(255,255,255,0.97)` (dark `rgba(44,44,48,0.97)`) at the Float depth: a 0.5 pt edge of black at 20% (dark white at 14%) and `0 8px 24px` |
+| Swatches | Red, Orange, Yellow, Green, Blue and Black, 20 pt circles in the preset colours marks use. The chosen one has a 1.5 pt ink ring outside a 2 pt gap, and the others an inner 1 pt edge of black at 12% (dark white at 18%) |
+| Divider | 1 × 18 pt in the control edge colour |
+| Widths | Thin, Medium and Thick on the shared segmented control (`BrutalSegmented` with pictures): 26 × 20 pt segments holding 12 pt lines 2, 4 and 6 pt tall, ink when chosen and 85% ink otherwise. Text, notes and counters show Small, Medium and Large as three sizes of "A" |
+| More style | `…` as a toolbar button. It opens a popover with what the bar has no room for: the shape, every colour with white and a custom one, the fill, the text's alignment, a redaction's amount, a spotlight's strength and soft edge, and Reset last |
+
+- **Where it sits.** Centred 10 pt above the mark and its handles, or else below, right or left of it, whichever first fits 12 pt inside the canvas, sliding along that edge to stay in. With nothing selected it styles the tool's next mark from the top centre of the canvas. Only a mark that fills the view on every side is covered, by the bar at the top. `StyleBarPlacement` in ShotCore decides this, with tests. The canvas reports the mark's frame in view points to `EditorModel.styleBarMark`, so the bar follows zoom, scrolling and edits.
+- **What it shows.** `StyleBarContent` in ShotCore picks the parts in the order the options row used. Arrows, lines, shapes, pens, text, notes, highlights and counters get the swatches and widths. A redaction gets blur or pixelate, and a spotlight its shape and its darken or blur. The select tool with nothing selected, an image or several marks shows no bar, and Style in the title bar styles those.
+- **Out of the way.** It hides while a drag draws, moves, resizes or crops, and comes back beside the mark when you let go. More style closes with it.
+- **Temporary homes.** The crop's aspect and Reset sit in the bar, at the top of the canvas, until the crop bar (#1097). The zoom menu and the Canvas menu move to the canvas's bottom left, where the board's zoom control sits, until #1095 and #1099 replace them. The title bar has no room for them at 1,060 pt.
+- **Departures from the board.** The board rounds the bar at 11, the segmented track at 7 and its thumb at 5; Shot uses the group radius 10 and the segmented control's 8 and 6. The board's shadow is 18%, and Shot uses the Float depth's 16%. The board's swatches use the interface colours (`#E5352B` and so on), while Shot's are the preset colours an arrow is drawn in, so the swatch matches the mark. More style is a 30 × 28 toolbar button, the toolbar's minimum, rather than 26 × 22, so the bar is 38 pt tall rather than 32. A colour that isn't one of the six, such as white or a custom one, shows no swatch as chosen, and More style shows it.
+- **Keyboard.** With keyboard navigation on, Tab reaches each swatch, the width control and More style, each with the 4 pt accent focus halo, and the arrow keys move the width. Every tool's key still works while the bar shows.
+- **VoiceOver** reads the bar as a group named "Style", each swatch by its colour name with the chosen one as selected, the widths as a segmented control (Thin, Medium, Thick), and More style as a button.
+- **Text size** scales the line and letter pictures and the popover's type, while the swatches and segments keep their size.
+- **Reduce Motion.** The bar arrives with the panel moment, a 240 ms spring fading in from 96%, and Reduce Motion makes that a 120 ms fade. Following the mark is always instant, as edits are.
+- **Increase Contrast and Reduce Transparency** make the bar solid in the group colour. Increase Contrast adds a 1 pt edge of 60% ink and gives the segmented track its 60% edge.
 
 ## Website values
 
@@ -752,7 +775,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Board | Issue | Files | QA |
 | --- | --- | --- | --- |
 | Image editor · annotate | #1093 toolbar | `Editor/EditorRootView.swift` (`EditorTitleBar`, `ShareMenu`), `Editor/EditorToolbar.swift` (`EditorToolGroup`), `Editor/EditorModel.swift` (`share(_:)`), `Editor/EditorWindowController.swift` (minimum width), ShotCore `EditorToolbarLayout.swift` (`EditorToolbarLayout`, `EditorShareAction`) | ☐ |
-| Image editor · annotate | #1094 style bar | `Editor/EditorCanvasView.swift`, `Editor/EditorRootView.swift` | ☐ |
+| Image editor · annotate | #1094 style bar | `Editor/StyleBar.swift` (`StyleBarOverlay`, `StyleBar`, `MoreStyle`), `Editor/EditorCanvasView.swift` (`updateStyleBar`), `Editor/EditorModel.swift` (`styleBarMark`, `styleBarContent`), `Editor/EditorRootView.swift`, `Design/BrutalStyle.swift` (`BrutalSegmented` pictures), ShotCore `StyleBar.swift` (`StyleBarPlacement`, `StyleBarContent`, `StyleBarSwatches`) | ☐ |
 | Image editor · annotate | #1095 canvas | `Editor/EditorCanvasView.swift`, `Design/LayersPanel.swift` (empty state) | ☐ |
 | Image editor · annotate | #1073 title bar | `Design/GlassWindow.swift` | ☐ |
 | Image editor · style | #1096 | `Editor/StylePopover.swift` (replaced by a side panel), `Editor/EditorRootView.swift` | ☐ |

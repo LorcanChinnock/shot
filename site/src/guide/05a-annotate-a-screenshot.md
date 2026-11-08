@@ -49,21 +49,30 @@ Your marks can reach past the edges of the screenshot. The canvas grows to fit t
 
 ## Choose colours and options
 
-The options for the tool you picked show below the tools:
+A small style bar floats over the screenshot with the options for the tool you picked. It sits at the top of the screenshot until you draw, then moves next to the mark you selected, above it where there's room, and otherwise below or beside it, so it never covers the mark. It steps out of the way while you drag.
 
-- **Colour and width:** a colour and one of three widths. For text, sticky notes and counters, the widths are text sizes, and changing the size or colour while you type updates the text as you go.
-- **Text and sticky notes:** left, centre or right alignment. A sticky note can also put its text at the top, middle or bottom, which shows when you drag the note taller than its text.
+- **Colour and width:** six colours and three widths, thin, medium and thick. For text, sticky notes and counters, the widths are text sizes, and changing the size or colour while you type updates the text as you go.
+- **Redact:** blur or pixelate.
+- **Spotlight:** a rectangle or an ellipse, and whether to darken or blur outside it. Every spotlight in the screenshot shares one dim, so the effect applies to all of them.
+- **Crop:** the shape to hold the crop to, and Reset to take the crop off.
+
+Click **…** at the end of the bar for **More style**, which has the rest:
+
 - **Shape:** which shape, and a fill.
-- **Redact:** blur or pixelate, and how strong.
-- **Spotlight:** a rectangle or an ellipse, a soft edge, whether to darken or blur outside it, and how much. Every spotlight in the screenshot shares one dim, so the effect and strength apply to all of them.
+- **Colour:** white too, and a rainbow swatch that picks any colour. Its eyedropper takes a colour from anywhere on screen, such as a brand colour in the screenshot itself.
+- **Text and sticky notes:** left, centre or right alignment. A sticky note can also put its text at the top, middle or bottom, which shows when you drag the note taller than its text.
+- **Redact:** how strong the blur or pixelation is.
+- **Spotlight:** a soft edge, and how much to darken or blur outside it, which applies to every spotlight.
 
-The last swatch picks any colour, and its eyedropper takes a colour from anywhere on screen, such as a brand colour in the screenshot itself. Each palette remembers the last colour you picked. The highlight and sticky notes keep their own colours, yellow at first, so they don't take the colour of your arrows. The editor remembers the options you last used.
+Each palette remembers the last colour you picked. The highlight and sticky notes keep their own colours, yellow at first, so they don't take the colour of your arrows. The editor remembers the options you last used.
 
-To go back to the plain look, click **Reset** at the end of the options. It puts that tool's colour, width and other options back to how Shot starts, for the selected mark too, and for the next one you draw, as one undo step. Your saved custom colours stay, and it's greyed out when the options are already the defaults. For a spotlight, **Reset** also sets the effect and strength of every spotlight in the screenshot, since they share them.
+To go back to the plain look, click **Reset** at the bottom of More style. It puts that tool's colour, width and other options back to how Shot starts, for the selected mark too, and for the next one you draw, as one undo step. Your saved custom colours stay, and it's greyed out when the options are already the defaults. For a spotlight, **Reset** also sets the effect and strength of every spotlight in the screenshot, since they share them.
+
+With keyboard navigation turned on in System Settings, <kbd>Tab</kbd> moves into the style bar, and the arrow keys change the width.
 
 ## Change what you've drawn
 
-What you've just drawn stays selected, so you can fix its colour, width or fill from the toolbar, or drag its handles, without switching tools. The change also applies to what you draw next. Otherwise, pick the select tool (<kbd>V</kbd>) and click a mark.
+What you've just drawn stays selected, so you can fix its colour, width or fill from the style bar beside it, or drag its handles, without switching tools. The change also applies to what you draw next. Otherwise, pick the select tool (<kbd>V</kbd>) and click a mark.
 
 - **Move** it by dragging, or nudge it with the arrow keys, 1 pixel at a time or 10 with <kbd>Shift</kbd>.
 - **Resize** it with its handles. <kbd>Shift</kbd> keeps a box's proportions, or snaps an arrow or line end to 45°. <kbd>⌥</kbd> resizes from the centre. Hold <kbd>Space</kbd> to move the whole shape mid-drag.
@@ -83,7 +92,7 @@ What you've just drawn stays selected, so you can fix its colour, width or fill 
 
 ## Zoom in
 
-Pinch, or press <kbd>⌘+</kbd> and <kbd>⌘−</kbd>. <kbd>⌘0</kbd> fits the screenshot to the window, and <kbd>⌘1</kbd> shows it at actual size. To move around when zoomed in, scroll, hold <kbd>Space</kbd> and drag, drag with the middle mouse button, or use the hand tool (<kbd>H</kbd>).
+Pinch, press <kbd>⌘+</kbd> and <kbd>⌘−</kbd>, or use the zoom menu at the bottom left of the canvas. <kbd>⌘0</kbd> fits the screenshot to the window, and <kbd>⌘1</kbd> shows it at actual size. To move around when zoomed in, scroll, hold <kbd>Space</kbd> and drag, drag with the middle mouse button, or use the hand tool (<kbd>H</kbd>).
 
 ## Copy or save
 
