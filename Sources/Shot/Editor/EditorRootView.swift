@@ -12,16 +12,19 @@ struct EditorRootView: View {
                 .padding(.trailing, 12 - Brutal.windowInset)
                 .frame(height: GlassWindow.titlebarHeight)
                 .padding(.bottom, -Brutal.sectionGap / 2)
-            // Until the zoom control moves onto the canvas (#1095) and the Canvas menu finds its place (#1099).
-            HStack(spacing: 14) {
-                EditorToolbar(model: model)
-                ZoomMenu(model: model, canvas: canvas)
-                CanvasMenu(model: model)
-            }
             HStack(spacing: Brutal.sectionGap) {
                 CanvasHost(canvas: canvas)
                     .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
                     .glassCard()
+                    .overlay(alignment: .bottomLeading) {
+                        // Until the zoom control moves onto the canvas (#1095) and the Canvas menu finds its place (#1099).
+                        HStack(spacing: 8) {
+                            ZoomMenu(model: model, canvas: canvas)
+                            CanvasMenu(model: model)
+                        }
+                        .padding(StyleBarPlacement.inset)
+                    }
+                    .overlay { StyleBarOverlay(model: model) }
                 if model.showsLayers {
                     LayersPanel(
                         rows: model.layerRows,

@@ -21,7 +21,7 @@ struct ColorSwatches: View {
             Swatch(color: nil, isSelected: selected == nil, name: String(localized: "Transparent")) { choose(nil) }
         }
         ForEach(RGBA.presets.indices, id: \.self) { index in
-            Swatch(color: RGBA.presets[index], isSelected: selected == RGBA.presets[index], name: EditorToolbar.colorNames[index]) {
+            Swatch(color: RGBA.presets[index], isSelected: selected == RGBA.presets[index], name: PresetColorNames.all[index]) {
                 choose(RGBA.presets[index])
             }
         }

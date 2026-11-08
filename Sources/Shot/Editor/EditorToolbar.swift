@@ -43,88 +43,12 @@ struct EditorToolGroup: View {
     }
 }
 
-/// The row under the title bar with the selected tool's colour, width and other options. #1094 moves these into the
-/// style bar beside the selection.
-struct EditorToolbar: View {
-    /// Matches `RGBA.presets`. Not `RGBA.presetNames`, which agents read and so stays English.
-    static let colorNames = [
+/// The names of `RGBA.presets`, for swatches. Not `RGBA.presetNames`, which agents read and so stays English.
+enum PresetColorNames {
+    static let all = [
         String(localized: "Red"), String(localized: "Orange"), String(localized: "Yellow"), String(localized: "Green"),
         String(localized: "Blue"), String(localized: "Black"), String(localized: "White"),
     ]
-
-    @Bindable var model: EditorModel
-
-    var body: some View {
-        HStack(spacing: 14) {
-            if model.showsStyle {
-                styleOptions
-                resetButton
-            } else if model.tool == .crop {
-                CropOptions(selected: model.cropAspect, canReset: model.canResetCrop, choose: model.chooseCropAspect, reset: model.resetCrop)
-            } else if let redaction = model.paletteRedaction {
-                RedactionOptions(selected: redaction, amount: model.paletteRedactionAmount, choose: model.setRedaction, setAmount: model.setRedactionAmount, dragAmount: model.setDraggingStyle)
-                resetButton
-            } else if let spotlight = model.paletteSpotlight {
-                SpotlightOptions(
-                    style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook,
-                    chooseSoftEdge: model.setSpotlightSoftEdge, dragSlider: model.setDraggingStyle
-                )
-                resetButton
-            } else {
-                Text(model.tool.summary)
-                    .font(Brutal.caption)
-                    .foregroundStyle(Brutal.faded(0.6))
-                    .padding(.leading, 4)
-            }
-            Spacer(minLength: 0)
-        }
-        .frame(height: 30 + Brutal.groupInset * 2)
-    }
-
-    /// Puts this tool's options back to how a fresh install starts, so the next arrow, blur or spotlight comes out plain too.
-    private var resetButton: some View {
-        Button("Reset", action: model.resetToolOptions)
-            .buttonStyle(BrutalButtonStyle(.plain))
-            .disabled(!model.canResetToolOptions)
-            .brutalTip("Reset", detail: "Puts this tool's colour, size and other options back to how a new install starts. Your saved custom colours stay.")
-    }
-
-    @ViewBuilder private var styleOptions: some View {
-        if let shape = model.paletteShape {
-            ShapeMenu(selected: shape, choose: model.setShape)
-        }
-        ToolGroup {
-            ColorSwatches(
-                selected: model.paletteColor,
-                lastCustom: model.lastCustom(forFill: false),
-                customHelp: "Custom colour",
-                choose: { if let color = $0 { model.paletteColor = color } },
-                pickCustom: { model.pickCustom($0, forFill: false) },
-                beginPicking: model.beginColorPick
-            )
-        }
-        if model.showsFill {
-            ToolGroup {
-                Text("FILL").font(Brutal.mono).foregroundStyle(Brutal.ink).padding(.horizontal, 4)
-                ColorSwatches(
-                    selected: model.paletteFill,
-                    lastCustom: model.lastCustom(forFill: true),
-                    allowsNone: true,
-                    customHelp: "Custom fill colour",
-                    choose: { model.paletteFill = $0 },
-                    pickCustom: { model.pickCustom($0, forFill: true) },
-                    beginPicking: model.beginColorPick
-                )
-            }
-        }
-        WidthOptions(selected: model.lineWidthIndex, sizesText: model.sizesText) { model.lineWidthIndex = $0 }
-        if let alignment = model.paletteAlignment {
-            AlignmentOptions(selected: alignment, choose: model.setAlignment)
-        }
-        if let verticalAlignment = model.paletteVerticalAlignment {
-            VerticalAlignmentOptions(selected: verticalAlignment, choose: model.setVerticalAlignment)
-        }
-    }
 }
 
 /// Line widths, or text sizes for text, notes and counters, whose width sets their size.
@@ -222,7 +146,7 @@ struct CropOptions: View {
     }
 }
 
-private extension CropAspect {
+extension CropAspect {
     /// What the tile shows. Ratios aren't translated.
     var label: String {
         switch self {

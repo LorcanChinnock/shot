@@ -845,6 +845,10 @@ struct CheckboxMark: View {
 struct BrutalSegmented<Value: Hashable>: View {
     @Binding var selection: Value
     let options: [(value: Value, label: String)]
+    /// Draws each segment as a picture instead of its label, given whether it's selected, in a segment `glyphSize` big.
+    /// The label still names it to VoiceOver and in its tooltip.
+    private var glyph: ((Value, Bool) -> AnyView)?
+    private var glyphSize = CGSize(width: 26, height: 20)
     @Namespace private var thumb
     @FocusState private var focused: Bool
     @Environment(\.isEnabled) private var isEnabled
@@ -860,6 +864,14 @@ struct BrutalSegmented<Value: Hashable>: View {
     init<S: StringProtocol>(selection: Binding<Value>, options: [(value: Value, label: S)]) {
         _selection = selection
         self.options = options.map { ($0.value, String($0.label)) }
+    }
+
+    /// Segments drawn as pictures, such as the style bar's line widths, with labels that are already localized.
+    init<Glyph: View>(selection: Binding<Value>, options: [(value: Value, label: String)], glyphSize: CGSize, @ViewBuilder glyph: @escaping (Value, Bool) -> Glyph) {
+        _selection = selection
+        self.options = options
+        self.glyph = { AnyView(glyph($0, $1)) }
+        self.glyphSize = glyphSize
     }
 
     private static var trackRadius: CGFloat { 8 }
@@ -900,7 +912,25 @@ struct BrutalSegmented<Value: Hashable>: View {
         }
     }
 
-    private func segment(_ option: (value: Value, label: String)) -> some View {
+    @ViewBuilder private func segment(_ option: (value: Value, label: String)) -> some View {
+        if let glyph {
+            let selected = option.value == selection
+            glyph(option.value, selected)
+                .frame(width: glyphSize.width, height: glyphSize.height)
+                .background {
+                    if selected {
+                        SegmentThumb().matchedGeometryEffect(id: "thumb", in: thumb)
+                    }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture { select(option.value) }
+                .brutalTip(option.label)
+        } else {
+            textSegment(option)
+        }
+    }
+
+    private func textSegment(_ option: (value: Value, label: String)) -> some View {
         let selected = option.value == selection
         return ZStack {
             // The semibold label holds each segment at its selected width, so picking one doesn't shift the others.
