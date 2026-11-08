@@ -117,7 +117,9 @@ extension Recorder {
         }
         let remaining = videos.filter { FileManager.default.fileExists(atPath: $0.path) }
         if let kept = await keepAsIs(remaining, date: first.modified) {
-            removeSegmentFiles(leftover.files)
+            // Only the audio of parts that moved; a part whose move failed keeps its files, for the next launch to offer.
+            let moved = leftover.segments.filter { !FileManager.default.fileExists(atPath: folder.appendingPathComponent($0.video).path) }
+            removeSegmentFiles(moved.flatMap(\.files))
             await MainActor.run { Toast.show("Saved the parts of an interrupted recording", duration: .seconds(8), reveal: kept[0]) }
         } else {
             await MainActor.run { Toast.error("Couldn't recover the recording. Shot will ask again the next time it opens.") }
