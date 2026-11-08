@@ -96,6 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        Toast.commitPending()
         TextIndexer.shared.stop()
         if ColorSampler.isShowing {
             ColorSampler.endLoupe()

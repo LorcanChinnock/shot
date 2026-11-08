@@ -601,6 +601,31 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Reduce Motion** changes nothing, since the bubble never animates. Moving and resizing are instant.
 - **Increase Contrast** adds a 1 pt ink line outside the white ring, so the bubble reads on a white page.
 
+### Discard and recovery
+
+#1092 builds the discard toast on Record › While recording and the dialog on Capture › Permission card… › Recovering a recording. Discard was already undoable, so the toast is the shared one (see Toast). The dialog replaces the old silent recovery at launch, which joined the parts without asking and only then showed a toast. It is SwiftUI in a borderless panel sized to the card, with the system shadow, centred on the screen with the pointer.
+
+| Part | Look |
+| --- | --- |
+| Discard toast | The shared toast: "Recording discarded" with Undo and a faded ⌘Z, for 5 seconds. The parts stay on disk until it goes, and Undo joins them as Stop would |
+| Card | 320 pt wide, the group fill (white, dark `#2C2C30`), panel radius 14, 20 pt padding, 10 pt between parts, everything centred. A 0.5 pt edge of black at 20% (dark: white at 14%) |
+| Icon | `record.circle` at 22 pt in the Recording sidebar tint, `#C4271E` on a 44 pt `#FFE1DE` tile with group corners (dark: `#FF7B72` on `#4A2220`) |
+| Title | "Recover your last recording?" in 15 pt bold text colour |
+| Detail | "Shot stopped while recording. 1:42 was saved in 3 parts, and Shot can join them now." in 12.5 pt secondary text. One part reads "0:42 was saved, and Shot can put it in your save folder now" |
+| Buttons | Show Parts as the secondary button and Recover as the main button, equal widths, 8 pt apart and 6 pt further below the detail. One part says Show File |
+| Discard recording | A destructive plain button under them, in `#C4271E` (dark `#FF7B72`) |
+
+- **What each choice does.** Recover joins the parts into "… (recovered).mp4" in the save folder, or moves them there as separate parts when they can't be joined, and a toast offers Show. Show Parts selects them in Finder and leaves the dialog open. Discard recording closes the dialog behind the discard toast, whose Undo opens it again; once the toast goes, the parts are deleted.
+- **Nothing is lost by waiting.** Esc closes the dialog and leaves the parts where they are, so Shot asks again the next time it opens. Quitting while a discard toast shows commits the discard, so a recording you threw away isn't offered back.
+- **The length.** `SegmentRecovery.Leftover` in ShotCore adds up the parts' lengths to the nearest second, never under one, and writes it as the recording timer would, with tests.
+- **Red while something may be lost.** The tile takes the Recording tint, as the board does. It fits rule 6, since the recording is lost unless you recover it.
+- **Departures from the board.** The board rounds the tile at 12 and the buttons at 8; Shot uses the group and control tokens, 10 and 6. Discard recording is the shared plain button, 13 pt medium rather than the board's 12 pt. The shadow is the system window shadow rather than the board's `0 20px 44px` at 22%. The board shows light only; dark takes the group fill, the dark Recording tint and the Float edge's dark value. The toast keeps the shared toast's 10 pt gap, 4 pt button padding and faded ⌘Z, where the board's discard toast has 12, 3 and a white key.
+- **Keyboard.** The dialog takes the keyboard when Shot is brought forward. Return recovers and Esc puts it off. With keyboard navigation on, Tab moves between the buttons, which show the accent focus halo. macOS can refuse to bring a menu bar app forward at launch, so the panel floats above other windows either way. The toast never takes the keyboard, so ⌘Z presses Undo from any app.
+- **VoiceOver** announces the title and detail when the dialog appears. The dialog is a group named by its title, the title is a heading, and each button reads by name, with a tooltip saying what it does.
+- **Text size.** The card is 320 pt times Settings › Text size wide, so the detail wraps as on the board, and it grows to fit. The tile scales with it.
+- **Reduce Motion.** The dialog rises 8 pt as it fades in over the panel arrival's 240 ms, and Reduce Motion makes that a 120 ms fade. The toast follows Toast.
+- **Increase Contrast** takes the card's edge to 1 pt of 60% ink and the detail to the text colour.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -683,7 +708,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Quick Access, pin, menu and toasts › floating panels | #1073 | `Design/GlassWindow.swift` (`FloatingPanel`, `FloatingPanelWindow`), `Toast.swift`, `Overlay/SelectionOverlayView.swift`, `Recording/RecordingControlPanel.swift`, `Recording/RecordingSetupController.swift`, `Capture/ScrollingCaptureController.swift`, `QuickAccess/QuickAccessView.swift` | ☐ |
 | Permission card… › permission card | #1087 | `Overlay/BrowserPermissionCard.swift`, `Overlay/SelectionOverlayController.swift` (`showPermissionCard`), `Overlay/SelectionOverlayView.swift` (`barScreenFrame`, a click closes the card), `Design/GlassWindow.swift` (`FloatingPanel.Opacity.card`), ShotCore `PermissionCardPlacement.swift` | ☐ |
 | Permission card… › colour loupe | #1080 | `ColorSampler.swift`, `Overlay/ColorPickerOverlay.swift`, ShotCore `ColorLoupe.swift` (`ColorLoupe`, `PixelColor`) | ☐ |
-| Permission card… › recovery | #1092 | `Recording/RecordingRecovery.swift` | ☐ |
+| Permission card… › recovery | #1092 | `Recording/RecordingRecovery.swift` (`RecordingRecoveryDialog`, `recover(_:)`), `AppDelegate.swift`, ShotCore `SegmentRecovery.swift` (`Leftover`) | ☐ |
 | Permission card… › update prompt | #1117 | `Updater.swift` | ☐ |
 | Permission card… › tooltips and menus | #1072 | `Design/BrutalTip.swift` | ☐ |
 | Permission card… › Share menu | #1093 | `Editor/EditorToolbar.swift` | ☐ |
@@ -698,7 +723,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | While recording | #1089 controls | `Recording/RecordingControlPanel.swift`, `Recording/AudioMeter.swift` (`MicLevelColumns`), `Recording/Recorder.swift` (`RecordingSessionModel.seconds`), `Design/BrandMark.swift` (`timerImage`), `MenuBar/StatusMenu.swift`, ShotCore `RecordingClock.swift` | ☐ |
 | While recording | #1090 border and clicks | `Recording/RecordingBorderPanel.swift`, `Recording/ClickRings.swift`, `Recording/Recorder.swift` (`makeFilter`), ShotCore `RecordingMarks.swift` (`RecordingBorder`, `ClickRing`), `Moment.clickRing` | ☐ |
 | While recording | #1091 camera bubble | `Recording/CameraBubble.swift`, ShotCore `CameraBubbleLayout.swift` | ☐ |
-| While recording | #1092 discard toast | `Recording/RecordingControlPanel.swift`, `Toast.swift` | ☐ |
+| While recording | #1092 discard toast | `Recording/RecordingControlPanel.swift` (Discard), `Recording/Recorder.swift` (`complete(discard:)`), `Toast.swift` (`commitPending()`) | ☐ |
 
 ### Edit
 

@@ -214,6 +214,12 @@ enum Toast {
         }
     }
 
+    /// Commits what an undo toast would undo, for when Shot quits while one shows, so a discarded recording's parts are
+    /// deleted rather than offered back by the recovery dialog the next time Shot opens.
+    static func commitPending() {
+        settle()
+    }
+
     private static func hide() {
         panel?.orderOut(nil)
         panel?.alphaValue = 1
