@@ -21,11 +21,12 @@ The camera bubble, microphone and cursor are on or off as you set them in **Sett
 
 ## Check everything before you start
 
-Hold <kbd>⌥</kbd> as you finish picking an area or window. Before recording starts, you can then:
+Hold <kbd>⌥</kbd> as you finish picking an area or window. The rest of the screen dims, the frame shows its size in pixels, and a bar appears under it. Before recording starts, you can then:
 
-- move and resize the frame. If you picked an area with a ratio, the handles keep it.
-- switch between an area, a screen and a window.
-- turn the camera bubble, microphone and cursor on or off, just for this recording.
+- move and resize the frame with its handles, or drag the grip above it. If you picked an area with a ratio, the handles keep it, and the size shows the ratio.
+- switch between an area, a window and the full screen.
+- turn the microphone, camera bubble, Mac sound and cursor on or off, just for this recording. With the microphone on, the bars under its name move as you speak, so you can check it's working before you start.
+- pick the frame rate for this recording.
 
 Press <kbd>Return</kbd> or click **Record** to start, or <kbd>Esc</kbd> to cancel. To get this step every time, turn on **Adjust before recording** in **Settings › Recording**.
 

@@ -83,3 +83,37 @@ struct LevelMeter: View {
         }
     }
 }
+
+/// The setup bar's microphone level (Record › Check before recording): ten 5 × 4 pt bars, lit success green and amber for
+/// the top two, near clipping, over white at 18%. It only redraws while `active`, so a microphone that's off costs nothing.
+struct MicLevelBars: View {
+    let meter: AudioMeter
+    var active = true
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.textSize) private var textSize
+
+    /// The board's amber, which reads as a warning without taking record red, kept for recording and loss.
+    private static let loud = Color(hex: 0xFFB648)
+
+    var body: some View {
+        let scale = CGFloat(textSize.scale)
+        TimelineView(.animation(minimumInterval: 1.0 / 20, paused: !active)) { _ in
+            let lit = active ? LevelBars.lit(meter.level) : 0
+            HStack(spacing: 2) {
+                ForEach(0..<LevelBars.count, id: \.self) { index in
+                    RoundedRectangle(cornerRadius: 1, style: .circular)
+                        .fill(color(index, lit: index < lit))
+                        .frame(width: (5 * scale).rounded(), height: (4 * scale).rounded())
+                }
+            }
+        }
+        .accessibilityHidden(true)
+    }
+
+    private func color(_ index: Int, lit: Bool) -> Color {
+        guard lit else {
+            return Color.white.opacity(contrast == .increased ? 0.4 : 0.18)
+        }
+        return index >= LevelBars.loudFrom ? Self.loud : Brutal.success
+    }
+}

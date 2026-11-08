@@ -72,6 +72,10 @@ final class Recorder: NSObject {
         let camera: Bool
         let microphone: Bool
         let showsCursor: Bool
+        /// Sound from other apps on the Mac.
+        let systemAudio: Bool
+        /// The frame rate asked for; a display that can't refresh that fast records at the most it offers.
+        let fps: Int
         /// Set when recording one window, which then follows the window and leaves out anything covering it.
         let windowID: CGWindowID?
         /// Set with `windowID` to record only a browser window's page.
@@ -143,7 +147,7 @@ final class Recorder: NSObject {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let finalURL = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "mp4", prefix: prefs.filePrefix)
         let microphoneID = CaptureDevices.device(id: prefs.microphoneDeviceID, for: .audio)?.uniqueID
-        session = Session(screen: screen, region: region, windowID: options.windowID, pageInsets: options.pageInsets, microphone: microphone, showsCursor: options.showsCursor, showsClicks: prefs.recordShowsClicks, microphoneID: microphoneID, fps: RecordingFrameRate.effective(setting: prefs.recordingFPS, displayRate: screen.maximumFramesPerSecond), systemAudio: prefs.recordSystemAudio, finalURL: finalURL)
+        session = Session(screen: screen, region: region, windowID: options.windowID, pageInsets: options.pageInsets, microphone: microphone, showsCursor: options.showsCursor, showsClicks: prefs.recordShowsClicks, microphoneID: microphoneID, fps: RecordingFrameRate.effective(setting: options.fps, displayRate: screen.maximumFramesPerSecond), systemAudio: options.systemAudio, finalURL: finalURL)
         segments = RecordingSegments()
         microphoneFailureShown = false
         model = RecordingSessionModel()

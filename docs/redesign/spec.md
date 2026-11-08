@@ -506,6 +506,34 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Dark appearance** changes nothing: the toast is a floating panel, dark in both.
 - **Increase Contrast and Reduce Transparency** make the pill solid. Increase Contrast also takes its edge to 40% white and the percentage to full white.
 
+### Check before recording
+
+#1088 builds Record › Check before recording: what you see after picking an area, window or screen to record when Settings › Recording › Adjust before recording is on, or when ⌥ is held as the pick ends. The frame is one panel the size of the screen, which ignores the mouse, and the bar is SwiftUI in its own `FloatingPanelWindow` with the system shadow. The camera bubble keeps its current look until #1091.
+
+| Part | Look |
+| --- | --- |
+| Dim | `rgba(12,12,16,0.46)` outside the frame, on the screen it's on. Four plain layer colours, so a large screen costs no bitmap |
+| Edge | 1 pt `rgba(255,255,255,0.95)` just outside the frame, then 1 pt `rgba(0,0,0,0.35)` outside that, as on the area overlay |
+| Handles | 10 pt white circles with a 1.5 pt ink edge at the corners and the middle of each side, each in a 20 pt panel you can grab |
+| Chip | The size in pixels, then the ratio when the area was picked with one ("1040 × 1040 · 1:1"), in 12 pt bold SF Mono, white, on the floating fill at 88% with its 0.5 pt edge, radius 8, 3 × 9 pt padding, 14 pt above the frame's top-left corner |
+| Bar | Standard floating panel, radius 16, 7 pt padding, 6 pt between parts, 22 pt under the frame. It grows to fit its labels and stays centred under the frame |
+| Mode | `BrutalSegmented` with Area, Window and Full Screen |
+| Microphone | The microphone's name in Small type over ten 5 × 4 pt level bars: success green, amber `#FFB648` for the top two, and white at 18% unlit |
+| Toggles | Camera, Mac sound and Cursor, each a symbol and its name. On: the 16% white fill, white and semibold. Off: no fill, 70% white, and the symbol struck through |
+| Frame rate | "60 fps" in 12 pt bold SF Mono with a chevron, opening a `BrutalDropdown` of the rates the screen offers |
+| Buttons | Cancel as the floating secondary button, and Record as the floating main button: a 13 pt red dot with a 1.5 pt ink ring, "Record", and a faded ↩. Both 38 pt tall, as are the toggles |
+
+- **Choices for this recording only.** The toggles and the frame rate start from Settings › Recording and change only the recording about to start, as the camera, microphone and cursor toggles did before. `Recorder.Options` now carries Mac sound and the frame rate too. Picking a screen that can't refresh as fast steps the rate down to the fastest it offers.
+- **The meter runs before you record.** Turning the microphone on starts it through `DevicePreview`, so the bars move as you speak, and it stops before a countdown or the recording opens the microphone. macOS asks for the permission here the first time, and a refusal turns the toggle off. `LevelBars` in ShotCore works out how many bars are lit, with tests.
+- **The dim.** `RecordSetupFrame.dimRects` in ShotCore lays out the four rects around the frame, and `RecordSetupFrame.label` writes the chip's text, with tests. The chip uses `AreaLabelPlacement`, kept below the menu bar and off the bar and the move grip. Clicks go through the dim to the apps under it, so you can still set them up.
+- **The move grip stays.** The board draws no way to move the frame. The grip above its top edge is now a small dark pill in the chip's colours, kept below the menu bar.
+- **Camera can't be turned on for a window recording,** since the bubble would never appear in it. Its tooltip says so.
+- **Departures from the board.** The bar's radius is 16 like the capture bar's, rather than 18, and its buttons take group corners (10) rather than 11. Cancel is the floating secondary button, as on the countdown and the browser permission card, rather than plain text. Off toggles strike through their symbol, so on and off differ by more than the fill. The mode control is `BrutalSegmented`, a little shorter than the board's, and says Full Screen, as the capture bar does. Mac sound keeps the board's name, and #1115 decides whether Settings › Recording's "System audio" row follows it.
+- **Keyboard.** The bar is key while it shows. Return, Enter and the record shortcut start the recording, and Esc cancels. With keyboard navigation on, Tab moves between the controls, which show the accent focus halo, and the arrow keys move the mode.
+- **VoiceOver** reads the bar as "Check before recording" with the frame's size as its value. Each toggle reads its name and On or Off, the microphone adds its name, the frame rate is a menu button with the rate as its value, and Record and Cancel read by name. Tooltips say what each control does, with its key.
+- **Text size.** The bar's labels, the level bars, the record dot and the chip scale with Settings › Text size, and the bar grows to fit. The handles and edges don't.
+- **Increase Contrast and Reduce Transparency** make the bar and the chip solid with the 40% edge. Increase Contrast also takes off toggles to 90% white and the unlit level bars to 40%.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -598,7 +626,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 
 | Board | Issue | Files | QA |
 | --- | --- | --- | --- |
-| Check before recording | #1088 | `Recording/RecordingSetupController.swift`, `Recording/AudioMeter.swift` | ☐ |
+| Check before recording | #1088 | `Recording/RecordingSetupController.swift`, `Recording/AudioMeter.swift` (`MicLevelBars`), `Recording/Recorder.swift` (`Options`), `Recording/RecordingBorderPanel.swift`, ShotCore `RecordSetupFrame.swift` (`RecordSetupFrame`, `LevelBars`) | ☐ |
 | Check before recording | #1091 camera bubble | `Recording/CameraBubble.swift` | ☐ |
 | While recording | #1089 controls | `Recording/RecordingControlPanel.swift`, `Recording/AudioMeter.swift`, `Design/BrandMark.swift` | ☐ |
 | While recording | #1090 border and clicks | `Recording/RecordingBorderPanel.swift` | ☐ |
