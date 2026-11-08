@@ -19,6 +19,8 @@ public enum Moment: CaseIterable, Sendable {
     case countdownRing
     /// The menu bar's recording mark breathes.
     case recordingPulse
+    /// A click's ring fades out once it has held for `ClickRing.hold`.
+    case clickRing
 
     /// What Reduce Motion plays instead.
     public enum Reduced: Sendable {
@@ -42,6 +44,7 @@ public enum Moment: CaseIterable, Sendable {
         case .countdownFlip: 0.16
         case .countdownRing: 1
         case .recordingPulse: 1.6
+        case .clickRing: 0.24
         }
     }
 
@@ -49,14 +52,14 @@ public enum Moment: CaseIterable, Sendable {
     public var isAmbient: Bool {
         switch self {
         case .countdownRing, .recordingPulse: true
-        case .press, .viewfinderSnap, .tick, .markLand, .panelArrive, .countdownFlip: false
+        case .press, .viewfinderSnap, .tick, .markLand, .panelArrive, .countdownFlip, .clickRing: false
         }
     }
 
     public var reduced: Reduced {
         switch self {
         case .viewfinderSnap, .tick, .panelArrive: .fade
-        case .press, .markLand, .countdownFlip, .countdownRing, .recordingPulse: .none
+        case .press, .markLand, .countdownFlip, .countdownRing, .recordingPulse, .clickRing: .none
         }
     }
 
