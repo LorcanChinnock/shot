@@ -4,7 +4,7 @@ import ShotCore
 
 /// The app icon's viewfinder mark as a menu bar template image; macOS tints it for light and dark menu bars.
 /// The centre mark shows the state, and a corner dot shows an update is waiting. While counting down the digit flips each
-/// second, and while recording a ring breathes out of the mark (`MenuBarAnimation`).
+/// second (`MenuBarAnimation`). While recording, the mark gives way to the time (`timerImage`).
 enum BrandMark {
     enum State: Equatable {
         case idle, recording, paused
@@ -52,6 +52,49 @@ enum BrandMark {
         case let .countdown(seconds): String(localized: "Shot, starting in \(seconds) seconds")
         }
         image.accessibilityDescription = updateAvailable ? String(localized: "\(description), update available") : description
+        return image
+    }
+
+    /// The time recorded, in place of the mark (Record › While recording). Recording, it's white on a record red pill with a
+    /// stop square that a ring breathes out of; paused, it's a template image of the pause marks and the time, which macOS
+    /// tints like the rest of the menu bar, so red shows only while something is being recorded.
+    static func timerImage(seconds: Int, paused: Bool, pulse: Double? = nil) -> NSImage {
+        let text = RecordingClock.label(seconds)
+        let font = NSFont.monospacedSystemFont(ofSize: 12, weight: .bold)
+        let ink: NSColor = paused ? .black : .white
+        let string = NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: ink])
+        let textWidth = ceil(string.size().width)
+        let padding: CGFloat = paused ? 2 : 8
+        let size = NSSize(width: padding + 7 + 5 + textWidth + padding, height: 20)
+        let image = NSImage(size: size, flipped: false) { rect in
+            if !paused {
+                NSColor(srgbRed: 0xE5 / 255, green: 0x35 / 255, blue: 0x2B / 255, alpha: 1).set()
+                NSBezierPath(roundedRect: rect, xRadius: 6, yRadius: 6).fill()
+            }
+            let mark = CGRect(x: padding, y: rect.midY - 3.5, width: 7, height: 7)
+            if paused {
+                ink.set()
+                NSBezierPath(roundedRect: CGRect(x: mark.minX, y: rect.midY - 4, width: 2.5, height: 8), xRadius: 0.75, yRadius: 0.75).fill()
+                NSBezierPath(roundedRect: CGRect(x: mark.maxX - 2.5, y: rect.midY - 4, width: 2.5, height: 8), xRadius: 0.75, yRadius: 0.75).fill()
+            } else {
+                if let pulse {
+                    let breath = Moment.pulse(pulse)
+                    if breath.opacity > 0.01 {
+                        let radius = 3.5 + 2.5 * breath.spread
+                        NSColor.white.withAlphaComponent(breath.opacity).set()
+                        NSBezierPath(ovalIn: CGRect(x: mark.midX - radius, y: mark.midY - radius, width: radius * 2, height: radius * 2)).fill()
+                    }
+                }
+                ink.set()
+                NSBezierPath(roundedRect: mark, xRadius: 1.5, yRadius: 1.5).fill()
+            }
+            // Centre the digits' cap height, as `drawNumber` does.
+            string.draw(at: CGPoint(x: mark.maxX + 5, y: rect.midY - font.capHeight / 2 + font.descender))
+            return true
+        }
+        image.isTemplate = paused
+        let time = Duration.seconds(seconds).formatted(.units(allowed: [.hours, .minutes, .seconds], width: .wide))
+        image.accessibilityDescription = paused ? String(localized: "Shot, recording paused at \(time)") : String(localized: "Shot, recording, \(time)")
         return image
     }
 

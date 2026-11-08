@@ -93,7 +93,7 @@ struct MicLevelBars: View {
     @Environment(\.textSize) private var textSize
 
     /// The board's amber, which reads as a warning without taking record red, kept for recording and loss.
-    private static let loud = Color(hex: 0xFFB648)
+    static let loud = Color(hex: 0xFFB648)
 
     var body: some View {
         let scale = CGFloat(textSize.scale)
@@ -115,5 +115,40 @@ struct MicLevelBars: View {
             return Color.white.opacity(contrast == .increased ? 0.4 : 0.18)
         }
         return index >= LevelBars.loudFrom ? Self.loud : Brutal.success
+    }
+}
+
+/// The recording controls' microphone level (Record › While recording): four 3 pt columns rising from 5 to 14 pt, lit
+/// success green from the shortest as the level rises, with the tallest amber, near clipping. Unlit columns are white at
+/// 25% (40% with Increase Contrast). It only redraws while `active`, so a muted or paused microphone costs nothing.
+struct MicLevelColumns: View {
+    let meter: AudioMeter
+    var active = true
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.textSize) private var textSize
+
+    private static let heights: [CGFloat] = [5, 8, 11, 14]
+
+    var body: some View {
+        let scale = CGFloat(textSize.scale)
+        TimelineView(.animation(minimumInterval: 1.0 / 20, paused: !active)) { _ in
+            let lit = active ? LevelBars.lit(meter.level, of: Self.heights.count) : 0
+            HStack(alignment: .bottom, spacing: 2) {
+                ForEach(Self.heights.indices, id: \.self) { index in
+                    RoundedRectangle(cornerRadius: 1, style: .circular)
+                        .fill(color(index, lit: index < lit))
+                        .frame(width: (3 * scale).rounded(), height: (Self.heights[index] * scale).rounded())
+                }
+            }
+            .frame(height: (14 * scale).rounded(), alignment: .bottom)
+        }
+        .accessibilityHidden(true)
+    }
+
+    private func color(_ index: Int, lit: Bool) -> Color {
+        guard lit else {
+            return Color.white.opacity(contrast == .increased ? 0.4 : 0.25)
+        }
+        return index == Self.heights.count - 1 ? MicLevelBars.loud : Brutal.success
     }
 }

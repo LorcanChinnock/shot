@@ -213,7 +213,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | Viewfinder snap | `Capture/ViewfinderSnap.swift` | 4 pt ink brackets with a white edge fly in 14 pt from outside each corner, overshoot 2 pt and settle, with a 30% white flash. They hold for 180 ms, then fade. Shape layers, so a full-screen capture adds no memory |
 | Copied tick | `Toast.done(_:drawsTick:)` | A 20 pt accent disc with an ink tick, for every copy and save. The toast rises 8 pt as it fades in. After a capture the snap is that action's moment, so the toast shows its tick already drawn |
 | Marks land | `Editor/EditorCanvasView.swift` | A new counter grows to 122% and settles. An arrow is already whole when you let go of the drag, so it doesn't draw again |
-| Countdown, recording pulse | `Design/BrandMark.swift` (`MenuBarAnimation`) | The digit folds flat and the next unfolds over 160 ms. While recording, a ring breathes out of the mark. A frame loop runs only while one plays. The countdown panel's ring is #1078 (see Countdown) and the recording controls' dot is #1089 |
+| Countdown, recording pulse | `Design/BrandMark.swift` (`MenuBarAnimation`) | The digit folds flat and the next unfolds over 160 ms. While recording, the menu bar shows the time instead, and a ring breathes out of its stop square. A frame loop runs only while one plays. The countdown panel's ring is #1078 (see Countdown), and the recording controls' dot and the menu bar time are #1089 (see Recording controls) |
 
 ### Capture bar
 
@@ -534,6 +534,31 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Text size.** The bar's labels, the level bars, the record dot and the chip scale with Settings › Text size, and the bar grows to fit. The handles and edges don't.
 - **Increase Contrast and Reduce Transparency** make the bar and the chip solid with the 40% edge. Increase Contrast also takes off toggles to 90% white and the unlit level bars to 40%.
 
+### Recording controls
+
+#1089 builds Record › While recording: the bar under the area while it records, and the time in the menu bar. The bar is SwiftUI in its own `FloatingPanelWindow` with the system shadow, and grows to fit what it shows. The border is #1090, the camera bubble #1091, and the discard toast #1092.
+
+| Part | Look |
+| --- | --- |
+| Bar | Standard floating panel, radius 16, 6 pt padding, 4 pt between parts, 22 pt under the area and centred on it. You can drag it aside |
+| Status | Recording: a 10 pt record red (`#FF453A`) dot, then the time in 15 pt bold SF Mono with tabular figures, 9 pt apart, padded 10 pt left and 12 pt right. Paused: two 3 × 10 pt amber `#FFB648` bars in place of the dot, and the time at 70% white |
+| Divider | `FloatingDivider` |
+| Microphone | Its symbol and four 3 pt columns rising from 5 to 14 pt, lit success green as the level rises with the tallest amber, and white at 25% unlit. Muted: the symbol struck through, at 70% white, and every column unlit. Shown only when the recording has the microphone |
+| Camera | The floating toolbar toggle, on with the 16% fill, the symbol struck through when off. Hidden for a window recording |
+| Pause, Discard | Floating toolbar buttons, 36 pt tall, symbol only |
+| Stop | Recording: the floating main button in record red, with a 10 pt white square and "Stop". Paused: the floating secondary button, "Stop" alone |
+| Resume | Paused only, in Pause's place: the floating main button with ▶ and "Resume" |
+| Menu bar | Recording: the time in 12 pt bold SF Mono, white on a record red (`#E5352B`) pill 20 pt tall at radius 6, after a 7 pt white stop square. Paused: the pause marks and the time as a template image, in the menu bar's own colour |
+
+- **The pulse.** A halo of record red breathes out of the dot over `Moment.recordingPulse` (1.6 s), using `Moment.pulse`, the same breath as the menu bar's. Its frame loop runs at 30 fps and only while recording. Reduce Motion holds the board's steady 4 pt halo at 25%. In the menu bar a white ring breathes out of the stop square.
+- **The timer never jitters.** `RecordingSessionModel.seconds` ticks once on each whole second recorded, and `RecordingClock` in ShotCore writes "0:07", "12:34" or "1:02:03", with tests. The time sits over hidden zeroes at least "00:00" wide in tabular figures, so the bar keeps its width until the recording passes an hour. The menu bar and the bar read the same clock, so they always agree.
+- **Red only while recording.** The menu bar pill, the dot and Stop's red go when you pause (rule 6). Resume is then the one ink button, in the accent, and Stop turns secondary.
+- **Departures from the board.** The board's paused bar shows only the time, Resume and Stop. Shot keeps the microphone, camera and Discard while paused, so you can discard or hide the camera before resuming, and Resume lands where Pause was. The board's microphone columns are drawn at uneven heights; Shot draws a rising row lit by the level, which reads at a glance. Buttons take group corners (10), as the board draws them. The camera toggle that's on uses the 16% fill rather than the board's 12%, as every floating toggle does. The board leaves out changing the bubble's size, which used to have its own button; double-clicking the bubble still does it, and the camera button's tooltip says so. The menu bar's paused look isn't on the board.
+- **Keyboard.** The bar never takes the keyboard, so the app you're recording keeps it. The record shortcut stops, and the menu bar menu has Pause and Stop.
+- **VoiceOver** reads the bar as "Recording" or "Recording paused". The status reads its state with the time as its value, such as "Recording, 7 seconds". The microphone reads "Microphone" with On or Muted, the camera "Camera bubble" with On or Off, and Pause, Resume, Discard and Stop by name. The menu bar item reads "Shot, recording, 7 seconds", or "Shot, recording paused at 7 seconds".
+- **Text size.** The time, symbols, dot, pause marks, level columns and buttons scale with Settings › Text size, and the bar grows to fit, keeping its middle and top edge. The menu bar doesn't scale.
+- **Increase Contrast and Reduce Transparency** make the bar solid with the 40% edge. Increase Contrast also takes the paused time and a muted microphone to 90% white, unlit columns to 40%, and Stop's red to `#C4271E`.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -628,7 +653,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | --- | --- | --- | --- |
 | Check before recording | #1088 | `Recording/RecordingSetupController.swift`, `Recording/AudioMeter.swift` (`MicLevelBars`), `Recording/Recorder.swift` (`Options`), `Recording/RecordingBorderPanel.swift`, ShotCore `RecordSetupFrame.swift` (`RecordSetupFrame`, `LevelBars`) | ☐ |
 | Check before recording | #1091 camera bubble | `Recording/CameraBubble.swift` | ☐ |
-| While recording | #1089 controls | `Recording/RecordingControlPanel.swift`, `Recording/AudioMeter.swift`, `Design/BrandMark.swift` | ☐ |
+| While recording | #1089 controls | `Recording/RecordingControlPanel.swift`, `Recording/AudioMeter.swift` (`MicLevelColumns`), `Recording/Recorder.swift` (`RecordingSessionModel.seconds`), `Design/BrandMark.swift` (`timerImage`), `MenuBar/StatusMenu.swift`, ShotCore `RecordingClock.swift` | ☐ |
 | While recording | #1090 border and clicks | `Recording/RecordingBorderPanel.swift` | ☐ |
 | While recording | #1091 camera bubble | `Recording/CameraBubble.swift` | ☐ |
 | While recording | #1092 discard toast | `Recording/RecordingControlPanel.swift`, `Toast.swift` | ☐ |
