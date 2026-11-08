@@ -7,32 +7,17 @@ struct EditorRootView: View {
 
     var body: some View {
         VStack(spacing: Brutal.sectionGap) {
-            HStack(spacing: 12) {
-                Text(model.fileURL.lastPathComponent)
-                    .font(.scaled(13, weight: .heavy))
-                    .foregroundStyle(Brutal.ink)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                if model.isDirty {
-                    BrutalBadge(text: "EDITED")
-                }
-                Spacer()
-                Button { model.toggleLayers() } label: { Label("Layers", systemImage: "square.3.layers.3d").fixedSize() }
-                    .buttonStyle(BrutalButtonStyle(.toolbar, isOn: model.showsLayers))
-                    .brutalTip("Show the layers (⌘L)")
+            EditorTitleBar(model: model)
+                .padding(.leading, GlassWindow.trafficLightsWidth - Brutal.windowInset)
+                .padding(.trailing, 12 - Brutal.windowInset)
+                .frame(height: GlassWindow.titlebarHeight)
+                .padding(.bottom, -Brutal.sectionGap / 2)
+            // Until the zoom control moves onto the canvas (#1095) and the Canvas menu finds its place (#1099).
+            HStack(spacing: 14) {
+                EditorToolbar(model: model)
                 ZoomMenu(model: model, canvas: canvas)
                 CanvasMenu(model: model)
-                Button("Copy") { Task { await model.copy() } }
-                    .buttonStyle(BrutalButtonStyle(.main))
-                    .brutalTip("Copy image (⌘C)")
-                Button("Save") { Task { await model.save() } }
-                    .buttonStyle(BrutalButtonStyle())
-                    .brutalTip("Save and copy (⌘S)")
             }
-            .padding(.leading, GlassWindow.trafficLightsWidth)
-            .frame(height: GlassWindow.titlebarHeight)
-            .padding(.bottom, -Brutal.sectionGap / 2)
-            EditorToolbar(model: model)
             HStack(spacing: Brutal.sectionGap) {
                 CanvasHost(canvas: canvas)
                     .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
@@ -73,6 +58,135 @@ struct EditorRootView: View {
             }
         }
         .padding([.horizontal, .bottom], Brutal.windowInset)
+    }
+}
+
+/// The title bar and toolbar in one, from Edit › Image editor · annotate: the file beside the traffic lights, the tools in
+/// the middle, then Undo, Style, Layers, Share, Save and Copy, the one main button.
+private struct EditorTitleBar: View {
+    @Bindable var model: EditorModel
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(model.fileURL.lastPathComponent)
+                    .font(Brutal.label)
+                    .foregroundStyle(Brutal.ink)
+                    .truncationMode(.middle)
+                subtitle
+                    .font(Brutal.caption)
+                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                    .monospacedDigit()
+            }
+            .lineLimit(1)
+            .frame(minWidth: 100, maxWidth: 190, alignment: .leading)
+            .padding(.leading, 8)
+            // The name takes its room first; the tools sit centred in what's left.
+            .layoutPriority(1)
+            .accessibilityElement(children: .combine)
+            Spacer(minLength: 0)
+            EditorToolGroup(model: model)
+            Spacer(minLength: 0)
+            actions
+        }
+    }
+
+    private var size: String { EditorToolbarLayout.sizeLabel(model.document.exportSize) }
+
+    private var subtitle: Text {
+        model.isDirty ? Text("Edited · \(size)") : Text(verbatim: size)
+    }
+
+    private var actions: some View {
+        HStack(spacing: 4) {
+            Tile(selected: false, help: "Undo", key: "⌘Z", detail: "Redo with ⇧⌘Z.", isEnabled: model.history.canUndo) {
+                model.undo()
+            } label: {
+                Image(systemName: "arrow.uturn.backward").font(Brutal.toolIcon)
+            }
+            Tile(
+                selected: model.showsStylePopover, help: "Style",
+                detail: "Add a shadow, border or rounded corners to the selected image, a shadow or glow to a shape, arrow or text, or style the screenshot when nothing is selected",
+                isEnabled: model.styleTarget != nil
+            ) {
+                model.showsStylePopover.toggle()
+            } label: {
+                Image(systemName: "paintpalette").font(Brutal.toolIcon)
+            }
+            .popover(isPresented: $model.showsStylePopover, arrowEdge: .bottom) {
+                StylePopover(model: model)
+            }
+            Tile(selected: model.showsLayers, help: "Layers", key: "⌘L", detail: "Shows every mark and image in a list beside the canvas.") {
+                model.toggleLayers()
+            } label: {
+                Image(systemName: "sidebar.right").font(Brutal.toolIcon)
+            }
+            Rectangle()
+                .fill(Brutal.controlEdge)
+                .frame(width: 1, height: 20)
+                .padding(.horizontal, 6)
+                .accessibilityHidden(true)
+            ShareMenu(model: model)
+            Button("Save") { Task { await model.save() } }
+                .buttonStyle(BrutalButtonStyle())
+                .brutalTip("Save", key: "⌘S", detail: "Saves your changes and copies the image.")
+                .padding(.leading, 4)
+            Button("Copy") { Task { await model.copy() } }
+                .buttonStyle(BrutalButtonStyle(.main))
+                .brutalTip("Copy", key: "⌘C", detail: "Copies the image with your changes, ready to paste.")
+                .padding(.leading, 4)
+        }
+        .fixedSize()
+    }
+}
+
+/// Everything else you can do with the image: Copy Image, Copy Path, Save As…, Show in Finder and Pin to Screen.
+private struct ShareMenu: View {
+    let model: EditorModel
+
+    var body: some View {
+        BrutalDropdown(title: "Share", entries: entries) {
+            HStack(spacing: 6) {
+                Text("Share")
+                Image(systemName: "chevron.down")
+                    .font(.scaled(9, weight: .bold))
+                    .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+            }
+        }
+        .buttonStyle(BrutalButtonStyle())
+        .fixedSize()
+        .brutalTip("Share", detail: "Copy the file's path for an AI assistant or a chat, save a copy somewhere else, show it in Finder or pin it to your screen.")
+    }
+
+    private var entries: [BrutalMenuEntry] {
+        EditorShareAction.allCases.flatMap { action -> [BrutalMenuEntry] in
+            let item = BrutalMenuEntry.item(action.title, symbol: action.symbol, shortcut: action.shortcut) {
+                Task { await model.share(action) }
+            }
+            return action.startsSection ? [.divider, item] : [item]
+        }
+    }
+}
+
+private extension EditorShareAction {
+    var title: String {
+        switch self {
+        case .copyImage: String(localized: "Copy Image")
+        case .copyPath: String(localized: "Copy Path")
+        case .saveAs: String(localized: "Save As…")
+        case .showInFinder: String(localized: "Show in Finder")
+        case .pin: String(localized: "Pin to Screen")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .copyImage: "doc.on.doc"
+        case .copyPath: "sparkles"
+        case .saveAs: "square.and.arrow.down"
+        case .showInFinder: "folder"
+        case .pin: "pin"
+        }
     }
 }
 

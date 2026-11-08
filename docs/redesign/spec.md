@@ -626,6 +626,28 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Reduce Motion.** The dialog rises 8 pt as it fades in over the panel arrival's 240 ms, and Reduce Motion makes that a 120 ms fade. The toast follows Toast.
 - **Increase Contrast** takes the card's edge to 1 pt of 60% ink and the detail to the text colour.
 
+### Image editor toolbar
+
+#1093 builds the editor's title bar on Edit › Image editor · annotate, and its Share menu on Capture › Permission card… › Menus and tooltips. The title bar and the toolbar were two rows; now they're one, beside the traffic lights. Copy is the window's one main button, and what you need less often moves into Share. The row of colour and width options stays under it until the style bar (#1094) replaces it.
+
+| Part | Look |
+| --- | --- |
+| File | The file name in Window type (13 semibold), and under it the size the image saves at, "1,040 × 600", in Caption type and tertiary text, after "Edited ·" while there are unsaved changes. Up to 190 pt wide; the name truncates in the middle |
+| Tool group | Centred between the file and the buttons. Field fill, group radius 10, 3 pt padding, 1 pt between buttons. Select, Arrow, Line, Shape, Pen, Text, Sticky note, Highlight, Spotlight, Redact and Counter, a 1 × 18 pt control-edge divider with 4 pt either side, then Add image and Crop. Each is a tool tile (`Tile(tool: true)`), 30 × 28, so the selected tool is the accent with a 1.5 pt ink outline and 1.5 pt drop |
+| Buttons | Undo, Style and Layers as toolbar tiles, 4 pt apart. Style and Layers fill while their popover or panel shows. Then a 1 × 20 pt control-edge divider with 6 pt either side |
+| Share | A secondary button with a 9 pt chevron in secondary text. It opens the shared menu (`BrutalDropdown`): Copy Image ⌘C, Copy Path, a divider, Save As…, Show in Finder and Pin to Screen, each with its symbol |
+| Save, Copy | Save is a secondary button and Copy the main button, 4 pt further apart than the tiles, with Copy last |
+
+- **What Share does.** Copy Image copies the annotated image, as Copy does. Copy Path and Show in Finder save unsaved changes first, without the save's own toast, so the file they point at has the marks. Copy Path's toast then says "Saved as … and copied its path". Save As… writes the annotated image to a file the user names, PNG or JPEG by its extension, next to the file to start, and leaves the editor on its own file. It won't replace the file being edited, since Save does that and keeps the original. A JPEG with transparent padding takes a white background. Pin to Screen floats the annotated image as Quick Access's Pin does. `EditorShareAction` in ShotCore holds the order, the divider, the shortcut and which actions save first, with tests.
+- **Which tools have buttons.** `EditorToolbarLayout` in ShotCore lists them, with tests that every tool but the hand has one and each keeps its key. The hand tool has no button, as on the board. H still picks it, and Space-drag, a middle-drag and scrolling still move around. While it's in use no button shows as selected.
+- **Window width.** The title bar needs 1,060 pt, so that's the editor's new minimum, up from 980.
+- **Departures from the board.** Redo has no button, as on the board, and the Undo tooltip says ⇧⌘Z redoes. The zoom menu and the Canvas menu move to the end of the options row until the canvas's zoom control (#1095) and the Canvas menu's new place (#1099); the board has no room for them in the title bar. The board rounds the tool buttons at 7 and the Share, Save and Copy buttons at 7; Shot uses the control token, 6. The tools keep their SF Symbols, and Highlight and Redact keep their names, which the guide and Settings use, where the board says Highlighter and Blur. Style keeps its palette symbol and Layers takes `sidebar.right`, the board's panel icon. The board's menu highlights its row in selection blue; the shared menu highlights in the accent, as every Shot menu does.
+- **Keyboard.** Every tool keeps its key, and its tooltip shows it on a keycap with what the tool does. Undo shows ⌘Z, Layers ⌘L, Add image ⇧⌘I, Save ⌘S and Copy ⌘C. With keyboard navigation on, Tab reaches each button, which shows the accent focus halo, and the Share menu takes the arrow keys, Return and Esc.
+- **VoiceOver** reads the tool group as "Tools" and each tool by name, with the selected one as selected. The file name and size read as one element. Share reads as a button that opens a menu.
+- **Text size** scales the type and icons. At Larger the file name truncates first; the buttons and tools keep their size.
+- **Reduce Motion** keeps the main button's drop still and darkens it on press, as every button does. Nothing else in the title bar moves.
+- **Increase Contrast** takes the size line to the text colour and the secondary buttons' edges to 60% ink.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -711,7 +733,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Permission card… › recovery | #1092 | `Recording/RecordingRecovery.swift` (`RecordingRecoveryDialog`, `recover(_:)`), `AppDelegate.swift`, ShotCore `SegmentRecovery.swift` (`Leftover`) | ☐ |
 | Permission card… › update prompt | #1117 | `Updater.swift` | ☐ |
 | Permission card… › tooltips and menus | #1072 | `Design/BrutalTip.swift` | ☐ |
-| Permission card… › Share menu | #1093 | `Editor/EditorToolbar.swift` | ☐ |
+| Permission card… › Share menu | #1093 | `Editor/EditorRootView.swift` (`ShareMenu`), `Editor/EditorModel.swift` (`share(_:)`), ShotCore `EditorToolbarLayout.swift` (`EditorShareAction`) | ☐ |
 | Permission card… › Move to Trash | #1110 | `Gallery/GalleryView.swift` | ☐ |
 
 ### Record
@@ -729,7 +751,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 
 | Board | Issue | Files | QA |
 | --- | --- | --- | --- |
-| Image editor · annotate | #1093 toolbar | `Editor/EditorToolbar.swift`, `Editor/EditorRootView.swift` | ☐ |
+| Image editor · annotate | #1093 toolbar | `Editor/EditorRootView.swift` (`EditorTitleBar`, `ShareMenu`), `Editor/EditorToolbar.swift` (`EditorToolGroup`), `Editor/EditorModel.swift` (`share(_:)`), `Editor/EditorWindowController.swift` (minimum width), ShotCore `EditorToolbarLayout.swift` (`EditorToolbarLayout`, `EditorShareAction`) | ☐ |
 | Image editor · annotate | #1094 style bar | `Editor/EditorCanvasView.swift`, `Editor/EditorRootView.swift` | ☐ |
 | Image editor · annotate | #1095 canvas | `Editor/EditorCanvasView.swift`, `Design/LayersPanel.swift` (empty state) | ☐ |
 | Image editor · annotate | #1073 title bar | `Design/GlassWindow.swift` | ☐ |

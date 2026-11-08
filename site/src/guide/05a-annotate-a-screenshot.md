@@ -17,12 +17,12 @@ Any of these opens a screenshot in the annotation editor:
 
 ## Pick a tool
 
-Press a tool's key, or click it in the toolbar. Hover a tool to see what it does.
+Press a tool's key, or click it in the group of tools in the middle of the title bar. Hover a tool to see its name, its key and what it does.
 
 | Key | Tool |
 |---|---|
 | <kbd>V</kbd> | **Select:** move, resize and restyle what you've drawn. |
-| <kbd>H</kbd> | **Hand:** drag to move around when zoomed in, without touching your marks. |
+| <kbd>H</kbd> | **Hand:** drag to move around when zoomed in, without touching your marks. It has no button, so press <kbd>H</kbd> or hold <kbd>Space</kbd>. |
 | <kbd>A</kbd> | **Arrow** |
 | <kbd>L</kbd> | **Line** |
 | <kbd>R</kbd> | **Shape:** rectangle, ellipse, triangle, diamond or star. |
@@ -73,7 +73,7 @@ What you've just drawn stays selected, so you can fix its colour, width or fill 
 - **Delete** it with <kbd>Delete</kbd>. <kbd>Esc</kbd> deselects.
 - **Copy, paste and duplicate** it with <kbd>⌘C</kbd>, <kbd>⌘V</kbd> and <kbd>⌘D</kbd>, even into another editor window.
 
-<kbd>⌘Z</kbd> undoes and <kbd>⇧⌘Z</kbd> redoes.
+<kbd>⌘Z</kbd> or the Undo button in the title bar undoes, and <kbd>⇧⌘Z</kbd> redoes.
 
 > [!NOTE]
 > Text and counters have no handles, and a placed image only has them at its corners. A triangle or diamond rounds each corner, a star only its points, and an ellipse has none. New shapes start with square corners. While you type in a text box or note, <kbd>Esc</kbd> finishes it, and <kbd>⌘Z</kbd> removes it again. With the text or note tool, clicking existing text or a note selects it, dragging moves it, and clicking it again or double-clicking edits it, so you don't need to switch tools first.
@@ -87,10 +87,22 @@ Pinch, or press <kbd>⌘+</kbd> and <kbd>⌘−</kbd>. <kbd>⌘0</kbd> fits the 
 
 ## Copy or save
 
-- **Copy** copies the annotated image. With nothing or several things selected, <kbd>⌘C</kbd> does the same.
+- **Copy**, the yellow button at the right of the title bar, copies the annotated image. With nothing or several things selected, <kbd>⌘C</kbd> does the same.
 - **Save** (<kbd>⌘S</kbd>) replaces the screenshot with your edited one and copies it. Shot keeps the original, so you can reopen the screenshot and undo your edits, or choose **Edit › Revert to Original**. This applies to screenshots Shot took. A picture from anywhere else saves as a new copy beside it, `name (2).png` (or `.jpg`), then `name (3).png` and so on, and the original never changes. To always save a new copy, turn off **Settings › General › Save edits over the original**.
 
-The title bar shows **EDITED** while you have unsaved changes, and closing the window asks whether to save them.
+Under the file name, the title bar shows the size the image saves at, such as "1,040 × 600", with **Edited** before it while you have unsaved changes. Closing the window asks whether to save them.
+
+## Share
+
+The **Share** menu, beside Save, holds what you need less often:
+
+- **Copy Image** copies the annotated image, as Copy does.
+- **Copy Path** copies where the file is on your Mac, for an assistant that can open files. See [Share a capture with an AI assistant](#share-a-capture-with-an-ai-assistant).
+- **Save As…** writes the annotated image to a file you name, as PNG or JPEG, and leaves the screenshot as it is.
+- **Show in Finder** selects the file in Finder.
+- **Pin to Screen** floats the annotated image above your other windows, as [Pin](#quick-access) does from Quick Access.
+
+Copy Path and Show in Finder save your changes first, so the file they point at has your marks.
 
 ## Reopen a saved version
 

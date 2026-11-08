@@ -29,7 +29,7 @@ Nothing is lost: what's outside the crop is hidden but kept, marks included, so 
 
 ## Layers
 
-Click **Layers** (<kbd>⌘L</kbd>) to list your marks, frontmost first, with the screenshot locked at the bottom.
+Click **Layers** in the title bar (<kbd>⌘L</kbd>) to list your marks, frontmost first, with the screenshot locked at the bottom.
 
 | To | Do this |
 |---|---|

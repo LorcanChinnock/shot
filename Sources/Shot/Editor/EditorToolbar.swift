@@ -1,6 +1,50 @@
 import ShotCore
 import SwiftUI
 
+/// The title bar's one group of tools, from Edit › Image editor · annotate: the eleven drawing tools, a divider, then
+/// Add image and Crop. The selected tool is the ink button; the hand tool has no button of its own.
+struct EditorToolGroup: View {
+    @Bindable var model: EditorModel
+
+    var body: some View {
+        HStack(spacing: 1) {
+            ForEach(EditorToolbarLayout.drawingTools) { toolTile($0) }
+            Rectangle()
+                .fill(Brutal.controlEdge)
+                .frame(width: 1, height: 18)
+                .padding(.horizontal, 4)
+                .accessibilityHidden(true)
+            Tile(selected: model.showsImagePicker, help: "Add an image", key: "⇧⌘I", detail: "Place a recent capture or an image file beside your screenshot") {
+                model.showsImagePicker.toggle()
+            } label: {
+                Image(systemName: "photo.badge.plus").font(Brutal.toolIcon)
+            }
+            .popover(isPresented: $model.showsImagePicker, arrowEdge: .bottom) {
+                ImagePicker(excluding: model.fileURL) { urls in
+                    model.showsImagePicker = false
+                    model.addImageFiles(urls)
+                }
+            }
+            ForEach(EditorToolbarLayout.afterDivider) { toolTile($0) }
+        }
+        .padding(3)
+        .background(Brutal.fieldFill, in: RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular))
+        .fixedSize()
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Tools"))
+    }
+
+    private func toolTile(_ tool: EditorTool) -> some View {
+        Tile(selected: EditorToolbarLayout.selectedButton(for: model.tool) == tool, tool: true, help: tool.title, key: String(tool.key).uppercased(), detail: tool.summary) {
+            model.tool = tool
+        } label: {
+            Image(systemName: tool.symbol).font(Brutal.toolIcon)
+        }
+    }
+}
+
+/// The row under the title bar with the selected tool's colour, width and other options. #1094 moves these into the
+/// style bar beside the selection.
 struct EditorToolbar: View {
     /// Matches `RGBA.presets`. Not `RGBA.presetNames`, which agents read and so stays English.
     static let colorNames = [
@@ -11,81 +55,30 @@ struct EditorToolbar: View {
     @Bindable var model: EditorModel
 
     var body: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 14) {
-                ToolGroup {
-                    ForEach(EditorTool.allCases) { tool in
-                        Tile(selected: model.tool == tool, tool: true, help: tool.title, key: String(tool.key).uppercased(), detail: tool.summary) {
-                            model.tool = tool
-                        } label: {
-                            Image(systemName: tool.symbol).font(Brutal.toolIcon)
-                        }
-                    }
-                }
-                ToolGroup {
-                    Tile(selected: model.showsImagePicker, help: "Add an image", key: "⇧⌘I", detail: "Place a recent capture or an image file beside your screenshot") {
-                        model.showsImagePicker.toggle()
-                    } label: {
-                        Image(systemName: "photo.badge.plus").font(Brutal.toolIcon)
-                    }
-                    .popover(isPresented: $model.showsImagePicker, arrowEdge: .bottom) {
-                        ImagePicker(excluding: model.fileURL) { urls in
-                            model.showsImagePicker = false
-                            model.addImageFiles(urls)
-                        }
-                    }
-                    Tile(
-                        selected: model.showsStylePopover, help: "Style",
-                        detail: "Add a shadow, border or rounded corners to the selected image, a shadow or glow to a shape, arrow or text, or style the screenshot when nothing is selected",
-                        isEnabled: model.styleTarget != nil
-                    ) {
-                        model.showsStylePopover.toggle()
-                    } label: {
-                        Image(systemName: "paintpalette").font(Brutal.toolIcon)
-                    }
-                    .popover(isPresented: $model.showsStylePopover, arrowEdge: .bottom) {
-                        StylePopover(model: model)
-                    }
-                }
-                Spacer(minLength: 0)
-                ToolGroup {
-                    Tile(selected: false, help: "Undo", key: "⌘Z", isEnabled: model.history.canUndo) {
-                        model.undo()
-                    } label: {
-                        Image(systemName: "arrow.uturn.backward").font(Brutal.toolIcon)
-                    }
-                    Tile(selected: false, help: "Redo", key: "⇧⌘Z", isEnabled: model.history.canRedo) {
-                        model.redo()
-                    } label: {
-                        Image(systemName: "arrow.uturn.forward").font(Brutal.toolIcon)
-                    }
-                }
+        HStack(spacing: 14) {
+            if model.showsStyle {
+                styleOptions
+                resetButton
+            } else if model.tool == .crop {
+                CropOptions(selected: model.cropAspect, canReset: model.canResetCrop, choose: model.chooseCropAspect, reset: model.resetCrop)
+            } else if let redaction = model.paletteRedaction {
+                RedactionOptions(selected: redaction, amount: model.paletteRedactionAmount, choose: model.setRedaction, setAmount: model.setRedactionAmount, dragAmount: model.setDraggingStyle)
+                resetButton
+            } else if let spotlight = model.paletteSpotlight {
+                SpotlightOptions(
+                    style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook,
+                    chooseSoftEdge: model.setSpotlightSoftEdge, dragSlider: model.setDraggingStyle
+                )
+                resetButton
+            } else {
+                Text(model.tool.summary)
+                    .font(Brutal.caption)
+                    .foregroundStyle(Brutal.faded(0.6))
+                    .padding(.leading, 4)
             }
-            HStack(spacing: 14) {
-                if model.showsStyle {
-                    styleOptions
-                    resetButton
-                } else if model.tool == .crop {
-                    CropOptions(selected: model.cropAspect, canReset: model.canResetCrop, choose: model.chooseCropAspect, reset: model.resetCrop)
-                } else if let redaction = model.paletteRedaction {
-                    RedactionOptions(selected: redaction, amount: model.paletteRedactionAmount, choose: model.setRedaction, setAmount: model.setRedactionAmount, dragAmount: model.setDraggingStyle)
-                    resetButton
-                } else if let spotlight = model.paletteSpotlight {
-                    SpotlightOptions(
-                        style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook,
-                        chooseSoftEdge: model.setSpotlightSoftEdge, dragSlider: model.setDraggingStyle
-                    )
-                    resetButton
-                } else {
-                    Text(model.tool.summary)
-                        .font(Brutal.caption)
-                        .foregroundStyle(Brutal.faded(0.6))
-                        .padding(.leading, 4)
-                }
-                Spacer(minLength: 0)
-            }
-            .frame(height: 30 + Brutal.groupInset * 2)
+            Spacer(minLength: 0)
         }
+        .frame(height: 30 + Brutal.groupInset * 2)
     }
 
     /// Puts this tool's options back to how a fresh install starts, so the next arrow, blur or spotlight comes out plain too.

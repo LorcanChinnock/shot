@@ -6744,6 +6744,58 @@
         }
       }
     },
+    "Copies the image with your changes, ready to paste." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiert das Bild mit deinen Änderungen, bereit zum Einsetzen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copia la imagen con tus cambios, lista para pegar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copie l'image avec vos modifications, prête à coller."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copia l'immagine con le tue modifiche, pronta da incollare."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "変更を加えた画像をコピーします。そのままペーストできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "변경 사항이 반영된 이미지를 복사합니다. 바로 붙여넣을 수 있습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copia a imagem com suas alterações, pronta para colar."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拷贝包含你的更改的图像，可直接粘贴。"
+          }
+        }
+      }
+    },
     "Copy" : {
       "localizations" : {
         "de" : {
@@ -6844,6 +6896,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "拷贝（⌘C）"
+          }
+        }
+      }
+    },
+    "Copy Image" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bild kopieren"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar imagen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copier l'image"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copia immagine"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像をコピー"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이미지 복사"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar imagem"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拷贝图像"
           }
         }
       }
@@ -7004,54 +7108,54 @@
         }
       }
     },
-    "Copy image (⌘C)" : {
+    "Copy the file's path for an AI assistant or a chat, save a copy somewhere else, show it in Finder or pin it to your screen." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bild kopieren (⌘C)"
+            "value" : "Kopiere den Pfad der Datei für einen KI-Assistenten oder einen Chat, sichere eine Kopie an einem anderen Ort, zeige sie im Finder oder hefte sie an deinen Bildschirm."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Copiar imagen (⌘C)"
+            "value" : "Copia la ruta del archivo para un asistente de IA o un chat, guarda una copia en otro sitio, muéstralo en el Finder o fíjalo en la pantalla."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Copier l'image (⌘C)"
+            "value" : "Copiez le chemin du fichier pour un assistant IA ou une discussion, enregistrez une copie ailleurs, affichez-le dans le Finder ou épinglez-le à l'écran."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Copia immagine (⌘C)"
+            "value" : "Copia il percorso del file per un assistente IA o una chat, salva una copia altrove, mostralo nel Finder o fissalo sullo schermo."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "イメージをコピー（⌘C）"
+            "value" : "AI アシスタントやチャット用にファイルのパスをコピーしたり、別の場所にコピーを保存したり、Finder で表示したり、画面に固定したりできます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이미지 복사 (⌘C)"
+            "value" : "AI 어시스턴트나 채팅용으로 파일 경로를 복사하거나, 다른 곳에 사본을 저장하거나, Finder에서 보거나, 화면에 고정할 수 있습니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Copiar imagem (⌘C)"
+            "value" : "Copie o caminho do arquivo para um assistente de IA ou um chat, salve uma cópia em outro lugar, mostre-o no Finder ou fixe-o na tela."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "拷贝图像（⌘C）"
+            "value" : "为 AI 助手或聊天拷贝文件路径、将副本存储到别处、在访达中显示，或将其固定到屏幕上。"
           }
         }
       }
@@ -8145,6 +8249,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法粘贴：%@"
+          }
+        }
+      }
+    },
+    "Couldn't pin the image" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Bild konnte nicht angeheftet werden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo fijar la imagen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d'épingler l'image"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile fissare l'immagine"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像を固定できませんでした"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이미지를 고정하지 못했습니다"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível fixar a imagem"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法固定图像"
           }
         }
       }
@@ -11772,6 +11928,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "编辑视频"
+          }
+        }
+      }
+    },
+    "Edited · %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bearbeitet · %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editada · %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifiée · %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modificata · %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "編集済み · %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "편집됨 · %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editada · %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已编辑 · %@"
           }
         }
       }
@@ -20512,7 +20720,56 @@
 
     },
     "Pin to Screen" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An Bildschirm heften"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fijar en la pantalla"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épingler à l'écran"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fissa sullo schermo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画面に固定"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "화면에 고정"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fixar na tela"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "固定到屏幕"
+          }
+        }
+      }
     },
     "Pinned %@" : {
 
@@ -22174,6 +22431,58 @@
         }
       }
     },
+    "Redo with ⇧⌘Z." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiederholen mit ⇧⌘Z."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rehacer con ⇧⌘Z."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rétablir avec ⇧⌘Z."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripeti con ⇧⌘Z."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "⇧⌘Z でやり直します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "⇧⌘Z로 실행 복귀합니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refazer com ⇧⌘Z."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按 ⇧⌘Z 重做。"
+          }
+        }
+      }
+    },
     "Region border" : {
       "localizations" : {
         "de" : {
@@ -23713,6 +24022,58 @@
         }
       }
     },
+    "Save As can't replace the file you're editing. Use Save, or pick another name." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„Sichern unter“ kann die Datei, die du bearbeitest, nicht ersetzen. Verwende „Sichern“ oder wähle einen anderen Namen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardar como no puede reemplazar el archivo que estás editando. Usa Guardar o elige otro nombre."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistrer sous ne peut pas remplacer le fichier que vous modifiez. Utilisez Enregistrer ou choisissez un autre nom."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salva come non può sostituire il file che stai modificando. Usa Salva o scegli un altro nome."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「別名で保存」では編集中のファイルを置き換えられません。「保存」を使うか、別の名前を選んでください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다른 이름으로 저장으로는 편집 중인 파일을 대치할 수 없습니다. 저장을 사용하거나 다른 이름을 고르세요."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salvar como não pode substituir o arquivo que você está editando. Use Salvar ou escolha outro nome."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“存储为”无法替换你正在编辑的文件。请使用“存储”，或选取其他名称。"
+          }
+        }
+      }
+    },
     "Save As…" : {
       "localizations" : {
         "de" : {
@@ -23822,58 +24183,6 @@
     },
     "Save and copy" : {
 
-    },
-    "Save and copy (⌘S)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sichern und kopieren (⌘S)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guardar y copiar (⌘S)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enregistrer et copier (⌘S)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Salva e copia (⌘S)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "保存してコピー（⌘S）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "저장 및 복사 (⌘S)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Salvar e copiar (⌘S)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "存储并拷贝（⌘S）"
-          }
-        }
-      }
     },
     "Save changes to %@ as a copy?" : {
       "localizations" : {
@@ -24327,6 +24636,58 @@
     "Saved and copied.%@" : {
 
     },
+    "Saved as %@ and copied its path" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als %@ gesichert und Pfad kopiert"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardado como %@ y ruta copiada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistré sous %@ et chemin copié"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salvato come %@ e percorso copiato"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ として保存し、パスをコピーしました"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@(으)로 저장하고 경로를 복사했습니다"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salvo como %@ e caminho copiado"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已存储为 %@ 并拷贝其路径"
+          }
+        }
+      }
+    },
     "Saved as %@ and copied.%@" : {
       "localizations" : {
         "en" : {
@@ -24398,6 +24759,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已存储，但无法重新载入：%@"
+          }
+        }
+      }
+    },
+    "Saves your changes and copies the image." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sichert deine Änderungen und kopiert das Bild."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guarda tus cambios y copia la imagen."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistre vos modifications et copie l'image."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salva le modifiche e copia l'immagine."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "変更を保存して画像をコピーします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "변경 사항을 저장하고 이미지를 복사합니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salva suas alterações e copia a imagem."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "存储你的更改并拷贝图像。"
           }
         }
       }
@@ -25520,6 +25933,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "形状"
+          }
+        }
+      }
+    },
+    "Share" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teilen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compartir"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partager"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Condividi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共有"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "공유"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compartilhar"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共享"
           }
         }
       }
@@ -26723,58 +27188,6 @@
     "Show or hide the tracks, keyframes, imports and annotations (T)" : {
 
     },
-    "Show the layers (⌘L)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ebenen zeigen (⌘L)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostrar las capas (⌘L)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Afficher les calques (⌘L)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostra i livelli (⌘L)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "レイヤーを表示（⌘L）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "레이어 보기 (⌘L)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostrar as camadas (⌘L)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "显示图层（⌘L）"
-          }
-        }
-      }
-    },
     "Show the pointer in the recording" : {
 
     },
@@ -26939,6 +27352,58 @@
     },
     "Show your camera in a bubble" : {
 
+    },
+    "Shows every mark and image in a list beside the canvas." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeigt jede Markierung und jedes Bild in einer Liste neben der Arbeitsfläche."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muestra cada marca e imagen en una lista junto al lienzo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Affiche chaque annotation et image dans une liste à côté du canevas."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra ogni segno e immagine in un elenco accanto alla tela."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべての注釈と画像をキャンバスの横にリストで表示します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 표시와 이미지를 캔버스 옆 목록에 보여 줍니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra cada marcação e imagem em uma lista ao lado da tela."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在画布旁的列表中显示每个标注和图像。"
+          }
+        }
+      }
     },
     "Shows the frame handles and options first. Hold ⌥ as you finish the selection to show them once." : {
       "localizations" : {
@@ -30189,6 +30654,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "今天"
+          }
+        }
+      }
+    },
+    "Tools" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Werkzeuge"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Herramientas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Outils"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strumenti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ツール"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "도구"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferramentas"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "工具"
           }
         }
       }
