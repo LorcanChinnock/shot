@@ -34,6 +34,26 @@ public enum SegmentRecovery {
         public let orphans: [String]
     }
 
+    /// A recording that never finished, as the recovery dialog describes it: its parts and how long they run together.
+    public struct Leftover: Equatable, Sendable {
+        public let segments: [Segment]
+        /// Whole seconds across every part, to the nearest second and never under one, so a short clip doesn't read "0:00".
+        public let seconds: Int
+
+        /// `durations` holds each segment's length in seconds, in the same order.
+        public init(segments: [Segment], durations: [TimeInterval]) {
+            self.segments = segments
+            let total = durations.filter(\.isFinite).reduce(0, +)
+            seconds = max(Int(total.rounded()), 1)
+        }
+
+        public var parts: Int { segments.count }
+        /// "1:42", as the recording timer would have shown it.
+        public var length: String { RecordingClock.label(seconds) }
+        /// Every file the parts were written to, their audio included, to delete when the recording is discarded.
+        public var files: [String] { segments.flatMap(\.files) }
+    }
+
     private static let videoSuffix = ".mp4"
     private static let systemSuffix = "-system.mov"
     private static let microphoneSuffix = "-microphone.mov"

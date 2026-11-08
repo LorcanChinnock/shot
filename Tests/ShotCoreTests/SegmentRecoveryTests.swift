@@ -40,3 +40,24 @@ private func file(_ name: String, minutesAgo: Double) -> SegmentRecovery.File {
     #expect(SegmentRecovery.audio(of: missing.segments) == nil)
     #expect(SegmentRecovery.audio(of: []) == nil)
 }
+
+@Test func aLeftoverRecordingAddsUpItsParts() {
+    let plan = SegmentRecovery.plan([file("a.mp4", minutesAgo: 40), file("b.mp4", minutesAgo: 30), file("c.mp4", minutesAgo: 20)], now: now)
+    let leftover = SegmentRecovery.Leftover(segments: plan.segments, durations: [40, 40.2, 21.4])
+    #expect(leftover.parts == 3)
+    #expect(leftover.seconds == 102)
+    #expect(leftover.length == "1:42")
+}
+
+@Test func aLeftoverRecordingNeverReadsAsNoTime() {
+    let plan = SegmentRecovery.plan([file("a.mp4", minutesAgo: 40)], now: now)
+    #expect(SegmentRecovery.Leftover(segments: plan.segments, durations: [0.2]).length == "0:01")
+    #expect(SegmentRecovery.Leftover(segments: plan.segments, durations: [.nan]).seconds == 1)
+    #expect(SegmentRecovery.Leftover(segments: plan.segments, durations: [3722]).length == "1:02:02")
+}
+
+@Test func discardingALeftoverRecordingDeletesItsAudioToo() {
+    let plan = SegmentRecovery.plan([file("a.mp4", minutesAgo: 40), file("a-system.mov", minutesAgo: 40), file("a-microphone.mov", minutesAgo: 40), file("b.mp4", minutesAgo: 30)], now: now)
+    let leftover = SegmentRecovery.Leftover(segments: plan.segments, durations: [5, 5])
+    #expect(leftover.files == ["a.mp4", "a-system.mov", "a-microphone.mov", "b.mp4"])
+}

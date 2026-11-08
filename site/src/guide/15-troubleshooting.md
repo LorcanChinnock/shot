@@ -51,6 +51,16 @@ The panel beside the area names the problem and what to do:
 
 A capture can still have a thin gap or repeat after a fast scroll past the end of a page. Scroll back over that part, or take it again.
 
+## Shot asks to recover your last recording
+
+Shot shows this dialog when it opens after stopping in the middle of a recording, for example after a crash or a restart. The dialog says how much was recorded and how many parts it was saved in.
+
+1. **Recover** joins the parts and saves the video to your save folder as `… (recovered).mp4`. If they can't be joined, each part is saved as its own `(recovered, part N)` file.
+2. **Show Parts** opens the parts in Finder, so you can look at them before you choose. The dialog stays open.
+3. **Discard recording** deletes the parts. **Undo** in the message that follows brings the dialog back for 5 seconds.
+
+Press <kbd>Esc</kbd> to close the dialog without choosing. The parts stay where they are, and Shot asks again the next time it opens.
+
 ## Something else is wrong
 
 Shot writes to the macOS log. Run this in Terminal while you try again:
