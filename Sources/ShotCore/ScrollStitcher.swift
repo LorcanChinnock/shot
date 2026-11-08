@@ -41,6 +41,10 @@ public final class ScrollStitcher {
         public let viewport: CGRect
         /// Whether the image changed.
         public let changed: Bool
+        /// Frames the image is built from so far.
+        public let framesKept: Int
+        /// Whether a header that stays at the top of the area was found, which the image shows once.
+        public let hasStickyHeader: Bool
     }
 
     let width: Int
@@ -117,6 +121,10 @@ public final class ScrollStitcher {
     private var lastReceived1: [Float] = []
     private var stillSinceLastFrame = false
     private var frames = 0
+    /// Frames that lined up and were painted, the first included.
+    private var linedUp = 0
+    /// Set once any tile sticks to the top edge, and kept: the header is in the image once from then on.
+    public private(set) var hasStickyHeader = false
     private var hitLimit = false
     public private(set) var status: ScrollCaptureStatus = .ready
     /// Set to collect `diagnostics` for each frame: what lined up and how well, for logs and tests.
@@ -212,6 +220,7 @@ public final class ScrollStitcher {
         lap("copy+greys")
         frames += 1
         if frames == 1 {
+            linedUp = 1
             canvas.paintContent(current, width: width, height: height, at: (0, 0), rect: (0, 0, width, height))
             recordKey()
             voteReference.update(from: current, count: width * height * 4)
@@ -291,15 +300,26 @@ public final class ScrollStitcher {
         let changed = paint(movedAnchors: before)
         lap("paint")
         status = hitLimit ? .sizeLimit : .live
+        linedUp += 1
         recordKey(force: restedHere)
         collectBandVotes()
         swapFrames()
         return update(changed: changed)
     }
 
+    /// Frames the image is built from so far: those kept for the final pass, or every frame painted when they had to
+    /// be given up.
+    public var framesKept: Int {
+        composes && !keysIncomplete ? keys.count : linedUp
+    }
+
     private func update(changed: Bool) -> Update {
         note("frame \(frames) → \(status) at \(position) size \(size)")
-        return Update(status: status, size: size, viewport: viewport, changed: changed)
+        // After a frame, `previousFlags` holds its flags, whether it was swapped in or the frame failed.
+        if !hasStickyHeader {
+            hasStickyHeader = previousFlags.contains { $0 & Anchor.top != 0 }
+        }
+        return Update(status: status, size: size, viewport: viewport, changed: changed, framesKept: framesKept, hasStickyHeader: hasStickyHeader)
     }
 
     private func note(_ line: @autoclosure () -> String) {

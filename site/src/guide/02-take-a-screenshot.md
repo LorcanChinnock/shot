@@ -47,7 +47,7 @@ Scroll takes one screenshot of something taller or wider than the screen: a long
 
 1. Press the screenshot shortcut, then click **Scroll** (the arrow to a line) on the bar, or press <kbd>S</kbd>. It starts off each time.
 2. Pick what scrolls: drag across it, or choose Window and click it. A panel appears beside it.
-3. Scroll the content with the trackpad, the mouse wheel, <kbd>Page Down</kbd> or <kbd>Space</kbd>. Any direction works, and so does scrolling back. The panel's preview shows the picture so far, with the parts you haven't scrolled over hatched, so you can go back and fill them in.
+3. Scroll the content with the trackpad, the mouse wheel, <kbd>Page Down</kbd> or <kbd>Space</kbd>. Any direction works, and so does scrolling back. The panel's preview shows the picture so far, with the parts you haven't scrolled over hatched and a yellow line where you are now, so you can go back and fill them in. Beside it are the picture's size, how many frames it's built from, and whether a sticky header was found. If Shot can't line up what you scrolled, a yellow card under them says what to do.
 4. Press <kbd>Return</kbd> or click **Done**. The screenshot is copied and saved like any other. <kbd>Esc</kbd> cancels and keeps nothing.
 
 Sticky headers, footers, pinned columns and floating buttons appear once, where they belong. When you press Return, Shot builds the saved picture again from every frame it kept, so the saved image can be sharper and cleaner than the live preview. The picture can be up to 30,000 pixels on a side.
