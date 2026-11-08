@@ -1132,9 +1132,10 @@ final class EditorModel {
         Toast.done("Copied")
     }
 
-    /// Returns false if the save failed or another is still running.
+    /// Returns false if the save failed or another is still running. Without `announce`, it shows no toast of its own,
+    /// for a Share action that says what it did.
     @discardableResult
-    func save() async -> Bool {
+    func save(announce: Bool = true) async -> Bool {
         guard !isSaving else {
             return false
         }
@@ -1159,6 +1160,9 @@ final class EditorModel {
             self.pristine = version.original
             canRevert = overwrote
             history.didSave(snapshot, document: self.document)
+            guard announce else {
+                return true
+            }
             let note = TemporaryCaptures.toastNote(for: version.url)
             Toast.show(overwrote ? "Saved over \(version.url.lastPathComponent) and copied.\(note)" : "Saved as \(version.url.lastPathComponent) and copied.\(note)", duration: .seconds(3))
             return true
@@ -1168,6 +1172,100 @@ final class EditorModel {
         case let .failure(.write(error)):
             Toast.error("Couldn't save: \(error.localizedDescription)")
             return false
+        }
+    }
+
+    // MARK: Share menu
+
+    /// The file on disk the editor shows: the version last opened or saved, or the image itself.
+    var savedFile: URL { version ?? fileURL }
+
+    /// Runs one of the Share menu's actions. Copy Path and Show in Finder save unsaved changes first, so the file they
+    /// point at has them.
+    func share(_ action: EditorShareAction) async {
+        let saved = action.savesFirst(isDirty: isDirty)
+        if saved {
+            guard await save(announce: false) else {
+                return
+            }
+        }
+        switch action {
+        case .copyImage:
+            await copy()
+        case .copyPath:
+            Clipboard.copy(string: savedFile.path)
+            if saved {
+                Toast.done("Saved as \(savedFile.lastPathComponent) and copied its path", duration: .seconds(3))
+            } else {
+                Toast.done("Copied path")
+            }
+        case .saveAs:
+            await saveAs()
+        case .showInFinder:
+            NSWorkspace.shared.activateFileViewerSelecting([savedFile])
+        case .pin:
+            await pin()
+        }
+    }
+
+    /// Writes the image with its changes to a file the user picks, in PNG or JPEG by the name's extension. The editor
+    /// stays on its own file, so Save still makes its next version.
+    private func saveAs() async {
+        commitPendingText?()
+        applyCropIfCropping()
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.png, .jpeg]
+        panel.nameFieldStringValue = VersionNaming.nextVersionURL(of: savedFile).lastPathComponent
+        panel.directoryURL = savedFile.deletingLastPathComponent()
+        NSApp.activate()
+        guard panel.runModal() == .OK, let destination = panel.url else {
+            return
+        }
+        let same = { (url: URL) in url.resolvingSymlinksInPath().standardizedFileURL }
+        guard same(destination) != same(savedFile), same(destination) != same(fileURL) else {
+            Toast.error("Save As can't replace the file you're editing. Use Save, or pick another name.")
+            return
+        }
+        let format = ImageFormat(fileExtension: destination.pathExtension)
+        var document = document
+        // JPEG has no alpha, so transparent padding would come out black.
+        if format == .jpeg, document.background == nil, document.hasPadding {
+            document.background = EditorDocument.defaultBackground(for: .jpeg)
+        }
+        let scale = scale
+        let written = await Task.detached { () -> String? in
+            do {
+                let file = try VersionWriter.render(document, scale: scale, as: format).file
+                try file.write(to: destination, options: .atomic)
+                return nil
+            } catch {
+                return error.localizedDescription
+            }
+        }.value
+        if let written {
+            Toast.error("Couldn't save: \(written)")
+        } else {
+            Toast.show("Saved \(destination.lastPathComponent)", duration: .seconds(4), reveal: destination)
+        }
+    }
+
+    /// Floats the image with its changes above other windows, as Quick Access's Pin does.
+    private func pin() async {
+        commitPendingText?()
+        applyCropIfCropping()
+        guard let png = await renderedPNG() else {
+            Toast.error("Couldn't pin the image")
+            return
+        }
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString)-\(fileURL.deletingPathExtension().lastPathComponent).png")
+        do {
+            try png.write(to: file)
+        } catch {
+            Toast.error("Couldn't pin the image")
+            return
+        }
+        PinController.shared.pin(file) {
+            try? FileManager.default.removeItem(at: file)
         }
     }
 }

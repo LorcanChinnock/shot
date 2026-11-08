@@ -8,7 +8,7 @@ group: Edit and share
 
 ## Add a shadow, border or rounded corners
 
-1. In the annotation editor, click **Style** in the toolbar.
+1. In the annotation editor, click **Style** in the title bar.
 2. Point at a preset to preview it on the canvas, and click to apply it. The arrow keys move between presets, previewing each, and <kbd>Return</kbd> applies the one you're on.
 
 Nothing is styled until you ask. Each click is one undo step, and so is each slider drag. A shadow or border grows the canvas just enough to fit it, and removing it shrinks the canvas back.
