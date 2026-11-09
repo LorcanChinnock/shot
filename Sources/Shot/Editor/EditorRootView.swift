@@ -16,14 +16,7 @@ struct EditorRootView: View {
                 CanvasHost(canvas: canvas)
                     .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
                     .glassCard()
-                    .overlay(alignment: .bottomLeading) {
-                        // Until the zoom control moves onto the canvas (#1095) and the Canvas menu finds its place (#1099).
-                        HStack(spacing: 8) {
-                            ZoomMenu(model: model, canvas: canvas)
-                            CanvasMenu(model: model)
-                        }
-                        .padding(StyleBarPlacement.inset)
-                    }
+                    .overlay(alignment: .bottom) { CanvasFoot(model: model, canvas: canvas) }
                     .overlay { StyleBarOverlay(model: model) }
                 if model.showsLayers {
                     LayersPanel(
@@ -196,71 +189,6 @@ private extension EditorShareAction {
 private struct CanvasHost: NSViewRepresentable {
     let canvas: EditorCanvasView
 
-    func makeNSView(context: Context) -> EditorCanvasView { canvas }
-    func updateNSView(_ nsView: EditorCanvasView, context: Context) {}
-}
-
-/// Shows the zoom and offers the zoom commands; pinch and the keyboard shortcuts do the same.
-private struct ZoomMenu: View {
-    @Bindable var model: EditorModel
-    let canvas: EditorCanvasView
-
-    var body: some View {
-        BrutalDropdown(title: "Zoom", entries: [
-            .item("Zoom In", shortcut: "⌘+") { canvas.zoomIn() },
-            .item("Zoom Out", shortcut: "⌘−") { canvas.zoomOut() },
-            .divider,
-            .item("Zoom to Fit", shortcut: "⌘0") { canvas.zoomToFit() },
-            .item("Actual Size", shortcut: "⌘1") { canvas.zoomToActualSize() },
-        ]) {
-            HStack(spacing: 6) {
-                Text("\(Int((model.zoom * 100).rounded()))%")
-                    .monospacedDigit()
-                Image(systemName: "chevron.down").font(.scaled(9, weight: .black))
-            }
-        }
-        .buttonStyle(BrutalButtonStyle())
-        .fixedSize()
-        .brutalTip("Zoom in (⌘+), out (⌘−), to fit (⌘0) or to actual size (⌘1). Pinch to zoom; scroll, Space-drag, middle-drag or the hand tool (H) to move around.")
-    }
-}
-
-private struct CanvasMenu: View {
-    @Bindable var model: EditorModel
-    @State private var showsBackground = false
-
-    var body: some View {
-        BrutalDropdown(title: "Canvas", entries: [
-            .item("Fit to Content") { model.fitToContent() },
-            .item("Trim to Image", enabled: !model.document.capturePaintedBounds.contains(model.document.contentRect)) { model.trimToImage() },
-            .divider,
-            .item("Background…") { showsBackground = true },
-        ]) {
-            HStack(spacing: 6) {
-                Text("Canvas")
-                Image(systemName: "chevron.down").font(.scaled(9, weight: .black))
-            }
-        }
-        .buttonStyle(BrutalButtonStyle())
-        .fixedSize()
-        .brutalTip("Canvas size and background")
-        .popover(isPresented: $showsBackground, arrowEdge: .bottom) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("BACKGROUND").font(Brutal.mono).foregroundStyle(Brutal.ink)
-                HStack(spacing: 2) {
-                    ColorSwatches(
-                        selected: model.document.background,
-                        lastCustom: model.lastBackgroundColor,
-                        // JPEG has no alpha, so it can't keep transparent padding.
-                        allowsNone: !model.isJPEG,
-                        customHelp: "Custom background colour",
-                        choose: model.setBackground,
-                        pickCustom: model.pickBackground,
-                        beginPicking: model.beginColorPick
-                    )
-                }
-            }
-            .padding(12)
-        }
-    }
+    func makeNSView(context: Context) -> EditorCanvasContainer { EditorCanvasContainer(canvas: canvas) }
+    func updateNSView(_ nsView: EditorCanvasContainer, context: Context) {}
 }

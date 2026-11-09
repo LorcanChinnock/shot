@@ -156,7 +156,7 @@ final class EditorModel {
     @ObservationIgnored private var isSaving = false
     /// Set by the canvas: turns the text or note still being typed into an annotation.
     var commitPendingText: (() -> Void)?
-    /// The canvas's zoom, where 1 is actual size, for the zoom menu; the canvas view keeps it current.
+    /// The canvas's zoom, where 1 is actual size, for the zoom control; the canvas view keeps it current.
     /// Zoom is view state, not part of the document, so it isn't undoable.
     var zoom: CGFloat = 1
     /// The mark the style bar sits beside, in the canvas's view points with its selection handles: the text being typed,
@@ -164,6 +164,8 @@ final class EditorModel {
     var styleBarMark: CGRect?
     /// True while a drag on the canvas draws, moves, resizes or crops, when the style bar steps out of the way.
     var isCanvasDragging = false
+    /// How much of the canvas's foot the zoom control and hint take, with their inset, which the style bar keeps clear of.
+    var canvasFootHeight: CGFloat = 0
     /// Whether More style, the style bar's popover of the options that don't fit in it, is open.
     var showsMoreStyle = false
     private(set) var history: EditHistory
@@ -217,6 +219,11 @@ final class EditorModel {
 
     var selection: Annotation? {
         selectedID.flatMap { id in document.annotations.first { $0.id == id } }
+    }
+
+    /// The hint at the canvas's bottom right: what's selected or what the tool does, and its keys.
+    var canvasHint: CanvasHint {
+        CanvasHint.hint(tool: tool, selection: document.annotations.filter { selectedIDs.contains($0.id) }, isTyping: editingText != nil)
     }
 
     // MARK: Layers

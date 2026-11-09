@@ -59,21 +59,23 @@ public enum StyleBarPlacement {
     /// The bar's top-left corner. With no mark, the bar sits at the top centre of the canvas. With one, it sits centred
     /// above the mark, or else below it, to its right or to its left, whichever comes first with room, sliding along the
     /// edge it sits on to stay inside the canvas. Only a mark that leaves no room on any side is covered, by the bar at
-    /// the top of the canvas.
-    public static func origin(bar: CGSize, mark: CGRect?, in canvas: CGSize) -> CGPoint {
+    /// the top of the canvas. `bottom` is how much of the canvas's foot the zoom control and hint take, which the bar
+    /// keeps clear of as it does the other edges.
+    public static func origin(bar: CGSize, mark: CGRect?, in canvas: CGSize, bottom: CGFloat = 0) -> CGPoint {
         let centredX = clamp((canvas.width - bar.width) / 2, size: bar.width, within: canvas.width)
         guard let mark, !mark.isNull, !mark.isInfinite else {
             return CGPoint(x: centredX, y: inset)
         }
         let x = clamp(mark.midX - bar.width / 2, size: bar.width, within: canvas.width)
-        let y = clamp(mark.midY - bar.height / 2, size: bar.height, within: canvas.height)
+        let floor = max(inset, bottom)
+        let y = max(inset, min(mark.midY - bar.height / 2, canvas.height - floor - bar.height))
         let candidates = [
             CGPoint(x: x, y: mark.minY - gap - bar.height),
             CGPoint(x: x, y: mark.maxY + gap),
             CGPoint(x: mark.maxX + gap, y: y),
             CGPoint(x: mark.minX - gap - bar.width, y: y),
         ]
-        let room = CGRect(x: inset, y: inset, width: canvas.width - inset * 2, height: canvas.height - inset * 2)
+        let room = CGRect(x: inset, y: inset, width: canvas.width - inset * 2, height: canvas.height - inset - floor)
         for origin in candidates {
             let frame = CGRect(origin: origin, size: bar)
             if room.contains(frame), !frame.intersects(mark) {
