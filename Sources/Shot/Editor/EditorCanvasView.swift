@@ -41,6 +41,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private var spaceHeld = false
     /// The last view point of a scroll by dragging: with Space held, the hand tool or the middle button.
     private var panPoint: CGPoint?
+    /// Told where the canvas is, in view points, so the backdrop behind it draws its shadow there.
+    var onImageRectChange: ((CGRect) -> Void)?
 
     init(model: EditorModel) {
         self.model = model
@@ -206,7 +208,6 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             doc.annotations.append(draft)
         }
         let rect = imageRect
-        let ink = Brutal.inkNS
         if doc.background == nil, doc.hasPadding {
             let padding = NSBezierPath(rect: rect)
             let image = doc.fullRect.intersection(doc.canvasRect)
@@ -233,10 +234,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             AnnotationRenderer.draw(unclipped, base: doc.base, over: doc.annotations[...], in: ctx)
             ctx.restoreGState()
         }
-        ink.setStroke()
-        let frame = NSBezierPath(rect: rect.insetBy(dx: -0.75, dy: -0.75))
-        frame.lineWidth = 1.5
-        frame.stroke()
+        drawImageEdge(around: rect)
 
         for other in model.document.annotations where model.selectedIDs.count > 1 && model.selectedIDs.contains(other.id) {
             SelectionStyle.outline(viewRect(other.bounds.insetBy(dx: -other.lineWidth, dy: -other.lineWidth).union(other.paintedBounds)))
@@ -259,6 +257,22 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         if model.tool == .crop, let cropDraft = model.cropDraft {
             drawCrop(viewRect(cropDraft), over: viewRect(cropBounds), in: ctx)
         }
+    }
+
+    /// The board's hairline just outside the image: ink at 8% (dark white at 10%, half as thick), and 50% ink under
+    /// Increase Contrast. The backdrop draws the soft shadow under it.
+    private func drawImageEdge(around rect: CGRect) {
+        let dark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let width: CGFloat = dark ? 0.5 : 1
+        let color: NSColor = if NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast {
+            (dark ? NSColor.white : Brutal.inkNS).withAlphaComponent(0.5)
+        } else {
+            dark ? NSColor.white.withAlphaComponent(0.1) : Brutal.inkNS.withAlphaComponent(0.08)
+        }
+        color.setStroke()
+        let edge = NSBezierPath(rect: rect.insetBy(dx: -width / 2, dy: -width / 2))
+        edge.lineWidth = width
+        edge.stroke()
     }
 
     /// Dims and greys out what `crop` leaves out of `canvas`, the canvas or the image being cropped, so it looks switched off, and draws the
@@ -869,7 +883,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         pan(by: CGVector(dx: event.scrollingDeltaX * step, dy: event.scrollingDeltaY * step))
     }
 
-    /// Shows the new zoom in the toolbar and keeps an open text field over its text.
+    /// Shows the new zoom in the zoom control, moves the image's shadow, and keeps an open text field over its text.
     private func viewportDidChange() {
         let zoom = currentZoom
         if model.zoom != zoom {
@@ -877,6 +891,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
         layoutTextField()
         updateStyleBar()
+        onImageRectChange?(imageRect)
         needsDisplay = true
     }
 

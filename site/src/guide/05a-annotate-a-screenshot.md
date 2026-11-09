@@ -47,6 +47,8 @@ Drag on the screenshot to draw with the tool you picked. While you drag:
 
 Your marks can reach past the edges of the screenshot. The canvas grows to fit them.
 
+The hint at the bottom right of the canvas tells you what the tool does, or what you've selected, with the keys that change it. With an arrow selected it reads "Arrow selected · ⌫ delete · ⇧ snap 45°".
+
 ## Choose colours and options
 
 A small style bar floats over the screenshot with the options for the tool you picked. It sits at the top of the screenshot until you draw, then moves next to the mark you selected, above it where there's room, and otherwise below or beside it, so it never covers the mark. It steps out of the way while you drag.
@@ -92,7 +94,7 @@ What you've just drawn stays selected, so you can fix its colour, width or fill 
 
 ## Zoom in
 
-Pinch, press <kbd>⌘+</kbd> and <kbd>⌘−</kbd>, or use the zoom menu at the bottom left of the canvas. <kbd>⌘0</kbd> fits the screenshot to the window, and <kbd>⌘1</kbd> shows it at actual size. To move around when zoomed in, scroll, hold <kbd>Space</kbd> and drag, drag with the middle mouse button, or use the hand tool (<kbd>H</kbd>).
+Pinch, press <kbd>⌘+</kbd> and <kbd>⌘−</kbd>, or click **−** and **+** in the zoom control at the bottom left of the canvas. **Fit**, or <kbd>⌘0</kbd>, fits the screenshot to the window. Click the percentage for a menu with **Actual Size** (<kbd>⌘1</kbd>). To move around when zoomed in, scroll, hold <kbd>Space</kbd> and drag, drag with the middle mouse button, or use the hand tool (<kbd>H</kbd>).
 
 ## Copy or save
 

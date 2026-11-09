@@ -13,7 +13,9 @@ struct StyleBarOverlay: View {
     var body: some View {
         GeometryReader { proxy in
             if let content {
-                let origin = StyleBarPlacement.origin(bar: barSize, mark: content.followsMark ? model.styleBarMark : nil, in: proxy.size)
+                let origin = StyleBarPlacement.origin(
+                    bar: barSize, mark: content.followsMark ? model.styleBarMark : nil, in: proxy.size, bottom: model.canvasFootHeight
+                )
                 StyleBar(model: model, content: content)
                     .fixedSize()
                     .onGeometryChange(for: CGSize.self, of: \.size) { barSize = $0 }

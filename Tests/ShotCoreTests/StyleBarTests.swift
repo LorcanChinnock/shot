@@ -77,3 +77,16 @@ private let bar = CGSize(width: 260, height: 32)
     #expect(StyleBarSwatches.colors.last == RGBA(0, 0, 0))
     #expect(!StyleBarSwatches.contains(RGBA(1, 1, 1)))
 }
+
+@Test func theBarKeepsClearOfTheControlsAtTheFoot() {
+    // Below this mark fits the canvas, but would cover the zoom control and hint, so the bar goes to its right.
+    let mark = CGRect(x: 300, y: 12, width: 120, height: 388)
+    #expect(StyleBarPlacement.origin(bar: bar, mark: mark, in: canvas) == CGPoint(x: 230, y: 410))
+    #expect(StyleBarPlacement.origin(bar: bar, mark: mark, in: canvas, bottom: 60) == CGPoint(x: 430, y: 190))
+}
+
+@Test func besideAMarkTheBarSlidesUpAboveTheControls() {
+    let mark = CGRect(x: 100, y: 40, width: 200, height: 860)
+    #expect(StyleBarPlacement.origin(bar: bar, mark: mark, in: canvas) == CGPoint(x: 310, y: 454))
+    #expect(StyleBarPlacement.origin(bar: bar, mark: mark, in: canvas, bottom: 60) == CGPoint(x: 310, y: 408))
+}
