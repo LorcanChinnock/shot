@@ -4,6 +4,7 @@ import SwiftUI
 struct EditorRootView: View {
     @Bindable var model: EditorModel
     let canvas: EditorCanvasView
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: Brutal.sectionGap) {
@@ -18,6 +19,10 @@ struct EditorRootView: View {
                     .glassCard()
                     .overlay(alignment: .bottom) { CanvasFoot(model: model, canvas: canvas) }
                     .overlay { StyleBarOverlay(model: model) }
+                if model.showsStylePanel {
+                    StylePanel(model: model)
+                        .transition(reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity))
+                }
                 if model.showsLayers {
                     LayersPanel(
                         rows: model.layerRows,
@@ -54,6 +59,7 @@ struct EditorRootView: View {
             }
         }
         .padding([.horizontal, .bottom], Brutal.windowInset)
+        .animation(Motion.animation(.panelArrive, reduceMotion: reduceMotion), value: model.showsStylePanel)
     }
 }
 
@@ -101,16 +107,12 @@ private struct EditorTitleBar: View {
                 Image(systemName: "arrow.uturn.backward").font(Brutal.toolIcon)
             }
             Tile(
-                selected: model.showsStylePopover, help: "Style",
-                detail: "Add a shadow, border or rounded corners to the selected image, a shadow or glow to a shape, arrow or text, or style the screenshot when nothing is selected",
-                isEnabled: model.styleTarget != nil
+                selected: model.showsStylePanel, help: "Style",
+                detail: "Shows a panel beside the canvas for the screenshot's background, padding, size, shadow and corners, or the selected image's, shape's or text's shadow and border."
             ) {
-                model.showsStylePopover.toggle()
+                model.toggleStylePanel()
             } label: {
                 Image(systemName: "paintpalette").font(Brutal.toolIcon)
-            }
-            .popover(isPresented: $model.showsStylePopover, arrowEdge: .bottom) {
-                StylePopover(model: model)
             }
             Tile(selected: model.showsLayers, help: "Layers", key: "⌘L", detail: "Shows every mark and image in a list beside the canvas.") {
                 model.toggleLayers()

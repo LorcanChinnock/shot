@@ -301,6 +301,9 @@ public struct CopiedStyle: Equatable, Sendable, Codable {
     /// styles saved before it still decode.
     private var fromShape: Bool?
     public var isFromShape: Bool { fromShape ?? false }
+    /// The screenshot's background, padding and size, saved only by Use for new captures and only when it has them.
+    /// Paste Style leaves it out. Styles saved before it decode without one.
+    public var canvas: CanvasStyle?
 
     public init(style: ObjectStyle, cornerRadius: CGFloat = 0, source: StyleKind, fromShape: Bool = false) {
         self.style = style
@@ -354,6 +357,16 @@ public extension CopiedStyle {
             }
         }
         guard source == other.source, same(cornerRadius, other.cornerRadius) else {
+            return false
+        }
+        switch (canvas, other.canvas) {
+        case (nil, nil):
+            break
+        case let (a?, b?):
+            guard a.isSame(as: b) else {
+                return false
+            }
+        default:
             return false
         }
         switch (style.shadow, other.style.shadow) {
