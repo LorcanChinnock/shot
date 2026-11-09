@@ -3,10 +3,12 @@ name: Redesign close issues
 # GitHub closes the issues a pull request names with `Closes #N` only when it merges into the default branch. Redesign
 # pull requests merge into `redesign`, so this closes those issues itself, and the epic's progress stays current. The
 # epic (#1050) stays open until the final `redesign` → `main` pull request merges, which closes it the normal way.
-# pull_request_target, so the token can write even for a pull request from a fork. It checks out nothing and reads the
-# body only through an environment variable, so no code or text from the pull request runs.
+# pull_request rather than pull_request_target, which GitHub now blocks unless an administrator allows it. Redesign pull
+# requests come from branches in this repository, so the token can still close issues; a pull request from a fork gets a
+# read-only token, and its issues are closed by hand. It checks out nothing and reads the body only through an
+# environment variable, so no code or text from the pull request runs.
 on:
-  pull_request_target:
+  pull_request:
     types: [closed]
     branches: [redesign]
 
