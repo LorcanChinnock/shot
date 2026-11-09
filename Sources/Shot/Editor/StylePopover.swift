@@ -143,7 +143,7 @@ struct StylePopover<Model: StyleEditing>: View {
         let style: ObjectStyle
         let selected: Bool
         /// The plain card drawn when there's no picture of the target.
-        let swatch: Swatch
+        let swatch: StylePresetSwatch
     }
 
     /// The shadow presets, then the borders the target can have; none for a window with the macOS shadow.
@@ -151,23 +151,23 @@ struct StylePopover<Model: StyleEditing>: View {
         guard !model.targetHasWindowShadow else {
             return []
         }
-        func preset(_ id: String, _ title: String, selected: Bool, swatch: Swatch, _ change: (inout ObjectStyle) -> Void) -> Preset {
+        func preset(_ id: String, _ title: String, selected: Bool, swatch: StylePresetSwatch, _ change: (inout ObjectStyle) -> Void) -> Preset {
             var candidate = style
             change(&candidate)
             return Preset(id: id, title: title, style: candidate, selected: selected, swatch: swatch)
         }
-        let shadows = [preset("shadow-none", String(localized: "None"), selected: style.shadow == nil, swatch: Swatch()) { $0.shadow = nil }]
+        let shadows = [preset("shadow-none", String(localized: "None"), selected: style.shadow == nil, swatch: StylePresetSwatch()) { $0.shadow = nil }]
             + ShadowPreset.allCases.map { shadowPreset in
                 let shadow = shadowPreset.shadow(scale: model.scale)
-                return preset("shadow-\(shadowPreset.rawValue)", shadowPreset.title, selected: style.shadow == shadow, swatch: Swatch(shadow: shadowPreset)) { $0.shadow = shadow }
+                return preset("shadow-\(shadowPreset.rawValue)", shadowPreset.title, selected: style.shadow == shadow, swatch: StylePresetSwatch(shadow: shadowPreset)) { $0.shadow = shadow }
             }
         var rows = [PresetRow(title: String(localized: "SHADOW"), presets: shadows)]
         let borderKinds = kind.borders(transparent: model.targetHasTransparency)
         if !borderKinds.isEmpty {
-            let borders = [preset("border-none", String(localized: "None"), selected: style.border == nil, swatch: Swatch()) { $0.border = nil }]
+            let borders = [preset("border-none", String(localized: "None"), selected: style.border == nil, swatch: StylePresetSwatch()) { $0.border = nil }]
                 + borderKinds.map { borderKind in
                     let border = model.newBorder(borderKind)
-                    return preset("border-\(borderKind.rawValue)", borderKind.title, selected: style.border?.kind == borderKind, swatch: Swatch(border: borderKind)) { $0.border = border }
+                    return preset("border-\(borderKind.rawValue)", borderKind.title, selected: style.border?.kind == borderKind, swatch: StylePresetSwatch(border: borderKind)) { $0.border = border }
                 }
             rows.append(PresetRow(title: String(localized: "BORDER"), presets: borders))
         }
@@ -363,7 +363,7 @@ private struct StyleTile: View {
     /// Called with true as the pointer moves onto the tile and false as it leaves.
     let preview: (Bool) -> Void
     let action: () -> Void
-    let swatch: Swatch
+    let swatch: StylePresetSwatch
     @State private var hovering = false
     @Environment(\.displayScale) private var displayScale
 
@@ -430,7 +430,8 @@ extension Border.Kind {
 }
 
 /// A white card with a preset's shadow or border, as a tile's picture; an outline's is a cut-out disc with a white rim.
-private struct Swatch: View {
+/// The Style panel's tiles draw it too.
+struct StylePresetSwatch: View {
     var shadow: ShadowPreset?
     var border: Border.Kind?
 

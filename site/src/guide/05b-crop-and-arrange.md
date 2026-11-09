@@ -59,5 +59,5 @@ The canvas grows to fit marks that reach past the screenshot's edges, except spo
 In the **Canvas** menu, at the bottom left of the canvas next to the zoom control:
 
 - **Fit to Content** fits the canvas to everything on it.
-- **Trim to Image** trims it back to the screenshot.
-- **Background…** sets the colour of the extra space: transparent (PNG only), a palette colour, or any colour from the rainbow swatch. It starts transparent for a PNG and white for a JPEG.
+- **Trim to Image** trims it back to the screenshot, and takes off any padding and size from the Style panel.
+- **Background…** opens the Style panel, where you choose what fills the extra space, add padding around the screenshot or give the canvas a size such as 16:9 (see [Style a screenshot](#style-a-screenshot)).

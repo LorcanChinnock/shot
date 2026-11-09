@@ -156,17 +156,17 @@ private struct CanvasHintPill: View {
     private static let keyColor = Color(light: Color(hex: 0x55545A), dark: Color(hex: 0xEDEBE6))
 }
 
-/// Fit to Content, Trim to Image and Background…, until the Canvas menu moves (#1099).
+/// Fit to Content, Trim to Image and Background…, until the Canvas menu moves (#1099). Background… opens the Style
+/// panel, where the background now lives.
 private struct CanvasMenu: View {
     @Bindable var model: EditorModel
-    @State private var showsBackground = false
 
     var body: some View {
         BrutalDropdown(title: "Canvas", entries: [
             .item("Fit to Content") { model.fitToContent() },
-            .item("Trim to Image", enabled: !model.document.capturePaintedBounds.contains(model.document.contentRect)) { model.trimToImage() },
+            .item("Trim to Image", enabled: model.document.canTrimToImage) { model.trimToImage() },
             .divider,
-            .item("Background…") { showsBackground = true },
+            .item("Background…") { model.showStylePanel() },
         ]) {
             HStack(spacing: 5) {
                 Text("Canvas")
@@ -177,25 +177,7 @@ private struct CanvasMenu: View {
         }
         .buttonStyle(BrutalButtonStyle(.toolbar))
         .fixedSize()
-        .brutalTip("Canvas", detail: "Fit the canvas to what's on it, trim it to the image, or choose its background.")
-        .popover(isPresented: $showsBackground, arrowEdge: .bottom) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("BACKGROUND").font(Brutal.mono).foregroundStyle(Brutal.ink)
-                HStack(spacing: 2) {
-                    ColorSwatches(
-                        selected: model.document.background,
-                        lastCustom: model.lastBackgroundColor,
-                        // JPEG has no alpha, so it can't keep transparent padding.
-                        allowsNone: !model.isJPEG,
-                        customHelp: "Custom background colour",
-                        choose: model.setBackground,
-                        pickCustom: model.pickBackground,
-                        beginPicking: model.beginColorPick
-                    )
-                }
-            }
-            .padding(12)
-        }
+        .brutalTip("Canvas", detail: "Fit the canvas to what's on it, trim it to the image, or choose its background in the Style panel.")
     }
 }
 

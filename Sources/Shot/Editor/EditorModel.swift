@@ -147,8 +147,9 @@ final class EditorModel {
     var showsLayers = UserDefaults.standard.bool(forKey: EditorModel.showsLayersKey)
     /// Whether the picker of images to place on the canvas is open.
     var showsImagePicker = false
-    /// Whether the Style popover is open.
-    var showsStylePopover = false
+    /// Whether the Style panel shows beside the canvas. It starts closed in every window, and it and the Layers panel
+    /// take turns, so the canvas keeps its room at the window's minimum width.
+    private(set) var showsStylePanel = false
     private static let showsLayersKey = PreferenceKey.editorShowsLayers
     /// The text or note whose text field is open, with the colour and size picked for it so far; it may not be in the document yet.
     var editingText: Annotation?
@@ -170,6 +171,7 @@ final class EditorModel {
     var showsMoreStyle = false
     private(set) var history: EditHistory
     private var isDraggingStyle = false
+    @ObservationIgnored private var isLoadingDesktopPicture = false
 
     /// `newCaptureStyle` is put on the screenshot as where the document starts, so it's no unsaved change. `windowShadow`
     /// says the image is a window captured with the macOS shadow. `layers` are the live layers and canvas of `version`,
@@ -206,9 +208,10 @@ final class EditorModel {
         widthIndex = style.widthIndex
         objectStyles = style.objectStyles
         if let newCaptureStyle {
-            self.document.pasteStyle(newCaptureStyle, to: [.capture], scale: scale, margin: canvasMargin)
+            self.document.applyNewCaptureStyle(newCaptureStyle, scale: scale, margin: canvasMargin)
             history.setSaved(self.document.snapshot)
         }
+        loadDesktopPictureIfNeeded()
     }
 
     /// Saves only the value that changed, so another open editor's choices aren't overwritten with this
@@ -245,6 +248,27 @@ final class EditorModel {
     func toggleLayers() {
         showsLayers.toggle()
         UserDefaults.standard.set(showsLayers, forKey: Self.showsLayersKey)
+        if showsLayers {
+            showsStylePanel = false
+        }
+    }
+
+    /// Opens the Style panel if it's closed, as the Canvas menu's Background… does.
+    func showStylePanel() {
+        if !showsStylePanel {
+            toggleStylePanel()
+        }
+    }
+
+    /// Opens or closes the Style panel. Opening it closes the Layers panel, which ⌘L brings back in its place.
+    func toggleStylePanel() {
+        showsStylePanel.toggle()
+        if showsStylePanel, showsLayers {
+            toggleLayers()
+        }
+        if !showsStylePanel {
+            stylePreview = nil
+        }
     }
 
     /// Picks layers from the panel, which also switches to the select tool, as picking one on the canvas does.
@@ -475,7 +499,7 @@ final class EditorModel {
 
     // MARK: Object style
 
-    /// What the Style popover changes: the selected image, mark or text, else the capture when nothing is selected. `nil`
+    /// What the Style panel changes: the selected image, mark or text, else the capture when nothing is selected. `nil`
     /// while text is typed or the selection can't take a style.
     var styleTarget: StyleTarget? {
         guard editingText == nil else {
@@ -490,22 +514,22 @@ final class EditorModel {
         return .annotation(selection.id)
     }
 
-    /// What the Style popover's target is, which decides what it offers.
+    /// What the Style panel's target is, which decides what it offers.
     var targetStyleKind: StyleKind? {
         styleTarget.flatMap { document.styleKind(of: $0) }
     }
 
-    /// Whether the target has see-through pixels, so the Style popover offers an outline.
+    /// Whether the target has see-through pixels, so the Style panel offers an outline.
     var targetHasTransparency: Bool {
         styleTarget.map { document.hasTransparency(of: $0) } ?? false
     }
 
-    /// Whether the Style popover's target is a window captured with the macOS shadow.
+    /// Whether the Style panel's target is a window captured with the macOS shadow.
     var targetHasWindowShadow: Bool {
         styleTarget == .capture && document.hasWindowShadow
     }
 
-    /// What the Style popover's tiles draw: the screenshot or placed image itself, or the mark or text.
+    /// What the Style panel's tiles draw: the screenshot or placed image itself, or the mark or text.
     var targetThumbnail: StyleThumbnail.Subject? {
         switch styleTarget {
         case .capture:
@@ -525,17 +549,17 @@ final class EditorModel {
 
     var thumbnailBackground: RGBA? { document.background }
 
-    /// The style the Style popover shows: its target's.
+    /// The style the Style panel shows: its target's.
     var targetStyle: ObjectStyle {
         styleTarget.map { document.style(of: $0) } ?? ObjectStyle()
     }
 
-    /// The corner radius the Style popover shows, in points.
+    /// The corner radius the Style panel shows, in points.
     var targetCornerRadius: CGFloat {
         styleTarget.map { document.cornerRadius(of: $0) / scale } ?? 0
     }
 
-    /// A style the pointer is over in the Style popover, shown on the canvas in place of the target's until it moves off.
+    /// A style the pointer is over in the Style panel, shown on the canvas in place of the target's until it moves off.
     /// It's not part of the document, so it's never an undo step.
     var stylePreview: ObjectStyle?
 
@@ -556,7 +580,8 @@ final class EditorModel {
     }
 
     /// Puts the target's shadow, border and corners back to how a new one of its kind starts, as one undo step, and
-    /// remembers that style for the next one. The screenshot's "use for new captures" setting stays as it is.
+    /// remembers that style for the next one. The screenshot's background, padding and size go back to how a new
+    /// capture starts too. The screenshot's "use for new captures" setting stays as it is.
     func resetTargetStyle() {
         guard let styleTarget, let kind = targetStyleKind else {
             return
@@ -564,10 +589,16 @@ final class EditorModel {
         stylePreview = nil
         let style = kind.defaultStyle.scaled(by: scale)
         let radius = kind.defaultCornerRadius * scale
+        let background = EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension))
         edit {
             $0.setStyle(style, of: styleTarget, margin: canvasMargin)
             if kind.takesCorners {
                 $0.setCornerRadius(radius, of: styleTarget)
+            }
+            if kind == .capture {
+                $0.background = background
+                $0.backgroundFill = nil
+                $0.frame = .none
             }
         }
         if kind != .capture {
@@ -658,7 +689,7 @@ final class EditorModel {
 
     /// Saves the screenshot's style for new captures to open and copy with, or turns that off.
     func setUsesStyleForNewCaptures(_ on: Bool) {
-        Preferences.styleNewCaptures(with: on ? document.copyStyle(of: .capture, scale: scale) : nil)
+        Preferences.styleNewCaptures(with: on ? document.newCaptureStyle(scale: scale) : nil)
         newCaptureSettingChanges += 1
     }
 
@@ -1005,8 +1036,62 @@ final class EditorModel {
         edit { $0.trimToImage() }
     }
 
+    /// Sets the background to one colour, or none, in place of any gradient.
     func setBackground(_ background: RGBA?) {
-        edit { $0.background = background }
+        edit {
+            $0.background = background
+            $0.backgroundFill = nil
+        }
+    }
+
+    /// Fills the canvas with a gradient or the desktop picture, over a colour close to it that tints shadows.
+    func setBackgroundFill(_ fill: BackgroundFill) {
+        edit {
+            $0.background = fill.average
+            $0.backgroundFill = fill
+        }
+        loadDesktopPictureIfNeeded()
+    }
+
+    /// Whether the Style panel's Reset has anything to put back.
+    var isTargetStyleDefault: Bool {
+        guard let kind = targetStyleKind else {
+            return true
+        }
+        let style = kind.isDefault(style: targetStyle, cornerRadius: targetCornerRadius)
+        guard kind == .capture else {
+            return style
+        }
+        return style && document.frame.isNone && document.backgroundFill == nil
+            && document.background == EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension))
+    }
+
+    /// The padding the Style panel shows, in points.
+    var canvasPadding: CGFloat { document.frame.padding / scale }
+
+    /// Sets the padding round the screenshot, in points. A drag of its slider is one undo step.
+    func setCanvasPadding(_ points: CGFloat) {
+        edit(coalescing: isDraggingStyle ? "canvas-padding" : nil) { $0.frame.padding = (points * scale).rounded() }
+    }
+
+    func setCanvasAspect(_ aspect: CanvasAspect) {
+        edit { $0.frame.aspect = aspect }
+    }
+
+    /// Loads the desktop picture for a Desktop fill, off the main actor, the first time the document needs it.
+    private func loadDesktopPictureIfNeeded() {
+        guard document.backgroundFill == .desktop, document.desktopPicture == nil, !isLoadingDesktopPicture else {
+            return
+        }
+        isLoadingDesktopPicture = true
+        Task { [weak self] in
+            let picture = await DesktopPicture.current()
+            guard let self else {
+                return
+            }
+            isLoadingDesktopPicture = false
+            document.desktopPicture = picture
+        }
     }
 
     /// The background picked last from the custom colour editor, which its rainbow swatch applies again; `nil` until one
@@ -1021,7 +1106,10 @@ final class EditorModel {
             color.a = 1
         }
         lastBackgroundColor = color
-        edit(coalescing: "background") { $0.background = color }
+        edit(coalescing: "background") {
+            $0.background = color
+            $0.backgroundFill = nil
+        }
     }
 
     /// Applies `change` as one undoable step, or does nothing if it leaves the document as it was.

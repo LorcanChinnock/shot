@@ -536,8 +536,10 @@ final class CaptureCoordinator {
         let source = SendableImage(image)
         Task {
             let start = ContinuousClock.now
+            // Read only for a saved Desktop background, so other styles wait for nothing.
+            let desktop = style.canvas?.fill == .desktop ? await DesktopPicture.current().map(SendableImage.init) : nil
             let styled = await Task.detached { () -> (png: Data, thumbnail: SendableImage?, size: CGSize)? in
-                guard let styled = style.styledCapture(source.image, scale: scale, background: background, windowShadow: windowShadow),
+                guard let styled = style.styledCapture(source.image, scale: scale, background: background, windowShadow: windowShadow, desktopPicture: desktop?.image),
                       let png = ImageCodec.data(from: styled, scale: scale)
                 else {
                     return nil

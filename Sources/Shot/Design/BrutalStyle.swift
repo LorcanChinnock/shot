@@ -849,6 +849,8 @@ struct BrutalSegmented<Value: Hashable>: View {
     /// The label still names it to VoiceOver and in its tooltip.
     private var glyph: ((Value, Bool) -> AnyView)?
     private var glyphSize = CGSize(width: 26, height: 20)
+    /// Whether the segments share all the width they're given, as the Style panel's Size does, rather than fit their labels.
+    private var fills = false
     @Namespace private var thumb
     @FocusState private var focused: Bool
     @Environment(\.isEnabled) private var isEnabled
@@ -876,6 +878,13 @@ struct BrutalSegmented<Value: Hashable>: View {
 
     private static var trackRadius: CGFloat { 8 }
 
+    /// The segments share the whole width, each as wide as the others.
+    func fillingWidth() -> Self {
+        var copy = self
+        copy.fills = true
+        return copy
+    }
+
     var body: some View {
         let track = RoundedRectangle(cornerRadius: Self.trackRadius, style: .circular)
         HStack(spacing: 0) {
@@ -887,7 +896,7 @@ struct BrutalSegmented<Value: Hashable>: View {
         .background(Brutal.fieldFill, in: track)
         .modifier(ButtonEdge(shape: track, width: contrast == .increased ? 1 : 0, color: Brutal.ink.opacity(0.6)))
         .opacity(isEnabled ? 1 : 0.5)
-        .fixedSize()
+        .fixedSize(horizontal: !fills, vertical: true)
         .background {
             if focused, isEnabled {
                 Color.clear.inkBorder(RoundedRectangle(cornerRadius: Self.trackRadius + 4, style: .circular), width: 4, color: Brutal.focusRing).padding(-4)
@@ -940,8 +949,9 @@ struct BrutalSegmented<Value: Hashable>: View {
                 .foregroundStyle(selected ? AnyShapeStyle(Brutal.ink) : AnyShapeStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink)))
         }
         .lineLimit(1)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, fills ? 4 : 12)
         .padding(.vertical, 3)
+        .frame(maxWidth: fills ? .infinity : nil)
         .background {
             if selected {
                 SegmentThumb().matchedGeometryEffect(id: "thumb", in: thumb)

@@ -13,8 +13,15 @@ public struct EditorDocument: @unchecked Sendable {
     public var frameCrop: CGRect?
     /// Whether the frame crop is left out of the export, which shows all of `contentRect`.
     public var isFrameCropHidden = false
-    /// Fills the canvas behind the image; `nil` is transparent.
+    /// Fills the canvas behind the image; `nil` is transparent. Under a `backgroundFill` it's a colour close to it.
     public var background: RGBA?
+    /// A gradient or the desktop picture drawn over `background`, or `nil` for the colour alone.
+    public var backgroundFill: BackgroundFill?
+    /// The desktop picture a `.desktop` fill draws, which the app loads; without one it draws a warm grey gradient.
+    /// It isn't part of the snapshot, so a saved version shows whatever the desktop is when it reopens.
+    public var desktopPicture: CGImage?
+    /// The Style panel's padding and size, which add canvas around the screenshot and its crop.
+    public var frame = CanvasFrame.none
     /// How far the image's corners are rounded, in image pixels.
     public var captureCornerRadius: CGFloat = 0
     /// The image's shadow and border.
@@ -50,16 +57,17 @@ public struct EditorDocument: @unchecked Sendable {
     }
 
     /// The exported region in image pixels. It can be smaller than the image (a crop) or reach past it (padding). A
-    /// cropped one is the crop plus what the screenshot's shadow and border need around the part still showing.
+    /// cropped one is the crop plus what the screenshot's shadow and border need around the part still showing. The
+    /// frame's padding and size then add canvas around that.
     public var canvasRect: CGRect {
         guard let crop = visibleCrop else {
-            return contentRect
+            return frame.framing(contentRect, image: fullRect)
         }
         let shown = captureRect
         guard !shown.isEmpty else {
-            return crop
+            return frame.framing(crop, image: crop)
         }
-        return crop.union(captureStyle.paintedRect(around: shown)).integral
+        return frame.framing(crop.union(captureStyle.paintedRect(around: shown)).integral, image: shown)
     }
     public var exportSize: CGSize { canvasRect.size }
     /// Whether the canvas reaches past the image on any side.
@@ -177,16 +185,22 @@ public struct EditorDocument: @unchecked Sendable {
         }
     }
 
-    /// Removes the padding but what the image's shadow and border need. A frame crop stays, within what's left.
+    /// Removes the padding but what the image's shadow and border need, the frame's included. A frame crop stays,
+    /// within what's left.
     public mutating func trimToImage() {
         contentRect = capturePaintedBounds.integral
+        frame = .none
         clampCrop()
     }
+
+    /// Whether Trim to Image would remove anything.
+    public var canTrimToImage: Bool { !capturePaintedBounds.contains(contentRect) || !frame.isNone }
 
     public var snapshot: EditorSnapshot {
         EditorSnapshot(
             annotations: annotations, contentRect: contentRect, frameCrop: frameCrop, isFrameCropHidden: isFrameCropHidden,
-            background: background, captureCornerRadius: captureCornerRadius, captureStyle: captureStyle
+            background: background, captureCornerRadius: captureCornerRadius, captureStyle: captureStyle,
+            backgroundFill: backgroundFill, frame: frame.isNone ? nil : frame
         )
     }
 
@@ -198,6 +212,8 @@ public struct EditorDocument: @unchecked Sendable {
         background = snapshot.background
         captureCornerRadius = snapshot.captureCornerRadius
         captureStyle = snapshot.captureStyle
+        backgroundFill = snapshot.backgroundFill
+        frame = snapshot.frame ?? .none
     }
 }
 
@@ -211,6 +227,25 @@ public struct EditorSnapshot: Equatable, Sendable, Codable {
     public var background: RGBA?
     public var captureCornerRadius: CGFloat
     public var captureStyle: ObjectStyle
+    /// `nil` in snapshots saved before the Style panel had fills, which decode as no fill.
+    public var backgroundFill: BackgroundFill?
+    /// `nil` for no padding or size, as snapshots saved before the Style panel had them decode.
+    public var frame: CanvasFrame?
+
+    public init(
+        annotations: [Annotation], contentRect: CGRect, frameCrop: CGRect?, isFrameCropHidden: Bool, background: RGBA?,
+        captureCornerRadius: CGFloat, captureStyle: ObjectStyle, backgroundFill: BackgroundFill? = nil, frame: CanvasFrame? = nil
+    ) {
+        self.annotations = annotations
+        self.contentRect = contentRect
+        self.frameCrop = frameCrop
+        self.isFrameCropHidden = isFrameCropHidden
+        self.background = background
+        self.captureCornerRadius = captureCornerRadius
+        self.captureStyle = captureStyle
+        self.backgroundFill = backgroundFill
+        self.frame = frame
+    }
 }
 
 /// The last cropped screenshot, so drawing it again returns the same image.
@@ -382,10 +417,32 @@ public extension EditorDocument {
     /// Whether this screenshot, in a document of `scale` pixels per point, has `newCaptureStyle`, the style Use this
     /// style for new captures saved; false when that's off.
     func captureHas(_ newCaptureStyle: CopiedStyle?, scale: CGFloat) -> Bool {
-        guard let newCaptureStyle, let style = copyStyle(of: .capture, scale: scale) else {
+        guard let newCaptureStyle, let style = self.newCaptureStyle(scale: scale) else {
             return false
         }
         return style.isSameStyle(as: newCaptureStyle)
+    }
+
+    /// The screenshot's style as Use for new captures saves it: its shadow, border and corners, and its canvas while
+    /// that has padding, a size or a fill. A plain canvas isn't saved, so new captures keep their format's background.
+    func newCaptureStyle(scale: CGFloat) -> CopiedStyle? {
+        guard var style = copyStyle(of: .capture, scale: scale) else {
+            return nil
+        }
+        if !frame.isNone || backgroundFill != nil {
+            style.canvas = CanvasStyle(background: background, fill: backgroundFill, padding: frame.padding / scale, aspect: frame.aspect)
+        }
+        return style
+    }
+
+    /// Puts `canvas`, saved by Use for new captures, on a document of `scale` pixels per point. A transparent background
+    /// stays as it is where it can't be, as on a JPEG, which needs one.
+    mutating func applyCanvas(_ canvas: CanvasStyle, scale: CGFloat) {
+        if canvas.background != nil || background == nil {
+            background = canvas.background
+        }
+        backgroundFill = canvas.fill
+        frame = CanvasFrame(padding: canvas.padding * scale, aspect: canvas.aspect)
     }
 }
 

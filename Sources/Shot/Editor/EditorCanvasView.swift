@@ -92,7 +92,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     // MARK: Geometry
 
     /// The canvas as it will be once the draft or note being typed is committed, so it grows and shrinks as they do,
-    /// and as a style previewed in the Style popover would make it.
+    /// and as a style previewed in the Style panel would make it.
     private var canvasRect: CGRect { displayDocument.canvasRect }
 
     /// What the canvas draws: the previewed document grown for the pending draft. In crop mode it's uncropped, so

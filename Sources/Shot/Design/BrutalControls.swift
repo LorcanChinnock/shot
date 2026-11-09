@@ -91,7 +91,7 @@ private struct CustomColorButton: View {
     }
 }
 
-private struct ColorEditor: View {
+struct ColorEditor: View {
     let pick: (RGBA) -> Void
     @State private var hue: Double
     @State private var saturation: Double
