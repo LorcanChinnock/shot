@@ -17,14 +17,13 @@ public struct CanvasHint: Equatable, Sendable {
 
     /// The keys a hint can name, each shown as its symbol and read to VoiceOver by its name.
     public enum Key: Sendable {
-        case delete, shift, option, returnKey, escape
+        case delete, shift, option, escape
 
         public var symbol: String {
             switch self {
             case .delete: "⌫"
             case .shift: "⇧"
             case .option: "⌥"
-            case .returnKey: "↩"
             case .escape: "esc"
             }
         }
@@ -34,7 +33,6 @@ public struct CanvasHint: Equatable, Sendable {
             case .delete: String(localized: "Delete")
             case .shift: String(localized: "Shift")
             case .option: String(localized: "Option")
-            case .returnKey: String(localized: "Return")
             case .escape: String(localized: "Escape")
             }
         }
@@ -54,15 +52,16 @@ public struct CanvasHint: Equatable, Sendable {
         ([lead] + parts.map { part in part.key.map { "\($0.name): \(part.action)" } ?? part.action }).joined(separator: ". ")
     }
 
-    /// The hint for the canvas as it is. Typing and cropping come first, since their keys work only then. Then the
-    /// selection: several marks, one locked mark, or one mark with what Shift does while you resize it. With nothing
-    /// selected, the tool's action and what Shift or Option does while you draw.
-    public static func hint(tool: EditorTool, selection: [Annotation], isTyping: Bool) -> CanvasHint {
+    /// The hint for the canvas as it is, or `nil` in crop mode, where the crop bar takes the foot and names its own keys.
+    /// Typing comes first, since its key works only then. Then the selection: several marks, one locked mark, or one mark
+    /// with what Shift does while you resize it. With nothing selected, the tool's action and what Shift or Option does
+    /// while you draw.
+    public static func hint(tool: EditorTool, selection: [Annotation], isTyping: Bool) -> CanvasHint? {
         if isTyping {
             return CanvasHint(String(localized: "Typing"), [Part(.escape, String(localized: "done"))])
         }
         if tool == .crop {
-            return CanvasHint(String(localized: "Cropping"), [Part(.returnKey, String(localized: "apply")), Part(.escape, String(localized: "cancel"))])
+            return nil
         }
         if selection.count > 1 {
             return CanvasHint(
@@ -89,7 +88,7 @@ public struct CanvasHint: Equatable, Sendable {
         }
     }
 
-    private static func toolHint(_ tool: EditorTool) -> CanvasHint {
+    private static func toolHint(_ tool: EditorTool) -> CanvasHint? {
         let snap = Part(.shift, String(localized: "snap 45°"))
         let fromCentre = Part(.option, String(localized: "from centre"))
         return switch tool {
@@ -105,7 +104,7 @@ public struct CanvasHint: Equatable, Sendable {
         case .spotlight: CanvasHint(String(localized: "Drag around what matters"), [fromCentre])
         case .redact: CanvasHint(String(localized: "Drag over private details"), [fromCentre])
         case .counter: CanvasHint(String(localized: "Click to add the next step"))
-        case .crop: CanvasHint(String(localized: "Cropping"))
+        case .crop: nil
         }
     }
 }

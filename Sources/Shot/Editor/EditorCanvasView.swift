@@ -68,6 +68,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             _ = model.document.canvasRect
             _ = model.document.background
             _ = model.cropDraft
+            _ = model.cropBarClearance
             _ = model.stylePreview
             _ = model.selectedIDs
             _ = model.tool
@@ -116,12 +117,18 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     /// The whole canvas, no larger than actual size.
     private var fitViewport: Viewport {
-        .fit(canvasRect, in: bounds.size, maxScale: Viewport.scale(forZoom: 1, pixelsPerPoint: model.scale))
+        .fit(canvasRect, in: viewportSize, maxScale: Viewport.scale(forZoom: 1, pixelsPerPoint: model.scale))
     }
 
     /// Clamped on every read, so a crop or a window resize never leaves the canvas scrolled away.
     private var viewport: Viewport {
-        zoomedViewport?.clamped(to: canvasRect, in: bounds.size) ?? fitViewport
+        zoomedViewport?.clamped(to: canvasRect, in: viewportSize) ?? fitViewport
+    }
+
+    /// The room the image fits and scrolls in: the view above the crop bar in crop mode, so the crop's bottom handles
+    /// never sit under it, and all of it otherwise.
+    private var viewportSize: CGSize {
+        CGSize(width: bounds.width, height: max(1, bounds.height - (model.tool == .crop ? model.cropBarClearance : 0)))
     }
 
     /// View points per image pixel.
@@ -275,32 +282,85 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         edge.stroke()
     }
 
-    /// Dims and greys out what `crop` leaves out of `canvas`, the canvas or the image being cropped, so it looks switched off, and draws the
-    /// crop's outline and its eight handles.
+    /// Washes what `crop` leaves out of `canvas`, the canvas or the image being cropped, in the backdrop's colour, and
+    /// draws the crop as on Edit › Image editor · crop and combine: a 1.5 pt ink outline with a 1 pt edge outside it in
+    /// the opposite colour, a thirds grid, ink L-shaped corners and a short bar in the middle of each side.
     private func drawCrop(_ crop: CGRect, over canvas: CGRect, in ctx: CGContext) {
+        let dark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let increased = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
         let outside = NSBezierPath(rect: canvas)
         outside.append(NSBezierPath(rect: crop))
         outside.windingRule = .evenOdd
         ctx.saveGState()
         outside.addClip()
-        ctx.setBlendMode(.saturation)
-        ctx.setFillColor(gray: 0.5, alpha: 1)
-        ctx.fill(canvas)
-        ctx.setBlendMode(.normal)
-        ctx.setFillColor(gray: 0, alpha: 0.45)
-        ctx.fill(canvas)
+        let wash = dark ? NSColor(srgbRed: 0x15 / 255, green: 0x15 / 255, blue: 0x17 / 255, alpha: 1) : NSColor(srgbRed: 0xEC / 255, green: 0xEA / 255, blue: 0xE5 / 255, alpha: 1)
+        wash.withAlphaComponent(increased ? 0.85 : 0.72).setFill()
+        canvas.fill()
         ctx.restoreGState()
-        NSColor.black.withAlphaComponent(0.5).setStroke()
-        let shadow = NSBezierPath(rect: crop)
-        shadow.lineWidth = 3
-        shadow.stroke()
-        NSColor.white.setStroke()
-        let outline = NSBezierPath(rect: crop)
+
+        // The thirds grid, white at 80% (all white under Increase Contrast), inside the crop.
+        NSColor.white.withAlphaComponent(increased ? 1 : 0.8).setFill()
+        for third in [1.0 / 3, 2.0 / 3] {
+            NSRect(x: (crop.minX + crop.width * third).rounded() - 0.5, y: crop.minY, width: 1, height: crop.height).fill()
+            NSRect(x: crop.minX, y: (crop.minY + crop.height * third).rounded() - 0.5, width: crop.width, height: 1).fill()
+        }
+
+        // The ink, light in dark mode, with an edge of the opposite colour outside it, so the outline and marks show on
+        // any screenshot.
+        let ink = dark ? NSColor(srgbRed: 0xED / 255, green: 0xEB / 255, blue: 0xE6 / 255, alpha: 1) : Brutal.inkNS
+        let edge: NSColor = dark ? .black : .white
+        edge.setStroke()
+        let halo = NSBezierPath(rect: crop.insetBy(dx: -0.5, dy: -0.5))
+        halo.lineWidth = 1
+        halo.stroke()
+        ink.setStroke()
+        let outline = NSBezierPath(rect: crop.insetBy(dx: 0.75, dy: 0.75))
         outline.lineWidth = 1.5
         outline.stroke()
-        for handle in CropHandle.allCases {
-            SelectionStyle.handle(at: handle.point(on: crop))
+
+        ink.setFill()
+        for path in Self.cropMarks(crop) {
+            edge.setStroke()
+            path.lineWidth = 2
+            path.stroke()
+            path.fill()
         }
+    }
+
+    /// The crop's corners and side bars, in view points: 4 pt ink Ls 18 pt long, starting 3 pt outside each corner, and
+    /// 26 × 5 pt bars rounded at 2.5 across the middle of each side, as on the board. Their hit areas are the handles'.
+    private static func cropMarks(_ crop: CGRect) -> [NSBezierPath] {
+        let thick: CGFloat = 4, long: CGFloat = 18, out: CGFloat = 3
+        var marks: [NSBezierPath] = []
+        for (x, y) in [(crop.minX, crop.minY), (crop.maxX, crop.minY), (crop.minX, crop.maxY), (crop.maxX, crop.maxY)] {
+            let sx: CGFloat = x == crop.minX ? 1 : -1
+            let sy: CGFloat = y == crop.minY ? 1 : -1
+            let cx = x - sx * out, cy = y - sy * out
+            let path = NSBezierPath()
+            path.move(to: CGPoint(x: cx, y: cy))
+            path.line(to: CGPoint(x: cx + sx * long, y: cy))
+            path.line(to: CGPoint(x: cx + sx * long, y: cy + sy * thick))
+            path.line(to: CGPoint(x: cx + sx * thick, y: cy + sy * thick))
+            path.line(to: CGPoint(x: cx + sx * thick, y: cy + sy * long))
+            path.line(to: CGPoint(x: cx, y: cy + sy * long))
+            path.close()
+            marks.append(path)
+        }
+        // Each bar sits 4 pt outside its side and 1 pt in, as the board's `top: -4px` with 5 px of height does. A side
+        // too short to hold one clear of its corners goes without.
+        let length: CGFloat = 26, width: CGFloat = 5
+        let room = length + long * 2
+        var bars: [CGRect] = []
+        if crop.width > room {
+            bars.append(CGRect(x: crop.midX - length / 2, y: crop.minY - 4, width: length, height: width))
+            bars.append(CGRect(x: crop.midX - length / 2, y: crop.maxY - 1, width: length, height: width))
+        }
+        if crop.height > room {
+            bars.append(CGRect(x: crop.minX - 4, y: crop.midY - length / 2, width: width, height: length))
+            bars.append(CGRect(x: crop.maxX - 1, y: crop.midY - length / 2, width: width, height: length))
+        }
+        marks += bars.map { NSBezierPath(roundedRect: $0, xRadius: 2.5, yRadius: 2.5) }
+        return marks
     }
 
     /// Where a press in crop mode lands decides whether dragging resizes, moves or redraws the crop.
@@ -833,7 +893,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard zoom != currentZoom else {
             return
         }
-        zoomedViewport = viewport.zoomed(to: Viewport.scale(forZoom: zoom, pixelsPerPoint: model.scale), about: point).clamped(to: canvasRect, in: bounds.size)
+        zoomedViewport = viewport.zoomed(to: Viewport.scale(forZoom: zoom, pixelsPerPoint: model.scale), about: point).clamped(to: canvasRect, in: viewportSize)
         viewportDidChange()
     }
 
@@ -842,7 +902,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard zoomedViewport != nil else {
             return
         }
-        zoomedViewport = viewport.panned(by: offset).clamped(to: canvasRect, in: bounds.size)
+        zoomedViewport = viewport.panned(by: offset).clamped(to: canvasRect, in: viewportSize)
         viewportDidChange()
     }
 

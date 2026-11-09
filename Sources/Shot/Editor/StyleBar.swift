@@ -14,7 +14,7 @@ struct StyleBarOverlay: View {
         GeometryReader { proxy in
             if let content {
                 let origin = StyleBarPlacement.origin(
-                    bar: barSize, mark: content.followsMark ? model.styleBarMark : nil, in: proxy.size, bottom: model.canvasFootHeight
+                    bar: barSize, mark: model.styleBarMark, in: proxy.size, bottom: model.canvasFootHeight
                 )
                 StyleBar(model: model, content: content)
                     .fixedSize()
@@ -35,8 +35,8 @@ struct StyleBarOverlay: View {
     }
 }
 
-/// The bar: the colour swatches, a divider and the three widths, then More style for everything else. A redaction, a
-/// spotlight and the crop show their own main choices in its place.
+/// The bar: the colour swatches, a divider and the three widths, then More style for everything else. A redaction and a
+/// spotlight show their own main choices in its place.
 private struct StyleBar: View {
     @Bindable var model: EditorModel
     let content: StyleBarContent
@@ -75,20 +75,8 @@ private struct StyleBar: View {
                         StyleBarGlyph(symbol: effect == .darken ? "moon.fill" : "drop.halffull", selected: selected)
                     }
                 }
-            case .crop:
-                BrutalSegmented(
-                    selection: Binding(get: { model.cropAspect }, set: { model.chooseCropAspect($0) }),
-                    options: CropAspect.allCases.map { ($0, $0.label) }
-                )
-                StyleBarDivider()
-                Button("Reset", action: model.resetCrop)
-                    .buttonStyle(BrutalButtonStyle(.plain))
-                    .disabled(!model.canResetCrop)
-                    .brutalTip("Reset", detail: "Takes the crop off, so the whole image is kept.")
             }
-            if content.hasMore {
-                MoreStyleButton(model: model)
-            }
+            MoreStyleButton(model: model)
         }
         .padding(.vertical, 5)
         .padding(.horizontal, 7)
