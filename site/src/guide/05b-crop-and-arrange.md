@@ -8,17 +8,17 @@ group: Edit and share
 
 ## Crop
 
-1. Press <kbd>C</kbd>, or click the **Frame** row in Layers.
-2. Drag the handles to choose what to keep. What's cropped off shows dimmed.
-3. Press <kbd>Return</kbd> to apply the crop, or <kbd>Esc</kbd> to cancel.
+1. Press <kbd>C</kbd>, click **Crop** in the toolbar, or click the **Frame** row in Layers.
+2. Drag the handles to choose what to keep. What's cropped off shows faded, and a thirds grid helps you line things up.
+3. Click **Crop** in the bar at the bottom of the canvas, or press <kbd>Return</kbd>, to apply the crop. Click **Cancel**, or press <kbd>Esc</kbd>, to leave it as it was.
 
-While you crop:
+The bar also shows the size in pixels that the crop keeps, and it changes as you drag. While you crop:
 
 - **Drag a handle** to resize the crop, in or out. An edge can go as far as the content reaches, padding and your marks included, so dragging outward brings cropped pixels back. Edges snap to the screenshot's edges.
 - **Drag inside** the crop to move it, or **outside** it to draw a new one.
 - **Hold <kbd>Shift</kbd>** to keep the crop's shape.
-- **Aspect** holds it to Free, 1:1, 4:3 or 16:9. Picking a ratio fits the largest crop of that ratio inside the current one, centred, wide or tall to match. The editor remembers the last one.
-- **Reset**, or <kbd>Delete</kbd>, makes the crop the whole screenshot again.
+- **Aspect**, in the bar, holds it to Free, 1:1, 4:3 or 16:9. Picking a ratio fits the largest crop of that ratio inside the current one, centred, wide or tall to match. The editor remembers the last one.
+- **Reset** in the bar, or <kbd>Delete</kbd>, makes the crop the whole screenshot again.
 
 Picking another tool, <kbd>⌘C</kbd>, <kbd>⌘S</kbd> or clicking outside the canvas also applies the crop. It's one undo step.
 

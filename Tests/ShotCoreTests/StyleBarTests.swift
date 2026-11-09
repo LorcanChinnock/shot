@@ -58,18 +58,15 @@ private let bar = CGSize(width: 260, height: 32)
 
 @Test func theBarShowsWhatTheOptionsRowDid() {
     #expect(StyleBarContent.content(showsStyle: true, tool: .arrow, showsRedaction: false, showsSpotlight: false) == .colorAndWidth)
-    #expect(StyleBarContent.content(showsStyle: false, tool: .crop, showsRedaction: false, showsSpotlight: false) == .crop)
     #expect(StyleBarContent.content(showsStyle: false, tool: .redact, showsRedaction: true, showsSpotlight: false) == .redaction)
     #expect(StyleBarContent.content(showsStyle: false, tool: .spotlight, showsRedaction: false, showsSpotlight: true) == .spotlight)
     #expect(StyleBarContent.content(showsStyle: false, tool: .select, showsRedaction: false, showsSpotlight: false) == nil)
     #expect(StyleBarContent.content(showsStyle: false, tool: .hand, showsRedaction: false, showsSpotlight: false) == nil)
 }
 
-@Test func onlyTheCropStaysAtTheTopWithoutMoreStyle() {
-    #expect(!StyleBarContent.crop.followsMark && !StyleBarContent.crop.hasMore)
-    for content in [StyleBarContent.colorAndWidth, .redaction, .spotlight] {
-        #expect(content.followsMark && content.hasMore)
-    }
+@Test func cropModeHasNoStyleBarSinceTheCropBarTakesItsPlace() {
+    #expect(StyleBarContent.content(showsStyle: false, tool: .crop, showsRedaction: false, showsSpotlight: false) == nil)
+    #expect(StyleBarContent.content(showsStyle: true, tool: .crop, showsRedaction: true, showsSpotlight: true) == nil)
 }
 
 @Test func theBarOffersTheBoardsSixColours() {

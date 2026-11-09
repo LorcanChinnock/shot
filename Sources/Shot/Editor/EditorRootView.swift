@@ -19,6 +19,7 @@ struct EditorRootView: View {
                     .glassCard()
                     .overlay(alignment: .bottom) { CanvasFoot(model: model, canvas: canvas) }
                     .overlay { StyleBarOverlay(model: model) }
+                    .overlay { CropBarOverlay(model: model) }
                 if model.showsStylePanel {
                     StylePanel(model: model)
                         .transition(reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity))
@@ -130,7 +131,8 @@ private struct EditorTitleBar: View {
                 .brutalTip("Save", key: "⌘S", detail: "Saves your changes and copies the image.")
                 .padding(.leading, 4)
             Button("Copy") { Task { await model.copy() } }
-                .buttonStyle(BrutalButtonStyle(.main))
+                // In crop mode the crop bar's Crop is the next step, so Copy steps back to keep one main button (rule 1).
+                .buttonStyle(BrutalButtonStyle(model.tool == .crop ? .secondary : .main))
                 .brutalTip("Copy", key: "⌘C", detail: "Copies the image with your changes, ready to paste.")
                 .padding(.leading, 4)
         }

@@ -167,6 +167,10 @@ final class EditorModel {
     var isCanvasDragging = false
     /// How much of the canvas's foot the zoom control and hint take, with their inset, which the style bar keeps clear of.
     var canvasFootHeight: CGFloat = 0
+    /// The size of the zoom control and Canvas menu at the canvas's bottom left, which the crop bar keeps clear of.
+    var canvasFootLeading: CGSize = .zero
+    /// How much of the canvas's bottom the crop bar covers in crop mode, which the fitted image keeps clear of; 0 otherwise.
+    var cropBarClearance: CGFloat = 0
     /// Whether More style, the style bar's popover of the options that don't fit in it, is open.
     var showsMoreStyle = false
     private(set) var history: EditHistory
@@ -224,8 +228,9 @@ final class EditorModel {
         selectedID.flatMap { id in document.annotations.first { $0.id == id } }
     }
 
-    /// The hint at the canvas's bottom right: what's selected or what the tool does, and its keys.
-    var canvasHint: CanvasHint {
+    /// The hint at the canvas's bottom right: what's selected or what the tool does, and its keys. `nil` in crop mode,
+    /// where the crop bar takes the foot.
+    var canvasHint: CanvasHint? {
         CanvasHint.hint(tool: tool, selection: document.annotations.filter { selectedIDs.contains($0.id) }, isTyping: editingText != nil)
     }
 
@@ -924,6 +929,11 @@ final class EditorModel {
         } else {
             edit { $0.resetCrop() }
         }
+    }
+
+    /// The pixels applying the crop being adjusted keeps, which the crop bar shows.
+    var cropKeptSize: CGSize {
+        cropDraft.map { CropBar.keptSize(draft: $0, croppingImage: cropImageID != nil, contentRect: document.contentRect) } ?? .zero
     }
 
     /// Whether there's a crop to take off, which Reset offers.

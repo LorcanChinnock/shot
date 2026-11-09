@@ -10,17 +10,16 @@ public enum StyleBarContent: Equatable, Sendable {
     case redaction
     /// The spotlight's shape and its dim or blur, with the strength, soft edge and Reset under More style.
     case spotlight
-    /// The crop's aspect and Reset, until the crop bar (#1097) takes them.
-    case crop
 
-    /// What the bar shows, in the same order the options row used: colour and width first, then crop, a redaction and a
-    /// spotlight. `nil` hides the bar, as for the select tool with nothing or an image selected.
+    /// What the bar shows, in the same order the options row used: colour and width first, then a redaction and a
+    /// spotlight. `nil` hides the bar, as for the select tool with nothing or an image selected, and in crop mode, where
+    /// the crop bar takes its place.
     public static func content(showsStyle: Bool, tool: EditorTool, showsRedaction: Bool, showsSpotlight: Bool) -> StyleBarContent? {
+        if tool == .crop {
+            return nil
+        }
         if showsStyle {
             return .colorAndWidth
-        }
-        if tool == .crop {
-            return .crop
         }
         if showsRedaction {
             return .redaction
@@ -30,12 +29,6 @@ public enum StyleBarContent: Equatable, Sendable {
         }
         return nil
     }
-
-    /// Whether the bar sits beside the selected mark. The crop covers the canvas, so its options stay at the top.
-    public var followsMark: Bool { self != .crop }
-
-    /// Whether the bar ends with More style, which opens the options that don't fit in it.
-    public var hasMore: Bool { self != .crop }
 }
 
 /// The colours the bar offers, the first six presets: red, orange, yellow, green, blue and black. White and custom
