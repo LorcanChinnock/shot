@@ -16,7 +16,7 @@ It shows every image, movie and GIF in your save folder and the folders inside i
 
 ## Search, filter and sort
 
-- **Filter** by All, Screenshots, Videos or GIFs.
+- **Filter** by picking **All Captures**, **Screenshots**, **Recordings** or **GIFs** under Library in the sidebar. Each shows how many captures it holds.
 - **Search** (<kbd>⌘F</kbd>) by file name, and for a screenshot, by the text in it too. Case and accents don't matter.
 - **Sort** by **Newest first**, **Oldest first**, **Name** or **Largest first**. Sorted by date, captures are grouped into Today, Yesterday, This Week, This Month and then each older month.
 - **Resize thumbnails** with the slider, or <kbd>⌘+</kbd> and <kbd>⌘−</kbd>.

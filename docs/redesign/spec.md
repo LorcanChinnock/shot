@@ -969,7 +969,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 
 | Part | Look |
 | --- | --- |
-| Gallery window | A standard window titled "Gallery", 1224 × 764 pt at first as on the board, 640 × 420 pt at the smallest. The title shows in the title bar beside the traffic lights |
+| Gallery window | A standard window titled "Gallery", 1224 × 764 pt at first as on the board, 640 × 420 pt at the smallest. Since #1107 the title bar shows no title: the sidebar runs under the traffic lights and the toolbar names what's shown (Gallery sidebar) |
 | Settings window | Titled "Settings", 1080 × 720 pt at first as before, with no Gallery section; it opens on General |
 | Open Gallery | A row at the foot of the Settings sidebar, above the "Show icons only" button: the `square.grid.2x2` symbol on a paper tile with the sections' 2 pt ink edge, "Open Gallery", and a small `arrow.up.right` in faded ink. Shrunk to icons, it's the tile alone with a tip |
 
@@ -978,12 +978,43 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Two windows.** Settings and the gallery open, close and come forward on their own. ⌘W closes the one in front, ⌘, opens Settings from either, and Shot leaves the Dock once both are closed, as before.
 - **Kept in captures.** Screenshots, scrolling captures and recordings keep both windows in, as they kept the old one, and leave Shot's overlays and panels out (`ShotWindows.capturable`).
 - **Memory.** Closing the gallery stops watching the folder and drops its views, as closing the old window did, so a closed gallery costs nothing. Closing Settings stops a microphone test or camera preview and drops its views.
-- **Departures from the board.** The board's sidebar runs under the traffic lights and puts the title, "All Captures" and its count, in the toolbar; #1107 and #1108 build those. Until then the window's title bar shows "Gallery", since the gallery has no heading of its own now that it isn't a Settings section. The Settings sidebar's Open Gallery row keeps today's sidebar rows' look, with a 28 pt tile and the 2 pt ink edge, rather than the board's 22 pt white tile with a hairline, until #1111 redraws the whole sidebar. At larger text sizes, or in a long translation, the arrow hides so the label stays on one line.
+- **Departures from the board.** The board's sidebar runs under the traffic lights and puts the title, "All Captures" and its count, in the toolbar; #1107 and #1108 build those. #1106 showed "Gallery" in the title bar until #1107 put the heading in the toolbar. The Settings sidebar's Open Gallery row keeps today's sidebar rows' look, with a 28 pt tile and the 2 pt ink edge, rather than the board's 22 pt white tile with a hairline, until #1111 redraws the whole sidebar. At larger text sizes, or in a long translation, the arrow hides so the label stays on one line.
 - **Keyboard.** The gallery's keys work in its window as they did in Settings (Keyboard shortcuts › Gallery). With keyboard navigation on, Tab reaches Open Gallery in the Settings sidebar, and Space opens the gallery.
 - **VoiceOver** reads Open Gallery as a button of that name. The arrow is hidden from it. The windows are named "Gallery" and "Settings", which VoiceOver and Mission Control show.
 - **Text size** scales Open Gallery's label and symbols. At Larger its label still fits on one line in the default sidebar width.
 - **Reduce Motion.** Nothing here moves. The windows open with the system's own window animation.
 - **Increase Contrast** changes nothing here. Open Gallery's tile already has a 2 pt ink edge.
+
+### Gallery sidebar
+
+#1107 gives the gallery window the board's see-through sidebar from Library & Settings › Gallery, in light and dark. It used to be a folder list that started closed, with All, Screenshots, Videos and GIFs as a segmented control in the toolbar and the tags as a row of chips under it. Now Library, Folders and Tags are sections of one sidebar that starts open, one row is picked at a time, and the foot shows how much room the captures take. Nothing here runs during a capture, so the capture → copy path is unchanged.
+
+| Part | Look |
+| --- | --- |
+| Sidebar | 220 pt wide by default, 150–360 pt by dragging its edge, the full window height under the traffic lights, on `SidebarMaterial` (solid `#ECE9E3`, dark `#242427`, with Increase Contrast or Reduce Transparency) with a 1 pt separator on its right |
+| Sidebar button | `sidebar.left` in a toolbar button just after the traffic lights. With the sidebar hidden, the toolbar starts after it |
+| Headings | Library, Folders and Tags in 11 pt semibold tertiary text. Folders has a New Folder button (`folder.badge.plus`) and Tags a "Rename or remove tags" button (`ellipsis.circle`) at the end, each 12 pt tertiary with a hover fill |
+| Rows | 13 pt regular text, 5 × 8 pt padding, a 9 pt gap after an 18 pt icon slot and the count in 11.5 pt tertiary tabular figures. Hover fills with `Brutal.hover` |
+| Picked row | Yellow, `#FFD43B` (dark `#F2CC4A`), with a 1.5 pt ink edge and semibold text. Its icon and count turn ink, which stays dark on yellow in dark mode (`inkOnFill`) |
+| Library | All Captures (`square.grid.2x2` in ink), Screenshots (`photo`, `#5B4BD6`, dark `#A99BFF`), Recordings (`video`, `#C4271E`, dark `#FF7B72`) and GIFs (`play.rectangle.on.rectangle`, `#1D6FB8`, dark `#7DBBFF`), at 13 pt medium |
+| Folders | The save folder, then its folders indented 16 pt a level, each with `folder` in secondary text. A chevron in the indent opens the folders inside one. Hover or picking shows the "…" menu over the count |
+| Tags | A 10 pt dot in the tag's Finder colour, or tertiary grey for a tag that isn't named after one, then the tag and its count |
+| Drop target | A folder something is held over fills with selection blue at 18% under a 1.5 pt selection-blue edge |
+| Storage | Under a hairline: the save folder from the home folder (such as "Pictures/Shot") in 11.5 pt secondary and the captures' size in tertiary, a 4 pt bar of that size against the disk in ink on `quietTrack`, and "Make room…" in `PanelLinkStyle` |
+| Toolbar heading | The picked row's name in 15 pt bold and "N items" in 11 pt tertiary, in the title bar beside the sidebar. #1108 restyles the rest of the toolbar |
+
+- **One row at a time.** ShotCore's `GallerySource` is the picked row, as a kind, a folder or a tag, and gives the grid its filter, folder and tags, with tests. Picking a folder shows every kind in it, and picking a tag shows it in every folder. Typing `tag:name` in the search still narrows any row, so combining is still possible.
+- **Counts.** `GalleryCounts` counts each Library row, the captures directly in each folder, and each tag whatever its case, plus their size together, once when the list or the tags change, never per row. A count of 0 shows nothing.
+- **Make room…** shows All Captures sorted Largest first and clears the search, so the biggest captures are at the top to trash. The bar measures the captures against the disk's whole size (`volumeTotalCapacity`), so it's usually a sliver; a sliver of 4 pt shows whenever there are captures. Make room… hides when the folder has none.
+- **What's kept.** Every folder action in Organise your captures works as before: New Folder, New Folder Inside, Rename (also by double-click), Save New Captures Here with its arrow mark, Show in Finder, Move to Trash…, dragging captures and folders onto a folder, the 700 ms open while dragging over a closed folder, and dropping on the space below the rows to bring a folder to the top. The tag manager moved from the chip row's tag button to the Tags heading, and right-clicking a tag still offers Rename or Remove Tags… and Remove.
+- **What went.** The segmented filter, the tag chip row, the "All" row at the top of the folder list (All Captures replaces it) and the lines that joined nested folders.
+- **Focus.** A new or renamed folder's field takes focus a turn after it appears. Taking it at once lost it to the search field, so typing went into the search.
+- **Departures from the board.** The sidebar starts open, which rule 2 would close: it's how the gallery filters by kind now, so hiding it would hide the filters, and it's navigation, as in Finder and Photos, not a tool panel. The board rounds rows at 7; Shot uses the control radius 6. Recordings is "Videos" in the board's segmented control of old and "Recordings" in the board's sidebar; Shot follows the sidebar. The board gives every tag a colour; Finder tags only have one when named after a Finder colour, so the rest are grey (rule 6). The board's GIF icon is a drawn box; Shot uses `play.rectangle.on.rectangle`. The board has no sidebar button, New Folder button, tag manager button, chevrons or drop highlight; Shot needs them for hiding the sidebar and for the folder and tag actions it already had. The board's storage bar is 38% full for 2.1 GB, which no disk gives; Shot's bar is the true share. The board's folder count for the save folder is blank; Shot shows it, as for every folder.
+- **Keyboard.** The arrow keys still move through the grid wherever focus is. With keyboard navigation on, Tab reaches the sidebar button and each Library and tag row, and Space picks one. Folder rows aren't Tab stops, as before, since a button would swallow the drag that moves a folder; VoiceOver and the right-click menu reach them.
+- **VoiceOver** reads each row's name, its count as "N captures" and whether it's selected, the headings as headings, and the storage as "Captures in Pictures/Shot" with its size. The bar is hidden from it.
+- **Text size** scales every row, heading, count and the storage text. At Larger the rows grow taller and the sidebar scrolls sooner; its width doesn't change, so long names truncate in the middle.
+- **Reduce Motion.** The sidebar slides in and out with the panel moment, a 240 ms spring, which Reduce Motion makes a 120 ms fade.
+- **Increase Contrast** makes the sidebar solid in the Sidebar colour, and the headings, counts, storage text and chevrons ink.
 
 ## Website values
 
@@ -1110,7 +1141,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Board | Issue | Files | QA |
 | --- | --- | --- | --- |
 | Gallery | #1106 own window | `Gallery/GalleryWindowController.swift` (new), `Settings/SettingsWindowController.swift` (was `MainWindowController.swift`), `Gallery/GalleryController.swift`, `Capture/ShotWindows.swift` (new), `Capture/DisplayCapturer.swift`, `Capture/ScrollingCaptureController.swift`, `Recording/Recorder.swift`, `MenuBar/StatusMenu.swift`, `AppDelegate.swift`, ShotCore `ShotURL.swift` (`shot://settings?section=gallery`) | ☐ |
-| Gallery | #1107 sidebar | `Gallery/GallerySidebar.swift` | ☐ |
+| Gallery | #1107 sidebar | `Gallery/GallerySidebar.swift`, `Gallery/GalleryView.swift` (layout, toolbar heading, tag row removed), `Gallery/GalleryModel.swift` (`source`, `counts`, `makeRoom`), `Gallery/GalleryWindowController.swift`, ShotCore `GallerySource.swift` (new) and `Preferences.swift` (sidebar open, 220 pt) | ☐ |
 | Gallery | #1108 grid and selection bar | `Gallery/GalleryView.swift` | ☐ |
 | Gallery · preview and empty state | #1109 preview | `Gallery/GalleryPreview.swift` | ☐ |
 | Gallery · preview and empty state | #1110 empty state | `Gallery/GalleryView.swift` | ☐ |

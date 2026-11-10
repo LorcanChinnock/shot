@@ -6,41 +6,63 @@ import UniformTypeIdentifiers
 struct GalleryRootView: View {
     let model: GalleryModel
     @FocusState private var searchFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// Room after the traffic lights for the sidebar button, which the toolbar keeps clear of while the sidebar is hidden.
+    private static let sidebarButtonEnd = GlassWindow.trafficLightsWidth + 34
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
-            if !model.allTags.isEmpty {
-                GalleryTagRow(model: model)
-            }
-            HStack(alignment: .top, spacing: 14) {
-                // Folders stay out of the way until someone opens the sidebar.
-                if model.showsSidebar {
-                    GallerySidebar(model: model)
-                        .frame(width: model.sidebarWidth)
-                        .overlay(alignment: .trailing) {
-                            // Centred in the gap before the grid.
-                            PanelResizeHandle(width: Bindable(model).sidebarWidth, range: GalleryModel.sidebarWidths, defaultWidth: GalleryModel.defaultSidebarWidth) {
-                                model.showsSidebar = false
-                            }
-                            .offset(x: 14)
+        HStack(spacing: 0) {
+            if model.showsSidebar {
+                // The see-through sidebar runs the window's full height, under the traffic lights.
+                GallerySidebar(model: model)
+                    .padding(.top, GlassWindow.titlebarHeight)
+                    .frame(width: model.sidebarWidth)
+                    .frame(maxHeight: .infinity)
+                    .background { SidebarMaterial() }
+                    .overlay(alignment: .trailing) {
+                        Brutal.separator.frame(width: 1)
+                    }
+                    .overlay(alignment: .trailing) {
+                        PanelResizeHandle(width: Bindable(model).sidebarWidth, range: GalleryModel.sidebarWidths, defaultWidth: GalleryModel.defaultSidebarWidth) {
+                            setSidebar(shown: false)
                         }
-                }
-                content
+                        .offset(x: 4)
+                    }
+                    .transition(reduceMotion ? .opacity : .move(edge: .leading))
+                    .zIndex(1)
             }
-            GalleryFooter(model: model)
+            VStack(spacing: 0) {
+                header
+                content
+                    .padding(.horizontal, 15)
+                GalleryFooter(model: model)
+                    .padding(.horizontal, 19)
+                    .padding(.bottom, 12)
+            }
+        }
+        .overlay(alignment: .topLeading) {
+            sidebarToggle
+                .frame(height: GlassWindow.titlebarHeight)
+                .padding(.leading, GlassWindow.trafficLightsWidth)
         }
         .onChange(of: model.searchFocusRequest) {
             searchFocused = true
         }
     }
 
+    private func setSidebar(shown: Bool) {
+        withAnimation(Motion.animation(.panelArrive, reduceMotion: reduceMotion)) {
+            model.showsSidebar = shown
+        }
+    }
+
     // MARK: Header
 
+    /// The toolbar, in the title bar beside the sidebar: what's shown and how many, then search, sort and thumbnail size.
     private var header: some View {
         HStack(spacing: 12) {
-            sidebarToggle
-            BrutalSegmented(selection: Bindable(model).filter, options: GalleryFilter.allCases.map { ($0, $0.title) })
+            GalleryHeading(model: model)
             Spacer(minLength: 8)
             searchField
             sortMenu
@@ -56,29 +78,28 @@ struct GalleryRootView: View {
                 .font(.scaled(15, weight: .bold))
                 .foregroundStyle(Brutal.faded(0.6))
         }
-        .padding(.horizontal, 3)
+        .padding(.leading, model.showsSidebar ? 22 : Self.sidebarButtonEnd)
+        .padding(.trailing, 16)
         .frame(minWidth: 0, maxWidth: .infinity)
-        .frame(height: 36)
+        .frame(height: GlassWindow.titlebarHeight)
+        .overlay(alignment: .bottom) {
+            Brutal.separator.frame(height: 1)
+        }
     }
 
-    private var sidebarTip: LocalizedStringResource { model.showsSidebar ? "Hide folders" : "Show folders" }
+    private var sidebarTip: LocalizedStringResource { model.showsSidebar ? "Hide sidebar" : "Show sidebar" }
 
     private var sidebarToggle: some View {
-        let on = model.showsSidebar
-        return Button {
-            model.showsSidebar.toggle()
+        Button {
+            setSidebar(shown: !model.showsSidebar)
         } label: {
             Image(systemName: "sidebar.left")
-                .font(.scaled(13, weight: .bold))
-                .foregroundStyle(Brutal.ink)
-                .inkOnFill(on ? Brutal.violet : nil)
-                .frame(width: 30, height: 30)
-                .brutalSurface(on ? Brutal.violet : Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: on ? 0 : 2)
+                .font(.scaled(13, weight: .medium))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(BrutalButtonStyle(.toolbar))
         .brutalTip(sidebarTip)
-        .accessibilityLabel(Text("Folders"))
-        .accessibilityAddTraits(on ? .isSelected : [])
+        .accessibilityLabel(Text("Sidebar"))
+        .accessibilityAddTraits(model.showsSidebar ? .isSelected : [])
     }
 
     private var searchField: some View {
@@ -232,6 +253,38 @@ private struct GalleryGrid: View {
             case let .header(section, _): "header " + section.title
             case let .tile(item, _, _): item.url.path
             }
+        }
+    }
+}
+
+/// The name of the sidebar row picked and how many captures it holds. It's its own view, so only it re-evaluates when they
+/// change.
+private struct GalleryHeading: View {
+    let model: GalleryModel
+
+    var body: some View {
+        let count = model.counts.count(of: model.source)
+        VStack(alignment: .leading, spacing: 0) {
+            Text(verbatim: title)
+                .font(.scaled(15, weight: .bold))
+                .foregroundStyle(Brutal.ink)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            Text("\(count) items")
+                .font(.scaled(11, tabular: true))
+                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+        }
+        // The title bar behind it moves the window.
+        .allowsHitTesting(false)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
+    }
+
+    private var title: String {
+        switch model.source {
+        case let .library(filter): filter.libraryTitle
+        case let .folder(path): path.isEmpty ? model.rootName : Gallery.folderLeaf(of: path)
+        case let .tag(name): name
         }
     }
 }
@@ -523,52 +576,9 @@ private struct SelectionCheckbox: View {
 
 // MARK: Tags
 
-/// The tags on the captures, as chips that narrow the grid to those carrying every one picked. It shows only once a
-/// file has a tag.
-private struct GalleryTagRow: View {
-    let model: GalleryModel
-    @State private var managing = false
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                Button {
-                    managing.toggle()
-                } label: {
-                    Image(systemName: "tag")
-                        .font(.scaled(12, weight: .medium))
-                }
-                .buttonStyle(BrutalButtonStyle(.toolbar, isOn: managing))
-                .brutalTip("Rename or remove tags")
-                .accessibilityLabel(Text("Manage tags"))
-                .popover(isPresented: $managing, arrowEdge: .bottom) {
-                    GalleryTagManager(model: model)
-                }
-                ForEach(model.allTags, id: \.self) { tag in
-                    let on = model.isFiltering(on: tag)
-                    Button {
-                        model.toggleTagFilter(tag)
-                    } label: {
-                        TagChip(name: tag, color: TagDot.color(of: tag).map { Color(nsColor: $0) }, isOn: on)
-                    }
-                    .buttonStyle(.plain)
-                    .brutalTip("Show only captures with this tag")
-                    .contextMenu {
-                        Button("Rename or Remove Tags…") { managing = true }
-                        Button("Remove “\(tag)”…") { model.deleteTag(tag) }
-                    }
-                    .accessibilityAddTraits(on ? .isSelected : [])
-                }
-            }
-            .padding(.horizontal, 3)
-            .padding(.vertical, 6)
-        }
-    }
-}
-
 /// Every tag in use, each with a field to rename it and a button to remove it from all the captures that have it.
 /// Renaming one to the name of another merges them.
-private struct GalleryTagManager: View {
+struct GalleryTagManager: View {
     let model: GalleryModel
 
     var body: some View {
@@ -637,16 +647,15 @@ private struct GalleryTagManagerRow: View {
     }
 }
 
-/// A Finder tag's colour, for the tags named like Finder's coloured ones; other tags have none.
-private struct TagDot: View {
+/// A Finder tag's colour, for the tags named like Finder's coloured ones; other tags are grey.
+struct TagDot: View {
     let tag: String
+    var size: CGFloat = 9
 
     var body: some View {
-        if let color = Self.color(of: tag) {
-            Circle()
-                .fill(Color(nsColor: color))
-                .frame(width: 9, height: 9)
-        }
+        Circle()
+            .fill(Self.color(of: tag).map { Color(nsColor: $0) } ?? Brutal.tertiaryText)
+            .frame(width: size, height: size)
     }
 
     static func color(of tag: String) -> NSColor? {

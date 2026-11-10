@@ -9,7 +9,7 @@ private let log = Logger.shot("gallery")
 @MainActor
 @Observable
 final class GalleryModel {
-    private(set) var items: [GalleryItem] = [] { didSet { refilter() } }
+    private(set) var items: [GalleryItem] = [] { didSet { recount(); refilter() } }
     /// The text read from the screenshots so far, folded for search, which `TextIndexer` hands over as it reads more.
     /// Only a search uses it, and more text usually finds nothing new, so the grid redraws only when the matches change.
     @ObservationIgnored private var texts: [URL: String] = [:] {
@@ -19,7 +19,11 @@ final class GalleryModel {
             }
         }
     }
-    var filter = GalleryFilter.all { didSet { measure("Gallery filter"); refilter() } }
+    /// The sidebar row picked, which sets the kind, folder or tag the grid shows.
+    var source = GallerySource.all { didSet { measure("Gallery filter"); refilter() } }
+    var filter: GalleryFilter { source.filter }
+    /// The folder shown, by path, empty for the save folder itself, or `nil` for everything in all of them.
+    var shownFolder: String? { source.folder }
     var sort = GallerySort.newest { didSet { measure("Gallery filter"); refilter() } }
     var query = "" {
         didSet {
@@ -28,13 +32,9 @@ final class GalleryModel {
             readTextIfSearching()
         }
     }
-    /// The folder shown, by path, empty for the save folder itself, or `nil` for everything in all of them.
-    var shownFolder: String? = nil { didSet { measure("Gallery filter"); refilter() } }
-    /// The tags picked in the tag row; an item has to carry all of them.
-    var tagFilter: Set<String> = [] { didSet { measure("Gallery filter"); refilter() } }
     /// Every folder in the save folder at any depth, by path, each before the folders in it.
     private(set) var folders: [String] = []
-    /// Whether the sidebar of folders is open, which stays off until someone opens it.
+    /// Whether the sidebar of Library, Folders and Tags is open, which it is until someone hides it.
     var showsSidebar: Bool {
         get { storedShowsSidebar }
         set { storedShowsSidebar = newValue }
@@ -42,7 +42,7 @@ final class GalleryModel {
     @ObservationIgnored @Setting(PreferenceKey.galleryShowsSidebar) private var storedShowsSidebar: Bool
     /// How wide the folder sidebar is, kept between the narrowest and widest it can be dragged to.
     static let sidebarWidths = 150.0...360.0
-    static let defaultSidebarWidth = 200.0
+    static let defaultSidebarWidth = 220.0
     var sidebarWidth: Double {
         get { min(max(storedSidebarWidth, Self.sidebarWidths.lowerBound), Self.sidebarWidths.upperBound) }
         set { storedSidebarWidth = newValue }
@@ -76,13 +76,28 @@ final class GalleryModel {
     private(set) var tags: [URL: [String]] = [:] {
         didSet {
             allTags = GalleryTags.all(tags)
-            if !tagFilter.isEmpty || !GalleryQuery(query).tags.isEmpty {
+            recount()
+            if case let .tag(name) = source {
+                // A tag no capture carries any more leaves nothing to show; one that's left takes the spelling the sidebar shows.
+                if let shown = shownSpelling(name) {
+                    if shown != name {
+                        source = .tag(shown)
+                    }
+                } else if !tags.isEmpty {
+                    source = .all
+                }
+                refilter()
+            } else if !GalleryQuery(query).tags.isEmpty {
                 refilter()
             }
         }
     }
-    /// Every tag on the items, which the tag row and the Tag menu offer.
+    /// Every tag on the items, which the sidebar and the Tag menu offer.
     private(set) var allTags: [String] = []
+    /// How many captures each sidebar row shows, and their size together.
+    private(set) var counts = GalleryCounts.empty
+    /// The size of the disk the save folder is on, in bytes, which the sidebar's storage bar measures against.
+    private(set) var diskCapacity: Int?
     /// The item whose Tag popover is open.
     var taggingItem: URL?
     /// The files the open Tag popover tags, fixed when it opens.
@@ -133,7 +148,21 @@ final class GalleryModel {
     var allSelected: Bool { Gallery.allSelected(selection, in: visible) }
 
     private func matching() -> [GalleryItem] {
-        Gallery.visible(items, filter: filter, sort: sort, query: query, texts: texts, folder: shownFolder, tags: tagFilter, tagsOf: tags)
+        Gallery.visible(items, filter: source.filter, sort: sort, query: query, texts: texts, folder: source.folder, tags: source.tags, tagsOf: tags)
+    }
+
+    private func recount() {
+        let next = GalleryCounts(items, tagsOf: tags)
+        if next != counts {
+            counts = next
+        }
+    }
+
+    /// Shows every capture, largest first, so the ones taking the most room are at the top to trash.
+    func makeRoom() {
+        query = ""
+        source = .all
+        sort = .size
     }
 
     private func refilter() {
@@ -180,12 +209,14 @@ final class GalleryModel {
         let root = Preferences().saveFolder
         if root != folder {
             folder = root
-            shownFolder = nil
+            source = .all
         }
         let folder = folder
         loadTask?.cancel()
         loadTask = Task {
-            let (found, names) = await Task.detached { (Gallery.items(in: folder), Gallery.folders(in: folder)) }.value
+            let (found, names, capacity) = await Task.detached {
+                (Gallery.items(in: folder), Gallery.folders(in: folder), (try? folder.resourceValues(forKeys: [.volumeTotalCapacityKey]))?.volumeTotalCapacity)
+            }.value
             guard !Task.isCancelled else {
                 return
             }
@@ -193,8 +224,11 @@ final class GalleryModel {
             if names != folders {
                 folders = names
             }
-            if let shownFolder, !shownFolder.isEmpty, !names.contains(shownFolder) {
-                self.shownFolder = nil
+            if capacity != diskCapacity {
+                diskCapacity = capacity
+            }
+            if let shown = shownFolder, !shown.isEmpty, !names.contains(shown) {
+                source = .all
             }
             if found != items {
                 items = found
@@ -562,7 +596,7 @@ final class GalleryModel {
         let url = Gallery.folderURL(path, in: folder).standardizedFileURL.path + "/"
         selection = selection.filter { !$0.standardizedFileURL.path.hasPrefix(url) }
         if let shown = shownFolder, Gallery.folder(shown, isIn: path) {
-            shownFolder = Gallery.parentFolder(of: path)
+            source = .folder(Gallery.parentFolder(of: path))
         }
         if Gallery.folder(storedCaptureSubfolder, isIn: path) {
             storedCaptureSubfolder = ""
@@ -583,7 +617,7 @@ final class GalleryModel {
     /// Points everything that referred to the folder at `old` at `new`, where it is now.
     private func relocated(_ old: String, to new: String) {
         if let shown = shownFolder {
-            shownFolder = Gallery.relocated(shown, from: old, to: new)
+            source = .folder(Gallery.relocated(shown, from: old, to: new))
         }
         storedCaptureSubfolder = Gallery.relocated(storedCaptureSubfolder, from: old, to: new)
         expandedFolders = Set(expandedFolders.map { Gallery.relocated($0, from: old, to: new) })
@@ -656,9 +690,10 @@ final class GalleryModel {
         if failed > 0 {
             Toast.error("Couldn't tag \(failed) files")
         }
-        // A filter on a tag that's gone is dropped, and each one that's left takes the spelling the chips show, so two
-        // spellings of one tag are a single entry the chip can switch off.
-        tagFilter = Set(tagFilter.compactMap(shownSpelling))
+        // Showing a tag that's gone shows everything instead, and a tag that's left takes the spelling the sidebar shows.
+        if case let .tag(name) = source {
+            source = shownSpelling(name).map(GallerySource.tag) ?? .all
+        }
     }
 
     /// Calls `tag` `typed` on every file that has it, or merges it into a tag of that name that's there already.
@@ -668,10 +703,10 @@ final class GalleryModel {
         }
         Task {
             await refreshAllTags()
-            let filtered = isFiltering(on: tag)
+            let showing = isShowing(tag)
             apply(GalleryTags.renaming(tag, to: name, tagsOf: tags))
-            if filtered, let shown = shownSpelling(name) {
-                tagFilter.insert(shown)
+            if showing, let shown = shownSpelling(name) {
+                source = .tag(shown)
             }
         }
     }
@@ -709,21 +744,17 @@ final class GalleryModel {
         }
     }
 
-    /// `tag` as the chips spell it, or `nil` when no capture has it. Tags ignore case, as in Finder.
+    /// `tag` as the sidebar spells it, or `nil` when no capture has it. Tags ignore case, as in Finder.
     private func shownSpelling(_ tag: String) -> String? {
         allTags.first { $0.caseInsensitiveCompare(tag) == .orderedSame }
     }
 
-    /// Whether the grid is narrowed to `tag`, in whatever case it was picked.
-    func isFiltering(on tag: String) -> Bool {
-        tagFilter.contains { $0.caseInsensitiveCompare(tag) == .orderedSame }
-    }
-
-    func toggleTagFilter(_ tag: String) {
-        if isFiltering(on: tag) {
-            tagFilter = tagFilter.filter { $0.caseInsensitiveCompare(tag) != .orderedSame }
+    /// Whether the sidebar's row for `tag` is picked, in whatever case it was picked.
+    func isShowing(_ tag: String) -> Bool {
+        if case let .tag(name) = source {
+            name.caseInsensitiveCompare(tag) == .orderedSame
         } else {
-            tagFilter.insert(tag)
+            false
         }
     }
 

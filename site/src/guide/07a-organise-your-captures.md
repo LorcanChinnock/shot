@@ -4,32 +4,36 @@ summary: "Group captures into folders that nest inside each other, tag them in t
 group: Edit and share
 ---
 
-The [gallery](#open-the-gallery) can keep captures in folders and tag them, for example by client, bug or project. Nothing changes until you open the folder sidebar or add a tag. Taking a screenshot never asks you where it goes.
+The [gallery](#open-the-gallery) can keep captures in folders and tag them, for example by client, bug or project. Nothing changes until you make a folder or add a tag. Taking a screenshot never asks you where it goes.
 
 Folders are ordinary folders inside your save folder, and tags are Finder tags. Both show in Finder and Spotlight too, and they stay with a file when you move or rename it.
 
-## Open the folder sidebar
+## Use the sidebar
 
-Click the sidebar button at the left of the gallery's toolbar. It lists:
+The gallery's sidebar has three sections. Click a row to show what's in it, and the row turns yellow. One row is picked at a time.
 
-- **All**, which shows everything, in every folder.
-- Your save folder itself, which shows only what isn't in a folder.
-- Your folders, with an arrow to open the folders inside each one.
+- **Library:** **All Captures**, **Screenshots**, **Recordings** and **GIFs**, each with how many there are. All Captures shows everything, in every folder.
+- **Folders:** your save folder itself, which shows only what isn't in a folder, then your folders, with an arrow to open the folders inside each one.
+- **Tags:** each tag you've used, once a capture has one.
 
-Click the button again to hide it. Shot remembers whether you left it open.
+To hide the sidebar, click the sidebar button next to the window's close, minimise and zoom buttons. Click it again to bring the sidebar back. Shot remembers whether you left it open.
 
 ## Manage folders
 
-- **Make one:** click the folder button in the sidebar's header, type a name and press <kbd>Return</kbd>. To put one inside another, click the "…" button on a folder, or right-click it, and choose **New Folder Inside**.
+- **Make one:** click the folder button next to **Folders** in the sidebar, type a name and press <kbd>Return</kbd>. To put one inside another, click the "…" button on a folder, or right-click it, and choose **New Folder Inside**.
 - **Rename one:** double-click it, or choose **Rename** from its menu. Type the new name and press <kbd>Return</kbd>, or <kbd>Esc</kbd> to leave it as it was.
 - **Move one:** drag it onto another folder, which opens after a moment if it has folders inside. Drag it onto your save folder, or onto the empty space below the list, to bring it back to the top.
 - **Delete one:** choose **Move to Trash…** from its menu. Shot says how many captures and folders are inside, and everything goes to the Trash together, where Finder's Put Back restores it.
 
 You can also make a folder while moving captures: right-click one, or a selection, and choose **Move to › New Folder…**.
 
-## Make room
+## Change the sidebar's width
 
-Drag the thin strip between the folder sidebar and the thumbnails to change its width, or double-click it to reset. Drag it narrower than it goes to close it. The window's own sidebar of sections works the same way, and its button at the bottom shrinks it to a column of icons.
+Drag the thin strip between the sidebar and the thumbnails to change its width, or double-click it to reset. Drag it narrower than it goes to close it. The Settings window's sidebar works the same way, and its button at the bottom shrinks it to a column of icons.
+
+## See how much room your captures take
+
+The foot of the sidebar shows your save folder, how much space the captures in it take, and a bar of that against your disk. Click **Make room…** to show every capture with the largest first, so you can choose which to move to the Trash.
 
 ## Move captures
 
@@ -53,10 +57,10 @@ Tags named after Finder's colours, such as Red or Blue, show their colour.
 
 ## Filter by tag
 
-Once a capture has a tag, a row of tags appears under the filters. Click a tag to show only the captures that have it. Click more tags to narrow it down further. Tags work together with Screenshots, Videos and GIFs, and with the folder you're in.
+Once a capture has a tag, a Tags section appears in the sidebar. Click a tag to show only the captures that have it. A tag named after a Finder colour shows that colour, and other tags show a grey dot.
 
-You can also type `tag:` and a tag's name in the search field, such as `tag:bug login`. Put quotes around a tag with a space in it: `tag:"Client A"`.
+To narrow any sidebar row further, type `tag:` and a tag's name in the search field, such as `tag:bug login`. Put quotes around a tag with a space in it: `tag:"Client A"`.
 
 ## Rename or remove a tag
 
-Click the tag button at the left of the tag row. Each tag has a field to rename it and a button to remove it from every capture that has it. Renaming a tag to the name of another one merges them. The captures stay. You can also right-click a tag in the row to remove it.
+Click the "…" button next to **Tags** in the sidebar. Each tag has a field to rename it and a button to remove it from every capture that has it. Renaming a tag to the name of another one merges them. The captures stay. You can also right-click a tag in the sidebar to remove it.
