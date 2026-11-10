@@ -61,8 +61,6 @@ enum GalleryWindowController {
             GalleryWindowView()
         }
         window.minSize = minSize
-        // The gallery has no heading of its own yet, so the title bar names it.
-        window.titleVisibility = .visible
         // `make` centres the window; a frame saved from an earlier session puts it back where it was.
         window.setFrameUsingName(frameName)
         window.setFrameAutosaveName(frameName)
@@ -95,16 +93,13 @@ enum GalleryWindowController {
     }
 }
 
-/// The gallery filling its window, below the title bar.
+/// The gallery filling its window: the sidebar runs under the traffic lights and the toolbar sits in the title bar.
 private struct GalleryWindowView: View {
     var body: some View {
         let model = GalleryController.shared.model
         GalleryRootView(model: model)
             .onAppear { model.start() }
             .onDisappear { model.stop() }
-            .padding(.top, GlassWindow.titlebarHeight + 8)
-            .padding(.horizontal, Brutal.windowInset)
-            .padding(.bottom, Brutal.windowInset - 6)
             .frame(minWidth: GalleryWindowController.minSize.width, maxWidth: .infinity, maxHeight: .infinity)
     }
 }
