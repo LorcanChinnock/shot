@@ -3,21 +3,20 @@ import ShotCore
 import SwiftUI
 
 struct VideoEditorRootView: View {
-    /// Everything but the video: the title bar and its hairline, the well's room above and below the video, the controls
-    /// area with a plain recording's lanes, and the export options.
-    static let chromeHeight: CGFloat = GlassWindow.titlebarHeight + 1 + VideoWell.verticalInset * 2 + PlaybackControls.areaHeight + ExportOptionsBar.height + exportPadding * 2
+    /// Everything but the video: the title bar and its hairline, the well's room above and below the video, and the
+    /// controls area with a plain recording's lanes.
+    static let chromeHeight: CGFloat = GlassWindow.titlebarHeight + 1 + VideoWell.verticalInset * 2 + PlaybackControls.areaHeight
 
     /// The least the video is squeezed to before the lanes scroll instead.
     static let playerFloor: CGFloat = 200
-    /// Above and below the export options, which line up with the controls area at the sides.
-    private static let exportPadding: CGFloat = 10
 
     let model: VideoEditorModel
     @State private var windowHeight: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        // From Edit › Video editor and export: the title bar over a hairline, the video in its well, then the controls area.
+        // From Edit › Video editor and export: the title bar over a hairline, the video in its well over the controls area, and
+        // the Export panel beside both once it's open.
         VStack(spacing: 0) {
             VideoEditorTitleBar(model: model)
                 .padding(.leading, GlassWindow.trafficLightsWidth)
@@ -27,21 +26,28 @@ struct VideoEditorRootView: View {
                 .fill(ContrastAware(standard: Brutal.hairline, increased: Brutal.ink.opacity(0.6)))
                 .frame(height: 1)
                 .accessibilityHidden(true)
-            well
-            if model.isAnnotating {
-                AnnotationPalette(model: model)
-                    .padding(.horizontal, PlaybackControls.side)
-                    .padding(.vertical, Brutal.sectionGap / 2)
+            HStack(spacing: 0) {
+                VStack(spacing: 0) {
+                    well
+                    if model.isAnnotating {
+                        AnnotationPalette(model: model)
+                            .padding(.horizontal, PlaybackControls.side)
+                            .padding(.vertical, Brutal.sectionGap / 2)
+                    }
+                    if model.showsInspector {
+                        ClipInspector(model: model)
+                            .padding(.horizontal, PlaybackControls.side)
+                            .padding(.vertical, Brutal.sectionGap / 2)
+                    }
+                    controls
+                }
+                // Export opens its panel beside the video and the controls, from under the title bar to the window's foot.
+                if model.showsExportPanel {
+                    ExportPanel(model: model)
+                        .transition(reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity))
+                }
             }
-            if model.showsInspector {
-                ClipInspector(model: model)
-                    .padding(.horizontal, PlaybackControls.side)
-                    .padding(.vertical, Brutal.sectionGap / 2)
-            }
-            controls
-            ExportOptionsBar(model: model)
-                .padding(.horizontal, PlaybackControls.side)
-                .padding(.vertical, Self.exportPadding)
+            .animation(Motion.animation(.panelArrive, reduceMotion: reduceMotion), value: model.showsExportPanel)
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { windowHeight = $0 }
         .dropDestination(for: URL.self) { urls, _ in
@@ -185,11 +191,13 @@ private struct VideoEditorTitleBar: View {
                 } else {
                     saveButton
                 }
-                Button("Export") { Task { await model.export() } }
-                    // In crop mode the crop bar's Apply is the next step, so Export steps back to keep one main button (rule 1).
-                    .buttonStyle(BrutalButtonStyle(model.isCropping ? .secondary : .main))
-                    .disabled(model.isExporting)
-                    .brutalTip(String(localized: "Export"), detail: exportDetail)
+                Button("Export") { model.toggleExportPanel() }
+                    // One main button (rule 1): once the panel is open its own Export GIF or MP4 is the next step, and in
+                    // crop mode the crop bar's Apply is, so Export steps back to secondary. No isOn: a secondary button's
+                    // on state is the accent halo, which would read as focus and put a second yellow mark beside the panel's.
+                    .buttonStyle(BrutalButtonStyle(model.isCropping || model.showsExportPanel ? .secondary : .main))
+                    .accessibilityAddTraits(model.showsExportPanel ? .isSelected : [])
+                    .brutalTip("Export", detail: "Opens the Export panel, where you choose a GIF or an MP4 and export it.")
             }
             .padding(.leading, 4)
         }
@@ -208,94 +216,6 @@ private struct VideoEditorTitleBar: View {
         }
     }
 
-    private var exportDetail: String {
-        model.options.format == .gif
-            ? String(localized: "Writes a new GIF with these options next to the recording, and copies it.")
-            : String(localized: "Writes a new MP4 with these options next to the recording, and copies it.")
-    }
-}
-
-/// Format, GIF size and frame rate, mute, speed, and the size Export would write.
-struct ExportOptionsBar: View {
-    static let height: CGFloat = 32
-
-    let model: VideoEditorModel
-
-    var body: some View {
-        HStack(spacing: 12) {
-            BrutalSegmented(selection: option(\.format), options: [(.mp4, "MP4"), (.gif, "GIF")])
-                .brutalTip("Export format")
-            if model.options.format == .gif {
-                caption("FPS")
-                BrutalSegmented(selection: option(\.gifFrameRate), options: VideoExportOptions.gifFrameRates.map { ($0, "\($0)") })
-                    .brutalTip("GIF frames per second")
-                caption("WIDTH")
-                BrutalSegmented(selection: option(\.gifWidth), options: VideoExportOptions.gifWidths.map { ($0, Self.widthLabel($0)) })
-                    .brutalTip("GIF width in pixels; it's never made wider than the video")
-            } else {
-                caption("MUTE")
-                Toggle("Mute", isOn: option(\.muted))
-                    .toggleStyle(BrutalToggleStyle())
-                    .labelsHidden()
-                    .accessibilityLabel(Text("Mute"))
-                    .brutalTip("Leave the sound out")
-            }
-            caption("SPEED")
-            BrutalSegmented(selection: option(\.speed), options: VideoExportOptions.speeds.map { ($0, Self.speedLabel($0)) })
-                .disabled(speedIsLocked)
-                .overlay {
-                    if speedIsLocked {
-                        Color.clear.contentShape(Rectangle()).onTapGesture { Toast.error(Self.speedLockedReason) }
-                    }
-                }
-                .brutalTip(speedIsLocked ? Self.speedLockedReason : "Playback speed")
-            Spacer(minLength: 8)
-            Text(model.estimatedSize.map { "≈ " + ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .file) } ?? "≈ …")
-                .font(Brutal.mono)
-                .foregroundStyle(Brutal.faded(0.7))
-                .fixedSize()
-                .brutalTip("Estimated size of the exported file")
-            Button("Reset") { model.setOptions(.default) }
-                .buttonStyle(BrutalButtonStyle(.plain))
-                .disabled(model.options.isDefault)
-                .brutalTip("Puts the format, GIF size, mute and speed back to how new exports start.")
-        }
-        .frame(height: Self.height)
-        .disabled(model.isExporting)
-        .task(id: model.edit) {
-            await model.refreshEstimate()
-        }
-    }
-
-    private static let speedLockedReason: LocalizedStringResource = "Speed isn't available for an MP4 with imports, annotations or transforms. A GIF can change speed."
-
-    private var speedIsLocked: Bool { model.isComposite && model.options.format == .mp4 }
-
-    private func caption(_ text: LocalizedStringResource) -> some View {
-        Text(text)
-            .sectionCaption()
-            .fixedSize()
-            .padding(.trailing, -6)
-    }
-
-    /// Each change is one undo step.
-    private func option<Value>(_ keyPath: WritableKeyPath<VideoExportOptions, Value>) -> Binding<Value> {
-        Binding {
-            model.options[keyPath: keyPath]
-        } set: { value in
-            var options = model.options
-            options[keyPath: keyPath] = value
-            model.setOptions(options)
-        }
-    }
-
-    private static func widthLabel(_ width: Int) -> String {
-        width == VideoExportOptions.originalWidth ? String(localized: "Full") : "\(width)"
-    }
-
-    private static func speedLabel(_ speed: Double) -> String {
-        (speed.rounded() == speed ? "\(Int(speed))" : "\(speed)") + "×"
-    }
 }
 
 private struct PlayerHost: NSViewRepresentable {

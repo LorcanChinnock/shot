@@ -85,7 +85,7 @@ Cropping works as in the [annotation editor](#crop): what's cropped off shows di
 
 - <kbd>⌘Z</kbd> undoes and <kbd>⇧⌘Z</kbd> redoes.
 - <kbd>Delete</kbd> takes away the selected keyframe, or else the selected section, or else the selected clip or annotation.
-- <kbd>Esc</kbd> cancels an export, or else clears the selected section, or else deselects, or else stops annotating.
+- <kbd>Esc</kbd> cancels an export, or else clears the selected section, or else deselects, or else stops annotating, or else closes the Export panel.
 
 ## Save
 
@@ -93,6 +93,6 @@ Cropping works as in the [annotation editor](#crop): what's cropped off shows di
 
 Once your edit is more than trims and cuts, the button reads **Save Copy** instead, and writes a new file next to the recording. An import, annotation, keyframe or crop, a moved or styled recording, a changed volume, reordered clips, or a hidden or muted track each switches it to **Save Copy**.
 
-**Save**, **Save Copy** and **Export**, the yellow button at the right of the title bar, each copy the file they write. To copy the edited video without saving it, press <kbd>⌘C</kbd>; it includes everything you've added. To make an MP4 or GIF with other settings, see [Export a video or GIF](#export-a-video-or-gif).
+**Save** and **Save Copy** each copy the file they write. **Export**, the yellow button at the right of the title bar, opens the Export panel, whose own button writes and copies the export. To copy the edited video without saving it, press <kbd>⌘C</kbd>; it includes everything you've added. To make an MP4 or GIF with other settings, see [Export a video or GIF](#export-a-video-or-gif).
 
 Closing the window asks whether to save, or to save a copy, when you've changed anything since you last saved, saved a copy or exported.

@@ -129,7 +129,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             VideoEditorRootView(model: model)
         }
         window.delegate = self
-        // Wide enough for the export options in one row, GIF's included.
+        // Wide enough for the controls row in its compact form beside the open Export panel.
         window.minSize = NSSize(width: 880, height: VideoEditorRootView.playerFloor + VideoEditorRootView.chromeHeight)
 
         model.onLayoutChanged = { [weak self] in
@@ -238,7 +238,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
         case 45: // N
             model.toggleSnapping()
         case 53: // Escape
-            return model.cancelExport() || model.clearSelection() || model.escapeAnnotating()
+            return model.cancelExport() || model.clearSelection() || model.escapeAnnotating() || model.closeExportPanel()
         default:
             return false
         }
