@@ -44,9 +44,7 @@ struct StylePanel: View {
                     .padding(.top, 4)
             }
         }
-        .frame(width: Self.width)
-        .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
-        .glassCard()
+        .sidePanel(width: Self.width)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Style"))
         .onDisappear {

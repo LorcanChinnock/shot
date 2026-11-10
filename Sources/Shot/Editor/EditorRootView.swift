@@ -7,16 +7,21 @@ struct EditorRootView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        VStack(spacing: Brutal.sectionGap) {
+        // From Edit › Image editor: the title bar over a hairline, then the canvas edge to edge, with a side panel flush
+        // against its right.
+        VStack(spacing: 0) {
             EditorTitleBar(model: model)
-                .padding(.leading, GlassWindow.trafficLightsWidth - Brutal.windowInset)
-                .padding(.trailing, 12 - Brutal.windowInset)
+                .padding(.leading, GlassWindow.trafficLightsWidth)
+                .padding(.trailing, 12)
                 .frame(height: GlassWindow.titlebarHeight)
-                .padding(.bottom, -Brutal.sectionGap / 2)
-            HStack(spacing: Brutal.sectionGap) {
+            Rectangle()
+                .fill(ContrastAware(standard: Brutal.hairline, increased: Brutal.ink.opacity(0.6)))
+                .frame(height: 1)
+                .accessibilityHidden(true)
+            HStack(spacing: 0) {
                 CanvasHost(canvas: canvas)
-                    .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
-                    .glassCard()
+                    // The canvas's scroll view draws past its bounds, over the title bar, unless it's clipped.
+                    .clipped()
                     .overlay(alignment: .bottom) { CanvasFoot(model: model, canvas: canvas) }
                     .overlay { StyleBarOverlay(model: model) }
                     .overlay { CropBarOverlay(model: model) }
@@ -56,11 +61,12 @@ struct EditorRootView: View {
                             }
                         }
                     )
+                    .transition(reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity))
                 }
             }
         }
-        .padding([.horizontal, .bottom], Brutal.windowInset)
         .animation(Motion.animation(.panelArrive, reduceMotion: reduceMotion), value: model.showsStylePanel)
+        .animation(Motion.animation(.panelArrive, reduceMotion: reduceMotion), value: model.showsLayers)
     }
 }
 

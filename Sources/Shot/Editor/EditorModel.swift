@@ -245,9 +245,14 @@ final class EditorModel {
         }
     }
 
-    /// The Frame row of the layers panel: there while the image has a crop.
+    /// The Frame row of the layers panel: there while the image has a crop. Its detail follows the crop being dragged
+    /// while the crop tool adjusts it.
     var frameRow: FrameRow? {
-        document.frameCrop.map { _ in FrameRow(isHidden: document.isFrameCropHidden, isSelected: tool == .crop && cropImageID == nil) }
+        document.frameCrop.map { crop in
+            let isSelected = tool == .crop && cropImageID == nil
+            let size = isSelected && cropDraft != nil ? cropKeptSize : crop.integral.intersection(document.contentRect).size
+            return FrameRow(isHidden: document.isFrameCropHidden, isSelected: isSelected, detail: FrameRowDetail.label(for: size))
+        }
     }
 
     func toggleLayers() {

@@ -37,17 +37,17 @@ Click **Layers** in the title bar (<kbd>⌘L</kbd>) to list your marks, frontmos
 | Reorder | Drag a row by its handle. <kbd>Esc</kbd>, or dropping outside the list, cancels. |
 | Move forward or back | <kbd>⌘]</kbd> and <kbd>⌘[</kbd>, or <kbd>⌥⌘]</kbd> and <kbd>⌥⌘[</kbd> to bring to the front or send to the back. |
 | Hide | Click the eye. A hidden layer is also left out of Copy and Save. |
-| Lock | Click the lock. A locked layer can't be picked on the canvas, moved or deleted, but you can still drag it in the list. |
-| Delete | Press <kbd>Delete</kbd>, or click the bin. |
+| Lock | Point at the row and click the lock, which stays showing while the layer is locked. A locked layer can't be picked on the canvas, moved or deleted, but you can still drag it in the list. |
+| Delete | Press <kbd>Delete</kbd>, or point at the row and click the bin. |
 | Rename | Double-click the name, or select the row and press <kbd>Return</kbd>. |
 
 Right-click a row to rename, duplicate, delete, lock or hide it, or to crop a placed image.
 
 **Names:** a layer is named after its kind, or the first words of its text. Your own name shows only in the list, never in the image, and a duplicate keeps it. <kbd>Return</kbd> or clicking elsewhere keeps a new name, <kbd>Esc</kbd> cancels, and clearing it goes back to the automatic one. Renaming is one undo step.
 
-**The Frame row:** a cropped screenshot has a **Frame** row pinned at the top. Click it to change the crop, use its eye to show the uncropped screenshot and leave the crop out of Copy and Save, or click its bin to remove the crop. It can't be moved, locked or duplicated.
+**The Frame row:** a cropped screenshot has a **Frame** row pinned at the top, showing the crop's shape, such as 16:9, or its size in pixels. Click it to change the crop, and it turns yellow while you do. Use its eye to show the uncropped screenshot and leave the crop out of Copy and Save, or point at it and click its bin to remove the crop. It can't be moved, locked or duplicated.
 
-**Placed images** with a crop of their own show a crop badge. Click it to change the crop, or right-click the row and choose **Reset Crop** to show the whole image again.
+**Placed images** with a crop of their own show a **Crop** badge. Click it to change the crop, or right-click the row and choose **Reset Crop** to show the whole image again.
 
 > [!NOTE]
 > Each layer acts on everything under it and nothing over it: a blur, pixelate or spotlight covers the layers below it, and layers above it are drawn on top. All spotlights share one dim, at the place of the lowest one in the list.

@@ -19,13 +19,16 @@ struct FrameRow: Equatable {
     let isHidden: Bool
     /// Whether the crop tool is adjusting it.
     let isSelected: Bool
+    /// The crop's shape or size on the right, from ShotCore's `FrameRowDetail`.
+    let detail: String
 }
 
 /// The photo editor's annotations as a stack of layers, frontmost first, with the crop pinned above them and the image
-/// locked at the bottom.
+/// locked at the bottom, from Edit › Image editor · crop and combine: a side panel flush with the canvas.
 struct LayersPanel: View {
-    static let width: CGFloat = 230
-    nonisolated static let rowHeight: CGFloat = 30
+    static let width: CGFloat = 256
+    /// A row's 28 pt and the 1 pt gap after it.
+    nonisolated static let rowHeight: CGFloat = 29
     private static let space = "layers"
     /// How far a drag scrolls the list each frame with the pointer at its edge.
     private static let edgeScrollStep: CGFloat = 10
@@ -67,17 +70,10 @@ struct LayersPanel: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("LAYERS")
-                .sectionCaption()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-            Divider().overlay(Brutal.faint(0.25))
+            header
             if let frame {
-                FrameRowView(row: frame, isFocused: isFocused, onSelect: onSelectFrame, onHide: { onHideFrame(!frame.isHidden) }, onDelete: onDeleteFrame)
-                    .padding(.horizontal, 6)
-                    .padding(.top, 4)
-                Divider().overlay(Brutal.faint(0.25)).padding(.top, 4)
+                FrameRowView(row: frame, onSelect: onSelectFrame, onHide: { onHideFrame(!frame.isHidden) }, onDelete: onDeleteFrame)
+                PanelHairline().padding(.horizontal, 4).padding(.vertical, 6)
             }
             ScrollView {
                 ZStack(alignment: .top) {
@@ -87,9 +83,8 @@ struct LayersPanel: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: CGFloat(drag.map { $0.rest.count + 1 } ?? rows.count) * Self.rowHeight, alignment: .top)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 4)
             }
+            .scrollIndicators(.automatic)
             .scrollPosition($position)
             .onScrollGeometryChange(for: ListScroll.self) { geometry in
                 ListScroll(offset: geometry.contentOffset.y, content: geometry.contentSize.height, viewport: geometry.containerSize.height)
@@ -130,22 +125,55 @@ struct LayersPanel: View {
                     EmptyLayers().allowsHitTesting(false)
                 }
             }
-            Divider().overlay(Brutal.faint(0.25))
-            HStack(spacing: 8) {
-                Image(systemName: "photo").frame(width: 18)
-                Text("Image")
-                Spacer(minLength: 0)
-                Image(systemName: "lock.fill").font(.scaled(10, weight: .bold)).foregroundStyle(Brutal.faded(0.45))
-            }
-            .font(.scaled(12, weight: .semibold))
-            .foregroundStyle(Brutal.ink)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            PanelHairline().padding(.vertical, 6)
+            footer
         }
-        .frame(width: Self.width)
-        .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular))
-        .glassCard()
+        .padding(.vertical, 12)
+        .padding(.horizontal, 10)
+        .sidePanel(width: Self.width)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Layers"))
         .onDisappear(perform: stopDragging)
+    }
+
+    /// "Layers" in 13 pt bold, and its shortcut in the tertiary text on the right.
+    private var header: some View {
+        HStack {
+            Text("Layers")
+                .font(.scaled(13, weight: .bold))
+                .foregroundStyle(Brutal.ink)
+                .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 8)
+            Text(verbatim: "⌘L")
+                .font(.scaled(11))
+                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .accessibilityHidden(true)
+        }
+        .padding(.horizontal, 6)
+        .padding(.top, 2)
+        .padding(.bottom, 10)
+    }
+
+    /// The screenshot under every layer, which can't be moved or hidden.
+    private var footer: some View {
+        HStack(spacing: 9) {
+            Image(systemName: "photo")
+                .font(.scaled(12, weight: .medium))
+                .frame(width: 16)
+            Text("Screenshot")
+                .font(.scaled(13))
+                .lineLimit(1)
+            Spacer(minLength: 4)
+            Image(systemName: "lock.fill")
+                .font(.scaled(10, weight: .semibold))
+                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .frame(width: 20)
+        }
+        .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Screenshot, locked"))
     }
 
     private func rowView(_ row: LayerRow) -> some View {
@@ -154,7 +182,6 @@ struct LayersPanel: View {
         return LayerRowView(
             row: row,
             isSelected: selection.contains(row.id),
-            isFocused: isFocused,
             isLifted: lifted,
             isRenaming: renaming == row.id,
             grip: grip(for: row),
@@ -169,7 +196,7 @@ struct LayersPanel: View {
                 }
             }
         )
-        .frame(height: Self.rowHeight)
+        .frame(height: Self.rowHeight, alignment: .top)
         .contentShape(Rectangle())
         // One gesture, so a click selects at once instead of waiting out the double-click interval; the second click renames.
         .onTapGesture {
@@ -185,6 +212,10 @@ struct LayersPanel: View {
             }
         }
         .contextMenu { menu(for: selection.contains(row.id) ? selection : [row.id]) }
+        .accessibilityAction(named: Text("Rename")) {
+            selection = [row.id]
+            renaming = row.id
+        }
         // Carried rows ride under the lifted one, which fades while a drop would cancel.
         .opacity(carried ? 0 : lifted && drag?.isOutside == true ? 0.5 : 1)
         // The lifted row follows the pointer; the others glide to open the gap.
@@ -363,47 +394,72 @@ struct LayersPanel: View {
     }
 }
 
-/// The Frame row: click it to adjust the crop. Unlike a layer it can't be moved, locked or duplicated.
+/// The Frame row: click it to adjust the crop. Unlike a layer it can't be moved, locked or duplicated. While the crop tool
+/// adjusts it, it's yellow with an ink edge, as the selected tool is.
 private struct FrameRowView: View {
     let row: FrameRow
-    let isFocused: Bool
     let onSelect: () -> Void
     let onHide: () -> Void
     let onDelete: () -> Void
+    @State private var isHovered = false
     @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
-        HStack(spacing: 6) {
-            // Empty slots where a layer has its drag handle and lock button, so the columns line up.
-            Color.clear.frame(width: 16, height: 1)
+        HStack(spacing: 9) {
             Image(systemName: "crop")
-                .font(.scaled(12, weight: .bold))
-                .frame(width: 18)
-            Text("Frame")
                 .font(.scaled(12, weight: .semibold))
+                .frame(width: 16)
+            Text("Frame")
+                .font(.scaled(13, weight: row.isSelected ? .semibold : .regular))
                 .lineLimit(1)
             Spacer(minLength: 4)
-            Color.clear.frame(width: 20, height: 1)
-            RowButton(symbol: row.isHidden ? "eye.slash" : "eye", isOn: row.isHidden, label: row.isHidden ? "Show" : "Hide", action: onHide)
-            RowButton(symbol: "trash", isOn: false, label: "Delete", action: onDelete)
+            Text(verbatim: row.detail)
+                .font(.scaled(11, weight: .medium))
+                .monospacedDigit()
+                .lineLimit(1)
+                .foregroundStyle(row.isSelected ? AnyShapeStyle(Brutal.ink) : AnyShapeStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink)))
+            HStack(spacing: 0) {
+                RowButton(symbol: row.isHidden ? "eye.slash" : "eye", isOn: row.isHidden, label: row.isHidden ? "Show" : "Hide", action: onHide)
+                RowButton(symbol: "trash", isOn: false, label: "Delete", isShown: isHovered, action: onDelete)
+            }
         }
-        .padding(.leading, 2)
+        // As a layer row's, so the eyes line up.
+        .padding(.leading, 8)
         .padding(.trailing, 4)
-        .frame(height: LayersPanel.rowHeight - 2)
+        .frame(height: layerRowHeight)
         .foregroundStyle(Brutal.ink)
-        // Lighter under Increase Contrast too, but enough that an unset button in a hidden row keeps 3:1.
-        .opacity(row.isHidden ? (contrast == .increased ? 0.8 : 0.45) : 1)
+        .opacity(row.isHidden ? (contrast == .increased ? 0.8 : 0.5) : 1)
+        .inkOnFill(row.isSelected ? Brutal.yellow : nil)
         .background {
+            let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
             if row.isSelected {
-                RoundedRectangle(cornerRadius: Brutal.Radius.inset, style: .circular).fill(Brutal.yellow.opacity(isFocused ? 1 : 0.5))
+                shape.fill(Brutal.yellow).inkBorder(shape, width: 1.5)
+            } else if isHovered {
+                shape.fill(Brutal.hover)
             }
         }
         .contentShape(Rectangle())
+        .onHover { isHovered = $0 }
         .onTapGesture(perform: onSelect)
         .contextMenu {
             Button("Delete", action: onDelete)
             Button(row.isHidden ? "Show" : "Hide", action: onHide)
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Frame, \(row.detail)"))
+        .accessibilityAddTraits(row.isSelected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAction(.default, onSelect)
+        .accessibilityAction(named: Text("Delete"), onDelete)
+    }
+}
+
+/// A 1 pt hairline between the panel's parts.
+private struct PanelHairline: View {
+    var body: some View {
+        Rectangle()
+            .fill(ContrastAware(standard: Brutal.hairline, increased: Brutal.ink.opacity(0.6)))
+            .frame(height: 1)
+            .accessibilityHidden(true)
     }
 }
 
@@ -462,10 +518,12 @@ private struct RowDrag {
     }
 }
 
+/// A row's height, less the 1 pt gap after it.
+private let layerRowHeight: CGFloat = 28
+
 private struct LayerRowView<Grip: Gesture>: View {
     let row: LayerRow
     let isSelected: Bool
-    let isFocused: Bool
     let isLifted: Bool
     let isRenaming: Bool
     let grip: Grip
@@ -475,60 +533,119 @@ private struct LayerRowView<Grip: Gesture>: View {
     let onCrop: () -> Void
     /// The name typed into the field, or `nil` when Escape cancelled it.
     let onRename: (String?) -> Void
+    @State private var isHovered = false
     @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "line.3.horizontal")
-                .font(.scaled(11, weight: .bold))
-                .foregroundStyle(Brutal.faded(isLifted ? 1 : 0.45))
-                .frame(width: 16, height: Self.height)
+        HStack(spacing: 9) {
+            GripDots()
+                .foregroundStyle(Brutal.faded(isLifted ? 0.8 : 0.4))
+                .frame(width: 10, height: layerRowHeight)
                 .contentShape(Rectangle())
                 .pointerStyle(isLifted ? .grabActive : .grabIdle)
                 .gesture(grip)
                 .accessibilityLabel(Text("Drag to reorder"))
             Image(systemName: row.symbol)
-                .font(.scaled(12, weight: .bold))
-                .frame(width: 18)
+                .font(.scaled(12, weight: .medium))
+                .foregroundStyle(ContrastAware(standard: Brutal.ink.opacity(0.85), increased: Brutal.ink))
+                .frame(width: 16)
             if isRenaming {
-                LayerNameField(name: row.name, fontSize: 12, onCommit: { onRename($0) }, onCancel: { onRename(nil) })
+                LayerNameField(name: row.name, fontSize: 13, onCommit: { onRename($0) }, onCancel: { onRename(nil) })
             } else {
                 Text(row.name)
-                    .font(.scaled(12, weight: .semibold))
+                    .font(.scaled(13, weight: isSelected ? .semibold : .regular))
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
             Spacer(minLength: 4)
             if row.isCropped {
-                RowButton(symbol: "crop", isOn: true, label: "Adjust crop", action: onCrop)
+                CropBadge(action: onCrop)
                     .disabled(row.isLocked)
             }
-            RowButton(symbol: row.isLocked ? "lock.fill" : "lock.open", isOn: row.isLocked, label: row.isLocked ? "Unlock" : "Lock", action: onLock)
-            RowButton(symbol: row.isHidden ? "eye.slash" : "eye", isOn: row.isHidden, label: row.isHidden ? "Show" : "Hide", action: onHide)
-            RowButton(symbol: "trash", isOn: false, label: "Delete", action: onDelete)
-                .disabled(row.isLocked)
+            HStack(spacing: 0) {
+                // The lock shows while it's set; the lock and bin of an unlocked row show while the pointer is on it.
+                RowButton(symbol: row.isLocked ? "lock.fill" : "lock.open", isOn: row.isLocked, label: row.isLocked ? "Unlock" : "Lock", isShown: row.isLocked || isHovered, action: onLock)
+                RowButton(symbol: row.isHidden ? "eye.slash" : "eye", isOn: row.isHidden, label: row.isHidden ? "Show" : "Hide", action: onHide)
+                RowButton(symbol: "trash", isOn: false, label: "Delete", isShown: isHovered, action: onDelete)
+                    .disabled(row.isLocked)
+            }
         }
-        .padding(.leading, 2)
+        .padding(.leading, 8)
         .padding(.trailing, 4)
-        .frame(height: Self.height)
+        .frame(height: layerRowHeight)
         .foregroundStyle(Brutal.ink)
-        // Lighter under Increase Contrast too, but enough that an unset button in a hidden row keeps 3:1.
-        .opacity(row.isHidden && !isLifted ? (contrast == .increased ? 0.8 : 0.45) : 1)
-        .inkOnFill(isSelected ? Brutal.yellow : nil)
+        // Lighter under Increase Contrast too, but enough that the eye in a hidden row keeps 3:1.
+        .opacity(row.isHidden && !isLifted ? (contrast == .increased ? 0.8 : 0.5) : 1)
         .background { background }
-        .scaleEffect(isLifted ? 1.04 : 1)
-        .shadow(color: .black.opacity(isLifted ? 0.25 : 0), radius: 8, y: 4)
+        .scaleEffect(isLifted ? 1.03 : 1)
+        .onHover { isHovered = $0 }
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        // The lock and bin hide until the pointer is on the row, so VoiceOver reaches them as actions too.
+        .accessibilityAction(named: Text(row.isLocked ? "Unlock" : "Lock"), onLock)
+        .accessibilityActions {
+            if !row.isLocked {
+                Button("Delete", action: onDelete)
+            }
+        }
     }
-
-    private static var height: CGFloat { LayersPanel.rowHeight - 2 }
 
     @ViewBuilder
     private var background: some View {
+        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
         if isLifted {
-            Color.clear.brutalSurface(isSelected ? Brutal.yellow : Brutal.paper, radius: Brutal.Radius.inset, shadow: 2, border: 2)
+            Color.clear
+                .depth(.float, fill: Brutal.group, radius: Brutal.Radius.control)
+                .overlay { if isSelected { selectionFill(shape) } }
         } else if isSelected {
-            RoundedRectangle(cornerRadius: Brutal.Radius.inset, style: .circular).fill(Brutal.yellow.opacity(isFocused ? 1 : 0.5))
+            selectionFill(shape)
+        } else if isHovered {
+            shape.fill(Brutal.hover)
         }
+    }
+
+    /// Selection blue at 14% with a 1 pt edge at 35%, solid under Increase Contrast.
+    private func selectionFill(_ shape: RoundedRectangle) -> some View {
+        shape
+            .fill(Brutal.selection.opacity(0.14))
+            .inkBorder(shape, width: 1, color: Brutal.selection.opacity(contrast == .increased ? 1 : 0.35))
+    }
+}
+
+/// The drag handle: two columns of three dots, 2.4 pt across, as on the board.
+private struct GripDots: View {
+    var body: some View {
+        VStack(spacing: 1.6) {
+            ForEach(0..<3, id: \.self) { _ in
+                HStack(spacing: 2.6) {
+                    Circle().frame(width: 2.4, height: 2.4)
+                    Circle().frame(width: 2.4, height: 2.4)
+                }
+            }
+        }
+    }
+}
+
+/// The Crop badge on a placed image with a crop of its own: click it to adjust the crop.
+private struct CropBadge: View {
+    let action: () -> Void
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    var body: some View {
+        Button(action: action) {
+            Text("Crop")
+                .font(.scaled(10, weight: .semibold))
+                .foregroundStyle(ContrastAware(standard: Brutal.ink.opacity(0.85), increased: Brutal.ink))
+                .padding(.horizontal, 5)
+                .padding(.vertical, 1)
+                .background(Brutal.ink.opacity(contrast == .increased ? 0.16 : 0.08), in: RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
+                .opacity(isEnabled ? 1 : 0.5)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Adjust crop"))
+        .brutalTip("Adjust crop")
     }
 }
 
@@ -582,12 +699,13 @@ struct LayerNameField: View {
     }
 }
 
-/// Shown dimmed until set or hovered, so an unlocked, visible row isn't cluttered. Under Increase Contrast an unset button
-/// rests at 70%, enough to keep 3:1 inside a hidden row, and still lighter than a set one.
+/// A row's eye, lock or bin. Unset, it's in a quieter grey; `isShown` false leaves its room empty until the pointer is on
+/// the row, so a plain row shows only its eye, as on the board.
 private struct RowButton: View {
     let symbol: String
     let isOn: Bool
     let label: LocalizedStringResource
+    var isShown = true
     let action: () -> Void
     @State private var isHovered = false
     @Environment(\.isEnabled) private var isEnabled
@@ -596,20 +714,23 @@ private struct RowButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.scaled(11, weight: .bold))
+                .font(.scaled(11, weight: .semibold))
                 .frame(width: 20, height: 20)
-                .opacity(opacity)
+                .foregroundStyle(Brutal.ink.opacity(opacity))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .opacity(isShown ? 1 : 0)
+        .allowsHitTesting(isShown)
         .onHover { isHovered = $0 }
         .accessibilityLabel(Text(label))
         .brutalTip(label)
     }
 
     private var opacity: Double {
-        if isOn || (isHovered && isEnabled) { return 1 }
         let increased = contrast == .increased
-        return isEnabled ? (increased ? 0.7 : 0.4) : (increased ? 0.3 : 0.15)
+        guard isEnabled else { return increased ? 0.3 : 0.2 }
+        if isOn || isHovered { return 1 }
+        return increased ? 0.75 : 0.5
     }
 }
