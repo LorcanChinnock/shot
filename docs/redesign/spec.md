@@ -803,6 +803,28 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Reduce Motion.** Nothing here moves: the badge appears and goes in place, and the menu opens as every menu does.
 - **Increase Contrast** takes the Canvas label and chevron to the ink, and the badge's edge to 60% ink (dark 60% light ink).
 
+### Video editor toolbar
+
+#1100 builds the video editor's title bar on Edit › Video editor and export, in light and dark. The file name, a times label, More tools, Copy, Export and Save used to share one row with a TRIMMED or EDITED badge. Now the title bar follows the image editor's (see Image editor toolbar): the file and what's changed beside the traffic lights, a few tiles, then Save or Save Copy and Export, the one main button, over a hairline. The window follows the appearance setting, as every Shot window does. Nothing here runs until the editor opens, so the capture → copy path is unchanged.
+
+| Part | Look |
+| --- | --- |
+| File | The file name in Window type (13 semibold), truncating in the middle. Under it, in Caption type and tertiary text with tabular figures, the recording's length ("0:10.00") until something changes, then "Edited" and what the edit is: "Edited · trimmed · 1 cut · 2 annotations · 1 clip added · cropped", each part only when it applies |
+| Tiles | Undo and More tools, toolbar tiles 30 × 28, 4 pt apart. More tools fills while the tracks show |
+| Draw | A toolbar button 28 pt tall: the `pencil` symbol in the tool icon size and "Draw" in 12 pt semibold, 6 pt apart. It fills while a drawing tool is picked. Then a 1 × 20 pt control-edge divider with 6 pt either side |
+| Save, Export | Save, or Save Copy once the edit is more than trims and cuts, is a secondary button; Export is the main button, last. While exporting, Cancel takes Save's place and Export dims |
+
+- **What the subtitle counts.** `VideoEditSummary` in ShotCore reads the project, with tests: trimmed when the recording's start or end is off, a cut for each gap between the recording's clips on the main track, every annotation, every clip from another file (an added video's own sound isn't counted again), and cropped when the frame is. An edit it can't name, such as a moved or styled recording, reads "Edited" alone. The counts use the catalog's plural forms.
+- **What Draw does.** It opens the tracks if they're closed and picks the last drawing tool, Arrow to start, or stops drawing when it's on. The drawing tools stay in the tracks until #1101 moves them beside the video, so hiding the tracks stops drawing too, and Draw never shows on with nothing to draw with. The tracks' own Annotate button is gone, since Draw replaces it.
+- **One main button.** Export is the ink control. In crop mode the crop bar's Apply is the next step, so Export steps back to secondary, as Copy does in the image editor. The yellow Play button is #1102's; the light board draws it plain.
+- **Window width.** Unchanged at 880 pt, which the export options row needs. At Larger text the title bar still leaves about half its width empty at the window's opening size, so it needs no fallback form.
+- **Departures from the board.** Copy has no button, as on the board; ⌘C still copies the edited video, and Save, Save Copy and Export each copy the file they write. More tools (T) stays as a tile until #1102 decides whether the lanes always show; the board has none. The board's button reads Save Copy; Shot keeps Save while the edit is only trims and cuts, since then it replaces the recording, as before. The times label ("0:00.00 – 0:10.00 · 0:10.00") leaves the title bar; the length shows under the file name until something changes, and #1102's controls row brings the playhead's time back. The board rounds Draw, Save Copy and Export at 7; Shot uses the control token, 6. Draw keeps the toolbar's 12 pt label and pads 3 pt more each side to reach the board's 10.
+- **Keyboard.** Shortcuts are unchanged: ⌘Z undoes and ⇧⌘Z redoes, T shows the tracks, ⌘S saves, ⌘C copies, Esc cancels an export. Undo's tip shows ⌘Z, More tools T and Save ⌘S on keycaps. With keyboard navigation on, Tab reaches each button with the accent focus halo.
+- **VoiceOver** reads the file name and subtitle as one element, Undo and More tools by name, Draw as "Draw", selected while it's on, and Save, Save Copy, Export and Cancel by their text.
+- **Text size** scales the type and icons. At Larger the file name truncates first; the buttons keep their size.
+- **Reduce Motion** keeps the main button's drop still and darkens it on press. Nothing else moves; the window grows and shrinks for the tracks as before.
+- **Increase Contrast** takes the subtitle to the text colour, the hairline to 60% ink, and the secondary buttons' edges to 60% ink.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -914,13 +936,13 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Image editor · crop and combine | #1097 crop | `Editor/CropBar.swift` (`CropBarOverlay`, `CropBarView`), `Editor/EditorCanvasView.swift` (`drawCrop`, `cropMarks`, `viewportSize`), `Editor/EditorModel.swift` (`cropKeptSize`, `cropBarClearance`, `canvasFootLeading`), `Editor/CanvasControls.swift` (hint steps aside), `Editor/EditorRootView.swift` (overlay, Copy steps down), `Editor/StyleBar.swift` (crop removed), ShotCore `CropBar.swift` (`CropBar`), ShotCore `StyleBar.swift`, ShotCore `CanvasHint.swift` | ☐ |
 | Image editor · crop and combine | #1098 layers | `Design/LayersPanel.swift` (`LayersPanel`, `FrameRowView`, `LayerRowView`, `CropBadge`), `Design/SidePanel.swift` (`sidePanel(width:)`, `Brutal.sidePanel`), `Editor/StylePanel.swift` (flush panel), `Editor/EditorRootView.swift` (canvas edge to edge, title bar hairline), `Editor/EditorModel.swift` (`frameRow`), ShotCore `Layers.swift` (`FrameRowDetail`) | ☐ |
 | Image editor · crop and combine | #1099 combine | `Editor/EditorRootView.swift` (`CanvasMenu` in `EditorTitleBar`), `Editor/CanvasControls.swift` (menu leaves the foot), `Editor/EditorCanvasView.swift` (crop badge, hover), `Editor/EditorModel.swift` (`startingStyle`, `resetTargetStyle`, `isTargetStyleDefault`), ShotCore `CanvasCropBadge.swift`, ShotCore `ObjectStyle.swift` (`editorDefaultStyle`), ShotCore `EditorTool.swift` (`editorObjectStyle`) | ☐ |
-| Video editor and export (dark) | #1100 window and toolbar | `VideoEditor/VideoEditorView.swift`, `VideoEditor/VideoEditorWindowController.swift` | ☐ |
+| Video editor and export (dark) | #1100 window and toolbar | `VideoEditor/VideoEditorView.swift` (`VideoEditorTitleBar`, hairline), `VideoEditor/VideoEditorModel.swift` (`toggleDrawing()`, hiding the tracks stops drawing), `VideoEditor/TracksView.swift` (Annotate removed), `VideoEditor/VideoEditorWindowController.swift` (unchanged), ShotCore `VideoEditSummary.swift` | ☐ |
 | Video editor and export (dark) | #1101 drawing tools | `VideoEditor/AnnotationPalette.swift`, `VideoEditor/AnnotationCanvas.swift` | ☐ |
 | Video editor and export (dark) | #1102 timeline | `VideoEditor/TracksView.swift` | ☐ |
 | Video editor and export (dark) | #1103 export panel | `VideoEditor/VideoEditorView.swift`, `VideoEditor/VideoEditorModel.swift` | ☐ |
 | Video editor and export (dark) | #1104 inspectors | `VideoEditor/ClipInspector.swift`, `VideoEditor/VideoEditorView.swift` | ☐ |
 | Video editor and export (dark) | #1105 crop and transform | `VideoEditor/VideoCropOverlay.swift`, `VideoEditor/TransformOverlay.swift` | ☐ |
-| Video editor and export (light) | #1100 | `VideoEditor/VideoEditorView.swift`, `VideoEditor/VideoEditorWindowController.swift`, `VideoEditor/TracksView.swift` | ☐ |
+| Video editor and export (light) | #1100 | `VideoEditor/VideoEditorView.swift`, `VideoEditor/VideoEditorModel.swift`, `VideoEditor/TracksView.swift`, ShotCore `VideoEditSummary.swift` (the title bar takes the light tokens; see Video editor toolbar) | ☐ |
 | Image editor · annotate (dark) | #1119, after #1093–#1099 | `Design/BrutalStyle.swift` (dark values), `Editor/EditorToolbar.swift`, `Editor/EditorCanvasView.swift` | ☐ |
 
 ### Library & Settings

@@ -46,7 +46,7 @@ Most recordings start with a few seconds of reaching for the mouse and end with 
 - **Split** (<kbd>S</kbd>) splits the clips under the playhead.
 - **Delete** (<kbd>⌫</kbd>) cuts out the selected clip and closes the gap.
 - **Snap** (<kbd>N</kbd>) snaps the playhead, and clips you drag or trim, to clip edges and the playhead.
-- **More tools** (<kbd>T</kbd>) shows or hides the tracks, keyframes, imports and annotations. The editor opens with just the trim strip each time. Once your edit is more than trims and cuts, they stay shown.
+- **More tools** (<kbd>T</kbd>), the tile beside Undo in the title bar, shows or hides the tracks, keyframes, imports and annotations. The editor opens with just the trim strip each time. Once your edit is more than trims and cuts, they stay shown.
 
 ## Add video or sound
 
@@ -84,10 +84,10 @@ Cropping works as in the [annotation editor](#crop): what's cropped off shows di
 
 ## Save
 
-**Save** (<kbd>⌘S</kbd>) replaces the recording with your trimmed version, without re-encoding where it can, and copies it. The title shows **TRIMMED** while you've only trimmed the ends, and **EDITED** once there's a cut or more.
+**Save** (<kbd>⌘S</kbd>) replaces the recording with your trimmed version, without re-encoding where it can, and copies it. Under the file name, the title bar shows the recording's length until you change something, then what you've changed, such as "Edited · trimmed" or "Edited · 1 cut · 2 annotations".
 
 Once your edit is more than trims and cuts, the button reads **Save Copy** instead, and writes a new file next to the recording. An import, annotation, keyframe or crop, a moved or styled recording, a changed volume, reordered clips, or a hidden or muted track each switches it to **Save Copy**.
 
-**Copy** (<kbd>⌘C</kbd>) copies the edited video, everything included. To make an MP4 or GIF with other settings, see [Export a video or GIF](#export-a-video-or-gif).
+**Save**, **Save Copy** and **Export**, the yellow button at the right of the title bar, each copy the file they write. To copy the edited video without saving it, press <kbd>⌘C</kbd>; it includes everything you've added. To make an MP4 or GIF with other settings, see [Export a video or GIF](#export-a-video-or-gif).
 
 Closing the window asks whether to save, or to save a copy, when you've changed anything since you last saved, saved a copy or exported.
