@@ -1077,6 +1077,36 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Reduce Motion.** Nothing here moves. Opening, stepping and closing are instant.
 - **Increase Contrast** takes the position, fact names, notes and secondary text to ink, and the panel's edge to 60% ink.
 
+### Gallery empty state and Move to Trash
+
+#1110 draws the gallery before anything is saved, from Library & Settings › Gallery · preview and empty state (right), and asks before captures go to the Trash, from Capture › Permission card… › Confirming something destructive. The empty gallery used to be the shared `EmptyState`, "No captures yet" with Open Folder, and trashing moved files at once with only the toast's ⌘Z to undo it. Nothing here runs during a capture, so the capture → copy path is unchanged.
+
+| Part | Look |
+| --- | --- |
+| Toolbar | Unchanged: "All Captures" in 15 pt bold and "0 items" (Gallery sidebar) |
+| Background | 1 pt dots 18 pt apart in ink at 8%, edge to edge under the toolbar |
+| Box | 220 × 140 pt, a 2 pt dashed line in ink at 25%, rounded at the panel radius, 14. Inside, "Your first capture goes here" in 15 pt semibold secondary text |
+| Arrow | The board's 60 × 44 curved arrow in record red, a 4 pt round-capped stroke and a filled head aimed along the curve's last stretch. The stroke draws itself in 0.5 s, 0.45 s into every 3 s, and the head appears as the stroke reaches it, so it never shows alone |
+| Keys | The screenshot shortcut from Settings, one big keycap per key: 22 pt heavy on the group colour, a 2 pt ink edge and a 4 pt ink drop, rounded at the group radius, 10, at least 36 pt wide, 6 pt apart. ⇧ takes the accent |
+| Words | "Take a screenshot to start your library" in 17 pt heavy, then "Everything Shot saves to Pictures/Shot appears here, and you can search the text inside it." in 13 pt secondary text, 320 pt wide at most, 6 pt apart |
+| Button | "Choose a different folder…" as the secondary button |
+| Trash dialog | A sheet on the gallery window, 300 pt wide on the group colour, 20 pt padding, 10 pt between parts, all centred |
+| Thumbnails | The first three captures as 54 × 40 pt cards overlapping by 30, rounded at the control radius, 6, with a 1 pt edge in ink at 15% and a `0 4 10` shadow at 10%. Two turn −6° and 5°, one turns −3°, three turn −8°, 0° and 7° |
+| Title and detail | "Move 2 captures to the Trash?" in 15 pt bold, then "They leave Pictures/Shot too. You can put them back from the Trash in Finder." in 12.5 pt secondary text. One capture reads "It leaves … put it back" |
+| Buttons | Cancel as the secondary button and Move to Trash as the main button in record red with white text, equal widths, 8 pt apart and 6 pt further below the detail |
+
+- **When it shows.** The empty library shows once the save folder has been read and holds no captures at all, whatever row is picked. An empty folder and a search with no matches keep the shared `EmptyState` ("This folder is empty", "Nothing matches").
+- **The real shortcut.** The keys are the Screenshot shortcut in Settings › Shortcuts, read as it changes, with modifiers in the order menus show them, so the default reads ⌃ ⇧ 4, or ⇧ ⌘ 4 when Shot replaces the system's. With no shortcut set, the keys and arrow hide. ShotCore's `KeyCombo.keycaps` splits it, with a test.
+- **The folder's name.** "Pictures/Shot" is the save folder from the home folder, in the names Finder shows, or the whole path when it's elsewhere. ShotCore's `Gallery.folderPath` works it out, with tests. Choose a different folder… opens the folder panel as a sheet and sets the save folder as Settings › General does, and the gallery lists the new folder at once.
+- **A short window** drops the box and the arrow first, then scrolls, so the words and the button always show.
+- **What asks.** The selection bar's Trash button, the context menu's Move to Trash, and Delete in the grid or the preview open the dialog for what they act on. ⌘⌫ moves the selection to the Trash without asking, as in Photos and Finder. Either way the toast offers ⌘Z, which puts the files back.
+- **Keyboard.** Return presses Move to Trash and Esc presses Cancel. While the dialog is open, the gallery's own keys do nothing, so Delete or ⌘⌫ can't trash twice. With keyboard navigation on, Tab moves between the two buttons, which show the accent focus halo.
+- **Departures from the board.** The note is in the app's type, not Caveat, and doesn't wobble, since rule 7 keeps handwriting out of the app (#1169). The board's empty window has no sidebar; Shot keeps it, so the folders and Make room… stay where they were. The board's keycaps read ⌘ ⇧ 4; Shot shows the shortcut actually set, in menu order. The board's dialog floats on its own; Shot shows it as a sheet on the gallery window, native rule 4. The board rounds the cards at 6 and the buttons at 8; Shot uses the control radius, 6, for both.
+- **VoiceOver** reads the title as a heading, the keys as "Screenshot shortcut" and the shortcut, and the box, arrow and dots not at all. The dialog is a group named by its title, which is a heading; its thumbnails are hidden.
+- **Text size** scales the words, keys, box and dialog width; the box and arrow give way first when they don't fit.
+- **Reduce Motion** leaves the arrow drawn and still. Nothing else here moves.
+- **Increase Contrast** takes the box's line to 60% ink, the note and secondary text to ink, the cards' edge to 60% ink, and darkens Move to Trash's red, as every destructive main button does.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -1163,7 +1193,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Permission card… › update prompt | #1117 | `Updater.swift` | ☐ |
 | Permission card… › tooltips and menus | #1072 | `Design/BrutalTip.swift` | ☐ |
 | Permission card… › Share menu | #1093 | `Editor/EditorRootView.swift` (`ShareMenu`), `Editor/EditorModel.swift` (`share(_:)`), ShotCore `EditorToolbarLayout.swift` (`EditorShareAction`) | ☐ |
-| Permission card… › Move to Trash | #1110 | `Gallery/GalleryView.swift` | ☐ |
+| Permission card… › Move to Trash | #1110 | `Gallery/GalleryEmptyLibrary.swift` (new, `TrashConfirmation`), `Gallery/GalleryModel.swift` (`trashRequest`, `askToTrash`, `confirmTrash`), `Gallery/GalleryController.swift` (Delete asks, ⌘⌫ doesn't), `Gallery/GalleryView.swift` (the sheet) | ☐ |
 
 ### Record
 
@@ -1205,7 +1235,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Gallery | #1107 sidebar | `Gallery/GallerySidebar.swift`, `Gallery/GalleryView.swift` (layout, toolbar heading, tag row removed), `Gallery/GalleryModel.swift` (`source`, `counts`, `makeRoom`), `Gallery/GalleryWindowController.swift`, ShotCore `GallerySource.swift` (new) and `Preferences.swift` (sidebar open, 220 pt) | ☐ |
 | Gallery | #1108 grid and selection bar | `Gallery/GalleryView.swift` (toolbar, `GalleryGrid`, `GalleryTile`, `SelectionCheckbox`, `GallerySelectionBar`; footer removed), ShotCore `GalleryTileDetail.swift` (new) | ☐ |
 | Gallery · preview and empty state | #1109 preview | `Gallery/GalleryPreview.swift` (`GalleryPreviewView` replaces the Quick Look panel), `Gallery/GalleryModel.swift` (`previewing`, `preview(_:)`, `stepPreview(by:)`, `textRevision`), `Gallery/GalleryController.swift` (preview keys), `Gallery/GalleryView.swift` (preview over the grid, Preview in the menu), ShotCore `GalleryPreviewDetails.swift` (new) | ☐ |
-| Gallery · preview and empty state | #1110 empty state | `Gallery/GalleryView.swift` | ☐ |
+| Gallery · preview and empty state | #1110 empty state | `Gallery/GalleryEmptyLibrary.swift` (new, `GalleryEmptyLibrary`), `Gallery/GalleryView.swift` (`content`), `Gallery/GalleryModel.swift` (`folderPath`, `chooseFolder(in:)`), ShotCore `GalleryEmptyLibrary.swift` (new, `Gallery.folderPath`, `trashFan`, `KeyCombo.keycaps`) | ☐ |
 | Welcome | #1118 | `WelcomeWindow.swift` | ☐ |
 | Settings sidebar (shared component) | #1111 | `Settings/SettingsView.swift` | ☐ |
 | Settings sidebar (shared component) | #1106 Open Gallery | `Settings/SettingsView.swift` (`OpenGalleryItem`) | ☐ |
@@ -1261,7 +1291,7 @@ Every page in `site/src/guide/`. #1128 updates the text, ticking **Updated** for
 | 07 Find your captures | The gallery in its own window; grid, search and sort; the preview's details panel; the empty gallery | #1128 | #1106, #1108, #1109, #1110 | ☐ |
 | 07a Organise your captures | Library, Folders and Tags in the sidebar; the selection bar; the Move to Trash dialog | #1128 | #1107, #1108, #1110 | ☐ |
 | 08a Share a capture with an AI assistant | "Copy path for an AI assistant" in the preview; Copy Path in the Share menu | #1128 | #1109, #1093 | ☐ |
-| 09 Keyboard shortcuts | M, C and I on the capture bar; Settings › Shortcuts | #1128 | #1075, #1116 | ☐ |
+| 09 Keyboard shortcuts | M, C and I on the capture bar; Settings › Shortcuts; Delete asks before the Trash and ⌘Delete doesn't | #1128 | #1075, #1110, #1116 | ☐ |
 | 10 Automation reference | `shot://gallery` and `shot://settings?section=gallery` open the gallery window; `shot://welcome` | #1128 | #1106, #1118 | ☐ |
 | 11 Settings | Section and row names, the sidebar search, Open Gallery | #1128 | #1111, #1112, #1113, #1114, #1115, #1116, #1117 | ☐ |
 | 12 Languages | Check only: no redesigned screen is described | #1128 | #1121 | ☐ |

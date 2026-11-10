@@ -142,7 +142,8 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | ⌘A, ⌘⇧A | Select all, deselect all |
 | ⌘C | Copy |
 | ⌘R | Show in Finder |
-| Delete or ⌘Delete | Move to the Trash |
+| Delete | Move to the Trash, after asking |
+| ⌘Delete | Move to the Trash without asking |
 | ⌘Z | Put back what you last moved to the Trash |
 | ⌘F | Search |
 | ⌘+, ⌘− | Thumbnail size |

@@ -31,6 +31,10 @@ final class GalleryController {
     }
 
     func handleCommand(_ key: String, shift: Bool, in window: NSWindow) -> Bool {
+        // The Move to Trash dialog has the keyboard while it's open.
+        guard model.trashRequest == nil else {
+            return false
+        }
         // Thumbnail size and Select All act on the grid, which the preview covers.
         if model.previewing != nil, ["=", "+", "-", "a"].contains(key) {
             return true
@@ -59,6 +63,7 @@ final class GalleryController {
         case "z" where !isTyping(in: window) && !shift && model.canUndoTrash:
             model.undoTrash()
         case "\u{7f}" where !isTyping(in: window):
+            // ⌘⌫ trashes without asking, as in Photos and Finder. ⌘Z still puts it back.
             model.trash(model.selectedItems)
         default:
             return false
@@ -68,7 +73,7 @@ final class GalleryController {
 
     /// Arrows, Return, Space, Delete and Escape work wherever focus is, except while typing in the search field.
     func handleKey(_ event: NSEvent, in window: NSWindow) -> Bool {
-        guard event.modifierFlags.intersection([.command, .option, .control]).isEmpty else {
+        guard event.modifierFlags.intersection([.command, .option, .control]).isEmpty, model.trashRequest == nil else {
             return false
         }
         if isTyping(in: window) {
@@ -105,7 +110,7 @@ final class GalleryController {
             guard !model.selection.isEmpty else {
                 return false
             }
-            model.trash(model.selectedItems)
+            model.askToTrash(model.selectedItems)
         case 53: // Escape
             guard !model.selection.isEmpty else {
                 return false
@@ -127,7 +132,7 @@ final class GalleryController {
         case 119: model.previewEnd(last: true) // End
         case 49, 53: model.closePreview() // Space, Escape
         case 36, 76: model.edit(model.selectedItems) // Return, Enter
-        case 51, 117: model.trash(model.selectedItems) // Delete, Forward Delete
+        case 51, 117: model.askToTrash(model.selectedItems) // Delete, Forward Delete
         default: return false
         }
         return true
