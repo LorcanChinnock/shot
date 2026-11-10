@@ -15,6 +15,9 @@ public struct QuickAccessLayout: Equatable, Sendable {
     public static let cardMaxHeight: CGFloat = 210
     public static let spacing: CGFloat = 14
     public static let padding: CGFloat = 10
+    /// How far the panel sits in from the side and bottom of the screen's visible frame, so a card's outer edge is
+    /// `screenInset + padding` in.
+    public static let screenInset: CGFloat = 20
     /// How far the cards behind the front one show above it at rest.
     public static let peek: CGFloat = 14
     /// The size of a card behind the front one at rest, shrunk towards its bottom middle.

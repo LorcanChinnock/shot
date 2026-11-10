@@ -48,4 +48,4 @@ When you hover a pin, a dark bar appears across its top:
 
 The newest card sits in front, with older ones waiting behind it, up to five. A sixth closes the oldest. Point at the stack to spread the cards out and reach an older one. Each card closes on its own after 8 seconds, but none closes while the pointer is on the stack.
 
-In **Settings › Quick Access**, choose the bottom-left or bottom-right corner, and how long cards stay: 4, 8, 15 or 30 seconds, or **Never**. To skip the card altogether, turn off **Show Quick Access** in **Settings › Capture**.
+In **Settings › Quick Access**, choose the bottom-left or bottom-right corner, and how long cards stay: 4, 8, 15 or 30 seconds, or **Never**. The preview under those options shows a card in the corner you chose and counts down the time you picked. To skip the card altogether, turn off **Show Quick Access** in **Settings › Capture**.

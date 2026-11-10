@@ -45,7 +45,7 @@ struct QuickAccessCardAction {
 final class QuickAccessController {
     static let shared = QuickAccessController()
     static let maxCards = 5
-    static let inset: CGFloat = 20
+    static let inset = QuickAccessLayout.screenInset
 
     var onAnnotate: ((URL) -> Void)?
     var onExportGIF: ((URL) -> Void)?
