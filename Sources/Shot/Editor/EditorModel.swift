@@ -611,9 +611,11 @@ final class EditorModel {
                 $0.frame = .none
             }
         }
+        // Forgetting the kind's style, rather than saving its default, lets each editor start the next one with its own:
+        // the Soft shadow on an image here, and none on a video clip, which reads the same preference.
         if kind != .capture {
-            objectStyles[kind] = kind.editorDefaultStyle
-            rememberStyle { $0.objectStyles[kind] = kind.editorDefaultStyle }
+            objectStyles[kind] = nil
+            rememberStyle { $0.objectStyles[kind] = nil }
         }
     }
 

@@ -295,9 +295,12 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             guard CanvasCropBadge.shows(on: annotation, selected: selected, hovered: annotation.id == hoveredImageID) else {
                 return nil
             }
-            return (annotation.id, CanvasCropBadge.center(
-                of: viewRect(annotation.bounds), clearOfHandle: annotation.id == withHandles, in: bounds
-            ))
+            // An image scrolled wholly out of view has no badge; one partly in view keeps its badge inside the edge.
+            let rect = viewRect(annotation.bounds)
+            guard rect.intersects(bounds) else {
+                return nil
+            }
+            return (annotation.id, CanvasCropBadge.center(of: rect, clearOfHandle: annotation.id == withHandles, in: bounds))
         }
     }
 
