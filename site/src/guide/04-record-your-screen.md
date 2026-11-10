@@ -54,9 +54,9 @@ A window recording captures just that window. It follows the window when you mov
 
 In **Settings › Recording**:
 
-- **Microphone** records your voice. Pick which microphone, and press **Test** to check it.
-- **System audio** records the sound from other apps. Shot's own sounds are left out.
-- **Camera bubble** adds a round webcam view to the recording. Pick the camera and size, and press **Preview** to check your framing.
+- **Microphone** records your voice. Pick which microphone next to **Input**, and press **Test** to see its level as you speak.
+- **Mac sound** records the sound from other apps. Shot's own sounds are left out.
+- **Camera bubble** adds a round webcam view to the recording. Pick the camera and size, and press **Preview** on the dark card above them to check your framing.
 
 The camera bubble is a round view of your camera with a white edge, and it starts in the bottom-left corner of the recorded area and stays inside it. Drag it to move it, and double-click it to step through small, medium and large. While you check before recording, it has a small round handle on its lower edge: drag the handle to resize it, or press ⌘+ and ⌘− instead. The size you pick becomes the default. An area too small for the bubble records without it.
 
@@ -78,7 +78,7 @@ To stop copying recordings, turn off **Copy to clipboard** in **Settings › Rec
 
 ## Quality and file format
 
-Recordings are H.264 MP4 at 30 or 60 frames per second. On a display that refreshes at 120 Hz or faster, such as a ProMotion MacBook Pro, **Settings › Recording** also offers 120 fps, which records HEVC MP4. Exports from the video editor of a 120 fps recording are HEVC too. On a slower screen, a 120 fps setting records at 60.
+Recordings are H.264 MP4 at 30 or 60 frames per second. On a display that refreshes at 120 Hz or faster, such as a ProMotion MacBook Pro, **Frame rate** in **Settings › Recording** also offers 120, which records HEVC MP4. Exports from the video editor of a 120 fps recording are HEVC too. On a slower screen, a 120 fps setting records at 60.
 
 > [!NOTE]
 > **If something goes wrong:** each stretch between pauses is written to a temporary folder as you record, and joined into one file when you stop. Quitting Shot mid-recording stops and saves it first. If Shot crashes, it asks **Recover your last recording?** the next time it opens, with how long the recording is and how many parts it was saved in. **Recover** saves it to your save folder as `… (recovered).mp4`, or as separate `(recovered, part N)` files if the parts can't be joined, and a message offers **Show**. **Discard recording** deletes it, with **Undo** for 5 seconds. See [Troubleshooting](#troubleshooting) for the rest of the dialog. If the disk fills up, Shot keeps the last part if it still plays.

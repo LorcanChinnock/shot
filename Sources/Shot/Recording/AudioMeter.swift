@@ -50,21 +50,25 @@ final class AudioMeter: Sendable {
     }
 }
 
-/// A row of bars filled to the meter's level: mint, then yellow, then red near clipping. Grey while `muted`.
+/// Settings › Recording's microphone level (Library & Settings › Settings · Recording): eight 4 × 10 pt bars rounded at 1,
+/// lit success green and the setup bar's amber for the top two, near clipping, over ink at 12% (white at 16% in dark).
+/// It only redraws while the test runs, so a meter at rest costs nothing.
 struct LevelMeter: View {
     let meter: AudioMeter
     var muted = false
     private static let bars = 8
+    private static let unlit = Color(light: Color(hex: 0x16161A).opacity(0.12), dark: .white.opacity(0.16))
+    private static let unlitContrast = Color(light: Color(hex: 0x16161A).opacity(0.3), dark: .white.opacity(0.35))
+    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 1.0 / 20)) { _ in
-            let lit = Int((meter.level * Double(Self.bars)).rounded(.up))
+        TimelineView(.animation(minimumInterval: 1.0 / 20, paused: muted)) { _ in
+            let lit = muted ? 0 : LevelBars.lit(meter.level, of: Self.bars)
             HStack(spacing: 2) {
                 ForEach(0..<Self.bars, id: \.self) { index in
-                    RoundedRectangle(cornerRadius: 1.5, style: .circular)
-                        .fill(index < lit ? color(index) : Brutal.well)
-                        .inkBorder(RoundedRectangle(cornerRadius: 1.5, style: .circular), width: 1)
-                        .frame(width: 5, height: 16)
+                    RoundedRectangle(cornerRadius: 1, style: .circular)
+                        .fill(index < lit ? color(index) : contrast == .increased ? Self.unlitContrast : Self.unlit)
+                        .frame(width: 4, height: 10)
                 }
             }
         }
@@ -73,14 +77,7 @@ struct LevelMeter: View {
     }
 
     private func color(_ index: Int) -> Color {
-        if muted {
-            return Brutal.ink.opacity(0.3)
-        }
-        switch index {
-        case ..<5: return Brutal.mint
-        case ..<7: return Brutal.yellow
-        default: return Brutal.red
-        }
+        index >= LevelBars.loudFrom(of: Self.bars) ? MicLevelBars.loud : Brutal.success
     }
 }
 

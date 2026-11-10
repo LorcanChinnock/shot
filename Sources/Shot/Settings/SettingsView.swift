@@ -1038,7 +1038,9 @@ private struct RecordingSettings: View {
     // Read only so the GIF summary updates when the video editor changes them.
     @Setting(PreferenceKey.gifFrameRate) private var gifFrameRate: Int
     @Setting(PreferenceKey.gifWidth) private var gifWidth: Int
-    private let color = SettingsSection.recording.color
+    @Environment(\.settingsQuery) private var query
+    /// Two columns, as on the board, while the content is wide enough for them, and one in a narrow window.
+    @State private var twoColumns = true
 
     /// 120 fps shows only with a display that fast, or when it's already chosen so the selection never disappears.
     private var frameRates: [Int] {
@@ -1046,51 +1048,82 @@ private struct RecordingSettings: View {
     }
 
     private var frameRateSubtitle: LocalizedStringResource {
-        RecordingFrameRate.usesHEVC(fps: fps) ? "HEVC MP4, on displays that refresh this fast." : "H.264 MP4."
+        frameRates.contains(where: RecordingFrameRate.usesHEVC) ? "MP4. 120 records HEVC on ProMotion displays." : "Recordings save as MP4."
     }
 
     var body: some View {
-        SettingsCard(title: "Starting") {
-            ToggleRow(title: "Adjust before recording", subtitle: "Shows the frame handles and options first. Hold ⌥ as you finish the selection to show them once.", isOn: $adjust)
+        if SettingsSearch.terms(query).isEmpty {
+            columns
+        } else {
+            // Search results list each section's groups one under another, so they hide one by one when nothing matches.
+            SoundSettings()
+            pointer
+            afterRecording
+            CameraSettings()
+            quality
         }
-        SettingsCard(title: "Video") {
-            SettingRow(title: "Frame rate", subtitle: frameRateSubtitle) {
-                BrutalSegmented(selection: $fps, options: frameRates.map { ($0, "\($0) fps") })
+    }
+
+    private var columns: some View {
+        let spacing: CGFloat = twoColumns ? 16 : 18
+        let layout = twoColumns ? AnyLayout(HStackLayout(alignment: .top, spacing: 16)) : AnyLayout(VStackLayout(alignment: .leading, spacing: spacing))
+        return layout {
+            VStack(alignment: .leading, spacing: spacing) {
+                SoundSettings()
+                pointer
+                afterRecording
             }
-            ToggleRow(title: "Show cursor", isOn: $showsCursor)
-            ToggleRow(title: "Show clicks", subtitle: "Draws a circle where you click.", isOn: $showsClicks)
-            ToggleRow(title: "Region border", subtitle: "A red border around the recorded area. It never appears in the video.", isOn: $border)
-            ToggleRow(title: "Copy to clipboard", subtitle: "Copies the finished recording, ready to paste as a file.", isOn: $copy)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            VStack(alignment: .leading, spacing: spacing) {
+                CameraPreviewCard()
+                CameraSettings()
+                quality
+            }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
         }
-        AudioSettings()
-        CameraSettings()
-        SettingsCard(title: "GIF export") {
-            SettingRow(title: "From the Quick Access card", subtitle: "Uses the video editor's last GIF settings: \(Preferences().videoExportOptions.gifSummary)") {
-                BrutalBadge(text: "GIF")
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .onGeometryChange(for: Bool.self) { $0.size.width >= 600 } action: { twoColumns = $0 }
+    }
+
+    private var pointer: some View {
+        SettingsCard(title: "Pointer") {
+            ToggleRow(title: "Show cursor", isOn: $showsCursor)
+            ToggleRow(title: "Show clicks", subtitle: "A ring wherever you click.", isOn: $showsClicks)
+            ToggleRow(title: "Region border", subtitle: "Outlines what’s recorded. It never appears in the video.", isOn: $border)
+        }
+    }
+
+    private var afterRecording: some View {
+        SettingsCard(title: "After recording") {
+            ToggleRow(title: "Copy to clipboard", isOn: $copy)
+            ToggleRow(title: "Adjust before recording", subtitle: "Check the frame and options before every recording. Hold ⌥ as you finish the selection to check once.", isOn: $adjust)
+        }
+    }
+
+    private var quality: some View {
+        SettingsCard(title: "Quality") {
+            SettingRow(title: "Frame rate", subtitle: frameRateSubtitle) {
+                BrutalSegmented(selection: $fps, options: frameRates.map { ($0, String($0)) })
+            }
+            SettingRow(title: String(localized: "GIF from Quick Access"), subtitle: String(localized: "Export GIF on the card uses the video editor’s last settings: \(Preferences().videoExportOptions.gifSummary)")) {
+                EmptyView()
             }
         }
     }
 }
 
-private struct AudioSettings: View {
+private struct SoundSettings: View {
     @Setting(PreferenceKey.recordMicrophone) private var microphone: Bool
     @Setting(PreferenceKey.microphoneDeviceID) private var deviceID: String
     @Setting(PreferenceKey.recordSystemAudio) private var systemAudio: Bool
     @State private var devices: [AVCaptureDevice] = []
     private let preview = DevicePreview.microphone
 
-    private var testSubtitle: LocalizedStringResource {
-        preview.isRunning ? "Speak to see the level." : "Shows the input level of the microphone above."
-    }
-
     var body: some View {
-        SettingsCard(title: "Audio") {
-            ToggleRow(title: "Microphone", subtitle: "macOS asks for permission on first use. Mute it from the recording controls.", isOn: $microphone)
-            SettingRow(title: "Microphone input") {
-                DevicePicker(devices: devices, selection: $deviceID)
-            }
-            SettingRow(title: "Test microphone", subtitle: testSubtitle) {
-                HStack(spacing: 10) {
+        SettingsCard(title: "Sound") {
+            ToggleRow(title: "Microphone", isOn: $microphone)
+            SettingRow(title: "Input") {
+                HStack(spacing: 8) {
                     LevelMeter(meter: preview.meter, muted: !preview.isRunning)
                     Button(preview.isRunning ? "Stop" : "Test") {
                         if preview.isRunning {
@@ -1100,9 +1133,12 @@ private struct AudioSettings: View {
                         }
                     }
                     .buttonStyle(BrutalButtonStyle())
+                    .fixedSize()
+                    .accessibilityLabel(Text(preview.isRunning ? "Stop the microphone test" : "Test the microphone"))
+                    DevicePicker(devices: devices, selection: $deviceID, maxWidth: 120)
                 }
             }
-            ToggleRow(title: "System audio", subtitle: "Sound from other apps. Shot's own sounds are excluded.", isOn: $systemAudio)
+            ToggleRow(title: "Mac sound", subtitle: "Sound from other apps. Shot’s own sounds are left out.", isOn: $systemAudio)
         }
         .onAppear {
             devices = CaptureDevices.microphones()
@@ -1116,6 +1152,88 @@ private struct AudioSettings: View {
     }
 }
 
+/// The dark card over the Camera group (Library & Settings › Settings · Recording): the camera in a circle with the camera
+/// bubble's 3 pt white ring, live and mirrored while Preview runs, beside the camera's name and the Preview button. It
+/// hides while searching, since it isn't a row.
+private struct CameraPreviewCard: View {
+    @Setting(PreferenceKey.cameraDeviceID) private var deviceID: String
+    @State private var name = ""
+    private let preview = DevicePreview.camera
+
+    private static let fill = Color(hex: 0x2A2A2E)
+    private static let diameter: CGFloat = 84
+
+    private var subtitle: LocalizedStringResource {
+        preview.isRunning ? "Live and mirrored, as the bubble shows it." : "Check your framing and lighting."
+    }
+
+    var body: some View {
+        HStack(spacing: 14) {
+            bubble
+            VStack(alignment: .leading, spacing: 4) {
+                Text(name)
+                    .font(.scaled(13, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                Text(subtitle)
+                    .font(Brutal.caption)
+                    .foregroundStyle(.white.opacity(0.7))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .accessibilityElement(children: .combine)
+            Spacer(minLength: 8)
+            Button(preview.isRunning ? "Stop" : "Preview") {
+                if preview.isRunning {
+                    preview.stop()
+                } else {
+                    Task { await preview.start(deviceID: deviceID) }
+                }
+            }
+            .buttonStyle(BrutalButtonStyle())
+            .fixedSize()
+            .accessibilityLabel(Text(preview.isRunning ? "Stop the camera preview" : "Preview the camera"))
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Self.fill, in: RoundedRectangle(cornerRadius: 12, style: .circular))
+        .overlay {
+            Color.clear.inkBorder(RoundedRectangle(cornerRadius: 12, style: .circular), width: 1, color: .white.opacity(0.06))
+        }
+        .colorScheme(.dark)
+        .onAppear(perform: updateName)
+        .onChange(of: deviceID, updateName)
+        .onDisappear {
+            preview.stop()
+        }
+        .hiddenWhileSearching()
+    }
+
+    /// The camera in its ring: live while Preview runs, otherwise a quiet figure in its place.
+    private var bubble: some View {
+        ZStack {
+            // Opaque, since the ring is a white disc behind the circle, as it is on the bubble.
+            Circle().fill(Color(hex: 0x3A3A3F))
+            Image(systemName: "person.fill")
+                .font(.system(size: 34))
+                .foregroundStyle(.white.opacity(0.45))
+                .offset(y: 6)
+            if let session = preview.session {
+                CameraPreviewView(session: session)
+                    .id(ObjectIdentifier(session))
+            }
+        }
+        .frame(width: Self.diameter, height: Self.diameter)
+        .clipShape(Circle())
+        .padding(CameraBubbleStyle.ringWidth)
+        .background(Circle().fill(.white))
+        .accessibilityHidden(true)
+    }
+
+    private func updateName() {
+        name = CaptureDevices.device(id: deviceID, for: .video)?.localizedName ?? String(localized: "No camera found")
+    }
+}
+
 private struct CameraSettings: View {
     @Setting(PreferenceKey.recordCamera) private var camera: Bool
     @Setting(PreferenceKey.cameraDeviceID) private var deviceID: String
@@ -1125,30 +1243,11 @@ private struct CameraSettings: View {
 
     var body: some View {
         SettingsCard(title: "Camera") {
-            ToggleRow(title: "Camera bubble", subtitle: "Round webcam overlay recorded with your screen. Drag to move, double-click to resize.", isOn: $camera)
+            ToggleRow(title: "Camera bubble", isOn: $camera)
             SettingRow(title: "Camera") {
                 DevicePicker(devices: devices, selection: $deviceID)
             }
-            SettingRow(title: "Preview", subtitle: "Check your framing and lighting.") {
-                HStack(spacing: 12) {
-                    if let session = preview.session {
-                        CameraPreviewView(session: session)
-                            .id(ObjectIdentifier(session))
-                            .frame(width: 120, height: 120)
-                            .clipShape(Circle().inset(by: Brutal.underInk(Brutal.border)))
-                            .brutalCircle(Color.black, shadow: 3)
-                    }
-                    Button(preview.isRunning ? "Stop" : "Preview") {
-                        if preview.isRunning {
-                            preview.stop()
-                        } else {
-                            Task { await preview.start(deviceID: deviceID) }
-                        }
-                    }
-                    .buttonStyle(BrutalButtonStyle())
-                }
-            }
-            SettingRow(title: "Bubble size") {
+            SettingRow(title: "Size") {
                 BrutalSegmented(selection: $size, options: CameraBubbleSize.allCases.map { ($0, $0.title) })
             }
         }
@@ -1157,9 +1256,6 @@ private struct CameraSettings: View {
         }
         .onChange(of: deviceID) {
             restart(preview, deviceID: deviceID)
-        }
-        .onDisappear {
-            preview.stop()
         }
     }
 }
@@ -1175,6 +1271,7 @@ private func restart(_ preview: DevicePreview, deviceID: String) {
 private struct DevicePicker: View {
     let devices: [AVCaptureDevice]
     @Binding var selection: String
+    var maxWidth: CGFloat = 150
 
     var body: some View {
         BrutalPopUp(title: "Device", entries: [
@@ -1182,7 +1279,7 @@ private struct DevicePicker: View {
             .divider,
         ] + devices.map { device in
             .item(device.localizedName, selected: device.uniqueID == selection) { selection = device.uniqueID }
-        }, value: selectedName, maxWidth: 190)
+        }, value: selectedName, maxWidth: maxWidth)
     }
 
     private var selectedName: String {
