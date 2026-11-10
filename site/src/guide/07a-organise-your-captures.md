@@ -38,7 +38,7 @@ The foot of the sidebar shows your save folder, how much space the captures in i
 ## Move captures
 
 - Drag thumbnails onto a folder in the sidebar. If the one you drag is selected, the whole selection moves.
-- Or right-click and choose **Move to**, then a folder. Pick your save folder's name to take captures out of a folder.
+- Or select them and click **Move to…** in the selection bar, or right-click and choose **Move to**, then a folder. Pick your save folder's name to take captures out of a folder.
 
 If a folder already has a file with the same name, Shot leaves that capture where it was. Edits you can reopen stay reopenable after a move.
 
@@ -50,7 +50,7 @@ Choose **Save New Captures Here** from a folder's menu to send new screenshots a
 
 ## Tag captures
 
-1. Right-click a capture, or a selection, and choose **Tag…**.
+1. Select captures and click **Tag** in the selection bar, or right-click a capture, or a selection, and choose **Tag…**.
 2. Type a tag and press <kbd>Return</kbd>, or click a tag you've used before. Click a ticked tag to take it off.
 
 Tags named after Finder's colours, such as Red or Blue, show their colour.

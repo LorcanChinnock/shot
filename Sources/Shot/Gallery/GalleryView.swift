@@ -36,9 +36,11 @@ struct GalleryRootView: View {
                 header
                 content
                     .padding(.horizontal, 15)
-                GalleryFooter(model: model)
-                    .padding(.horizontal, 19)
-                    .padding(.bottom, 12)
+                    .overlay(alignment: .bottom) {
+                        GallerySelectionBar(model: model)
+                            .padding(.bottom, 20)
+                            .padding(.horizontal, 16)
+                    }
             }
         }
         .overlay(alignment: .topLeading) {
@@ -66,17 +68,16 @@ struct GalleryRootView: View {
             Spacer(minLength: 8)
             searchField
             sortMenu
-            Image(systemName: "photo")
-                .font(.scaled(10, weight: .bold))
-                .foregroundStyle(Brutal.faded(0.6))
-            Slider(value: Bindable(model).tileSize, in: Gallery.tileSizes)
-                .frame(minWidth: 40, idealWidth: 80, maxWidth: 80)
-                .tint(Brutal.ink)
-                .brutalTip("Thumbnail size (⌘+ and ⌘−)")
-                .accessibilityLabel(Text("Thumbnail size"))
-            Image(systemName: "photo")
-                .font(.scaled(15, weight: .bold))
-                .foregroundStyle(Brutal.faded(0.6))
+            HStack(spacing: 6) {
+                Image(systemName: "square")
+                    .font(.scaled(10, weight: .medium))
+                BrutalSlider(value: Bindable(model).tileSize, range: Gallery.tileSizes, width: 70)
+                    .brutalTip("Thumbnail size (⌘+ and ⌘−)")
+                    .accessibilityLabel(Text("Thumbnail size"))
+                Image(systemName: "square")
+                    .font(.scaled(14, weight: .medium))
+            }
+            .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
         }
         .padding(.leading, model.showsSidebar ? 22 : Self.sidebarButtonEnd)
         .padding(.trailing, 16)
@@ -103,8 +104,8 @@ struct GalleryRootView: View {
     }
 
     private var searchField: some View {
-        BrutalSearchField(prompt: "Search", text: Bindable(model).query, focus: $searchFocused)
-            .frame(minWidth: 90, idealWidth: 170, maxWidth: 170, minHeight: 28, maxHeight: 28)
+        BrutalSearchField(prompt: "Search names and text in screenshots", text: Bindable(model).query, focus: $searchFocused)
+            .frame(minWidth: 120, idealWidth: 290, maxWidth: 290, minHeight: 28, maxHeight: 28)
             .brutalTip("Search by file name or by text in screenshots (⌘F)")
     }
 
@@ -153,7 +154,9 @@ struct GalleryRootView: View {
 /// It builds only the headers and tiles near the view, at the places `GalleryGridLayout` gives them. A lazy grid
 /// estimates the height of rows it hasn't built, and as that estimate changes the scroll bar jumps.
 private struct GalleryGrid: View {
-    static let spacing: CGFloat = 20
+    static let spacing: CGFloat = 16
+    /// Room under the last row for the selection bar, which floats over the grid's foot.
+    static let barClearance: CGFloat = 64
     /// Room above the first section and below the last.
     static let margin: CGFloat = 8
     /// How far past the view headers and tiles are built. The built range moves in steps this size, so scrolling
@@ -183,11 +186,14 @@ private struct GalleryGrid: View {
                     ForEach(placed(layout.blocks(in: built), cell: cell)) { place in
                         switch place {
                         case let .header(section, top):
-                            HStack(spacing: 8) {
+                            HStack(alignment: .firstTextBaseline, spacing: 8) {
                                 Text(section.title)
-                                    .font(Brutal.title(15))
+                                    .font(.scaled(13, weight: .bold))
                                     .foregroundStyle(Brutal.ink)
-                                BrutalBadge(text: "\(section.items.count)")
+                                    .accessibilityAddTraits(.isHeader)
+                                Text(section.items.count, format: .number)
+                                    .font(.scaled(12, tabular: true))
+                                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
                                 Spacer()
                             }
                             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { headerHeight = $0 }
@@ -195,7 +201,8 @@ private struct GalleryGrid: View {
                         case let .tile(item, x, y):
                             GalleryTile(item: item, model: model, slot: model.thumbnails.slot(for: item), width: cell,
                                         selected: model.selection.contains(item.url), selectionActive: !model.selection.isEmpty,
-                                        tagging: model.taggingItem == item.url)
+                                        tagging: model.taggingItem == item.url, tag: model.tags[item.url]?.first,
+                                        detail: Gallery.tileDetail(for: item, sort: model.sort))
                                 .equatable()
                                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { captionHeight = $0 - GalleryTile.thumbnailHeight(width: cell) }
                                 .offset(x: x, y: y)
@@ -206,7 +213,8 @@ private struct GalleryGrid: View {
                 .frame(height: layout.height, alignment: .top)
                 .padding(.leading, Brutal.groupInset)
                 .padding(.trailing, Brutal.groupInset + SystemScroller.shared.overlayRoom)
-                .padding(.vertical, Self.margin)
+                .padding(.top, Self.margin)
+                .padding(.bottom, Self.margin + Self.barClearance)
                 .background {
                     Color.clear
                         .contentShape(Rectangle())
@@ -289,58 +297,80 @@ private struct GalleryHeading: View {
     }
 }
 
-private struct GalleryFooter: View {
+/// Floats over the grid's foot while something is selected: how many, what can be done to them, and Copy as the one ink
+/// button. It's its own view, so only it re-evaluates when the selection changes, not the grid around it.
+private struct GallerySelectionBar: View {
     let model: GalleryModel
+    @State private var tagging = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let selected = model.selectedItems
-        return HStack(spacing: 10) {
-            GalleryStatus(model: model)
-                .font(Brutal.mono)
-                .foregroundStyle(Brutal.faded(0.7))
-                .lineLimit(1)
-            if model.allSelected {
-                Button("Deselect All") { model.clearSelection() }
-                    .buttonStyle(BrutalButtonStyle())
-                    .brutalTip("Deselect all (⇧⌘A)")
-            } else {
-                Button("Select All") { model.selectAll() }
-                    .buttonStyle(BrutalButtonStyle())
-                    .disabled(model.visible.isEmpty)
-                    .brutalTip("Select all (⌘A)")
+        ZStack {
+            if !selected.isEmpty {
+                bar(selected)
+                    .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
             }
-            Spacer()
-            Group {
-                Button("Edit") { model.edit(selected) }
-                    .buttonStyle(BrutalButtonStyle(.toolbar))
-                    // Whether a GIF has a project is read from the store only on a click, so one never greys it out.
-                    .disabled(!Gallery.canEdit(selected) { _ in true })
-                    .brutalTip("Open in the editor (Return)")
-                Button("Copy") { model.copy(selected) }
-                    .buttonStyle(BrutalButtonStyle(.main))
-                    .brutalTip("Copy (⌘C)")
-                Button("Show in Finder") { model.reveal(selected) }
-                    .buttonStyle(BrutalButtonStyle(.toolbar))
-                    .brutalTip("Show in Finder (⌘R)")
-                Button("Move to Trash") { model.trash(selected) }
-                    .buttonStyle(BrutalButtonStyle(.toolbar, destructive: true))
-                    .brutalTip("Move to the Trash (⌘⌫)")
-            }
-            .disabled(selected.isEmpty)
         }
-        .padding(.horizontal, 3)
-        .frame(height: 34)
-        .padding(.top, 6)
+        .animation(Motion.animation(.panelArrive, reduceMotion: reduceMotion), value: selected.isEmpty)
     }
-}
 
-private struct GalleryStatus: View {
-    let model: GalleryModel
+    private func bar(_ selected: [GalleryItem]) -> some View {
+        HStack(spacing: 6) {
+            Text("\(selected.count) selected")
+                .font(.scaled(13, weight: .semibold, tabular: true))
+                .foregroundStyle(Brutal.ink)
+                .padding(.trailing, 6)
+                .lineLimit(1)
+            Button("Edit") { model.edit(selected) }
+                .buttonStyle(BrutalButtonStyle(.toolbar))
+                // Whether a GIF has a project is read from the store only on a click, so one never greys it out.
+                .disabled(!Gallery.canEdit(selected) { _ in true })
+                .brutalTip("Open in the editor (Return)")
+            BrutalDropdown(title: "Move to", entries: moveEntries(selected)) {
+                Text("Move to…")
+            }
+            .buttonStyle(BrutalButtonStyle(.toolbar))
+            Button("Tag") { tagging = true }
+                .buttonStyle(BrutalButtonStyle(.toolbar))
+                .popover(isPresented: $tagging, arrowEdge: .top) {
+                    GalleryTagPopover(model: model, targets: selected.map(\.url))
+                }
+            Button("Show in Finder") { model.reveal(selected) }
+                .buttonStyle(BrutalButtonStyle(.toolbar))
+                .brutalTip("Show in Finder (⌘R)")
+            Button {
+                model.trash(selected)
+            } label: {
+                Image(systemName: "trash")
+                    .font(.scaled(13, weight: .medium))
+                    .foregroundStyle(Brutal.destructiveText)
+            }
+            .buttonStyle(BrutalButtonStyle(.toolbar))
+            .brutalTip("Move to the Trash (⌘⌫)")
+            .accessibilityLabel(Text("Move to Trash"))
+            Button("Copy") { model.copy(selected) }
+                .buttonStyle(BrutalButtonStyle(.main))
+                .brutalTip("Copy (⌘C)")
+        }
+        .padding(.vertical, 6)
+        .padding(.leading, 14)
+        .padding(.trailing, 6)
+        .fixedSize()
+        .depth(.float, fill: Brutal.group, radius: Brutal.Radius.panel)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Selection"))
+    }
 
-    var body: some View {
-        let total = model.visible.count
-        let count = model.selection.count
-        Text(count > 0 ? String(localized: "\(count) of \(total) selected") : String(localized: "\(total) items"))
+    private func moveEntries(_ selected: [GalleryItem]) -> [BrutalMenuEntry] {
+        var entries: [BrutalMenuEntry] = ([""] + model.folders).map { path in
+            // A folder inside another reads as its path, such as Clients › Acme.
+            let title = path.isEmpty ? model.rootName : path.replacingOccurrences(of: "/", with: " › ")
+            return .item(title, symbol: "folder", enabled: !selected.allSatisfy { $0.folder == path }) { model.move(selected, to: path) }
+        }
+        entries.append(.divider)
+        entries.append(.item("New Folder…", symbol: "folder.badge.plus") { model.newFolder(moving: selected) })
+        return entries
     }
 }
 
@@ -361,8 +391,9 @@ private struct LeadScroller: View {
             let view = model.viewport
             if top < view.minY {
                 position.scrollTo(y: top)
-            } else if bottom > view.maxY {
-                position.scrollTo(y: bottom - view.height)
+            } else if bottom > view.maxY - GalleryGrid.barClearance {
+                // Clear of the selection bar, which floats over the grid's foot while something is selected.
+                position.scrollTo(y: bottom - view.height + GalleryGrid.barClearance)
             }
         }
     }
@@ -380,11 +411,16 @@ private struct GalleryTile: View, Equatable {
     let selectionActive: Bool
     /// Whether the Tag popover is open on this tile.
     let tagging: Bool
+    /// The capture's first tag, which shows as a dot before its detail.
+    let tag: String?
+    /// The file's type and the time, size or date, as `Gallery.tileDetail` gives it.
+    let detail: String
     @State private var hovering = false
 
     nonisolated static func == (lhs: GalleryTile, rhs: GalleryTile) -> Bool {
         lhs.item == rhs.item && lhs.model === rhs.model && lhs.slot === rhs.slot && lhs.width == rhs.width
             && lhs.selected == rhs.selected && lhs.selectionActive == rhs.selectionActive && lhs.tagging == rhs.tagging
+            && lhs.tag == rhs.tag && lhs.detail == rhs.detail
     }
 
     private var thumbnail: Thumbnail? { slot.thumbnail }
@@ -395,7 +431,8 @@ private struct GalleryTile: View, Equatable {
     }
 
     var body: some View {
-        VStack(spacing: 7) {
+        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular)
+        VStack(alignment: .leading, spacing: 7) {
             ZStack {
                 if let thumbnail {
                     Image(nsImage: thumbnail.image)
@@ -406,49 +443,57 @@ private struct GalleryTile: View, Equatable {
                         .clipped()
                 } else {
                     Image(systemName: item.kind == .video ? "film" : "photo")
-                        .font(.scaled(22, weight: .bold))
-                        .foregroundStyle(Brutal.ink.opacity(0.35))
+                        .font(.scaled(22, weight: .medium))
+                        .foregroundStyle(Brutal.tertiaryText)
                 }
-                badges
-                if hovering || selectionActive {
-                    VStack {
-                        HStack {
-                            SelectionCheckbox(checked: selected) {
-                                model.click(item, command: true, shift: false)
-                            }
-                            Spacer()
-                        }
-                        Spacer()
+                badge
+                if selected || hovering || selectionActive {
+                    SelectionCheckbox(checked: selected) {
+                        model.click(item, command: true, shift: false)
                     }
-                    .padding(8)
+                    .padding(4)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     .transition(.opacity)
                 }
                 if hovering, item.kind.isEditable {
-                    VStack {
-                        HStack {
-                            Spacer()
-                            CornerButton(symbol: item.kind == .video ? "scissors" : "pencil", help: item.kind == .video ? "Edit video" : "Annotate") {
-                                model.edit([item])
-                            }
-                        }
-                        Spacer()
+                    CornerButton(symbol: item.kind == .video ? "scissors" : "pencil", help: item.kind == .video ? "Edit video" : "Annotate") {
+                        model.edit([item])
                     }
-                    .padding(8)
+                    .padding(7)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                     .transition(.opacity)
                 }
             }
             .frame(width: width, height: height)
-            .background(Brutal.paper.opacity(0.6))
-            .inkBorder(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.violet : Brutal.line)
-            Text(item.name)
-                .font(.scaled(11, weight: .semibold))
-                .foregroundStyle(Brutal.ink)
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .inkOnFill(selected ? Brutal.violet : nil)
-                .background(selected ? Brutal.violet : Color.clear, in: RoundedRectangle(cornerRadius: 5, style: .circular))
+            .background(Brutal.well)
+            .clipShape(shape)
+            .overlay {
+                if selected {
+                    // A 2.5 pt ring in selection blue with a soft halo outside it.
+                    shape.inset(by: -1.25).stroke(Brutal.selection, lineWidth: 2.5)
+                    shape.inset(by: -3.5).stroke(Brutal.selection.opacity(0.2), lineWidth: 2)
+                } else {
+                    Color.clear.inkBorder(shape, width: 1, color: Brutal.hairline)
+                }
+            }
+            .shadow(color: .black.opacity(selected ? 0 : 0.06), radius: 1.5, y: 1)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(item.name)
+                    .font(.scaled(12.5, weight: .medium))
+                    .foregroundStyle(Brutal.ink)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                HStack(spacing: 5) {
+                    if let tag {
+                        TagDot(tag: tag, size: 7)
+                    }
+                    Text(verbatim: detail)
+                        .lineLimit(1)
+                }
+                .font(.scaled(11, tabular: true))
+                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+            }
+            .padding(.horizontal, 2)
         }
         .frame(width: width)
         .contentShape(Rectangle())
@@ -488,31 +533,24 @@ private struct GalleryTile: View, Equatable {
         }
     }
 
+    /// A recording's length or "GIF", in white on a dark tab in the thumbnail's corner.
     @ViewBuilder
-    private var badges: some View {
-        VStack {
-            Spacer()
-            HStack {
-                switch item.kind {
-                case .video:
-                    Image(systemName: "play.fill")
-                        .font(.scaled(10, weight: .black))
-                        .foregroundStyle(Brutal.ink)
-                        .frame(width: 26, height: 26)
-                        .brutalCircle(Brutal.yellow, shadow: 2)
-                    Spacer()
-                    if let duration = thumbnail?.duration {
-                        BrutalBadge(text: Gallery.duration(duration), style: .strong)
-                    }
-                case .gif:
-                    BrutalBadge(text: "GIF", style: .strong)
-                    Spacer()
-                case .image:
-                    Spacer()
-                }
-            }
+    private var badge: some View {
+        let text: String? = switch item.kind {
+        case .video: thumbnail?.duration.map(Gallery.duration)
+        case .gif: "GIF"
+        case .image: nil
         }
-        .padding(8)
+        if let text {
+            Text(verbatim: text)
+                .font(.scaled(10.5, weight: .bold, design: .monospaced, tabular: true))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 1)
+                .background(Color(hex: 0x16161A).opacity(0.78), in: RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
+                .padding(7)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+        }
     }
 }
 
@@ -561,9 +599,23 @@ private struct SelectionCheckbox: View {
 
     var body: some View {
         Button(action: action) {
-            CheckboxMark(checked: checked, size: 20)
-                .frame(width: 26, height: 26)
-                .contentShape(Rectangle())
+            ZStack {
+                if checked {
+                    Circle().fill(Brutal.selection)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .heavy))
+                        .foregroundStyle(.white)
+                } else {
+                    Circle().fill(.white.opacity(0.85))
+                    Circle().strokeBorder(Color(hex: 0x16161A).opacity(0.25), lineWidth: 1)
+                }
+            }
+            .frame(width: 20, height: 20)
+            .overlay {
+                Circle().strokeBorder(.white, lineWidth: 2).padding(-2)
+            }
+            .frame(width: 28, height: 28)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         // Focus stays on the grid, so the keyboard shortcuts keep working after a click.
