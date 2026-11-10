@@ -447,10 +447,11 @@ struct TracksView: View {
         model.project.tracks.firstIndex { $0.clips.contains { $0.id == id } || $0.annotations.contains { $0.id == id } } ?? 0
     }
 
+    /// A keyframe on the lane's bottom edge: the accent with an ink edge, or selection blue with a white edge once it's selected.
     private func diamond(selected: Bool) -> some View {
         Rectangle()
-            .fill(selected ? Brutal.pink : Brutal.yellow)
-            .inkBorder(Rectangle(), width: 2)
+            .fill(selected ? Brutal.selection : Brutal.yellow)
+            .inkBorder(Rectangle(), width: 1.5, color: selected ? .white : Brutal.line)
             .frame(width: 9, height: 9)
             .rotationEffect(.degrees(45))
             .frame(width: 12, height: 12)

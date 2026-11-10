@@ -8,7 +8,7 @@ group: Edit and share
 
 ## Export
 
-In the video editor, click **Export** at the right of the title bar to open the Export panel beside the video. Click **Export** again, or press <kbd>Esc</kbd>, to close it. In the panel, choose:
+In the video editor, click **Export** at the right of the title bar to open the Export panel beside the video. Click **Export** again, or press <kbd>Esc</kbd>, to close it. The Export panel and the Inspector share the space beside the video, so opening one closes the other. In the panel, choose:
 
 - **MP4** or **GIF**.
 - **Speed:** 1×, 1.5× or 2×. For an MP4, speed is available only while the edit is trims and cuts, when Save reads **Save**, not **Save Copy**.

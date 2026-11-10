@@ -539,26 +539,6 @@ final class EditorModel {
         styleTarget == .capture && document.hasWindowShadow
     }
 
-    /// What the Style panel's tiles draw: the screenshot or placed image itself, or the mark or text.
-    var targetThumbnail: StyleThumbnail.Subject? {
-        switch styleTarget {
-        case .capture:
-            return .image(document.base)
-        case let .annotation(id):
-            guard let annotation = document.annotations.first(where: { $0.id == id }) else {
-                return nil
-            }
-            if case let .image(image, _) = annotation.kind {
-                return .image(image.cropped(annotation.imageCrop))
-            }
-            return .annotation(annotation)
-        case nil:
-            return nil
-        }
-    }
-
-    var thumbnailBackground: RGBA? { document.background }
-
     /// The style the Style panel shows: its target's.
     var targetStyle: ObjectStyle {
         styleTarget.map { document.style(of: $0) } ?? ObjectStyle()

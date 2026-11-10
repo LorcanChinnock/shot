@@ -35,10 +35,46 @@ struct StyleBarOverlay: View {
     }
 }
 
+/// What the style bar edits: the drawing options of the image editor or the video editor, which both build them from
+/// ShotCore's `AnnotationPalette`.
+@MainActor
+protocol StyleBarEditing: AnyObject, Observable {
+    /// Whether More style, the bar's popover of the options that don't fit in it, is open.
+    var showsMoreStyle: Bool { get set }
+    var showsStyle: Bool { get }
+    var sizesText: Bool { get }
+    var showsFill: Bool { get }
+    var paletteColor: RGBA { get set }
+    var paletteFill: RGBA? { get set }
+    var lineWidthIndex: Int { get set }
+    var paletteShape: BoxShape? { get }
+    func setShape(_ shape: BoxShape)
+    var paletteRedaction: Redaction? { get }
+    func setRedaction(_ redaction: Redaction)
+    var paletteRedactionAmount: CGFloat { get }
+    func setRedactionAmount(_ amount: CGFloat)
+    var paletteSpotlight: SpotlightStyle? { get }
+    func setSpotlightShape(_ shape: BoxShape)
+    func setSpotlightLook(effect: SpotlightStyle.Effect, strength: Double)
+    func setSpotlightSoftEdge(_ softEdge: Double)
+    var paletteAlignment: TextAlign? { get }
+    func setAlignment(_ alignment: TextAlign)
+    var paletteVerticalAlignment: VerticalTextAlign? { get }
+    func setVerticalAlignment(_ alignment: VerticalTextAlign)
+    func lastCustom(forFill: Bool) -> RGBA?
+    func pickCustom(_ color: RGBA, forFill: Bool)
+    func beginColorPick()
+    var canResetToolOptions: Bool { get }
+    func resetToolOptions()
+    func setDraggingStyle(_ dragging: Bool)
+}
+
+extension EditorModel: StyleBarEditing {}
+
 /// The bar: the colour swatches, a divider and the three widths, then More style for everything else. A redaction and a
-/// spotlight show their own main choices in its place.
-private struct StyleBar: View {
-    @Bindable var model: EditorModel
+/// spotlight show their own main choices in its place. The video editor shows it too, at the top of the video's well.
+struct StyleBar<Model: StyleBarEditing>: View {
+    @Bindable var model: Model
     let content: StyleBarContent
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
@@ -80,7 +116,7 @@ private struct StyleBar: View {
         }
         .padding(.vertical, 5)
         .padding(.horizontal, 7)
-        .depth(.float, fill: solid ? AnyShapeStyle(Brutal.group) : AnyShapeStyle(Self.fill), radius: Brutal.Radius.group)
+        .depth(.float, fill: solid ? AnyShapeStyle(Brutal.group) : AnyShapeStyle(styleBarFill), radius: Brutal.Radius.group)
         .overlay {
             if contrast == .increased {
                 Color.clear.inkBorder(shape, width: 1, color: Brutal.ink.opacity(0.6))
@@ -90,9 +126,6 @@ private struct StyleBar: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Style"))
     }
-
-    /// The board's fill, a touch see-through over the canvas.
-    private static let fill = Color(light: .white.opacity(0.97), dark: Color(hex: 0x2C2C30).opacity(0.97))
 
     private var solid: Bool { contrast == .increased || reduceTransparency }
 
@@ -125,6 +158,9 @@ private struct StyleBar: View {
         }
     }
 }
+
+/// The board's fill, a touch see-through over the canvas.
+private let styleBarFill = Color(light: .white.opacity(0.97), dark: Color(hex: 0x2C2C30).opacity(0.97))
 
 /// A segmented control of pictures, which calls `choose` rather than holding a binding, as the palette's setters do.
 private struct GlyphSegmented<Value: Hashable, Glyph: View>: View {
@@ -209,8 +245,8 @@ private struct StyleBarSwatch: View {
 }
 
 /// "…": opens the options that don't fit in the bar, with Reset.
-private struct MoreStyleButton: View {
-    @Bindable var model: EditorModel
+private struct MoreStyleButton<Model: StyleBarEditing>: View {
+    @Bindable var model: Model
 
     var body: some View {
         Button {
@@ -229,8 +265,8 @@ private struct MoreStyleButton: View {
 
 /// What the bar has no room for: for a mark, its shape, every colour with white and custom ones, its fill and the
 /// text's alignment; for a redaction its amount; for a spotlight its strength and soft edge. Reset is last.
-private struct MoreStyle: View {
-    @Bindable var model: EditorModel
+private struct MoreStyle<Model: StyleBarEditing>: View {
+    @Bindable var model: Model
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {

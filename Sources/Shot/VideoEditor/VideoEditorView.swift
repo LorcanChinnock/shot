@@ -16,7 +16,7 @@ struct VideoEditorRootView: View {
 
     var body: some View {
         // From Edit › Video editor and export: the title bar over a hairline, the video in its well over the controls area, and
-        // the Export panel beside both once it's open.
+        // the Inspector or the Export panel beside both once one is open. They take turns, so the video keeps its room.
         VStack(spacing: 0) {
             VideoEditorTitleBar(model: model)
                 .padding(.leading, GlassWindow.trafficLightsWidth)
@@ -29,25 +29,21 @@ struct VideoEditorRootView: View {
             HStack(spacing: 0) {
                 VStack(spacing: 0) {
                     well
-                    if model.isAnnotating {
-                        AnnotationPalette(model: model)
-                            .padding(.horizontal, PlaybackControls.side)
-                            .padding(.vertical, Brutal.sectionGap / 2)
-                    }
-                    if model.showsInspector {
-                        ClipInspector(model: model)
-                            .padding(.horizontal, PlaybackControls.side)
-                            .padding(.vertical, Brutal.sectionGap / 2)
-                    }
                     controls
                 }
-                // Export opens its panel beside the video and the controls, from under the title bar to the window's foot.
-                if model.showsExportPanel {
+                // The side panel sits beside the video and the controls, from under the title bar to the window's foot.
+                switch model.sidePanel {
+                case .inspector:
+                    InspectorPanel(model: model)
+                        .transition(panelTransition)
+                case .export:
                     ExportPanel(model: model)
-                        .transition(reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity))
+                        .transition(panelTransition)
+                case nil:
+                    EmptyView()
                 }
             }
-            .animation(Motion.animation(.panelArrive, reduceMotion: reduceMotion), value: model.showsExportPanel)
+            .animation(Motion.animation(.panelArrive, reduceMotion: reduceMotion), value: model.sidePanel)
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { windowHeight = $0 }
         .dropDestination(for: URL.self) { urls, _ in
@@ -56,7 +52,12 @@ struct VideoEditorRootView: View {
         }
     }
 
-    /// The video, centred in the well at its own shape with tiny corners and a soft shadow, and the drawing tools beside it.
+    private var panelTransition: AnyTransition {
+        reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity)
+    }
+
+    /// The video, centred in the well at its own shape with tiny corners and a soft shadow, the drawing tools beside it
+    /// and the style bar over its top.
     private var well: some View {
         GeometryReader { geometry in
             let rect = VideoWell.videoRect(showing: model.shownFrame.size, in: geometry.size)
@@ -75,7 +76,11 @@ struct VideoEditorRootView: View {
         .frame(minHeight: Self.playerFloor + VideoWell.verticalInset * 2)
         .background(VideoEditorSurface.well, ignoresSafeAreaEdges: [])
         .overlay(alignment: .leading) { drawTools }
+        .overlay(alignment: .top) { VideoStyleBar(model: model) }
         .clipped()
+        // Clipping hides a scaled-up clip's handles past the well, but only a content shape stops them catching clicks
+        // meant for the title bar or the controls.
+        .contentShape(Rectangle())
     }
 
     /// Play, the time and the timeline's actions over the lanes, on the controls area's own surface.
@@ -117,7 +122,7 @@ struct VideoEditorRootView: View {
 }
 
 /// The title bar and toolbar in one, from Edit › Video editor and export: the file and what's changed beside the traffic
-/// lights, then Undo and Draw, Save or Save Copy, and Export, the one main button.
+/// lights, then Undo, Draw and Inspector, Save or Save Copy, and Export, the one main button.
 private struct VideoEditorTitleBar: View {
     let model: VideoEditorModel
 
@@ -178,6 +183,14 @@ private struct VideoEditorTitleBar: View {
             }
             .buttonStyle(BrutalButtonStyle(.toolbar, isOn: model.showsDrawTools))
             .brutalTip("Draw", detail: "Draw arrows, shapes, text, blur and more over the video.")
+            Tile(
+                selected: model.showsInspector, help: "Inspector", key: "⌥⌘I",
+                detail: "Shows a panel beside the video for the selected clip's or annotation's position, scale, keyframes and style."
+            ) {
+                model.toggleInspector()
+            } label: {
+                Image(systemName: "slider.horizontal.3").font(Brutal.toolIcon)
+            }
             Rectangle()
                 .fill(Brutal.controlEdge)
                 .frame(width: 1, height: 20)

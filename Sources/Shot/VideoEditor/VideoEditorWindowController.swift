@@ -43,7 +43,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
     /// Run once the window has closed, so Flatten opens the file after any Save or Discard sheet.
     private var afterClose: (() -> Void)?
     private let window: NSWindow
-    /// How much of the window's height is the lanes past a plain recording's, the drawing options and the inspector.
+    /// How much of the window's height is the lanes past a plain recording's.
     private var appliedExtraHeight: CGFloat = 0
     private var discarding = false
     /// Set while a quit waits on this window's Save / Discard / Cancel sheet; answers true once the window may go.
@@ -129,7 +129,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             VideoEditorRootView(model: model)
         }
         window.delegate = self
-        // Wide enough for the controls row in its compact form beside the open Export panel.
+        // Wide enough for the controls row in its compact form beside the open Inspector or Export panel.
         window.minSize = NSSize(width: 880, height: VideoEditorRootView.playerFloor + VideoEditorRootView.chromeHeight)
 
         model.onLayoutChanged = { [weak self] in
@@ -172,6 +172,8 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             model.copyStyle()
         case "v" where option:
             model.pasteStyle()
+        case "i" where option:
+            model.toggleInspector()
         case "c":
             Task { await model.copy() }
         case "s":
