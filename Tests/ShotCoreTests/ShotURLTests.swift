@@ -20,7 +20,7 @@ private let home = FileManager.default.homeDirectoryForCurrentUser
     ("shot://pause", .pause),
     ("shot://gallery", .gallery),
     ("shot://settings", .settings(section: nil)),
-    ("shot://settings?section=gallery", .settings(section: "gallery")),
+    ("shot://settings?section=gallery", .gallery),
     ("shot://settings?section=shortcuts", .settings(section: "shortcuts")),
     ("shot://welcome", .welcome),
     ("shot://annotate?path=/tmp/a.png", .edit(.image(URL(fileURLWithPath: "/tmp/a.png")))),

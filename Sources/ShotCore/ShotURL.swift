@@ -62,7 +62,9 @@ public enum ShotURL: Equatable, Sendable {
         case "gallery":
             self = .gallery
         case "settings":
-            self = .settings(section: value("section"))
+            // The gallery was once a Settings section, so links to it open the gallery's own window.
+            let section = value("section")
+            self = section == "gallery" ? .gallery : .settings(section: section)
         case "welcome":
             self = .welcome
         case "capture-timer":

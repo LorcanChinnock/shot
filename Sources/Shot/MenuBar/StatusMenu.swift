@@ -98,7 +98,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         showRecent()
 
         menu.addItem(.separator())
-        let settings = row(String(localized: "Settings…"), symbol: nil) { MainWindowController.showSettings() }
+        let settings = row(String(localized: "Settings…"), symbol: nil) { SettingsWindowController.show() }
         settings.keyEquivalent = ","
         menu.addItem(settings)
         menu.addItem(updateRow())

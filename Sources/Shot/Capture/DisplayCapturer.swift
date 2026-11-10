@@ -61,25 +61,25 @@ enum DisplayCapturer {
     /// Captures every display (or only `screens`) concurrently.
     static func captureAll(screens: [NSScreen] = NSScreen.screens) async throws -> [FrozenDisplay] {
         let prefs = Preferences()
-        return try await capture(targets(screens), showsCursor: prefs.captureShowsCursor, keeping: MainWindowController.windowID)
+        return try await capture(targets(screens), showsCursor: prefs.captureShowsCursor, keeping: ShotWindows.capturable)
     }
 
     /// Captures every display without Shot's windows or the cursor, for the live overlay's magnifier.
     static func captureForMagnifier() async throws -> [FrozenDisplay] {
-        try await capture(targets(NSScreen.screens), showsCursor: false, keeping: MainWindowController.windowID)
+        try await capture(targets(NSScreen.screens), showsCursor: false, keeping: ShotWindows.capturable)
     }
 
     /// Captures every display as it looks, Shot's own windows included and without the cursor, for Pick Colour: the
     /// editor's eyedropper picks colours from the image open in it.
     static func captureForColorPicking() async throws -> [FrozenDisplay] {
-        try await capture(targets(NSScreen.screens), showsCursor: false, keeping: MainWindowController.windowID, excludingShot: false)
+        try await capture(targets(NSScreen.screens), showsCursor: false, keeping: ShotWindows.capturable, excludingShot: false)
     }
 
     private static func targets(_ screens: [NSScreen]) -> [Target] {
         screens.map { Target(displayID: $0.displayID, frame: $0.frame, backingScale: $0.backingScaleFactor) }
     }
 
-    private nonisolated static func capture(_ targets: [Target], showsCursor: Bool, keeping mainWindowID: CGWindowID?, excludingShot: Bool = true) async throws -> [FrozenDisplay] {
+    private nonisolated static func capture(_ targets: [Target], showsCursor: Bool, keeping keptIDs: Set<CGWindowID>, excludingShot: Bool = true) async throws -> [FrozenDisplay] {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         return try await withThrowingTaskGroup(of: FrozenDisplay.self) { group in
             for target in targets {
@@ -87,8 +87,8 @@ enum DisplayCapturer {
                     throw CaptureError.displayNotFound
                 }
                 let ownApps = excludingShot ? content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier } : []
-                // Shot's overlays stay out of captures; the main window (Settings and the gallery) stays in, so it can be screenshotted.
-                let kept = content.windows.filter { $0.windowID == mainWindowID }
+                // Shot's overlays stay out of captures; the Settings and gallery windows stay in, so they can be screenshotted.
+                let kept = content.windows.filter { keptIDs.contains($0.windowID) }
                 let filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: kept)
                 let config = SCStreamConfiguration()
                 config.width = Int(target.frame.width * target.backingScale)

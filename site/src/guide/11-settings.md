@@ -10,11 +10,12 @@ group: Reference
 
 Click Shot's menu bar icon and choose **Settings…**, or press <kbd>⌘,</kbd> while a Shot window is in front. To open a particular section, use [`shot://settings?section=recording`](#url-scheme), or any section name below.
 
+The [gallery](#find-your-captures) has its own window. **Open Gallery**, at the foot of the Settings sidebar, opens it.
+
 ## What each section controls
 
 | Section | What you can change |
 |---|---|
-| Gallery | The [gallery](#find-your-captures) |
 | General | Open Shot at login, the capture sound, cropping the menu bar off captures of the full screen, light or dark appearance (or following your Mac), the text size of Shot's own windows (macOS's Accessibility › Text size doesn't reach other apps), the save folder, the file name, PNG or JPEG, and scaling Retina captures to 1× |
 | Capture | What happens after a capture (save, copy, Quick Access, or the editor), the magnifier, the crosshair, the size label, the cursor, and window shadows |
 | Quick Access | The screen corner and how long cards stay |

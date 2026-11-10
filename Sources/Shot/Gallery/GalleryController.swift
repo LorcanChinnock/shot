@@ -4,7 +4,7 @@ import ShotCore
 
 private let log = Logger.shot("gallery")
 
-/// The gallery section's model and keyboard handling inside the main window.
+/// The gallery's model and its keyboard handling in the gallery window.
 @MainActor
 final class GalleryController {
     static let shared = GalleryController()
@@ -22,7 +22,7 @@ final class GalleryController {
     let model = GalleryModel()
 
     func show() {
-        MainWindowController.show(section: .gallery)
+        GalleryWindowController.show()
         log.notice("Gallery opened")
     }
 

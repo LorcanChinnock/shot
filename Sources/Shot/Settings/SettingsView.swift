@@ -4,13 +4,12 @@ import ShotCore
 import SwiftUI
 
 enum SettingsSection: String, CaseIterable, Identifiable {
-    case gallery, general, capture, quickAccess, recording, shortcuts, about
+    case general, capture, quickAccess, recording, shortcuts, about
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .gallery: String(localized: "Gallery")
         case .general: String(localized: "General")
         case .capture: String(localized: "Capture")
         case .quickAccess: String(localized: "Quick Access")
@@ -22,7 +21,6 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
     var subtitle: String {
         switch self {
-        case .gallery: String(localized: "Every capture in your folder.")
         case .general: String(localized: "Behaviour, files and formats.")
         case .capture: String(localized: "What happens when you take a shot.")
         case .quickAccess: String(localized: "The floating card after each capture.")
@@ -34,7 +32,6 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
     var symbol: String {
         switch self {
-        case .gallery: "photo.on.rectangle"
         case .general: "gearshape"
         case .capture: "viewfinder"
         case .quickAccess: "rectangle.stack"
@@ -47,7 +44,6 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     /// Each section has its own colour. A new section needs a new `Brutal` token, not a repeat.
     var color: Color {
         switch self {
-        case .gallery: Brutal.violet
         case .general: Brutal.yellow
         case .capture: Brutal.pink
         case .quickAccess: Brutal.sky
@@ -62,7 +58,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 @Observable
 final class SettingsNavigation {
     static let shared = SettingsNavigation()
-    var section: SettingsSection = .gallery
+    var section: SettingsSection = .general
 }
 
 struct SettingsView: View {
@@ -100,28 +96,21 @@ struct SettingsView: View {
                 }
             VStack(alignment: .leading, spacing: 16) {
                 header
-                if section == .gallery {
-                    let model = GalleryController.shared.model
-                    GalleryRootView(model: model)
-                        .onAppear { model.start() }
-                        .onDisappear { model.stop() }
-                } else {
-                    ScrollView {
-                        VStack(spacing: 18) {
-                            content
-                        }
-                        .padding(.trailing, Brutal.groupInset + SystemScroller.shared.overlayRoom)
-                        .padding(.bottom, Brutal.sectionGap)
-                        .padding([.leading, .top], 3)
+                ScrollView {
+                    VStack(spacing: 18) {
+                        content
                     }
-                    .id(section)
+                    .padding(.trailing, Brutal.groupInset + SystemScroller.shared.overlayRoom)
+                    .padding(.bottom, Brutal.sectionGap)
+                    .padding([.leading, .top], 3)
                 }
+                .id(section)
             }
         }
         .padding(.top, GlassWindow.titlebarHeight + 8)
         .padding(.horizontal, Brutal.windowInset)
         .padding(.bottom, Self.bottomInset)
-        .frame(minWidth: MainWindowController.minSize.width, maxWidth: .infinity, maxHeight: .infinity)
+        .frame(minWidth: SettingsWindowController.minSize.width, maxWidth: .infinity, maxHeight: .infinity)
         .background(alignment: .leading) {
             // The see-through sidebar runs from the window's edge, under the traffic lights, to the middle of the gap.
             SidebarMaterial()
@@ -161,7 +150,6 @@ struct SettingsView: View {
     @ViewBuilder
     private var content: some View {
         switch section {
-        case .gallery: EmptyView()
         case .general: GeneralSettings()
         case .capture: CaptureSettings()
         case .quickAccess: QuickAccessSettings()
@@ -212,6 +200,7 @@ private struct Sidebar: View {
                 }
             }
             Spacer()
+            OpenGalleryItem(collapsed: collapsed)
             if canToggle {
                 toggleButton
             }
@@ -278,6 +267,67 @@ private struct SidebarItem: View {
         if collapsed {
             // Without its label, the icon needs a tip to say what it is.
             button.brutalTip(section.title)
+        } else {
+            button
+        }
+    }
+}
+
+/// Opens the gallery's own window, below the sections, with an arrow that says it opens somewhere else.
+private struct OpenGalleryItem: View {
+    let collapsed: Bool
+    @State private var hovering = false
+
+    private var label: some View {
+        Text("Open Gallery")
+            .font(.scaled(13.5, weight: .semibold))
+            .foregroundStyle(Brutal.ink)
+            .lineLimit(1)
+    }
+
+    private var button: some View {
+        Button {
+            GalleryController.shared.show()
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "square.grid.2x2")
+                    .font(.scaled(14, weight: .semibold))
+                    .foregroundStyle(Brutal.ink)
+                    .frame(width: 28, height: 28)
+                    .brutalSurface(Brutal.paper, radius: Brutal.Radius.button, shadow: 0, border: 2)
+                if !collapsed {
+                    // At larger text sizes, or in a long translation, the arrow gives way so the label stays on one line.
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 10) {
+                            label
+                            Spacer(minLength: 0)
+                            Image(systemName: "arrow.up.right")
+                                .font(.scaled(10, weight: .bold))
+                                .foregroundStyle(Brutal.faded(0.6))
+                                .accessibilityHidden(true)
+                        }
+                        label.frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 8)
+            .background {
+                if hovering {
+                    RoundedRectangle(cornerRadius: Brutal.Radius.panel, style: .circular).fill(Brutal.ink.opacity(0.06))
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .accessibilityLabel(Text("Open Gallery"))
+    }
+
+    @ViewBuilder
+    var body: some View {
+        if collapsed {
+            button.brutalTip("Open Gallery")
         } else {
             button
         }

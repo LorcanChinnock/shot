@@ -8,7 +8,7 @@ group: Edit and share
 
 ## Open the gallery
 
-Choose **Gallery** in Shot's menu bar menu, or open [`shot://gallery`](#url-scheme). The gallery is the first section of the Settings window.
+Choose **Gallery** in Shot's menu bar menu, click **Open Gallery** at the foot of the Settings sidebar, or open [`shot://gallery`](#url-scheme). The gallery has its own window, which opens where you last left it and at the same size.
 
 For your last few captures you don't need the gallery. The menu bar menu shows your four newest under **Recent**: click one to open it in its editor, or drag it into another app. With the keyboard, press <kbd>↓</kbd> until the row is highlighted, then <kbd>→</kbd> for a list of them.
 

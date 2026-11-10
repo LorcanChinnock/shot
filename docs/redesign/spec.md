@@ -963,6 +963,28 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Reduce Motion.** The bar arrives with the panel moment, a 240 ms spring rising 8 pt as it fades in, and Reduce Motion makes that a 120 ms fade. The video's refit as crop mode starts and ends is instant, as in the image editor. Drags are instant.
 - **Increase Contrast** takes the wash to 85% and the thirds grid to solid white, and makes the bar solid in the group colour with a 1 pt edge of 60% ink, as in the image editor. The clip handles keep the accent colour on white.
 
+### Gallery window
+
+#1106 moves the gallery out of the Settings window into a window of its own, from Library & Settings › Gallery and the Settings sidebar's "Open Gallery". The gallery used to be the first section of Settings, so opening Settings showed the gallery and its folder watching started with it. Now Settings opens on General, and the gallery window does the gallery's work only while it's open. The grid, sidebar, preview and empty state inside it are unchanged until #1107–#1110, so this section covers the window and the ways in.
+
+| Part | Look |
+| --- | --- |
+| Gallery window | A standard window titled "Gallery", 1224 × 764 pt at first as on the board, 640 × 420 pt at the smallest. The title shows in the title bar beside the traffic lights |
+| Settings window | Titled "Settings", 1080 × 720 pt at first as before, with no Gallery section; it opens on General |
+| Open Gallery | A row at the foot of the Settings sidebar, above the "Show icons only" button: the `square.grid.2x2` symbol on a paper tile with the sections' 2 pt ink edge, "Open Gallery", and a small `arrow.up.right` in faded ink. Shrunk to icons, it's the tile alone with a tip |
+
+- **Ways in.** The menu bar menu's Gallery row, `shot://gallery`, Open Gallery in Settings and `shot://settings?section=gallery` all open the gallery window. ShotCore's `ShotURL` turns the last into `.gallery`, with a test, so older links and scripts keep working.
+- **Its size and place.** The window saves its frame under "Gallery" with AppKit's frame autosave, so it opens where it was last closed, at the same size, across launches. The first time, it opens centred, no larger than the screen under the pointer.
+- **Two windows.** Settings and the gallery open, close and come forward on their own. ⌘W closes the one in front, ⌘, opens Settings from either, and Shot leaves the Dock once both are closed, as before.
+- **Kept in captures.** Screenshots, scrolling captures and recordings keep both windows in, as they kept the old one, and leave Shot's overlays and panels out (`ShotWindows.capturable`).
+- **Memory.** Closing the gallery stops watching the folder and drops its views, as closing the old window did, so a closed gallery costs nothing. Closing Settings stops a microphone test or camera preview and drops its views.
+- **Departures from the board.** The board's sidebar runs under the traffic lights and puts the title, "All Captures" and its count, in the toolbar; #1107 and #1108 build those. Until then the window's title bar shows "Gallery", since the gallery has no heading of its own now that it isn't a Settings section. The Settings sidebar's Open Gallery row keeps today's sidebar rows' look, with a 28 pt tile and the 2 pt ink edge, rather than the board's 22 pt white tile with a hairline, until #1111 redraws the whole sidebar. At larger text sizes, or in a long translation, the arrow hides so the label stays on one line.
+- **Keyboard.** The gallery's keys work in its window as they did in Settings (Keyboard shortcuts › Gallery). With keyboard navigation on, Tab reaches Open Gallery in the Settings sidebar, and Space opens the gallery.
+- **VoiceOver** reads Open Gallery as a button of that name. The arrow is hidden from it. The windows are named "Gallery" and "Settings", which VoiceOver and Mission Control show.
+- **Text size** scales Open Gallery's label and symbols. At Larger its label still fits on one line in the default sidebar width.
+- **Reduce Motion.** Nothing here moves. The windows open with the system's own window animation.
+- **Increase Contrast** changes nothing here. Open Gallery's tile already has a 2 pt ink edge.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -1087,14 +1109,14 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 
 | Board | Issue | Files | QA |
 | --- | --- | --- | --- |
-| Gallery | #1106 own window | `MainWindowController.swift`, `Gallery/GalleryController.swift`, `MenuBar/StatusMenu.swift`, `AppDelegate.swift` (`shot://gallery`) | ☐ |
+| Gallery | #1106 own window | `Gallery/GalleryWindowController.swift` (new), `Settings/SettingsWindowController.swift` (was `MainWindowController.swift`), `Gallery/GalleryController.swift`, `Capture/ShotWindows.swift` (new), `Capture/DisplayCapturer.swift`, `Capture/ScrollingCaptureController.swift`, `Recording/Recorder.swift`, `MenuBar/StatusMenu.swift`, `AppDelegate.swift`, ShotCore `ShotURL.swift` (`shot://settings?section=gallery`) | ☐ |
 | Gallery | #1107 sidebar | `Gallery/GallerySidebar.swift` | ☐ |
 | Gallery | #1108 grid and selection bar | `Gallery/GalleryView.swift` | ☐ |
 | Gallery · preview and empty state | #1109 preview | `Gallery/GalleryPreview.swift` | ☐ |
 | Gallery · preview and empty state | #1110 empty state | `Gallery/GalleryView.swift` | ☐ |
 | Welcome | #1118 | `WelcomeWindow.swift` | ☐ |
 | Settings sidebar (shared component) | #1111 | `Settings/SettingsView.swift` | ☐ |
-| Settings sidebar (shared component) | #1106 Open Gallery | `Settings/SettingsView.swift` | ☐ |
+| Settings sidebar (shared component) | #1106 Open Gallery | `Settings/SettingsView.swift` (`OpenGalleryItem`) | ☐ |
 | Settings · General | #1112 | `Settings/SettingsView.swift` | ☐ |
 | Settings · General | #1073 sidebar material | `Design/GlassWindow.swift` (`SidebarMaterial`), `Settings/SettingsView.swift` | ☐ |
 | Settings · Capture | #1113 | `Settings/SettingsView.swift` | ☐ |

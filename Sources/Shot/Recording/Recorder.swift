@@ -466,10 +466,10 @@ final class Recorder: NSObject {
             throw CaptureError.displayNotFound
         }
         let ownApps = content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
-        // Shot's windows stay out of the video, except the camera bubble, the main window (Settings and the gallery) and
+        // Shot's windows stay out of the video, except the camera bubble, the Settings and gallery windows and
         // the click rings.
         let cameraWindows = content.windows.filter { $0.windowID == CameraBubble.shared.windowID }
-        let mainWindows = content.windows.filter { $0.windowID == MainWindowController.windowID }
+        let mainWindows = content.windows.filter { ShotWindows.capturable.contains($0.windowID) }
         let clickWindows = clickRings.map { rings in content.windows.filter { $0.windowID == rings.windowID } } ?? []
         if clickRings != nil, clickWindows.isEmpty {
             log.error("Click ring window not found in shareable content")
