@@ -137,7 +137,8 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 |---|---|
 | Arrow keys, Home, End | Move the selection (⇧ extends it) |
 | Return | Edit the selection |
-| Space | Quick Look |
+| Space | Preview the selection, or go back to the grid |
+| ← / → in the preview | Previous / next capture |
 | ⌘A, ⌘⇧A | Select all, deselect all |
 | ⌘C | Copy |
 | ⌘R | Show in Finder |
@@ -145,7 +146,7 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | ⌘Z | Put back what you last moved to the Trash |
 | ⌘F | Search |
 | ⌘+, ⌘− | Thumbnail size |
-| Esc | Clear the selection |
+| Esc | Clear the selection, or go back to the grid from the preview |
 
 ## Any Shot window
 

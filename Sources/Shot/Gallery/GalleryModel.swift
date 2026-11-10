@@ -1,7 +1,6 @@
 import AppKit
 import Observation
 import os
-import QuickLookUI
 import ShotCore
 
 private let log = Logger.shot("gallery")
@@ -14,6 +13,7 @@ final class GalleryModel {
     /// Only a search uses it, and more text usually finds nothing new, so the grid redraws only when the matches change.
     @ObservationIgnored private var texts: [URL: String] = [:] {
         didSet {
+            textRevision += 1
             if !query.trimmingCharacters(in: .whitespaces).isEmpty, matching() != visible {
                 refilter()
             }
@@ -111,6 +111,10 @@ final class GalleryModel {
     }
     @ObservationIgnored @Setting(PreferenceKey.captureSubfolder) private var storedCaptureSubfolder: String
     private(set) var visible: [GalleryItem] = []
+    /// The capture the preview shows over the grid, or `nil` while the grid shows.
+    private(set) var previewing: URL?
+    /// Counts each time `TextIndexer` hands over more text, so the preview reads the index again for its text panel.
+    private(set) var textRevision = 0
     private(set) var sections: [GallerySection] = []
     private(set) var hasLoaded = false
     private(set) var folder = Preferences().saveFolder
@@ -121,6 +125,9 @@ final class GalleryModel {
     /// Set by the grid as it lays out, so the up and down arrows know a row's width.
     var columns = 1
     var searchFocusRequest = 0
+    /// Counts each request to leave the search field. Clearing the window's first responder alone isn't enough: the
+    /// field's focus state takes it back, and the next Space types into the field instead of opening the preview.
+    var searchBlurRequest = 0
     /// Read through `SettingsStore`, so Reset All in Settings shows here while the gallery is open.
     var tileSize: Double {
         get { Gallery.tileSizes.contains(storedTileSize) ? storedTileSize : Gallery.defaultTileSize }
@@ -169,6 +176,9 @@ final class GalleryModel {
         visible = matching()
         sections = Gallery.sections(visible, sort: sort)
         selection.formIntersection(visible.map(\.url))
+        if let previewing, !visible.contains(where: { $0.url == previewing }) {
+            self.previewing = nil
+        }
     }
 
     // MARK: Loading
@@ -185,6 +195,7 @@ final class GalleryModel {
     }
 
     func stop() {
+        previewing = nil
         TextIndexer.shared.onTexts = nil
         texts = [:]
         watchers.values.forEach { $0.cancel() }
@@ -351,6 +362,48 @@ final class GalleryModel {
             return
         }
         click(visible[next], command: false, shift: extending)
+    }
+
+    // MARK: Preview
+
+    /// The capture the preview shows, while it's open.
+    var previewItem: GalleryItem? {
+        previewing.flatMap { url in visible.first { $0.url == url } }
+    }
+
+    /// Previews `item` over the grid, selecting it alone, so Copy, Edit and the other shortcuts act on what's shown.
+    func preview(_ item: GalleryItem) {
+        click(item, command: false, shift: false)
+        previewing = item.url
+    }
+
+    /// Previews the item the keyboard last moved to, or the first selected.
+    func previewSelection() {
+        let item = lead.flatMap { url in selectedItems.first { $0.url == url } } ?? selectedItems.first
+        if let item {
+            preview(item)
+        }
+    }
+
+    /// Back to the grid, which keeps the previewed capture selected and in view.
+    func closePreview() {
+        previewing = nil
+    }
+
+    /// Shows the capture `step` places before or after the one previewed, in the grid's order. Stops at either end.
+    func stepPreview(by step: Int) {
+        guard let current = previewing.flatMap({ url in visible.firstIndex { $0.url == url } }),
+              let next = Gallery.stepped(from: current, by: step, count: visible.count) else {
+            return
+        }
+        preview(visible[next])
+    }
+
+    /// Shows the first or last capture in the grid's order.
+    func previewEnd(last: Bool) {
+        if let item = last ? visible.last : visible.first {
+            preview(item)
+        }
     }
 
     /// What an action on `item` applies to: the whole selection when `item` is in it, otherwise just `item`.
@@ -764,6 +817,7 @@ final class GalleryModel {
             return
         }
         let position = visible.firstIndex { $0.url == first.url } ?? 0
+        let wasPreviewing = previewing != nil
         var trashed: Set<URL> = []
         var moves: [(trashed: URL, original: URL)] = []
         for item in items {
@@ -791,6 +845,10 @@ final class GalleryModel {
         }
         if selection.isEmpty, !visible.isEmpty {
             click(visible[min(position, visible.count - 1)], command: false, shift: false)
+        }
+        // The preview moves on to the capture that took the trashed one's place, or closes when none is left.
+        if wasPreviewing {
+            previewing = selection.isEmpty ? nil : lead
         }
     }
 

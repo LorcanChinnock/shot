@@ -12,6 +12,27 @@ struct GalleryRootView: View {
     private static let sidebarButtonEnd = GlassWindow.trafficLightsWidth + 34
 
     var body: some View {
+        // The preview covers the grid rather than replacing it, so the grid keeps its scroll position for the way back.
+        let previewing = model.previewing != nil
+        ZStack {
+            browser
+                .opacity(previewing ? 0 : 1)
+                .allowsHitTesting(!previewing)
+                .accessibilityHidden(previewing)
+            if previewing {
+                GalleryPreviewView(model: model)
+            }
+        }
+        .onChange(of: model.searchFocusRequest) {
+            searchFocused = true
+        }
+        .onChange(of: model.searchBlurRequest) {
+            searchFocused = false
+        }
+    }
+
+    /// The sidebar, the toolbar and the grid.
+    private var browser: some View {
         HStack(spacing: 0) {
             if model.showsSidebar {
                 // The see-through sidebar runs the window's full height, under the traffic lights.
@@ -47,9 +68,6 @@ struct GalleryRootView: View {
             sidebarToggle
                 .frame(height: GlassWindow.titlebarHeight)
                 .padding(.leading, GlassWindow.trafficLightsWidth)
-        }
-        .onChange(of: model.searchFocusRequest) {
-            searchFocused = true
         }
     }
 
@@ -505,6 +523,10 @@ private struct GalleryTile: View, Equatable {
         // One gesture, so a click selects at once instead of waiting out the double-click interval; the second click opens.
         .onTapGesture {
             let event = NSApp.currentEvent
+            // A click in the grid leaves the search field, so the keys after it act on the grid.
+            if NSApp.keyWindow?.firstResponder is NSText {
+                model.searchBlurRequest += 1
+            }
             if event?.clickCount == 2 {
                 model.edit([item])
                 return
@@ -569,7 +591,7 @@ private struct GalleryTileMenu: View {
         }
         Divider()
         Button("Copy") { model.copy(targets) }
-        Button("Quick Look") { GalleryPreview.shared.show(targets.map(\.url)) }
+        Button("Preview") { model.preview(item) }
         if targets.count == 1, item.kind == .image {
             Button("Pin") { PinController.shared.pin(item.url) }
         }
@@ -721,7 +743,7 @@ struct TagDot: View {
 }
 
 /// Adds a tag to the files it opened on, or takes one off them, from the tags already used.
-private struct GalleryTagPopover: View {
+struct GalleryTagPopover: View {
     let model: GalleryModel
     let targets: [URL]
     @State private var name = ""
@@ -755,7 +777,9 @@ private struct GalleryTagPopover: View {
         }
         .padding(12)
         .frame(width: 230)
-        .onAppear { focused = true }
+        // A turn after it appears: taking focus at once loses it while the popover is still opening, and the keys
+        // typed next reach the gallery instead.
+        .onAppear { DispatchQueue.main.async { focused = true } }
     }
 
     private func row(_ tag: String) -> some View {

@@ -31,10 +31,16 @@ final class GalleryController {
     }
 
     func handleCommand(_ key: String, shift: Bool, in window: NSWindow) -> Bool {
+        // Thumbnail size and Select All act on the grid, which the preview covers.
+        if model.previewing != nil, ["=", "+", "-", "a"].contains(key) {
+            return true
+        }
         switch key {
         case "w":
             window.performClose(nil)
         case "f":
+            // The search field is in the grid's toolbar, so searching goes back to the grid.
+            model.closePreview()
             model.searchFocusRequest += 1
         case "=", "+":
             model.zoom(by: 30)
@@ -70,7 +76,12 @@ final class GalleryController {
                 return false
             }
             window.makeFirstResponder(nil)
+            model.searchBlurRequest += 1
             return true
+        }
+        // After the typing check, so Return in the preview's Tag popover adds the tag rather than opening the editor.
+        if model.previewing != nil {
+            return handlePreviewKey(event, in: window)
         }
         let extending = event.modifierFlags.contains(.shift)
         switch event.keyCode {
@@ -86,7 +97,10 @@ final class GalleryController {
             }
             model.edit(model.selectedItems)
         case 49: // Space
-            GalleryPreview.shared.toggle(model.selectedItems.map(\.url))
+            guard !model.selection.isEmpty else {
+                return false
+            }
+            model.previewSelection()
         case 51, 117: // Delete, Forward Delete
             guard !model.selection.isEmpty else {
                 return false
@@ -99,6 +113,22 @@ final class GalleryController {
             model.clearSelection()
         default:
             return false
+        }
+        return true
+    }
+
+    /// In the preview, ← and → step through the captures in the grid's order, and Space and Escape go back to the grid.
+    /// The previewed capture is the selection, so Return and Delete act on it as they do in the grid.
+    private func handlePreviewKey(_ event: NSEvent, in window: NSWindow) -> Bool {
+        switch event.keyCode {
+        case 123, 126: model.stepPreview(by: -1) // Left, Up
+        case 124, 125: model.stepPreview(by: 1) // Right, Down
+        case 115: model.previewEnd(last: false) // Home
+        case 119: model.previewEnd(last: true) // End
+        case 49, 53: model.closePreview() // Space, Escape
+        case 36, 76: model.edit(model.selectedItems) // Return, Enter
+        case 51, 117: model.trash(model.selectedItems) // Delete, Forward Delete
+        default: return false
         }
         return true
     }
