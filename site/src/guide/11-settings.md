@@ -25,7 +25,7 @@ Click **Show All** beside a section, or click a section in the sidebar, to clear
 | Section | What you can change |
 |---|---|
 | General | Open Shot at login, the capture sound, cropping the menu bar off captures of the full screen, light or dark appearance (or following your Mac), the text size of Shot's own windows from the **Text size** menu (macOS's Accessibility › Text size doesn't reach other apps), the save folder (**Show in Finder** opens it and **Choose…** picks another), the file name, PNG or JPEG, scaling Retina captures to 1×, and whether the editor's Save replaces the original |
-| Capture | What happens after a capture (save, copy, Quick Access, or the editor), the magnifier, the crosshair, the size label, the cursor, and window shadows |
+| Capture | **After a capture:** saving, copying, Quick Access, or opening the editor instead. **Captured image:** the cursor, window shadows, and capturing only the page of a browser window. **While selecting:** the magnifier, the crosshair and the size label, with a preview that shows the ones you turn on. Move the pointer over the preview to drag an area and try them. Each of those three also has a key on the capture bar, <kbd>M</kbd>, <kbd>C</kbd> and <kbd>I</kbd>, for one capture |
 | Quick Access | The screen corner and how long cards stay |
 | Recording | Adjust before recording, frame rate, cursor, clicks, region outline, copying to the clipboard, the microphone and its input (with a **Test**), system audio, and the camera bubble's camera (with a **Preview**) and size. It also sums up the GIF settings the video editor last used. |
 | Shortcuts | The macOS screenshot keys and every global shortcut |

@@ -2414,58 +2414,6 @@
         }
       }
     },
-    "8× loupe next to the pointer for pixel-precise edges." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "8×-Lupe neben dem Zeiger für pixelgenaue Kanten."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lupa 8× junto al puntero para bordes precisos al píxel."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loupe 8× près du pointeur pour des bords précis au pixel."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lente 8× accanto al puntatore per bordi precisi al pixel."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ポインタの横に8倍ルーペを表示し、ピクセル単位で端を合わせます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "포인터 옆에 8× 돋보기를 표시해 가장자리를 픽셀 단위로 맞춥니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lupa de 8× junto ao ponteiro para bordas precisas."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "指针旁的 8 倍放大镜，可精确到像素地对齐边缘。"
-          }
-        }
-      }
-    },
     "A GIF keeps the first %lld seconds." : {
       "localizations" : {
         "de" : {
@@ -3521,30 +3469,30 @@
         }
       }
     },
-    "After capture" : {
+    "After a capture" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nach der Aufnahme"
+            "value" : "Nach einer Aufnahme"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Después de capturar"
+            "value" : "Después de una captura"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Après la capture"
+            "value" : "Après une capture"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dopo la cattura"
+            "value" : "Dopo una cattura"
           }
         },
         "ja" : {
@@ -3562,7 +3510,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Após a captura"
+            "value" : "Após uma captura"
           }
         },
         "zh-Hans" : {
@@ -3942,6 +3890,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "程度"
+          }
+        }
+      }
+    },
+    "An 8× loupe beside the pointer, for exact edges." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine 8×-Lupe neben dem Zeiger für genaue Kanten."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una lupa 8× junto al puntero, para bordes exactos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une loupe 8× près du pointeur, pour des bords précis."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una lente 8× accanto al puntatore, per bordi precisi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ポインタの横に8倍ルーペを表示し、端を正確に合わせます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "포인터 옆에 8× 돋보기를 표시해 가장자리를 정확히 맞춥니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uma lupa de 8× junto ao ponteiro, para bordas exatas."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "指针旁的 8 倍放大镜，用于精确对齐边缘。"
           }
         }
       }
@@ -5276,6 +5276,58 @@
     "C: crosshair" : {
 
     },
+    "Captured image" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aufgenommenes Bild"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imagen capturada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Image capturée"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Immagine catturata"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャプチャした画像"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "캡처한 이미지"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imagem capturada"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "捕捉的图像"
+          }
+        }
+      }
+    },
     "Captures look the same either way." : {
       "localizations" : {
         "de" : {
@@ -6179,7 +6231,56 @@
 
     },
     "Capture only the page in browser windows" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Browserfenstern nur die Seite aufnehmen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capturar solo la página en ventanas del navegador"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capturer uniquement la page dans les fenêtres de navigateur"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cattura solo la pagina nelle finestre del browser"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブラウザウインドウではページだけをキャプチャ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "브라우저 창에서는 페이지만 캡처"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capturar só a página em janelas do navegador"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在浏览器窗口中仅捕捉页面"
+          }
+        }
+      }
     },
     "Capture overlay" : {
 
@@ -13984,6 +14085,58 @@
         }
       }
     },
+    "Each one also has a key on the capture bar: M, C and I." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jede hat auch eine Taste in der Aufnahmeleiste: M, C und I."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada una tiene también una tecla en la barra de captura: M, C e I."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chacune a aussi une touche dans la barre de capture : M, C et I."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ognuna ha anche un tasto nella barra di cattura: M, C e I."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "それぞれキャプチャバーのキーでも切り替えられます：M、C、I。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "각각 캡처 막대에서 키로도 전환할 수 있습니다: M, C, I."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada uma também tem uma tecla na barra de captura: M, C e I."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每一项在捕捉栏上也有对应按键：M、C 和 I。"
+          }
+        }
+      }
+    },
     "Each one opens in its own editor window." : {
       "localizations" : {
         "de" : {
@@ -16786,58 +16939,6 @@
     "Full size" : {
 
     },
-    "Full-screen guide lines through the pointer." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bildschirmweite Hilfslinien durch den Zeiger."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Líneas guía a pantalla completa que cruzan el puntero."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lignes de repère plein écran passant par le pointeur."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Linee guida a tutto schermo attraverso il puntatore."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ポインタを通る画面全体のガイド線。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "포인터를 지나는 전체 화면 안내선을 표시합니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Linhas-guia de tela inteira cruzando o ponteiro."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "穿过指针的全屏参考线。"
-          }
-        }
-      }
-    },
     "GIF" : {
       "localizations" : {
         "de" : {
@@ -17565,6 +17666,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "绿色"
+          }
+        }
+      }
+    },
+    "Guide lines through the pointer across the screen." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hilfslinien durch den Zeiger über den ganzen Bildschirm."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Líneas guía que cruzan la pantalla por el puntero."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lignes de repère traversant l’écran par le pointeur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linee guida che attraversano lo schermo passando per il puntatore."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ポインタを通って画面全体に伸びるガイド線。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "포인터를 지나 화면 전체에 걸친 안내선을 표시합니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linhas-guia que cruzam a tela pelo ponteiro."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "穿过指针、横贯屏幕的参考线。"
           }
         }
       }
@@ -18415,6 +18568,58 @@
     },
     "Include some text or an image, or pick another area." : {
 
+    },
+    "Include the pointer in area and full-screen captures." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeigt den Zeiger in Aufnahmen eines Bereichs oder des ganzen Bildschirms."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incluye el puntero en las capturas de un área o de la pantalla completa."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inclut le pointeur dans les captures d’une zone ou de tout l’écran."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Include il puntatore nelle catture di un’area o dello schermo intero."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "範囲や画面全体のキャプチャにポインタを含めます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "영역 및 전체 화면 캡처에 포인터를 포함합니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inclui o ponteiro nas capturas de área e de tela inteira."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在区域和全屏捕捉中包含指针。"
+          }
+        }
+      }
     },
     "Inspector" : {
       "localizations" : {
@@ -20028,6 +20233,58 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "Move the pointer over the preview to drag the area." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bewege den Zeiger über die Vorschau, um den Bereich aufzuziehen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mueve el puntero sobre la vista previa para arrastrar el área."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Déplacez le pointeur sur l’aperçu pour tracer la zone."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muovi il puntatore sull’anteprima per trascinare l’area."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プレビューの上でポインタを動かすと、範囲をドラッグできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "미리보기 위로 포인터를 움직이면 영역을 드래그할 수 있습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mova o ponteiro sobre a prévia para arrastar a área."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将指针移到预览上即可拖出区域。"
           }
         }
       }
@@ -22321,9 +22578,6 @@
         }
       }
     },
-    "Off captures the whole window. On captures just the web page, without the toolbar and tabs. Needs Accessibility access. Press B on the overlay to switch for one capture." : {
-
-    },
     "Off keeps the original and saves a copy." : {
       "localizations" : {
         "de" : {
@@ -23333,6 +23587,58 @@
     "Opens it to edit. Drag it into another app to use the file there." : {
 
     },
+    "Opens the editor instead of Quick Access." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffnet den Editor statt des Schnellzugriffs."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre el editor en lugar de Acceso rápido."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvre l’éditeur au lieu d’Accès rapide."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apre l’editor invece di Accesso rapido."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クイックアクセスの代わりにエディタを開きます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "빠른 접근 대신 편집기를 엽니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre o editor em vez do Acesso Rápido."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开编辑器而非快速访问。"
+          }
+        }
+      }
+    },
     "Opens the Export panel, where you choose a GIF or an MP4 and export it." : {
       "localizations" : {
         "de" : {
@@ -23381,58 +23687,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "打开导出面板，在其中选择 GIF 或 MP4 并导出。"
-          }
-        }
-      }
-    },
-    "Opens the annotation editor instead of Quick Access." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Öffnet den Editor statt des Schnellzugriffs."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abre el editor de anotaciones en lugar de Acceso rápido."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ouvre l'éditeur d'annotations au lieu d'Accès rapide."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apre l'editor di annotazioni invece di Accesso rapido."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "クイックアクセスの代わりに注釈エディタを開きます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "빠른 접근 대신 주석 편집기를 엽니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abre o editor de anotações em vez do Acesso Rápido."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "打开标注编辑器而非快速访问。"
           }
         }
       }
@@ -32321,58 +32575,6 @@
     "Show the pointer in the recording" : {
 
     },
-    "Show the pointer when you capture an area or the full screen." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zeigt den Zeiger, wenn du einen Bereich oder den ganzen Bildschirm aufnimmst."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Muestra el puntero al capturar un área o la pantalla completa."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Affiche le pointeur quand vous capturez une zone ou tout l'écran."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostra il puntatore quando catturi un'area o lo schermo intero."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "範囲や画面全体をキャプチャするときにポインタを表示します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "영역이나 전체 화면을 캡처할 때 포인터를 표시합니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostra o ponteiro ao capturar uma área ou a tela inteira."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "捕捉区域或全屏时显示指针。"
-          }
-        }
-      }
-    },
     "Show the track" : {
       "localizations" : {
         "de" : {
@@ -36084,6 +36286,58 @@
         }
       }
     },
+    "The quick path saves and copies each capture and shows it in Quick Access, without opening a window." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der schnelle Weg sichert und kopiert jede Aufnahme und zeigt sie im Schnellzugriff, ohne ein Fenster zu öffnen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La ruta rápida guarda y copia cada captura y la muestra en Acceso rápido, sin abrir ninguna ventana."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le chemin rapide enregistre et copie chaque capture et l’affiche dans Accès rapide, sans ouvrir de fenêtre."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il percorso rapido salva e copia ogni cattura e la mostra in Accesso rapido, senza aprire finestre."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クイックパスでは、キャプチャごとに保存とコピーを行い、ウインドウを開かずにクイックアクセスに表示します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "빠른 경로는 캡처할 때마다 저장하고 복사한 뒤, 창을 열지 않고 빠른 접근에 표시합니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O caminho rápido salva e copia cada captura e a mostra no Acesso Rápido, sem abrir nenhuma janela."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "快捷路径会保存并拷贝每次捕捉，并在快速访问中显示，不会打开窗口。"
+          }
+        }
+      }
+    },
     "The recording has no video track" : {
       "localizations" : {
         "de" : {
@@ -38614,6 +38868,58 @@
         }
       }
     },
+    "While selecting" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beim Auswählen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Al seleccionar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pendant la sélection"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Durante la selezione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "範囲選択中"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선택하는 동안"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ao selecionar"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择时"
+          }
+        }
+      }
+    },
     "White" : {
       "localizations" : {
         "de" : {
@@ -38718,54 +39024,54 @@
         }
       }
     },
-    "Width and height in pixels next to the pointer while you drag." : {
+    "Width and height in pixels while you drag." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Breite und Höhe in Pixeln neben dem Zeiger, während du ziehst."
+            "value" : "Breite und Höhe in Pixeln, während du ziehst."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ancho y alto en píxeles junto al puntero mientras arrastras."
+            "value" : "Ancho y alto en píxeles mientras arrastras."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Largeur et hauteur en pixels à côté du pointeur pendant que vous faites glisser."
+            "value" : "Largeur et hauteur en pixels pendant que vous faites glisser."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Larghezza e altezza in pixel accanto al puntatore mentre trascini."
+            "value" : "Larghezza e altezza in pixel mentre trascini."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ドラッグ中、ポインタの横に幅と高さをピクセルで表示します。"
+            "value" : "ドラッグ中に幅と高さをピクセルで表示します。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "드래그하는 동안 포인터 옆에 너비와 높이를 픽셀로 표시합니다."
+            "value" : "드래그하는 동안 너비와 높이를 픽셀로 표시합니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Largura e altura em pixels ao lado do ponteiro enquanto você arrasta."
+            "value" : "Largura e altura em pixels enquanto você arrasta."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "拖动时在指针旁显示以像素为单位的宽度和高度。"
+            "value" : "拖动时显示以像素为单位的宽度和高度。"
           }
         }
       }
@@ -38818,6 +39124,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "窗口"
+          }
+        }
+      }
+    },
+    "Window captures of a browser leave out its toolbar and tabs. It needs Accessibility access, and B on the capture bar switches it for one capture." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fensteraufnahmen eines Browsers lassen Symbolleiste und Tabs weg. Dafür ist der Bedienungshilfen-Zugriff nötig, und B in der Aufnahmeleiste schaltet es für eine Aufnahme um."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las capturas de ventana de un navegador omiten su barra de herramientas y pestañas. Necesita acceso de Accesibilidad, y B en la barra de captura lo cambia para una captura."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les captures de fenêtre d’un navigateur omettent sa barre d’outils et ses onglets. Cela nécessite l’accès Accessibilité, et B dans la barre de capture le change pour une capture."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le catture di finestra di un browser escludono la barra degli strumenti e i pannelli. Serve l’accesso Accessibilità, e B nella barra di cattura lo cambia per una cattura."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブラウザのウインドウをキャプチャすると、ツールバーとタブが省かれます。アクセシビリティへのアクセスが必要です。キャプチャバーの B で1回だけ切り替えられます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "브라우저 창을 캡처하면 도구 막대와 탭이 빠집니다. 손쉬운 사용 접근 권한이 필요하며, 캡처 막대의 B로 한 번만 전환할 수 있습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capturas de janela de um navegador deixam de fora a barra de ferramentas e as abas. Precisa de acesso de Acessibilidade, e B na barra de captura alterna para uma captura."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "浏览器的窗口捕捉会省略其工具栏和标签页。需要辅助功能权限，按捕捉栏上的 B 可仅对本次捕捉切换。"
           }
         }
       }

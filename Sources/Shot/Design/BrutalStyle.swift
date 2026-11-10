@@ -1004,23 +1004,43 @@ extension EnvironmentValues {
     @Entry var settingsContext: [String] = []
 }
 
-/// A group of Settings rows: its name over a grouped panel, with a separator between rows. While searching, it shows only the
-/// rows that match, and nothing when none do.
+/// A Settings group's name, 12 pt in, over its panel or preview.
+struct SettingsGroupHeading: View {
+    let title: String
+
+    init(_ title: LocalizedStringResource) {
+        self.title = String(localized: title)
+    }
+
+    @_disfavoredOverload
+    init<S: StringProtocol>(_ title: S) {
+        self.title = String(title)
+    }
+
+    var body: some View {
+        Text(title)
+            .font(.scaled(12, weight: .semibold))
+            .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+            .padding(.leading, 12)
+            .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// A group of Settings rows: its name over a grouped panel, with a separator between rows, and an optional note under the
+/// panel. While searching, it shows only the rows that match, without the note, and nothing when no row does.
 struct SettingsCard<Content: View>: View {
     let title: LocalizedStringResource
+    var note: LocalizedStringResource?
     @ViewBuilder let content: Content
     @Environment(\.settingsContext) private var context
+    @Environment(\.settingsQuery) private var query
 
     var body: some View {
         let heading = String(localized: title)
         Group(subviews: content) { rows in
             if let first = rows.first {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(heading)
-                        .font(.scaled(12, weight: .semibold))
-                        .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
-                        .padding(.leading, 12)
-                        .accessibilityAddTraits(.isHeader)
+                    SettingsGroupHeading(heading)
                     VStack(spacing: 0) {
                         ForEach(rows) { row in
                             if row.id != first.id {
@@ -1030,6 +1050,15 @@ struct SettingsCard<Content: View>: View {
                         }
                     }
                     .depth(.group, fill: Brutal.group, radius: Brutal.Radius.group)
+                    if let note, SettingsSearch.terms(query).isEmpty {
+                        Text(note)
+                            .font(Brutal.caption)
+                            .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                            .lineSpacing(1.5)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal, 12)
+                            .padding(.top, 2)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }

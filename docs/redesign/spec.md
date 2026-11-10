@@ -1167,6 +1167,35 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Reduce Motion.** The switches' knobs and the segmented thumbs move at once.
 - **Increase Contrast** makes the descriptions ink, and gives the off switches, segmented tracks, buttons, pop-up and field their 60% ink edges.
 
+### Settings · Capture
+
+#1113 redraws the Capture pane from Library & Settings › Settings · Capture. Its settings and their keys are unchanged. The rows sit in three groups where there were two, in the board's two columns, with notes under After a capture and While selecting, and a preview of the selection aids. The descriptions are the board's shorter ones. Nothing here runs during a capture, so the capture → copy path is unchanged.
+
+| Group | Row | Control | Description |
+| --- | --- | --- | --- |
+| After a capture | Save to folder | Switch | None |
+| After a capture | Copy to clipboard | Switch | None |
+| After a capture | Show Quick Access | Switch | None |
+| After a capture | Open in editor | Switch | "Opens the editor instead of Quick Access." |
+| Captured image | Show cursor | Switch | "Include the pointer in area and full-screen captures." |
+| Captured image | Window shadow | Switch | "Keep the macOS drop shadow in window captures." |
+| Captured image | Capture only the page in browser windows | Switch, which asks for Accessibility access when turned on without it | "Window captures of a browser leave out its toolbar and tabs. It needs Accessibility access, and B on the capture bar switches it for one capture." |
+| While selecting | Magnifier | Switch | "An 8× loupe beside the pointer, for exact edges." |
+| While selecting | Crosshair | Switch | "Guide lines through the pointer across the screen." |
+| While selecting | Size label | Switch | "Width and height in pixels while you drag." |
+
+- **Layout.** After a capture and Captured image fill the left column, While selecting and the preview the right, 16 pt apart, with 16 pt between groups. Below 600 pt of content, as in a narrow window, they stack in one column 18 pt apart. While searching, the three groups list one under another like every other section's, without the notes or the preview.
+- **Group notes.** `SettingsCard(title:note:)` puts a note in 11 pt tertiary text 12 pt in and 8 pt under the panel. After a capture says "The quick path saves and copies each capture and shows it in Quick Access, without opening a window." While selecting says "Each one also has a key on the capture bar: M, C and I." Notes hide while searching. The group name is now `SettingsGroupHeading`, which the preview uses too.
+- **Preview.** Under a "Preview" heading, a 150 pt panel rounded at the group radius with a 1 pt edge in ink at 8%, and under it the note "Move the pointer over the preview to drag the area." It pictures picking an area as the overlay draws it, over a desktop of warm wallpaper (`#9A8F84` to `#6F675F`) and a light sample window with a sidebar, a heading, lines of text and a yellow tag, which stays light in dark mode. The area runs from a fixed corner at 40, 30 pt to the pointer, which rests at the board's 170 × 80 pt area: outside it dimmed with `rgba(12,12,16,0.35)`, the overlay's 1 pt white and dark rings, and its round handles at 7 pt. With the mouse elsewhere the overlay's crosshair cursor is drawn at the pointer. Moving the mouse over the preview drags the area under the overlay's own cursor, and leaving springs it back. The size label is the overlay's two chips, the size in pixels in 10 pt bold monospaced type and "Free ratio", 5 pt above the area. The crosshair is the overlay's 1 pt white line over a 3 pt shadow with an 8 pt gap at the pointer. The loupe is the overlay's: the scene magnified 6×, 11 points across and ruled per point, the pointer's row and column lit yellow at 35%, its own point outlined in ink, and its position in pixels in a chip at the foot, in a 2 pt white ring and a 1 pt ink ring with a soft shadow. It sits 12 pt below and right of the pointer and flips to the other side where it wouldn't fit. Each aid shows only while its switch is on, and fades in or out over 0.15 s as it changes. ShotCore's `SelectionAidsPreviewLayout` places the area, loupe and readouts, with tests.
+- **One ink control.** The pane adds none: the selected sidebar row stays the window's only ink. Switches that are on take the accent with an ink edge, as the Ink table allows. The loupe's ink ring is part of the picture, as on the overlay.
+- **What went.** The Selection group, which held all six of the selection and image switches. The longer descriptions: "for pixel-precise edges", "next to the pointer" under Size label, the annotation editor by name, and "Off captures the whole window" with "Press B on the overlay" under the browser row.
+- **Departures from the board.** The board has no browser row; Shot keeps Capture only the page in browser windows at the end of Captured image, since it decides what ends up in the image and Settings is the only place to change it. The board's rows are 9 × 12 pt with a 12 pt gap and its content is 24 pt in; Shot uses the shared rows, 9 × 14 pt with 16, and the shared 28 pt, so Capture lines up with the other panes. The board's preview is a flat colour with a bare rectangle, a blank loupe and the caption "Updates as you change options" inside it; Shot's draws a sample window under the overlay's handles, chips, cursor and working loupe, lets the mouse drag the area, and puts its note under the panel like the groups' notes, so the crosshair and loupe never cross it. The board's quick-path note reads "saved, copied and in the corner card"; Shot names Quick Access, as the row above it does. The board's preview is fixed; Shot's follows the switches, as #1113 asks.
+- **Keyboard.** With keyboard navigation on, Tab reaches each switch in reading order, the left column before the right. The preview takes no focus, and dragging its area is for the mouse only, since it changes no setting.
+- **VoiceOver** reads each switch with its row's name, and the group names as headings. It reads the notes after their groups and skips the preview, since the switches above it say the same.
+- **Text size** scales every row, description, note, and the preview's heading, chips and loupe readout. The preview and its loupe keep their size. At Larger the descriptions wrap rather than truncate.
+- **Reduce Motion.** The switches' knobs move at once, the preview's aids appear and disappear without fading, and the area jumps back rather than springing when the mouse leaves.
+- **Increase Contrast** makes the group names, descriptions and notes ink, and gives the off switches their 60% ink edges. The preview keeps its colours, since it pictures the overlay.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -1302,7 +1331,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Settings · General | #1111 title, groups and rows | `Settings/SettingsView.swift`, `Design/BrutalStyle.swift` (`SettingsCard`, `SettingRow`) | ☐ |
 | Settings · General | #1112 | `Settings/SettingsView.swift` (`GeneralSettings`: descriptions, Text size pop-up, Show in Finder, 180 pt File name field, Choose… as a sheet) | ☐ |
 | Settings · General | #1073 sidebar material | `Design/GlassWindow.swift` (`SidebarMaterial`), `Settings/SettingsView.swift` | ☐ |
-| Settings · Capture | #1113 | `Settings/SettingsView.swift` | ☐ |
+| Settings · Capture | #1113 | `Settings/SettingsView.swift` (`CaptureSettings`: three groups in two columns, shorter descriptions, `SelectionAidsPreview`, `PreviewScene`), `Design/BrutalStyle.swift` (`SettingsCard` note, `SettingsGroupHeading`), `ShotCore/SelectionAidsPreview.swift` (`SelectionAidsPreviewLayout`) | ☐ |
 | Settings · Quick Access | #1114 | `Settings/SettingsView.swift` | ☐ |
 | Settings · Recording | #1115 | `Settings/SettingsView.swift`, `Settings/DevicePreview.swift` | ☐ |
 | Settings · Shortcuts | #1116 | `Settings/ShortcutRecorderView.swift`, `Settings/SettingsView.swift` | ☐ |
@@ -1354,7 +1383,7 @@ Every page in `site/src/guide/`. #1128 updates the text, ticking **Updated** for
 | 08a Share a capture with an AI assistant | "Copy path for an AI assistant" in the preview; Copy Path in the Share menu | #1128 | #1109, #1093 | ☐ |
 | 09 Keyboard shortcuts | M, C and I on the capture bar; Settings › Shortcuts; Delete asks before the Trash and ⌘Delete doesn't | #1128 | #1075, #1110, #1116 | ☐ |
 | 10 Automation reference | `shot://gallery` and `shot://settings?section=gallery` open the gallery window; `shot://welcome` | #1128 | #1106, #1118 | ☐ |
-| 11 Settings | Section and row names, the sidebar search, Open Gallery, General's Text size menu and Show in Finder | #1128 | #1111, #1112, #1113, #1114, #1115, #1116, #1117 | ☐ |
+| 11 Settings | Section and row names, the sidebar search, Open Gallery, General's Text size menu and Show in Finder, Capture's groups and its preview of the selection aids | #1128 | #1111, #1112, #1113, #1114, #1115, #1116, #1117 | ☐ |
 | 12 Languages | Check only: no redesigned screen is described | #1128 | #1121 | ☐ |
 | 13 Updates | The restyled update prompt; Settings › About › Updates | #1128 | #1117, #1084 | ☐ |
 | 14 Privacy | Permissions in Settings › About show Allowed or Allow… | #1128 | #1117 | ☐ |
