@@ -27,6 +27,18 @@ private func timelineRecording() -> Project {
     #expect(rect.minX >= 16 + 40)
 }
 
+@Test func videoWellFitsTheVideoAboveTheCropBar() {
+    let well = CGSize(width: 1000, height: 400)
+    // The bar covers the bottom 60 pt, so the video fits between 20 pt above and 60 + 8 pt below.
+    let rect = VideoWell.videoRect(showing: CGSize(width: 1280, height: 720), in: well, bottomClearance: 60)
+    #expect(rect.minY == VideoWell.verticalInset)
+    #expect(abs(rect.maxY - (400 - 68)) < 0.001)
+    #expect(rect.midX == 500)
+    // A bar lower than the inset leaves the video where it was.
+    let low = VideoWell.videoRect(showing: CGSize(width: 1280, height: 720), in: well, bottomClearance: 4)
+    #expect(low == VideoWell.videoRect(showing: CGSize(width: 1280, height: 720), in: well))
+}
+
 @Test func videoWellHasNothingToShowWhenEmpty() {
     #expect(VideoWell.videoRect(showing: .zero, in: CGSize(width: 500, height: 300)).isEmpty)
     #expect(VideoWell.videoRect(showing: CGSize(width: 16, height: 9), in: CGSize(width: 100, height: 30)).isEmpty, "shorter than the insets")

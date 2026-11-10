@@ -8,9 +8,15 @@ public enum VideoWell {
     /// Room above and below the video.
     public static let verticalInset: CGFloat = 20
 
-    /// Where the video sits in a well of `size`: `frame`'s shape, as large as fits inside the insets, centred.
-    public static func videoRect(showing frame: CGSize, in size: CGSize) -> CGRect {
-        let room = CGSize(width: max(0, size.width - sideInset * 2), height: max(0, size.height - verticalInset * 2))
+    /// How far the video keeps above the crop bar in crop mode.
+    public static let cropBarGap: CGFloat = 8
+
+    /// Where the video sits in a well of `size`: `frame`'s shape, as large as fits inside the insets, centred. In crop
+    /// mode `bottomClearance` is how much of the well's bottom the crop bar covers, and the video fits in the room above
+    /// it, so the crop's bottom handles are never under the bar.
+    public static func videoRect(showing frame: CGSize, in size: CGSize, bottomClearance: CGFloat = 0) -> CGRect {
+        let bottom = bottomClearance > 0 ? max(verticalInset, bottomClearance + cropBarGap) : verticalInset
+        let room = CGSize(width: max(0, size.width - sideInset * 2), height: max(0, size.height - verticalInset - bottom))
         guard frame.width > 0, frame.height > 0, room.width > 0, room.height > 0 else {
             return CGRect(x: size.width / 2, y: size.height / 2, width: 0, height: 0)
         }
@@ -18,7 +24,7 @@ public enum VideoWell {
         let width = frame.width * scale
         let height = frame.height * scale
         let x = (size.width - width) / 2
-        let y = (size.height - height) / 2
+        let y = verticalInset + (room.height - height) / 2
         return CGRect(x: x, y: y, width: width, height: height)
     }
 }

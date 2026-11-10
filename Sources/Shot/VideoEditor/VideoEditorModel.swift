@@ -81,6 +81,8 @@ final class VideoEditorModel {
     private(set) var cropTarget: VideoCropTarget?
     /// The crop being adjusted: in canvas pixels for the frame, or in the clip's picture's pixels, y down, for a clip.
     var cropDraft: CGRect?
+    /// How much of the well's bottom the crop bar covers in crop mode, which the video fits above.
+    var cropBarClearance: CGFloat = 0
     var cropAspect: CropAspect = CropAspect(rawValue: UserDefaults.standard.string(forKey: PreferenceKey.editorCropAspect) ?? "") ?? .free {
         didSet { UserDefaults.standard.set(cropAspect.rawValue, forKey: PreferenceKey.editorCropAspect) }
     }
@@ -1492,12 +1494,12 @@ extension VideoEditorModel {
         resumeDrawingAfterCrop()
     }
 
-    /// Reset in crop mode: the crop shows everything again, until it's applied.
-    func resetCropDraft() {
+    /// Reset in crop mode, or Delete: the crop shows everything again, until it's applied.
+    func resetCrop() {
         cropDraft = cropBounds
     }
 
-    func setCropAspect(_ aspect: CropAspect) {
+    func chooseCropAspect(_ aspect: CropAspect) {
         cropAspect = aspect
         if let draft = cropDraft {
             cropDraft = CropEditing.draft(draft, holding: aspect)
