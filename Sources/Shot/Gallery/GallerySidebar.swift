@@ -140,31 +140,6 @@ private struct SidebarIconButton: View {
     }
 }
 
-/// The fill behind a row: yellow with an ink edge when it's picked, selection blue while something is held over a folder, and
-/// a quiet fill under the pointer.
-private struct SidebarRowBackground: ViewModifier {
-    let selected: Bool
-    var hovering = false
-    var targeted = false
-
-    func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
-        content
-            .inkOnFill(selected && !targeted ? Brutal.accent : nil)
-            .background {
-                if targeted {
-                    shape.fill(Brutal.selection.opacity(0.18))
-                        .inkBorder(shape, width: 1.5, color: Brutal.selection)
-                } else if selected {
-                    shape.fill(Brutal.accent)
-                        .inkBorder(shape, width: 1.5, color: Brutal.line)
-                } else if hovering {
-                    shape.fill(Brutal.hover)
-                }
-            }
-    }
-}
-
 /// A row's icon, name and count, laid out the same in every section.
 private struct SidebarRowLabel<Icon: View>: View {
     let title: String

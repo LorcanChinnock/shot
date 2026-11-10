@@ -64,9 +64,8 @@ public enum PreferenceKey {
     public static let galleryShowsSidebar = "galleryShowsSidebar"
     /// How wide the gallery's folder sidebar is, in points.
     public static let galleryFolderSidebarWidth = "galleryFolderSidebarWidth"
-    /// How wide the window's sidebar of sections is, in points, and whether it's shrunk to icons.
+    /// How wide the Settings sidebar is, in points.
     public static let appSidebarWidth = "appSidebarWidth"
-    public static let appSidebarCollapsed = "appSidebarCollapsed"
     /// How large Shot draws its own text, a `TextSize`.
     public static let textSize = "textSize"
     /// Whether Shot follows the system appearance, an `AppearanceMode`.
@@ -166,8 +165,7 @@ public struct Preferences {
             PreferenceKey.captureSubfolder: "",
             PreferenceKey.galleryShowsSidebar: true,
             PreferenceKey.galleryFolderSidebarWidth: 220.0,
-            PreferenceKey.appSidebarWidth: 196.0,
-            PreferenceKey.appSidebarCollapsed: false,
+            PreferenceKey.appSidebarWidth: 228.0,
             PreferenceKey.editorShowsLayers: false,
             PreferenceKey.videoEditorShowsInspector: false,
         ]

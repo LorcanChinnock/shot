@@ -298,9 +298,9 @@ private struct SetupStep: View {
                 subtitle: keysSubtitle,
                 isOn: $model.usesSystemKeys
             )
-            ToggleRow(title: "Open Shot at login", subtitle: "So your shortcuts work after a restart.", isOn: $model.opensAtLogin, divider: false)
+            Brutal.separator.frame(height: 1)
+            ToggleRow(title: "Open Shot at login", subtitle: "So your shortcuts work after a restart.", isOn: $model.opensAtLogin)
         }
-        .padding(.horizontal, 14)
         .padding(.vertical, 4)
         .glassCard()
         Spacer(minLength: 0)

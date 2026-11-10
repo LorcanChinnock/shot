@@ -81,7 +81,7 @@ The gallery sidebar draws its icons in the same colours without a tile: Screensh
 
 `FloatingPanel` in `Design/GlassWindow.swift` holds these values. `.floatingPanel(shape, opacity:)` draws the fill and edge and lays the content out in the dark appearance, so `BrutalBadge`, `BrutalSegmented` and the other quiet components pick up their dark values. Buttons inside take `BrutalButtonStyle(…, floating: true)`, and `FloatingDivider` draws the divider. Each panel lives in a `FloatingPanelWindow` sized to its shape. The shadow is the system window shadow, which follows the shape and needs no transparent margin to catch clicks, so it only approximates the board's. The capture bar is drawn by AppKit inside the overlay, so it draws the board's shadow itself, outside the bar only, from `FloatingPanel.shadowNS`. Increase Contrast and Reduce Transparency make every panel solid, and Increase Contrast takes the edge to 40% white and the divider to 60%. Panel layouts stay as they are until each board's own issue rebuilds them.
 
-**Window chrome** (#1073): `GlassWindow` makes a standard titled window with a unified, transparent title bar and the toolbar content beside the standard traffic lights. The window background is the plain Window colour, and the system draws the corners and edge. `SidebarMaterial` is the see-through sidebar (`NSVisualEffectView`, `.sidebar` material), solid in the Sidebar colour with Increase Contrast or Reduce Transparency. Settings runs it from the window's edge to the middle of the gap beside the sidebar, with a separator on its right.
+**Window chrome** (#1073): `GlassWindow` makes a standard titled window with a unified, transparent title bar and the toolbar content beside the standard traffic lights. The window background is the plain Window colour, and the system draws the corners and edge. `SidebarMaterial` is the see-through sidebar (`NSVisualEffectView`, `.sidebar` material), solid in the Sidebar colour with Increase Contrast or Reduce Transparency. Settings and the gallery run it the window's full height, under the traffic lights, with a separator on its right.
 
 The menu bar menu is a native menu. The board draws it at `rgba(248,246,242,0.96)`, radius 11, with the highlighted row in accent and a 1 pt `rgba(22,22,26,0.4)` inner edge.
 
@@ -971,19 +971,19 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | --- | --- |
 | Gallery window | A standard window titled "Gallery", 1224 × 764 pt at first as on the board, 640 × 420 pt at the smallest. Since #1107 the title bar shows no title: the sidebar runs under the traffic lights and the toolbar names what's shown (Gallery sidebar) |
 | Settings window | Titled "Settings", 1080 × 720 pt at first as before, with no Gallery section; it opens on General |
-| Open Gallery | A row at the foot of the Settings sidebar, above the "Show icons only" button: the `square.grid.2x2` symbol on a paper tile with the sections' 2 pt ink edge, "Open Gallery", and a small `arrow.up.right` in faded ink. Shrunk to icons, it's the tile alone with a tip |
+| Open Gallery | A row at the foot of the Settings sidebar: the `square.grid.2x2` symbol on a tile, "Open Gallery", and a small `arrow.up.right`. #1111 redrew it and dropped the icons-only rail (Settings window and sidebar) |
 
 - **Ways in.** The menu bar menu's Gallery row, `shot://gallery`, Open Gallery in Settings and `shot://settings?section=gallery` all open the gallery window. ShotCore's `ShotURL` turns the last into `.gallery`, with a test, so older links and scripts keep working.
 - **Its size and place.** The window saves its frame under "Gallery" with AppKit's frame autosave, so it opens where it was last closed, at the same size, across launches. The first time, it opens centred, no larger than the screen under the pointer.
 - **Two windows.** Settings and the gallery open, close and come forward on their own. ⌘W closes the one in front, ⌘, opens Settings from either, and Shot leaves the Dock once both are closed, as before.
 - **Kept in captures.** Screenshots, scrolling captures and recordings keep both windows in, as they kept the old one, and leave Shot's overlays and panels out (`ShotWindows.capturable`).
 - **Memory.** Closing the gallery stops watching the folder and drops its views, as closing the old window did, so a closed gallery costs nothing. Closing Settings stops a microphone test or camera preview and drops its views.
-- **Departures from the board.** The board's sidebar runs under the traffic lights and puts the title, "All Captures" and its count, in the toolbar; #1107 and #1108 build those. #1106 showed "Gallery" in the title bar until #1107 put the heading in the toolbar. The Settings sidebar's Open Gallery row keeps today's sidebar rows' look, with a 28 pt tile and the 2 pt ink edge, rather than the board's 22 pt white tile with a hairline, until #1111 redraws the whole sidebar. At larger text sizes, or in a long translation, the arrow hides so the label stays on one line.
+- **Departures from the board.** The board's sidebar runs under the traffic lights and puts the title, "All Captures" and its count, in the toolbar; #1107 and #1108 build those. #1106 showed "Gallery" in the title bar until #1107 put the heading in the toolbar. The Settings sidebar's Open Gallery row kept the old sidebar rows' look, with a 28 pt tile and the 2 pt ink edge, until #1111 redrew the whole sidebar with the board's 22 pt white tile (Settings window and sidebar). At larger text sizes, or in a long translation, the arrow hides so the label stays on one line.
 - **Keyboard.** The gallery's keys work in its window as they did in Settings (Keyboard shortcuts › Gallery). With keyboard navigation on, Tab reaches Open Gallery in the Settings sidebar, and Space opens the gallery.
 - **VoiceOver** reads Open Gallery as a button of that name. The arrow is hidden from it. The windows are named "Gallery" and "Settings", which VoiceOver and Mission Control show.
 - **Text size** scales Open Gallery's label and symbols. At Larger its label still fits on one line in the default sidebar width.
 - **Reduce Motion.** Nothing here moves. The windows open with the system's own window animation.
-- **Increase Contrast** changes nothing here. Open Gallery's tile already has a 2 pt ink edge.
+- **Increase Contrast** changes nothing here. Since #1111, Open Gallery's arrow turns ink (Settings window and sidebar).
 
 ### Gallery sidebar
 
@@ -1106,6 +1106,39 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Text size** scales the words, keys, box and dialog width; the box and arrow give way first when they don't fit.
 - **Reduce Motion** leaves the arrow drawn and still. Nothing else here moves.
 - **Increase Contrast** takes the box's line to 60% ink, the note and secondary text to ink, the cards' edge to 60% ink, and darkens Move to Trash's red, as every destructive main button does.
+
+### Settings window and sidebar
+
+#1111 redraws the Settings window from Library & Settings › Settings sidebar and Settings · General, in light and dark. The sidebar used to be a column of 28 pt colour tiles with 2 pt ink edges under the app icon and "Shot", with a "Show icons only" button, and the content opened under a 30 pt title over a yellow marker and a subtitle. Now the sidebar is the board's: a search field, six rows with tinted icons, Open Gallery, and Shot's icon with its update status. The content has a 15 pt title in the title bar and grouped white panels. The panes' rows are unchanged until #1112–#1117, so this section covers the window, the sidebar, the search and the shared groups and rows. Nothing here runs during a capture, so the capture → copy path is unchanged.
+
+| Part | Look |
+| --- | --- |
+| Sidebar | 228 pt wide by default, 180–300 pt by dragging its edge, the full window height under the traffic lights, on `SidebarMaterial` with a 1 pt separator on its right, 10 pt in from each side |
+| Search | `BrutalSearchField` with "Search" as its prompt, 4 pt further in and 12 pt above the rows |
+| Rows | A 22 pt tile rounded at the control radius, 6, with the section's symbol in 12 pt semibold in its tint (Colour › Sidebar icon tints), then the name in 13 pt regular, 6 × 8 pt padding, 2 pt apart. Hover fills with `Brutal.hover` |
+| Selected row | Yellow, `#FFD43B` (dark `#F2CC4A`), with a 1.5 pt ink edge and semibold text (`SidebarRowBackground`, shared with the gallery). Its tile turns white with a 1 pt edge in ink at 20% and an ink symbol |
+| Open Gallery | At the foot: `square.grid.2x2` on a white tile (dark `#3A3A3F`) with a 1 pt control edge, "Open Gallery" in 13 pt and a small `arrow.up.right` in tertiary text |
+| Footer | Under a hairline, 6 pt below Open Gallery: the app icon at 28 pt, "Shot" in 12 pt bold and the status in 11 pt tertiary text |
+| Title | The section's name in 15 pt bold in the 52 pt title bar beside the sidebar, 28 pt in, over a 1 pt separator. While searching, "Results for “login”" |
+| Content | 18 pt from the top and 28 pt from each side, groups 18 pt apart |
+| Group | Its name in 12 pt semibold tertiary text, 12 pt in, 6 pt above a panel in the group colour with the group depth, rounded at the group radius, 10 |
+| Group row | The name in 13 pt regular and its description in 11 pt tertiary text 2 pt under it, the control on the right, 9 × 14 pt padding, with a 1 pt separator between rows |
+| Search results | Each section with a match: its tile and name in 15 pt bold with Show All as a `PanelLinkStyle` link on the right, then its groups that match, 28 pt before the next section |
+| No results | The shared `EmptyState`, "No settings match" and "Try another word, or clear the search to see every section.", centred in the content |
+
+- **Search.** Typing in the field lists every row whose name or description holds every word typed, from all six sections, under their names. A row also matches its group's and its section's names, so "audio" lists the Audio group and "about" lists About. Groups and sections with no matching row hide, and sidebar rows without one fade to 40%. Case, accents, full-width letters and curly apostrophes don't matter, and a word can match inside another, which languages written without spaces need. ShotCore's `SettingsSearch` does the matching, with tests. Previews and notes that aren't rows, such as the Quick Access screen and the shortcut hint, hide while searching.
+- **How the rows filter.** Each `SettingRow` hides itself when the search doesn't match, and `SettingsCard` lays out the rows that are left (`Group(subviews:)`), drawing the separators between them, so it draws nothing when none are. Rows no longer take a `divider:` argument, and groups no longer take a symbol.
+- **Leaving a search.** Clicking a sidebar row or Show All clears the search and opens that section. Esc in the field clears it and gives the keyboard back to the window.
+- **Arrow keys.** ↑ and ↓ move to the section above or below, stopping at the first and last, unless a text field, a shortcut recorder, a pop-up menu or a sheet has the keyboard. The window opens with the keyboard out of the search field so they work at once, and picking a section takes it out again. ⌘F puts it back in the field. `SettingsSearch.step` has a test.
+- **The status.** "Up to date" while Shot checks for updates by itself and has found nothing, "Shot 1.2 is available" in accent text once a check finds one, and "Version 1.2" when automatic checks are off or the build has no update feed, as ShotDev doesn't, since then it can't tell. Clicking the footer opens About, where updates are.
+- **`shot://settings?section=`** opens that section as before, and ends a search.
+- **What went.** The icons-only rail with its "Show icons only" button, and the automatic shrink below 920 pt wide, which the board doesn't have and which left no room for the search. The app icon and "Shot" at the top of the sidebar, the 30 pt title with its marker, and the subtitles under it. The upper-case group headings with symbols, and the rows' 1.5 pt dividers. `PreferenceKey.appSidebarCollapsed` is gone, and the sidebar's default width is 228 pt, up from 196.
+- **Departures from the board.** The board rounds rows at 7; Shot uses the control radius, 6. The board's sidebar is fixed; Shot keeps the drag to resize it, as in the gallery. The board's footer tile is the brand mark on yellow with an ink edge and drop; Shot shows the app icon, as #1111 asks, so the selected row stays the sidebar's only ink. The board always says "Up to date"; Shot says it only when that's true. The board has no search results; Shot lists them in the content, as the issue asks, with Show All and a no-results state.
+- **Keyboard.** With keyboard navigation on, Tab reaches the search field, each row, Open Gallery and the footer, and Space presses them.
+- **VoiceOver** reads the sidebar as "Settings sections", each row as a button with its name and whether it's selected, a faded row's value as "No matches", and the footer as "Shot" with its status and the hint "Opens About". Group names and the title read as headings.
+- **Text size** scales the search, the rows' names, Open Gallery, the footer, the title and every group and row; the tiles stay 22 pt, and Open Gallery's arrow gives way first in a narrow sidebar.
+- **Reduce Motion.** Nothing here moves. Sections switch at once, where the old sidebar sprang.
+- **Increase Contrast** makes the sidebar solid in the Sidebar colour, and the group names, row descriptions, Open Gallery's arrow and the footer's status ink.
 
 ## Website values
 
@@ -1237,8 +1270,9 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Gallery · preview and empty state | #1109 preview | `Gallery/GalleryPreview.swift` (`GalleryPreviewView` replaces the Quick Look panel), `Gallery/GalleryModel.swift` (`previewing`, `preview(_:)`, `stepPreview(by:)`, `textRevision`), `Gallery/GalleryController.swift` (preview keys), `Gallery/GalleryView.swift` (preview over the grid, Preview in the menu), ShotCore `GalleryPreviewDetails.swift` (new) | ☐ |
 | Gallery · preview and empty state | #1110 empty state | `Gallery/GalleryEmptyLibrary.swift` (new, `GalleryEmptyLibrary`), `Gallery/GalleryView.swift` (`content`), `Gallery/GalleryModel.swift` (`folderPath`, `chooseFolder(in:)`), ShotCore `GalleryEmptyLibrary.swift` (new, `Gallery.folderPath`, `trashFan`, `KeyCombo.keycaps`) | ☐ |
 | Welcome | #1118 | `WelcomeWindow.swift` | ☐ |
-| Settings sidebar (shared component) | #1111 | `Settings/SettingsView.swift` | ☐ |
-| Settings sidebar (shared component) | #1106 Open Gallery | `Settings/SettingsView.swift` (`OpenGalleryItem`) | ☐ |
+| Settings sidebar (shared component) | #1111 | `Settings/SettingsSidebar.swift` (new: sidebar, rows, Open Gallery, footer), `Settings/SettingsView.swift` (`SettingsNavigation` search, layout, title, search results), `Settings/SettingsWindowController.swift` (arrow keys), `Settings/ShortcutRecorderView.swift`, `Design/BrutalStyle.swift` (`SettingsCard`, `SettingRow`, `SidebarTint.gallery`), `Design/GlassWindow.swift` (`SidebarRowBackground`, from the gallery), `Updater.swift` (`isEnabled`), ShotCore `SettingsSearch.swift` (new) and `Preferences.swift` (228 pt, no collapse) | ☐ |
+| Settings sidebar (shared component) | #1106 Open Gallery | `Settings/SettingsView.swift` (`OpenGalleryItem`, redrawn by #1111 as `OpenGalleryRow` in `Settings/SettingsSidebar.swift`) | ☐ |
+| Settings · General | #1111 title, groups and rows | `Settings/SettingsView.swift`, `Design/BrutalStyle.swift` (`SettingsCard`, `SettingRow`) | ☐ |
 | Settings · General | #1112 | `Settings/SettingsView.swift` | ☐ |
 | Settings · General | #1073 sidebar material | `Design/GlassWindow.swift` (`SidebarMaterial`), `Settings/SettingsView.swift` | ☐ |
 | Settings · Capture | #1113 | `Settings/SettingsView.swift` | ☐ |

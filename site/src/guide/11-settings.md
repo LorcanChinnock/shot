@@ -12,6 +12,14 @@ Click Shot's menu bar icon and choose **Settings…**, or press <kbd>⌘,</kbd> 
 
 The [gallery](#find-your-captures) has its own window. **Open Gallery**, at the foot of the Settings sidebar, opens it.
 
+Use <kbd>↑</kbd> and <kbd>↓</kbd> to move between sections. The foot of the sidebar shows Shot's version, or **Up to date** while Shot checks for updates by itself. Click it to open **About**.
+
+## Find a setting
+
+Type in the **Search** field at the top of the sidebar, or press <kbd>⌘F</kbd>. Shot lists every setting whose name or description has the words you type, from all six sections, under each section's name. Sections with no match fade in the sidebar.
+
+Click **Show All** beside a section, or click a section in the sidebar, to clear the search and see the whole section. <kbd>Esc</kbd> clears the search too.
+
 ## What each section controls
 
 | Section | What you can change |

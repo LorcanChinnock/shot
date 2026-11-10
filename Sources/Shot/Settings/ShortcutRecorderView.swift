@@ -37,6 +37,7 @@ struct ShortcutRecorderView: View {
 
     private func start() {
         isRecording = true
+        SettingsNavigation.shared.recordingShortcut = true
         HotkeyCenter.shared.suspend()
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             switch event.keyCode {
@@ -74,6 +75,7 @@ struct ShortcutRecorderView: View {
         monitor = nil
         if isRecording {
             isRecording = false
+            SettingsNavigation.shared.recordingShortcut = false
             HotkeyCenter.shared.resume()
         }
     }
