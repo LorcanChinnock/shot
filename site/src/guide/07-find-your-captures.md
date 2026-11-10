@@ -12,7 +12,7 @@ Choose **Gallery** in Shot's menu bar menu, click **Open Gallery** at the foot o
 
 For your last few captures you don't need the gallery. The menu bar menu shows your four newest under **Recent**: click one to open it in its editor, or drag it into another app. With the keyboard, press <kbd>↓</kbd> until the row is highlighted, then <kbd>→</kbd> for a list of them.
 
-It shows every image, movie and GIF in your save folder and the folders inside it, whether Shot made it or not, and stays up to date as you capture. Captures taken with saving turned off aren't in it. To group captures into folders or tag them, see [Organise your captures](#organise-your-captures).
+It shows every image, movie and GIF in your save folder and the folders inside it, whether Shot made it or not, and stays up to date as you capture. Captures taken with saving turned off aren't in it. Until you save your first capture, the gallery shows the screenshot shortcut set in Settings, and **Choose a different folder…** points it at a folder you already keep captures in. To group captures into folders or tag them, see [Organise your captures](#organise-your-captures).
 
 ## Search, filter and sort
 
@@ -41,7 +41,7 @@ While something is selected, a bar floats at the bottom of the gallery. It says 
 | Copy | Click **Copy** in the selection bar, or press <kbd>⌘C</kbd>. |
 | Drop it in another app | Drag the thumbnail. |
 | Show the file | Click **Show in Finder**. |
-| Delete | Click the Trash button in the selection bar, or press <kbd>⌘⌫</kbd>. <kbd>⌘Z</kbd> puts it back, and so can Finder. |
+| Delete | Click the Trash button in the selection bar, choose **Move to Trash** from a capture's menu, or press <kbd>Delete</kbd>. Shot shows the captures and asks first. <kbd>⌘⌫</kbd> moves them straight to the Trash without asking. <kbd>⌘Z</kbd> puts them back, and so can Finder. |
 
 Right-click for the same actions, plus **Preview**. On a single item, right-click also offers **Rename…**, **Export GIF** for a video, and [**Pin**](#pin-a-screenshot) for a screenshot.
 

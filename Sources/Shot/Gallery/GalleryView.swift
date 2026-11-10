@@ -23,6 +23,9 @@ struct GalleryRootView: View {
                 GalleryPreviewView(model: model)
             }
         }
+        .sheet(item: Bindable(model).trashRequest) { request in
+            TrashConfirmation(model: model, request: request)
+        }
         .onChange(of: model.searchFocusRequest) {
             searchFocused = true
         }
@@ -56,7 +59,6 @@ struct GalleryRootView: View {
             VStack(spacing: 0) {
                 header
                 content
-                    .padding(.horizontal, 15)
                     .overlay(alignment: .bottom) {
                         GallerySelectionBar(model: model)
                             .padding(.bottom, 20)
@@ -138,10 +140,15 @@ struct GalleryRootView: View {
 
     @ViewBuilder
     private var content: some View {
-        if model.sections.isEmpty {
+        if model.hasLoaded, model.items.isEmpty {
+            // Nothing saved yet: the empty library runs edge to edge, under its dot grid.
+            GalleryEmptyLibrary(model: model)
+        } else if model.sections.isEmpty {
             emptyState
+                .padding(.horizontal, 15)
         } else {
             GalleryGrid(model: model)
+                .padding(.horizontal, 15)
         }
     }
 
@@ -150,14 +157,6 @@ struct GalleryRootView: View {
         Group {
             if !model.hasLoaded {
                 ProgressView().controlSize(.small)
-            } else if model.items.isEmpty {
-                EmptyState(
-                    symbol: "photo.on.rectangle.angled", title: String(localized: "No captures yet"),
-                    message: String(localized: "Screenshots and recordings saved to \((model.folder.path as NSString).abbreviatingWithTildeInPath) show up here.")
-                ) {
-                    Button("Open Folder") { NSWorkspace.shared.open(model.folder) }
-                        .buttonStyle(BrutalButtonStyle())
-                }
             } else if let shown = model.shownFolder, !model.items.contains(where: { $0.folder == shown }) {
                 EmptyState(symbol: "folder", title: "This folder is empty", message: "Drag captures onto this folder in the sidebar, or use Move to in a capture's menu. Captures in the folders inside it show when you open them.")
             } else {
@@ -358,7 +357,7 @@ private struct GallerySelectionBar: View {
                 .buttonStyle(BrutalButtonStyle(.toolbar))
                 .brutalTip("Show in Finder (⌘R)")
             Button {
-                model.trash(selected)
+                model.askToTrash(selected)
             } label: {
                 Image(systemName: "trash")
                     .font(.scaled(13, weight: .medium))
@@ -610,7 +609,7 @@ private struct GalleryTileMenu: View {
         Button("Tag…") { model.startTagging(item) }
         Button("Show in Finder") { model.reveal(targets) }
         Divider()
-        Button("Move to Trash") { model.trash(targets) }
+        Button("Move to Trash") { model.askToTrash(targets) }
     }
 }
 

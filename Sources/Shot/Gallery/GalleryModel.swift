@@ -110,9 +110,12 @@ final class GalleryModel {
         set { storedCaptureSubfolder = newValue }
     }
     @ObservationIgnored @Setting(PreferenceKey.captureSubfolder) private var storedCaptureSubfolder: String
+    @ObservationIgnored @Setting(PreferenceKey.saveFolder) private var storedSaveFolder: String
     private(set) var visible: [GalleryItem] = []
     /// The capture the preview shows over the grid, or `nil` while the grid shows.
     private(set) var previewing: URL?
+    /// The captures the Move to Trash dialog asks about, or `nil` while it's closed.
+    var trashRequest: TrashRequest?
     /// Counts each time `TextIndexer` hands over more text, so the preview reads the index again for its text panel.
     private(set) var textRevision = 0
     private(set) var sections: [GallerySection] = []
@@ -196,6 +199,7 @@ final class GalleryModel {
 
     func stop() {
         previewing = nil
+        trashRequest = nil
         TextIndexer.shared.onTexts = nil
         texts = [:]
         watchers.values.forEach { $0.cancel() }
@@ -501,6 +505,32 @@ final class GalleryModel {
 
     /// The name the save folder itself goes by in menus.
     var rootName: String { folder.lastPathComponent }
+
+    /// The save folder as the empty gallery and the Trash dialog name it, "Pictures/Shot", in the names Finder shows.
+    var folderPath: String {
+        Gallery.folderPath(folder, home: FileManager.default.homeDirectoryForCurrentUser) { FileManager.default.displayName(atPath: $0) }
+    }
+
+    /// Lets you pick another save folder, as Settings › General does, then lists it. The panel opens on the gallery window.
+    func chooseFolder(in window: NSWindow?) {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.directoryURL = folder
+        let picked: (NSApplication.ModalResponse) -> Void = { [weak self, weak panel] response in
+            guard response == .OK, let url = panel?.url else {
+                return
+            }
+            self?.storedSaveFolder = url.path
+            self?.reload()
+        }
+        if let window {
+            panel.beginSheetModal(for: window, completionHandler: picked)
+        } else {
+            picked(panel.runModal())
+        }
+    }
 
     /// Moves `items` into the folder `name`, or out of folders into the save folder itself when it's empty.
     func move(_ items: [GalleryItem], to name: String) {
@@ -811,6 +841,23 @@ final class GalleryModel {
         }
     }
 
+    /// Opens the Move to Trash dialog for `items`, which trashes them only if you confirm. ⌘⌫ skips it, as in Photos.
+    func askToTrash(_ items: [GalleryItem]) {
+        guard !items.isEmpty else {
+            return
+        }
+        trashRequest = TrashRequest(items: items)
+    }
+
+    /// The Move to Trash dialog's button: trashes what it asked about and closes it.
+    func confirmTrash() {
+        guard let request = trashRequest else {
+            return
+        }
+        trashRequest = nil
+        trash(request.items)
+    }
+
     /// Moves the files to the Trash, where Finder can put them back, then selects the item that takes the first one's place.
     func trash(_ items: [GalleryItem]) {
         guard let first = items.first else {
@@ -871,4 +918,10 @@ final class GalleryModel {
     func zoom(by step: Double) {
         tileSize = min(max(tileSize + step, Gallery.tileSizes.lowerBound), Gallery.tileSizes.upperBound)
     }
+}
+
+/// What the Move to Trash dialog asks about. Each request is new, so the sheet opens afresh for each.
+struct TrashRequest: Identifiable {
+    let id = UUID()
+    let items: [GalleryItem]
 }
