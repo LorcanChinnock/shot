@@ -71,6 +71,8 @@ final class VideoEditorModel {
     private(set) var waveforms: [URL: Waveform] = [:]
     /// The tool drawing annotations over the video, or nil when none is picked. Never crop.
     private(set) var annotationTool: EditorTool?
+    /// The drawing tool to pick again when a crop started from the drawing tools ends.
+    private(set) var toolAfterCrop: EditorTool?
     /// What crop mode is adjusting, or `nil` outside it.
     private(set) var cropTarget: VideoCropTarget?
     /// The crop being adjusted: in canvas pixels for the frame, or in the clip's picture's pixels, y down, for a clip.
@@ -155,12 +157,12 @@ final class VideoEditorModel {
     /// write. An edit taken back to the plain recording loses nothing.
     var hasUnsavedChanges: Bool { isDirty && project != savedProject }
 
-    /// What the panel adds to the window's height over the collapsed layout.
+    /// What the drawing options and the tracks add to the window's height over the collapsed layout.
     var tracksExtraHeight: CGFloat {
-        guard showsTracks else {
-            return 0
-        }
         let palette = isAnnotating ? AnnotationPalette.height + Brutal.sectionGap : 0
+        guard showsTracks else {
+            return palette
+        }
         let inspector = showsInspector ? ClipInspector.height + Brutal.sectionGap : 0
         return TracksView.extraHeight(for: project) + palette + inspector
     }
@@ -311,23 +313,24 @@ final class VideoEditorModel {
         setShowsTracks(!showsTracks)
     }
 
-    /// The title bar's Draw: picks the last drawing tool, opening the tracks, where the drawing tools are, or stops drawing.
+    /// The title bar's Draw: shows the drawing tools beside the video with the last tool picked, or stops drawing. A crop
+    /// started from the tools is kept, as picking another tool keeps it.
     func toggleDrawing() {
+        if toolAfterCrop != nil {
+            toolAfterCrop = nil
+            applyCrop()
+            return
+        }
         guard !isAnnotating else {
             setAnnotationTool(nil)
             return
         }
-        setShowsTracks(true)
         setAnnotationTool(annotationStyle.tool == .crop || annotationStyle.tool == .hand ? .arrow : annotationStyle.tool)
     }
 
     private func setShowsTracks(_ shown: Bool) {
         guard shown != showsTracks else {
             return
-        }
-        // The drawing tools are in the tracks, so hiding them stops drawing, and Draw doesn't stay on with nothing to show.
-        if !shown {
-            setAnnotationTool(nil)
         }
         showsTracks = shown
         onLayoutChanged?()
@@ -1013,6 +1016,44 @@ final class VideoEditorModel {
 extension VideoEditorModel {
     var isAnnotating: Bool { annotationTool != nil }
 
+    /// Whether the drawing tools show beside the video: while a tool is picked, and while a crop started from them runs.
+    var showsDrawTools: Bool { isAnnotating || toolAfterCrop != nil }
+
+    /// A tool in the drawing tools: keeps a crop started from them, then picks the tool.
+    func pickDrawTool(_ tool: EditorTool) {
+        if isCropping {
+            toolAfterCrop = nil
+            applyCrop()
+        }
+        annotationStyle.tool = tool
+        setAnnotationTool(tool)
+    }
+
+    /// Crop video in the drawing tools, or C while drawing: leaves the tool for crop mode, and picks it again when the
+    /// crop is applied or cancelled. Outside drawing it's C as before.
+    @discardableResult
+    func cropFromDrawTools() -> Bool {
+        guard let tool = annotationTool else {
+            return beginCrop()
+        }
+        setAnnotationTool(nil)
+        guard beginCrop() else {
+            setAnnotationTool(tool)
+            return false
+        }
+        toolAfterCrop = tool
+        return true
+    }
+
+    /// Back to the drawing tool a crop from the drawing tools left.
+    private func resumeDrawingAfterCrop() {
+        guard let tool = toolAfterCrop else {
+            return
+        }
+        toolAfterCrop = nil
+        setAnnotationTool(tool)
+    }
+
     var selectedAnnotation: AnnotationClip? { selectedClipID.flatMap(project.annotationClip) }
 
     /// Canvas pixels per point of a new annotation's strokes and corners, so they look the same on a 4K recording as on a small one.
@@ -1036,6 +1077,7 @@ extension VideoEditorModel {
         }
         player.pause()
         endCropSilently()
+        toolAfterCrop = nil
         annotationTool = tool
         if tool != nil, tool != .select {
             selectedClipID = selectedAnnotation == nil ? selectedClipID : nil
@@ -1387,6 +1429,7 @@ extension VideoEditorModel {
         let changed = project.applying(cropDraft: draft, bounds: bounds, to: target)
         cropTarget = nil
         cropDraft = nil
+        defer { resumeDrawingAfterCrop() }
         guard let changed, replaceProject(with: changed) else {
             refreshPlayer()
             return
@@ -1400,6 +1443,7 @@ extension VideoEditorModel {
         }
         endCropSilently()
         refreshPlayer()
+        resumeDrawingAfterCrop()
     }
 
     private func endCropSilently() {
@@ -1415,6 +1459,7 @@ extension VideoEditorModel {
         }
         endCropSilently()
         refreshPlayer()
+        resumeDrawingAfterCrop()
     }
 
     /// Reset in crop mode: the crop shows everything again, until it's applied.

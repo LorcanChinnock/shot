@@ -6,11 +6,11 @@ group: Edit and share
 
 ## Draw over the video
 
-1. In the video editor, click **Draw** in the title bar. The tracks open with the drawing tools above them, and clicking **Draw** again stops drawing.
-2. Pick a tool and draw, as in the [annotation editor](#annotate-a-screenshot): arrows, shapes, text, blur and more. Crop and the hand tool aren't here; to crop the video, see [Crop the video](#crop-the-video).
-3. To add a picture, use the image button in the same toolbar.
+1. In the video editor, click **Draw** in the title bar. The drawing tools appear in a column on the left of the video, and the colours, fill and line widths for the tool appear under it. Clicking **Draw** again hides them.
+2. Pick a tool and draw, as in the [annotation editor](#annotate-a-screenshot): arrows, shapes, text, blur and more. The hand tool isn't here, and the tools have no letter keys, since the video editor uses those for splitting and playback.
+3. To add a picture, click the image button near the bottom of the column. To crop, click **Crop video** at the bottom, or press <kbd>C</kbd>; when you apply or cancel the crop, you're back on the tool you were using. See [Crop the video](#crop-the-video).
 
-Each annotation starts at the playhead and shows for 3 seconds. It goes on the first annotation lane that's free at that time and not locked, or else on a new lane.
+Each annotation starts at the playhead and shows for 3 seconds. It goes on the first annotation lane that's free at that time and not locked, or else on a new lane. Click **More tools** (<kbd>T</kbd>) to see the lanes and change when an annotation shows.
 
 ## Fine-tune with the Inspector
 

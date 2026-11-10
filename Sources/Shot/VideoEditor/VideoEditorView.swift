@@ -12,6 +12,7 @@ struct VideoEditorRootView: View {
 
     let model: VideoEditorModel
     @State private var windowHeight: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         // From Edit › Video editor and export: the title bar over a hairline, as in the image editor, then the editor.
@@ -42,11 +43,12 @@ struct VideoEditorRootView: View {
                 .overlay { TransformOverlay(model: model) }
                 .overlay { AnnotationCanvas(model: model) }
                 .overlay { VideoCropOverlay(model: model) }
+                .overlay(alignment: .leading) { drawTools }
                 .inkBorder(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular), width: 2)
+            if model.isAnnotating {
+                AnnotationPalette(model: model)
+            }
             if model.showsTracks {
-                if model.isAnnotating {
-                    AnnotationPalette(model: model)
-                }
                 TracksToolbar(model: model)
                 if model.showsInspector {
                     ClipInspector(model: model)
@@ -74,6 +76,18 @@ struct VideoEditorRootView: View {
             }
             ExportOptionsBar(model: model)
         }
+    }
+
+    /// The drawing tools, over the left of the video while Draw is on.
+    private var drawTools: some View {
+        ZStack(alignment: .leading) {
+            if model.showsDrawTools {
+                DrawToolColumn(model: model)
+                    .padding(.leading, 16)
+                    .transition(reduceMotion ? .opacity : .move(edge: .leading).combined(with: .opacity))
+            }
+        }
+        .animation(Motion.animation(.panelArrive, reduceMotion: reduceMotion), value: model.showsDrawTools)
     }
 
     /// Drops the play button so it's centred on the main track's row, which sits below the ruler and any picture or annotation lanes.
@@ -159,7 +173,7 @@ private struct VideoEditorTitleBar: View {
                 }
                 .padding(.horizontal, 3)
             }
-            .buttonStyle(BrutalButtonStyle(.toolbar, isOn: model.isAnnotating))
+            .buttonStyle(BrutalButtonStyle(.toolbar, isOn: model.showsDrawTools))
             .brutalTip("Draw", detail: "Draw arrows, shapes, text, blur and more over the video.")
             Rectangle()
                 .fill(Brutal.controlEdge)

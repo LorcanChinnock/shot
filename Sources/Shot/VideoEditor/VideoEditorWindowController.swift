@@ -217,8 +217,8 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             return true
         }
         switch event.keyCode {
-        case 8: // C
-            return model.beginCrop()
+        case 8: // C, which keeps the drawing tools showing when it's pressed while drawing
+            return model.cropFromDrawTools()
         case 115: // Home
             model.seek(to: model.range.start)
         case 119: // End
