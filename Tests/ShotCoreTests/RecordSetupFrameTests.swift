@@ -51,4 +51,10 @@ import Testing
         #expect(LevelBars.lit(1.5) == LevelBars.count)
         #expect(LevelBars.lit(0.5, of: 8) == 4)
     }
+
+    @Test func levelBarsWarnInTheTopTwo() {
+        #expect(LevelBars.loudFrom == 8)
+        #expect(LevelBars.loudFrom(of: 8) == 6)
+        #expect(LevelBars.loudFrom(of: 1) == 0)
+    }
 }

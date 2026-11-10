@@ -1217,6 +1217,38 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Reduce Motion.** The card fades in and out in place rather than sliding, and the hover state appears at once. The countdown still runs.
 - **Increase Contrast** makes the group name, description and caption ink. The preview keeps its colours, since it pictures the screen.
 
+### Settings · Recording
+
+#1115 redraws the Recording pane from Library & Settings › Settings · Recording. Its settings and their keys are unchanged. The rows move into the board's five groups in two columns, and a dark card over the Camera group previews the camera. System audio is now called Mac sound, Bubble size is Size, and most descriptions are the board's shorter ones. Nothing here runs during a capture or a recording, so the capture → copy path is unchanged.
+
+| Group | Row | Control | Description |
+| --- | --- | --- | --- |
+| Sound | Microphone | Switch | None |
+| Sound | Input | `LevelMeter`, Test (Stop while it runs) and the device pop-up, 8 pt apart | None |
+| Sound | Mac sound | Switch | "Sound from other apps. Shot’s own sounds are left out." |
+| Pointer | Show cursor | Switch | None |
+| Pointer | Show clicks | Switch | "A ring wherever you click." |
+| Pointer | Region border | Switch | "Outlines what’s recorded. It never appears in the video." |
+| After recording | Copy to clipboard | Switch | None |
+| After recording | Adjust before recording | Switch | "Check the frame and options before every recording. Hold ⌥ as you finish the selection to check once." |
+| Camera | Camera bubble | Switch | None |
+| Camera | Camera | The device pop-up | None |
+| Camera | Size | `BrutalSegmented`: Small, Medium, Large | None |
+| Quality | Frame rate | `BrutalSegmented`: 30, 60, and 120 on a display that fast or when it's already chosen (`RecordingFrameRate`) | "MP4. 120 records HEVC on ProMotion displays." while 120 is offered, otherwise "Recordings save as MP4." |
+| Quality | GIF from Quick Access | None | "Export GIF on the card uses the video editor’s last settings:" and the summary, such as "15 fps, up to 720 px wide, first 60 seconds." |
+
+- **Layout.** Sound, Pointer and After recording fill the left column, and the camera card, Camera and Quality the right, 16 pt apart, with 16 pt between groups. Below 600 pt of content, as in a narrow window, they stack in one column 18 pt apart. While searching, the five groups list one under another like every other section's, without the camera card.
+- **Camera card.** `#2A2A2E` in both appearances, rounded at 12 with a 1 pt edge in white at 6%, with 14 pt padding. On the left, an 84 pt circle inside the camera bubble's 3 pt white ring (`CameraBubbleStyle.ringWidth`). It shows a grey figure (`person.fill` on `#3A3A3F`) until Preview runs, then the camera live and mirrored, as the bubble draws it. Beside it, the chosen camera's name in 13 pt semibold white, or the system default's, and "Check your framing and lighting." in 11 pt white at 70%, which becomes "Live and mirrored, as the bubble shows it." while the preview runs. Preview is a secondary button on the right that becomes Stop. Preview asks for camera access the way it did before, and the preview stops when the pane closes.
+- **Level meter.** `LevelMeter` is the board's: eight 4 × 10 pt bars rounded at 1 and 2 pt apart, lit success green and the setup bar's amber for the top two, over ink at 12% (white at 16% in dark). It no longer draws ink edges or record red, and it only redraws while Test runs. `LevelBars.loudFrom(of:)` in ShotCore picks the amber bars for both meters, with a test.
+- **One ink control.** The pane adds none: the selected sidebar row stays the window's only ink. Switches that are on take the accent with an ink edge, as the Ink table allows.
+- **What went.** The Starting, Video, Audio and GIF export groups, the Test microphone and Preview rows, the GIF badge, and the pane's use of `SettingsSection.color`. The longer descriptions: the permission and mute note under Microphone, "Copies the finished recording, ready to paste as a file.", the bubble's drag and double-click hint (the guide still has it), the frame rate's codec for each choice, and "Shows the input level of the microphone above." The "fps" after each frame rate, which the row's name already says.
+- **Departures from the board.** The board has no switch to turn the microphone off; Shot keeps Microphone as a switch over an Input row, as agreed in #1115, so it mirrors Camera bubble over Camera. The board's Microphone row has a meter and a pop-up; Shot's Input row adds Test between them, as #1115 asks. The board's camera card is a still drawing that says the bubble shows bottom-right; Shot's shows the live camera with a Preview button, and leaves out the corner, since the bubble starts bottom-left (Camera bubble). Its figure is a system symbol rather than the board's drawn one. The board's sizes read S, M and L; Shot spells them out, since VoiceOver reads the labels. The board has no GIF row; Shot keeps it at the end of Quality, as #1115 asks. The board's Adjust before recording says only "Always show the check step."; Shot keeps the ⌥ shortcut in it. The board's rows are 9 × 12 pt and its content is 24 pt in; Shot uses the shared rows, 9 × 14 pt, the shared 28 pt and `BrutalSegmented`.
+- **Keyboard.** With keyboard navigation on, Tab reaches each control in reading order, the left column before the right, including Test, both pop-ups and Preview.
+- **VoiceOver** reads each switch with its row's name, the group names as headings, the meter as "Microphone level", or "Microphone level, muted" while Test is off, Test as "Test the microphone" and Preview as "Preview the camera", which become "Stop the microphone test" and "Stop the camera preview" while they run. It reads the camera card's name and line together and skips the circle.
+- **Text size** scales every row, description, button and the card's text. The circle, the meter and the ring keep their size. At Larger the descriptions wrap rather than truncate.
+- **Reduce Motion.** The switches' knobs and the segmented thumbs move at once. Nothing else moves.
+- **Increase Contrast** makes the group names and descriptions ink, gives the off switches their 60% ink edges, and takes the meter's unlit bars to 30% ink (35% white in dark). The camera card keeps its colours, since it pictures the camera.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -1354,7 +1386,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Settings · General | #1073 sidebar material | `Design/GlassWindow.swift` (`SidebarMaterial`), `Settings/SettingsView.swift` | ☐ |
 | Settings · Capture | #1113 | `Settings/SettingsView.swift` (`CaptureSettings`: three groups in two columns, shorter descriptions, `SelectionAidsPreview`, `PreviewScene`), `Design/BrutalStyle.swift` (`SettingsCard` note, `SettingsGroupHeading`), `ShotCore/SelectionAidsPreview.swift` (`SelectionAidsPreviewLayout`) | ☐ |
 | Settings · Quick Access | #1114 | `Settings/SettingsView.swift` (`QuickAccessSettings`, `QuickAccessPreview`, `QuickAccessPreviewHover`, `QuickAccessDesktop`, `PreviewSampleWindow` split out of `PreviewScene`), `ShotCore/QuickAccessPreview.swift` (`QuickAccessPreviewLayout`), `ShotCore/QuickAccessLayout.swift` (`screenInset`) | ☐ |
-| Settings · Recording | #1115 | `Settings/SettingsView.swift`, `Settings/DevicePreview.swift` | ☐ |
+| Settings · Recording | #1115 | `Settings/SettingsView.swift` (`RecordingSettings`: five groups in two columns, shorter descriptions, `SoundSettings`, `CameraPreviewCard`, `CameraSettings`, `DevicePicker` width), `Recording/AudioMeter.swift` (`LevelMeter` redrawn), `ShotCore/RecordSetupFrame.swift` (`LevelBars.loudFrom(of:)`) | ☐ |
 | Settings · Shortcuts | #1116 | `Settings/ShortcutRecorderView.swift`, `Settings/SettingsView.swift` | ☐ |
 | Settings · About | #1117 | `Settings/SettingsView.swift`, `Updater.swift`, `Permissions.swift` | ☐ |
 | Gallery (dark) | #1119, after #1106–#1110 | `Design/BrutalStyle.swift` (dark values), `Gallery/GallerySidebar.swift`, `Gallery/GalleryView.swift` | ☐ |
@@ -1404,7 +1436,7 @@ Every page in `site/src/guide/`. #1128 updates the text, ticking **Updated** for
 | 08a Share a capture with an AI assistant | "Copy path for an AI assistant" in the preview; Copy Path in the Share menu | #1128 | #1109, #1093 | ☐ |
 | 09 Keyboard shortcuts | M, C and I on the capture bar; Settings › Shortcuts; Delete asks before the Trash and ⌘Delete doesn't | #1128 | #1075, #1110, #1116 | ☐ |
 | 10 Automation reference | `shot://gallery` and `shot://settings?section=gallery` open the gallery window; `shot://welcome` | #1128 | #1106, #1118 | ☐ |
-| 11 Settings | Section and row names, the sidebar search, Open Gallery, General's Text size menu and Show in Finder, Capture's groups and its preview of the selection aids, Quick Access's preview of the card in its corner with the countdown | #1128 | #1111, #1112, #1113, #1114, #1115, #1116, #1117 | ☐ |
+| 11 Settings | Section and row names, the sidebar search, Open Gallery, General's Text size menu and Show in Finder, Capture's groups and its preview of the selection aids, Quick Access's preview of the card in its corner with the countdown, Recording's groups with Mac sound and its camera card | #1128 | #1111, #1112, #1113, #1114, #1115, #1116, #1117 | ☐ |
 | 12 Languages | Check only: no redesigned screen is described | #1128 | #1121 | ☐ |
 | 13 Updates | The restyled update prompt; Settings › About › Updates | #1128 | #1117, #1084 | ☐ |
 | 14 Privacy | Permissions in Settings › About show Allowed or Allow… | #1128 | #1117 | ☐ |

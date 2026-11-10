@@ -49,7 +49,12 @@ public enum LevelBars {
     /// Bars in the row, as on the board.
     public static let count = 10
     /// Bars from this index up are lit in the warning colour, since the level is near clipping.
-    public static let loudFrom = 8
+    public static let loudFrom = loudFrom(of: count)
+
+    /// The first of the top two bars in a row of `count`, which light in the warning colour.
+    public static func loudFrom(of count: Int) -> Int {
+        max(count - 2, 0)
+    }
 
     /// How many bars a `level` from 0 to 1 lights. Any sound at all lights the first bar.
     public static func lit(_ level: Double, of count: Int = count) -> Int {

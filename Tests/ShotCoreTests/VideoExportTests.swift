@@ -1,5 +1,6 @@
 import AVFoundation
 import ImageIO
+import Synchronization
 import Testing
 @testable import ShotCore
 
@@ -194,15 +195,29 @@ extension MediaTests {
         let input = folder.appendingPathComponent("in.mp4")
         try await writeScreenRecording(to: input, seconds: 20, audio: true)
         let output = folder.appendingPathComponent("fast.mp4")
+        // A retimed export copies the retimed video and audio into the output last. Stopping that copy after a few
+        // samples cancels it partway through every time, where cancelling the task raced a copy that can finish first.
+        let checks = Mutex(0)
+        let stopAfterThreeSamples: @Sendable () -> Bool = { checks.withLock { $0 += 1; return $0 > 3 } }
 
-        let export = Task { try await VideoTrimmer.trim(input, range: TrimRange(duration: 20), speed: 1.5, to: output) }
-        // The samples are copied into the output last, once the retimed video and audio are written.
-        let deadline = ContinuousClock.now + .seconds(30)
-        while !FileManager.default.fileExists(atPath: output.path) {
-            try #require(ContinuousClock.now < deadline, "The export never started writing")
-            try await Task.sleep(for: .milliseconds(1))
+        await #expect(throws: CancellationError.self) {
+            try await AVVideoAssembler.mux(video: input, audio: input, to: output, as: .mp4, isCancelled: stopAfterThreeSamples)
         }
-        export.cancel()
+        #expect(checks.withLock { $0 } == 4)
+        #expect(!FileManager.default.fileExists(atPath: output.path))
+    }
+
+    @Test func cancellingARetimedExportBeforeItFinishesLeavesNoFile() async throws {
+        let folder = try temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let input = folder.appendingPathComponent("in.mp4")
+        try await writeScreenRecording(to: input, seconds: 2, audio: true)
+        let output = folder.appendingPathComponent("fast.mp4")
+
+        let export = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await VideoTrimmer.trim(input, range: TrimRange(duration: 2), speed: 1.5, to: output)
+        }
 
         await #expect(throws: CancellationError.self) { try await export.value }
         #expect(!FileManager.default.fileExists(atPath: output.path))
