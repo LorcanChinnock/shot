@@ -52,8 +52,6 @@ final class VideoEditorModel {
     /// A saved project to open the recording with instead of the plain one, until it's loaded.
     @ObservationIgnored private var restoring: Project?
 
-    // More tools (the tracks panel): closed for each new editor, open only when the edit needs it.
-    private(set) var showsTracks = false
     /// 1 fits the project in the window; see `TimelineZoom`.
     private(set) var zoom: Double = 1
     private(set) var snapping = true
@@ -147,8 +145,6 @@ final class VideoEditorModel {
     /// Where the playhead is on the timeline, which differs from the recording's time once something's cut.
     var playhead: Double { itemIsComposite ? currentTime : project.timelinePosition(ofSource: currentTime) }
 
-    var thumbnails: [CGImage?] { thumbnailSets[fileURL] ?? [] }
-
     var selectedClip: Clip? { selectedClipID.flatMap(project.clip) }
 
     var isDirty: Bool { isComposite || !range.isFull(duration: duration) || !cuts.isEmpty }
@@ -157,12 +153,9 @@ final class VideoEditorModel {
     /// write. An edit taken back to the plain recording loses nothing.
     var hasUnsavedChanges: Bool { isDirty && project != savedProject }
 
-    /// What the drawing options and the tracks add to the window's height over the collapsed layout.
+    /// What the drawing options, the inspector and the lanes past a plain recording's add to the window's height.
     var tracksExtraHeight: CGFloat {
         let palette = isAnnotating ? AnnotationPalette.height + Brutal.sectionGap : 0
-        guard showsTracks else {
-            return palette
-        }
         let inspector = showsInspector ? ClipInspector.height + Brutal.sectionGap : 0
         return TracksView.extraHeight(for: project) + palette + inspector
     }
@@ -191,8 +184,6 @@ final class VideoEditorModel {
             project = restoring ?? Project(source: fileURL, duration: duration, canvasSize: CGSize(width: abs(size.width), height: abs(size.height)), hasAudio: hasAudio)
             restoring = nil
             savedProject = project
-            // A saved edit with imports or transforms has no trim strip to go back to.
-            if isComposite { showsTracks = true }
         } catch let failure as LoadFailure {
             throw failure
         } catch {
@@ -302,17 +293,6 @@ final class VideoEditorModel {
 
     // MARK: Tracks
 
-    /// A project with more than a trim in it has no strip to go back to.
-    var canHideTracks: Bool { !(showsTracks && isComposite) }
-
-    func toggleTracks() {
-        guard canHideTracks else {
-            Toast.error("Delete the imported clips and transforms to hide the tracks")
-            return
-        }
-        setShowsTracks(!showsTracks)
-    }
-
     /// The title bar's Draw: shows the drawing tools beside the video with the last tool picked, or stops drawing. A crop
     /// started from the tools is kept, as picking another tool keeps it.
     func toggleDrawing() {
@@ -326,14 +306,6 @@ final class VideoEditorModel {
             return
         }
         setAnnotationTool(annotationStyle.tool == .crop || annotationStyle.tool == .hand ? .arrow : annotationStyle.tool)
-    }
-
-    private func setShowsTracks(_ shown: Bool) {
-        guard shown != showsTracks else {
-            return
-        }
-        showsTracks = shown
-        onLayoutChanged?()
     }
 
     func toggleSnapping() {
@@ -471,7 +443,6 @@ final class VideoEditorModel {
             }
             replaceProject(with: changed)
             selectedClipID = added
-            setShowsTracks(true)
             log.notice("Imported \(urls.count, privacy: .public) files")
         }
     }
@@ -763,11 +734,6 @@ final class VideoEditorModel {
     /// Moves the playhead by `seconds` along the timeline, for VoiceOver's adjust gesture.
     func nudgePlayhead(bySeconds seconds: Double) {
         seekTimeline(to: min(max(0, playhead + seconds), keptLength))
-    }
-
-    /// Thumbnails of the recording for the strip.
-    func loadThumbnails(count: Int, height: CGFloat) async {
-        await loadThumbnails(of: fileURL, duration: duration, aspectRatio: aspectRatio, count: count, height: height)
     }
 
     /// `count` frames from equal slots of `source`, `height` points tall, into `thumbnailSets`. Frames fetched before are reused.

@@ -2986,54 +2986,106 @@
         }
       }
     },
-    "Add video or audio files to the timeline" : {
+    "Add media" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Video- oder Audiodateien zur Zeitleiste hinzufügen"
+            "value" : "Medien hinzufügen"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Añade archivos de vídeo o audio a la línea de tiempo"
+            "value" : "Añadir contenido"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ajouter des fichiers vidéo ou audio à la timeline"
+            "value" : "Ajouter un média"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aggiungi file video o audio alla timeline"
+            "value" : "Aggiungi media"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ビデオやオーディオファイルをタイムラインに追加"
+            "value" : "メディアを追加"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "타임라인에 비디오 또는 오디오 파일 추가"
+            "value" : "미디어 추가"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Adicione arquivos de vídeo ou áudio à linha do tempo"
+            "value" : "Adicionar mídia"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "将视频或音频文件添加到时间线"
+            "value" : "添加媒体"
+          }
+        }
+      }
+    },
+    "Adds video or sound files to the timeline, at the playhead or after the recording. You can also drop them on the window." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fügt Video- oder Tondateien zur Zeitleiste hinzu, an der Abspielposition oder nach der Aufnahme. Du kannst sie auch auf das Fenster ziehen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añade archivos de vídeo o sonido a la línea de tiempo, en el cursor de reproducción o después de la grabación. También puedes soltarlos en la ventana."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajoute des fichiers vidéo ou son à la timeline, à la tête de lecture ou après l’enregistrement. Vous pouvez aussi les déposer sur la fenêtre."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiunge file video o audio alla timeline, alla testina o dopo la registrazione. Puoi anche trascinarli sulla finestra."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ビデオやサウンドのファイルをタイムラインの再生位置、または収録の後ろに追加します。ウインドウにドロップしても追加できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "비디오나 사운드 파일을 타임라인의 재생 위치나 녹화 뒤에 추가합니다. 윈도우에 끌어다 놓아도 됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adiciona arquivos de vídeo ou som à linha do tempo, no cursor de reprodução ou depois da gravação. Você também pode soltá-los na janela."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将视频或声音文件添加到时间线的播放头处或录制内容之后。也可以将它们拖到窗口上。"
           }
         }
       }
@@ -10618,6 +10670,7 @@
       }
     },
     "Cut" : {
+      "comment" : "Video editor timeline: the badge where a section was cut out, before its length, as in CUT 1.2s.",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -10669,54 +10722,54 @@
         }
       }
     },
-    "Cut out the selected clip and close the gap (⌫)" : {
+    "Cuts out the selected section or clip and closes the gap. Shift-drag along the lanes to select a section." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ausgewählten Clip herausschneiden und Lücke schließen (⌫)"
+            "value" : "Schneidet den ausgewählten Abschnitt oder Clip heraus und schließt die Lücke. Ziehe mit gedrückter Umschalttaste über die Spuren, um einen Abschnitt auszuwählen."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quita el clip seleccionado y cierra el hueco (⌫)"
+            "value" : "Corta la sección o el clip seleccionado y cierra el hueco. Arrastra con Mayúsculas por las pistas para seleccionar una sección."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Supprimer le clip sélectionné et combler le vide (⌫)"
+            "value" : "Coupe la section ou le clip sélectionné et referme l’espace. Faites glisser avec Maj le long des pistes pour sélectionner une section."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rimuovi la clip selezionata e chiudi lo spazio (⌫)"
+            "value" : "Taglia la sezione o la clip selezionata e chiude il vuoto. Trascina con Maiusc lungo le tracce per selezionare una sezione."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "選択したクリップを切り取って隙間を詰める（⌫）"
+            "value" : "選択した区間またはクリップをカットし、間を詰めます。区間を選択するには、Shift キーを押しながらレーンに沿ってドラッグします。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "선택한 클립을 잘라내고 빈 공간 메우기 (⌫)"
+            "value" : "선택한 구간이나 클립을 잘라내고 빈 곳을 메웁니다. 구간을 선택하려면 Shift 키를 누른 채 레인을 따라 드래그하십시오."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Remover o clipe selecionado e fechar o espaço (⌫)"
+            "value" : "Corta a seção ou o clipe selecionado e fecha o espaço. Arraste com Shift pelas faixas para selecionar uma seção."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "剪掉所选片段并合拢空隙（⌫）"
+            "value" : "剪掉所选部分或片段并合拢空隙。按住 Shift 键沿轨道拖移可选择一个部分。"
           }
         }
       }
@@ -11044,58 +11097,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "删除轨道"
-          }
-        }
-      }
-    },
-    "Delete the imported clips and transforms to hide the tracks" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lösche die importierten Clips und Transformationen, um die Spuren auszublenden"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Elimina los clips importados y las transformaciones para ocultar las pistas"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Supprimez les clips importés et les transformations pour masquer les pistes"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Elimina le clip importate e le trasformazioni per nascondere le tracce"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "トラックを隠すには、読み込んだクリップと変形を削除してください"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "트랙을 숨기려면 가져온 클립과 변형을 삭제하세요"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apague os clipes importados e as transformações para ocultar as faixas"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "删除导入的片段和变换以隐藏轨道"
           }
         }
       }
@@ -12116,58 +12117,6 @@
     "Drag the handles to choose the area to keep, of the whole picture or the placed image selected. Return applies it, Esc cancels." : {
 
     },
-    "Drag the handles to trim. Shift-drag to select a section, then press Delete to cut it." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zieh an den Griffen zum Kürzen. Mit Umschalt-Ziehen einen Abschnitt wählen, dann mit Löschen herausschneiden."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Arrastra los tiradores para acortar. Arrastra con Mayúsculas para seleccionar un tramo y pulsa Eliminar para cortarlo."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Faites glisser les poignées pour raccourcir. Maj + glisser pour sélectionner une section, puis appuyez sur Supprimer pour la couper."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trascina le maniglie per rifilare. Trascina con Maiusc per selezionare una sezione, poi premi Elimina per tagliarla."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ハンドルをドラッグしてトリムします。Shiftキーを押しながらドラッグして区間を選択し、Deleteキーでカットします。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "핸들을 드래그해 다듬습니다. Shift-드래그로 구간을 선택한 다음 Delete 키를 눌러 잘라냅니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Arraste as alças para aparar. Arraste com Shift para selecionar um trecho e pressione Delete para cortá-lo."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "拖移控制柄以修剪。按住 Shift 拖移以选择一段，然后按 Delete 将其剪掉。"
-          }
-        }
-      }
-    },
     "Drag to add a sticky note" : {
       "localizations" : {
         "de" : {
@@ -12951,59 +12900,60 @@
     "Drag to resize. Double-click to reset." : {
 
     },
-    "Drag to scrub. Drag a clip to move it and its edges to trim it, and an annotation or picture up or down to restack it. Shift-drag to select a section, then press Delete to cut it. Right-click a lane for its options." : {
+    "Drag to scrub. Drag the yellow handles to trim, a clip to move it and its edges to trim it, and an annotation or picture up or down to restack it. Shift-drag to select a section, then press Delete to cut it. Right-click a lane for its options." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zieh zum Spulen. Zieh einen Clip, um ihn zu verschieben, seine Ränder, um ihn zu kürzen, und eine Markierung oder ein Bild nach oben oder unten, um die Reihenfolge zu ändern. Mit Umschalt-Ziehen einen Abschnitt wählen, dann mit Löschen herausschneiden. Rechtsklick auf eine Spur zeigt ihre Optionen."
+            "value" : "Ziehe zum Durchsuchen. Ziehe die gelben Griffe zum Kürzen, einen Clip zum Verschieben und seine Ränder zum Kürzen, und eine Anmerkung oder ein Bild nach oben oder unten, um sie neu zu stapeln. Ziehe mit gedrückter Umschalttaste, um einen Abschnitt auszuwählen, und drücke dann die Rückschritttaste, um ihn herauszuschneiden. Klicke mit der rechten Maustaste auf eine Spur für ihre Optionen."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Arrastra para recorrer el vídeo. Arrastra un clip para moverlo y sus bordes para acortarlo, y una anotación o imagen hacia arriba o abajo para cambiar su orden. Arrastra con Mayúsculas para seleccionar un tramo y pulsa Eliminar para cortarlo. Haz clic derecho en un carril para ver sus opciones."
+            "value" : "Arrastra para desplazarte. Arrastra los tiradores amarillos para recortar, un clip para moverlo y sus bordes para recortarlo, y una anotación o imagen hacia arriba o abajo para reordenarla. Arrastra con Mayúsculas para seleccionar una sección y pulsa Eliminar para cortarla. Haz clic derecho en una pista para ver sus opciones."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Faites glisser pour parcourir. Faites glisser un clip pour le déplacer et ses bords pour le raccourcir, et une annotation ou une image vers le haut ou le bas pour changer son ordre. Maj + glisser pour sélectionner une section, puis appuyez sur Supprimer pour la couper. Cliquez avec le bouton droit sur une piste pour voir ses options."
+            "value" : "Faites glisser pour parcourir. Faites glisser les poignées jaunes pour rogner, un clip pour le déplacer et ses bords pour le rogner, et une annotation ou une image vers le haut ou le bas pour la réordonner. Faites glisser avec Maj pour sélectionner une section, puis appuyez sur Supprimer pour la couper. Cliquez avec le bouton droit sur une piste pour ses options."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Trascina per scorrere. Trascina una clip per spostarla e i suoi bordi per rifilarla, e un'annotazione o un'immagine in su o in giù per cambiarne l'ordine. Trascina con Maiusc per selezionare una sezione, poi premi Elimina per tagliarla. Fai clic destro su una corsia per le opzioni."
+            "value" : "Trascina per scorrere. Trascina le maniglie gialle per rifilare, una clip per spostarla e i suoi bordi per rifilarla, e un’annotazione o un’immagine in su o in giù per riordinarla. Trascina con Maiusc per selezionare una sezione, poi premi Elimina per tagliarla. Fai clic destro su una traccia per le sue opzioni."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ドラッグしてスクラブします。クリップはドラッグで移動、端のドラッグでトリムできます。注釈やイメージは上下にドラッグして重なり順を変えられます。Shiftキーを押しながらドラッグして区間を選択し、Deleteキーでカットします。レーンを右クリックするとオプションが表示されます。"
+            "value" : "ドラッグして再生位置を移動します。黄色のハンドルをドラッグするとトリム、クリップをドラッグすると移動、端をドラッグするとトリムでき、注釈や画像を上下にドラッグすると重なり順を変更できます。Shift キーを押しながらドラッグして区間を選択し、Delete キーを押すとカットします。レーンを右クリックするとオプションが表示されます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "드래그하여 탐색합니다. 클립을 드래그해 이동하고 가장자리를 드래그해 다듬으며, 주석이나 그림을 위아래로 드래그해 쌓는 순서를 바꿉니다. Shift-드래그로 구간을 선택한 다음 Delete 키를 눌러 잘라냅니다. 레인을 오른쪽 클릭하면 옵션이 나타납니다."
+            "value" : "드래그하여 탐색합니다. 노란색 핸들을 드래그하여 다듬고, 클립을 드래그하여 이동하고 가장자리를 드래그하여 다듬으며, 주석이나 사진을 위아래로 드래그하여 순서를 바꿉니다. Shift 키를 누른 채 드래그하여 구간을 선택한 다음 Delete 키를 눌러 잘라냅니다. 레인을 오른쪽 클릭하면 옵션이 나타납니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Arraste para navegar. Arraste um clipe para movê-lo e as bordas para apará-lo, e uma anotação ou imagem para cima ou para baixo para mudar a ordem. Arraste com Shift para selecionar um trecho e pressione Delete para cortá-lo. Clique com o botão direito numa faixa para ver as opções."
+            "value" : "Arraste para navegar. Arraste as alças amarelas para aparar, um clipe para movê-lo e suas bordas para apará-lo, e uma anotação ou imagem para cima ou para baixo para reordená-la. Arraste com Shift para selecionar uma seção e pressione Delete para cortá-la. Clique com o botão direito em uma faixa para ver suas opções."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "拖移以快速浏览。拖移片段可移动它，拖移其边缘可修剪；上下拖移标注或图片可调整层叠顺序。按住 Shift 拖移以选择一段，然后按 Delete 将其剪掉。右键点按某条轨道可查看其选项。"
+            "value" : "拖移以浏览。拖移黄色控制柄可修剪，拖移片段可移动它，拖移其边缘可修剪它，上下拖移注释或图片可调整叠放顺序。按住 Shift 键拖移可选择一个部分，然后按 Delete 键将其剪掉。右键点按轨道可查看其选项。"
           }
         }
       }
     },
     "Draw" : {
+      "comment" : "Video editor timeline: the name of a lane of arrows, shapes and other marks.",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -15364,58 +15314,6 @@
         }
       }
     },
-    "Fit the whole project in the window (⌘0)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ganzes Projekt ins Fenster einpassen (⌘0)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ajusta todo el proyecto a la ventana (⌘0)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Afficher tout le projet dans la fenêtre (⌘0)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Adatta l'intero progetto alla finestra (⌘0)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プロジェクト全体をウインドウに合わせる（⌘0）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "전체 프로젝트를 윈도우에 맞춤 (⌘0)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ajustar o projeto inteiro à janela (⌘0)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使整个项目适合窗口（⌘0）"
-          }
-        }
-      }
-    },
     "Fit to Content" : {
       "localizations" : {
         "de" : {
@@ -15464,6 +15362,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "适合内容"
+          }
+        }
+      }
+    },
+    "Fits the whole recording in the timeline again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeigt wieder die ganze Aufnahme in der Zeitleiste."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vuelve a mostrar toda la grabación en la línea de tiempo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Affiche à nouveau tout l’enregistrement dans la timeline."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra di nuovo tutta la registrazione nella timeline."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "収録全体をもう一度タイムラインに収めます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "녹화 전체를 다시 타임라인에 맞춥니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra de novo a gravação inteira na linha do tempo."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "让整段录制内容重新适合时间线。"
           }
         }
       }
@@ -17749,58 +17699,6 @@
         }
       }
     },
-    "Import" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importieren"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importar"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importer"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importa"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "読み込む"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "가져오기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importar"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "导入"
-          }
-        }
-      }
-    },
     "Include some text or an image, or pick another area." : {
 
     },
@@ -19629,58 +19527,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "更多样式"
-          }
-        }
-      }
-    },
-    "More tools" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Weitere Werkzeuge"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Más herramientas"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Plus d’outils"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Altri strumenti"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "その他のツール"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "추가 도구"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mais ferramentas"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "更多工具"
           }
         }
       }
@@ -22772,58 +22618,6 @@
         }
       }
     },
-    "Pause (Space)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pausieren (Leertaste)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pausar (Espacio)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pause (Espace)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pausa (Spazio)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "一時停止（Space）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "일시 정지 (Space)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pausar (Espaço)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "暂停（空格）"
-          }
-        }
-      }
-    },
     "Pause Recording" : {
       "localizations" : {
         "de" : {
@@ -23561,58 +23355,6 @@
         }
       }
     },
-    "Play (Space)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abspielen (Leertaste)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reproducir (Espacio)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lire (Espace)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Riproduci (Spazio)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "再生（Space）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "재생 (Space)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reproduzir (Espaço)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "播放（空格）"
-          }
-        }
-      }
-    },
     "Play capture sound" : {
       "localizations" : {
         "de" : {
@@ -23717,6 +23459,58 @@
         }
       }
     },
+    "Playhead" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abspielposition"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cursor de reproducción"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tête de lecture"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Testina"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再生ヘッド"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "재생 헤드"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cursor de reprodução"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "播放头"
+          }
+        }
+      }
+    },
     "Pop" : {
       "localizations" : {
         "de" : {
@@ -23769,54 +23563,54 @@
         }
       }
     },
-    "Position, scale, rotation, opacity, volume and keyframes of the selected clip" : {
+    "Position, scale, rotation, opacity, volume and keyframes of the selected clip." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Position, Skalierung, Drehung, Deckkraft, Lautstärke und Keyframes des ausgewählten Clips"
+            "value" : "Position, Größe, Drehung, Deckkraft, Lautstärke und Keyframes des ausgewählten Clips."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Posición, escala, rotación, opacidad, volumen y fotogramas clave del clip seleccionado"
+            "value" : "Posición, escala, rotación, opacidad, volumen y fotogramas clave del clip seleccionado."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Position, échelle, rotation, opacité, volume et images clés du clip sélectionné"
+            "value" : "Position, échelle, rotation, opacité, volume et images clés du clip sélectionné."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Posizione, scala, rotazione, opacità, volume e fotogrammi chiave della clip selezionata"
+            "value" : "Posizione, scala, rotazione, opacità, volume e fotogrammi chiave della clip selezionata."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "選択したクリップの位置、拡大率、回転、不透明度、音量、キーフレーム"
+            "value" : "選択したクリップの位置、拡大率、回転、不透明度、音量、キーフレーム。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "선택한 클립의 위치, 크기, 회전, 불투명도, 볼륨 및 키프레임"
+            "value" : "선택한 클립의 위치, 크기, 회전, 불투명도, 음량 및 키프레임."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Posição, escala, rotação, opacidade, volume e quadros-chave do clipe selecionado"
+            "value" : "Posição, escala, rotação, opacidade, volume e quadros-chave do clipe selecionado."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "所选片段的位置、缩放、旋转、不透明度、音量和关键帧"
+            "value" : "所选片段的位置、缩放、旋转、不透明度、音量和关键帧。"
           }
         }
       }
@@ -30859,58 +30653,6 @@
         }
       }
     },
-    "Shows the tracks under the video, with keyframes, imports and annotations." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zeigt die Spuren unter dem Video mit Keyframes, Importen und Anmerkungen."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Muestra las pistas bajo el vídeo, con fotogramas clave, importaciones y anotaciones."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Affiche les pistes sous la vidéo, avec les images clés, les imports et les annotations."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostra le tracce sotto il video, con fotogrammi chiave, importazioni e annotazioni."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ビデオの下にトラックを表示します。キーフレーム、読み込んだ素材、注釈も含まれます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "동영상 아래에 키프레임, 가져온 항목, 주석과 함께 트랙을 표시합니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostra as faixas sob o vídeo, com quadros-chave, importações e anotações."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在视频下方显示轨道，包括关键帧、导入的素材和注释。"
-          }
-        }
-      }
-    },
     "Size" : {
 
     },
@@ -31226,54 +30968,54 @@
         }
       }
     },
-    "Snap the playhead to clip edges (N)" : {
+    "Snaps the playhead and dragged clips to clip edges." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Abspielposition an Clipkanten einrasten (N)"
+            "value" : "Lässt die Abspielposition und gezogene Clips an Clip-Rändern einrasten."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ajusta el cursor de reproducción a los bordes de los clips (N)"
+            "value" : "Ajusta el cursor de reproducción y los clips arrastrados a los bordes de los clips."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aimanter la tête de lecture aux bords des clips (N)"
+            "value" : "Aimante la tête de lecture et les clips déplacés aux bords des clips."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aggancia la testina ai bordi delle clip (N)"
+            "value" : "Aggancia la testina e le clip trascinate ai bordi delle clip."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "再生ヘッドをクリップの端にスナップ（N）"
+            "value" : "再生ヘッドとドラッグしたクリップをクリップの端に吸着させます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "재생헤드를 클립 가장자리에 스냅 (N)"
+            "value" : "재생 헤드와 드래그한 클립을 클립 가장자리에 맞춥니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alinhar o indicador às bordas dos clipes (N)"
+            "value" : "Encaixa o cursor de reprodução e os clipes arrastados nas bordas dos clipes."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "将播放头吸附到片段边缘（N）"
+            "value" : "让播放头和拖移的片段吸附到片段边缘。"
           }
         }
       }
@@ -31541,6 +31283,59 @@
         }
       }
     },
+    "Sound" : {
+      "comment" : "Video editor timeline: the name of the recording's sound lane, or of an added sound's.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ton"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sonido"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サウンド"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사운드"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Som"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "声音"
+          }
+        }
+      }
+    },
     "Sound from other apps. Shot's own sounds are excluded." : {
       "localizations" : {
         "de" : {
@@ -31801,54 +31596,54 @@
         }
       }
     },
-    "Split the clip at the playhead (S)" : {
+    "Splits the clip at the playhead." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Clip an der Abspielposition trennen (S)"
+            "value" : "Teilt den Clip an der Abspielposition."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Divide el clip en el cursor de reproducción (S)"
+            "value" : "Divide el clip en el cursor de reproducción."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Scinder le clip à la tête de lecture (S)"
+            "value" : "Scinde le clip à la tête de lecture."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dividi la clip alla testina (S)"
+            "value" : "Divide la clip alla testina."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "再生ヘッドの位置でクリップを分割（S）"
+            "value" : "再生ヘッドの位置でクリップを分割します。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "재생헤드에서 클립 분할 (S)"
+            "value" : "재생 헤드 위치에서 클립을 분할합니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dividir o clipe no indicador de reprodução (S)"
+            "value" : "Divide o clipe no cursor de reprodução."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在播放头处拆分片段（S）"
+            "value" : "在播放头处拆分片段。"
           }
         }
       }
@@ -33150,6 +32945,7 @@
       }
     },
     "Text" : {
+      "comment" : "Video editor timeline: the name of a lane of text annotations.",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -34164,6 +33960,58 @@
         }
       }
     },
+    "Timeline" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeitleiste"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Línea de tiempo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Timeline"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Timeline"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "タイムライン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "타임라인"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linha do tempo"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "时间线"
+          }
+        }
+      }
+    },
     "Today" : {
       "localizations" : {
         "de" : {
@@ -34264,58 +34112,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "工具"
-          }
-        }
-      }
-    },
-    "Tracks" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spuren"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pistas"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pistes"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tracce"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "トラック"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "트랙"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Faixas"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "轨道"
           }
         }
       }
@@ -34427,54 +34223,54 @@
     "Trim Idle Time" : {
 
     },
-    "Trim timeline" : {
+    "Trim idle" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zeitleiste zum Kürzen"
+            "value" : "Leerlauf kürzen"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Línea de tiempo para acortar"
+            "value" : "Recortar inactividad"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Timeline de coupe"
+            "value" : "Rogner l’inactivité"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Timeline di rifinitura"
+            "value" : "Rifila inattività"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "トリムのタイムライン"
+            "value" : "静止部分をトリム"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "다듬기 타임라인"
+            "value" : "정지 구간 다듬기"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Linha do tempo de aparo"
+            "value" : "Aparar inatividade"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "修剪时间线"
+            "value" : "修剪静止部分"
           }
         }
       }
@@ -34533,6 +34329,58 @@
     },
     "Trimmed %@ of idle time" : {
 
+    },
+    "Trims the still start and end of the recording, keeping any speech. It works while the edit is only trims and cuts." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kürzt den unbewegten Anfang und das unbewegte Ende der Aufnahme und behält gesprochene Stellen. Das geht, solange die Bearbeitung nur aus Kürzungen und Schnitten besteht."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recorta el inicio y el final sin movimiento de la grabación, conservando lo que se habla. Funciona mientras la edición solo tenga recortes y cortes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rogne le début et la fin immobiles de l’enregistrement, en gardant la parole. Fonctionne tant que la modification ne comporte que des rognages et des coupes."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rifila l’inizio e la fine immobili della registrazione, mantenendo il parlato. Funziona finché la modifica contiene solo rifilature e tagli."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "収録の動きのない最初と最後をトリムし、話している部分は残します。編集がトリムとカットだけのときに使えます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "녹화에서 움직임이 없는 시작과 끝을 다듬고 말소리는 남깁니다. 편집이 다듬기와 자르기뿐일 때 사용할 수 있습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apara o início e o fim parados da gravação, mantendo a fala. Funciona enquanto a edição tiver só aparas e cortes."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修剪录制内容开头和结尾的静止部分，保留讲话内容。仅在编辑只有修剪和剪切时可用。"
+          }
+        }
+      }
     },
     "Try another search, or show All." : {
       "localizations" : {
@@ -35801,6 +35649,7 @@
       }
     },
     "Video" : {
+      "comment" : "Video editor timeline: the name of the recording's lane, or of an added video's.",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -36947,58 +36796,6 @@
         }
       }
     },
-    "Zoom in (⌘+)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vergrößern (⌘+)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Acercar (⌘+)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zoom avant (⌘+)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ingrandisci (⌘+)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "拡大（⌘+）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "확대 (⌘+)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ampliar (⌘+)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "放大（⌘+）"
-          }
-        }
-      }
-    },
     "Zoom out" : {
       "localizations" : {
         "de" : {
@@ -37047,58 +36844,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "缩小"
-          }
-        }
-      }
-    },
-    "Zoom out (⌘−)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verkleinern (⌘−)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alejar (⌘−)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zoom arrière (⌘−)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Riduci (⌘−)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "縮小（⌘−）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "축소 (⌘−)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reduzir (⌘−)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "缩小（⌘−）"
           }
         }
       }

@@ -10,11 +10,11 @@ group: Edit and share
 2. Pick a tool and draw, as in the [annotation editor](#annotate-a-screenshot): arrows, shapes, text, blur and more. The hand tool isn't here, and the tools have no letter keys, since the video editor uses those for splitting and playback.
 3. To add a picture, click the image button near the bottom of the column. To crop, click **Crop video** at the bottom, or press <kbd>C</kbd>; when you apply or cancel the crop, you're back on the tool you were using. See [Crop the video](#crop-the-video).
 
-Each annotation starts at the playhead and shows for 3 seconds. It goes on the first annotation lane that's free at that time and not locked, or else on a new lane. Click **More tools** (<kbd>T</kbd>) to see the lanes and change when an annotation shows.
+Each annotation starts at the playhead and shows for 3 seconds. It goes on the first annotation lane that's free at that time and not locked, or else on a new lane. The lanes are under the video, named **Draw**, or **Text** when a lane holds only text. Drag an annotation along its lane to change when it shows, or drag its ends to change how long.
 
 ## Fine-tune with the Inspector
 
-Click **Inspector** to see the selected clip's or annotation's properties:
+Click **Inspector**, the button with sliders beside zoom under the video, to see the selected clip's or annotation's properties:
 
 - **Position**, **scale**, **rotation** (**Turn**) and **opacity**.
 - **Volume** for a clip on a sound lane, from 0 to 200%.

@@ -65,9 +65,9 @@ public enum Timecode {
 /// Maps a recording's time onto a horizontal strip of `width` points starting at `minX`.
 /// The start handle sits left of the in point and the end handle right of the out point.
 public struct TrimTimeline: Sendable {
-    public static let handleWidth: CGFloat = 12
+    public static let handleWidth: CGFloat = 8
     /// Extra reach around a handle, so a thin one is still easy to grab.
-    public static let slop: CGFloat = 4
+    public static let slop: CGFloat = 6
 
     public let duration: Double
     public let minX: CGFloat

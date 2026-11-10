@@ -14,23 +14,23 @@ private func layoutProject() throws -> Project {
     // Tracks: 0 main, 1 its sound, 2 picture, 3 sound, 4 picture, 5 sound.
     let layout = LaneLayout(project, top: 22)
     #expect(layout.lanes.map(\.track) == [4, 2, 0, 1, 3, 5])
-    #expect(layout.lanes.map(\.y) == [22, 66, 110, 170, 214, 258])
-    #expect(layout.height == 298)
+    #expect(layout.lanes.map(\.y) == [22, 61, 100, 151, 182, 213])
+    #expect(layout.height == 239)
 }
 
 @Test func aLoneRecordingHasTheMainLaneAndItsSound() {
     let project = Project(source: URL(fileURLWithPath: "/tmp/a.mov"), duration: 10, canvasSize: CGSize(width: 640, height: 360), hasAudio: true)
     let layout = LaneLayout(project, top: 22)
     #expect(layout.lanes.map(\.track) == [0, 1])
-    #expect(layout.height == 122)
+    #expect(layout.height == 99)
 }
 
 @Test func lanesAreFoundByPositionAndTrack() throws {
     let layout = LaneLayout(try layoutProject(), top: 22)
-    #expect(layout.lane(at: 100)?.track == 2)
-    #expect(layout.lane(at: 65) == nil, "the gap between lanes")
+    #expect(layout.lane(at: 80)?.track == 2)
+    #expect(layout.lane(at: 97) == nil, "the gap between lanes")
     #expect(layout.lane(at: 5) == nil, "the ruler")
-    #expect(layout.lane(ofTrack: 0)?.y == 110)
+    #expect(layout.lane(ofTrack: 0)?.y == 100)
     #expect(layout.lane(ofTrack: 9) == nil)
 }
 
@@ -39,9 +39,9 @@ private func layoutProject() throws -> Project {
     let annotated = base.adding(annotation: Annotation(kind: .line(from: .zero, to: CGPoint(x: 5, y: 5)), color: RGBA.presets[0], lineWidth: 2), at: 1).project
     let layout = LaneLayout(annotated, top: 22)
     #expect(layout.lanes.first?.track == 6)
-    #expect(layout.lanes.first?.height == 28)
+    #expect(layout.lanes.first?.height == 22)
     #expect(layout.lanes.map(\.track) == [6, 4, 2, 0, 1, 3, 5])
-    #expect(layout.lanes[1].y == 54)
+    #expect(layout.lanes[1].y == 49)
 }
 
 @Test func lanesScrollRatherThanSqueezeThePreview() throws {
@@ -49,18 +49,6 @@ private func layoutProject() throws -> Project {
     #expect(layout.visibleHeight(available: 1000, minimum: 78) == layout.height, "room to spare")
     #expect(layout.visibleHeight(available: 150, minimum: 78) == 150)
     #expect(layout.visibleHeight(available: 20, minimum: 78) == 78, "the ruler and the main lane stay in view")
-}
-
-@Test func aClipsNameStartsPastTheLaneSwitchesOverIt() {
-    // Lock and hide: 4 in, two 20 pt buttons 3 apart.
-    #expect(LaneLayout.controlsWidth(count: 2) == 47)
-    #expect(LaneLayout.controlsWidth(count: 1) == 24)
-    #expect(LaneLayout.controlsWidth(count: 0) == 0)
-    #expect(LaneLayout.labelInset(clipX: 0, controlsEnd: 47) == 47, "a clip at 0:00")
-    #expect(LaneLayout.labelInset(clipX: 30, controlsEnd: 47) == 17)
-    #expect(LaneLayout.labelInset(clipX: 60, controlsEnd: 47) == 0, "clear of the switches")
-    #expect(LaneLayout.labelInset(clipX: 0, controlsEnd: 0) == 0, "no switches showing")
-    #expect(LaneLayout.labelInset(clipX: -100, controlsEnd: 47) == 147, "scrolled past its start")
 }
 
 @Test func trimmedEndsShowTheWholeRecordingAroundWhatsKept() throws {

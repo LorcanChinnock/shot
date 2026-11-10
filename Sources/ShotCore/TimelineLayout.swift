@@ -9,11 +9,11 @@ public struct LaneLayout: Equatable, Sendable {
         public var height: CGFloat
     }
 
-    public static let mainHeight: CGFloat = 56
-    public static let annotationHeight: CGFloat = 28
-    public static let pictureHeight: CGFloat = 40
-    public static let soundHeight: CGFloat = 40
-    public static let gap: CGFloat = 4
+    public static let mainHeight: CGFloat = 46
+    public static let annotationHeight: CGFloat = 22
+    public static let pictureHeight: CGFloat = 34
+    public static let soundHeight: CGFloat = 26
+    public static let gap: CGFloat = 5
 
     public let lanes: [Lane]
     public let height: CGFloat
@@ -51,27 +51,8 @@ public struct LaneLayout: Equatable, Sendable {
         lanes.first { $0.track == track }
     }
 
-    /// The lane switches (lock, hide, mute): square buttons in a row, `controlInset` in from the view's left edge.
-    public static let controlSize: CGFloat = 20
-    public static let controlSpacing: CGFloat = 3
-    public static let controlInset: CGFloat = 4
-
-    /// How far from the view's left edge `count` lane switches reach; 0 when none show.
-    public static func controlsWidth(count: Int) -> CGFloat {
-        guard count > 0 else {
-            return 0
-        }
-        return controlInset + CGFloat(count) * controlSize + CGFloat(count - 1) * controlSpacing
-    }
-
-    /// How much further in a clip's name starts so the lane switches don't cover it: the switches reach `controlsEnd` and the
-    /// clip starts at `clipX`, both from the same origin. 0 when the clip starts past them.
-    public static func labelInset(clipX: CGFloat, controlsEnd: CGFloat) -> CGFloat {
-        max(0, controlsEnd - clipX)
-    }
-
     /// How close to a lane's edge a clip dragged up or down drops between lanes, onto a new track of its own.
-    public static let insertReach: CGFloat = 7
+    public static let insertReach: CGFloat = 5
 
     /// Where a clip dragged to `y` lands among the lanes above the main one, which are `project`'s: onto the lane under it,
     /// or onto a new track near the edge between two lanes, above the top one, or anywhere below the bottom one.

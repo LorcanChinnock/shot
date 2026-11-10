@@ -1,83 +1,18 @@
 import ShotCore
 import SwiftUI
 
-/// Split, delete, snapping and zoom for the lanes.
-struct TracksToolbar: View {
-    static let height: CGFloat = 30
-
-    let model: VideoEditorModel
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Button { model.split() } label: { Label("Split", systemImage: "scissors") }
-                .buttonStyle(BrutalButtonStyle(.toolbar))
-                .brutalTip("Split the clip at the playhead (S)")
-            Button { _ = model.deleteSelectedClip() } label: { Label("Delete", systemImage: "trash") }
-                .buttonStyle(BrutalButtonStyle(.toolbar))
-                .disabled(model.selectedClipID == nil)
-                .brutalTip("Cut out the selected clip and close the gap (⌫)")
-            ImportMenu(model: model)
-            Button { model.toggleInspector() } label: { Label("Inspector", systemImage: "slider.horizontal.3") }
-                .buttonStyle(BrutalButtonStyle(.toolbar, isOn: model.showsInspector))
-                .brutalTip("Position, scale, rotation, opacity, volume and keyframes of the selected clip")
-            Button { model.toggleSnapping() } label: { Label("Snap", systemImage: "magnet") }
-                .buttonStyle(BrutalButtonStyle(.toolbar, isOn: model.snapping))
-                .brutalTip("Snap the playhead to clip edges (N)")
-            Spacer(minLength: 8)
-            Button { model.zoom(bySteps: -1) } label: { Image(systemName: "minus.magnifyingglass") }
-                .buttonStyle(BrutalButtonStyle(.toolbar))
-                .brutalTip("Zoom out (⌘−)")
-                .accessibilityLabel(Text("Zoom out"))
-            Button { model.resetZoom() } label: { Text("Fit") }
-                .buttonStyle(BrutalButtonStyle(.toolbar))
-                .brutalTip("Fit the whole project in the window (⌘0)")
-            Button { model.zoom(bySteps: 1) } label: { Image(systemName: "plus.magnifyingglass") }
-                .buttonStyle(BrutalButtonStyle(.toolbar))
-                .brutalTip("Zoom in (⌘+)")
-                .accessibilityLabel(Text("Zoom in"))
-        }
-        .frame(height: Self.height)
-        .disabled(model.isExporting)
-    }
-}
-
-/// Picks files to put on the timeline: on new tracks at the playhead, or at the end of the main track.
-struct ImportMenu: View {
-    let model: VideoEditorModel
-
-    var body: some View {
-        BrutalDropdown(title: "Import", entries: [
-            .item("Add Video or Audio at Playhead…") { pick(appendToMain: false) },
-            .item("Add Video to End…") { pick(appendToMain: true) },
-        ]) {
-            Label("Import", systemImage: "plus")
-        }
-        .buttonStyle(BrutalButtonStyle(.toolbar))
-        .fixedSize()
-        .brutalTip("Add video or audio files to the timeline")
-    }
-
-    private func pick(appendToMain: Bool) {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.movie, .audio]
-        panel.allowsMultipleSelection = true
-        panel.message = appendToMain ? String(localized: "Choose videos to add to the end") : String(localized: "Choose videos or audio to add at the playhead")
-        guard panel.runModal() == .OK else {
-            return
-        }
-        model.importMedia(panel.urls, appendToMain: appendToMain)
-    }
-}
-
-/// The project's lanes in timeline time: a ruler, picture lanes above the main track, the main track's clips as thumbnails,
-/// and sound lanes as waveforms. Drag to scrub; drag a clip to move it and its edges to trim it; drag the outer edges of the
-/// main track's first and last clip to trim; Shift-drag to select a section.
+/// The project's lanes in timeline time, from Edit › Video editor and export: a mono ruler, then each lane under its name
+/// in a column on the left. Annotation and picture lanes sit above the Video lane, whose clips show as a filmstrip, and sound
+/// lanes below it as waveforms. Drag to scrub; drag a clip to move it and its edges to trim it; drag the yellow handles at
+/// the Video lane's ends to trim; Shift-drag to select a section.
 struct TracksView: View {
-    static let rulerHeight: CGFloat = 18
+    static let rulerHeight: CGFloat = 14
+    /// The ruler and the Video lane, which the window always has room for.
+    static let baseHeight: CGFloat = rulerHeight + LaneLayout.gap + LaneLayout.mainHeight
 
-    /// What the panel adds to the window's height over the collapsed layout, which has the main lane's height already.
+    /// What the project's lanes add to the window's height over a recording's Video lane alone.
     static func extraHeight(for project: Project) -> CGFloat {
-        TracksToolbar.height + Brutal.sectionGap + layout(for: project).height - LaneLayout.mainHeight + 8
+        layout(for: project).height - baseHeight
     }
 
     static func layout(for project: Project) -> LaneLayout {
@@ -91,6 +26,8 @@ struct TracksView: View {
         case move(UUID, grab: Double)
         case trim(UUID, TrimHandle)
         case keyframe(UUID, time: Double)
+        /// A press on the lane names, which does nothing.
+        case ignored
     }
 
     private struct ThumbnailRequest: Hashable {
@@ -118,32 +55,35 @@ struct TracksView: View {
     var body: some View {
         let layout = Self.layout(for: model.project)
         GeometryReader { geometry in
-            let viewWidth = geometry.size.width
+            // The lanes start right of the names; `viewWidth` is the part of the view they show in.
+            let viewWidth = max(1, geometry.size.width - LaneLayout.labelWidth)
             let width = viewWidth * model.zoom
             let timeline = TrimTimeline(duration: model.fitDuration, minX: 0, width: width)
             let pointsPerSecond = width / CGFloat(max(model.fitDuration, .leastNonzeroMagnitude))
             // What was trimmed off the front shows before 0, so the lanes start that far in.
             let lead = model.project.trimmedLead
             let leadX = CGFloat(lead) * pointsPerSecond
+            // Where time 0 sits in the scrolling content: past the names and what was trimmed off the front.
+            let originX = LaneLayout.labelWidth + leadX
             let reach = model.project.tracks.indices.flatMap(model.project.trimmedEnds).map(\.end).max() ?? 0
             ScrollView([.horizontal, .vertical], showsIndicators: false) {
                 lanes(timeline, layout: layout, leadX: leadX)
-                    .offset(x: leadX)
-                    .frame(width: max(width, leadX + CGFloat(reach) * pointsPerSecond), height: layout.height, alignment: .topLeading)
-                    .overlay(alignment: .topLeading) { laneControls(layout).offset(x: scrollX) }
+                    .offset(x: originX)
+                    .frame(width: LaneLayout.labelWidth + max(width, leadX + CGFloat(reach) * pointsPerSecond), height: layout.height, alignment: .topLeading)
+                    .overlay(alignment: .topLeading) { laneNames(layout).offset(x: scrollX) }
                     .contentShape(Rectangle())
                     .onContinuousHover { phase in
                         if case .active(let point) = phase {
                             let track = layout.lane(at: point.y)?.track
                             hoveredTrack = track
-                            let time = Double((point.x - leadX) / pointsPerSecond)
+                            let time = Double((point.x - originX) / pointsPerSecond)
                             hoveredAnnotation = track.flatMap { model.project.tracks[$0].annotations.first { time >= $0.start && time <= $0.end }?.id }
                         } else {
                             hoveredTrack = nil
                             hoveredAnnotation = nil
                         }
                     }
-                    .gesture(drag(timeline, layout: layout, leadX: leadX))
+                    .gesture(drag(timeline, layout: layout, originX: originX))
                     .contextMenu { laneMenu }
                     .task(id: thumbnailRequests(width: width)) {
                         // Zooming and resizing change the requests many times a second, so wait for them to settle.
@@ -177,8 +117,8 @@ struct TracksView: View {
                 .onEnded { _ in pinchStart = nil })
         }
         .frame(height: height)
-        .modifier(TimelineAccessibility(model: model, label: Text("Tracks")))
-        .help("Drag to scrub. Drag a clip to move it and its edges to trim it, and an annotation or picture up or down to restack it. Shift-drag to select a section, then press Delete to cut it. Right-click a lane for its options.")
+        .modifier(TimelineAccessibility(model: model, label: Text("Timeline")))
+        .help("Drag to scrub. Drag the yellow handles to trim, a clip to move it and its edges to trim it, and an annotation or picture up or down to restack it. Shift-drag to select a section, then press Delete to cut it. Right-click a lane for its options.")
         .allowsHitTesting(!model.isExporting)
     }
 
@@ -205,11 +145,8 @@ struct TracksView: View {
         return ZStack(alignment: .topLeading) {
             ruler(timeline, pointsPerSecond: pointsPerSecond)
             ForEach(layout.lanes, id: \.track) { lane in
-                // The lane switches are pinned to the view's left edge, over the clips; this is where they end in lane time's points.
-                let controlsEnd = LaneLayout.controlsWidth(count: shownControls(onTrack: lane.track).count) + scrollX - leadX
                 ForEach(project.tracks[lane.track].annotations) { clip in
-                    annotationClip(clip, height: lane.height, pointsPerSecond: pointsPerSecond,
-                                   labelInset: LaneLayout.labelInset(clipX: CGFloat(clip.start) * pointsPerSecond, controlsEnd: controlsEnd))
+                    annotationClip(clip, height: lane.height, pointsPerSecond: pointsPerSecond)
                         // Faded while it's dragged to another lane, where the marker shows it'll land.
                         .opacity(model.laneDrop?.clip == clip.id ? 0.4 : 1)
                         .offset(x: CGFloat(clip.start) * pointsPerSecond, y: lane.y)
@@ -227,9 +164,9 @@ struct TracksView: View {
             }
             if let selection = model.selection, let main = layout.lane(ofTrack: 0) {
                 let from = timeline.x(for: selection.lowerBound), to = timeline.x(for: selection.upperBound)
-                Rectangle().fill(Brutal.sky.opacity(0.35))
-                    .inkBorder(Rectangle(), width: 2, color: Brutal.sky)
-                    .frame(width: max(0, to - from), height: layout.height - main.y)
+                Rectangle().fill(Brutal.selection.opacity(0.2))
+                    .inkBorder(Rectangle(), width: 1.5, color: Brutal.selection)
+                    .frame(width: max(0, to - from), height: layout.height - (layout.lanes.first?.y ?? main.y))
                     .offset(x: from, y: layout.lanes.first?.y ?? main.y)
                     .allowsHitTesting(false)
             }
@@ -241,17 +178,18 @@ struct TracksView: View {
                 }
             }
             if let main = layout.lane(ofTrack: 0), let first = project.main.clips.first, let last = project.main.clips.last {
-                ForEach(project.mainCuts, id: \.self) { time in
-                    Rectangle().fill(Brutal.pink)
-                        .frame(width: 3, height: main.height)
-                        .offset(x: CGFloat(time) * pointsPerSecond - 1.5, y: main.y)
+                handle(.start, height: main.height).offset(x: timeline.x(for: first.start), y: main.y)
+                handle(.end, height: main.height).offset(x: timeline.x(for: last.end) - TrimTimeline.handleWidth, y: main.y)
+                ForEach(project.mainCutMarks, id: \.time) { mark in
+                    // Centred on the cut in a fixed frame; an alignment guide would move the whole stack's origin.
+                    CutBadge(length: mark.length)
+                        .frame(width: 120)
+                        .offset(x: CGFloat(mark.time) * pointsPerSecond - 60, y: main.y + 4)
                         .allowsHitTesting(false)
                 }
-                handle("chevron.compact.left", height: main.height).offset(x: timeline.x(for: first.start), y: main.y)
-                handle("chevron.compact.right", height: main.height).offset(x: timeline.x(for: last.end) - TrimTimeline.handleWidth, y: main.y)
             }
-            PlayheadCapsule(model: model, timeline: timeline, time: \.playhead, height: layout.height - Self.rulerHeight + 4)
-                .offset(y: Self.rulerHeight - 2)
+            Playhead(model: model, timeline: timeline, height: layout.height - Self.rulerHeight + 8)
+                .offset(y: Self.rulerHeight - 6)
         }
     }
 
@@ -308,20 +246,48 @@ struct TracksView: View {
         }
     }
 
-    /// Lock, hide and mute for each lane, pinned to the left of the view: the ones that are on, and every one under the pointer.
-    private func laneControls(_ layout: LaneLayout) -> some View {
+    /// Each lane's name in the column left of the lanes, pinned there as they scroll sideways, with its lock, hide and mute
+    /// switches: the ones that are on, and every one while the pointer is over the lane.
+    private func laneNames(_ layout: LaneLayout) -> some View {
         ZStack(alignment: .topLeading) {
+            // Short of the lanes by half the playhead's cap, so the cap shows whole at 0:00.
+            VideoEditorSurface.controls
+                .frame(width: LaneLayout.labelWidth - 6, height: layout.height)
             ForEach(layout.lanes, id: \.track) { lane in
                 let track = model.project.tracks[lane.track]
-                HStack(spacing: LaneLayout.controlSpacing) {
-                    ForEach(shownControls(onTrack: lane.track), id: \.self) { control in
-                        laneButton(control, track: lane.track, isOn: track[keyPath: control.flag])
+                HStack(spacing: 0) {
+                    Text(Self.title(model.project.laneName(ofTrack: lane.track)))
+                        .font(.scaled(10.5))
+                        .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+                        .lineLimit(1)
+                        .fixedSize()
+                    Spacer(minLength: 2)
+                    // The name always shows whole; at a larger text size the switches give way, and the lane's
+                    // right-click menu still has them.
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 0) {
+                            ForEach(shownControls(onTrack: lane.track), id: \.self) { control in
+                                laneButton(control, track: lane.track, isOn: track[keyPath: control.flag])
+                            }
+                        }
+                        Color.clear.frame(width: 0)
                     }
                 }
-                .padding(.leading, LaneLayout.controlInset)
-                .frame(height: lane.height)
+                .padding(.leading, 4)
+                .padding(.trailing, 2)
+                .frame(width: LaneLayout.labelWidth, height: lane.height)
                 .offset(y: lane.y)
             }
+        }
+        .frame(width: LaneLayout.labelWidth, height: layout.height, alignment: .topLeading)
+    }
+
+    private static func title(_ name: LaneLayout.Name) -> LocalizedStringResource {
+        switch name {
+        case .draw: LocalizedStringResource("Draw", comment: "Video editor timeline: the name of a lane of arrows, shapes and other marks.")
+        case .text: LocalizedStringResource("Text", comment: "Video editor timeline: the name of a lane of text annotations.")
+        case .video: LocalizedStringResource("Video", comment: "Video editor timeline: the name of the recording's lane, or of an added video's.")
+        case .sound: LocalizedStringResource("Sound", comment: "Video editor timeline: the name of the recording's sound lane, or of an added sound's.")
         }
     }
 
@@ -333,12 +299,11 @@ struct TracksView: View {
     private func laneButton(_ control: LaneControl, track: Int, isOn: Bool) -> some View {
         Button { model.toggle(control.flag, ofTrack: track) } label: {
             Image(systemName: control.symbol(isOn: isOn))
-                .font(.scaled(10, weight: .bold))
-                .foregroundStyle(Brutal.ink)
-                .frame(width: LaneLayout.controlSize, height: LaneLayout.controlSize)
-                .inkOnFill(isOn ? Brutal.yellow : nil)
-                .background(isOn ? Brutal.yellow : Brutal.paper)
-                .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: 2)
+                .font(.scaled(10, weight: .semibold))
+                .foregroundStyle(isOn ? AnyShapeStyle(Brutal.ink) : AnyShapeStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink)))
+                .frame(width: 14, height: 16)
+                .background(isOn ? Brutal.hover : .clear, in: RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .brutalTip(control.tip(isOn: isOn))
@@ -351,8 +316,8 @@ struct TracksView: View {
         return Canvas { context, size in
             for time in ticks {
                 let x = timeline.x(for: time)
-                context.fill(Path(CGRect(x: x, y: size.height - 5, width: 1, height: 5)), with: .color(Brutal.ink.opacity(0.6)))
-                context.draw(Text(TimelineRuler.label(time, interval: interval)).font(ScaledFont.scaled(10, weight: .bold, design: .monospaced).resolved(textSize)).foregroundStyle(Brutal.faded(0.7)), at: CGPoint(x: x + 3, y: size.height / 2 - 1), anchor: .leading)
+                context.fill(Path(CGRect(x: x, y: size.height - 4, width: 1, height: 4)), with: .color(Brutal.tertiaryText.opacity(0.6)))
+                context.draw(Text(TimelineRuler.label(time, interval: interval)).font(ScaledFont.scaled(10, weight: .medium, design: .monospaced).resolved(textSize)).foregroundStyle(Brutal.tertiaryText), at: CGPoint(x: x + 3, y: size.height / 2 - 1), anchor: .leading)
             }
         }
         .frame(width: timeline.width, height: Self.rulerHeight)
@@ -377,11 +342,24 @@ struct TracksView: View {
         }
         .saturation(trimmed ? 0 : 1)
         .opacity(trimmed ? 0.35 : 1)
-        .offset(x: CGFloat(clip.start) * pointsPerSecond, y: lane.y)
+        // A point in from each end, so clips that meet, at a split or a cut, show a gap between them.
+        .offset(x: CGFloat(clip.start) * pointsPerSecond + Self.clipGap, y: lane.y)
+    }
+
+    /// Half the gap between clips that meet.
+    private static let clipGap: CGFloat = 1
+
+    private func clipShape() -> RoundedRectangle {
+        RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
+    }
+
+    /// A clip's edge: selection blue while it's selected, a hairline otherwise.
+    private func clipEdge(selected: Bool) -> (width: CGFloat, color: Color) {
+        selected ? (2, Brutal.selection) : (1, Color(light: Brutal.line.opacity(0.12), dark: .white.opacity(0.2)))
     }
 
     private func pictureClip(_ clip: Clip, height: CGFloat, pointsPerSecond: CGFloat, trimmed: Bool) -> some View {
-        let width = CGFloat(clip.length) * pointsPerSecond
+        let width = max(1, CGFloat(clip.length) * pointsPerSecond - Self.clipGap * 2)
         let selected = !trimmed && isSelected(clip)
         let thumbnails = model.thumbnailSets[clip.source] ?? []
         let tile = max(1, height * clip.size.width / max(clip.size.height, 1))
@@ -399,13 +377,13 @@ struct TracksView: View {
             }
         }
         .frame(width: width, height: height)
-        .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
-        .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.line)
+        .clipShape(clipShape())
+        .inkBorder(clipShape(), width: clipEdge(selected: selected).width, color: clipEdge(selected: selected).color)
         .allowsHitTesting(false)
     }
 
     private func soundClip(_ clip: Clip, height: CGFloat, pointsPerSecond: CGFloat, trimmed: Bool) -> some View {
-        let width = CGFloat(clip.length) * pointsPerSecond
+        let width = max(1, CGFloat(clip.length) * pointsPerSecond - Self.clipGap * 2)
         let selected = !trimmed && isSelected(clip)
         let waveform = model.waveforms[clip.source]
         let volume = Float(clip.volume)
@@ -424,37 +402,34 @@ struct TracksView: View {
                 let bottom = mid - CGFloat(low) * (mid - 3)
                 path.addRect(CGRect(x: x, y: top, width: max(1, barWidth - 0.5), height: max(1, bottom - top)))
             }
-            context.fill(path, with: .color(Brutal.ink.opacity(0.85)))
+            context.fill(path, with: .color(soundGreen))
         }
         .frame(width: width, height: height)
-        .inkOnFill(Brutal.mint)
-        .background(Brutal.mint)
-        .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
-        .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.line)
+        .background(soundGreen.opacity(0.12))
+        .clipShape(clipShape())
+        .inkBorder(clipShape(), width: clipEdge(selected: selected).width, color: clipEdge(selected: selected).color)
         .allowsHitTesting(false)
         .task(id: clip.source) { await model.loadWaveform(for: clip.source) }
     }
 
-    /// `labelInset` moves the name and its rename field clear of the lane switches when they're over the clip's start.
-    private func annotationClip(_ clip: AnnotationClip, height: CGFloat, pointsPerSecond: CGFloat, labelInset: CGFloat) -> some View {
-        let width = CGFloat(clip.duration) * pointsPerSecond
+    /// An annotation's span on its lane: purple with its symbol and name, or selection blue while it's selected.
+    private func annotationClip(_ clip: AnnotationClip, height: CGFloat, pointsPerSecond: CGFloat) -> some View {
+        let width = max(1, CGFloat(clip.duration) * pointsPerSecond - Self.clipGap * 2)
         let selected = model.selectedClipID == clip.id
-        let color = clip.annotation.color
         let isRenaming = renaming == clip.id
-        return HStack(spacing: 4) {
-            Image(systemName: clip.annotation.layerSymbol).font(.scaled(11, weight: .bold))
-            Text(clip.annotation.layerName).font(.scaled(11, weight: .bold)).lineLimit(1)
+        return HStack(spacing: 5) {
+            Image(systemName: clip.annotation.layerSymbol).font(.scaled(10, weight: .semibold))
+            Text(clip.annotation.layerName).font(.scaled(11, weight: selected ? .semibold : .regular)).lineLimit(1)
                 .opacity(isRenaming ? 0 : 1)
         }
-        .foregroundStyle(Brutal.ink)
-        .padding(.horizontal, 6)
-        .padding(.leading, labelInset)
+        .foregroundStyle(selected ? Color.white : annotationText)
+        .padding(.horizontal, 8)
         .frame(width: width, height: height, alignment: .leading)
-        .background(color.swiftUIColor.opacity(0.55))
-        .background(Brutal.paper)
-        .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
-        .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.yellow : Brutal.line)
+        .background(selected ? Brutal.selection : annotationFill, in: clipShape())
+        .clipShape(clipShape())
+        .inkBorder(clipShape(), width: selected ? 1.5 : 1, color: selected ? .white : Color(light: Brutal.line.opacity(0.1), dark: .white.opacity(0.14)))
         .allowsHitTesting(false)
+        .offset(x: Self.clipGap)
         // Over the clip rather than in it, so a short clip doesn't squeeze the field.
         .overlay(alignment: .leading) {
             if isRenaming {
@@ -462,8 +437,8 @@ struct TracksView: View {
                     renaming = nil
                     model.renameAnnotation(clip.id, to: name)
                 }, onCancel: { renaming = nil })
-                .frame(width: max(width - 24 - labelInset, 140))
-                .padding(.leading, 22 + labelInset)
+                .frame(width: max(width - 24, 140))
+                .padding(.leading, 22)
             }
         }
     }
@@ -482,32 +457,34 @@ struct TracksView: View {
             .allowsHitTesting(false)
     }
 
-    private func handle(_ symbol: String, height: CGFloat) -> some View {
-        Image(systemName: symbol)
-            .font(.scaled(12, weight: .black))
-            .foregroundStyle(Brutal.ink)
+    /// A yellow trim handle at one end of the Video lane, rounded on its outer side, with an ink edge in light.
+    private func handle(_ edge: TrimHandle, height: CGFloat) -> some View {
+        let r = Brutal.Radius.control
+        let shape = UnevenRoundedRectangle(topLeadingRadius: edge == .start ? r : 0, bottomLeadingRadius: edge == .start ? r : 0,
+                                           bottomTrailingRadius: edge == .end ? r : 0, topTrailingRadius: edge == .end ? r : 0, style: .circular)
+        return shape.fill(Brutal.yellow)
+            .inkBorder(shape, width: 1.5, color: Color(light: Brutal.line, dark: .clear))
             .frame(width: TrimTimeline.handleWidth, height: height)
-            .inkOnFill(Brutal.yellow)
-            .background(Brutal.yellow)
-            .inkBorder(Rectangle(), width: 2)
             .allowsHitTesting(false)
     }
 
     // MARK: Gestures
 
-    /// `leadX` is where time 0 sits in the lanes.
-    private func drag(_ timeline: TrimTimeline, layout: LaneLayout, leadX: CGFloat) -> some SwiftUI.Gesture {
+    /// `originX` is where time 0 sits in the scrolling content.
+    private func drag(_ timeline: TrimTimeline, layout: LaneLayout, originX: CGFloat) -> some SwiftUI.Gesture {
         let pointsPerSecond = timeline.width / CGFloat(max(model.fitDuration, .leastNonzeroMagnitude))
         return DragGesture(minimumDistance: 0)
             .onChanged { value in
                 if gesture == nil {
-                    let point = CGPoint(x: value.startLocation.x - leadX, y: value.startLocation.y)
-                    gesture = (start(point, timeline: timeline, layout: layout), value.startLocation.x, pointsPerSecond)
+                    // The names are pinned over the content's left edge, so a press on them isn't on a lane.
+                    let onNames = value.startLocation.x - scrollX < LaneLayout.labelWidth
+                    let point = CGPoint(x: value.startLocation.x - originX, y: value.startLocation.y)
+                    gesture = (onNames ? .ignored : start(point, timeline: timeline, layout: layout), value.startLocation.x, pointsPerSecond)
                 }
                 guard let gesture else {
                     return
                 }
-                let time = Double((value.location.x - leadX) / gesture.pointsPerSecond)
+                let time = Double((value.location.x - originX) / gesture.pointsPerSecond)
                 let reach = Double(Snapping.reach / gesture.pointsPerSecond)
                 switch gesture.kind {
                 case .scrub:
@@ -523,12 +500,17 @@ struct TracksView: View {
                     model.trimClip(id, handle, toTimeline: time, snapThreshold: reach)
                 case .keyframe(let id, let original):
                     model.moveKeyframe(id, from: original, toTimeline: time)
+                case .ignored:
+                    break
                 }
             }
             .onEnded { _ in
-                if case .select = gesture?.kind {
+                switch gesture?.kind {
+                case .select, .ignored:
                     gesture = nil
                     return
+                default:
+                    break
                 }
                 gesture = nil
                 model.endDrag()
@@ -607,21 +589,56 @@ struct TracksView: View {
     }
 }
 
-/// The playhead line. It alone reads the time, so playback redraws just it rather than the timeline it's on.
-struct PlayheadCapsule: View {
+/// The playhead: a 2 pt line with a cap in the ruler, white in dark and ink in light. It alone reads the time, so playback
+/// redraws just it rather than the lanes it's over.
+struct Playhead: View {
     let model: VideoEditorModel
     let timeline: TrimTimeline
-    let time: KeyPath<VideoEditorModel, Double>
     let height: CGFloat
 
+    private static let color = Color(light: Brutal.line, dark: .white)
+
     var body: some View {
-        Capsule().fill(Brutal.paper)
-            .inkBorder(Capsule(), width: 1)
-            .frame(width: 4, height: height)
-            .offset(x: max(0, timeline.x(for: model[keyPath: time]) - 2))
-            .allowsHitTesting(false)
+        VStack(spacing: -2) {
+            UnevenRoundedRectangle(topLeadingRadius: 2, bottomLeadingRadius: 6, bottomTrailingRadius: 6, topTrailingRadius: 2, style: .circular)
+                .fill(Self.color)
+                .frame(width: 12, height: 12)
+            Rectangle()
+                .fill(Self.color)
+                .frame(width: 2)
+        }
+        .frame(width: 12, height: height)
+        .shadow(color: Color(light: .clear, dark: .black.opacity(0.5)), radius: 0.5)
+        .offset(x: timeline.x(for: model.playhead) - 6)
+        .allowsHitTesting(false)
     }
 }
+
+/// "CUT 1.2s" on the Video lane where a cut was made: ink with light text, since a cut can be undone and record red is kept
+/// for recording (rule 6).
+private struct CutBadge: View {
+    let length: Double
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Text("Cut", comment: "Video editor timeline: the badge where a section was cut out, before its length, as in CUT 1.2s.")
+                .textCase(.uppercase)
+            Text(verbatim: Duration.seconds(length).formatted(.units(allowed: [.seconds], width: .narrow, fractionalPart: .show(length: 1))))
+        }
+        .font(.scaled(9.5, weight: .bold))
+        .foregroundStyle(.white)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 1)
+        .background(Brutal.line, in: RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
+        .fixedSize()
+    }
+}
+
+/// Sound clips' waveform and tint.
+private let soundGreen = Color(light: Color(hex: 0x248A3D), dark: Color(hex: 0x34C759))
+/// Annotation clips' fill and text, as on the board.
+private let annotationFill = Color(light: Color(hex: 0xDCD6F2), dark: Color(hex: 0x4A3D7A))
+private let annotationText = Color(light: Color(hex: 0x2E2660), dark: Color(hex: 0xEDEBE6))
 
 /// A timeline as one VoiceOver element whose value is the playhead. A modifier re-runs without re-running the view it's on,
 /// so reading the time here doesn't redraw the timeline on every tick.
