@@ -35,7 +35,7 @@ Shot starts an area screenshot, just as <kbd>⌘⇧4</kbd> does.
 | `shot://annotate?path=<file>` | Open an image in the editor, or a video in the video editor |
 | `shot://edit-video?path=<file>` | Open a video in the video editor to trim it |
 | `shot://gallery` | Open the gallery |
-| `shot://settings?section=<name>` | Open Settings at `gallery`, `general`, `capture`, `quickAccess`, `recording`, `shortcuts`, or `about` |
+| `shot://settings?section=<name>` | Open Settings at `general`, `capture`, `quickAccess`, `recording`, `shortcuts`, or `about`. `gallery` opens the gallery window, as `shot://gallery` does |
 | `shot://welcome` | Open the [welcome window](#follow-the-welcome-window) again |
 
 ### Paths and errors

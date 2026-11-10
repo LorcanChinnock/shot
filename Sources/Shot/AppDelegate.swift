@@ -108,7 +108,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// behind the notch or pushed off a crowded bar.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         log.notice("Reopened; showing Settings")
-        MainWindowController.showSettings()
+        SettingsWindowController.show()
         return false
     }
 
@@ -143,7 +143,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Toast.error("Unknown settings section: \(name)")
                 return
             }
-            MainWindowController.showSettings(section: section)
+            SettingsWindowController.show(section: section)
         case .welcome:
             WelcomeWindow.showAgain()
         case let .captureTimer(seconds):
@@ -210,6 +210,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func showSettings() {
-        MainWindowController.showSettings()
+        SettingsWindowController.show()
     }
 }

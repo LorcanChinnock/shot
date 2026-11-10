@@ -137,7 +137,7 @@ final class ScrollingCaptureController: NSObject {
         }
         // Shot's own windows, the panel and outline included, never appear in the frames.
         let ownApps = content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
-        let mainWindows = content.windows.filter { $0.windowID == MainWindowController.windowID }
+        let mainWindows = content.windows.filter { ShotWindows.capturable.contains($0.windowID) }
         let filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: mainWindows)
         let config = SCStreamConfiguration()
         config.sourceRect = Geometry.displayLocalTopLeft(region, screenFrame: screen.frame)
