@@ -407,23 +407,56 @@ private struct CaptureSettings: View {
     @Setting(PreferenceKey.captureShowsCursor) private var showsCursor: Bool
     @Setting(PreferenceKey.windowShadow) private var windowShadow: Bool
     @Setting(PreferenceKey.browserPageOnly) private var browserPageOnly: Bool
+    @Environment(\.settingsQuery) private var query
+    /// Two columns, as on the board, while the content is wide enough for them, and one in a narrow window.
+    @State private var twoColumns = true
 
     var body: some View {
-        SettingsCard(title: "After capture") {
+        if SettingsSearch.terms(query).isEmpty {
+            columns
+        } else {
+            // Search results list each section's groups one under another, so they hide one by one when nothing matches.
+            afterCapture
+            capturedImage
+            whileSelecting
+        }
+    }
+
+    private var columns: some View {
+        let spacing: CGFloat = twoColumns ? 16 : 18
+        let layout = twoColumns ? AnyLayout(HStackLayout(alignment: .top, spacing: 16)) : AnyLayout(VStackLayout(alignment: .leading, spacing: spacing))
+        return layout {
+            VStack(alignment: .leading, spacing: spacing) {
+                afterCapture
+                capturedImage
+            }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            VStack(alignment: .leading, spacing: spacing) {
+                whileSelecting
+                SelectionAidsPreview(magnifier: magnifier, crosshair: crosshair, sizeLabel: sizeLabel)
+            }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .onGeometryChange(for: Bool.self) { $0.size.width >= 600 } action: { twoColumns = $0 }
+    }
+
+    private var afterCapture: some View {
+        SettingsCard(title: "After a capture", note: "The quick path saves and copies each capture and shows it in Quick Access, without opening a window.") {
             ToggleRow(title: "Save to folder", isOn: $save)
             ToggleRow(title: "Copy to clipboard", isOn: $copy)
             ToggleRow(title: "Show Quick Access", isOn: $quickAccess)
-            ToggleRow(title: "Open in editor", subtitle: "Opens the annotation editor instead of Quick Access.", isOn: $openEditor)
+            ToggleRow(title: "Open in editor", subtitle: "Opens the editor instead of Quick Access.", isOn: $openEditor)
         }
-        SettingsCard(title: "Selection") {
-            ToggleRow(title: "Magnifier", subtitle: "8× loupe next to the pointer for pixel-precise edges.", isOn: $magnifier)
-            ToggleRow(title: "Crosshair", subtitle: "Full-screen guide lines through the pointer.", isOn: $crosshair)
-            ToggleRow(title: "Size label", subtitle: "Width and height in pixels next to the pointer while you drag.", isOn: $sizeLabel)
-            ToggleRow(title: "Show cursor", subtitle: "Show the pointer when you capture an area or the full screen.", isOn: $showsCursor)
+    }
+
+    private var capturedImage: some View {
+        SettingsCard(title: "Captured image") {
+            ToggleRow(title: "Show cursor", subtitle: "Include the pointer in area and full-screen captures.", isOn: $showsCursor)
             ToggleRow(title: "Window shadow", subtitle: "Keep the macOS drop shadow in window captures.", isOn: $windowShadow)
             ToggleRow(
                 title: "Capture only the page in browser windows",
-                subtitle: "Off captures the whole window. On captures just the web page, without the toolbar and tabs. Needs Accessibility access. Press B on the overlay to switch for one capture.",
+                subtitle: "Window captures of a browser leave out its toolbar and tabs. It needs Accessibility access, and B on the capture bar switches it for one capture.",
                 isOn: Binding(
                     get: { browserPageOnly },
                     set: { on in
@@ -435,6 +468,303 @@ private struct CaptureSettings: View {
                 )
             )
         }
+    }
+
+    private var whileSelecting: some View {
+        SettingsCard(title: "While selecting", note: "Each one also has a key on the capture bar: M, C and I.") {
+            ToggleRow(title: "Magnifier", subtitle: "An 8× loupe beside the pointer, for exact edges.", isOn: $magnifier)
+            ToggleRow(title: "Crosshair", subtitle: "Guide lines through the pointer across the screen.", isOn: $crosshair)
+            ToggleRow(title: "Size label", subtitle: "Width and height in pixels while you drag.", isOn: $sizeLabel)
+        }
+    }
+}
+
+/// A miniature of picking an area over a sample window (Library & Settings › Settings · Capture): the area with its
+/// handles, and the magnifier, crosshair and size label that are switched on, drawn as the overlay draws them. Moving the
+/// mouse over it drags the area, so you can try the aids before a capture. It hides while searching, and VoiceOver skips
+/// it, since the rows above say the same.
+private struct SelectionAidsPreview: View {
+    let magnifier: Bool
+    let crosshair: Bool
+    let sizeLabel: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Where the mouse is over the preview, or nil while it's elsewhere and the pointer rests.
+    @State private var hover: CGPoint?
+    @State private var cursorPushed = false
+
+    private static let height: CGFloat = 150
+    private static let ink = Color(hex: 0x16161A)
+    private static let chip = Color(hex: 0x1A1A1E).opacity(0.88)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            SettingsGroupHeading("Preview")
+            GeometryReader { proxy in
+                let layout = SelectionAidsPreviewLayout(size: proxy.size, pointer: hover)
+                ZStack(alignment: .topLeading) {
+                    PreviewScene()
+                    areaDim(layout)
+                    handles(layout)
+                    if crosshair {
+                        guides(layout).transition(.opacity)
+                    }
+                    if sizeLabel {
+                        sizeChips(layout).transition(.opacity)
+                    }
+                    if hover == nil {
+                        pointer(at: layout.pointer)
+                    }
+                    if magnifier {
+                        loupe(layout).transition(.opacity.combined(with: .scale(scale: 0.85)))
+                    }
+                }
+                .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
+                .contentShape(Rectangle())
+                .onContinuousHover { phase in
+                    switch phase {
+                    case .active(let point):
+                        if !cursorPushed {
+                            SelectionOverlayView.cursor.push()
+                            cursorPushed = true
+                        }
+                        hover = point
+                    case .ended:
+                        popCursor()
+                        withAnimation(reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.8)) { hover = nil }
+                    }
+                }
+            }
+            .frame(height: Self.height)
+            .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular))
+            .overlay {
+                Color.clear.inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular), width: 1, color: Self.ink.opacity(0.08))
+            }
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: [magnifier, crosshair, sizeLabel])
+            Text("Move the pointer over the preview to drag the area.")
+                .font(Brutal.caption)
+                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 12)
+                .padding(.top, 2)
+        }
+        .onDisappear(perform: popCursor)
+        .accessibilityHidden(true)
+        .hiddenWhileSearching()
+    }
+
+    private func popCursor() {
+        if cursorPushed {
+            NSCursor.pop()
+            cursorPushed = false
+        }
+    }
+
+    /// Outside the area dimmed, and the overlay's 1 pt white line and dark ring around it.
+    private func areaDim(_ layout: SelectionAidsPreviewLayout) -> some View {
+        Canvas { context, size in
+            var dim = Path(CGRect(origin: .zero, size: size))
+            dim.addRect(layout.area)
+            context.fill(dim, with: .color(Color(red: 12 / 255, green: 12 / 255, blue: 16 / 255).opacity(0.35)), style: FillStyle(eoFill: true))
+            context.stroke(Path(layout.area.insetBy(dx: -1.5, dy: -1.5)), with: .color(.black.opacity(0.35)), lineWidth: 1)
+            context.stroke(Path(layout.area.insetBy(dx: -0.5, dy: -0.5)), with: .color(.white.opacity(0.95)), lineWidth: 1)
+        }
+        .allowsHitTesting(false)
+    }
+
+    /// The overlay's round white handles with ink edges, at the corners and the middle of each long side, at a smaller size.
+    private func handles(_ layout: SelectionAidsPreviewLayout) -> some View {
+        Canvas { context, _ in
+            let radius: CGFloat = 3.5
+            for point in AreaHandles.points(around: layout.area) {
+                let handle = Path(ellipseIn: CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2))
+                context.fill(handle, with: .color(.white))
+                context.stroke(handle, with: .color(Self.ink), lineWidth: 1)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    /// The overlay's guides: a 1 pt white line over a 3 pt shadow, across the whole preview, with a gap at the pointer.
+    private func guides(_ layout: SelectionAidsPreviewLayout) -> some View {
+        Canvas { context, size in
+            let x = layout.pointer.x.rounded(.down) + 0.5
+            let y = layout.pointer.y.rounded(.down) + 0.5
+            let gap: CGFloat = 8
+            var path = Path()
+            path.move(to: CGPoint(x: 0, y: y))
+            path.addLine(to: CGPoint(x: x - gap, y: y))
+            path.move(to: CGPoint(x: x + gap, y: y))
+            path.addLine(to: CGPoint(x: size.width, y: y))
+            path.move(to: CGPoint(x: x, y: 0))
+            path.addLine(to: CGPoint(x: x, y: y - gap))
+            path.move(to: CGPoint(x: x, y: y + gap))
+            path.addLine(to: CGPoint(x: x, y: size.height))
+            context.stroke(path, with: .color(.black.opacity(0.25)), lineWidth: 3)
+            context.stroke(path, with: .color(.white.opacity(0.9)), lineWidth: 1)
+        }
+        .allowsHitTesting(false)
+    }
+
+    /// The overlay's crosshair cursor while the mouse is elsewhere: white 3 pt lines under ink ones, open in the middle.
+    private func pointer(at point: CGPoint) -> some View {
+        Canvas { context, _ in
+            let x = point.x.rounded(.down) + 0.5
+            let y = point.y.rounded(.down) + 0.5
+            let arm: CGFloat = 7
+            var path = Path()
+            for (from, to) in [(-arm, -2.0), (2.0, arm)] {
+                path.move(to: CGPoint(x: x + from, y: y))
+                path.addLine(to: CGPoint(x: x + to, y: y))
+                path.move(to: CGPoint(x: x, y: y + from))
+                path.addLine(to: CGPoint(x: x, y: y + to))
+            }
+            context.stroke(path, with: .color(.white), lineWidth: 3)
+            context.stroke(path, with: .color(Self.ink), lineWidth: 1.2)
+        }
+        .allowsHitTesting(false)
+    }
+
+    /// The size in pixels and the ratio, above the area's top left corner, as the overlay's chips.
+    private func sizeChips(_ layout: SelectionAidsPreviewLayout) -> some View {
+        let size = layout.pixelSize
+        return HStack(spacing: 4) {
+            Text(verbatim: "\(size.width) × \(size.height)")
+                .font(.scaled(10, weight: .bold, design: .monospaced))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 2)
+                .background(Self.chip, in: RoundedRectangle(cornerRadius: 6, style: .circular))
+            Text("Free ratio")
+                .font(.scaled(10, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.75))
+                .padding(.horizontal, 7)
+                .padding(.vertical, 2)
+                .background(Self.chip, in: RoundedRectangle(cornerRadius: 6, style: .circular))
+        }
+        .fixedSize()
+        .alignmentGuide(.top) { $0[.bottom] - layout.area.minY + 5 }
+        .offset(x: layout.area.minX)
+        .allowsHitTesting(false)
+    }
+
+    /// The overlay's loupe: the sample window magnified six times, 11 points across, ruled per point, with the pointer's row
+    /// and column lit yellow, its own point outlined in ink, and its position in pixels underneath, in a white ring and an
+    /// ink one with a soft shadow.
+    private func loupe(_ layout: SelectionAidsPreviewLayout) -> some View {
+        let side = SelectionAidsPreviewLayout.loupeSide
+        let zoom = SelectionAidsPreviewLayout.magnification
+        let centre = layout.loupeCentre
+        let pixel = layout.pixel
+        return ZStack {
+            PreviewScene()
+                .frame(width: layout.size.width, height: layout.size.height)
+                .scaleEffect(zoom, anchor: .topLeading)
+                .offset(x: side / 2 - centre.x * zoom, y: side / 2 - centre.y * zoom)
+                .frame(width: side, height: side, alignment: .topLeading)
+            Canvas { context, size in
+                let cells = SelectionAidsPreviewLayout.cells
+                let cell = size.width / CGFloat(cells)
+                let middle = CGFloat(cells / 2) * cell
+                var grid = Path()
+                for step in 1..<cells {
+                    let offset = CGFloat(step) * cell
+                    grid.move(to: CGPoint(x: offset, y: 0))
+                    grid.addLine(to: CGPoint(x: offset, y: size.height))
+                    grid.move(to: CGPoint(x: 0, y: offset))
+                    grid.addLine(to: CGPoint(x: size.width, y: offset))
+                }
+                context.stroke(grid, with: .color(Color(white: 0.5).opacity(0.3)), lineWidth: 0.5)
+                let lit = Color(hex: 0xFFD43B).opacity(0.35)
+                context.fill(Path(CGRect(x: middle, y: 0, width: cell, height: middle)), with: .color(lit))
+                context.fill(Path(CGRect(x: middle, y: middle + cell, width: cell, height: size.height - middle - cell)), with: .color(lit))
+                context.fill(Path(CGRect(x: 0, y: middle, width: middle, height: cell)), with: .color(lit))
+                context.fill(Path(CGRect(x: middle + cell, y: middle, width: size.width - middle - cell, height: cell)), with: .color(lit))
+                let own = CGRect(x: middle, y: middle, width: cell, height: cell)
+                context.stroke(Path(own.insetBy(dx: -0.25, dy: -0.25)), with: .color(.white), lineWidth: 0.5)
+                context.stroke(Path(own.insetBy(dx: 0.5, dy: 0.5)), with: .color(Self.ink), lineWidth: 1)
+            }
+            Text(verbatim: "\(pixel.x), \(pixel.y)")
+                .font(.scaled(8, weight: .medium, design: .monospaced))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 1)
+                .background(Self.chip, in: RoundedRectangle(cornerRadius: 4, style: .circular))
+                .fixedSize()
+                .frame(maxHeight: .infinity, alignment: .bottom)
+                .padding(.bottom, 6)
+        }
+        .frame(width: side, height: side)
+        .clipShape(Circle())
+        .padding(2)
+        .background(Circle().fill(.white))
+        .padding(1)
+        .background(Circle().fill(Self.ink).shadow(color: .black.opacity(0.4), radius: 7, y: 6))
+        .offset(x: layout.loupe.minX - 3, y: layout.loupe.minY - 3)
+        .allowsHitTesting(false)
+    }
+}
+
+/// The desktop the preview pictures: warm wallpaper and a light sample window with a sidebar, a heading, lines of text and
+/// a yellow tag, so the area, guides and loupe have something to land on. It stays light in dark mode, as a screenshot of
+/// another app would.
+private struct PreviewScene: View {
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            LinearGradient(colors: [Color(hex: 0x9A8F84), Color(hex: 0x6F675F)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            window
+                .offset(x: 18, y: 14)
+        }
+        .allowsHitTesting(false)
+    }
+
+    private var window: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 4) {
+                ForEach([0xFF5F57, 0xFEBC2E, 0x28C840], id: \.self) { hex in
+                    Circle().fill(Color(hex: UInt32(hex))).frame(width: 6, height: 6)
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 7)
+            .frame(height: 16)
+            .background(Color(hex: 0xEEECE7))
+            HStack(alignment: .top, spacing: 0) {
+                VStack(alignment: .leading, spacing: 6) {
+                    bar(30, 0xC9C5BD)
+                    bar(38, 0xD8D4CC)
+                    bar(26, 0xD8D4CC)
+                    bar(34, 0xD8D4CC)
+                }
+                .padding(8)
+                .frame(width: 58, alignment: .topLeading)
+                .frame(maxHeight: .infinity, alignment: .top)
+                .background(Color(hex: 0xF5F3EF))
+                VStack(alignment: .leading, spacing: 7) {
+                    bar(92, 0x3A3A40, height: 6)
+                    bar(150, 0xCFCBC4)
+                    bar(132, 0xCFCBC4)
+                    HStack(spacing: 6) {
+                        bar(60, 0xCFCBC4)
+                        Capsule().fill(Color(hex: 0xFFD43B)).frame(width: 34, height: 9)
+                            .overlay { Capsule().stroke(Color(hex: 0x16161A), lineWidth: 1) }
+                    }
+                    bar(118, 0xCFCBC4)
+                    bar(140, 0xCFCBC4)
+                    bar(96, 0xCFCBC4)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                Spacer(minLength: 0)
+            }
+        }
+        .frame(width: 270, height: 170, alignment: .topLeading)
+        .background(.white)
+        .clipShape(RoundedRectangle(cornerRadius: 7, style: .circular))
+        .shadow(color: .black.opacity(0.25), radius: 8, y: 4)
+    }
+
+    private func bar(_ width: CGFloat, _ hex: UInt32, height: CGFloat = 4) -> some View {
+        Capsule().fill(Color(hex: hex)).frame(width: width, height: height)
     }
 }
 
