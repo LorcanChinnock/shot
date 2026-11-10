@@ -1001,7 +1001,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | Tags | A 10 pt dot in the tag's Finder colour, or tertiary grey for a tag that isn't named after one, then the tag and its count |
 | Drop target | A folder something is held over fills with selection blue at 18% under a 1.5 pt selection-blue edge |
 | Storage | Under a hairline: the save folder from the home folder (such as "Pictures/Shot") in 11.5 pt secondary and the captures' size in tertiary, a 4 pt bar of that size against the disk in ink on `quietTrack`, and "Make room…" in `PanelLinkStyle` |
-| Toolbar heading | The picked row's name in 15 pt bold and "N items" in 11 pt tertiary, in the title bar beside the sidebar. #1108 restyles the rest of the toolbar |
+| Toolbar heading | The picked row's name in 15 pt bold and "N items" in 11 pt tertiary, in the title bar beside the sidebar. #1108 restyles the rest of the toolbar (Gallery grid, toolbar and selection bar) |
 
 - **One row at a time.** ShotCore's `GallerySource` is the picked row, as a kind, a folder or a tag, and gives the grid its filter, folder and tags, with tests. Picking a folder shows every kind in it, and picking a tag shows it in every folder. Typing `tag:name` in the search still narrows any row, so combining is still possible.
 - **Counts.** `GalleryCounts` counts each Library row, the captures directly in each folder, and each tag whatever its case, plus their size together, once when the list or the tags change, never per row. A count of 0 shows nothing.
@@ -1015,6 +1015,37 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Text size** scales every row, heading, count and the storage text. At Larger the rows grow taller and the sidebar scrolls sooner; its width doesn't change, so long names truncate in the middle.
 - **Reduce Motion.** The sidebar slides in and out with the panel moment, a 240 ms spring, which Reduce Motion makes a 120 ms fade.
 - **Increase Contrast** makes the sidebar solid in the Sidebar colour, and the headings, counts, storage text and chevrons ink.
+
+### Gallery grid, toolbar and selection bar
+
+#1108 redraws the rest of the gallery's toolbar, its grid of tiles and what happens once something is selected, from Library & Settings › Gallery, in light and dark. The tiles used to have a 2 pt ink edge, a yellow play button on recordings and a violet selection, and a footer held the count, Select All and every action. Now tiles are rounded thumbnails with a quiet edge, a selected tile has a selection-blue ring and tick, and a bar floats up from the foot of the grid while something is selected, with Copy as its one ink button. Nothing here runs during a capture, so the capture → copy path is unchanged.
+
+| Part | Look |
+| --- | --- |
+| Search | 290 pt at most, 120 pt at least, with "Search names and text in screenshots" as its prompt (`BrutalSearchField`) |
+| Sort | The shared pop-up, "Newest first" and so on, as before |
+| Thumbnail size | `BrutalSlider` 70 pt wide between a 10 pt and a 14 pt `square` in tertiary text |
+| Section heading | "Today" and so on in 13 pt bold, its count after it in 12 pt tertiary tabular figures |
+| Grid | 16 pt between tiles both ways (was 20), 64 pt of room under the last row for the selection bar |
+| Thumbnail | 4:3, rounded at the group radius, 10, on the well colour, with a 1 pt hairline edge and a 1.5 pt soft shadow |
+| Selected thumbnail | A 2.5 pt selection-blue ring just outside the edge with a 2 pt halo at 20% outside that, and no shadow |
+| Tick | A 20 pt circle in the top-left corner with a 2 pt white ring: selection blue with a white tick when selected, white at 85% with a faint edge otherwise. It shows on hover, and on every tile while anything is selected |
+| Badge | A recording's length, or "GIF", in 10.5 pt bold monospaced white on `#16161A` at 78%, rounded at the tiny radius, 4, 7 pt in from the bottom-right corner |
+| Name and detail | The name in 12.5 pt medium, truncated in the middle, then a 7 pt dot for the first tag and the file's type with the time, size or date in 11 pt tertiary |
+| Selection bar | Centred 20 pt above the grid's foot on the floating depth in the group colour, rounded at the panel radius, 14: "N selected" in 13 pt semibold, Edit, Move to…, Tag and Show in Finder as toolbar buttons, a `trash` button in destructive red, and Copy as the main button |
+
+- **The detail line.** ShotCore's `Gallery.tileDetail` gives the file's type and, for the date sorts, the time (the section already says the day); for Largest first, the size; for Name, the date. It has tests.
+- **The selection bar** rises 8 pt and fades in with the panel moment when the first capture is selected, and goes when the last is deselected. Move to… lists the save folder and every folder, greying out the one every selected capture is already in, then New Folder…. Tag opens the Tag popover above the bar for the whole selection.
+- **One ink control.** Copy in the bar is the gallery's only ink button, and it shows only while something is selected (rule 1).
+- **What went.** The footer with its count, Select All and Deselect All, and Edit, Copy, Show in Finder and Move to Trash, which the bar now holds; the count is in the toolbar heading and ⌘A, ⇧⌘A and Esc select and deselect. The yellow play button on recordings, the violet ring and name fill on selected tiles, and the count badge on section headings.
+- **The lazy grid rules hold.** A tile takes its first tag and its detail line as plain values and stays `Equatable`, so one selection change re-evaluates only the tiles whose `selected` or `selectionActive` changed. The selection bar reads the selection in its own view, and the root view no longer reads it at all, so selecting doesn't re-evaluate the toolbar, the sidebar or the grid around the tiles.
+- **Keeping the lead in view.** Moving the selection with the arrow keys scrolls a row clear of the bar, not just of the window's edge.
+- **Departures from the board.** The board rounds thumbnails at 9; Shot uses the group radius, 10. The board's badge corner is 5; Shot uses the tiny radius, 4. The board's search is 260 pt; its prompt doesn't fit in SF Pro at that width, so Shot allows 290. The board shows a tick only on selected tiles; Shot also shows an empty circle on hover and on every tile while anything is selected, as before, so a click on it adds a tile without ⌘. The board's detail is "PNG · 21:53" or a size; Shot picks between time, size and date by the sort. The board has no pencil or scissors on a hovered tile; Shot keeps them, as the guide's "Open in an editor" uses them. The board's bar shows the Trash as an icon without a label, which Shot keeps, with "Move to Trash" for VoiceOver and the tip.
+- **Keyboard.** Every shortcut in Keyboard shortcuts › Gallery works as before. With keyboard navigation on, Tab reaches each button in the bar.
+- **VoiceOver** reads a tile as its name and whether it's selected, with a Select or Deselect action, as before. The bar is a group named "Selection", and the Trash button reads "Move to Trash". Section headings read as headings.
+- **Text size** scales the names, details, badges, section headings and the bar. The search prompt truncates at Larger.
+- **Reduce Motion** makes the bar's arrival a 120 ms fade. A hovered tile's tick and edit button fade in over 120 ms either way, as before.
+- **Increase Contrast** takes the tile details, section counts and slider icons to ink. The bar's group-colour fill is already solid, so it needs no change; its 0.5 pt edge stays as it is.
 
 ## Website values
 
@@ -1142,7 +1173,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | --- | --- | --- | --- |
 | Gallery | #1106 own window | `Gallery/GalleryWindowController.swift` (new), `Settings/SettingsWindowController.swift` (was `MainWindowController.swift`), `Gallery/GalleryController.swift`, `Capture/ShotWindows.swift` (new), `Capture/DisplayCapturer.swift`, `Capture/ScrollingCaptureController.swift`, `Recording/Recorder.swift`, `MenuBar/StatusMenu.swift`, `AppDelegate.swift`, ShotCore `ShotURL.swift` (`shot://settings?section=gallery`) | ☐ |
 | Gallery | #1107 sidebar | `Gallery/GallerySidebar.swift`, `Gallery/GalleryView.swift` (layout, toolbar heading, tag row removed), `Gallery/GalleryModel.swift` (`source`, `counts`, `makeRoom`), `Gallery/GalleryWindowController.swift`, ShotCore `GallerySource.swift` (new) and `Preferences.swift` (sidebar open, 220 pt) | ☐ |
-| Gallery | #1108 grid and selection bar | `Gallery/GalleryView.swift` | ☐ |
+| Gallery | #1108 grid and selection bar | `Gallery/GalleryView.swift` (toolbar, `GalleryGrid`, `GalleryTile`, `SelectionCheckbox`, `GallerySelectionBar`; footer removed), ShotCore `GalleryTileDetail.swift` (new) | ☐ |
 | Gallery · preview and empty state | #1109 preview | `Gallery/GalleryPreview.swift` | ☐ |
 | Gallery · preview and empty state | #1110 empty state | `Gallery/GalleryView.swift` | ☐ |
 | Welcome | #1118 | `WelcomeWindow.swift` | ☐ |
