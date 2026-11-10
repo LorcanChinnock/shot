@@ -2,8 +2,8 @@ import AppKit
 import ShotCore
 import SwiftUI
 
-/// What sits along the canvas's foot, from Edit › Image editor · annotate: the zoom control and the Canvas menu at the
-/// bottom left, and the hint at the bottom right, each 16 pt in. The hint gives way first when the canvas is narrow. In
+/// What sits along the canvas's foot, from Edit › Image editor · annotate: the zoom control at the bottom left, and the
+/// hint at the bottom right, each 16 pt in. The hint gives way first when the canvas is narrow. In
 /// crop mode the crop bar (`CropBarOverlay`) takes the hint's place.
 struct CanvasFoot: View {
     @Bindable var model: EditorModel
@@ -13,12 +13,8 @@ struct CanvasFoot: View {
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
-            HStack(alignment: .bottom, spacing: 8) {
-                CanvasZoomControl(model: model, canvas: canvas)
-                // Until the Canvas menu finds its place (#1099).
-                CanvasPill { CanvasMenu(model: model) }
-            }
-            .onGeometryChange(for: CGSize.self, of: \.size) { model.canvasFootLeading = $0 }
+            CanvasZoomControl(model: model, canvas: canvas)
+                .onGeometryChange(for: CGSize.self, of: \.size) { model.canvasFootLeading = $0 }
             Spacer(minLength: 12)
             if let hint = model.canvasHint {
                 CanvasHintPill(hint: hint)
@@ -160,31 +156,6 @@ private struct CanvasHintPill: View {
 
     /// The board's keys: the hint's grey in light, and the ink in dark, where they stand out from it.
     private static let keyColor = Color(light: Color(hex: 0x55545A), dark: Color(hex: 0xEDEBE6))
-}
-
-/// Fit to Content, Trim to Image and Background…, until the Canvas menu moves (#1099). Background… opens the Style
-/// panel, where the background now lives.
-private struct CanvasMenu: View {
-    @Bindable var model: EditorModel
-
-    var body: some View {
-        BrutalDropdown(title: "Canvas", entries: [
-            .item("Fit to Content") { model.fitToContent() },
-            .item("Trim to Image", enabled: model.document.canTrimToImage) { model.trimToImage() },
-            .divider,
-            .item("Background…") { model.showStylePanel() },
-        ]) {
-            HStack(spacing: 5) {
-                Text("Canvas")
-                Image(systemName: "chevron.down")
-                    .font(.scaled(9, weight: .bold))
-                    .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
-            }
-        }
-        .buttonStyle(BrutalButtonStyle(.toolbar))
-        .fixedSize()
-        .brutalTip("Canvas", detail: "Fit the canvas to what's on it, trim it to the image, or choose its background in the Style panel.")
-    }
 }
 
 // MARK: Backdrop

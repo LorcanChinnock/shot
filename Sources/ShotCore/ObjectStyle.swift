@@ -90,6 +90,19 @@ public enum StyleKind: String, CaseIterable, Codable, CodingKeyRepresentable, Se
     public func isDefault(style: ObjectStyle, cornerRadius: CGFloat) -> Bool {
         style == defaultStyle && (!takesCorners || cornerRadius == defaultCornerRadius)
     }
+
+    /// What the image editor starts a new object of this kind with and its Reset puts back, in points: the Soft shadow
+    /// on a placed image, from Edit › Image editor · crop and combine, and `defaultStyle` on anything else. The video
+    /// editor's clips are images too, and keep the plain `defaultStyle`.
+    public var editorDefaultStyle: ObjectStyle {
+        self == .image ? ObjectStyle(shadow: ShadowPreset.soft.shadow(scale: 1)) : defaultStyle
+    }
+
+    /// Whether `style`, in pixels of a document of `scale` pixels per point, and `cornerRadius` are what the image editor
+    /// starts a new object of this kind with.
+    public func isEditorDefault(style: ObjectStyle, cornerRadius: CGFloat, scale: CGFloat) -> Bool {
+        style == editorDefaultStyle.scaled(by: scale) && (!takesCorners || cornerRadius == defaultCornerRadius)
+    }
 }
 
 /// A soft shadow under an object, lit from straight above. Each preset is a point in the one space of elevation,

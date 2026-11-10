@@ -43,6 +43,16 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private var panPoint: CGPoint?
     /// Told where the canvas is, in view points, so the backdrop behind it draws its shadow there.
     var onImageRectChange: ((CGRect) -> Void)?
+    /// The placed image the pointer is over, which shows its crop badge when it has a crop of its own.
+    private var hoveredImageID: UUID? {
+        didSet {
+            if hoveredImageID != oldValue {
+                needsDisplay = true
+                window?.invalidateCursorRects(for: self)
+            }
+        }
+    }
+    private var hoverArea: NSTrackingArea?
 
     init(model: EditorModel) {
         self.model = model
@@ -261,8 +271,115 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
                 }
             }
         }
+        for badge in cropBadges {
+            drawCropBadge(at: badge.center)
+        }
         if model.tool == .crop, let cropDraft = model.cropDraft {
             drawCrop(viewRect(cropDraft), over: viewRect(cropBounds), in: ctx)
+        }
+    }
+
+    // MARK: Crop badges
+
+    /// The crop badges showing, with their centres in view points: one on each placed image with its own crop that the
+    /// pointer is over or that's selected. There are none in crop mode, while text is typed, or while a drag moves or
+    /// resizes something.
+    private var cropBadges: [(id: UUID, center: CGPoint)] {
+        guard model.tool != .crop, editingText == nil, !(dragStart != nil && movedSinceMouseDown) else {
+            return []
+        }
+        // The single selection shows its resize handles, so its badge steps out past the corner one.
+        let withHandles = model.selection.flatMap { $0.isLocked ? nil : $0.id }
+        return model.document.annotations.compactMap { annotation in
+            let selected = model.selectedIDs.contains(annotation.id)
+            guard CanvasCropBadge.shows(on: annotation, selected: selected, hovered: annotation.id == hoveredImageID) else {
+                return nil
+            }
+            // An image scrolled wholly out of view has no badge; one partly in view keeps its badge inside the edge.
+            let rect = viewRect(annotation.bounds)
+            guard rect.intersects(bounds) else {
+                return nil
+            }
+            return (annotation.id, CanvasCropBadge.center(of: rect, clearOfHandle: annotation.id == withHandles, in: bounds))
+        }
+    }
+
+    /// The image whose crop badge is under `viewPoint`, if any.
+    private func cropBadge(at viewPoint: CGPoint) -> UUID? {
+        cropBadges.last { CanvasCropBadge.contains(viewPoint, center: $0.center) }?.id
+    }
+
+    /// The board's badge: an 18 pt white circle with a 1 pt edge of ink at 20% and a small drop, holding the crop symbol
+    /// in 85% ink. Dark mode uses the floating pills' `#2C2C30` and the light ink, and Increase Contrast a 60% edge.
+    private func drawCropBadge(at center: CGPoint) {
+        let dark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let increased = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        let size = CanvasCropBadge.diameter
+        let box = CGRect(x: center.x - size / 2, y: center.y - size / 2, width: size, height: size)
+        let circle = NSBezierPath(ovalIn: box)
+        NSGraphicsContext.saveGraphicsState()
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor.black.withAlphaComponent(dark ? 0.4 : 0.2)
+        shadow.shadowBlurRadius = 3
+        shadow.shadowOffset = NSSize(width: 0, height: -1)
+        shadow.set()
+        (dark ? Self.badgeDarkFill : NSColor.white).setFill()
+        circle.fill()
+        NSGraphicsContext.restoreGraphicsState()
+        let ink = dark ? Self.lightInk : Brutal.inkNS
+        let edge = increased ? ink.withAlphaComponent(0.6) : (dark ? NSColor.white.withAlphaComponent(0.18) : ink.withAlphaComponent(0.2))
+        edge.setStroke()
+        let rim = NSBezierPath(ovalIn: box.insetBy(dx: 0.5, dy: 0.5))
+        rim.lineWidth = 1
+        rim.stroke()
+        let symbolColor = increased || dark ? ink : NSColor(srgbRed: 0x3A / 255, green: 0x39 / 255, blue: 0x3F / 255, alpha: 1)
+        let config = NSImage.SymbolConfiguration(pointSize: 9, weight: .bold).applying(.init(paletteColors: [symbolColor]))
+        guard let symbol = NSImage(systemSymbolName: "crop", accessibilityDescription: nil)?.withSymbolConfiguration(config) else {
+            return
+        }
+        let symbolSize = symbol.size
+        symbol.draw(
+            in: CGRect(x: center.x - symbolSize.width / 2, y: center.y - symbolSize.height / 2, width: symbolSize.width, height: symbolSize.height),
+            from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil
+        )
+    }
+
+    private static let badgeDarkFill = NSColor(srgbRed: 0x2C / 255, green: 0x2C / 255, blue: 0x30 / 255, alpha: 1)
+    private static let lightInk = NSColor(srgbRed: 0xED / 255, green: 0xEB / 255, blue: 0xE6 / 255, alpha: 1)
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if hoverArea == nil {
+            let area = NSTrackingArea(rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect], owner: self)
+            addTrackingArea(area)
+            hoverArea = area
+        }
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        super.mouseMoved(with: event)
+        let viewPoint = convert(event.locationInWindow, from: nil)
+        // A badge already showing keeps its image hovered, since it reaches past the image's corner.
+        if let badge = cropBadge(at: viewPoint) {
+            hoveredImageID = badge
+            setToolTip(String(localized: "Crop Image"))
+            return
+        }
+        setToolTip(nil)
+        let point = viewport.imagePoint(viewPoint)
+        let hit = model.document.annotations.topmostIndex(at: point, tolerance: handleTolerance).map { model.document.annotations[$0] }
+        hoveredImageID = hit?.imageFullRect != nil ? hit?.id : nil
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        super.mouseExited(with: event)
+        hoveredImageID = nil
+        setToolTip(nil)
+    }
+
+    private func setToolTip(_ tip: String?) {
+        if toolTip != tip {
+            toolTip = tip
         }
     }
 
@@ -418,6 +535,13 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     override func resetCursorRects() {
         addCursorRect(bounds, cursor: restingCursor)
+        guard !spaceHeld, model.tool != .hand else {
+            return
+        }
+        let size = CanvasCropBadge.diameter
+        for badge in cropBadges {
+            addCursorRect(CGRect(x: badge.center.x - size / 2, y: badge.center.y - size / 2, width: size, height: size), cursor: .pointingHand)
+        }
     }
 
     private func beginPan(_ event: NSEvent) {
@@ -450,6 +574,12 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         window?.makeFirstResponder(self)
         if spaceHeld || model.tool == .hand {
             beginPan(event)
+            return
+        }
+        // The crop badge adjusts its image's crop, whichever tool is picked, as the Layers panel's badge does.
+        if let badge = cropBadge(at: convert(event.locationInWindow, from: nil)) {
+            movedSinceMouseDown = false
+            model.cropImage(badge)
             return
         }
         let point = imagePoint(event)

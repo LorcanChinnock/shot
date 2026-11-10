@@ -111,6 +111,16 @@ public struct EditorStyle: Equatable, Sendable {
         }
         return (objectStyles[kind] ?? ObjectStyle()).scaled(by: scale)
     }
+
+    /// The style a new object of `kind` starts with in the image editor: the last one given to that kind, else
+    /// `StyleKind.editorDefaultStyle`, so a placed image starts with the Soft shadow until an image is given another
+    /// style. The capture always starts plain. The video editor keeps `objectStyle(for:scale:)`.
+    public func editorObjectStyle(for kind: StyleKind, scale: CGFloat) -> ObjectStyle {
+        guard kind != .capture else {
+            return ObjectStyle()
+        }
+        return (objectStyles[kind] ?? kind.editorDefaultStyle).scaled(by: scale)
+    }
 }
 
 /// A palette that remembers its own last custom colour.
