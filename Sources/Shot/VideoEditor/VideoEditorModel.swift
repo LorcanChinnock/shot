@@ -311,9 +311,23 @@ final class VideoEditorModel {
         setShowsTracks(!showsTracks)
     }
 
+    /// The title bar's Draw: picks the last drawing tool, opening the tracks, where the drawing tools are, or stops drawing.
+    func toggleDrawing() {
+        guard !isAnnotating else {
+            setAnnotationTool(nil)
+            return
+        }
+        setShowsTracks(true)
+        setAnnotationTool(annotationStyle.tool == .crop || annotationStyle.tool == .hand ? .arrow : annotationStyle.tool)
+    }
+
     private func setShowsTracks(_ shown: Bool) {
         guard shown != showsTracks else {
             return
+        }
+        // The drawing tools are in the tracks, so hiding them stops drawing, and Draw doesn't stay on with nothing to show.
+        if !shown {
+            setAnnotationTool(nil)
         }
         showsTracks = shown
         onLayoutChanged?()

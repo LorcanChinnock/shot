@@ -6,7 +6,7 @@ group: Edit and share
 
 ## Draw over the video
 
-1. In the video editor, click **Annotate**.
+1. In the video editor, click **Draw** in the title bar. The tracks open with the drawing tools above them, and clicking **Draw** again stops drawing.
 2. Pick a tool and draw, as in the [annotation editor](#annotate-a-screenshot): arrows, shapes, text, blur and more. Crop and the hand tool aren't here; to crop the video, see [Crop the video](#crop-the-video).
 3. To add a picture, use the image button in the same toolbar.
 

@@ -17,11 +17,6 @@ struct TracksToolbar: View {
                 .disabled(model.selectedClipID == nil)
                 .brutalTip("Cut out the selected clip and close the gap (⌫)")
             ImportMenu(model: model)
-            Button {
-                model.setAnnotationTool(model.isAnnotating ? nil : (model.annotationStyle.tool == .crop ? .arrow : model.annotationStyle.tool))
-            } label: { Label("Annotate", systemImage: "pencil.tip.crop.circle") }
-                .buttonStyle(BrutalButtonStyle(.toolbar, isOn: model.isAnnotating))
-                .brutalTip("Draw arrows, shapes, text, blur and more over the video")
             Button { model.toggleInspector() } label: { Label("Inspector", systemImage: "slider.horizontal.3") }
                 .buttonStyle(BrutalButtonStyle(.toolbar, isOn: model.showsInspector))
                 .brutalTip("Position, scale, rotation, opacity, volume and keyframes of the selected clip")

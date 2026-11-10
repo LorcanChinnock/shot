@@ -3,8 +3,8 @@ import ShotCore
 import SwiftUI
 
 struct VideoEditorRootView: View {
-    /// Everything but the player: title bar, timeline row, insets, and gaps.
-    static let chromeHeight: CGFloat = GlassWindow.titlebarHeight + TrimTimelineView.height + ExportOptionsBar.height + Brutal.windowInset + Brutal.sectionGap * 2.5 + 24
+    /// Everything but the player: title bar and its hairline, timeline row, insets, and gaps.
+    static let chromeHeight: CGFloat = GlassWindow.titlebarHeight + 1 + TrimTimelineView.height + ExportOptionsBar.height + Brutal.windowInset + Brutal.sectionGap * 3 + 24
 
     /// The least the preview is squeezed to before the tracks scroll instead.
     static let playerFloor: CGFloat = 200
@@ -14,47 +14,29 @@ struct VideoEditorRootView: View {
     @State private var windowHeight: CGFloat = 0
 
     var body: some View {
+        // From Edit › Video editor and export: the title bar over a hairline, as in the image editor, then the editor.
+        VStack(spacing: 0) {
+            VideoEditorTitleBar(model: model)
+                .padding(.leading, GlassWindow.trafficLightsWidth)
+                .padding(.trailing, 12)
+                .frame(height: GlassWindow.titlebarHeight)
+            Rectangle()
+                .fill(ContrastAware(standard: Brutal.hairline, increased: Brutal.ink.opacity(0.6)))
+                .frame(height: 1)
+                .accessibilityHidden(true)
+            content
+                .padding(.top, Brutal.sectionGap)
+                .padding([.horizontal, .bottom], Brutal.windowInset)
+        }
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { windowHeight = $0 }
+        .dropDestination(for: URL.self) { urls, _ in
+            model.importMedia(urls)
+            return !urls.isEmpty
+        }
+    }
+
+    private var content: some View {
         VStack(spacing: Brutal.sectionGap) {
-            HStack(spacing: 12) {
-                Text(model.fileURL.lastPathComponent)
-                    .font(.scaled(13, weight: .heavy))
-                    .foregroundStyle(Brutal.ink)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                if model.isDirty {
-                    BrutalBadge(text: model.cuts.isEmpty && !model.isComposite ? "TRIMMED" : "EDITED")
-                }
-                Spacer()
-                Text(timesLabel)
-                    .font(Brutal.mono)
-                    .foregroundStyle(Brutal.faded(0.7))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                    .layoutPriority(1)
-                Group {
-                    Button { model.toggleTracks() } label: { Label("More tools", systemImage: "rectangle.split.3x1").fixedSize() }
-                        .buttonStyle(BrutalButtonStyle(.toolbar, isOn: model.showsTracks))
-                        .brutalTip("Show or hide the tracks, keyframes, imports and annotations (T)")
-                    Button("Copy") { Task { await model.copy() } }
-                        .buttonStyle(BrutalButtonStyle())
-                        .brutalTip("Copy video (⌘C)")
-                    Button("Export") { Task { await model.export() } }
-                        .buttonStyle(BrutalButtonStyle(.main))
-                        .brutalTip("Export a new \(model.options.format.rawValue.uppercased()) with these options next to the video, and copy it")
-                    Button(model.isComposite ? "Save Copy" : "Save") { Task { await model.save() } }
-                        .buttonStyle(BrutalButtonStyle())
-                        .brutalTip(model.isComposite ? "Write the edit as a new video next to the original and copy it (⌘S)" : "Save the edited video and copy it (⌘S)")
-                }
-                .disabled(model.isExporting)
-                if model.isExporting {
-                    Button("Cancel") { model.cancelExport() }
-                        .buttonStyle(BrutalButtonStyle())
-                        .brutalTip("Stop exporting (Esc)")
-                }
-            }
-            .padding(.leading, GlassWindow.trafficLightsWidth)
-            .frame(height: GlassWindow.titlebarHeight)
-            .padding(.bottom, -Brutal.sectionGap / 2)
             PlayerHost(player: model.player)
                 .background(Color.black)
                 .overlay { TransformOverlay(model: model) }
@@ -92,12 +74,6 @@ struct VideoEditorRootView: View {
             }
             ExportOptionsBar(model: model)
         }
-        .padding([.horizontal, .bottom], Brutal.windowInset)
-        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { windowHeight = $0 }
-        .dropDestination(for: URL.self) { urls, _ in
-            model.importMedia(urls)
-            return !urls.isEmpty
-        }
     }
 
     /// Drops the play button so it's centred on the main track's row, which sits below the ruler and any picture or annotation lanes.
@@ -116,9 +92,115 @@ struct VideoEditorRootView: View {
         let minimum = TracksView.rulerHeight + LaneLayout.gap + LaneLayout.mainHeight
         return layout.visibleHeight(available: windowHeight - everythingElse - Self.playerFloor, minimum: minimum)
     }
+}
 
-    private var timesLabel: String {
-        "\(Timecode.string(model.range.start)) – \(Timecode.string(model.range.end))  ·  \(Timecode.string(model.keptLength))"
+/// The title bar and toolbar in one, from Edit › Video editor and export: the file and what's changed beside the traffic
+/// lights, then Undo, More tools and Draw, Save or Save Copy, and Export, the one main button.
+private struct VideoEditorTitleBar: View {
+    let model: VideoEditorModel
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(model.fileURL.lastPathComponent)
+                    .font(Brutal.label)
+                    .foregroundStyle(Brutal.ink)
+                    .truncationMode(.middle)
+                Text(verbatim: subtitle)
+                    .font(Brutal.caption)
+                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                    .monospacedDigit()
+            }
+            .lineLimit(1)
+            .padding(.leading, 8)
+            .accessibilityElement(children: .combine)
+            Spacer(minLength: 0)
+            actions
+        }
+    }
+
+    /// The length while nothing's changed; then "Edited", and what the edit is where it can say.
+    private var subtitle: String {
+        guard model.isDirty else {
+            return Timecode.string(model.keptLength)
+        }
+        let parts = VideoEditSummary(project: model.project, recording: model.fileURL).parts.map(Self.label)
+        return ([String(localized: "Edited")] + parts).joined(separator: " · ")
+    }
+
+    private static func label(_ part: VideoEditSummary.Part) -> String {
+        switch part {
+        case .trimmed: String(localized: "trimmed", comment: "Video editor title bar, after Edited: the recording's start or end is trimmed off.")
+        case let .cuts(count): String(localized: "\(count) cuts", comment: "Video editor title bar, after Edited: sections cut out of the recording.")
+        case let .annotations(count): String(localized: "\(count) annotations", comment: "Video editor title bar, after Edited: arrows, text and other marks drawn over the video.")
+        case let .addedClips(count): String(localized: "\(count) clips added", comment: "Video editor title bar, after Edited: videos, sounds or pictures added from other files.")
+        case .cropped: String(localized: "cropped", comment: "Video editor title bar, after Edited: the video's frame is cropped.")
+        }
+    }
+
+    private var actions: some View {
+        HStack(spacing: 4) {
+            Tile(selected: false, help: "Undo", key: "⌘Z", detail: "Redo with ⇧⌘Z.", isEnabled: model.history.canUndo) {
+                model.undo()
+            } label: {
+                Image(systemName: "arrow.uturn.backward").font(Brutal.toolIcon)
+            }
+            Tile(selected: model.showsTracks, help: "More tools", key: "T", detail: "Shows the tracks under the video, with keyframes, imports and annotations.") {
+                model.toggleTracks()
+            } label: {
+                Image(systemName: "rectangle.split.3x1").font(Brutal.toolIcon)
+            }
+            Button {
+                model.toggleDrawing()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "pencil").font(Brutal.toolIcon)
+                    Text("Draw").font(.scaled(12, weight: .semibold))
+                }
+                .padding(.horizontal, 3)
+            }
+            .buttonStyle(BrutalButtonStyle(.toolbar, isOn: model.isAnnotating))
+            .brutalTip("Draw", detail: "Draw arrows, shapes, text, blur and more over the video.")
+            Rectangle()
+                .fill(Brutal.controlEdge)
+                .frame(width: 1, height: 20)
+                .padding(.horizontal, 6)
+                .accessibilityHidden(true)
+            Group {
+                if model.isExporting {
+                    Button("Cancel") { model.cancelExport() }
+                        .buttonStyle(BrutalButtonStyle())
+                        .brutalTip("Cancel", detail: "Stops exporting.")
+                } else {
+                    saveButton
+                }
+                Button("Export") { Task { await model.export() } }
+                    // In crop mode the crop bar's Apply is the next step, so Export steps back to keep one main button (rule 1).
+                    .buttonStyle(BrutalButtonStyle(model.isCropping ? .secondary : .main))
+                    .disabled(model.isExporting)
+                    .brutalTip(String(localized: "Export"), detail: exportDetail)
+            }
+            .padding(.leading, 4)
+        }
+        .fixedSize()
+    }
+
+    @ViewBuilder private var saveButton: some View {
+        if model.isComposite {
+            Button("Save Copy") { Task { await model.save() } }
+                .buttonStyle(BrutalButtonStyle())
+                .brutalTip("Save Copy", key: "⌘S", detail: "Writes the edit as a new video next to the recording and copies it.")
+        } else {
+            Button("Save") { Task { await model.save() } }
+                .buttonStyle(BrutalButtonStyle())
+                .brutalTip("Save", key: "⌘S", detail: "Saves the trimmed video and copies it. The original goes to the Trash.")
+        }
+    }
+
+    private var exportDetail: String {
+        model.options.format == .gif
+            ? String(localized: "Writes a new GIF with these options next to the recording, and copies it.")
+            : String(localized: "Writes a new MP4 with these options next to the recording, and copies it.")
     }
 }
 
