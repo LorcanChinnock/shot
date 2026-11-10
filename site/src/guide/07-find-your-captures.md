@@ -37,12 +37,23 @@ While something is selected, a bar floats at the bottom of the gallery. It says 
 | To | Do this |
 |---|---|
 | Open in an editor | Double-click it, click the pencil or scissors on a hovered thumbnail, or select it and press <kbd>Return</kbd> or click **Edit**. Screenshots open in the [annotation editor](#annotate-a-screenshot) and recordings in the [video editor](#edit-a-recording). Shot asks first if you open more than 8. |
-| Preview | Press <kbd>Space</kbd> for Quick Look. |
+| Preview | Select it and press <kbd>Space</kbd>, or right-click it and choose **Preview**. See [Preview a capture](#preview-a-capture). |
 | Copy | Click **Copy** in the selection bar, or press <kbd>⌘C</kbd>. |
 | Drop it in another app | Drag the thumbnail. |
 | Show the file | Click **Show in Finder**. |
 | Delete | Click the Trash button in the selection bar, or press <kbd>⌘⌫</kbd>. <kbd>⌘Z</kbd> puts it back, and so can Finder. |
 
-Right-click for the same actions, plus **Quick Look**. On a single item, right-click also offers **Rename…**, **Export GIF** for a video, and [**Pin**](#pin-a-screenshot) for a screenshot.
+Right-click for the same actions, plus **Preview**. On a single item, right-click also offers **Rename…**, **Export GIF** for a video, and [**Pin**](#pin-a-screenshot) for a screenshot.
 
 A GIF opens in an editor only if the video editor exported it, and then opens its [project](#reopen-an-edit-later).
+
+## Preview a capture
+
+Select a capture and press <kbd>Space</kbd> to see it large in the gallery window, with a details panel beside it. The toolbar shows its name and where it is in the grid, such as "3 of 248", with **Edit** and **Copy**. Recordings play, and GIFs animate.
+
+- Press <kbd>←</kbd> or <kbd>→</kbd> for the previous or next capture in the grid, and <kbd>Space</kbd> or <kbd>Esc</kbd>, or the back arrow, to go back to the grid. The capture you were on stays selected.
+- <kbd>Return</kbd>, <kbd>⌘C</kbd>, <kbd>⌘R</kbd> and <kbd>⌘⌫</kbd> work on the capture shown, as they do on a selection.
+- The details panel says when it was taken, its size in pixels and on disk, its folder, and how many edits were saved beside it, such as "Original + 1 edit".
+- **Tags** lists its tags. Click **+ Add tag** to add or remove one.
+- **Text in this screenshot** shows the text that search found in it. While you're searching, your search is highlighted there and in the image, and the panel counts the matches.
+- **Copy path for an AI assistant** copies where the file is on your Mac, for an assistant that can open files. **Show in Finder** shows the file.

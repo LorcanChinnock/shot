@@ -1047,6 +1047,36 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Reduce Motion** makes the bar's arrival a 120 ms fade. A hovered tile's tick and edit button fade in over 120 ms either way, as before.
 - **Increase Contrast** takes the tile details, section counts and slider icons to ink. The bar's group-colour fill is already solid, so it needs no change; its 0.5 pt edge stays as it is.
 
+### Gallery preview and details panel
+
+#1109 replaces the system Quick Look panel with the board's preview from Library & Settings › Gallery · preview and empty state (left). Space used to open Quick Look over the gallery, for the whole selection. Now it shows the lead capture large inside the gallery window, over the sidebar and grid, with a details panel beside it. Nothing here runs during a capture, so the capture → copy path is unchanged.
+
+| Part | Look |
+| --- | --- |
+| Toolbar | In the title bar after the traffic lights: a `chevron.left` toolbar button, the name in 13 pt semibold truncated in the middle, "3 of 248" in 12 pt tertiary tabular figures, then Edit as a secondary button and Copy as the main button, over a 1 pt separator |
+| Stage | The well colour with 24 pt of room around the capture, which fits the space and is never larger than its pixels at 2x. Rounded at the control radius, 6, with a 1 pt hairline edge and a `0 14 32` shadow at 16% |
+| Matches | Each place the search appears in the image under a selection-blue wash at 22%, rounded 2 |
+| Keys | "← → next · Space close" on `Keycap`s in 11.5 pt secondary text, 14 pt above the stage's foot |
+| Details panel | 250 pt on the side panel colour with a hairline down its leading edge (`sidePanel(width:)`), 16 pt in, 16 pt between sections, in 12.5 pt |
+| Facts | Taken, Size, Folder, Versions and, while searching, Search: the name in tertiary text and the value in medium weight, right-aligned |
+| Tags | "Tags" as a panel heading, then each tag as a chip in the group colour with an 8 pt dot and a 1 pt control edge, then "+ Add tag" as an outlined chip |
+| Text in this screenshot | A panel heading over the text in 12.5 pt secondary on the group colour, rounded 6 with a hairline edge, its lines joined with " · " and each match on a selection-blue wash at 22% |
+| Actions | "Copy path for an AI assistant" (`sparkles`) and "Show in Finder" (`folder`) as full-width secondary buttons, pinned to the panel's foot |
+
+- **Opening and stepping.** Space previews the lead capture, or the first selected, and selects it alone, so Return, ⌘C, ⌘R and ⌘⌫ act on what's shown. The context menu's Quick Look is now Preview. ← and → (and ↑ ↓) step through the grid's captures in its order and stop at either end, Home and End go to the first and last, and Space, Esc or Back return to the grid. The grid stays built under the preview, so it keeps its scroll position, and the lead stays selected.
+- **The facts.** ShotCore works out each one, with tests: `Gallery.takenLabel` gives "Today, 21:53" or a date and time, `sizeLabel` the pixels and file size, `folderLabel` the folder from the save folder ("Shot › Bugs"), and `versions` counts the files beside it that `VersionNaming` names as versions of the same original ("Original + 1 edit"). The Versions row hides when there are none, and Search hides when the search isn't in the text.
+- **Reading the text without indexing.** The text panel reads the index `TextIndexer` keeps (`TextIndexer.store`) once when the preview opens, and again when the indexer hands over more, and never adds to it. A screenshot not read yet says that Shot reads the text the first time you search. `TextSearch.ranges` finds the matches, ignoring case and accents as search does.
+- **Highlights in the image.** The index keeps text but not where it is, so while a search matches the shown screenshot's text, `TextRecognizer` reads that one screenshot again on this Mac, and `CaptureText.boxes(matching:)` gives the boxes. Without a search, nothing is read.
+- **Recordings and GIFs.** A recording plays in AppKit's `AVPlayerView` with the system's inline controls and stops when the preview moves on or closes. SwiftUI's `VideoPlayer` crashed in AVKit's SwiftUI overlay on macOS 27, so it isn't used. A GIF animates in an `NSImageView`. Neither has a text section.
+- **Loading.** The grid's thumbnail shows at once, and the full image decodes off the main actor, up to 5,120 pixels on its longer side.
+- **Departures from the board.** The board rounds the image at 8; Shot uses the control radius, 6. The board's preview has no sidebar; Shot hides it while the preview is open and brings it back with the grid. The board shows only a screenshot; Shot also previews recordings and GIFs. The board's text card has no empty or unread state; Shot adds a short line for each. Space previews one capture where Quick Look showed the whole selection.
+- **Focus.** Esc in the search field, or a click on a tile while typing in it, now also clears the field's focus state, which used to take the keyboard back so Space typed into the field instead of previewing. The Tag popover's field takes focus a turn after it opens, as the sidebar's folder field does, and the preview clears the keyboard when its popover closes, since the field stays in the window and kept it.
+- **Keyboard.** ← → step, Space and Esc close, and ⌘F goes back to the grid's search. ⌘A, ⇧⌘A and the thumbnail size keys do nothing in the preview. With keyboard navigation on, Tab reaches Back, Edit, Copy, + Add tag and the two actions.
+- **VoiceOver** reads Back as "Back to grid", the name as a heading, the image as "Preview of" its name, each fact as one element, each tag as "Tag" and its name, and the panel as a group named "Details". The keys along the foot are hidden from it.
+- **Text size** scales the toolbar, facts, chips, text and actions; the panel scrolls above its actions when they don't fit.
+- **Reduce Motion.** Nothing here moves. Opening, stepping and closing are instant.
+- **Increase Contrast** takes the position, fact names, notes and secondary text to ink, and the panel's edge to 60% ink.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -1174,7 +1204,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Gallery | #1106 own window | `Gallery/GalleryWindowController.swift` (new), `Settings/SettingsWindowController.swift` (was `MainWindowController.swift`), `Gallery/GalleryController.swift`, `Capture/ShotWindows.swift` (new), `Capture/DisplayCapturer.swift`, `Capture/ScrollingCaptureController.swift`, `Recording/Recorder.swift`, `MenuBar/StatusMenu.swift`, `AppDelegate.swift`, ShotCore `ShotURL.swift` (`shot://settings?section=gallery`) | ☐ |
 | Gallery | #1107 sidebar | `Gallery/GallerySidebar.swift`, `Gallery/GalleryView.swift` (layout, toolbar heading, tag row removed), `Gallery/GalleryModel.swift` (`source`, `counts`, `makeRoom`), `Gallery/GalleryWindowController.swift`, ShotCore `GallerySource.swift` (new) and `Preferences.swift` (sidebar open, 220 pt) | ☐ |
 | Gallery | #1108 grid and selection bar | `Gallery/GalleryView.swift` (toolbar, `GalleryGrid`, `GalleryTile`, `SelectionCheckbox`, `GallerySelectionBar`; footer removed), ShotCore `GalleryTileDetail.swift` (new) | ☐ |
-| Gallery · preview and empty state | #1109 preview | `Gallery/GalleryPreview.swift` | ☐ |
+| Gallery · preview and empty state | #1109 preview | `Gallery/GalleryPreview.swift` (`GalleryPreviewView` replaces the Quick Look panel), `Gallery/GalleryModel.swift` (`previewing`, `preview(_:)`, `stepPreview(by:)`, `textRevision`), `Gallery/GalleryController.swift` (preview keys), `Gallery/GalleryView.swift` (preview over the grid, Preview in the menu), ShotCore `GalleryPreviewDetails.swift` (new) | ☐ |
 | Gallery · preview and empty state | #1110 empty state | `Gallery/GalleryView.swift` | ☐ |
 | Welcome | #1118 | `WelcomeWindow.swift` | ☐ |
 | Settings sidebar (shared component) | #1111 | `Settings/SettingsView.swift` | ☐ |
