@@ -5380,6 +5380,58 @@
         }
       }
     },
+    "Cards stay until you close them." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karten bleiben, bis du sie schließt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las tarjetas se quedan hasta que las cierres."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les cartes restent jusqu’à ce que vous les fermiez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le schede restano finché non le chiudi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カードは閉じるまで表示されたままです。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "카드는 닫을 때까지 그대로 있습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Os cartões ficam até você fechá-los."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片会一直显示，直到你关闭它们。"
+          }
+        }
+      }
+    },
     "Choose a different folder…" : {
       "localizations" : {
         "de" : {
@@ -5428,6 +5480,110 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选取其他文件夹…"
+          }
+        }
+      }
+    },
+    "Closed after %llds. The next capture brings a new card." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nach %llds geschlossen. Die nächste Aufnahme bringt eine neue Karte."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se cerró tras %llds. La próxima captura trae una tarjeta nueva."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fermée après %llds. La prochaine capture affiche une nouvelle carte."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiusa dopo %llds. La prossima cattura porta una nuova scheda."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld秒後に閉じました。次のキャプチャで新しいカードが表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld초 후 닫혔습니다. 다음 캡처 때 새 카드가 나타납니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fechado após %llds. A próxima captura traz um novo cartão."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 秒后已关闭。下次截图会出现一张新卡片。"
+          }
+        }
+      }
+    },
+    "Closes in %llds. Hover over the card to keep it open." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schließt in %llds. Bewege den Zeiger auf die Karte, damit sie offen bleibt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se cierra en %llds. Pasa el puntero sobre la tarjeta para mantenerla abierta."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se ferme dans %llds. Survolez la carte pour la garder ouverte."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si chiude tra %llds. Passa il puntatore sulla scheda per tenerla aperta."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld秒後に閉じます。カードにポインタを重ねると開いたままになります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld초 후 닫힙니다. 카드 위에 포인터를 올리면 열린 채로 유지됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fecha em %llds. Passe o ponteiro sobre o cartão para mantê-lo aberto."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 秒后关闭。将指针悬停在卡片上可让它保持打开。"
           }
         }
       }
@@ -24099,58 +24255,6 @@
         }
       }
     },
-    "PREVIEW" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VORSCHAU"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VISTA PREVIA"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "APERÇU"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ANTEPRIMA"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プレビュー"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "미리보기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "PRÉVIA"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "预览"
-          }
-        }
-      }
-    },
     "Padding" : {
       "localizations" : {
         "de" : {
@@ -36386,6 +36490,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "录制内容没有视频轨道"
+          }
+        }
+      }
+    },
+    "The timer waits while the pointer is on the card, and starts again when it leaves." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Timer wartet, solange der Zeiger auf der Karte ist, und beginnt von vorn, wenn er sie verlässt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El temporizador espera mientras el puntero está sobre la tarjeta y vuelve a empezar cuando sale."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le minuteur attend tant que le pointeur est sur la carte, et repart quand il la quitte."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il timer attende finché il puntatore è sulla scheda e riparte quando la lascia."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ポインタがカード上にある間はタイマーが止まり、離れると最初から始まります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "포인터가 카드 위에 있는 동안 타이머가 멈추고, 벗어나면 다시 시작합니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O cronômetro espera enquanto o ponteiro está sobre o cartão e recomeça quando ele sai."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "指针停在卡片上时计时器会等待，移开后重新开始。"
           }
         }
       }

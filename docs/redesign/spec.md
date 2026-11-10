@@ -1196,6 +1196,27 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Reduce Motion.** The switches' knobs move at once, the preview's aids appear and disappear without fading, and the area jumps back rather than springing when the mouse leaves.
 - **Increase Contrast** makes the group names, descriptions and notes ink, and gives the off switches their 60% ink edges. The preview keeps its colours, since it pictures the overlay.
 
+### Settings · Quick Access
+
+#1114 redraws the Quick Access pane from Library & Settings › Settings · Quick Access. Its settings and their keys are unchanged, and so are the row names and the description, which match the board already. Under the group, a preview of a desktop pictures the real card in the chosen corner and counts down the auto-close time. Nothing here runs during a capture, so the capture → copy path is unchanged.
+
+| Group | Row | Control | Description |
+| --- | --- | --- | --- |
+| Placement | Screen corner | Segmented: Bottom left, Bottom right | None |
+| Placement | Auto-close | Segmented: 4s, 8s, 15s, 30s, Never | "Hovering a card pauses the timer." |
+
+- **Layout.** Placement, then the preview 18 pt under it, in one column like General. While searching, Placement lists like every other section's group, without the preview.
+- **Preview.** Under a "Preview" heading, a panel half as tall as it is wide, between 200 and 340 pt, rounded at the group radius with a 1 pt edge in ink at 8%. It pictures a 1440 pt display at the pane's width, so a 720 pt preview draws it at half size, with its bottom edge at the panel's and any cut taken off the top. On the Capture preview's warm wallpaper (`#9A8F84` to `#6F675F`) sit a light menu bar 24 display points tall and the Capture preview's sample window at 2.8 times its size, centred 70 points under the menu bar, which shrinks in a short panel to keep 12 pt under it. The card is the real one, placed as `QuickAccessController` places it: 280 × 175 points, 30 points in from the side and bottom, with the 14 point panel radius, a white fill, the 0.5 pt edge at 30% black and a soft shadow. Its capture is the Capture preview's desktop. The card slides in from its corner's edge as the real one does, moving in with a spring and scaling up from 88%, waits out the chosen time, slides out past the edge, and comes back 1.6 s later. Changing the corner brings it in from the new edge, and choosing Never leaves it in place. Pointing at the card shows the real card's hover state at the same scale: the scrim, Copy in the floating accent with an ink edge, Save As… in white, and Close, Annotate and Pin in round dark buttons. The timer waits while the pointer is on the card and starts again from the full time when it leaves, as `QuickAccessController` does. ShotCore's `QuickAccessPreviewLayout` places the menu bar, window and card and counts the seconds, with tests.
+- **Caption.** Under the panel, in 11 pt tertiary text 12 pt in, with digits that keep their width. While the card counts down it says "Closes in 5s. Hover over the card to keep it open." with the seconds left, and after the card closes "Closed after 8s. The next capture brings a new card." While the pointer is on the card it says "The timer waits while the pointer is on the card, and starts again when it leaves." With Never it says the board's "Cards stay until you close them."
+- **One ink control.** The pane adds none: the selected sidebar row stays the window's only ink. The Copy button's ink edge inside the preview is part of the picture, as on the real card.
+- **What went.** The old preview: a violet-to-sky gradient, the "PREVIEW" badge and two plain cards with 2 pt ink borders, one in the section's colour. The pane no longer uses `SettingsSection.color`.
+- **Departures from the board.** The board draws a timer bar along the foot of the card; the real card has none, so the preview card has none either, and the caption counts the seconds down instead, as agreed in #1114. The board's caption sits in a dark pill inside the preview and reads "Card closes after 8s · hover to keep it"; Shot's sits under the panel like the Capture preview's note, so the card never crosses it, and counts down. The board's card is a white sheet with coloured lines; Shot's is the real card at scale, with a capture on it and the real hover state. The board's preview fills the rest of the window; Shot's is half as tall as it is wide within limits, since the pane scrolls. The board's segments are 3 × 12 and 3 × 11 pt; Shot uses the shared `BrutalSegmented`, so Quick Access lines up with General and Capture. The board's rows are 10 × 14 pt; Shot uses the shared 9 × 14.
+- **Keyboard.** With keyboard navigation on, Tab reaches both segmented controls in reading order. The preview takes no focus, and pointing at its card is for the mouse only, since it changes no setting.
+- **VoiceOver** reads both segmented controls as segmented controls, and the group name as a heading. It skips the preview and its caption, since the rows above say the same.
+- **Text size** scales the rows, the description, the preview's heading and its caption. The preview keeps its size, since it pictures the screen at scale.
+- **Reduce Motion.** The card fades in and out in place rather than sliding, and the hover state appears at once. The countdown still runs.
+- **Increase Contrast** makes the group name, description and caption ink. The preview keeps its colours, since it pictures the screen.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -1332,7 +1353,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Settings · General | #1112 | `Settings/SettingsView.swift` (`GeneralSettings`: descriptions, Text size pop-up, Show in Finder, 180 pt File name field, Choose… as a sheet) | ☐ |
 | Settings · General | #1073 sidebar material | `Design/GlassWindow.swift` (`SidebarMaterial`), `Settings/SettingsView.swift` | ☐ |
 | Settings · Capture | #1113 | `Settings/SettingsView.swift` (`CaptureSettings`: three groups in two columns, shorter descriptions, `SelectionAidsPreview`, `PreviewScene`), `Design/BrutalStyle.swift` (`SettingsCard` note, `SettingsGroupHeading`), `ShotCore/SelectionAidsPreview.swift` (`SelectionAidsPreviewLayout`) | ☐ |
-| Settings · Quick Access | #1114 | `Settings/SettingsView.swift` | ☐ |
+| Settings · Quick Access | #1114 | `Settings/SettingsView.swift` (`QuickAccessSettings`, `QuickAccessPreview`, `QuickAccessPreviewHover`, `QuickAccessDesktop`, `PreviewSampleWindow` split out of `PreviewScene`), `ShotCore/QuickAccessPreview.swift` (`QuickAccessPreviewLayout`), `ShotCore/QuickAccessLayout.swift` (`screenInset`) | ☐ |
 | Settings · Recording | #1115 | `Settings/SettingsView.swift`, `Settings/DevicePreview.swift` | ☐ |
 | Settings · Shortcuts | #1116 | `Settings/ShortcutRecorderView.swift`, `Settings/SettingsView.swift` | ☐ |
 | Settings · About | #1117 | `Settings/SettingsView.swift`, `Updater.swift`, `Permissions.swift` | ☐ |
@@ -1383,7 +1404,7 @@ Every page in `site/src/guide/`. #1128 updates the text, ticking **Updated** for
 | 08a Share a capture with an AI assistant | "Copy path for an AI assistant" in the preview; Copy Path in the Share menu | #1128 | #1109, #1093 | ☐ |
 | 09 Keyboard shortcuts | M, C and I on the capture bar; Settings › Shortcuts; Delete asks before the Trash and ⌘Delete doesn't | #1128 | #1075, #1110, #1116 | ☐ |
 | 10 Automation reference | `shot://gallery` and `shot://settings?section=gallery` open the gallery window; `shot://welcome` | #1128 | #1106, #1118 | ☐ |
-| 11 Settings | Section and row names, the sidebar search, Open Gallery, General's Text size menu and Show in Finder, Capture's groups and its preview of the selection aids | #1128 | #1111, #1112, #1113, #1114, #1115, #1116, #1117 | ☐ |
+| 11 Settings | Section and row names, the sidebar search, Open Gallery, General's Text size menu and Show in Finder, Capture's groups and its preview of the selection aids, Quick Access's preview of the card in its corner with the countdown | #1128 | #1111, #1112, #1113, #1114, #1115, #1116, #1117 | ☐ |
 | 12 Languages | Check only: no redesigned screen is described | #1128 | #1121 | ☐ |
 | 13 Updates | The restyled update prompt; Settings › About › Updates | #1128 | #1117, #1084 | ☐ |
 | 14 Privacy | Permissions in Settings › About show Allowed or Allow… | #1128 | #1117 | ☐ |

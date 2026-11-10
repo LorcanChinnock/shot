@@ -704,20 +704,26 @@ private struct SelectionAidsPreview: View {
     }
 }
 
-/// The desktop the preview pictures: warm wallpaper and a light sample window with a sidebar, a heading, lines of text and
-/// a yellow tag, so the area, guides and loupe have something to land on. It stays light in dark mode, as a screenshot of
-/// another app would.
+/// The desktop the Capture preview pictures: warm wallpaper and the sample window, so the area, guides and loupe have
+/// something to land on. A Quick Access card in the Quick Access preview shows it too, as its capture. It stays light in
+/// dark mode, as a screenshot of another app would.
 private struct PreviewScene: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             LinearGradient(colors: [Color(hex: 0x9A8F84), Color(hex: 0x6F675F)], startPoint: .topLeading, endPoint: .bottomTrailing)
-            window
+            PreviewSampleWindow()
+                .shadow(color: .black.opacity(0.25), radius: 8, y: 4)
                 .offset(x: 18, y: 14)
         }
         .allowsHitTesting(false)
     }
+}
 
-    private var window: some View {
+/// A light sample window with a sidebar, a heading, lines of text and a yellow tag, 270 × 170 pt.
+private struct PreviewSampleWindow: View {
+    static let size = CGSize(width: 270, height: 170)
+
+    var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 4) {
                 ForEach([0xFF5F57, 0xFEBC2E, 0x28C840], id: \.self) { hex in
@@ -757,10 +763,9 @@ private struct PreviewScene: View {
                 Spacer(minLength: 0)
             }
         }
-        .frame(width: 270, height: 170, alignment: .topLeading)
+        .frame(width: Self.size.width, height: Self.size.height, alignment: .topLeading)
         .background(.white)
         .clipShape(RoundedRectangle(cornerRadius: 7, style: .circular))
-        .shadow(color: .black.opacity(0.25), radius: 8, y: 4)
     }
 
     private func bar(_ width: CGFloat, _ hex: UInt32, height: CGFloat = 4) -> some View {
@@ -773,7 +778,6 @@ private struct PreviewScene: View {
 private struct QuickAccessSettings: View {
     @Setting(PreferenceKey.quickAccessPosition) private var position: QuickAccessPosition
     @Setting(PreferenceKey.quickAccessDuration) private var duration: Double
-    private let color = SettingsSection.quickAccess.color
 
     var body: some View {
         SettingsCard(title: "Placement") {
@@ -784,43 +788,241 @@ private struct QuickAccessSettings: View {
                 BrutalSegmented(selection: $duration, options: [(4.0, "4s"), (8.0, "8s"), (15.0, "15s"), (30.0, "30s"), (0.0, "Never")])
             }
         }
-        ScreenPreview(position: position, color: color)
-            .hiddenWhileSearching()
+        QuickAccessPreview(position: position, duration: duration)
     }
 }
 
-/// A miniature screen showing where cards appear.
-private struct ScreenPreview: View {
+/// A desktop with a Quick Access card in the chosen corner, drawn as the real card is (Library & Settings › Settings ·
+/// Quick Access). The card slides in from its edge, the caption under the panel counts down the auto-close time, and the
+/// card slides out when it runs out and comes back after a moment. Hovering the card holds it under the real card's
+/// hover buttons, and the timer starts again when the pointer leaves, as it does after a capture. It hides while
+/// searching, and VoiceOver skips it, since the rows above say the same.
+private struct QuickAccessPreview: View {
     let position: QuickAccessPosition
-    let color: Color
+    let duration: Double
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var width: CGFloat = 0
+    @State private var shown = false
+    /// Set when the timer closed the card, until the next one arrives.
+    @State private var closed = false
+    @State private var hovering = false
+    @State private var secondsLeft = 0
+    /// The corner the card last arrived in, so changing corners brings it in from the new edge.
+    @State private var shownIn: QuickAccessPosition?
+
+    private static let ink = Color(hex: 0x16161A)
+
+    private struct TimerKey: Equatable {
+        let position: QuickAccessPosition
+        let duration: Double
+        let hovering: Bool
+    }
 
     var body: some View {
-        ZStack(alignment: position == .left ? .bottomLeading : .bottomTrailing) {
-            LinearGradient(colors: [Brutal.violet.opacity(0.55), Brutal.sky.opacity(0.55)], startPoint: .topLeading, endPoint: .bottomTrailing)
-            VStack(spacing: 0) {
-                Rectangle().fill(Brutal.paper.opacity(0.7)).frame(height: 14)
-                    .overlay(alignment: .bottom) { Rectangle().fill(Brutal.line).frame(height: 2) }
-                HStack {
-                    BrutalBadge(text: "PREVIEW", style: .strong)
-                    Spacer()
-                }
-                .padding(12)
-                Spacer()
+        let height = QuickAccessPreviewLayout.height(forWidth: width)
+        let layout = QuickAccessPreviewLayout(size: CGSize(width: width, height: height), position: position)
+        VStack(alignment: .leading, spacing: 6) {
+            SettingsGroupHeading("Preview")
+            ZStack(alignment: .topLeading) {
+                QuickAccessDesktop(layout: layout)
+                card(layout)
             }
-            VStack(spacing: 6) {
-                ForEach(0..<2) { index in
-                    RoundedRectangle(cornerRadius: 5, style: .circular)
-                        .fill(index == 1 ? color : Brutal.paper)
-                        .frame(width: 72, height: 42)
-                        .inkBorder(RoundedRectangle(cornerRadius: 5, style: .circular), width: 2)
-                }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .frame(height: height)
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+            .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular))
+            .overlay {
+                Color.clear.inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular), width: 1, color: Self.ink.opacity(0.08))
             }
-            .padding(12)
+            caption
+                .font(Brutal.caption)
+                .monospacedDigit()
+                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 12)
+                .padding(.top, 2)
         }
-        .frame(height: 210)
-        .clipShape(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular).inset(by: Brutal.underInk(Brutal.border)))
-        .brutalSurface(Color.clear)
-        .animation(.spring(response: 0.35, dampingFraction: 0.75), value: position)
+        .task(id: TimerKey(position: position, duration: duration, hovering: hovering)) { await run() }
+        .accessibilityHidden(true)
+        .hiddenWhileSearching()
+    }
+
+    private var caption: Text {
+        if duration <= 0 {
+            return Text("Cards stay until you close them.")
+        }
+        if hovering {
+            return Text("The timer waits while the pointer is on the card, and starts again when it leaves.")
+        }
+        if closed {
+            return Text("Closed after \(Int(duration))s. The next capture brings a new card.")
+        }
+        return Text("Closes in \(secondsLeft)s. Hover over the card to keep it open.")
+    }
+
+    /// The real card at the preview's scale: a capture filling a white card with a hairline edge and a window shadow,
+    /// sliding in from its edge as the real one does, or fading under Reduce Motion.
+    private func card(_ layout: QuickAccessPreviewLayout) -> some View {
+        let shape = RoundedRectangle(cornerRadius: layout.cardRadius, style: .circular)
+        let away = !shown && !reduceMotion
+        return ZStack {
+            PreviewScene()
+                .frame(width: QuickAccessLayout.cardWidth, height: layout.card.height / max(layout.scale, 0.01))
+                .scaleEffect(layout.scale, anchor: .topLeading)
+                .frame(width: layout.card.width, height: layout.card.height, alignment: .topLeading)
+            if hovering {
+                QuickAccessPreviewHover(scale: layout.scale)
+                    .transition(.opacity)
+            }
+        }
+        .frame(width: layout.card.width, height: layout.card.height)
+        .background(Color.white)
+        .clipShape(shape)
+        .inkBorder(shape, width: 0.5, color: .black.opacity(0.3))
+        .background(shape.fill(.white).shadow(color: .black.opacity(0.3), radius: 18 * layout.scale, y: 8 * layout.scale))
+        .contentShape(shape)
+        .onHover { inside in
+            withAnimation(reduceMotion ? nil : Motion.fade) { hovering = inside && shown }
+        }
+        .scaleEffect(away ? 0.88 : 1, anchor: position == .left ? .leading : .trailing)
+        .offset(x: layout.card.minX + (away ? layout.slide : 0), y: layout.card.minY)
+        .opacity(shown ? 1 : 0)
+        .allowsHitTesting(shown)
+    }
+
+    private var arrive: Animation { reduceMotion ? Motion.fade : .spring(response: 0.45, dampingFraction: 0.82) }
+    private var leave: Animation { reduceMotion ? Motion.fade : .easeIn(duration: 0.3) }
+
+    /// Brings the card in, counts down while the pointer is off it, sends it out when the time runs out and brings it
+    /// back, until the corner, the duration or the hover changes and this starts again.
+    private func run() async {
+        if shownIn != position {
+            // The first showing, or a new corner: the card comes in from that corner's edge.
+            var still = Transaction()
+            still.disablesAnimations = true
+            withTransaction(still) { shown = false }
+            shownIn = position
+            guard await pause(.milliseconds(350)) else { return }
+            arriveNow()
+        } else if !shown {
+            arriveNow()
+        }
+        secondsLeft = QuickAccessPreviewLayout.secondsLeft(duration: duration, elapsed: 0)
+        guard duration > 0, !hovering else { return }
+        while true {
+            let start = ContinuousClock.now
+            while secondsLeft > 0 {
+                guard await pause(.milliseconds(200)) else { return }
+                let elapsed = (ContinuousClock.now - start).components
+                secondsLeft = QuickAccessPreviewLayout.secondsLeft(duration: duration, elapsed: Double(elapsed.seconds) + Double(elapsed.attoseconds) / 1e18)
+            }
+            closed = true
+            withAnimation(leave) { shown = false }
+            guard await pause(.seconds(1.6)) else { return }
+            arriveNow()
+            secondsLeft = QuickAccessPreviewLayout.secondsLeft(duration: duration, elapsed: 0)
+        }
+    }
+
+    private func arriveNow() {
+        closed = false
+        withAnimation(arrive) { shown = true }
+    }
+
+    private func pause(_ duration: Duration) async -> Bool {
+        do {
+            try await Task.sleep(for: duration)
+            return true
+        } catch {
+            return false
+        }
+    }
+}
+
+/// The real card's hover state at the preview's scale: the scrim, Copy and Save As… in the middle, Close and Annotate at
+/// the top and Pin at the bottom right. The Copy button is ink, as on the real card.
+private struct QuickAccessPreviewHover: View {
+    let scale: CGFloat
+
+    var body: some View {
+        ZStack {
+            FloatingPanel.scrim
+            VStack(spacing: 8 * scale) {
+                button("Copy", fill: Color(nsColor: FloatingPanel.accentNS), weight: .semibold, edge: .black, edgeWidth: 1.5)
+                button("Save As…", fill: .white, weight: .medium, edge: .black.opacity(0.14), edgeWidth: 1)
+            }
+            VStack {
+                HStack {
+                    corner("xmark", iconSize: 10)
+                    Spacer()
+                    corner("pencil", iconSize: 12)
+                }
+                Spacer()
+                HStack {
+                    Spacer()
+                    corner("pin", iconSize: 12)
+                }
+            }
+            .padding(8 * scale)
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func button(_ title: LocalizedStringResource, fill: Color, weight: Font.Weight, edge: Color, edgeWidth: CGFloat) -> some View {
+        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control * scale, style: .circular)
+        return Text(title)
+            .font(.system(size: 14 * scale, weight: weight))
+            .foregroundStyle(Color(hex: 0x16161A))
+            .lineLimit(1)
+            .frame(width: 128 * scale, height: 32 * scale)
+            .background(fill, in: shape)
+            .overlay { shape.stroke(edge, lineWidth: edgeWidth * scale) }
+    }
+
+    private func corner(_ symbol: String, iconSize: CGFloat) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: iconSize * scale, weight: .bold))
+            .foregroundStyle(.white)
+            .frame(width: 26 * scale, height: 26 * scale)
+            .background(Color(hex: 0x1A1A1E).opacity(FloatingPanel.Opacity.cornerButton), in: Circle())
+    }
+}
+
+/// The desktop behind the card, as wide as the pane: the Capture preview's warm wallpaper, a menu bar, and its sample
+/// window in the middle at the pictured display's scale. It stays light in dark mode, as a screenshot would.
+private struct QuickAccessDesktop: View {
+    let layout: QuickAccessPreviewLayout
+
+    var body: some View {
+        let s = layout.scale
+        let windowScale = layout.window.width / PreviewSampleWindow.size.width
+        ZStack(alignment: .topLeading) {
+            LinearGradient(colors: [Color(hex: 0x9A8F84), Color(hex: 0x6F675F)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            HStack(spacing: 16 * s) {
+                Circle().fill(Color(hex: 0x2A2A2E)).frame(width: 12 * s, height: 12 * s)
+                bar(34 * s, s, strong: true)
+                bar(28 * s, s)
+                bar(30 * s, s)
+                bar(40 * s, s)
+                Spacer(minLength: 0)
+                bar(22 * s, s)
+                bar(18 * s, s)
+                bar(64 * s, s, strong: true)
+            }
+            .padding(.horizontal, 18 * s)
+            .frame(width: layout.menuBar.width, height: layout.menuBar.height)
+            .background(Color(hex: 0xF4F1EC).opacity(0.82))
+            PreviewSampleWindow()
+                .scaleEffect(windowScale, anchor: .topLeading)
+                .frame(width: layout.window.width, height: layout.window.height, alignment: .topLeading)
+                .shadow(color: .black.opacity(0.25), radius: 8 * windowScale / 2, y: 4 * windowScale / 2)
+                .offset(x: layout.window.minX, y: layout.window.minY)
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func bar(_ width: CGFloat, _ scale: CGFloat, strong: Bool = false) -> some View {
+        Capsule().fill(Color(hex: strong ? 0x3A3A40 : 0x8D8A86)).frame(width: width, height: 6 * scale)
     }
 }
 
