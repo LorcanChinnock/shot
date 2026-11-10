@@ -1140,6 +1140,33 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Reduce Motion.** Nothing here moves. Sections switch at once, where the old sidebar sprang.
 - **Increase Contrast** makes the sidebar solid in the Sidebar colour, and the group names, row descriptions, Open Gallery's arrow and the footer's status ink.
 
+### Settings · General
+
+#1112 redraws the General pane from Library & Settings › Settings · General, in light and dark. Its settings and their keys are unchanged; the rows' descriptions are the board's shorter ones, Text size is a pop-up menu where it was a segmented control, and the save folder's Reveal button now says Show in Finder. Nothing here runs during a capture, so the capture → copy path is unchanged.
+
+| Group | Row | Control | Description |
+| --- | --- | --- | --- |
+| Behaviour | Open Shot at login | Switch | "Start Shot when you log in to your Mac." |
+| Behaviour | Play capture sound | Switch | None |
+| Behaviour | Exclude menu bar | Switch | "Crop the menu bar and notch off full-screen captures." |
+| Behaviour | Appearance | `BrutalSegmented`: System, Light, Dark | "Captures look the same either way." |
+| Behaviour | Text size | `BrutalPopUp`: Default, Large, Larger | "Shot’s windows, panels and toasts." |
+| Files | Save folder | Show in Finder and Choose…, secondary buttons 8 pt apart | The folder from the home folder, such as `~/Pictures/Shot` |
+| Files | File name | The shared text field, 180 pt wide (was 150) | The next capture's name, such as "Shot 2026-11-03 at 14.02.11.png" |
+| Files | Image format | `BrutalSegmented`: PNG, JPEG | "Clipboard copies always use PNG." |
+| Files | Scale Retina captures to 1× | Switch | "Halves pixel size on 2× displays." |
+| Files | Save edits over the original | Switch | "Off keeps the original and saves a copy." |
+
+- **One ink control.** The pane adds none: the selected sidebar row stays the window's only ink. Switches that are on take the accent with an ink edge, as the Ink table allows.
+- **Choose…** opens the folder picker as a sheet on the Settings window, as the gallery's does, where it used to open a separate modal window.
+- **What went.** The longer descriptions: "Smaller files, less detail" under Scale Retina, the note that the editor's Save keeps the original so you can undo (Annotate a screenshot › Save still says it), and "Shot's windows and panels" before Appearance's note. The guide's Settings page lists every row.
+- **Departures from the board.** The board's row buttons are 3 × 12 pt; Shot uses the shared secondary button, 5 × 14 pt, which still fits within a row's two lines of text. The board's File name field has a 0.16 edge with an inner shadow, and in dark the field fill; Shot uses the shared text field (Feedback), whose dark fill is the group colour, so #1119 decides whether fields in a group take the field fill. The board's file name example is a fixed date; Shot shows the next capture's real name in the chosen format.
+- **Keyboard.** With keyboard navigation on, Tab reaches each switch, segmented control, the Text size pop-up, both buttons and the field. The pop-up opens with Space and takes ↑, ↓, Return and typing, like a system menu. The window still opens with the keyboard out of the File name field, so ↑ and ↓ move between sections at once.
+- **VoiceOver** reads each switch with its row's name, the segmented controls as segmented controls, Text size as a pop-up button with its value, and the field as "File name".
+- **Text size** scales every row, control and description. At Larger the descriptions wrap rather than truncate.
+- **Reduce Motion.** The switches' knobs and the segmented thumbs move at once.
+- **Increase Contrast** makes the descriptions ink, and gives the off switches, segmented tracks, buttons, pop-up and field their 60% ink edges.
+
 ## Website values
 
 From **Website › Site · components and motion**, **Site · landing page** and **Site · guide page**. The site uses the app's light colours above, plus these. The Website boards are drawn in light only: until a dark board exists, the site's dark mode uses the app's dark neutrals and dark accent (#1123).
@@ -1273,7 +1300,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Settings sidebar (shared component) | #1111 | `Settings/SettingsSidebar.swift` (new: sidebar, rows, Open Gallery, footer), `Settings/SettingsView.swift` (`SettingsNavigation` search, layout, title, search results), `Settings/SettingsWindowController.swift` (arrow keys), `Settings/ShortcutRecorderView.swift`, `Design/BrutalStyle.swift` (`SettingsCard`, `SettingRow`, `SidebarTint.gallery`), `Design/GlassWindow.swift` (`SidebarRowBackground`, from the gallery), `Updater.swift` (`isEnabled`), ShotCore `SettingsSearch.swift` (new) and `Preferences.swift` (228 pt, no collapse) | ☐ |
 | Settings sidebar (shared component) | #1106 Open Gallery | `Settings/SettingsView.swift` (`OpenGalleryItem`, redrawn by #1111 as `OpenGalleryRow` in `Settings/SettingsSidebar.swift`) | ☐ |
 | Settings · General | #1111 title, groups and rows | `Settings/SettingsView.swift`, `Design/BrutalStyle.swift` (`SettingsCard`, `SettingRow`) | ☐ |
-| Settings · General | #1112 | `Settings/SettingsView.swift` | ☐ |
+| Settings · General | #1112 | `Settings/SettingsView.swift` (`GeneralSettings`: descriptions, Text size pop-up, Show in Finder, 180 pt File name field, Choose… as a sheet) | ☐ |
 | Settings · General | #1073 sidebar material | `Design/GlassWindow.swift` (`SidebarMaterial`), `Settings/SettingsView.swift` | ☐ |
 | Settings · Capture | #1113 | `Settings/SettingsView.swift` | ☐ |
 | Settings · Quick Access | #1114 | `Settings/SettingsView.swift` | ☐ |
@@ -1327,7 +1354,7 @@ Every page in `site/src/guide/`. #1128 updates the text, ticking **Updated** for
 | 08a Share a capture with an AI assistant | "Copy path for an AI assistant" in the preview; Copy Path in the Share menu | #1128 | #1109, #1093 | ☐ |
 | 09 Keyboard shortcuts | M, C and I on the capture bar; Settings › Shortcuts; Delete asks before the Trash and ⌘Delete doesn't | #1128 | #1075, #1110, #1116 | ☐ |
 | 10 Automation reference | `shot://gallery` and `shot://settings?section=gallery` open the gallery window; `shot://welcome` | #1128 | #1106, #1118 | ☐ |
-| 11 Settings | Section and row names, the sidebar search, Open Gallery | #1128 | #1111, #1112, #1113, #1114, #1115, #1116, #1117 | ☐ |
+| 11 Settings | Section and row names, the sidebar search, Open Gallery, General's Text size menu and Show in Finder | #1128 | #1111, #1112, #1113, #1114, #1115, #1116, #1117 | ☐ |
 | 12 Languages | Check only: no redesigned screen is described | #1128 | #1121 | ☐ |
 | 13 Updates | The restyled update prompt; Settings › About › Updates | #1128 | #1117, #1084 | ☐ |
 | 14 Privacy | Permissions in Settings › About show Allowed or Allow… | #1128 | #1117 | ☐ |

@@ -5276,6 +5276,58 @@
     "C: crosshair" : {
 
     },
+    "Captures look the same either way." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aufnahmen sehen in beiden Fällen gleich aus."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las capturas se ven igual en ambos casos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les captures restent identiques dans les deux cas."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le catture restano uguali in entrambi i casi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャプチャの見た目はどちらでも変わりません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "캡처는 어느 쪽이든 똑같이 보입니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "As capturas ficam iguais em qualquer caso."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "截图在两种模式下看起来都一样。"
+          }
+        }
+      }
+    },
     "Choose a different folder…" : {
       "localizations" : {
         "de" : {
@@ -5324,6 +5376,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选取其他文件夹…"
+          }
+        }
+      }
+    },
+    "Crop the menu bar and notch off full-screen captures." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schneidet Menüleiste und Notch von Vollbildaufnahmen ab."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recorta la barra de menús y el notch en las capturas de pantalla completa."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retire la barre des menus et l'encoche des captures en plein écran."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi barra dei menu e notch dalle catture a schermo intero."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全画面キャプチャからメニューバーとノッチを切り取ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전체 화면 캡처에서 메뉴 막대와 노치를 잘라냅니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recorta a barra de menus e o notch das capturas da tela inteira."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从全屏截图中裁掉菜单栏和刘海。"
           }
         }
       }
@@ -10861,58 +10965,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "裁剪尺寸"
-          }
-        }
-      }
-    },
-    "Crop the menu bar and notch off screenshots and recordings of the full screen." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Schneidet Menüleiste und Notch von Vollbild-Bildschirmfotos und -Aufzeichnungen ab."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recorta la barra de menús y el notch en las capturas y grabaciones de pantalla completa."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Retire la barre des menus et l'encoche des captures d'écran et des enregistrements en plein écran."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rimuovi barra dei menu e notch da screenshot e registrazioni a schermo intero."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "画面全体のスクリーンショットと収録からメニューバーとノッチを切り取ります。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "전체 화면 스크린샷과 녹화에서 메뉴 막대와 노치를 잘라냅니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recorta a barra de menus e o notch das capturas e gravações da tela inteira."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "从全屏截屏和录制中裁掉菜单栏和刘海。"
           }
         }
       }
@@ -17569,6 +17621,58 @@
         }
       }
     },
+    "Halves pixel size on 2× displays." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Halbiert die Pixelgröße auf 2×-Displays."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reduce a la mitad los píxeles en pantallas 2×."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Divise par deux la taille en pixels sur les écrans 2×."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dimezza i pixel sugli schermi 2×."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2×ディスプレイではピクセルサイズが半分になります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2× 디스플레이에서 픽셀 크기를 절반으로 줄입니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reduz os pixels pela metade em telas 2×."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 2× 显示器上将像素尺寸减半。"
+          }
+        }
+      }
+    },
     "HEVC MP4, on displays that refresh this fast." : {
       "localizations" : {
         "de" : {
@@ -17669,58 +17773,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "细线"
-          }
-        }
-      }
-    },
-    "Halves pixel size on 2× displays. Smaller files, less detail." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Halbiert die Pixelgröße auf 2×-Displays. Kleinere Dateien, weniger Details."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reduce a la mitad los píxeles en pantallas 2×. Archivos más pequeños, menos detalle."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Divise par deux la taille en pixels sur les écrans 2×. Fichiers plus légers, moins de détails."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dimezza i pixel sugli schermi 2×. File più piccoli, meno dettagli."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Retinaディスプレイではピクセルサイズが半分になります。ファイルは小さくなり、細部は減ります。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "2× 디스플레이에서 픽셀 크기를 절반으로 줄입니다. 파일이 작아지고 디테일은 줄어듭니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reduz os pixels pela metade em telas 2×. Arquivos menores, menos detalhe."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在 2× 显示器上将像素尺寸减半。文件更小，细节更少。"
           }
         }
       }
@@ -22271,6 +22323,58 @@
     },
     "Off captures the whole window. On captures just the web page, without the toolbar and tabs. Needs Accessibility access. Press B on the overlay to switch for one capture." : {
 
+    },
+    "Off keeps the original and saves a copy." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aus behält das Original und speichert eine Kopie."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desactivado, conserva el original y guarda una copia."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Désactivé, l'original est conservé et une copie est enregistrée."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se disattivato, mantiene l'originale e salva una copia."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オフにすると元の画像を残し、コピーを保存します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "끄면 원본을 그대로 두고 사본을 저장합니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desativado, mantém o original e salva uma cópia."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭时保留原图并另存一份副本。"
+          }
+        }
+      }
     },
     "Oldest first" : {
       "localizations" : {
@@ -27656,58 +27760,6 @@
         }
       }
     },
-    "Reveal" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zeigen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostrar"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Afficher"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostra"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "表示"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "보기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostrar"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "显示"
-          }
-        }
-      }
-    },
     "Revert to Original" : {
 
     },
@@ -31357,9 +31409,6 @@
     "Shot uses it only to find where the page sits inside the browser window, so it can leave out the tabs and address bar." : {
 
     },
-    "Shot's windows and panels. Captures look the same either way." : {
-
-    },
     "Shot, recording" : {
       "localizations" : {
         "de" : {
@@ -31586,6 +31635,58 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "Shot’s windows, panels and toasts." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fenster, Bereiche und Hinweise von Shot."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ventanas, paneles y avisos de Shot."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fenêtres, panneaux et notifications de Shot."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finestre, pannelli e avvisi di Shot."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shotのウインドウ、パネル、通知。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shot의 윈도우, 패널, 알림."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Janelas, painéis e avisos do Shot."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shot 的窗口、面板和提示。"
           }
         }
       }
@@ -35552,9 +35653,6 @@
         }
       }
     },
-    "Text in Shot's windows, panels and toasts. Captures keep their size." : {
-
-    },
     "Text in this screenshot" : {
       "localizations" : {
         "de" : {
@@ -35930,9 +36028,6 @@
           }
         }
       }
-    },
-    "The editor's Save replaces the screenshot. Shot keeps the original, so you can reopen it and undo your edits. Off writes a new copy instead." : {
-
     },
     "The image is as big as Shot can stitch. Press Return to save it." : {
 

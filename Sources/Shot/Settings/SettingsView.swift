@@ -306,18 +306,20 @@ private struct GeneralSettings: View {
                     setLaunchAtLogin(enabled)
                 }
             ToggleRow(title: "Play capture sound", isOn: $playSound)
-            ToggleRow(title: "Exclude menu bar", subtitle: "Crop the menu bar and notch off screenshots and recordings of the full screen.", isOn: $excludesMenuBar)
-            SettingRow(title: "Appearance", subtitle: "Shot's windows and panels. Captures look the same either way.") {
+            ToggleRow(title: "Exclude menu bar", subtitle: "Crop the menu bar and notch off full-screen captures.", isOn: $excludesMenuBar)
+            SettingRow(title: "Appearance", subtitle: "Captures look the same either way.") {
                 BrutalSegmented(selection: $appearance, options: AppearanceMode.allCases.map { ($0, Self.title(of: $0)) })
             }
-            SettingRow(title: "Text size", subtitle: "Text in Shot's windows, panels and toasts. Captures keep their size.") {
-                BrutalSegmented(selection: $textSize, options: TextSize.allCases.map { ($0, Self.title(of: $0)) })
+            SettingRow(title: "Text size", subtitle: "Shot’s windows, panels and toasts.") {
+                BrutalPopUp(title: "Text size", entries: TextSize.allCases.map { size in
+                    .item(Self.title(of: size), selected: size == textSize) { textSize = size }
+                }, value: Self.title(of: textSize))
             }
         }
         SettingsCard(title: "Files") {
             SettingRow(title: String(localized: "Save folder"), subtitle: (saveFolder as NSString).abbreviatingWithTildeInPath) {
-                HStack(spacing: 10) {
-                    Button("Reveal") { NSWorkspace.shared.open(URL(fileURLWithPath: saveFolder)) }
+                HStack(spacing: 8) {
+                    Button("Show in Finder") { NSWorkspace.shared.open(URL(fileURLWithPath: saveFolder)) }
                         .buttonStyle(BrutalButtonStyle())
                     Button("Choose…", action: chooseFolder)
                         .buttonStyle(BrutalButtonStyle())
@@ -328,13 +330,14 @@ private struct GeneralSettings: View {
                     .font(Brutal.body)
                     .focused($prefixFocused)
                     .brutalField(focused: prefixFocused)
-                    .frame(width: 150)
+                    .frame(width: 180)
+                    .accessibilityLabel(Text("File name"))
             }
             SettingRow(title: "Image format", subtitle: "Clipboard copies always use PNG.") {
                 BrutalSegmented(selection: $imageFormat, options: [(ImageFormat.png, "PNG"), (.jpeg, "JPEG")])
             }
-            ToggleRow(title: "Scale Retina captures to 1×", subtitle: "Halves pixel size on 2× displays. Smaller files, less detail.", isOn: $downscaleRetina)
-            ToggleRow(title: "Save edits over the original", subtitle: "The editor's Save replaces the screenshot. Shot keeps the original, so you can reopen it and undo your edits. Off writes a new copy instead.", isOn: $savesOverOriginal)
+            ToggleRow(title: "Scale Retina captures to 1×", subtitle: "Halves pixel size on 2× displays.", isOn: $downscaleRetina)
+            ToggleRow(title: "Save edits over the original", subtitle: "Off keeps the original and saves a copy.", isOn: $savesOverOriginal)
         }
     }
 
@@ -364,8 +367,16 @@ private struct GeneralSettings: View {
         panel.canChooseFiles = false
         panel.canCreateDirectories = true
         panel.directoryURL = URL(fileURLWithPath: saveFolder)
-        if panel.runModal() == .OK, let url = panel.url {
-            saveFolder = url.path
+        let picked: (NSApplication.ModalResponse) -> Void = { [weak panel] response in
+            if response == .OK, let url = panel?.url {
+                saveFolder = url.path
+            }
+        }
+        // A sheet on the Settings window, as the gallery's chooser opens, so the window stays put while you pick.
+        if let window = NSApp.keyWindow {
+            panel.beginSheetModal(for: window, completionHandler: picked)
+        } else {
+            picked(panel.runModal())
         }
     }
 
