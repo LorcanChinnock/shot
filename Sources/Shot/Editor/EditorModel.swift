@@ -597,7 +597,7 @@ final class EditorModel {
             return
         }
         stylePreview = nil
-        let style = kind.defaultStyle.scaled(by: scale)
+        let style = kind.editorDefaultStyle.scaled(by: scale)
         let radius = kind.defaultCornerRadius * scale
         let background = EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension))
         edit {
@@ -612,8 +612,8 @@ final class EditorModel {
             }
         }
         if kind != .capture {
-            objectStyles[kind] = kind.defaultStyle
-            rememberStyle { $0.objectStyles[kind] = kind.defaultStyle }
+            objectStyles[kind] = kind.editorDefaultStyle
+            rememberStyle { $0.objectStyles[kind] = kind.editorDefaultStyle }
         }
     }
 
@@ -703,9 +703,10 @@ final class EditorModel {
         newCaptureSettingChanges += 1
     }
 
-    /// The style a new annotation of `kind` starts with: the last one given to that kind, else none.
+    /// The style a new annotation of `kind` starts with: the last one given to that kind, else the Soft shadow for a
+    /// placed image and none for anything else.
     private func startingStyle(for kind: StyleKind) -> ObjectStyle {
-        EditorStyle(objectStyles: objectStyles).objectStyle(for: kind, scale: scale)
+        EditorStyle(objectStyles: objectStyles).editorObjectStyle(for: kind, scale: scale)
     }
 
     /// Copies the style of the selection, or of the screenshot when nothing is selected, for Paste Style.
@@ -1073,7 +1074,7 @@ final class EditorModel {
         guard let kind = targetStyleKind else {
             return true
         }
-        let style = kind.isDefault(style: targetStyle, cornerRadius: targetCornerRadius)
+        let style = kind.isEditorDefault(style: targetStyle, cornerRadius: targetCornerRadius, scale: scale)
         guard kind == .capture else {
             return style
         }
@@ -1199,7 +1200,8 @@ final class EditorModel {
             for (index, (image, imageScale)) in decoded.enumerated() {
                 let center = point.map { CGPoint(x: $0.x + pasteStep * CGFloat(index), y: $0.y + pasteStep * CGFloat(index)) }
                 let id = doc.addImage(image, scale: imageScale, documentScale: scale, centeredAt: center, margin: canvasMargin)
-                // It starts with the last style given to an image, but for an outline it has no see-through pixels for.
+                // It starts with the last style given to an image, else the Soft shadow, but for an outline it has no
+                // see-through pixels for.
                 if !style.isEmpty {
                     doc.setStyle(style, of: .annotation(id), margin: canvasMargin)
                 }

@@ -56,7 +56,7 @@ Right-click a row to rename, duplicate, delete, lock or hide it, or to crop a pl
 
 The canvas grows to fit marks that reach past the screenshot's edges, except spotlights. On a cropped screenshot, the extra space grows behind the crop and shows again when you uncrop.
 
-In the **Canvas** menu, at the bottom left of the canvas next to the zoom control:
+In the **Canvas** menu, in the title bar after Undo (in a narrow window it's a button with a dashed rectangle):
 
 - **Fit to Content** fits the canvas to everything on it.
 - **Trim to Image** trims it back to the screenshot, and takes off any padding and size from the Style panel.
