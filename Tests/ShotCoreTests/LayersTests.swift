@@ -487,3 +487,25 @@ private func mixedProject() throws -> (project: Project, below: UUID, picture: U
         #expect(annotation(.shape(shape, rect: rect)).layerSymbol == shape.symbol)
     }
 }
+
+@Test func frameRowDetailNamesTheCropToolsShapes() {
+    #expect(FrameRowDetail.label(for: CGSize(width: 1600, height: 900)) == "16:9")
+    #expect(FrameRowDetail.label(for: CGSize(width: 900, height: 1600)) == "9:16")
+    #expect(FrameRowDetail.label(for: CGSize(width: 800, height: 600)) == "4:3")
+    #expect(FrameRowDetail.label(for: CGSize(width: 600, height: 800)) == "3:4")
+    #expect(FrameRowDetail.label(for: CGSize(width: 512, height: 512)) == "1:1")
+}
+
+@Test func frameRowDetailAllowsAPixelOfRounding() {
+    // 1,480 wide at 16:9 is 832.5 tall, which a crop rounds to whole pixels.
+    #expect(FrameRowDetail.label(for: CGSize(width: 1480, height: 833)) == "16:9")
+    #expect(FrameRowDetail.label(for: CGSize(width: 1480, height: 832)) == "16:9")
+    #expect(FrameRowDetail.label(for: CGSize(width: 1480, height: 835)) != "16:9")
+}
+
+@Test func frameRowDetailFallsBackToThePixelsKept() {
+    let english = Locale(identifier: "en_US")
+    #expect(FrameRowDetail.label(for: CGSize(width: 1480, height: 560), locale: english) == "1,480 × 560")
+    #expect(FrameRowDetail.label(for: CGSize(width: 300, height: 200), locale: english) == "300 × 200")
+    #expect(FrameRowDetail.label(for: .zero) == "")
+}

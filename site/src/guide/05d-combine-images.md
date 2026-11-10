@@ -33,4 +33,4 @@ To trim an image's own edges, such as a pasted screenshot's toolbar:
 Double-click it again to drag the edges back out. Its shadow, border and rounded corners go around the cropped edge, and resizing it scales what's left. Copies, duplicates and pastes keep the crop, and **Paste Style** leaves it alone.
 
 > [!NOTE]
-> The crop of the whole screenshot still applies on top, so it can cut off part of a placed image too. In [Layers](#layers), a placed image with its own crop shows a crop badge, and **Reset Crop** on its row shows the whole image again.
+> The crop of the whole screenshot still applies on top, so it can cut off part of a placed image too. In [Layers](#layers), a placed image with its own crop shows a **Crop** badge, and **Reset Crop** on its row shows the whole image again.
