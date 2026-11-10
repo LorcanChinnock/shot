@@ -30,3 +30,18 @@ private struct SidePanelSurface: ViewModifier {
             }
     }
 }
+
+/// Reset in a side panel's header, such as Style's and Export's: 12 pt medium accent text, faded when there's nothing to reset.
+struct PanelLinkStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.scaled(12, weight: .medium))
+            .foregroundStyle(isEnabled ? (contrast == .increased ? Brutal.ink : Brutal.accentText) : Brutal.disabledText)
+            .opacity(configuration.isPressed ? 0.6 : 1)
+            .padding(.vertical, 2)
+            .contentShape(Rectangle())
+    }
+}

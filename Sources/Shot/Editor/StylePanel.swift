@@ -563,18 +563,3 @@ private struct NewCaptureCard: View {
         .brutalTip("Use for new captures", detail: "New captures open and copy with this screenshot's background, padding, size, shadow, border and corners.")
     }
 }
-
-/// Reset in the panel's header: 12 pt medium accent text, faded when there's nothing to reset.
-private struct PanelLinkStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.colorSchemeContrast) private var contrast
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.scaled(12, weight: .medium))
-            .foregroundStyle(isEnabled ? (contrast == .increased ? Brutal.ink : Brutal.accentText) : Brutal.disabledText)
-            .opacity(configuration.isPressed ? 0.6 : 1)
-            .padding(.vertical, 2)
-            .contentShape(Rectangle())
-    }
-}

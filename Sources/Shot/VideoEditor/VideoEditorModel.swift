@@ -46,6 +46,10 @@ final class VideoEditorModel {
     private(set) var options = Preferences().videoExportOptions
     /// Bytes Export would write, or nil until it's worked out.
     private(set) var estimatedSize: Int?
+    /// Whether the Export panel shows beside the video. It starts closed in every window (rule 2).
+    private(set) var showsExportPanel = false
+    /// How far Export has got, from 0 to 1, while it can tell; nil when it can't or nothing is exporting.
+    private(set) var exportFraction: Double?
     private(set) var history = VideoEditHistory()
     /// The project as last opened or written, so closing asks only about changes since.
     private var savedProject: Project?
@@ -873,11 +877,17 @@ final class VideoEditorModel {
         let options = options, project = project, plan = VideoExportPlan(project: project, options: options), fileURL = fileURL
         let output = FileNaming.uniqueURL(in: fileURL.deletingLastPathComponent(), date: Date(), pathExtension: options.format.fileExtension, prefix: Preferences().filePrefix)
         var truncated = false
-        let progress = PercentProgress { percent in
+        let progress = PercentProgress { [weak self] percent in
             Task { @MainActor in
+                // The task may run on after the export ended, so a late report can't bring the bar back.
+                guard self?.isExporting == true else {
+                    return
+                }
+                self?.exportFraction = Double(percent) / 100
                 Toast.progress("Exporting…", fraction: Double(percent) / 100)
             }
         }
+        defer { exportFraction = nil }
         let exported = await exporting {
             let outcome = try await VersionWriter.writeVideo(plan, of: project, original: fileURL, to: output, projects: .app, progress: progress.report)
             truncated = outcome.truncated
@@ -962,6 +972,21 @@ final class VideoEditorModel {
         }
         exportTask = task
         return await task.value
+    }
+
+    /// Shows or hides the Export panel.
+    func toggleExportPanel() {
+        showsExportPanel.toggle()
+    }
+
+    /// Hides the Export panel; false when it wasn't showing.
+    @discardableResult
+    func closeExportPanel() -> Bool {
+        guard showsExportPanel else {
+            return false
+        }
+        showsExportPanel = false
+        return true
     }
 
     /// Stops the export in progress; false when there isn't one.
