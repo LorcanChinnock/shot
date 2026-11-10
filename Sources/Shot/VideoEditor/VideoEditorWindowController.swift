@@ -43,7 +43,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
     /// Run once the window has closed, so Flatten opens the file after any Save or Discard sheet.
     private var afterClose: (() -> Void)?
     private let window: NSWindow
-    /// How much of the window's height is the tracks panel.
+    /// How much of the window's height is the lanes past a plain recording's, the drawing options and the inspector.
     private var appliedExtraHeight: CGFloat = 0
     private var discarding = false
     /// Set while a quit waits on this window's Save / Discard / Cancel sheet; answers true once the window may go.
@@ -119,7 +119,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
         self.opened = opened
         let visible = (NSScreen.underPointer ?? NSScreen.screens[0]).visibleFrame
         let width = min(max(880, visible.width * 0.6), visible.width * 0.85)
-        let playerHeight = min((width - Brutal.windowInset * 2) / model.aspectRatio, visible.height * 0.55)
+        let playerHeight = min((width - VideoWell.sideInset * 2) / model.aspectRatio, visible.height * 0.55)
         let size = CGSize(width: width, height: playerHeight + VideoEditorRootView.chromeHeight)
         let editorWindow = VideoEditorWindow()
         window = editorWindow
@@ -235,8 +235,6 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             return model.split()
         case 40: // K
             model.toggleAllKeyframes()
-        case 17: // T
-            model.toggleTracks()
         case 45: // N
             model.toggleSnapping()
         case 53: // Escape

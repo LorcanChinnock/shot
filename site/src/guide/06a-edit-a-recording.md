@@ -14,6 +14,8 @@ group: Edit and share
 
 ## Play and move around
 
+Under the video, the controls area shows **Play**, the playhead's time and the edit's length ("0:02.40 / 0:10.50"), then **Split**, **Cut**, **Trim idle** and **Add media**, and zoom at the right. Under that is the timeline: a ruler, then each lane with its name on the left. A plain recording has a **Video** lane and, if it has sound, a **Sound** lane. Annotations add **Draw** or **Text** lanes above the video, and added files add lanes of their own. Hover over a lane's name to lock it, hide it or mute it.
+
 | Press | To |
 |---|---|
 | <kbd>Space</kbd> | Play or pause. |
@@ -21,15 +23,15 @@ group: Edit and share
 | <kbd>⇧←</kbd> <kbd>⇧→</kbd> | Step one second. |
 | <kbd>Home</kbd> <kbd>End</kbd> | Go to the start or the end. |
 
-Click the ruler to move the playhead. Pinch, or press <kbd>⌘+</kbd> and <kbd>⌘−</kbd>, to zoom the timeline, and click **Fit** or press <kbd>⌘0</kbd> to fit it to the window.
+Click the ruler to move the playhead. Drag the zoom slider, click **−** and **+**, pinch, or press <kbd>⌘+</kbd> and <kbd>⌘−</kbd> to zoom the timeline, and press <kbd>⌘0</kbd> to fit it to the window.
 
 ## Trim the ends
 
-Drag the yellow handles at either end of the main track. What you trim off stays greyed out, so you can drag it back. The playhead follows the handle and stays on the new start or end when you let go, so the video shows the exact frame the trim lands on.
+Drag the yellow handles at either end of the Video lane. What you trim off stays greyed out, so you can drag it back. The playhead follows the handle and stays on the new start or end when you let go, so the video shows the exact frame the trim lands on.
 
 ### Trim idle time
 
-Most recordings start with a few seconds of reaching for the mouse and end with a few of reaching for Stop. Choose **Edit › Trim Idle Time** and Shot moves both handles to where things start and stop changing on screen, with a little time to spare either side. Anything you say stays in, even over a still screen.
+Most recordings start with a few seconds of reaching for the mouse and end with a few of reaching for Stop. Click **Trim idle**, or choose **Edit › Trim Idle Time**, and Shot moves both handles to where things start and stop changing on screen, with a little time to spare either side. Anything you say stays in, even over a still screen.
 
 - It's one step, so <kbd>⌘Z</kbd> puts the handles back.
 - It only moves the handles in, so anything you've already trimmed off stays off.
@@ -39,19 +41,22 @@ Most recordings start with a few seconds of reaching for the mouse and end with 
 ## Cut out a section
 
 1. Hold <kbd>Shift</kbd> and drag along the timeline to select a section.
-2. Press <kbd>Delete</kbd>.
+2. Click **Cut**, or press <kbd>Delete</kbd>.
+
+A black **CUT** badge on the Video lane shows where each cut is and how long it was, such as "CUT 1.2s".
 
 ## Split and rearrange
 
 - **Split** (<kbd>S</kbd>) splits the clips under the playhead.
-- **Delete** (<kbd>⌫</kbd>) cuts out the selected clip and closes the gap.
-- **Snap** (<kbd>N</kbd>) snaps the playhead, and clips you drag or trim, to clip edges and the playhead.
-- **More tools** (<kbd>T</kbd>), the tile beside Undo in the title bar, shows or hides the tracks, keyframes, imports and annotations. The editor opens with just the trim strip each time. Once your edit is more than trims and cuts, they stay shown.
+- **Cut** (<kbd>⌫</kbd>) cuts out the selected section, or else the selected clip, and closes the gap.
+- **Snap** (<kbd>N</kbd>), the button with two arrows beside zoom, snaps the playhead, and clips you drag or trim, to clip edges and the playhead.
+
+Clips that meet, after a split or a cut, show a small gap between them. The selected clip has a blue outline.
 
 ## Add video or sound
 
-- **Import › Add Video or Audio at Playhead…**, or dropping a file on the window, puts its picture on a new lane above the main track and its sound on a lane of its own.
-- **Import › Add Video to End…** adds a video to the end of the main track.
+- **Add media › Add Video or Audio at Playhead…**, or dropping a file on the window, puts its picture on a new lane above the main track and its sound on a lane of its own.
+- **Add media › Add Video to End…** adds a video to the end of the Video lane.
 
 Drag a clip on another lane to move it in time, or drag its edges to trim it. Sound lanes show a waveform, which grows and shrinks with the clip's volume.
 

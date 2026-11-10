@@ -302,12 +302,12 @@ private func clip(on track: UUID, of project: Project) -> UUID {
 
 @Test func whereADraggedClipLandsDependsOnHowNearALaneEdgeItIs() {
     let (project, _, _, _) = overlayProject()
-    // Lanes top down: the top track (3) at 0–28, the middle (2) at 32–60, the bottom (1) at 64–92, then the main track.
+    // Lanes top down: the top track (3) at 0–22, the middle (2) at 27–49, the bottom (1) at 54–76, then the main track.
     let layout = LaneLayout(project, top: 0)
     #expect(layout.laneDrop(at: 2, in: project) == .insert(4))
     #expect(layout.laneDrop(at: 14, in: project) == .onto(3))
     #expect(layout.laneDrop(at: 27, in: project) == .insert(3))
-    #expect(layout.laneDrop(at: 46, in: project) == .onto(2))
+    #expect(layout.laneDrop(at: 38, in: project) == .onto(2))
     #expect(layout.laneDrop(at: 90, in: project) == .insert(1))
     #expect(layout.laneDrop(at: 120, in: project) == .insert(1))
 }
@@ -405,10 +405,10 @@ private func mixedProject() throws -> (project: Project, below: UUID, picture: U
     let layout = LaneLayout(project, top: 0)
     #expect(layout.lanes.map(\.track) == [3, 2, 1, 0])
     #expect(layout.lanes.map(\.height) == [LaneLayout.annotationHeight, LaneLayout.pictureHeight, LaneLayout.annotationHeight, LaneLayout.mainHeight])
-    // Lanes top down: the arrow (3) at 0–28, the picture (2) at 32–72, the blur (1) at 76–104, then the main track.
+    // Lanes top down: the arrow (3) at 0–22, the picture (2) at 27–61, the blur (1) at 66–88, then the main track.
     #expect(layout.laneDrop(at: 50, in: project) == .onto(2))
     #expect(layout.laneDrop(at: 30, in: project) == .insert(3))
-    #expect(layout.laneDrop(at: 74, in: project) == .insert(2))
+    #expect(layout.laneDrop(at: 63, in: project) == .insert(2))
     #expect(layout.laneDrop(at: 120, in: project) == .insert(1))
 }
 
