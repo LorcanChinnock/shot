@@ -2298,9 +2298,6 @@
     "A window recording has no camera bubble" : {
 
     },
-    "ASPECT" : {
-
-    },
     "About" : {
       "localizations" : {
         "de" : {
@@ -3622,9 +3619,6 @@
         }
       }
     },
-    "Apply" : {
-
-    },
     "Apply Style to All Images" : {
       "localizations" : {
         "de" : {
@@ -4742,12 +4736,6 @@
       }
     },
     "C: crosshair" : {
-
-    },
-    "CROP CLIP" : {
-
-    },
-    "CROP FRAME" : {
 
     },
     "CUSTOM" : {
@@ -9972,6 +9960,110 @@
         }
       }
     },
+    "Crop Clip" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clip beschneiden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recortar clip"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recadrer le clip"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ritaglia la clip"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クリップを切り取り"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "클립 자르기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recortar clipe"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "裁剪片段"
+          }
+        }
+      }
+    },
+    "Crop Frame" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rahmen beschneiden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recortar marco"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recadrer le cadre"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ritaglia la cornice"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フレームを切り取り"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "프레임 자르기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recortar moldura"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "裁剪画框"
+          }
+        }
+      }
+    },
     "Crop Image" : {
 
     },
@@ -10027,12 +10119,6 @@
         }
       }
     },
-    "Crop the clip" : {
-
-    },
-    "Crop the frame" : {
-
-    },
     "Crop the menu bar and notch off screenshots and recordings of the full screen." : {
       "localizations" : {
         "de" : {
@@ -10084,9 +10170,6 @@
           }
         }
       }
-    },
-    "Crop to this (Return)" : {
-
     },
     "Crop video" : {
       "localizations" : {
@@ -11948,9 +12031,6 @@
           }
         }
       }
-    },
-    "Drag the crop to any shape." : {
-
     },
     "Drag the handles to choose the area to keep, of the whole picture or the placed image selected. Return applies it, Esc cancels." : {
 
@@ -15478,16 +15558,16 @@
     },
     "Frame size, %lld by %lld pixels" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Frame size, %1$lld by %2$lld pixels"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rahmengröße: %lld × %lld Pixel"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Frame size, %1$lld by %2$lld pixels"
           }
         },
         "es" : {
@@ -15744,9 +15824,6 @@
           }
         }
       }
-    },
-    "Free crop" : {
-
     },
     "Free ratio" : {
 
@@ -17832,9 +17909,6 @@
         }
       }
     },
-    "Keeps the crop this shape, wide or tall to match it." : {
-
-    },
     "Keeps what's inside the crop. Picking another tool, Copy or Save does too, and Undo takes it back." : {
       "localizations" : {
         "de" : {
@@ -17883,6 +17957,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "保留裁剪框内的内容。选择其他工具、拷贝或存储也会应用裁剪，撤销可将其还原。"
+          }
+        }
+      }
+    },
+    "Keeps what's inside the crop. Undo takes it back." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Behält, was im Zuschnitt liegt. Widerrufen macht es rückgängig."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conserva lo que queda dentro del recorte. Deshacer lo revierte."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Garde ce qui est dans le recadrage. Annuler revient en arrière."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantiene ciò che è dentro il ritaglio. Annulla lo ripristina."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "切り取り枠の内側を残します。取り消すと元に戻ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "자르기 영역 안쪽을 남깁니다. 실행 취소로 되돌릴 수 있습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantém o que está dentro do recorte. Desfazer reverte."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保留裁剪框内的内容。撤销可还原。"
           }
         }
       }
@@ -18210,9 +18336,6 @@
           }
         }
       }
-    },
-    "Leave the crop as it was (Esc)" : {
-
     },
     "Leave the sound out" : {
       "localizations" : {
@@ -30486,6 +30609,58 @@
         }
       }
     },
+    "Shows the clip's whole picture again, so nothing is cropped off." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeigt wieder das ganze Bild des Clips, sodass nichts abgeschnitten wird."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vuelve a mostrar toda la imagen del clip, sin recortar nada."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Affiche à nouveau toute l'image du clip, sans rien recadrer."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra di nuovo l'intera immagine della clip, senza ritagliare nulla."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クリップの画像全体を再び表示し、何も切り取りません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "클립의 전체 화면을 다시 보여 주어 잘리는 부분이 없습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra de novo a imagem inteira do clipe, sem recortar nada."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新显示片段的完整画面，不裁掉任何内容。"
+          }
+        }
+      }
+    },
     "Shows the frame handles and options first. Hold ⌥ as you finish the selection to show them once." : {
       "localizations" : {
         "de" : {
@@ -30638,6 +30813,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "显示此标记的其余选项，如白色、自定颜色和还原。"
+          }
+        }
+      }
+    },
+    "Shows the whole frame again, so nothing is cropped off." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeigt wieder den ganzen Rahmen, sodass nichts abgeschnitten wird."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vuelve a mostrar todo el marco, sin recortar nada."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Affiche à nouveau tout le cadre, sans rien recadrer."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra di nuovo l'intera cornice, senza ritagliare nulla."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フレーム全体を再び表示し、何も切り取りません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "프레임 전체를 다시 보여 주어 잘리는 부분이 없습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra de novo a moldura inteira, sem recortar nada."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新显示完整画框，不裁掉任何内容。"
           }
         }
       }
@@ -31896,9 +32123,6 @@
           }
         }
       }
-    },
-    "Square, 1:1" : {
-
     },
     "Star" : {
       "localizations" : {

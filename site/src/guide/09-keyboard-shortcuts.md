@@ -120,7 +120,7 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | ⌥⌘I | Show or hide the Inspector |
 | C | Crop the selected clip, or the frame with nothing selected |
 | Return | Apply the crop |
-| Delete | Take away the selected keyframe, section, or clip or annotation |
+| Delete | Take away the selected keyframe, section, or clip or annotation; in crop mode, show everything again |
 | Esc | Cancel a crop or an export, clear the selected section, deselect, stop annotating, or close the Export panel |
 | ⌘] / ⌘[ | Move the selected annotation or clip a lane up / down |
 | ⌥⌘] / ⌥⌘[ | Move the selected annotation or clip to the top / bottom lane |

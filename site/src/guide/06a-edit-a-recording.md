@@ -62,18 +62,20 @@ Drag a clip on another lane to move it in time, or drag its edges to trim it. So
 
 ## Move, scale and rotate a clip
 
-Select a clip, the recording included, while the playhead is on it, and a yellow box appears over the video:
+Select a clip, the recording included, while the playhead is on it, and a dashed outline in your Mac's accent colour appears round it on the video, with a white handle on each corner and a round one on a short stem above it:
 
-- Drag inside the box to move the clip.
+- Drag inside the outline to move the clip.
 - Drag a corner to scale it about its centre.
-- Drag the pink knob above it to rotate it.
+- Drag the round handle to rotate it. On a clip that fills the video, there's no room above it, so the handle sits just inside the top edge.
+
+Each drag is one undo step.
 
 ## Crop the video
 
 - **The whole video:** with nothing selected, press <kbd>C</kbd>, or click **Crop** under **Frame** in the Inspector.
-- **One clip:** select it and press <kbd>C</kbd>, double-click its yellow box, or click **Crop** in the Inspector.
+- **One clip:** select it and press <kbd>C</kbd>, double-click it on the video, or click **Crop** in the Inspector.
 
-Cropping works as in the [annotation editor](#crop): what's cropped off shows dimmed, drag a handle to resize or inside to move, hold <kbd>Shift</kbd> to keep the shape, and pick an **Aspect** (Free, 1:1, 4:3 or 16:9). **Reset** shows everything again. <kbd>Return</kbd> or **Apply** applies the crop as one undo step, and <kbd>Esc</kbd> or **Cancel** leaves it as it was.
+Cropping looks and works as it does when you [crop a screenshot](#crop). What's cropped off fades into the background, and the crop has a thirds grid and dark handles on its corners and sides (light ones in Dark Mode). Drag a handle to resize the crop or drag inside it to move it, and hold <kbd>Shift</kbd> to keep its shape. A crop of a turned clip turns with it. The bar under the video holds **Aspect** (Free, 1:1, 4:3 or 16:9), the size the crop keeps in pixels, **Reset**, **Cancel** and **Crop**. **Reset** or <kbd>Delete</kbd> shows everything again. <kbd>Return</kbd> or **Crop** applies the crop as one undo step, and <kbd>Esc</kbd> or **Cancel** leaves it as it was.
 
 - **Cropping the video changes its size.** Cropping off the menu bar of a 1920 × 1080 recording gives a smaller video, not a scaled-up one, and MP4 and GIF exports come out at the cropped size. Sizes round down to even numbers. With nothing selected, the Inspector shows the size under **Frame**, and **Reset** at the top of the panel takes the crop off.
 - **A cropped clip** still moves, scales and turns as a whole, about the middle of its whole picture, and its corners, shadow and border follow the cropped edge. **Reset Crop** in the Inspector shows all of it again.

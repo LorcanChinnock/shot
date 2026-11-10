@@ -209,11 +209,12 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             }
             return true
         }
-        // Crop mode takes Return and Esc, and leaves the playhead where the picture is.
+        // Crop mode takes Return, Esc and Delete, and leaves the playhead where the picture is.
         if model.isCropping {
             switch event.keyCode {
             case 36, 76: model.applyCrop()
             case 53: model.cancelCrop()
+            case 51, 117: model.resetCrop()
             default: return false
             }
             return true

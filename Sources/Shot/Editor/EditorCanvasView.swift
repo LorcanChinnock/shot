@@ -444,40 +444,18 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
     }
 
-    /// The crop's corners and side bars, in view points: 4 pt ink Ls 18 pt long, starting 3 pt outside each corner, and
-    /// 26 × 5 pt bars rounded at 2.5 across the middle of each side, as on the board. Their hit areas are the handles'.
+    /// The crop's corners and side bars, in view points, from ShotCore's `CropMarks`, which the video editor shares.
+    /// Their hit areas are the handles'.
     private static func cropMarks(_ crop: CGRect) -> [NSBezierPath] {
-        let thick: CGFloat = 4, long: CGFloat = 18, out: CGFloat = 3
-        var marks: [NSBezierPath] = []
-        for (x, y) in [(crop.minX, crop.minY), (crop.maxX, crop.minY), (crop.minX, crop.maxY), (crop.maxX, crop.maxY)] {
-            let sx: CGFloat = x == crop.minX ? 1 : -1
-            let sy: CGFloat = y == crop.minY ? 1 : -1
-            let cx = x - sx * out, cy = y - sy * out
+        let corners = CropMarks.corners(of: crop).map { points in
             let path = NSBezierPath()
-            path.move(to: CGPoint(x: cx, y: cy))
-            path.line(to: CGPoint(x: cx + sx * long, y: cy))
-            path.line(to: CGPoint(x: cx + sx * long, y: cy + sy * thick))
-            path.line(to: CGPoint(x: cx + sx * thick, y: cy + sy * thick))
-            path.line(to: CGPoint(x: cx + sx * thick, y: cy + sy * long))
-            path.line(to: CGPoint(x: cx, y: cy + sy * long))
+            path.move(to: points[0])
+            points.dropFirst().forEach { path.line(to: $0) }
             path.close()
-            marks.append(path)
+            return path
         }
-        // Each bar sits 4 pt outside its side and 1 pt in, as the board's `top: -4px` with 5 px of height does. A side
-        // too short to hold one clear of its corners goes without.
-        let length: CGFloat = 26, width: CGFloat = 5
-        let room = length + long * 2
-        var bars: [CGRect] = []
-        if crop.width > room {
-            bars.append(CGRect(x: crop.midX - length / 2, y: crop.minY - 4, width: length, height: width))
-            bars.append(CGRect(x: crop.midX - length / 2, y: crop.maxY - 1, width: length, height: width))
-        }
-        if crop.height > room {
-            bars.append(CGRect(x: crop.minX - 4, y: crop.midY - length / 2, width: width, height: length))
-            bars.append(CGRect(x: crop.maxX - 1, y: crop.midY - length / 2, width: width, height: length))
-        }
-        marks += bars.map { NSBezierPath(roundedRect: $0, xRadius: 2.5, yRadius: 2.5) }
-        return marks
+        let bars = CropMarks.bars(of: crop).map { NSBezierPath(roundedRect: $0, xRadius: CropMarks.barRadius, yRadius: CropMarks.barRadius) }
+        return corners + bars
     }
 
     /// Where a press in crop mode lands decides whether dragging resizes, moves or redraws the crop.

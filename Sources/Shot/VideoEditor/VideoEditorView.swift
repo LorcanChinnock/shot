@@ -56,11 +56,11 @@ struct VideoEditorRootView: View {
         reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity)
     }
 
-    /// The video, centred in the well at its own shape with tiny corners and a soft shadow, the drawing tools beside it
-    /// and the style bar over its top.
+    /// The video, centred in the well at its own shape with tiny corners and a soft shadow, the drawing tools beside it,
+    /// the style bar over its top and, in crop mode, the crop bar at its foot.
     private var well: some View {
         GeometryReader { geometry in
-            let rect = VideoWell.videoRect(showing: model.shownFrame.size, in: geometry.size)
+            let rect = VideoWell.videoRect(showing: model.shownFrame.size, in: geometry.size, bottomClearance: model.isCropping ? model.cropBarClearance : 0)
             let corners = RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular)
             PlayerHost(player: model.player)
                 .background(Color.black)
@@ -77,6 +77,8 @@ struct VideoEditorRootView: View {
         .background(VideoEditorSurface.well, ignoresSafeAreaEdges: [])
         .overlay(alignment: .leading) { drawTools }
         .overlay(alignment: .top) { VideoStyleBar(model: model) }
+        // In crop mode, the image editor's crop bar at the well's foot, which the video fits above.
+        .overlay { CropBarOverlay(model: model) }
         .clipped()
         // Clipping hides a scaled-up clip's handles past the well, but only a content shape stops them catching clicks
         // meant for the title bar or the controls.

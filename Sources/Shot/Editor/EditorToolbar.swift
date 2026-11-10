@@ -66,55 +66,14 @@ extension TextAlign {
     }
 }
 
-/// What the crop tool offers: the shape to hold the crop to, and taking the crop off.
-struct CropOptions: View {
-    let selected: CropAspect
-    let canReset: Bool
-    let choose: (CropAspect) -> Void
-    let reset: () -> Void
-
-    var body: some View {
-        ToolGroup {
-            Text("ASPECT").font(Brutal.mono).foregroundStyle(Brutal.ink).padding(.horizontal, 4)
-            ForEach(CropAspect.allCases, id: \.self) { aspect in
-                Tile(selected: selected == aspect, help: aspect.title, detail: aspect.detail) {
-                    choose(aspect)
-                } label: {
-                    Text(aspect.label).font(.scaled(9, weight: .heavy)).minimumScaleFactor(0.7).lineLimit(1)
-                }
-            }
-        }
-        Button("Reset", action: reset)
-            .buttonStyle(BrutalButtonStyle(.plain))
-            .disabled(!canReset)
-            .brutalTip("Reset", detail: "Takes the crop off, so the whole image is kept.")
-    }
-}
-
 extension CropAspect {
-    /// What the tile shows. Ratios aren't translated.
+    /// What the crop bar's segment shows. Ratios aren't translated.
     var label: String {
         switch self {
         case .free: String(localized: "Free")
         case .square: "1:1"
         case .fourThree: "4:3"
         case .sixteenNine: "16:9"
-        }
-    }
-
-    var title: String {
-        switch self {
-        case .free: String(localized: "Free crop")
-        case .square: String(localized: "Square, 1:1")
-        case .fourThree: "4:3"
-        case .sixteenNine: "16:9"
-        }
-    }
-
-    var detail: String {
-        switch self {
-        case .free: String(localized: "Drag the crop to any shape.")
-        default: String(localized: "Keeps the crop this shape, wide or tall to match it.")
         }
     }
 }
