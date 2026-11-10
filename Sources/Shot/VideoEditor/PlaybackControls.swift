@@ -12,7 +12,7 @@ enum VideoEditorSurface {
 }
 
 /// The row over the lanes, from Edit › Video editor and export: Play, the playhead's time, Split, Cut, Trim idle and Add
-/// media, then snapping, the inspector and zoom. In a narrow window, or at a larger text size, the actions drop their names.
+/// media, then snapping and zoom. In a narrow window, or at a larger text size, the actions drop their names.
 struct PlaybackControls: View {
     static let height: CGFloat = 30
     /// The controls area's padding: 10 above, 14 at the sides and below, with 10 between the row and the lanes.
@@ -43,7 +43,7 @@ struct PlaybackControls: View {
             divider
             actions(named: named)
             Spacer(minLength: 8)
-            toggles
+            snap
             divider
             zoom
         }
@@ -113,17 +113,11 @@ struct PlaybackControls: View {
         .accessibilityLabel(Text("Trim idle"))
     }
 
-    private var toggles: some View {
-        HStack(spacing: 2) {
-            Button { model.toggleSnapping() } label: { Image(systemName: "arrow.right.and.line.vertical.and.arrow.left").font(Brutal.toolIcon) }
-                .buttonStyle(BrutalButtonStyle(.toolbar, isOn: model.snapping))
-                .brutalTip("Snap", key: "N", detail: "Snaps the playhead and dragged clips to clip edges.")
-                .accessibilityLabel(Text("Snap"))
-            Button { model.toggleInspector() } label: { Image(systemName: "slider.horizontal.3").font(Brutal.toolIcon) }
-                .buttonStyle(BrutalButtonStyle(.toolbar, isOn: model.showsInspector))
-                .brutalTip("Inspector", detail: "Position, scale, rotation, opacity, volume and keyframes of the selected clip.")
-                .accessibilityLabel(Text("Inspector"))
-        }
+    private var snap: some View {
+        Button { model.toggleSnapping() } label: { Image(systemName: "arrow.right.and.line.vertical.and.arrow.left").font(Brutal.toolIcon) }
+            .buttonStyle(BrutalButtonStyle(.toolbar, isOn: model.snapping))
+            .brutalTip("Snap", key: "N", detail: "Snaps the playhead and dragged clips to clip edges.")
+            .accessibilityLabel(Text("Snap"))
     }
 
     private var zoom: some View {

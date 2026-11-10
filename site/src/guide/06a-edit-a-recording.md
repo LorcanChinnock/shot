@@ -75,7 +75,7 @@ Select a clip, the recording included, while the playhead is on it, and a yellow
 
 Cropping works as in the [annotation editor](#crop): what's cropped off shows dimmed, drag a handle to resize or inside to move, hold <kbd>Shift</kbd> to keep the shape, and pick an **Aspect** (Free, 1:1, 4:3 or 16:9). **Reset** shows everything again. <kbd>Return</kbd> or **Apply** applies the crop as one undo step, and <kbd>Esc</kbd> or **Cancel** leaves it as it was.
 
-- **Cropping the video changes its size.** Cropping off the menu bar of a 1920 × 1080 recording gives a smaller video, not a scaled-up one, and MP4 and GIF exports come out at the cropped size. Sizes round down to even numbers. The Inspector shows the size under **Frame**, with **Reset** to take the crop off.
+- **Cropping the video changes its size.** Cropping off the menu bar of a 1920 × 1080 recording gives a smaller video, not a scaled-up one, and MP4 and GIF exports come out at the cropped size. Sizes round down to even numbers. With nothing selected, the Inspector shows the size under **Frame**, and **Reset** at the top of the panel takes the crop off.
 - **A cropped clip** still moves, scales and turns as a whole, about the middle of its whole picture, and its corners, shadow and border follow the cropped edge. **Reset Crop** in the Inspector shows all of it again.
 
 > [!TIP]

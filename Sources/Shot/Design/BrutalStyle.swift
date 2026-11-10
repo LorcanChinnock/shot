@@ -412,7 +412,7 @@ extension View {
         modifier(DepthSurface(level: level, fill: fill, radius: radius))
     }
 
-    /// A section's small capitals heading, as the Style popover and the video inspector have.
+    /// A section's small capitals heading, as the image picker and the video crop bar have.
     func sectionCaption() -> some View {
         font(Brutal.sectionCaption).tracking(1.2).foregroundStyle(Brutal.faded(0.75))
     }

@@ -46,8 +46,9 @@ final class VideoEditorModel {
     private(set) var options = Preferences().videoExportOptions
     /// Bytes Export would write, or nil until it's worked out.
     private(set) var estimatedSize: Int?
-    /// Whether the Export panel shows beside the video. It starts closed in every window (rule 2).
-    private(set) var showsExportPanel = false
+    /// The side panel beside the video: the Inspector or Export, which take turns. Export starts closed in every window
+    /// (rule 2), while the Inspector opens again if it was open when the last window closed, as the image editor's Layers does.
+    private(set) var sidePanel: VideoSidePanel? = UserDefaults.standard.bool(forKey: VideoEditorModel.showsInspectorKey) ? .inspector : nil
     /// How far Export has got, from 0 to 1, while it can tell; nil when it can't or nothing is exporting.
     private(set) var exportFraction: Double?
     private(set) var history = VideoEditHistory()
@@ -69,7 +70,8 @@ final class VideoEditorModel {
     }
     /// The time of the keyframe being worked on, in seconds from the start of the selected clip.
     private(set) var selectedKeyframe: Double?
-    private(set) var showsInspector = UserDefaults.standard.bool(forKey: VideoEditorModel.showsInspectorKey)
+    /// Whether More style, the style bar's popover of the drawing options that don't fit in it, is open.
+    var showsMoreStyle = false
     private(set) var waveforms: [URL: Waveform] = [:]
     /// The tool drawing annotations over the video, or nil when none is picked. Never crop.
     private(set) var annotationTool: EditorTool?
@@ -87,8 +89,8 @@ final class VideoEditorModel {
     var editingText: Annotation?
     /// Called when the panel opens, closes or changes height, so the window can grow or shrink to fit.
     @ObservationIgnored var onLayoutChanged: (() -> Void)?
-    /// A style the pointer or the arrow keys are on in the Style popover, drawn on the selected annotation or clip until
-    /// they move off. It's not part of the project, so it's never an undo step.
+    /// A style the pointer is on in the Inspector's Style section, drawn on the selected annotation or clip until it
+    /// moves off. It's not part of the project, so it's never an undo step.
     var stylePreview: ObjectStyle? {
         didSet {
             if stylePreview != oldValue {
@@ -157,11 +159,10 @@ final class VideoEditorModel {
     /// write. An edit taken back to the plain recording loses nothing.
     var hasUnsavedChanges: Bool { isDirty && project != savedProject }
 
-    /// What the drawing options, the inspector and the lanes past a plain recording's add to the window's height.
+    /// What the lanes past a plain recording's add to the window's height. The drawing options float over the video and
+    /// the Inspector is a side panel, so neither adds any.
     var tracksExtraHeight: CGFloat {
-        let palette = isAnnotating ? AnnotationPalette.height + Brutal.sectionGap : 0
-        let inspector = showsInspector ? ClipInspector.height + Brutal.sectionGap : 0
-        return TracksView.extraHeight(for: project) + palette + inspector
+        TracksView.extraHeight(for: project)
     }
 
     var edit: VideoEdit { VideoEdit(project: project, options: options) }
@@ -974,9 +975,15 @@ final class VideoEditorModel {
         return await task.value
     }
 
-    /// Shows or hides the Export panel.
+    /// Whether the Export panel shows beside the video.
+    var showsExportPanel: Bool { sidePanel == .export }
+
+    /// Whether the Inspector shows beside the video.
+    var showsInspector: Bool { sidePanel == .inspector }
+
+    /// Shows or hides the Export panel, which closes the Inspector.
     func toggleExportPanel() {
-        showsExportPanel.toggle()
+        setSidePanel(VideoSidePanel.toggling(.export, from: sidePanel))
     }
 
     /// Hides the Export panel; false when it wasn't showing.
@@ -985,8 +992,22 @@ final class VideoEditorModel {
         guard showsExportPanel else {
             return false
         }
-        showsExportPanel = false
+        setSidePanel(nil)
         return true
+    }
+
+    /// Shows or hides the Inspector, which closes the Export panel.
+    func toggleInspector() {
+        setSidePanel(VideoSidePanel.toggling(.inspector, from: sidePanel))
+    }
+
+    /// Remembers whether the Inspector is open for the next window, as the image editor's Layers panel does.
+    private func setSidePanel(_ panel: VideoSidePanel?) {
+        sidePanel = panel
+        UserDefaults.standard.set(panel == .inspector, forKey: Self.showsInspectorKey)
+        if panel != .inspector {
+            stylePreview = nil
+        }
     }
 
     /// Stops the export in progress; false when there isn't one.
@@ -1073,7 +1094,6 @@ extension VideoEditorModel {
         if tool != nil, tool != .select {
             selectedClipID = selectedAnnotation == nil ? selectedClipID : nil
         }
-        onLayoutChanged?()
         refreshPlayer()
     }
 
@@ -1237,6 +1257,25 @@ extension VideoEditorModel {
     /// The colour or fill palette's last custom colour.
     func lastCustom(forFill: Bool) -> RGBA? {
         palette.lastCustom(forFill: forFill)
+    }
+
+    /// True when the drawing options aren't the defaults, so More style's Reset has something to do.
+    var canResetToolOptions: Bool { palette.canReset }
+
+    /// More style's Reset: puts the drawing options back to how a new install starts, for the selected annotation, the
+    /// text being typed and the next annotation. A spotlight's dim goes back for every spotlight, since they share it.
+    func resetToolOptions() {
+        let before = palette
+        var changed = before
+        changed.reset()
+        guard changed != before else {
+            return
+        }
+        history.stopCoalescing()
+        adopt(changed)
+        if let look = changed.sharedSpotlight, look != before.sharedSpotlight {
+            setSpotlightLook(effect: look.effect, strength: look.strength)
+        }
     }
 
     /// Shows the compositor `annotation` at the playhead, in place of the clip `id` when it has one, before it's committed.
@@ -1481,12 +1520,6 @@ extension VideoEditorModel {
 // MARK: Keyframes
 
 extension VideoEditorModel {
-    func toggleInspector() {
-        showsInspector.toggle()
-        UserDefaults.standard.set(showsInspector, forKey: Self.showsInspectorKey)
-        onLayoutChanged?()
-    }
-
     /// The selected clip's properties at the playhead, with its keyframes applied.
     var selectedValues: PropertyValues? {
         selectedClipID.flatMap { project.values(ofClip: $0, at: playhead) }
@@ -1608,7 +1641,7 @@ extension VideoEditorModel {
 // MARK: Style
 
 extension VideoEditorModel: StyleEditing {
-    /// What the Style popover offers: the selected annotation's kind, or an image's for a clip's picture, which can have
+    /// What the Inspector's Style section offers: the selected annotation's kind, or an image's for a clip's picture, which can have
     /// rounded corners, a hairline and a solid border. `nil` for sound, and for annotations that can't be styled.
     var targetStyleKind: StyleKind? {
         if let note = selectedAnnotation {
@@ -1620,10 +1653,6 @@ extension VideoEditorModel: StyleEditing {
         return .image
     }
 
-    var targetStyleTitle: String {
-        selectedAnnotation == nil && targetStyleKind != nil ? String(localized: "CLIP STYLE") : targetStyleKind?.title ?? ""
-    }
-
     var targetHasTransparency: Bool {
         selectedAnnotation?.annotation.hasTransparency ?? false
     }
@@ -1632,30 +1661,12 @@ extension VideoEditorModel: StyleEditing {
         selectedAnnotation?.annotation.style ?? selectedClip?.style ?? ObjectStyle()
     }
 
-    /// What the Style popover's tiles draw: a placed image, mark or text, or a frame of a clip once its thumbnails load.
-    var targetThumbnail: StyleThumbnail.Subject? {
-        if let annotation = selectedAnnotation?.annotation {
-            if case let .image(image, _) = annotation.kind {
-                return .image(image.cropped(annotation.imageCrop))
-            }
-            return .annotation(annotation)
-        }
-        guard targetStyleKind != nil, let clip = selectedClip, let frame = thumbnailSets[clip.source]?.lazy.compactMap(\.self).first else {
-            return nil
-        }
-        // A thumbnail is the whole picture, so it's cut as the clip is.
-        guard let crop = clip.crop else {
-            return .image(frame)
-        }
-        return .image(frame.cropping(to: crop.sourceRect(width: frame.width, height: frame.height)) ?? frame)
-    }
-
     /// In points.
     var targetCornerRadius: CGFloat {
         (selectedAnnotation.map { $0.annotation.cornerRadius ?? 0 } ?? selectedClip?.cornerRadius ?? 0) / scale
     }
 
-    /// Canvas pixels per point of the Style popover's sizes, as annotations are sized.
+    /// Canvas pixels per point of the Style section's sizes, as annotations are sized.
     var scale: CGFloat { styleScale }
 
     /// A new `kind` border for the target, at the middle width, in the colour of the border it has, else white, or for

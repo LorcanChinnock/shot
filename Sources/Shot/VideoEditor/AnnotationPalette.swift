@@ -2,73 +2,38 @@ import AppKit
 import ShotCore
 import SwiftUI
 
-/// The drawing options under the video while a tool is picked: colours, fill and width, the shape, blur or spotlight
-/// options, or what the tool does. The tools themselves are in `DrawToolColumn`, beside the video.
-struct AnnotationPalette: View {
-    /// One row of tool groups.
-    static let height: CGFloat = 30 + Brutal.groupInset * 2
-
+/// The drawing options while a tool is picked: the image editor's style bar, from Edit › Image editor · annotate, centred
+/// 12 pt down from the top of the video's well. The colours and widths are in the bar, and the shape, fill, white and custom
+/// colours, alignment, a blur's amount and a spotlight's strength under More style. The select tool with nothing selected
+/// shows no bar, and neither does crop mode. The tools themselves are in `DrawToolColumn`, beside the video.
+struct VideoStyleBar: View {
     @Bindable var model: VideoEditorModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    var body: some View {
-        HStack(spacing: 14) {
-            if model.showsStyle {
-                styleOptions
-            } else if let redaction = model.paletteRedaction {
-                RedactionOptions(selected: redaction, amount: model.paletteRedactionAmount, choose: model.setRedaction, setAmount: model.setRedactionAmount) { dragging in
-                    dragging ? model.beginDrag() : model.endDrag()
-                }
-            } else if let spotlight = model.paletteSpotlight {
-                SpotlightOptions(
-                    style: spotlight, chooseShape: model.setSpotlightShape, chooseLook: model.setSpotlightLook, chooseSoftEdge: model.setSpotlightSoftEdge
-                ) { dragging in
-                    dragging ? model.beginDrag() : model.endDrag()
-                }
-            } else if let tool = model.annotationTool {
-                Text(tool.summary)
-                    .font(Brutal.caption)
-                    .foregroundStyle(Brutal.faded(0.6))
-                    .padding(.leading, 4)
-            }
-            Spacer(minLength: 0)
+    private var content: StyleBarContent? {
+        guard let tool = model.annotationTool, !model.isCropping else {
+            return nil
         }
-        .frame(height: Self.height)
+        return StyleBarContent.content(
+            showsStyle: model.showsStyle, tool: tool, showsRedaction: model.paletteRedaction != nil, showsSpotlight: model.paletteSpotlight != nil
+        )
     }
 
-    @ViewBuilder private var styleOptions: some View {
-        if let shape = model.paletteShape {
-            ShapeMenu(selected: shape, choose: model.setShape)
-        }
-        ToolGroup {
-            ColorSwatches(
-                selected: model.paletteColor,
-                lastCustom: model.lastCustom(forFill: false),
-                customHelp: "Custom colour",
-                choose: { if let color = $0 { model.paletteColor = color } },
-                pickCustom: { model.pickCustom($0, forFill: false) },
-                beginPicking: model.beginColorPick
-            )
-        }
-        if model.showsFill {
-            ToolGroup {
-                Text("FILL").font(Brutal.mono).foregroundStyle(Brutal.ink).padding(.horizontal, 4)
-                ColorSwatches(
-                    selected: model.paletteFill,
-                    lastCustom: model.lastCustom(forFill: true),
-                    allowsNone: true,
-                    customHelp: "Custom fill colour",
-                    choose: { model.paletteFill = $0 },
-                    pickCustom: { model.pickCustom($0, forFill: true) },
-                    beginPicking: model.beginColorPick
-                )
+    var body: some View {
+        ZStack {
+            if let content {
+                StyleBar(model: model, content: content)
+                    .fixedSize()
+                    .padding(.top, StyleBarPlacement.inset)
+                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.96)))
             }
         }
-        WidthOptions(selected: model.lineWidthIndex, sizesText: model.sizesText) { model.lineWidthIndex = $0 }
-        if let alignment = model.paletteAlignment {
-            AlignmentOptions(selected: alignment, choose: model.setAlignment)
-        }
-        if let verticalAlignment = model.paletteVerticalAlignment {
-            VerticalAlignmentOptions(selected: verticalAlignment, choose: model.setVerticalAlignment)
+        // Arriving is the panel moment, as in the image editor; changing what it shows is instant.
+        .animation(Motion.animation(.panelArrive, reduceMotion: reduceMotion), value: content)
+        .onChange(of: content) {
+            if content == nil {
+                model.showsMoreStyle = false
+            }
         }
     }
 }
@@ -174,3 +139,5 @@ private let columnInset: CGFloat = 12
 
 /// The board's fill, a touch see-through over the video.
 private let columnFill = Color(light: .white.opacity(0.97), dark: Color(hex: 0x2C2C30).opacity(0.92))
+
+extension VideoEditorModel: StyleBarEditing {}

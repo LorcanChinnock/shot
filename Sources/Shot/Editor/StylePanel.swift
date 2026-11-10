@@ -90,9 +90,13 @@ struct StylePanel: View {
         switch section {
         case .background: backgroundSection
         case .padding: paddingSection
-        case .corners: cornersSection
-        case .shadow: shadowSection
-        case .border: borderSection
+        case .corners:
+            // The screenshot's corners sit under its padding.
+            if model.targetStyleKind != .capture {
+                StyleSection(model: model, section: .corners, sliderWidth: Self.inner)
+            }
+        case .shadow, .border:
+            StyleSection(model: model, section: section, sliderWidth: Self.inner)
         case .size: sizeSection
         case .windowShadowNote:
             note("Uses macOS window shadow")
@@ -111,13 +115,6 @@ struct StylePanel: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 
-    private func heading(_ text: LocalizedStringResource) -> some View {
-        Text(text)
-            .font(.scaled(11.5, weight: .semibold))
-            .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
-            .accessibilityAddTraits(.isHeader)
-    }
-
     // MARK: Background
 
     /// None, the panel's seven colours, three gradients, the desktop picture and a custom colour, 7 to a row.
@@ -126,7 +123,7 @@ struct StylePanel: View {
         let fill = doc.backgroundFill
         let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
         return VStack(alignment: .leading, spacing: 8) {
-            heading("Background")
+            Text("Background").panelHeading()
             LazyVGrid(columns: columns, spacing: 6) {
                 BackgroundTile(name: String(localized: "None"), selected: fill == nil && doc.background == nil) {
                     model.setBackground(nil)
@@ -155,151 +152,18 @@ struct StylePanel: View {
         }
     }
 
-    // MARK: Padding and corners
+    // MARK: Padding
 
     private var paddingSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            sliderRow(
-                "Padding", value: model.canvasPadding, range: CanvasFrame.paddings, shown: "\(Int(model.canvasPadding.rounded())) pt",
-                set: { model.setCanvasPadding($0) }
+            PanelSliderRow(
+                name: "Padding", value: Double(model.canvasPadding),
+                range: Double(CanvasFrame.paddings.lowerBound)...Double(CanvasFrame.paddings.upperBound),
+                shown: "\(Int(model.canvasPadding.rounded())) pt", width: Self.inner,
+                set: { model.setCanvasPadding(CGFloat($0)) }, editing: model.setDraggingStyle
             )
             if model.targetStyleKind == .capture, !model.targetHasWindowShadow {
-                cornersSlider
-            }
-        }
-    }
-
-    /// The selection's corners, on its own when the target isn't the screenshot, whose corners sit under its padding.
-    @ViewBuilder
-    private var cornersSection: some View {
-        if model.targetStyleKind != .capture {
-            cornersSlider
-        }
-    }
-
-    private var cornersSlider: some View {
-        sliderRow(
-            "Corners", value: model.targetCornerRadius, range: 0...48, shown: "\(Int(model.targetCornerRadius.rounded())) pt",
-            set: { model.setTargetCornerRadius($0) }
-        )
-    }
-
-    /// The name and value over a slider as wide as the panel.
-    private func sliderRow(_ name: LocalizedStringResource, value: CGFloat, range: ClosedRange<CGFloat>, shown: String, set: @escaping (CGFloat) -> Void) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(name)
-                    .font(.scaled(12, weight: .semibold))
-                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
-                Spacer(minLength: 8)
-                Text(verbatim: shown)
-                    .font(.scaled(12, tabular: true))
-                    .foregroundStyle(Brutal.ink)
-            }
-            .accessibilityHidden(true)
-            BrutalSlider(
-                value: Binding(get: { Double(value) }, set: { set(CGFloat($0)) }),
-                range: Double(range.lowerBound)...Double(range.upperBound),
-                width: Self.inner,
-                onEditingChanged: { model.setDraggingStyle($0) }
-            )
-            .frame(height: 18)
-            .accessibilityLabel(Text(name))
-            .accessibilityValue(Text(verbatim: shown))
-        }
-    }
-
-    // MARK: Shadow and border
-
-    private var shadowSection: some View {
-        let style = model.targetStyle
-        let shadows: [PanelPreset] = [PanelPreset(id: "shadow-none", title: String(localized: "None"), style: with(style) { $0.shadow = nil }, selected: style.shadow == nil, swatch: StylePresetSwatch())]
-            + ShadowPreset.allCases.map { preset in
-                let shadow = preset.shadow(scale: model.scale)
-                return PanelPreset(id: "shadow-\(preset.rawValue)", title: preset.title, style: with(style) { $0.shadow = shadow }, selected: style.shadow == shadow, swatch: StylePresetSwatch(shadow: preset))
-            }
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                heading("Shadow")
-                if let shadow = style.shadow, ShadowPreset.matching(shadow, scale: model.scale) == nil {
-                    BrutalBadge(text: "CUSTOM")
-                }
-            }
-            presetGrid(shadows)
-            if let shadow = style.shadow {
-                sliderRow(
-                    "Elevation", value: shadow.elevation / model.scale, range: Shadow.elevations, shown: "\(Int((shadow.elevation / model.scale).rounded())) pt",
-                    set: { model.setShadowElevation($0) }
-                )
-                sliderRow(
-                    "Opacity", value: shadow.opacity, range: Shadow.opacities, shown: "\(Int((shadow.opacity * 100).rounded()))%",
-                    set: { model.setShadowOpacity($0) }
-                )
-            }
-        }
-    }
-
-    private var borderSection: some View {
-        let style = model.targetStyle
-        let kinds = model.targetStyleKind?.borders(transparent: model.targetHasTransparency) ?? []
-        let borders: [PanelPreset] = [PanelPreset(id: "border-none", title: String(localized: "None"), style: with(style) { $0.border = nil }, selected: style.border == nil, swatch: StylePresetSwatch())]
-            + kinds.map { kind in
-                let border = model.newBorder(kind)
-                return PanelPreset(id: "border-\(kind.rawValue)", title: kind.title, style: with(style) { $0.border = border }, selected: style.border?.kind == kind, swatch: StylePresetSwatch(border: kind))
-            }
-        return VStack(alignment: .leading, spacing: 8) {
-            heading("Border")
-            presetGrid(borders)
-            if let border = style.border, border.kind != .hairline, let kind = model.targetStyleKind {
-                borderOptions(border, on: kind)
-            }
-        }
-    }
-
-    private func with(_ style: ObjectStyle, _ change: (inout ObjectStyle) -> Void) -> ObjectStyle {
-        var style = style
-        change(&style)
-        return style
-    }
-
-    private func presetGrid(_ presets: [PanelPreset]) -> some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 5), spacing: 6) {
-            ForEach(presets) { preset in
-                PresetTile(preset: preset, model: model)
-            }
-        }
-    }
-
-    /// The width, S, M or L, and the colour of a solid border or an outline.
-    private func borderOptions(_ border: Border, on kind: StyleKind) -> some View {
-        let widths = Border.widths(border.kind, on: kind)
-        return VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 4) {
-                Text("Width")
-                    .font(.scaled(12, weight: .semibold))
-                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
-                    .frame(width: 60, alignment: .leading)
-                ForEach(widths.indices, id: \.self) { index in
-                    let points = widths[index]
-                    Tile(selected: abs(points * model.scale - border.width) < 0.01, help: WidthOptions.sizeNames[index]) {
-                        model.setBorderWidth(points)
-                    } label: {
-                        Text(WidthOptions.sizeNames[index].prefix(1)).font(.scaled(12, weight: .heavy))
-                    }
-                }
-            }
-            Text("Colour")
-                .font(.scaled(12, weight: .semibold))
-                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
-            HStack(spacing: 2) {
-                ColorSwatches(
-                    selected: border.paint,
-                    lastCustom: model.lastBorderColor,
-                    customHelp: "Custom border colour",
-                    choose: { if let color = $0 { model.setBorderColor(color) } },
-                    pickCustom: { model.pickBorderColor($0) },
-                    beginPicking: model.beginColorPick
-                )
+                StyleSection(model: model, section: .corners, sliderWidth: Self.inner)
             }
         }
     }
@@ -308,7 +172,7 @@ struct StylePanel: View {
 
     private var sizeSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            heading("Size")
+            Text("Size").panelHeading()
             BrutalSegmented(
                 selection: Binding(get: { model.document.frame.aspect }, set: { model.setCanvasAspect($0) }),
                 options: CanvasAspect.allCases.map { (value: $0, label: $0.title) }
@@ -327,70 +191,6 @@ extension StyleKind {
         case .image: String(localized: "Selected image")
         case .mark: String(localized: "Selected shape")
         case .text: String(localized: "Selected text")
-        }
-    }
-}
-
-/// A shadow or border tile: the target's style with one change made to it.
-private struct PanelPreset: Identifiable {
-    let id: String
-    let title: String
-    let style: ObjectStyle
-    let selected: Bool
-    let swatch: StylePresetSwatch
-}
-
-/// A card with the preset's look over its name. The chosen one is white with a 1.5 pt ink edge, as on the board.
-/// Pointing at it shows it on the canvas until the pointer moves off.
-private struct PresetTile: View {
-    let preset: PanelPreset
-    let model: EditorModel
-    @State private var hovering = false
-    @Environment(\.colorSchemeContrast) private var contrast
-
-    var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular)
-        Button {
-            model.setTargetStyle(preset.style)
-        } label: {
-            VStack(spacing: 5) {
-                preset.swatch.frame(width: 26, height: 18)
-                Text(verbatim: preset.title)
-                    .font(.scaled(10.5, weight: preset.selected ? .semibold : .regular))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
-            .foregroundStyle(Brutal.ink)
-            .padding(.top, 8)
-            .padding(.bottom, 6)
-            .frame(maxWidth: .infinity)
-            .background {
-                if preset.selected {
-                    shape.fill(Brutal.group)
-                } else if hovering {
-                    shape.fill(Brutal.hover)
-                }
-            }
-            .overlay {
-                if preset.selected {
-                    Color.clear.inkBorder(shape, width: 1.5, color: Brutal.ink)
-                } else if contrast == .increased {
-                    Color.clear.inkBorder(shape, width: 1, color: Brutal.ink.opacity(0.6))
-                }
-            }
-            .contentShape(shape)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text(verbatim: preset.title))
-        .accessibilityAddTraits(preset.selected ? .isSelected : [])
-        .onHover { inside in
-            hovering = inside
-            if inside {
-                model.stylePreview = preset.style
-            } else if model.stylePreview == preset.style {
-                // Moving straight onto another tile can report entering it before leaving this one.
-                model.stylePreview = nil
-            }
         }
     }
 }

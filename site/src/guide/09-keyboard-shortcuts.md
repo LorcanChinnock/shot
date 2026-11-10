@@ -117,6 +117,7 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | S | Split the clips under the playhead |
 | K | Key everything the selected clip or annotation can animate at the playhead, or take those keyframes away |
 | N | Turn snapping on or off |
+| ⌥⌘I | Show or hide the Inspector |
 | C | Crop the selected clip, or the frame with nothing selected |
 | Return | Apply the crop |
 | Delete | Take away the selected keyframe, section, or clip or annotation |

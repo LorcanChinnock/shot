@@ -51,30 +51,9 @@ enum PresetColorNames {
     ]
 }
 
-/// Line widths, or text sizes for text, notes and counters, whose width sets their size.
-struct WidthOptions: View {
-    /// What the three widths are called, here and for border widths in the Style popover.
+/// The names of the three widths, for text sizes in the style bar and border widths in the style sections.
+enum WidthOptions {
     static let sizeNames = [String(localized: "Small"), String(localized: "Medium"), String(localized: "Large")]
-
-    let selected: Int
-    let sizesText: Bool
-    let choose: (Int) -> Void
-
-    var body: some View {
-        ToolGroup {
-            ForEach(EditorStyle.widths.indices, id: \.self) { index in
-                Tile(selected: selected == index, help: sizesText ? "Text size: \(Self.sizeNames[index])" : "Line width: \(Int(EditorStyle.widths[index]))") {
-                    choose(index)
-                } label: {
-                    if sizesText {
-                        Text("A").font(.system(size: 9 + CGFloat(index) * 4, weight: .heavy))
-                    } else {
-                        Capsule().fill(Brutal.ink).frame(width: 16, height: EditorStyle.widths[index] + 1)
-                    }
-                }
-            }
-        }
-    }
 }
 
 extension TextAlign {
@@ -83,40 +62,6 @@ extension TextAlign {
         case .left: .left
         case .center: .center
         case .right: .right
-        }
-    }
-}
-
-struct AlignmentOptions: View {
-    let selected: TextAlign
-    let choose: (TextAlign) -> Void
-
-    var body: some View {
-        ToolGroup {
-            ForEach(TextAlign.allCases, id: \.self) { alignment in
-                Tile(selected: selected == alignment, help: alignment.title) {
-                    choose(alignment)
-                } label: {
-                    Image(systemName: alignment.symbol).font(Brutal.toolIcon)
-                }
-            }
-        }
-    }
-}
-
-struct VerticalAlignmentOptions: View {
-    let selected: VerticalTextAlign
-    let choose: (VerticalTextAlign) -> Void
-
-    var body: some View {
-        ToolGroup {
-            ForEach(VerticalTextAlign.allCases, id: \.self) { alignment in
-                Tile(selected: selected == alignment, help: alignment.title) {
-                    choose(alignment)
-                } label: {
-                    Image(systemName: alignment.symbol).font(Brutal.toolIcon)
-                }
-            }
         }
     }
 }
@@ -170,132 +115,6 @@ extension CropAspect {
         switch self {
         case .free: String(localized: "Drag the crop to any shape.")
         default: String(localized: "Keeps the crop this shape, wide or tall to match it.")
-        }
-    }
-}
-
-struct ShapeOptions: View {
-    let shapes: [BoxShape]
-    let selected: BoxShape
-    let choose: (BoxShape) -> Void
-
-    var body: some View {
-        ToolGroup {
-            ForEach(shapes, id: \.self) { shape in
-                Tile(selected: selected == shape, help: shape.title) {
-                    choose(shape)
-                } label: {
-                    Image(systemName: shape.symbol).font(Brutal.toolIcon)
-                }
-            }
-        }
-    }
-}
-
-/// Every shape in one dropdown, which leaves room in the toolbar for the colour and fill beside it.
-struct ShapeMenu: View {
-    let selected: BoxShape
-    let choose: (BoxShape) -> Void
-
-    var body: some View {
-        ToolGroup {
-            BrutalDropdown(title: "Shape", entries: BoxShape.allCases.map { shape in
-                .item(shape.title, symbol: shape.symbol, selected: shape == selected) { choose(shape) }
-            }) {
-                HStack(spacing: 6) {
-                    Image(systemName: selected.symbol).font(Brutal.toolIcon)
-                    Image(systemName: "chevron.up.chevron.down").font(.scaled(9, weight: .bold))
-                }
-            }
-            .buttonStyle(BrutalButtonStyle(.toolbar))
-            .fixedSize()
-            .brutalTip(String(localized: "Shape"), detail: selected.title)
-        }
-    }
-}
-
-struct RedactionOptions: View {
-    let selected: Redaction
-    let amount: CGFloat
-    let choose: (Redaction) -> Void
-    let setAmount: (CGFloat) -> Void
-
-    // A switch, since string extraction misses the second branch of a ternary passed as an optional.
-    private var amountDetail: LocalizedStringResource {
-        switch selected {
-        case .blur: "How far the blur spreads."
-        case .pixelate: "How big the blocks are."
-        }
-    }
-    let dragAmount: (Bool) -> Void
-
-    var body: some View {
-        ToolGroup {
-            ForEach(Redaction.allCases, id: \.self) { redaction in
-                Tile(selected: selected == redaction, help: redaction.title) {
-                    choose(redaction)
-                } label: {
-                    Image(systemName: redaction == .blur ? "drop.halffull" : "square.grid.3x3").font(Brutal.toolIcon)
-                }
-            }
-        }
-        ToolGroup {
-            BrutalSlider(
-                value: Binding(get: { amount }, set: { setAmount($0) }),
-                range: Redaction.amounts.lowerBound...Redaction.amounts.upperBound,
-                width: 120,
-                onEditingChanged: dragAmount
-            )
-            .frame(height: 30)
-            .padding(.horizontal, 6)
-            .accessibilityLabel(Text("Amount"))
-            .brutalTip("Amount", detail: amountDetail)
-        }
-    }
-}
-
-/// A spotlight's shape and edge, and the effect and strength every spotlight in the image shares.
-struct SpotlightOptions: View {
-    let style: SpotlightStyle
-    let chooseShape: (BoxShape) -> Void
-    let chooseLook: (SpotlightStyle.Effect, Double) -> Void
-    let chooseSoftEdge: (Double) -> Void
-    let dragSlider: (Bool) -> Void
-
-    var body: some View {
-        ShapeOptions(shapes: BoxShape.spotlightShapes, selected: style.shape, choose: chooseShape)
-        ToolGroup {
-            ForEach(SpotlightStyle.Effect.allCases, id: \.self) { effect in
-                Tile(selected: style.effect == effect, help: "\(effect.title) outside", detail: "Applies to every spotlight in the image.") {
-                    chooseLook(effect, style.strength)
-                } label: {
-                    Image(systemName: effect == .darken ? "moon.fill" : "drop.halffull").font(Brutal.toolIcon)
-                }
-            }
-        }
-        ToolGroup {
-            BrutalSlider(
-                value: Binding(get: { style.strength }, set: { chooseLook(style.effect, $0) }),
-                range: SpotlightStyle.strengths,
-                width: 120,
-                onEditingChanged: dragSlider
-            )
-            .frame(height: 30)
-            .padding(.horizontal, 6)
-            .accessibilityLabel(Text("Strength"))
-            .brutalTip("Strength", detail: "Applies to every spotlight in the image.")
-        }
-        ToolGroup {
-            Text("EDGE").font(Brutal.mono).foregroundStyle(Brutal.ink).padding(.horizontal, 4)
-            BrutalSlider(
-                value: Binding(get: { style.softEdge }, set: { chooseSoftEdge($0) }),
-                width: 100,
-                onEditingChanged: dragSlider
-            )
-            .frame(height: 30)
-            .padding(.trailing, 6)
-            .accessibilityLabel(Text("Soft edge"))
-            .brutalTip("Soft edge", detail: "Fades the spotlight into the dim.")
         }
     }
 }

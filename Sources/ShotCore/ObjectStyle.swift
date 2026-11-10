@@ -74,12 +74,12 @@ public enum StyleKind: String, CaseIterable, Codable, CodingKeyRepresentable, Se
         }
     }
 
-    /// True for the kinds whose corners the Style popover rounds.
+    /// True for the kinds whose corners the style sections round.
     public var takesCorners: Bool {
         self == .capture || self == .image
     }
 
-    /// The shadow and border a new object of this kind starts with, which the Style popover's Reset puts back: none.
+    /// The shadow and border a new object of this kind starts with, which the style sections' Reset puts back: none.
     public var defaultStyle: ObjectStyle { ObjectStyle() }
 
     /// The corner radius a new object of this kind starts with, in points.
@@ -176,7 +176,7 @@ public struct Shadow: Equatable, Hashable, Sendable, Codable {
     }
 }
 
-/// The named shadows the Style popover offers.
+/// The named shadows the style sections offer.
 public enum ShadowPreset: String, CaseIterable, Sendable {
     case soft, float, contact, glow
 
@@ -259,14 +259,14 @@ public struct Border: Equatable, Hashable, Sendable, Codable {
     }
 }
 
-/// What the Style popover changes: the capture, or one annotation.
+/// What the Style panel changes: the capture, or one annotation.
 public enum StyleTarget: Equatable, Hashable, Sendable {
     case capture
     case annotation(UUID)
 }
 
 extension Annotation {
-    /// What its style is on, which decides what the Style popover offers; `nil` for the kinds it can't style: blurs,
+    /// What its style is on, which decides what the Style panel offers; `nil` for the kinds it can't style: blurs,
     /// pixelates, spotlights, the highlighter and notes, which have a shadow of their own.
     public var styleKind: StyleKind? {
         switch kind {
@@ -277,7 +277,7 @@ extension Annotation {
         }
     }
 
-    /// True for the kinds the Style popover can give a shadow or border.
+    /// True for the kinds the style sections can give a shadow or border.
     public var takesObjectStyle: Bool { styleKind != nil }
 
     /// Whether it's a placed image with see-through pixels, which can take an outline.
