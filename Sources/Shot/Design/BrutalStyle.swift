@@ -93,6 +93,8 @@ enum Brutal {
         static let recording = SidebarTint(tile: (0xFFE1DE, 0x4A2220), icon: (0xC4271E, 0xFF7B72))
         static let shortcuts = SidebarTint(tile: (0xFFE9D3, 0x4A3118), icon: (0xB35A00, 0xFFB366))
         static let about = SidebarTint(tile: (0xEAF6D2, 0x2E3D1A), icon: (0x4E7A0E, 0xA8D86A))
+        /// Open Gallery's tile, under a control edge.
+        static let gallery = SidebarTint(tile: (0xFFFFFF, 0x3A3A3F), icon: (0x3A393F, 0xCFCDD4))
         /// The selected row's tile, in both appearances.
         static let selected = SidebarTint(tile: (0xFFFFFF, 0xFFFFFF), icon: (0x16161A, 0x16161A))
     }
@@ -995,58 +997,77 @@ private struct SegmentThumb: View {
 
 // MARK: Layout
 
+extension EnvironmentValues {
+    /// What's typed in the Settings sidebar's search. Rows that don't match it hide, and groups with no rows left hide too.
+    @Entry var settingsQuery = ""
+    /// The names of the section and group a Settings row sits in, which its search also matches.
+    @Entry var settingsContext: [String] = []
+}
+
+/// A group of Settings rows: its name over a grouped panel, with a separator between rows. While searching, it shows only the
+/// rows that match, and nothing when none do.
 struct SettingsCard<Content: View>: View {
     let title: LocalizedStringResource
-    var symbol: String?
     @ViewBuilder let content: Content
+    @Environment(\.settingsContext) private var context
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
-                if let symbol {
-                    Image(systemName: symbol).font(.scaled(11, weight: .bold))
+        let heading = String(localized: title)
+        Group(subviews: content) { rows in
+            if let first = rows.first {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(heading)
+                        .font(.scaled(12, weight: .semibold))
+                        .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                        .padding(.leading, 12)
+                        .accessibilityAddTraits(.isHeader)
+                    VStack(spacing: 0) {
+                        ForEach(rows) { row in
+                            if row.id != first.id {
+                                Brutal.separator.frame(height: 1)
+                            }
+                            row
+                        }
+                    }
+                    .depth(.group, fill: Brutal.group, radius: Brutal.Radius.group)
                 }
-                Text(String(localized: title).uppercased()).font(Brutal.sectionCaption).tracking(1.2)
-            }
-            .foregroundStyle(Brutal.faded(0.75))
-            .padding(.bottom, 6)
-            VStack(spacing: 0) {
-                content
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .glassCard()
+        .environment(\.settingsContext, context + [heading])
     }
 }
 
+/// A Settings row: its name and an optional description on the left, its control on the right. It hides while a search
+/// doesn't match its name, description, group or section.
 struct SettingRow<Control: View>: View {
     let title: String
     var subtitle: String?
-    var divider = true
     @ViewBuilder let control: Control
+    @Environment(\.settingsQuery) private var query
+    @Environment(\.settingsContext) private var context
 
-    init(title: LocalizedStringResource, subtitle: LocalizedStringResource? = nil, divider: Bool = true, @ViewBuilder control: () -> Control) {
-        self.init(title: String(localized: title), subtitle: subtitle.map { String(localized: $0) }, divider: divider, control: control)
+    init(title: LocalizedStringResource, subtitle: LocalizedStringResource? = nil, @ViewBuilder control: () -> Control) {
+        self.init(title: String(localized: title), subtitle: subtitle.map { String(localized: $0) }, control: control)
     }
 
     /// A row whose title is already localized, such as an action's.
     @_disfavoredOverload
-    init<S: StringProtocol>(title: S, subtitle: String? = nil, divider: Bool = true, @ViewBuilder control: () -> Control) {
+    init<S: StringProtocol>(title: S, subtitle: String? = nil, @ViewBuilder control: () -> Control) {
         self.title = String(title)
         self.subtitle = subtitle
-        self.divider = divider
         self.control = control()
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(alignment: .center, spacing: 12) {
+        if SettingsSearch.matches(query, in: context + [title, subtitle ?? ""]) {
+            HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(Brutal.label).foregroundStyle(Brutal.ink)
+                    Text(title).font(Brutal.body).foregroundStyle(Brutal.ink)
                     if let subtitle {
-                        Text(subtitle).font(Brutal.caption).foregroundStyle(Brutal.faded(0.6))
+                        Text(subtitle)
+                            .font(Brutal.caption)
+                            .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -1054,9 +1075,7 @@ struct SettingRow<Control: View>: View {
                 control
             }
             .padding(.vertical, 9)
-            if divider {
-                Rectangle().fill(Brutal.faint(0.12)).frame(height: 1.5)
-            }
+            .padding(.horizontal, 14)
         }
     }
 }
@@ -1065,12 +1084,28 @@ struct ToggleRow: View {
     let title: LocalizedStringResource
     var subtitle: LocalizedStringResource?
     @Binding var isOn: Bool
-    var divider = true
 
     var body: some View {
-        SettingRow(title: title, subtitle: subtitle, divider: divider) {
+        SettingRow(title: title, subtitle: subtitle) {
             Toggle(String(localized: title), isOn: $isOn).toggleStyle(BrutalToggleStyle()).labelsHidden()
                 .accessibilityLabel(Text(title))
+        }
+    }
+}
+
+extension View {
+    /// Settings content that isn't a row, such as a preview or a note, which hides while searching.
+    func hiddenWhileSearching() -> some View {
+        modifier(HiddenWhileSearching())
+    }
+}
+
+private struct HiddenWhileSearching: ViewModifier {
+    @Environment(\.settingsQuery) private var query
+
+    func body(content: Content) -> some View {
+        if SettingsSearch.terms(query).isEmpty {
+            content
         }
     }
 }

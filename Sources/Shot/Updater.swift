@@ -19,14 +19,16 @@ final class Updater: NSObject {
     /// update alert can open behind other windows, so the menu offers it too.
     private(set) var pendingVersion: String?
     private(set) var canCheckForUpdates = false
+    /// False in builds without an update feed, such as ShotDev, which never check.
+    let isEnabled: Bool
 
     @ObservationIgnored private var controller: SPUStandardUpdaterController!
     @ObservationIgnored private var canCheckObservation: NSKeyValueObservation?
 
     private override init() {
-        super.init()
         let feed = Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") as? String
-        let isEnabled = !(feed ?? "").isEmpty
+        isEnabled = !(feed ?? "").isEmpty
+        super.init()
         controller = SPUStandardUpdaterController(startingUpdater: isEnabled, updaterDelegate: self, userDriverDelegate: self)
         canCheckObservation = controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) { [weak self] _, _ in
             MainActor.assumeIsolated {

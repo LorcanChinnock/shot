@@ -19,17 +19,6 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         }
     }
 
-    var subtitle: String {
-        switch self {
-        case .general: String(localized: "Behaviour, files and formats.")
-        case .capture: String(localized: "What happens when you take a shot.")
-        case .quickAccess: String(localized: "The floating card after each capture.")
-        case .recording: String(localized: "Screen recording video and audio.")
-        case .shortcuts: String(localized: "Global hotkeys for every action.")
-        case .about: String(localized: "Version, updates, permissions and reset.")
-        }
-    }
-
     var symbol: String {
         switch self {
         case .general: "gearshape"
@@ -41,7 +30,19 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Each section has its own colour. A new section needs a new `Brutal` token, not a repeat.
+    /// The tile and glyph behind the section's icon in the sidebar.
+    var tint: Brutal.SidebarTint {
+        switch self {
+        case .general: .general
+        case .capture: .capture
+        case .quickAccess: .quickAccess
+        case .recording: .recording
+        case .shortcuts: .shortcuts
+        case .about: .about
+        }
+    }
+
+    /// The old fill colour, which the panes still use until #1112–#1117 rebuild them.
     var color: Color {
         switch self {
         case .general: Brutal.yellow
@@ -59,96 +60,138 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 final class SettingsNavigation {
     static let shared = SettingsNavigation()
     var section: SettingsSection = .general
+    /// What's typed in the sidebar's search. While it holds a word, the content lists matching rows from every section.
+    var query = ""
+    /// Set while a shortcut recorder is listening, so the arrow keys reach it rather than moving between sections.
+    var recordingShortcut = false
+    /// Bumped by ⌘F to put the keyboard in the search field.
+    var searchFocusRequest = 0
+    /// Bumped to take the keyboard out of the search field, so the arrow keys move between sections. The window opens this
+    /// way too, since SwiftUI would otherwise give its first text field the keyboard.
+    var searchBlurRequest = 0
+
+    var isSearching: Bool { !SettingsSearch.terms(query).isEmpty }
+
+    /// Shows a section, ending any search.
+    func open(_ section: SettingsSection) {
+        query = ""
+        self.section = section
+        searchBlurRequest += 1
+    }
+
+    /// The section above or below the one shown, for the arrow keys.
+    func step(by offset: Int) {
+        let sections = SettingsSection.allCases
+        let index = sections.firstIndex(of: section) ?? 0
+        open(sections[SettingsSearch.step(from: index, by: offset, count: sections.count)])
+    }
 }
 
 struct SettingsView: View {
-    private static let bottomInset = Brutal.windowInset - 6
-    private static let sidebarWidths = 150.0...280.0
-    private static let defaultSidebarWidth = 196.0
-    /// How wide the sidebar is when it's shrunk to icons.
-    private static let railWidth: CGFloat = 52
-    private static let sidebarGap: CGFloat = 22
-    /// Below this window width the sidebar shrinks to icons by itself, whatever was chosen, to leave room for the content.
-    private static let autoCollapseWidth: CGFloat = 920
+    static let sidebarWidths = 180.0...300.0
+    static let defaultSidebarWidth = 228.0
 
     @Setting(PreferenceKey.appSidebarWidth) private var sidebarWidth: Double
-    @Setting(PreferenceKey.appSidebarCollapsed) private var sidebarCollapsed: Bool
-
     @Bindable private var navigation = SettingsNavigation.shared
-    @Environment(\.colorScheme) private var colorScheme
-    @State private var windowWidth: CGFloat = .infinity
-    private var narrow: Bool { windowWidth < Self.autoCollapseWidth }
-    private var railShown: Bool { sidebarCollapsed || narrow }
-    private var section: SettingsSection { navigation.section }
+    @FocusState private var searchFocused: Bool
+    /// The sections with a row that matches the search, which the sidebar keeps at full strength.
+    @State private var matchingSections: Set<SettingsSection> = []
 
     var body: some View {
-        HStack(alignment: .top, spacing: Self.sidebarGap) {
-            Sidebar(selection: $navigation.section, collapsed: railShown, canToggle: !narrow) { sidebarCollapsed.toggle() }
+        HStack(spacing: 0) {
+            // The see-through sidebar runs the window's full height, under the traffic lights.
+            SettingsSidebar(navigation: navigation, searchFocused: $searchFocused, matching: navigation.isSearching ? matchingSections : nil)
+                .padding(.top, GlassWindow.titlebarHeight - 6)
                 .frame(width: shownSidebarWidth)
-                .overlay(alignment: .trailing) {
-                    if !railShown {
-                        // Centred in the gap between the sidebar and what's beside it.
-                        PanelResizeHandle(width: $sidebarWidth, range: Self.sidebarWidths, defaultWidth: Self.defaultSidebarWidth) {
-                            sidebarCollapsed = true
-                        }
-                        .offset(x: 18)
-                    }
-                }
-            VStack(alignment: .leading, spacing: 16) {
-                header
-                ScrollView {
-                    VStack(spacing: 18) {
-                        content
-                    }
-                    .padding(.trailing, Brutal.groupInset + SystemScroller.shared.overlayRoom)
-                    .padding(.bottom, Brutal.sectionGap)
-                    .padding([.leading, .top], 3)
-                }
-                .id(section)
-            }
-        }
-        .padding(.top, GlassWindow.titlebarHeight + 8)
-        .padding(.horizontal, Brutal.windowInset)
-        .padding(.bottom, Self.bottomInset)
-        .frame(minWidth: SettingsWindowController.minSize.width, maxWidth: .infinity, maxHeight: .infinity)
-        .background(alignment: .leading) {
-            // The see-through sidebar runs from the window's edge, under the traffic lights, to the middle of the gap.
-            SidebarMaterial()
-                .frame(width: Brutal.windowInset + shownSidebarWidth + Self.sidebarGap / 2)
+                .frame(maxHeight: .infinity)
+                .background { SidebarMaterial() }
                 .overlay(alignment: .trailing) {
                     Brutal.separator.frame(width: 1)
                 }
+                .overlay(alignment: .trailing) {
+                    PanelResizeHandle(width: $sidebarWidth, range: Self.sidebarWidths, defaultWidth: Self.defaultSidebarWidth)
+                        .offset(x: 7)
+                }
+                .zIndex(1)
+            VStack(spacing: 0) {
+                header
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        if navigation.isSearching {
+                            SettingsSearchResults(navigation: navigation)
+                        } else {
+                            SettingsSectionContent(section: navigation.section)
+                        }
+                    }
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 18)
+                    .padding(.trailing, SystemScroller.shared.overlayRoom)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .id(navigation.isSearching ? "search" : navigation.section.rawValue)
+                .environment(\.settingsQuery, navigation.query)
+            }
         }
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { windowWidth = $0 }
+        .frame(minWidth: SettingsWindowController.minSize.width, maxWidth: .infinity, maxHeight: .infinity)
+        .onPreferenceChange(MatchingSections.self) { matchingSections = $0 }
+        .onChange(of: navigation.searchFocusRequest) {
+            searchFocused = true
+        }
+        .onChange(of: navigation.searchBlurRequest) {
+            blurSearch()
+        }
+        .onAppear {
+            // A turn later, once SwiftUI has handed the search field the keyboard.
+            DispatchQueue.main.async(execute: blurSearch)
+        }
+        .background {
+            // ⌘F, as in other Mac apps' sidebars with a search field.
+            Button("Search") { navigation.searchFocusRequest += 1 }
+                .keyboardShortcut("f")
+                .hidden()
+                .accessibilityHidden(true)
+        }
+    }
+
+    private func blurSearch() {
+        searchFocused = false
+        if let window = NSApp.windows.first(where: { $0.firstResponder is NSText && $0.title == String(localized: "Settings") }) {
+            window.makeFirstResponder(nil)
+        }
     }
 
     private var shownSidebarWidth: CGFloat {
-        railShown ? Self.railWidth : min(max(sidebarWidth, Self.sidebarWidths.lowerBound), Self.sidebarWidths.upperBound)
+        min(max(sidebarWidth, Self.sidebarWidths.lowerBound), Self.sidebarWidths.upperBound)
     }
 
+    /// The section's name in the title bar beside the sidebar, over a separator.
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(section.title)
-                .font(Brutal.title(30))
-                .foregroundStyle(Brutal.ink)
-                .padding(.horizontal, 4)
-                .background(alignment: .bottom) {
-                    // On dark, an underline below the letters: off-white text over the marker would lose its contrast.
-                    if colorScheme == .dark {
-                        section.color.frame(height: 5)
-                    } else {
-                        section.color.frame(height: 12).offset(y: -4)
-                    }
-                }
-            Text(section.subtitle)
-                .font(.scaled(13, weight: .medium))
-                .foregroundStyle(Brutal.faded(0.65))
+        Group {
+            if navigation.isSearching {
+                Text("Results for “\(navigation.query.trimmingCharacters(in: .whitespacesAndNewlines))”")
+            } else {
+                Text(navigation.section.title)
+            }
         }
-        .animation(.easeOut(duration: 0.15), value: section)
+        .font(Brutal.section)
+        .foregroundStyle(Brutal.ink)
+        .lineLimit(1)
+        .truncationMode(.middle)
+        .accessibilityAddTraits(.isHeader)
+        .padding(.horizontal, 28)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: GlassWindow.titlebarHeight)
+        .overlay(alignment: .bottom) {
+            Brutal.separator.frame(height: 1)
+        }
     }
+}
 
-    @ViewBuilder
-    private var content: some View {
+/// One section's groups of rows.
+private struct SettingsSectionContent: View {
+    let section: SettingsSection
+
+    var body: some View {
         switch section {
         case .general: GeneralSettings()
         case .capture: CaptureSettings()
@@ -160,8 +203,76 @@ struct SettingsView: View {
     }
 }
 
+/// The sections with a row matching the search, gathered from each section's results.
+private struct MatchingSections: SwiftUI.PreferenceKey {
+    static let defaultValue: Set<SettingsSection> = []
+
+    static func reduce(value: inout Set<SettingsSection>, nextValue: () -> Set<SettingsSection>) {
+        value.formUnion(nextValue())
+    }
+}
+
+/// Every row that matches the search, under the name of its section, or a note when nothing does.
+private struct SettingsSearchResults: View {
+    let navigation: SettingsNavigation
+    @State private var matching: Set<SettingsSection>?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(SettingsSection.allCases) { section in
+                SectionResults(section: section) { navigation.open(section) }
+            }
+            if matching?.isEmpty == true {
+                EmptyState(symbol: "magnifyingglass", title: "No settings match", message: "Try another word, or clear the search to see every section.")
+                    .frame(maxWidth: .infinity)
+                    // Centred in what the scroll view shows, less the content's 18 pt padding above and below.
+                    .containerRelativeFrame(.vertical, alignment: .center) { height, _ in max(height - 36, 0) }
+            }
+        }
+        .onPreferenceChange(MatchingSections.self) { matching = $0 }
+    }
+}
+
+private struct SectionResults: View {
+    let section: SettingsSection
+    let open: () -> Void
+
+    var body: some View {
+        // The section's groups hide when none of their rows match, so no groups left means the section has no results.
+        Group(subviews: SettingsSectionContent(section: section)) { groups in
+            ZStack(alignment: .topLeading) {
+                Color.clear
+                    .frame(width: 0, height: 0)
+                    .preference(key: MatchingSections.self, value: groups.isEmpty ? [] : [section])
+                if !groups.isEmpty {
+                    VStack(alignment: .leading, spacing: 14) {
+                        heading
+                        ForEach(groups) { $0 }
+                    }
+                    .padding(.bottom, 28)
+                }
+            }
+        }
+        .environment(\.settingsContext, [section.title])
+    }
+
+    private var heading: some View {
+        HStack(spacing: 10) {
+            SettingsSectionTile(section: section, selected: false)
+            Text(section.title)
+                .font(Brutal.section)
+                .foregroundStyle(Brutal.ink)
+                .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 8)
+            Button("Show All", action: open)
+                .buttonStyle(PanelLinkStyle())
+                .accessibilityLabel(Text("Show all of \(section.title)"))
+        }
+    }
+}
+
 /// The bundle's app icon, which already carries its own soft shadow.
-private struct AppIconView: View {
+struct AppIconView: View {
     let size: CGFloat
 
     var body: some View {
@@ -170,167 +281,6 @@ private struct AppIconView: View {
             .interpolation(.high)
             .frame(width: size, height: size)
             .accessibilityLabel("Shot")
-    }
-}
-
-// MARK: Sidebar
-
-private struct Sidebar: View {
-    @Binding var selection: SettingsSection
-    /// Whether it's shrunk to a column of icons.
-    let collapsed: Bool
-    /// False while the window is too narrow for the labels, so the button would do nothing.
-    var canToggle = true
-    let toggle: () -> Void
-
-    var body: some View {
-        VStack(alignment: collapsed ? .center : .leading, spacing: 8) {
-            HStack(spacing: 10) {
-                AppIconView(size: collapsed ? 34 : 44)
-                if !collapsed {
-                    Text("Shot").font(Brutal.title(24)).foregroundStyle(Brutal.ink)
-                }
-            }
-            .padding(.bottom, 14)
-            ForEach(SettingsSection.allCases) { item in
-                SidebarItem(section: item, selected: item == selection, collapsed: collapsed) {
-                    withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                        selection = item
-                    }
-                }
-            }
-            Spacer()
-            OpenGalleryItem(collapsed: collapsed)
-            if canToggle {
-                toggleButton
-            }
-        }
-    }
-
-    private var toggleButton: some View {
-        Button(action: toggle) {
-            Image(systemName: "sidebar.left")
-                .font(.scaled(13, weight: .bold))
-                .foregroundStyle(Brutal.faded(0.7))
-                .frame(width: 30, height: 30)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .brutalTip(collapsedTip)
-        .accessibilityLabel(Text(collapsedTip))
-    }
-
-    private var collapsedTip: LocalizedStringResource { collapsed ? "Show labels" : "Show icons only" }
-}
-
-private struct SidebarItem: View {
-    let section: SettingsSection
-    let selected: Bool
-    let collapsed: Bool
-    let action: () -> Void
-    @State private var hovering = false
-
-    private var button: some View {
-        Button(action: action) {
-            HStack(spacing: 10) {
-                Image(systemName: section.symbol)
-                    .font(.scaled(14, weight: .semibold))
-                    .foregroundStyle(Brutal.ink)
-                    .frame(width: 28, height: 28)
-                    .brutalSurface(section.color, radius: Brutal.Radius.button, shadow: 0, border: 2)
-                if !collapsed {
-                    Text(section.title)
-                        .font(.scaled(13.5, weight: selected ? .heavy : .semibold))
-                        .foregroundStyle(Brutal.ink)
-                    Spacer()
-                }
-            }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 8)
-            .background {
-                if selected {
-                    Color.clear.brutalSurface(Brutal.paper.opacity(0.6), glass: true, radius: Brutal.Radius.panel, shadow: 3)
-                } else if hovering {
-                    RoundedRectangle(cornerRadius: Brutal.Radius.panel, style: .circular).fill(Brutal.ink.opacity(0.06))
-                }
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering = $0 }
-        .accessibilityLabel(Text(section.title))
-        .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-
-    @ViewBuilder
-    var body: some View {
-        if collapsed {
-            // Without its label, the icon needs a tip to say what it is.
-            button.brutalTip(section.title)
-        } else {
-            button
-        }
-    }
-}
-
-/// Opens the gallery's own window, below the sections, with an arrow that says it opens somewhere else.
-private struct OpenGalleryItem: View {
-    let collapsed: Bool
-    @State private var hovering = false
-
-    private var label: some View {
-        Text("Open Gallery")
-            .font(.scaled(13.5, weight: .semibold))
-            .foregroundStyle(Brutal.ink)
-            .lineLimit(1)
-    }
-
-    private var button: some View {
-        Button {
-            GalleryController.shared.show()
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "square.grid.2x2")
-                    .font(.scaled(14, weight: .semibold))
-                    .foregroundStyle(Brutal.ink)
-                    .frame(width: 28, height: 28)
-                    .brutalSurface(Brutal.paper, radius: Brutal.Radius.button, shadow: 0, border: 2)
-                if !collapsed {
-                    // At larger text sizes, or in a long translation, the arrow gives way so the label stays on one line.
-                    ViewThatFits(in: .horizontal) {
-                        HStack(spacing: 10) {
-                            label
-                            Spacer(minLength: 0)
-                            Image(systemName: "arrow.up.right")
-                                .font(.scaled(10, weight: .bold))
-                                .foregroundStyle(Brutal.faded(0.6))
-                                .accessibilityHidden(true)
-                        }
-                        label.frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-            }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 8)
-            .background {
-                if hovering {
-                    RoundedRectangle(cornerRadius: Brutal.Radius.panel, style: .circular).fill(Brutal.ink.opacity(0.06))
-                }
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering = $0 }
-        .accessibilityLabel(Text("Open Gallery"))
-    }
-
-    @ViewBuilder
-    var body: some View {
-        if collapsed {
-            button.brutalTip("Open Gallery")
-        } else {
-            button
-        }
     }
 }
 
@@ -350,7 +300,7 @@ private struct GeneralSettings: View {
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     var body: some View {
-        SettingsCard(title: "Behaviour", symbol: "slider.horizontal.3") {
+        SettingsCard(title: "Behaviour") {
             ToggleRow(title: "Open Shot at login", subtitle: "Start Shot when you log in to your Mac.", isOn: $launchAtLogin)
                 .onChange(of: launchAtLogin) { _, enabled in
                     setLaunchAtLogin(enabled)
@@ -360,11 +310,11 @@ private struct GeneralSettings: View {
             SettingRow(title: "Appearance", subtitle: "Shot's windows and panels. Captures look the same either way.") {
                 BrutalSegmented(selection: $appearance, options: AppearanceMode.allCases.map { ($0, Self.title(of: $0)) })
             }
-            SettingRow(title: "Text size", subtitle: "Text in Shot's windows, panels and toasts. Captures keep their size.", divider: false) {
+            SettingRow(title: "Text size", subtitle: "Text in Shot's windows, panels and toasts. Captures keep their size.") {
                 BrutalSegmented(selection: $textSize, options: TextSize.allCases.map { ($0, Self.title(of: $0)) })
             }
         }
-        SettingsCard(title: "Files", symbol: "folder.fill") {
+        SettingsCard(title: "Files") {
             SettingRow(title: String(localized: "Save folder"), subtitle: (saveFolder as NSString).abbreviatingWithTildeInPath) {
                 HStack(spacing: 10) {
                     Button("Reveal") { NSWorkspace.shared.open(URL(fileURLWithPath: saveFolder)) }
@@ -384,7 +334,7 @@ private struct GeneralSettings: View {
                 BrutalSegmented(selection: $imageFormat, options: [(ImageFormat.png, "PNG"), (.jpeg, "JPEG")])
             }
             ToggleRow(title: "Scale Retina captures to 1×", subtitle: "Halves pixel size on 2× displays. Smaller files, less detail.", isOn: $downscaleRetina)
-            ToggleRow(title: "Save edits over the original", subtitle: "The editor's Save replaces the screenshot. Shot keeps the original, so you can reopen it and undo your edits. Off writes a new copy instead.", isOn: $savesOverOriginal, divider: false)
+            ToggleRow(title: "Save edits over the original", subtitle: "The editor's Save replaces the screenshot. Shot keeps the original, so you can reopen it and undo your edits. Off writes a new copy instead.", isOn: $savesOverOriginal)
         }
     }
 
@@ -448,13 +398,13 @@ private struct CaptureSettings: View {
     @Setting(PreferenceKey.browserPageOnly) private var browserPageOnly: Bool
 
     var body: some View {
-        SettingsCard(title: "After capture", symbol: "bolt.fill") {
+        SettingsCard(title: "After capture") {
             ToggleRow(title: "Save to folder", isOn: $save)
             ToggleRow(title: "Copy to clipboard", isOn: $copy)
             ToggleRow(title: "Show Quick Access", isOn: $quickAccess)
-            ToggleRow(title: "Open in editor", subtitle: "Opens the annotation editor instead of Quick Access.", isOn: $openEditor, divider: false)
+            ToggleRow(title: "Open in editor", subtitle: "Opens the annotation editor instead of Quick Access.", isOn: $openEditor)
         }
-        SettingsCard(title: "Selection", symbol: "plus.viewfinder") {
+        SettingsCard(title: "Selection") {
             ToggleRow(title: "Magnifier", subtitle: "8× loupe next to the pointer for pixel-precise edges.", isOn: $magnifier)
             ToggleRow(title: "Crosshair", subtitle: "Full-screen guide lines through the pointer.", isOn: $crosshair)
             ToggleRow(title: "Size label", subtitle: "Width and height in pixels next to the pointer while you drag.", isOn: $sizeLabel)
@@ -471,8 +421,7 @@ private struct CaptureSettings: View {
                             Permissions.requestAccessibility()
                         }
                     }
-                ),
-                divider: false
+                )
             )
         }
     }
@@ -486,15 +435,16 @@ private struct QuickAccessSettings: View {
     private let color = SettingsSection.quickAccess.color
 
     var body: some View {
-        SettingsCard(title: "Placement", symbol: "rectangle.bottomhalf.inset.filled") {
+        SettingsCard(title: "Placement") {
             SettingRow(title: "Screen corner") {
                 BrutalSegmented(selection: $position, options: [(QuickAccessPosition.left, "Bottom left"), (.right, "Bottom right")])
             }
-            SettingRow(title: "Auto-close", subtitle: "Hovering a card pauses the timer.", divider: false) {
+            SettingRow(title: "Auto-close", subtitle: "Hovering a card pauses the timer.") {
                 BrutalSegmented(selection: $duration, options: [(4.0, "4s"), (8.0, "8s"), (15.0, "15s"), (30.0, "30s"), (0.0, "Never")])
             }
         }
         ScreenPreview(position: position, color: color)
+            .hiddenWhileSearching()
     }
 }
 
@@ -557,22 +507,22 @@ private struct RecordingSettings: View {
     }
 
     var body: some View {
-        SettingsCard(title: "Starting", symbol: "record.circle") {
-            ToggleRow(title: "Adjust before recording", subtitle: "Shows the frame handles and options first. Hold ⌥ as you finish the selection to show them once.", isOn: $adjust, divider: false)
+        SettingsCard(title: "Starting") {
+            ToggleRow(title: "Adjust before recording", subtitle: "Shows the frame handles and options first. Hold ⌥ as you finish the selection to show them once.", isOn: $adjust)
         }
-        SettingsCard(title: "Video", symbol: "film.fill") {
+        SettingsCard(title: "Video") {
             SettingRow(title: "Frame rate", subtitle: frameRateSubtitle) {
                 BrutalSegmented(selection: $fps, options: frameRates.map { ($0, "\($0) fps") })
             }
             ToggleRow(title: "Show cursor", isOn: $showsCursor)
             ToggleRow(title: "Show clicks", subtitle: "Draws a circle where you click.", isOn: $showsClicks)
             ToggleRow(title: "Region border", subtitle: "A red border around the recorded area. It never appears in the video.", isOn: $border)
-            ToggleRow(title: "Copy to clipboard", subtitle: "Copies the finished recording, ready to paste as a file.", isOn: $copy, divider: false)
+            ToggleRow(title: "Copy to clipboard", subtitle: "Copies the finished recording, ready to paste as a file.", isOn: $copy)
         }
         AudioSettings()
         CameraSettings()
-        SettingsCard(title: "GIF export", symbol: "photo.stack.fill") {
-            SettingRow(title: "From the Quick Access card", subtitle: "Uses the video editor's last GIF settings: \(Preferences().videoExportOptions.gifSummary)", divider: false) {
+        SettingsCard(title: "GIF export") {
+            SettingRow(title: "From the Quick Access card", subtitle: "Uses the video editor's last GIF settings: \(Preferences().videoExportOptions.gifSummary)") {
                 BrutalBadge(text: "GIF")
             }
         }
@@ -591,7 +541,7 @@ private struct AudioSettings: View {
     }
 
     var body: some View {
-        SettingsCard(title: "Audio", symbol: "waveform") {
+        SettingsCard(title: "Audio") {
             ToggleRow(title: "Microphone", subtitle: "macOS asks for permission on first use. Mute it from the recording controls.", isOn: $microphone)
             SettingRow(title: "Microphone input") {
                 DevicePicker(devices: devices, selection: $deviceID)
@@ -609,7 +559,7 @@ private struct AudioSettings: View {
                     .buttonStyle(BrutalButtonStyle())
                 }
             }
-            ToggleRow(title: "System audio", subtitle: "Sound from other apps. Shot's own sounds are excluded.", isOn: $systemAudio, divider: false)
+            ToggleRow(title: "System audio", subtitle: "Sound from other apps. Shot's own sounds are excluded.", isOn: $systemAudio)
         }
         .onAppear {
             devices = CaptureDevices.microphones()
@@ -631,7 +581,7 @@ private struct CameraSettings: View {
     private let preview = DevicePreview.camera
 
     var body: some View {
-        SettingsCard(title: "Camera", symbol: "web.camera.fill") {
+        SettingsCard(title: "Camera") {
             ToggleRow(title: "Camera bubble", subtitle: "Round webcam overlay recorded with your screen. Drag to move, double-click to resize.", isOn: $camera)
             SettingRow(title: "Camera") {
                 DevicePicker(devices: devices, selection: $deviceID)
@@ -655,7 +605,7 @@ private struct CameraSettings: View {
                     .buttonStyle(BrutalButtonStyle())
                 }
             }
-            SettingRow(title: "Bubble size", divider: false) {
+            SettingRow(title: "Bubble size") {
                 BrutalSegmented(selection: $size, options: CameraBubbleSize.allCases.map { ($0, $0.title) })
             }
         }
@@ -711,10 +661,10 @@ private struct ShortcutSettings: View {
     }
 
     var body: some View {
-        SettingsCard(title: "macOS screenshot keys", symbol: "command") {
-            ToggleRow(title: "Use Shot for ⌘⇧4 and ⌘⇧5", subtitle: "Turns off the matching macOS shortcuts, so these keys and a keyboard's screenshot key open Shot. macOS gets them back while Shot isn't running, or when you turn this off.", isOn: useShot, divider: replacesSystemScreenshots && macOSOwnsKeys)
+        SettingsCard(title: "macOS screenshot keys") {
+            ToggleRow(title: "Use Shot for ⌘⇧4 and ⌘⇧5", subtitle: "Turns off the matching macOS shortcuts, so these keys and a keyboard's screenshot key open Shot. macOS gets them back while Shot isn't running, or when you turn this off.", isOn: useShot)
             if replacesSystemScreenshots && macOSOwnsKeys {
-                SettingRow(title: "macOS still uses these keys", subtitle: "Turn off the Screenshots shortcuts under Keyboard Shortcuts.", divider: false) {
+                SettingRow(title: "macOS still uses these keys", subtitle: "Turn off the Screenshots shortcuts under Keyboard Shortcuts.") {
                     Button("Open") { SystemShortcuts.openKeyboardSettings() }
                         .buttonStyle(BrutalButtonStyle())
                 }
@@ -724,10 +674,10 @@ private struct ShortcutSettings: View {
             macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
         }
 
-        SettingsCard(title: "Global hotkeys", symbol: "keyboard.fill") {
+        SettingsCard(title: "Global hotkeys") {
             let actions = ShotAction.allCases.filter(\.hasShortcut)
-            ForEach(Array(actions.enumerated()), id: \.element) { index, action in
-                SettingRow(title: action.title, divider: index < actions.count - 1) {
+            ForEach(actions, id: \.self) { action in
+                SettingRow(title: action.title) {
                     ShortcutRecorderView(action: action)
                 }
             }
@@ -746,6 +696,7 @@ private struct ShortcutSettings: View {
                 .buttonStyle(BrutalButtonStyle())
         }
         .padding(.horizontal, 4)
+        .hiddenWhileSearching()
     }
 }
 
@@ -796,17 +747,18 @@ private struct AboutSettings: View {
         }
         .padding(16)
         .glassCard()
+        .hiddenWhileSearching()
 
-        SettingsCard(title: "Updates", symbol: "arrow.down.circle.fill") {
+        SettingsCard(title: "Updates") {
             ToggleRow(title: "Check for updates automatically", subtitle: "Shot asks GitHub once a day whether a new version is out, and installs it when you agree. Nothing else is sent.", isOn: $updater.automaticallyChecks)
-            SettingRow(title: "Check now", subtitle: "Looks for a new version once, even when automatic checks are off.", divider: false) {
+            SettingRow(title: "Check now", subtitle: "Looks for a new version once, even when automatic checks are off.") {
                 Button("Check") { updater.checkForUpdates() }
                     .buttonStyle(BrutalButtonStyle())
                     .disabled(!updater.canCheckForUpdates)
             }
         }
 
-        SettingsCard(title: "Permissions", symbol: "lock.fill") {
+        SettingsCard(title: "Permissions") {
             SettingRow(title: "Screen & System Audio Recording", subtitle: "Required for every capture.") {
                 HStack(spacing: 10) {
                     BrutalBadge(text: screenGranted ? "GRANTED" : "MISSING", dot: screenGranted ? Brutal.success : nil)
@@ -835,7 +787,7 @@ private struct AboutSettings: View {
                 }
             }
             PermissionRow(title: "Microphone", subtitle: "Only needed to record your voice.", mediaType: .audio, status: $microphoneStatus, pane: "Privacy_Microphone")
-            PermissionRow(title: "Camera", subtitle: "Only needed for the camera bubble.", mediaType: .video, status: $cameraStatus, pane: "Privacy_Camera", divider: false)
+            PermissionRow(title: "Camera", subtitle: "Only needed for the camera bubble.", mediaType: .video, status: $cameraStatus, pane: "Privacy_Camera")
         }
         // A menu bar app may not become active when Settings opens or regains focus, so also re-read when the window
         // appears and when it becomes key.
@@ -843,7 +795,7 @@ private struct AboutSettings: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in refreshPermissions() }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in refreshPermissions() }
 
-        SettingsCard(title: "Data", symbol: "externaldrive.fill") {
+        SettingsCard(title: "Data") {
             SettingRow(title: String(localized: "Save folder"), subtitle: (Preferences().saveFolder.path as NSString).abbreviatingWithTildeInPath) {
                 Button("Open") {
                     let folder = Preferences().saveFolder
@@ -864,7 +816,7 @@ private struct AboutSettings: View {
                 }
                 .buttonStyle(BrutalButtonStyle(confirmingClear ? .main : .secondary, destructive: confirmingClear))
             }
-            SettingRow(title: "Reset all settings", subtitle: "Restores every setting and shortcut. Your captures stay.", divider: false) {
+            SettingRow(title: "Reset all settings", subtitle: "Restores every setting and shortcut. Your captures stay.") {
                 Button(confirmingReset ? "Click to confirm" : "Reset") {
                     if confirmingReset {
                         Preferences.resetAll()
@@ -879,7 +831,7 @@ private struct AboutSettings: View {
             }
         }
 
-        SettingsCard(title: "Project", symbol: "chevron.left.forwardslash.chevron.right") {
+        SettingsCard(title: "Project") {
             SettingRow(title: "Source code", subtitle: "Free and open source under the GPL-3.0 license.") {
                 Button("GitHub") { NSWorkspace.shared.open(Self.repository) }
                     .buttonStyle(BrutalButtonStyle())
@@ -900,7 +852,7 @@ private struct AboutSettings: View {
                 Button("Sponsor") { NSWorkspace.shared.open(Self.sponsors) }
                     .buttonStyle(BrutalButtonStyle())
             }
-            SettingRow(title: "Report a problem", subtitle: "Bug reports and ideas are welcome.", divider: false) {
+            SettingRow(title: "Report a problem", subtitle: "Bug reports and ideas are welcome.") {
                 Button("New Issue") { NSWorkspace.shared.open(Self.repository.appending(path: "issues/new/choose")) }
                     .buttonStyle(BrutalButtonStyle())
             }
@@ -918,10 +870,9 @@ private struct PermissionRow: View {
     let mediaType: AVMediaType
     @Binding var status: AVAuthorizationStatus
     let pane: String
-    var divider = true
 
     var body: some View {
-        SettingRow(title: title, subtitle: subtitle, divider: divider) {
+        SettingRow(title: title, subtitle: subtitle) {
             HStack(spacing: 10) {
                 BrutalBadge(text: label, dot: status == .authorized ? Brutal.success : nil)
                 // macOS asks only while the status is not determined; after a denial only System Settings can change it.
