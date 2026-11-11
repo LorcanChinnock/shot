@@ -43,7 +43,7 @@
 
 ### Capture and Quick Access
 
-<img src="docs/media/capture.gif" width="720" alt="Pressing Tab to step the capture between an area, a window and the full screen, dragging out an area with the magnifier, then the Quick Access card sliding into the corner">
+<img src="docs/media/capture.gif" width="720" alt="Pressing Tab to step the capture from a window to the full screen and on to an area, turning on the magnifier, dragging out an area around a support ticket, then the Quick Access card sliding into the corner">
 
 ### Annotate anything
 
@@ -55,7 +55,7 @@
 
 ### Trim and export to GIF
 
-<img src="docs/media/video-editor.png" width="720" alt="The video editor with More tools open: a cut in the recording, a Best day label and an arrow over the video, the annotation tools, and the GIF export options">
+<img src="docs/media/video-editor.png" width="720" alt="The video editor with the Export panel open: a cut in the recording, a Best day label and an arrow over the video, and the GIF options with the estimated size">
 
 ## Install
 

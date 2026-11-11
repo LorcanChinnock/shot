@@ -4,7 +4,7 @@ summary: "What each part of Settings controls."
 group: Reference
 ---
 
-![Settings › General in light mode, with the sidebar listing every section and the Behaviour and Files cards: Play capture sound is on](../../../docs/media/settings.png)
+![Settings › General in light mode, with the sidebar listing every section and the Behaviour and Files groups: Play capture sound is on](../../../docs/media/settings.png)
 
 ## Open Settings
 
@@ -38,7 +38,7 @@ Shot's windows and panels follow your Mac's light or dark appearance. To pick on
 1. Open **Settings › General**.
 2. Next to **Appearance**, choose **System**, **Light** or **Dark**.
 
-![Settings › General in dark mode, with Appearance set to Dark, the sidebar listing every section and the Behaviour and Files cards](../../../docs/media/settings-dark.png)
+![Settings › General in dark mode, with Appearance set to Dark, the sidebar listing every section and the Behaviour and Files groups](../../../docs/media/settings-dark.png)
 
 > [!NOTE]
 > This changes Shot's own windows and panels only. Your captures look the same either way.

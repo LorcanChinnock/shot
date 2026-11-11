@@ -4,7 +4,7 @@ summary: "Trim, cut, split, crop and add clips to a recording, then save it."
 group: Edit and share
 ---
 
-![The video editor timeline with an arrow and a text label on their own lanes above the clips, and the pink seam where a cut was made](../../../docs/media/video-timeline.png)
+![The video editor timeline with a Best day label and an arrow on their own lanes above the clip, and the mark where a 4-second cut was made](../../../docs/media/video-timeline.png)
 
 ## Open the video editor
 
