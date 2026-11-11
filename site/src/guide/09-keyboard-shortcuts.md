@@ -20,10 +20,12 @@ Shot takes these keys over from macOS while it runs, once it has Screen Recordin
 ## Change a shortcut
 
 1. Open **Settings › Shortcuts**.
-2. Click a shortcut, then press the new keys. They must include <kbd>⌘</kbd>, <kbd>⌥</kbd> or <kbd>⌃</kbd>.
-3. <kbd>Esc</kbd> cancels, and <kbd>Delete</kbd> clears the shortcut.
+2. Under **Global**, click a shortcut. It says **Press keys…** while it waits.
+3. Press the new keys. They must include <kbd>⌘</kbd>, <kbd>⌥</kbd> or <kbd>⌃</kbd>. <kbd>Esc</kbd> cancels, and <kbd>Delete</kbd> clears the shortcut, which then says **Record Shortcut**.
 
-Shot won't take a shortcut that another action already uses, or <kbd>⌘Q</kbd>, <kbd>⌘W</kbd>, <kbd>⌘Tab</kbd>, <kbd>⌘Space</kbd>, <kbd>⌘H</kbd> or <kbd>⌘M</kbd>. **Restore Defaults** puts them all back, and turns **Use Shot for ⌘⇧4 and ⌘⇧5** back on.
+Shot won't take a shortcut that another action already uses, or <kbd>⌘Q</kbd>, <kbd>⌘W</kbd>, <kbd>⌘Tab</kbd>, <kbd>⌘Space</kbd>, <kbd>⌘H</kbd> or <kbd>⌘M</kbd>. **Restore Defaults**, at the top right of the window, puts them all back and turns **Use Shot for ⌘⇧4 and ⌘⇧5** back on.
+
+Under **While picking what to capture**, the same pane lists the main keys from [While selecting](#while-selecting).
 
 ## Keep the macOS screenshot tool
 

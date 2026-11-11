@@ -85,10 +85,10 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             })
             menu.addItem(.separator())
         }
-        menu.addItem(action(.screenshot, symbol: "viewfinder"))
+        menu.addItem(action(.screenshot, symbol: ShotAction.screenshot.symbol))
         if !state.isRecording {
-            menu.addItem(action(.record, symbol: "record.circle", tint: .record))
-            menu.addItem(action(.pickColor, symbol: "eyedropper"))
+            menu.addItem(action(.record, symbol: ShotAction.record.symbol, tint: .record))
+            menu.addItem(action(.pickColor, symbol: ShotAction.pickColor.symbol))
         }
         menu.addItem(row(String(localized: "Gallery"), symbol: "square.grid.2x2") {
             GalleryController.shared.show()
