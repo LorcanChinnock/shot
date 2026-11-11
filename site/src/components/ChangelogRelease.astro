@@ -1,0 +1,45 @@
+---
+import { prURL, releaseURL, type Release } from '../lib/changelog';
+
+interface Props {
+  release: Release;
+  latest?: boolean;
+  /** The "Big one" sentence from src/data/changelog-highlights.ts. */
+  highlight?: string;
+}
+const { release, latest = false, highlight } = Astro.props;
+const { version, date, entries, summary } = release;
+const labels = { new: 'New', fixed: 'Fixed', faster: 'Faster', changed: 'Changed' };
+// The New filter shows features and breaking changes, and Fixes shows bug fixes and speed-ups.
+const group = (kind: keyof typeof labels) => (kind === 'new' || kind === 'changed' ? 'is-new' : 'is-fix');
+const day = new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+---
+
+<li class:list={['changelog-release', 'reveal', { latest }]} id={`v${version}`}>
+  <div class="release-meta">
+    <span class="release-dot" aria-hidden="true"></span>
+    <h2><a href={releaseURL(version)}>{version}</a></h2>
+    <time datetime={date}>{day}</time>
+    {latest && <span class="badge">Latest</span>}
+  </div>
+  <div class:list={['release-card', latest ? 'ink-card' : 'card']}>
+    {highlight && (
+      <p class="big-one"><span class="big-one-label">Big one</span><span>{highlight}</span></p>
+    )}
+    {summary && <p class="summary">{summary}</p>}
+    {entries.length > 0 && (
+      <ul class="entries">
+        {entries.map((e) => (
+          <li class:list={['entry', group(e.kind)]}>
+            <span class:list={['kind', e.kind]}>{labels[e.kind]}</span>
+            <span class="change">
+              <Fragment set:html={e.html} />
+              {e.scope && <> <span class:list={['tag', e.area]}>{e.scope}</span></>}
+            </span>
+            {e.pr && <a class="pr" href={prURL(e.pr)} aria-label={`Pull request ${e.pr}`}>#{e.pr}</a>}
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+</li>

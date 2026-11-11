@@ -34,7 +34,7 @@ All of them are classes in `src/styles/global.css`, so each page uses them witho
 - **Buttons**: `.button` is the ink button and `.button.small` the header's. `.button.secondary` is the quiet one beside it, and `.go` is a plain link with an arrow.
 - **Install block** (`Copy.astro`): the command on the dark band with a white Copy button that turns green and says Copied ✓, or says "Press ⌘C" and selects the command when the clipboard is blocked.
 - **Key caps**: `kbd.key` in text and `kbd.key.big` in headings, `.accent` for a yellow one. They press into their shadow on hover, never plain text.
-- **Badges and tags**: `.badge` (Latest), `.badge.dark` (Free), `.badge.quiet` (beta), and the changelog's `.tag.capture`, `.editor`, `.gallery` and `.release`.
+- **Badges and tags**: `.badge` (Latest), `.badge.dark` (Free), `.badge.quiet` (beta), and the changelog's `.tag.capture`, `.editor`, `.gallery` and `.release`. A `.tag` with none of these is light grey, and every tag stays light in dark.
 - **Cards**: `.card` is quiet, `.ink-card` has ink, and `.tilt` tilts a card at rest (`--tilt`) and straightens and lifts it on hover. `.panel.sand` and the other pastels hold product shots.
 - **Tabs and questions**: `.tabs` with `role="tab"` buttons, or with radio `<label>`s for tabs that need no script: the labels look like tabs, the arrow keys move between them, and the page shows the checked one's panel with `:has()` (the landing page's Capture section). `details.faq` opens without a script.
 - **Product shots** (`Window.astro`): a screenshot or loop on a pastel panel, tilted with a deep shadow, straightening on hover. Marks go in its `marks` slot so they're placed against the shot. The landing hero (`HeroStage.astro`) is the editor screenshot on the sand panel, with the capture bar under it, the Quick Access card floating beside it, badges 1–3 on the capture bar, the arrow and Copy, and a Copied toast.
@@ -47,6 +47,12 @@ All of them are classes in `src/styles/global.css`, so each page uses them witho
   - Right: "On this page", with the section you're reading marked in red, and a dark "Try it now" card with ⌘⇧4 or ⌘⇧5 on pages about screenshots or recordings.
   - The search is in the header, opens its results under the field, and takes `/` to focus. Code blocks have a Copy button that says Copied ✓ in green, or "Press ⌘C" with the code selected.
   - Between 1000 and 1280px "On this page" moves under the page list. Under 1000px both lists become cards that open, above the article, and the "Try it now" card is hidden.
+
+- **Changelog** (`pages/changelog/index.astro` and `components/ChangelogRelease.astro`, from the board **Site · changelog**): "What's new" with the highlighter under "new", an RSS feed link, and Everything, New and Fixes filters. The filters are radio labels styled as one segmented control, and `:has()` hides the other entries, so they need no script.
+  - Each release is a row on a timeline: the version in SF Mono with its date on the left, beside a dot on a grey line, and its changes in a card on the right. The latest has the ink outline, a pulsing red dot and the Latest badge. The rest are quiet cards. Under 760px the version and date sit in a row above the card.
+  - Each change has a kind pill (New in ink, Fixed and Faster quiet, Changed outlined), its text, a scope tag and its pull request number. `src/lib/changelog.ts` maps release-please's headings and `**scope:**` prefixes, and gives capture, editor, gallery and release areas their tag colours. Other areas get the neutral tag.
+  - A release can have a "Big one" sticky note across the top of its card, from `src/data/changelog-highlights.ts`. It's on the sticky-note yellow, so its Caveat label follows the sticky-notes-only rule.
+  - The eight newest releases show, and the rest open under "Show older releases".
 
 ## Motion
 

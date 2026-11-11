@@ -280,11 +280,11 @@ kbd.key.accent { background: var(--accent); color: var(--on-accent); }
 .badge.dark { padding: 1px 8px; font-size: 11px; font-weight: 700; color: var(--bg); background: var(--ink); box-shadow: none; }
 .badge.quiet { padding: 1px 6px; font-size: 11px; font-weight: 600; border-radius: 5px; color: var(--muted); background: var(--well); box-shadow: none; }
 
-/* A scope tag, for the changelog's areas. */
+/* A scope tag, for the changelog's areas. Like paper, it keeps its light colour in dark, so its dark text stays readable. */
 .tag {
   display: inline-block; padding: 0 7px;
   font: 700 12px/1.6 var(--font); color: #16161a;
-  background: var(--tag, var(--control)); border-radius: 6px;
+  background: var(--tag, #f1efea); border-radius: 6px;
 }
 .tag.capture { --tag: var(--tag-capture); }
 .tag.editor { --tag: var(--tag-editor); }
@@ -474,7 +474,7 @@ section { padding-block: clamp(48px, 8vw, 96px); }
 .mark b { font: 900 15px/1 var(--mono); letter-spacing: -0.04em; padding: 4px 5px; border-radius: 6px; background: var(--paper); color: var(--ink); box-shadow: 0 0 0 1.5px var(--line); }
 .mark b i { font-style: normal; color: var(--accent); -webkit-text-stroke: 0.5px var(--line); }
 
-/* ---------- Prose: the guide's base (its page adds the board's look) and the long-form pages until #1126 and #1127 restyle them ---------- */
+/* ---------- Prose: the guide's base (its page adds the board's look) and the long-form pages until #1127 restyles them ---------- */
 
 .prose { padding: clamp(20px, 4vw, 44px); }
 .prose h1 { margin-bottom: 20px; }
