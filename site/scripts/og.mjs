@@ -99,7 +99,6 @@ const page = ({ chip, chipColor, headline, size, keys, scene }) => `<!doctype ht
   .sc-list i.on { background: var(--mint); } .sc-list i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--paper); border: 2px solid var(--line); } .sc-list i.on::after { left: 27px; }
   .sc-list .btn b { width: auto; height: auto; background: none; border: 0; border-radius: 0; font-size: 24px; } .sc-list .btn { justify-content: center; background: var(--yellow); color: var(--on-accent); }
 </style>
-<div class="backdrop"><div class="blob pink"></div><div class="blob yellow"></div><div class="blob mint"></div><div class="blob sky"></div></div>
 <div class="brand"><img src="${url('../public/icon-256.png')}"><span>Shot</span></div>
 <div class="intro">
   <span class="chip" style="--chip: var(--${chipColor})">${chip}</span>

@@ -1,5 +1,5 @@
 ---
-/** A one-line shell command with a copy button. */
+/** A one-line shell command on the dark band, with a Copy button that says Copied ✓. */
 interface Props {
   command: string;
 }
@@ -8,19 +8,39 @@ const { command } = Astro.props;
 const parts = command.split('/');
 ---
 
-<div class="copy card solid">
+<div class="copy">
   <code>{parts.map((part, i) => (i ? <Fragment>/<wbr />{part}</Fragment> : part))}</code>
-  <button type="button" class="button small white" data-copy={command}>Copy</button>
+  <button type="button" data-copy={command}>Copy</button>
   <span class="status" aria-live="polite"></span>
 </div>
 
 <style>
-  .copy { display: flex; min-width: 0; align-items: center; gap: 12px; padding: 6px 6px 6px 16px; max-width: 100%; }
-  code { font-size: 14px; font-weight: 600; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .copy {
+    display: flex; align-items: center; gap: 10px;
+    min-width: 0; max-width: 100%;
+    padding: 6px 6px 6px 14px;
+    color: var(--band-text); background: var(--band);
+    border-radius: 14px;
+  }
+  code { flex: 1; min-width: 0; font: 600 13.5px/1.45 var(--mono); overflow-wrap: anywhere; }
   /* Generated content, so selecting the command (triple-click included) never picks up the prompt. */
-  code::before { content: '$ '; opacity: 0.45; }
-  button { flex: none; min-width: 78px; }
+  code::before { content: '$ '; color: var(--accent); font-weight: 700; }
+  button {
+    flex: none; min-width: 84px; min-height: 36px; padding: 7px 13px;
+    font: 800 13px/1.2 var(--font); color: #16161a;
+    background: #fff;
+    border: 1.5px solid #000; border-radius: 9px;
+    box-shadow: 0 2px 0 #000;
+    cursor: pointer;
+    transition: transform var(--press), box-shadow var(--press), background-color 200ms;
+  }
+  button:active { transform: translateY(2px); box-shadow: 0 0 0 #000; }
+  button.done { background: var(--copied); }
+  button:focus-visible { outline-color: var(--band-text); }
   .status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  @media (prefers-reduced-motion: reduce) {
+    button:active { transform: none; box-shadow: 0 2px 0 #000; filter: brightness(0.92); }
+  }
 </style>
 
 <script>
@@ -31,7 +51,8 @@ const parts = command.split('/');
     button.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(button.dataset.copy!);
-        button.textContent = 'Copied';
+        button.textContent = 'Copied ✓';
+        button.classList.add('done');
         status.textContent = 'Copied to the clipboard';
       } catch {
         button.textContent = 'Press ⌘C';
@@ -44,6 +65,7 @@ const parts = command.split('/');
       clearTimeout(reset);
       reset = setTimeout(() => {
         button.textContent = 'Copy';
+        button.classList.remove('done');
         status.textContent = '';
       }, 1600);
     });
