@@ -15,6 +15,7 @@ enum SettingsWindowController {
     static var windowID: CGWindowID? { window.map { CGWindowID($0.windowNumber) } }
 
     static func show(section: SettingsSection? = nil) {
+        Perf.measureWindowOpen("settings")
         if let section {
             SettingsNavigation.shared.open(section)
         }

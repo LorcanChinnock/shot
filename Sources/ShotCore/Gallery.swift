@@ -278,6 +278,23 @@ public enum Gallery {
         !items.isEmpty && items.allSatisfy { $0.kind.isEditable || $0.kind == .gif && hasProject($0.url) }
     }
 
+    /// What the selection bar shows for `items`: how many, whether Edit applies, and the folder they're all in. It changes
+    /// far less often than the selection does (moving with the arrow keys keeps it the same), so the bar redraws only
+    /// when it changes.
+    public struct SelectionSummary: Equatable, Sendable {
+        public let count: Int
+        public let canEdit: Bool
+        /// The folder every item is in, which Move to greys out, or nil when they're in different folders.
+        public let sharedFolder: String?
+
+        public init(_ items: [GalleryItem]) {
+            count = items.count
+            canEdit = Gallery.canEdit(items) { _ in true }
+            let folders = Set(items.map(\.folder))
+            sharedFolder = folders.count == 1 ? folders.first : nil
+        }
+    }
+
     /// The next item to select after an arrow key, clamped to the ends.
     public static func moved(from index: Int?, by step: Int, count: Int) -> Int? {
         guard count > 0 else {

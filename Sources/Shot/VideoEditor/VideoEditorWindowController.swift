@@ -83,6 +83,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             GlassWindow.present(existing.window)
             return
         }
+        let opening = Perf.begin("Window open")
         let saved = flat ? nil : VersionWriter.project(of: url, in: .app)
         let file = saved?.original ?? url
         Task {
@@ -103,6 +104,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             let controller = VideoEditorWindowController(model: model, opened: url)
             open.append(controller)
             GlassWindow.present(controller.window)
+            Perf.measureWindowOpen("video editor", since: opening)
             if let missing = saved?.missing, !missing.isEmpty {
                 Toast.error("Opened without \(missing.map(\.lastPathComponent).formatted(.list(type: .and))), which can't be found")
             }

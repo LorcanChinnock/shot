@@ -114,6 +114,7 @@ final class QuickAccessController {
     }
 
     private func add(_ card: QuickAccessCard) {
+        let opening = Perf.begin("Quick Access open")
         settleTask?.cancel()
         ensurePanel()
         // The panel only grows now, so the card that was in front isn't clipped as it moves behind the new one. It takes
@@ -128,6 +129,7 @@ final class QuickAccessController {
             withAnimation(Motion.arrive) {
                 self.model.cards.append(card)
             }
+            Perf.endAtCommit("Quick Access open", opening, "card")
             while self.model.cards.count > Self.maxCards {
                 self.remove(self.model.cards[0].id)
             }

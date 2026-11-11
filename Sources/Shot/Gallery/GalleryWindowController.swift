@@ -38,6 +38,7 @@ enum GalleryWindowController {
     static var windowID: CGWindowID? { window.map { CGWindowID($0.windowNumber) } }
 
     static func show() {
+        Perf.measureWindowOpen("gallery")
         if window == nil {
             makeWindow()
         }

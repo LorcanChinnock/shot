@@ -198,9 +198,23 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         return item
     }
 
+    /// Icons already made, since the menu is rebuilt on every open. Record's red differs between light and dark, so its
+    /// icon is kept for each appearance.
+    private static var icons: [String: NSImage] = [:]
+
     /// The board's 15 pt line icons. Untinted icons stay templates, so the menu draws them in its text colour and inverts
     /// them on the highlight, the way every native menu does. Record keeps its red.
     private static func icon(_ symbol: String, tint: Tint?) -> NSImage? {
+        let key = tint == nil ? symbol : "\(symbol) record \(NSApp.effectiveAppearance.name.rawValue)"
+        if let cached = icons[key] {
+            return cached
+        }
+        let image = makeIcon(symbol, tint: tint)
+        icons[key] = image
+        return image
+    }
+
+    private static func makeIcon(_ symbol: String, tint: Tint?) -> NSImage? {
         var configuration = NSImage.SymbolConfiguration(pointSize: 13, weight: .regular)
         if tint == .record {
             configuration = configuration.applying(.init(paletteColors: [NSColor(Brutal.record)]))

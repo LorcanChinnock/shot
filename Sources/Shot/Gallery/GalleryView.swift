@@ -320,46 +320,60 @@ private struct GalleryHeading: View {
 /// button. It's its own view, so only it re-evaluates when the selection changes, not the grid around it.
 private struct GallerySelectionBar: View {
     let model: GalleryModel
-    @State private var tagging = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        let selected = model.selectedItems
+        let summary = Gallery.SelectionSummary(model.selectedItems)
         ZStack {
-            if !selected.isEmpty {
-                bar(selected)
+            if summary.count > 0 {
+                GallerySelectionBarContent(model: model, summary: summary, folders: model.folders, rootName: model.rootName)
+                    .equatable()
                     .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .animation(Motion.animation(.panelArrive, reduceMotion: reduceMotion), value: selected.isEmpty)
+        .animation(Motion.animation(.panelArrive, reduceMotion: reduceMotion), value: summary.count == 0)
+    }
+}
+
+/// The selection bar's buttons. It takes the selection's summary rather than the items, and its actions read the selection
+/// when clicked, so moving through the grid with the arrow keys doesn't rebuild its buttons, tips and menu.
+private struct GallerySelectionBarContent: View, Equatable {
+    let model: GalleryModel
+    let summary: Gallery.SelectionSummary
+    let folders: [String]
+    let rootName: String
+    @State private var tagging = false
+
+    nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.summary == rhs.summary && lhs.folders == rhs.folders && lhs.rootName == rhs.rootName
     }
 
-    private func bar(_ selected: [GalleryItem]) -> some View {
+    var body: some View {
         HStack(spacing: 6) {
-            Text("\(selected.count) selected")
+            Text("\(summary.count) selected")
                 .font(.scaled(13, weight: .semibold, tabular: true))
                 .foregroundStyle(Brutal.ink)
                 .padding(.trailing, 6)
                 .lineLimit(1)
-            Button("Edit") { model.edit(selected) }
+            Button("Edit") { model.edit(model.selectedItems) }
                 .buttonStyle(BrutalButtonStyle(.toolbar))
                 // Whether a GIF has a project is read from the store only on a click, so one never greys it out.
-                .disabled(!Gallery.canEdit(selected) { _ in true })
+                .disabled(!summary.canEdit)
                 .brutalTip("Open in the editor (Return)")
-            BrutalDropdown(title: "Move to", entries: moveEntries(selected)) {
+            BrutalDropdown(title: "Move to", entries: moveEntries) {
                 Text("Move to…")
             }
             .buttonStyle(BrutalButtonStyle(.toolbar))
             Button("Tag") { tagging = true }
                 .buttonStyle(BrutalButtonStyle(.toolbar))
                 .popover(isPresented: $tagging, arrowEdge: .top) {
-                    GalleryTagPopover(model: model, targets: selected.map(\.url))
+                    GalleryTagPopover(model: model, targets: model.selectedItems.map(\.url))
                 }
-            Button("Show in Finder") { model.reveal(selected) }
+            Button("Show in Finder") { model.reveal(model.selectedItems) }
                 .buttonStyle(BrutalButtonStyle(.toolbar))
                 .brutalTip("Show in Finder (⌘R)")
             Button {
-                model.askToTrash(selected)
+                model.askToTrash(model.selectedItems)
             } label: {
                 Image(systemName: "trash")
                     .font(.scaled(13, weight: .medium))
@@ -368,7 +382,7 @@ private struct GallerySelectionBar: View {
             .buttonStyle(BrutalButtonStyle(.toolbar))
             .brutalTip("Move to the Trash (⌘⌫)")
             .accessibilityLabel(Text("Move to Trash"))
-            Button("Copy") { model.copy(selected) }
+            Button("Copy") { model.copy(model.selectedItems) }
                 .buttonStyle(BrutalButtonStyle(.main))
                 .brutalTip("Copy (⌘C)")
         }
@@ -381,14 +395,14 @@ private struct GallerySelectionBar: View {
         .accessibilityLabel(Text("Selection"))
     }
 
-    private func moveEntries(_ selected: [GalleryItem]) -> [BrutalMenuEntry] {
-        var entries: [BrutalMenuEntry] = ([""] + model.folders).map { path in
+    private var moveEntries: [BrutalMenuEntry] {
+        var entries: [BrutalMenuEntry] = ([""] + folders).map { path in
             // A folder inside another reads as its path, such as Clients › Acme.
-            let title = path.isEmpty ? model.rootName : path.replacingOccurrences(of: "/", with: " › ")
-            return .item(title, symbol: "folder", enabled: !selected.allSatisfy { $0.folder == path }) { model.move(selected, to: path) }
+            let title = path.isEmpty ? rootName : path.replacingOccurrences(of: "/", with: " › ")
+            return .item(title, symbol: "folder", enabled: path != summary.sharedFolder) { [model] in model.move(model.selectedItems, to: path) }
         }
         entries.append(.divider)
-        entries.append(.item("New Folder…", symbol: "folder.badge.plus") { model.newFolder(moving: selected) })
+        entries.append(.item("New Folder…", symbol: "folder.badge.plus") { [model] in model.newFolder(moving: model.selectedItems) })
         return entries
     }
 }
