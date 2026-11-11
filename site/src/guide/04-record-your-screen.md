@@ -4,7 +4,7 @@ summary: "Record an area, a window or the whole screen, with your voice, the sou
 group: Capture
 ---
 
-![The recording controls: elapsed time, Pause, the camera bubble button (showing the bubble is off), the dimmed Change camera bubble size button, discard and Stop](../../../docs/media/recording-controls.png)
+![The recording controls: elapsed time, the camera button (showing the camera is off), Pause, discard and Stop](../../../docs/media/recording-controls.png)
 
 ## Start a recording
 

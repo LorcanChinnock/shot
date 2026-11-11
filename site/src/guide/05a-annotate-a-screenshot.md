@@ -4,7 +4,7 @@ summary: "Add arrows, text, highlights and blur to a screenshot, then copy or sa
 group: Edit and share
 ---
 
-![The editor toolbar: the tools, then the colours, line widths and Reset button for the arrow tool](../../../docs/media/editor-toolbar.png)
+![The editor toolbar with the arrow tool picked, and a bar under it with the arrow's colours and line widths](../../../docs/media/editor-toolbar.png)
 
 ## Open the editor
 
@@ -117,7 +117,7 @@ Copy Path and Show in Finder save your changes first, so the file they point at 
 
 ## Reopen a saved version
 
-![A saved version reopened in the editor as the screenshot it came from, with its counter, ellipse and arrow still live: the arrow is selected with its handles, and the Layers panel lists Step 1, Ellipse and Arrow](../../../docs/media/editor-versions.png)
+![A saved version reopened in the editor with its marks still live: the arrow is selected with its handles, and the Layers panel lists the highlighter, the note, the arrow and the blur](../../../docs/media/editor-versions.png)
 
 Open a version you saved, from the gallery, Quick Access or a `shot://annotate` link, and every mark is still live, so you can move, change or delete it. **Save** then replaces it again, or writes the next copy if you turned off saving over the original.
 

@@ -4,7 +4,7 @@ summary: "Browse, search, filter and reopen everything in your save folder in th
 group: Edit and share
 ---
 
-![The gallery with its folder sidebar open, listing a Bugs and a Reports folder beside three screenshots, with filters, sort and the thumbnail size slider](../../../docs/media/gallery.png)
+![The gallery searching for SPRING20, which finds the two ticket screenshots by the text in them, with the Bugs and Reports folders in the sidebar](../../../docs/media/gallery.png)
 
 ## Open the gallery
 

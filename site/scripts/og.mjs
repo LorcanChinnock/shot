@@ -21,7 +21,7 @@ const windowStyle = between(source('../src/components/Window.astro'), '<style>',
 const media = (file) => url(`../../docs/media/${file}`);
 const shot = (file, size, [x, y, w, h]) => `<div class="sc-crop" style="aspect-ratio: ${w} / ${h}"><img src="${media(file)}" style="width: ${(size[0] / w) * 100}%; left: ${(-x / w) * 100}%; top: ${(-y / h) * 100}%"></div>`;
 const wide = [1600, 1000];
-const editorWindow = [236, 92, 1128, 776];
+const editorWindow = [220, 39, 1160, 883];
 const marks = (extra = '') => `<div class="sc-marks ${extra}">${stage}</div>`;
 const strip = (file) => `<div class="sc-strip"><img src="${media(file)}"></div>`;
 const kbd = (keys) => keys.map((k) => `<kbd class="key">${k}</kbd>`).join('');
@@ -29,10 +29,10 @@ const code = (lines) => `<div class="sc-code">${lines.map((l) => `<p>${l}</p>`).
 
 // What each guide page's card shows beside its title: the page's own screenshot where the guide has one, otherwise a drawing of
 // what the page is about. Anything not listed shows the hero's last frame.
-const shortcuts = [['⌘⇧4', 'Area'], ['⌘⇧3', 'Whole screen'], ['⌘⇧5', 'Record'], ['A', 'Arrow'], ['B', 'Blur'], ['T', 'Text'], ['H', 'Highlight'], ['⌘C', 'Copy'], ['⌘Z', 'Undo']];
+const shortcuts = [['⌘⇧4', 'Area'], ['⌘⇧3', 'Whole screen'], ['⌘⇧5', 'Record'], ['A', 'Arrow'], ['B', 'Blur'], ['T', 'Text'], ['M', 'Highlight'], ['⌘C', 'Copy'], ['⌘Z', 'Undo']];
 const languages = ['English', 'Deutsch', 'Français', 'Español', 'Italiano', 'Português', '日本語', '한국어', '简体中文'];
 const scenes = {
-  'get-started': shot('welcome.png', [1240, 940], [190, 150, 860, 600]),
+  'get-started': shot('welcome.png', [1240, 940], [190, 150, 860, 583]),
   'take-a-screenshot': { stage: '.selection, .size, .cursor { opacity: 1; } .marks, .quick, .copied { display: none; }' },
   'quick-access': `<img class="sc-plain" src="${media('quick-access.png')}">`,
   'record-your-screen': strip('recording-controls.png'),
@@ -40,14 +40,14 @@ const scenes = {
   'crop-and-arrange': shot('editor-crop.png', wide, editorWindow),
   'style-a-screenshot': shot('editor-style.png', wide, editorWindow),
   'combine-images': shot('editor-combine.png', wide, editorWindow),
-  'edit-a-recording': shot('video-editor.png', wide, [355, 722, 890, 205]),
+  'edit-a-recording': strip('video-timeline.png'),
   'animate-and-annotate-a-recording': `<svg class="sc-chart" viewBox="0 0 520 280"><rect x="6" y="6" width="508" height="268" rx="14" fill="#fff"/><text x="30" y="40" font-weight="800" font-size="20" fill="#23232b">Revenue</text><text x="124" y="40" font-size="14" fill="#77777f">Last 14 days</text><rect x="40" y="170" width="22" height="50" rx="3" fill="#b7d3ca"/><rect x="72" y="158" width="22" height="62" rx="3" fill="#b7d3ca"/><rect x="104" y="168" width="22" height="52" rx="3" fill="#b7d3ca"/><rect x="136" y="140" width="22" height="80" rx="3" fill="#b7d3ca"/><rect x="168" y="148" width="22" height="72" rx="3" fill="#b7d3ca"/><rect x="200" y="132" width="22" height="88" rx="3" fill="#b7d3ca"/><rect x="232" y="120" width="22" height="100" rx="3" fill="#b7d3ca"/><rect x="264" y="150" width="22" height="70" rx="3" fill="#b7d3ca"/><rect x="296" y="156" width="22" height="64" rx="3" fill="#b7d3ca"/><rect x="328" y="135" width="22" height="85" rx="3" fill="#b7d3ca"/><rect x="360" y="125" width="22" height="95" rx="3" fill="#b7d3ca"/><rect x="392" y="130" width="22" height="90" rx="3" fill="#b7d3ca"/><rect x="424" y="110" width="22" height="110" rx="3" fill="#b7d3ca"/><rect x="456" y="70" width="22" height="150" rx="3" fill="#3f9c7c"/><line x1="30" y1="221" x2="490" y2="221" stroke="#d6d6dc" stroke-width="2"/><text x="296" y="58" font-weight="800" font-size="26" fill="#ff4d3d">Best day</text><path d="M 404 52 Q 430 52 449 70" fill="none" stroke="#ff4d3d" stroke-width="4" stroke-linecap="round"/><path d="M 445.5 59.6 L 449 70 L 438.4 67.1" fill="none" stroke="#ff4d3d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   'export-a-video-or-gif': `<div class="sc-seg"><p><b>Format</b><span>MP4</span><span class=on>GIF</span></p><p><b>FPS</b><span>10</span><span class=on>15</span><span>24</span></p><p><b>Width</b><span>480</span><span class=on>720</span><span>1080</span><span>Full</span></p><p><b>Speed</b><span class=on>1x</span><span>1.5x</span><span>2x</span></p><p class="est">≈ 105 KB</p></div>`,
-  'organise-your-captures': shot('gallery.png', wide, [170, 56, 1260, 850]),
-  'find-your-captures': shot('gallery.png', wide, [170, 56, 1260, 850]),
+  'organise-your-captures': shot('gallery.png', wide, [170, 88, 1260, 786]),
+  'find-your-captures': shot('gallery.png', wide, [170, 88, 1260, 786]),
   'keyboard-shortcuts': `<div class="sc-keys">${shortcuts.map(([k, l], i) => `<p style="--fill: var(--${['yellow', 'pink', 'mint'][i % 3]})">${kbd([k])}<span>${l}</span></p>`).join('')}</div>`,
   'automation-reference': code(['<b>open</b> "shot://capture-area"', '<b>open</b> "shot://capture-timer?seconds=5"', '<b>open</b> "shot://capture-window"', '<b>open</b> "shot://gallery"']),
-  settings: shot('settings.png', wide, [170, 56, 1260, 850]),
+  settings: shot('settings.png', wide, [170, 61, 1260, 840]),
   languages: `<div class="sc-langs">${languages.map((l, i) => `<span style="--fill: var(--${['yellow', 'pink', 'sky', 'mint', 'violet', 'orange'][i % 6]})">${l}</span>`).join('')}</div>`,
   updates: `<div class="sc-list"><p><span>Check for updates</span><i class="on"></i></p><p><span>Ask me before going online</span><i class="on"></i></p><p class="btn"><b>Check Now</b></p></div>`,
   privacy: `<div class="sc-list"><p class="no"><b>✕</b><span>No account</span></p><p class="no"><b>✕</b><span>No cloud</span></p><p class="no"><b>✕</b><span>No analytics</span></p><p class="fine">Goes online only to check for updates.</p></div>`,

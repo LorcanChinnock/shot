@@ -27,7 +27,7 @@ Download the zip from the [latest release](https://github.com/LorcanChinnock/sho
 
 ## Follow the welcome window
 
-![The welcome window's second step, Make it yours: Use Shot for ⌘⇧4 and ⌘⇧5 and Open Shot at login both on, with a Continue button](../../../docs/media/welcome.png)
+![The welcome window's second step, Make it yours: Use Shot for ⌘⇧4 and ⌘⇧5 is on, Open Shot at login is off, and there's a Continue button](../../../docs/media/welcome.png)
 
 A short welcome window walks you through up to three steps, named across its top so you can see how far you've got. **Back** in the bottom left returns to the step before. You can close the window at any point to skip the rest.
 

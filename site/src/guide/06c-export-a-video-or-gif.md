@@ -4,7 +4,7 @@ summary: "Export an MP4 or a GIF at the size, frame rate and speed you want, and
 group: Edit and share
 ---
 
-![The video editor with More tools open: a cut in the recording, a Best day label and an arrow over the video, the annotation tools, and the GIF export options](../../../docs/media/video-editor.png)
+![The video editor with the Export panel open: a cut in the recording, a Best day label and an arrow over the video, and the GIF options with the estimated size](../../../docs/media/video-editor.png)
 
 ## Export
 
