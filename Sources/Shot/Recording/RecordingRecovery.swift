@@ -301,7 +301,7 @@ private struct RecordingRecoveryView: View {
                 .foregroundStyle(increased ? Brutal.ink : Brutal.secondaryText)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: Self.buttonGap) {
+            ButtonRow(shares: [1, 1], gap: Self.buttonGap) {
                 Button { actions.showParts() } label: {
                     (leftover.parts == 1 ? Text("Show File") : Text("Show Parts")).frame(maxWidth: .infinity)
                 }

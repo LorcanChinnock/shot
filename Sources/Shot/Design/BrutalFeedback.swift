@@ -98,10 +98,23 @@ struct BrutalSearchField: View {
                 .font(.scaled(12, weight: .medium))
                 .foregroundStyle(Brutal.tertiaryText)
                 .accessibilityHidden(true)
-            TextField(text: $text, prompt: Text(prompt).foregroundStyle(contrast == .increased ? Brutal.ink : Brutal.tertiaryText)) {
+            // The prompt is drawn behind the field rather than as its placeholder, which AppKit clips mid-letter when a
+            // long translation doesn't fit; this one ends in "…".
+            TextField(text: $text, prompt: Text(verbatim: "")) {
                 Text(prompt)
             }
             .font(Brutal.body)
+            .frame(maxWidth: .infinity)
+            .background(alignment: .leading) {
+                if text.isEmpty {
+                    Text(prompt)
+                        .font(Brutal.body)
+                        .foregroundStyle(contrast == .increased ? Brutal.ink : Brutal.tertiaryText)
+                        .lineLimit(1)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+            }
             .focused(focus)
             if !text.isEmpty {
                 Button {

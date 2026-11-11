@@ -366,7 +366,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | Icon | `globe` at 18 pt semibold, white, in a 36 pt tile of white at 12% with group corners |
 | Title | "Browser needs Accessibility" in 15 pt bold, white |
 | Detail | What Shot uses the permission for, in 12.5 pt at 75% white |
-| Buttons | Use Window as the floating secondary button and Grant Access as the floating main button, 8 pt apart and 4 pt below the detail. Grant Access is 1.3 times as wide, as on the board |
+| Buttons | Use Window as the floating secondary button and Grant Access as the floating main button, 8 pt apart and 4 pt below the detail. Grant Access is 1.3 times as wide, as on the board. When a translation or a larger text size leaves either name wider than its share, Grant Access goes above Use Window at full width (`ButtonRow`) |
 
 - **Where it sits.** Centred on the bar and 16 pt above it, or below it when the bar is at the top. After `B` with the bar faded, it sits in the middle of the screen with the pointer. `PermissionCardPlacement` in ShotCore keeps it 8 pt inside the screen, with tests.
 - **The overlay waits.** The mode doesn't change under the card. Use Window switches to Window and gives the keyboard back, Esc or a click anywhere on the overlay closes the card in the mode you were in, and that click doesn't capture.
@@ -612,7 +612,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | Icon | `record.circle` at 22 pt in the Recording sidebar tint, `#C4271E` on a 44 pt `#FFE1DE` tile with group corners (dark: `#FF7B72` on `#4A2220`) |
 | Title | "Recover your last recording?" in 15 pt bold text colour |
 | Detail | "Shot stopped while recording. 1:42 was saved in 3 parts, and Shot can join them now." in 12.5 pt secondary text. One part reads "0:42 was saved, and Shot can put it in your save folder now" |
-| Buttons | Show Parts as the secondary button and Recover as the main button, equal widths, 8 pt apart and 6 pt further below the detail. One part says Show File |
+| Buttons | Show Parts as the secondary button and Recover as the main button, equal widths, 8 pt apart and 6 pt further below the detail. One part says Show File. When a translation or a larger text size leaves either name wider than half, Recover goes above Show Parts at full width (`ButtonRow`) |
 | Discard recording | A destructive plain button under them, in `#C4271E` (dark `#FF7B72`) |
 
 - **What each choice does.** Recover joins the parts into "… (recovered).mp4" in the save folder, or moves them there as separate parts when they can't be joined, and a toast offers Show. Show Parts selects them in Finder and leaves the dialog open. Discard recording closes the dialog behind the discard toast, whose Undo opens it again; once the toast goes, the parts are deleted.
@@ -1022,7 +1022,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 
 | Part | Look |
 | --- | --- |
-| Search | 290 pt at most, 120 pt at least, with "Search names and text in screenshots" as its prompt (`BrutalSearchField`) |
+| Search | 290 pt at most, 120 pt at least, with "Search names and text in screenshots" as its prompt (`BrutalSearchField`). A prompt too long for the field ends in "…" rather than being cut off mid-letter |
 | Sort | The shared pop-up, "Newest first" and so on, as before |
 | Thumbnail size | `BrutalSlider` 70 pt wide between a 10 pt and a 14 pt `square` in tertiary text |
 | Section heading | "Today" and so on in 13 pt bold, its count after it in 12 pt tertiary tabular figures |
@@ -1093,7 +1093,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | Trash dialog | A sheet on the gallery window, 300 pt wide on the group colour, 20 pt padding, 10 pt between parts, all centred |
 | Thumbnails | The first three captures as 54 × 40 pt cards overlapping by 30, rounded at the control radius, 6, with a 1 pt edge in ink at 15% and a `0 4 10` shadow at 10%. Two turn −6° and 5°, one turns −3°, three turn −8°, 0° and 7° |
 | Title and detail | "Move 2 captures to the Trash?" in 15 pt bold, then "They leave Pictures/Shot too. You can put them back from the Trash in Finder." in 12.5 pt secondary text. One capture reads "It leaves … put it back" |
-| Buttons | Cancel as the secondary button and Move to Trash as the main button in record red with white text, equal widths, 8 pt apart and 6 pt further below the detail |
+| Buttons | Cancel as the secondary button and Move to Trash as the main button in record red with white text, equal widths, 8 pt apart and 6 pt further below the detail. When a translation or a larger text size leaves either name wider than half, Move to Trash goes above Cancel at full width (`ButtonRow`) |
 
 - **When it shows.** The empty library shows once the save folder has been read and holds no captures at all, whatever row is picked. An empty folder and a search with no matches keep the shared `EmptyState` ("This folder is empty", "Nothing matches").
 - **The real shortcut.** The keys are the Screenshot shortcut in Settings › Shortcuts, read as it changes, with modifiers in the order menus show them, so the default reads ⌃ ⇧ 4, or ⇧ ⌘ 4 when Shot replaces the system's. With no shortcut set, the keys and arrow hide. ShotCore's `KeyCombo.keycaps` splits it, with a test.
@@ -1122,7 +1122,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | Title | The section's name in 15 pt bold in the 52 pt title bar beside the sidebar, 28 pt in, over a 1 pt separator. While searching, "Results for “login”" |
 | Content | 18 pt from the top and 28 pt from each side, groups 18 pt apart |
 | Group | Its name in 12 pt semibold tertiary text, 12 pt in, 6 pt above a panel in the group colour with the group depth, rounded at the group radius, 10 |
-| Group row | The name in 13 pt regular and its description in 11 pt tertiary text 2 pt under it, the control on the right, 9 × 14 pt padding, with a 1 pt separator between rows |
+| Group row | The name in 13 pt regular and its description in 11 pt tertiary text 2 pt under it, the control on the right, 9 × 14 pt padding, with a 1 pt separator between rows. When a control that can't shrink, such as a segmented control or a button, leaves the name less than its own width (or 120 pt with a description), the control goes 8 pt under the name, on the left (`SettingRowFit`) |
 | Search results | Each section with a match: its tile and name in 15 pt bold with Show All as a `PanelLinkStyle` link on the right, then its groups that match, 28 pt before the next section |
 | No results | The shared `EmptyState`, "No settings match" and "Try another word, or clear the search to see every section.", centred in the content |
 

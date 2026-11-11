@@ -591,9 +591,9 @@ private struct GalleryStorage: View {
         }
     }
 
-    /// The save folder's path, from the home folder when it's inside it, such as `Pictures/Shot`.
+    /// The save folder's path, from the home folder when it's inside it, with Finder's names, such as "Bilder/Shot" in
+    /// German, as the Trash dialog and the empty gallery name it.
     private var folderName: String {
-        let path = (model.folder.path as NSString).abbreviatingWithTildeInPath
-        return path.hasPrefix("~/") ? String(path.dropFirst(2)) : path
+        model.folderPath
     }
 }
