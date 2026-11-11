@@ -71,9 +71,19 @@ struct LevelMeter: View {
                         .frame(width: 4, height: 10)
                 }
             }
+            // Inside the timeline, so VoiceOver reads the level as it is now rather than when the meter appeared.
+            .accessibilityElement()
+            .accessibilityLabel(Text(muted ? "Microphone level, muted" : "Microphone level"))
+            .accessibilityValue(muted ? Text(verbatim: "") : value(lit: lit))
         }
-        .accessibilityElement()
-        .accessibilityLabel(Text(muted ? "Microphone level, muted" : "Microphone level"))
+    }
+
+    /// The level in words: whether the microphone hears anything, and whether it's near clipping.
+    private func value(lit: Int) -> Text {
+        if lit == 0 {
+            return Text("No sound")
+        }
+        return lit >= LevelBars.loudFrom(of: Self.bars) ? Text("Loud") : Text("Hearing sound")
     }
 
     private func color(_ index: Int) -> Color {

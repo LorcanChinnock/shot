@@ -326,6 +326,7 @@ private struct ScrollCaptureView: View {
     let model: ScrollCaptureModel
     let actions: ScrollCapturePanel.Actions
     let onSize: (CGSize) -> Void
+    @Environment(\.textSize) private var textSize
 
     var body: some View {
         VStack(spacing: 0) {
@@ -340,7 +341,8 @@ private struct ScrollCaptureView: View {
             Brutal.separator.frame(height: 1)
             footer
         }
-        .frame(width: Self.width)
+        // Wider at larger text sizes, so the facts and the footer keep their size rather than shrinking or truncating.
+        .frame(width: (Self.width * textSize.scale).rounded())
         .modifier(ScrollPanelSurface(shape: RoundedRectangle(cornerRadius: Self.radius, style: .circular)))
         .fixedSize()
         .accessibilityElement(children: .contain)

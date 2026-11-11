@@ -335,6 +335,7 @@ struct BrutalSurface<S: InsettableShape, Fill: ShapeStyle>: ViewModifier {
     var shadow = Brutal.shadow
     var border = Brutal.border
     @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.displayScale) private var scale
 
     func body(content: Content) -> some View {
@@ -344,8 +345,9 @@ struct BrutalSurface<S: InsettableShape, Fill: ShapeStyle>: ViewModifier {
             .inkOnFill(fill as? Color)
             .background {
                 ZStack {
-                    // Over a material, glass turns solid with Increase Contrast on so text over it holds its contrast.
-                    if glass, contrast == .increased {
+                    // Over a material, glass turns solid with Increase Contrast or Reduce Transparency on, so text over it
+                    // holds its contrast.
+                    if glass, contrast == .increased || reduceTransparency {
                         shape.inset(by: Brutal.underInk(border, scale: scale)).fill(Brutal.group)
                     } else if glass {
                         shape.inset(by: Brutal.underInk(border, scale: scale)).fill(.ultraThinMaterial)
@@ -862,6 +864,7 @@ struct BrutalSegmented<Value: Hashable>: View {
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.settingRowTitle) private var rowTitle
 
     init(selection: Binding<Value>, options: [(value: Value, label: LocalizedStringResource)]) {
         self.init(selection: selection, options: options.map { ($0.value, String(localized: $0.label)) })
@@ -921,7 +924,8 @@ struct BrutalSegmented<Value: Hashable>: View {
                     Text(options[index].label).tag(options[index].value)
                 }
             } label: {
-                EmptyView()
+                // A Settings row's title names it; anywhere else the caller adds an accessibility label.
+                Text(verbatim: rowTitle ?? "")
             }
             .pickerStyle(.segmented)
         }
@@ -1122,8 +1126,11 @@ struct SettingRow<Control: View>: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+                // Ahead of the control, so at a larger text size a pop-up shortens its value before a title breaks mid-word.
+                .layoutPriority(1)
                 Spacer(minLength: 8)
                 control
+                    .environment(\.settingRowTitle, title)
             }
             .padding(.vertical, 9)
             .padding(.horizontal, 14)
@@ -1140,8 +1147,15 @@ struct ToggleRow: View {
         SettingRow(title: title, subtitle: subtitle) {
             Toggle(String(localized: title), isOn: $isOn).toggleStyle(BrutalToggleStyle()).labelsHidden()
                 .accessibilityLabel(Text(title))
+                .accessibilityHint(subtitle.map { Text($0) } ?? Text(verbatim: ""))
         }
     }
+}
+
+extension EnvironmentValues {
+    /// The title of the Settings row a control sits in, so a control without a label of its own, such as a segmented
+    /// control, can give VoiceOver its name.
+    @Entry var settingRowTitle: String?
 }
 
 extension View {

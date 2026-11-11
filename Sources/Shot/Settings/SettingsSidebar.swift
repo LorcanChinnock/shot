@@ -68,6 +68,7 @@ private struct SettingsSidebarRow: View {
     let faded: Bool
     let action: () -> Void
     @State private var hovering = false
+    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         Button(action: action) {
@@ -85,7 +86,7 @@ private struct SettingsSidebarRow: View {
             .modifier(SidebarRowBackground(selected: selected, hovering: hovering))
         }
         .buttonStyle(.plain)
-        .opacity(faded ? 0.4 : 1)
+        .opacity(faded ? (contrast == .increased ? 0.75 : 0.4) : 1)
         .onHover { hovering = $0 }
         .accessibilityLabel(Text(section.title))
         .accessibilityValue(faded ? Text("No matches") : Text(verbatim: ""))

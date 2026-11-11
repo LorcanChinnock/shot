@@ -1130,7 +1130,7 @@ private struct SoundSettings: View {
                     .buttonStyle(BrutalButtonStyle())
                     .fixedSize()
                     .accessibilityLabel(Text(preview.isRunning ? "Stop the microphone test" : "Test the microphone"))
-                    DevicePicker(devices: devices, selection: $deviceID, maxWidth: 120)
+                    DevicePicker(title: "Microphone", devices: devices, selection: $deviceID, maxWidth: 120)
                 }
             }
             ToggleRow(title: "Mac sound", subtitle: "Sound from other apps. Shot’s own sounds are left out.", isOn: $systemAudio)
@@ -1239,7 +1239,7 @@ private struct CameraSettings: View {
         SettingsCard(title: "Camera") {
             ToggleRow(title: "Camera bubble", isOn: $camera)
             SettingRow(title: "Camera") {
-                DevicePicker(devices: devices, selection: $deviceID)
+                DevicePicker(title: "Camera", devices: devices, selection: $deviceID)
             }
             SettingRow(title: "Size") {
                 BrutalSegmented(selection: $size, options: CameraBubbleSize.allCases.map { ($0, $0.title) })
@@ -1263,12 +1263,14 @@ private func restart(_ preview: DevicePreview, deviceID: String) {
 }
 
 private struct DevicePicker: View {
+    /// The kind of device, which VoiceOver reads as the pop-up's name.
+    let title: LocalizedStringResource
     let devices: [AVCaptureDevice]
     @Binding var selection: String
     var maxWidth: CGFloat = 150
 
     var body: some View {
-        BrutalPopUp(title: "Device", entries: [
+        BrutalPopUp(title: title, entries: [
             .item("System default", selected: !devices.contains { $0.uniqueID == selection }) { selection = "" },
             .divider,
         ] + devices.map { device in

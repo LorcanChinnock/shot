@@ -49,6 +49,7 @@ private struct CustomColorButton: View {
     let beginPicking: () -> Void
     let editorShown: (Bool) -> Void
     @State private var isOpen = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var isSelected: Bool { isOpen || custom != nil }
 
@@ -71,7 +72,7 @@ private struct CustomColorButton: View {
         .brutalTip(help)
         .accessibilityLabel(Text(help))
         .accessibilityAddTraits(custom != nil ? .isSelected : [])
-        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
+        .animation(reduceMotion ? nil : .spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
         .popover(isPresented: $isOpen, arrowEdge: .bottom) {
             ColorEditor(initial: lastCustom ?? fallback, pick: pick)
         }
@@ -378,6 +379,7 @@ private struct Swatch: View {
     let isSelected: Bool
     let name: String
     let action: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Button(action: action) {
@@ -397,7 +399,7 @@ private struct Swatch: View {
         .brutalTip(name)
         .accessibilityLabel(Text(name))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
-        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
+        .animation(reduceMotion ? nil : .spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
     }
 }
 

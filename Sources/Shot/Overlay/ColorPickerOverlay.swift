@@ -316,10 +316,11 @@ final class ColorPickerView: NSView {
         swatchEdge.stroke()
         hex.draw(at: CGPoint(x: swatchRect.maxX + 8, y: (label.midY - hexSize.height / 2).rounded()))
 
-        // The hint, on a light pill so it reads over the dark label and any content; solid with Increase Contrast.
+        // The hint, on a light pill so it reads over the dark label and any content; solid with Increase Contrast or
+        // Reduce Transparency.
         let hintRect = layout.hint
         let hintPill = NSBezierPath(roundedRect: hintRect, xRadius: 8, yRadius: 8)
-        NSColor.white.withAlphaComponent(increased ? 1 : 0.85).setFill()
+        NSColor.white.withAlphaComponent(FloatingPanel.solidNS ? 1 : 0.85).setFill()
         hintPill.fill()
         if increased {
             Brutal.inkNS.withAlphaComponent(0.4).setStroke()

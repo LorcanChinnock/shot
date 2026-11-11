@@ -111,7 +111,8 @@ private struct QuickAccessCardView: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 40, height: 40)
-                .foregroundStyle(Brutal.ink.opacity(0.4))
+                // The card is white in both appearances, so the placeholder takes a fixed dark grey rather than ink.
+                .foregroundStyle(ContrastAware(standard: Color(hex: 0x16161A).opacity(0.4), increased: Color(hex: 0x16161A).opacity(0.75)))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .accessibilityLabel(label)
         } else {

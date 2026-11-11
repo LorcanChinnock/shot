@@ -277,6 +277,14 @@ private struct GalleryFolderRow: View {
 
     private var isFolder: Bool { !folder.isEmpty }
 
+    private var hiddenCount: Text {
+        let count = model.counts.count(of: .folder(folder))
+        guard hovering || model.source == .folder(folder), count > 0 else {
+            return Text(verbatim: "")
+        }
+        return Text(count, format: .number)
+    }
+
     var body: some View {
         if model.folderEdit == .rename(folder) {
             FolderNameField(model: model, edit: .rename(folder), level: Self.level(of: folder))
@@ -306,7 +314,9 @@ private struct GalleryFolderRow: View {
             }
             .modifier(FolderDrag(model: model, folder: isFolder ? folder : nil))
             .accessibilityElement(children: .combine)
-            .accessibilityAddTraits(.isButton)
+            // The count fades out under the "…" button on a selected or hovered row, so VoiceOver gets it here instead.
+            .accessibilityValue(hiddenCount)
+            .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
             .accessibilityAction { model.source = .folder(folder) }
             if folder == model.captureSubfolder, isFolder {
                 Image(systemName: "arrow.down.circle.fill")
@@ -373,7 +383,7 @@ private struct GalleryFolderRow: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(Text(open ? "Collapse" : "Expand"))
+            .accessibilityLabel(Text(open ? "Collapse \(title)" : "Expand \(title)"))
         }
     }
 

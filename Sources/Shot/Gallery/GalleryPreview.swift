@@ -432,9 +432,10 @@ private struct GalleryPreviewDetails: View {
                 .font(.scaled(12, weight: .medium))
                 .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
                 .accessibilityHidden(true)
+            // Wraps rather than shrinking or truncating, so a larger text size or a long translation still reads in full.
             Text(title)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

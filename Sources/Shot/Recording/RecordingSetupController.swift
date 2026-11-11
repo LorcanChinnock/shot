@@ -727,6 +727,7 @@ private struct SetupBarView: View {
         HStack(spacing: 6) {
             BrutalSegmented(selection: Binding(get: { model.mode }, set: { actions.switchMode($0) }), options: CaptureTarget.allCases.map { ($0, $0.title) })
                 .brutalTip("Switch what to record")
+                .accessibilityLabel(Text("What to record"))
             FloatingDivider().padding(.horizontal, 4)
             microphone
             SetupToggle(on: model.cameraOn, title: "Camera", symbol: "video", offSymbol: "video.slash", help: cameraTip, detail: cameraDetail, action: actions.toggleCamera)

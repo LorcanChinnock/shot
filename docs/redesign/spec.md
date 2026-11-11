@@ -331,7 +331,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 
 ### Scrolling capture
 
-#1086 builds Capture › Scrolling capture: the panel beside the area while you scroll it yourself. It is SwiftUI in its own `FloatingPanelWindow` with the system shadow, 300 pt wide, and grows to fit what it shows.
+#1086 builds Capture › Scrolling capture: the panel beside the area while you scroll it yourself. It is SwiftUI in its own `FloatingPanelWindow` with the system shadow, 300 pt times Settings › Text size wide, and grows to fit what it shows.
 
 | Part | Look |
 | --- | --- |
@@ -353,7 +353,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **No dimmed screen.** The board dims everything outside the area. That would need a screen-sized window over the content being scrolled, so it's left out.
 - **Keyboard.** Return, Enter and the screenshot shortcut finish, and Esc cancels, while the content's app keeps the keyboard. Cancel shows "Esc" in its tooltip and Done shows "↩".
 - **VoiceOver** reads the panel as "Scrolling capture", the header as one element, each fact as one element and the preview as "Preview of the image so far". A warning is announced with its title and advice when it appears.
-- **Text size.** The header, facts, card and buttons scale with Settings › Text size, and the panel grows to fit. A long size shrinks to 70% before it would wrap. The preview stays 150 × 280.
+- **Text size.** The header, facts, card and buttons scale with Settings › Text size, and the panel widens by the same factor and grows to fit, so the facts and the footer keep their size. A long size shrinks to 70% before it would wrap. The preview stays 150 × 280.
 - **Increase Contrast** takes the panel's edge to 50% black (40% white in dark), the warning card's edge to 60%, and the hatching to 22%.
 
 ### Browser permission card
@@ -667,9 +667,9 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Clear of the foot.** The bar keeps clear of the zoom control and hint along the canvas's foot as it does the canvas's edges (see Editor canvas).
 - **Departures from the board.** The board rounds the bar at 11, the segmented track at 7 and its thumb at 5; Shot uses the group radius 10 and the segmented control's 8 and 6. The board's shadow is 18%, and Shot uses the Float depth's 16%. The board's swatches use the interface colours (`#E5352B` and so on), while Shot's are the preset colours an arrow is drawn in, so the swatch matches the mark. More style is a 30 × 28 toolbar button, the toolbar's minimum, rather than 26 × 22, so the bar is 38 pt tall rather than 32. A colour that isn't one of the six, such as white or a custom one, shows no swatch as chosen, and More style shows it.
 - **Keyboard.** With keyboard navigation on, Tab reaches each swatch, the width control and More style, each with the 4 pt accent focus halo, and the arrow keys move the width. Every tool's key still works while the bar shows.
-- **VoiceOver** reads the bar as a group named "Style", each swatch by its colour name with the chosen one as selected, the widths as a segmented control (Thin, Medium, Thick), and More style as a button.
+- **VoiceOver** reads the bar as a group named "Style", each swatch by its colour name with the chosen one as selected, the widths as a segmented control named "Line width" (Thin, Medium, Thick) or "Text size" for text, a redaction's choice as "Blur or pixelate", a spotlight's as "Spotlight shape" and "Outside the spotlight", and More style as a button.
 - **Text size** scales the line and letter pictures and the popover's type, while the swatches and segments keep their size.
-- **Reduce Motion.** The bar arrives with the panel moment, a 240 ms spring fading in from 96%, and Reduce Motion makes that a 120 ms fade. Following the mark is always instant, as edits are.
+- **Reduce Motion.** The bar arrives with the panel moment, a 240 ms spring fading in from 96%, and Reduce Motion makes that a 120 ms fade. Following the mark is always instant, as edits are. A chosen swatch grows and drops with a quick spring, and appears chosen at once with Reduce Motion.
 - **Increase Contrast and Reduce Transparency** make the bar solid in the group colour. Increase Contrast adds a 1 pt edge of 60% ink and gives the segmented track its 60% edge.
 
 ### Editor canvas
@@ -774,9 +774,9 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **The canvas's foot.** The zoom control, hint, style bar and crop bar all sit inside the canvas, so they keep their 16 pt inset from its new edges and stay clear of the panel. The canvas is clipped to its bounds, since its scroll view otherwise draws over the title bar.
 - **Departures from the board.** The board rounds rows at 7; Shot uses the control radius 6. The board shows the Frame row only in yellow; when the crop tool isn't on it, Shot draws it as a plain row, with the hover fill. The board leaves out the lock and bin, which Shot keeps on hover and keeps the lock showing while it's set, so the guide's Lock and Delete still have buttons. The Frame row keeps its eye, and its bin on hover. The board's dark panel isn't drawn, so dark uses `#242427`, the sidebar's dark value, between the window and the canvas backdrop. Increase Contrast takes the hairlines to 60% ink, which the board doesn't draw.
 - **Keyboard.** ⌘L opens and closes the panel. With the list focused, ↑ and ↓ move the selection, Return renames, Delete deletes, and Esc cancels a drag or a rename.
-- **VoiceOver** reads the panel as a group named "Layers" with its header as a heading. Each row reads its name, as selected when it is, with its eye, lock and bin as buttons, and Rename, Lock or Unlock and Delete as actions, so the buttons that hide until hover stay in reach. The Frame row reads "Frame, 16:9" as a button, and the footer "Screenshot, locked". The drag handle reads "Drag to reorder".
+- **VoiceOver** reads the panel as a group named "Layers" with its header as a heading. Each row reads its name, as selected when it is, with its eye, lock and bin as buttons, and Rename, Lock or Unlock and Delete as actions, so the buttons that hide until hover stay in reach. Pressing a row selects it, and Move Up and Move Down move it one place, since the drag handle only drags and is hidden from VoiceOver. The row icons are hidden too. The Frame row reads "Frame, 16:9" as a button, and the footer "Screenshot, locked".
 - **Text size** scales the header, names, Frame detail, badge and footer. Rows keep their 28 pt height, and names truncate first.
-- **Reduce Motion.** The panel arrives with the panel moment, a 240 ms spring sliding in from the right, and Reduce Motion makes that a 120 ms fade. Selecting, hiding and locking are instant; a dragged row follows the pointer as before.
+- **Reduce Motion.** The panel arrives with the panel moment, a 240 ms spring sliding in from the right, and Reduce Motion makes that a 120 ms fade. Selecting, hiding and locking are instant; a dragged row follows the pointer as before. The other rows glide aside to open a gap, and with Reduce Motion they jump there instead.
 - **Increase Contrast and Reduce Transparency.** The panel is already solid. Increase Contrast takes the hairlines and the panel's edge to 60% ink, the grip, icons, detail, header shortcut and footer to the ink, the selected row's edge to solid selection blue, and a hidden row to 80% so its eye keeps 3:1.
 
 ### Combining images
@@ -1138,7 +1138,8 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **VoiceOver** reads the sidebar as "Settings sections", each row as a button with its name and whether it's selected, a faded row's value as "No matches", and the footer as "Shot" with its status and the hint "Opens About". Group names and the title read as headings.
 - **Text size** scales the search, the rows' names, Open Gallery, the footer, the title and every group and row; the tiles stay 22 pt, and Open Gallery's arrow gives way first in a narrow sidebar.
 - **Reduce Motion.** Nothing here moves. Sections switch at once, where the old sidebar sprang.
-- **Increase Contrast** makes the sidebar solid in the Sidebar colour, and the group names, row descriptions, Open Gallery's arrow and the footer's status ink.
+- **Increase Contrast** makes the sidebar solid in the Sidebar colour, and the group names, row descriptions, Open Gallery's arrow and the footer's status ink. A row faded by a search stays at 75% rather than 40%, and the search field's placeholder turns ink.
+- **VoiceOver in the panes.** A segmented control or pop-up takes its row's title as its name, such as "Appearance" or "Microphone", and a switch reads its row's description as its hint.
 
 ### Settings · General
 

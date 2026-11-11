@@ -160,7 +160,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
         frame.size.height = height
         frame.origin.y = min(max(frame.origin.y, visible.minY), visible.maxY - height)
         appliedExtraHeight = extra
-        window.setFrame(frame, display: true, animate: animate)
+        window.setFrame(frame, display: true, animate: animate && !Motion.reduced)
     }
 
     private func handleCommand(_ key: String, shift: Bool, option: Bool) -> Bool {
