@@ -88,7 +88,9 @@ struct BrutalPopUp: View {
             }
         }
         .buttonStyle(BrutalButtonStyle(.popUp))
-        .fixedSize()
+        // With a maximum width, the value shortens with an ellipsis when its row runs out of room, such as at a larger
+        // text size, rather than pushing the row's title onto two lines.
+        .fixedSize(horizontal: maxWidth == nil, vertical: true)
     }
 }
 

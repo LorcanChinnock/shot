@@ -90,6 +90,7 @@ struct BrutalSearchField: View {
     let prompt: LocalizedStringResource
     @Binding var text: String
     var focus: FocusState<Bool>.Binding
+    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         HStack(spacing: 6) {
@@ -97,7 +98,7 @@ struct BrutalSearchField: View {
                 .font(.scaled(12, weight: .medium))
                 .foregroundStyle(Brutal.tertiaryText)
                 .accessibilityHidden(true)
-            TextField(text: $text, prompt: Text(prompt).foregroundStyle(Brutal.tertiaryText)) {
+            TextField(text: $text, prompt: Text(prompt).foregroundStyle(contrast == .increased ? Brutal.ink : Brutal.tertiaryText)) {
                 Text(prompt)
             }
             .font(Brutal.body)

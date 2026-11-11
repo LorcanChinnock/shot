@@ -78,6 +78,7 @@ private struct CanvasZoomControl: View {
             .buttonStyle(BrutalButtonStyle(.toolbar))
             .disabled(!ZoomControl.canZoomOut(model.zoom))
             .brutalTip("Zoom Out", key: "⌘−")
+            .accessibilityLabel(Text("Zoom Out"))
             BrutalDropdown(title: "Zoom", entries: [
                 .item("Zoom In", shortcut: "⌘+") { canvas.zoomIn() },
                 .item("Zoom Out", shortcut: "⌘−") { canvas.zoomOut() },
@@ -99,6 +100,7 @@ private struct CanvasZoomControl: View {
             .buttonStyle(BrutalButtonStyle(.toolbar))
             .disabled(!ZoomControl.canZoomIn(model.zoom))
             .brutalTip("Zoom In", key: "⌘+")
+            .accessibilityLabel(Text("Zoom In"))
             Button("Fit") { canvas.zoomToFit() }
                 .buttonStyle(BrutalButtonStyle(.toolbar))
                 .brutalTip("Zoom to Fit", key: "⌘0")

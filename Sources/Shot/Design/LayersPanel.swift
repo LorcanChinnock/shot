@@ -57,6 +57,7 @@ struct LayersPanel: View {
     @State private var drag: RowDrag?
     /// Set by Escape, so the rest of that drag does nothing.
     @State private var dragCancelled = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var escapeMonitor: Any?
     @State private var listSize: CGSize = .zero
     @State private var position = ScrollPosition()
@@ -212,15 +213,32 @@ struct LayersPanel: View {
             }
         }
         .contextMenu { menu(for: selection.contains(row.id) ? selection : [row.id]) }
+        // Pressing selects the layer, as a click does. Its own action, since the tap gesture reads a mouse event's click count.
+        .accessibilityAction(.default) {
+            isFocused = true
+            selection = [row.id]
+            anchor = row.id
+        }
         .accessibilityAction(named: Text("Rename")) {
             selection = [row.id]
             renaming = row.id
+        }
+        // The grip only drags, so VoiceOver moves a layer one place at a time.
+        .accessibilityActions {
+            if let index = rows.firstIndex(where: { $0.id == row.id }) {
+                if index > 0 {
+                    Button("Move Up") { onMove(IndexSet(integer: index), index - 1) }
+                }
+                if index < rows.count - 1 {
+                    Button("Move Down") { onMove(IndexSet(integer: index), index + 2) }
+                }
+            }
         }
         // Carried rows ride under the lifted one, which fades while a drop would cancel.
         .opacity(carried ? 0 : lifted && drag?.isOutside == true ? 0.5 : 1)
         // The lifted row follows the pointer; the others glide to open the gap.
         .offset(y: y(of: row.id))
-        .animation(lifted ? nil : .snappy(duration: 0.2), value: drag?.gap)
+        .animation(lifted || reduceMotion ? nil : .snappy(duration: 0.2), value: drag?.gap)
         .zIndex(lifted ? 1 : 0)
     }
 
@@ -306,7 +324,7 @@ struct LayersPanel: View {
                     return
                 }
                 if drag == nil {
-                    withAnimation(.snappy(duration: 0.2)) {
+                    withAnimation(glide(0.2)) {
                         drag = RowDrag(id: row.id, moving: movingIDs(grabbing: row.id), rows: rows, startOffset: scroll.offset)
                     }
                     watchEscape()
@@ -323,7 +341,7 @@ struct LayersPanel: View {
                     return
                 }
                 stopDragging()
-                withAnimation(.snappy(duration: 0.25)) {
+                withAnimation(glide(0.25)) {
                     if !drag.isOutside, let destination = drag.destination(in: rows) {
                         onMove(IndexSet(rows.indices.filter { drag.moving.contains(rows[$0].id) }), destination)
                     }
@@ -382,13 +400,18 @@ struct LayersPanel: View {
         escapeMonitor = nil
     }
 
+    /// Rows glide aside while one is dragged, or jump straight there with Reduce Motion.
+    private func glide(_ duration: Double) -> Animation? {
+        reduceMotion ? nil : .snappy(duration: duration)
+    }
+
     private func cancelDrag() {
         stopDragging()
         guard drag != nil else {
             return
         }
         dragCancelled = true
-        withAnimation(.snappy(duration: 0.25)) {
+        withAnimation(glide(0.25)) {
             drag = nil
         }
     }
@@ -409,6 +432,7 @@ private struct FrameRowView: View {
             Image(systemName: "crop")
                 .font(.scaled(12, weight: .semibold))
                 .frame(width: 16)
+                .accessibilityHidden(true)
             Text("Frame")
                 .font(.scaled(13, weight: row.isSelected ? .semibold : .regular))
                 .lineLimit(1)
@@ -544,11 +568,13 @@ private struct LayerRowView<Grip: Gesture>: View {
                 .contentShape(Rectangle())
                 .pointerStyle(isLifted ? .grabActive : .grabIdle)
                 .gesture(grip)
-                .accessibilityLabel(Text("Drag to reorder"))
+                // VoiceOver moves a layer with the row's Move Up and Move Down actions instead.
+                .accessibilityHidden(true)
             Image(systemName: row.symbol)
                 .font(.scaled(12, weight: .medium))
                 .foregroundStyle(ContrastAware(standard: Brutal.ink.opacity(0.85), increased: Brutal.ink))
                 .frame(width: 16)
+                .accessibilityHidden(true)
             if isRenaming {
                 LayerNameField(name: row.name, fontSize: 13, onCommit: { onRename($0) }, onCancel: { onRename(nil) })
             } else {
@@ -580,7 +606,8 @@ private struct LayerRowView<Grip: Gesture>: View {
         .scaleEffect(isLifted ? 1.03 : 1)
         .onHover { isHovered = $0 }
         .accessibilityElement(children: .contain)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityLabel(Text(row.name))
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
         // The lock and bin hide until the pointer is on the row, so VoiceOver reaches them as actions too.
         .accessibilityAction(named: Text(row.isLocked ? "Unlock" : "Lock"), onLock)
         .accessibilityActions {

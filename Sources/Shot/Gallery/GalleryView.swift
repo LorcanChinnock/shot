@@ -91,11 +91,13 @@ struct GalleryRootView: View {
             HStack(spacing: 6) {
                 Image(systemName: "square")
                     .font(.scaled(10, weight: .medium))
+                    .accessibilityHidden(true)
                 BrutalSlider(value: Bindable(model).tileSize, range: Gallery.tileSizes, width: 70)
                     .brutalTip("Thumbnail size (⌘+ and ⌘−)")
                     .accessibilityLabel(Text("Thumbnail size"))
                 Image(systemName: "square")
                     .font(.scaled(14, weight: .medium))
+                    .accessibilityHidden(true)
             }
             .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
         }
@@ -433,6 +435,7 @@ private struct GalleryTile: View, Equatable {
     /// The file's type and the time, size or date, as `Gallery.tileDetail` gives it.
     let detail: String
     @State private var hovering = false
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     nonisolated static func == (lhs: GalleryTile, rhs: GalleryTile) -> Bool {
         lhs.item == rhs.item && lhs.model === rhs.model && lhs.slot === rhs.slot && lhs.width == rhs.width
@@ -548,11 +551,28 @@ private struct GalleryTile: View, Equatable {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(item.name))
-        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityValue(Text(verbatim: spokenDetail))
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+        // Pressing selects, as a click does. Its own action, since the tap gesture reads a mouse event's click count.
+        .accessibilityAction {
+            model.click(item, command: false, shift: false)
+        }
         // The checkbox shows only on hover and sits inside this one element, so its ⌘-click toggle is an action here.
         .accessibilityAction(named: Text(selected ? "Deselect" : "Select")) {
             model.click(item, command: true, shift: false)
         }
+        .accessibilityAction(named: Text(item.kind == .video ? "Edit video" : "Annotate")) {
+            model.edit([item])
+        }
+    }
+
+    /// What the caption and badge show, for VoiceOver: the tag, the kind, date and size, and a recording's length.
+    private var spokenDetail: String {
+        var parts = [tag, detail].compactMap(\.self)
+        if item.kind == .video, let length = thumbnail?.duration.map(Gallery.duration) {
+            parts.append(length)
+        }
+        return parts.joined(separator: ", ")
     }
 
     /// A recording's length or "GIF", in white on a dark tab in the thumbnail's corner.
@@ -569,7 +589,7 @@ private struct GalleryTile: View, Equatable {
                 .foregroundStyle(.white)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 1)
-                .background(Color(hex: 0x16161A).opacity(0.78), in: RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
+                .background(Color(hex: 0x16161A).opacity(reduceTransparency ? 1 : 0.78), in: RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
                 .padding(7)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         }
@@ -618,6 +638,7 @@ private struct GalleryTileMenu: View {
 private struct SelectionCheckbox: View {
     let checked: Bool
     let action: () -> Void
+    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         Button(action: action) {
@@ -628,8 +649,9 @@ private struct SelectionCheckbox: View {
                         .font(.system(size: 10, weight: .heavy))
                         .foregroundStyle(.white)
                 } else {
-                    Circle().fill(.white.opacity(0.85))
-                    Circle().strokeBorder(Color(hex: 0x16161A).opacity(0.25), lineWidth: 1)
+                    // Increase Contrast makes the empty circle solid with a darker edge, so it holds 3:1 over a light capture.
+                    Circle().fill(.white.opacity(contrast == .increased ? 1 : 0.85))
+                    Circle().strokeBorder(Color(hex: 0x16161A).opacity(contrast == .increased ? 0.7 : 0.25), lineWidth: 1)
                 }
             }
             .frame(width: 20, height: 20)
@@ -654,6 +676,7 @@ private struct SelectionCheckbox: View {
 /// Renaming one to the name of another merges them.
 struct GalleryTagManager: View {
     let model: GalleryModel
+    @Environment(\.textSize) private var textSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -680,7 +703,7 @@ struct GalleryTagManager: View {
             }
         }
         .padding(12)
-        .frame(width: 260)
+        .frame(width: (260 * textSize.scale).rounded())
     }
 }
 
@@ -748,6 +771,7 @@ struct GalleryTagPopover: View {
     let targets: [URL]
     @State private var name = ""
     @FocusState private var focused: Bool
+    @Environment(\.textSize) private var textSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -776,7 +800,7 @@ struct GalleryTagPopover: View {
             }
         }
         .padding(12)
-        .frame(width: 230)
+        .frame(width: (230 * textSize.scale).rounded())
         // A turn after it appears: taking focus at once loses it while the popover is still opening, and the keys
         // typed next reach the gallery instead.
         .onAppear { DispatchQueue.main.async { focused = true } }
@@ -790,6 +814,7 @@ struct GalleryTagPopover: View {
             HStack(spacing: 7) {
                 Image(systemName: coverage == .all ? "checkmark.square.fill" : coverage == .some ? "minus.square" : "square")
                     .font(.scaled(12, weight: .bold))
+                    .accessibilityHidden(true)
                 TagDot(tag: tag)
                 Text(verbatim: tag)
                     .lineLimit(1)
@@ -803,5 +828,7 @@ struct GalleryTagPopover: View {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(coverage == .all ? .isSelected : [])
+        // The minus box shows a tag on only some of the captures, which the selected trait can't say.
+        .accessibilityValue(coverage == .some ? Text("On some") : Text(verbatim: ""))
     }
 }

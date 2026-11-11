@@ -67,8 +67,16 @@ final class SelectionOverlayView: NSView {
         super.init(frame: frame)
         setAccessibilityElement(true)
         setAccessibilityRole(.group)
-        setAccessibilityLabel(String(localized: "Capture overlay"))
-        setAccessibilityHelp(hintText)
+    }
+
+    /// Read when VoiceOver asks, so they follow the mode, ratio and kind as they change. The kind leads the label, since
+    /// the bar only draws it.
+    override func accessibilityLabel() -> String? {
+        controller.recording ? String(localized: "Record overlay") : String(localized: "Screenshot overlay")
+    }
+
+    override func accessibilityHelp() -> String? {
+        hintText
     }
 
     @available(*, unavailable)
@@ -567,7 +575,7 @@ final class SelectionOverlayView: NSView {
                 size.draw(at: CGPoint(x: (frame.midX - sizeSize.width / 2).rounded(), y: nameRect.minY - 2 - sizeSize.height))
             case .hint:
                 let shape = NSBezierPath(roundedRect: frame, xRadius: frame.height / 2, yRadius: frame.height / 2)
-                NSColor.white.withAlphaComponent(increased ? 1 : 0.9).setFill()
+                NSColor.white.withAlphaComponent(FloatingPanel.solidNS ? 1 : 0.9).setFill()
                 shape.fill()
                 if increased {
                     Self.ink.withAlphaComponent(0.4).setStroke()

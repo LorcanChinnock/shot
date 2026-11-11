@@ -94,6 +94,7 @@ struct StyleBar<Model: StyleBarEditing>: View {
                     ) { redaction, selected in
                         StyleBarGlyph(symbol: redaction == .blur ? "drop.halffull" : "square.grid.3x3", selected: selected)
                     }
+                    .accessibilityLabel(Text("Blur or pixelate"))
                 }
             case .spotlight:
                 if let spotlight = model.paletteSpotlight {
@@ -102,6 +103,7 @@ struct StyleBar<Model: StyleBarEditing>: View {
                     ) { shape, selected in
                         StyleBarGlyph(symbol: shape.symbol, selected: selected)
                     }
+                    .accessibilityLabel(Text("Spotlight shape"))
                     StyleBarDivider()
                     GlyphSegmented(
                         selection: spotlight.effect,
@@ -110,6 +112,7 @@ struct StyleBar<Model: StyleBarEditing>: View {
                     ) { effect, selected in
                         StyleBarGlyph(symbol: effect == .darken ? "moon.fill" : "drop.halffull", selected: selected)
                     }
+                    .accessibilityLabel(Text("Outside the spotlight"))
                 }
             }
             MoreStyleButton(model: model)
@@ -156,6 +159,7 @@ struct StyleBar<Model: StyleBarEditing>: View {
                 Capsule().fill(style).frame(width: 12, height: CGFloat(index + 1) * 2)
             }
         }
+        .accessibilityLabel(sizesText ? Text("Text size") : Text("Line width"))
     }
 }
 

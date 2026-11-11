@@ -58,18 +58,21 @@ struct ExportPanel: View {
                 BrutalSegmented(selection: option(\.format), options: [(.mp4, "MP4"), (.gif, "GIF")])
                     .fillingWidth()
                     .brutalTip("Export format")
+                    .accessibilityLabel(Text("Format"))
             }
         case .frameRate:
             section("Frames per second") {
                 BrutalSegmented(selection: option(\.gifFrameRate), options: VideoExportOptions.gifFrameRates.map { ($0, "\($0)") })
                     .fillingWidth()
                     .brutalTip("GIF frames per second")
+                    .accessibilityLabel(Text("Frames per second"))
             }
         case .width:
             section("Width") {
                 BrutalSegmented(selection: option(\.gifWidth), options: VideoExportOptions.gifWidths.map { ($0, VideoExportPanel.widthLabel($0)) })
                     .fillingWidth()
                     .brutalTip("GIF width in pixels; it's never made wider than the video")
+                    .accessibilityLabel(Text("Width"))
             }
         case .mute:
             HStack(spacing: 10) {
@@ -90,6 +93,7 @@ struct ExportPanel: View {
                     .fillingWidth()
                     .disabled(speedIsLocked)
                     .brutalTip(speedIsLocked ? Self.speedLockedReason : "Playback speed")
+                    .accessibilityLabel(Text("Speed"))
                 if speedIsLocked {
                     note(Self.speedLockedReason)
                 }
