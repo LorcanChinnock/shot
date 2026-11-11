@@ -1027,7 +1027,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | Thumbnail size | `BrutalSlider` 70 pt wide between a 10 pt and a 14 pt `square` in tertiary text |
 | Section heading | "Today" and so on in 13 pt bold, its count after it in 12 pt tertiary tabular figures |
 | Grid | 16 pt between tiles both ways (was 20), 64 pt of room under the last row for the selection bar |
-| Thumbnail | 4:3, rounded at the group radius, 10, on the well colour, with a 1 pt hairline edge and a 1.5 pt soft shadow |
+| Thumbnail | 4:3, rounded at the group radius, 10, on the well colour, with a 1 pt hairline edge and a 1.5 pt soft shadow, black at 6% (dark 30%) |
 | Selected thumbnail | A 2.5 pt selection-blue ring just outside the edge with a 2 pt halo at 20% outside that, and no shadow |
 | Tick | A 20 pt circle in the top-left corner with a 2 pt white ring: selection blue with a white tick when selected, white at 85% with a faint edge otherwise. It shows on hover, and on every tile while anything is selected |
 | Badge | A recording's length, or "GIF", in 10.5 pt bold monospaced white on `#16161A` at 78%, rounded at the tiny radius, 4, 7 pt in from the bottom-right corner |
