@@ -98,7 +98,9 @@ struct StyleSection<Model: StyleEditing>: View {
                 Text("Width")
                     .font(.scaled(12, weight: .semibold))
                     .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
-                    .frame(width: 60, alignment: .leading)
+                    // At least 60 pt so the sizes line up, and wider for a long name such as "Épaisseur" at a larger text size.
+                    .frame(minWidth: 60, alignment: .leading)
+                    .fixedSize()
                 ForEach(widths.indices, id: \.self) { index in
                     let points = widths[index]
                     Tile(selected: abs(points * model.scale - border.width) < 0.01, help: WidthOptions.sizeNames[index]) {

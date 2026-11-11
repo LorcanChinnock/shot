@@ -1108,32 +1108,92 @@ struct SettingRow<Control: View>: View {
 
     var body: some View {
         if SettingsSearch.matches(query, in: context + [title, subtitle ?? ""]) {
-            HStack(alignment: .center, spacing: 16) {
-                if let icon {
-                    Image(systemName: icon.symbol)
-                        .font(.scaled(14, weight: .medium))
-                        .foregroundStyle(icon.tint)
-                        .frame(width: 16)
-                        .padding(.trailing, -4)
-                        .accessibilityHidden(true)
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(Brutal.body).foregroundStyle(Brutal.ink)
-                    if let subtitle {
-                        Text(subtitle)
-                            .font(Brutal.caption)
-                            .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
-                            .fixedSize(horizontal: false, vertical: true)
+            SettingRowLayout {
+                HStack(alignment: .center, spacing: 12) {
+                    if let icon {
+                        Image(systemName: icon.symbol)
+                            .font(.scaled(14, weight: .medium))
+                            .foregroundStyle(icon.tint)
+                            .frame(width: 16)
+                            .accessibilityHidden(true)
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title).font(Brutal.body).foregroundStyle(Brutal.ink)
+                        if let subtitle {
+                            Text(subtitle)
+                                .font(Brutal.caption)
+                                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                 }
-                // Ahead of the control, so at a larger text size a pop-up shortens its value before a title breaks mid-word.
-                .layoutPriority(1)
-                Spacer(minLength: 8)
-                control
-                    .environment(\.settingRowTitle, title)
+                HStack(spacing: 16) {
+                    control
+                }
+                .environment(\.settingRowTitle, title)
             }
             .padding(.vertical, 9)
             .padding(.horizontal, 14)
+        }
+    }
+}
+
+/// A Settings row's name and control: side by side, with the name first in line for room so a pop-up shortens its value
+/// before a name breaks mid-word, or the control under the name when it can't shrink enough to leave the name room
+/// (`SettingRowFit`), as a segmented control or button can in a long translation.
+private struct SettingRowLayout: Layout {
+    private let spacing: CGFloat = 16
+    private let stackedSpacing: CGFloat = 8
+
+    private struct Measure {
+        let stacks: Bool
+        let title: CGSize
+        let control: CGSize
+    }
+
+    private func measure(_ width: CGFloat, _ subviews: Subviews) -> Measure? {
+        guard subviews.count == 2 else {
+            return nil
+        }
+        let title = subviews[0], control = subviews[1]
+        let narrowest = control.sizeThatFits(ProposedViewSize(width: 0, height: nil)).width
+        let titleIdeal = title.sizeThatFits(.unspecified).width
+        if SettingRowFit.stacks(width: width, controlWidth: narrowest, titleWidth: titleIdeal, spacing: spacing) {
+            return Measure(
+                stacks: true,
+                title: title.sizeThatFits(ProposedViewSize(width: width, height: nil)),
+                control: control.sizeThatFits(ProposedViewSize(width: width, height: nil))
+            )
+        }
+        let titleSize = title.sizeThatFits(ProposedViewSize(width: min(titleIdeal, width - narrowest - spacing), height: nil))
+        let controlSize = control.sizeThatFits(ProposedViewSize(width: width - titleSize.width - spacing, height: nil))
+        return Measure(stacks: false, title: titleSize, control: controlSize)
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? subviews.reduce(spacing) { $0 + $1.sizeThatFits(.unspecified).width }
+        guard let m = measure(width, subviews) else {
+            return .zero
+        }
+        return CGSize(
+            width: width,
+            height: m.stacks ? m.title.height + stackedSpacing + m.control.height : max(m.title.height, m.control.height)
+        )
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        guard let m = measure(bounds.width, subviews) else {
+            return
+        }
+        if m.stacks {
+            subviews[0].place(at: bounds.origin, proposal: ProposedViewSize(m.title))
+            subviews[1].place(
+                at: CGPoint(x: bounds.minX, y: bounds.minY + m.title.height + stackedSpacing),
+                proposal: ProposedViewSize(m.control)
+            )
+        } else {
+            subviews[0].place(at: CGPoint(x: bounds.minX, y: bounds.midY), anchor: .leading, proposal: ProposedViewSize(m.title))
+            subviews[1].place(at: CGPoint(x: bounds.maxX, y: bounds.midY), anchor: .trailing, proposal: ProposedViewSize(m.control))
         }
     }
 }

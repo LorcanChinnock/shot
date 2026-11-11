@@ -87,8 +87,6 @@ private struct BrowserPermissionCardView: View {
     var body: some View {
         let scale = CGFloat(textSize.scale)
         let width = Self.width(textSize)
-        let inner = width - Self.padding * 2
-        let secondaryWidth = ((inner - Self.buttonGap) / (1 + Self.mainShare)).rounded()
         VStack(alignment: .leading, spacing: Self.spacing) {
             Image(systemName: "globe")
                 .font(.scaled(18, weight: .semibold))
@@ -106,12 +104,11 @@ private struct BrowserPermissionCardView: View {
                 .lineSpacing(3)
                 .foregroundStyle(increased ? Color.white : FloatingPanel.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: Self.buttonGap) {
+            ButtonRow(shares: [1, Self.mainShare], gap: Self.buttonGap) {
                 Button { actions.useWindow() } label: {
                     Text("Use Window").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(BrutalButtonStyle(floating: true))
-                .frame(width: secondaryWidth)
                 .help(String(localized: "Capture the whole window instead"))
                 Button { actions.grant() } label: {
                     Text("Grant Access").frame(maxWidth: .infinity)

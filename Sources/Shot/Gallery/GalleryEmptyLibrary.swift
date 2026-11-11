@@ -277,7 +277,7 @@ struct TrashConfirmation: View {
                 .font(.scaled(12.5))
                 .lineSpacing(3)
                 .foregroundStyle(contrast == .increased ? Brutal.ink : Brutal.secondaryText)
-            HStack(spacing: 8) {
+            ButtonRow(shares: [1, 1]) {
                 Button { model.trashRequest = nil } label: {
                     Text("Cancel").frame(maxWidth: .infinity)
                 }
