@@ -2,42 +2,68 @@
 // Searches the guide with the static Pagefind index that astro.config.mjs builds into /pagefind/.
 ---
 
-<div class="guide-search card solid" role="search" hidden>
+<div class="guide-search" role="search" hidden>
   <div class="field">
-    <input type="search" placeholder="Search the guide" aria-label="Search the guide" aria-keyshortcuts="/" autocomplete="off" spellcheck="false" />
-    <kbd class="key hint" aria-hidden="true">/</kbd>
+    <svg class="glass" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+    <input type="search" placeholder="Search the guide" aria-label="Search the guide" aria-keyshortcuts="/" aria-controls="guide-results" autocomplete="off" spellcheck="false" />
+    <kbd class="hint" aria-hidden="true">/</kbd>
   </div>
-  <p class="status" aria-live="polite"></p>
-  <ol class="results"></ol>
+  <div class="panel-results" hidden>
+    <p class="status" aria-live="polite"></p>
+    <ol class="results" id="guide-results" aria-label="Search results"></ol>
+  </div>
 </div>
 
 <style>
-  .guide-search { padding: 12px; }
+  /* In the header, between "Shot guide" and the links, as the board draws it. On phones it takes a row of its own. */
+  .guide-search { position: relative; flex: 0 1 380px; min-width: 0; }
   .guide-search[hidden] { display: none; }
-  input {
-    width: 100%; min-height: 40px; padding: 6px 12px;
-    font: 600 16px/1.3 var(--font); color: var(--ink);
-    background: var(--paper);
-    border: 2px solid var(--line); border-radius: 10px;
+  :global(.site-header .bar:has(.guide-search)) { flex-wrap: wrap; }
+  @media (max-width: 720px) {
+    .guide-search { order: 3; flex: 1 1 100%; }
   }
-  input:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
-  .field { position: relative; }
-  input { padding-right: 40px; }
-  .hint { position: absolute; right: 10px; top: 50%; translate: 0 -50%; min-width: 1.6em; font-size: 13px; pointer-events: none; }
-  input:focus + .hint, input:not(:placeholder-shown) + .hint { display: none; }
+  .field { position: relative; display: flex; align-items: center; }
+  .glass { position: absolute; left: 12px; color: var(--tertiary); pointer-events: none; }
+  input {
+    width: 100%; min-height: 40px; padding: 8px 40px 8px 34px;
+    font: 400 15px/1.3 var(--font); color: var(--ink);
+    background: var(--surface);
+    border: 0; border-radius: 12px;
+    box-shadow: 0 0 0 1.5px var(--edge);
+    -webkit-appearance: none; appearance: none;
+  }
+  input::placeholder { color: var(--tertiary); opacity: 1; }
+  input:focus-visible { outline: 2.5px solid var(--ink); outline-offset: 3px; }
+  .hint {
+    position: absolute; right: 10px; min-width: 1.7em; padding: 1px 7px;
+    font: 800 12px/1.4 var(--font); text-align: center; color: var(--ink);
+    background: var(--paper); border-radius: 6px;
+    box-shadow: 0 0 0 1.5px var(--line), 0 2px 0 var(--line);
+    pointer-events: none;
+  }
+  input:focus ~ .hint, input:not(:placeholder-shown) ~ .hint { display: none; }
   /* Touch screens have no slash key to press. */
   @media (hover: none) { .hint { display: none; } }
-  .status { margin: 8px 2px 0; font-size: 14px; color: var(--muted); }
+
+  /* The results open under the field, over the page. */
+  .panel-results {
+    position: absolute; z-index: 20; left: 0; top: calc(100% + 8px);
+    width: max(100%, min(440px, calc(100vw - 32px))); max-height: min(70vh, 560px); overflow-y: auto;
+    padding: 8px; background: var(--surface); border-radius: 16px;
+    box-shadow: 0 0 0 1px var(--edge), var(--float-shadow);
+  }
+  .panel-results[hidden] { display: none; }
+  .status { margin: 6px 8px; font-size: 14px; color: var(--muted); }
   .status:empty { display: none; }
-  .results { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-  .results:not(:empty) { margin-top: 10px; }
+  .results { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
   .results :global(li) { margin: 0; }
-  .results :global(a) { display: block; padding: 6px 8px; border-radius: 8px; text-decoration: none; font-size: 15px; line-height: 1.35; }
-  .results :global(a:hover), .results :global(a:focus-visible) { background: var(--well); }
-  .results :global(.page) { display: block; font: 800 12px/1.4 var(--font); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .results :global(a) { display: block; padding: 8px 10px; border-radius: 10px; text-decoration: none; font-size: 15px; line-height: 1.35; }
+  .results :global(a:hover), .results :global(a:focus-visible) { background: var(--hover); }
+  .results :global(a:focus-visible) { outline-offset: -2.5px; }
+  .results :global(.page) { display: block; font-size: 12.5px; font-weight: 700; color: var(--tertiary); }
   .results :global(.title) { display: block; font-weight: 800; }
   .results :global(.excerpt) { display: block; margin-top: 2px; font-size: 14px; color: var(--muted); }
-  .results :global(mark) { background: var(--yellow); color: var(--on-accent); border-radius: 3px; padding-inline: 1px; }
+  .results :global(mark) { background: var(--accent); color: var(--on-accent); border-radius: 3px; padding-inline: 1px; }
 </style>
 
 <script>
@@ -50,10 +76,11 @@
 
   const box = document.querySelector<HTMLElement>('.guide-search');
   const input = box?.querySelector('input');
+  const panel = box?.querySelector<HTMLElement>('.panel-results');
   const status = box?.querySelector<HTMLElement>('.status');
   const list = box?.querySelector<HTMLOListElement>('.results');
 
-  if (box && input && status && list) {
+  if (box && input && panel && status && list) {
     // The box needs this script, so it shows only once the script runs.
     box.hidden = false;
 
@@ -93,14 +120,17 @@
       if (!query) {
         list.replaceChildren();
         status.textContent = '';
+        panel.hidden = true;
         return;
       }
+      panel.hidden = false;
       let found;
       try {
         found = await (await load()).debouncedSearch(query);
       } catch {
         // `npm run dev` has no index; it's built with the site.
         status.textContent = 'Search works on the built site only.';
+        panel.hidden = false;
         return;
       }
       if (!found) return;
@@ -120,14 +150,26 @@
 
     input.addEventListener('focus', load, { once: true });
     input.addEventListener('input', search);
+    // The results close when focus or a click leaves the search, and come back when you return to a query.
+    box.addEventListener('focusout', (event) => {
+      if (!box.contains(event.relatedTarget as Node | null)) panel.hidden = true;
+    });
+    input.addEventListener('focus', () => {
+      if (input.value.trim()) panel.hidden = false;
+    });
     input.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
-        input.value = '';
-        search();
+        // The first Escape closes the results; the next clears the box.
+        if (!panel.hidden) panel.hidden = true;
+        else {
+          input.value = '';
+          search();
+        }
       } else if (event.key === 'Enter') {
         list.querySelector('a')?.click();
-      } else if (event.key === 'ArrowDown') {
+      } else if (event.key === 'ArrowDown' && list.firstChild) {
         event.preventDefault();
+        panel.hidden = false;
         list.querySelector('a')?.focus();
       }
     });

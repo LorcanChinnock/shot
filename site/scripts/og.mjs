@@ -25,8 +25,6 @@ const stage = hero
   .replace(/<Image src=\{(\w+)\}([^>]*?)\s*\/>/g, (_, name, attrs) => `<img src="${heroImages[name]}"${attrs.replace(/\s(widths|sizes|loading|fetchpriority)=(\{[^}]*\}|"[^"]*")/g, '')}>`);
 const stageStyle = unscope(hero.slice(hero.lastIndexOf('<style>') + '<style>'.length, hero.lastIndexOf('</style>')));
 const windowStyle = unscope(between(source('../src/components/Window.astro'), '<style>', '</style>'));
-// Each guide group's chip colour picks the pastel panel behind its card's picture.
-const tones = { yellow: 'sand', pink: 'blush', sky: 'sky', violet: 'lilac', red: 'sage' };
 
 const media = (file) => url(`../../docs/media/${file}`);
 const shot = (file, size, [x, y, w, h]) => `<div class="sc-crop" style="aspect-ratio: ${w} / ${h}"><img src="${media(file)}" style="width: ${(size[0] / w) * 100}%; left: ${(-x / w) * 100}%; top: ${(-y / h) * 100}%"></div>`;
@@ -64,7 +62,7 @@ const scenes = {
   'removing-shot': code(['<b>$</b> curl -fsSL \\', '    shot.lorcanchinnock.com/uninstall.sh \\', '    | bash']),
 };
 
-const page = ({ chip, chipColor, headline, size, keys, scene }) => `<!doctype html>
+const page = ({ chip, chipColor, tone, headline, size, keys, scene }) => `<!doctype html>
 <link rel="stylesheet" href="${url('../src/styles/global.css')}">
 <style>
   ${stageStyle}
@@ -116,7 +114,7 @@ const page = ({ chip, chipColor, headline, size, keys, scene }) => `<!doctype ht
   <h1>${headline}${keys ? '<span class="keys"><kbd class="key">⌘</kbd><kbd class="key accent">⇧</kbd><kbd class="key">4</kbd></span>' : ''}</h1>
   ${keys ? '<p class="lede">A screenshot app that lives in your menu bar.</p>' : ''}
 </div>
-${scene ? `<figure class="shot-panel panel ${tones[chipColor]}"><div class="shot-anchor"><div class="shot-frame"><div class="sc">${scene}</div></div></div></figure>` : stage}`;
+${scene ? `<figure class="shot-panel panel ${tone}"><div class="shot-anchor"><div class="shot-frame"><div class="sc">${scene}</div></div></div></figure>` : stage}`;
 
 const dir = mkdtempSync(join(tmpdir(), 'shot-og-'));
 const render = (html, out) => {
@@ -129,7 +127,7 @@ const render = (html, out) => {
   ], { stdio: 'ignore' });
 };
 
-render(page({ chip: 'Free and open source', chipColor: 'yellow', headline: 'A <span class="hl">better</span>', size: 100, keys: true }), '../public/og.png');
+render(page({ chip: 'Free and open source', chipColor: 'accent', headline: 'A <span class="hl">better</span>', size: 100, keys: true }), '../public/og.png');
 
 // Cards of pages that no longer exist would otherwise stay behind.
 rmSync(new URL('../public/og/', import.meta.url), { recursive: true, force: true });
@@ -137,5 +135,6 @@ mkdirSync(new URL('../public/og/', import.meta.url), { recursive: true });
 for (const { slug, title, group } of readGuide()) {
   const longest = Math.max(...title.split(' ').map((w) => w.length));
   const size = title.length > 40 ? 52 : title.length > 22 || longest > 12 ? 64 : 84;
-  render(page({ chip: `User guide · ${group}`, chipColor: groups.find((g) => g.name === group).color, headline: title, size, scene: scenes[slug] }), `../public/og/${slug}.png`);
+  const { color, tone } = groups.find((g) => g.name === group);
+  render(page({ chip: `User guide · ${group}`, chipColor: color, tone, headline: title, size, scene: scenes[slug] }), `../public/og/${slug}.png`);
 }

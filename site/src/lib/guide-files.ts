@@ -2,13 +2,14 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseFrontmatter } from '@astrojs/markdown-remark';
 
-/** The guide's parts, in order, each with its colour from the app's palette. */
+/** The guide's parts, in order. `color` is the token behind the group's marker in the page list and its chip (spec › Website
+ * values › Guide groups, which share the scope tags' colours), and `tone` the pastel panel behind its screenshots and social card. */
 export const groups = [
-  { name: 'Get started', color: 'yellow' },
-  { name: 'Capture', color: 'pink' },
-  { name: 'Edit and share', color: 'sky' },
-  { name: 'Reference', color: 'violet' },
-  { name: 'Help', color: 'red' },
+  { name: 'Get started', color: 'accent', tone: 'sand' },
+  { name: 'Capture', color: 'tag-capture', tone: 'blush' },
+  { name: 'Edit and share', color: 'tag-editor', tone: 'sky' },
+  { name: 'Reference', color: 'tag-release', tone: 'lilac' },
+  { name: 'Help', color: 'tag-gallery', tone: 'sage' },
 ] as const;
 
 export interface GuideFile {

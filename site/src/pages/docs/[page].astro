@@ -10,28 +10,70 @@ export function getStaticPaths() {
   }));
 }
 const { page, previous, next } = Astro.props;
-const colorOf = (group: string) => groups.find((g) => g.name === group)?.color;
-const links = pages.map((p) => ({ href: `/docs/${p.slug}/`, title: p.title, current: p === page, group: p.group, color: colorOf(p.group) }));
+const group = groups.find((g) => g.name === page.group)!;
+// The pastel panel's token: the sky one is --sky-panel, since --sky is still an older name (global.css).
+const panel = group.tone === 'sky' ? 'sky-panel' : group.tone;
+const links = pages.map((p) => ({ href: `/docs/${p.slug}/`, title: p.title, current: p === page, group: p.group, color: groups.find((g) => g.name === p.group)?.color }));
+
+// The highlighter goes under the title's last word.
+const words = page.title.split(' ');
+const lead = words.slice(0, -1).join(' ');
+const last = words.at(-1);
+
+// The "Try it now" card, on pages about something a global shortcut starts.
+const screenshot = { keys: ['⌘', '⇧', '4'], label: 'takes a screenshot' };
+const record = { keys: ['⌘', '⇧', '5'], label: 'starts a recording' };
+const tries: Record<string, typeof screenshot> = {
+  'get-started': screenshot,
+  'take-a-screenshot': screenshot,
+  'quick-access': screenshot,
+  'annotate-a-screenshot': screenshot,
+  'crop-and-arrange': screenshot,
+  'style-a-screenshot': screenshot,
+  'combine-images': screenshot,
+  'record-your-screen': record,
+  'edit-a-recording': record,
+  'animate-and-annotate-a-recording': record,
+  'export-a-video-or-gif': record,
+};
+const tryIt = tries[page.slug];
+
+const repo = 'https://github.com/LorcanChinnock/shot';
+const report = `${repo}/issues/new?title=${encodeURIComponent(`Guide: ${page.title}`)}`;
+const edit = `${repo}/edit/main/site/src/guide/${page.file}`;
 ---
 
 <Prose title={page.title} description={page.summary} image={`/og/${page.slug}.png`} imageAlt={`Shot user guide: ${page.title}`} headings={page.headings} pages={links}>
-  <GuideSearch slot="side" />
-  <div data-pagefind-body style={`--accent: var(--${colorOf(page.group)})`}>
+  <GuideSearch slot="header" />
+  <div class="guide-body" data-pagefind-body style={`--chip: var(--${group.color}); --panel: var(--${panel})`}>
     <header class="page-head">
-      <p class="crumb"><a href="/docs/get-started/">User guide</a> <span aria-hidden="true">›</span> <span class="chip">{page.group}</span></p>
-      <h1>{page.title}</h1>
+      <p class="meta"><span class="dot" aria-hidden="true"></span>{page.group} <span class="time">· {page.minutes} min read</span></p>
+      <h1>{lead && `${lead} `}<span class="hl">{last}</span></h1>
       <p class="lede">{page.summary}</p>
     </header>
     <Fragment set:html={page.html} />
   </div>
-  <nav class="pager" aria-label="More of the guide">
-    {previous ? <a class="card prev" href={`/docs/${previous.slug}/`}><span>Previous</span>{previous.title}</a> : <span />}
-    {next ? <a class="card next" href={`/docs/${next.slug}/`}><span>Next</span>{next.title}</a> : <span />}
+  <div class="feedback card" data-pagefind-ignore>
+    <p>Something missing or wrong on this page?</p>
+    <a href={report}>Tell us on GitHub</a>
+    <a class="edit" href={edit}>Edit this page on GitHub</a>
+  </div>
+  <nav class="pager" aria-label="Previous and next pages" data-pagefind-ignore>
+    {previous ? <a class="card prev tilt" href={`/docs/${previous.slug}/`}><span>← Previous</span>{previous.title}</a> : <span />}
+    {next && <a class="ink-card next tilt" href={`/docs/${next.slug}/`}><span>Next →</span>{next.title}</a>}
   </nav>
+  <p class="visually-hidden" aria-live="polite" id="copy-status"></p>
+  {tryIt && (
+    <div slot="rail" class="try dark-band">
+      <p>Try it now</p>
+      <p class="keys"><span class="visually-hidden">Press </span>{tryIt.keys.map((k) => <kbd>{k}</kbd>)}<span class="visually-hidden">, which {tryIt.label}.</span></p>
+    </div>
+  )}
 </Prose>
 
 <script>
-  // A Copy button on each code block. It says Copied, or selects the code and says Press ⌘C when the clipboard is blocked.
+  // A Copy button on each code block. It says Copied ✓, or selects the code and says Press ⌘C when the clipboard is blocked.
+  const status = document.getElementById('copy-status');
   for (const button of document.querySelectorAll<HTMLButtonElement>('.copy-code')) {
     const code = button.previousElementSibling as HTMLElement;
     button.hidden = false;
@@ -39,35 +81,104 @@ const links = pages.map((p) => ({ href: `/docs/${p.slug}/`, title: p.title, curr
     button.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(code.innerText.trimEnd());
-        button.textContent = 'Copied';
+        button.textContent = 'Copied ✓';
+        button.classList.add('done');
+        if (status) status.textContent = 'Copied to the clipboard';
       } catch {
         button.textContent = 'Press ⌘C';
+        if (status) status.textContent = 'Selected. Press Command-C to copy.';
         const range = document.createRange();
         range.selectNodeContents(code);
         getSelection()?.removeAllRanges();
         getSelection()?.addRange(range);
       }
-      button.classList.add('done');
       clearTimeout(reset);
       reset = setTimeout(() => {
         button.textContent = 'Copy';
         button.classList.remove('done');
+        if (status) status.textContent = '';
       }, 1600);
     });
   }
 </script>
 
 <style is:global>
-  .prose .page-head { margin-bottom: 32px; }
-  /* Lighter rules than the changelog's, so a page of short tasks doesn't read as a stack of boxes. */
-  .prose [data-pagefind-body] h2 { margin-top: 44px; padding-top: 20px; border-top: 2px solid var(--well); }
-  .prose .crumb { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font-weight: 700; font-size: 15px; }
-  .prose .crumb .chip { --chip: var(--accent); }
-  .prose .page-head h1 { margin-bottom: 12px; }
-  .prose .lede { margin: 0; font-size: 20px; line-height: 1.45; color: var(--muted); max-width: 40em; }
-  .prose .pager { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 48px; }
-  .prose .pager a { display: grid; gap: 2px; padding: 14px 18px; text-decoration: none; font-weight: 900; font-size: 18px; background: var(--paper); }
-  .prose .pager span { font: 800 12px/1.4 var(--font); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-  .prose .pager .next { text-align: right; }
-  @media (max-width: 560px) { .prose .pager { grid-template-columns: 1fr; } .prose .pager .next { text-align: left; } }
+  /* The guide's article, from the board's "Site · guide page". Long-form pages that share .prose keep its plain rules. */
+  .guide-article { display: grid; gap: 22px; }
+  .prose .guide-body { display: grid; gap: 22px; min-width: 0; color: var(--ink); }
+  .prose .guide-body > * { margin: 0; min-width: 0; }
+
+  .prose .guide-body .page-head { display: grid; gap: 12px; }
+  .prose .guide-body .page-head > * { margin: 0; }
+  .prose .guide-body .meta { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--tertiary); }
+  .prose .guide-body .meta .dot { width: 10px; height: 10px; border-radius: 3px; background: var(--chip); box-shadow: inset 0 0 0 1px rgb(22 22 26 / 0.2); }
+  .prose .guide-body .meta .time { font-weight: 500; }
+  .prose .guide-body .lede { margin: 0; max-width: 40em; }
+
+  .prose .guide-body h2 { margin: 18px 0 0; padding: 0; border: 0; line-height: 1.15; scroll-margin-top: 24px; }
+  .prose .guide-body h3 { margin: 8px 0 0; font-size: 21px; }
+  .prose .guide-body h2 + *, .prose .guide-body h3 + * { margin-top: -8px; }
+
+  /* Screenshots stand on the group's pastel panel, tilted a little, straightening on hover (rehypeFigures in src/lib/guide.ts). */
+  .prose .guide-body figure.shot { display: grid; place-items: center; margin: 8px 0; padding: clamp(14px, 3.5vw, 28px); }
+  .prose .guide-body figure.shot img { border-radius: 14px; box-shadow: 0 24px 50px rgb(40 30 90 / 0.22); transform: rotate(-0.8deg); transition: transform var(--hover-ease); }
+  .prose .guide-body figure.shot img:hover { transform: rotate(0deg) translateY(-3px); }
+
+  /* Steps: each a white card on a red numbered badge. */
+  .prose .guide-body > ol { display: grid; gap: 12px; }
+  .prose .guide-body > ol > li { padding: 14px 16px 14px 60px; min-height: 58px; background: var(--surface); border-radius: 16px; box-shadow: 0 0 0 1px var(--hairline); }
+  .prose .guide-body > ol > li::before { left: 16px; top: 14px; width: 30px; height: 30px; box-shadow: 0 0 0 2.5px #fff, 0 3px 8px rgb(0 0 0 / 0.15); }
+  .prose .guide-body > ol > li:nth-child(2)::before { --delay: 150ms; }
+  .prose .guide-body > ol > li:nth-child(n + 3)::before { --delay: 300ms; }
+  .prose .guide-body li > ul, .prose .guide-body li > ol { margin-top: 6px; }
+
+  /* Callouts: the Tip is a tilted sticky note, the Note a blue callout, Watch out a red one. */
+  .prose .guide-body .callout { display: grid; gap: 6px; margin: 4px 0; padding: 16px 18px; font-size: 16px; }
+  .prose .guide-body .callout > p { margin: 0; }
+  .prose .guide-body .callout-tip { margin-inline: 6px; padding: 18px 20px 20px; border-radius: 0; box-shadow: 0 10px 22px rgb(22 22 26 / 0.12); transform: rotate(-0.6deg); }
+  .prose .guide-body .callout-tip .callout-label { font: 700 26px/1 var(--hand); }
+  .prose .guide-body .callout-note, .prose .guide-body .callout-warning { border-radius: 16px; font-size: 15.5px; }
+  .prose .guide-body .callout-label { gap: 10px; }
+  .prose .guide-body .callout-icon { flex: none; width: 28px; height: 28px; padding: 6px; border-radius: 8px; background: #fff; }
+  .prose .guide-body .callout-warning .callout-icon { background: var(--surface); }
+
+  /* Tables: quiet cards, and an ink outline on key tables (a key cap in the first column). */
+  .prose .guide-body .table { overflow-x: auto; background: var(--surface); border-radius: var(--radius-card); box-shadow: 0 0 0 1px var(--edge); }
+  .prose .guide-body .table:has(td:first-child > kbd:first-child) { box-shadow: var(--ink-ring), var(--ink-drop); margin-bottom: 4px; }
+  .prose .guide-body .table table { display: table; width: 100%; margin: 0; font-size: 15.5px; border-collapse: collapse; }
+  .prose .guide-body .table th, .prose .guide-body .table td { padding: 11px 16px; border: 0; border-top: 1px solid var(--hairline); }
+  .prose .guide-body .table th { padding-block: 12px; border-top: 0; border-bottom: 1.5px solid var(--edge); }
+  .prose .guide-body .table thead + tbody tr:first-child td { border-top: 0; }
+  .prose .guide-body .table td:first-child { white-space: nowrap; }
+  .prose .guide-body .code { margin: 0; }
+
+  /* The end of the page: a way to report a gap, then the previous page and the next one, which is the page's ink control. */
+  .guide-article .feedback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 22px; padding: 16px 20px; }
+  .guide-article .feedback p { margin: 0; font-size: 15px; font-weight: 700; }
+  .guide-article .feedback a { font-weight: 600; font-size: 14.5px; }
+  .guide-article .feedback .edit { margin-left: auto; font-weight: 500; font-size: 13.5px; color: var(--muted); }
+  .guide-article .pager { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .guide-article .pager a { display: grid; gap: 2px; padding: 16px 18px; text-decoration: none; font-weight: 800; font-size: 17px; line-height: 1.3; }
+  .guide-article .pager span { font-size: 13px; font-weight: 500; color: var(--tertiary); }
+  .guide-article .pager .prev { --tilt: -0.6deg; }
+  .guide-article .pager .next { --tilt: 0.6deg; grid-column: -2; text-align: right; color: var(--on-accent); background: var(--accent); }
+  .guide-article .pager .next span { color: #3a3010; }
+  .guide-article .pager .prev:hover { box-shadow: 0 0 0 1px var(--edge), var(--float-shadow); }
+
+  /* "Try it now": the keys that start what this page is about, on the dark band. Touch screens have no keys to press. */
+  .try { display: grid; gap: 10px; margin-top: 20px; padding: 14px; border-radius: 16px; }
+  @media (prefers-color-scheme: dark) { .try { box-shadow: 0 0 0 1px var(--edge); } }
+  .try p { margin: 0; font-size: 13px; font-weight: 700; }
+  .try .keys { display: flex; gap: 5px; }
+  .try kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 2em; padding: 3px 9px; font: 800 15px/1.3 var(--font); color: #16161a; background: #fff; border-radius: 7px; box-shadow: 0 3px 0 #000; }
+  @media (max-width: 999px), (hover: none) { .try { display: none; } }
+
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .prose .guide-body > :is(figure, ol, .callout, .table, .code) { animation: rise linear both; animation-timeline: view(); animation-range: entry 0% cover 20%; }
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .prose .guide-body figure.shot img:hover { transform: rotate(-0.8deg); }
+  }
 </style>
