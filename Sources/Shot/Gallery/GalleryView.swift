@@ -493,7 +493,8 @@ private struct GalleryTile: View, Equatable {
                     Color.clear.inkBorder(shape, width: 1, color: Brutal.hairline)
                 }
             }
-            .shadow(color: .black.opacity(selected ? 0 : 0.06), radius: 1.5, y: 1)
+            // Dark takes black at 30%, as the dark board does; 6% vanishes on the dark window.
+            .shadow(color: selected ? .clear : Color(light: .black.opacity(0.06), dark: .black.opacity(0.3)), radius: 1.5, y: 1)
             VStack(alignment: .leading, spacing: 1) {
                 Text(item.name)
                     .font(.scaled(12.5, weight: .medium))

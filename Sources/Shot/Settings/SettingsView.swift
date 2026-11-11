@@ -1211,7 +1211,6 @@ private struct CameraPreviewCard: View {
             Image(systemName: "person.fill")
                 .font(.system(size: 34))
                 .foregroundStyle(.white.opacity(0.45))
-                .offset(y: 6)
             if let session = preview.session {
                 CameraPreviewView(session: session)
                     .id(ObjectIdentifier(session))
