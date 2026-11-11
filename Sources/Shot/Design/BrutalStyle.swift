@@ -1026,21 +1026,23 @@ struct SettingsGroupHeading: View {
     }
 }
 
-/// A group of Settings rows: its name over a grouped panel, with a separator between rows, and an optional note under the
-/// panel. While searching, it shows only the rows that match, without the note, and nothing when no row does.
+/// A group of Settings rows: its name, if it has one, over a grouped panel, with a separator between rows, and an optional
+/// note under the panel. While searching, it shows only the rows that match, without the note, and nothing when no row does.
 struct SettingsCard<Content: View>: View {
-    let title: LocalizedStringResource
+    var title: LocalizedStringResource?
     var note: LocalizedStringResource?
     @ViewBuilder let content: Content
     @Environment(\.settingsContext) private var context
     @Environment(\.settingsQuery) private var query
 
     var body: some View {
-        let heading = String(localized: title)
+        let heading = title.map { String(localized: $0) }
         Group(subviews: content) { rows in
             if let first = rows.first {
                 VStack(alignment: .leading, spacing: 6) {
-                    SettingsGroupHeading(heading)
+                    if let heading {
+                        SettingsGroupHeading(heading)
+                    }
                     VStack(spacing: 0) {
                         ForEach(rows) { row in
                             if row.id != first.id {
@@ -1063,15 +1065,22 @@ struct SettingsCard<Content: View>: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .environment(\.settingsContext, context + [heading])
+        .environment(\.settingsContext, context + (heading.map { [$0] } ?? []))
     }
 }
 
-/// A Settings row: its name and an optional description on the left, its control on the right. It hides while a search
-/// doesn't match its name, description, group or section.
+/// A Settings row: an optional icon, its name and an optional description on the left, its control on the right. It hides
+/// while a search doesn't match its name, description, group or section.
 struct SettingRow<Control: View>: View {
+    /// A 16 pt line icon before the name, 12 pt from it, as Settings › Shortcuts gives each action.
+    struct Icon {
+        let symbol: String
+        var tint: Color = Brutal.ink.opacity(0.85)
+    }
+
     let title: String
     var subtitle: String?
+    var icon: Icon?
     @ViewBuilder let control: Control
     @Environment(\.settingsQuery) private var query
     @Environment(\.settingsContext) private var context
@@ -1082,15 +1091,24 @@ struct SettingRow<Control: View>: View {
 
     /// A row whose title is already localized, such as an action's.
     @_disfavoredOverload
-    init<S: StringProtocol>(title: S, subtitle: String? = nil, @ViewBuilder control: () -> Control) {
+    init<S: StringProtocol>(title: S, subtitle: String? = nil, icon: Icon? = nil, @ViewBuilder control: () -> Control) {
         self.title = String(title)
         self.subtitle = subtitle
+        self.icon = icon
         self.control = control()
     }
 
     var body: some View {
         if SettingsSearch.matches(query, in: context + [title, subtitle ?? ""]) {
             HStack(alignment: .center, spacing: 16) {
+                if let icon {
+                    Image(systemName: icon.symbol)
+                        .font(.scaled(14, weight: .medium))
+                        .foregroundStyle(icon.tint)
+                        .frame(width: 16)
+                        .padding(.trailing, -4)
+                        .accessibilityHidden(true)
+                }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).font(Brutal.body).foregroundStyle(Brutal.ink)
                     if let subtitle {

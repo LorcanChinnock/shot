@@ -5484,6 +5484,58 @@
         }
       }
     },
+    "Click a shortcut to change it. It needs ⌘, ⌥ or ⌃, and can’t be one that macOS or another action already uses." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klicke auf einen Kurzbefehl, um ihn zu ändern. Er braucht ⌘, ⌥ oder ⌃ und darf nicht schon von macOS oder einer anderen Aktion belegt sein."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Haz clic en un atajo para cambiarlo. Necesita ⌘, ⌥ o ⌃, y no puede ser uno que ya use macOS u otra acción."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cliquez sur un raccourci pour le modifier. Il doit comporter ⌘, ⌥ ou ⌃ et ne pas être déjà utilisé par macOS ou une autre action."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fai clic su un’abbreviazione per cambiarla. Deve includere ⌘, ⌥ o ⌃ e non può essere già usata da macOS o da un’altra azione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ショートカットをクリックすると変更できます。⌘、⌥、⌃ のいずれかを含み、macOS やほかの操作がすでに使っているものは使えません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "단축키를 클릭하면 변경할 수 있습니다. ⌘, ⌥ 또는 ⌃가 들어가야 하며, macOS나 다른 동작이 이미 쓰는 단축키는 쓸 수 없습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clique em um atalho para alterá-lo. Ele precisa ter ⌘, ⌥ ou ⌃ e não pode ser um que o macOS ou outra ação já use."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点按快捷键即可更改。快捷键需包含 ⌘、⌥ 或 ⌃，且不能是 macOS 或其他操作已在使用的。"
+          }
+        }
+      }
+    },
     "Closed after %llds. The next capture brings a new card." : {
       "localizations" : {
         "de" : {
@@ -7397,58 +7449,6 @@
     },
     "Click a screen" : {
 
-    },
-    "Click a shortcut, then press the new keys. Esc cancels, Delete clears." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Klicke auf einen Kurzbefehl und drücke die neuen Tasten. Esc bricht ab, Löschen entfernt ihn."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Haz clic en un atajo y pulsa las nuevas teclas. Esc cancela, Eliminar lo borra."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cliquez sur un raccourci, puis appuyez sur les nouvelles touches. Échap annule, Supprimer efface."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fai clic su un'abbreviazione, poi premi i nuovi tasti. Esc annulla, Elimina cancella."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ショートカットをクリックして新しいキーを押します。Escでキャンセル、Deleteで消去します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "단축키를 클릭한 다음 새 키를 누르세요. Esc는 취소, Delete는 지우기입니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Clique em um atalho e pressione as novas teclas. Esc cancela, Delete apaga."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "点按一个快捷键，然后按下新的按键。Esc 取消，Delete 清除。"
-          }
-        }
-      }
     },
     "Click a window" : {
       "localizations" : {
@@ -11753,6 +11753,58 @@
     "D: delay" : {
 
     },
+    "Delay %@ s" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verzögerung %@ s"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retardo de %@ s"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Délai %@ s"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ritardo %@ s"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "遅延 %@ 秒"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "지연 %@초"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atraso de %@ s"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "延迟 %@ 秒"
+          }
+        }
+      }
+    },
     "DENIED" : {
       "localizations" : {
         "de" : {
@@ -14917,6 +14969,58 @@
     "Enter a name that doesn't start with a dot." : {
 
     },
+    "Esc cancels · ⌫ clears" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esc bricht ab · ⌫ löscht"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esc cancela · ⌫ borra"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Échap annule · ⌫ efface"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esc annulla · ⌫ cancella"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esc でキャンセル · ⌫ で消去"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esc 취소 · ⌫ 지우기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esc cancela · ⌫ apaga"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esc 取消 · ⌫ 清除"
+          }
+        }
+      }
+    },
     "Esc discards" : {
 
     },
@@ -17300,6 +17404,58 @@
         }
       }
     },
+    "Global" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Global"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Globales"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Globaux"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Globali"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "グローバル"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전역"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Globais"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全局"
+          }
+        }
+      }
+    },
     "GRANTED" : {
       "localizations" : {
         "de" : {
@@ -17504,58 +17660,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "GitHub"
-          }
-        }
-      }
-    },
-    "Global hotkeys" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Globale Kurzbefehle"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Atajos globales"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Raccourcis globaux"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abbreviazioni globali"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "グローバルホットキー"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "전역 단축키"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Atalhos globais"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "全局快捷键"
           }
         }
       }
@@ -22679,6 +22783,58 @@
         }
       }
     },
+    "Off gives macOS its screenshot keys back, and Shot’s default shortcuts become ⌃⇧4 and ⌃⇧5." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aus gibt macOS seine Bildschirmfoto-Tasten zurück, und Shots Standardkurzbefehle werden zu ⌃⇧4 und ⌃⇧5."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desactivado devuelve a macOS sus teclas de captura, y los atajos predeterminados de Shot pasan a ser ⌃⇧4 y ⌃⇧5."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Désactivé rend à macOS ses touches de capture d’écran, et les raccourcis par défaut de Shot deviennent ⌃⇧4 et ⌃⇧5."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se disattivato, macOS riprende i suoi tasti per le istantanee e le abbreviazioni predefinite di Shot diventano ⌃⇧4 e ⌃⇧5."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オフにすると macOS にスクリーンショットのキーが戻り、Shot のデフォルトのショートカットは ⌃⇧4 と ⌃⇧5 になります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "끄면 macOS가 스크린샷 키를 다시 쓰고, Shot의 기본 단축키는 ⌃⇧4와 ⌃⇧5가 됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desativado devolve ao macOS suas teclas de captura de tela, e os atalhos padrão do Shot passam a ser ⌃⇧4 e ⌃⇧5."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭后 macOS 会收回截屏按键，Shot 的默认快捷键变为 ⌃⇧4 和 ⌃⇧5。"
+          }
+        }
+      }
+    },
     "Off keeps the original and saves a copy." : {
       "localizations" : {
         "de" : {
@@ -25616,6 +25772,58 @@
         }
       }
     },
+    "Press the new keys. Escape cancels and Delete clears." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drück die neuen Tasten. Escape bricht ab, Löschen entfernt den Kurzbefehl."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pulsa las teclas nuevas. Escape cancela y Suprimir borra."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appuyez sur les nouvelles touches. Échap annule et Supprimer efface."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premi i nuovi tasti. Esc annulla e Elimina cancella."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新しいキーを押してください。Escape でキャンセル、Delete で消去します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 키를 누르십시오. Escape는 취소하고 Delete는 지웁니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pressione as novas teclas. Escape cancela e Apagar limpa."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按下新的按键。Escape 取消，Delete 清除。"
+          }
+        }
+      }
+    },
     "Preview" : {
       "localizations" : {
         "de" : {
@@ -26154,6 +26362,58 @@
     "R: ratio (%@)" : {
 
     },
+    "Ratio %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verhältnis %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proporción %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Format %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proporzioni %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "比率 %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "비율 %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proporção %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "比例 %@"
+          }
+        }
+      }
+    },
     "RECENT CAPTURES" : {
       "localizations" : {
         "de" : {
@@ -26312,6 +26572,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "录制"
+          }
+        }
+      }
+    },
+    "Record Shortcut" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kurzbefehl aufnehmen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grabar atajo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistrer un raccourci"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registra abbreviazione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ショートカットを記録"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "단축키 기록"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gravar atalho"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "录制快捷键"
           }
         }
       }
@@ -26685,6 +26997,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "录制内容以 MP4 格式存储。"
+          }
+        }
+      }
+    },
+    "Records a new shortcut." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nimmt einen neuen Kurzbefehl auf."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Graba un atajo nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistre un nouveau raccourci."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registra una nuova abbreviazione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新しいショートカットを記録します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 단축키를 기록합니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grava um novo atalho."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "录制新的快捷键。"
           }
         }
       }
@@ -27911,6 +28275,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "恢复默认设置"
+          }
+        }
+      }
+    },
+    "Restore the default shortcuts" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standardkurzbefehle wiederherstellen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restaurar los atajos predeterminados"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rétablir les raccourcis par défaut"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripristina le abbreviazioni predefinite"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デフォルトのショートカットに戻す"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기본 단축키 복원"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restaurar os atalhos padrão"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "恢复默认快捷键"
           }
         }
       }
@@ -37705,58 +38121,6 @@
         }
       }
     },
-    "Turns off the matching macOS shortcuts, so these keys and a keyboard's screenshot key open Shot. macOS gets them back while Shot isn't running, or when you turn this off." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Schaltet die passenden macOS-Kurzbefehle aus, damit diese Tasten und die Bildschirmfoto-Taste einer Tastatur Shot öffnen. macOS bekommt sie zurück, wenn Shot nicht läuft oder du dies ausschaltest."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desactiva las funciones rápidas equivalentes de macOS para que estas teclas y la tecla de captura del teclado abran Shot. macOS las recupera cuando Shot no está abierto o cuando desactivas esta opción."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Désactive les raccourcis macOS correspondants, pour que ces touches et la touche de capture d'écran d'un clavier ouvrent Shot. macOS les récupère quand Shot n'est pas ouvert, ou quand vous désactivez cette option."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Disattiva le abbreviazioni corrispondenti di macOS, così questi tasti e il tasto screenshot della tastiera aprono Shot. macOS le riprende quando Shot non è in esecuzione o quando disattivi questa opzione."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "対応するmacOSのショートカットをオフにして、これらのキーやキーボードのスクリーンショットキーでShotが開くようにします。Shotが実行されていないときや、この設定をオフにしたときはmacOSに戻ります。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "해당 macOS 단축키를 꺼서 이 키와 키보드의 스크린샷 키로 Shot을 엽니다. Shot이 실행 중이 아니거나 이 옵션을 끄면 macOS 단축키가 복원됩니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desativa os atalhos correspondentes do macOS, para que estas teclas e a tecla de captura de tela do teclado abram o Shot. O macOS os recupera quando o Shot não está aberto ou quando você desativa isto."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "关闭对应的 macOS 快捷键，让这些按键和键盘上的截屏键打开 Shot。Shot 未运行或你关闭此项时，macOS 会收回这些快捷键。"
-          }
-        }
-      }
-    },
     "Two choices, both in Settings later." : {
       "localizations" : {
         "de" : {
@@ -38965,6 +39329,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "欢迎使用 Shot"
+          }
+        }
+      }
+    },
+    "While picking what to capture" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beim Auswählen, was aufgenommen wird"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Al elegir qué capturar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pendant le choix de la zone à capturer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mentre scegli cosa catturare"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャプチャ対象を選ぶあいだ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "캡처할 대상을 고르는 동안"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ao escolher o que capturar"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择要捕捉的内容时"
           }
         }
       }
@@ -40893,58 +41309,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "macOS 要求每次捕捉都具有录屏权限。"
-          }
-        }
-      }
-    },
-    "macOS screenshot keys" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS-Bildschirmfototasten"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Teclas de captura de macOS"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Touches de capture d'écran de macOS"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tasti screenshot di macOS"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOSのスクリーンショットキー"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS 스크린샷 키"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Teclas de captura do macOS"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS 截屏快捷键"
           }
         }
       }

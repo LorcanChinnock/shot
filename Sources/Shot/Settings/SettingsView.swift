@@ -164,20 +164,27 @@ struct SettingsView: View {
         min(max(sidebarWidth, Self.sidebarWidths.lowerBound), Self.sidebarWidths.upperBound)
     }
 
-    /// The section's name in the title bar beside the sidebar, over a separator.
+    /// The section's name in the title bar beside the sidebar, over a separator, with Shortcuts' Restore Defaults on the right.
     private var header: some View {
-        Group {
-            if navigation.isSearching {
-                Text("Results for “\(navigation.query.trimmingCharacters(in: .whitespacesAndNewlines))”")
-            } else {
-                Text(navigation.section.title)
+        HStack(spacing: 12) {
+            Group {
+                if navigation.isSearching {
+                    Text("Results for “\(navigation.query.trimmingCharacters(in: .whitespacesAndNewlines))”")
+                } else {
+                    Text(navigation.section.title)
+                }
+            }
+            .font(Brutal.section)
+            .foregroundStyle(Brutal.ink)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 0)
+            if !navigation.isSearching && navigation.section == .shortcuts {
+                RestoreShortcutsButton()
+                    .padding(.trailing, -8)
             }
         }
-        .font(Brutal.section)
-        .foregroundStyle(Brutal.ink)
-        .lineLimit(1)
-        .truncationMode(.middle)
-        .accessibilityAddTraits(.isHeader)
         .padding(.horizontal, 28)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: GlassWindow.titlebarHeight)
@@ -1289,6 +1296,9 @@ private struct DevicePicker: View {
 
 // MARK: Shortcuts
 
+/// Settings › Shortcuts (Library & Settings › Settings · Shortcuts): the switch that takes ⌘⇧4 and ⌘⇧5 from macOS, each
+/// action's global shortcut with its icon, and a reference of the keys that work while picking what to capture. Restore
+/// Defaults sits in the title bar (`RestoreShortcutsButton`).
 private struct ShortcutSettings: View {
     @Setting(PreferenceKey.replacesSystemScreenshots) private var replacesSystemScreenshots: Bool
     @State private var macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
@@ -1301,41 +1311,87 @@ private struct ShortcutSettings: View {
     }
 
     var body: some View {
-        SettingsCard(title: "macOS screenshot keys") {
-            ToggleRow(title: "Use Shot for ⌘⇧4 and ⌘⇧5", subtitle: "Turns off the matching macOS shortcuts, so these keys and a keyboard's screenshot key open Shot. macOS gets them back while Shot isn't running, or when you turn this off.", isOn: useShot)
+        SettingsCard {
+            ToggleRow(title: "Use Shot for ⌘⇧4 and ⌘⇧5", subtitle: "Off gives macOS its screenshot keys back, and Shot’s default shortcuts become ⌃⇧4 and ⌃⇧5.", isOn: useShot)
             if replacesSystemScreenshots && macOSOwnsKeys {
                 SettingRow(title: "macOS still uses these keys", subtitle: "Turn off the Screenshots shortcuts under Keyboard Shortcuts.") {
                     Button("Open") { SystemShortcuts.openKeyboardSettings() }
                         .buttonStyle(BrutalButtonStyle())
+                        .fixedSize()
                 }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
         }
+        .onReceive(NotificationCenter.default.publisher(for: .shortcutsRestored)) { _ in
+            macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
+        }
 
-        SettingsCard(title: "Global hotkeys") {
-            let actions = ShotAction.allCases.filter(\.hasShortcut)
-            ForEach(actions, id: \.self) { action in
-                SettingRow(title: action.title) {
+        SettingsCard(title: "Global", note: "Click a shortcut to change it. It needs ⌘, ⌥ or ⌃, and can’t be one that macOS or another action already uses.") {
+            ForEach(ShotAction.allCases.filter(\.hasShortcut), id: \.self) { action in
+                SettingRow(title: action.title, icon: icon(for: action)) {
                     ShortcutRecorderView(action: action)
                 }
             }
         }
-        HStack(alignment: .top, spacing: 14) {
-            Text("Click a shortcut, then press the new keys. Esc cancels, Delete clears.")
-                .font(Brutal.caption)
-                .foregroundStyle(Brutal.faded(0.65))
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer()
-            Button("Restore Defaults") {
-                Preferences.resetHotkeys()
-                SystemShortcuts.useShot(true)
-                macOSOwnsKeys = SystemShortcuts.macOSOwnsKeys
-            }
-                .buttonStyle(BrutalButtonStyle())
+
+        PickingKeysCard()
+    }
+
+    /// The menu bar menu's icon for the action, with Record in record red as it is there.
+    private func icon(for action: ShotAction) -> SettingRow<ShortcutRecorderView>.Icon {
+        action.isRecording ? .init(symbol: action.symbol, tint: Brutal.record) : .init(symbol: action.symbol)
+    }
+}
+
+extension Notification.Name {
+    /// Posted after Restore Defaults puts the shortcuts back, so the pane checks again whether macOS still owns the keys.
+    fileprivate static let shortcutsRestored = Notification.Name("ShotShortcutsRestored")
+}
+
+/// Restore Defaults in the title bar while Shortcuts shows: it puts every shortcut back and gives the ⌘⇧4 and ⌘⇧5 keys
+/// to Shot again, as the button under the shortcuts did before.
+private struct RestoreShortcutsButton: View {
+    var body: some View {
+        Button("Restore Defaults") {
+            Preferences.resetHotkeys()
+            SystemShortcuts.useShot(true)
+            NotificationCenter.default.post(name: .shortcutsRestored, object: nil)
         }
-        .padding(.horizontal, 4)
+        .buttonStyle(BrutalButtonStyle())
+        .fixedSize()
+        .accessibilityLabel(Text("Restore the default shortcuts"))
+    }
+}
+
+/// "While picking what to capture": the overlay's keys from `PickingKey.all` as keycaps, three to a row (two in a narrow
+/// window), on a group panel. It isn't a row, so it hides while searching.
+private struct PickingKeysCard: View {
+    @State private var columns = 3
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            SettingsGroupHeading("While picking what to capture")
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 18, alignment: .leading), count: columns), alignment: .leading, spacing: 10) {
+                ForEach(PickingKey.all, id: \.key) { item in
+                    HStack(spacing: 8) {
+                        Keycap(item.key)
+                        Text(item.label)
+                            .font(.scaled(12.5))
+                            .foregroundStyle(Brutal.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .depth(.group, fill: Brutal.group, radius: Brutal.Radius.group)
+            .onGeometryChange(for: Int.self) { $0.size.width >= 480 ? 3 : 2 } action: { columns = $0 }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .hiddenWhileSearching()
     }
 }
