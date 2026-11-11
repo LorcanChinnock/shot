@@ -215,6 +215,28 @@ private func item(_ name: String, _ date: Date, bytes: Int = 1) -> GalleryItem {
     #expect(!Gallery.canEdit([]))
 }
 
+@Test func selectionSummaryStaysTheSameWhileArrowKeysMoveOneSelectedItem() {
+    let first = GalleryItem(url: URL(fileURLWithPath: "/shots/a.png"), kind: .image, date: now, bytes: 1, folder: "Clients")
+    let next = GalleryItem(url: URL(fileURLWithPath: "/shots/b.png"), kind: .image, date: now, bytes: 1, folder: "Clients")
+    #expect(Gallery.SelectionSummary([first]) == Gallery.SelectionSummary([next]))
+    #expect(Gallery.SelectionSummary([first]).sharedFolder == "Clients")
+    #expect(Gallery.SelectionSummary([first, next]).count == 2)
+}
+
+@Test func selectionSummaryNamesAFolderOnlyWhenEveryItemIsInIt() {
+    let root = GalleryItem(url: URL(fileURLWithPath: "/shots/a.png"), kind: .image, date: now, bytes: 1)
+    let filed = GalleryItem(url: URL(fileURLWithPath: "/shots/Clients/b.png"), kind: .image, date: now, bytes: 1, folder: "Clients")
+    #expect(Gallery.SelectionSummary([root]).sharedFolder == "")
+    #expect(Gallery.SelectionSummary([root, filed]).sharedFolder == nil)
+    #expect(Gallery.SelectionSummary([]).sharedFolder == nil)
+}
+
+@Test func selectionSummaryLetsAnyGIFBeEditedUntilTheClick() {
+    // Whether a GIF has a project is read only on a click, so a GIF never greys Edit out.
+    #expect(Gallery.SelectionSummary([item("a.png", now), item("c.gif", now)]).canEdit)
+    #expect(!Gallery.SelectionSummary([]).canEdit)
+}
+
 @Test func recentImagesAreTheNewestScreenshotsButTheOneBeingEdited() {
     let items = [
         item("old.png", day(9, 1)), item("clip.mp4", day(10, 7)), item("party.gif", day(10, 7)),

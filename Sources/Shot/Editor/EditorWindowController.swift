@@ -75,6 +75,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
             existing.show()
             return
         }
+        let opening = Perf.begin("Window open")
         let saved = flat ? nil : VersionWriter.savedLayers(of: url, in: .app)
         // A version saved over its file has its original in Shot's own folder, so it keeps its own name.
         let file = saved.map { ProjectStore.app.keeps($0.original) ? url : $0.original } ?? url
@@ -90,6 +91,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         let controller = EditorWindowController(model: model, opened: url)
         open.append(controller)
         controller.show()
+        Perf.measureWindowOpen("editor", since: opening)
         log.notice("Editor opened: \(url.path)\(saved == nil ? "" : " with its layers")")
     }
 

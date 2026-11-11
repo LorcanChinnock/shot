@@ -26,6 +26,12 @@ budget_memory_mb="30"
 budget_idle_cpu="1.0"
 budget_gallery_selection_ms="30"
 budget_gallery_filter_ms="36"
+budget_quick_access_ms="14"
+budget_menu_ms="62"
+budget_settings_ms="113"
+budget_gallery_open_ms="160"
+budget_editor_ms="324"
+budget_video_editor_ms="99"
 
 work=$(mktemp -d "${TMPDIR:-/tmp}/shot-perf.XXXXXX")
 started=$(date "+%Y-%m-%d %H:%M:%S")
@@ -139,6 +145,8 @@ for i in $(seq 20); do
 done
 sleep 2
 capture_ms=$(durations "Capture to clipboard" copied | median)
+# Quick Access: from each capture's card being added to the frame that first shows it.
+quick_access_ms=$(durations "Quick Access open" card | median)
 
 # Memory after use: the footprint once the 20 captures' Quick Access cards have gone.
 sleep 10
@@ -200,27 +208,80 @@ restore_save_folder
 gallery_selection_ms=$(durations "Gallery selection" "items=1500" | median)
 gallery_filter_ms=$(durations "Gallery filter" | median)
 
-# Idle CPU: open and close the editor, video editor and gallery, then the CPU time used over the next 30 s.
 shot=$(find "$folder" -maxdepth 1 -newer "$marker" -name "*.png" | head -1)
 clip="$work/clip.mp4"
 if command -v ffmpeg >/dev/null; then
   ffmpeg -loglevel error -y -f lavfi -i "testsrc2=size=1280x720:rate=30:duration=3" -c:v libx264 -pix_fmt yuv420p "$clip"
+else
+  cp docs/media/recording.mp4 "$clip"
 fi
 encode() { python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$1"; }
 [ -n "$shot" ] || { echo "No capture found in $folder to open in the editor" >&2; exit 1; }
+close_windows() {
+  osascript -e "tell application \"System Events\" to tell process \"$executable\"
+    set frontmost to true
+    repeat (count of windows) times
+      keystroke \"w\" using command down
+      delay 0.5
+    end repeat
+  end tell" >/dev/null
+}
+
+# Menu: click Shot's menu bar icon five times with real mouse events, closing the menu with Escape each time. A click on
+# the icon never reaches the app, so each one is timed from the moment this script posts it to the app's "Menu shown" event.
+icon=$(osascript -e "tell application \"System Events\" to tell process \"$executable\" to get {position, size} of menu bar item 1 of menu bar 2" | tr -d ' ')
+clicks="$work/menu-clicks"
+python3 -c '
+import ctypes, sys, time
+cg = ctypes.CDLL("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics")
+class Point(ctypes.Structure):
+    _fields_ = [("x", ctypes.c_double), ("y", ctypes.c_double)]
+cg.CGEventCreateMouseEvent.restype = ctypes.c_void_p
+cg.CGEventCreateMouseEvent.argtypes = [ctypes.c_void_p, ctypes.c_uint32, Point, ctypes.c_uint32]
+cg.CGEventCreateKeyboardEvent.restype = ctypes.c_void_p
+cg.CGEventCreateKeyboardEvent.argtypes = [ctypes.c_void_p, ctypes.c_uint16, ctypes.c_bool]
+cg.CGEventPost.argtypes = [ctypes.c_uint32, ctypes.c_void_p]
+x, y, width, height = (float(v) for v in sys.argv[1].split(","))
+centre = Point(x + width / 2, y + height / 2)
+for _ in range(5):
+    print(time.time(), flush=True)
+    for kind in (1, 2):  # left mouse down, up
+        cg.CGEventPost(0, cg.CGEventCreateMouseEvent(None, kind, centre, 0))
+    time.sleep(1.5)
+    for down in (True, False):  # Escape
+        cg.CGEventPost(0, cg.CGEventCreateKeyboardEvent(None, 53, down))
+    time.sleep(1)
+' "$icon" > "$clicks"
+menu_ms=$(signposts "Menu shown" | python3 -c '
+import json, sys
+from datetime import datetime
+clicks = [float(line) for line in open(sys.argv[1])]
+shown = sorted(datetime.strptime(json.loads(line)["timestamp"], "%Y-%m-%d %H:%M:%S.%f%z").timestamp() for line in sys.stdin if "signpostType" in line)
+for click in clicks:
+    after = [when for when in shown if click <= when < click + 1]
+    if after:
+        print((after[0] - click) * 1000)' "$clicks" | median)
+
+# Window opening: Settings, the gallery, the editor and the video editor, three times each, closing them in between.
+for link in "$scheme://settings?section=general" "$scheme://gallery" "$scheme://annotate?path=$(encode "$shot")" "$scheme://edit-video?path=$(encode "$clip")"; do
+  for _ in 1 2 3; do
+    open -g -a "$app" "$link"
+    sleep 3
+    close_windows
+    sleep 1
+  done
+done
+settings_ms=$(durations "Window open" settings | median)
+gallery_open_ms=$(durations "Window open" gallery | median)
+editor_ms=$(durations "Window open" editor | median)
+video_editor_ms=$(durations "Window open" "video editor" | median)
+
+# Idle CPU: open and close the editor, video editor and gallery, then the CPU time used over the next 30 s.
 open -g -a "$app" "$scheme://annotate?path=$(encode "$shot")"
-if [ -f "$clip" ]; then
-  open -g -a "$app" "$scheme://edit-video?path=$(encode "$clip")"
-fi
+open -g -a "$app" "$scheme://edit-video?path=$(encode "$clip")"
 open -g -a "$app" "$scheme://gallery"
 sleep 4
-osascript -e "tell application \"System Events\" to tell process \"$executable\"
-  set frontmost to true
-  repeat (count of windows) times
-    keystroke \"w\" using command down
-    delay 0.5
-  end repeat
-end tell" >/dev/null
+close_windows
 sleep 5
 # ps %cpu is a decaying average over about a minute, so it would still count the windows just closed; CPU time isn't.
 cpu_seconds() { ps -o time= -p "$(pid)" | python3 -c '
@@ -251,5 +312,11 @@ row "Memory after use" "$memory_mb" MB "$budget_memory_mb"
 row "Idle CPU" "$idle_cpu" % "$budget_idle_cpu"
 row "Gallery selection" "$gallery_selection_ms" ms "$budget_gallery_selection_ms"
 row "Gallery filter" "$gallery_filter_ms" ms "$budget_gallery_filter_ms"
+row "Quick Access open" "$quick_access_ms" ms "$budget_quick_access_ms"
+row "Menu open" "$menu_ms" ms "$budget_menu_ms"
+row "Settings open" "$settings_ms" ms "$budget_settings_ms"
+row "Gallery open" "$gallery_open_ms" ms "$budget_gallery_open_ms"
+row "Editor open" "$editor_ms" ms "$budget_editor_ms"
+row "Video editor open" "$video_editor_ms" ms "$budget_video_editor_ms"
 echo
 exit $failed

@@ -27,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let launch = Perf.millisecondsSinceLaunch() {
             Perf.signposter.emitEvent("Ready", "launch ms=\(launch)")
         }
+        Perf.watchMenuOpening()
         QuickAccessController.shared.onAnnotate = { [weak self] url in
             self?.coordinator.annotate(url)
         }
