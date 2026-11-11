@@ -1395,7 +1395,7 @@ From **Website › Site · components and motion**, **Site · landing page** and
 | H2 | 30 px, 900, tracking −0.03 em |
 | Lede | 20 px, line height 1.5 |
 | Body | 16.5 px, line height 1.65 |
-| Notes | Caveat 700, notes only |
+| Notes | Caveat 700, notes only, self-hosted in `site/public/fonts/` so the site still makes no third-party requests |
 | Containers | guide 1360 px, landing page 1240 px; marks hidden under 860 px |
 
 ### Motion
@@ -1410,7 +1410,9 @@ From **Website › Site · components and motion**, **Site · landing page** and
 | Ambient | 2–5 s loops | Key presses, pulse, float; the marquee takes 20–32 s |
 | Hover | 350 ms ease-out | Tilted cards straighten and lift 4 px |
 
-`prefers-reduced-motion: reduce` turns every one of these off, and the page needs no animation script.
+`prefers-reduced-motion: reduce` turns every one of these off, and the page needs no animation script. Colour changes stay as a 120 ms fade, and a pressed button darkens instead of dropping, as in the app.
+
+In dark (#1123), the highlighter sits lower, from 80% to 96% of the line, because off-white text on yellow fails contrast. Pastel panels are mixed 26% into the dark card colour `#2C2C30`. Sticky notes, callouts and scope tags keep their light colours. Keyboard focus is a 2.5 px ink ring rather than the app's accent halo, since yellow on the light page is under 3:1.
 
 ## Coverage: boards
 
