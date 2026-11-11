@@ -1520,7 +1520,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Site · landing page | #1124 | `site/src/pages/index.astro`, `site/src/components/HeroStage.astro`, `Loop.astro`, `Copy.astro`, `Window.astro`, `ForMacs.astro` | ☐ |
 | Site · guide page | #1125 | `site/src/layouts/Prose.astro`, `site/src/pages/docs/[page].astro`, `site/src/components/GuideSearch.astro`, `site/src/lib/guide.ts`, `site/src/lib/guide-files.ts` | ☐ |
 | Site · guide page › long-form text | #1127 | `site/src/pages/privacy/`, `site/src/pages/screenshot-apps/` | ☐ |
-| Site · changelog | #1126 | `site/src/pages/changelog/index.astro` | ☐ |
+| Site · changelog | #1126 | `site/src/pages/changelog/`, `site/src/components/ChangelogRelease.astro`, `site/src/lib/changelog.ts`, `site/src/data/changelog-highlights.ts` | ☐ |
 
 ### Whole-app checks
 

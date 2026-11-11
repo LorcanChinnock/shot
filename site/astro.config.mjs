@@ -2,26 +2,10 @@ import { defineConfig } from 'astro/config';
 import { writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import * as pagefind from 'pagefind';
-import { SKIP, visit } from 'unist-util-visit';
 import { readGuide } from './src/lib/guide-files.ts';
 import { rehypeRepoLinks } from './src/lib/rehype.ts';
 
 const repo = 'https://github.com/LorcanChinnock/shot';
-
-/** Drops release-please's "(abc1234)" commit links from CHANGELOG.md; the issue link is enough. */
-function rehypeDropCommitLinks() {
-  return (tree) =>
-    visit(tree, 'element', (node, index, parent) => {
-      if (node.tagName !== 'a' || !/\/commit\/[0-9a-f]+$/.test(node.properties?.href ?? '')) return;
-      const before = parent.children[index - 1];
-      const after = parent.children[index + 1];
-      if (before?.type !== 'text' || !before.value.endsWith('(') || after?.type !== 'text' || !after.value.startsWith(')')) return;
-      before.value = before.value.slice(0, -1).trimEnd();
-      after.value = after.value.slice(1);
-      parent.children.splice(index, 1);
-      return [SKIP, index];
-    });
-}
 
 /** Writes Cloudflare's _redirects, so short links like /github and /sponsor redirect. */
 function redirects() {
@@ -66,11 +50,11 @@ export default defineConfig({
   redirects: { '/docs': '/docs/get-started/' },
   integrations: [redirects(), search()],
   markdown: {
-    rehypePlugins: [rehypeRepoLinks, rehypeDropCommitLinks],
+    rehypePlugins: [rehypeRepoLinks],
     shikiConfig: { themes: { light: 'github-light', dark: 'github-dark' } },
   },
   vite: {
-    // CHANGELOG.md and docs/media live outside the site folder.
+    // docs/media lives outside the site folder.
     server: { fs: { allow: ['..'] } },
     // Keep scripts in files, so the Content-Security-Policy in public/_headers can stay at script-src 'self'.
     build: { assetsInlineLimit: 0 },
