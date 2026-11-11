@@ -29,7 +29,7 @@ Download the zip from the [latest release](https://github.com/LorcanChinnock/sho
 
 ![The welcome window's second step, Make it yours: Use Shot for ⌘⇧4 and ⌘⇧5 and Open Shot at login both on, with a Continue button](../../../docs/media/welcome.png)
 
-A short welcome window walks you through up to three steps. You can close it at any point to skip the rest.
+A short welcome window walks you through up to three steps, named across its top so you can see how far you've got. **Back** in the bottom left returns to the step before. You can close the window at any point to skip the rest.
 
 1. **Allow screen recording.** macOS needs this for every capture. Click **Grant** and turn Shot on under **Screen & System Audio Recording**, then click **Relaunch**. macOS only applies the permission after Shot restarts. If Shot already has it, you won't see this step.
 2. **Make it yours.** Choose whether Shot takes over the screenshot keys <kbd>⌘⇧4</kbd> and <kbd>⌘⇧5</kbd>, and whether it opens when you log in. Both start on. Click **Continue** to apply them. If you close the window here instead, macOS keeps its keys and Shot doesn't open at login.

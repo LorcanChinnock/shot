@@ -594,6 +594,58 @@
         }
       }
     },
+    "%@ records the screen" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ nimmt den Bildschirm auf"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ graba la pantalla"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ enregistre l’écran"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ registra lo schermo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@で画面を収録"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 키로 화면 녹화"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ grava a tela"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 录制屏幕"
+          }
+        }
+      }
+    },
     "%@ records the screen the same way." : {
 
     },
@@ -4900,6 +4952,58 @@
     "B: browser page only" : {
 
     },
+    "Back" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zurück"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atrás"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retour"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indietro"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "戻る"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "뒤로"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voltar"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "返回"
+          }
+        }
+      }
+    },
     "Back to grid" : {
       "localizations" : {
         "de" : {
@@ -5532,6 +5636,58 @@
     },
     "Browser needs Accessibility" : {
 
+    },
+    "Browser pages" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Browserseiten"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Páginas del navegador"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pages du navigateur"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pagine del browser"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブラウザのページ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "브라우저 페이지"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Páginas do navegador"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "浏览器页面"
+          }
+        }
+      }
     },
     "Browser pages are ready" : {
 
@@ -21274,6 +21430,58 @@
     "M: magnifier" : {
 
     },
+    "macOS gets its screenshot keys back when Shot quits." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS bekommt seine Bildschirmfoto-Tasten zurück, wenn Shot beendet wird."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS recupera sus teclas de captura cuando Shot se cierra."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS récupère ses raccourcis de capture quand Shot se ferme."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS riprende i suoi tasti per gli screenshot quando Shot si chiude."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shotを終了すると、macOSのスクリーンショットキーが元に戻ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shot을 종료하면 macOS가 스크린샷 키를 다시 사용합니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O macOS recupera as teclas de captura quando o Shot é encerrado."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出 Shot 后，macOS 会恢复它的截图快捷键。"
+          }
+        }
+      }
+    },
     "Move %lld captures to the Trash?" : {
       "localizations" : {
         "en" : {
@@ -25451,6 +25659,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "勾勒录制的范围。它不会出现在视频中。"
+          }
+        }
+      }
+    },
+    "Permission" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Berechtigung"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permiso"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autorisation"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permesso"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アクセス許可"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "권한"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permissão"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "权限"
           }
         }
       }
@@ -31374,6 +31634,58 @@
         }
       }
     },
+    "Screenshot of any area" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildschirmfoto eines beliebigen Bereichs"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Captura de cualquier área"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capture de n’importe quelle zone"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Screenshot di qualsiasi area"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "好きな範囲のスクリーンショット"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "원하는 영역의 스크린샷"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Captura de qualquer área"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "任意区域的截图"
+          }
+        }
+      }
+    },
     "Screenshot shortcut: %@" : {
       "localizations" : {
         "de" : {
@@ -31426,6 +31738,110 @@
         }
       }
     },
+    "Screenshot, copied" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildschirmfoto, kopiert"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Captura, copiada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capture, copiée"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Screenshot, copiato"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "スクリーンショットをコピー"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스크린샷 복사"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Captura, copiada"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "截图并拷贝"
+          }
+        }
+      }
+    },
+    "Screenshot, copied and saved" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildschirmfoto, kopiert und gesichert"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Captura, copiada y guardada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capture, copiée et enregistrée"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Screenshot, copiato e salvato"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "スクリーンショットをコピーして保存"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스크린샷 복사 및 저장"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Captura, copiada e salva"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "截图，拷贝并存储"
+          }
+        }
+      }
+    },
     "Screenshot, locked" : {
       "localizations" : {
         "de" : {
@@ -31474,6 +31890,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "截屏，已锁定"
+          }
+        }
+      }
+    },
+    "Screenshot, saved" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildschirmfoto, gesichert"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Captura, guardada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capture, enregistrée"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Screenshot, salvato"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "スクリーンショットを保存"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스크린샷 저장"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Captura, salva"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "截图并存储"
           }
         }
       }
@@ -33425,6 +33893,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Shot 在此截屏中未找到文字。"
+          }
+        }
+      }
+    },
+    "Shot is on" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shot ist eingeschaltet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shot está activado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shot est activé"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shot è attivo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shotはオンです"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shot이 켜져 있음"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Shot está ativado"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shot 已打开"
           }
         }
       }
@@ -36551,60 +37071,60 @@
         }
       }
     },
-    "Step %lld of %lld" : {
+    "Step %lld of %lld: %@" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Schritt %1$lld von %2$lld"
+            "value" : "Schritt %1$lld von %2$lld: %3$@"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Step %1$lld of %2$lld"
+            "value" : "Step %1$lld of %2$lld: %3$@"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paso %1$lld de %2$lld"
+            "value" : "Paso %1$lld de %2$lld: %3$@"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Étape %1$lld sur %2$lld"
+            "value" : "Étape %1$lld sur %2$lld : %3$@"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Passaggio %1$lld di %2$lld"
+            "value" : "Passo %1$lld di %2$lld: %3$@"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ステップ%1$lld/%2$lld"
+            "value" : "ステップ%1$lld/%2$lld：%3$@"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%2$lld단계 중 %1$lld단계"
+            "value" : "%2$lld단계 중 %1$lld단계: %3$@"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Passo %1$lld de %2$lld"
+            "value" : "Etapa %1$lld de %2$lld: %3$@"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "第 %1$lld 步，共 %2$lld 步"
+            "value" : "第 %1$lld 步，共 %2$lld 步：%3$@"
           }
         }
       }
@@ -39634,54 +40154,54 @@
         }
       }
     },
-    "Two choices, both in Settings later." : {
+    "Two choices. You can change both later in Settings." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zwei Optionen, beide später in den Einstellungen."
+            "value" : "Zwei Entscheidungen. Du kannst beide später in den Einstellungen ändern."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dos opciones, ambas en Ajustes más adelante."
+            "value" : "Dos opciones. Puedes cambiar ambas más tarde en Ajustes."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Deux choix, modifiables plus tard dans les Réglages."
+            "value" : "Deux choix. Vous pourrez les modifier plus tard dans les Réglages."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Due scelte, entrambe modificabili poi in Impostazioni."
+            "value" : "Due scelte. Puoi cambiarle entrambe più tardi nelle Impostazioni."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "2つの選択肢です。どちらも後で設定から変更できます。"
+            "value" : "選ぶのは2つだけ。どちらもあとで設定で変更できます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "두 가지 선택 사항이며, 나중에 설정에서 바꿀 수 있습니다."
+            "value" : "두 가지만 고르세요. 둘 다 나중에 설정에서 바꿀 수 있습니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Duas escolhas, ambas nos Ajustes depois."
+            "value" : "Duas escolhas. Você pode mudar as duas depois nos Ajustes."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "两个选项，之后都可以在“设置”中更改。"
+            "value" : "两个选择。之后都可以在设置中更改。"
           }
         }
       }
@@ -43024,58 +43544,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "macOS 仍在使用这些按键"
-          }
-        }
-      }
-    },
-    "macOS's own screenshot shortcuts turn off while Shot runs, and come back when it quits." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die macOS-eigenen Bildschirmfoto-Kurzbefehle sind aus, solange Shot läuft, und kommen zurück, wenn es beendet wird."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Las funciones rápidas de captura de pantalla de macOS se desactivan mientras Shot está abierto y vuelven cuando lo cierras."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les raccourcis de capture d'écran de macOS sont désactivés tant que Shot est ouvert, et reviennent quand vous le quittez."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le abbreviazioni screenshot di macOS si disattivano mentre Shot è in esecuzione e tornano quando Shot si chiude."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shotの実行中はmacOS標準のスクリーンショットのショートカットがオフになり、終了すると元に戻ります。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shot이 실행되는 동안 macOS 자체 스크린샷 단축키가 꺼지고, Shot을 종료하면 다시 켜집니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Os atalhos de captura de tela do próprio macOS ficam desativados enquanto o Shot está aberto e voltam quando ele é encerrado."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shot 运行时，macOS 自带的截屏快捷键会关闭，退出 Shot 后会恢复。"
           }
         }
       }
