@@ -13,16 +13,16 @@ Apple hasn't notarized Shot, and macOS checks apps you download in a browser. Cl
 macOS applies the access only after Shot relaunches.
 
 1. Quit Shot and open it again.
-2. Check **Settings › About**: it shows **GRANTED** or **MISSING** beside **Screen & System Audio Recording**. **Grant** asks for access, and once macOS has asked, **Open** goes to that list in System Settings.
-3. If it still says MISSING, run this in Terminal, then open Shot and grant access again:
+2. Check **Settings › About**: **Screen & System Audio Recording** shows **Allowed**, or an **Allow…** button. The first click of **Allow…** asks macOS for access, and after that it opens that list in System Settings. Once Shot has asked, **Relaunch** appears beside it.
+3. If it still shows **Allow…**, run this in Terminal, then open Shot and grant access again:
 
 ```sh
 tccutil reset ScreenCapture dev.lorcan.Shot
 ```
 
-## Microphone or Camera says NOT ASKED, but System Settings shows Shot allowed
+## Microphone or Camera shows Allow…, but System Settings shows Shot allowed
 
-The allowed entry belongs to a differently signed copy of Shot, such as one you built yourself. Clear it, then click **Grant** in **Settings › About**:
+The allowed entry belongs to a differently signed copy of Shot, such as one you built yourself. Clear it, then click **Allow…** in **Settings › About**:
 
 ```sh
 tccutil reset Microphone dev.lorcan.Shot

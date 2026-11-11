@@ -156,7 +156,7 @@ private struct SettingsSidebarFooter: View {
                         .foregroundStyle(Brutal.ink)
                     Text(status)
                         .font(.scaled(11))
-                        .foregroundStyle(updater.pendingVersion == nil
+                        .foregroundStyle(updater.status.availableVersion == nil
                             ? ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink)
                             : ContrastAware(standard: Brutal.accentText, increased: Brutal.ink))
                         .lineLimit(1)
@@ -180,16 +180,16 @@ private struct SettingsSidebarFooter: View {
         .accessibilityHint(Text("Opens About"))
     }
 
-    /// "Up to date" only while Shot checks by itself and has found nothing; otherwise the version, since a build that doesn't
-    /// check can't say.
+    /// "Up to date" only when a check in this session found nothing; otherwise the version, since Shot can't say.
     private var status: String {
-        if let version = updater.pendingVersion {
+        switch updater.status {
+        case .available(let version):
             return String(localized: "Shot \(version) is available")
-        }
-        if updater.isEnabled, updater.automaticallyChecks {
+        case .upToDate:
             return String(localized: "Up to date")
+        case .off, .lastChecked, .notChecked:
+            let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+            return String(localized: "Version \(version)")
         }
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
-        return String(localized: "Version \(version)")
     }
 }

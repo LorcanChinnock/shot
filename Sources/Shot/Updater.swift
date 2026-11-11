@@ -1,6 +1,7 @@
 import AppKit
 import Observation
 import os
+import ShotCore
 import Sparkle
 
 private let log = Logger.shot("update")
@@ -19,6 +20,8 @@ final class Updater: NSObject {
     /// update alert can open behind other windows, so the menu offers it too.
     private(set) var pendingVersion: String?
     private(set) var canCheckForUpdates = false
+    /// What the last check in this session found, for Settings' status. Nil until one finishes.
+    private(set) var lastCheckResult: UpdateCheckResult?
     /// False in builds without an update feed, such as ShotDev, which never check.
     let isEnabled: Bool
 
@@ -53,6 +56,11 @@ final class Updater: NSObject {
         }
     }
 
+    /// What Settings shows about updates: About's header and the sidebar's footer.
+    var status: UpdateStatus {
+        UpdateStatus(hasFeed: isEnabled, pendingVersion: pendingVersion, lastResult: lastCheckResult, lastCheck: isEnabled ? controller.updater.lastUpdateCheckDate : nil)
+    }
+
     func checkForUpdates() {
         NSApp.activate()
         controller.checkForUpdates(nil)
@@ -60,6 +68,19 @@ final class Updater: NSObject {
 }
 
 extension Updater: SPUUpdaterDelegate {
+    nonisolated func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
+        let version = item.displayVersionString
+        Task { @MainActor in
+            lastCheckResult = .found(version: version)
+        }
+    }
+
+    nonisolated func updaterDidNotFindUpdate(_ updater: SPUUpdater) {
+        Task { @MainActor in
+            lastCheckResult = .upToDate
+        }
+    }
+
     nonisolated func updater(_ updater: SPUUpdater, shouldProceedWithUpdate updateItem: SUAppcastItem, updateCheck: SPUUpdateCheck) throws {
         let running = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         let infoURL = Bundle.main.bundleURL.appending(path: "Contents/Info.plist")

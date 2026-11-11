@@ -490,8 +490,57 @@
         }
       }
     },
-    "%@ of screenshots as they were before Save went over them. They let you undo those edits, and stay on this Mac." : {
-
+    "%@ of screenshots from before Save went over them, for undo." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ an Bildschirmfotos von vor dem Überschreiben durch Sichern, zum Widerrufen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ de capturas de antes de que Guardar las sobrescribiera, para deshacer."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ de captures d’écran d’avant leur remplacement par Enregistrer, pour annuler."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ di screenshot di prima che Salva li sovrascrivesse, per annullare."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存で上書きする前のスクリーンショット %@（取り消し用）。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "저장으로 덮어쓰기 전의 스크린샷 %@(실행 취소용)."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ de capturas de antes de Salvar sobrescrevê-las, para desfazer."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 被“存储”覆盖前的截图，用于撤销。"
+          }
+        }
+      }
     },
     "%@ outside" : {
       "localizations" : {
@@ -3894,6 +3943,110 @@
         }
       }
     },
+    "Allowed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erlaubt"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permitido"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autorisé"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consentito"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "許可済み"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "허용됨"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permitido"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已允许"
+          }
+        }
+      }
+    },
+    "Allow…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erlauben …"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permitir…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autoriser…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consenti…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "許可…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "허용…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permitir…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "允许…"
+          }
+        }
+      }
+    },
     "Amount" : {
       "localizations" : {
         "de" : {
@@ -4322,6 +4475,58 @@
     "Arrows: next window" : {
 
     },
+    "Asks macOS for access" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bittet macOS um Zugriff"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pide acceso a macOS"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demande l’accès à macOS"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiede l’accesso a macOS"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOSにアクセスを求めます"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS에 접근 권한을 요청합니다"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pede acesso ao macOS"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "向 macOS 请求访问权限"
+          }
+        }
+      }
+    },
     "Aspect" : {
       "localizations" : {
         "de" : {
@@ -4480,58 +4685,6 @@
     },
     "B: browser page only" : {
 
-    },
-    "BETA" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "BETA"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "BETA"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "BÊTA"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "BETA"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ベータ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "베타"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "BETA"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "测试版"
-          }
-        }
-      }
     },
     "Back to grid" : {
       "localizations" : {
@@ -5169,54 +5322,55 @@
     "Browser pages are ready" : {
 
     },
-    "Bug reports and ideas are welcome." : {
+    "bug issue feedback idea" : {
+      "comment" : "Search words for the Report a problem row in Settings › About, separated by spaces",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fehlerberichte und Ideen sind willkommen."
+            "value" : "Fehler Bug Problem Feedback Idee"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se agradecen los informes de errores y las ideas."
+            "value" : "error fallo problema comentarios idea"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rapports de bugs et idées sont les bienvenus."
+            "value" : "bug problème retour idée"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Segnalazioni di bug e idee sono benvenute."
+            "value" : "bug errore problema feedback idea"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "バグ報告やアイデアを歓迎します。"
+            "value" : "バグ 不具合 問題 フィードバック 要望"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "버그 보고와 아이디어를 환영합니다."
+            "value" : "버그 오류 문제 피드백 아이디어"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Relatos de bugs e ideias são bem-vindos."
+            "value" : "bug erro problema feedback ideia"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "欢迎报告问题和提出建议。"
+            "value" : "错误 问题 反馈 建议"
           }
         }
       }
@@ -5380,6 +5534,110 @@
         }
       }
     },
+    "Check automatically" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatisch suchen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscar automáticamente"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rechercher automatiquement"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controlla automaticamente"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自動的に確認"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "자동으로 확인"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verificar automaticamente"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动检查"
+          }
+        }
+      }
+    },
+    "Check for Updates" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nach Updates suchen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscar actualizaciones"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rechercher les mises à jour"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controlla aggiornamenti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アップデートを確認"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "업데이트 확인"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verificar Atualizações"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "检查更新"
+          }
+        }
+      }
+    },
     "Check the frame and options before every recording. Hold ⌥ as you finish the selection to check once." : {
       "localizations" : {
         "de" : {
@@ -5480,6 +5738,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选取其他文件夹…"
+          }
+        }
+      }
+    },
+    "Clear…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Löschen …"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Borrar…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effacer…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancella…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "消去…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "지우기…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Limpar…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清除…"
           }
         }
       }
@@ -5636,6 +5946,59 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld 秒后关闭。将指针悬停在卡片上可让它保持打开。"
+          }
+        }
+      }
+    },
+    "credits Sparkle warranty" : {
+      "comment" : "Search words for the Acknowledgements row in Settings › About, separated by spaces",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Danksagungen Sparkle Garantie"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "créditos Sparkle garantía"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "crédits Sparkle garantie"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "crediti Sparkle garanzia"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クレジット Sparkle 保証"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "크레딧 Sparkle 보증"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "créditos Sparkle garantia"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "致谢 Sparkle 担保"
           }
         }
       }
@@ -6554,58 +6917,6 @@
     "Capturing only the page in a browser window needs Accessibility access to find where the browser shows its page. Skip it if you'll capture whole windows." : {
 
     },
-    "Check" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prüfen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Comprobar"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vérifier"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Controlla"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "確認"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "확인"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verificar"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "检查"
-          }
-        }
-      }
-    },
     "Check before recording" : {
 
     },
@@ -6657,58 +6968,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "检查更新…"
-          }
-        }
-      }
-    },
-    "Check for updates automatically" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Automatisch nach Updates suchen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Buscar actualizaciones automáticamente"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rechercher les mises à jour automatiquement"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Controlla automaticamente gli aggiornamenti"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "アップデートを自動で確認"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "자동으로 업데이트 확인"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verificar atualizações automaticamente"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "自动检查更新"
           }
         }
       }
@@ -11801,58 +12060,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "延迟 %@ 秒"
-          }
-        }
-      }
-    },
-    "DENIED" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ABGELEHNT"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "DENEGADO"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "REFUSÉ"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "NEGATO"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "拒否"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "거부됨"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "NEGADO"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已拒绝"
           }
         }
       }
@@ -16981,58 +17188,6 @@
         }
       }
     },
-    "Free and open source under the GPL-3.0 license." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Frei und Open Source unter der GPL-3.0-Lizenz."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gratis y de código abierto con licencia GPL-3.0."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gratuit et open source sous licence GPL-3.0."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Libero e open source con licenza GPL-3.0."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GPL-3.0ライセンスの無料オープンソースソフトウェアです。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GPL-3.0 라이선스에 따른 무료 오픈 소스입니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Livre e de código aberto sob a licença GPL-3.0."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "基于 GPL-3.0 许可证的免费开源软件。"
-          }
-        }
-      }
-    },
     "Free ratio" : {
 
     },
@@ -17404,6 +17559,59 @@
         }
       }
     },
+    "GitHub licence license open source" : {
+      "comment" : "Search words for the Source code row in Settings › About, separated by spaces",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub Lizenz Open Source Quellcode"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub licencia código abierto"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub licence open source code"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub licenza open source codice"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub ライセンス オープンソース"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub 라이선스 오픈 소스"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub licença código aberto"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub 许可证 开源"
+          }
+        }
+      }
+    },
     "Global" : {
       "localizations" : {
         "de" : {
@@ -17452,58 +17660,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "全局"
-          }
-        }
-      }
-    },
-    "GRANTED" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ERLAUBT"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CONCEDIDO"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "AUTORISÉ"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CONCESSO"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "許可済み"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "허용됨"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CONCEDIDO"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已授权"
           }
         }
       }
@@ -17608,58 +17764,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "通用"
-          }
-        }
-      }
-    },
-    "GitHub" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GitHub"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GitHub"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GitHub"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GitHub"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GitHub"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GitHub"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GitHub"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GitHub"
           }
         }
       }
@@ -18079,6 +18183,59 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "抓手"
+          }
+        }
+      }
+    },
+    "help manual docs" : {
+      "comment" : "Search words for the User guide row in Settings › About, separated by spaces",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hilfe Handbuch Doku"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ayuda manual documentación"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "aide manuel documentation"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "aiuto manuale documentazione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ヘルプ マニュアル ドキュメント"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "도움말 매뉴얼 문서"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ajuda manual documentação"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "帮助 手册 文档"
           }
         }
       }
@@ -18553,9 +18710,6 @@
           }
         }
       }
-    },
-    "How to use every part of Shot." : {
-
     },
     "Hue" : {
 
@@ -19438,6 +19592,58 @@
         }
       }
     },
+    "Last checked %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zuletzt gesucht: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Última comprobación: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dernière vérification : %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ultimo controllo: %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最終確認：%@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "마지막 확인: %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Última verificação: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上次检查：%@"
+          }
+        }
+      }
+    },
     "Later" : {
       "localizations" : {
         "de" : {
@@ -20169,112 +20375,8 @@
         }
       }
     },
-    "Looks for a new version once, even when automatic checks are off." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sucht einmal nach einer neuen Version, auch wenn die automatische Suche aus ist."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Busca una nueva versión una vez, aunque la comprobación automática esté desactivada."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recherche une nouvelle version une fois, même si les vérifications automatiques sont désactivées."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cerca una nuova versione una volta, anche con i controlli automatici disattivati."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "自動確認がオフでも、新しいバージョンを一度だけ確認します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "자동 확인이 꺼져 있어도 새 버전을 한 번 확인합니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Procura uma nova versão uma vez, mesmo com as verificações automáticas desativadas."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "查找一次新版本，即使自动检查已关闭。"
-          }
-        }
-      }
-    },
     "M: magnifier" : {
 
-    },
-    "MISSING" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "FEHLT"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SIN ACCESO"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MANQUANT"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MANCANTE"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未許可"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "미허용"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "AUSENTE"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "缺失"
-          }
-        }
-      }
     },
     "Move %lld captures to the Trash?" : {
       "localizations" : {
@@ -21710,6 +21812,58 @@
         }
       }
     },
+    "Needed for every capture." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für jede Aufnahme nötig."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Necesario para cada captura."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nécessaire pour chaque capture."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Necessario per ogni cattura."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてのキャプチャに必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 캡처에 필요합니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Necessário para toda captura."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每次截取都需要。"
+          }
+        }
+      }
+    },
     "No matches" : {
       "localizations" : {
         "de" : {
@@ -21814,54 +21968,54 @@
         }
       }
     },
-    "NOT ASKED" : {
+    "None yet. Shot keeps a screenshot’s original when Save goes over it, so you can undo." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NICHT GEFRAGT"
+            "value" : "Noch keine. Shot behält das Original eines Bildschirmfotos, wenn Sichern es überschreibt, damit du widerrufen kannst."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "SIN SOLICITAR"
+            "value" : "Ninguno aún. Shot guarda el original de una captura cuando Guardar la sobrescribe, para que puedas deshacer."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NON DEMANDÉ"
+            "value" : "Aucun pour l’instant. Shot garde l’original d’une capture quand Enregistrer la remplace, pour que vous puissiez annuler."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NON RICHIESTO"
+            "value" : "Nessuno per ora. Shot conserva l’originale di uno screenshot quando Salva lo sovrascrive, così puoi annullare."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "未確認"
+            "value" : "まだありません。保存でスクリーンショットを上書きすると、取り消せるようにShotが元の画像を保持します。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "요청 안 함"
+            "value" : "아직 없습니다. 저장으로 스크린샷을 덮어쓰면 실행 취소할 수 있도록 Shot이 원본을 보관합니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NÃO PEDIDO"
+            "value" : "Nenhum ainda. O Shot guarda o original de uma captura quando Salvar a sobrescreve, para que você possa desfazer."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "未请求"
+            "value" : "暂无。“存储”覆盖截图时，Shot 会保留原图，以便撤销。"
           }
         }
       }
@@ -21978,58 +22132,6 @@
     },
     "New Folder…" : {
 
-    },
-    "New Issue" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neues Issue"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nueva incidencia"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nouveau ticket"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nuova segnalazione"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新しいIssue"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "새 이슈"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Novo Problema"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新建问题"
-          }
-        }
-      }
     },
     "New captures are saved here" : {
 
@@ -22458,6 +22560,58 @@
     },
     "None found" : {
 
+    },
+    "Not checked yet" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch nicht gesucht"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún sin comprobar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas encore vérifié"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non ancora controllato"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "まだ確認していません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "아직 확인하지 않음"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ainda não verificado"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚未检查"
+          }
+        }
+      }
     },
     "Not yet" : {
 
@@ -23046,112 +23200,161 @@
         }
       }
     },
-    "Only GIFs exported from the video editor can be edited" : {
-
-    },
-    "Only needed for the camera bubble." : {
+    "Only for the camera bubble." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nur für die Kamerablase nötig."
+            "value" : "Nur für die Kamerablase."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Solo se necesita para la burbuja de cámara."
+            "value" : "Solo para la burbuja de cámara."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nécessaire uniquement pour la bulle de caméra."
+            "value" : "Uniquement pour la bulle caméra."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Serve solo per la bolla fotocamera."
+            "value" : "Solo per la bolla della fotocamera."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "カメラバブルにのみ必要です。"
+            "value" : "カメラバブルにのみ使用します。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "카메라 버블에만 필요합니다."
+            "value" : "카메라 버블에만 사용합니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Só é necessária para a bolha da câmera."
+            "value" : "Só para a bolha da câmera."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "仅摄像头气泡需要。"
+            "value" : "仅用于摄像头气泡。"
           }
         }
       }
     },
-    "Only needed to capture just the page in browser windows." : {
+    "Only GIFs exported from the video editor can be edited" : {
 
     },
-    "Only needed to record your voice." : {
+    "Only to capture just the page in a browser." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nur nötig, um deine Stimme aufzuzeichnen."
+            "value" : "Nur um in einem Browser nur die Seite aufzunehmen."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Solo se necesita para grabar tu voz."
+            "value" : "Solo para capturar solo la página en un navegador."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nécessaire uniquement pour enregistrer votre voix."
+            "value" : "Uniquement pour capturer seulement la page dans un navigateur."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Serve solo per registrare la tua voce."
+            "value" : "Solo per catturare solo la pagina in un browser."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "声を収録する場合にのみ必要です。"
+            "value" : "ブラウザでページだけをキャプチャする場合にのみ使用します。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "목소리를 녹음할 때만 필요합니다."
+            "value" : "브라우저에서 페이지만 캡처할 때만 사용합니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Só é necessário para gravar sua voz."
+            "value" : "Só para capturar apenas a página em um navegador."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "仅录制你的声音时需要。"
+            "value" : "仅用于在浏览器中只截取网页。"
+          }
+        }
+      }
+    },
+    "Only to record your voice." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur um deine Stimme aufzunehmen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo para grabar tu voz."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uniquement pour enregistrer votre voix."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo per registrare la tua voce."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "声を録音する場合にのみ使用します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "음성을 녹음할 때만 사용합니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Só para gravar sua voz."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅用于录制你的声音。"
           }
         }
       }
@@ -23843,6 +24046,58 @@
     },
     "Opens it to edit. Drag it into another app to use the file there." : {
 
+    },
+    "Opens System Settings" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffnet die Systemeinstellungen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre Ajustes del Sistema"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvre Réglages Système"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apre Impostazioni di Sistema"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "システム設定を開きます"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시스템 설정을 엽니다"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre os Ajustes do Sistema"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开系统设置"
+          }
+        }
+      }
     },
     "Opens the editor instead of Quick Access." : {
       "localizations" : {
@@ -28013,58 +28268,6 @@
         }
       }
     },
-    "Required for every capture." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Für jede Aufnahme nötig."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Necesario para cualquier captura."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Requis pour toute capture."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Necessario per ogni cattura."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "すべてのキャプチャに必要です。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "모든 캡처에 필요합니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Necessária para todas as capturas."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "每次捕捉都需要。"
-          }
-        }
-      }
-    },
     "Reset" : {
       "localizations" : {
         "de" : {
@@ -28220,6 +28423,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "还原所有设置"
+          }
+        }
+      }
+    },
+    "Reset…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zurücksetzen …"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réinitialiser…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripristina…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リセット…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "재설정…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redefinir…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重置…"
           }
         }
       }
@@ -30223,58 +30478,6 @@
         }
       }
     },
-    "Screenshots and screen recordings for macOS." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bildschirmfotos und Bildschirmaufzeichnungen für macOS."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Capturas y grabaciones de pantalla para macOS."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Captures d'écran et enregistrements d'écran pour macOS."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Screenshot e registrazioni dello schermo per macOS."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS用のスクリーンショットと画面収録。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS용 스크린샷 및 화면 녹화 앱."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Capturas e gravações de tela para macOS."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "适用于 macOS 的截屏和录屏工具。"
-          }
-        }
-      }
-    },
     "Scroll" : {
 
     },
@@ -31911,58 +32114,6 @@
         }
       }
     },
-    "Shot asks GitHub once a day whether a new version is out, and installs it when you agree. Nothing else is sent." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shot fragt einmal am Tag bei GitHub nach einer neuen Version und installiert sie, wenn du zustimmst. Sonst wird nichts gesendet."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shot pregunta a GitHub una vez al día si hay una nueva versión y la instala cuando aceptas. No se envía nada más."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shot demande à GitHub une fois par jour si une nouvelle version est sortie, et l'installe avec votre accord. Rien d'autre n'est envoyé."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shot chiede a GitHub una volta al giorno se c'è una nuova versione e la installa quando accetti. Non viene inviato nient'altro."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shotは1日に1回GitHubで新しいバージョンを確認し、同意するとインストールします。それ以外の情報は送信しません。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shot은 하루에 한 번 GitHub에 새 버전이 있는지 확인하고, 동의하면 설치합니다. 그 밖에는 아무것도 전송하지 않습니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O Shot pergunta ao GitHub uma vez por dia se há uma nova versão e a instala se você concordar. Nada mais é enviado."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shot 每天向 GitHub 查询一次是否有新版本，并在你同意后安装。不会发送其他任何信息。"
-          }
-        }
-      }
-    },
     "Shot can now find the page in a browser window. Turn on Capture only the page in browser windows in Settings to use it." : {
 
     },
@@ -32070,9 +32221,6 @@
         }
       }
     },
-    "Shot comes with no warranty. It updates itself with Sparkle, under the MIT license." : {
-
-    },
     "Shot found no text in this screenshot." : {
       "localizations" : {
         "de" : {
@@ -32125,54 +32273,54 @@
         }
       }
     },
-    "Shot is free, with no ads or account. Sponsoring keeps it that way." : {
+    "Shot looks for a new version once a day. It’s the only time Shot goes online." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shot ist kostenlos, ohne Werbung und Konto. Sponsoring sorgt dafür, dass es so bleibt."
+            "value" : "Shot sucht einmal am Tag nach einer neuen Version. Nur dann geht Shot online."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shot es gratis, sin anuncios ni cuenta. Patrocinarlo ayuda a que siga así."
+            "value" : "Shot busca una versión nueva una vez al día. Es la única vez que Shot se conecta."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shot est gratuit, sans publicité ni compte. Le sponsoring permet que ça dure."
+            "value" : "Shot recherche une nouvelle version une fois par jour. C’est le seul moment où Shot se connecte."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shot è gratuito, senza pubblicità né account. Le sponsorizzazioni lo mantengono così."
+            "value" : "Shot cerca una nuova versione una volta al giorno. È l’unico momento in cui Shot va online."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shotは無料で、広告もアカウントもありません。スポンサーになって、この状態を支えてください。"
+            "value" : "Shotは1日に1回新しいバージョンを確認します。Shotがインターネットに接続するのはこのときだけです。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shot은 광고나 계정 없이 무료입니다. 후원이 이를 지켜 줍니다."
+            "value" : "Shot은 하루에 한 번 새 버전을 확인합니다. Shot이 온라인에 연결되는 유일한 때입니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "O Shot é gratuito, sem anúncios nem conta. O patrocínio o mantém assim."
+            "value" : "O Shot procura uma versão nova uma vez por dia. É a única vez que o Shot se conecta."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shot 免费，没有广告，无需账户。赞助让它保持这样。"
+            "value" : "Shot 每天检查一次新版本。这是 Shot 唯一联网的时候。"
           }
         }
       }
@@ -34610,54 +34758,54 @@
         }
       }
     },
-    "Source code" : {
+    "Source code · GPL-3.0" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quellcode"
+            "value" : "Quellcode · GPL-3.0"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Código fuente"
+            "value" : "Código fuente · GPL-3.0"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Code source"
+            "value" : "Code source · GPL-3.0"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Codice sorgente"
+            "value" : "Codice sorgente · GPL-3.0"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ソースコード"
+            "value" : "ソースコード · GPL-3.0"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "소스 코드"
+            "value" : "소스 코드 · GPL-3.0"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Código-fonte"
+            "value" : "Código-fonte · GPL-3.0"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "源代码"
+            "value" : "源代码 · GPL-3.0"
           }
         }
       }
@@ -34870,54 +35018,55 @@
         }
       }
     },
-    "Sponsor" : {
+    "sponsor donate" : {
+      "comment" : "Search words for the Support Shot row in Settings › About, separated by spaces",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sponsern"
+            "value" : "Sponsor spenden unterstützen"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Patrocinar"
+            "value" : "patrocinar donar"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sponsoriser"
+            "value" : "sponsor don soutenir"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sponsorizza"
+            "value" : "sponsor donare sostenere"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "スポンサー"
+            "value" : "スポンサー 寄付 支援"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "후원"
+            "value" : "후원 기부 지원"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Patrocinar"
+            "value" : "patrocinar doar apoiar"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "赞助"
+            "value" : "赞助 捐赠 支持"
           }
         }
       }
@@ -37118,6 +37267,58 @@
         }
       }
     },
+    "This build doesn’t update itself" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Build aktualisiert sich nicht selbst"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta compilación no se actualiza sola"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette version ne se met pas à jour seule"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questa build non si aggiorna da sola"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このビルドは自動アップデートしません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 빌드는 스스로 업데이트하지 않습니다"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta versão não se atualiza sozinha"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此版本不会自行更新"
+          }
+        }
+      }
+    },
     "This Month" : {
       "localizations" : {
         "de" : {
@@ -38066,6 +38267,58 @@
     "Turn off the microphone" : {
 
     },
+    "Turn on Shot in System Settings, then relaunch Shot." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schalte Shot in den Systemeinstellungen ein und starte Shot dann neu."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activa Shot en Ajustes del Sistema y luego vuelve a abrir Shot."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activez Shot dans Réglages Système, puis relancez Shot."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attiva Shot in Impostazioni di Sistema, poi riavvia Shot."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "システム設定でShotをオンにしてから、Shotを再起動してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시스템 설정에서 Shot을 켠 다음 Shot을 다시 실행하세요."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ative o Shot nos Ajustes do Sistema e reabra o Shot."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在系统设置中打开 Shot，然后重新启动 Shot。"
+          }
+        }
+      }
+    },
     "Turn on Shot under Accessibility." : {
 
     },
@@ -38910,8 +39163,57 @@
         }
       }
     },
-    "User Guide" : {
-
+    "User guide" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anleitung"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guía de uso"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guide d’utilisation"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guida utente"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ユーザガイド"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사용 설명서"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guia do usuário"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用指南"
+          }
+        }
+      }
     },
     "Uses macOS window shadow" : {
       "localizations" : {
@@ -39225,9 +39527,6 @@
           }
         }
       }
-    },
-    "View" : {
-
     },
     "Volume" : {
       "localizations" : {
@@ -41830,58 +42129,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在“图层”中解锁"
-          }
-        }
-      }
-    },
-    "v%@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "v%@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "v%@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "v%@"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "v%@"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "v%@"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "v%@"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "v%@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "v%@"
           }
         }
       }

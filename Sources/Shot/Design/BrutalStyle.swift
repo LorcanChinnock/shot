@@ -39,6 +39,10 @@ enum Brutal {
     static let selection = Color(hex: 0x2B7FFF)
     /// Status dots and tags.
     static let success = Color(hex: 0x34C759)
+    /// A success tag's fill, such as an allowed permission's.
+    static let successFill = Color(light: Color(hex: 0xE3F4E6), dark: Color(hex: 0x34C759).opacity(0.18))
+    /// A success tag's text, darker than `success` in light so it holds 4.5:1 on `successFill`.
+    static let successText = Color(light: Color(hex: 0x1F6B3A), dark: Color(hex: 0x7DDE97))
 
     /// Edges of groups and cards.
     static let hairline = Color(light: Color(hex: 0x16161A).opacity(0.08), dark: .white.opacity(0.08))

@@ -12,7 +12,7 @@ Click Shot's menu bar icon and choose **Settings…**, or press <kbd>⌘,</kbd> 
 
 The [gallery](#find-your-captures) has its own window. **Open Gallery**, at the foot of the Settings sidebar, opens it.
 
-Use <kbd>↑</kbd> and <kbd>↓</kbd> to move between sections. The foot of the sidebar shows Shot's version, or **Up to date** while Shot checks for updates by itself. Click it to open **About**.
+Use <kbd>↑</kbd> and <kbd>↓</kbd> to move between sections. The foot of the sidebar shows Shot's version, or **Up to date** once a check for updates has found nothing since Shot opened. Click it to open **About**.
 
 ## Find a setting
 
@@ -29,7 +29,7 @@ Click **Show All** beside a section, or click a section in the sidebar, to clear
 | Quick Access | **Placement:** the screen corner and how long cards stay before they close. A preview shows a card in that corner, counts down its time and slides it away when the time runs out. Point at the card in the preview to see that the timer waits while the pointer is on it |
 | Recording | **Sound:** the microphone, which input it uses (**Test** lights the level meter as you speak), and Mac sound, the sound from other apps. **Pointer:** the cursor, clicks and the region border. **After recording:** copying to the clipboard, and adjusting before every recording. **Camera:** the camera bubble, which camera and its size. Click **Preview** on the dark card above them to see your camera in the bubble's circle. **Quality:** the frame rate, and the GIF settings the video editor last used, which **Export GIF** on the Quick Access card follows |
 | Shortcuts | **Use Shot for ⌘⇧4 and ⌘⇧5**, which takes the screenshot keys from macOS. **Global:** the screenshot and record shortcuts, shown as keys. Click one and press the new keys to change it. **Restore Defaults** at the top puts them back. **While picking what to capture** lists the keys that work while you choose an area, a window or a screen, such as <kbd>D</kbd> for a delay |
-| About | The version, updates, permissions, the save folder, links to the code and its licence, this guide, the acknowledgements, to report a bug and to sponsor Shot, and resetting all settings |
+| About | The version and whether Shot is up to date, updates, links to this guide, the code and its licence, bug reports, the acknowledgements and sponsoring, each permission with **Allowed** or **Allow…**, the save folder, kept originals, and resetting all settings |
 
 ## Use dark mode
 
@@ -45,4 +45,4 @@ Shot's windows and panels follow your Mac's light or dark appearance. To pick on
 
 ## Reset everything
 
-In **Settings › About**, click **Reset**, then **Click to confirm**. It restores every setting and shortcut. Your captures stay.
+In **Settings › About**, click **Reset…**, then **Click to confirm**. It restores every setting and shortcut. Your captures stay.
