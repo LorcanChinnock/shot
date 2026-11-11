@@ -18,6 +18,16 @@ Click **Check for Updates** in **Settings › About**, or choose **Check for Upd
 
 The top of **Settings › About** shows Shot's version and what the last check found. It says **Up to date** only when a check since Shot opened found nothing, names the new version once one is out, and otherwise says when Shot last checked.
 
+## Installing an update
+
+When there's a new version, Shot opens a small window with what's new in it. Click **Install and Relaunch** to download it, with a progress bar and Cancel. Shot then quits, installs it and opens again, and it asks about unsaved edits and saves any recording first.
+
+- **Later** closes the window, and the next check offers the version again. Closing the window or pressing Esc does the same.
+- **Skip** stops Shot offering that version. A newer one is still offered.
+- **Install future updates automatically**, shown while Check automatically is on, lets Shot download each new version by itself and install it the next time Shot quits.
+
+An update an automatic check finds doesn't take over the keyboard while you work, and its window can open behind other windows. Choose **Update to Shot** in the menu bar menu to bring it back.
+
 ## Installing over a running copy
 
 If you ran the install command again, or Homebrew replaced Shot, while Shot was running, a check offers to relaunch it instead of updating.

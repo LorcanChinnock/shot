@@ -25,20 +25,43 @@ final class Updater: NSObject {
     /// False in builds without an update feed, such as ShotDev, which never check.
     let isEnabled: Bool
 
-    @ObservationIgnored private var controller: SPUStandardUpdaterController!
+    @ObservationIgnored private var updater: SPUUpdater!
+    @ObservationIgnored private var driver: UpdateUserDriver!
     @ObservationIgnored private var canCheckObservation: NSKeyValueObservation?
 
     private override init() {
         let feed = Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") as? String
         isEnabled = !(feed ?? "").isEmpty
         super.init()
-        controller = SPUStandardUpdaterController(startingUpdater: isEnabled, updaterDelegate: self, userDriverDelegate: self)
-        canCheckObservation = controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) { [weak self] _, _ in
+        // Shot's own driver draws the update window; see UpdateUserDriver.
+        driver = UpdateUserDriver(owner: self, standardDelegate: self)
+        updater = SPUUpdater(hostBundle: .main, applicationBundle: .main, userDriver: driver, delegate: self)
+        driver.updater = updater
+        canCheckObservation = updater.observe(\.canCheckForUpdates, options: [.initial, .new]) { [weak self] _, _ in
             MainActor.assumeIsolated {
                 guard let self else {
                     return
                 }
-                self.canCheckForUpdates = self.controller.updater.canCheckForUpdates
+                self.canCheckForUpdates = self.updater.canCheckForUpdates
+            }
+        }
+        if isEnabled {
+            start()
+        }
+    }
+
+    /// Starts Sparkle, as `SPUStandardUpdaterController` did, with its alert if the updater can't start.
+    private func start() {
+        do {
+            try updater.start()
+        } catch {
+            log.error("The updater didn't start: \(error.localizedDescription, privacy: .public)")
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(1))
+                let alert = NSAlert()
+                alert.messageText = String(localized: "Shot can’t check for updates")
+                alert.informativeText = String(localized: "The updater didn’t start. Install the latest Shot from the website to get updates again.")
+                alert.runModal()
             }
         }
     }
@@ -46,11 +69,11 @@ final class Updater: NSObject {
     var automaticallyChecks: Bool {
         get {
             access(keyPath: \.automaticallyChecks)
-            return controller.updater.automaticallyChecksForUpdates
+            return updater.automaticallyChecksForUpdates
         }
         set {
             withMutation(keyPath: \.automaticallyChecks) {
-                controller.updater.automaticallyChecksForUpdates = newValue
+                updater.automaticallyChecksForUpdates = newValue
             }
             log.notice("Automatic update checks \(newValue ? "on" : "off")")
         }
@@ -58,12 +81,28 @@ final class Updater: NSObject {
 
     /// What Settings shows about updates: About's header and the sidebar's footer.
     var status: UpdateStatus {
-        UpdateStatus(hasFeed: isEnabled, pendingVersion: pendingVersion, lastResult: lastCheckResult, lastCheck: isEnabled ? controller.updater.lastUpdateCheckDate : nil)
+        UpdateStatus(hasFeed: isEnabled, pendingVersion: pendingVersion, lastResult: lastCheckResult, lastCheck: isEnabled ? updater.lastUpdateCheckDate : nil)
     }
 
     func checkForUpdates() {
         NSApp.activate()
-        controller.checkForUpdates(nil)
+        updater.checkForUpdates()
+    }
+
+    /// The window offered a version. A scheduled check's offer can open behind other windows, so the menu offers it too.
+    func updateShown(version: String, userInitiated: Bool) {
+        if !userInitiated {
+            pendingVersion = version
+        }
+    }
+
+    /// The person looked at the offer or answered it.
+    func updateGotAttention() {
+        pendingVersion = nil
+    }
+
+    func updateSessionEnded() {
+        pendingVersion = nil
     }
 }
 
@@ -109,29 +148,6 @@ extension Updater: SPUUpdaterDelegate {
     }
 }
 
-extension Updater: SPUStandardUserDriverDelegate {
-    nonisolated var supportsGentleScheduledUpdateReminders: Bool { true }
-
-    nonisolated func standardUserDriverWillHandleShowingUpdate(_ handleShowingUpdate: Bool, forUpdate update: SUAppcastItem, state: SPUUserUpdateState) {
-        let version = update.displayVersionString
-        let userInitiated = state.userInitiated
-        MainActor.assumeIsolated {
-            log.notice("Update \(version) available")
-            if !userInitiated {
-                pendingVersion = version
-            }
-        }
-    }
-
-    nonisolated func standardUserDriverDidReceiveUserAttention(forUpdate update: SUAppcastItem) {
-        MainActor.assumeIsolated {
-            pendingVersion = nil
-        }
-    }
-
-    nonisolated func standardUserDriverWillFinishUpdateSession() {
-        MainActor.assumeIsolated {
-            pendingVersion = nil
-        }
-    }
-}
+/// Sparkle's standard driver still shows the alerts UpdateUserDriver hands it, such as errors and "up to date", and
+/// reads its delegate for them.
+extension Updater: SPUStandardUserDriverDelegate {}
