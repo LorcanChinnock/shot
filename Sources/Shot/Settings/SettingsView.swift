@@ -41,18 +41,6 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .about: .about
         }
     }
-
-    /// The old fill colour, which the panes still use until #1112–#1117 rebuild them.
-    var color: Color {
-        switch self {
-        case .general: Brutal.yellow
-        case .capture: Brutal.pink
-        case .quickAccess: Brutal.sky
-        case .recording: Brutal.red
-        case .shortcuts: Brutal.orange
-        case .about: Brutal.lime
-        }
-    }
 }
 
 @MainActor
@@ -1399,28 +1387,46 @@ private struct PickingKeysCard: View {
 // MARK: About
 
 private struct AboutSettings: View {
-    @State private var screenGranted = Permissions.hasScreenCapture
-    @State private var screenRequested = Permissions.requestedScreenCapture
-    @State private var accessibilityGranted = Permissions.hasAccessibility
-    @State private var microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
-    @State private var cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
-    @State private var confirmingReset = false
-    @State private var confirmingClear = false
-    @State private var keptSize = AboutSettings.sizeText(ProjectStore.app.keptOriginalsSize())
+    @Environment(\.settingsQuery) private var query
+    /// Two columns, as on the board, while the content is wide enough for them, and one in a narrow window.
+    @State private var twoColumns = true
+
+    var body: some View {
+        if SettingsSearch.terms(query).isEmpty {
+            columns
+        } else {
+            // Search results list each section's groups one under another, so they hide one by one when nothing matches.
+            UpdatesCard()
+            PermissionsCard()
+            DataCard()
+            ProjectCard()
+        }
+    }
+
+    private var columns: some View {
+        let spacing: CGFloat = twoColumns ? 16 : 18
+        let layout = twoColumns ? AnyLayout(HStackLayout(alignment: .top, spacing: 16)) : AnyLayout(VStackLayout(alignment: .leading, spacing: spacing))
+        return layout {
+            VStack(alignment: .leading, spacing: spacing) {
+                AboutHeader()
+                UpdatesCard()
+                ProjectCard()
+            }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            VStack(alignment: .leading, spacing: spacing) {
+                PermissionsCard()
+                DataCard()
+            }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .onGeometryChange(for: Bool.self) { $0.size.width >= 600 } action: { twoColumns = $0 }
+    }
+}
+
+/// Shot's icon, name and version over what the last update check found.
+private struct AboutHeader: View {
     @Bindable private var updater = Updater.shared
-    private let color = SettingsSection.about.color
-
-    private static func sizeText(_ bytes: Int64) -> String {
-        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
-    }
-
-    private func refreshPermissions() {
-        screenGranted = Permissions.hasScreenCapture
-        screenRequested = Permissions.requestedScreenCapture
-        accessibilityGranted = Permissions.hasAccessibility
-        microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
-        cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
-    }
 
     private var version: String {
         let info = Bundle.main.infoDictionary
@@ -1429,91 +1435,308 @@ private struct AboutSettings: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            AppIconView(size: 76)
+            AppIconView(size: 64)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 8) {
-                    Text("Shot").font(Brutal.title(26)).foregroundStyle(Brutal.ink)
-                    BrutalBadge(text: "BETA")
-                }
-                Text("Screenshots and screen recordings for macOS.")
-                    .font(.scaled(12.5, weight: .medium)).foregroundStyle(Brutal.faded(0.65))
+                Text(verbatim: "Shot")
+                    .font(.scaled(20, weight: .bold))
+                    .foregroundStyle(Brutal.ink)
+                Text(verbatim: version)
+                    .font(.scaled(12, design: .monospaced))
+                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                    .textSelection(.enabled)
+                    .accessibilityLabel(Text("Version \(version)"))
+                UpdateStatusLine(status: updater.status)
             }
-            Spacer()
-            BrutalBadge(text: "v\(version)")
+            Spacer(minLength: 0)
         }
-        .padding(16)
-        .glassCard()
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .depth(.group, fill: Brutal.group, radius: 12)
+        .accessibilityElement(children: .combine)
         .hiddenWhileSearching()
+    }
+}
 
+/// "Up to date" beside a success dot only after a check in this session found nothing, and otherwise what Shot does know.
+private struct UpdateStatusLine: View {
+    let status: UpdateStatus
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if status == .upToDate {
+                Circle().fill(Brutal.success).frame(width: 7, height: 7)
+                    .accessibilityHidden(true)
+            }
+            Text(text)
+                .font(.scaled(12, weight: .semibold))
+                .foregroundStyle(status.availableVersion == nil
+                    ? ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink)
+                    : ContrastAware(standard: Brutal.accentText, increased: Brutal.ink))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var text: String {
+        switch status {
+        case .off: String(localized: "This build doesn’t update itself")
+        case .available(let version): String(localized: "Shot \(version) is available")
+        case .upToDate: String(localized: "Up to date")
+        case .lastChecked(let date): String(localized: "Last checked \(date.formatted(.relative(presentation: .named)))")
+        case .notChecked: String(localized: "Not checked yet")
+        }
+    }
+}
+
+private struct UpdatesCard: View {
+    @Bindable private var updater = Updater.shared
+
+    var body: some View {
         SettingsCard(title: "Updates") {
-            ToggleRow(title: "Check for updates automatically", subtitle: "Shot asks GitHub once a day whether a new version is out, and installs it when you agree. Nothing else is sent.", isOn: $updater.automaticallyChecks)
-            SettingRow(title: "Check now", subtitle: "Looks for a new version once, even when automatic checks are off.") {
-                Button("Check") { updater.checkForUpdates() }
+            ToggleRow(title: "Check automatically", subtitle: "Shot looks for a new version once a day. It’s the only time Shot goes online.", isOn: $updater.automaticallyChecks)
+            SettingRow(title: "Check now") {
+                Button("Check for Updates") { updater.checkForUpdates() }
                     .buttonStyle(BrutalButtonStyle())
+                    .fixedSize()
                     .disabled(!updater.canCheckForUpdates)
             }
         }
+    }
+}
 
+/// The links to the guide, the code, bug reports, the acknowledgements and sponsoring, each a whole row.
+private struct ProjectCard: View {
+    var body: some View {
+        SettingsCard(title: "Project") {
+            LinkRow(title: String(localized: "User guide"), words: String(localized: "help manual docs", comment: "Search words for the User guide row in Settings › About, separated by spaces"), symbol: "book") { NSWorkspace.shared.open(Self.guide) }
+            LinkRow(title: String(localized: "Source code · GPL-3.0"), words: String(localized: "GitHub licence license open source", comment: "Search words for the Source code row in Settings › About, separated by spaces"), symbol: "chevron.left.forwardslash.chevron.right") { NSWorkspace.shared.open(Self.repository) }
+            LinkRow(title: String(localized: "Report a problem"), words: String(localized: "bug issue feedback idea", comment: "Search words for the Report a problem row in Settings › About, separated by spaces"), symbol: "exclamationmark.triangle") {
+                NSWorkspace.shared.open(Self.repository.appending(path: "issues/new/choose"))
+            }
+            LinkRow(title: String(localized: "Acknowledgements"), words: String(localized: "credits Sparkle warranty", comment: "Search words for the Acknowledgements row in Settings › About, separated by spaces"), symbol: "info.circle") {
+                if let url = Bundle.main.url(forResource: "Acknowledgements", withExtension: "txt") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+            LinkRow(title: String(localized: "Support Shot"), words: String(localized: "sponsor donate", comment: "Search words for the Support Shot row in Settings › About, separated by spaces"), symbol: "heart") { NSWorkspace.shared.open(Self.sponsors) }
+        }
+    }
+
+    private static let repository = URL(string: "https://github.com/LorcanChinnock/shot")!
+    private static let guide = URL(string: "https://shot.lorcanchinnock.com/docs/")!
+    private static let sponsors = URL(string: "https://github.com/sponsors/LorcanChinnock")!
+}
+
+/// A row that opens something outside Settings: its icon and name, with an arrow on the right. It has no description, so
+/// `words` carries what a search might use instead, such as "sponsor" for Support Shot.
+private struct LinkRow: View {
+    let title: String
+    let words: String
+    let symbol: String
+    let action: () -> Void
+    @Environment(\.settingsQuery) private var query
+    @Environment(\.settingsContext) private var context
+
+    var body: some View {
+        // Matched here as well as in the row, so a row that doesn't match leaves no button behind for the group to count.
+        if SettingsSearch.matches(query, in: context + [title, words]) {
+            Button(action: action) {
+                SettingRow(title: title, icon: SettingRow.Icon(symbol: symbol)) {
+                    Image(systemName: "arrow.up.right")
+                        .font(.scaled(10, weight: .bold))
+                        .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                        .accessibilityHidden(true)
+                }
+                .contentShape(Rectangle())
+                .environment(\.settingsContext, context + [words])
+            }
+            .buttonStyle(.plain)
+            .pointerStyle(.link)
+            .accessibilityLabel(Text(title))
+            .accessibilityAddTraits(.isLink)
+        }
+    }
+}
+
+/// Each permission Shot uses, with Allowed or a button that asks for it. It re-reads them every two seconds while it shows,
+/// since macOS doesn't say when one changes in System Settings.
+private struct PermissionsCard: View {
+    @State private var screenGranted = Permissions.hasScreenCapture
+    @State private var screenRequested = Permissions.requestedScreenCapture
+    @State private var accessibilityGranted = Permissions.hasAccessibility
+    @State private var microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+    @State private var cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
+
+    private func refresh() {
+        screenGranted = Permissions.hasScreenCapture
+        screenRequested = Permissions.requestedScreenCapture
+        accessibilityGranted = Permissions.hasAccessibility
+        microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+        cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
+    }
+
+    /// macOS applies a new Screen Recording grant only after a relaunch, so once Shot has asked, the row says so.
+    private var screenSubtitle: String {
+        screenGranted || !screenRequested
+            ? String(localized: "Needed for every capture.")
+            : String(localized: "Turn on Shot in System Settings, then relaunch Shot.")
+    }
+
+    var body: some View {
         SettingsCard(title: "Permissions") {
-            SettingRow(title: "Screen & System Audio Recording", subtitle: "Required for every capture.") {
-                HStack(spacing: 10) {
-                    BrutalBadge(text: screenGranted ? "GRANTED" : "MISSING", dot: screenGranted ? Brutal.success : nil)
-                    if !screenGranted, !screenRequested {
-                        Button("Grant") {
-                            Permissions.requestScreenCapture()
-                            screenRequested = true
+            SettingRow(title: String(localized: "Screen & System Audio Recording"), subtitle: screenSubtitle) {
+                if screenGranted {
+                    AllowedTag()
+                } else {
+                    HStack(spacing: 8) {
+                        if screenRequested {
+                            Button("Relaunch") { Permissions.relaunch() }
+                                .buttonStyle(BrutalButtonStyle())
+                                .fixedSize()
                         }
-                        .buttonStyle(BrutalButtonStyle())
-                    } else {
-                        Button("Open") { Permissions.openSettings() }
-                            .buttonStyle(BrutalButtonStyle())
+                        // Asking a second time would wipe a grant macOS hasn't applied yet, so after the first it opens System Settings.
+                        AllowButton(opensSettings: screenRequested) {
+                            if screenRequested {
+                                Permissions.openSettings()
+                            } else {
+                                Permissions.requestScreenCapture()
+                                screenRequested = true
+                            }
+                        }
                     }
                 }
             }
-            SettingRow(title: "Accessibility", subtitle: "Only needed to capture just the page in browser windows.") {
-                HStack(spacing: 10) {
-                    BrutalBadge(text: accessibilityGranted ? "GRANTED" : "MISSING", dot: accessibilityGranted ? Brutal.success : nil)
-                    if accessibilityGranted {
-                        Button("Open") { Permissions.openAccessibilitySettings() }
-                            .buttonStyle(BrutalButtonStyle())
-                    } else {
-                        Button("Grant") { Permissions.requestAccessibility() }
-                            .buttonStyle(BrutalButtonStyle())
-                    }
+            SettingRow(title: "Accessibility", subtitle: "Only to capture just the page in a browser.") {
+                if accessibilityGranted {
+                    AllowedTag()
+                } else {
+                    // macOS's own prompt has a button straight to System Settings.
+                    AllowButton(opensSettings: false) { Permissions.requestAccessibility() }
                 }
             }
-            PermissionRow(title: "Microphone", subtitle: "Only needed to record your voice.", mediaType: .audio, status: $microphoneStatus, pane: "Privacy_Microphone")
-            PermissionRow(title: "Camera", subtitle: "Only needed for the camera bubble.", mediaType: .video, status: $cameraStatus, pane: "Privacy_Camera")
+            MediaPermissionRow(title: "Microphone", subtitle: "Only to record your voice.", mediaType: .audio, status: $microphoneStatus, pane: "Privacy_Microphone")
+            MediaPermissionRow(title: "Camera", subtitle: "Only for the camera bubble.", mediaType: .video, status: $cameraStatus, pane: "Privacy_Camera")
         }
         // A menu bar app may not become active when Settings opens or regains focus, so also re-read when the window
-        // appears and when it becomes key.
-        .onAppear(perform: refreshPermissions)
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in refreshPermissions() }
-        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in refreshPermissions() }
+        // appears and when it becomes key, and every two seconds for a change made in System Settings.
+        .onAppear(perform: refresh)
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in refresh() }
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(2))
+                refresh()
+            }
+        }
+    }
+}
 
+private struct MediaPermissionRow: View {
+    let title: LocalizedStringResource
+    let subtitle: LocalizedStringResource
+    let mediaType: AVMediaType
+    @Binding var status: AVAuthorizationStatus
+    let pane: String
+
+    var body: some View {
+        SettingRow(title: title, subtitle: subtitle) {
+            if status == .authorized {
+                AllowedTag()
+            } else {
+                // macOS asks only while the status is not determined; after a denial only System Settings can change it.
+                AllowButton(opensSettings: status != .notDetermined) {
+                    if status == .notDetermined {
+                        Task {
+                            _ = await AVCaptureDevice.requestAccess(for: mediaType)
+                            status = AVCaptureDevice.authorizationStatus(for: mediaType)
+                        }
+                    } else {
+                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)")!)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// A permission that's allowed: a check and "Allowed" in success green on a pale green pill.
+private struct AllowedTag: View {
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "checkmark")
+                .font(.scaled(9, weight: .heavy))
+                .accessibilityHidden(true)
+            Text("Allowed")
+                .font(.scaled(11.5, weight: .bold))
+        }
+        .foregroundStyle(contrast == .increased ? Brutal.ink : Brutal.successText)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 2)
+        .background(Brutal.successFill, in: Capsule())
+        .fixedSize()
+    }
+}
+
+/// Asks macOS for a permission, or opens its list in System Settings once macOS won't ask again.
+private struct AllowButton: View {
+    let opensSettings: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button("Allow…", action: action)
+            .buttonStyle(BrutalButtonStyle())
+            .fixedSize()
+            .accessibilityHint(opensSettings ? Text("Opens System Settings") : Text("Asks macOS for access"))
+    }
+}
+
+/// The save folder, the originals kept for undo after Save, and resetting every setting. Clearing and resetting each take a
+/// second click to confirm.
+private struct DataCard: View {
+    @State private var confirmingReset = false
+    @State private var confirmingClear = false
+    @State private var keptBytes = ProjectStore.app.keptOriginalsSize()
+
+    private var keptSize: String {
+        ByteCountFormatter.string(fromByteCount: keptBytes, countStyle: .file)
+    }
+
+    /// The board's shorter line, with the size, or what Shot keeps while there's nothing to clear.
+    private var keptSubtitle: LocalizedStringResource {
+        keptBytes == 0
+            ? "None yet. Shot keeps a screenshot’s original when Save goes over it, so you can undo."
+            : "\(keptSize) of screenshots from before Save went over them, for undo."
+    }
+
+    var body: some View {
         SettingsCard(title: "Data") {
             SettingRow(title: String(localized: "Save folder"), subtitle: (Preferences().saveFolder.path as NSString).abbreviatingWithTildeInPath) {
-                Button("Open") {
+                Button("Show in Finder") {
                     let folder = Preferences().saveFolder
                     try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
                     NSWorkspace.shared.open(folder)
                 }
                 .buttonStyle(BrutalButtonStyle())
+                .fixedSize()
             }
-            SettingRow(title: "Kept originals", subtitle: "\(keptSize) of screenshots as they were before Save went over them. They let you undo those edits, and stay on this Mac.") {
-                Button(confirmingClear ? "Click to confirm" : "Delete") {
+            SettingRow(title: "Kept originals", subtitle: keptSubtitle) {
+                Button(confirmingClear ? "Click to confirm" : "Clear…") {
                     if confirmingClear {
                         ProjectStore.app.removeKeptOriginals()
-                        keptSize = Self.sizeText(ProjectStore.app.keptOriginalsSize())
+                        keptBytes = ProjectStore.app.keptOriginalsSize()
                         confirmingClear = false
                     } else {
                         confirmingClear = true
                     }
                 }
                 .buttonStyle(BrutalButtonStyle(confirmingClear ? .main : .secondary, destructive: confirmingClear))
+                .fixedSize()
+                .disabled(keptBytes == 0 && !confirmingClear)
             }
             SettingRow(title: "Reset all settings", subtitle: "Restores every setting and shortcut. Your captures stay.") {
-                Button(confirmingReset ? "Click to confirm" : "Reset") {
+                Button(confirmingReset ? "Click to confirm" : "Reset…") {
                     if confirmingReset {
                         Preferences.resetAll()
                         SystemShortcuts.useShot(Preferences().replacesSystemScreenshots)
@@ -1524,77 +1747,8 @@ private struct AboutSettings: View {
                     }
                 }
                 .buttonStyle(BrutalButtonStyle(confirmingReset ? .main : .secondary, destructive: true))
+                .fixedSize()
             }
-        }
-
-        SettingsCard(title: "Project") {
-            SettingRow(title: "Source code", subtitle: "Free and open source under the GPL-3.0 license.") {
-                Button("GitHub") { NSWorkspace.shared.open(Self.repository) }
-                    .buttonStyle(BrutalButtonStyle())
-            }
-            SettingRow(title: "User Guide", subtitle: "How to use every part of Shot.") {
-                Button("Open") { NSWorkspace.shared.open(Self.guide) }
-                    .buttonStyle(BrutalButtonStyle())
-            }
-            SettingRow(title: "Acknowledgements", subtitle: "Shot comes with no warranty. It updates itself with Sparkle, under the MIT license.") {
-                Button("View") {
-                    if let url = Bundle.main.url(forResource: "Acknowledgements", withExtension: "txt") {
-                        NSWorkspace.shared.open(url)
-                    }
-                }
-                .buttonStyle(BrutalButtonStyle())
-            }
-            SettingRow(title: "Support Shot", subtitle: "Shot is free, with no ads or account. Sponsoring keeps it that way.") {
-                Button("Sponsor") { NSWorkspace.shared.open(Self.sponsors) }
-                    .buttonStyle(BrutalButtonStyle())
-            }
-            SettingRow(title: "Report a problem", subtitle: "Bug reports and ideas are welcome.") {
-                Button("New Issue") { NSWorkspace.shared.open(Self.repository.appending(path: "issues/new/choose")) }
-                    .buttonStyle(BrutalButtonStyle())
-            }
-        }
-    }
-
-    private static let repository = URL(string: "https://github.com/LorcanChinnock/shot")!
-    private static let guide = URL(string: "https://shot.lorcanchinnock.com/docs/")!
-    private static let sponsors = URL(string: "https://github.com/sponsors/LorcanChinnock")!
-}
-
-private struct PermissionRow: View {
-    let title: LocalizedStringResource
-    let subtitle: LocalizedStringResource
-    let mediaType: AVMediaType
-    @Binding var status: AVAuthorizationStatus
-    let pane: String
-
-    var body: some View {
-        SettingRow(title: title, subtitle: subtitle) {
-            HStack(spacing: 10) {
-                BrutalBadge(text: label, dot: status == .authorized ? Brutal.success : nil)
-                // macOS asks only while the status is not determined; after a denial only System Settings can change it.
-                if status == .notDetermined {
-                    Button("Grant") {
-                        Task {
-                            _ = await AVCaptureDevice.requestAccess(for: mediaType)
-                            status = AVCaptureDevice.authorizationStatus(for: mediaType)
-                        }
-                    }
-                    .buttonStyle(BrutalButtonStyle())
-                } else {
-                    Button("Open") {
-                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)")!)
-                    }
-                    .buttonStyle(BrutalButtonStyle())
-                }
-            }
-        }
-    }
-
-    private var label: LocalizedStringResource {
-        switch status {
-        case .authorized: "GRANTED"
-        case .notDetermined: "NOT ASKED"
-        default: "DENIED"
         }
     }
 }

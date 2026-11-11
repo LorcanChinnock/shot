@@ -10,11 +10,13 @@ Shot updates itself through [Sparkle](https://sparkle-project.org), once you all
 
 The second time you open Shot, it asks whether to check for updates automatically. If you say yes, Shot asks GitHub once a day whether a new version is out, and installs it when you agree.
 
-To change your mind, turn **Check for updates automatically** on or off in **Settings › About**.
+To change your mind, turn **Check automatically** on or off in **Settings › About**.
 
 ## Check now
 
-Click **Check** in **Settings › About**, or choose **Check for Updates…** in Shot's menu bar menu. When a check finds a new version, that menu item becomes **Update to Shot** and the version. When an automatic check finds one, a dot also takes the place of the top-right corner of Shot's menu bar icon until you open the update.
+Click **Check for Updates** in **Settings › About**, or choose **Check for Updates…** in Shot's menu bar menu. When a check finds a new version, that menu item becomes **Update to Shot** and the version. When an automatic check finds one, a dot also takes the place of the top-right corner of Shot's menu bar icon until you open the update.
+
+The top of **Settings › About** shows Shot's version and what the last check found. It says **Up to date** only when a check since Shot opened found nothing, names the new version once one is out, and otherwise says when Shot last checked.
 
 ## Installing over a running copy
 

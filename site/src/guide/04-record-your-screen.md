@@ -60,7 +60,7 @@ In **Settings › Recording**:
 
 The camera bubble is a round view of your camera with a white edge, and it starts in the bottom-left corner of the recorded area and stays inside it. Drag it to move it, and double-click it to step through small, medium and large. While you check before recording, it has a small round handle on its lower edge: drag the handle to resize it, or press ⌘+ and ⌘− instead. The size you pick becomes the default. An area too small for the bubble records without it.
 
-macOS asks for microphone and camera access the first time Shot uses them. To allow both up front, click **Grant** beside each in **Settings › About**.
+macOS asks for microphone and camera access the first time Shot uses them. To allow both up front, click **Allow…** beside each in **Settings › About**.
 
 ## Show the cursor and your clicks
 
