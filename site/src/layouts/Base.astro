@@ -7,6 +7,8 @@ interface Props {
   description?: string;
   /** A wider page, for the guide's three columns. */
   wide?: boolean;
+  /** Adds "guide" to the header's wordmark, on the user guide's pages. */
+  guide?: boolean;
   /** A card for this page's link previews, as a path under /; every page without one shares /og.png. */
   image?: string;
   imageAlt?: string;
@@ -17,6 +19,7 @@ interface Props {
 const {
   title,
   wide = false,
+  guide = false,
   description = 'A screenshot, annotation and screen recording app for the Mac menu bar. Free and open source.',
   image = '/og.png',
   imageAlt = "Shot's menu bar app: a better ⌘⇧4. Shot's editor with a support ticket, its discount line highlighted and an arrow pointing at it, the capture bar, the Quick Access card and a Copied message. Free and open source, for Mac.",
@@ -112,8 +115,10 @@ const footer: { title: string; links: [string, string][] }[] = [
         <a class="brand" href="/">
           <img src="/icon-64.png" alt="" width="36" height="36" />
           <span>Shot</span>
+          {guide && <span class="brand-guide">guide</span>}
           <span class="badge quiet">beta</span>
         </a>
+        <slot name="header" />
         <nav class="links" aria-label="Main">
           {nav.map((l) => <a href={l.href} aria-current={current(l.href)}>{l.label}</a>)}
           <a class="button small" href="/#install">Download free</a>

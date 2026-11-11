@@ -1380,7 +1380,7 @@ From **Website › Site · components and motion**, **Site · landing page** and
 | Scope tags | capture `#F9C6CE`, editor `#BFE3F5`, gallery `#D8E8D0`, release `#DCD6F2` | Changelog areas |
 | Guide groups | Get started accent, Capture `#F9C6CE`, Edit and share `#BFE3F5`, Reference `#DCD6F2`, Help `#D8E8D0` | Group markers in the guide's page list |
 | Step badge | `#E5352B` with a 2.5 px white ring | Numbered steps, counter marks |
-| Red text | `#C4271E` | The handwritten "guide" in the header |
+| Red text | `#C4271E` | "guide" beside "Shot" in the guide's header, in the system font (rule 7 keeps handwriting to sticky notes) |
 | Copied | `#7FD8A0` | The copy-command button after copying |
 | Dark band | `#16161A`, text `#EDEBE6`, secondary `#B9B7BE` | Scrolling band, motion card, "Try it now" card |
 
@@ -1518,7 +1518,7 @@ Every board on the canvas, the issue that builds it, and the files it touches. #
 | Site · components and motion | #1123 | `site/src/styles/global.css`, `site/src/layouts/Base.astro`, `site/src/components/` | ☐ |
 | Site · components and motion › 404 | #1127 | `site/src/pages/404.astro` | ☐ |
 | Site · landing page | #1124 | `site/src/pages/index.astro`, `site/src/components/HeroStage.astro`, `Loop.astro`, `Copy.astro`, `Window.astro`, `ForMacs.astro` | ☐ |
-| Site · guide page | #1125 | `site/src/layouts/Prose.astro`, `site/src/pages/docs/[page].astro`, `site/src/components/GuideSearch.astro` | ☐ |
+| Site · guide page | #1125 | `site/src/layouts/Prose.astro`, `site/src/pages/docs/[page].astro`, `site/src/components/GuideSearch.astro`, `site/src/lib/guide.ts`, `site/src/lib/guide-files.ts` | ☐ |
 | Site · guide page › long-form text | #1127 | `site/src/pages/privacy/`, `site/src/pages/screenshot-apps/` | ☐ |
 | Site · changelog | #1126 | `site/src/pages/changelog/index.astro` | ☐ |
 
