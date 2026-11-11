@@ -8,64 +8,88 @@ import ForMacs from '../components/ForMacs.astro';
 import HeroStage from '../components/HeroStage.astro';
 import { latestRelease } from '../lib/release';
 import editor from '../../../docs/media/editor.png';
+import captureArea from '../../../docs/media/capture-area.png';
+import captureWindow from '../../../docs/media/capture-window.png';
+import captureScroll from '../../../docs/media/capture-scroll.png';
+import recordingSetup from '../../../docs/media/recording-setup.png';
 import videoEditor from '../../../docs/media/video-editor.png';
-import quickAccess from '../../../docs/media/quick-access.png';
+import gallery from '../../../docs/media/gallery.png';
 
 const release = await latestRelease();
-const full = '(min-width: 1120px) 1088px, 100vw';
-const half = '(min-width: 900px) 540px, 100vw';
+const install = 'curl -fsSL https://shot.lorcanchinnock.com/install.sh | bash';
 
-// The strip of shortcuts under the hero. It scrolls, so it's written twice and the copy is hidden from screen readers.
-const shortcuts: [string[], string][] = [
-  [['⌘', '⇧', '4'], 'Screenshot'],
-  [['Tab'], 'Area, window, screen'],
-  [['⌘', '⇧', '5'], 'Record'],
-  [['A'], 'Arrow'],
-  [['B'], 'Blur'],
-  [['T'], 'Text'],
-  [['M'], 'Highlight'],
-  [['⌘', 'C'], 'Copy'],
-  [['⌘', 'Z'], 'Undo'],
+// Icon paths for the scrolling band and the capture tabs, drawn on a 24 px grid.
+const icon = {
+  area: 'M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5',
+  window: 'M3 5h18v14H3zM3 9h18',
+  scroll: 'M12 3v14M7 12l5 5 5-5M5 21h14',
+  arrow: 'M5 19L19 5M9 5h10v10',
+  blur: 'M12 3s7 7 7 12a7 7 0 0 1-14 0c0-5 7-12 7-12z',
+  mic: 'M9 3h6v11H9zM5 11a7 7 0 0 0 14 0M12 18v3',
+  gif: 'M4 4h16v16H4zM9 9v6M13 9h3M13 12h2M13 9v6',
+  search: 'M10 3a7 7 0 1 0 0 14a7 7 0 1 0 0-14M21 21l-6-6',
+};
+
+// What Shot does, on the dark band under the hero. Each icon takes one of the light colours.
+const band: [string, string, string][] = [
+  ['Area, window or page', icon.area, 'var(--accent)'],
+  ['Long pages', icon.scroll, 'var(--tag-editor)'],
+  ['Arrows and notes', icon.arrow, '#ff8a80'],
+  ['Blur private details', icon.blur, 'var(--tag-editor)'],
+  ['Record with your voice', icon.mic, '#ff8a80'],
+  ['Export GIFs', icon.gif, 'var(--accent)'],
+  ['Searchable library', icon.search, 'var(--tag-gallery)'],
 ];
 
-// The whole job in three steps, one accent each.
-const steps = [
-  { color: 'pink', name: 'Capture', title: 'Drag out an area, or click a window.', body: "Turn on the magnifier for the last pixel. It's copied and saved the moment you let go." },
-  { color: 'sky', name: 'Mark up', title: 'Hover the corner card to add an arrow.', body: 'Blur an email address, circle the problem, type a note. Or skip it.' },
-  { color: 'mint', name: 'Share', title: 'Paste it, or drag it into a message.', body: 'Recordings and GIFs work the same way, with your voice if you like.' },
+// The Capture tabs. Each mode's panel holds its real still (cropped closer to the window, in the still's pixels), what it does and its keys (Keyboard shortcuts › While selecting).
+const modes = [
+  {
+    id: 'area', label: 'Area', icon: icon.area, image: captureArea, crop: '--iw: 2000; --x: 340; --y: 200; --w: 1320; --h: 1035',
+    alt: 'An area being dragged over a support ticket, around the customer\'s message and the order, with handles on its corners and edges',
+    title: 'Drag out exactly what matters.',
+    body: 'The screen freezes while you choose, so nothing moves under you. Hold ⇧ for a square, or press R to step through common ratios.',
+    keys: [['⇧', 'Square'], ['R', 'Ratio'], ['Space', 'Move']],
+  },
+  {
+    id: 'window', label: 'Window', icon: icon.window, image: captureWindow, crop: '--iw: 2000; --x: 340; --y: 200; --w: 1320; --h: 1035',
+    alt: 'Window mode: a revenue dashboard window lit up in yellow, with its name and size in the middle, and the capture bar below with Window picked',
+    title: 'Click a window to capture just that window.',
+    body: 'Shot captures it as it is, even if something covers it, and keeps its macOS shadow. Press D for a delay when you need to open a menu first.',
+    keys: [['Tab', 'Switch'], ['D', 'Delay'], ['↩', 'Capture']],
+  },
+  {
+    id: 'scroll', label: 'Long page', icon: icon.scroll, image: captureScroll, crop: '--iw: 2000; --x: 0; --y: 0; --w: 2000; --h: 985',
+    alt: 'A long help page being captured as it scrolls, beside a Keep scrolling panel that shows the image so far, with the part not captured yet hatched',
+    title: 'Scroll a long page into one tall image.',
+    body: 'Press S, then scroll the page yourself, in any direction. A sticky header appears only once, and the preview hatches what you haven\'t covered yet.',
+    keys: [['S', 'Scroll'], ['↩', 'Done'], ['Esc', 'Cancel']],
+  },
 ];
 
-// One card per kind of person, the quick sharer first (CLAUDE.md › Who uses Shot).
-const audiences = [
-  {
-    color: 'yellow',
-    who: 'You paste screenshots into chats',
-    what: 'Press the keys you already know. The screenshot is copied before you let go, so paste it straight into a message or an email.',
-    link: '/docs/take-a-screenshot/',
-    cta: 'Take a screenshot',
-  },
-  {
-    color: 'pink',
-    who: 'You show people how things work',
-    what: 'Point with arrows, blur private details, and record a short walkthrough with your voice. Send it as a video or a GIF, and keep it in a folder for each client or bug.',
-    link: '/docs/record-your-screen/',
-    cta: 'Record your screen',
-  },
-  {
-    color: 'sky',
-    who: 'You make images for docs and slides',
-    what: 'Combine screenshots, add padding, a background and a shadow, and reuse the same style on every capture.',
-    link: '/docs/style-a-screenshot/',
-    cta: 'Style a screenshot',
-  },
-  {
-    color: 'mint',
-    who: 'You ask Claude or ChatGPT about your screen',
-    what: "Your arrows and boxes show the assistant where to look. Paste the screenshot in, or copy its path for an assistant that can open files.",
-    link: '/docs/share-a-capture-with-an-ai-assistant/',
-    cta: 'Share a capture with an assistant',
-  },
+// The Mark up cards, each with its tool's key (Annotate a screenshot › Tools).
+const tools = [
+  { id: 'arrow', name: 'Arrows', key: 'A', body: 'Straight or bent, in any colour.', tilt: '-1.2deg' },
+  { id: 'blur', name: 'Blur and pixelate', key: 'B', body: 'Hide emails, names and card numbers.', tilt: '1deg' },
+  { id: 'highlight', name: 'Highlight', key: 'M', body: 'Draw the eye to one line.', tilt: '0.8deg' },
+  { id: 'spot', name: 'Spotlight', key: 'F', body: 'Dim or blur everything else.', tilt: '-0.8deg' },
+  { id: 'count', name: 'Numbered steps', key: 'N', body: 'Circles that count up for you.', tilt: '-1deg' },
+  { id: 'note', name: 'Sticky notes', key: 'S', body: 'Say it right next to the problem.', tilt: '1.2deg' },
 ];
+
+const stats: [string, string][] = [
+  ['2', 'shortcuts to learn: ⌘⇧4 and ⌘⇧5'],
+  ['0', 'accounts, uploads or trackers'],
+  ['30,000', 'pixels tall, the longest scrolling capture'],
+  ['120 fps', 'recording on ProMotion displays'],
+  ['9', 'languages, following your Mac'],
+];
+
+const promises: [string, string][] = [
+  ['Nothing leaves your Mac', 'Captures are files in a folder you choose. Shot never uploads them or makes share links.'],
+  ['Shared images stay clean', 'A saved copy never carries hidden layers or the full-size images you placed in it.'],
+  ['Updates only when you agree', 'The one time Shot goes online is to check for a new version, and it asks you first.'],
+];
+
 const software = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
@@ -87,257 +111,457 @@ const software = {
 
 <Base>
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(software)} />
+
   <section class="hero">
-    <div class="wrap hero-grid">
-      <div class="hero-text">
-        <h1>A better <span class="keys"><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd></span></h1>
-        <p class="lede">Shot is a screenshot app that lives in your menu bar. Press the keys you already know, and the picture is copied before you let go.</p>
-        <div class="cta">
-          <Copy command="curl -fsSL https://shot.lorcanchinnock.com/install.sh | bash" />
-        </div>
-        <ForMacs />
-        <p class="meta">Free and open source. Version {release.version}, for macOS 15 or later, on Apple Silicon or Intel. <a href="#install">How to install</a></p>
+    <div class="wrap hero-head">
+      <p class="pill pop"><span class="badge dark">Free</span>Open source · No account · macOS 15 or later</p>
+      <h1>A <span class="hl">better</span><br />
+        <span class="hero-keys anchor"><kbd class="key big press">⌘</kbd><kbd class="key big accent press">⇧</kbd><kbd class="key big press">4</kbd><span class="hero-note deco" aria-hidden="true"><span class="note pop">The only shortcut you need</span><svg class="arrow" width="70" height="40" viewBox="0 0 70 40"><path class="shaft" d="M4 30 C 24 40, 44 34, 58 18" /><path class="head" d="M66 10 L64 30 L50 20 Z" /></svg></span></span>
+      </h1>
+      <p class="lede pop">Shot is a screenshot app that lives in your menu bar. Press the keys you already know, add an arrow if you like, and paste the picture into a chat or an email.</p>
+      <div class="actions pop">
+        <a class="button big" href="#install">Download for Mac</a>
+        <a class="button big secondary" href="#features">See it work <span aria-hidden="true">↓</span></a>
       </div>
-      <Window>
-        <HeroStage />
-      </Window>
+      <ForMacs />
+      <p class="meta">Version {release.version}, for Apple Silicon and Intel Macs · <a href="#install">Install with one line</a></p>
+    </div>
+    <div class="wrap scene-wrap">
+      <HeroStage />
     </div>
   </section>
 
-  <div class="strip-wrap">
-  <div class="strip">
-    {[0, 1].map((copy) => (
-      <ul aria-label={copy ? undefined : 'Shortcuts'} aria-hidden={copy ? 'true' : undefined}>
-        {shortcuts.map(([keys, label]) => (
-          <li>{keys.map((k) => <kbd class="key">{k}</kbd>)}<span>{label}</span></li>
-        ))}
-      </ul>
-    ))}
-  </div>
+  <div class="band-wrap">
+    <div class="marquee band">
+      {[0, 1].map((copy) => (
+        <ul aria-label={copy ? undefined : 'What Shot does'} aria-hidden={copy ? 'true' : undefined}>
+          {band.map(([label, d, colour]) => (
+            <li><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style={`--icon: ${colour}`}><path d={d} /></svg>{label}</li>
+          ))}
+        </ul>
+      ))}
+    </div>
   </div>
 
-  <section id="features">
+  <section id="features" class="reveal">
     <div class="wrap">
-      <div class="section-head reveal">
-        <h2>Three steps. Zero settings.</h2>
-        <p>Shot opens in its simplest state. Everything else stays out of the way until you ask.</p>
+      <div class="head-row">
+        <div class="section-head">
+          <p class="step"><span class="counter">1</span>Capture</p>
+          <h2>One shortcut for every kind of <span class="hl">capture</span>.</h2>
+        </div>
+        <p class="aside">Press <kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd>, then <kbd class="key">Tab</kbd> to switch between an area, a window and the whole screen. Shot remembers the one you used last.</p>
       </div>
-      <ol class="three">
-        {steps.map((s, i) => (
-          <li class="reveal">
-            <div class="card tile" style={`--fill: var(--${s.color})`}>
-              <span class="n">{i + 1} {s.name}</span>
-              <strong>{s.title}</strong>
-              <span>{s.body}</span>
+
+      <div class="capture">
+        <div class="mode-row">
+          <div class="tabs" role="radiogroup" aria-label="Capture modes">
+            {modes.map((m, i) => (
+              <label><input type="radio" name="capture-mode" value={m.id} checked={i === 0} /><svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true"><path d={m.icon} /></svg>{m.label}</label>
+            ))}
+          </div>
+          <span class="try deco" aria-hidden="true"><svg class="arrow" width="46" height="26" viewBox="0 0 46 26"><path class="shaft" d="M42 18 C 30 26, 16 22, 8 10" /><path class="head" d="M4 2 L16 8 L4 16 Z" /></svg><span class="note">try them</span></span>
+        </div>
+        <div class="modes">
+          {modes.map((m) => (
+            <div class:list={['mode', m.id]}>
+              <Window tone="lilac" tilt="-1deg">
+                <div class="crop" style={m.crop}>
+                  <Image src={m.image} alt={m.alt} widths={[1000, 2000]} sizes="(min-width: 1240px) 1000px, 100vw" />
+                </div>
+              </Window>
+              <div class="mode-text">
+                <h3>{m.title}</h3>
+                <p>{m.body}</p>
+                <ul class="keys">
+                  {m.keys.map(([k, label]) => <li><kbd class="key">{k}</kbd>{label}</li>)}
+                </ul>
+              </div>
             </div>
-          </li>
-        ))}
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="step"><span class="counter">2</span>Mark up</p>
+        <h2>Make the point before the moment <span class="hl">passes</span>.</h2>
+      </div>
+      <div class="markup">
+        <div class="editor-card panel sky">
+          <div class="editor-text">
+            <h3>An editor that opens in a blink</h3>
+            <p>Hover the corner card and click the pencil. Your marks stay editable, even after you save.</p>
+          </div>
+          <div class="editor-shot anchor">
+            <div class="crop tilt" style="--tilt: 1deg; --iw: 1600; --x: 470; --y: 39; --w: 910; --h: 696">
+              <Image src={editor} alt="Close up of the editor: the highlighted discount line on a support ticket, with a red arrow pointing at it from a sticky note, under the toolbar with Share, Save and Copy" widths={[600, 1200]} sizes="(min-width: 1240px) 760px, 100vw" />
+            </div>
+            <span class="editable deco" aria-hidden="true"><svg class="arrow" width="54" height="40" viewBox="0 0 54 40"><path class="shaft" d="M50 6 C 36 4, 18 12, 12 28" /><path class="head" d="M5 38 L7 22 L19 31 Z" /></svg><span class="note wobble">this arrow stays editable</span></span>
+          </div>
+        </div>
+        <ul class="tools">
+          {tools.map((t) => (
+            <li class="ink-card tilt" style={`--tilt: ${t.tilt}`}>
+              <div class:list={['demo', `d-${t.id}`]} aria-hidden="true">
+                {t.id === 'arrow' && <svg class="arrow" width="120" height="48" viewBox="0 0 120 48"><path class="shaft" d="M8 40 C 40 44, 80 30, 100 12" /><path class="head" d="M108 4 L106 26 L88 14 Z" /></svg>}
+                {t.id === 'blur' && <span class="blurred">jane@example.com</span>}
+                {t.id === 'highlight' && <span class="marker">Discount −$0.00</span>}
+                {t.id === 'spot' && <span class="hole" />}
+                {t.id === 'count' && <span class="counts"><span class="counter">1</span><span class="counter">2</span><span class="counter">3</span></span>}
+                {t.id === 'note' && <span class="mini-note">Total didn’t change</span>}
+              </div>
+              <h3>{t.name} <kbd class="key">{t.key}</kbd></h3>
+              <p>{t.body}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <div class="wrap">
+      <div class="head-row">
+        <div class="section-head">
+          <p class="step"><span class="counter">3</span>Record</p>
+          <h2>Record a walkthrough, then send it as a <span class="hl">GIF</span>.</h2>
+        </div>
+        <p class="aside"><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">5</kbd> records an area, a window or the whole screen, with your voice, your Mac’s sound and your camera if you want them.</p>
+      </div>
+      <ol class="stages panel blush">
+        <li class="card tilt" style="--tilt: -1.2deg">
+          <div class="stage-shot"><Image src={recordingSetup} alt="The recording setup bar under a picked area, with buttons for the camera, the microphone, the cursor and a delay" widths={[400, 800]} sizes="(min-width: 1000px) 380px, 100vw" /><span class="counter" aria-hidden="true">1</span></div>
+          <h3>Check it before you start</h3>
+          <p>Hold <kbd class="key">⌥</kbd> as you pick to adjust the frame and turn the camera, microphone and cursor on or off.</p>
+        </li>
+        <li class="card tilt" style="--tilt: 0.8deg">
+          <div class="stage-shot"><Loop name="recording" label="Stepping the Delay chip through its choices, picking an area to record, then the red recording outline around a chart, with the timer, Pause and Stop controls" /><span class="counter" aria-hidden="true">2</span></div>
+          <h3>Talk it through</h3>
+          <p>Pause whenever you need to. The red outline shows what’s being recorded, and it never ends up in the video.</p>
+        </li>
+        <li class="card tilt" style="--tilt: -0.6deg">
+          <div class="stage-shot"><Image src={videoEditor} alt="The video editor with a cut where the recording went to another page, a Best day label and an arrow, and the GIF export options" widths={[400, 800]} sizes="(min-width: 1000px) 380px, 100vw" /><span class="counter" aria-hidden="true">3</span></div>
+          <h3>Cut the dead air</h3>
+          <p>Trim, cut and speed it up, draw over it, then export an MP4 or a GIF and see its size before you save.</p>
+        </li>
       </ol>
     </div>
   </section>
 
-  <section>
-    <div class="wrap stack">
-      <div class="say reveal">
-        <span class="step">That's the real app</span>
-        <h2>Let go of the mouse and the screenshot is already copied and saved. A little card shows up in the corner, and you can drag it straight into a message.</h2>
-      </div>
-      <Window class="reveal"><Loop name="hero" label="Pressing ⌘⇧4, highlighting the problem and pointing an arrow at it, then pasting the screenshot into a chat" /></Window>
-      <noscript><img class="still" src={quickAccess.src} width={quickAccess.width} height={quickAccess.height} alt="Shot's Quick Access card over a screenshot of a support ticket's order, with Copy and Save As buttons in the middle, close, edit and pin buttons in the corners, and a Drag into any app hint." /></noscript>
-    </div>
-  </section>
-
-  <section>
-    <div class="wrap pair">
-      <div class="stack reveal">
-        <div class="say">
-          <span class="step" style="--chip: var(--pink)">Capture</span>
-          <h2>Drag out an area, or click a window. A magnifier is there for the last pixel.</h2>
-        </div>
-        <Window tint="var(--pink)"><Loop name="capture" label="Pressing Tab to step between an area, a window and the full screen, dragging out an area with the magnifier, then the Quick Access card sliding into the corner" /></Window>
-      </div>
-      <div class="stack reveal">
-        <div class="say">
-          <span class="step" style="--chip: var(--sky)">Mark up</span>
-          <h2>Press <kbd class="key">A</kbd> for an arrow, or <kbd class="key">B</kbd> to blur an email address.</h2>
-        </div>
-        <Window tint="var(--sky)"><Image src={editor} alt="The annotation editor with a blurred email address, the discount line highlighted, and a sticky note with an arrow pointing at it" widths={[540, 1080]} sizes={half} /></Window>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="wrap pair">
-      <div class="stack reveal">
-        <div class="say">
-          <span class="step" style="--chip: var(--mint)">Record</span>
-          <h2><kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">5</kbd> records instead, with your voice and your camera if you like.</h2>
-        </div>
-        <Window tint="var(--mint)"><Loop name="recording" label="Stepping the Delay chip through its choices, picking an area to record, then the red recording outline around a chart, with the timer, Pause and Stop controls" /></Window>
-      </div>
-      <div class="stack reveal">
-        <div class="say">
-          <span class="step" style="--chip: var(--violet)">Trim</span>
-          <h2>Then cut the part where you went looking for the right tab, and save it as a GIF.</h2>
-        </div>
-        <Window tint="var(--violet)"><Image src={videoEditor} alt="The video editor with a cut where the recording went to another page, a Best day label and an arrow, and the GIF export options" widths={[540, 1080, 1600]} sizes={half} /></Window>
-      </div>
-    </div>
-  </section>
-
-  <section class="band">
+  <section class="reveal numbers-section">
     <div class="wrap">
-      <div class="section-head reveal">
-        <span class="chip">Who it's for</span>
-        <h2>Start with what you do.</h2>
-        <p>Shot opens in its simplest state. Everything else is there when you want it.</p>
-      </div>
-      <ul class="audiences">
-        {audiences.map((a, i) => (
-          <li class={`reveal ${i === 0 ? 'first' : ''}`} style={`--accent: var(--${a.color})`}>
-            <a class="card" href={a.link}>
-              <strong>{a.who}</strong>
-              <span>{a.what}</span>
-              <em>{a.cta} →</em>
-            </a>
-          </li>
-        ))}
+      <ul class="numbers">
+        {stats.map(([value, label]) => <li><strong>{value}</strong><span>{label}</span></li>)}
       </ul>
     </div>
   </section>
 
-  <section>
-    <div class="wrap">
-      <ul class="facts">
-        <li class="card reveal" style="--accent: var(--mint)">
-          <span class="chip">Private</span>
-          <p>There's no account to make. Shot only goes online to check for updates, and it asks you first. The <a href="https://github.com/LorcanChinnock/shot">code is on GitHub</a> if you want to look.</p>
-        </li>
-        <li class="card reveal" style="--accent: var(--sky)">
-          <span class="chip">Speaks your language</span>
-          <p>English, German, French, Spanish, Italian, Brazilian Portuguese, Japanese, Korean and Simplified Chinese. Shot follows the language your Mac is set to.</p>
-        </li>
-        <li class="card reveal" style="--accent: var(--pink)">
-          <span class="chip">Free</span>
-          <p>Shot follows your Mac's light or dark appearance, and costs nothing. If it saves you time, you can <a href="/sponsor">sponsor it</a>. Everything else is in the <a href="/docs/get-started/">guide</a>.</p>
-        </li>
-      </ul>
+  <section class="reveal">
+    <div class="wrap find">
+      <div class="find-text">
+        <p class="step"><span class="counter">4</span>Find</p>
+        <h2>Search what’s <span class="hl">inside</span> your screenshots.</h2>
+        <p>Every capture lands in one library. Search the text in them, sort them into folders or tags, and drag any of them back out into another app.</p>
+        <a class="go" href="/docs/find-your-captures/">Find your captures</a>
+      </div>
+      <Window tone="sage" tilt="1deg" class="find-shot">
+        <div class="crop" style="--iw: 1600; --x: 170; --y: 88; --w: 1260; --h: 786">
+          <Image src={gallery} alt="The library window with SPRING20 typed in its search field, showing the two screenshots of the ticket that mention it" widths={[700, 1400]} sizes="(min-width: 1240px) 700px, 100vw" />
+        </div>
+        <span slot="marks" class="search-label deco pop on-view" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24"><path d={icon.search} /></svg>SPRING20<span class="found">2 found</span></span>
+      </Window>
     </div>
   </section>
 
-  <section class="install" id="install">
+  <section class="reveal">
     <div class="wrap">
-      <div class="stack reveal">
-        <h2>Install</h2>
-        <p>Paste this into Terminal. It downloads the latest release, checks it against the release's checksum, and copies Shot into Applications.</p>
-        <Copy command="curl -fsSL https://shot.lorcanchinnock.com/install.sh | bash" />
+      <div class="privacy dark-band">
+        <div class="privacy-text">
+          <h2>Your screen stays on your <span class="mac">Mac</span>.</h2>
+          <p>Screenshots often hold things nobody else should see, so Shot has no account, uploads nothing and collects no analytics. The <a href="https://github.com/LorcanChinnock/shot">code is on GitHub</a> for anyone to check.</p>
+          <span class="card-chip" aria-hidden="true"><span>Paid with card</span><b>4242 4242</b></span>
+        </div>
+        <ul class="promises">
+          {promises.map(([title, body]) => (
+            <li><span class="tick" aria-hidden="true"></span><span><b>{title}</b>{body}</span></li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" class="reveal">
+    <div class="narrow faq-list">
+      <h2>Questions, <span class="hl">answered</span>.</h2>
+      <details class="faq">
+        <summary>Is Shot really free?</summary>
+        <p>Yes. It’s free and open source under the GPL-3.0 license, with no ads and no paid tier. If it saves you time, you can <a href="/sponsor">sponsor it</a>.</p>
+      </details>
+      <details class="faq">
+        <summary>Does it replace my Mac’s screenshot keys?</summary>
+        <p>While Shot runs, <kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd> and <kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">5</kbd> open Shot, and macOS gets them back when Shot quits. To keep the built-in tool, turn off Use Shot for ⌘⇧4 and ⌘⇧5 in Settings › Shortcuts, and Shot uses <kbd class="key">⌃</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd> and <kbd class="key">⌃</kbd><kbd class="key">⇧</kbd><kbd class="key">5</kbd> instead.</p>
+      </details>
+      <details class="faq">
+        <summary>Does anything get uploaded?</summary>
+        <p>No. Shot has no account and no analytics, and your captures stay in a folder on your Mac. It only goes online to check for updates, and it asks you first. The <a href="/privacy/">privacy page</a> has the details.</p>
+      </details>
+      <details class="faq">
+        <summary>What do I need?</summary>
+        <p>A Mac with macOS 15 or later, on Apple Silicon or Intel.</p>
+      </details>
+      <details class="faq">
+        <summary>Why does macOS warn me when I open it?</summary>
+        <p>Apple hasn’t notarized Shot. The install command avoids the warning, but a zip downloaded in a browser shows it the first time, and <a href="/docs/get-started/">Get started</a> walks you through it.</p>
+      </details>
+      <details class="faq">
+        <summary>How do I remove it?</summary>
+        <p>One Terminal command removes Shot and everything it keeps. <a href="/docs/removing-shot/">Removing Shot</a> has the command, and the steps to do it by hand.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="install-section reveal" id="install">
+    <div class="wrap">
+      <div class="install">
+        <h2>Press <span class="cta-keys anchor"><kbd class="key big press">⌘</kbd><kbd class="key big press">⇧</kbd><kbd class="key big press">4</kbd><span class="tutorial deco" aria-hidden="true"><svg class="arrow" width="54" height="44" viewBox="0 0 54 44"><path class="shaft" d="M50 8 C 36 0, 18 8, 12 30" /><path class="head" d="M4 26 L18 26 L10 40 Z" /></svg><span class="note">that’s the whole tutorial</span></span></span>.</h2>
+        <p>Paste this into Terminal. It downloads the latest release, checks it against the release’s checksum and copies Shot into Applications.</p>
+        <Copy command={install} />
         <ForMacs />
-        <ol class="steps">
-          <li>In Shot's welcome window, click <b>Grant</b>, turn Shot on under Screen &amp; System Audio Recording, then click <b>Relaunch</b>.</li>
-          <li>Press <kbd class="key">⌘</kbd><kbd class="key">⇧</kbd><kbd class="key">4</kbd> and drag out an area.</li>
-        </ol>
-        <p>The <a href="/docs/get-started/">guide</a> covers the rest of the first launch.</p>
+        <p class="small">Then click Grant in Shot’s welcome window and turn Shot on under Screen &amp; System Audio Recording. <a href="/docs/get-started/">Get started</a> covers the rest, and you can also <a href="https://github.com/LorcanChinnock/shot/releases/latest">download the zip from GitHub</a>.</p>
       </div>
     </div>
   </section>
 </Base>
 
 <style>
-  .still { margin-inline: auto; }
-  .hero { padding-block: clamp(32px, 6vw, 72px) clamp(32px, 5vw, 56px); }
-  .hero-grid { display: grid; gap: 32px; align-items: center; }
-  @media (min-width: 1000px) { .hero-grid { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 48px; } }
-  .hero-text { display: grid; gap: 20px; justify-items: start; min-width: 0; }
-  .hero h1 { font-size: clamp(44px, 7vw, 84px); display: flex; flex-wrap: wrap; align-items: center; gap: 0.18em; }
-  .keys { display: inline-flex; gap: 0.12em; }
-  .hero h1 .key { font-size: 0.62em; padding: 0.05em 0.3em; border-width: 3px; border-radius: 12px; box-shadow: 4px 4px 0 var(--line); }
-  .lede { font-size: clamp(19px, 2.2vw, 22px); margin: 0; max-width: 30em; }
-  .cta { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; width: 100%; }
-  .cta :global(.copy) { flex: 1 1 320px; min-width: 0; }
-  .button.big { min-height: 52px; padding: 12px 22px; font-size: 18px; }
-  .meta { margin: 0; font-size: 15px; color: var(--muted); }
-  .hero :global(.window) { width: 100%; }
-
-  /* The keycaps in the title press in time with the hero's animation (HeroStage.astro's --loop). */
+  /* ---------- Hero ---------- */
+  .hero { padding: clamp(36px, 6vw, 64px) 0 0; }
+  .hero-head { display: flex; flex-direction: column; align-items: center; gap: 26px; text-align: center; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px; margin: 0;
+    padding: 5px 12px 5px 6px; border-radius: 20px;
+    font-size: 13.5px; color: var(--muted);
+    background: var(--surface); box-shadow: 0 0 0 1px var(--edge), var(--soft-shadow);
+    --delay: 100ms;
+  }
+  /* Hero H1 (spec › Website values): the board's size, on the landing hero only. */
+  .hero h1 { font-size: clamp(52px, 8.5vw, 112px); line-height: 0.98; letter-spacing: -0.045em; max-width: 1000px; }
+  .hero h1 .hl { --delay: 500ms; }
+  .hero-keys {
+    display: inline-flex; gap: 0.12em; margin-top: 0.12em;
+    /* The keys are drawn at heading size, so the ink scales with them. */
+    --ink-ring: 0 0 0 3px var(--line);
+    --ink-drop: 0 0.09em 0 var(--line);
+  }
+  .hero-keys kbd, .cta-keys kbd { font: inherit; font-size: 0.78em; font-weight: 800; min-width: 1.1em; padding: 0.02em 0.18em; border-radius: 0.18em; line-height: 1.2; margin: 0; }
+  .hero-keys kbd:nth-of-type(1) { rotate: -4deg; }
+  .hero-keys kbd:nth-of-type(2) { rotate: 2deg; --delay: 120ms; }
+  .hero-keys kbd:nth-of-type(3) { rotate: -1deg; --delay: 240ms; }
+  /* The note sits left of the keys and its arrow points right at them. */
+  .hero-note { position: absolute; right: calc(100% + 18px); top: 50%; translate: 0 -50%; display: flex; align-items: center; gap: 4px; }
+  .hero-note .note { --r: -7deg; --delay: 1100ms; width: 170px; max-width: none; padding: 14px 16px 18px; font-size: 25px; line-height: 1.05; text-align: left; }
+  .hero-note .arrow { --len: 80; --delay: 1500ms; }
+  .lede { margin: 0; max-width: 600px; font-size: 21px; color: var(--muted); --delay: 300ms; }
+  .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; --delay: 400ms; }
+  .button.big { min-height: 52px; padding: 13px 26px; font-size: 17px; }
+  .meta { margin: 0; font-size: 13px; color: var(--tertiary); }
+  .scene-wrap { margin-top: 52px; }
   @media (prefers-reduced-motion: no-preference) {
-    .hero h1 .key { animation: press 11s infinite both; }
-    .hero h1 .key:nth-child(2) { animation-delay: 0.12s; }
-    .hero h1 .key:nth-child(3) { animation-delay: 0.24s; }
-  }
-  @keyframes press {
-    0%, 4% { transform: none; box-shadow: 4px 4px 0 var(--line); background: var(--paper); color: var(--ink); }
-    5%, 10% { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--line); background: var(--yellow); color: var(--on-accent); }
-    12%, 100% { transform: none; box-shadow: 4px 4px 0 var(--line); background: var(--paper); color: var(--ink); }
+    .scene-wrap { animation: rise 1s 500ms var(--ease-out) both; }
   }
 
-  /* An ink band of shortcuts that scrolls on its own, and stands still with reduced motion. */
-  /* The tilted strip is wider than the page, so its wrapper clips it, leaving room above and below for the tilt. */
-  .strip-wrap { overflow: clip; padding-block: 16px; }
-  .strip { display: flex; overflow: hidden; background: var(--line); color: #f6f4ef; border-block: var(--border) solid var(--line); transform: rotate(-1deg); margin-inline: -8px; }
-  .strip ul { display: flex; flex: none; gap: 40px; margin: 0; padding: 14px 20px; list-style: none; }
-  .strip li { display: flex; align-items: center; gap: 6px; font-weight: 800; white-space: nowrap; }
-  .strip li span { margin-left: 6px; }
-  .strip .key { color: var(--on-accent); background: var(--yellow); border-color: #000; box-shadow: 2px 2px 0 #000; }
-  .strip li:nth-child(3n + 2) .key { background: var(--pink); }
-  .strip li:nth-child(3n) .key { background: var(--mint); }
+  /* ---------- The scrolling band ---------- */
+  /* It's tilted and wider than the page, so its wrapper clips it, with room above and below for the tilt. */
+  .band-wrap { overflow: clip; padding-block: 40px 8px; margin-top: 20px; }
+  .band { margin-inline: -40px; padding: 18px 0; border-radius: 0; rotate: -1.6deg; transform: none; box-shadow: 0 10px 30px rgb(22 22 26 / 0.2); }
+  .band li { display: flex; align-items: center; gap: 10px; padding-right: 44px; font-size: 17px; font-weight: 700; }
+  .band svg { fill: none; stroke: var(--icon); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* The board's rhythm: more room above each section than below it. */
+  section:not(.hero) { padding-block: clamp(56px, 8vw, 120px) clamp(24px, 3vw, 40px); }
+
+  /* ---------- Section heads ---------- */
+  .step { display: flex; align-items: center; gap: 9px; margin: 0; font-size: 14px; font-weight: 800; }
+  .step .counter { width: 30px; height: 30px; font-size: 15px; box-shadow: 0 0 0 2.5px #fff, 0 4px 10px rgb(0 0 0 / 0.15); }
+  .head-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 0 24px; margin-bottom: 36px; }
+  .head-row .section-head { margin-bottom: 0; }
+  .aside { margin: 16px 0 0; max-width: 380px; font-size: 17px; line-height: 1.55; color: var(--muted); }
+  h3 { font-size: 20px; }
+
+  /* ---------- 1 Capture: tabs that are a radio group, with panels switched by :has() ---------- */
+  .mode-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-bottom: 28px; }
+  .capture .tabs { gap: 10px; }
+  .capture .tabs label { padding: 10px 18px; font-size: 15px; border-radius: 12px; }
+  .capture .tabs svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .try { display: flex; align-items: center; gap: 4px; }
+  .try .arrow { --len: 60; }
+  .try .note { --r: 4deg; padding: 6px 10px 8px; font-size: 20px; }
+  /* Every panel sits in the same cell, so the tallest sets the height and switching never moves the page. */
+  .modes { display: grid; }
+  .mode { grid-area: 1 / 1; display: flex; flex-wrap: wrap; align-items: center; gap: 32px; }
+  .mode :global(.shot-panel) { flex: 2 1 600px; min-width: 0; align-self: stretch; }
+  .mode :global(.shot-anchor) { max-width: 704px; }
+  .mode-text { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+  .mode-text h3 { font-size: 30px; line-height: 1.12; letter-spacing: -0.025em; }
+  .mode-text p { margin: 0; font-size: 17px; line-height: 1.55; color: var(--muted); }
+  .keys { display: flex; flex-wrap: wrap; gap: 12px; margin: 0; padding: 0; list-style: none; }
+  .keys li { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+  /* Area shows until :has() says otherwise, so a browser without it still shows one panel. */
+  .mode:not(.area) { visibility: hidden; }
+  .capture:has(input[value="window"]:checked) .mode.area,
+  .capture:has(input[value="scroll"]:checked) .mode.area { visibility: hidden; }
+  .capture:has(input[value="window"]:checked) .mode.window,
+  .capture:has(input[value="scroll"]:checked) .mode.scroll { visibility: visible; }
   @media (prefers-reduced-motion: no-preference) {
-    .strip ul { animation: marquee 40s linear infinite; }
-    .strip:hover ul { animation-play-state: paused; }
-  }
-  @keyframes marquee { to { transform: translateX(-100%); } }
-
-  section { padding-block: clamp(32px, 5vw, 64px); }
-  .stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-content: start; min-width: 0; }
-  .say { display: grid; gap: 12px; justify-items: start; }
-  .say h2 { font: 800 clamp(20px, 2.4vw, 26px)/1.3 var(--display); letter-spacing: -0.015em; max-width: 30em; text-wrap: pretty; }
-  /* A tight line height keeps the caps from making a caption's line taller than plain text. */
-  .say .key { font-size: 0.75em; line-height: 1.1; }
-  .say .key + .key { margin-left: 0.2em; }
-  .step { display: inline-flex; padding: 3px 10px; font: 800 12px/1.4 var(--font); letter-spacing: 0.06em; text-transform: uppercase; color: var(--on-accent); background: var(--chip, var(--yellow)); border: 2px solid var(--line); border-radius: 999px; }
-
-  .pair { display: grid; gap: 40px; }
-  @media (min-width: 900px) {
-    .pair { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+    .capture:has(input[value="area"]:checked) .mode.area :global(.shot-frame),
+    .capture:has(input[value="window"]:checked) .mode.window :global(.shot-frame),
+    .capture:has(input[value="scroll"]:checked) .mode.scroll :global(.shot-frame) { animation: pop var(--pop) both; --r: var(--tilt); }
   }
 
-  /* The audiences, on a tinted band so the page has a change of pace. */
-  .band { background: color-mix(in srgb, var(--yellow) calc(var(--blob) * 22%), transparent); border-block: var(--border) solid var(--line); }
-  .audiences { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
-  .audiences li { display: grid; }
-  .audiences .card { display: grid; align-content: start; gap: 8px; padding: 20px 22px; text-decoration: none; background: var(--glass-strong); }
-  .audiences strong { font: 900 22px/1.15 var(--display); letter-spacing: -0.02em; }
-  .audiences span { color: var(--muted); font-size: 16px; line-height: 1.5; }
-  .audiences em { margin-top: 6px; font-style: normal; font-weight: 800; }
-  .audiences em { justify-self: start; padding: 2px 10px; color: var(--on-accent); background: var(--accent); border: 2px solid var(--line); border-radius: 8px; }
-  @media (min-width: 700px) {
-    .audiences { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .audiences .first { grid-column: 1 / -1; }
-    /* With the first card across the top, an even count leaves the last one alone on its row, so it spans too. */
-    .audiences li:last-child:nth-child(even) { grid-column: 1 / -1; }
-    .audiences .first .card { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); align-items: center; column-gap: 32px; background: var(--yellow); color: var(--on-accent); }
-    .audiences .first strong { font-size: clamp(26px, 3vw, 34px); grid-row: span 2; }
-    .audiences .first span { color: var(--on-accent); opacity: 0.8; }
-    .audiences .first em { background: #fff; color: var(--on-accent); }
+  /* ---------- Crops: show part of a screenshot, in its own pixels (--iw wide; --w × --h from --x, --y) ---------- */
+  .crop { position: relative; overflow: hidden; aspect-ratio: var(--w) / var(--h); }
+  .crop :global(img) { position: absolute; max-width: none; height: auto; width: calc(var(--iw) / var(--w) * 100%); left: calc(var(--x) / var(--w) * -100%); top: calc(var(--y) / var(--h) * -100%); }
+
+  /* ---------- 2 Mark up ---------- */
+  .markup { display: flex; flex-wrap: wrap; gap: 18px; }
+  .editor-card { flex: 1.3 1 520px; min-width: 0; padding: 32px; border-radius: 28px; display: flex; flex-direction: column; gap: 22px; }
+  .editor-text { display: flex; flex-direction: column; gap: 8px; max-width: 440px; }
+  .editor-text h3 { font-size: 25px; line-height: 1.15; letter-spacing: -0.02em; }
+  .editor-text p { margin: 0; font-size: 16px; line-height: 1.5; }
+  .editor-shot { width: 100%; max-width: 563px; align-self: center; }
+  .editor-shot .crop { border-radius: 12px; box-shadow: 0 24px 50px rgb(20 40 70 / 0.25); }
+  /* The note sits above and right of the screenshot's arrow, and points down at its middle, at (61%, 80%) of the crop. */
+  .editable { position: absolute; left: 60%; top: calc(80% - 40px); display: flex; align-items: flex-start; gap: 2px; }
+  .editable .arrow { --len: 60; flex: none; }
+  .editable .note { width: 140px; padding: 10px 12px 14px; }
+  .tools { flex: 1 1 420px; min-width: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 18px; margin: 0; padding: 0; list-style: none; }
+  .tools li { padding: 18px; display: flex; flex-direction: column; gap: 6px; min-height: 172px; border-radius: 22px; }
+  .tools h3 { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; font-size: 17px; font-weight: 800; letter-spacing: 0; }
+  .tools h3 kbd { font-size: 13px; }
+  .tools p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--muted); }
+
+  /* The tool demos: Shot's marks, drawn small. Their fills are paper colours, so they stay light in dark. */
+  .demo { position: relative; height: 64px; overflow: hidden; border-radius: 12px; color: #16161a; }
+  .demo.d-arrow { background: #fde2df; }
+  .demo.d-blur { background: #e2e8f6; }
+  .demo.d-highlight { background: #fff6d6; }
+  .demo.d-spot { background: #ecebf2; }
+  .demo.d-count { background: #fbe3ec; }
+  .demo.d-note { background: #e6f2e1; }
+  .demo .arrow { position: absolute; left: 14px; top: 8px; --len: 110; }
+  .blurred { position: absolute; left: 14px; top: 20px; font-size: 15px; font-weight: 600; filter: blur(4px); }
+  .marker { position: absolute; left: 14px; top: 20px; padding: 1px 6px; font-size: 15px; font-weight: 700; background: linear-gradient(var(--accent), var(--accent)) no-repeat; background-size: 100% 100%; }
+  .hole { position: absolute; left: 22px; top: 12px; width: 70px; height: 40px; border-radius: 50%; box-shadow: 0 0 0 200px rgb(22 22 26 / 0.55); }
+  .counts { position: absolute; left: 14px; top: 16px; display: flex; gap: 10px; }
+  .counts .counter { width: 30px; height: 30px; font-size: 14px; box-shadow: 0 0 0 2px #fff; }
+  .mini-note { position: absolute; left: 14px; top: 10px; width: 110px; padding: 6px 8px; font-size: 11.5px; line-height: 1.25; font-weight: 600; background: var(--note); color: var(--note-text); box-shadow: 0 4px 10px rgb(0 0 0 / 0.12); rotate: -3deg; }
+  @media (prefers-reduced-motion: no-preference) {
+    .demo .arrow .shaft { animation: draw 1.4s ease-out infinite alternate; }
+    .demo .arrow .head { animation: none; }
+    .blurred { animation: blur-pulse 2.4s ease-in-out infinite alternate; }
+    .marker { animation: sweep 1.2s ease-in-out infinite alternate; }
+    .hole { animation: spot 3s ease-in-out infinite; }
+    .counts .counter { animation: count 3s infinite both; }
+    .counts .counter:nth-child(2) { animation-delay: 250ms; }
+    .counts .counter:nth-child(3) { animation-delay: 500ms; }
+    .mini-note { animation: wobble 3s ease-in-out infinite; --r: -3deg; rotate: none; }
+  }
+  @keyframes blur-pulse { 0%, 35% { filter: blur(0); } 50%, 100% { filter: blur(4px); } }
+  @keyframes spot { 50% { transform: translateX(46px); } }
+  @keyframes count { 0%, 15% { transform: scale(0); } 25% { transform: scale(1.2); } 32%, 100% { transform: scale(1); } }
+
+  /* ---------- 3 Record ---------- */
+  .stages { margin: 0; padding: 32px; list-style: none; border-radius: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 22px; }
+  .stages li { padding: 12px 12px 20px; border-radius: 22px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 16px 36px rgb(90 30 40 / 0.14); }
+  .stages h3 { margin: 8px 8px 0; letter-spacing: -0.015em; }
+  .stages p { margin: 0 8px; font-size: 15px; line-height: 1.5; color: var(--muted); }
+  .stage-shot { position: relative; height: 232px; overflow: hidden; border-radius: 13px; background: #2a2a2e; }
+  .stage-shot :global(img), .stage-shot :global(video) { width: 100%; height: 100%; object-fit: cover; }
+  .stage-shot .counter { position: absolute; left: 10px; top: 10px; width: 28px; height: 28px; font-size: 13px; box-shadow: 0 0 0 2px #fff; }
+
+  /* ---------- Numbers ---------- */
+  section.numbers-section { padding-block: clamp(56px, 8vw, 110px) 0; }
+  .numbers {
+    max-width: 1180px; margin: 0 auto; padding: 48px 40px; list-style: none;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 32px 24px;
+    color: var(--on-accent); background: var(--accent);
+    border: 2.5px solid #16161a; border-radius: 30px; box-shadow: 0 7px 0 #16161a;
+    rotate: -0.8deg;
+  }
+  .numbers li { display: flex; flex-direction: column; gap: 8px; }
+  .numbers strong { font: 900 clamp(40px, 4vw, 54px)/1 var(--display); white-space: nowrap; letter-spacing: -0.045em; font-variant-numeric: tabular-nums; }
+  .numbers span { font-size: 15px; line-height: 1.45; font-weight: 500; }
+
+  /* ---------- 4 Find ---------- */
+  .find { display: flex; flex-wrap: wrap; align-items: center; gap: 48px; }
+  .find-text { flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
+  .find-text h2 { font-size: clamp(30px, 4vw, 44px); }
+  .find-text p:not(.step) { margin: 0; font-size: 17px; line-height: 1.55; color: var(--muted); }
+  .find :global(.find-shot) { flex: 1.5 1 560px; min-width: 0; }
+  .find :global(.shot-anchor) { max-width: 640px; }
+  /* Over the library's search field, which spans 55% to 79% of the window. */
+  .search-label {
+    position: absolute; left: 67%; top: -20px; translate: -50% 0;
+    display: flex; align-items: center; gap: 8px; padding: 9px 14px;
+    font-size: 15px; font-weight: 600; white-space: nowrap; color: #16161a;
+    background: #fff; border-radius: 14px; box-shadow: 0 0 0 1.5px #16161a, 0 4px 0 #16161a;
+  }
+  .search-label svg { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+  .found { padding: 1px 7px; border-radius: 8px; background: var(--accent); font-size: 12px; font-weight: 800; }
+
+  /* ---------- Privacy ---------- */
+  .privacy { display: flex; flex-wrap: wrap; align-items: center; gap: 40px; padding: clamp(28px, 5vw, 56px) clamp(20px, 4vw, 44px); border-radius: 32px; }
+  .privacy-text { flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
+  .privacy h2 { font-size: clamp(32px, 4vw, 52px); line-height: 1.02; letter-spacing: -0.04em; color: #fff; }
+  .mac { color: var(--accent); }
+  .privacy p { margin: 0; font-size: 17px; line-height: 1.55; color: var(--band-muted); }
+  .privacy a { color: var(--band-text); }
+  .card-chip { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px; background: #2c2c30; font-size: 15px; color: var(--band-muted); }
+  .card-chip b { font-family: var(--mono); color: var(--band-text); filter: blur(4px); }
+  @media (prefers-reduced-motion: no-preference) {
+    .card-chip b { animation: blur-pulse 2.6s ease-in-out infinite alternate; }
+  }
+  .promises { flex: 1 1 380px; min-width: 0; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+  .promises li { display: flex; gap: 14px; padding: 16px 18px; border-radius: 16px; background: #242427; }
+  .promises li > span:last-child { display: flex; flex-direction: column; gap: 3px; font-size: 14.5px; line-height: 1.5; color: var(--band-muted); }
+  .promises b { font-size: 16px; color: #fff; }
+  .tick {
+    flex: none; width: 26px; height: 26px; border-radius: 8px;
+    background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2316161A' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center / 14px no-repeat;
   }
 
-  .three { list-style: none; margin: 0; padding: 0; display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
-  .three li { display: grid; }
-  .tile { display: grid; align-content: start; gap: 12px; min-height: 200px; padding: 26px; color: var(--on-accent); background: var(--fill); transition: transform 120ms var(--ease-out), box-shadow 120ms var(--ease-out); }
-  .tile .n { font: 900 13px/1.4 var(--font); letter-spacing: 0.08em; text-transform: uppercase; }
-  .tile strong { font: 900 clamp(22px, 2.6vw, 28px)/1.1 var(--display); letter-spacing: -0.02em; text-wrap: balance; }
-  .tile span:last-child { font-size: 16px; line-height: 1.5; }
-  .tile:hover, .facts li:hover { transform: translate(-3px, -3px); box-shadow: calc(var(--shadow) + 3px) calc(var(--shadow) + 3px) 0 var(--line); }
-  .facts li { transition: transform 120ms var(--ease-out), box-shadow 120ms var(--ease-out); }
+  /* ---------- FAQ ---------- */
+  .faq-list { display: flex; flex-direction: column; gap: 12px; max-width: 880px; }
+  .faq-list h2 { margin-bottom: 16px; text-align: center; font-size: clamp(36px, 4.6vw, 56px); letter-spacing: -0.04em; }
+  .faq-list .faq { border-radius: 18px; }
+  .faq-list .faq summary { padding: 18px 22px; font-size: 17px; border-radius: 18px; }
+  .faq-list .faq > p { padding: 0 22px 22px; font-size: 16px; line-height: 1.6; }
+  .faq-list .faq a { color: var(--ink); font-weight: 600; }
 
-  .facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
-  .facts li { display: grid; gap: 12px; align-content: start; justify-items: start; padding: 20px 22px; }
-  .facts .chip { --chip: var(--accent); }
-  .facts p { margin: 0; font-size: 17px; }
-  .facts a { font-weight: 700; }
-
-  .install h2 { font-size: clamp(32px, 4vw, 44px); }
-  .install p { margin: 0; }
-  .install a { font-weight: 700; }
-  .install .steps { margin: 0; padding-left: 1.4em; display: grid; gap: 4px; }
-  .install :global(.shot) { border: 2px solid var(--line); border-radius: 10px; box-shadow: var(--shadow) var(--shadow) 0 var(--line); }
+  /* ---------- Install: the last call ---------- */
+  section.install-section { padding-block: clamp(48px, 7vw, 80px) clamp(56px, 8vw, 100px); }
+  .install {
+    max-width: 1180px; margin: 0 auto; padding: clamp(40px, 7vw, 72px) clamp(16px, 4vw, 32px);
+    display: flex; flex-direction: column; align-items: center; gap: 22px; text-align: center;
+    color: var(--on-accent); background: var(--accent);
+    border: 2.5px solid #16161a; border-radius: 36px; box-shadow: 0 8px 0 #16161a;
+  }
+  .install :focus-visible { outline-color: #16161a; }
+  .install h2 { font-size: clamp(38px, 6vw, 76px); line-height: 1; letter-spacing: -0.04em; }
+  .cta-keys { display: inline-flex; gap: 0.1em; --ink-ring: 0 0 0 3px #16161a; --ink-drop: 0 0.09em 0 #16161a; }
+  .cta-keys kbd { font-size: 0.8em; padding: 0 0.16em; color: #16161a; background: #fff; }
+  .cta-keys kbd:nth-of-type(2) { --delay: 120ms; }
+  .cta-keys kbd:nth-of-type(3) { --delay: 240ms; }
+  .tutorial { position: absolute; left: calc(100% + 30px); top: -10px; display: flex; align-items: flex-start; gap: 2px; color: #16161a; }
+  .tutorial .arrow { color: #16161a; --len: 60; }
+  .tutorial .note { --r: 6deg; width: 150px; max-width: none; font-size: 24px; text-align: left; letter-spacing: 0; }
+  .install > p { margin: 0; max-width: 560px; font-size: 19px; line-height: 1.5; }
+  .install :global(.copy) { width: 100%; max-width: 640px; text-align: left; }
+  .install .small { font-size: 14px; max-width: 600px; }
+  .install a { color: inherit; font-weight: 700; }
+  .install :global(.for-macs) { justify-content: center; }
 </style>

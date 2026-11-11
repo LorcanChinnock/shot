@@ -1,29 +1,27 @@
 ---
-/** Glass window chrome around a screenshot or loop, like the app's GlassWindow. */
+/**
+ * A product shot on a pastel panel, as the landing page shows them: the shot sits tilted with a deep shadow, and
+ * straightens and lifts on hover. Marks go in the `marks` slot, positioned against the shot (not the panel).
+ */
 interface Props {
-  title?: string;
-  tint?: string;
+  tone?: 'sand' | 'lilac' | 'sky' | 'blush' | 'sage';
+  /** The resting tilt, such as "-1deg". */
+  tilt?: string;
   class?: string;
 }
-const { title, tint = 'var(--yellow)', class: className } = Astro.props;
+const { tone = 'sand', tilt = '-1deg', class: className } = Astro.props;
 ---
 
-<figure class:list={['window card', className]} style={`--tint: ${tint}`}>
-  <div class="titlebar">
-    <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
-    {title && <span class="name">{title}</span>}
+<figure class:list={['shot-panel panel', tone, className]}>
+  <div class="shot-anchor">
+    <div class="shot-frame tilt" style={`--tilt: ${tilt}`}><slot /></div>
+    <slot name="marks" />
   </div>
-  <div class="pane"><slot /></div>
 </figure>
 
 <style>
-  .window { margin: 0; padding: 0 8px 8px; background: var(--glass-strong); overflow: hidden; }
-  .titlebar { display: flex; align-items: center; gap: 12px; height: 36px; padding: 0 6px; }
-  .lights { display: flex; gap: 7px; }
-  .lights i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--line); background: var(--red); }
-  .lights i:nth-child(2) { background: var(--yellow); }
-  .lights i:nth-child(3) { background: var(--mint); }
-  .name { font: 800 13px/1 var(--font); }
-  .pane { border: 2px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--tint); }
-  .pane :global(img), .pane :global(video) { width: 100%; }
+  .shot-panel { margin: 0; padding: clamp(16px, 3vw, 34px); display: grid; place-items: center; border-radius: 28px; }
+  .shot-anchor { position: relative; width: 100%; }
+  .shot-frame { overflow: hidden; border-radius: 14px; box-shadow: 0 0 0 1px rgb(22 22 26 / 0.06), 0 30px 60px rgb(40 30 60 / 0.22); }
+  .shot-frame :global(img), .shot-frame :global(video) { width: 100%; }
 </style>
