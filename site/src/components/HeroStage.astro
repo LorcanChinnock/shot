@@ -1,185 +1,118 @@
 ---
 /**
- * The hero's animation, in CSS only: an area is dragged out over a support ticket, the screen flashes, the discount line
- * is highlighted, an arrow and a note are drawn, and the Quick Access card slides in and says Copied. It tells the same
- * story as the hero recording below it. With reduced motion it shows its last frame and stands still.
- * Positions are percentages of the 16:10 stage, and text is in cqw, so the whole scene scales as one picture.
+ * The hero's product scene: a real editor screenshot on the sand panel, with the capture bar under it and the Quick Access
+ * card floating beside it. Badges 1–3 label the capture bar, the arrow and Copy, and a Copied toast pops beside Copy.
+ * Every mark is positioned in percentages of the screenshot it labels, so it stays on its target at any width.
+ *
+ * scripts/og.mjs renders this markup for the social cards: it slices everything from `<div class="hero-scene` to
+ * `<style>` and swaps each `<Image src={name} … />` for a plain <img> of the imported file. Keep the markup free of other
+ * expressions, and keep each Image on one line in that shape.
  */
+import { Image } from 'astro:assets';
+import editor from '../../../docs/media/editor.png';
+import captureBar from '../../../docs/media/capture-bar.png';
+import quickAccess from '../../../docs/media/quick-access.png';
 ---
 
-<div class="stage" role="img" aria-label="An area is dragged out around an order with a discount that didn't apply. The discount line is highlighted, an arrow and a note saying the code is valid but the total is unchanged are added, and the Quick Access card slides in with Copy and Save As buttons.">
-  <div class="screen" aria-hidden="true">
-    <div class="app">
-      <div class="sidebar">
-        <p class="logo"><i></i>Acme</p>
-        <span class="bar" style="width: 58%"></span>
-        <span class="bar on" style="width: 66%"></span>
-        <span class="bar" style="width: 70%"></span>
-        <span class="bar" style="width: 52%"></span>
-        <span class="bar" style="width: 60%"></span>
+<div class="hero-scene panel sand" role="img" aria-label="Shot's editor with a support ticket: the email address is blurred, the discount line is highlighted, and an arrow points at it from a note saying the code is valid but the total is unchanged. The capture bar sits under it, and the Quick Access card floats beside it with Copy and Save As.">
+  <div class="scene" aria-hidden="true">
+    <div class="editor-crop">
+      <Image src={editor} class="editor" alt="" widths={[1130, 1600]} sizes="(min-width: 900px) 1130px, 140vw" loading="eager" fetchpriority="high" />
+    </div>
+
+    <div class="bar-anchor">
+      <div class="bar-crop">
+        <Image src={captureBar} class="bar" alt="" widths={[640, 1206]} sizes="(min-width: 900px) 640px, 80vw" loading="eager" />
       </div>
-      <div class="main">
-        <p class="id">#4821</p>
-        <p class="title">Discount code isn't applied at checkout</p>
-        <p class="tags"><span class="t red">High priority</span><span class="t blue">Checkout</span><span class="t pink">Promotions</span></p>
-        <div class="message">
-          <i class="avatar">JD</i>
-          <p><b>Jane Doe</b> I entered SPRING20 and it says the code is valid, but the total doesn't change.</p>
-        </div>
-        <div class="order">
-          <p class="row head"><b>Order #A-20931</b><span>Placed today</span></p>
-          <p class="row"><span>Trail runners, size 9</span><span>$128.00</span></p>
-          <p class="row"><span>Shipping</span><span>$6.50</span></p>
-          <p class="row discount"><span>Discount&nbsp; SPRING20</span><span>−$0.00</span></p>
-          <p class="row total"><b>Total</b><b>$134.50</b></p>
-        </div>
+      <span class="mark-bar pop deco"><span class="counter pulse">1</span></span>
+    </div>
+
+    <div class="quick-anchor deco">
+      <div class="quick-crop float">
+        <Image src={quickAccess} class="quick" alt="" widths={[324, 648]} sizes="240px" loading="eager" />
       </div>
     </div>
 
-    <div class="marks">
-      <div class="highlight"></div>
-      <svg class="arrow" viewBox="0 0 160 100">
-        <path class="shaft" pathLength="1" d="M 106 46 C 104 60, 96 69, 84 72" />
-        <path class="head" d="M 89.6 66.8 L 84 72 L 91.2 74.4" />
-      </svg>
-      <p class="note">Code is valid but the total is unchanged</p>
-    </div>
-
-    <div class="selection"><span class="size">1136 × 688</span></div>
-    <div class="cursor"></div>
-    <div class="flash"></div>
-
-    <div class="quick">
-      <div class="thumb">
-        <span style="width: 62%"></span><span style="width: 80%"></span><span class="hl" style="width: 70%"></span><span style="width: 76%"></span>
-      </div>
-      <span class="pill copy">Copy</span>
-      <span class="pill save">Save As…</span>
-    </div>
-    <p class="copied">✓ Copied</p>
+    <span class="mark mark-arrow pop deco"><span class="label">Point at it</span><span class="counter pulse">2</span></span>
+    <span class="mark mark-copy pop deco"><span class="label">Copy</span><span class="counter pulse">3</span></span>
+    <span class="toast deco"><i></i>Copied</span>
   </div>
 </div>
 
 <style>
-  .stage {
-    --loop: 11s;
-    position: relative;
-    aspect-ratio: 16 / 10;
-    container-type: inline-size;
-    overflow: hidden;
-    /* A wallpaper behind the app, warm in light mode and dusky in dark. */
-    background:
-      radial-gradient(circle at 15% 10%, color-mix(in srgb, var(--pink) 55%, transparent), transparent 55%),
-      radial-gradient(circle at 90% 90%, color-mix(in srgb, var(--sky) 60%, transparent), transparent 55%),
-      color-mix(in srgb, var(--violet) 35%, var(--bg));
+  .hero-scene {
+    width: 100%;
+    max-width: 1120px;
+    margin-inline: auto;
+    padding: clamp(28px, 4.5vw, 52px) clamp(12px, 3vw, 24px) 0;
+    border-radius: 32px 32px 0 0;
   }
-  .screen { position: absolute; inset: 0; font: 500 1.45cqw/1.35 var(--font); color: #23232b; }
-  .screen p { margin: 0; }
-  .screen * { position: absolute; }
-  .screen p *, .screen .row > *, .screen .thumb * { position: static; }
+  .scene { position: relative; width: min(820px, 100%); margin-inline: auto; }
 
-  /* The ticket app being captured. It's someone's screen, so it stays light in both themes. */
-  .app { left: 3%; top: 5%; width: 94%; height: 90%; background: #fff; border-radius: 1.2cqw; box-shadow: 0 1cqw 3cqw rgb(0 0 0 / 0.18); overflow: hidden; }
-  .sidebar { left: 0; top: 0; bottom: 0; width: 22%; background: #f2f2f4; border-right: 1px solid #e3e3e8; }
-  .sidebar .logo { position: relative; left: 14%; top: 7%; display: flex; align-items: center; gap: 0.6cqw; font-weight: 800; font-size: 1.7cqw; }
-  .logo i { width: 1.9cqw; height: 1.9cqw; border-radius: 0.5cqw; background: #2fb589; }
-  .sidebar .bar { position: relative; display: block; left: 14%; height: 1cqw; margin-top: 2.2cqw; border-radius: 1cqw; background: #d6d6dc; }
-  .sidebar .bar:first-of-type { margin-top: 5cqw; }
-  .sidebar .bar.on { background: #b9e6d6; }
-  .main { left: 25%; top: 0; right: 3%; bottom: 0; }
-  .id { left: 0; top: 5%; color: #77777f; font-size: 1.25cqw; }
-  .title { left: 0; top: 10%; font-weight: 800; font-size: 2.35cqw; letter-spacing: -0.02em; white-space: nowrap; }
-  .tags { left: 0; top: 19.5%; display: flex; gap: 0.7cqw; font-size: 1.15cqw; font-weight: 700; }
-  .t { padding: 0.15cqw 0.6cqw; border-radius: 0.5cqw; }
-  .t.red { color: #d23c3c; background: #fde6e6; }
-  .t.blue { color: #2b7bd3; background: #e3f0fd; }
-  .t.pink { color: #c034b5; background: #fbe6f8; }
-  .message { left: 0; right: 0; top: 27%; height: 16%; border: 1px solid #e3e3e8; border-radius: 1cqw; }
-  .message .avatar { position: absolute; left: 2%; top: 18%; width: 3.4cqw; height: 3.4cqw; display: grid; place-items: center; border-radius: 50%; background: #f59a3c; color: #fff; font: 800 1.2cqw/1 var(--font); }
-  .message p { left: 11%; top: 16%; right: 4%; }
-  .order { left: 0; right: 0; top: 50%; height: 40%; border: 1px solid #e3e3e8; border-radius: 1cqw; padding: 0 3%; }
-  .row { position: relative !important; display: flex; justify-content: space-between; margin-top: 1.25cqw !important; }
-  .row.head { margin-top: 1.6cqw !important; padding-bottom: 1cqw; border-bottom: 1px solid #e3e3e8; }
-  .row.head span { color: #77777f; }
-  .row.discount { color: #d23c3c; }
-  .row.total { padding-top: 1cqw; border-top: 1px solid #e3e3e8; }
+  /* Crops: each screenshot is cropped to its window in the source file's pixels, so marks can be placed in the same space. */
+  .editor-crop, .bar-crop, .quick-crop { position: relative; overflow: hidden; }
+  .editor-crop :global(img), .bar-crop :global(img), .quick-crop :global(img) { position: absolute; max-width: none; height: auto; }
 
-  /* Shot's marks, in the editor's colours. */
-  .marks { inset: 0; }
-  .highlight { left: 27.8%; top: 70.5%; width: 19.5%; height: 4.6%; background: rgb(255 212 59 / 0.6); border-radius: 0.3cqw; transform-origin: left; transform: rotate(-1deg); }
-  .arrow { inset: 0; width: 100%; height: 100%; overflow: visible; }
-  .arrow path { fill: none; stroke: #ff4d3d; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-  .shaft { stroke-dasharray: 1; }
-  .note { left: 58%; top: 31%; width: 30%; padding: 1.2cqw 1.4cqw; font-size: 1.5cqw; font-weight: 600; background: #ffe98a; border-radius: 0.4cqw; box-shadow: 0 0.6cqw 1.6cqw rgb(0 0 0 / 0.18); transform: rotate(-2deg); }
+  /* editor.png is 1600 × 1000; the window's top 821 px, from (220, 39), is shown. */
+  .editor-crop {
+    aspect-ratio: 1160 / 821;
+    border-radius: 1.4% 1.4% 0 0 / 1.95% 1.95% 0 0;
+    box-shadow: 0 30px 70px rgb(80 50 10 / 0.28);
+  }
+  .editor-crop :global(img) { width: calc(1600 / 1160 * 100%); left: calc(-220 / 1160 * 100%); top: calc(-39 / 821 * 100%); }
 
-  /* The capture overlay: a selection whose huge shadow dims the rest of the screen. */
-  .selection { left: 24%; top: 48%; width: 72%; height: 44%; border: 2px solid #fff; outline: 1px solid rgb(0 0 0 / 0.5); box-shadow: 0 0 0 200cqw rgb(10 10 20 / 0.35); opacity: 0; }
-  .size { left: auto; right: 0; top: calc(100% + 0.8cqw); padding: 0.3cqw 0.8cqw; font: 700 1.2cqw/1.3 var(--mono); color: #fff; background: rgb(18 18 26 / 0.85); border-radius: 0.5cqw; white-space: nowrap; }
-  .cursor { left: 96%; top: 92%; width: 3cqw; height: 3cqw; margin: -1.5cqw 0 0 -1.5cqw; opacity: 0; }
-  .cursor::before, .cursor::after { content: ""; position: absolute; background: #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.6); }
-  .cursor::before { left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; }
-  .cursor::after { top: 50%; left: 0; right: 0; height: 2px; margin-top: -1px; }
-  .flash { inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+  /* capture-bar.png is 1206 × 148; the bar is 1146 × 92 from (30, 28). It overlaps the editor's bottom edge. */
+  .bar-anchor { position: absolute; left: 50%; bottom: 0; width: 74%; translate: -50% 42%; }
+  .bar-crop { aspect-ratio: 1146 / 92; border-radius: 2.6% / 32%; box-shadow: 0 14px 30px rgb(0 0 0 / 0.3); }
+  .bar-crop :global(img) { width: calc(1206 / 1146 * 100%); left: calc(-30 / 1146 * 100%); top: calc(-28 / 92 * 100%); }
+  /* On the Area button, which runs from 19% to 32% of the bar. */
+  .mark-bar { position: absolute; left: 19.5%; top: 0; display: flex; margin: -16px 0 0 -16px; --delay: 1500ms; }
+  .mark-bar .counter { width: 34px; height: 34px; font-size: 17px; }
 
-  /* Quick Access: always dark, like the app's card. */
-  .quick { left: 2.5%; top: 67%; width: 21%; height: 25%; background: #0d0d10; border: 0.35cqw solid #2a2a30; border-radius: 1.6cqw; box-shadow: 0 1cqw 3cqw rgb(0 0 0 / 0.35); }
-  .thumb { left: 5%; right: 5%; top: 18%; bottom: 18%; padding: 4% 6%; background: #f4f4f6; display: grid; align-content: space-evenly; }
-  .thumb span { display: block; height: 0.7cqw; border-radius: 1cqw; background: #c9c9d0; }
-  .thumb .hl { background: #f08b8b; box-shadow: 0 0 0 0.35cqw rgb(255 212 59 / 0.7); }
-  .pill { left: 50%; transform: translateX(-50%); padding: 0.4cqw 1.2cqw; font: 800 1.25cqw/1.3 var(--font); color: #12121a; border: 0.3cqw solid #0d0d10; border-radius: 0.8cqw; box-shadow: 0.25cqw 0.25cqw 0 #0d0d10; white-space: nowrap; }
-  .pill.copy { top: 26%; background: #ffd43b; }
-  .pill.save { top: 55%; background: #fff; }
-  .copied { left: 2.5%; top: 59%; padding: 0.3cqw 1cqw; font: 800 1.3cqw/1.4 var(--font); color: #12121a; background: #4fe3b5; border: 0.25cqw solid #12121a; border-radius: 99px; }
+  /* quick-access.png is 648 × 400; the card is 558 × 315 from (45, 42). It hangs off the left into the panel's margin,
+     by as much as the margin allows. */
+  .quick-anchor {
+    position: absolute; top: 30%; width: 25%;
+    left: calc(-1 * clamp(0px, (min(1120px, 100vw - 32px) - 836px) / 2, 74px));
+  }
+  .quick-crop {
+    --r: -4deg;
+    aspect-ratio: 558 / 315;
+    border-radius: 5% / 8.9%;
+    box-shadow: 0 24px 50px rgb(0 0 0 / 0.3);
+    transform: rotate(var(--r));
+  }
+  .quick-crop :global(img) { width: calc(648 / 558 * 100%); left: calc(-45 / 558 * 100%); top: calc(-42 / 315 * 100%); }
 
-  /* The loop, as fractions of --loop: keys press 4–12%, drag 15–34%, flash 36%, highlight 42–49%, arrow 50–58%,
-     note 56–62%, Quick Access 66–72%, Copied 72%, hold, then everything fades from 92%. */
+  /* A badge with a dark label, as the board draws them. */
+  .mark { position: absolute; display: flex; align-items: center; gap: 6px; }
+  .label { padding: 3px 9px; border-radius: 8px; background: #16161a; color: #fff; font: 700 13px/1.4 var(--font); white-space: nowrap; }
+  /* Below and left of the arrow's middle, which crosses (69.6%, 69.4%) of the crop. */
+  .mark-arrow { right: 31%; top: 71%; --delay: 1400ms; }
+  /* Above Copy, whose centre is 96.2% across the crop. */
+  .mark-copy { right: calc(3.8% - 22px); bottom: calc(100% + 8px); flex-direction: column; width: 44px; --delay: 1700ms; }
+  .mark .counter { --delay: 2000ms; }
+
+  /* The Copied toast pops in just under Copy, then fades, on a 4 s loop. Reduce Motion shows it standing. */
+  .toast {
+    position: absolute; right: 1.1%; top: 7%;
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 15px 8px 9px; border-radius: 22px;
+    background: rgb(26 26 30 / 0.94); color: #fff;
+    font: 600 14px/1.3 var(--font);
+    box-shadow: 0 14px 30px rgb(0 0 0 / 0.3);
+    transform: rotate(-3deg);
+  }
+  .toast i {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2316161A' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center / 13px no-repeat;
+  }
   @media (prefers-reduced-motion: no-preference) {
-    .selection { animation: select var(--loop) infinite both; }
-    .size { animation: show-size var(--loop) infinite both; }
-    .cursor { animation: cursor var(--loop) infinite both; }
-    .flash { animation: flash var(--loop) infinite both; }
-    .highlight { animation: highlight var(--loop) infinite both; }
-    .shaft { animation: draw var(--loop) infinite both; }
-    .head { animation: head var(--loop) infinite both; }
-    .note { animation: note var(--loop) infinite both; }
-    .quick { animation: quick var(--loop) infinite both; }
-    .copied { animation: copied var(--loop) infinite both; }
-    .marks { animation: fade var(--loop) infinite both; }
+    .toast { animation: toast 4s 1s infinite both; }
   }
-  @keyframes select {
-    0%, 11% { opacity: 0; width: 0; height: 0; }
-    13%, 15% { opacity: 1; width: 0; height: 0; }
-    34% { width: 72%; height: 44%; box-shadow: 0 0 0 200cqw rgb(10 10 20 / 0.35); }
-    36% { opacity: 1; box-shadow: 0 0 0 200cqw rgb(10 10 20 / 0.35); }
-    40%, 100% { opacity: 0; width: 72%; height: 44%; box-shadow: 0 0 0 200cqw rgb(10 10 20 / 0); }
+  @keyframes toast {
+    0%, 30% { opacity: 0; transform: translateY(8px) scale(0.92) rotate(-3deg); }
+    36%, 82% { opacity: 1; transform: rotate(-3deg); }
+    90%, 100% { opacity: 0; transform: translateY(-6px) scale(0.96) rotate(-3deg); }
   }
-  @keyframes show-size { 0%, 18% { opacity: 0; } 20%, 35% { opacity: 1; } 37%, 100% { opacity: 0; } }
-  @keyframes cursor {
-    0%, 11% { opacity: 0; left: 24%; top: 48%; }
-    13%, 15% { opacity: 1; left: 24%; top: 48%; }
-    34% { opacity: 1; left: 96%; top: 92%; }
-    36%, 100% { opacity: 0; left: 96%; top: 92%; }
-  }
-  @keyframes flash { 0%, 35% { opacity: 0; } 36.5% { opacity: 0.85; } 41%, 100% { opacity: 0; } }
-  @keyframes highlight { 0%, 42% { transform: rotate(-1deg) scaleX(0); } 49%, 100% { transform: rotate(-1deg) scaleX(1); } }
-  @keyframes draw { 0%, 50% { stroke-dashoffset: 1; } 57%, 100% { stroke-dashoffset: 0; } }
-  @keyframes head { 0%, 56.5% { opacity: 0; } 57.5%, 100% { opacity: 1; } }
-  @keyframes note {
-    0%, 56% { opacity: 0; transform: rotate(-8deg) scale(0.6); }
-    60% { opacity: 1; transform: rotate(1deg) scale(1.06); }
-    63%, 100% { opacity: 1; transform: rotate(-2deg) scale(1); }
-  }
-  @keyframes quick {
-    0%, 66% { opacity: 0; transform: translateX(-130%); }
-    70% { opacity: 1; transform: translateX(6%); }
-    73%, 92% { opacity: 1; transform: translateX(0); }
-    97%, 100% { opacity: 0; transform: translateX(0); }
-  }
-  @keyframes copied {
-    0%, 72% { opacity: 0; transform: translateY(40%) scale(0.7); }
-    75% { opacity: 1; transform: translateY(0) scale(1.08); }
-    77%, 92% { opacity: 1; transform: none; }
-    97%, 100% { opacity: 0; transform: none; }
-  }
-  @keyframes fade { 0%, 92% { opacity: 1; } 97%, 100% { opacity: 0; } }
 </style>

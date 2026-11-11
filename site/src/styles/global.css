@@ -57,7 +57,7 @@
   --band-text: #edebe6;
   --band-muted: #b9b7be;
 
-  /* Older names the page files still use until #1124–#1127 restyle them. */
+  /* Older names the guide, changelog and 404 pages (until #1125–#1127 restyle them) and scripts/og.mjs still use. */
   --yellow: var(--accent);
   --red: var(--record);
   --pink: #ff7ab6;
@@ -294,17 +294,24 @@ kbd.key.accent { background: var(--accent); color: var(--on-accent); }
 /* ---------- Tabs and questions ---------- */
 
 .tabs { display: flex; flex-wrap: wrap; gap: 8px; }
-.tabs [role="tab"] {
+.tabs [role="tab"], .tabs label {
   font: 700 14px/1.2 var(--font); color: var(--ink);
   min-height: 40px; padding: 8px 14px;
   background: var(--surface); border: 1.5px solid var(--edge); border-radius: 11px;
   cursor: pointer;
   transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out), background-color 200ms;
 }
-.tabs [role="tab"][aria-selected="true"] {
+.tabs [role="tab"][aria-selected="true"], .tabs label:has(input:checked) {
   color: var(--on-accent); background: var(--accent); border-color: var(--line);
   box-shadow: 0 3px 0 var(--line); transform: translateY(-2px);
 }
+
+/* Tabs without a script: a radio group whose labels look like tabs. The arrow keys move between them, and the page
+   shows the checked one's panel with :has() (the landing page's Capture section). */
+.tabs label { display: inline-flex; align-items: center; gap: 8px; }
+.tabs label svg { flex: none; }
+.tabs label input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
+.tabs label:has(input:focus-visible) { outline: 2.5px solid var(--ink); outline-offset: 3px; }
 
 /* A question that opens: <details class="faq"><summary>…</summary><p>…</p></details>. No script. */
 .faq {

@@ -1392,6 +1392,7 @@ From **Website › Site · components and motion**, **Site · landing page** and
 | Ink | 2 px outline with a 4 px drop on large buttons, cards and keycaps (5 px on the 404 panel); 1.5 px with a 2–3 px drop on small buttons, chips and keycaps in text |
 | Highlighter | `linear-gradient(transparent 56%, accent 56%, accent 94%, transparent 94%)` under one word per heading |
 | H1 | `clamp(36px, 4.6vw, 56px)`, 900, tracking −0.04 em, line height 1.02 |
+| Hero H1 | `clamp(52px, 8.5vw, 112px)`, 900, tracking −0.045 em, line height 0.98: the landing page's hero only, with its keycaps at 0.78 em and 3 px ink |
 | H2 | 30 px, 900, tracking −0.03 em |
 | Lede | 20 px, line height 1.5 |
 | Body | 16.5 px, line height 1.65 |

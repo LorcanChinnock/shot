@@ -19,7 +19,7 @@ The website is Shot's, so it uses Shot's design system. The values come from the
 
 ## Type
 
-System fonts: SF Pro on a Mac, which is what Shot itself uses. Headings are black weight (900) with tight tracking: H1 `clamp(36px, 4.6vw, 56px)`, H2 30px. Body text is 16.5px at 1.65 and the lede 20px. Code and commands are SF Mono. The one web font is Caveat, self-hosted in `public/fonts/` under the SIL Open Font License, and it's used for sticky notes only, never for text you need to read.
+System fonts: SF Pro on a Mac, which is what Shot itself uses. Headings are black weight (900) with tight tracking: H1 `clamp(36px, 4.6vw, 56px)`, H2 30px. The landing page's hero alone is bigger, `clamp(52px, 8.5vw, 112px)`, as the board draws it. Body text is 16.5px at 1.65 and the lede 20px. Code and commands are SF Mono. The one web font is Caveat, self-hosted in `public/fonts/` under the SIL Open Font License, and it's used for sticky notes only, never for text you need to read.
 
 ## Shape
 
@@ -36,7 +36,8 @@ All of them are classes in `src/styles/global.css`, so each page uses them witho
 - **Key caps**: `kbd.key` in text and `kbd.key.big` in headings, `.accent` for a yellow one. They press into their shadow on hover, never plain text.
 - **Badges and tags**: `.badge` (Latest), `.badge.dark` (Free), `.badge.quiet` (beta), and the changelog's `.tag.capture`, `.editor`, `.gallery` and `.release`.
 - **Cards**: `.card` is quiet, `.ink-card` has ink, and `.tilt` tilts a card at rest (`--tilt`) and straightens and lifts it on hover. `.panel.sand` and the other pastels hold product shots.
-- **Tabs and questions**: `.tabs` with `role="tab"` buttons, and `details.faq`, which opens without a script.
+- **Tabs and questions**: `.tabs` with `role="tab"` buttons, or with radio `<label>`s for tabs that need no script: the labels look like tabs, the arrow keys move between them, and the page shows the checked one's panel with `:has()` (the landing page's Capture section). `details.faq` opens without a script.
+- **Product shots** (`Window.astro`): a screenshot or loop on a pastel panel, tilted with a deep shadow, straightening on hover. Marks go in its `marks` slot so they're placed against the shot. The landing hero (`HeroStage.astro`) is the editor screenshot on the sand panel, with the capture bar under it, the Quick Access card floating beside it, badges 1–3 on the capture bar, the arrow and Copy, and a Copied toast.
 - **Shot's marks**: `.hl` is the highlighter under one word per heading. `.counter` is the red numbered badge, `svg.arrow` with a `.shaft` and a `.head` is a drawn arrow, and `.note` is a sticky note. Each mark sits inside an `.anchor` next to what it labels, carries `.deco` and `aria-hidden="true"`, and is hidden under 860px.
 - **Header**: Features, Guide, FAQ and GitHub, and a small Download free button. Under 720px the links move into a Menu button (a `<details>`), and the logo and Download stay.
 - **Footer**: the product with a line about it, then Product, Help and Project columns, stacking to one on a phone. It ends with the "LC_" mark and "Made by Lorcan Chinnock", linked to lorcanchinnock.com, in Shot's ink with the underscore in yellow, and "Not affiliated with Apple."
@@ -59,7 +60,7 @@ The page needs no animation script, and a browser without scroll timelines or vi
 
 ## Social cards
 
-`npm run og` renders each card from the site itself: the home card is the hero (`A better ⌘⇧4` beside the window with its last frame). A guide page's card swaps the headline for the page's title, with its group as a chip, and shows what the page is about in the window: the guide's own screenshot where it has one, otherwise a drawing in the site's style (keycaps for the shortcuts page, a command for removing Shot). The scenes are listed in `scripts/og.mjs`; a page without one shows the hero. Cards reuse `global.css` and `HeroStage.astro`, so a change to either shows up the next time the cards are rendered.
+`npm run og` renders each card from the site itself: the home card is the hero (`A better ⌘⇧4` beside the hero scene, as Reduce Motion shows it). A guide page's card swaps the headline for the page's title, with its group as a chip, and shows what the page is about in the window: the guide's own screenshot where it has one, otherwise a drawing in the site's style (keycaps for the shortcuts page, a command for removing Shot). The scenes are listed in `scripts/og.mjs`, each on its group's pastel panel; a page without one shows the hero scene. Cards reuse `global.css` and `HeroStage.astro`, so a change to either shows up the next time the cards are rendered.
 
 ## Rules
 
