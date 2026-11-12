@@ -335,7 +335,7 @@ struct LayersPanel: View {
         let top = frame == nil ? 0 : -1
         let current = frame?.isSelected == true ? -1 : rows.firstIndex { selection.contains($0.id) }
         let next = current.map { min(max($0 + step, top), rows.count - 1) } ?? (step > 0 ? top : rows.count - 1)
-        guard next != current, next >= top else {
+        guard next != current, next >= top, next < rows.count else {
             return
         }
         if next == -1 {
