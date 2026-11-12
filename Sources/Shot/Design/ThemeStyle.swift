@@ -216,6 +216,9 @@ enum Theme {
 extension EnvironmentValues {
     /// Settings › General › Text size, set at the root of every hosted view.
     @Entry var textSize = TextSize.standard
+    /// Narrows toolbar and tool buttons to 4 pt either side of their symbol, for a title bar that's short of room, such
+    /// as the image editor's at a larger text size. Their 30 × 28 pt floor stays.
+    @Entry var tightToolbar = false
 }
 
 /// A system font that grows with Settings › General › Text size. Use `.font(.scaled(…))` for Shot's own interface text;
@@ -535,6 +538,7 @@ private struct ThemeButtonBody: View {
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.displayScale) private var scale
+    @Environment(\.tightToolbar) private var tightToolbar
     @State private var hovering = false
 
     /// Text on the accent stays near-black in both appearances.
@@ -613,7 +617,7 @@ private struct ThemeButtonBody: View {
         case .main, .secondary: style.large ? 20 : 14
         case .popUp: 9
         case .plain: 6
-        case .toolbar, .tool: 7
+        case .toolbar, .tool: tightToolbar ? 4 : 7
         }
     }
 

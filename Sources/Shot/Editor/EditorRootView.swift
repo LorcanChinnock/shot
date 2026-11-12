@@ -74,18 +74,25 @@ struct EditorRootView: View {
 /// the middle, then Undo, the Canvas menu, Style, Layers, Share, Save and Copy, the one main button.
 private struct EditorTitleBar: View {
     @Bindable var model: EditorModel
+    @Environment(\.textSize) private var textSize
 
     var body: some View {
         // The Canvas menu is the board's "Canvas ⌄" while the window has room for it beside a 100 pt file name, and a
-        // tile with the same menu when it doesn't, such as at the 1,060 pt minimum width.
+        // tile with the same menu when it doesn't, such as at the 1,060 pt minimum width. At a larger text size the tiles
+        // grow with their symbols, so last of all the tiles narrow, the gaps close to 8 pt and the name can shrink to
+        // 80 pt, which keeps Copy inside the window. The standard size never narrows: its compact row is a few points
+        // over at the minimum width, which shows as nothing, and it keeps the look the board drew.
         ViewThatFits(in: .horizontal) {
             row(compactCanvas: false)
             row(compactCanvas: true)
+            if textSize != .standard {
+                row(compactCanvas: true, tight: true)
+            }
         }
     }
 
-    private func row(compactCanvas: Bool) -> some View {
-        HStack(spacing: 12) {
+    private func row(compactCanvas: Bool, tight: Bool = false) -> some View {
+        HStack(spacing: tight ? 8 : 12) {
             VStack(alignment: .leading, spacing: 0) {
                 Text(model.fileURL.lastPathComponent)
                     .font(Theme.label)
@@ -97,8 +104,8 @@ private struct EditorTitleBar: View {
                     .monospacedDigit()
             }
             .lineLimit(1)
-            // Measured at its 100 pt floor when choosing the Canvas menu's form, and as wide as the room allows after.
-            .frame(minWidth: 100, idealWidth: 100, maxWidth: 190, alignment: .leading)
+            // Measured at its floor when choosing the title bar's form, and as wide as the room allows after.
+            .frame(minWidth: tight ? 80 : 100, idealWidth: tight ? 80 : 100, maxWidth: 190, alignment: .leading)
             .padding(.leading, 8)
             // The name takes its room first; the tools sit centred in what's left.
             .layoutPriority(1)
@@ -108,6 +115,7 @@ private struct EditorTitleBar: View {
             Spacer(minLength: 0)
             actions(compactCanvas: compactCanvas)
         }
+        .environment(\.tightToolbar, tight)
     }
 
     private var size: String { EditorToolbarLayout.sizeLabel(model.document.exportSize) }
