@@ -269,6 +269,7 @@ private struct GalleryFolderRow: View {
     @State private var hovering = false
     @State private var targeted = false
     @State private var openTask: Task<Void, Never>?
+    @FocusState private var focused: Bool
 
     /// How deep a folder is: 0 for the save folder, 1 for a folder in it, and so on.
     static func level(of path: String) -> Int {
@@ -308,16 +309,23 @@ private struct GalleryFolderRow: View {
                 if NSApp.currentEvent?.clickCount == 2, isFolder {
                     model.folderEdit = .rename(folder)
                 } else {
-                    model.source = .folder(folder)
-                    model.expandedFolders.formUnion(Gallery.ancestors(of: folder))
+                    open()
                 }
+            }
+            // As a Button takes focus: Tab reaches it while keyboard navigation is on, and a click doesn't focus it.
+            .focusable(interactions: .activate)
+            .focused($focused)
+            .focusEffectDisabled()
+            .onKeyPress(keys: [.space, .return]) { _ in
+                open()
+                return .handled
             }
             .modifier(FolderDrag(model: model, folder: isFolder ? folder : nil))
             .accessibilityElement(children: .combine)
             // The count fades out under the "…" button on a selected or hovered row, so VoiceOver gets it here instead.
             .accessibilityValue(hiddenCount)
             .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
-            .accessibilityAction { model.source = .folder(folder) }
+            .accessibilityAction { open() }
             if folder == model.captureSubfolder, isFolder {
                 Image(systemName: "arrow.down.circle.fill")
                     .font(.scaled(11, weight: .semibold))
@@ -340,6 +348,7 @@ private struct GalleryFolderRow: View {
             disclosure.padding(.leading, leading - 15)
         }
         .modifier(SidebarRowBackground(selected: selected, hovering: hovering, targeted: targeted || extraTargeted))
+        .focusHalo(focused)
         .onHover { hovering = $0 }
         .modifier(FolderDrop(model: model, folder: folder, targeted: $targeted))
         // Holding something over a closed folder opens it, so it can be dropped deeper.
@@ -360,6 +369,12 @@ private struct GalleryFolderRow: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    /// Shows what's in the folder, opening the folders above it so its row stays in view.
+    private func open() {
+        model.source = .folder(folder)
+        model.expandedFolders.formUnion(Gallery.ancestors(of: folder))
     }
 
     /// The arrow that opens or closes the folders inside this one, in the space before its icon. The save folder is always

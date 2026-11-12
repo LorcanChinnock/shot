@@ -46,10 +46,18 @@ struct EditorRootView: View {
                             canvas.window?.makeFirstResponder(canvas)
                         },
                         onResetImageCrop: model.resetImageCrop,
-                        onSelectFrame: {
-                            model.tool = .crop
-                            // Return and Esc go to the canvas, not the panel that was clicked.
-                            canvas.window?.makeFirstResponder(canvas)
+                        onSelectFrame: { byArrowKey in
+                            if model.frameRow?.isSelected != true {
+                                // Without a layer picked, so taking up the crop tool adjusts the frame rather than giving a
+                                // selected placed image a crop of its own.
+                                model.selectLayers([])
+                                model.tool = .crop
+                            }
+                            // Return and Esc go to the canvas, not the panel that was clicked. The arrow keys keep moving
+                            // through the list, so focus stays there.
+                            if !byArrowKey {
+                                canvas.window?.makeFirstResponder(canvas)
+                            }
                         },
                         onHideFrame: model.setFrameCropHidden,
                         onDeleteFrame: model.deleteFrame,

@@ -97,7 +97,8 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | ⌥⌘C / ⌥⌘V | Copy / paste a style |
 | ⇧⌘I | Add an image: a recent capture or a file |
 | ⌘L | Show or hide the layers |
-| Return in the layers | Rename the selected layer |
+| ↑ / ↓ in the layers | Select the layer above or below. The Frame row, at the top while the image has a crop, takes up the crop tool. |
+| Return in the layers | Rename the selected layer, or on the Frame row, hand the keys to the crop |
 | ⌘] / ⌘[ | Move the selection forward / back |
 | ⌥⌘] / ⌥⌘[ | Bring the selection to the front / send it to the back |
 | ⌘Z / ⇧⌘Z | Undo / redo |

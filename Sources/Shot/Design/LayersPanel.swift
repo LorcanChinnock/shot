@@ -47,13 +47,20 @@ struct LayersPanel: View {
     /// Crop Image or a crop badge was chosen for the placed image with this id.
     let onCropImage: (UUID) -> Void
     let onResetImageCrop: (UUID) -> Void
-    let onSelectFrame: () -> Void
+    /// The Frame row was chosen: `true` when the arrow keys moved onto it, so the list keeps focus, and `false` for a click
+    /// or Return, which hand the keys to the crop.
+    let onSelectFrame: (Bool) -> Void
     let onHideFrame: (Bool) -> Void
     let onDeleteFrame: () -> Void
     /// A tool's key was pressed while the list had focus and no name was being edited.
     let onTool: (EditorTool) -> Void
 
     @FocusState private var isFocused: Bool
+    /// Whether the focus came from the keyboard rather than a click, which shows itself in the selection, so only then
+    /// does the halo show, as it does on a Button.
+    @State private var showsHalo = false
+    /// Whether one of the rows' buttons has focus, rather than the list itself.
+    @State private var buttonFocused = false
     @State private var drag: RowDrag?
     /// Set by Escape, so the rest of that drag does nothing.
     @State private var dragCancelled = false
@@ -72,8 +79,24 @@ struct LayersPanel: View {
     var body: some View {
         VStack(spacing: 0) {
             header
+            list
+            PanelHairline().padding(.vertical, 6)
+            footer
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 10)
+        .sidePanel(width: Self.width)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Layers"))
+        .onDisappear(perform: stopDragging)
+    }
+
+    /// The Frame row and the layers under it, which take focus together, so the arrow keys move between them and the halo
+    /// goes round both.
+    private var list: some View {
+        VStack(spacing: 0) {
             if let frame {
-                FrameRowView(row: frame, onSelect: onSelectFrame, onHide: { onHideFrame(!frame.isHidden) }, onDelete: onDeleteFrame)
+                FrameRowView(row: frame, onSelect: { onSelectFrame(false) }, onHide: { onHideFrame(!frame.isHidden) }, onDelete: onDeleteFrame)
                 PanelHairline().padding(.horizontal, 4).padding(.vertical, 6)
             }
             ScrollView {
@@ -95,46 +118,53 @@ struct LayersPanel: View {
             }
             .coordinateSpace(.named(Self.space))
             .onGeometryChange(for: CGSize.self, of: \.size) { listSize = $0 }
-            .focusable()
-            .focused($isFocused)
-            .focusEffectDisabled()
-            .onDeleteCommand {
-                if frame?.isSelected == true {
-                    onDeleteFrame()
-                } else {
-                    onDelete(selection)
-                }
-            }
-            .onMoveCommand(perform: moveSelection)
-            .onKeyPress(.return) {
-                guard renaming == nil, selection.count == 1, let id = selection.first, rows.contains(where: { $0.id == id }) else {
-                    return .ignored
-                }
-                renaming = id
-                return .handled
-            }
-            // Tool keys work here too, as they do on the canvas.
-            .onKeyPress(phases: .down) { press in
-                guard renaming == nil, press.modifiers.isDisjoint(with: [.command, .control, .option]), let tool = EditorTool(key: press.characters) else {
-                    return .ignored
-                }
-                onTool(tool)
-                return .handled
-            }
             .overlay {
                 if rows.isEmpty {
                     EmptyLayers().allowsHitTesting(false)
                 }
             }
-            PanelHairline().padding(.vertical, 6)
-            footer
         }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 10)
-        .sidePanel(width: Self.width)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(Text("Layers"))
-        .onDisappear(perform: stopDragging)
+        .focusable()
+        .focused($isFocused)
+        .focusEffectDisabled()
+        .focusHalo(showsHalo)
+        // The list counts as focused while one of its rows' buttons is, and those draw their own halo.
+        .onPreferenceChange(RowButtonFocus.self) { focused in
+            buttonFocused = focused
+            updateHalo()
+        }
+        .onChange(of: isFocused, updateHalo)
+        .onDeleteCommand {
+            if frame?.isSelected == true {
+                onDeleteFrame()
+            } else {
+                onDelete(selection)
+            }
+        }
+        .onMoveCommand(perform: moveSelection)
+        .onKeyPress(.return) {
+            guard renaming == nil else {
+                return .ignored
+            }
+            // On the Frame row, Return hands the keys to the crop, as clicking the row does.
+            if frame?.isSelected == true {
+                onSelectFrame(false)
+                return .handled
+            }
+            guard selection.count == 1, let id = selection.first, rows.contains(where: { $0.id == id }) else {
+                return .ignored
+            }
+            renaming = id
+            return .handled
+        }
+        // Tool keys work here too, as they do on the canvas.
+        .onKeyPress(phases: .down) { press in
+            guard renaming == nil, press.modifiers.isDisjoint(with: [.command, .control, .option]), let tool = EditorTool(key: press.characters) else {
+                return .ignored
+            }
+            onTool(tool)
+            return .handled
+        }
     }
 
     /// "Layers" in 13 pt bold, and its shortcut in the tertiary text on the right.
@@ -270,6 +300,11 @@ struct LayersPanel: View {
         }
     }
 
+    private func updateHalo() {
+        let mouse: [NSEvent.EventType] = [.leftMouseDown, .leftMouseUp, .rightMouseDown, .rightMouseUp, .otherMouseDown, .otherMouseUp]
+        showsHalo = isFocused && !buttonFocused && !mouse.contains { $0 == NSApp.currentEvent?.type }
+    }
+
     // MARK: Selection
 
     /// A click selects the row, ⌘-click adds or removes it, and ⇧-click selects the rows from the last one clicked.
@@ -293,13 +328,22 @@ struct LayersPanel: View {
         case .down: 1
         default: 0
         }
-        guard step != 0, !rows.isEmpty else {
+        guard step != 0 else {
             return
         }
-        let current = rows.firstIndex { selection.contains($0.id) }
-        let next = current.map { min(max($0 + step, 0), rows.count - 1) } ?? (step > 0 ? 0 : rows.count - 1)
-        selection = [rows[next].id]
-        anchor = rows[next].id
+        // The Frame row sits above the layers, at -1.
+        let top = frame == nil ? 0 : -1
+        let current = frame?.isSelected == true ? -1 : rows.firstIndex { selection.contains($0.id) }
+        let next = current.map { min(max($0 + step, top), rows.count - 1) } ?? (step > 0 ? top : rows.count - 1)
+        guard next != current, next >= top else {
+            return
+        }
+        if next == -1 {
+            onSelectFrame(true)
+        } else {
+            selection = [rows[next].id]
+            anchor = rows[next].id
+        }
     }
 
     // MARK: Dragging
@@ -686,6 +730,11 @@ struct LayerNameField: View {
     /// Set once it has committed or cancelled, so losing focus as it goes doesn't commit again.
     @State private var isDone = false
     @FocusState private var isFocused: Bool
+    /// Whether the focus came from the keyboard rather than a click, which shows itself in the selection, so only then
+    /// does the halo show, as it does on a Button.
+    @State private var showsHalo = false
+    /// Whether one of the rows' buttons has focus, rather than the list itself.
+    @State private var buttonFocused = false
 
     init(name: String, fontSize: CGFloat, onCommit: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
         self.name = name
@@ -728,6 +777,15 @@ struct LayerNameField: View {
 
 /// A row's eye, lock or bin. Unset, it's in a quieter grey; `isShown` false leaves its room empty until the pointer is on
 /// the row, so a plain row shows only its eye, as on the board.
+/// Whether any of the rows' buttons has focus, which the list reads so it draws its own halo only when it has focus itself.
+private struct RowButtonFocus: SwiftUI.PreferenceKey {
+    static let defaultValue = false
+
+    static func reduce(value: inout Bool, nextValue: () -> Bool) {
+        value = value || nextValue()
+    }
+}
+
 private struct RowButton: View {
     let symbol: String
     let isOn: Bool
@@ -735,6 +793,7 @@ private struct RowButton: View {
     var isShown = true
     let action: () -> Void
     @State private var isHovered = false
+    @FocusState private var focused: Bool
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.colorSchemeContrast) private var contrast
 
@@ -747,7 +806,12 @@ private struct RowButton: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .opacity(isShown ? 1 : 0)
+        .focusEffectDisabled()
+        .focused($focused)
+        .focusHalo(focused && isEnabled, radius: Theme.Radius.tiny)
+        .preference(key: RowButtonFocus.self, value: focused)
+        // A button that only shows on hover shows while Tab has reached it too, so the halo isn't round an empty space.
+        .opacity(isShown || focused ? 1 : 0)
         .allowsHitTesting(isShown)
         .onHover { isHovered = $0 }
         .accessibilityLabel(Text(label))
